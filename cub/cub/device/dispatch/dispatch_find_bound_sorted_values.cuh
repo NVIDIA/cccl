@@ -26,8 +26,6 @@
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
-
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/limits>
 
@@ -166,8 +164,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       static_cast<int>(::cuda::ceil_div(num_diagonals, Offset{threads_per_partition_block}));
 
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-            partition_grid_size, threads_per_partition_block, 0, stream)
+          launcher_factory(partition_grid_size, threads_per_partition_block, 0, stream)
             .doit(device_partition_find_bound_sorted_values_kernel<PolicySelector,
                                                                    HaystackIt,
                                                                    NeedlesIt,
@@ -191,8 +188,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   {
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-            static_cast<int>(num_tiles), active_policy.threads_per_block, 0, stream)
+          launcher_factory(static_cast<int>(num_tiles), active_policy.threads_per_block, 0, stream)
             .doit(
               device_find_bound_sorted_values_kernel<PolicySelector, Mode, HaystackIt, NeedlesIt, OutputIt, Offset, CompareOp>,
               d_range,

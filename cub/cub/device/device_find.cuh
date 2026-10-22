@@ -763,7 +763,7 @@ struct DeviceFind
   //! - @devicestorage
   //!
   //! .. versionadded:: 3.5.0
-  //!    First appears in CUDA Toolkit 13.4.
+  //!    First appears in CUDA Toolkit 13.5.
   //!
   //! @endrst
   //!
@@ -782,8 +782,10 @@ struct DeviceFind
   //!   is an integral type representing the number of values to search for.
   //!
   //! @tparam OutputIteratorT
-  //!   is a model of [Random Access Iterator] whose value type is assignable
-  //!   from ``RangeIteratorT``'s difference type.
+  //!   is an output iterator supporting random access and assignable.
+  //!   Each result is a zero-based offset into the haystack range.
+  //!   Before assignment, the offset is converted to the iterator's ``value_type`` if non-void, or to
+  //!   ``cuda::std::ptrdiff_t`` otherwise.
   //!
   //! @tparam CompareOpT
   //!   is a model of [Strict Weak Ordering] over the value types of both
@@ -864,7 +866,7 @@ struct DeviceFind
   //! sorted consistently with ``comp``.
   //!
   //! .. versionadded:: 3.5.0
-  //!    First appears in CUDA Toolkit 13.4.
+  //!    First appears in CUDA Toolkit 13.5.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -1004,6 +1006,7 @@ struct DeviceFind
   //! - @devicestorage
   //!
   //! .. versionadded:: 3.5.0
+  //!    First appears in CUDA Toolkit 13.5.
   //!
   //! @endrst
   //!
@@ -1022,8 +1025,10 @@ struct DeviceFind
   //!   is an integral type representing the number of values to search for.
   //!
   //! @tparam OutputIteratorT
-  //!   is a model of [Random Access Iterator] whose value type is assignable
-  //!   from ``RangeIteratorT``'s difference type.
+  //!   is an output iterator supporting random access and assignable.
+  //!   Each result is a zero-based offset into the haystack range.
+  //!   Before assignment, the offset is converted to the iterator's ``value_type`` if non-void, or to
+  //!   ``cuda::std::ptrdiff_t`` otherwise.
   //!
   //! @tparam CompareOpT
   //!   is a model of [Strict Weak Ordering] over the value types of both
@@ -1104,7 +1109,7 @@ struct DeviceFind
   //! sorted consistently with ``comp``.
   //!
   //! .. versionadded:: 3.5.0
-  //!    First appears in CUDA Toolkit 13.4.
+  //!    First appears in CUDA Toolkit 13.5.
   //!
   //! This is an environment-based API that allows customization of:
   //!

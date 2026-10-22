@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__fwd/extents.h>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
@@ -104,7 +105,7 @@ struct layout_stride : ::cuda::std::layout_stride
  * @tparam dimensions
  */
 template <typename T, size_t dimensions = 1>
-using slice = mdspan<T, ::cuda::std::dextents<size_t, dimensions>, layout_stride>;
+using slice = mdspan<T, ::cuda::std::dims<dimensions>, layout_stride>;
 
 /**
  * @brief Compute how many dimensions of a slice are actually contiguous.
