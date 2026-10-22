@@ -31,6 +31,7 @@
 #include <cuda/std/__simd/abi.h>
 #include <cuda/std/__simd/basic_mask.h>
 #include <cuda/std/__simd/basic_vec.h>
+#include <cuda/std/__simd/exposition.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/declval.h>
@@ -147,6 +148,34 @@ _CCCL_REQUIRES(__reduction_binary_operation<_BinaryOperation, _Tp> _CCCL_AND
     __x, __mask, __binary_op, ::cuda::std::simd::__default_identity_element<_Tp, _BinaryOperation>());
 }
 
+// [simd.reductions], scalar reduce
+
+_CCCL_TEMPLATE(typename _Tp, typename _BinaryOperation = plus<>)
+_CCCL_REQUIRES(__is_vectorizable_v<_Tp> _CCCL_AND __reduction_binary_operation<_BinaryOperation, _Tp> _CCCL_AND
+                 __is_reduce_default_supported_operation_v<_BinaryOperation>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp reduce(const _Tp& __x, _BinaryOperation = {}) noexcept
+{
+  return __x;
+}
+
+_CCCL_TEMPLATE(typename _Tp, typename _Mask, typename _BinaryOperation)
+_CCCL_REQUIRES(
+  __is_vectorizable_v<_Tp> _CCCL_AND same_as<_Mask, bool> _CCCL_AND __reduction_binary_operation<_BinaryOperation, _Tp>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp
+reduce(const _Tp& __x, _Mask __mask, _BinaryOperation, const type_identity_t<_Tp> __identity_element) noexcept
+{
+  return __mask ? __x : __identity_element;
+}
+
+_CCCL_TEMPLATE(typename _Tp, typename _Mask, typename _BinaryOperation = plus<>)
+_CCCL_REQUIRES(__is_vectorizable_v<_Tp> _CCCL_AND same_as<_Mask, bool> _CCCL_AND
+                 __reduction_binary_operation<_BinaryOperation, _Tp> _CCCL_AND
+                   __is_reduce_default_supported_operation_v<_BinaryOperation>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp reduce(const _Tp& __x, _Mask __mask, _BinaryOperation = {}) noexcept
+{
+  return __mask ? __x : ::cuda::std::simd::__default_identity_element<_Tp, _BinaryOperation>();
+}
+
 // [simd.reductions], reduce_min
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
@@ -198,6 +227,20 @@ reduce_min(const basic_vec<_Tp, _Abi>& __x, const typename basic_vec<_Tp, _Abi>:
   return __result;
 }
 
+_CCCL_TEMPLATE(typename _Tp)
+_CCCL_REQUIRES(__is_vectorizable_v<_Tp> _CCCL_AND totally_ordered<_Tp>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp reduce_min(const _Tp& __x) noexcept
+{
+  return __x;
+}
+
+_CCCL_TEMPLATE(typename _Tp, typename _Mask)
+_CCCL_REQUIRES(__is_vectorizable_v<_Tp> _CCCL_AND same_as<_Mask, bool> _CCCL_AND totally_ordered<_Tp>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp reduce_min(const _Tp& __x, _Mask __mask) noexcept
+{
+  return __mask ? __x : numeric_limits<_Tp>::max();
+}
+
 // [simd.reductions], reduce_max
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
@@ -247,6 +290,20 @@ reduce_max(const basic_vec<_Tp, _Abi>& __x, const typename basic_vec<_Tp, _Abi>:
     }
   }
   return __result;
+}
+
+_CCCL_TEMPLATE(typename _Tp)
+_CCCL_REQUIRES(__is_vectorizable_v<_Tp> _CCCL_AND totally_ordered<_Tp>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp reduce_max(const _Tp& __x) noexcept
+{
+  return __x;
+}
+
+_CCCL_TEMPLATE(typename _Tp, typename _Mask)
+_CCCL_REQUIRES(__is_vectorizable_v<_Tp> _CCCL_AND same_as<_Mask, bool> _CCCL_AND totally_ordered<_Tp>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp reduce_max(const _Tp& __x, _Mask __mask) noexcept
+{
+  return __mask ? __x : numeric_limits<_Tp>::lowest();
 }
 
 // [simd.mask.reductions], mask reductions
