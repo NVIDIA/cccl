@@ -19,6 +19,7 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/segmented_params.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_scan.cuh>
@@ -37,6 +38,7 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/__utility/cmp.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -100,6 +102,25 @@ struct device_fixed_size_segmented_scan_kernel_source
       AccumT,
       EnforceInclusive == ForceInclusive::Yes>);
 };
+
+// Returns the host-known segment size, or -1 if it does not fit into int
+template <typename SegmentSizeT>
+CUB_RUNTIME_FUNCTION int host_segment_size(SegmentSizeT segment_size)
+{
+  using validation = params::__validate_uniform_integral_param<SegmentSizeT>;
+  static_assert(!validation::args_traits::is_deferred,
+                "cub::DeviceSegmentedScan: a fixed segment size must be known on the host, so cuda::args::deferred "
+                "is not supported.");
+  if constexpr (validation::all_ok && !validation::args_traits::is_deferred)
+  {
+    const auto size = params::get_param(segment_size, 0);
+    return ::cuda::std::in_range<int>(size) ? static_cast<int>(size) : -1;
+  }
+  else
+  {
+    return -1;
+  }
+}
 
 template <typename ScanOpT, typename InitValueT, typename InputValueT>
 using deduced_accum_t = ::cuda::std::__accumulator_t<
@@ -279,6 +300,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 template <ForceInclusive EnforceInclusive = ForceInclusive::No,
           typename InputIteratorT,
           typename OutputIteratorT,
+          typename SegmentSizeT,
           typename ScanOpT,
           typename InitValueT,
           typename AccumT         = deduced_accum_t<ScanOpT, InitValueT, it_value_t<InputIteratorT>>,
@@ -301,7 +323,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_fixed_size(
   InputIteratorT d_in,
   OutputIteratorT d_out,
   ::cuda::std::int64_t num_segments,
-  int segment_size,
+  SegmentSizeT segment_size_arg,
   ScanOpT scan_op,
   InitValueT init_value,
   cudaStream_t stream,
@@ -310,6 +332,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_fixed_size(
   KernelLauncherFactory launcher_factory = {})
 {
   static constexpr auto int64_max = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max();
+  const int segment_size          = host_segment_size(segment_size_arg);
 
   // The total number of items is used to advance d_in and d_out, so it must fit into int64_t
   if (num_segments < 0 || segment_size < 0 || (segment_size > 0 && num_segments > int64_max / segment_size))

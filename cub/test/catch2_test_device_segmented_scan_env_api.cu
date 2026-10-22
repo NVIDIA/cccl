@@ -8,6 +8,7 @@
 #include <thrust/device_vector.h>
 
 #include <cuda/__execution/tune.h>
+#include <cuda/argument>
 #include <cuda/devices>
 #include <cuda/functional>
 #include <cuda/stream>
@@ -392,7 +393,8 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum (fixed size) accepts s
   // example-begin inclusive-segmented-sum-fixed-size-env
   // Two segments of four items each: [8, 6, 7, 5] and [3, 0, 9, 1]
   ::cuda::std::int64_t num_segments = 2;
-  int segment_size                  = 4;
+  // The segment size can also be annotated, here as a compile-time constant
+  constexpr auto segment_size = cuda::args::constant<4>{};
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1};
   thrust::device_vector<int> d_out(d_in.size());
 

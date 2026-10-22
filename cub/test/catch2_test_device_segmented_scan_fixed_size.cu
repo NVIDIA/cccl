@@ -7,6 +7,7 @@
 
 #include <thrust/tabulate.h>
 
+#include <cuda/argument>
 #include <cuda/iterator>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
@@ -168,6 +169,63 @@ CUB_TEST("DeviceSegmentedScan fixed-size overloads work", "[segmented][scan][fix
   }
 }
 
+using static_segment_sizes =
+  c2h::type_list<cuda::std::integral_constant<int, 1>,
+                 cuda::std::integral_constant<int, 3>,
+                 cuda::std::integral_constant<int, 64>,
+                 cuda::std::integral_constant<int, 577>,
+                 cuda::std::integral_constant<int, 1500>>;
+
+CUB_TEST("DeviceSegmentedScan fixed-size overloads accept cuda::args segment sizes",
+         "[segmented][scan][fixed_size]",
+         CUB_SMALL,
+         static_segment_sizes)
+{
+  constexpr int segment_size = c2h::get<0, TestType>::value;
+  const auto num_segments    = static_cast<cuda::std::int64_t>(GENERATE(1, 17, (1 << 16) / segment_size + 1));
+  const auto num_items       = num_segments * segment_size;
+  CAPTURE(segment_size, num_segments);
+
+  c2h::device_vector<int> input(num_items, thrust::no_init);
+  thrust::tabulate(input.begin(), input.end(), make_value<int>{});
+  c2h::device_vector<int> output(num_items, thrust::no_init);
+  const c2h::host_vector<int> h_input = input;
+
+  const auto d_in    = thrust::raw_pointer_cast(input.data());
+  auto d_out         = thrust::raw_pointer_cast(output.data());
+  const auto plus    = cuda::std::plus<int>{};
+  const auto init    = 3;
+  const auto sum     = segmented_reference<true>(h_input, num_segments, segment_size, plus, 0);
+  const auto ex_scan = segmented_reference<false>(h_input, num_segments, segment_size, plus, init);
+
+  SECTION("constant")
+  {
+    device_inclusive_segmented_sum(d_in, d_out, num_segments, cuda::args::constant<segment_size>{});
+    REQUIRE(sum == c2h::host_vector<int>(output));
+  }
+
+  SECTION("immediate")
+  {
+    device_inclusive_segmented_sum(d_in, d_out, num_segments, cuda::args::immediate{segment_size});
+    REQUIRE(sum == c2h::host_vector<int>(output));
+  }
+
+  SECTION("immediate with bounds")
+  {
+    const auto size = cuda::args::immediate{cuda::std::int64_t{segment_size}, cuda::args::bounds<1, 2048>()};
+    device_exclusive_segmented_scan(d_in, d_out, num_segments, size, plus, init);
+    REQUIRE(ex_scan == c2h::host_vector<int>(output));
+  }
+
+  SECTION("constant through the environment overload")
+  {
+    REQUIRE(cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
+              d_in, d_out, num_segments, cuda::args::constant<segment_size>{}, plus, init)
+            == cudaSuccess);
+    REQUIRE(ex_scan == c2h::host_vector<int>(output));
+  }
+}
+
 CUB_TEST("DeviceSegmentedScan fixed-size overloads preserve operand order", "[segmented][scan][fixed_size]", CUB_SMALL)
 {
   const int segment_size  = GENERATE(1, 5, 100, 1500);
@@ -249,6 +307,20 @@ CUB_TEST("DeviceSegmentedScan fixed-size overloads validate sizes", "[segmented]
             nullptr, temp_storage_bytes, ptr, ptr, cuda::std::numeric_limits<cuda::std::int64_t>::max(), 2)
           == cudaErrorInvalidValue);
   REQUIRE(DeviceSegmentedScan::InclusiveSegmentedSum(ptr, ptr, -1, 5) == cudaErrorInvalidValue);
+
+  // segment sizes beyond INT_MAX are rejected rather than truncated, in every form
+  const auto too_large = cuda::std::size_t{1} << 32;
+  REQUIRE(DeviceSegmentedScan::InclusiveSegmentedSum(nullptr, temp_storage_bytes, ptr, ptr, 5, too_large)
+          == cudaErrorInvalidValue);
+  REQUIRE(DeviceSegmentedScan::InclusiveSegmentedSum(
+            nullptr, temp_storage_bytes, ptr, ptr, 5, cuda::args::immediate{too_large})
+          == cudaErrorInvalidValue);
+  REQUIRE(DeviceSegmentedScan::InclusiveSegmentedSum(
+            nullptr, temp_storage_bytes, ptr, ptr, 5, cuda::args::constant<cuda::std::size_t{1} << 32>{})
+          == cudaErrorInvalidValue);
+  REQUIRE(
+    DeviceSegmentedScan::InclusiveSegmentedSum(nullptr, temp_storage_bytes, ptr, ptr, 5, cuda::args::constant<-1>{})
+    == cudaErrorInvalidValue);
 }
 
 CUB_TEST("DeviceSegmentedScan fixed-size and offset overloads resolve unambiguously",
