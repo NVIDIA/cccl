@@ -85,6 +85,10 @@ private:
 
   static constexpr auto agent_policy = SegmentedScanPolicyGetterT{}().block;
 
+  // Volatile loads are never beneficial for performance and require a default constructible value type
+  static_assert(agent_policy.load_modifier != CacheLoadModifier::LOAD_VOLATILE,
+                "SegmentedScanBlockPolicy: load_modifier must not be LOAD_VOLATILE");
+
   // Input iterator wrapper type (for applying cache modifier)
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
@@ -109,6 +113,14 @@ private:
   static constexpr auto load_algorithm  = agent_policy.load_algorithm;
   static constexpr auto store_algorithm = agent_policy.store_algorithm;
   static constexpr auto scan_algorithm  = agent_policy.scan_algorithm;
+
+  // The block-wide scan requires the items in a blocked arrangement
+  static_assert(load_algorithm != BLOCK_LOAD_STRIPED || items_per_thread == 1,
+                "SegmentedScanBlockPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED unless items_per_thread is "
+                "1, since the scan requires a blocked arrangement");
+  static_assert(store_algorithm != BLOCK_STORE_STRIPED || items_per_thread == 1,
+                "SegmentedScanBlockPolicy: store_algorithm must not be BLOCK_STORE_STRIPED unless items_per_thread "
+                "is 1, since the scan produces a blocked arrangement");
 
   using block_load_t  = BlockLoad<AccumT, threads_per_block, items_per_thread, load_algorithm>;
   using block_store_t = BlockStore<AccumT, threads_per_block, items_per_thread, store_algorithm>;
