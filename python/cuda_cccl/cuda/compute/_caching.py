@@ -662,7 +662,7 @@ def clear_all_caches():
     _clear_wrapper_caches()
     _process_wide_build_results_cache.clear()
     # Auxiliary caches registered process-wide (_jit._infer_return_type, the
-    # compiled-operator memo _jit._compile_op_impl, and the NVRTC memos in
+    # compiled-operator memo _jit.compile_op, and the NVRTC memos in
     # _cpp_compile) must be cleared too, so builds after a clear really are
     # cold. Factory entries' cache_clear is idempotent with
     # _clear_wrapper_caches above. Snapshot the registry first: a lazy import
@@ -674,19 +674,18 @@ def clear_all_caches():
 
 class CachableFunction:
     """
-    A type that wraps a function and provides custom comparison
-    (__eq__) and hash (__hash__) implementations.
+    A cache key for a function, with comparison (__eq__) and hash (__hash__)
+    based on its bytecode, constants, and closures, while ignoring other
+    attributes such as its docstring.
 
-    The purpose of this class is to enable caching and comparison of
-    functions based on their bytecode, constants, and closures, while
-    ignoring other attributes such as their names or docstrings.
+    It does not hold a reference to the function it was built from.
     """
 
     # TODO: eventually, move this class to _jit.py as it only
     # has to do with caching of Python callables that will be
     # JIT compiled.
     def __init__(self, func):
-        self._func = func
+        self._name = func.__name__
 
         closure = func.__closure__ if func.__closure__ is not None else []
         contents = []
@@ -718,7 +717,7 @@ class CachableFunction:
         return hash(self._identity)
 
     def __repr__(self):
-        return str(self._func)
+        return f"<CachableFunction {self._name}>"
 
 
 # Register keyers for built-in types

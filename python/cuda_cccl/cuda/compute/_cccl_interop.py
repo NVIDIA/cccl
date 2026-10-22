@@ -228,15 +228,22 @@ def get_value_type(
 
 
 def set_cccl_iterator_state(cccl_it: Iterator, input_it):
+    """Bind the per-call state of ``input_it`` to the cached ``cccl_it``.
+
+    Only the pointer value (or state bytes) is bound; ``input_it`` itself is
+    not kept alive by ``cccl_it``. The caller holds ``input_it`` for the
+    duration of the call, which is all the launch needs, whereas ``cccl_it``
+    belongs to an algorithm object that lives in the process-wide wrapper
+    cache.
+    """
     if cccl_it.is_ptr_kind:
-        ptr = get_data_pointer(input_it)
-        cccl_it.bind_pointer_state(ptr, input_it)
+        cccl_it.bind_pointer_state(get_data_pointer(input_it))
     else:
         state_ = input_it.state
         if isinstance(state_, (IteratorState, Pointer)):
             cccl_it.state = state_
         else:
-            cccl_it.state = make_pointer_object(state_, input_it)
+            cccl_it.state = make_pointer_object(state_)
 
 
 @functools.lru_cache()

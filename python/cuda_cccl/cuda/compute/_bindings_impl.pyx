@@ -609,33 +609,31 @@ cdef class Pointer(StateBase):
             )
         self.set_state(ptr, ref)
 
-    def rebind(self, ptr, owner):
-        """Update the ptr and ref in place"""
+    def rebind(self, ptr):
+        """Update the ptr in place from a raw address.
+
+        Clears ``ref``: a raw address has no Python object to keep alive, and
+        recording one here (e.g. the device array the address came from) would
+        keep it alive for as long as this Pointer does, which for the Pointer
+        cached on an Iterator is for as long as the algorithm's wrapper cache
+        entry lives.
+        """
         if isinstance(ptr, int):
             self.ptr = int_as_ptr(ptr)
         elif isinstance(ptr, ctypes.c_void_p):
             self.ptr = int_as_ptr(ptr.value)
         else:
             raise TypeError(
-                "First argument must be an integer, or ctypes.c_void_p, "
+                "Argument must be an integer, or ctypes.c_void_p, "
                 f"got {type(ptr)}"
             )
-        self.ref = owner
+        self.ref = None
 
 
-def make_pointer_object(ptr, owner):
+def make_pointer_object(ptr):
+    """Make a Pointer from a raw address."""
     cdef Pointer res = Pointer(0)
-
-    if isinstance(ptr, int):
-        res.ptr = int_as_ptr(ptr)
-    elif isinstance(ptr, ctypes.c_void_p):
-        res.ptr = int_as_ptr(ptr.value)
-    else:
-        raise TypeError(
-            "First argument must be an integer, or ctypes.c_void_p, "
-            f"got {type(ptr)}"
-        )
-    res.ref = owner
+    res.rebind(ptr)
     return res
 
 
@@ -840,7 +838,7 @@ cdef class Iterator:
         self.is_ptr_kind = (it_kind == cccl_iterator_kind_t.POINTER)
         self._cached_ptr_obj = None
 
-    def bind_pointer_state(self, ptr, owner):
+    def bind_pointer_state(self, ptr):
         """Set state from a raw pointer, reusing a cached Pointer instead
         of allocating one each call. Only valid when is_ptr_kind is True.
         """
@@ -848,7 +846,7 @@ cdef class Iterator:
         if cached is None:
             cached = Pointer(0)
             self._cached_ptr_obj = cached
-        cached.rebind(ptr, owner)
+        cached.rebind(ptr)
         self.state = cached
 
     @property

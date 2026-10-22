@@ -1111,7 +1111,6 @@ def test_operator_device_code_targets_the_requested_cc(monkeypatch):
     follow the build machine instead.
     """
     from cuda.compute import _jit
-    from cuda.compute._caching import CachableFunction
 
     if not _jit.USING_V2:
         pytest.skip("v1 compiles the operator through a different entry point")
@@ -1131,8 +1130,8 @@ def test_operator_device_code_targets_the_requested_cc(monkeypatch):
         return x + 1
 
     int32 = from_numpy_dtype(np.dtype(np.int32))
-    _jit._compile_op_impl.cache_clear()
-    _jit._compile_op_impl(CachableFunction(add_one), (int32,), int32, (7, 5))
+    _jit.compile_op.cache_clear()
+    _jit._compile_op_impl(add_one, (int32,), int32, (7, 5))
 
     assert recorded["chip"] == "sm_75"
 
