@@ -72,7 +72,7 @@ bool equal_range(const Buffer& buf)
     }
     const cuda::__ensure_current_context guard{buf.stream()};
     check_equal_kernel<<<1, 1, 0, buf.stream().get()>>>(buf.begin());
-    CCCLRT_CHECK(cudaGetLastError() == cudaSuccess);
+    CHECK(cudaGetLastError() == cudaSuccess);
     buf.stream().sync();
     return true;
   }
@@ -158,7 +158,7 @@ bool equal_size_value(const Buffer& buf, const size_t size, const typename Buffe
     }
     const cuda::__ensure_current_context guard{buf.stream()};
     check_equal_value_kernel<<<1, 1, 0, buf.stream().get()>>>(buf.begin(), size, value);
-    CCCLRT_CHECK(cudaGetLastError() == cudaSuccess);
+    CHECK(cudaGetLastError() == cudaSuccess);
     buf.stream().sync();
     return true;
   }
@@ -185,8 +185,8 @@ template <class Buffer>
 void check_allocation_device(const Buffer& buf, cuda::device_ref device)
 {
   ::cudaPointerAttributes attributes{};
-  CCCLRT_REQUIRE(::cudaPointerGetAttributes(&attributes, buf.data()) == ::cudaSuccess);
-  CCCLRT_CHECK(attributes.device == device.get());
+  REQUIRE(::cudaPointerGetAttributes(&attributes, buf.data()) == ::cudaSuccess);
+  CHECK(attributes.device == device.get());
 }
 
 // helper class as we need to pass the properties in a tuple to the catch tests
