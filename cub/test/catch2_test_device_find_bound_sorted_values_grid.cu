@@ -53,7 +53,7 @@ CUB_TEST("DeviceFind sorted bounds span multiple grids", "[find][device][binary-
   cuda::compute_capability cc{};
   REQUIRE(cub::detail::ptx_compute_cap(cc) == cudaSuccess);
   const auto policy = cub::detail::find_bound_sorted_values::policy_selector_from_types<value_type, value_type>{}(cc);
-  const auto tile_size = static_cast<offset_type>(policy.threads_per_block * policy.items_per_thread);
+  const auto tile_size = static_cast<offset_type>(policy.threads_per_block) * policy.items_per_thread;
 
   // Two blocks per grid: the search pass crosses a grid boundary at three tiles, while the
   // partition pass crosses one at 512 tiles (513 diagonals, with 256 diagonals per block).
