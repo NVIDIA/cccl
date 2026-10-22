@@ -51,13 +51,13 @@ FP64 rate is 1:64.
 
 | Need | FP64 on the target | Reach for | Why |
 |---|---|---|---|
-| More than 104 significand bits, or a wider exponent range than `double`'s | any | software binary128 (__float128) on the device sm_100 and later | nothing narrower holds it |
-| Beyond `double`, up to 104 bits | full rate | `fp64mp2` | 13× faster than software binary128 on B200, at about 3.6 `double` passes |
-| Beyond `double`, up to 104 bits | rationed | software binary128, or `double` with a compensated algorithm | binary128 is integer code and runs 2.4–3.1× faster than `fp64mp2` there; [fp64mp2](#fp64mp2) has the register-pressure exception |
+| More than 104 significand bits, or a wider exponent range than `double`'s | any | software binary128 (`__float128`) on the device sm_100 and later | nothing narrower holds it |
+| Beyond `double`, up to 104 bits | full rate | `fp64mp2` | 7.8× faster than software binary128 per `mid` addition on B200, 17.8× per division |
+| Beyond `double`, up to 104 bits | rationed | software binary128, or `double` with a compensated algorithm | binary128 is integer code and runs 1.4–4× faster than `fp64mp2` there; [fp64mp2](#fp64mp2) has the register-pressure exception |
 | An x87 `long double` port, 64-bit significand | full rate | `fp64mp2` | 104 bits covers 64 with room; the exponent range does not carry over |
 | Extra precision between operations only, result stored as `double` | rationed | `fp64emu_unpacked` | 62-bit intermediates rounded once at the pack; about 1.5× `double` |
 | `double` results bit for bit, without the FP64 pipe | rationed | `fp64emu`, packed, at its default `high` | identical results off the FP64 pipe; near `double`'s speed only in small kernels |
-| About `double` precision, `float`'s range is enough | rationed | `fp32mp2` | 46 bits in 8 bytes on the FP32 pipe; 6–17× `double` by level |
+| About `double` precision, `float`'s range is enough | rationed | `fp32mp2` | 46 bits in 8 bytes on the FP32 pipe; 5.5–16× `double` by level |
 | `float` precision over `double`'s exponent range | rationed | `fp64emu_low` | the cheapest emulated arithmetic, about 2× `double`, reaching ±10^308 |
 | Up to `double` precision | full rate | native `double` | every emulation only slows the mix down |
 | To find out how much precision an algorithm needs | any | `fp64_custom<E, M>` | sweeps formats within `double` layout, ~ same cost |
@@ -124,12 +124,12 @@ the component documentation already relies on, collected in one place.
 - **Two pipes at once.** On a rationed part the FP64 units sit idle while `fpemu` runs on the
   FP32 and integer pipes, and would still deliver their own rate if asked, so a reduction split
   between native `double` and `fpemu` could in principle sum the two
-  throughputs - [README_fpemu.md](README_fpemu.md) puts the arithmetic sum with the unpacked form
-  at 2.9–3.1× `double`. No such kernel has been built or measured, and the two halves share
-  issue bandwidth, registers and the scheduler, so treat it as an upper bound to test rather
-  than a result to plan on. Packed `high` is the partner when the split must not change the
-  result: it holds `double`'s layout and returns `double`'s bits, so the handover costs nothing
-  and the two halves agree. The unpacked form is the partner when throughput matters more, its
+  throughputs - [README_fpemu.md](README_fpemu.md) measures `fp64emu_unpacked_mid` at
+  1.78–1.96× `double`, so the sum would be 2.8–3.0× `double`. No such kernel has been built or
+  measured, and the two halves share issue bandwidth, registers and the scheduler, so treat it
+  as an upper bound to test rather than a result to plan on. Packed `high` is the partner when
+  the split must not change the result: it holds `double`'s layout and returns `double`'s bits,
+  so the handover costs nothing and the two halves agree. The unpacked form is the partner when throughput matters more, its
   pack boundary being where the handover would sit.
 
 - **Size first, then choose.** When the precision a computation needs is not known,
@@ -191,11 +191,11 @@ without it for the runs that count.
   FP32 instructions, and the bargain holds only where those are cheap relative to FP64. On the
   FP64-rationed parts - L40S, RTX PRO 6000 Blackwell, B300, consumer GPUs generally - a `mid`
   addition runs 5.6× faster than a native `double` addition, and the well-known π integration
-  benchmark referenced in [README_fpmp.md](README_fpmp.md#where-this-pays-off) comes out 11.7×
-  ahead. On a full-rate part such as B200 the same addition runs at 0.36× of native `double`:
-  `double` is both faster and more accurate there, and the float pair has nothing to offer. The
-  code is portable; the win is not. Decide from the FP64:FP32 rate of the target, and keep
-  `double` reachable behind a type alias.
+  benchmark referenced in [README_fpmp.md](README_fpmp.md#where-this-pays-off) comes out
+  8.6–10.8× ahead. On a full-rate part such as B200 the same addition runs at 0.36× of native
+  `double`: `double` is both faster and more accurate there, and the float pair has nothing to
+  offer. The code is portable; the win is not. Decide from the FP64:FP32 rate of the target, and
+  keep `double` reachable behind a type alias.
 
 - **Keep `double` ↔ `fp32mp2` conversions out of hot loops.** A conversion is arithmetic, not a
   register move: about 25 instructions into the pair and 40 out of it. They hide in two places.
@@ -303,7 +303,7 @@ without it for the runs that count.
   is 7.8× faster than software binary128, and division is 17.8× faster. On B300, with FP64 at
   1/64 of FP32, the same addition sustains 45 - a thirtieth - and software binary128, which is
   integer code and does not compete for the FP64 units, is 1.4–4× faster than `fp64mp2`
-  operation for operation and 2.4–3.1× on the π integration. On such a part the choice is
+  operation for operation. On such a part the choice is
   usually `fp128` for the digits or `double` for the speed, with `fp64mp2` the worst of both -
   usually, because those figures come from small kernels. Software binary128 is long integer
   code with many values live at once, and a large kernel already near its register budget can
@@ -388,10 +388,10 @@ measured figures live in [README_fpemu.md](README_fpemu.md); the advice here is 
   part a chain of it runs ahead of hardware `double` and lands closer to the exact answer. That
   is the form that competes with native `double` in real applications, and sometimes wins.
   Packed `fp64emu` is a different proposition. The π integration on
-  [README_fpemu.md](README_fpemu.md) puts it close to parity with hardware `double` on L40S, RTX
-  PRO 6000 Blackwell and B300, with the unpacked form at about 1.5× it, but that kernel is the
-  exception rather than the rule: a few operations per term, no memory traffic, nothing else
-  competing for registers. A real kernel is larger and rarely bound by arithmetic alone, and
+  [README_fpemu.md](README_fpemu.md) puts it close to parity with hardware `double` on RTX 6000
+  Ada, RTX PRO 6000 Blackwell and B300, with the unpacked form at about 1.5× it, but that kernel
+  is the exception rather than the rule: a few operations per term, no memory traffic, nothing
+  else competing for registers. A real kernel is larger and rarely bound by arithmetic alone, and
   each emulated operation replaces one FP64 instruction with a run of integer and FP32
   instructions and several more live registers, so in a large kernel the packed form usually
   means register pressure, spills and a net loss against the FP64 pipe, slow as that pipe is.
@@ -418,7 +418,7 @@ measured figures live in [README_fpemu.md](README_fpemu.md); the advice here is 
   live values; the unpacked form is the one that costs occupancy.
 
 - **Step down with the range in mind.** `mid` is 1–2 ulp and `low` about `float`'s precision;
-  `mid` runs at 1.4–1.6× `double` packed and 1.8–2.1× unpacked, `low` at 1.7–2.0× and 2.0–2.3×.
+  `mid` runs at 1.4–1.6× `double` packed and 1.8–2.0× unpacked, `low` at 1.7–2.0× and 2.0–2.3×.
   In the packed form both handle the normal range only and drop the subnormal, infinity and NaN
   handling that `high` carries; the unpacked form keeps full-range pack and unpack at every
   level, so stepping down there is the safer move. `low`'s error is biased rather than

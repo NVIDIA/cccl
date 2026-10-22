@@ -26,7 +26,7 @@ reaches 104 significand bits out of ordinary FP64 operations.
 
 Which of the two applies is decided by one number, the rate at which the part runs FP64 against
 FP32, and the :doc:`specification <fpmp_spec>` lists it for every platform measured — 1:2 on B200
-against 1:32 on B300. ``fp64mp2`` spends FP64 throughput, so it is the cheap route to quad-like
+against 1:64 on B300. ``fp64mp2`` spends FP64 throughput, so it is the cheap route to quad-like
 precision on a part where FP64 runs close to FP32, and a costly one where FP64 is rationed: a
 software binary128 is integer code and is not competing for the units ``fp64mp2`` needs.
 ``fp32mp2`` is the mirror image, and wins exactly where ``fp64mp2`` struggles.
@@ -561,7 +561,10 @@ to get past.
 pair operation is a run of operations on the limbs, and on these parts those are the rationed FP64
 ones.
 The digits past ``double`` are therefore bought at a real price, unlike the ones below it, and how
-bearable that price is follows from the FP64 throughput underneath.
+bearable that price is follows from the FP64 throughput underneath. Where FP64 runs at full rate the
+comparison that matters is against software binary128, and the :doc:`specification <fpmp_spec>` has
+it per function: on B200 a ``mid`` addition is 7.8× faster than software binary128 and division
+17.8×, while on B300 binary128 is 1.4–4× faster than ``fp64mp2`` operation for operation.
 
 Optimization guide
 ------------------

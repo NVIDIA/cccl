@@ -63,12 +63,12 @@ is 1:64.
    * - Beyond ``double``, up to 104 bits
      - full rate
      - ``fp64mp2``
-     - 13× faster than software binary128 on B200, at about 3.6 ``double`` passes
+     - 7.8× faster than software binary128 per ``mid`` addition on B200, 17.8× per division
 
    * - Beyond ``double``, up to 104 bits
      - rationed
      - software binary128, or ``double`` with a compensated algorithm
-     - binary128 is integer code and runs 2.4–3.1× faster than ``fp64mp2`` there; :ref:`fp64mp2
+     - binary128 is integer code and runs 1.4–4× faster than ``fp64mp2`` there; :ref:`fp64mp2
        <libcudacxx-extended-api-fp-optimization-guide-fp64mp2>` has the register-pressure exception
 
    * - An x87 ``long double`` port, 64-bit significand
@@ -89,7 +89,7 @@ is 1:64.
    * - About ``double`` precision, ``float``'s range is enough
      - rationed
      - ``fp32mp2``
-     - 46 bits in 8 bytes on the FP32 pipe; 6–17× ``double`` by level
+     - 46 bits in 8 bytes on the FP32 pipe; 5.5–16× ``double`` by level
 
    * - ``float`` precision over ``double``'s exponent range
      - rationed
@@ -174,12 +174,12 @@ documentation already relies on, collected in one place.
 - **Two pipes at once.** On a rationed part the FP64 units sit idle while ``fpemu`` runs on the FP32
   and integer pipes, and would still deliver their own rate if asked, so a reduction split between
   native ``double`` and ``fpemu`` could in principle sum the two throughputs -
-  :ref:`the fpemu page <libcudacxx-extended-api-fp-fpemu>` puts the arithmetic sum with the unpacked
-  form at 2.9–3.1× ``double``. No such kernel has been built or measured, and the two halves share
-  issue bandwidth, registers and the scheduler, so treat it as an upper bound to test rather than a
-  result to plan on. Packed ``high`` is the partner when the split must not change the result: it
-  holds ``double``'s layout and returns ``double``'s bits, so the handover costs nothing and the two
-  halves agree. The unpacked form is the partner when throughput matters more, its pack boundary
+  :ref:`the fpemu page <libcudacxx-extended-api-fp-fpemu>` measures ``fp64emu_unpacked_mid`` at
+  1.78–1.96× ``double``, so the sum would be 2.8–3.0× ``double``. No such kernel has been built or
+  measured, and the two halves share issue bandwidth, registers and the scheduler, so treat it as an
+  upper bound to test rather than a result to plan on. Packed ``high`` is the partner when the split
+  must not change the result: it holds ``double``'s layout and returns ``double``'s bits, so the
+  handover costs nothing and the two halves agree. The unpacked form is the partner when throughput matters more, its pack boundary
   being where the handover would sit.
 
 - **Size first, then choose.** When the precision a computation needs is not known,
@@ -291,8 +291,8 @@ fp32mp2
   FP32 instructions, and the bargain holds only where those are cheap relative to FP64. On the
   FP64-rationed parts - L40S, RTX PRO 6000 Blackwell, B300, consumer GPUs generally - a ``mid``
   addition runs 5.6× faster than a native ``double`` addition, and the well-known π integration
-  benchmark referenced in :ref:`the fpmp page <libcudacxx-extended-api-fp-fpmp-80-bit>` comes out
-  11.7× ahead. On a full-rate part such as B200 the same addition runs at 0.36× of native
+  benchmark on :ref:`the fpmp page <libcudacxx-extended-api-fp-fpmp-performance>` comes out
+  8.6–10.8× ahead. On a full-rate part such as B200 the same addition runs at 0.36× of native
   ``double``: ``double`` is both faster and more accurate there, and the float pair has nothing to
   offer. The code is portable; the win is not. Decide from the FP64:FP32 rate of the target, and
   keep ``double`` reachable behind a type alias.
@@ -404,16 +404,16 @@ fp64mp2
   price is fair: on B200 a ``mid`` addition sustains 1347 giga-additions per second and is 7.8×
   faster than software binary128, and division is 17.8× faster. On B300, with FP64 at 1/64 of FP32,
   the same addition sustains 45 - a thirtieth - and software binary128, which is integer code and
-  does not compete for the FP64 units, is 1.4–4× faster than ``fp64mp2`` operation for operation and
-  2.4–3.1× on the π integration. On such a part the choice is usually ``fp128`` for the digits or
-  ``double`` for the speed, with ``fp64mp2`` the worst of both - usually, because those figures come
-  from small kernels. Software binary128 is long integer code with many values live at once, and a
-  large kernel already near its register budget can spill where the pair, at four registers per
-  value and a dozen instructions per operation, does not; once the spills sit in the inner loop the
-  ordering can reverse, and ``fp64mp2`` comes out ahead on rationed FP64 after all. The same code
-  size shows up at build time, since every ``fp128`` operation instantiated adds noticeably to
-  compile time. So measure in the real kernel, with ``-Xptxas -v`` on both builds, rather than from
-  the table. The host side has no such rationing, so CPU code is on the good side of this line.
+  does not compete for the FP64 units, is 1.4–4× faster than ``fp64mp2`` operation for operation. On
+  such a part the choice is usually ``fp128`` for the digits or ``double`` for the speed, with
+  ``fp64mp2`` the worst of both - usually, because those figures come from small kernels. Software
+  binary128 is long integer code with many values live at once, and a large kernel already near its
+  register budget can spill where the pair, at four registers per value and a dozen instructions per
+  operation, does not; once the spills sit in the inner loop the ordering can reverse, and
+  ``fp64mp2`` comes out ahead on rationed FP64 after all. The same code size shows up at build time,
+  since every ``fp128`` operation instantiated adds noticeably to compile time. So measure in the
+  real kernel, with ``-Xptxas -v`` on both builds, rather than from the table. The host side has no
+  such rationing, so CPU code is on the good side of this line.
 
 - **Conversions are free; bandwidth and registers are not.** Unlike the float pair, ``fp64mp2``
   converts to and from ``double`` at no cost worth measuring: ``double`` into the pair is a limb
@@ -491,20 +491,19 @@ is qualitative.
   rather than once per operation and keeps 9 guard bits between operations, so on a rationed part a
   chain of it runs ahead of hardware ``double`` and lands closer to the exact answer. That is the
   form that competes with native ``double`` in real applications, and sometimes wins. Packed
-  ``fp64emu`` is a different proposition. The π integration on
-  :ref:`the fpemu page <libcudacxx-extended-api-fp-fpemu>` puts it close to parity with hardware
-  ``double`` on L40S, RTX PRO 6000 Blackwell and B300, with the unpacked form at about 1.5× it, but
-  that kernel is the exception rather than the rule: a few operations per term, no memory traffic,
-  nothing else competing for registers. A real kernel is larger and rarely bound by arithmetic
-  alone, and each emulated operation replaces one FP64 instruction with a run of integer and FP32
-  instructions and several more live registers, so in a large kernel the packed form usually means
-  register pressure, spills and a net loss against the FP64 pipe, slow as that pipe is. Its uses are
-  the ones the unpacked form cannot serve: ``double`` work moved onto the FP32 and integer pipes
-  alongside a saturated FP64 pipe, see
-  :ref:`Mixed cases <libcudacxx-extended-api-fp-optimization-guide-mixed>`; results that must match
-  ``double`` bit for bit while the FP64 pipe is avoided; and a target with no FP64 arithmetic at
-  all. On a full-rate part hardware ``double`` is the fast path for everything, and emulating it
-  only slows the mix down.
+  ``fp64emu`` is a different proposition. The π integration on :ref:`the fpemu page
+  <libcudacxx-extended-api-fp-fpemu>` puts it close to parity with hardware ``double`` on RTX 6000
+  Ada, RTX PRO 6000 Blackwell and B300, with the unpacked form at about 1.5× it, but that kernel is
+  the exception rather than the rule: a few operations per term, no memory traffic, nothing else
+  competing for registers. A real kernel is larger and rarely bound by arithmetic alone, and each
+  emulated operation replaces one FP64 instruction with a run of integer and FP32 instructions and
+  several more live registers, so in a large kernel the packed form usually means register pressure,
+  spills and a net loss against the FP64 pipe, slow as that pipe is. Its uses are the ones the
+  unpacked form cannot serve: ``double`` work moved onto the FP32 and integer pipes alongside a
+  saturated FP64 pipe, see :ref:`Mixed cases <libcudacxx-extended-api-fp-optimization-guide-mixed>`;
+  results that must match ``double`` bit for bit while the FP64 pipe is avoided; and a target with
+  no FP64 arithmetic at all. On a full-rate part hardware ``double`` is the fast path for
+  everything, and emulating it only slows the mix down.
 
 - **Know what the default buys.** ``fpemu`` defaults to ``high``, the opposite of ``fpmp``, so
   packed ``fp64emu`` reproduces ``double`` bit for bit out of the box - and at best runs at about
@@ -523,7 +522,7 @@ is qualitative.
   values; the unpacked form is the one that costs occupancy.
 
 - **Step down with the range in mind.** ``mid`` is 1–2 ulp and ``low`` about ``float``'s precision;
-  ``mid`` runs at 1.4–1.6× ``double`` packed and 1.8–2.1× unpacked, ``low`` at 1.7–2.0× and
+  ``mid`` runs at 1.4–1.6× ``double`` packed and 1.8–2.0× unpacked, ``low`` at 1.7–2.0× and
   2.0–2.3×. In the packed form both handle the normal range only and drop the subnormal, infinity
   and NaN handling that ``high`` carries; the unpacked form keeps full-range pack and unpack at
   every level, so stepping down there is the safer move. ``low``'s error is biased rather than
