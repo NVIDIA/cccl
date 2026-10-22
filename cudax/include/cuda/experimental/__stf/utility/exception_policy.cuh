@@ -5171,10 +5171,23 @@ UNITTEST("error sinks")
     (notify(here_log) & subst(1))->*[]() -> int {
       throw ::std::runtime_error("here");
     };
+    // Compilers differ in which line of a multi-line expression they report, so any line of the
+    // expression's span counts. On a miss the result is the whole report, for the failure message.
     const ::std::string text = here_log.str();
-    EXPECT(text.find(::std::string(__FILE__) + "(" + ::std::to_string(yield_line) + ")") != ::std::string::npos);
-    EXPECT(text.find(::std::string(__FILE__) + "(" + ::std::to_string(shift_line) + ")") != ::std::string::npos);
-    EXPECT(text.find(::std::string(__FILE__) + "(" + ::std::to_string(composite_line) + ")") != ::std::string::npos);
+    const ::std::string file = ::cuda::std::source_location::current().file_name();
+    const auto reported      = [&](unsigned first) -> ::std::string {
+      for (unsigned line = first; line < first + 3; ++line)
+      {
+        if (text.find(file + "(" + ::std::to_string(line) + ")") != ::std::string::npos)
+        {
+          return "reported";
+        }
+      }
+      return text;
+    };
+    EXPECT(reported(yield_line) == "reported");
+    EXPECT(reported(shift_line) == "reported");
+    EXPECT(reported(composite_line) == "reported");
   }
 
   // `defer` captures instead of reacting: the callable supplies an empty pointer on success;
