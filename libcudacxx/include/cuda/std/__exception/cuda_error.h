@@ -252,6 +252,17 @@ public:
     __store(__status);
   }
 
+#  if _CCCL_HAS_CTK()
+  //! @brief Constructs from the result of a no-throw driver call: the error records its `CUresult`, and
+  //! names the failing API when the caller does not.
+  _CCCL_HOST_API cuda_error(const ::cuda::__driver::__driver_status& __status,
+                            const char* __msg,
+                            const char* __api                         = nullptr,
+                            const ::cuda::std::source_location& __loc = ::cuda::std::source_location::current())
+      : cuda_error{__status.__status_, __msg, __api != nullptr ? __api : __status.__api_, __loc}
+  {}
+#  endif // _CCCL_HAS_CTK()
+
   //! @brief The status seen as a CUDA Runtime error code. Exact for a `cudaError_t`. A `CUresult` is converted
   //! numerically, which is how the runtime reports driver-originated failures. Any other status type reports
   //! `cudaErrorUnknown`; use `status<Status>()` or `raw_code()` for the exact value.
