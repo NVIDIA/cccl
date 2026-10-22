@@ -26,6 +26,7 @@
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/__utility/static_for.h>
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__bit/countr.h>
@@ -235,7 +236,7 @@ struct WarpReduceShfl
           return *output;
         }
       }
-      if constexpr (AllValidLanes)
+      if constexpr (AllValidLanes && ::cuda::is_trivially_copyable_v<T>)
       {
         FullShuffleReduce(reduce_value, reduction_op);
       }
