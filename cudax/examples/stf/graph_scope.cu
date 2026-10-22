@@ -30,7 +30,7 @@ int main()
   // Style 1: Direct constructor (like std::lock_guard)
   // This is the most idiomatic C++ style
   {
-    stackable_ctx::graph_scope_guard scope{ctx}; // Direct constructor - push() called
+    const stackable_ctx::graph_scope_guard scope{ctx}; // Direct constructor - push() called
 
     auto temp = ctx.logical_data(lA.shape());
     ctx.parallel_for(temp.shape(), temp.write(), lA.read())->*[] __device__(size_t i, auto temp, auto a) {
@@ -60,7 +60,7 @@ int main()
   // Useful for readability in complex scenarios
   {
     using scope_t = stackable_ctx::graph_scope_guard;
-    scope_t scope{ctx}; // Explicit type - push() called
+    const scope_t scope{ctx}; // Explicit type - push() called
 
     ctx.parallel_for(lA.shape(), lA.rw())->*[] __device__(size_t i, auto a) {
       a(i) *= 3;
@@ -73,7 +73,7 @@ int main()
   // Demonstrates repeated nested contexts
   for (int iter = 0; iter < 3; iter++)
   {
-    stackable_ctx::graph_scope_guard iteration{ctx}; // New scope each iteration
+    const stackable_ctx::graph_scope_guard iteration{ctx}; // New scope each iteration
 
     auto temp = ctx.logical_data(lA.shape());
 

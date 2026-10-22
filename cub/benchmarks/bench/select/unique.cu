@@ -10,7 +10,7 @@
 #include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
 
-// %RANGE% TUNE_TRANSPOSE trp 0:1:1
+// %RANGE% TUNE_TRANSPOSE trp 0:2:1
 // %RANGE% TUNE_LOAD ld 0:1:1
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
@@ -22,14 +22,16 @@
 template <typename InputT>
 struct bench_policy_selector
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::SelectPolicy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::SelectPolicy
   {
-    return {TUNE_THREADS_PER_BLOCK,
-            TUNE_ITEMS_PER_THREAD,
-            (TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE),
-            (TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA),
-            cub::BLOCK_SCAN_WARP_SCANS,
-            lookback_delay_policy};
+    return {cub::SelectAlgorithm::lookback,
+            {TUNE_THREADS_PER_BLOCK,
+             TUNE_ITEMS_PER_THREAD,
+             (TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT
+                                  : (TUNE_TRANSPOSE == 1 ? cub::BLOCK_LOAD_WARP_TRANSPOSE : cub::BLOCK_LOAD_VECTORIZE)),
+             (TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA),
+             cub::BLOCK_SCAN_WARP_SCANS,
+             lookback_delay_policy}};
   }
 };
 #endif // !TUNE_BASE
@@ -52,7 +54,7 @@ static void unique(nvbench::state& state, nvbench::type_list<T, InPlace>)
   offset_t* d_num_unique = thrust::raw_pointer_cast(num_unique_out.data());
 
   // Get number of unique elements for metrics
-  _CCCL_TRY_CUDA_API(
+  _CCCL_TRY_RUNTIME_API(
     cub::DeviceSelect::Unique,
     "select_unique failed",
     d_in,
@@ -80,7 +82,7 @@ static void unique(nvbench::state& state, nvbench::type_list<T, InPlace>)
     );
     if constexpr (InPlace::value)
     {
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         cub::DeviceSelect::Unique,
         "select_unique failed",
         d_in,
@@ -91,7 +93,7 @@ static void unique(nvbench::state& state, nvbench::type_list<T, InPlace>)
     }
     else
     {
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         cub::DeviceSelect::Unique,
         "select_unique failed",
         d_in,

@@ -10,13 +10,14 @@
 #include <cuda/std/functional>
 
 #include "catch2_test_device_scan.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/generators.h>
 
 using float_type_list = c2h::type_list<float, double>;
 
-C2H_TEST("DeviceScan::ExclusiveScan with run_to_run determinism is bit-reproducible",
+CUB_TEST("DeviceScan::ExclusiveScan with run_to_run determinism is bit-reproducible",
          "[scan][deterministic][run_to_run]",
+         CUB_SMALL,
          float_type_list)
 {
   using type = typename c2h::get<0, TestType>;
@@ -72,8 +73,9 @@ C2H_TEST("DeviceScan::ExclusiveScan with run_to_run determinism is bit-reproduci
   }
 }
 
-C2H_TEST("DeviceScan::ExclusiveScan with run_to_run determinism matches host reference",
+CUB_TEST("DeviceScan::ExclusiveScan with run_to_run determinism matches host reference",
          "[scan][deterministic][run_to_run]",
+         CUB_SMALL,
          float_type_list)
 {
   using type = typename c2h::get<0, TestType>;
@@ -109,7 +111,7 @@ C2H_TEST("DeviceScan::ExclusiveScan with run_to_run determinism matches host ref
   const auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
   const auto op  = cuda::std::plus<type>{};
 
-  c2h::host_vector<type> h_input(d_input);
+  const c2h::host_vector<type> h_input(d_input);
   c2h::host_vector<type> h_reference(num_items);
   compute_exclusive_scan_reference(h_input.cbegin(), h_input.cend(), h_reference.begin(), type{}, op);
 

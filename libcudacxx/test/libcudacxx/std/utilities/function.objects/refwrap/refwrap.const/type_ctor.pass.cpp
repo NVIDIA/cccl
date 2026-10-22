@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: function-to-pointer decay is unsupported in tile code
 // error: taking address of a function is unsupported in tile code
 
@@ -28,13 +28,13 @@ class functor1
 {};
 
 template <class T>
-TEST_FUNC void test(T& t)
+TEST_HOST_DEVICE_FUNC void test(T& t)
 {
   cuda::std::reference_wrapper<T> r(t);
   assert(&r.get() == &t);
 }
 
-TEST_FUNC void f() {}
+TEST_HOST_DEVICE_FUNC void f() {}
 
 int main(int, char**)
 {

@@ -7,18 +7,18 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: asm statement is unsupported in tile code
-
 // UNSUPPORTED: nvrtc, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
+
+// UNSUPPORTED: force-tile
+// error: asm statement unsupported in tile mode
 
 #include <cuda/atomic>
 #include <cuda/std/cassert>
 
 #include "common.h"
 
-TEST_FUNC void validate_not_lock_free()
+TEST_HOST_DEVICE_FUNC void validate_not_lock_free()
 {
   cuda::atomic<big_not_lockfree_type> test;
   assert(!test.is_lock_free());

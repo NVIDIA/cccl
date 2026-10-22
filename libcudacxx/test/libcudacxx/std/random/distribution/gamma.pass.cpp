@@ -7,10 +7,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
 //
 // REQUIRES: long_tests
+
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 // <random>
 
@@ -30,7 +31,7 @@ struct gamma_cdf
 {
   using P = typename cuda::std::gamma_distribution<T>::param_type;
 
-  TEST_FUNC double operator()(double x, const P& p) const
+  TEST_HOST_DEVICE_FUNC double operator()(double x, const P& p) const
   {
     if (x <= 0.0)
     {
@@ -48,7 +49,7 @@ struct gamma_cdf
 };
 
 template <class T>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   [[maybe_unused]] const bool test_constexpr = false;
   using D                                    = cuda::std::gamma_distribution<T>;

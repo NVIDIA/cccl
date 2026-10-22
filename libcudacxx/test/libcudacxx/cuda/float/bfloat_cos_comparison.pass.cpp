@@ -9,9 +9,6 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: nvrtc, nvcc-11, nvcc-12.0, nvcc-12.1
 
-// XFAIL: enable-tile
-// tile does not support access to members of `__half` or `__nv_bfloat16`
-
 #include <cuda/std/cmath>
 
 #include "host_device_comparison.h"
@@ -19,7 +16,7 @@
 
 struct func
 {
-  TEST_FUNC __nv_bfloat16 operator()(cuda::std::size_t i) const
+  TEST_HOST_DEVICE_FUNC __nv_bfloat16 operator()(cuda::std::size_t i) const
   {
     auto raw = __nv_bfloat16_raw();
     raw.x    = (unsigned short) i;

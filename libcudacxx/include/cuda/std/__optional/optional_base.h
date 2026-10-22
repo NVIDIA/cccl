@@ -30,9 +30,7 @@
 #include <cuda/std/__type_traits/is_move_assignable.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_copy_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_object.h>
@@ -89,8 +87,11 @@ struct __optional_destruct_base<_Tp, false>
   __storage __storage_;
   bool __engaged_;
 
+  // The held value may throw an exception, but the standard explicitly defines the destructor
+  // for optional "normally", i.e. without `noexcept(false)`. We take this to mean that the
+  // optional should call then call `std::terminate()` in the case of thrown exceptions.
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 ~__optional_destruct_base()
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 ~__optional_destruct_base() // NOLINT(bugprone-exception-escape)
   {
     if (__engaged_)
     {

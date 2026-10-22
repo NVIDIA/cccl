@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__functional/binary_function.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/weak_result_type.h>
 #include <cuda/std/__utility/forward.h>
@@ -46,6 +45,7 @@ public:
   {}
 
   // invoke
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _ArgTypes>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 invoke_result_t<type, _ArgTypes...> operator()(_ArgTypes&&... __args) const
   {

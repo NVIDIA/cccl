@@ -12,12 +12,22 @@
 // Static configuration
 #include <cub/config.cuh>
 
-#ifndef CCCL_DISABLE_CUB_NVRTC_COMPATIBILITY_CHECK
+#ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 #  if _CCCL_COMPILER(NVRTC)
 #    error \
-      "Including <cub/cub.cuh> is not supported when compiling with NVRTC. Include the specific device header instead (e.g. <cub/block/block_reduce.cuh>). You can define CCCL_DISABLE_CUB_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+      "Including <cub/cub.cuh> is not supported when compiling with NVRTC. Include the specific device header instead (e.g. <cub/block/block_reduce.cuh>). You can define CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK to disable this warning."
 #  endif // _CCCL_COMPILER(NVRTC)
-#endif // CCCL_DISABLE_CUB_NVRTC_COMPATIBILITY_CHECK
+#endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+
+#ifndef CCCL_DISABLE_CUB_UMBRELLA_HEADER_WARNING
+#  if _CCCL_COMPILER(MSVC)
+#    pragma message( \
+      "warning: <cub/cub.cuh> is an umbrella header that includes all CUB headers and can increase compile times. To reduce compile times, replace <cub/cub.cuh> with headers for the CUB features used (e.g., <cub/device/device_reduce.cuh> for cub::DeviceReduce). Define CCCL_DISABLE_CUB_UMBRELLA_HEADER_WARNING to disable this warning.")
+#  else
+#    warning \
+      "<cub/cub.cuh> is an umbrella header that includes all CUB headers and can increase compile times. To reduce compile times, replace <cub/cub.cuh> with headers for the CUB features used (e.g., <cub/device/device_reduce.cuh> for cub::DeviceReduce). Define CCCL_DISABLE_CUB_UMBRELLA_HEADER_WARNING to disable this warning."
+#  endif // _CCCL_COMPILER(MSVC)
+#endif // CCCL_DISABLE_CUB_UMBRELLA_HEADER_WARNING
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -27,6 +37,7 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 // Block
 #include <cub/block/block_adjacent_difference.cuh>
 #include <cub/block/block_discontinuity.cuh>
@@ -58,8 +69,10 @@
 #include <cub/device/device_scan.cuh>
 #include <cub/device/device_segmented_radix_sort.cuh>
 #include <cub/device/device_segmented_reduce.cuh>
+#include <cub/device/device_segmented_scan.cuh>
 #include <cub/device/device_segmented_sort.cuh>
 #include <cub/device/device_select.cuh>
+#include <cub/device/device_set_operations.cuh>
 #include <cub/device/device_topk.cuh>
 #include <cub/device/device_transform.cuh>
 
@@ -76,6 +89,7 @@
 #include <cub/thread/thread_store.cuh>
 
 // Warp
+#include <cub/warp/warp_bitonic_sort.cuh>
 #include <cub/warp/warp_exchange.cuh>
 #include <cub/warp/warp_load.cuh>
 #include <cub/warp/warp_merge_sort.cuh>
@@ -94,5 +108,7 @@
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_ptx.cuh>
+#include <cub/util_runs_on.cuh>
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh>
+// IWYU pragma: end_exports

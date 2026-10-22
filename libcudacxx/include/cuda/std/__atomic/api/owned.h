@@ -22,16 +22,20 @@
 #endif // no system header
 
 #include <cuda/std/__atomic/api/common.h>
-#include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__atomic/types.h>
-#include <cuda/std/__atomic/wait/notify_wait.h>
-#include <cuda/std/__atomic/wait/polling.h>
+#include <cuda/std/__atomic/wait/notify_wait.h> // IWYU pragma: keep
+#include <cuda/std/__atomic/wait/polling.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_pointer.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#define _LIBCUDACXX_ATOMIC_MUTATING_CONSTRAINT()
 
 template <typename _Tp, typename _Sco>
 struct __atomic_common
@@ -128,6 +132,8 @@ using __atomic_impl = _If<
   _If<is_floating_point_v<_Tp>,
       __atomic_arithmetic<_Tp, __scope_to_tag<_Sco>>,
       _If<is_integral_v<_Tp>, __atomic_bitwise<_Tp, __scope_to_tag<_Sco>>, __atomic_common<_Tp, __scope_to_tag<_Sco>>>>>;
+
+#undef _LIBCUDACXX_ATOMIC_MUTATING_CONSTRAINT
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

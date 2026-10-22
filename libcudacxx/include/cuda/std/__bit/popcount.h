@@ -22,10 +22,10 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__limits/numeric_limits.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/conditional.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 #if _CCCL_COMPILER(MSVC)
 #  include <intrin.h>
@@ -51,7 +51,7 @@
 #if _CCCL_TILE_COMPILATION() // nvbug6081171: error: "call to non-tile function not supported!"
 #  undef _CCCL_BUILTIN_POPCOUNT
 #  undef _CCCL_BUILTIN_POPCOUNTLL
-#  undef _CCCL_BUILTIN_POPCOUNTLL
+#  undef _CCCL_BUILTIN_POPCOUNTG
 #endif // _CCCL_TILE_COMPILATION()
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD

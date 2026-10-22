@@ -10,6 +10,9 @@
 
 // ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
+// UNSUPPORTED: force-tile
+// error: dynamic allocations are not supported in tile mode
+
 // <memory>
 
 // template <class T>
@@ -19,9 +22,6 @@
 // template <class T>
 //   void
 //   return_temporary_buffer(T* p);
-
-// XFAIL: enable-tile
-// In tile mode dynamic memory allocation is unsupported
 
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>

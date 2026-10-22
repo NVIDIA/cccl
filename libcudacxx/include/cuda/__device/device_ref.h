@@ -46,7 +46,7 @@ class device_ref
 
 public:
   //! @brief Create a `device_ref` object from a native device ordinal.
-  /*implicit*/ _CCCL_HOST_API constexpr device_ref(int __id) noexcept
+  /*implicit*/ _CCCL_HOST_API constexpr device_ref(int __id)
       : __id_(__id)
   {
     _CCCL_IF_CONSTEVAL_DEFAULT
@@ -168,6 +168,9 @@ public:
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<const device_ref> peers() const; // implemented in
                                                                                   // <cuda/__device/physical_device.h>
                                                                                   // to avoid circular dependency
+
+  // implemented in cuda/__device/physical_device.h> to avoid circular dependency
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<const __logical_device_ref> __locality_domains() const;
 };
 
 _CCCL_DIAG_POP

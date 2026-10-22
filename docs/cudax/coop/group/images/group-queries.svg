@@ -1,0 +1,334 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="620" viewBox="0 0 1440 620" role="img" aria-labelledby="title description">
+<title id="title">Thread and warp rank queries within a block</title>
+<desc id="description">Two panels each show one block containing four 32-thread warps. The group contains the first three warps; the fourth warp is outside the group. Thread 75, in the third warp, is highlighted in green. CTK Cooperative Groups group threads within the block level and expose the thread rank within the three-warp group. CCCL Cooperative Groups group warps within the block level and expose both thread rank 75 and warp rank 2 within the same group. Ranks start at zero.</desc>
+<style>
+  text { font-family: Arial, Helvetica, sans-serif; fill: #172b3a; }
+  .heading { font-size: 24px; font-weight: 700; }
+  .subtitle { font-size: 18px; fill: #526373; }
+  .label { font-size: 17px; }
+  .note { font-size: 20px; font-weight: 700; }
+  .thread { fill: #e3e9ef; stroke: #9eacb9; stroke-width: 1.2; }
+  .member { fill: #76b900; stroke: #3e6500; stroke-width: 1.5; }
+  .block { fill: #f8fafc; stroke: #a8b5c1; stroke-width: 1.5; }
+  .boundary { fill: none; stroke: #266a9e; stroke-width: 2.5; stroke-dasharray: 7 5; }
+  .warp { fill: none; stroke: #a8b5c1; stroke-width: 1.5; }
+  .current-warp { fill: #edf7da; stroke: #3e6500; stroke-width: 2; }
+  .callout { fill: none; stroke: #3e6500; stroke-width: 2; }
+</style>
+<rect width="1440" height="620" fill="white"/>
+<path d="M 720 16 V 576" stroke="#dce3e9"/>
+<g id="panel-1" transform="translate(150 -96)">
+<text x="20" y="365" class="label" text-anchor="end">Block</text>
+<rect x="40" y="136" width="340" height="445" rx="12" class="block"/>
+<rect x="50" y="146" width="320" height="316" rx="16" class="boundary"/>
+<g id="panel-1-warp-0">
+<text x="62" y="207" class="label" text-anchor="start">Warp 0</text>
+<rect x="166" y="163" width="168" height="97" rx="9" class="warp"/>
+<circle cx="180" cy="178" r="6" class="thread"/>
+<circle cx="200" cy="178" r="6" class="thread"/>
+<circle cx="220" cy="178" r="6" class="thread"/>
+<circle cx="240" cy="178" r="6" class="thread"/>
+<circle cx="260" cy="178" r="6" class="thread"/>
+<circle cx="280" cy="178" r="6" class="thread"/>
+<circle cx="300" cy="178" r="6" class="thread"/>
+<circle cx="320" cy="178" r="6" class="thread"/>
+<circle cx="180" cy="200" r="6" class="thread"/>
+<circle cx="200" cy="200" r="6" class="thread"/>
+<circle cx="220" cy="200" r="6" class="thread"/>
+<circle cx="240" cy="200" r="6" class="thread"/>
+<circle cx="260" cy="200" r="6" class="thread"/>
+<circle cx="280" cy="200" r="6" class="thread"/>
+<circle cx="300" cy="200" r="6" class="thread"/>
+<circle cx="320" cy="200" r="6" class="thread"/>
+<circle cx="180" cy="222" r="6" class="thread"/>
+<circle cx="200" cy="222" r="6" class="thread"/>
+<circle cx="220" cy="222" r="6" class="thread"/>
+<circle cx="240" cy="222" r="6" class="thread"/>
+<circle cx="260" cy="222" r="6" class="thread"/>
+<circle cx="280" cy="222" r="6" class="thread"/>
+<circle cx="300" cy="222" r="6" class="thread"/>
+<circle cx="320" cy="222" r="6" class="thread"/>
+<circle cx="180" cy="244" r="6" class="thread"/>
+<circle cx="200" cy="244" r="6" class="thread"/>
+<circle cx="220" cy="244" r="6" class="thread"/>
+<circle cx="240" cy="244" r="6" class="thread"/>
+<circle cx="260" cy="244" r="6" class="thread"/>
+<circle cx="280" cy="244" r="6" class="thread"/>
+<circle cx="300" cy="244" r="6" class="thread"/>
+<circle cx="320" cy="244" r="6" class="thread"/>
+</g>
+<g id="panel-1-warp-1">
+<text x="62" y="307" class="label" text-anchor="start">Warp 1</text>
+<rect x="166" y="263" width="168" height="97" rx="9" class="warp"/>
+<circle cx="180" cy="278" r="6" class="thread"/>
+<circle cx="200" cy="278" r="6" class="thread"/>
+<circle cx="220" cy="278" r="6" class="thread"/>
+<circle cx="240" cy="278" r="6" class="thread"/>
+<circle cx="260" cy="278" r="6" class="thread"/>
+<circle cx="280" cy="278" r="6" class="thread"/>
+<circle cx="300" cy="278" r="6" class="thread"/>
+<circle cx="320" cy="278" r="6" class="thread"/>
+<circle cx="180" cy="300" r="6" class="thread"/>
+<circle cx="200" cy="300" r="6" class="thread"/>
+<circle cx="220" cy="300" r="6" class="thread"/>
+<circle cx="240" cy="300" r="6" class="thread"/>
+<circle cx="260" cy="300" r="6" class="thread"/>
+<circle cx="280" cy="300" r="6" class="thread"/>
+<circle cx="300" cy="300" r="6" class="thread"/>
+<circle cx="320" cy="300" r="6" class="thread"/>
+<circle cx="180" cy="322" r="6" class="thread"/>
+<circle cx="200" cy="322" r="6" class="thread"/>
+<circle cx="220" cy="322" r="6" class="thread"/>
+<circle cx="240" cy="322" r="6" class="thread"/>
+<circle cx="260" cy="322" r="6" class="thread"/>
+<circle cx="280" cy="322" r="6" class="thread"/>
+<circle cx="300" cy="322" r="6" class="thread"/>
+<circle cx="320" cy="322" r="6" class="thread"/>
+<circle cx="180" cy="344" r="6" class="thread"/>
+<circle cx="200" cy="344" r="6" class="thread"/>
+<circle cx="220" cy="344" r="6" class="thread"/>
+<circle cx="240" cy="344" r="6" class="thread"/>
+<circle cx="260" cy="344" r="6" class="thread"/>
+<circle cx="280" cy="344" r="6" class="thread"/>
+<circle cx="300" cy="344" r="6" class="thread"/>
+<circle cx="320" cy="344" r="6" class="thread"/>
+</g>
+<g id="panel-1-warp-2">
+<text x="62" y="407" class="label" text-anchor="start">Warp 2</text>
+<rect x="166" y="363" width="168" height="97" rx="9" class="warp"/>
+<circle cx="180" cy="378" r="6" class="thread"/>
+<circle cx="200" cy="378" r="6" class="thread"/>
+<circle cx="220" cy="378" r="6" class="thread"/>
+<circle cx="240" cy="378" r="6" class="thread"/>
+<circle cx="260" cy="378" r="6" class="thread"/>
+<circle cx="280" cy="378" r="6" class="thread"/>
+<circle cx="300" cy="378" r="6" class="thread"/>
+<circle cx="320" cy="378" r="6" class="thread"/>
+<circle cx="180" cy="400" r="6" class="thread"/>
+<circle cx="200" cy="400" r="6" class="thread"/>
+<circle cx="220" cy="400" r="6" class="thread"/>
+<circle cx="240" cy="400" r="6" class="member"/>
+<circle cx="260" cy="400" r="6" class="thread"/>
+<circle cx="280" cy="400" r="6" class="thread"/>
+<circle cx="300" cy="400" r="6" class="thread"/>
+<circle cx="320" cy="400" r="6" class="thread"/>
+<circle cx="180" cy="422" r="6" class="thread"/>
+<circle cx="200" cy="422" r="6" class="thread"/>
+<circle cx="220" cy="422" r="6" class="thread"/>
+<circle cx="240" cy="422" r="6" class="thread"/>
+<circle cx="260" cy="422" r="6" class="thread"/>
+<circle cx="280" cy="422" r="6" class="thread"/>
+<circle cx="300" cy="422" r="6" class="thread"/>
+<circle cx="320" cy="422" r="6" class="thread"/>
+<circle cx="180" cy="444" r="6" class="thread"/>
+<circle cx="200" cy="444" r="6" class="thread"/>
+<circle cx="220" cy="444" r="6" class="thread"/>
+<circle cx="240" cy="444" r="6" class="thread"/>
+<circle cx="260" cy="444" r="6" class="thread"/>
+<circle cx="280" cy="444" r="6" class="thread"/>
+<circle cx="300" cy="444" r="6" class="thread"/>
+<circle cx="320" cy="444" r="6" class="thread"/>
+</g>
+<g id="panel-1-warp-3">
+<text x="62" y="507" class="label" text-anchor="start">Warp 3</text>
+<rect x="166" y="463" width="168" height="97" rx="9" class="warp"/>
+<circle cx="180" cy="478" r="6" class="thread"/>
+<circle cx="200" cy="478" r="6" class="thread"/>
+<circle cx="220" cy="478" r="6" class="thread"/>
+<circle cx="240" cy="478" r="6" class="thread"/>
+<circle cx="260" cy="478" r="6" class="thread"/>
+<circle cx="280" cy="478" r="6" class="thread"/>
+<circle cx="300" cy="478" r="6" class="thread"/>
+<circle cx="320" cy="478" r="6" class="thread"/>
+<circle cx="180" cy="500" r="6" class="thread"/>
+<circle cx="200" cy="500" r="6" class="thread"/>
+<circle cx="220" cy="500" r="6" class="thread"/>
+<circle cx="240" cy="500" r="6" class="thread"/>
+<circle cx="260" cy="500" r="6" class="thread"/>
+<circle cx="280" cy="500" r="6" class="thread"/>
+<circle cx="300" cy="500" r="6" class="thread"/>
+<circle cx="320" cy="500" r="6" class="thread"/>
+<circle cx="180" cy="522" r="6" class="thread"/>
+<circle cx="200" cy="522" r="6" class="thread"/>
+<circle cx="220" cy="522" r="6" class="thread"/>
+<circle cx="240" cy="522" r="6" class="thread"/>
+<circle cx="260" cy="522" r="6" class="thread"/>
+<circle cx="280" cy="522" r="6" class="thread"/>
+<circle cx="300" cy="522" r="6" class="thread"/>
+<circle cx="320" cy="522" r="6" class="thread"/>
+<circle cx="180" cy="544" r="6" class="thread"/>
+<circle cx="200" cy="544" r="6" class="thread"/>
+<circle cx="220" cy="544" r="6" class="thread"/>
+<circle cx="240" cy="544" r="6" class="thread"/>
+<circle cx="260" cy="544" r="6" class="thread"/>
+<circle cx="280" cy="544" r="6" class="thread"/>
+<circle cx="300" cy="544" r="6" class="thread"/>
+<circle cx="320" cy="544" r="6" class="thread"/>
+</g>
+<path d="M 248 400 H 396" class="callout"/>
+<text x="410" y="406" class="note" text-anchor="start">Thread rank: 75</text>
+</g>
+<g id="panel-2" transform="translate(150 -96)">
+<text x="740" y="365" class="label" text-anchor="end">Block</text>
+<rect x="760" y="136" width="340" height="445" rx="12" class="block"/>
+<rect x="770" y="146" width="320" height="316" rx="16" class="boundary"/>
+<g id="panel-2-warp-0">
+<text x="782" y="207" class="label" text-anchor="start">Warp 0</text>
+<rect x="886" y="163" width="168" height="97" rx="9" class="warp"/>
+<circle cx="900" cy="178" r="6" class="thread"/>
+<circle cx="920" cy="178" r="6" class="thread"/>
+<circle cx="940" cy="178" r="6" class="thread"/>
+<circle cx="960" cy="178" r="6" class="thread"/>
+<circle cx="980" cy="178" r="6" class="thread"/>
+<circle cx="1000" cy="178" r="6" class="thread"/>
+<circle cx="1020" cy="178" r="6" class="thread"/>
+<circle cx="1040" cy="178" r="6" class="thread"/>
+<circle cx="900" cy="200" r="6" class="thread"/>
+<circle cx="920" cy="200" r="6" class="thread"/>
+<circle cx="940" cy="200" r="6" class="thread"/>
+<circle cx="960" cy="200" r="6" class="thread"/>
+<circle cx="980" cy="200" r="6" class="thread"/>
+<circle cx="1000" cy="200" r="6" class="thread"/>
+<circle cx="1020" cy="200" r="6" class="thread"/>
+<circle cx="1040" cy="200" r="6" class="thread"/>
+<circle cx="900" cy="222" r="6" class="thread"/>
+<circle cx="920" cy="222" r="6" class="thread"/>
+<circle cx="940" cy="222" r="6" class="thread"/>
+<circle cx="960" cy="222" r="6" class="thread"/>
+<circle cx="980" cy="222" r="6" class="thread"/>
+<circle cx="1000" cy="222" r="6" class="thread"/>
+<circle cx="1020" cy="222" r="6" class="thread"/>
+<circle cx="1040" cy="222" r="6" class="thread"/>
+<circle cx="900" cy="244" r="6" class="thread"/>
+<circle cx="920" cy="244" r="6" class="thread"/>
+<circle cx="940" cy="244" r="6" class="thread"/>
+<circle cx="960" cy="244" r="6" class="thread"/>
+<circle cx="980" cy="244" r="6" class="thread"/>
+<circle cx="1000" cy="244" r="6" class="thread"/>
+<circle cx="1020" cy="244" r="6" class="thread"/>
+<circle cx="1040" cy="244" r="6" class="thread"/>
+</g>
+<g id="panel-2-warp-1">
+<text x="782" y="307" class="label" text-anchor="start">Warp 1</text>
+<rect x="886" y="263" width="168" height="97" rx="9" class="warp"/>
+<circle cx="900" cy="278" r="6" class="thread"/>
+<circle cx="920" cy="278" r="6" class="thread"/>
+<circle cx="940" cy="278" r="6" class="thread"/>
+<circle cx="960" cy="278" r="6" class="thread"/>
+<circle cx="980" cy="278" r="6" class="thread"/>
+<circle cx="1000" cy="278" r="6" class="thread"/>
+<circle cx="1020" cy="278" r="6" class="thread"/>
+<circle cx="1040" cy="278" r="6" class="thread"/>
+<circle cx="900" cy="300" r="6" class="thread"/>
+<circle cx="920" cy="300" r="6" class="thread"/>
+<circle cx="940" cy="300" r="6" class="thread"/>
+<circle cx="960" cy="300" r="6" class="thread"/>
+<circle cx="980" cy="300" r="6" class="thread"/>
+<circle cx="1000" cy="300" r="6" class="thread"/>
+<circle cx="1020" cy="300" r="6" class="thread"/>
+<circle cx="1040" cy="300" r="6" class="thread"/>
+<circle cx="900" cy="322" r="6" class="thread"/>
+<circle cx="920" cy="322" r="6" class="thread"/>
+<circle cx="940" cy="322" r="6" class="thread"/>
+<circle cx="960" cy="322" r="6" class="thread"/>
+<circle cx="980" cy="322" r="6" class="thread"/>
+<circle cx="1000" cy="322" r="6" class="thread"/>
+<circle cx="1020" cy="322" r="6" class="thread"/>
+<circle cx="1040" cy="322" r="6" class="thread"/>
+<circle cx="900" cy="344" r="6" class="thread"/>
+<circle cx="920" cy="344" r="6" class="thread"/>
+<circle cx="940" cy="344" r="6" class="thread"/>
+<circle cx="960" cy="344" r="6" class="thread"/>
+<circle cx="980" cy="344" r="6" class="thread"/>
+<circle cx="1000" cy="344" r="6" class="thread"/>
+<circle cx="1020" cy="344" r="6" class="thread"/>
+<circle cx="1040" cy="344" r="6" class="thread"/>
+</g>
+<g id="panel-2-warp-2">
+<text x="782" y="407" class="label" text-anchor="start">Warp 2</text>
+<rect x="886" y="363" width="168" height="97" rx="9" class="current-warp"/>
+<circle cx="900" cy="378" r="6" class="thread"/>
+<circle cx="920" cy="378" r="6" class="thread"/>
+<circle cx="940" cy="378" r="6" class="thread"/>
+<circle cx="960" cy="378" r="6" class="thread"/>
+<circle cx="980" cy="378" r="6" class="thread"/>
+<circle cx="1000" cy="378" r="6" class="thread"/>
+<circle cx="1020" cy="378" r="6" class="thread"/>
+<circle cx="1040" cy="378" r="6" class="thread"/>
+<circle cx="900" cy="400" r="6" class="thread"/>
+<circle cx="920" cy="400" r="6" class="thread"/>
+<circle cx="940" cy="400" r="6" class="thread"/>
+<circle cx="960" cy="400" r="6" class="member"/>
+<circle cx="980" cy="400" r="6" class="thread"/>
+<circle cx="1000" cy="400" r="6" class="thread"/>
+<circle cx="1020" cy="400" r="6" class="thread"/>
+<circle cx="1040" cy="400" r="6" class="thread"/>
+<circle cx="900" cy="422" r="6" class="thread"/>
+<circle cx="920" cy="422" r="6" class="thread"/>
+<circle cx="940" cy="422" r="6" class="thread"/>
+<circle cx="960" cy="422" r="6" class="thread"/>
+<circle cx="980" cy="422" r="6" class="thread"/>
+<circle cx="1000" cy="422" r="6" class="thread"/>
+<circle cx="1020" cy="422" r="6" class="thread"/>
+<circle cx="1040" cy="422" r="6" class="thread"/>
+<circle cx="900" cy="444" r="6" class="thread"/>
+<circle cx="920" cy="444" r="6" class="thread"/>
+<circle cx="940" cy="444" r="6" class="thread"/>
+<circle cx="960" cy="444" r="6" class="thread"/>
+<circle cx="980" cy="444" r="6" class="thread"/>
+<circle cx="1000" cy="444" r="6" class="thread"/>
+<circle cx="1020" cy="444" r="6" class="thread"/>
+<circle cx="1040" cy="444" r="6" class="thread"/>
+</g>
+<g id="panel-2-warp-3">
+<text x="782" y="507" class="label" text-anchor="start">Warp 3</text>
+<rect x="886" y="463" width="168" height="97" rx="9" class="warp"/>
+<circle cx="900" cy="478" r="6" class="thread"/>
+<circle cx="920" cy="478" r="6" class="thread"/>
+<circle cx="940" cy="478" r="6" class="thread"/>
+<circle cx="960" cy="478" r="6" class="thread"/>
+<circle cx="980" cy="478" r="6" class="thread"/>
+<circle cx="1000" cy="478" r="6" class="thread"/>
+<circle cx="1020" cy="478" r="6" class="thread"/>
+<circle cx="1040" cy="478" r="6" class="thread"/>
+<circle cx="900" cy="500" r="6" class="thread"/>
+<circle cx="920" cy="500" r="6" class="thread"/>
+<circle cx="940" cy="500" r="6" class="thread"/>
+<circle cx="960" cy="500" r="6" class="thread"/>
+<circle cx="980" cy="500" r="6" class="thread"/>
+<circle cx="1000" cy="500" r="6" class="thread"/>
+<circle cx="1020" cy="500" r="6" class="thread"/>
+<circle cx="1040" cy="500" r="6" class="thread"/>
+<circle cx="900" cy="522" r="6" class="thread"/>
+<circle cx="920" cy="522" r="6" class="thread"/>
+<circle cx="940" cy="522" r="6" class="thread"/>
+<circle cx="960" cy="522" r="6" class="thread"/>
+<circle cx="980" cy="522" r="6" class="thread"/>
+<circle cx="1000" cy="522" r="6" class="thread"/>
+<circle cx="1020" cy="522" r="6" class="thread"/>
+<circle cx="1040" cy="522" r="6" class="thread"/>
+<circle cx="900" cy="544" r="6" class="thread"/>
+<circle cx="920" cy="544" r="6" class="thread"/>
+<circle cx="940" cy="544" r="6" class="thread"/>
+<circle cx="960" cy="544" r="6" class="thread"/>
+<circle cx="980" cy="544" r="6" class="thread"/>
+<circle cx="1000" cy="544" r="6" class="thread"/>
+<circle cx="1020" cy="544" r="6" class="thread"/>
+<circle cx="1040" cy="544" r="6" class="thread"/>
+</g>
+<path d="M 968 400 H 1116" class="callout"/>
+<text x="1130" y="406" class="note" text-anchor="start">Thread rank: 75</text>
+<path d="M 1054 448 H 1116" class="callout"/>
+<text x="1130" y="454" class="note" text-anchor="start">Warp rank: 2</text>
+</g>
+<text x="360" y="525" class="heading" text-anchor="middle">CTK Cooperative Groups</text>
+<text x="360" y="559" class="subtitle" text-anchor="middle">Groups threads within the block level</text>
+<text x="1080" y="525" class="heading" text-anchor="middle">CCCL Cooperative Groups</text>
+<text x="1080" y="559" class="subtitle" text-anchor="middle">Groups warps within the block level</text>
+<g id="legend" transform="translate(454 0)">
+<path d="M 280 597 H 320" class="boundary"/>
+<text x="330" y="603" class="label">Group: first 3 warps</text>
+<circle cx="46" cy="597" r="6" class="member"/>
+<text x="62" y="603" class="label">Highlighted thread</text>
+</g>
+</svg>

@@ -27,9 +27,9 @@
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #include <cuda/std/__concepts/assignable.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/derived_from.h>
-#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__iterator/iter_move.h>
@@ -38,13 +38,11 @@
 #include <cuda/std/__iterator/move_sentinel.h>
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_convertible.h>
-#include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
-#include <cuda/std/__type_traits/is_reference.h>
-#include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/move.h>
@@ -75,7 +73,7 @@ concept __move_iter_comparable = requires {
 
 template <class _Iter>
 inline constexpr bool __noexcept_move_iter_iter_move =
-  noexcept(::cuda::std::ranges::__iter_move_cpo{}(::cuda::std::declval<const _Iter&>()));
+  noexcept(::cuda::std::ranges::iter_move(::cuda::std::declval<const _Iter&>()));
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Iter, class = void>
 struct __move_iter_category_base
@@ -100,7 +98,7 @@ _CCCL_CONCEPT __move_iter_comparable = _CCCL_FRAGMENT(__move_iter_comparable_, _
 
 template <class _Iter>
 inline constexpr bool __noexcept_move_iter_iter_move =
-  noexcept(::cuda::std::ranges::__iter_move_cpo{}(::cuda::std::declval<const _Iter&>()));
+  noexcept(::cuda::std::ranges::iter_move(::cuda::std::declval<const _Iter&>()));
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
@@ -188,12 +186,12 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr reference operator*() const
   {
-    return ::cuda::std::ranges::__iter_move_cpo{}(__current_);
+    return ::cuda::std::ranges::iter_move(__current_);
   }
 
   [[nodiscard]] _CCCL_API constexpr reference operator[](difference_type __n) const
   {
-    return ::cuda::std::ranges::__iter_move_cpo{}(__current_ + __n);
+    return ::cuda::std::ranges::iter_move(__current_ + __n);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -396,7 +394,7 @@ public:
   [[nodiscard]] _CCCL_API friend constexpr iter_rvalue_reference_t<_Iter>
   iter_move(const move_iterator& __i) noexcept(__noexcept_move_iter_iter_move<_Iter>)
   {
-    return ::cuda::std::ranges::__iter_move_cpo{}(__i.__current_);
+    return ::cuda::std::ranges::iter_move(__i.__current_);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -405,7 +403,7 @@ public:
   iter_swap(const move_iterator& __x, const move_iterator<_Iter2>& __y) noexcept(__noexcept_swappable<_Iter, _Iter2>)
     _CCCL_TRAILING_REQUIRES(void)(indirectly_swappable<_Iter2, _Iter>)
   {
-    return ::cuda::std::ranges::__iter_swap_cpo{}(__x.__current_, __y.__current_);
+    return ::cuda::std::ranges::iter_swap(__x.__current_, __y.__current_);
   }
 };
 _CCCL_CTAD_SUPPORTED_FOR_TYPE(move_iterator);

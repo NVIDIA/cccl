@@ -32,7 +32,7 @@ try
   caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     auto env = cub_bench_env(alloc, launch, cuda::execution::require(cuda::execution::determinism::run_to_run));
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceScan::ExclusiveScan,
       "ExclusiveScan failed",
       d_input,

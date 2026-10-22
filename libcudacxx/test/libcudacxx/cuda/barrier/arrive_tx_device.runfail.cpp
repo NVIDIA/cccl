@@ -13,7 +13,7 @@
 
 // UNSUPPORTED: no_execute
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: asm statement is unsupported in tile code
 
 // <cuda/barrier>

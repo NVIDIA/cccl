@@ -1,19 +1,116 @@
-.. _cuda_coop_experimental-module:
+.. _cuda_coop-module:
 
-``cuda.coop._experimental`` API Reference
-===========================================
+``cuda.coop`` API Reference
+===========================
 
 .. warning::
-  ``cuda.coop._experimental`` is in public beta.
-  The API is subject to change without notice.
+   ``cuda.coop`` is an experimental API and is subject to change.
 
-.. automodule:: cuda.coop._experimental.warp
-  :members:
-  :undoc-members:
-  :imported-members:
+.. _coop-portable-api:
+.. _portable-api:
+.. _coop-common-api:
+
+Common API
+----------
+
+The primitive functions below are compiler markers; ``register`` is a
+host-side configuration function. The installed ``.pyi`` files are
+authoritative for overload and result typing.
+
+.. currentmodule:: cuda.coop
+
+Backend registration
+^^^^^^^^^^^^^^^^^^^^
+
+See :ref:`registering a backend <coop-backend-registration>`.
+
+.. autofunction:: register
+
+Thread groups
+^^^^^^^^^^^^^
+
+See :ref:`thread groups <coop-thread-groups>` and
+:ref:`participation and synchronization <coop-participation>` for the shared
+execution model. ``ThreadGroup`` and ``ThreadHierarchy`` describe which
+threads cooperate. A descriptor's availability does not imply that every
+primitive supports that group.
+
+.. autofunction:: this_thread
+.. autofunction:: this_warp
+.. autofunction:: this_block
+.. autofunction:: this_cluster
+.. autofunction:: this_grid
+
+.. autoclass:: ThreadGroup
+   :no-members:
+   :no-special-members:
+
+   .. automethod:: group_by
+
+.. autoclass:: ThreadHierarchy
+   :no-members:
+   :no-special-members:
+
+.. py:class:: Hierarchy
+
+   Alias for :class:`ThreadHierarchy`.
+
+Payloads and temporary storage
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``ThreadData`` constructs the per-thread payload supplied to a primitive;
+thread-group descriptors describe the participating threads.
+
+.. autofunction:: ThreadData
+
+.. autoclass:: ThreadDataLike
+   :no-members:
+   :no-special-members:
+
+.. autofunction:: TempStorage
+
+.. autoclass:: TempStorageLike
+   :no-members:
+   :no-special-members:
+
+Memory operations
+^^^^^^^^^^^^^^^^^
+
+.. autofunction:: load
+.. autofunction:: store
 
 
-.. automodule:: cuda.coop._experimental.block
-  :members:
-  :undoc-members:
-  :imported-members:
+.. _coop-numba-extensions:
+
+Numba-CUDA-MLIR-qualified API
+-----------------------------
+
+.. py:module:: cuda.coop.numba_mlir
+
+Use this module for the extensions below. Shared parameters and behavior
+follow the :ref:`Common API <coop-common-api>`.
+
+.. code-block:: python
+
+   import cuda.coop.numba_mlir as coop
+
+Qualified calls also accept fixed-size, one-dimensional local arrays where
+the operation accepts per-thread payloads. ``local`` and ``shared`` expose
+Numba-CUDA-MLIR's memory namespaces.
+
+.. currentmodule:: cuda.coop.numba_mlir
+
+Payloads and temporary storage
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: ThreadData
+
+.. autoclass:: TempStorage
+   :no-members:
+   :no-special-members:
+
+Memory operations
+^^^^^^^^^^^^^^^^^
+
+.. autofunction:: load
+.. autofunction:: store

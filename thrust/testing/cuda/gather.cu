@@ -1,6 +1,8 @@
 #include <thrust/execution_policy.h>
 #include <thrust/gather.h>
 
+#include <cuda/functional>
+
 #include <algorithm>
 
 #include <unittest/unittest.h>
@@ -41,10 +43,10 @@ void TestGatherDevice(ExecutionPolicy exec, const size_t n)
   gather_kernel<<<1, 1>>>(exec, d_map.begin(), d_map.end(), d_source.begin(), d_output.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
 }
 
 template <typename T>
@@ -62,7 +64,7 @@ void TestGatherDeviceDevice(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestGatherDeviceDevice);
 #endif
 
-void TestGatherCudaStreams()
+TEST_CASE("TestGatherCudaStreams", "[gather]")
 {
   thrust::device_vector<int> map = {6, 2, 1, 7, 2}; // gather indices
   thrust::device_vector<int> src = {0, 1, 2, 3, 4, 5, 6, 7}; // source vector
@@ -74,12 +76,11 @@ void TestGatherCudaStreams()
   thrust::gather(thrust::cuda::par.on(s), map.begin(), map.end(), src.begin(), dst.begin());
   cudaStreamSynchronize(s);
 
-  thrust::device_vector<int> ref = {6, 2, 1, 7, 2}; // destination vector
+  const thrust::device_vector<int> ref = {6, 2, 1, 7, 2}; // destination vector
 
-  ASSERT_EQUAL(dst, ref);
+  REQUIRE(dst == ref);
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestGatherCudaStreams);
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy,
@@ -99,15 +100,6 @@ __global__ void gather_if_kernel(
 {
   thrust::gather_if(exec, map_first, map_last, stencil_first, elements_first, result, pred);
 }
-
-template <typename T>
-struct is_even_gather_if
-{
-  _CCCL_HOST_DEVICE bool operator()(const T i) const
-  {
-    return (i % 2) == 0;
-  }
-};
 
 template <typename T, typename ExecutionPolicy>
 void TestGatherIfDevice(ExecutionPolicy exec, const size_t n)
@@ -143,27 +135,16 @@ void TestGatherIfDevice(ExecutionPolicy exec, const size_t n)
   thrust::device_vector<T> d_output(n);
 
   thrust::gather_if(
-    h_map.begin(),
-    h_map.end(),
-    h_stencil.begin(),
-    h_source.begin(),
-    h_output.begin(),
-    is_even_gather_if<unsigned int>());
+    h_map.begin(), h_map.end(), h_stencil.begin(), h_source.begin(), h_output.begin(), cuda::__is_even{});
 
   gather_if_kernel<<<1, 1>>>(
-    exec,
-    d_map.begin(),
-    d_map.end(),
-    d_stencil.begin(),
-    d_source.begin(),
-    d_output.begin(),
-    is_even_gather_if<unsigned int>());
+    exec, d_map.begin(), d_map.end(), d_stencil.begin(), d_source.begin(), d_output.begin(), cuda::__is_even{});
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
 }
 
 template <typename T>
@@ -181,7 +162,7 @@ void TestGatherIfDeviceDevice(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestGatherIfDeviceDevice);
 #endif
 
-void TestGatherIfCudaStreams()
+TEST_CASE("TestGatherIfCudaStreams", "[gather]")
 {
   thrust::device_vector<int> flg{0, 1, 0, 1, 0}; // predicate array
   thrust::device_vector<int> map{6, 2, 1, 7, 2}; // gather indices
@@ -194,9 +175,8 @@ void TestGatherIfCudaStreams()
   thrust::gather_if(thrust::cuda::par.on(s), map.begin(), map.end(), flg.begin(), src.begin(), dst.begin());
   cudaStreamSynchronize(s);
 
-  thrust::device_vector<int> ref{0, 2, 0, 7, 0}; // destination vector
+  const thrust::device_vector<int> ref{0, 2, 0, 7, 0}; // destination vector
 
-  ASSERT_EQUAL(dst, ref);
+  REQUIRE(dst == ref);
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestGatherIfCudaStreams);

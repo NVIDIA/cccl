@@ -119,7 +119,7 @@ inline void init_by_array(unsigned int init_key[], int key_length)
 inline unsigned int genrand_int32()
 {
   unsigned int y;
-  static unsigned int mag01[2] = {0x0, MATRIX_A};
+  static const unsigned int mag01[2] = {0x0, MATRIX_A}; // NOLINT(misc-const-correctness)
 
   /* mag01[x] = x * MATRIX_A  for x=0,1 */
 

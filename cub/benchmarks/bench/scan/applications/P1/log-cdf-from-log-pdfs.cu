@@ -143,7 +143,7 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<FloatingPoi
       cuda::execution::tune(policy_selector<accum_t>{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceScan::InclusiveScan,
       "InclusiveScan failed",
       d_input,

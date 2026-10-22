@@ -20,14 +20,15 @@ void block_stream(cuda::stream_ref stream, cuda::atomic<int>& atomic)
 {
   auto block_lambda = [&]() {
     while (atomic != 1)
-      ;
+    {
+    }
   };
   cuda::host_launch(stream, block_lambda);
 }
 
 void unblock_and_wait_stream(cuda::stream_ref stream, cuda::atomic<int>& atomic)
 {
-  CCCLRT_REQUIRE(!stream.is_done());
+  REQUIRE(!stream.is_done());
   atomic = 1;
   stream.sync();
   atomic = 0;
@@ -73,7 +74,7 @@ struct lambda_wrapper
     if constexpr (cuda::std::is_same_v<cuda::std::invoke_result_t<Lambda>, void*>)
     {
       // If lambda returns the address it captured, confirm this object wasn't moved
-      CCCLRT_REQUIRE(lambda() == this);
+      REQUIRE(lambda() == this);
     }
     else
     {
@@ -84,7 +85,7 @@ struct lambda_wrapper
   // Make sure we fail if const is added to this wrapper anywhere
   void operator()() const
   {
-    CCCLRT_REQUIRE(false);
+    REQUIRE(false);
   }
 };
 
@@ -124,49 +125,49 @@ private:
 
 C2H_CCCLRT_TEST("Host launch", "")
 {
-  cuda::device_ref device{0};
+  const cuda::device_ref device{0};
   device.init();
 
-  cuda::stream stream{device};
+  const cuda::stream stream{device};
 
   SECTION("Ordinary function without arguments returning void")
   {
-    CCCLRT_REQUIRE(ordinary_function_run_proof == false);
+    REQUIRE(ordinary_function_run_proof == false);
 
     cuda::host_launch(stream, ordinary_function<void>);
 
     stream.sync();
-    CCCLRT_REQUIRE(ordinary_function_run_proof == true);
+    REQUIRE(ordinary_function_run_proof == true);
     ordinary_function_run_proof = false;
   }
   SECTION("Ordinary function without arguments returning int")
   {
-    CCCLRT_REQUIRE(ordinary_function_run_proof == false);
+    REQUIRE(ordinary_function_run_proof == false);
 
     cuda::host_launch(stream, ordinary_function<int>);
 
     stream.sync();
-    CCCLRT_REQUIRE(ordinary_function_run_proof == true);
+    REQUIRE(ordinary_function_run_proof == true);
     ordinary_function_run_proof = false;
   }
   SECTION("Ordinary function with arguments returning void")
   {
-    CCCLRT_REQUIRE(ordinary_function_run_proof == false);
+    REQUIRE(ordinary_function_run_proof == false);
 
     cuda::host_launch(stream, ordinary_function<int, char, double>, 'c', 1.0);
 
     stream.sync();
-    CCCLRT_REQUIRE(ordinary_function_run_proof == true);
+    REQUIRE(ordinary_function_run_proof == true);
     ordinary_function_run_proof = false;
   }
   SECTION("Nodiscard ordinary function")
   {
-    CCCLRT_REQUIRE(ordinary_function_run_proof == false);
+    REQUIRE(ordinary_function_run_proof == false);
 
     cuda::host_launch(stream, nodiscard_ordinary_function);
 
     stream.sync();
-    CCCLRT_REQUIRE(ordinary_function_run_proof == true);
+    REQUIRE(ordinary_function_run_proof == true);
     ordinary_function_run_proof = false;
   }
 
@@ -184,14 +185,14 @@ C2H_CCCLRT_TEST("Host launch", "")
     cuda::host_launch(stream, set_lambda, 2);
 
     unblock_and_wait_stream(stream, atomic);
-    CCCLRT_REQUIRE(i == 2);
+    REQUIRE(i == 2);
   }
 
   SECTION("Can launch multiple functions")
   {
     block_stream(stream, atomic);
     auto check_lambda = [&]() {
-      CCCLRT_REQUIRE(i == 4);
+      REQUIRE(i == 4);
     };
 
     cuda::host_launch(stream, set_lambda, 3);
@@ -199,7 +200,7 @@ C2H_CCCLRT_TEST("Host launch", "")
     cuda::host_launch(stream, check_lambda);
     cuda::host_launch(stream, set_lambda, 5);
     unblock_and_wait_stream(stream, atomic);
-    CCCLRT_REQUIRE(i == 5);
+    REQUIRE(i == 5);
   }
 
   SECTION("Non trivially copyable")
@@ -209,7 +210,7 @@ C2H_CCCLRT_TEST("Host launch", "")
     cuda::host_launch(
       stream,
       [&](auto str_arg) {
-        CCCLRT_REQUIRE(s == str_arg);
+        REQUIRE(s == str_arg);
       },
       s);
     stream.sync();
@@ -217,13 +218,13 @@ C2H_CCCLRT_TEST("Host launch", "")
 
   SECTION("Confirm no const added to the callable")
   {
-    lambda_wrapper wrapped_lambda([&]() {
+    lambda_wrapper wrapped_lambda([&]() { // NOLINT(misc-const-correctness)
       i = 21;
     });
 
     cuda::host_launch(stream, wrapped_lambda);
     stream.sync();
-    CCCLRT_REQUIRE(i == 21);
+    REQUIRE(i == 21);
   }
 
   SECTION("Can launch a local function and return")
@@ -231,7 +232,7 @@ C2H_CCCLRT_TEST("Host launch", "")
     block_stream(stream, atomic);
     launch_local_lambda(stream, i, 42);
     unblock_and_wait_stream(stream, atomic);
-    CCCLRT_REQUIRE(i == 42);
+    REQUIRE(i == 42);
   }
 
   SECTION("Launch by reference")
@@ -247,7 +248,7 @@ C2H_CCCLRT_TEST("Host launch", "")
     block_stream(stream, atomic);
     cuda::host_launch(stream, cuda::std::ref(another_lambda_setter));
     unblock_and_wait_stream(stream, atomic);
-    CCCLRT_REQUIRE(i == 84);
+    REQUIRE(i == 84);
   }
 
   SECTION("Launch by reference with arguments")
@@ -260,7 +261,7 @@ C2H_CCCLRT_TEST("Host launch", "")
     block_stream(stream, atomic);
     cuda::host_launch(stream, cuda::std::ref(lambda), i);
     unblock_and_wait_stream(stream, atomic);
-    CCCLRT_REQUIRE(result == 10);
+    REQUIRE(result == 10);
   }
 
   SECTION("Launch by reference with arguments captured by reference")
@@ -272,7 +273,7 @@ C2H_CCCLRT_TEST("Host launch", "")
     block_stream(stream, atomic);
     cuda::host_launch(stream, cuda::std::ref(lambda), cuda::std::ref(i));
     unblock_and_wait_stream(stream, atomic);
-    CCCLRT_REQUIRE(i == 10);
+    REQUIRE(i == 10);
   }
 
   SECTION("Check that host_launch works with move only callables and arguments")
@@ -289,19 +290,19 @@ C2H_CCCLRT_TEST("Host launch uses the stream device when current device differs"
     return;
   }
 
-  cuda::device_ref current_device{0};
-  cuda::device_ref explicit_device{1};
+  const cuda::device_ref current_device{0};
+  const cuda::device_ref explicit_device{1};
 
-  cuda::stream stream{explicit_device};
+  const cuda::stream stream{explicit_device};
   int value = 0;
 
   {
-    cuda::__ensure_current_context guard(current_device);
+    const cuda::__ensure_current_context guard(current_device);
     cuda::host_launch(stream, [&value]() {
       value = 42;
     });
   }
 
   stream.sync();
-  CCCLRT_REQUIRE(value == 42);
+  REQUIRE(value == 42);
 }

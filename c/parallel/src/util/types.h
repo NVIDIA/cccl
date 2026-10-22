@@ -19,6 +19,10 @@
 #include <string>
 #include <string_view>
 
+#if defined(_WIN32)
+#  include <mutex>
+#endif // _WIN32
+
 #include "errors.h"
 #include <cccl/c/types.h>
 
@@ -33,9 +37,25 @@ struct items_storage_t; // Used in merge_sort
 // for these unsupported types and converts them to nvcc-compatible types.
 // The method signature is kept identical to `nvrtcGetTypeName` so that this
 // helper can be used as a drop-in replacement.
+#if defined(_WIN32)
+// The Windows nvrtcGetTypeName path demangles through DbgHelp's
+// UnDecorateSymbolName, which Microsoft documents as single-threaded: concurrent
+// calls "will likely result in unexpected behavior or memory corruption." Under
+// free-threaded Python, distinct-key build storms resolve type names on multiple
+// threads at once, and the returned names get swapped/corrupted, producing bogus
+// NVRTC name expressions (e.g. a transform kernel instantiated with a reduce
+// policy). Serialize every call through one process-wide mutex; the `inline`
+// variable is a single instance shared across all `cccl_type_name_from_nvrtc<T>`
+// instantiations and translation units.
+inline std::mutex nvrtc_type_name_mutex;
+#endif // _WIN32
+
 template <typename T>
 nvrtcResult cccl_type_name_from_nvrtc(std::string* result)
 {
+#if defined(_WIN32)
+  const std::lock_guard<std::mutex> lock(nvrtc_type_name_mutex);
+#endif // _WIN32
   if (const nvrtcResult res = nvrtcGetTypeName<T>(result); res != NVRTC_SUCCESS)
   {
     return res;
@@ -91,6 +111,13 @@ std::string cccl_type_enum_to_name(cccl_type_enum type, bool is_pointer = false)
 #else
       throw std::runtime_error("float16 is not supported");
 #endif
+    case cccl_type_enum::CCCL_BFLOAT16:
+#if _CCCL_HAS_NVBF16()
+      result = "__nv_bfloat16";
+      break;
+#else
+      throw std::runtime_error("bfloat16 is not supported");
+#endif
     case cccl_type_enum::CCCL_FLOAT32:
       result = "float";
       break;
@@ -140,6 +167,7 @@ inline constexpr cub::detail::type_t cccl_type_enum_to_cub_type(cccl_type_enum t
     case CCCL_FLOAT64:
       return cub::detail::type_t::float64;
     case CCCL_FLOAT16:
+    case CCCL_BFLOAT16:
     case CCCL_STORAGE:
     default:
       return cub::detail::type_t::other;

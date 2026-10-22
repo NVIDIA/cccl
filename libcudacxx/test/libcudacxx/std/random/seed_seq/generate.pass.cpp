@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 #include <cuda/std/random>
 #if _CCCL_HOSTED()
@@ -19,7 +19,7 @@
 
 #include "test_macros.h"
 
-TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   static_assert(noexcept(cuda::std::seed_seq{}));
   cuda::std::seed_seq seq{1, 2, 3, 4, 5};

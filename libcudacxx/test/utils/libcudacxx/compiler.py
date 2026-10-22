@@ -30,6 +30,7 @@ class CXXCompiler(object):
         verify_supported=None,
         verify_flags=None,
         use_verify=False,
+        treat_warnings_as_errors=False,
         modules_flags=None,
         use_modules=False,
         use_ccache=False,
@@ -48,6 +49,7 @@ class CXXCompiler(object):
         self.warning_flags = list(warning_flags or [])
         self.verify_supported = verify_supported
         self.use_verify = use_verify
+        self.treat_warnings_as_errors = treat_warnings_as_errors
         self.verify_flags = list(verify_flags or [])
         assert not use_verify or verify_supported
         assert not use_verify or verify_flags is not None
@@ -94,6 +96,9 @@ class CXXCompiler(object):
 
     def useWarnings(self, value=True):
         self.use_warnings = value
+
+    def treatWarningsAsErrors(self, value=True):
+        self.treat_warnings_as_errors = value
 
     def _initTypeAndVersion(self):
         # Get compiler type and version
@@ -206,6 +211,10 @@ class CXXCompiler(object):
         if self.use_verify:
             cmd += self.verify_flags
             assert mode in [self.CM_Default, self.CM_Compile]
+        if self.treat_warnings_as_errors:
+            if self.type == "nvcc":
+                cmd += ["-Werror=all-warnings", "-Xcompiler"]
+            cmd += ["/WX"]
         if self.use_modules:
             cmd += self.modules_flags
         if mode != self.CM_Link:
@@ -263,6 +272,13 @@ class CXXCompiler(object):
         if self.use_verify:
             cmd += self.verify_flags
             assert mode in [self.CM_Default, self.CM_Compile]
+        if self.treat_warnings_as_errors:
+            if self.type == "nvcc":
+                host_cxx_type = self.host_cxx.type
+                cmd += ["-Werror=all-warnings", "-Xcompiler"]
+            else:
+                host_cxx_type = self.type
+            cmd += ["/WX"] if host_cxx_type == "msvc" else ["-Werror"]
         if self.use_modules:
             cmd += self.modules_flags
         if mode != self.CM_Link:

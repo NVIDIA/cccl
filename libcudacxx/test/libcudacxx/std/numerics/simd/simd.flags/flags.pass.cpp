@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -33,12 +33,12 @@
 namespace simd = cuda::std::simd;
 
 template <typename T, typename R>
-TEST_FUNC constexpr bool is_same_flags(const T&, const R&)
+TEST_HOST_DEVICE_FUNC constexpr bool is_same_flags(const T&, const R&)
 {
   return cuda::std::is_same_v<cuda::std::remove_cvref_t<T>, cuda::std::remove_cvref_t<R>>;
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   static_assert(is_same_flags(simd::flag_default, simd::flags<>{}));
   // default | X == X

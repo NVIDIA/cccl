@@ -39,8 +39,8 @@ int main()
     ref_sum += X[ind];
   }
 
-  auto lX   = ctx.logical_data(&X[0], {N});
-  auto lsum = ctx.logical_data(&sum, {1});
+  auto lX   = ctx.logical_data(&X[0], N);
+  auto lsum = ctx.logical_data(&sum, 1);
 
   auto number_devices = 1; //
   auto where          = exec_place::repeat(exec_place::device(0), number_devices);

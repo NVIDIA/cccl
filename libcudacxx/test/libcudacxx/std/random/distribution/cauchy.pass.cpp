@@ -7,10 +7,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
 //
 // REQUIRES: long_tests
+
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 // <random>
 
@@ -30,7 +31,7 @@ struct cauchy_cdf
 {
   using P = typename cuda::std::cauchy_distribution<T>::param_type;
 
-  TEST_FUNC double operator()(double x, const P& p) const
+  TEST_HOST_DEVICE_FUNC double operator()(double x, const P& p) const
   {
     // CDF of Cauchy distribution: F(x; a, b) = (1/π) * arctan((x - a) / b) + 0.5
     return (1.0 / cuda::std::__numbers<double>::__pi()) * cuda::std::atan((x - p.a()) / p.b()) + 0.5;
@@ -38,7 +39,7 @@ struct cauchy_cdf
 };
 
 template <class T>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   [[maybe_unused]] const bool test_constexpr = false;
   using D                                    = cuda::std::cauchy_distribution<T>;

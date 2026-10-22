@@ -26,9 +26,8 @@ class bad_alloc : public std::bad_alloc
 public:
   inline bad_alloc(const std::string& w)
       : std::bad_alloc()
-      , m_what()
+      , m_what(std::bad_alloc::what())
   {
-    m_what = std::bad_alloc::what();
     m_what += ": ";
     m_what += w;
   } // end bad_alloc()

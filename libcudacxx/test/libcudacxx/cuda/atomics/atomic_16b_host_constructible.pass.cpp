@@ -8,7 +8,7 @@
 //
 // UNSUPPORTED: windows
 
-// XFAIL: enable-tile
+// UNSUPPORTED: force-tile
 // error: asm statement is unsupported in tile code
 
 // <cuda/atomic>
@@ -20,7 +20,7 @@
 
 // Check that atomics on host may be constructed
 template <class T>
-TEST_FUNC void do_test()
+TEST_HOST_DEVICE_FUNC void do_test()
 {
   T v(0);
   cuda::atomic_ref<T> a(v);

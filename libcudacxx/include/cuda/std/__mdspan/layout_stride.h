@@ -28,21 +28,24 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__numeric/add_overflow.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__mdspan/concepts.h>
 #include <cuda/std/__mdspan/empty_base.h>
 #include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/as_const.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
+#include <cuda/std/span>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -119,8 +122,7 @@ private:
   [[nodiscard]] _CCCL_API static constexpr bool
   __add_overflow(index_type __x, index_type __y, index_type* __res) noexcept
   {
-    *__res = __x + __y;
-    return *__res < __y;
+    return ::cuda::add_overflow(*__res, __x, __y);
   }
 
   template <class _OtherIndexType>
@@ -144,7 +146,6 @@ private:
     const extents_type& __ext, [[maybe_unused]] span<_OtherIndexType, extents_type::rank()> __strides)
   {
     // nvcc believes strides is unused here
-    bool __result = true;
     if constexpr (extents_type::rank() != 0)
     {
       index_type __size = 1;
@@ -153,30 +154,26 @@ private:
         // We can only check correct conversion of _OtherIndexType if it is an integral
         if (__conversion_may_overflow(__strides[__r]))
         {
-          __result = false;
-          break;
+          return false;
         }
         if (__ext.extent(__r) == index_type{0})
         {
-          __result = true;
-          break;
+          return true;
         }
 
         index_type __prod = (__ext.extent(__r) - 1);
         if (::cuda::std::__mdspan_detail::__mul_overflow(__prod, static_cast<index_type>(__strides[__r]), &__prod))
         {
-          __result = false;
-          break;
+          return false;
         }
         if (__add_overflow(__size, __prod, &__size))
         {
-          __result = false;
-          break;
+          return false;
         }
       }
     }
 
-    return __result;
+    return true;
   }
 
   // compute offset of a strided layout mapping
@@ -285,17 +282,15 @@ public:
     __bubble_sort_by_strides(__permute);
 
     // check that this permutations represents a growing set
-    bool __result = true;
     for (rank_type __i = 1; __i < __rank_; __i++)
     {
       if (static_cast<index_type>(__strides()[__permute[__i]])
           < static_cast<index_type>(__strides()[__permute[__i - 1]]) * extents().extent(__permute[__i - 1]))
       {
-        __result = false;
-        break;
+        return false;
       }
     }
-    return __result;
+    return true;
   }
   [[nodiscard]] _CCCL_API constexpr bool __check_unique_mapping(index_sequence<>) const noexcept
   {
@@ -455,7 +450,7 @@ public:
     }
     else
     {
-      return __op_index(__strides(), ::cuda::std::make_index_sequence<sizeof...(_Indices)>(), __idx...);
+      return __op_index(__strides(), ::cuda::std::index_sequence_for<_Indices...>(), __idx...);
     }
   }
 
@@ -513,16 +508,14 @@ public:
             }
           }
 
-          bool __result = true;
           for (rank_type __r = 0; __r != __rank_; __r++)
           {
             if (extents().extent(__r) == 0 && __r != __r_largest)
             {
-              __result = false;
-              break;
+              return false;
             }
           }
-          return __result;
+          return true;
         }
       }
       else

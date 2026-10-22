@@ -21,7 +21,6 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/aligned_storage.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -49,11 +48,11 @@ struct aligned_union
   static const size_t alignment_value =
     __static_max<_CCCL_PREFERRED_ALIGNOF(_Type0), _CCCL_PREFERRED_ALIGNOF(_Types)...>::value;
   static const size_t __len = __static_max<_Len, sizeof(_Type0), sizeof(_Types)...>::value;
-  using type                = typename aligned_storage<__len, alignment_value>::type;
+  using type                = ::cuda::std::aligned_storage_t<__len, alignment_value>;
 };
 
 template <size_t _Len, class... _Types>
-using aligned_union_t _CCCL_NODEBUG_ALIAS = typename aligned_union<_Len, _Types...>::type;
+using aligned_union_t _CCCL_NODEBUG = typename aligned_union<_Len, _Types...>::type;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

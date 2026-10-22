@@ -43,7 +43,7 @@ public:
   void cleanup();
 
 private:
-  void add_raw_bitcode(const char* data, size_t size, const std::string& name);
+  void add_raw_bitcode(const char* data, size_t size, const std::string& name, cccl_op_code_type code_type);
   bool compile_and_add(const char* source, size_t source_size, const std::string& name);
   void add_op_code(cccl_op_t& op, const std::string& name);
 

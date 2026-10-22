@@ -67,7 +67,8 @@ else()
   option(CCCL_ENABLE_BENCHMARKS "Enable CUDA C++ Core Library benchmarks." OFF)
 endif()
 
-option(CCCL_ENABLE_TILE "Enable tile support" OFF)
+option(CCCL_FORCE_TILE_TESTS "Force tests to be run as a tile program" OFF)
+option(CCCL_ENABLE_TILE "Enable tile support" ${CCCL_FORCE_TILE_TESTS})
 
 option(
   CCCL_ENABLE_UNSTABLE
@@ -87,21 +88,12 @@ else()
   set(CCCL_ENABLE_CUDAX OFF)
 endif()
 
-option(CCCL_ENABLE_CLANG_TIDY "Enable clang-tidy" OFF)
-mark_as_advanced(CCCL_ENABLE_CLANG_TIDY)
-
-if (CCCL_TOPLEVEL_PROJECT)
-  include(cmake/CCCLAddTidyTarget.cmake)
-
-  if (CCCL_ENABLE_CLANG_TIDY)
-    cccl_tidy_init()
-  endif()
-endif()
-
 include(CTest)
 enable_testing()
 
 option(CCCL_USE_LIBCXX "Use libc++ when compiling and linking" OFF)
+option(CCCL_ENABLE_CLANG_TIDY "Enable clang-tidy" OFF)
+mark_as_advanced(CCCL_ENABLE_CLANG_TIDY)
 
 if (CCCL_TOPLEVEL_PROJECT)
   include(cmake/AppendOptionIfAvailable.cmake)
@@ -115,8 +107,12 @@ if (CCCL_TOPLEVEL_PROJECT)
   include(cmake/CCCLGenerateHeaderTests.cmake)
   include(cmake/CCCLGetDependencies.cmake)
   include(cmake/CCCLTestParams.cmake)
+  include(cmake/CCCLAddTidyTarget.cmake)
 
   cccl_build_compiler_targets()
+  if (CCCL_ENABLE_CLANG_TIDY)
+    cccl_tidy_init()
+  endif()
 endif()
 
 option(

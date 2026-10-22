@@ -13,6 +13,7 @@ print_help() {
     echo "Options:"
     echo "  -c, --cuda               Specify the CUDA version. E.g., 12.2"
     echo "  --cuda-ext               Use a docker image with extended CTK libraries."
+    echo "  --tidy-ext               Use a docker image with Clang/LLVM development libraries."
     echo "  -H, --host               Specify the host compiler. E.g., gcc12"
     echo "  -d, --docker             Launch the development environment in Docker directly without using VSCode."
     echo "  --gpus gpu-request       GPU devices to add to the container ('all' to pass all GPUs)."
@@ -69,7 +70,7 @@ parse_options() {
     set -- "${@:1:$#-1}";
 
     local OPTIONS=c:e:H:dhv:
-    local LONG_OPTIONS=cuda:,cuda-ext,env:,host:,gpus:,volume:,ulimit:,docker,help
+    local LONG_OPTIONS=cuda:,cuda-ext,tidy-ext,env:,host:,gpus:,volume:,ulimit:,docker,help
     # shellcheck disable=SC2155
     local PARSED_OPTIONS="$(getopt -n "$0" -o "${OPTIONS}" --long "${LONG_OPTIONS}" -- "$@")"
 
@@ -82,6 +83,13 @@ parse_options() {
 
     local -a DOCKER_RUN_ARGS=();
 
+    if command -v code > /dev/null 2>&1 ; then
+      docker_mode=false
+    else
+      # no vscode, default to docker
+      docker_mode=true
+    fi
+
     while true; do
         case "$1" in
             -c|--cuda)
@@ -90,6 +98,10 @@ parse_options() {
                 ;;
             --cuda-ext)
                 cuda_ext=true
+                shift
+                ;;
+            --tidy-ext)
+                tidy_ext=true
                 shift
                 ;;
             -e|--env)
@@ -140,6 +152,12 @@ parse_options() {
 launch_docker() {
     local -;
     set -euo pipefail
+
+    if ! docker --version > /dev/null 2>&1 ; then
+      echo "Docker launch requires a working installation of docker."
+      echo "Ensure that 'docker' is reachable on PATH."
+      exit 127
+    fi
 
     ###
     # Read relevant values from devcontainer.json
@@ -284,6 +302,13 @@ launch_docker() {
 launch_vscode() {
     local -;
     set -euo pipefail;
+
+    if ! code --version > /dev/null 2>&1 ; then
+      echo "VSCode launch requires a working installation of vscode."
+      echo "Ensure that 'code' is reachable on PATH."
+      exit 127
+    fi
+
     # Since Visual Studio Code allows only one instance per `devcontainer.json`,
     # this code prepares a unique temporary directory structure for each launch of a devcontainer.
     # By doing so, it ensures that multiple instances of the same environment can be run
@@ -328,10 +353,24 @@ main() {
     if [[ -z ${cuda_version:-} ]] && [[ -z ${host_compiler:-} ]]; then
         path=".devcontainer"
     else
-        if ${cuda_ext:-false}; then
-          cuda_suffix="ext"
+        if [[ -z ${cuda_version:-} ]]; then
+          echo "Must also provide a CUDA version when specifying the host compiler" >&2
+          exit 2
         fi
-        path=".devcontainer/cuda${cuda_version}${cuda_suffix:-}-${host_compiler}"
+
+        if [[ -z ${host_compiler:-} ]]; then
+          echo "Must also provide a host compiler when specifying the cuda version" >&2
+          exit 2
+        fi
+
+        local suffix=""
+        if ${cuda_ext:-false}; then
+          suffix+="ext"
+        fi
+        if ${tidy_ext:-false}; then
+          suffix+="tidy"
+        fi
+        path=".devcontainer/cuda${cuda_version}${suffix:-}-${host_compiler}"
         if [[ ! -f "${path}/devcontainer.json" ]]; then
             echo "Unknown CUDA [${cuda_version}] compiler [${host_compiler}] combination"
             echo "Requested devcontainer ${path}/devcontainer.json does not exist"

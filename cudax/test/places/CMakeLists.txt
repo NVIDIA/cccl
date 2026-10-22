@@ -4,6 +4,7 @@ set(
   data_place_alloc.cu
   data_place_vmm.cu
   exec_place_scope.cu
+  placement.cu
   stream_pool.cu
 )
 
@@ -11,7 +12,9 @@ set(places_fail_tests exec_place_scope_data_place_fail.cu)
 
 set(
   places_unittested_headers
+  cuda/experimental/__places/cute_partition.cuh
   cuda/experimental/__places/places.cuh
+  cuda/experimental/__places/exec/cuda_context.cuh
   cuda/experimental/__places/exec/green_context.cuh
   cuda/experimental/__places/partitions/blocked_partition.cuh
   cuda/experimental/__places/partitions/cyclic_shape.cuh

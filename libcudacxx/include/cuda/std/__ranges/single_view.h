@@ -20,15 +20,17 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__ranges/movable_box.h>
 #include <cuda/std/__ranges/range_adaptor.h>
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_object.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -135,12 +137,14 @@ struct __fn : __range_adaptor_closure<__fn>
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__can_single_view<_Tp>) // MSVC breaks without it
-  _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(single_view<decay_t<_Tp>>(::cuda::std::forward<_Tp>(__t)))) -> single_view<decay_t<_Tp>>
+  _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(single_view<decay_t<_Tp>>(::cuda::std::forward<_Tp>(__t))))
+    -> single_view<decay_t<_Tp>>
   {
     return single_view<decay_t<_Tp>>(::cuda::std::forward<_Tp>(__t));
   }
 };
+
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo

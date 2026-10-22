@@ -21,16 +21,19 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/std/__simd/math/abs.h>
 #include <cuda/std/__simd/math/classification.h>
 #include <cuda/std/__simd/math/common.h>
 #include <cuda/std/__simd/math/comparison.h>
 #include <cuda/std/__simd/math/exponential.h>
-#include <cuda/std/__simd/math/fma_lerp.h>
+#include <cuda/std/__simd/math/fma.h>
+#include <cuda/std/__simd/math/lerp.h>
 #include <cuda/std/__simd/math/manipulation.h>
 #include <cuda/std/__simd/math/min_max.h>
 #include <cuda/std/__simd/math/modulo.h>
 #include <cuda/std/__simd/math/rounding.h>
 #include <cuda/std/__simd/math/trigonometric.h>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_STD___SIMD_MATH_H

@@ -22,8 +22,8 @@ OutputIterator expand(InputIterator1 first1, InputIterator1 last1, InputIterator
 {
   using difference_type = typename cuda::std::iterator_traits<InputIterator1>::difference_type;
 
-  difference_type input_size  = cuda::std::distance(first1, last1);
-  difference_type output_size = thrust::reduce(first1, last1);
+  const difference_type input_size  = cuda::std::distance(first1, last1);
+  const difference_type output_size = thrust::reduce(first1, last1);
 
   // scan the counts to obtain output offsets for each input element
   thrust::device_vector<difference_type> output_offsets(input_size, 0);

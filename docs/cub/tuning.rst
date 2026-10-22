@@ -3,7 +3,7 @@
 
 .. _cub-policy-selectors:
 
-CUB Tunings
+Tunings
 ================================================================================
 
 Device-scope algorithms in CUB have many knobs that significantly impact performance (without affecting correctness).
@@ -49,7 +49,7 @@ taking a ``cuda::compute_capability`` and returning the algorithm's policy struc
         if (cc >= cuda::compute_capability(9, 0)) {
           const auto pass = cub::ReducePassPolicy{
             .threads_per_block = 512,
-            .items_per_thread = std::max(64 / sizeof(T), 1), // 8 double, 16 float, 32 half_t, ...
+            .items_per_thread = std::max<int>(64 / sizeof(T), 1), // 8 double, 16 float, 32 half_t, ...
             .vec_size = 2,
             .reduce_algorithm = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
             .load_modifier = cub::LOAD_DEFAULT
@@ -68,10 +68,14 @@ taking a ``cuda::compute_capability`` and returning the algorithm's policy struc
       }
     };
 
-The policy selector must be stateless (:code:`std::is_empty_v<T>` must be :code:`true`)
-since only its type will be passed to a kernel.
-Policy selectors are also freely constructed and copied where needed,
-so they must also be default constructible and copyable (:code:`std::semiregular<T>` must be :code:`true`).
+.. warning::
+
+   The policy selector must be stateless (:code:`std::is_empty_v<T>` must be :code:`true`)
+   since only its type will be passed to a kernel — any captured state would be silently
+   lost. Policy selectors are also freely constructed and copied where needed, so they
+   must also be default constructible and copyable (:code:`std::semiregular<T>` must be
+   :code:`true`).
+
 It can be a class template, but then only a full specialization can be passed to CUB,
 e.g., :code:`my_reduce_tuning<float>`.
 The implementation can use branches and helper functions arbitrarily,

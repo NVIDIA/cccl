@@ -133,12 +133,15 @@
 #  define _CCCL_HOST_API        _CCCL_HOST
 #  define _CCCL_DEVICE_API      _CCCL_DEVICE
 #  define _CCCL_TILE_API        _CCCL_TILE
+#  define _CCCL_DEVICE_TILE_API _CCCL_TILE _CCCL_DEVICE
 #else // ^^^ _CCCL_COMPILER(NVHPC) ^^^ / vvv !_CCCL_COMPILER(NVHPC) vvv
-#  define _CCCL_API             _CCCL_TILE _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+#  define _CCCL_API _CCCL_TILE _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #  define _CCCL_HOST_DEVICE_API _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #  define _CCCL_HOST_API        _CCCL_HOST _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #  define _CCCL_DEVICE_API      _CCCL_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #  define _CCCL_TILE_API        _CCCL_TILE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+#  define _CCCL_DEVICE_TILE_API \
+    _CCCL_TILE _CCCL_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #endif // !_CCCL_COMPILER(NVHPC)
 
 //! @brief \c _CCCL_NODEBUG_API marks a function's visibility as hidden and causes
@@ -147,17 +150,19 @@
 //! function \c G, stepping into \c F in a debugger will skip over \c F and step directly
 //! into \c G. In a stacktrace, \c F will still be shone, but you will not be able to
 //! set the debugger's active frame to \c F.
-#define _CCCL_NODEBUG_API        _CCCL_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
-#define _CCCL_NODEBUG_HOST_API   _CCCL_HOST_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
-#define _CCCL_NODEBUG_DEVICE_API _CCCL_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
+#define _CCCL_NODEBUG_API             _CCCL_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
+#define _CCCL_NODEBUG_HOST_API        _CCCL_HOST_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
+#define _CCCL_NODEBUG_DEVICE_API      _CCCL_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
+#define _CCCL_NODEBUG_HOST_DEVICE_API _CCCL_HOST_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
 
 //! @brief \c _CCCL_TRIVIAL_API force-inlines a function, marks its visibility as hidden,
 //! and causes debuggers to skip it. This is useful for trivial internal functions that do
 //! dispatching or other plumbing work. It is particularly useful in the definition of
 //! customization point objects.
-#define _CCCL_TRIVIAL_API        _CCCL_API _CCCL_ARTIFICIAL _CCCL_NODEBUG _CCCL_FORCEINLINE
-#define _CCCL_TRIVIAL_HOST_API   _CCCL_HOST_API _CCCL_ARTIFICIAL _CCCL_NODEBUG _CCCL_FORCEINLINE
-#define _CCCL_TRIVIAL_DEVICE_API _CCCL_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG _CCCL_FORCEINLINE
+#define _CCCL_TRIVIAL_API             _CCCL_API _CCCL_ARTIFICIAL _CCCL_NODEBUG _CCCL_FORCEINLINE
+#define _CCCL_TRIVIAL_HOST_API        _CCCL_HOST_API _CCCL_ARTIFICIAL _CCCL_NODEBUG _CCCL_FORCEINLINE
+#define _CCCL_TRIVIAL_DEVICE_API      _CCCL_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG _CCCL_FORCEINLINE
+#define _CCCL_TRIVIAL_HOST_DEVICE_API _CCCL_HOST_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG _CCCL_FORCEINLINE
 
 // Some functions have their addresses appear in public types (e.g., in
 // `cuda::__overrides_for` specializations). If the function is declared
@@ -183,7 +188,7 @@
 
 #if _CCCL_HAS_CDP()
 // We have CDP, so host and device APIs can call kernels
-#  define _CCCL_CDP_API _CCCL_API
+#  define _CCCL_CDP_API _CCCL_HOST_DEVICE_API
 #else // ^^^ _CCCL_HAS_CDP() ^^^ / vvv !_CCCL_HAS_CDP() vvv
 // We don't have CDP, only host APIs can call kernels
 #  define _CCCL_CDP_API _CCCL_HOST_API

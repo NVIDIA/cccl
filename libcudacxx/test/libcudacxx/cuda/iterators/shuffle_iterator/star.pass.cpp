@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 // constexpr W operator*() const noexcept(is_nothrow_copy_constructible_v<W>);
 
 #include <cuda/iterator>
@@ -16,7 +19,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   // taken from fake_bijection
   constexpr int random_indices[] = {4, 1, 2, 0, 3};

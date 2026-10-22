@@ -52,7 +52,7 @@ void keys(nvbench::state& state, nvbench::type_list<KeyT>)
       cuda::execution::tune(bench_policy_selector<key_t>{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceMerge::MergeKeys,
       "MergePairs failed",
       d_keys_lhs,

@@ -41,7 +41,7 @@ void for_each(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     auto env = cub_bench_env(alloc, launch);
-    _CCCL_TRY_CUDA_API(cub::DeviceFor::ForEachCopyN, "ForEachCopyN failed", d_in, elements, op, env);
+    _CCCL_TRY_RUNTIME_API(cub::DeviceFor::ForEachCopyN, "ForEachCopyN failed", d_in, elements, op, env);
   });
 }
 

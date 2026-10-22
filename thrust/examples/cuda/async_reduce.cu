@@ -30,7 +30,7 @@ __global__ void reduce_kernel(Iterator first, Iterator last, T init, BinaryOpera
 
 int main()
 {
-  size_t n = 1 << 20;
+  const size_t n = 1 << 20;
   thrust::device_vector<unsigned int> data(n, 1);
   thrust::device_vector<unsigned int> result(1, 0);
 
@@ -60,10 +60,10 @@ int main()
 
   // method 2: use std::async to create asynchrony
   // copy all the algorithm parameters
-  auto begin        = data.begin();
-  auto end          = data.end();
-  unsigned int init = 0;
-  auto binary_op    = cuda::std::plus<unsigned int>();
+  auto begin              = data.begin();
+  auto end                = data.end();
+  const unsigned int init = 0;
+  auto binary_op          = cuda::std::plus<unsigned int>();
 
   // std::async captures the algorithm parameters by value
   // use std::launch::async to ensure the creation of a new thread

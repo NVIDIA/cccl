@@ -22,6 +22,8 @@
 #  error "Non-vectorized algorithms require vector size to be 1 since they ignore the parameters"
 #endif // !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1)
 
+#include <thrust/zip_function.h>
+
 #include "common.h"
 
 template <typename T>

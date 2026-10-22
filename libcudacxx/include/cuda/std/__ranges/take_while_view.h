@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/convertible_to.h>
-#include <cuda/std/__functional/bind_back.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__memory/addressof.h>
@@ -34,6 +34,7 @@
 #include <cuda/std/__ranges/range_adaptor.h>
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_object.h>
 #include <cuda/std/__type_traits/maybe_const.h>
@@ -189,28 +190,28 @@ public:
   _CCCL_REQUIRES((!__simple_view<_View2>) )
   [[nodiscard]] _CCCL_API constexpr auto begin()
   {
-    return ::cuda::std::ranges::__begin_cpo{}(__base_);
+    return ::cuda::std::ranges::begin(__base_);
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(__take_while_const_is_range<_View2, _Pred>)
   [[nodiscard]] _CCCL_API constexpr auto begin() const
   {
-    return ::cuda::std::ranges::__begin_cpo{}(__base_);
+    return ::cuda::std::ranges::begin(__base_);
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES((!__simple_view<_View2>) )
   [[nodiscard]] _CCCL_API constexpr auto end()
   {
-    return __sentinel</*_Const=*/false>(::cuda::std::ranges::__end_cpo{}(__base_), ::cuda::std::addressof(*__pred_));
+    return __sentinel</*_Const=*/false>(::cuda::std::ranges::end(__base_), ::cuda::std::addressof(*__pred_));
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(__take_while_const_is_range<_View2, _Pred>)
   [[nodiscard]] _CCCL_API constexpr auto end() const
   {
-    return __sentinel</*_Const=*/true>(::cuda::std::ranges::__end_cpo{}(__base_), ::cuda::std::addressof(*__pred_));
+    return __sentinel</*_Const=*/true>(::cuda::std::ranges::end(__base_), ::cuda::std::addressof(*__pred_));
   }
 };
 
@@ -221,24 +222,24 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES take_while_view(_Range&&, _Pred)
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
-_CCCL_BEGIN_NAMESPACE_CPO(__take_while)
 
+_CCCL_BEGIN_NAMESPACE_CPO(__take_while)
 struct __fn
 {
   template <class _Range, class _Pred>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range, _Pred&& __pred) const
-    noexcept(noexcept(take_while_view(::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Pred>(__pred))))
-      -> take_while_view<all_t<_Range>, remove_cvref_t<_Pred>>
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Range&& __range, _Pred&& __pred) noexcept(
+    noexcept(take_while_view(::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Pred>(__pred))))
+    -> take_while_view<all_t<_Range>, remove_cvref_t<_Pred>>
   {
     return take_while_view(::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Pred>(__pred));
   }
 
   _CCCL_TEMPLATE(class _Pred)
   _CCCL_REQUIRES(constructible_from<decay_t<_Pred>, _Pred>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Pred&& __pred) const
-    noexcept(is_nothrow_constructible_v<decay_t<_Pred>, _Pred>)
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Pred&& __pred) noexcept(is_nothrow_constructible_v<decay_t<_Pred>, _Pred>)
   {
-    return __pipeable(::cuda::std::__bind_back(*this, ::cuda::std::forward<_Pred>(__pred)));
+    return ::cuda::std::ranges::__pipeable_bind_back(__fn{}, ::cuda::std::forward<_Pred>(__pred));
   }
 };
 _CCCL_END_NAMESPACE_CPO

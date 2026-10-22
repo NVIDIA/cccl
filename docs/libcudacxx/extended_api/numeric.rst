@@ -11,6 +11,7 @@ Numeric
    numeric/saturating_add_overflow
    numeric/div_overflow
    numeric/saturating_div_overflow
+   numeric/isclose
    numeric/mul_overflow
    numeric/saturating_mul_overflow
    numeric/narrow
@@ -58,6 +59,11 @@ Numeric
      - Performs division with overflow checking
      - CCCL 3.2.0
      - CUDA 13.2
+
+   * - :ref:`cuda::isclose <libcudacxx-extended-api-numeric-isclose>`
+     - Checks whether two values are approximately equal
+     - CCCL 3.5.0
+     - CUDA 13.5
 
    * - :ref:`cuda::mul_overflow <libcudacxx-extended-api-numeric-mul_overflow>`
      - Performs multiplication with overflow checking

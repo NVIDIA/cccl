@@ -21,9 +21,9 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_convertible.h>
-#include <cuda/std/__type_traits/is_enum.h>
-#include <cuda/std/__type_traits/underlying_type.h>
+#include <cuda/std/__type_traits/is_convertible.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_enum.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/underlying_type.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

@@ -21,11 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__type_traits/enable_if.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -48,13 +48,14 @@ _CCCL_END_NAMESPACE_CUDA_STD
 // [range.iter.op.next]
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
+
 _CCCL_BEGIN_NAMESPACE_CPO(__next)
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>)
-  [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x) const
+  [[nodiscard]] _CCCL_API constexpr _Ip _CCCL_STATIC_CALL_OPERATOR(_Ip __x)
   {
     ++__x;
     return __x;
@@ -63,27 +64,28 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>)
-  [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n) const
+  [[nodiscard]] _CCCL_API constexpr _Ip _CCCL_STATIC_CALL_OPERATOR(_Ip __x, iter_difference_t<_Ip> __n)
   {
-    ::cuda::std::ranges::__advance_cpo{}(__x, __n);
+    ::cuda::std::ranges::advance(__x, __n);
     return __x;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>&& sentinel_for<_Sp, _Ip>)
-  [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, _Sp __bound_sentinel) const
+  [[nodiscard]] _CCCL_API constexpr _Ip _CCCL_STATIC_CALL_OPERATOR(_Ip __x, _Sp __bound_sentinel)
   {
-    ::cuda::std::ranges::__advance_cpo{}(__x, __bound_sentinel);
+    ::cuda::std::ranges::advance(__x, __bound_sentinel);
     return __x;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>&& sentinel_for<_Sp, _Ip>)
-  [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n, _Sp __bound_sentinel) const
+  [[nodiscard]] _CCCL_API constexpr _Ip
+  _CCCL_STATIC_CALL_OPERATOR(_Ip __x, iter_difference_t<_Ip> __n, _Sp __bound_sentinel)
   {
-    ::cuda::std::ranges::__advance_cpo{}(__x, __n, __bound_sentinel);
+    ::cuda::std::ranges::advance(__x, __n, __bound_sentinel);
     return __x;
   }
 };
@@ -92,9 +94,6 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto next = __next::__fn{};
-
-// We want to avoid using the CPO internally because of __tile__ access
-using __next_cpo = __next::__fn;
 } // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES

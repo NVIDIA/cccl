@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // <cuda/std/__simd_>
 
 // [simd.math], classification functions
@@ -19,7 +22,7 @@
 #include "../simd_test_utils.h"
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   using Vec    = simd::basic_vec<T, simd::fixed_size<N>>;
   using IntVec = simd::rebind_t<int, Vec>;
@@ -52,9 +55,14 @@ TEST_FUNC constexpr void test_type()
   Mask inf       = cuda::std::simd::isinf(vec);
   Mask nan       = cuda::std::simd::isnan(vec);
   Mask normal    = cuda::std::simd::isnormal(vec);
-#if !TEST_COMPILER(GCC, <, 8) // GCC 7 does not support constexpr bit_cast used by signbit
-  Mask signs = cuda::std::simd::signbit(vec);
-#endif // !TEST_COMPILER(GCC, <, 8)
+  [[maybe_unused]] Mask signs;
+#if !defined(_CCCL_BUILTIN_BIT_CAST) // constexpr bit_cast used by signbit
+  if (!cuda::std::__cccl_default_is_constant_evaluated())
+#endif // _CCCL_BUILTIN_BIT_CAST
+  {
+    signs = cuda::std::simd::signbit(vec);
+  }
+
   for (int i = 0; i < N; ++i)
   {
     assert(classes[i] == cuda::std::fpclassify(vec[i]));
@@ -62,9 +70,12 @@ TEST_FUNC constexpr void test_type()
     assert(inf[i] == cuda::std::isinf(vec[i]));
     assert(nan[i] == cuda::std::isnan(vec[i]));
     assert(normal[i] == cuda::std::isnormal(vec[i]));
-#if !TEST_COMPILER(GCC, <, 8)
-    assert(signs[i] == cuda::std::signbit(vec[i]));
-#endif // !TEST_COMPILER(GCC, <, 8)
+#if !defined(_CCCL_BUILTIN_BIT_CAST) // constexpr bit_cast used by signbit
+    if (!cuda::std::__cccl_default_is_constant_evaluated())
+#endif // _CCCL_BUILTIN_BIT_CAST
+    {
+      assert(signs[i] == cuda::std::signbit(vec[i]));
+    }
   }
 }
 

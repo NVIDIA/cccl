@@ -14,7 +14,7 @@
 # limitations under the License.
 
 name: "Release: Upload Wheels to PyPi"
-description: "Manually triggered release workflow for wheels build and upload."
+# Manually triggered release workflow for wheels build and upload.
 
 on:
   workflow_dispatch:
@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.wheel-dst }}
-      url: https://${{ (inputs.wheel-dst == 'testpypi' && 'test.') || '' }}pypi.org/p/${{ inputs.component }}/
+      url: https://${{ (inputs.wheel-dst == 'testpypi' && 'test.') || '' }}pypi.org/
     permissions:
       id-token: write
     steps:
@@ -50,7 +50,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_ID: ${{ inputs.run-id }}
         run: |
-          gh run download ${RUN_ID} -D dl -R ${{ github.repository }} -p 'wheel-*'
+          gh run download "${RUN_ID}" -D dl -R ${{ github.repository }} -p 'wheel-*'
           mkdir dist
           mv dl/*/*/*.whl dist/
           rm -rf dl

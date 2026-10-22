@@ -21,18 +21,20 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/movable.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
-#include <cuda/std/__tuple_dir/sfinae_helpers.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__utility/delegate_constructors.h>
+#include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/optional>
 
@@ -244,6 +246,7 @@ struct __mb_holder
 {
   _Tp __val_;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _CCCL_API constexpr explicit __mb_holder(in_place_t,
                                            _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
@@ -256,6 +259,7 @@ struct __mb_holder<_Tp, true>
 {
   _CCCL_NO_UNIQUE_ADDRESS _Tp __val_;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _CCCL_API constexpr explicit __mb_holder(in_place_t,
                                            _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
@@ -268,6 +272,7 @@ struct __mb_holder_base
 {
   _CCCL_NO_UNIQUE_ADDRESS __mb_holder<_Tp> __holder_;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
   _CCCL_API constexpr explicit __mb_holder_base(in_place_t,
@@ -281,10 +286,12 @@ struct __mb_holder_base<_Tp, true>
 {
   _CCCL_NO_UNIQUE_ADDRESS __mb_holder<_Tp> __holder_;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr __mb_holder_base() noexcept(is_nothrow_default_constructible_v<_Tp>)
       : __holder_(in_place_t{})
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
   _CCCL_API constexpr explicit __mb_holder_base(in_place_t,

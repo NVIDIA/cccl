@@ -6,7 +6,9 @@
 #include <cub/util_allocator.cuh>
 #include <cub/util_arch.cuh>
 
-#include <c2h/catch2_test_helper.h>
+#include <cuda/std/span>
+
+#include "cub_test_macros.h"
 
 template <int ItemsPerThread, int ThreadsInBlock, cub::BlockLoadAlgorithm LoadAlgorithm>
 static __device__ int get_output_idx(int item)
@@ -122,8 +124,9 @@ struct params_t
   static constexpr cub::BlockLoadAlgorithm load_algorithm = c2h::get<3, TestType>::value;
 };
 
-C2H_TEST("Block load works with even block sizes",
+CUB_TEST("Block load works with even block sizes",
          "[load][block]",
+         CUB_SMALL,
          types,
          items_per_thread,
          even_threads_in_block,
@@ -139,8 +142,9 @@ C2H_TEST("Block load works with even block sizes",
     d_input, thrust::raw_pointer_cast(d_input.data()));
 }
 
-C2H_TEST("Block load works with even odd sizes",
+CUB_TEST("Block load works with even odd sizes",
          "[load][block]",
+         CUB_SMALL,
          types,
          items_per_thread,
          odd_threads_in_block,
@@ -157,8 +161,13 @@ C2H_TEST("Block load works with even odd sizes",
 
 // WAR bug in vec type handling in NVCC 12.0 + GCC 11.4 + C++20
 #if !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC, ==, 11, 4) && _CCCL_STD_VER == 2020)
-C2H_TEST(
-  "Block load works with even vector types", "[load][block]", vec_types, items_per_thread, a_block_size, load_algorithm)
+CUB_TEST("Block load works with even vector types",
+         "[load][block]",
+         CUB_SMALL,
+         vec_types,
+         items_per_thread,
+         a_block_size,
+         load_algorithm)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -170,7 +179,7 @@ C2H_TEST(
 }
 #endif // !(NVCC 12.0 and GCC 11.4 and C++20)
 
-C2H_TEST("Block load works with custom types", "[load][block]", items_per_thread, load_algorithm)
+CUB_TEST("Block load works with custom types", "[load][block]", CUB_SMALL, items_per_thread, load_algorithm)
 {
   using type                                              = c2h::custom_type_t<c2h::equal_comparable_t>;
   constexpr int items_per_thread                          = c2h::get<0, TestType>::value;
@@ -183,7 +192,7 @@ C2H_TEST("Block load works with custom types", "[load][block]", items_per_thread
   test_block_load<items_per_thread, threads_in_block, load_algorithm>(d_input, thrust::raw_pointer_cast(d_input.data()));
 }
 
-C2H_TEST("Block load works with caching iterators", "[load][block]", items_per_thread, load_algorithm)
+CUB_TEST("Block load works with caching iterators", "[load][block]", CUB_SMALL, items_per_thread, load_algorithm)
 {
   using type                                              = int;
   constexpr int items_per_thread                          = c2h::get<0, TestType>::value;
@@ -193,14 +202,15 @@ C2H_TEST("Block load works with caching iterators", "[load][block]", items_per_t
 
   c2h::device_vector<type> d_input(GENERATE_COPY(take(10, random(0, tile_size))));
   c2h::gen(C2H_SEED(10), d_input);
-  cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_DEFAULT, type> in(
+  const cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_DEFAULT, type> in(
     thrust::raw_pointer_cast(d_input.data()));
   test_block_load<items_per_thread, threads_in_block, load_algorithm>(d_input, in);
 }
 
 #if IPT == 1
-C2H_TEST("Vectorized block load with const and non-const datatype and different alignment cases",
+CUB_TEST("Vectorized block load with const and non-const datatype and different alignment cases",
          "[load][block]",
+         CUB_SMALL,
          c2h::type_list<const int*, int*>)
 {
   using type           = int;
@@ -220,5 +230,45 @@ C2H_TEST("Vectorized block load with const and non-const datatype and different 
 
   test_block_load<items_per_thread, threads_in_block, load_algorithm, type, input_ptr_type>(
     d_input_ref, thrust::raw_pointer_cast(d_input.data()) + offset_for_elements);
+}
+
+template <typename T, int ItemsPerThread, int ThreadsInBlock, typename InputIteratorT>
+__global__ void vectorized_full_tile_load_kernel(InputIteratorT input, T* output)
+{
+  T data[ItemsPerThread];
+  cub::BlockLoad<T, ThreadsInBlock, ItemsPerThread, cub::BlockLoadAlgorithm::BLOCK_LOAD_VECTORIZE>().Load(input, data);
+  for (int i = 0; i < ItemsPerThread; i++)
+  {
+    output[threadIdx.x * ItemsPerThread + i] = data[i];
+  }
+}
+
+template <typename T, typename InputT, typename InputIteratorT>
+void test_vectorized_full_tile_load(const c2h::device_vector<InputT>& d_input, InputIteratorT input)
+{
+  constexpr int items_per_thread = 4;
+  constexpr int threads_in_block = 64;
+  REQUIRE(d_input.size() == items_per_thread * threads_in_block);
+
+  c2h::device_vector<T> d_output(d_input.size(), thrust::no_init);
+  vectorized_full_tile_load_kernel<T, items_per_thread, threads_in_block>
+    <<<1, threads_in_block>>>(input, thrust::raw_pointer_cast(d_output.data()));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  const c2h::device_vector<T> expected(d_input.begin(), d_input.end());
+  REQUIRE(expected == d_output);
+}
+
+CUB_TEST_CASE("Vectorized block load converts from iterators of a different value type", "[load][block]", CUB_SMALL)
+{
+  c2h::device_vector<int> d_input(256, thrust::no_init);
+  c2h::gen(C2H_SEED(1), d_input);
+  int* ptr = thrust::raw_pointer_cast(d_input.data());
+
+  test_vectorized_full_tile_load<long long>(d_input, ptr);
+  test_vectorized_full_tile_load<long long>(d_input, cuda::std::span<int>(ptr, d_input.size()).begin());
+  test_vectorized_full_tile_load<long long>(
+    d_input, cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_DEFAULT, int>(ptr));
+  test_vectorized_full_tile_load<int>(d_input, cuda::std::span<volatile int>(ptr, d_input.size()).begin());
 }
 #endif

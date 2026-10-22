@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__iterator/common_iterator.h>
@@ -30,9 +31,9 @@
 #include <cuda/std/__ranges/range_adaptor.h>
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/view_interface.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
@@ -87,11 +88,11 @@ public:
   {
     if constexpr (random_access_range<_View> && sized_range<_View>)
     {
-      return ::cuda::std::ranges::__begin_cpo{}(__base_);
+      return ::cuda::std::ranges::begin(__base_);
     }
     else
     {
-      return common_iterator<iterator_t<_View>, sentinel_t<_View>>{::cuda::std::ranges::__begin_cpo{}(__base_)};
+      return common_iterator<iterator_t<_View>, sentinel_t<_View>>{::cuda::std::ranges::begin(__base_)};
     }
     _CCCL_UNREACHABLE();
   }
@@ -102,12 +103,11 @@ public:
   {
     if constexpr (random_access_range<const _View> && sized_range<const _View>)
     {
-      return ::cuda::std::ranges::__begin_cpo{}(__base_);
+      return ::cuda::std::ranges::begin(__base_);
     }
     else
     {
-      return common_iterator<iterator_t<const _View>, sentinel_t<const _View>>{
-        ::cuda::std::ranges::__begin_cpo{}(__base_)};
+      return common_iterator<iterator_t<const _View>, sentinel_t<const _View>>{::cuda::std::ranges::begin(__base_)};
     }
     _CCCL_UNREACHABLE();
   }
@@ -116,11 +116,11 @@ public:
   {
     if constexpr (random_access_range<_View> && sized_range<_View>)
     {
-      return ::cuda::std::ranges::__begin_cpo{}(__base_) + ::cuda::std::ranges::__size_cpo{}(__base_);
+      return ::cuda::std::ranges::begin(__base_) + ::cuda::std::ranges::size(__base_);
     }
     else
     {
-      return common_iterator<iterator_t<_View>, sentinel_t<_View>>{::cuda::std::ranges::__end_cpo{}(__base_)};
+      return common_iterator<iterator_t<_View>, sentinel_t<_View>>{::cuda::std::ranges::end(__base_)};
     }
     _CCCL_UNREACHABLE();
   }
@@ -131,12 +131,11 @@ public:
   {
     if constexpr (random_access_range<const _View> && sized_range<const _View>)
     {
-      return ::cuda::std::ranges::__begin_cpo{}(__base_) + ::cuda::std::ranges::__size_cpo{}(__base_);
+      return ::cuda::std::ranges::begin(__base_) + ::cuda::std::ranges::size(__base_);
     }
     else
     {
-      return common_iterator<iterator_t<const _View>, sentinel_t<const _View>>{
-        ::cuda::std::ranges::__end_cpo{}(__base_)};
+      return common_iterator<iterator_t<const _View>, sentinel_t<const _View>>{::cuda::std::ranges::end(__base_)};
     }
     _CCCL_UNREACHABLE();
   }
@@ -145,14 +144,14 @@ public:
   _CCCL_REQUIRES(sized_range<_View2>)
   [[nodiscard]] _CCCL_API constexpr auto size()
   {
-    return ::cuda::std::ranges::__size_cpo{}(__base_);
+    return ::cuda::std::ranges::size(__base_);
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(sized_range<const _View2>)
   [[nodiscard]] _CCCL_API constexpr auto size() const
   {
-    return ::cuda::std::ranges::__size_cpo{}(__base_);
+    return ::cuda::std::ranges::size(__base_);
   }
 };
 
@@ -165,21 +164,22 @@ inline constexpr bool enable_borrowed_range<common_view<_View>> = enable_borrowe
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
+
 _CCCL_BEGIN_NAMESPACE_CPO(__common)
 struct __fn : __range_adaptor_closure<__fn>
 {
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(common_range<_Range>)
-  [[nodiscard]] _CCCL_API constexpr all_t<_Range> operator()(_Range&& __range) const
-    noexcept(noexcept(::cuda::std::ranges::views::all(::cuda::std::forward<_Range>(__range))))
+  [[nodiscard]] _CCCL_API constexpr all_t<_Range> _CCCL_STATIC_CALL_OPERATOR(_Range&& __range) noexcept(
+    noexcept(::cuda::std::ranges::views::all(::cuda::std::forward<_Range>(__range))))
   {
     return ::cuda::std::ranges::views::all(::cuda::std::forward<_Range>(__range));
   }
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES((!common_range<_Range>) )
-  [[nodiscard]] _CCCL_API constexpr common_view<all_t<_Range>> operator()(_Range&& __range) const
-    noexcept(noexcept(common_view{::cuda::std::forward<_Range>(__range)}))
+  [[nodiscard]] _CCCL_API constexpr common_view<all_t<_Range>>
+  _CCCL_STATIC_CALL_OPERATOR(_Range&& __range) noexcept(noexcept(common_view{::cuda::std::forward<_Range>(__range)}))
   {
     return common_view{::cuda::std::forward<_Range>(__range)};
   }

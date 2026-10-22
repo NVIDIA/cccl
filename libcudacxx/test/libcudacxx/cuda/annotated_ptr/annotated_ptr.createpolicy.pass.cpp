@@ -8,9 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
-
 // UNSUPPORTED: nvrtc
 // UNSUPPORTED: pre-sm-80
 

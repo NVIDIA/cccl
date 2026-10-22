@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: asm statement is unsupported in tile code
 
 // UNSUPPORTED: nvrtc
@@ -21,7 +21,7 @@
 
 #include "test_macros.h"
 
-TEST_FUNC constexpr bool test_public_methods()
+TEST_HOST_DEVICE_FUNC constexpr bool test_public_methods()
 {
   using namespace cuda;
   using annotated_ptr                       = cuda::annotated_ptr<const int, access_property::persisting>;
@@ -42,7 +42,7 @@ TEST_FUNC constexpr bool test_public_methods()
   return true;
 }
 
-TEST_FUNC constexpr bool test_interleave_values()
+TEST_HOST_DEVICE_FUNC constexpr bool test_interleave_values()
 {
   using namespace cuda;
   constexpr auto normal = __l2_interleave(__l2_evict_t::_L2_Evict_Unchanged, __l2_evict_t::_L2_Evict_Unchanged, 1.0f);

@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 // constexpr iterator& operator--() requires decrementable<W>;
 // constexpr iterator operator--(int) requires decrementable<W>;
 
@@ -20,7 +23,7 @@
 template <class T>
 _CCCL_CONCEPT Decrementable = _CCCL_REQUIRES_EXPR((T), T i)((--i), (i--));
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   {
     cuda::shuffle_iterator iter1{fake_bijection{}, 1};

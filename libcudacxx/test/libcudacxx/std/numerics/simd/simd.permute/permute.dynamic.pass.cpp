@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -35,7 +35,7 @@
 // basic_vec: same-size permutations (identity / reverse / broadcast / arbitrary)
 
 template <typename T, typename Idx, int N>
-TEST_FUNC constexpr void test_vec_same_size()
+TEST_HOST_DEVICE_FUNC constexpr void test_vec_same_size()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   using Ind = simd::basic_vec<Idx, simd::fixed_size<N>>;
@@ -85,7 +85,7 @@ TEST_FUNC constexpr void test_vec_same_size()
 // basic_vec: size-changing permutations (I::size() != V::size())
 
 template <typename T>
-TEST_FUNC constexpr void test_vec_size_change()
+TEST_HOST_DEVICE_FUNC constexpr void test_vec_size_change()
 {
   using Src = simd::basic_vec<T, simd::fixed_size<4>>;
   Src src(iota_generator<T>{});
@@ -125,7 +125,7 @@ TEST_FUNC constexpr void test_vec_size_change()
 // basic_vec: test with multiple integer index types for completeness
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_vec_with_index_types()
+TEST_HOST_DEVICE_FUNC constexpr void test_vec_with_index_types()
 {
   test_vec_same_size<T, int16_t, N>();
   test_vec_same_size<T, int, N>();
@@ -137,7 +137,7 @@ TEST_FUNC constexpr void test_vec_with_index_types()
 // basic_mask: dynamic permute
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_mask()
+TEST_HOST_DEVICE_FUNC constexpr void test_mask()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   using Ind  = simd::basic_vec<int, simd::fixed_size<N>>;
@@ -193,7 +193,7 @@ TEST_FUNC constexpr void test_mask()
 //----------------------------------------------------------------------------------------------------------------------
 // noexcept
 
-TEST_FUNC constexpr void test_noexcept()
+TEST_HOST_DEVICE_FUNC constexpr void test_noexcept()
 {
   using Vec     = simd::basic_vec<int, simd::fixed_size<4>>;
   using Mask    = simd::basic_mask<4, simd::fixed_size<4>>;
@@ -211,7 +211,7 @@ TEST_FUNC constexpr void test_noexcept()
 //----------------------------------------------------------------------------------------------------------------------
 // Return-type
 
-TEST_FUNC constexpr void test_return_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_return_type()
 {
   using Vec4  = simd::basic_vec<int, simd::fixed_size<4>>;
   using Mask4 = simd::basic_mask<4, simd::fixed_size<4>>;
@@ -234,7 +234,7 @@ TEST_FUNC constexpr void test_return_type()
 
 //----------------------------------------------------------------------------------------------------------------------
 // do not depend on element types
-TEST_FUNC constexpr bool test_fixed_type()
+TEST_HOST_DEVICE_FUNC constexpr bool test_fixed_type()
 {
   test_noexcept();
   test_return_type();
@@ -247,7 +247,7 @@ TEST_FUNC constexpr bool test_fixed_type()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   test_vec_with_index_types<T, N>();
   if constexpr (N == 4) // size-change tests do not depend on N

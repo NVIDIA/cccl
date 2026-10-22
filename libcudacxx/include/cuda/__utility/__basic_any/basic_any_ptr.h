@@ -56,7 +56,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
   //!
   __basic_any() = default;
 
-  _CCCL_NODEBUG_API __basic_any(::cuda::std::nullptr_t) {}
+  _CCCL_NODEBUG_HOST_DEVICE_API __basic_any(::cuda::std::nullptr_t) {}
 
   _CCCL_TEMPLATE(class _Tp, class _Up = ::cuda::std::remove_const_t<_Tp>)
   _CCCL_REQUIRES((!__is_basic_any<_Tp>) _CCCL_AND __satisfies<_Up, interface_type> _CCCL_AND(
@@ -178,33 +178,32 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
 #if !defined(_CCCL_NO_THREE_WAY_COMPARISON)
   [[nodiscard]] _CCCL_HOST_DEVICE_API auto operator==(__basic_any const& __other) const noexcept -> bool
   {
-    using __void_ptr_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__maybe_const<__is_const_ptr, void>* const*;
+    using __void_ptr_t _CCCL_NODEBUG = ::cuda::std::__maybe_const<__is_const_ptr, void>* const*;
     return *static_cast<__void_ptr_t>(__get_optr()) == *static_cast<__void_ptr_t>(__other.__get_optr());
   }
 #else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend auto
   operator==(__basic_any const& __lhs, __basic_any const& __rhs) noexcept -> bool
   {
-    using __void_ptr_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__maybe_const<__is_const_ptr, void>* const*;
+    using __void_ptr_t _CCCL_NODEBUG = ::cuda::std::__maybe_const<__is_const_ptr, void>* const*;
     return *static_cast<__void_ptr_t>(__lhs.__get_optr()) == *static_cast<__void_ptr_t>(__rhs.__get_optr());
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API friend auto operator!=(__basic_any const& __lhs, __basic_any const& __rhs) noexcept
-    -> bool
+  [[nodiscard]] _CCCL_NODEBUG_HOST_DEVICE_API friend auto
+  operator!=(__basic_any const& __lhs, __basic_any const& __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
   }
 #endif // _CCCL_NO_THREE_WAY_COMPARISON
 
-  using __any_ref_t _CCCL_NODEBUG_ALIAS =
-    ::cuda::std::__maybe_const<__is_const_ptr, __basic_any<__ireference<_Interface>>>;
+  using __any_ref_t _CCCL_NODEBUG = ::cuda::std::__maybe_const<__is_const_ptr, __basic_any<__ireference<_Interface>>>;
 
-  [[nodiscard]] _CCCL_NODEBUG_API auto operator->() const noexcept -> __any_ref_t*
+  [[nodiscard]] _CCCL_NODEBUG_HOST_DEVICE_API auto operator->() const noexcept -> __any_ref_t*
   {
     return &__ref_;
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API auto operator*() const noexcept -> __any_ref_t&
+  [[nodiscard]] _CCCL_NODEBUG_HOST_DEVICE_API auto operator*() const noexcept -> __any_ref_t&
   {
     return __ref_;
   }
@@ -239,7 +238,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
   }
 
 #if !defined(_CCCL_DOXYGEN_INVOKED) // Do not document
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto __in_situ() noexcept -> bool
+  [[nodiscard]] _CCCL_NODEBUG_HOST_DEVICE_API static constexpr auto __in_situ() noexcept -> bool
   {
     return true;
   }
@@ -259,7 +258,7 @@ private:
   template <class _OtherInterface>
   _CCCL_HOST_DEVICE_API void __convert_from(__basic_any<_OtherInterface*> const& __other) noexcept
   {
-    using __other_interface_t _CCCL_NODEBUG_ALIAS = ::cuda::std::remove_const_t<_OtherInterface>;
+    using __other_interface_t _CCCL_NODEBUG = ::cuda::std::remove_const_t<_OtherInterface>;
     auto __to_vptr = __try_vptr_cast<__other_interface_t, interface_type>(__other.__get_vptr());
     auto __to_optr = __to_vptr ? *__other.__get_optr() : nullptr;
     __ref_.__set_ref(__to_vptr, __to_optr);

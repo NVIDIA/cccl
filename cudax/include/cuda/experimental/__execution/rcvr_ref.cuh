@@ -95,7 +95,7 @@ template <class _Rcvr>
 }
 
 template <class _Rcvr>
-using __rcvr_ref_t _CCCL_NODEBUG_ALIAS = decltype(execution::__ref_rcvr(::cuda::std::declval<_Rcvr&>()));
+using __rcvr_ref_t _CCCL_NODEBUG = decltype(execution::__ref_rcvr(::cuda::std::declval<_Rcvr&>()));
 } // namespace cuda::experimental::execution
 
 _CCCL_END_NV_DIAG_SUPPRESS() // function "foo" was references but not defined

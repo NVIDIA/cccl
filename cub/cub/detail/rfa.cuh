@@ -104,7 +104,7 @@ private:
   /// Return a binned floating-point bin
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static ftype binned_bins(int index)
   {
-    ftype* bins = get_shared_bin_array<ftype, max_index + max_fold>();
+    const ftype* bins = get_shared_bin_array<ftype, max_index + max_fold>();
     return bins[index];
   }
 
@@ -286,8 +286,8 @@ private:
   //! with absolute value less than @p max_abs_val
   _CCCL_DEVICE void binned_update(const ftype max_abs_val)
   {
-    int X_index = binned_dindex(max_abs_val);
-    int shift   = binned_index() - X_index;
+    const int X_index = binned_dindex(max_abs_val);
+    const int shift   = binned_index() - X_index;
     if (shift > 0)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -468,9 +468,9 @@ private:
     const auto X_index = binned_index();
     if (X_index <= (3 * mant_dig) / bin_width)
     {
-      double scale_down = ::cuda::std::ldexpf(0.5f, 1 - (2 * mant_dig - bin_width));
-      double scale_up   = ::cuda::std::ldexpf(0.5f, 1 - (2 * mant_dig - bin_width));
-      int scaled        = ::cuda::std::max(::cuda::std::min(Fold, (3 * mant_dig) / bin_width - X_index), 0);
+      const double scale_down = ::cuda::std::ldexpf(0.5f, 1 - (2 * mant_dig - bin_width));
+      const double scale_up   = ::cuda::std::ldexpf(0.5f, 1 - (2 * mant_dig - bin_width));
+      const int scaled        = ::cuda::std::max(::cuda::std::min(Fold, (3 * mant_dig) / bin_width - X_index), 0);
       if (X_index == 0)
       {
         Y += carry(0) * ((binned_bins(0 + X_index) / 6.0) * scale_down * expansion);

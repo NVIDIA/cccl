@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
+// UNSUPPORTED: force-tile
 // error: a non-__tile__ variable cannot be used in tile code
 
 // <cuda/std/iterator>
@@ -53,7 +53,7 @@ TEST_DIAG_SUPPRESS_GCC("-Wmissing-braces")
 TEST_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 
 template <typename C>
-TEST_FUNC void test_const_container(const C& c, typename C::value_type val)
+TEST_HOST_DEVICE_FUNC void test_const_container(const C& c, typename C::value_type val)
 {
   assert(cuda::std::begin(c) == c.begin());
   assert(*cuda::std::begin(c) == val);
@@ -71,7 +71,7 @@ TEST_FUNC void test_const_container(const C& c, typename C::value_type val)
 }
 
 template <typename T>
-TEST_FUNC void test_const_container(const cuda::std::initializer_list<T>& c, T val)
+TEST_HOST_DEVICE_FUNC void test_const_container(const cuda::std::initializer_list<T>& c, T val)
 {
   assert(cuda::std::begin(c) == c.begin());
   assert(*cuda::std::begin(c) == val);
@@ -84,7 +84,7 @@ TEST_FUNC void test_const_container(const cuda::std::initializer_list<T>& c, T v
 }
 
 template <typename C>
-TEST_FUNC void test_container(C& c, typename C::value_type val)
+TEST_HOST_DEVICE_FUNC void test_container(C& c, typename C::value_type val)
 {
   assert(cuda::std::begin(c) == c.begin());
   assert(*cuda::std::begin(c) == val);
@@ -102,7 +102,7 @@ TEST_FUNC void test_container(C& c, typename C::value_type val)
 }
 
 template <typename T>
-TEST_FUNC void test_container(cuda::std::initializer_list<T>& c, T val)
+TEST_HOST_DEVICE_FUNC void test_container(cuda::std::initializer_list<T>& c, T val)
 {
   assert(cuda::std::begin(c) == c.begin());
   assert(*cuda::std::begin(c) == val);
@@ -114,7 +114,7 @@ TEST_FUNC void test_container(cuda::std::initializer_list<T>& c, T val)
 }
 
 template <typename T, size_t Sz>
-TEST_FUNC void test_const_array(const T (&array)[Sz])
+TEST_HOST_DEVICE_FUNC void test_const_array(const T (&array)[Sz])
 {
   assert(cuda::std::begin(array) == array);
   assert(*cuda::std::begin(array) == array[0]);
@@ -129,7 +129,7 @@ TEST_FUNC void test_const_array(const T (&array)[Sz])
 [[maybe_unused]] TEST_GLOBAL_VARIABLE constexpr int global_array[]{1, 2, 3};
 [[maybe_unused]] TEST_GLOBAL_VARIABLE constexpr int global_const_array[] = {0, 1, 2, 3, 4};
 
-TEST_FUNC void test_ambiguous_std()
+TEST_HOST_DEVICE_FUNC void test_ambiguous_std()
 {
 #if !TEST_COMPILER(NVRTC)
   // clang-format off
@@ -176,8 +176,12 @@ TEST_FUNC void test_ambiguous_std()
 
 int main(int, char**)
 {
+#if !_CCCL_TILE_COMPILATION() // error: calling a host device function in tile mode
   cuda::std::inplace_vector<int, 3> v;
   v.push_back(1);
+  test_container(v, 1);
+  test_const_container(v, 1);
+#endif // !_CCCL_TILE_COMPILATION)
 #if defined(_LIBCUDACXX_HAS_LIST)
   cuda::std::list<int> l;
   l.push_back(2);
@@ -186,14 +190,12 @@ int main(int, char**)
   a[0]                                = 3;
   cuda::std::initializer_list<int> il = {4};
 
-  test_container(v, 1);
 #if defined(_LIBCUDACXX_HAS_LIST)
   test_container(l, 2);
 #endif
   test_container(a, 3);
   test_container(il, 4);
 
-  test_const_container(v, 1);
 #if defined(_LIBCUDACXX_HAS_LIST)
   test_const_container(l, 2);
 #endif

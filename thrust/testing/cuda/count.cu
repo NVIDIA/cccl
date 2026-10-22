@@ -22,9 +22,9 @@ void TestCountDevice(ExecutionPolicy exec, const size_t n)
 
   count_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), T(5), d_result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(h_result, d_result[0]);
+  REQUIRE(h_result == d_result[0]);
 }
 
 template <typename T>
@@ -67,9 +67,9 @@ void TestCountIfDevice(ExecutionPolicy exec, const size_t n)
   size_t h_result = thrust::count_if(h_data.begin(), h_data.end(), greater_than_five<T>());
   count_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), greater_than_five<T>(), d_result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(h_result, d_result[0]);
+  REQUIRE(h_result == d_result[0]);
 }
 
 template <typename T>
@@ -87,17 +87,16 @@ void TestCountIfDeviceDevice(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestCountIfDeviceDevice);
 #endif
 
-void TestCountCudaStreams()
+TEST_CASE("TestCountCudaStreams", "[count]")
 {
   thrust::device_vector<int> data{1, 1, 0, 0, 1};
 
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  ASSERT_EQUAL(thrust::count(thrust::cuda::par.on(s), data.begin(), data.end(), 0), 2);
-  ASSERT_EQUAL(thrust::count(thrust::cuda::par.on(s), data.begin(), data.end(), 1), 3);
-  ASSERT_EQUAL(thrust::count(thrust::cuda::par.on(s), data.begin(), data.end(), 2), 0);
+  REQUIRE(thrust::count(thrust::cuda::par.on(s), data.begin(), data.end(), 0) == 2);
+  REQUIRE(thrust::count(thrust::cuda::par.on(s), data.begin(), data.end(), 1) == 3);
+  REQUIRE(thrust::count(thrust::cuda::par.on(s), data.begin(), data.end(), 2) == 0);
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestCountCudaStreams);

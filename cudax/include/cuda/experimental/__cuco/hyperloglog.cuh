@@ -160,12 +160,12 @@ public:
     _MemoryResource_&& __memory_resource,
     precision __precision,
     const _Policy& __policy = {})
-      : __sketch_buffer{__stream,
-                        ::cuda::std::forward<_MemoryResource_>(__memory_resource),
-                        ref_type<>::sketch_bytes(
-                          __precision_in_bounds(__precision, "HyperLogLog precision must be in [4, 18]"))
-                          / sizeof(register_type),
-                        ::cuda::no_init}
+      : __sketch_buffer{
+          __stream,
+          ::cuda::std::forward<_MemoryResource_>(__memory_resource),
+          ref_type<>::sketch_bytes(__precision_in_bounds(__precision, "HyperLogLog precision must be in [4, 18]"))
+            / sizeof(register_type),
+          ::cuda::no_init}
       , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}),
               __policy}
   {
@@ -185,8 +185,10 @@ public:
 
   //! @brief Asynchronously resets the estimator, i.e., clears the current count estimate.
   //!
+  //! @throw cuda::cuda_error If the kernel launch fails.
+  //!
   //! @param __stream CUDA stream this operation is executed in
-  _CCCL_HOST_API constexpr void clear_async(::cuda::stream_ref __stream) noexcept
+  _CCCL_HOST_API constexpr void clear_async(::cuda::stream_ref __stream)
   {
     __ref.clear_async(__stream);
   }
@@ -313,7 +315,7 @@ public:
   //!
   //! @return Approximate distinct items count
   template <typename _HostMemoryResource = ::cuda::mr::legacy_pinned_memory_resource>
-  [[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::size_t
+  [[nodiscard]] _CCCL_HOST_API constexpr double
   estimate(::cuda::stream_ref __stream, _HostMemoryResource __host_mr = {}) const
   {
     return __ref.estimate(__stream, __host_mr);
@@ -322,7 +324,7 @@ public:
   //! @brief Get device ref.
   //!
   //! @return Device ref object of the current `hyperloglog` host object
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ref_type<> ref() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ref_type<> ref() const
   {
     return {sketch(), policy()};
   }
@@ -330,7 +332,7 @@ public:
   //! @brief Get hash function.
   //!
   //! @return The hash function
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto hash_function() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto hash_function() const
   {
     return __ref.hash_function();
   }

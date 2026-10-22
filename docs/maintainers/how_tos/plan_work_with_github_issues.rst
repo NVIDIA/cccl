@@ -85,7 +85,7 @@ Complete assigned issues
 
 Use the issue's close condition to decide when the work is done. Often, this
 means opening a PR that completes the work described by the issue. Follow the
-:doc:`contributing guidelines </cccl/contributing>` for how to prepare and
+:doc:`contributing guidelines </contributors/index>` for how to prepare and
 submit the PR.
 
 Link the PR to the issue so GitHub can close the issue when the PR merges. For

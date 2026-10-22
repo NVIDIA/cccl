@@ -23,10 +23,13 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__concepts/semiregular.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/char_traits.h>
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__fwd/inplace_vector.h>
 #include <cuda/std/__iterator/wrap_iter.h>
-#include <cuda/std/__string/char_traits.h>
+#include <cuda/std/__string/char_traits.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/add_pointer.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/remove_const.h>
@@ -50,7 +53,7 @@ _CCCL_CONCEPT __fmt_char_type = same_as<_CharT, char>
 // (Note testing for (w)format_context would be a valid choice, but requires
 // selecting the proper one depending on the type of _CharT.)
 template <class _CharT>
-using __fmt_iter_for _CCCL_NODEBUG_ALIAS = _CharT*;
+using __fmt_iter_for _CCCL_NODEBUG = _CharT*;
 
 template <class _Tp, class _Context, class _Formatter, class = void>
 inline constexpr bool __formattable_with_impl_v = false;

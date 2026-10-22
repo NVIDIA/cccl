@@ -6,7 +6,9 @@
 #include <cub/util_allocator.cuh>
 #include <cub/util_arch.cuh>
 
-#include <c2h/catch2_test_helper.h>
+#include <cuda/std/span>
+
+#include "cub_test_macros.h"
 
 template <int ItemsPerThread, int ThreadsInBlock, cub::BlockStoreAlgorithm /* StoreAlgorithm */>
 struct output_idx
@@ -136,8 +138,9 @@ struct params_t
   static constexpr cub::BlockStoreAlgorithm store_algorithm = c2h::get<3, TestType>::value;
 };
 
-C2H_TEST("Block store works with even block sizes",
+CUB_TEST("Block store works with even block sizes",
          "[store][block]",
+         CUB_SMALL,
          types,
          items_per_thread,
          even_threads_in_block,
@@ -159,8 +162,9 @@ C2H_TEST("Block store works with even block sizes",
   REQUIRE(d_input == d_output);
 }
 
-C2H_TEST("Block store works with even odd sizes",
+CUB_TEST("Block store works with even odd sizes",
          "[store][block]",
+         CUB_SMALL,
          types,
          items_per_thread,
          odd_threads_in_block,
@@ -184,8 +188,9 @@ C2H_TEST("Block store works with even odd sizes",
 
 // WAR bug in vec type handling in NVCC 12.0 + GCC 11.4 + C++20
 #if !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC, ==, 11, 4) && _CCCL_STD_VER == 2020)
-C2H_TEST("Block store works with even vector types",
+CUB_TEST("Block store works with even vector types",
          "[store][block]",
+         CUB_SMALL,
          vec_types,
          items_per_thread,
          a_block_size,
@@ -208,7 +213,7 @@ C2H_TEST("Block store works with even vector types",
 }
 #endif // !(NVCC 12.0 and GCC 11.4 and C++20)
 
-C2H_TEST("Block store works with custom types", "[store][block]", items_per_thread, store_algorithm)
+CUB_TEST("Block store works with custom types", "[store][block]", CUB_SMALL, items_per_thread, store_algorithm)
 {
   using type                                                = c2h::custom_type_t<c2h::equal_comparable_t>;
   constexpr int items_per_thread                            = c2h::get<0, TestType>::value;
@@ -229,7 +234,7 @@ C2H_TEST("Block store works with custom types", "[store][block]", items_per_thre
   REQUIRE(d_input == d_output);
 }
 
-C2H_TEST("Block store works with caching iterators", "[store][block]", items_per_thread, store_algorithm)
+CUB_TEST("Block store works with caching iterators", "[store][block]", CUB_SMALL, items_per_thread, store_algorithm)
 {
   using type                                                = int;
   constexpr int items_per_thread                            = c2h::get<0, TestType>::value;
@@ -241,7 +246,7 @@ C2H_TEST("Block store works with caching iterators", "[store][block]", items_per
   c2h::gen(C2H_SEED(10), d_input);
 
   c2h::device_vector<type> d_output(d_input.size());
-  cub::CacheModifiedOutputIterator<cub::CacheStoreModifier::STORE_DEFAULT, type> out(
+  const cub::CacheModifiedOutputIterator<cub::CacheStoreModifier::STORE_DEFAULT, type> out(
     thrust::raw_pointer_cast(d_output.data()));
 
   block_store<items_per_thread, threads_in_block, store_algorithm>(
@@ -251,7 +256,10 @@ C2H_TEST("Block store works with caching iterators", "[store][block]", items_per
 }
 
 #if IPT == 1
-C2H_TEST("Vectorized block store with different alignment cases", "[store][block]", c2h::enum_type_list<int, 1, 4, 7>)
+CUB_TEST("Vectorized block store with different alignment cases",
+         "[store][block]",
+         CUB_SMALL,
+         c2h::enum_type_list<int, 1, 4, 7>)
 {
   using type                     = int;
   constexpr int items_per_thread = c2h::get<0, TestType>::value;
@@ -278,5 +286,82 @@ C2H_TEST("Vectorized block store with different alignment cases", "[store][block
     static_cast<int>(d_input.size()));
 
   REQUIRE(d_input_ref == d_output);
+}
+
+constexpr int vectorized_items_per_thread = 4;
+constexpr int vectorized_threads_in_block = 64;
+constexpr int vectorized_tile_size        = vectorized_items_per_thread * vectorized_threads_in_block;
+
+template <typename T, typename OutputIteratorT>
+__global__ void vectorized_full_tile_store_kernel(const int* input, OutputIteratorT output)
+{
+  // construct each item from an int, so T need not be default constructible
+  const int* thread_input = input + threadIdx.x * vectorized_items_per_thread;
+  T data[vectorized_items_per_thread] = {T(thread_input[0]), T(thread_input[1]), T(thread_input[2]), T(thread_input[3])};
+  cub::BlockStore<T, vectorized_threads_in_block, vectorized_items_per_thread, cub::BLOCK_STORE_VECTORIZE>().Store(
+    output, data);
+}
+
+template <typename T, typename OutputIteratorT>
+void vectorized_full_tile_store(const c2h::device_vector<int>& d_input, OutputIteratorT output)
+{
+  vectorized_full_tile_store_kernel<T>
+    <<<1, vectorized_threads_in_block>>>(thrust::raw_pointer_cast(d_input.data()), output);
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+}
+
+CUB_TEST_CASE("Vectorized block store converts to outputs of a different value type", "[store][block]", CUB_SMALL)
+{
+  c2h::device_vector<int> d_input(vectorized_tile_size);
+  c2h::gen(C2H_SEED(1), d_input);
+  c2h::device_vector<long long> d_output(vectorized_tile_size, thrust::no_init);
+  long long* output = thrust::raw_pointer_cast(d_output.data());
+
+  SECTION("pointer")
+  {
+    vectorized_full_tile_store<int>(d_input, output);
+  }
+  SECTION("contiguous iterator")
+  {
+    vectorized_full_tile_store<int>(d_input, cuda::std::span<long long>(output, vectorized_tile_size).begin());
+  }
+
+  REQUIRE(c2h::device_vector<long long>(d_input.begin(), d_input.end()) == d_output);
+}
+
+struct non_default_constructible
+{
+  int value;
+
+  __host__ __device__ explicit non_default_constructible(int value)
+      : value(value)
+  {}
+};
+
+CUB_TEST_CASE("Vectorized block store works with non-default-constructible types", "[store][block]", CUB_SMALL)
+{
+  using T = non_default_constructible;
+
+  c2h::device_vector<int> d_input(vectorized_tile_size);
+  c2h::gen(C2H_SEED(1), d_input);
+  c2h::device_vector<T> d_output(vectorized_tile_size, T(0));
+  T* output = thrust::raw_pointer_cast(d_output.data());
+
+  SECTION("pointer")
+  {
+    vectorized_full_tile_store<T>(d_input, output);
+  }
+  SECTION("contiguous iterator")
+  {
+    vectorized_full_tile_store<T>(d_input, cuda::std::span<T>(output, vectorized_tile_size).begin());
+  }
+
+  const c2h::host_vector<int> h_input(d_input);
+  const c2h::host_vector<T> h_output(d_output);
+  for (int i = 0; i < vectorized_tile_size; i++)
+  {
+    REQUIRE(h_output[i].value == h_input[i]);
+  }
 }
 #endif

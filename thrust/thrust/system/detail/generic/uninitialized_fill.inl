@@ -13,10 +13,12 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/internal_functional.h>
-#include <thrust/detail/type_traits.h>
 #include <thrust/fill.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/uninitialized_fill.h>
+
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
@@ -29,7 +31,7 @@ _CCCL_HOST_DEVICE void uninitialized_fill(
   ForwardIterator first,
   ForwardIterator last,
   const T& x,
-  thrust::detail::true_type) // ::cuda::std::is_trivially_copy_constructible
+  ::cuda::std::true_type) // ::cuda::std::is_trivially_copy_constructible
 {
   thrust::fill(exec, first, last, x);
 } // end uninitialized_fill()
@@ -40,7 +42,7 @@ _CCCL_HOST_DEVICE void uninitialized_fill(
   ForwardIterator first,
   ForwardIterator last,
   const T& x,
-  thrust::detail::false_type) // ::cuda::std::is_trivially_copy_constructible
+  ::cuda::std::false_type) // ::cuda::std::is_trivially_copy_constructible
 {
   using ValueType = thrust::detail::it_value_t<ForwardIterator>;
 
@@ -53,7 +55,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_fill_n(
   ForwardIterator first,
   Size n,
   const T& x,
-  thrust::detail::true_type) // ::cuda::std::is_trivially_copy_constructible
+  ::cuda::std::true_type) // ::cuda::std::is_trivially_copy_constructible
 {
   return thrust::fill_n(exec, first, n, x);
 } // end uninitialized_fill()
@@ -64,7 +66,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_fill_n(
   ForwardIterator first,
   Size n,
   const T& x,
-  thrust::detail::false_type) // ::cuda::std::is_trivially_copy_constructible
+  ::cuda::std::false_type) // ::cuda::std::is_trivially_copy_constructible
 {
   using ValueType = thrust::detail::it_value_t<ForwardIterator>;
 

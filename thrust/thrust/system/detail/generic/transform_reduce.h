@@ -29,7 +29,7 @@ _CCCL_HOST_DEVICE OutputType transform_reduce(
   UnaryFunction unary_op,
   OutputType init,
   BinaryFunction binary_op);
-}
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/transform_reduce.inl>

@@ -17,7 +17,7 @@
 
 C2H_TEST("empty stf tasks", "[task]")
 {
-  size_t N = 1000000;
+  const size_t N = 1000000;
 
   stf_ctx_handle ctx = stf_ctx_create();
   REQUIRE(ctx != nullptr);

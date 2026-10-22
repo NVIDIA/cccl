@@ -23,11 +23,12 @@
 #include <cuda/std/__fwd/iterator.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
-#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__type_traits/void_t.h> // IWYU pragma: keep
 
 #if _CCCL_HOSTED()
 #  include <iterator>
@@ -51,7 +52,7 @@ struct __is_primary_cccl_template<_Iter, void_t<typename iterator_traits<_Iter>:
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 
 template <class _Traits>
-using __test_for_primary_template = enable_if_t<_IsSame<_Traits, typename _Traits::__cccl_primary_template>::value>;
+using __test_for_primary_template = enable_if_t<is_same_v<_Traits, typename _Traits::__cccl_primary_template>>;
 template <class _Iter>
 using __is_primary_cccl_template = _IsValidExpansion<__test_for_primary_template, iterator_traits<_Iter>>;
 
@@ -87,7 +88,7 @@ struct __is_primary_std_template : bool_constant<__is_primary_std_template_impl<
 
 // libc++ uses the same mechanism than we do with __primary_template
 template <class _Traits>
-using __test_for_primary_std_template = enable_if_t<_IsSame<_Traits, typename _Traits::__primary_template>::value>;
+using __test_for_primary_std_template = enable_if_t<is_same_v<_Traits, typename _Traits::__primary_template>>;
 template <class _Iter>
 using __is_primary_std_template = _IsValidExpansion<__test_for_primary_std_template, ::std::iterator_traits<_Iter>>;
 

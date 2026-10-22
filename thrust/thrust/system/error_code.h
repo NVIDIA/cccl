@@ -17,11 +17,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/type_traits.h>
 #include <thrust/system/detail/errno.h>
 
 #include <cuda/std/__host_stdlib/istream>
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -37,13 +38,13 @@ class error_code;
 /*! A metafunction returning whether or not the parameter is an \p error_code enum.
  */
 template <typename T>
-struct is_error_code_enum : public thrust::detail::false_type
+struct is_error_code_enum : public ::cuda::std::false_type
 {};
 
 /*! A metafunction returning whether or not the parameter is an \p error_condition enum.
  */
 template <typename T>
-struct is_error_condition_enum : public thrust::detail::false_type
+struct is_error_condition_enum : public ::cuda::std::false_type
 {};
 
 // XXX N3092 prefers enum class errc { ... }
@@ -51,7 +52,7 @@ namespace errc
 {
 /*! An enum containing common error codes.
  */
-enum errc_t
+enum errc_t // NOLINT(cppcoreguidelines-use-enum-class)
 {
   address_family_not_supported       = detail::eafnosupport,
   address_in_use                     = detail::eaddrinuse,
@@ -137,7 +138,7 @@ enum errc_t
 /*! Specialization of \p is_error_condition_enum for \p errc::errc_t
  */
 template <>
-struct is_error_condition_enum<errc::errc_t> : public thrust::detail::true_type
+struct is_error_condition_enum<errc::errc_t> : public ::cuda::std::true_type
 {};
 
 // [19.5.1.1] class error_category
@@ -255,6 +256,8 @@ public:
 
   /*! \post <tt>*this == make_error_code(e)</tt>.
    */
+  // The enable_if_t below is error_code& after substitution, as the MSVC branch spells out.
+  // NOLINTBEGIN(misc-unconventional-assign-operator)
   template <typename ErrorCodeEnum>
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
@@ -263,6 +266,7 @@ public:
   error_code&
 #endif // !_CCCL_COMPILER(MSVC)
   operator=(ErrorCodeEnum e);
+  // NOLINTEND(misc-unconventional-assign-operator)
 
   /*! \post <tt>value() == 0</tt> and <tt>category() == system_category()</tt>.
    */
@@ -317,8 +321,8 @@ inline bool operator<(const error_code& lhs, const error_code& rhs);
 #if _CCCL_HOSTED()
 /*! Effects: <tt>os << ec.category().name() << ':' << ec.value()</tt>.
  */
-template <typename charT, typename traits>
-std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& os, const error_code& ec);
+template <typename CharT, typename Traits>
+std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const error_code& ec);
 #endif // _CCCL_HOSTED()
 
 // [19.5.3] class error_condition
@@ -376,6 +380,9 @@ public:
    *  \note This operator shall not participate in overload resolution unless
    *        <tt>is_error_condition_enum<ErrorConditionEnum>::value</tt> is <tt>true</tt>.
    */
+  // The enable_if_t below is error_condition& after substitution, as the MSVC branch
+  // spells out.
+  // NOLINTBEGIN(misc-unconventional-assign-operator)
   template <typename ErrorConditionEnum>
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
@@ -384,6 +391,7 @@ public:
   error_condition&
 #endif // !_CCCL_COMPILER(MSVC)
   operator=(ErrorConditionEnum e);
+  // NOLINTEND(misc-unconventional-assign-operator)
 
   /*! Clears this \p error_code object.
    *  \post <tt>value == 0</tt>

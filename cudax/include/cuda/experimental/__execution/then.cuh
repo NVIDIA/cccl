@@ -54,36 +54,36 @@ template <bool IsVoid, bool _Nothrow>
 struct __completion_fn
 { // non-void, potentially throwing case
   template <class _Result>
-  using __call _CCCL_NODEBUG_ALIAS = completion_signatures<set_value_t(_Result), set_error_t(exception_ptr)>;
+  using __call _CCCL_NODEBUG = completion_signatures<set_value_t(_Result), set_error_t(exception_ptr)>;
 };
 
 template <>
 struct __completion_fn<true, false>
 { // void, potentially throwing case
   template <class>
-  using __call _CCCL_NODEBUG_ALIAS = completion_signatures<set_value_t(), set_error_t(exception_ptr)>;
+  using __call _CCCL_NODEBUG = completion_signatures<set_value_t(), set_error_t(exception_ptr)>;
 };
 
 template <>
 struct __completion_fn<false, true>
 { // non-void, non-throwing case
   template <class _Result>
-  using __call _CCCL_NODEBUG_ALIAS = completion_signatures<set_value_t(_Result)>;
+  using __call _CCCL_NODEBUG = completion_signatures<set_value_t(_Result)>;
 };
 
 template <>
 struct __completion_fn<true, true>
 { // void, non-throwing case
   template <class>
-  using __call _CCCL_NODEBUG_ALIAS = completion_signatures<set_value_t()>;
+  using __call _CCCL_NODEBUG = completion_signatures<set_value_t()>;
 };
 
 template <class _Result, bool _Nothrow>
-using __completion_ _CCCL_NODEBUG_ALIAS =
+using __completion_ _CCCL_NODEBUG =
   ::cuda::std::__type_call1<__completion_fn<__same_as<_Result, void>, _Nothrow>, _Result>;
 
 template <class _Fn, class... _Ts>
-using __completion _CCCL_NODEBUG_ALIAS = __completion_<__call_result_t<_Fn, _Ts...>, __nothrow_callable<_Fn, _Ts...>>;
+using __completion _CCCL_NODEBUG = __completion_<__call_result_t<_Fn, _Ts...>, __nothrow_callable<_Fn, _Ts...>>;
 
 template <class _Fn, class _Rcvr>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t

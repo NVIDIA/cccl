@@ -21,13 +21,12 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/in_fun_result.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
-#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__iterator/projected.h>
-#include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -38,13 +37,12 @@ template <class _Iter, class _Func>
 using for_each_n_result = in_fun_result<_Iter, _Func>;
 
 _CCCL_BEGIN_NAMESPACE_CPO(__for_each_n)
-
 struct __fn
 {
   _CCCL_TEMPLATE(class _Iter, class _Func, class _Proj = identity)
   _CCCL_REQUIRES(input_iterator<_Iter> _CCCL_AND indirectly_unary_invocable<_Func, projected<_Iter, _Proj>>)
   _CCCL_API constexpr for_each_n_result<_Iter, _Func>
-  operator()(_Iter __first, iter_difference_t<_Iter> __count, _Func __func, _Proj __proj = {}) const
+  _CCCL_STATIC_CALL_OPERATOR(_Iter __first, iter_difference_t<_Iter> __count, _Func __func, _Proj __proj = {})
   {
     while (__count-- > 0)
     {

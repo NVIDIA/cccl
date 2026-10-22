@@ -28,7 +28,7 @@ int main()
   double A[N];
   for (size_t i = 0; i < N; i++)
   {
-    A[i] = 1.0 * i;
+    A[i] = 1.0 * static_cast<double>(i);
   }
 
   auto lA = ctx.logical_data(A);
@@ -36,7 +36,9 @@ int main()
   for (size_t k = 0; k < NITER; k++)
   {
     ctx.parallel_for(blocked_partition(), exec_place::current_device(), lA.shape(), lA.rw())
-        ->*[] __host__ __device__(size_t i, slice<double> A) { A(i) = cos(A(i)); };
+        ->*[] __host__ __device__(size_t i, slice<double> A) {
+              A(i) = cos(A(i));
+            };
 
     ctx.change_stage();
   }
@@ -45,7 +47,7 @@ int main()
 
   for (size_t i = 0; i < N; i++)
   {
-    double Ai_ref = 1.0 * i;
+    double Ai_ref = 1.0 * static_cast<double>(i);
     for (size_t k = 0; k < NITER; k++)
     {
       Ai_ref = cos(Ai_ref);

@@ -154,8 +154,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t
   template <class _Rcvr, class _Sndr1, class _Sndr2>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
-    using operation_state_concept      = operation_state_t;
-    using __env2_t _CCCL_NODEBUG_ALIAS = __detail::__seq_env_next_t<env_of_t<_Sndr1>, env_of_t<_Rcvr>>;
+    using operation_state_concept = operation_state_t;
+    using __env2_t _CCCL_NODEBUG  = __detail::__seq_env_next_t<env_of_t<_Sndr1>, env_of_t<_Rcvr>>;
 
     // The moves from lvalues here is intentional:
     _CCCL_EXEC_CHECK_DISABLE
@@ -197,7 +197,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
 {
   using sender_concept = sender_t;
   template <class... _Env>
-  using __env2_t _CCCL_NODEBUG_ALIAS = sequence_t::__env2_t<env_of_t<_Sndr1>, _Env...>;
+  using __env2_t _CCCL_NODEBUG = sequence_t::__env2_t<env_of_t<_Sndr1>, _Env...>;
 
   template <class _Self, class... _Env>
   [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures()
@@ -286,7 +286,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Sndr1, class _Sndr2>
 _CCCL_HOST_DEVICE_API constexpr auto sequence_t::operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const
 {
-  using __sndr_t _CCCL_NODEBUG_ALIAS = sequence_t::__sndr_t<_Sndr1, _Sndr2>;
+  using __sndr_t _CCCL_NODEBUG = sequence_t::__sndr_t<_Sndr1, _Sndr2>;
   return __sndr_t{{}, {}, static_cast<_Sndr1&&>(__sndr1), static_cast<_Sndr2&&>(__sndr2)};
 }
 

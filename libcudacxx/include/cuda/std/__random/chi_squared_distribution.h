@@ -47,21 +47,23 @@ public:
 
     constexpr param_type() noexcept = default;
 
-    _CCCL_API constexpr explicit param_type(result_type __n) noexcept
+    _CCCL_HOST_DEVICE_API constexpr explicit param_type(result_type __n) noexcept
         : __n_{__n}
     {}
 
-    [[nodiscard]] _CCCL_API constexpr result_type n() const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type n() const noexcept
     {
       return __n_;
     }
 
-    [[nodiscard]] friend _CCCL_API constexpr bool operator==(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr bool
+    operator==(const param_type& __x, const param_type& __y) noexcept
     {
       return __x.__n_ == __y.__n_;
     }
 #if _CCCL_STD_VER <= 2017
-    [[nodiscard]] friend _CCCL_API constexpr bool operator!=(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr bool
+    operator!=(const param_type& __x, const param_type& __y) noexcept
     {
       return !(__x == __y);
     }
@@ -75,58 +77,58 @@ public:
   // constructor and reset functions
   constexpr chi_squared_distribution() noexcept = default;
 
-  _CCCL_API constexpr explicit chi_squared_distribution(result_type __n) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit chi_squared_distribution(result_type __n) noexcept
       : __p_{param_type{__n}}
   {}
-  _CCCL_API constexpr explicit chi_squared_distribution(const param_type& __p) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit chi_squared_distribution(const param_type& __p) noexcept
       : __p_{__p}
   {}
-  _CCCL_API void reset() noexcept {}
+  _CCCL_HOST_DEVICE_API void reset() noexcept {}
 
   // generating functions
   template <class _URng>
-  [[nodiscard]] _CCCL_API result_type operator()(_URng& __g)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API result_type operator()(_URng& __g)
   {
     return (*this)(__g, __p_);
   }
   template <class _URng>
-  [[nodiscard]] _CCCL_API result_type operator()(_URng& __g, const param_type& __p)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API result_type operator()(_URng& __g, const param_type& __p)
   {
     static_assert(__cccl_random_is_valid_urng<_URng>, "URng must meet the UniformRandomBitGenerator requirements");
     return gamma_distribution<result_type>(__p.n() / 2, 2)(__g);
   }
 
   // property functions
-  [[nodiscard]] _CCCL_API constexpr result_type n() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type n() const noexcept
   {
     return __p_.n();
   }
 
-  [[nodiscard]] _CCCL_API constexpr param_type param() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr param_type param() const noexcept
   {
     return __p_;
   }
-  _CCCL_API constexpr void param(const param_type& __p) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void param(const param_type& __p) noexcept
   {
     __p_ = __p;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr result_type min() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type min() noexcept
   {
     return result_type{0};
   }
-  [[nodiscard]] _CCCL_API static constexpr result_type max() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type max() noexcept
   {
     return numeric_limits<result_type>::infinity();
   }
 
-  [[nodiscard]] friend _CCCL_API constexpr bool
+  [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr bool
   operator==(const chi_squared_distribution& __x, const chi_squared_distribution& __y) noexcept
   {
     return __x.__p_ == __y.__p_;
   }
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] friend _CCCL_API constexpr bool
+  [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr bool
   operator!=(const chi_squared_distribution& __x, const chi_squared_distribution& __y) noexcept
   {
     return !(__x == __y);

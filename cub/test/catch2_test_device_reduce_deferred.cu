@@ -16,7 +16,6 @@
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 #include <cuda/argument>
-#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/functional>
@@ -31,7 +30,8 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
+#include <c2h/device_and_stream.h>
 #include <c2h/generators.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
@@ -40,9 +40,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Min, device_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Max, device_max);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::TransformReduce, device_transform_reduce);
 
-static_assert(cuda::std::is_same_v<cub::detail::reduce::num_items_offset_t<int32_t>, int32_t>);
 using deferred_count_t = decltype(cuda::args::deferred{static_cast<int32_t*>(nullptr)});
-static_assert(cuda::std::is_same_v<cub::detail::reduce::num_items_offset_t<deferred_count_t>, uint32_t>);
+static_assert(cuda::std::is_same_v<cub::detail::num_items_offset_t<deferred_count_t>, uint32_t>);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -229,7 +228,7 @@ struct select_then_reduce_t
 
 using count_types = c2h::type_list<int32_t, uint32_t, int64_t, uint64_t>;
 
-C2H_TEST("DeviceReduce::Reduce accepts deferred num_items", "[device][reduce][deferred]", count_types)
+CUB_TEST("DeviceReduce::Reduce accepts deferred num_items", "[device][reduce][deferred]", CUB_SMALL, count_types)
 {
   using value_t = int64_t;
   using count_t = typename c2h::get<0, TestType>;
@@ -254,8 +253,9 @@ C2H_TEST("DeviceReduce::Reduce accepts deferred num_items", "[device][reduce][de
   REQUIRE(output[0] == expected);
 }
 
-C2H_TEST("DeviceReduce::Reduce with deferred num_items is run-to-run reproducible",
-         "[device][reduce][deferred][run_to_run]")
+CUB_TEST("DeviceReduce::Reduce with deferred num_items is run-to-run reproducible",
+         "[device][reduce][deferred][run_to_run]",
+         CUB_SMALL)
 {
   using value_t = float;
   using count_t = int32_t;
@@ -282,7 +282,7 @@ C2H_TEST("DeviceReduce::Reduce with deferred num_items is run-to-run reproducibl
   }
 }
 
-C2H_TEST("DeviceReduce::Reduce with a deferred size handles grid boundaries", "[device][reduce][deferred]")
+CUB_TEST("DeviceReduce::Reduce with a deferred size handles grid boundaries", "[device][reduce][deferred]", CUB_SMALL)
 {
   using value_t = int64_t;
   using count_t = int32_t;
@@ -311,8 +311,9 @@ C2H_TEST("DeviceReduce::Reduce with a deferred size handles grid boundaries", "[
   REQUIRE(output[0] == value_t{7} + num_items);
 }
 
-C2H_TEST("DeviceReduce atomic dispatch with a deferred size handles grid boundaries",
-         "[device][reduce][deferred][not_guaranteed]")
+CUB_TEST("DeviceReduce atomic dispatch with a deferred size handles grid boundaries",
+         "[device][reduce][deferred][not_guaranteed]",
+         CUB_SMALL)
 {
   using value_t = float;
   using count_t = int32_t;
@@ -347,8 +348,9 @@ C2H_TEST("DeviceReduce atomic dispatch with a deferred size handles grid boundar
   REQUIRE(output[0] == init + static_cast<value_t>(num_items));
 }
 
-C2H_TEST("DeviceReduce deterministic dispatch with a deferred size handles grid boundaries",
-         "[device][reduce][deferred][gpu_to_gpu]")
+CUB_TEST("DeviceReduce deterministic dispatch with a deferred size handles grid boundaries",
+         "[device][reduce][deferred][gpu_to_gpu]",
+         CUB_SMALL)
 {
   using value_t = float;
   using count_t = int32_t;
@@ -376,7 +378,9 @@ C2H_TEST("DeviceReduce deterministic dispatch with a deferred size handles grid 
   REQUIRE(output[0] == init + static_cast<value_t>(num_items));
 }
 
-C2H_TEST("DeviceReduce::Reduce accepts deferred span and fancy-iterator sources", "[device][reduce][deferred]")
+CUB_TEST("DeviceReduce::Reduce accepts deferred span and fancy-iterator sources",
+         "[device][reduce][deferred]",
+         CUB_SMALL)
 {
   using value_t = int64_t;
   using count_t = int32_t;
@@ -413,7 +417,9 @@ C2H_TEST("DeviceReduce::Reduce accepts deferred span and fancy-iterator sources"
   REQUIRE(output[0] == num_items);
 }
 
-C2H_TEST("DeviceReduce entry points sharing reduce dispatch accept deferred num_items", "[device][reduce][deferred]")
+CUB_TEST("DeviceReduce entry points sharing reduce dispatch accept deferred num_items",
+         "[device][reduce][deferred]",
+         CUB_SMALL)
 {
   using value_t = int64_t;
   using count_t = int32_t;
@@ -449,7 +455,7 @@ C2H_TEST("DeviceReduce entry points sharing reduce dispatch accept deferred num_
   REQUIRE(output[0] == value_t{4} * num_items);
 }
 
-C2H_TEST("DeviceReduce::Reduce consumes a count produced by DeviceSelect::If", "[device][reduce][deferred]")
+CUB_TEST("DeviceReduce::Reduce consumes a count produced by DeviceSelect::If", "[device][reduce][deferred]", CUB_SMALL)
 {
   using value_t = int64_t;
   using count_t = int32_t;
@@ -485,8 +491,9 @@ C2H_TEST("DeviceReduce::Reduce consumes a count produced by DeviceSelect::If", "
 }
 
 #if TEST_LAUNCH == 0
-C2H_TEST("DeviceReduce::Reduce consumes a deferred count produced in another stream after an event",
-         "[device][reduce][deferred]")
+CUB_TEST("DeviceReduce::Reduce consumes a deferred count produced in another stream after an event",
+         "[device][reduce][deferred]",
+         CUB_SMALL)
 {
   using value_t = int64_t;
   using count_t = int32_t;
@@ -494,10 +501,8 @@ C2H_TEST("DeviceReduce::Reduce consumes a deferred count produced in another str
   constexpr count_t capacity       = 100'000;
   constexpr count_t selected_count = 1'000;
 
-  int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
-  cuda::stream producer{cuda::devices[current_device]};
-  cuda::stream consumer{cuda::devices[current_device]};
+  const cuda::stream producer = c2h::make_current_device_stream();
+  const cuda::stream consumer = c2h::make_current_device_stream();
 
   const auto d_input = cuda::counting_iterator<value_t>{value_t{0}};
   c2h::device_vector<value_t> selected_items(capacity, value_t{capacity + 1});
@@ -563,7 +568,7 @@ C2H_TEST("DeviceReduce::Reduce consumes a deferred count produced in another str
   REQUIRE(output[0] == expected_sum);
 }
 
-C2H_TEST("DeviceReduce environment entry points accept deferred num_items", "[device][reduce][deferred]")
+CUB_TEST("DeviceReduce environment entry points accept deferred num_items", "[device][reduce][deferred]", CUB_SMALL)
 {
   using value_t = int64_t;
   using count_t = int32_t;
@@ -604,8 +609,9 @@ C2H_TEST("DeviceReduce environment entry points accept deferred num_items", "[de
   REQUIRE(output[0] == value_t{4} * num_items);
 }
 
-C2H_TEST("DeviceReduce::Reduce supports deferred num_items with not_guaranteed determinism",
-         "[device][reduce][deferred]")
+CUB_TEST("DeviceReduce::Reduce supports deferred num_items with not_guaranteed determinism",
+         "[device][reduce][deferred]",
+         CUB_SMALL)
 {
   using value_t = float;
   using count_t = int32_t;
@@ -627,9 +633,10 @@ C2H_TEST("DeviceReduce::Reduce supports deferred num_items with not_guaranteed d
 
 using gpu_to_gpu_count_types = c2h::type_list<int32_t, uint32_t, int64_t, uint64_t>;
 
-C2H_TEST("DeviceReduce::Reduce with deferred num_items matches the immediate result bitwise with gpu_to_gpu "
+CUB_TEST("DeviceReduce::Reduce with deferred num_items matches the immediate result bitwise with gpu_to_gpu "
          "determinism",
          "[device][reduce][deferred][gpu_to_gpu]",
+         CUB_SMALL,
          gpu_to_gpu_count_types)
 {
   using value_t = float;
@@ -658,9 +665,10 @@ C2H_TEST("DeviceReduce::Reduce with deferred num_items matches the immediate res
 
 using gpu_to_gpu_large_count_types = c2h::type_list<uint32_t, int64_t, uint64_t>;
 
-C2H_TEST("DeviceReduce::Reduce with a large deferred num_items matches the immediate result bitwise with gpu_to_gpu "
+CUB_TEST("DeviceReduce::Reduce with a large deferred num_items matches the immediate result bitwise with gpu_to_gpu "
          "determinism",
          "[device][reduce][deferred][gpu_to_gpu]",
+         CUB_SMALL,
          gpu_to_gpu_large_count_types)
 {
   using value_t = float;
@@ -689,8 +697,9 @@ C2H_TEST("DeviceReduce::Reduce with a large deferred num_items matches the immed
 #endif // TEST_LAUNCH == 0
 
 #if TEST_LAUNCH == 2
-C2H_TEST("captured DeviceReduce atomic dispatch replays with zero and nonzero deferred counts",
-         "[device][reduce][deferred][not_guaranteed]")
+CUB_TEST("captured DeviceReduce atomic dispatch replays with zero and nonzero deferred counts",
+         "[device][reduce][deferred][not_guaranteed]",
+         CUB_SMALL)
 {
   using value_t = float;
   using count_t = int32_t;
@@ -742,8 +751,9 @@ C2H_TEST("captured DeviceReduce atomic dispatch replays with zero and nonzero de
   REQUIRE(cudaSuccess == cudaStreamDestroy(stream));
 }
 
-C2H_TEST("captured DeviceReduce deterministic dispatch replays with zero and nonzero deferred counts",
-         "[device][reduce][deferred][gpu_to_gpu]")
+CUB_TEST("captured DeviceReduce deterministic dispatch replays with zero and nonzero deferred counts",
+         "[device][reduce][deferred][gpu_to_gpu]",
+         CUB_SMALL)
 {
   using value_t = float;
   using count_t = int32_t;
@@ -791,8 +801,9 @@ C2H_TEST("captured DeviceReduce deterministic dispatch replays with zero and non
   REQUIRE(cudaSuccess == cudaStreamDestroy(stream));
 }
 
-C2H_TEST("captured DeviceSelect::If to DeviceReduce::Reduce pipeline replays with changing counts",
-         "[device][reduce][deferred]")
+CUB_TEST("captured DeviceSelect::If to DeviceReduce::Reduce pipeline replays with changing counts",
+         "[device][reduce][deferred]",
+         CUB_SMALL)
 {
   using value_t  = int64_t;
   using count_t  = int32_t;

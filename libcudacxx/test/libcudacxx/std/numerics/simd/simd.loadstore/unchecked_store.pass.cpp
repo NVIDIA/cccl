@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -35,7 +35,7 @@
 // unchecked_store: range
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_unchecked_store_range()
+TEST_HOST_DEVICE_FUNC constexpr void test_unchecked_store_range()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec vec(iota_generator<T>{});
@@ -59,7 +59,7 @@ TEST_FUNC constexpr void test_unchecked_store_range()
 // unchecked_store: range, masked — verify unmasked lanes are preserved
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_unchecked_store_range_masked()
+TEST_HOST_DEVICE_FUNC constexpr void test_unchecked_store_range_masked()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
@@ -84,7 +84,7 @@ TEST_FUNC constexpr void test_unchecked_store_range_masked()
 // unchecked_store: iterator + count
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_unchecked_store_iter_count()
+TEST_HOST_DEVICE_FUNC constexpr void test_unchecked_store_iter_count()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec vec(iota_generator<T>{});
@@ -115,7 +115,7 @@ TEST_FUNC constexpr void test_unchecked_store_iter_count()
 // unchecked_store: iterator + sentinel
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_unchecked_store_iter_sentinel()
+TEST_HOST_DEVICE_FUNC constexpr void test_unchecked_store_iter_sentinel()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec vec(iota_generator<T>{});
@@ -146,7 +146,7 @@ TEST_FUNC constexpr void test_unchecked_store_iter_sentinel()
 // alignment flags
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_unchecked_store_aligned()
+TEST_HOST_DEVICE_FUNC constexpr void test_unchecked_store_aligned()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec vec(iota_generator<T>{});
@@ -166,7 +166,7 @@ TEST_FUNC constexpr void test_unchecked_store_aligned()
   }
 }
 
-TEST_FUNC constexpr void test_unchecked_store_overaligned_non_power_of_two_size()
+TEST_HOST_DEVICE_FUNC constexpr void test_unchecked_store_overaligned_non_power_of_two_size()
 {
   using Vec = simd::basic_vec<float, simd::fixed_size<3>>;
   Vec vec(iota_generator<float>{});
@@ -183,7 +183,7 @@ TEST_FUNC constexpr void test_unchecked_store_overaligned_non_power_of_two_size(
 // flag_convert: lossy store to narrower type
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_unchecked_store_convert()
+TEST_HOST_DEVICE_FUNC constexpr void test_unchecked_store_convert()
 {
   if constexpr (sizeof(T) < 8 && cuda::std::is_integral_v<T>)
   {
@@ -216,7 +216,7 @@ TEST_FUNC constexpr void test_unchecked_store_convert()
 // round-trip: unchecked_store then unchecked_load
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_round_trip()
+TEST_HOST_DEVICE_FUNC constexpr void test_round_trip()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec original(iota_generator<T>{});
@@ -234,7 +234,7 @@ TEST_FUNC constexpr void test_round_trip()
 // noexcept: public functions must NOT be noexcept
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_unchecked_store_not_noexcept()
+TEST_HOST_DEVICE_FUNC constexpr void test_unchecked_store_not_noexcept()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
@@ -257,7 +257,7 @@ TEST_FUNC constexpr void test_unchecked_store_not_noexcept()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   test_unchecked_store_range<T, N>();
   test_unchecked_store_range_masked<T, N>();

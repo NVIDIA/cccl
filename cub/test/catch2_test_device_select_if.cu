@@ -13,7 +13,6 @@
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
-#include <cuda/devices>
 #include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/std/execution>
@@ -21,9 +20,11 @@
 
 #include <algorithm>
 
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::If, select_if);
 
@@ -60,7 +61,7 @@ using types =
 #endif // !(NVCC 12.0 and GCC 11.4 and C++20)
                  c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>>;
 
-C2H_TEST("DeviceSelect::If can run with empty input", "[device][select_if]", types)
+CUB_TEST("DeviceSelect::If can run with empty input", "[device][select_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -77,7 +78,7 @@ C2H_TEST("DeviceSelect::If can run with empty input", "[device][select_if]", typ
   REQUIRE(num_selected_out[0] == 0);
 }
 
-C2H_TEST("DeviceSelect::If handles all matched", "[device][select_if]", types)
+CUB_TEST("DeviceSelect::If handles all matched", "[device][select_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -96,7 +97,7 @@ C2H_TEST("DeviceSelect::If handles all matched", "[device][select_if]", types)
   REQUIRE(out == in);
 }
 
-C2H_TEST("DeviceSelect::If handles no matched", "[device][select_if]", types)
+CUB_TEST("DeviceSelect::If handles no matched", "[device][select_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -114,7 +115,7 @@ C2H_TEST("DeviceSelect::If handles no matched", "[device][select_if]", types)
   REQUIRE(num_selected_out[0] == 0);
 }
 
-C2H_TEST("DeviceSelect::If does not change input", "[device][select_if]", types)
+CUB_TEST("DeviceSelect::If does not change input", "[device][select_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -124,21 +125,21 @@ C2H_TEST("DeviceSelect::If does not change input", "[device][select_if]", types)
   c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // copy input first
-  c2h::device_vector<type> reference = in;
+  const c2h::device_vector<type> reference = in;
 
   select_if(in.begin(), out.begin(), d_first_num_selected_out, num_items, le);
 
   REQUIRE(reference == in);
 }
 
-C2H_TEST("DeviceSelect::If is stable", "[device][select_if]")
+CUB_TEST("DeviceSelect::If is stable", "[device][select_if]", CUB_SMALL)
 {
   using type = c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>;
 
@@ -148,7 +149,7 @@ C2H_TEST("DeviceSelect::If is stable", "[device][select_if]")
   c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -170,7 +171,7 @@ C2H_TEST("DeviceSelect::If is stable", "[device][select_if]")
 }
 
 #if TEST_LAUNCH == 0
-C2H_TEST("DeviceSelect::If works with user provided memory and environment", "[device][select_if]", all_types)
+CUB_TEST("DeviceSelect::If works with user provided memory and environment", "[device][select_if]", CUB_SMALL, all_types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -222,50 +223,13 @@ C2H_TEST("DeviceSelect::If works with user provided memory and environment", "[d
     REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::equal_to_value{type{}}));
   };
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
-  SECTION("DeviceSelect::If works with cudaStream_t")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_select_if(stream.get());
-  }
-
-  SECTION("DeviceSelect::If works with cuda::stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_select_if(stream);
-  }
-
-  SECTION("DeviceSelect::If works with cuda::stream_ref")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
-    test_select_if(stream_ref);
-  }
-
-  SECTION("DeviceSelect::If works with cuda::std::execution::env")
-  {
-    cuda::std::execution::env env{};
-    test_select_if(env);
-  }
-
-  SECTION("DeviceSelect::If works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_select_if(policy);
-  }
-
-  SECTION("DeviceSelect::If works with cuda::execution::gpu with stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_select_if(policy);
-  }
+  test_with_custom_streams(test_select_if);
 }
 
-C2H_TEST("DeviceSelect::If works in place with user provided memory and environment", "[device][select_if]", all_types)
+CUB_TEST("DeviceSelect::If works in place with user provided memory and environment",
+         "[device][select_if]",
+         CUB_SMALL,
+         all_types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -308,51 +272,11 @@ C2H_TEST("DeviceSelect::If works in place with user provided memory and environm
     REQUIRE(thrust::all_of(c2h::device_policy, in.begin(), boundary, le));
   };
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
-  SECTION("DeviceSelect::If works with cudaStream_t")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_select_if(stream.get());
-  }
-
-  SECTION("DeviceSelect::If works with cuda::stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_select_if(stream);
-  }
-
-  SECTION("DeviceSelect::If works with cuda::stream_ref")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
-    test_select_if(stream_ref);
-  }
-
-  SECTION("DeviceSelect::If works with cuda::std::execution::env")
-  {
-    cuda::std::execution::env env{};
-    test_select_if(env);
-  }
-
-  SECTION("DeviceSelect::If works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_select_if(policy);
-  }
-
-  SECTION("DeviceSelect::If works with cuda::execution::gpu with stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_select_if(policy);
-  }
+  test_with_custom_streams(test_select_if);
 }
 #endif // TEST_LAUNCH == 0
 
-C2H_TEST("DeviceSelect::If works with iterators", "[device][select_if]", all_types)
+CUB_TEST("DeviceSelect::If works with iterators", "[device][select_if]", CUB_SMALL, all_types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -362,7 +286,7 @@ C2H_TEST("DeviceSelect::If works with iterators", "[device][select_if]", all_typ
   c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -375,7 +299,7 @@ C2H_TEST("DeviceSelect::If works with iterators", "[device][select_if]", all_typ
   REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::equal_to_value{type{}}));
 }
 
-C2H_TEST("DeviceSelect::If works with pointers", "[device][select_if]", types)
+CUB_TEST("DeviceSelect::If works with pointers", "[device][select_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -385,7 +309,7 @@ C2H_TEST("DeviceSelect::If works with pointers", "[device][select_if]", types)
   c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -399,7 +323,7 @@ C2H_TEST("DeviceSelect::If works with pointers", "[device][select_if]", types)
   REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::equal_to_value{type{}}));
 }
 
-C2H_TEST("DeviceSelect::If works in place", "[device][select_if]", types)
+CUB_TEST("DeviceSelect::If works in place", "[device][select_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -408,7 +332,7 @@ C2H_TEST("DeviceSelect::If works in place", "[device][select_if]", types)
   c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -445,7 +369,7 @@ struct convertible_from_T
   }
 };
 
-C2H_TEST("DeviceSelect::If works with a different output type", "[device][select_if]")
+CUB_TEST("DeviceSelect::If works with a different output type", "[device][select_if]", CUB_SMALL)
 {
   using type = c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>;
 
@@ -455,7 +379,7 @@ C2H_TEST("DeviceSelect::If works with a different output type", "[device][select
   c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -468,8 +392,9 @@ C2H_TEST("DeviceSelect::If works with a different output type", "[device][select
   REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::equal_to_value{type{}}));
 }
 
-C2H_TEST("DeviceSelect::If works for very large number of items",
-         "[device][select_if][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
+CUB_TEST("DeviceSelect::If works for very large number of items",
+         "[device][select_if][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_SMALL)
 try
 {
   using type     = std::int64_t;
@@ -478,7 +403,7 @@ try
   // The partition size (the maximum number of items processed by a single kernel invocation) is an important boundary
   constexpr auto max_partition_size = static_cast<offset_t>(cuda::std::numeric_limits<std::int32_t>::max());
 
-  offset_t num_items = GENERATE_COPY(
+  const offset_t num_items = GENERATE_COPY(
     values({
       offset_t{2} * max_partition_size + offset_t{20000000}, // 3 partitions
       offset_t{2} * max_partition_size, // 2 partitions
@@ -497,25 +422,25 @@ try
 
   // Run test
   constexpr offset_t match_every_nth = 1000000;
-  offset_t expected_num_copied       = (num_items + match_every_nth - offset_t{1}) / match_every_nth;
+  const offset_t expected_num_copied = (num_items + match_every_nth - offset_t{1}) / match_every_nth;
   c2h::device_vector<type> out(expected_num_copied);
   select_if(
     in, out.begin(), d_first_num_selected_out, num_items, mod_n<offset_t>{static_cast<offset_t>(match_every_nth)});
 
   // Ensure that we created the correct output
   REQUIRE(num_selected_out[0] == expected_num_copied);
-  auto expected_out_it     = cuda::transform_iterator(in, multiply_n<offset_t>{static_cast<offset_t>(match_every_nth)});
-  bool all_results_correct = thrust::equal(out.cbegin(), out.cend(), expected_out_it);
+  auto expected_out_it = cuda::transform_iterator(in, multiply_n<offset_t>{static_cast<offset_t>(match_every_nth)});
+  const bool all_results_correct = thrust::equal(out.cbegin(), out.cend(), expected_out_it);
   REQUIRE(all_results_correct == true);
 }
-catch (std::bad_alloc&)
+catch (...)
 {
-  // Exceeding memory is not a failure.
-  SUCCEED("exceeding memory is not a failure");
+  c2h::skip_if_allocation_failure();
 }
 
-C2H_TEST("DeviceSelect::If works for very large number of output items",
-         "[device][select_if][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
+CUB_TEST("DeviceSelect::If works for very large number of output items",
+         "[device][select_if][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_LARGE)
 try
 {
   using type     = std::uint8_t;
@@ -524,7 +449,7 @@ try
   // The partition size (the maximum number of items processed by a single kernel invocation) is an important boundary
   constexpr auto max_partition_size = static_cast<offset_t>(cuda::std::numeric_limits<std::int32_t>::max());
 
-  offset_t num_items = GENERATE_COPY(
+  const offset_t num_items = GENERATE_COPY(
     values({
       offset_t{2} * max_partition_size + offset_t{20000000}, // 3 partitions
       offset_t{2} * max_partition_size, // 2 partitions
@@ -554,16 +479,15 @@ try
 
   // Ensure that we created the correct output
   REQUIRE(num_selected_out[0] == num_items);
-  bool all_results_correct = thrust::equal(out.cbegin(), out.cend(), in);
+  const bool all_results_correct = thrust::equal(out.cbegin(), out.cend(), in);
   REQUIRE(all_results_correct == true);
 }
-catch (std::bad_alloc&)
+catch (...)
 {
-  // Exceeding memory is not a failure.
-  SUCCEED("exceeding memory is not a failure");
+  c2h::skip_if_allocation_failure();
 }
 
-C2H_TEST("DeviceSelect::If works with iterators", "[device][select_if]")
+CUB_TEST("DeviceSelect::If works with iterators", "[device][select_if]", CUB_SMALL)
 {
   using type = int;
 

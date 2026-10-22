@@ -30,7 +30,8 @@ struct policy_selector_t
 #  endif
 
     constexpr int nominal_4b_items_per_thread = TUNE_ITEMS_PER_THREAD;
-    constexpr int items_per_thread            = cuda::std::max(1, (nominal_4b_items_per_thread * 4 / sizeof(KeyInT)));
+    constexpr int items_per_thread =
+      cuda::std::max(1, static_cast<int>(nominal_4b_items_per_thread * 4 / sizeof(KeyInT)));
     return cub::detail::topk::topk_policy{
       TUNE_THREADS_PER_BLOCK,
       items_per_thread,

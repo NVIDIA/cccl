@@ -14,6 +14,14 @@ from cuda.compute import (
     serialize,
 )
 
+# Replaces a former autouse fixture that monkeypatched _cccl_interop._check_sass
+# to False for every test here. The marker is equivalent -- conftest's verify_sass
+# returns early on it -- and keeps monkeypatch out of the fixture closure, which
+# pytest-run-parallel would otherwise treat as thread-unsafe and serialize.
+pytestmark = pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+
 DTYPE_LIST = [
     np.int32,
     np.int64,
@@ -35,15 +43,6 @@ def random_sorted_array(size, dtype, max_value=1000):
             data = rng.random(size=size, dtype=dtype)
     data.sort()
     return data
-
-
-@pytest.fixture(scope="function", autouse=True)
-def disable_sass_check(monkeypatch):
-    monkeypatch.setattr(
-        cuda.compute._cccl_interop,
-        "_check_sass",
-        False,
-    )
 
 
 @pytest.mark.parametrize(

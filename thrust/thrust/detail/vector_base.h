@@ -428,6 +428,7 @@ public:
   /*! This method swaps the contents of this vector_base with another vector_base.
    *  \param v The vector_base with which to swap.
    */
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   void swap(vector_base& v) noexcept(::cuda::std::is_nothrow_swappable_v<storage_type>
                                      && ::cuda::std::is_nothrow_swappable_v<size_type>)
   {
@@ -507,10 +508,10 @@ public:
 
 protected:
   // Our storage
-  storage_type m_storage;
+  storage_type m_storage; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   // The size of this vector_base, in number of elements.
-  size_type m_size;
+  size_type m_size; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
 private:
   template <typename InputIterator>
@@ -560,7 +561,7 @@ private:
    *  \param b The second vector of interest. After completion, the contents
    *           of a will be returned here.
    */
-  friend void swap(vector_base& a, vector_base& b) noexcept(noexcept(a.swap(b)))
+  friend void swap(vector_base& a, vector_base& b) noexcept(noexcept(a.swap(b))) // NOLINT(bugprone-exception-escape)
   {
     a.swap(b);
   }

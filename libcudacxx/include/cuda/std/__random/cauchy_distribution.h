@@ -47,26 +47,28 @@ public:
   public:
     using distribution_type = cauchy_distribution;
 
-    _CCCL_API constexpr explicit param_type(result_type __a = 0, result_type __b = 1) noexcept
+    _CCCL_HOST_DEVICE_API constexpr explicit param_type(result_type __a = 0, result_type __b = 1) noexcept
         : __a_{__a}
         , __b_{__b}
     {}
 
-    [[nodiscard]] _CCCL_API constexpr result_type a() const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type a() const noexcept
     {
       return __a_;
     }
-    [[nodiscard]] _CCCL_API constexpr result_type b() const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type b() const noexcept
     {
       return __b_;
     }
 
-    [[nodiscard]] friend _CCCL_API constexpr bool operator==(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr bool
+    operator==(const param_type& __x, const param_type& __y) noexcept
     {
       return __x.__a_ == __y.__a_ && __x.__b_ == __y.__b_;
     }
 #if _CCCL_STD_VER <= 2017
-    [[nodiscard]] friend _CCCL_API constexpr bool operator!=(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr bool
+    operator!=(const param_type& __x, const param_type& __y) noexcept
     {
       return !(__x == __y);
     }
@@ -79,22 +81,22 @@ private:
 public:
   // constructor and reset functions
   constexpr cauchy_distribution() noexcept = default;
-  _CCCL_API constexpr explicit cauchy_distribution(result_type __a, result_type __b = 1) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit cauchy_distribution(result_type __a, result_type __b = 1) noexcept
       : __p_{param_type{__a, __b}}
   {}
-  _CCCL_API constexpr explicit cauchy_distribution(const param_type& __p) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit cauchy_distribution(const param_type& __p) noexcept
       : __p_{__p}
   {}
-  _CCCL_API constexpr void reset() noexcept {}
+  _CCCL_HOST_DEVICE_API constexpr void reset() noexcept {}
 
   // generating functions
   template <class _URng>
-  [[nodiscard]] _CCCL_API result_type operator()(_URng& __g)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API result_type operator()(_URng& __g)
   {
     return (*this)(__g, __p_);
   }
   template <class _URng>
-  [[nodiscard]] _CCCL_API result_type operator()(_URng& __g, const param_type& __p)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API result_type operator()(_URng& __g, const param_type& __p)
   {
     static_assert(__cccl_random_is_valid_urng<_URng>, "URng must meet the UniformRandomBitGenerator requirements");
     uniform_real_distribution<result_type> __gen;
@@ -103,40 +105,40 @@ public:
   }
 
   // property functions
-  [[nodiscard]] _CCCL_API constexpr result_type a() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type a() const noexcept
   {
     return __p_.a();
   }
-  [[nodiscard]] _CCCL_API constexpr result_type b() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type b() const noexcept
   {
     return __p_.b();
   }
 
-  [[nodiscard]] _CCCL_API constexpr param_type param() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr param_type param() const noexcept
   {
     return __p_;
   }
-  _CCCL_API constexpr void param(const param_type& __p) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void param(const param_type& __p) noexcept
   {
     __p_ = __p;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr result_type min() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type min() noexcept
   {
     return -numeric_limits<result_type>::infinity();
   }
-  [[nodiscard]] _CCCL_API static constexpr result_type max() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type max() noexcept
   {
     return numeric_limits<result_type>::infinity();
   }
 
-  [[nodiscard]] friend _CCCL_API constexpr bool
+  [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr bool
   operator==(const cauchy_distribution& __x, const cauchy_distribution& __y) noexcept
   {
     return __x.__p_ == __y.__p_;
   }
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] friend _CCCL_API constexpr bool
+  [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr bool
   operator!=(const cauchy_distribution& __x, const cauchy_distribution& __y) noexcept
   {
     return !(__x == __y);

@@ -25,6 +25,7 @@
 #include <cuda/std/__fwd/reference_wrapper.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
@@ -48,9 +49,9 @@ private:
 
 public:
   // NOLINTBEGIN(bugprone-forwarding-reference-overload)
-  template <
-    class _Up,
-    class = enable_if_t<!__is_same_uncvref<_Up, reference_wrapper>::value, decltype(__fun(::cuda::std::declval<_Up>()))>>
+  template <class _Up,
+            class = enable_if_t<!is_same_v<remove_cvref_t<_Up>, reference_wrapper>,
+                                decltype(__fun(::cuda::std::declval<_Up>()))>>
   _CCCL_API constexpr reference_wrapper(_Up&& __u) noexcept(noexcept(__fun(::cuda::std::declval<_Up>())))
   {
     type& __f = static_cast<_Up&&>(__u);

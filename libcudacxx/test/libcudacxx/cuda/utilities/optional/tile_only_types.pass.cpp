@@ -20,8 +20,9 @@
 #include "test_macros.h"
 
 template <class T>
-TEST_TILE_FUNC void test()
+__tile__ void test()
 {
+#if _CCCL_TILE_COMPILATION()
   using optional = cuda::std::optional<T>;
   { // default construction
     optional default_constructed{};
@@ -133,12 +134,15 @@ TEST_TILE_FUNC void test()
     assert(*lhs == 42);
     assert(*rhs == 1337);
   }
+#endif // _CCCL_TILE_COMPILATION()
 }
 
-TEST_TILE_FUNC void test()
+__tile__ void test()
 {
+#if _CCCL_TILE_COMPILATION()
   test<tile_only_type>();
   test<tile_only_type&>();
+#endif // _CCCL_TILE_COMPILATION()
 }
 
 __tile_global__ void test_kernel()

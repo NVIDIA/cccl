@@ -24,8 +24,6 @@
 
 namespace
 {
-namespace test
-{
 // RAII wrapper around a pinned-memory allocation.
 template <typename T>
 struct pinned_array
@@ -59,7 +57,6 @@ struct pinned_array
     return __ptr[i];
   }
 };
-} // namespace test
 
 struct write_iota
 {
@@ -110,13 +107,13 @@ struct sum_to_ptr
 
 C2H_TEST("graph_buffer with no_init allocates and can be written/read", "[graph][graph_buffer]")
 {
-  cudax::stream s{cuda::device_ref{0}};
+  const cudax::stream s{cuda::device_ref{0}};
   constexpr int N = 10;
 
   cudax::graph_builder g;
   cudax::path_builder pb = cudax::start_path(g);
 
-  cudax::graph_memory_resource mr{cuda::device_ref{0}};
+  const cudax::graph_memory_resource mr{cuda::device_ref{0}};
   cudax::graph_buffer<int> buf(pb, mr, N, cuda::no_init);
 
   REQUIRE(buf.size() == N);
@@ -139,14 +136,14 @@ C2H_TEST("graph_buffer with no_init allocates and can be written/read", "[graph]
 
 C2H_TEST("graph_buffer with zero-fill initializes to zero", "[graph][graph_buffer]")
 {
-  cudax::stream s{cuda::device_ref{0}};
+  const cudax::stream s{cuda::device_ref{0}};
   constexpr int N = 16;
 
   cudax::graph_builder g;
   cudax::path_builder pb = cudax::start_path(g);
 
-  cudax::graph_memory_resource mr{cuda::device_ref{0}};
-  int zero = 0;
+  const cudax::graph_memory_resource mr{cuda::device_ref{0}};
+  const int zero = 0;
   cudax::graph_buffer<int> buf(pb, mr, N, zero);
 
   // Verify all zeros
@@ -161,8 +158,8 @@ C2H_TEST("graph_buffer with zero-fill initializes to zero", "[graph][graph_buffe
 
 C2H_TEST("graph_buffer from span", "[graph][graph_buffer]")
 {
-  cudax::stream s{cuda::device_ref{0}};
-  test::pinned_array<int> host_data{6};
+  const cudax::stream s{cuda::device_ref{0}};
+  const pinned_array<int> host_data{6};
   for (int i = 0; i < 6; ++i)
   {
     host_data[i] = i + 1;
@@ -171,12 +168,12 @@ C2H_TEST("graph_buffer from span", "[graph][graph_buffer]")
   cudax::graph_builder g;
   cudax::path_builder pb = cudax::start_path(g);
 
-  cudax::graph_memory_resource mr{cuda::device_ref{0}};
+  const cudax::graph_memory_resource mr{cuda::device_ref{0}};
   cudax::graph_buffer<int> buf(pb, mr, cuda::std::span<const int>{host_data.get(), 6});
 
   REQUIRE(buf.size() == 6);
 
-  test::pinned_array<int> result{6};
+  const pinned_array<int> result{6};
   cudax::copy_bytes(pb, buf, cuda::std::span<int>{result.get(), 6});
 
   buf.destroy(pb);
@@ -193,17 +190,17 @@ C2H_TEST("graph_buffer from span", "[graph][graph_buffer]")
 
 C2H_TEST("graph_buffer from initializer_list", "[graph][graph_buffer]")
 {
-  cudax::stream s{cuda::device_ref{0}};
+  const cudax::stream s{cuda::device_ref{0}};
 
   cudax::graph_builder g;
   cudax::path_builder pb = cudax::start_path(g);
 
-  cudax::graph_memory_resource mr{cuda::device_ref{0}};
+  const cudax::graph_memory_resource mr{cuda::device_ref{0}};
   cudax::graph_buffer<int> buf(pb, mr, {10, 20, 30, 40});
 
   REQUIRE(buf.size() == 4);
 
-  test::pinned_array<int> result{4};
+  const pinned_array<int> result{4};
   cudax::copy_bytes(pb, buf, cuda::std::span<int>{result.get(), 4});
 
   buf.destroy(pb);
@@ -220,13 +217,13 @@ C2H_TEST("graph_buffer from initializer_list", "[graph][graph_buffer]")
 
 C2H_TEST("make_buffer factory with no_init", "[graph][graph_buffer]")
 {
-  cudax::stream s{cuda::device_ref{0}};
+  const cudax::stream s{cuda::device_ref{0}};
   constexpr int N = 8;
 
   cudax::graph_builder g;
   cudax::path_builder pb = cudax::start_path(g);
 
-  cudax::graph_memory_resource mr{cuda::device_ref{0}};
+  const cudax::graph_memory_resource mr{cuda::device_ref{0}};
   auto buf = cudax::make_buffer<int>(pb, mr, N, cuda::no_init);
 
   REQUIRE(buf.size() == N);
@@ -243,8 +240,8 @@ C2H_TEST("make_buffer factory with no_init", "[graph][graph_buffer]")
 
 C2H_TEST("graph_buffer on forked paths", "[graph][graph_buffer]")
 {
-  cudax::stream s{cuda::device_ref{0}};
-  test::pinned_array<int> result_mem{1};
+  const cudax::stream s{cuda::device_ref{0}};
+  const pinned_array<int> result_mem{1};
   int* result = result_mem.get();
 
   constexpr int N = 10;
@@ -252,7 +249,7 @@ C2H_TEST("graph_buffer on forked paths", "[graph][graph_buffer]")
   cudax::graph_builder g;
   cudax::path_builder pb = cudax::start_path(g);
 
-  cudax::graph_memory_resource mr{cuda::device_ref{0}};
+  const cudax::graph_memory_resource mr{cuda::device_ref{0}};
   cudax::graph_buffer<int> buf(pb, mr, N, cuda::no_init);
 
   // Write on one path
@@ -278,9 +275,9 @@ C2H_TEST("graph_buffer move semantics", "[graph][graph_buffer]")
 {
   cudax::graph_builder g;
   cudax::path_builder pb = cudax::start_path(g);
-  cudax::stream s{cuda::device_ref{0}};
+  const cudax::stream s{cuda::device_ref{0}};
 
-  cudax::graph_memory_resource mr{cuda::device_ref{0}};
+  const cudax::graph_memory_resource mr{cuda::device_ref{0}};
   cudax::graph_buffer<int> buf1(pb, mr, 4, cuda::no_init);
 
   auto* original_data = buf1.data();
@@ -311,9 +308,9 @@ C2H_TEST("graph_buffer empty buffer", "[graph][graph_buffer]")
 {
   cudax::graph_builder g;
   cudax::path_builder pb = cudax::start_path(g);
-  cudax::stream s{cuda::device_ref{0}};
+  const cudax::stream s{cuda::device_ref{0}};
 
-  cudax::graph_memory_resource mr{cuda::device_ref{0}};
+  const cudax::graph_memory_resource mr{cuda::device_ref{0}};
   cudax::graph_buffer<int> buf(pb, mr, 0, cuda::no_init);
 
   REQUIRE(buf.data() == nullptr);

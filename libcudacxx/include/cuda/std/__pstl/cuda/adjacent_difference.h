@@ -31,21 +31,21 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 #  include <cub/device/device_adjacent_difference.cuh>
+#  include <cub/util_namespace.cuh>
 
 _CCCL_DIAG_POP
 
-#  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/call_or.h>
+#  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__execution/env.h>
-#  include <cuda/std/__execution/policy.h>
+#  include <cuda/std/__fwd/execution_policy.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__numeric/adjacent_difference.h>
 #  include <cuda/std/__pstl/cuda/ensure_current_context.h>
-#  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__utility/move.h>
@@ -55,7 +55,6 @@ _CCCL_DIAG_POP
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
-
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__adjacent_difference, __execution_backend::__cuda>
 {
@@ -73,7 +72,7 @@ struct __pstl_dispatch<__pstl_algorithm::__adjacent_difference, __execution_back
     const auto __count = ::cuda::std::distance(__first, __last);
 
     // We pass the policy as an environment to DeviceAdjacentDifference
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceAdjacentDifference::SubtractLeftCopy,
       "__pstl_cuda_merge: kernel launch of cub::DeviceAdjacentDifference::SubtractLeftCopy failed",
       ::cuda::std::move(__first),
@@ -89,12 +88,12 @@ struct __pstl_dispatch<__pstl_algorithm::__adjacent_difference, __execution_back
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _OutputIterator, class _BinaryOp)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND __has_forward_traversal<_OutputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _OutputIterator operator()(
+  [[nodiscard]] _CCCL_HOST_API _OutputIterator _CCCL_STATIC_CALL_OPERATOR(
     [[maybe_unused]] const _Policy& __policy,
     _InputIterator __first,
     _InputIterator __last,
     _OutputIterator __result,
-    _BinaryOp __binary_op) const
+    _BinaryOp __binary_op)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>
                   && ::cuda::std::__has_random_access_traversal<_OutputIterator>)

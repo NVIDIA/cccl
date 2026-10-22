@@ -8,9 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: return in loop statement is not supported
-
 #include <cuda/devices>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -44,12 +41,14 @@ TEST_FUNC constexpr bool test()
   assert(all_arch_ids[i++] == cuda::arch_id::sm_90);
   assert(all_arch_ids[i++] == cuda::arch_id::sm_100);
   assert(all_arch_ids[i++] == cuda::arch_id::sm_103);
+  assert(all_arch_ids[i++] == cuda::arch_id::sm_107);
   assert(all_arch_ids[i++] == cuda::arch_id::sm_110);
   assert(all_arch_ids[i++] == cuda::arch_id::sm_120);
   assert(all_arch_ids[i++] == cuda::arch_id::sm_121);
   assert(all_arch_ids[i++] == cuda::arch_id::sm_90a);
   assert(all_arch_ids[i++] == cuda::arch_id::sm_100a);
   assert(all_arch_ids[i++] == cuda::arch_id::sm_103a);
+  assert(all_arch_ids[i++] == cuda::arch_id::sm_107a);
   assert(all_arch_ids[i++] == cuda::arch_id::sm_110a);
   assert(all_arch_ids[i++] == cuda::arch_id::sm_120a);
   assert(all_arch_ids[i++] == cuda::arch_id::sm_121a);

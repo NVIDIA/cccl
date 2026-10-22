@@ -20,17 +20,19 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/iterator_operations.h>
 #include <cuda/std/__algorithm/unwrap_iter.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/cstdlib>
 #include <cuda/std/cstring> // memmove
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -108,8 +110,8 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy,
           class _Tp,
           class _Up,
-          enable_if_t<is_same_v<remove_const_t<_Tp>, _Up>, int> = 0,
-          enable_if_t<is_trivially_copyable_v<_Up>, int>        = 0>
+          enable_if_t<is_same_v<remove_const_t<_Tp>, _Up>, int>  = 0,
+          enable_if_t<::cuda::is_trivially_copyable_v<_Up>, int> = 0>
 _CCCL_API constexpr pair<_Tp*, _Up*> __copy(_Tp* __first, _Tp* __last, _Up* __result)
 {
   const ptrdiff_t __n = __last - __first;
@@ -140,9 +142,12 @@ _CCCL_API constexpr pair<_Tp*, _Up*> __copy(_Tp* __first, _Tp* __last, _Up* __re
 template <class _InputIterator, class _OutputIterator>
 _CCCL_API constexpr _OutputIterator copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
-  return ::cuda::std::__copy<_ClassicAlgPolicy>(
-           ::cuda::std::__unwrap_iter(__first), ::cuda::std::__unwrap_iter(__last), ::cuda::std::__unwrap_iter(__result))
-    .second;
+  auto __ret =
+    ::cuda::std::__copy<_ClassicAlgPolicy>(
+      ::cuda::std::__unwrap_iter(__first), ::cuda::std::__unwrap_iter(__last), ::cuda::std::__unwrap_iter(__result))
+      .second;
+
+  return ::cuda::std::__rewrap_iter(__result, __ret);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

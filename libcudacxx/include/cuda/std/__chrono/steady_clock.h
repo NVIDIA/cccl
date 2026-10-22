@@ -45,7 +45,7 @@ public:
   using time_point                = ::cuda::std::chrono::time_point<steady_clock, duration>;
   static constexpr bool is_steady = true;
 
-  [[nodiscard]] _CCCL_API static time_point now() noexcept;
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static time_point now() noexcept;
 };
 } // namespace chrono
 

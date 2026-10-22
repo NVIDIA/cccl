@@ -17,12 +17,13 @@
 #include <cub/block/block_load_to_shared.cuh>
 #include <cub/block/block_merge_sort.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_namespace.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
-#include <thrust/type_traits/is_trivially_relocatable.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/std/__algorithm/min.h>
@@ -193,7 +194,7 @@ struct agent_t
 
     // Now find the merge path for each of the threads.
     // We can use int type here, because the number of items in shared memory is limited.
-    int diag0_thread = ItemsPerThread * static_cast<int>(threadIdx.x);
+    int diag0_thread = ItemsPerThread * static_cast<int>(threadIdx.x); // NOLINT(misc-const-correctness)
     if constexpr (IsFullTile)
     {
       _CCCL_ASSERT(num_remaining == items_per_tile, "");

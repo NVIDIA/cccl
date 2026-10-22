@@ -70,9 +70,9 @@ bool equal_range(const Buffer& buf)
     {
       return false;
     }
-    cuda::__ensure_current_context guard{buf.stream()};
+    const cuda::__ensure_current_context guard{buf.stream()};
     check_equal_kernel<<<1, 1, 0, buf.stream().get()>>>(buf.begin());
-    CCCLRT_CHECK(cudaGetLastError() == cudaSuccess);
+    CHECK(cudaGetLastError() == cudaSuccess);
     buf.stream().sync();
     return true;
   }
@@ -87,10 +87,10 @@ bool compare_value(const T& value, const T& expected)
   }
   else
   {
-    cuda::__ensure_current_context guard{cuda::device_ref{0}};
+    const cuda::__ensure_current_context guard{cuda::device_ref{0}};
     // copy the value to host
     T host_value;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       ::cudaMemcpy,
       "failed to copy value",
       cuda::std::addressof(host_value),
@@ -110,9 +110,9 @@ void assign_value(T& value, const T& input)
   }
   else
   {
-    cuda::__ensure_current_context guard{cuda::device_ref{0}};
+    const cuda::__ensure_current_context guard{cuda::device_ref{0}};
     // copy the input to device
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       ::cudaMemcpy,
       "failed to copy value",
       cuda::std::addressof(value),
@@ -156,9 +156,9 @@ bool equal_size_value(const Buffer& buf, const size_t size, const typename Buffe
     {
       return false;
     }
-    cuda::__ensure_current_context guard{buf.stream()};
+    const cuda::__ensure_current_context guard{buf.stream()};
     check_equal_value_kernel<<<1, 1, 0, buf.stream().get()>>>(buf.begin(), size, value);
-    CCCLRT_CHECK(cudaGetLastError() == cudaSuccess);
+    CHECK(cudaGetLastError() == cudaSuccess);
     buf.stream().sync();
     return true;
   }
@@ -185,8 +185,8 @@ template <class Buffer>
 void check_allocation_device(const Buffer& buf, cuda::device_ref device)
 {
   ::cudaPointerAttributes attributes{};
-  CCCLRT_REQUIRE(::cudaPointerGetAttributes(&attributes, buf.data()) == ::cudaSuccess);
-  CCCLRT_CHECK(attributes.device == device.get());
+  REQUIRE(::cudaPointerGetAttributes(&attributes, buf.data()) == ::cudaSuccess);
+  CHECK(attributes.device == device.get());
 }
 
 // helper class as we need to pass the properties in a tuple to the catch tests
@@ -269,12 +269,12 @@ static_assert(::cuda::is_trivially_copyable_v<custom_char3>, "cuda::buffer will 
 
 #if _CCCL_CTK_AT_LEAST(12, 9)
 using test_types =
-  c2h::type_list<cuda::buffer<int, cuda::mr::host_accessible>,
-                 cuda::buffer<unsigned long long, cuda::mr::device_accessible>,
-                 cuda::buffer<short, cuda::mr::device_accessible>,
-                 cuda::buffer<float, cuda::mr::device_accessible>,
+  c2h::type_list<cuda::host_buffer<int>,
+                 cuda::device_buffer<unsigned long long>,
+                 cuda::device_buffer<short>,
+                 cuda::device_buffer<float>,
                  cuda::buffer<int, cuda::mr::host_accessible, cuda::mr::device_accessible>,
-                 cuda::buffer<::custom_char3, cuda::mr::device_accessible>>;
+                 cuda::device_buffer<::custom_char3>>;
 #else // ^^^ _CCCL_CTK_AT_LEAST(12, 9) ^^^ / vvv _CCCL_CTK_BELOW(12, 9) vvv
 using test_types =
   c2h::type_list<cuda::buffer<int, cuda::mr::device_accessible>,

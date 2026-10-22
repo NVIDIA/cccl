@@ -11,6 +11,10 @@
 
 #include <cstdio>
 
+#include "cub_non_catch2_test_memory.h"
+
+CUB_TEST_MEMORY_CLASS(CUB_SMALL);
+
 int main()
 {
   int in_h[2] = {1, 1};

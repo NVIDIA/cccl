@@ -12,10 +12,10 @@
 // UNSUPPORTED: nvrtc
 // UNSUPPORTED: nvhpc
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
-
 // Test the fix for https://llvm.org/PR54100
+
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 #include <cuda/std/__memory_>
 #include <cuda/std/cassert>

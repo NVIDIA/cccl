@@ -146,8 +146,10 @@ public:
 
   //! @brief Asynchronously resets the estimator, i.e., clears the current count estimate.
   //!
+  //! @throw cuda::cuda_error If the kernel launch fails.
+  //!
   //! @param __stream CUDA stream this operation is executed in
-  _CCCL_HOST_API constexpr void clear_async(::cuda::stream_ref __stream) noexcept
+  _CCCL_HOST_API constexpr void clear_async(::cuda::stream_ref __stream)
   {
     __impl.__clear_async(__stream);
   }
@@ -262,8 +264,7 @@ public:
   //! @param __group CUDA thread block group this operation is executed in
   //!
   //! @return Approximate distinct items count
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::size_t
-  estimate(const ::cooperative_groups::thread_block& __group) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API double estimate(const ::cooperative_groups::thread_block& __group) const noexcept
   {
     return __impl.__estimate(__group);
   }
@@ -280,7 +281,7 @@ public:
   //!
   //! @return Approximate distinct items count
   template <typename _HostMemoryResource = ::cuda::mr::legacy_pinned_memory_resource>
-  [[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::size_t
+  [[nodiscard]] _CCCL_HOST_API constexpr double
   estimate(::cuda::stream_ref __stream, _HostMemoryResource __host_mr = {}) const
   {
     return __impl.__estimate(__host_mr, __stream);
@@ -289,7 +290,7 @@ public:
   //! @brief Gets the hash function.
   //!
   //! @return The hash function
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto hash_function() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto hash_function() const
   {
     return __impl.__hash_function();
   }

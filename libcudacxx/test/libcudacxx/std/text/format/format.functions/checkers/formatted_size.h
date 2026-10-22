@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class CharT, class... Args>
-TEST_FUNC _CCCL_NOINLINE bool
+TEST_HOST_DEVICE_FUNC _CCCL_NOINLINE bool
 check(cuda::std::basic_string_view<CharT> expected, test_format_string<CharT, Args...> fmt, Args&&... args)
 {
   const auto size = cuda::std::formatted_size(fmt, cuda::std::forward<Args>(args)...);
@@ -23,7 +23,7 @@ check(cuda::std::basic_string_view<CharT> expected, test_format_string<CharT, Ar
 }
 
 template <class CharT, class... Args>
-TEST_FUNC bool check_exception(cuda::std::string_view, cuda::std::basic_string_view<CharT>, Args&&...)
+TEST_HOST_DEVICE_FUNC bool check_exception(cuda::std::string_view, cuda::std::basic_string_view<CharT>, Args&&...)
 {
   // After P2216 most exceptions thrown by std::formatted_size become ill-formed.
   // Therefore this tests does nothing.

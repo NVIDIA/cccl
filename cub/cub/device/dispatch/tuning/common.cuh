@@ -13,13 +13,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_type.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/numeric_traits.cuh>
+#include <cub/detail/type_size.cuh>
+#include <cub/util_device.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
-#include <thrust/type_traits/is_trivially_relocatable.h>
 
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
+#include <cuda/__functional/operator_properties.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__fwd/format.h>
@@ -100,20 +104,18 @@ enum class op_kind_t
   plus,
   min,
   max,
+  arg_extremum, // both argmin and argmax
+  argminmax,
   other
 };
 
-template <typename T>
-inline constexpr auto classify_op = op_kind_t::other;
-
-template <typename T>
-inline constexpr auto classify_op<::cuda::std::plus<T>> = op_kind_t::plus;
-
-template <typename T>
-inline constexpr auto classify_op<::cuda::minimum<T>> = op_kind_t::min;
-
-template <typename T>
-inline constexpr auto classify_op<::cuda::maximum<T>> = op_kind_t::max;
+template <typename Op>
+inline constexpr auto classify_op =
+  ::cuda::__is_cuda_std_plus_v<Op>  ? op_kind_t::plus
+  : ::cuda::__is_cuda_minimum_v<Op> ? op_kind_t::min
+  : ::cuda::__is_cuda_maximum_v<Op>
+    ? op_kind_t::max
+    : op_kind_t::other;
 
 struct iterator_info
 {
@@ -130,7 +132,7 @@ template <typename It>
   return iterator_info{
     static_cast<int>(size_of<vt>),
     static_cast<int>(align_of<vt>),
-    THRUST_NS_QUALIFIER::is_trivially_relocatable_v<vt>,
+    ::cuda::is_trivially_copyable_v<vt>,
     THRUST_NS_QUALIFIER::is_contiguous_iterator_v<It>};
 }
 
@@ -206,7 +208,7 @@ enum class LookbackDelayAlgorithm
 
 namespace detail
 {
-[[nodiscard]] _CCCL_API constexpr const char* to_string(LookbackDelayAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(LookbackDelayAlgorithm algo) noexcept
 {
   switch (algo)
   {

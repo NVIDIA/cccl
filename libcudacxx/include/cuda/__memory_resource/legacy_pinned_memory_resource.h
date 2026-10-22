@@ -27,11 +27,9 @@
 #  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
-#  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__runtime/ensure_current_context.h>
-#  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -68,7 +66,7 @@ public:
       _CCCL_THROW(::std::invalid_argument, "Invalid alignment passed to legacy_pinned_memory_resource::allocate_sync.");
     }
 
-    ::cuda::__ensure_current_context __guard(__device_);
+    const ::cuda::__ensure_current_context __guard(__device_);
     void* __ptr = ::cuda::__driver::__mallocHost(__bytes);
     return __ptr;
   }
@@ -85,7 +83,7 @@ public:
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _CCCL_ASSERT(__is_valid_alignment(__alignment),
                  "Invalid alignment passed to legacy_pinned_memory_resource::deallocate_sync.");
-    _CCCL_ASSERT_CUDA_API(
+    _CCCL_ASSERT_DRIVER_API(
       ::cuda::__driver::__freeHostNoThrow, "legacy_pinned_memory_resource::deallocate_sync failed", __ptr);
   }
 

@@ -61,8 +61,8 @@ count_if(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Inp
   using InputType = thrust::detail::it_value_t<InputIterator>;
   using CountType = thrust::detail::it_difference_t<InputIterator>;
 
-  thrust::system::detail::generic::count_if_transform<InputType, Predicate, CountType> unary_op(pred);
-  ::cuda::std::plus<CountType> binary_op;
+  const thrust::system::detail::generic::count_if_transform<InputType, Predicate, CountType> unary_op(pred);
+  const ::cuda::std::plus<CountType> binary_op;
   return thrust::transform_reduce(exec, first, last, unary_op, CountType(0), binary_op);
 } // end count_if()
 } // namespace system::detail::generic

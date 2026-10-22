@@ -27,8 +27,10 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/simd.h>
 #include <cuda/std/__iterator/default_sentinel.h>
+#include <cuda/std/__simd/abi.h>
+#include <cuda/std/__simd/exposition.h>
 #include <cuda/std/__simd/iterator.h>
-#include <cuda/std/__simd/specializations/fixed_size_mask.h>
+#include <cuda/std/__simd/specializations/fixed_size_mask.h> // IWYU pragma: keep
 #include <cuda/std/__simd/utility.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -354,7 +356,7 @@ public:
 
   // [simd.mask.cond], basic_mask exposition-only conditional operators
 
-  [[nodiscard]] _CCCL_API friend constexpr basic_mask
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_mask
   __simd_select_impl(const basic_mask& __mask, const basic_mask& __a, const basic_mask& __b) noexcept
   {
     basic_mask __result{};
@@ -368,7 +370,7 @@ public:
 
   _CCCL_TEMPLATE(typename _TpA, typename _TpB)
   _CCCL_REQUIRES(same_as<_TpA, bool> _CCCL_AND same_as<_TpB, bool>)
-  [[nodiscard]] _CCCL_API friend constexpr basic_mask
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_mask
   __simd_select_impl(const basic_mask& __mask, const _TpA __a, const _TpB __b) noexcept
   {
     basic_mask __result{};
@@ -382,7 +384,7 @@ public:
 
   _CCCL_TEMPLATE(typename _TpA, typename _TpB)
   _CCCL_REQUIRES(same_as<_TpA, _TpB> _CCCL_AND __is_vectorizable_v<_TpA> _CCCL_AND(sizeof(_TpA) == _Bytes))
-  [[nodiscard]] _CCCL_API friend constexpr vec<_TpA, __size>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr vec<_TpA, __size>
   __simd_select_impl(const basic_mask& __mask, const _TpA& __a, const _TpB& __b) noexcept
   {
     using _Vec = vec<_TpA, __size>;

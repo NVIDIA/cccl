@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 // <memory>
 
@@ -28,7 +28,7 @@ TEST_GLOBAL_VARIABLE int TT_count = 0;
 struct TT
 {
   int state_;
-  TEST_FUNC TEST_CONSTEXPR_CXX23 TT()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 TT()
       : state_(-1)
   {
     if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
@@ -36,7 +36,7 @@ struct TT
       ++TT_count;
     }
   }
-  TEST_FUNC TEST_CONSTEXPR_CXX23 explicit TT(int i)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 explicit TT(int i)
       : state_(i)
   {
     if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
@@ -44,7 +44,7 @@ struct TT
       ++TT_count;
     }
   }
-  TEST_FUNC TEST_CONSTEXPR_CXX23 TT(const TT& a)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 TT(const TT& a)
       : state_(a.state_)
   {
     if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
@@ -52,12 +52,12 @@ struct TT
       ++TT_count;
     }
   }
-  TEST_FUNC TEST_CONSTEXPR_CXX23 TT& operator=(const TT& a)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 TT& operator=(const TT& a)
   {
     state_ = a.state_;
     return *this;
   }
-  TEST_FUNC TEST_CONSTEXPR_CXX23 ~TT()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 ~TT()
   {
     if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
@@ -65,14 +65,15 @@ struct TT
     }
   }
 
-  TEST_FUNC friend TEST_CONSTEXPR_CXX23 bool operator==(const TT& x, const TT& y)
+  TEST_HOST_DEVICE_FUNC friend TEST_CONSTEXPR_CXX23 bool operator==(const TT& x, const TT& y)
   {
     return x.state_ == y.state_;
   }
 };
 
 template <class T>
-TEST_FUNC TEST_CONSTEXPR_CXX23 typename cuda::std::remove_all_extents<T>::type* newValueInit(int size, int new_value)
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 typename cuda::std::remove_all_extents<T>::type*
+newValueInit(int size, int new_value)
 {
   using VT = typename cuda::std::remove_all_extents<T>::type;
   VT* p    = newValue<T>(size);
@@ -84,7 +85,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 typename cuda::std::remove_all_extents<T>::type* 
 }
 
 template <bool IsArray>
-TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
 {
   using VT               = typename cuda::std::conditional<IsArray, TT[], TT>::type;
   const int expect_alive = IsArray ? 5 : 1;
@@ -123,7 +124,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
   }
 }
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   test_basic</*IsArray*/ false>();
   test_basic<true>();

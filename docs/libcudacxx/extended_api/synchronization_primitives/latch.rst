@@ -63,8 +63,11 @@ Example
      // This latch is suitable for all threads on the current processor (e.g. GPU).
      cuda::latch<cuda::thread_scope_device> c(10);
 
+     // This latch is suitable for all threads in the same thread block cluster.
+     cuda::latch<cuda::thread_scope_cluster> d(10);
+
      // This latch is suitable for all threads in the same thread block.
-     cuda::latch<cuda::thread_scope_block> d(10);
+     cuda::latch<cuda::thread_scope_block> e(10);
    }
 
 `See it on Godbolt <https://godbolt.org/z/8v4dcK7fa>`_

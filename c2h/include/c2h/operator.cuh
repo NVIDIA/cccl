@@ -25,6 +25,10 @@ inline const T identity_v<cuda::std::plus<>, T> = T{}; // e.g. short2, float2, c
  * half_t specializations
  **********************************************************************************************************************/
 
+// The fp16/bf16 identity tables below are initialized from non-constexpr, non-noexcept constructors (and CUDA's
+// numeric_limits for __half/__nv_bfloat16), i.e. dynamic static initialization that clang-tidy conservatively flags as
+// potentially throwing.
+// NOLINTBEGIN(bugprone-throwing-static-initialization)
 template <>
 inline const half_t identity_v<cuda::std::plus<>, half_t> = half_t{0.0f};
 
@@ -91,6 +95,7 @@ inline const __half2 identity_v<cuda::minimum<>, __half2> =
 template <>
 inline const __nv_bfloat162 identity_v<cuda::minimum<>, __nv_bfloat162> =
   __nv_bfloat162{cuda::std::numeric_limits<__nv_bfloat16>::max(), cuda::std::numeric_limits<__nv_bfloat16>::max()};
+// NOLINTEND(bugprone-throwing-static-initialization)
 
 template <template <typename> class... Policies>
 inline const c2h::custom_type_t<Policies...> identity_v<cuda::maximum<>, c2h::custom_type_t<Policies...>> =

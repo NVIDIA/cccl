@@ -17,8 +17,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/constant.cuh>
+#include <cub/detail/numeric_traits.cuh>
+#include <cub/detail/unit_word.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
+
+#include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__memory/pointer_traits.h>
@@ -31,7 +35,7 @@ CUB_NAMESPACE_BEGIN
 //-----------------------------------------------------------------------------
 
 //! @brief Enumeration of cache modifiers for memory store operations.
-enum CacheStoreModifier
+enum CacheStoreModifier // NOLINT(cppcoreguidelines-use-enum-class)
 {
   STORE_DEFAULT, ///< Default (no modifier)
   STORE_WB, ///< Cache write-back all coherent levels
@@ -316,7 +320,7 @@ ThreadStore(T* ptr, T val, detail::constant_t<MODIFIER> /*modifier*/, ::cuda::st
 template <CacheStoreModifier MODIFIER, typename OutputIteratorT, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStore(OutputIteratorT itr, T val)
 {
-  if constexpr (!::cuda::std::contiguous_iterator<OutputIteratorT> || MODIFIER == STORE_DEFAULT)
+  if constexpr (!THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT> || MODIFIER == STORE_DEFAULT)
   {
     *itr = val;
   }

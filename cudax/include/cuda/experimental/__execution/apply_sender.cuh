@@ -45,7 +45,7 @@ private:
   //! @tparam _Domain The domain to check.
   //! @tparam _Args The arguments to validate against the domain.
   template <class _Domain, class... _Args>
-  using __apply_domain_t _CCCL_NODEBUG_ALIAS = ::cuda::std::
+  using __apply_domain_t _CCCL_NODEBUG = ::cuda::std::
     _If<::cuda::std::_IsValidExpansion<__apply_sender_result_t, _Domain, _Args...>::value, _Domain, default_domain>;
 
 public:
@@ -68,7 +68,7 @@ public:
       _Tag{}, static_cast<_Sndr&&>(__sndr), static_cast<_Args&&>(__args)...)))
       -> __apply_sender_result_t<__apply_domain_t<_Domain, _Tag, _Sndr, _Args...>, _Tag, _Sndr, _Args...>
   {
-    using __dom_t _CCCL_NODEBUG_ALIAS = __apply_domain_t<_Domain, _Tag, _Sndr, _Args...>;
+    using __dom_t _CCCL_NODEBUG = __apply_domain_t<_Domain, _Tag, _Sndr, _Args...>;
     //! Calls the algorithm specified by _Tag using the determined domain.
     return __dom_t{}.apply_sender(_Tag{}, static_cast<_Sndr&&>(__sndr), static_cast<_Args&&>(__args)...);
   }

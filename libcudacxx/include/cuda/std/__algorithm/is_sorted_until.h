@@ -22,7 +22,6 @@
 
 #include <cuda/std/__algorithm/comp.h>
 #include <cuda/std/__algorithm/comp_ref_type.h>
-#include <cuda/std/__iterator/iterator_traits.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -40,8 +39,7 @@ __is_sorted_until(_ForwardIterator __first, _ForwardIterator __last, _Compare __
     {
       if (__comp(*__i, *__first))
       {
-        __last = __i;
-        break;
+        return __i;
       }
       __first = __i;
     }

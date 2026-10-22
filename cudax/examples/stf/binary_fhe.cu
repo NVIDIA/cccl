@@ -45,8 +45,10 @@ public:
     return symbol;
   }
 
+private:
   std::string symbol;
 
+public:
   const logical_data<slice<char>>& data() const
   {
     return l;
@@ -71,9 +73,8 @@ public:
 
   ciphertext encrypt() const;
 
-  logical_data<slice<char>> l;
-
 private:
+  logical_data<slice<char>> l;
   std::vector<char> values;
   mutable context ctx;
 };
@@ -88,9 +89,9 @@ public:
   plaintext decrypt() const
   {
     plaintext p(ctx);
-    p.l = ctx.logical_data(shape_of<slice<char>>(l.shape().size()));
+    p.data() = ctx.logical_data(shape_of<slice<char>>(l.shape().size()));
     // fprintf(stderr, "Decrypting...\n");
-    ctx.parallel_for(l.shape(), l.read(), p.l.write()).set_symbol("decrypt")->*
+    ctx.parallel_for(l.shape(), l.read(), p.data().write()).set_symbol("decrypt")->*
       [] _CCCL_DEVICE(size_t i, auto dctxt, auto dptxt) {
         dptxt(i) = char((dctxt(i) >> 32));
         // printf("DECRYPT %ld : %lx -> %x\n", i, dctxt(i), (int) dptxt(i));
@@ -146,18 +147,17 @@ public:
     return l;
   }
 
-  logical_data<slice<uint64_t>> l;
-
 private:
+  logical_data<slice<uint64_t>> l;
   mutable context ctx;
 };
 
 ciphertext plaintext::encrypt() const
 {
   ciphertext c(ctx);
-  c.l = ctx.logical_data(shape_of<slice<uint64_t>>(l.shape().size()));
+  c.data() = ctx.logical_data(shape_of<slice<uint64_t>>(l.shape().size()));
 
-  ctx.parallel_for(l.shape(), l.read(), c.l.write()).set_symbol("encrypt")->*
+  ctx.parallel_for(l.shape(), l.read(), c.data().write()).set_symbol("encrypt")->*
     [] _CCCL_DEVICE(size_t i, auto dptxt, auto dctxt) {
       // A super safe encryption !
       dctxt(i) = ((uint64_t) (dptxt(i)) << 32 | 0x4);
@@ -195,7 +195,7 @@ int main()
 
   for (size_t i = 0; i < v_out.size(); i++)
   {
-    char expected = circuit(vA[i], vB[i]);
+    const char expected = circuit(vA[i], vB[i]);
     EXPECT(expected == v_out[i]);
   }
 }

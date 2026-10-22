@@ -11,4 +11,6 @@ CheckOptions:
    value:           llvm
  - key:             modernize-use-nullptr.NullMacros
    value:           'NULL'
+ - key:             readability-identifier-naming.TemplateParameterCase
+   value:           CamelCase
 ...

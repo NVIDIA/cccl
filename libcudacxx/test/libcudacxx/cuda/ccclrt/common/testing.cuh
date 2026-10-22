@@ -14,6 +14,7 @@
 #include <cuda/std/detail/__config>
 
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__hierarchy/hierarchy_query_result.h>
 
 #include <nv/target>
 
@@ -23,22 +24,6 @@
 #include "test_macros.h"
 #include "utility.cuh"
 #include <c2h/catch2_test_helper.h>
-
-#define CUDART(call) REQUIRE((call) == cudaSuccess)
-
-#define CCCLRT_REQUIRE(condition) REQUIRE(condition)
-
-#define CCCLRT_CHECK(condition) CHECK(condition)
-
-#define CCCLRT_FAIL(message) FAIL(message)
-
-#define CCCLRT_CHECK_FALSE(condition) CHECK_FALSE(condition)
-
-// Explicit device side require macros for clang-cuda
-#define CCCLRT_REQUIRE_DEVICE(condition)     REQUIRE_DEVICE(condition)
-#define CCCLRT_CHECK_DEVICE(condition)       CHECK(condition)
-#define CCCLRT_FAIL_DEVICE(message)          FAIL(message)
-#define CCCLRT_CHECK_FALSE_DEVICE(condition) CHECK_FALSE(condition)
 
 TEST_FUNC constexpr bool operator==(const dim3& lhs, const dim3& rhs) noexcept
 {
@@ -57,10 +42,19 @@ struct StringMaker<dim3>
     return oss.str();
   }
 };
+
+template <typename T>
+struct StringMaker<cuda::hierarchy_query_result<T>>
+{
+  static std::string convert(cuda::hierarchy_query_result<T> const& result)
+  {
+    std::ostringstream oss;
+    oss << "(" << result.x << ", " << result.y << ", " << result.z << ")";
+    return oss.str();
+  }
+};
 } // namespace Catch
 
-namespace
-{
 namespace test
 {
 inline int count_driver_stack()
@@ -101,11 +95,10 @@ struct ccclrt_test_fixture
   }
   ~ccclrt_test_fixture()
   {
-    CCCLRT_CHECK(count_driver_stack() == 0);
+    CHECK(count_driver_stack() == 0);
   }
 };
 } // namespace test
-} // namespace
 
 // Test macro that should be used in all cccl-rt tests
 // It first empties the driver stack in case some other test has left it non-empty
