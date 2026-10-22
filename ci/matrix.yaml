@@ -81,6 +81,11 @@ workflows:
     - {jobs: ['build_nolid', 'build_lid0', 'build_lid1', 'build_lid2'], project: 'cub', std: 'minmax', ctk: '13.4', cxx: ['gcc', 'clang', 'msvc']}
     - {jobs: ['build'], project: ['libcudacxx', 'thrust'], std: 'minmax', ctk: '13.4', cxx: ['gcc', 'clang', 'msvc']}
 
+  pull_request_fork:
+    - {jobs: ['build'],                     project: ['libcudacxx', 'thrust', 'cudax'], std: 'max',  cxx: ['gcc', 'clang', 'msvc']}
+    - {jobs: ['build_nolid', 'build_lid0'], project: 'cub',                             std: 'max',  cxx: ['gcc', 'clang', 'msvc']}
+    - {jobs: ['test_headers'],              project: 'python', py_version: '3.14',      ctk: '13.X', cxx: ['gcc13', 'msvc2022']}
+
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
     - {jobs: ['build'],                     project: ['libcudacxx', 'thrust'], std: 'minmax', ctk: '12.0', cxx: ['gcc12', 'clang14',            'msvc2019', 'msvc14.39']}

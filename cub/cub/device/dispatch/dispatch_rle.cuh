@@ -22,6 +22,7 @@
 
 #include <cub/agent/agent_rle.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/non_void_value.cuh>
 #include <cub/detail/null_type.cuh>
@@ -31,8 +32,6 @@
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
-
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/max.h>
@@ -450,9 +449,8 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
       _CUB_LOG_KERNEL_LAUNCH("device_scan_init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
 
       // Invoke device_scan_init_kernel to initialize tile descriptors and queue descriptors
-      error = CubDebug(
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
-          .doit(device_scan_init_kernel, tile_status, num_current_tiles, d_num_runs_out));
+      error = CubDebug(detail::TripleChevronFactory{}(init_grid_size, init_kernel_threads, 0, stream)
+                         .doit(device_scan_init_kernel, tile_status, num_current_tiles, d_num_runs_out));
       if (cudaSuccess != error)
       {
         return error;
@@ -494,7 +492,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
           &tmp_num_uniques[buffer_selector ^ 0x01]};
 
         error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, threads_per_block, 0, stream)
+          detail::TripleChevronFactory{}(num_current_tiles, threads_per_block, 0, stream)
             .doit(device_rle_sweep_kernel,
                   d_in + current_partition_offset,
                   d_offsets_out,
@@ -513,7 +511,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
       else
       {
         error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, threads_per_block, 0, stream)
+          detail::TripleChevronFactory{}(num_current_tiles, threads_per_block, 0, stream)
             .doit(device_rle_sweep_kernel,
                   d_in + current_partition_offset,
                   d_offsets_out,
@@ -734,7 +732,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
     _CUB_LOG_KERNEL_LAUNCH("device_scan_init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
+          detail::TripleChevronFactory{}(init_grid_size, init_kernel_threads, 0, stream)
             .doit(&detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
                   tile_status,
                   num_current_tiles,
@@ -776,7 +774,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     }();
 
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, threads_per_block, 0, stream)
+          detail::TripleChevronFactory{}(num_current_tiles, threads_per_block, 0, stream)
             .doit(&detail::rle::DeviceRleSweepKernel<
                     PolicySelector,
                     InputIteratorT,

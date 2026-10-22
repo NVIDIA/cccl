@@ -12,7 +12,7 @@
     "gpu": "optional"
   },
   "containerEnv": {
-    "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
+    "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/rapids-token-sccache-devs",
     "CI": "${localEnv:CI}",
     "CUDA_VERSION": "13.3",
     "CUDAARCHS": "75-real",

@@ -890,6 +890,32 @@ def merge_dispatch_groups(accum_dispatch_groups, new_dispatch_groups):
                 accum_dispatch_groups[group_name][key] += value
 
 
+def remove_gpu_jobs(workflow_dispatch_groups):
+    cpu_dispatch_groups = {}
+    for group_name, group_json in workflow_dispatch_groups.items():
+        standalone = [job for job in group_json["standalone"] if job["gpu_count"] == 0]
+        two_stage = []
+        for pair in group_json["two_stage"]:
+            if any(job["gpu_count"] > 0 for job in pair["producers"]):
+                continue
+            consumers = [job for job in pair["consumers"] if job["gpu_count"] == 0]
+            if consumers:
+                two_stage.append(
+                    {"producers": pair["producers"], "consumers": consumers}
+                )
+            else:
+                # Keep CPU builds even when all their test consumers require GPUs.
+                standalone.extend(pair["producers"])
+
+        if standalone or two_stage:
+            cpu_dispatch_groups[group_name] = {
+                "standalone": standalone,
+                "two_stage": two_stage,
+            }
+
+    return cpu_dispatch_groups
+
+
 def compare_dispatch_jobs(job1, job2):
     "Compare two dispatch job specs for equality. Considers only name/runner/image/environment/command."
     # Ignores the 'origin' key, which may vary between identical job specifications.
@@ -1533,6 +1559,9 @@ def print_gha_workflow(args):
         workflow_dispatch_groups = parse_workflow_dispatch_groups(args, workflow_name)
         merge_dispatch_groups(final_workflow, workflow_dispatch_groups)
 
+    if args.exclude_gpu_jobs:
+        final_workflow = remove_gpu_jobs(final_workflow)
+
     final_workflow = finalize_workflow_dispatch_groups(final_workflow)
 
     write_outputs(final_workflow)
@@ -1645,6 +1674,11 @@ def main():
         "--allow-override",
         action="store_true",
         help='If a non-empty "override" workflow exists, it will be used instead of those in --workflows.',
+    )
+    parser.add_argument(
+        "--exclude-gpu-jobs",
+        action="store_true",
+        help="Exclude GPU jobs while retaining their CPU build dependencies.",
     )
     args = parser.parse_args()
 

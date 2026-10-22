@@ -31,7 +31,6 @@
 #include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__iterator/transform_iterator.h>
@@ -179,9 +178,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   // use d_temp_storage as the intermediate device result to read and write from. Then store the final result in the
   // output iterator.
-  if (const auto error = CubDebug(THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-                                    1, 1, 0, stream, /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
-                                    .doit(init_found_pos_pointer<OffsetT, OffsetT>, found_pos_ptr, num_items)))
+  if (const auto error = CubDebug(
+        detail::TripleChevronFactory{}(1, 1, 0, stream, /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
+          .doit(init_found_pos_pointer<OffsetT, OffsetT>, found_pos_ptr, num_items)))
   {
     return error;
   }
@@ -192,7 +191,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     // instead of device_reference<T>, which is necessary for predicates that don't accept proxy types.
     auto d_in_unwrapped = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in);
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+          detail::TripleChevronFactory{}(
             findif_grid_size,
             active_policy.threads_per_block,
             0,
@@ -207,8 +206,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   if constexpr (!can_write_to_output_directly)
   {
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-            1, 1, 0, stream, /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
+          detail::TripleChevronFactory{}(1, 1, 0, stream, /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
             .doit(copy_final_result_to_output_iterator<OffsetT, OutputIteratorT>, found_pos_ptr, d_out)))
     {
       return error;
