@@ -125,7 +125,6 @@ reduce(const basic_vec<_Tp, _Abi>& __x,
     return __identity_element;
   }
   vec<_Tp, 1> __result{__x[__first]};
-  _CCCL_PRAGMA_UNROLL_FULL()
   for (__simd_size_type __i = __first + 1; __i < __x.__size; ++__i)
   {
     if (__mask[__i])
@@ -185,7 +184,6 @@ reduce_min(const basic_vec<_Tp, _Abi>& __x, const typename basic_vec<_Tp, _Abi>:
     return numeric_limits<_Tp>::max();
   }
   auto __result = __x[__first];
-  _CCCL_PRAGMA_UNROLL_FULL()
   for (__simd_size_type __i = __first + 1; __i < __x.__size; ++__i)
   {
     if (__mask[__i])
@@ -237,7 +235,6 @@ reduce_max(const basic_vec<_Tp, _Abi>& __x, const typename basic_vec<_Tp, _Abi>:
     return numeric_limits<_Tp>::lowest();
   }
   auto __result = __x[__first];
-  _CCCL_PRAGMA_UNROLL_FULL()
   for (__simd_size_type __i = __first + 1; __i < __x.__size; ++__i)
   {
     if (__mask[__i])
