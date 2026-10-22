@@ -48,7 +48,7 @@ struct TestKernel1
     REQUIRE(group1.rank(parent_group) == rank / 16);
 
     const cudax::coop::virtual_group group2{
-      cuda::gpu_thread, group1, cudax::coop::group_as{cuda::std::integer_sequence<cuda::std::size_t, 8, 8>{}}};
+      cuda::gpu_thread, group1, cudax::coop::group_as{cuda::std::index_sequence<8, 8>{}}};
     test_group_membership(group2, 8, rank % 8);
     REQUIRE(group2.count(group1) == 2);
     REQUIRE(group2.rank(group1) == (rank % 16) / 8);
@@ -78,7 +78,7 @@ struct TestKernel2
     REQUIRE(group1.rank(parent_group) == rank / 32);
 
     const cudax::coop::virtual_group group2{
-      cuda::gpu_thread, group1, cudax::coop::group_as{cuda::std::integer_sequence<cuda::std::size_t, 16, 16>{}}};
+      cuda::gpu_thread, group1, cudax::coop::group_as{cuda::std::index_sequence<16, 16>{}}};
     test_group_membership(group2, 16, rank % 16);
     REQUIRE(group2.count(group1) == 2);
     REQUIRE(group2.rank(group1) == (rank % 32) / 16);

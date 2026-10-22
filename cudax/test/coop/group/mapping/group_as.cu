@@ -27,7 +27,7 @@ namespace
 template <cuda::std::size_t... Ns, class Config>
 __device__ void test_group_as(Config config)
 {
-  using NsSeq = cuda::std::integer_sequence<cuda::std::size_t, Ns...>;
+  using NsSeq = cuda::std::index_sequence<Ns...>;
   constexpr unsigned ns[]{static_cast<unsigned>(Ns)...};
   constexpr cuda::std::size_t ngroups = sizeof...(Ns);
 
@@ -36,7 +36,7 @@ __device__ void test_group_as(Config config)
 
   // Test static Ns.
   {
-    using Mapping = cudax::coop::group_as<cudax::coop::__group_as_static_tag<Ns...>, true>;
+    using Mapping = cudax::coop::group_as<cudax::coop::__group_as_static_tag<Ns...>>;
 
     // Test default constructor.
     {
@@ -81,11 +81,6 @@ __device__ void test_group_as(Config config)
         CHECK(Mapping::static_unit_count(i) == ns[i]);
       }
     }
-
-    // Test is_always_exhaustive().
-    static_assert(cuda::std::is_same_v<bool, decltype(Mapping::is_always_exhaustive())>);
-    static_assert(noexcept(Mapping::is_always_exhaustive()));
-    static_assert(Mapping::is_always_exhaustive());
 
     // Test unit_count().
     {
@@ -148,7 +143,7 @@ __device__ void test_group_as(Config config)
 
   // Test dynamic Ns.
   {
-    using Mapping = cudax::coop::group_as<cudax::coop::__group_as_dynamic_tag<ngroups>, true>;
+    using Mapping = cudax::coop::group_as<cudax::coop::__group_as_dynamic_tag<ngroups>>;
 
     // Test default constructor.
     static_assert(!cuda::std::is_default_constructible_v<Mapping>);
@@ -184,11 +179,6 @@ __device__ void test_group_as(Config config)
         CHECK(Mapping::static_unit_count(i) == cuda::std::dynamic_extent);
       }
     }
-
-    // Test is_always_exhaustive().
-    static_assert(cuda::std::is_same_v<bool, decltype(Mapping::is_always_exhaustive())>);
-    static_assert(noexcept(Mapping::is_always_exhaustive()));
-    static_assert(Mapping::is_always_exhaustive());
 
     // Test unit_count().
     {
@@ -253,7 +243,7 @@ __device__ void test_group_as(Config config)
 template <cuda::std::size_t... Ns, class Config>
 __device__ void test_group_as_non_exhaustive(Config config)
 {
-  using NsSeq = cuda::std::integer_sequence<cuda::std::size_t, Ns...>;
+  using NsSeq = cuda::std::index_sequence<Ns...>;
   constexpr unsigned ns[]{static_cast<unsigned>(Ns)...};
   constexpr cuda::std::size_t ngroups = sizeof...(Ns);
 
@@ -264,7 +254,7 @@ __device__ void test_group_as_non_exhaustive(Config config)
 
   // Test static Ns.
   {
-    using Mapping = cudax::coop::group_as<cudax::coop::__group_as_static_tag<Ns...>, false>;
+    using Mapping = cudax::coop::group_as<cudax::coop::__group_as_static_tag<Ns...>>;
 
     // Test default constructor.
     {
@@ -278,15 +268,12 @@ __device__ void test_group_as_non_exhaustive(Config config)
       }
     }
 
-    // Test the mapping is not constructible from the Ns sequence.
-    static_assert(!cuda::std::is_constructible_v<Mapping, NsSeq>);
-
-    // Test the mapping is constructible from Ns sequence and non_exhaustive_t.
+    // Test the mapping is constructible from the Ns sequence.
     {
-      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, NsSeq, cudax::coop::non_exhaustive_t>);
+      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, NsSeq>);
 
       // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
-      cudax::coop::group_as mapping{NsSeq{}, cudax::coop::non_exhaustive};
+      cudax::coop::group_as mapping{NsSeq{}};
       static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
 
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
@@ -294,6 +281,9 @@ __device__ void test_group_as_non_exhaustive(Config config)
         CHECK(mapping.unit_count(i) == ns[i]);
       }
     }
+
+    // Test the mapping is not constructible from Ns sequence and non_exhaustive_t.
+    static_assert(!cuda::std::is_constructible_v<Mapping, NsSeq, cudax::coop::non_exhaustive_t>);
 
     // Test static_group_count().
     static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(Mapping::static_group_count())>);
@@ -309,11 +299,6 @@ __device__ void test_group_as_non_exhaustive(Config config)
         CHECK(Mapping::static_unit_count(i) == ns[i]);
       }
     }
-
-    // Test is_always_exhaustive().
-    static_assert(cuda::std::is_same_v<bool, decltype(Mapping::is_always_exhaustive())>);
-    static_assert(noexcept(Mapping::is_always_exhaustive()));
-    static_assert(!Mapping::is_always_exhaustive());
 
     // Test unit_count().
     {
@@ -334,12 +319,12 @@ __device__ void test_group_as_non_exhaustive(Config config)
       const ThreadsInWarpMappingResult prev_mapping_result;
 
       static_assert(cudax::coop::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
-      static_assert(
-        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
+                      cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, prev_mapping_result))>);
+      static_assert(noexcept(cuda::std::declval<const Mapping>().map(
+        cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const Mapping mapping;
-      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
+      auto result  = mapping.map(cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       const auto rank_in_warp = cuda::gpu_thread.rank(parent_group);
@@ -347,7 +332,7 @@ __device__ void test_group_as_non_exhaustive(Config config)
 
       static_assert(Result::static_group_count() == ngroups);
       static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
-      static_assert(!Result::is_always_exhaustive());
+      static_assert(Result::is_always_exhaustive() == ((Ns + ...) == 32));
       static_assert(Result::is_always_contiguous());
 
       CHECK(result.is_valid() == is_valid_ref);
@@ -381,20 +366,17 @@ __device__ void test_group_as_non_exhaustive(Config config)
 
   // Test dynamic Ns.
   {
-    using Mapping = cudax::coop::group_as<cudax::coop::__group_as_dynamic_tag<ngroups>, false>;
+    using Mapping = cudax::coop::group_as<cudax::coop::__group_as_dynamic_tag<ngroups>>;
 
     // Test default constructor.
     static_assert(!cuda::std::is_default_constructible_v<Mapping>);
 
-    // Test the mapping is not constructible from the Ns array.
-    static_assert(!cuda::std::is_constructible_v<Mapping, decltype(ns)>);
-
-    // Test the mapping is constructible from Ns array and non_exhaustive_t.
+    // Test the mapping is constructible from the Ns array.
     {
-      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, decltype(ns), cudax::coop::non_exhaustive_t>);
+      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, decltype(ns)>);
 
       // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
-      cudax::coop::group_as mapping{ns, cudax::coop::non_exhaustive};
+      cudax::coop::group_as mapping{ns};
       static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
 
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
@@ -402,6 +384,9 @@ __device__ void test_group_as_non_exhaustive(Config config)
         CHECK(mapping.unit_count(i) == ns[i]);
       }
     }
+
+    // Test the mapping is not constructible from Ns array and non_exhaustive_t.
+    static_assert(!cuda::std::is_constructible_v<Mapping, decltype(ns), cudax::coop::non_exhaustive_t>);
 
     // Test static_group_count().
     static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(Mapping::static_group_count())>);
@@ -418,18 +403,13 @@ __device__ void test_group_as_non_exhaustive(Config config)
       }
     }
 
-    // Test is_always_exhaustive().
-    static_assert(cuda::std::is_same_v<bool, decltype(Mapping::is_always_exhaustive())>);
-    static_assert(noexcept(Mapping::is_always_exhaustive()));
-    static_assert(!Mapping::is_always_exhaustive());
-
     // Test unit_count().
     {
       static_assert(
         cuda::std::is_same_v<unsigned, decltype(cuda::std::declval<const Mapping>().unit_count(cuda::std::size_t{}))>);
       static_assert(noexcept(cuda::std::declval<const Mapping>().unit_count(cuda::std::size_t{})));
 
-      const Mapping mapping{ns, cudax::coop::non_exhaustive};
+      const Mapping mapping{ns};
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
         CHECK(mapping.unit_count(i) == ns[i]);
@@ -442,12 +422,12 @@ __device__ void test_group_as_non_exhaustive(Config config)
       const ThreadsInWarpMappingResult prev_mapping_result;
 
       static_assert(cudax::coop::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
-      static_assert(
-        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
+                      cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, prev_mapping_result))>);
+      static_assert(noexcept(cuda::std::declval<const Mapping>().map(
+        cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, prev_mapping_result)));
 
-      const Mapping mapping{ns, cudax::coop::non_exhaustive};
-      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
+      const Mapping mapping{ns};
+      auto result  = mapping.map(cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       const auto rank_in_warp = cuda::gpu_thread.rank(parent_group);

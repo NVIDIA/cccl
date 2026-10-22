@@ -906,9 +906,13 @@ def _setup_sort() -> SimpleNamespace:
 
 
 def _make_merge_sort(state: SimpleNamespace):
+    # Match the explicit None arguments forwarded by cc.merge_sort so its
+    # factory-cache lookup returns the wrapper patched by the benchmark.
     return cc.make_merge_sort(
         d_in_keys=state.d_in_keys,
+        d_in_values=None,
         d_out_keys=state.d_out_keys,
+        d_out_values=None,
         op=state.op,
     )
 

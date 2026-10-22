@@ -28,6 +28,7 @@
 #include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__type_traits/conjunction.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -101,7 +102,7 @@ CCCL_DEPRECATED_BECAUSE("Use cuda::is_trivially_copyable_v instead") constexpr b
 template <typename From, typename To>
 using is_trivially_relocatable_to
   CCCL_DEPRECATED_BECAUSE("Use cuda::is_trivially_copyable and cuda::std::is_same instead") =
-    integral_constant<bool, ::cuda::std::is_same_v<From, To> && detail::is_trivially_relocatable_impl<To>::value>;
+    ::cuda::std::bool_constant<::cuda::std::is_same_v<From, To> && detail::is_trivially_relocatable_impl<To>::value>;
 
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c From is
  *  <a href="https://wg21.link/P1144"><i>TriviallyRelocatable</i></a>,
@@ -138,11 +139,10 @@ using is_indirectly_trivially_relocatable_to
   CCCL_DEPRECATED_BECAUSE("Use cuda::is_trivially_copyable, "
                           "cuda::std::is_same, and "
                           "thrust::is_contiguous_iterator instead") =
-    integral_constant<bool,
-                      is_contiguous_iterator_v<FromIterator>
-                        && is_contiguous_iterator_v<ToIterator>&& ::cuda::std::
-                          is_same_v<detail::it_value_t<FromIterator>, detail::it_value_t<ToIterator>>
-                        && detail::is_trivially_relocatable_impl<detail::it_value_t<ToIterator>>::value>;
+    ::cuda::std::bool_constant<is_contiguous_iterator_v<FromIterator>
+                               && is_contiguous_iterator_v<ToIterator>&& ::cuda::std::
+                                 is_same_v<detail::it_value_t<FromIterator>, detail::it_value_t<ToIterator>>
+                               && detail::is_trivially_relocatable_impl<detail::it_value_t<ToIterator>>::value>;
 
 /*! \brief <tt>constexpr bool</tt> that is \c true if the element type of
  *  \c FromIterator is
@@ -226,7 +226,7 @@ _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 // https://wg21.link/P1144R0#wording-inheritance
 template <typename T>
 struct is_trivially_relocatable_impl
-    : integral_constant<bool, ::cuda::is_trivially_copyable_v<T> || proclaim_trivially_relocatable<T>::value>
+    : ::cuda::std::bool_constant<::cuda::is_trivially_copyable_v<T> || proclaim_trivially_relocatable<T>::value>
 {};
 _CCCL_SUPPRESS_DEPRECATED_POP
 
