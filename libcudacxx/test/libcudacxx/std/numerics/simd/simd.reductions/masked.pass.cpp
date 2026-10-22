@@ -109,7 +109,10 @@ TEST_HOST_DEVICE_FUNC bool test_runtime()
 
 int main(int, char**)
 {
+#if !TEST_COMPILER(GCC, ==, 7)
+  // GCC 7 does not support constexpr bit_cast for the signed-zero checks.
   static_assert(test());
+#endif // !TEST_COMPILER(GCC, ==, 7)
   assert(test());
   assert(test_runtime());
   return 0;
