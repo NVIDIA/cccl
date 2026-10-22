@@ -5548,14 +5548,14 @@ UNITTEST("alternation and repetition nested under & and |")
   ::std::ostringstream quiet;
 
   // `|` with a value answer as the right operand of `&` (the paper's figure shape).
-  EXPECT((errsink(notify(quiet) & (if_isa<key>(subst(1)) | subst(2)))->*throw_boom) == 2);
-  EXPECT((errsink(notify(quiet) & (if_isa<key>(subst(1)) | subst(2)))->*throw_key) == 1);
+  EXPECT(((notify(quiet) & (if_isa<key>(subst(1)) | subst(2)))->*throw_boom) == 2);
+  EXPECT(((notify(quiet) & (if_isa<key>(subst(1)) | subst(2)))->*throw_key) == 1);
 
   // Three arms, both associations.
-  EXPECT((errsink(if_isa<key>(subst(1)) | if_isa<boom>(subst(2)) | subst(3))->*throw_boom) == 2);
-  EXPECT((errsink(if_isa<key>(subst(1)) | if_isa<boom>(subst(2)) | subst(3))->*throw_other) == 3);
-  EXPECT((errsink(if_isa<key>(subst(1)) | (if_isa<boom>(subst(2)) | subst(3)))->*throw_key) == 1);
-  EXPECT((errsink(if_isa<key>(subst(1)) | (if_isa<boom>(subst(2)) | subst(3)))->*throw_other) == 3);
+  EXPECT(((if_isa<key>(subst(1)) | if_isa<boom>(subst(2)) | subst(3))->*throw_boom) == 2);
+  EXPECT(((if_isa<key>(subst(1)) | if_isa<boom>(subst(2)) | subst(3))->*throw_other) == 3);
+  EXPECT(((if_isa<key>(subst(1)) | (if_isa<boom>(subst(2)) | subst(3)))->*throw_key) == 1);
+  EXPECT(((if_isa<key>(subst(1)) | (if_isa<boom>(subst(2)) | subst(3)))->*throw_other) == 3);
 
   // `*` with a value-answering fallback, nested under `&`.
   int n                = 0;
@@ -5567,9 +5567,9 @@ UNITTEST("alternation and repetition nested under & and |")
     }
     return n;
   };
-  EXPECT((errsink(notify(quiet) & (retry * 2 | subst(-1)))->*third_try) == 3);
+  EXPECT(((notify(quiet) & (retry * 2 | subst(-1)))->*third_try) == 3);
   n = 0;
-  EXPECT((errsink(notify(quiet) & (retry * 1 | subst(-1)))->*[&]() -> int {
+  EXPECT(((notify(quiet) & (retry * 1 | subst(-1)))->*[&]() -> int {
            ++n;
            throw boom();
          })
@@ -5583,16 +5583,16 @@ UNITTEST("alternation and repetition nested under & and |")
       return true;
     },
     noop);
-  EXPECT((errsink((tick & if_isa<key>(subst(1))) | (tick & subst(2)))->*throw_boom) == 2);
+  EXPECT((((tick & if_isa<key>(subst(1))) | (tick & subst(2)))->*throw_boom) == 2);
   EXPECT(effects == 2);
 
   // The outermost forms that always worked still do.
-  EXPECT((errsink(notify(quiet) & if_isa<key>(subst(1)) | subst(2))->*throw_boom) == 2);
-  EXPECT((errsink(retry * 2 | subst(-1))->*throw_boom) == -1);
+  EXPECT(((notify(quiet) & if_isa<key>(subst(1)) | subst(2))->*throw_boom) == 2);
+  EXPECT(((retry * 2 | subst(-1))->*throw_boom) == -1);
 
   // Reference results keep their reference answer through a nested alternation.
   static int cell = 7;
-  int& r          = errsink(notify(quiet) & (if_isa<key>(cell) | cell))->*[]() -> int& {
+  int& r          = (notify(quiet) & (if_isa<key>(cell) | cell))->*[]() -> int& {
     throw boom();
   };
   EXPECT(&r == &cell);
