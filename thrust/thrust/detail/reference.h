@@ -612,7 +612,7 @@ class tagged_reference<void const, Tag>
 // note: this is not a hidden friend, because we have template specializations of reference
 template <typename Element, typename Pointer>
 _CCCL_HOST_DEVICE_API void swap(reference<Element, Pointer, use_default> x,
-                            reference<Element, Pointer, use_default> y) noexcept(noexcept(x.swap(y)))
+                                reference<Element, Pointer, use_default> y) noexcept(noexcept(x.swap(y)))
 {
   x.swap(y);
 }
