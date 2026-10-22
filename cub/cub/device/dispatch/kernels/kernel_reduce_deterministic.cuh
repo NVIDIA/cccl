@@ -23,6 +23,7 @@
 
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#include <cuda/__argument/argument.h>
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/min.h>
@@ -51,7 +52,7 @@ struct deterministic_num_items
 template <typename KernelNumItemsT>
 struct deterministic_num_items<KernelNumItemsT, false>
 {
-  using element_t = it_value_t<KernelNumItemsT>;
+  using element_t = typename ::cuda::args::__traits<KernelNumItemsT>::element_type;
   using type      = ::cuda::std::conditional_t<
     ::cuda::std::is_signed_v<element_t> && sizeof(element_t) == 4,
     int,
