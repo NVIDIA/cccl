@@ -880,8 +880,17 @@ def main(arguments: Sequence[str] | None = None) -> int:
     try:
         transcript = _run_debugger_with_retries(args, debugger, command_file)
     except DebuggerError as error:
-        _report_error(args, debugger, command_file, error)
-        return 1
+        # A scenario that skips itself exits before it reaches any breakpoint, so
+        # GDB fails the remaining commands and exits non-zero. Honor the skip
+        # marker in that case too.
+        transcript = (
+            args.output_log.read_text(errors="replace")
+            if args.output_log.exists()
+            else ""
+        )
+        if not _SKIP_PATTERN.search(transcript):
+            _report_error(args, debugger, command_file, error)
+            return 1
 
     skipped = _SKIP_PATTERN.search(transcript)
     if skipped:
