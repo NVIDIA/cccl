@@ -104,7 +104,10 @@ TEST_HOST_DEVICE_FUNC constexpr bool test()
   test_type<float>();
   test_type<double>();
   test_type<cuda::std::complex<float>>();
+#if !_CCCL_OS(WINDOWS)
+  // Windows lacks the int128 support required for 16-byte SIMD element representations.
   test_type<cuda::std::complex<double>>();
+#endif // !_CCCL_OS(WINDOWS)
 #if _CCCL_HAS_FLOAT128()
   test_type<__float128>();
 #endif // _CCCL_HAS_FLOAT128()
