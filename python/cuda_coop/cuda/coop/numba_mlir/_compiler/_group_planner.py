@@ -1812,11 +1812,18 @@ class _GroupCallPlanner:
                 bound = self._bind(function, call)
                 output = bound.arguments["output"]
                 count = bound.arguments["items_per_thread"]
+                alignment = bound.arguments["alignment"]
                 if not self._is_none(output):
                     if not self._is_none(count):
                         raise TypeError(
                             "cuda.coop.load accepts either output or "
                             "items_per_thread, not both"
+                        )
+                    if not self._is_none(alignment):
+                        raise TypeError(
+                            "cuda.coop.load alignment requires "
+                            "items_per_thread and no output; set alignment "
+                            "when constructing the output instead"
                         )
                     continue
                 if self._is_none(count):
@@ -1870,7 +1877,16 @@ class _GroupCallPlanner:
                 )
                 statements.append(
                     ir.Assign(
-                        ir.Expr.call(factory, [size, element_type], [], loc),
+                        ir.Expr.call(
+                            factory,
+                            [size, element_type],
+                            [
+                                (key, value)
+                                for key, value in call.kws
+                                if key == "alignment"
+                            ],
+                            loc,
+                        ),
                         inst.target,
                         loc,
                     )
@@ -1887,7 +1903,7 @@ class _GroupCallPlanner:
                             [
                                 (key, value)
                                 for key, value in call.kws
-                                if key != "items_per_thread"
+                                if key not in {"items_per_thread", "alignment"}
                             ],
                             loc,
                         ),

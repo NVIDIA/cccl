@@ -79,10 +79,11 @@ def check_common_surface(source: object, destination: object) -> None:
 def check_returning_load(source: object, destination: object) -> None:
     block = coop.this_block()
     warp = coop.this_warp()
-    returned = coop.load(block, source, items_per_thread=4)
+    returned = coop.load(block, source, items_per_thread=4, alignment=64)
     assert_type(returned, coop.ThreadDataLike[Any])
     assert_type(
-        coop.load(warp, source, items_per_thread=1), coop.ThreadDataLike[Any]
+        coop.load(warp, source, items_per_thread=1, alignment=None),
+        coop.ThreadDataLike[Any],
     )
     assert_type(
         coop.load(
@@ -91,3 +92,4 @@ def check_returning_load(source: object, destination: object) -> None:
         coop.ThreadDataLike[Any],
     )
     coop.store(block, destination, returned)
+    assert_type(coop.load(block, source, returned, alignment=None), None)

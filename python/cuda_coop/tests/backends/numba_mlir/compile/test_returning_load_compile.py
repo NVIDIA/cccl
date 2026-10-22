@@ -5,6 +5,7 @@
 """Reject ambiguous Load modes and incompatible returned payloads."""
 
 import os
+import re
 from types import SimpleNamespace
 
 import pytest
@@ -19,6 +20,9 @@ import cuda.coop.numba_mlir as numba_coop
 from cuda import coop
 from cuda.coop.numba_mlir._compiler._group_planner_support import (
     GroupRewriteError,
+)
+from cuda.coop.numba_mlir._compiler._rewrite import (
+    CoopSinglePhaseRewriteError,
 )
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
@@ -86,6 +90,16 @@ def test_load_requires_exactly_one_sizing_route(api, with_output):
 
 
 @pytest.mark.parametrize("api", [coop, numba_coop], ids=["common", "qualified"])
+def test_load_positional_integer_is_not_an_item_count(api):
+    @cuda.jit
+    def kernel(source):
+        api.load(api.this_block(), source, 4)
+
+    with pytest.raises(TypeError, match="output.*fixed-size"):
+        _compile(kernel, types.int32[::1])
+
+
+@pytest.mark.parametrize("api", [coop, numba_coop], ids=["common", "qualified"])
 def test_returning_load_rejects_data_dependent_extent(api):
     @cuda.jit
     def kernel(source, destination):
@@ -95,6 +109,85 @@ def test_returning_load_rejects_data_dependent_extent(api):
 
     with pytest.raises(GroupRewriteError, match="compile-time"):
         _compile(kernel, types.int32[::1], types.int32[::1])
+
+
+@pytest.mark.parametrize("api", [coop, numba_coop], ids=["common", "qualified"])
+@pytest.mark.parametrize("alignment", [1, 64])
+def test_returning_load_materializes_minimum_payload_alignment(api, alignment):
+    @cuda.jit
+    def kernel(source, destination, index):
+        block = api.this_block()
+        values = api.load(
+            block, source, items_per_thread=4, alignment=alignment
+        )
+        # Runtime indexing keeps a local allocation in the final PTX.
+        destination[cuda.threadIdx.x] = values[index]
+
+    result = _compile(kernel, types.int32[::1], types.int32[::1], types.int32)
+    local_alignments = re.findall(r"\.local\s+\.align\s+(\d+)", result.ptx)
+    assert local_alignments
+    assert all(int(value) >= alignment for value in local_alignments)
+
+
+@pytest.mark.parametrize("api", [coop, numba_coop], ids=["common", "qualified"])
+@pytest.mark.parametrize(
+    ("alignment", "message"),
+    [
+        (True, "alignment must be an integer or None"),
+        (1.5, "alignment must be an integer or None"),
+        (0, "alignment must be a positive integer"),
+        (-1, "alignment must be a positive integer"),
+        (3, "alignment must be a power of 2"),
+    ],
+)
+def test_returning_load_rejects_invalid_alignment(api, alignment, message):
+    @cuda.jit
+    def kernel(source, destination):
+        block = api.this_block()
+        values = api.load(
+            block, source, items_per_thread=4, alignment=alignment
+        )
+        api.store(block, destination, values)
+
+    with pytest.raises(CoopSinglePhaseRewriteError, match=message):
+        _compile(kernel, types.int32[::1], types.int32[::1])
+
+
+@pytest.mark.parametrize("api", [coop, numba_coop], ids=["common", "qualified"])
+def test_returning_load_rejects_data_dependent_alignment(api):
+    @cuda.jit
+    def kernel(source, destination):
+        block = api.this_block()
+        values = api.load(
+            block, source, items_per_thread=4, alignment=source[0]
+        )
+        api.store(block, destination, values)
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError, match="alignment must be a compile-time"
+    ):
+        _compile(kernel, types.int32[::1], types.int32[::1])
+
+
+@pytest.mark.parametrize("api", [coop, numba_coop], ids=["common", "qualified"])
+@pytest.mark.parametrize("with_output", [False, True])
+def test_load_alignment_requires_returning_form(api, with_output):
+    @cuda.jit
+    def kernel(source):
+        block = api.this_block()
+        if with_output:
+            values = api.ThreadData(items_per_thread=4, alignment=64)
+            api.load(block, source, values, alignment=64)
+        else:
+            api.load(block, source, alignment=64)
+
+    message = (
+        "alignment requires items_per_thread and no output"
+        if with_output
+        else "requires output or items_per_thread"
+    )
+    with pytest.raises(TypeError, match=message):
+        _compile(kernel, types.int32[::1])
 
 
 @pytest.mark.parametrize("api", [coop, numba_coop], ids=["common", "qualified"])

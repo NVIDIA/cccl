@@ -231,7 +231,7 @@ source's element type. With 128 threads, the group owns
 :class:`~cuda.coop.ThreadDataLike` names the common payload interface used
 in API signatures. It describes the item count, dtype, and indexed reads and
 writes. Direct :func:`~cuda.coop.ThreadData` construction remains useful for
-computed values, caller-supplied outputs, and explicit alignment. It creates
+computed values and caller-supplied outputs. It creates
 a payload for the active compiler backend. Other payload representations
 require support from that backend.
 
@@ -328,9 +328,12 @@ Conflicting type requirements are errors. See :ref:`element-type inference
 
 Load accepts either a positive compile-time ``items_per_thread`` count or an
 existing output payload. The count form returns a new payload, including for
-one item. ``coop.load(group, source, items)`` writes into the supplied payload
-and returns ``None``; omit ``items_per_thread`` in that form. Its dtype-free
-constructor and backward inference remain supported.
+one item. Pass the count by keyword: ``coop.load(group, source, 4)`` is invalid
+because the third positional argument denotes a writable output payload.
+``coop.load(group, source, items)`` writes into the supplied payload
+and returns ``None``; omit ``items_per_thread`` and leave ``alignment=None``
+in that form. Its dtype-free constructor and backward inference remain
+supported.
 
 Transpose Store algorithms may rearrange their input payload in place, as in
 CUB. Copy values before Store if they are needed later. Store returns ``None``.
@@ -346,11 +349,14 @@ address-taking, and register pressure influence the final placement.
 Increasing the item count increases the amount of live data per thread.
 
 The optional ``alignment`` keyword requests a minimum power-of-two alignment
-in bytes when the compiler materializes the payload. For example,
-``coop.ThreadData(items_per_thread, alignment=16)`` requests at least
-16-byte alignment. The compiler may strengthen it. This setting applies
-to payload storage; alignment of the input and output arrays remains a
-separate property.
+in bytes when the compiler materializes the payload. Both
+``coop.load(group, source, items_per_thread=items_per_thread, alignment=16)``
+and ``coop.ThreadData(items_per_thread, alignment=16)`` request at least
+16-byte alignment. The compiler may strengthen it. Load accepts a non-``None``
+alignment only when it creates the payload; an existing destination keeps
+the alignment selected at its construction. This setting applies to payload
+storage. Source and destination array alignment, and ``TempStorage`` scratch
+alignment, are separate properties.
 
 Load, operate, store
 --------------------

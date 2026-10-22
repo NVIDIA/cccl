@@ -39,7 +39,9 @@ def test_returning_load_keeps_old_aliases_and_destination_load_updates_them(
         )
         api.store(block, first, alias)
         api.store(block, second, values)
-        result = api.load(block, source, alias, offset=64 * count)
+        result = api.load(
+            block, source, alias, offset=64 * count, alignment=None
+        )
         api.store(block, updated, alias)
         flags[cuda.threadIdx.x] = result is None
 
@@ -53,6 +55,34 @@ def test_returning_load_keeps_old_aliases_and_destination_load_updates_them(
             output.copy_to_host(), source[index * size : (index + 1) * size]
         )
     assert flags.copy_to_host().all()
+
+
+@pytest.mark.parametrize("api", [coop, numba_coop], ids=["common", "qualified"])
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+@pytest.mark.parametrize("warp", [False, True], ids=["block", "warp"])
+def test_returning_load_with_aligned_payload_and_offset_source(
+    api, items_per_thread, warp
+):
+    @cuda.jit
+    def kernel(source, output, count):
+        if warp:
+            group = api.this_warp()
+        else:
+            group = api.this_block()
+        values = api.load(
+            group,
+            source,
+            items_per_thread=count,
+            alignment=64,
+            offset=1,
+        )
+        api.store(group, output, values)
+
+    size = 32 * items_per_thread
+    source = np.arange(size + 1, dtype=np.int32)
+    output = cuda.device_array(size, dtype=np.int32)
+    kernel[1, 32](cuda.to_device(source), output, items_per_thread)
+    np.testing.assert_array_equal(output.copy_to_host(), source[1:])
 
 
 @pytest.mark.parametrize("api", [coop, numba_coop], ids=["common", "qualified"])

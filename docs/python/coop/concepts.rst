@@ -157,20 +157,23 @@ comes from ``source``. Pass ``items_per_thread`` as a kernel argument;
 Numba-CUDA-MLIR specializes the kernel for its value.
 
 Use ``coop.ThreadData(items_per_thread)`` to construct a payload for computed
-values, an explicit output, or a minimum alignment request. Common and
-qualified calls use the same inference rules: an untyped Load output infers
-its dtype from the source, and Store combines the destination dtype with
-payload writes. ``coop.load(group, source, output)`` fills that existing
-payload and returns ``None``. Dtype-free ``ThreadData`` construction continues
+values or an explicit output. Common and qualified calls use the same
+inference rules: an untyped Load output infers its dtype from the source,
+and Store combines the destination dtype with payload writes.
+``coop.load(group, source, output)`` fills that existing payload and returns
+``None``. Dtype-free ``ThreadData`` construction continues
 to support backward inference from later uses, including Store.
 
 Both namespaces accept ``alignment`` as a compile-time positive power of two
 in bytes. It specifies minimum alignment when the compiler materializes
 payload storage; ``None`` lets the compiler choose. For example,
-``coop.ThreadData(items_per_thread, alignment=16)`` requests at least
-16-byte alignment. The backend may use stronger alignment, including for
-requests smaller than its minimum allocation alignment. This option does not
-assert alignment of source or destination arrays passed to Load or Store.
+``coop.load(group, source, items_per_thread=items_per_thread, alignment=16)``
+requests at least 16-byte alignment for its returned payload.
+``coop.ThreadData(items_per_thread, alignment=16)`` makes the same request
+for a directly constructed payload. The backend may use stronger alignment,
+including for requests smaller than its minimum allocation alignment. This
+option does not assert alignment of source or destination arrays passed to
+Load or Store.
 
 Directly constructed payload slots start uninitialized. A full Load fills
 every slot. In either Load form, a partial Load leaves invalid slots
@@ -200,6 +203,7 @@ The signatures are:
    load(
        group, source, output=None, /, *,
        items_per_thread=None,
+       alignment=None,
        algorithm="direct",
        valid_items=None,
        oob_default=None,
@@ -218,8 +222,12 @@ The signatures are:
 Supply exactly one of ``output`` or ``items_per_thread``. With a positive
 compile-time ``items_per_thread``, Load creates and returns a payload, even
 for a count of one. With ``output``, it populates that payload and returns
-``None``. The count and source-derived dtype do not imply that a partial
-Load initialized its invalid slots.
+``None``. ``items_per_thread`` and ``alignment`` are keyword-only. The third
+positional argument is always an output payload, so
+``coop.load(group, source, 4)`` is invalid. A non-``None`` ``alignment`` is
+valid only with ``items_per_thread``; set an existing output's alignment
+when constructing it instead. The count and source-derived dtype do not imply
+that a partial Load initialized its invalid slots.
 
 ``valid_items`` counts the valid prefix of the selected group tile, not the
 number of valid items per thread. A Warp-group tile contains
