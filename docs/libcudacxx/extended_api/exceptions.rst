@@ -56,7 +56,10 @@ status types are accepted, and how a library supplies text for its codes, is an 
 
     try
     {
-        throw cuda::cuda_error(cufftPlan1d(&plan, n, CUFFT_C2C, 1), "cufftPlan1d failed");
+        if (const cufftResult r = cufftPlan1d(&plan, n, CUFFT_C2C, 1); r != CUFFT_SUCCESS)
+        {
+            throw cuda::cuda_error(r, "cufftPlan1d failed"); // cuda_error does not test for success
+        }
     }
     catch (const cuda::cuda_error& e)
     {

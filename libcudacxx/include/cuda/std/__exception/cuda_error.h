@@ -241,7 +241,12 @@ class cuda_error : public ::std::runtime_error
 
 public:
   //! @brief Constructs from a status of any enumeration type, or of a small trivially copyable status struct.
-  //! `CUresult`, any other CUDA library's status enumeration, or a struct status with a specialization.
+  //! This covers `CUresult`, the status enumerations of the other CUDA libraries, and a struct status with a
+  //! specialization. The status is stored as given; the constructor does not test it for success.
+  //! @param __status The failing status, stored exactly and readable with `status<_Status>()`.
+  //! @param __msg What the caller was doing, appended to `what()`.
+  //! @param __api The failing API's name, if known.
+  //! @param __loc Where the error was raised; defaults to the call site.
   template <class _Status>
   _CCCL_HOST_API cuda_error(const _Status __status,
                             const char* __msg,
