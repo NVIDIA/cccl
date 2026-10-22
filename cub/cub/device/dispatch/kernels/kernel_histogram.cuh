@@ -135,8 +135,8 @@ struct Transforms
       int bin = -1;
     };
 
-    LevelIteratorT d_levels;
-    int num_output_levels;
+    LevelIteratorT d_levels{};
+    int num_output_levels{};
     LevelT first{};
     LevelT middle{};
     LevelT last{};
@@ -196,7 +196,7 @@ struct Transforms
         ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
                          CacheModifiedInputIterator<LOAD_LDG, LevelT, OffsetT>,
                          LevelIteratorT>;
-      WrappedLevelIteratorT wrapped_levels(d_levels);
+      const WrappedLevelIteratorT wrapped_levels(d_levels);
       const LevelT first_level = wrapped_levels[0];
       const LevelT last_level  = wrapped_levels[num_bins];
       if (!(first_level < last_level))
@@ -236,8 +236,9 @@ struct Transforms
       has_precompute = true;
     }
 
-    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid, BracketCacheT& bracket) const
+    template <CacheLoadModifier LoadModifier, typename SampleInputT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
+    BinSelect(SampleInputT sample, int& bin, bool valid, BracketCacheT& bracket) const
     {
       if (!valid)
       {
@@ -246,9 +247,9 @@ struct Transforms
 
       using WrappedLevelIteratorT =
         ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
-                         CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
+                         CacheModifiedInputIterator<LoadModifier, LevelT, OffsetT>,
                          LevelIteratorT>;
-      WrappedLevelIteratorT wrapped_levels(d_levels);
+      const WrappedLevelIteratorT wrapped_levels(d_levels);
       const int num_bins = num_output_levels - 1;
       const LevelT value = static_cast<LevelT>(sample);
 
@@ -330,8 +331,8 @@ struct Transforms
       }
     }
 
-    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid) const
+    template <CacheLoadModifier LoadModifier, typename SampleInputT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void BinSelect(SampleInputT sample, int& bin, bool valid) const
     {
       if (!valid)
       {
@@ -340,9 +341,9 @@ struct Transforms
 
       using WrappedLevelIteratorT =
         ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
-                         CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
+                         CacheModifiedInputIterator<LoadModifier, LevelT, OffsetT>,
                          LevelIteratorT>;
-      WrappedLevelIteratorT wrapped_levels(d_levels);
+      const WrappedLevelIteratorT wrapped_levels(d_levels);
       const int num_bins = num_output_levels - 1;
       const LevelT value = static_cast<LevelT>(sample);
 
@@ -1689,6 +1690,8 @@ struct AgentHistoCache
     }
 
     constexpr bool use_mru_cache = NumActiveChannels == 1 && PrivatizedDecodeOpT::is_range_transform;
+    // Mutated only by the single-channel RANGE instantiation; other compile-time paths leave it unused.
+    // NOLINTNEXTLINE(misc-const-correctness)
     [[maybe_unused]] histogram_bracket_cache_storage<PrivatizedDecodeOpT, use_mru_cache> bracket_cache_storage;
     ProbeOp probe_ops[NumActiveChannels];
     SpillOp spill_ops[NumActiveChannels];

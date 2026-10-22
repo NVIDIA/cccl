@@ -278,6 +278,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   }
 
   const HistogramPolicy active_policy = policy_selector(cc);
+  // This is an output parameter to alias_temporaries in the host-only cooperative path.
+  // NOLINTNEXTLINE(misc-const-correctness)
   size_t cooperative_temp_storage_bytes{};
 
   detail::log_dispatch("DeviceHistogram", cc, active_policy);
@@ -291,8 +293,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     if (false)
     {
       using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
-      ::cuda::std::array<int, NumActiveChannels> num_output_bins{};
-      ::cuda::std::array<LocalCounterT*, NumActiveChannels> private_histograms{};
+      const ::cuda::std::array<int, NumActiveChannels> num_output_bins{};
+      const ::cuda::std::array<LocalCounterT*, NumActiveChannels> private_histograms{};
       DeviceHistogramHistoCacheKernel<
         PolicySelector,
         NumChannels,

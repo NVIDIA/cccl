@@ -56,7 +56,7 @@ struct ordered_histogram_level
 {
   int value{};
 
-  _CCCL_HOST_DEVICE ordered_histogram_level() = default;
+  _CCCL_HOST_DEVICE ordered_histogram_level() {}
   _CCCL_HOST_DEVICE explicit ordered_histogram_level(int value_)
       : value(value_)
   {}
