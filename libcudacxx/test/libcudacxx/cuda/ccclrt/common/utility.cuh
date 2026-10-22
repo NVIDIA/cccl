@@ -23,7 +23,27 @@
 #include <new> // IWYU pragma: keep (needed for placement new)
 
 #include "test_macros.h"
-#include <c2h/catch2_test_macros.h>
+
+TEST_DEVICE_FUNC inline void ccclrt_require_impl(
+  bool condition, const char* condition_text, const char* filename, unsigned int linenum, const char* funcname)
+{
+  if (!condition)
+  {
+    // TODO do warp aggregate prints for easier readability?
+    printf("%s:%u: %s: block: [%d,%d,%d], thread: [%d,%d,%d] Condition `%s` failed.\n",
+           filename,
+           linenum,
+           funcname,
+           blockIdx.x,
+           blockIdx.y,
+           blockIdx.z,
+           threadIdx.x,
+           threadIdx.y,
+           threadIdx.z,
+           condition_text);
+    __trap();
+  }
+}
 
 namespace test
 {
@@ -110,7 +130,9 @@ struct verify_n
 {
   TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
   {
-    REQUIRE_DEVICE(*pi == N);
+    // TODO: fix clang CUDA require macro
+    // CCCLRT_REQUIRE(*pi == N);
+    ccclrt_require_impl(*pi == N, "*pi == N", __FILE__, __LINE__, __PRETTY_FUNCTION__);
   }
 };
 
