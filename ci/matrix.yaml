@@ -959,18 +959,24 @@ projects:
 #              Defaults to the GPU key. Useful when the key includes a suffix
 #              (e.g. 'h100_2gpu') but the runner label should use the base name
 #              (e.g. 'h100').
+# dc -> Whether the GPU is a data center product. Injected into all GPU jobs as
+#       the DATA_CENTER_GPU environment variable ('1' or '0'), which the
+#       devcontainer entrypoint uses to decide whether to run the
+#       setup-cuda-compat script. The CUDA forward compatibility (cuda-compat)
+#       libraries are only supported on data center GPUs and must not be
+#       activated on other GPUs.
 gpus:
-  t4:         { name: 'T4',          sm: 75,  runner: 't4-latest',         gpu_count: 1 } # 16 GB,  10 runners
-  rtx2080:    { name: 'RTX2080',     sm: 75,  runner: 'rtx2080-latest',    gpu_count: 1 } #  8 GB,  12 runners
-  rtxa6000:   { name: 'RTXA6000',    sm: 86,  runner: 'rtxa6000-latest',   gpu_count: 1 } # 48 GB,  12 runners
-  l4:         { name: 'L4',          sm: 89,  runner: 'l4-latest',         gpu_count: 1 } # 24 GB,  48 runners
-  rtx4090:    { name: 'RTX4090',     sm: 89,  runner: 'rtx4090-latest',    gpu_count: 1 } # 24 GB,  10 runners
-  h100:       { name: 'H100',        sm: 90,  runner: 'h100-latest',       gpu_count: 1 } # 80 GB,  16 runners
-  h100_2gpu:  { name: 'H100 2-GPU',  sm: 90,  runner: 'h100-latest',       gpu_count: 2, runner_id: 'h100' } # 2 x 80 GB
-  gb300:      { name: 'GB300',       sm: 103, runner: 'gb300-latest',      gpu_count: 1 }
+  t4:         { name: 'T4',          sm: 75,  runner: 't4-latest',         gpu_count: 1, dc: true  } # 16 GB,  10 runners
+  rtx2080:    { name: 'RTX2080',     sm: 75,  runner: 'rtx2080-latest',    gpu_count: 1, dc: false } #  8 GB,  12 runners
+  rtxa6000:   { name: 'RTXA6000',    sm: 86,  runner: 'rtxa6000-latest',   gpu_count: 1, dc: true } # 48 GB,  12 runners
+  l4:         { name: 'L4',          sm: 89,  runner: 'l4-latest',         gpu_count: 1, dc: true  } # 24 GB,  48 runners
+  rtx4090:    { name: 'RTX4090',     sm: 89,  runner: 'rtx4090-latest',    gpu_count: 1, dc: false } # 24 GB,  10 runners
+  h100:       { name: 'H100',        sm: 90,  runner: 'h100-latest',       gpu_count: 1, dc: true  } # 80 GB,  16 runners
+  h100_2gpu:  { name: 'H100 2-GPU',  sm: 90,  runner: 'h100-latest',       gpu_count: 2, runner_id: 'h100', dc: true } # 2 x 80 GB
+  gb300:      { name: 'GB300',       sm: 103, runner: 'gb300-latest',      gpu_count: 1, dc: true  }
   # Very small number of runners on loan from cuda-python while we wait for our order to arrive.
   # Limit jobs on these:
-  rtxpro6000: { name: 'RTXPRO6000',  sm: 120, runner: 'rtxpro6000-latest', gpu_count: 1 }
+  rtxpro6000: { name: 'RTXPRO6000',  sm: 120, runner: 'rtxpro6000-latest', gpu_count: 1, dc: true  }
 
 # Tags are used to define a `matrix job` in the workflow section.
 #

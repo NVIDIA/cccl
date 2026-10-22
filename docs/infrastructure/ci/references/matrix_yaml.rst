@@ -37,7 +37,7 @@ Top-level keys
    * - ``projects``
      - Project definitions: supported standards, display name, and ``job_map`` expansions.
    * - ``gpus``
-     - GPU runner pools and their ``sm`` value.
+     - GPU runner pools and their ``sm`` value and ``dc`` (data center GPU) classification.
    * - ``tags``
      - The fields a job entry accepts, with ``required`` flags and defaults.
 
@@ -119,6 +119,10 @@ Computed internally, not user-specified:
 - ``gpu`` requirement, ``cuda_ext``, ``name``, and ``invoke`` script details - also taken from the ``jobs`` section.
 - ``force_producer_ctk`` — set in the ``jobs`` section to pin a producer build's CTK independent
   of the consumer's ``ctk`` tag. Used mainly for python packaging special cases.
+- ``DATA_CENTER_GPU`` — injected into the ``environment`` of every GPU job as ``1`` or ``0``, taken
+  from the selected GPU's ``dc`` field. The devcontainer entrypoint gates the CUDA forward
+  compatibility (``cuda-compat``) setup on this variable; forward compatibility is only
+  supported on data center GPUs.
 
 Annotated example
 ~~~~~~~~~~~~~~~~~
