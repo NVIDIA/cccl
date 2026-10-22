@@ -35,6 +35,8 @@
 
 #if !defined(_CCCL_DOXYGEN_INVOKED)
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
+
 namespace cuda::experimental::coop
 {
 template <::cuda::std::size_t _StaticUnitCount>
@@ -218,6 +220,8 @@ public:
 template <class _Tp>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES take(_Tp) -> take<::cuda::std::__maybe_static_ext<_Tp>>;
 } // namespace cuda::experimental::coop
+
+_CCCL_END_NV_DIAG_SUPPRESS
 
 #endif // !_CCCL_DOXYGEN_INVOKED
 
