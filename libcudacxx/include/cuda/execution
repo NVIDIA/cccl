@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/guarantee.h>
 #include <cuda/__execution/output_ordering.h>
@@ -29,5 +30,6 @@
 #include <cuda/__execution/tie_break.h>
 #include <cuda/__execution/tune.h>
 #include <cuda/std/execution>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_EXECUTION

@@ -70,19 +70,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <typename _Tp>
 struct __atomic_is_always_lock_free
 {
-  enum
-  {
-    __value = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr)
-  };
+  static constexpr bool __value = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
 };
 #else
 template <typename _Tp>
 struct __atomic_is_always_lock_free
 {
-  enum
-  {
-    __value = sizeof(_Tp) <= 8
-  };
+  static constexpr bool __value = sizeof(_Tp) <= 8;
 };
 #endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 

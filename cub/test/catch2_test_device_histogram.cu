@@ -21,12 +21,11 @@
 #include <algorithm>
 #include <exception>
 #include <limits>
-#include <new>
-#include <string>
 #include <tuple>
 
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 #include <c2h/extended_types.h>
 #include <c2h/vector.h>
 
@@ -365,7 +364,7 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
     [[maybe_unused]] auto fp_scales = array<LevelT, ActiveChannels>{}; // only used when LevelT is floating point
     for (size_t c = 0; c < ActiveChannels; ++c)
     {
-      if constexpr (!cs::is_integral<LevelT>::value)
+      if constexpr (!cs::is_integral_v<LevelT>)
       {
         fp_scales[c] = static_cast<LevelT>(num_levels[c] - 1) / static_cast<LevelT>(upper_level[c] - lower_level[c]);
       }
@@ -381,7 +380,7 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
       {
         return n; // out of range
       }
-      if constexpr (cs::is_integral<LevelT>::value)
+      if constexpr (cs::is_integral_v<LevelT>)
       {
         // Accurate bin computation following the arithmetic we guarantee in the HistoEven docs
         return static_cast<int>(static_cast<uint64_t>(promoted_sample - min) * static_cast<uint64_t>(n - 1)
@@ -552,6 +551,7 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
 
 using types = c2h::type_list<
   std::int8_t,
+  char,
   std::uint8_t,
   std::int16_t,
   std::uint16_t,
@@ -756,13 +756,9 @@ try
     c2h::device_policy, d_bin_indices.begin(), d_bin_indices.end(), d_histogram.begin(), d_selected_bins.begin());
   CHECK(d_selected_bins == c2h::host_vector<counter_t>{1, 0});
 }
-catch (const std::bad_alloc&)
+catch (...)
 {
-  SUCCEED("allocation failure is not a test failure");
-}
-catch (const std::exception& e)
-{
-  FAIL("Unexpected exception: " + std::string(e.what()));
+  c2h::skip_if_allocation_failure();
 }
 
 // Our bin computation for HistogramEven is guaranteed only for when (max_level - min_level) * num_bins does not
@@ -899,6 +895,55 @@ CUB_TEST("DeviceHistogram::HistogramEven bin calculation regression", "[histogra
     upper_level,
     static_cast<int>(d_samples.size()));
   CHECK(h_histogram_ref == d_histogram);
+}
+
+// Regression tests for NVIDIA/cccl#10975: the even-bin arithmetic computed sample - min_level and
+// max_level - min_level in the narrow common type before widening, so level ranges wider than the
+// common type wrapped around (silently misbinning) or overflowed signed types (spuriously rejected).
+CUB_TEST("DeviceHistogram::HistogramEven level range wider than int16", "[histogram_even][device]", CUB_SMALL)
+{
+  // Full int16 range with 100 equal bins: expected bins are 0, 50, and 99.
+  constexpr int num_bins        = 100;
+  constexpr int16_t h_samples[] = {cs::numeric_limits<int16_t>::min(), 0, cs::numeric_limits<int16_t>::max() - 1};
+  auto d_samples                = c2h::device_vector<int16_t>(cs::begin(h_samples), cs::end(h_samples));
+  auto d_histogram              = c2h::device_vector<int>(num_bins);
+  histogram_even(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_bins + 1,
+    cs::numeric_limits<int16_t>::min(),
+    cs::numeric_limits<int16_t>::max(),
+    static_cast<int>(d_samples.size()));
+  c2h::host_vector<int> h_histogram = d_histogram;
+  CHECK(h_histogram[0] == 1);
+  CHECK(h_histogram[num_bins / 2] == 1);
+  CHECK(h_histogram[num_bins - 1] == 1);
+}
+
+CUB_TEST("DeviceHistogram::HistogramEven wide int32 level range is not spuriously rejected",
+         "[histogram_even][device]",
+         CUB_SMALL)
+{
+  // A [-1.5e9, 1.5e9) range with 100 bins is well within the documented uint64 overflow bound,
+  // but used to wrap the level subtraction in int32 and return cudaErrorInvalidValue.
+  constexpr int num_bins    = 100;
+  constexpr int lower_level = -1500000000;
+  constexpr int upper_level = 1500000000;
+  // 1400000000 lies 29/30 of the way through the range, so it lands in bin 96.
+  constexpr int h_samples[] = {lower_level, 0, 1400000000};
+  auto d_samples            = c2h::device_vector<int>(cs::begin(h_samples), cs::end(h_samples));
+  auto d_histogram          = c2h::device_vector<int>(num_bins);
+  histogram_even(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_bins + 1,
+    lower_level,
+    upper_level,
+    static_cast<int>(d_samples.size()));
+  c2h::host_vector<int> h_histogram = d_histogram;
+  CHECK(h_histogram[0] == 1);
+  CHECK(h_histogram[num_bins / 2] == 1);
+  CHECK(h_histogram[96] == 1);
 }
 
 #if TEST_BF_T()

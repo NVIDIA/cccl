@@ -269,12 +269,12 @@ static_assert(::cuda::is_trivially_copyable_v<custom_char3>, "cuda::buffer will 
 
 #if _CCCL_CTK_AT_LEAST(12, 9)
 using test_types =
-  c2h::type_list<cuda::buffer<int, cuda::mr::host_accessible>,
-                 cuda::buffer<unsigned long long, cuda::mr::device_accessible>,
-                 cuda::buffer<short, cuda::mr::device_accessible>,
-                 cuda::buffer<float, cuda::mr::device_accessible>,
+  c2h::type_list<cuda::host_buffer<int>,
+                 cuda::device_buffer<unsigned long long>,
+                 cuda::device_buffer<short>,
+                 cuda::device_buffer<float>,
                  cuda::buffer<int, cuda::mr::host_accessible, cuda::mr::device_accessible>,
-                 cuda::buffer<::custom_char3, cuda::mr::device_accessible>>;
+                 cuda::device_buffer<::custom_char3>>;
 #else // ^^^ _CCCL_CTK_AT_LEAST(12, 9) ^^^ / vvv _CCCL_CTK_BELOW(12, 9) vvv
 using test_types =
   c2h::type_list<cuda::buffer<int, cuda::mr::device_accessible>,

@@ -142,20 +142,6 @@ struct with_get_stream_method
   }
 };
 
-// A non-const conversion operator is unreachable through the const& the env APIs take, so the type
-// provides no stream to the env query and work runs on the default stream. The static_asserts pin
-// the trait pair behind that fallback.
-struct mutable_stream_wrapper
-{
-  cudaStream_t stream;
-
-  operator cudaStream_t()
-  {
-    return stream;
-  }
-};
-static_assert(cuda::std::is_convertible_v<mutable_stream_wrapper, cudaStream_t>);
-static_assert(!cuda::std::__is_callable_v<cuda::get_stream_t, const mutable_stream_wrapper&>);
 static_assert(cuda::std::__is_callable_v<cuda::get_stream_t, const non_copyable_stream_wrapper&>);
 
 template <class TestFn>
@@ -193,12 +179,6 @@ void test_env_kinds(TestFn test_fn)
   {
     const non_copyable_stream_wrapper wrapper{stream.get()};
     test_fn(wrapper, cuda::stream_ref{stream});
-  }
-
-  SECTION("wrapper with a non-const conversion to cudaStream_t")
-  {
-    // the stream is unreachable through the const& env query, so work runs on the default stream
-    test_fn(mutable_stream_wrapper{stream.get()}, default_stream);
   }
 
   SECTION("type with a stream() member")

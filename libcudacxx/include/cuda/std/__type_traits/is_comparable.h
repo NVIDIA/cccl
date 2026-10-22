@@ -22,6 +22,7 @@
 
 #include <cuda/std/__concepts/boolean_testable.h>
 #include <cuda/std/__type_traits/make_const_lvalue_ref.h>
+#include <cuda/std/__type_traits/void_t.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

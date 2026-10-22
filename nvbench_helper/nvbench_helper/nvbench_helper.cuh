@@ -5,6 +5,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 
+#include <cuda/functional>
 #include <cuda/std/cmath>
 #include <cuda/std/complex>
 #include <cuda/std/functional>
@@ -224,6 +225,17 @@ template <typename T>
   const auto max_val = static_cast<double>(cuda::std::numeric_limits<T>::max());
   return static_cast<T>(cuda::std::lerp(min_val, max_val, at));
 }
+
+// Checks if a value is even after truncating it toward zero (cast to int), so it also works for floating-point types,
+// which cuda::__is_even does not support.
+struct is_even_after_truncation
+{
+  template <typename T>
+  [[nodiscard]] __host__ __device__ constexpr bool operator()(const T& val) const noexcept
+  {
+    return cuda::__is_even{}(static_cast<int>(val));
+  }
+};
 
 namespace detail
 {

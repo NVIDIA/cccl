@@ -5,6 +5,8 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/sequence.h>
 
+#include <cuda/functional>
+
 #include <algorithm>
 
 #include <unittest/unittest.h>
@@ -139,15 +141,6 @@ void test_gather_if_simple()
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(test_gather_if_simple);
 
-template <typename T>
-struct is_even_gather_if
-{
-  _CCCL_HOST_DEVICE bool operator()(const T i) const
-  {
-    return (i % 2) == 0;
-  }
-};
-
 template <typename InputIterator1, typename InputIterator2, typename RandomAccessIterator, typename OutputIterator>
 OutputIterator gather_if(
   my_system& system,
@@ -232,19 +225,9 @@ void test_gather_if(const size_t n)
   thrust::device_vector<T> d_output(n);
 
   thrust::gather_if(
-    h_map.begin(),
-    h_map.end(),
-    h_stencil.begin(),
-    h_source.begin(),
-    h_output.begin(),
-    is_even_gather_if<unsigned int>());
+    h_map.begin(), h_map.end(), h_stencil.begin(), h_source.begin(), h_output.begin(), cuda::__is_even{});
   thrust::gather_if(
-    d_map.begin(),
-    d_map.end(),
-    d_stencil.begin(),
-    d_source.begin(),
-    d_output.begin(),
-    is_even_gather_if<unsigned int>());
+    d_map.begin(), d_map.end(), d_stencil.begin(), d_source.begin(), d_output.begin(), cuda::__is_even{});
 
   REQUIRE(h_output == d_output);
 }
@@ -280,20 +263,10 @@ void test_gather_if_to_discard_iterator(const size_t n)
   thrust::device_vector<unsigned int> d_stencil = h_stencil;
 
   const thrust::discard_iterator<> h_result = thrust::gather_if(
-    h_map.begin(),
-    h_map.end(),
-    h_stencil.begin(),
-    h_source.begin(),
-    thrust::make_discard_iterator(),
-    is_even_gather_if<unsigned int>());
+    h_map.begin(), h_map.end(), h_stencil.begin(), h_source.begin(), thrust::make_discard_iterator(), cuda::__is_even());
 
   const thrust::discard_iterator<> d_result = thrust::gather_if(
-    d_map.begin(),
-    d_map.end(),
-    d_stencil.begin(),
-    d_source.begin(),
-    thrust::make_discard_iterator(),
-    is_even_gather_if<unsigned int>());
+    d_map.begin(), d_map.end(), d_stencil.begin(), d_source.begin(), thrust::make_discard_iterator(), cuda::__is_even());
 
   const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 

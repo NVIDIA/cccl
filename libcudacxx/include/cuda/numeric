@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/__numeric/add_overflow.h>
 #include <cuda/__numeric/div_overflow.h>
 #include <cuda/__numeric/isclose.h>
@@ -34,5 +35,6 @@
 #include <cuda/__numeric/saturating_sub_overflow.h>
 #include <cuda/__numeric/sub_overflow.h>
 #include <cuda/std/numeric>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_NUMERIC

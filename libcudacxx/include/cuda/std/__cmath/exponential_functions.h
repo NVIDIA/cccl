@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__floating_point/fp.h>
@@ -33,6 +32,8 @@
 #include <cuda/std/__type_traits/promote.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 

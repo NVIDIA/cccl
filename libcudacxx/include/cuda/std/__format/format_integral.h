@@ -22,18 +22,22 @@
 
 #include <cuda/__cmath/uabs.h>
 #include <cuda/std/__charconv/to_chars.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__format/format_error.h>
 #include <cuda/std/__format/format_spec_parser.h>
 #include <cuda/std/__format/output_utils.h>
-#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__system_error/errc.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
-#include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/climits>
+#include <cuda/std/cstdint>
+#include <cuda/std/string_view>
 
 #include <cuda/std/__cccl/prologue.h>
 

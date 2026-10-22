@@ -153,7 +153,7 @@ target_link_libraries(
 )
 
 if (CUDAToolkit_FOUND)
-  target_link_libraries(libnvcc PRIVATE CUDA::cuda_driver CUDA::cudart)
+  target_link_libraries(libnvcc PRIVATE CUDA::cuda_driver)
   if (WIN32)
     # On Windows, static CUDA libs are built with /MT which conflicts with
     # the project's dynamic CRT (/MD). Use dynamic variants instead.

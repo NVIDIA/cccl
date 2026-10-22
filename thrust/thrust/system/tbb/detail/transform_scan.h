@@ -13,5 +13,5 @@
 #  pragma system_header
 #endif // no system header
 
-// this system inherits transform_scan
+// tbb system inherits transform_scan
 #include <thrust/system/cpp/detail/transform_scan.h>
