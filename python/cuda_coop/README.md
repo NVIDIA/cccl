@@ -170,7 +170,6 @@ from numba_cuda_mlir import cuda, types
 from cuda import coop
 
 block = coop.this_block()
-items = coop.ThreadData(items_per_thread)
 tile_items = cuda.blockDim.x * items_per_thread
 tile_offset = cuda.blockIdx.x * tile_items
 valid_items = count - tile_offset
@@ -178,10 +177,10 @@ if valid_items < 0:
     valid_items = 0
 elif valid_items > tile_items:
     valid_items = tile_items
-coop.load(
+items = coop.load(
     block,
     source,
-    items,
+    items_per_thread=items_per_thread,
     algorithm="direct",
     valid_items=valid_items,
     oob_default=0,
@@ -197,10 +196,21 @@ coop.store(
 )
 ```
 
-`load` fills the caller's output in place and returns `None`. `valid_items`
-counts items across the selected group tile, while `offset` is a nonnegative
-element offset. Runtime offsets are caller-validated. Source and destination
-arrays must be one-dimensional and contiguous. Without `oob_default`,
+`load(..., items_per_thread=N)` returns a `ThreadData` payload with `N`
+items per thread and the source's element type, including when `N` is one.
+Supply a positive compile-time count. To fill an existing payload, use
+`load(group, source, items, ...)`; that form returns `None` and obtains the
+count from `items`. Supply exactly one of an output payload or
+`items_per_thread`.
+
+Direct `ThreadData(items_per_thread)` construction remains available for
+computed values, explicit alignment, and caller-owned outputs. Its element
+type can still be inferred from later Load, Store, or supported assignments.
+
+`valid_items` counts items across the selected group tile, while `offset`
+is a nonnegative element offset. Runtime offsets are caller-validated.
+Source and destination arrays must be one-dimensional and contiguous.
+Without `oob_default`,
 invalid Load slots have unspecified values, even if initialized before Load.
 Every supplied runtime control (`valid_items`, `oob_default`, and `offset`)
 must be uniform within its selected group; different groups may use
@@ -283,7 +293,10 @@ storage = coop.TempStorage(
     auto_sync=False,
     sharing="shared",
 )
-coop.load(block, source, items, algorithm="transpose", temp_storage=storage)
+items = coop.load(
+    block, source, items_per_thread=items_per_thread,
+    algorithm="transpose", temp_storage=storage,
+)
 ```
 
 For block, physical Warp, and logical Warp calls, `direct`, `striped`, and

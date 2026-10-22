@@ -67,7 +67,6 @@ The common root and qualified backend expose matching entry points:
 
    # Inside a Numba-CUDA-MLIR kernel with an items_per_thread argument:
    block = coop.this_block()
-   items = coop.ThreadData(items_per_thread)
    tile_items = cuda.blockDim.x * items_per_thread
    tile_offset = cuda.blockIdx.x * tile_items
    valid_items = count - tile_offset
@@ -75,10 +74,10 @@ The common root and qualified backend expose matching entry points:
        valid_items = 0
    elif valid_items > tile_items:
        valid_items = tile_items
-   coop.load(
+   items = coop.load(
        block,
        source,
-       items,
+       items_per_thread=items_per_thread,
        valid_items=valid_items,
        oob_default=0,
        offset=tile_offset,
@@ -152,13 +151,18 @@ divergent participation safe.
 Per-thread payloads
 -------------------
 
-``coop.ThreadData(items_per_thread)`` gives each participating thread a
-fixed-size payload with that many items. Pass ``items_per_thread`` as a
-kernel argument; Numba-CUDA-MLIR specializes the kernel for its value.
-Common and qualified calls use the same inference rules: an untyped Load
-output infers its dtype from the source, and Store combines the destination
-dtype with payload writes. Load fills the supplied output in place and
-returns ``None``.
+``coop.load(group, source, items_per_thread=items_per_thread)`` returns each
+participating thread's fixed-size ``ThreadData`` payload. Its element type
+comes from ``source``. Pass ``items_per_thread`` as a kernel argument;
+Numba-CUDA-MLIR specializes the kernel for its value.
+
+Use ``coop.ThreadData(items_per_thread)`` to construct a payload for computed
+values, an explicit output, or a minimum alignment request. Common and
+qualified calls use the same inference rules: an untyped Load output infers
+its dtype from the source, and Store combines the destination dtype with
+payload writes. ``coop.load(group, source, output)`` fills that existing
+payload and returns ``None``. Dtype-free ``ThreadData`` construction continues
+to support backward inference from later uses, including Store.
 
 Both namespaces accept ``alignment`` as a compile-time positive power of two
 in bytes. It specifies minimum alignment when the compiler materializes
@@ -168,9 +172,10 @@ payload storage; ``None`` lets the compiler choose. For example,
 requests smaller than its minimum allocation alignment. This option does not
 assert alignment of source or destination arrays passed to Load or Store.
 
-Payload slots start uninitialized. Write every slot before reading it. A
-partial Load leaves invalid slots unspecified unless you pass
-``oob_default``. Initialize those slots after the Load or supply a default
+Directly constructed payload slots start uninitialized. A full Load fills
+every slot. In either Load form, a partial Load leaves invalid slots
+unspecified unless you pass ``oob_default``. Initialize those slots after
+the Load or supply a default
 before reading them. :class:`cuda.coop.ThreadDataLike` names the shared
 payload interface in type signatures. Protocol compatibility alone does not
 make an arbitrary Python object a supported kernel value.
@@ -193,13 +198,14 @@ The signatures are:
 .. code-block:: python
 
    load(
-       group, source, output, /, *,
+       group, source, output=None, /, *,
+       items_per_thread=None,
        algorithm="direct",
        valid_items=None,
        oob_default=None,
        offset=None,
        temp_storage=None,
-   ) -> None
+   ) -> ThreadDataLike | None
 
    store(
        group, destination, value, /, *,
@@ -208,6 +214,12 @@ The signatures are:
        offset=None,
        temp_storage=None,
    ) -> None
+
+Supply exactly one of ``output`` or ``items_per_thread``. With a positive
+compile-time ``items_per_thread``, Load creates and returns a payload, even
+for a count of one. With ``output``, it populates that payload and returns
+``None``. The count and source-derived dtype do not imply that a partial
+Load initialized its invalid slots.
 
 ``valid_items`` counts the valid prefix of the selected group tile, not the
 number of valid items per thread. A Warp-group tile contains

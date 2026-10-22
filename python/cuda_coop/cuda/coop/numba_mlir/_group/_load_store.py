@@ -12,6 +12,8 @@ Calling a marker directly in Python raises the ``RuntimeError`` from
 
 from __future__ import annotations
 
+from typing import Any
+
 try:
     import numpy
 except ModuleNotFoundError as exc:
@@ -42,20 +44,22 @@ from ._marker import group_primitive_marker
 def load(
     group: BlockGroup | WarpGroup,
     source: object,
-    output: ThreadDataLike[_CommonNumericT] | numpy.ndarray,
+    output: ThreadDataLike[_CommonNumericT] | numpy.ndarray | None = None,
     /,
     *,
+    items_per_thread: int | None = None,
     algorithm: BlockLoadStoreAlgorithm | WarpLoadStoreAlgorithm = "direct",
     valid_items: ValidItems | None = None,
     oob_default: _CommonNumericT | float | None = None,
     offset: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
-) -> None:
+) -> ThreadDataLike[Any] | None:
     """Load a block or warp tile with the Numba-CUDA-MLIR backend.
 
-    Parameters, algorithm choices, tile addressing, and the ``None`` return
-    follow :func:`cuda.coop.load`. In this backend, ``output`` may also be a
-    supported fixed-size Numba local array. It must be writable; an untyped
+    Parameters, algorithm choices, tile addressing, and result ownership
+    follow :func:`cuda.coop.load`. Supply ``items_per_thread`` to return a
+    fresh payload with the source dtype. In this backend, ``output`` may also
+    be a supported fixed-size Numba local array. It must be writable; an untyped
     local array can infer its dtype from the source.
 
     See :ref:`per-thread payloads <coop-thread-data>` and
@@ -85,6 +89,7 @@ def load(
         group,
         source,
         output,
+        items_per_thread=items_per_thread,
         algorithm=algorithm,
         valid_items=valid_items,
         oob_default=oob_default,

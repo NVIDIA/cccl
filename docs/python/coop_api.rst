@@ -58,8 +58,10 @@ primitive supports that group.
 Payloads and temporary storage
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``ThreadData`` constructs the per-thread payload supplied to a primitive;
-thread-group descriptors describe the participating threads.
+``load(..., items_per_thread=N)`` returns a per-thread ``ThreadData`` payload.
+Construct ``ThreadData`` directly for computed values, explicit alignment,
+or an existing output. Thread-group descriptors describe the participating
+threads.
 
 .. autofunction:: ThreadData
 

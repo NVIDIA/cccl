@@ -65,7 +65,17 @@ previously imported from ``numba_cuda_mlir``.
 When does ``ThreadData`` need an explicit element type?
 -------------------------------------------------------
 
-Start with an inferred payload:
+For a fresh Load, let the source supply the element type:
+
+.. code-block:: python
+
+   # Inside a kernel; source and items_per_thread are kernel arguments.
+   items = coop.load(
+       coop.this_block(), source, items_per_thread=items_per_thread
+   )
+
+The result is a ``ThreadData`` payload, including when the count is one.
+Direct construction without a dtype is also supported:
 
 .. code-block:: python
 
@@ -77,6 +87,13 @@ Load supplies the source element type. In Numba-CUDA-MLIR, supported indexed
 assignments and a Store destination can also establish the type. Other
 cooperative producers define their output types where their contracts say so.
 Inference follows the backend's supported operations and assignments.
+
+Returning Load needs the source's element type during cooperative planning.
+Kernel-array arguments and their contiguous slices provide that information.
+For a ``cuda.shared.array`` source, the qualified Numba-CUDA-MLIR API supports
+an explicitly typed ``ThreadData`` destination and output-form Load. Keep that
+form for this case; returning Load and common-API validation cannot yet infer
+the shared-memory source type.
 
 Numba's current planner cannot infer a payload type solely from the results of
 a non-inlined device helper when no other supported operation supplies type
@@ -138,10 +155,10 @@ share scratch while the values stay in each thread's payload:
 
    # Inside a kernel; source, destination, and items_per_thread are arguments.
    block = coop.this_block()
-   items = coop.ThreadData(items_per_thread)
    scratch = coop.TempStorage(auto_sync=True)
-   coop.load(
-       block, source, items, algorithm="transpose", temp_storage=scratch
+   items = coop.load(
+       block, source, items_per_thread=items_per_thread,
+       algorithm="transpose", temp_storage=scratch,
    )
    coop.store(
        block, destination, items, algorithm="transpose", temp_storage=scratch

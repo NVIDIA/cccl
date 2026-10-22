@@ -27,17 +27,16 @@ def test_warp_copy():
     @cuda.jit
     def copy_warp_tiles(source, destination, count, items_per_thread):
         group = coop.this_warp().group_by(8)
-        items = coop.ThreadData(items_per_thread)
         block_origin = cuda.blockIdx.x * cuda.blockDim.x * items_per_thread
         group_origin = (cuda.threadIdx.x // 8) * 8 * items_per_thread
         valid = min(
             max(count - block_origin - group_origin, 0), 8 * items_per_thread
         )
 
-        coop.load(
+        items = coop.load(
             group,
             source,
-            items,
+            items_per_thread=items_per_thread,
             offset=block_origin,
             valid_items=valid,
             oob_default=0,

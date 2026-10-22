@@ -34,6 +34,7 @@ from numbers import Integral
 from typing import TYPE_CHECKING, Any, cast
 
 import numba_cuda_mlir.numba_cuda.types as _numba_types
+from numba_cuda_mlir._whole_function_planners import _planner_registry
 from numba_cuda_mlir.cuda.local import array as _cuda_local_array
 from numba_cuda_mlir.extending import require_launch_config
 from numba_cuda_mlir.numba_cuda.core.errors import ForceLiteralArg
@@ -60,6 +61,7 @@ from ._group_errors import (
     InvalidGroupSelectorError,
     NonConstantGroupArgumentError,
     NonConstantThreadGroupError,
+    UnknownLoadStoreDtypeError,
 )
 from ._group_planner_support import (
     _COMMON_GROUP_CONSTRUCTORS,
@@ -71,6 +73,7 @@ from ._group_planner_support import (
     ir,
 )
 from ._group_planning import GroupPlanningContext
+from ._load_result_lifetime import validate_load_result_lifetimes
 from ._operations import group_primitive
 from ._scalar_provenance import (
     try_resolve_static_scalar,
@@ -1786,6 +1789,123 @@ class _GroupCallPlanner:
         self.dead_func_names.add(call.func.name)
         self.replacements[inst] = replacement
 
+    def _normalize_load_results(self) -> None:
+        """Expose fresh Load payloads before analyzing any of their consumers.
+
+        Expand the returning spelling into a source-typed constructor and
+        an ordinary destination Load at the same program point. All later
+        provenance, alias, and control-flow analysis then uses the existing
+        ThreadData rules, including common-API origin checks. The provider
+        still writes an output pointer and returns no value.
+        """
+        replacements: dict[ir.Assign, list[Any]] = {}
+        for block in self.func_ir.blocks.values():
+            for inst in block.body:
+                if not isinstance(inst, ir.Assign):
+                    continue
+                call = inst.value
+                if not isinstance(call, ir.Expr) or call.op != "call":
+                    continue
+                function = self._callable(call.func)
+                if _group_operation_name(function) != "load":
+                    continue
+                bound = self._bind(function, call)
+                output = bound.arguments["output"]
+                count = bound.arguments["items_per_thread"]
+                if not self._is_none(output):
+                    if not self._is_none(count):
+                        raise TypeError(
+                            "cuda.coop.load accepts either output or "
+                            "items_per_thread, not both"
+                        )
+                    continue
+                if self._is_none(count):
+                    raise TypeError(
+                        "cuda.coop.load requires output or items_per_thread"
+                    )
+                self._reject_literal_unroll_value(
+                    count, "load items_per_thread"
+                )
+                extent = self._constant(count)
+                if (
+                    not isinstance(extent, Integral)
+                    or isinstance(extent, bool)
+                    or extent <= 0
+                ):
+                    raise ValueError(
+                        "cuda.coop.load items_per_thread must be a positive "
+                        "compile-time integer"
+                    )
+                dtype = self.context.dtype(bound.arguments["source"])
+                if dtype is None:
+                    raise UnknownLoadStoreDtypeError("load")
+                constructor = (
+                    _common_api.ThreadData
+                    if _is_common_root_operation(function, "load")
+                    else ThreadData
+                )
+                statements: list[Any] = []
+                scope, loc = inst.target.scope, inst.loc
+
+                factory = self._value_var(
+                    statements,
+                    scope=scope,
+                    loc=loc,
+                    stem="load_thread_data",
+                    value=constructor,
+                )
+                size = self._value_var(
+                    statements,
+                    scope=scope,
+                    loc=loc,
+                    stem="load_items_per_thread",
+                    value=int(extent),
+                )
+                element_type = self._value_var(
+                    statements,
+                    scope=scope,
+                    loc=loc,
+                    stem="load_dtype",
+                    value=dtype,
+                )
+                statements.append(
+                    ir.Assign(
+                        ir.Expr.call(factory, [size, element_type], [], loc),
+                        inst.target,
+                        loc,
+                    )
+                )
+                statements.append(
+                    ir.Assign(
+                        ir.Expr.call(
+                            call.func,
+                            [
+                                bound.arguments["group"],
+                                bound.arguments["source"],
+                                inst.target,
+                            ],
+                            [
+                                (key, value)
+                                for key, value in call.kws
+                                if key != "items_per_thread"
+                            ],
+                            loc,
+                        ),
+                        self._new_var(scope, loc, "load_into_result"),
+                        loc,
+                    )
+                )
+                replacements[inst] = statements
+        if replacements:
+            validate_load_result_lifetimes(self.func_ir, replacements)
+            for block in self.func_ir.blocks.values():
+                block.body = [
+                    statement
+                    for inst in block.body
+                    for statement in replacements.get(inst, [inst])
+                ]
+            _planner_registry._repair_ir(self.func_ir)
+
     def _mark_descriptor_calls(self) -> None:
         """Mark thread-group and hierarchy assignments for removal.
 
@@ -1940,6 +2060,7 @@ class _GroupCallPlanner:
             The requested group or operation has no supported lowering.
         """
 
+        self._normalize_load_results()
         self._reject_literal_unroll_constructors()
         self._mark_descriptor_calls()
         for block in self.func_ir.blocks.values():

@@ -222,16 +222,18 @@ Constructing a group or a ``ThreadData`` object does not synchronize threads.
 ``ThreadData``: the part of a tile owned by one thread
 ------------------------------------------------------
 
-``coop.ThreadData(items_per_thread)`` gives each thread that many slots.
-With 128 threads, the group owns ``128 * items_per_thread`` values. Each
-thread indexes its own slots with ``items[i]``. Each thread accesses only
-its own slots.
+``items = coop.load(group, source, items_per_thread=items_per_thread)``
+returns a ``ThreadData`` payload with that many slots per thread and the
+source's element type. With 128 threads, the group owns
+``128 * items_per_thread`` values. Each thread indexes its own slots with
+``items[i]``. Each thread accesses only its own slots.
 
 :class:`~cuda.coop.ThreadDataLike` names the common payload interface used
 in API signatures. It describes the item count, dtype, and indexed reads and
-writes. Use :func:`~cuda.coop.ThreadData` to construct a payload for the
-active compiler backend. Other payload representations require support from
-that backend.
+writes. Direct :func:`~cuda.coop.ThreadData` construction remains useful for
+computed values, caller-supplied outputs, and explicit alignment. It creates
+a payload for the active compiler backend. Other payload representations
+require support from that backend.
 
 The item count must be a positive compile-time integer. Pass
 ``items_per_thread`` as a kernel argument; the compiler specializes the
@@ -248,6 +250,21 @@ not fill it with zeros. A full Load initializes the entire payload; a
 partial Load leaves out-of-bounds slots unspecified unless ``oob_default`` is
 provided. Initialize those slots after the Load or supply ``oob_default``
 before reading them.
+
+With Numba-CUDA-MLIR, each ``ThreadData`` construction site has one local
+allocation. A returning Load uses the same allocation rule. Repeated
+execution inside a loop reuses that site's storage. Consume a returned
+result before the same call executes again; the compiler checks returning
+Loads for aliases that may read overwritten storage. Direct constructors
+retain their existing allocation behavior without this additional check.
+Reassigning the result and reading the final result after the loop are
+supported.
+
+For a sliding window that needs both the previous and current tiles,
+construct two ``ThreadData`` payloads outside the loop and load into them
+with the output form. Numba-CUDA-MLIR supports swapping these payloads by
+assignment each iteration. Backends with stricter payload-identity rules
+can instead copy the current tile's elements into the previous payload.
 
 .. _coop-data-layouts:
 
@@ -309,9 +326,14 @@ Inference follows the backend's supported producers and assignments.
 Conflicting type requirements are errors. See :ref:`element-type inference
 <coop-faq-thread-data-dtype>` for cases that need additional information.
 
-Load writes into the payload supplied by the caller. Transpose Store
-algorithms may rearrange their input payload in place, as in CUB. Copy values
-before Store if they are needed later. Both operations return ``None``.
+Load accepts either a positive compile-time ``items_per_thread`` count or an
+existing output payload. The count form returns a new payload, including for
+one item. ``coop.load(group, source, items)`` writes into the supplied payload
+and returns ``None``; omit ``items_per_thread`` in that form. Its dtype-free
+constructor and backward inference remain supported.
+
+Transpose Store algorithms may rearrange their input payload in place, as in
+CUB. Copy values before Store if they are needed later. Store returns ``None``.
 
 Numba can promote integer arithmetic. Store requires an exact match to the
 destination dtype, so cast computed values when necessary, as in the
@@ -431,14 +453,13 @@ to that payload's items are visible to the caller.
 
 Cooperative helpers must be inlined into the calling kernel before planning.
 Numba-CUDA-MLIR defaults device helpers to ``inline="always"``; the example
-spells it out on ``load_into``. ``inline="never"`` prevents this frontend
+spells it out on ``load_values``. ``inline="never"`` prevents this frontend
 inlining and is unsupported for a helper containing cooperative operations.
 Inlining during later optimization or device linking comes too late to
 supply the group and payload information this planner needs.
 
-This example uses nested helpers. ``load_tile`` creates a payload, passes it
-and the group to ``load_into``, and returns the initialized payload to the
-kernel. Load infers the element type from ``source``:
+This example uses nested helpers. ``load_tile`` calls ``load_values``, which
+returns the payload produced by Load. Its element type comes from ``source``:
 
 .. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_device_helpers_example.py
    :language: python

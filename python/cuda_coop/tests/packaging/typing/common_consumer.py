@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 from typing_extensions import assert_type
@@ -74,3 +74,20 @@ def check_common_surface(source: object, destination: object) -> None:
         coop.store(logical_warp, destination, values, algorithm="striped"),
         None,
     )
+
+
+def check_returning_load(source: object, destination: object) -> None:
+    block = coop.this_block()
+    warp = coop.this_warp()
+    returned = coop.load(block, source, items_per_thread=4)
+    assert_type(returned, coop.ThreadDataLike[Any])
+    assert_type(
+        coop.load(warp, source, items_per_thread=1), coop.ThreadDataLike[Any]
+    )
+    assert_type(
+        coop.load(
+            block, source, items_per_thread=4, valid_items=7, oob_default=0
+        ),
+        coop.ThreadDataLike[Any],
+    )
+    coop.store(block, destination, returned)
