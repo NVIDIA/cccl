@@ -362,8 +362,22 @@ CUB_TEST("Device radix sort queries storage with a mismatched runs_on capability
 {
   cuda::compute_capability cc{};
   REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
-  const auto wrong_cc =
-    cc == cuda::compute_capability{8, 0} ? cuda::compute_capability{9, 0} : cuda::compute_capability{8, 0};
+
+  const auto wrong_cc = [&] {
+    for (auto&& target : cuda::__target_compute_capabilities())
+    {
+      if (target != cc)
+      {
+        return target;
+      }
+    }
+    SKIP("Test requires building with more than one compute-capability");
+    return cuda::compute_capability{};
+  }();
+
+  CAPTURE(cc.get());
+  CAPTURE(wrong_cc.get());
+
   const auto env =
     cuda::execution::guarantee(cub::experimental::RunsOn{cub::experimental::DeviceDescription{wrong_cc, 1}});
   c2h::device_vector<std::int32_t> keys_in{3, 1, 2};
@@ -395,7 +409,10 @@ CUB_TEST("Device radix sort queries storage with runs_on and no device allocatio
          "[radix_sort][device][runs_on][storage-query]",
          CUB_SMALL)
 {
-  const auto cc        = GENERATE(cuda::compute_capability{7, 5}, cuda::compute_capability{9, 0});
+  const auto cc = GENERATE(from_range(cuda::__target_compute_capabilities()));
+
+  CAPTURE(cc.get());
+
   const auto num_items = GENERATE(1, 100'000);
   CAPTURE(num_items);
   const auto env = cuda::execution::guarantee(cub::experimental::RunsOn{cub::experimental::DeviceDescription{cc, 128}});
