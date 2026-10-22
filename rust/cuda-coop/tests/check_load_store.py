@@ -1642,6 +1642,82 @@ cases.update(
     ),
 )
 
+# Radix Sort keys retain the input, scalar uniformity and storage policy.
+radix_sort = "let result=coop::radix_sort_keys(block,&values,Default::default());"
+radix_manual = radix_sort.replace(
+    "Default::default()", "coop::RadixSortOptions::default().temp_storage(&mut scratch)"
+)
+cases.update(
+    radix_sort_generic_bounds=(
+        load + "fn forward<T:coop::RadixKey,const N:usize,const A:usize>("
+        "block:coop::ThreadGroup<coop::Block>,keys:&coop::ThreadData<T,N,A>,end:i64)"
+        "->coop::ThreadData<T,N,A> where coop::Alignment<A>:coop::SupportedAlignment {"
+        "coop::radix_sort_keys(block,keys,coop::RadixSortOptions::default()"
+        ".begin_bit_const::<8>().end_bit(end).order(coop::Descending))}"
+        "let result=forward(block,&mut values,valid as i64);"
+        + store.replace("&values", "&result"),
+        None,
+    ),
+    radix_sort_storage_completed=(
+        load + new_storage + radix_manual + sync + radix_manual + store,
+        None,
+    ),
+    radix_sort_storage_auto=(
+        load
+        + new_storage.replace("new()", "new().auto_sync()")
+        + radix_manual
+        + radix_manual
+        + store,
+        None,
+    ),
+    radix_sort_read_completed=(
+        reload.replace(".valid_items(valid)", ".valid_items(valid).oob_default(0)")
+        + radix_sort
+        + sync
+        + store,
+        None,
+    ),
+    radix_sort_varying_begin=(
+        load
+        + radix_sort.replace(
+            "Default::default()",
+            "coop::RadixSortOptions::default().begin_bit(thread::threadIdx_x() as i64)",
+        ),
+        "not proved block-uniform",
+    ),
+    radix_sort_varying_end=(
+        load
+        + radix_sort.replace(
+            "Default::default()",
+            "coop::RadixSortOptions::default().end_bit(thread::threadIdx_x() as i64 + 1)",
+        ),
+        "not proved block-uniform",
+    ),
+    radix_sort_result_control=(
+        load + radix_sort + "if result[0]==0 {" + radix_sort + "}",
+        "lane-varying",
+    ),
+    radix_sort_storage_missing_barrier=(
+        load + new_storage + radix_manual + radix_manual,
+        "requires a full-block barrier",
+    ),
+    radix_sort_read_epoch=(
+        reload.replace(".valid_items(valid)", ".valid_items(valid).oob_default(0)")
+        + radix_sort
+        + store,
+        "requires a barrier covering both accesses",
+    ),
+    radix_sort_tile_capacity=(
+        "values.write(0,0_i32);let keys=coop::ThreadData::<i32,512>::new();"
+        "let result=coop::radix_sort_keys(block,&keys,Default::default());",
+        "at most 65535 keys",
+    ),
+    radix_sort_warp=(
+        load + radix_sort.replace("keys(block,", "keys(coop::this_warp(),"),
+        "mismatched types",
+    ),
+)
+
 if args.case:
     unknown = set(args.case).difference(cases)
     if unknown:

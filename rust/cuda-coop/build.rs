@@ -4,9 +4,9 @@
 //! Register the owning host provider for native cooperative operations.
 use cuda_coop_codegen::{
     AdjacentDifferenceRecipe, Algorithm, DiscontinuityRecipe, ExchangeMode, ExchangeRecipe,
-    HistogramAlgorithm, Operation, ReduceAlgorithm, ReduceBatchedLayout, ReduceBatchedRecipe,
-    ReduceForm, ReduceOperator, ReduceRecipe, ScanAlgorithm, ScanOperation, ScanOperator,
-    ScanRecipe, ShuffleRecipe, oxide,
+    HistogramAlgorithm, Operation, RadixSortKeysRecipe, ReduceAlgorithm, ReduceBatchedLayout,
+    ReduceBatchedRecipe, ReduceForm, ReduceOperator, ReduceRecipe, ScanAlgorithm, ScanOperation,
+    ScanOperator, ScanRecipe, ShuffleRecipe, oxide,
 };
 
 fn main() {
@@ -18,6 +18,14 @@ fn main() {
         return;
     }
     let executable = std::env::current_exe().expect("cuda.coop provider executable");
+    for (recipe, name) in [
+        (RadixSortKeysRecipe::Ascending, "ASCENDING"),
+        (RadixSortKeysRecipe::Descending, "DESCENDING"),
+    ] {
+        let value = oxide::radix_sort_keys_registration(&executable, recipe)
+            .expect("cuda.coop radix sort keys registration");
+        println!("cargo::rustc-env=COOP_RADIX_SORT_KEYS_{name}={value}");
+    }
     for (algorithm, name) in [
         (HistogramAlgorithm::Atomic, "ATOMIC"),
         (HistogramAlgorithm::Sort, "SORT"),

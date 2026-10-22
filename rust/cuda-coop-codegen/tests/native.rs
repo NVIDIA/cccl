@@ -6,12 +6,100 @@
 use cuda_coop_codegen::{
     AdjacentDifferenceRecipe, AdjacentDifferenceRequest, Algorithm, DiscontinuityRecipe,
     DiscontinuityRequest, Dtype, ExchangeMode, ExchangeRecipe, ExchangeRequest, HistogramAlgorithm,
-    HistogramRecipe, HistogramRequest, Layout, NativeRequest, Operation, Provider, ReduceAlgorithm,
-    ReduceBatchedLayout, ReduceBatchedRecipe, ReduceBatchedRequest, ReduceForm, ReduceOperator,
-    ReduceRequest, Request, ScanAlgorithm, ScanOperation, ScanOperator, ScanRequest, ShuffleRecipe,
-    ShuffleRequest,
+    HistogramRecipe, HistogramRequest, Layout, NativeRequest, Operation, Provider,
+    RadixSortKeysRecipe, RadixSortKeysRequest, ReduceAlgorithm, ReduceBatchedLayout,
+    ReduceBatchedRecipe, ReduceBatchedRequest, ReduceForm, ReduceOperator, ReduceRequest, Request,
+    ScanAlgorithm, ScanOperation, ScanOperator, ScanRequest, ShuffleRecipe, ShuffleRequest,
 };
 use std::{env, path::Path, time::Instant};
+
+#[test]
+#[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
+fn native_mixed_radix_sort_keys_recipes() -> Result<(), Box<dyn std::error::Error>> {
+    use RadixSortKeysRecipe::{Ascending, Descending};
+    let toolkit = env::var("CUDA_HOME")?;
+    let target = env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let provider = Provider::from_checkout(&checkout, &toolkit)?;
+    // Four key types, both directions, XYZ, non-warp geometry and bitmap tails.
+    // The last two rows distinguish order and exact shape at the same capacity.
+    let rows = [
+        (Dtype::I64, [4, 4, 4], 1, Ascending),
+        (Dtype::I64, [4, 4, 4], 4, Descending),
+        (Dtype::I32, [33, 1, 1], 9, Ascending),
+        (Dtype::U32, [1, 1, 1], 1, Descending),
+        (Dtype::U64, [64, 1, 1], 4, Ascending),
+        (Dtype::I64, [4, 4, 4], 4, Ascending),
+        (Dtype::I64, [64, 1, 1], 4, Ascending),
+    ];
+    let mut requests = Vec::new();
+    for (dtype, block, items, recipe) in rows {
+        requests.push(NativeRequest::RadixSortKeys(RadixSortKeysRequest::block(
+            dtype, recipe, block, items,
+        )?));
+    }
+    requests.extend([
+        NativeRequest::LoadStore(Request::new_typed(
+            Dtype::I32,
+            Operation::LoadFullValidity,
+            Algorithm::Direct,
+            64,
+            4,
+        )?),
+        NativeRequest::AdjacentDifference(AdjacentDifferenceRequest::block(
+            Dtype::I32,
+            AdjacentDifferenceRecipe::LeftPartialPredecessor,
+            [64, 1, 1],
+            4,
+        )?),
+        NativeRequest::Histogram(HistogramRequest::block(
+            Dtype::U8,
+            HistogramRecipe::new(HistogramAlgorithm::Sort, Dtype::U64, 65, 2)?,
+            [64, 1, 1],
+            4,
+        )?),
+    ]);
+    let artifact = provider.compile_native(&requests, &target)?;
+    assert_eq!(artifact.specializations.len(), 10);
+    assert!(!artifact.ltoir.is_empty());
+    let mut identities = std::collections::HashSet::new();
+    let mut symbols = std::collections::HashSet::new();
+    for (index, (request, entry)) in requests.iter().zip(&artifact.specializations).enumerate() {
+        assert!(identities.insert(entry.identity));
+        assert!(symbols.insert(&entry.symbol));
+        assert!(!entry.mutates_payload);
+        if index < rows.len() {
+            assert_eq!(entry.scratch, entry.cub_layout);
+            assert!(entry.scratch.size > 0 && entry.scratch.alignment.is_power_of_two());
+            assert!(!entry.scratch_free);
+        }
+        eprintln!(
+            "{request:?}: CUB {:?}, scratch {:?}",
+            entry.cub_layout, entry.scratch
+        );
+    }
+    assert_eq!(
+        artifact.specializations[1].scratch,
+        artifact.specializations[5].scratch
+    );
+    assert_eq!(
+        artifact.specializations[5].scratch,
+        artifact.specializations[6].scratch
+    );
+    assert!(artifact.specializations[7].scratch_free);
+    assert_eq!(artifact.specializations[7].scratch.size, 0);
+    assert_eq!(
+        artifact.specializations[8].scratch,
+        artifact.specializations[8].cub_layout
+    );
+    assert!(artifact.specializations[9].scratch.size > artifact.specializations[9].cub_layout.size);
+    eprintln!(
+        "{} LTO bytes, {} specializations",
+        artifact.ltoir.len(),
+        artifact.specializations.len()
+    );
+    Ok(())
+}
 
 #[test]
 #[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
