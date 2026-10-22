@@ -21,8 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__driver/driver_api.h>
-#include <cuda/__memory/address_space.h>
 #include <cuda/__memory/is_pointer_accessible.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>

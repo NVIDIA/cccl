@@ -20,6 +20,7 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include "cuda/__iterator/tabulate_output_iterator.h"
+#include <c2h/catch2_allocation_failure.h>
 #include <c2h/extended_types.h>
 
 template <cub::detail::topk::select SelectDirection,
@@ -189,9 +190,9 @@ try
   auto keys_expected_it = cuda::std::make_reverse_iterator(keys_in + num_items);
   REQUIRE(thrust::equal(keys_out.cbegin(), keys_out.cend(), keys_expected_it));
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
+  c2h::skip_if_allocation_failure();
 }
 
 CUB_TEST("DeviceTopK::{Min,Max}Keys works with custom keys and decomposers",
@@ -306,7 +307,7 @@ try
   // Verify results
   check_result_helper.check_all_results_correct();
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
+  c2h::skip_if_allocation_failure();
 }

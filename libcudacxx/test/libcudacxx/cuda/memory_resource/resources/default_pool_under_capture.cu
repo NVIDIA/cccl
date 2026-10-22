@@ -39,7 +39,9 @@ constexpr capture_mode_case capture_modes[] = {
 template <class Fn>
 Fn* driver_fn(const char* name)
 {
-  return reinterpret_cast<Fn*>(::cuda::__driver::__get_driver_entry_point(name));
+  const auto result = _CCCLRT_GET_DRIVER_FUNCTION_TYPED(Fn*, name);
+  ::cuda::__driver::__throw_if_failed(result.__status_, "Failed to get test driver function");
+  return result.__fn_;
 }
 ::CUresult begin_capture(::CUstream stream, ::CUstreamCaptureMode mode)
 {

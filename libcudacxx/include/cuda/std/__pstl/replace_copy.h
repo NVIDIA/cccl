@@ -23,11 +23,10 @@
 
 #if _CCCL_HOSTED()
 
+#  include <cuda/__functional/equal_to_value.h>
 #  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/replace_copy.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__execution/policy.h>
-#  include <cuda/std/__iterator/concepts.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__iterator/readable_traits.h>
 #  include <cuda/std/__pstl/dispatch.h>
@@ -35,12 +34,10 @@
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_comparable.h>
 #  include <cuda/std/__type_traits/is_execution_policy.h>
-#  include <cuda/std/__type_traits/is_nothrow_convertible.h>
-#  include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #  include <cuda/std/__utility/move.h>
 
 #  if _CCCL_HAS_BACKEND_CUDA()
-#    include <cuda/std/__pstl/cuda/transform.h>
+#    include <cuda/std/__pstl/cuda/transform.h> // IWYU pragma: keep
 #  endif // _CCCL_HAS_BACKEND_CUDA()
 
 #  include <cuda/std/__cccl/prologue.h>

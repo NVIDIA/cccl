@@ -15,7 +15,11 @@
 
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/device_double_buffer.cuh>
+#include <cub/detail/double_buffer.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/device_partition.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_sort.cuh>
@@ -26,7 +30,6 @@
 #include <cub/util_namespace.cuh>
 
 #include <thrust/iterator/counting_iterator.h>
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>

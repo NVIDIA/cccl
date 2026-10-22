@@ -124,7 +124,7 @@ struct tuple_decomposer_t<cuda::std::tuple<Ts...>>
 
   __host__ __device__ cuda::std::tuple<Ts&...> operator()(cuda::std::tuple<Ts...>& key) const
   {
-    return extract(key, cuda::std::make_index_sequence<sizeof...(Ts)>{});
+    return extract(key, cuda::std::index_sequence_for<Ts...>{});
   }
 };
 

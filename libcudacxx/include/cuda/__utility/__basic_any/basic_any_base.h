@@ -26,8 +26,6 @@
 #include <cuda/__utility/__basic_any/storage.h>
 #include <cuda/__utility/__basic_any/tagged_ptr.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/cstddef> // for byte
 
 #include <cuda/std/__cccl/prologue.h>
 

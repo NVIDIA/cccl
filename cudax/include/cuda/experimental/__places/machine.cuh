@@ -32,8 +32,6 @@
 
 #include <cstdio>
 
-#include <cuda_runtime_api.h>
-
 namespace cuda::experimental::places::reserved
 {
 using ::cuda::experimental::stf::cuda_try;

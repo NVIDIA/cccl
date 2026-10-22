@@ -22,9 +22,16 @@
 #include <cuda/fpmp>
 #include <cuda/std/cassert>
 
-#include "test_macros.h"
+// Host-side launch machinery, which NVRTC's device-only translation unit has no use for and
+// cannot parse; the launch below is preprocessed out there along with the rest of the host
+// branch.
+#if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
+#  include <cuda/devices>
+#  include <cuda/launch>
+#  include <cuda/stream>
+#endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+#include "test_macros.h"
 
 #if _CCCL_CUDA_COMPILATION()
 template <typename MP2>
@@ -71,8 +78,8 @@ TEST_DEVICE_FUNC void test_shfl()
 
 __global__ void test_kernel()
 {
-  test_shfl<cudax::fp32mp2>();
-  test_shfl<cudax::fp64mp2>();
+  test_shfl<cuda::fp32mp2>();
+  test_shfl<cuda::fp64mp2>();
 }
 #endif // _CCCL_CUDA_COMPILATION()
 
@@ -86,8 +93,9 @@ int main(int, char**)
   // test_kernel is not a template, so the launch can stay inside NV_IF_TARGET: it is
   // instantiated for the device regardless of the host-only block being discarded.
   NV_IF_TARGET(NV_IS_HOST,
-               (test_kernel<<<1, 32>>>(); assert(cudaGetLastError() == cudaSuccess);
-                assert(cudaDeviceSynchronize() == cudaSuccess);))
+               (const cuda::stream stream{cuda::device_ref{0}};
+                cuda::launch(stream, cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<32>()), test_kernel);
+                stream.sync();))
 #endif // _CCCL_CUDA_COMPILATION()
   return 0;
 }

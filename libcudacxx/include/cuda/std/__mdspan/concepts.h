@@ -33,7 +33,8 @@
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__fwd/mdspan.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/extents.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -46,7 +47,6 @@
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
-#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -102,9 +102,9 @@ _CCCL_CONCEPT __layout_mapping_alike = _CCCL_REQUIRES_EXPR((_Mapping))(
   requires(same_as<bool, decltype(_Mapping::is_always_strided())>),
   requires(same_as<bool, decltype(_Mapping::is_always_exhaustive())>),
   requires(same_as<bool, decltype(_Mapping::is_always_unique())>),
-  (integral_constant<bool, _Mapping::is_always_strided()>::value),
-  (integral_constant<bool, _Mapping::is_always_exhaustive()>::value),
-  (integral_constant<bool, _Mapping::is_always_unique()>::value));
+  (bool_constant<_Mapping::is_always_strided()>::value),
+  (bool_constant<_Mapping::is_always_exhaustive()>::value),
+  (bool_constant<_Mapping::is_always_unique()>::value));
 
 template <class _IndexType, class... _Indices>
 _CCCL_CONCEPT __all_convertible_to_index_type =

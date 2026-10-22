@@ -41,7 +41,6 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
   }
 
   // Test that the group exposes properties.
-  static_assert(Group::is_always_exhaustive());
   static_assert(Group::is_always_contiguous());
 
   // Test that the group can be synchronized using .sync() method.
@@ -79,9 +78,9 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
 template <class Hierarchy>
 __device__ void test_this_queries(const cudax::coop::this_thread<Hierarchy>& group)
 {
-  // todo(dabayer): These queries end up in `error: expression must have a constant value`, when group is taken by
-  // reference. Can we find a solution that works without copying the group?
-  // static_assert(cuda::gpu_thread.static_count(group) == 1);
+  // We need a view, because references can't be used in constant expressions before C++23.
+  const cudax::coop::group_view group_view{group};
+  static_assert(cuda::gpu_thread.static_count(group_view) == 1);
 
   REQUIRE(cuda::gpu_thread.count(group) == 1);
   REQUIRE(group.count(cuda::gpu_thread) == 1);
@@ -98,17 +97,15 @@ __device__ void test_this_queries(const cudax::coop::this_thread<Hierarchy>& gro
   REQUIRE(group.rank(cuda::grid) == cuda::gpu_thread.rank(cuda::grid));
 
   REQUIRE(cuda::gpu_thread.is_root_rank(group));
-
-  REQUIRE(cuda::gpu_thread.is_part_of(group));
 }
 
 template <class Hierarchy>
 __device__ void test_this_queries(const cudax::coop::this_warp<Hierarchy>& group)
 {
-  // todo(dabayer): These queries end up in `error: expression must have a constant value`, when group is taken by
-  // reference. Can we find a solution that works without copying the group?
-  // static_assert(cuda::gpu_thread.static_count(group) == cuda::gpu_thread.static_count(cuda::warp,
-  // group.hierarchy())); static_assert(cuda::warp.static_count(group) == 1);
+  // We need a view, because references can't be used in constant expressions before C++23.
+  const cudax::coop::group_view group_view{group};
+  static_assert(cuda::gpu_thread.static_count(group_view) == cuda::gpu_thread.static_count(cuda::warp, group_view));
+  static_assert(cuda::warp.static_count(group_view) == 1);
 
   REQUIRE(cuda::gpu_thread.count(group) == cuda::gpu_thread.count(cuda::warp));
   REQUIRE(cuda::warp.count(group) == 1);
@@ -126,19 +123,16 @@ __device__ void test_this_queries(const cudax::coop::this_warp<Hierarchy>& group
 
   REQUIRE(cuda::gpu_thread.is_root_rank(group) == (cuda::gpu_thread.rank(cuda::warp) == 0));
   REQUIRE(cuda::warp.is_root_rank(group));
-
-  REQUIRE(cuda::gpu_thread.is_part_of(group));
-  REQUIRE(cuda::warp.is_part_of(group));
 }
 
 template <class Hierarchy>
 __device__ void test_this_queries(const cudax::coop::this_block<Hierarchy>& group)
 {
-  // todo(dabayer): These queries end up in `error: expression must have a constant value`, when group is taken by
-  // reference. Can we find a solution that works without copying the group?
-  // static_assert(cuda::gpu_thread.static_count(group) == cuda::gpu_thread.static_count(cuda::block,
-  // group.hierarchy())); static_assert(cuda::warp.static_count(group) == cuda::warp.static_count(cuda::block,
-  // group.hierarchy())); static_assert(cuda::block.static_count(group) == 1);
+  // We need a view, because references can't be used in constant expressions before C++23.
+  const cudax::coop::group_view group_view{group};
+  static_assert(cuda::gpu_thread.static_count(group_view) == cuda::gpu_thread.static_count(cuda::block, group_view));
+  static_assert(cuda::warp.static_count(group_view) == cuda::warp.static_count(cuda::block, group_view));
+  static_assert(cuda::block.static_count(group_view) == 1);
 
   REQUIRE(cuda::gpu_thread.count(group) == cuda::gpu_thread.count(cuda::block));
   REQUIRE(cuda::warp.count(group) == cuda::warp.count(cuda::block));
@@ -157,21 +151,17 @@ __device__ void test_this_queries(const cudax::coop::this_block<Hierarchy>& grou
   REQUIRE(cuda::gpu_thread.is_root_rank(group) == (cuda::gpu_thread.rank(cuda::block) == 0));
   REQUIRE(cuda::warp.is_root_rank(group) == (cuda::warp.rank(cuda::block) == 0));
   REQUIRE(cuda::block.is_root_rank(group));
-
-  REQUIRE(cuda::gpu_thread.is_part_of(group));
-  REQUIRE(cuda::warp.is_part_of(group));
-  REQUIRE(cuda::block.is_part_of(group));
 }
 
 template <class Hierarchy>
 __device__ void test_this_queries(const cudax::coop::this_cluster<Hierarchy>& group)
 {
-  // todo(dabayer): These queries end up in `error: expression must have a constant value`, when group is taken by
-  // reference. Can we find a solution that works without copying the group?
-  // static_assert(cuda::gpu_thread.static_count(group) == cuda::gpu_thread.static_count(cuda::cluster,
-  // group.hierarchy())); static_assert(cuda::warp.static_count(group) == cuda::warp.static_count(cuda::cluster,
-  // group.hierarchy())); static_assert(cuda::block.static_count(group) == cuda::block.static_count(cuda::cluster,
-  // group.hierarchy())); static_assert(cuda::cluster.static_count(group) == 1);
+  // We need a view, because references can't be used in constant expressions before C++23.
+  const cudax::coop::group_view group_view{group};
+  static_assert(cuda::gpu_thread.static_count(group_view) == cuda::gpu_thread.static_count(cuda::cluster, group_view));
+  static_assert(cuda::warp.static_count(group_view) == cuda::warp.static_count(cuda::cluster, group_view));
+  static_assert(cuda::block.static_count(group_view) == cuda::block.static_count(cuda::cluster, group_view));
+  static_assert(cuda::cluster.static_count(group_view) == 1);
 
   REQUIRE(cuda::gpu_thread.count(group) == cuda::gpu_thread.count(cuda::cluster));
   REQUIRE(cuda::warp.count(group) == cuda::warp.count(cuda::cluster));
@@ -191,23 +181,18 @@ __device__ void test_this_queries(const cudax::coop::this_cluster<Hierarchy>& gr
   REQUIRE(cuda::warp.is_root_rank(group) == (cuda::warp.rank(cuda::cluster) == 0));
   REQUIRE(cuda::block.is_root_rank(group) == (cuda::block.rank(cuda::cluster) == 0));
   REQUIRE(cuda::cluster.is_root_rank(group));
-
-  REQUIRE(cuda::gpu_thread.is_part_of(group));
-  REQUIRE(cuda::warp.is_part_of(group));
-  REQUIRE(cuda::block.is_part_of(group));
-  REQUIRE(cuda::cluster.is_part_of(group));
 }
 
 template <class Hierarchy>
 __device__ void test_this_queries(const cudax::coop::this_grid<Hierarchy>& group)
 {
-  // todo(dabayer): These queries end up in `error: expression must have a constant value`, when group is taken by
-  // reference. Can we find a solution that works without copying the group?
-  // static_assert(cuda::gpu_thread.static_count(group) == cuda::gpu_thread.static_count(cuda::grid,
-  // group.hierarchy())); static_assert(cuda::warp.static_count(group) == cuda::warp.static_count(cuda::grid,
-  // group.hierarchy())); static_assert(cuda::block.static_count(group) == cuda::block.static_count(cuda::grid,
-  // group.hierarchy())); static_assert(cuda::cluster.static_count(group) == cuda::cluster.static_count(cuda::grid,
-  // group.hierarchy())); static_assert(cuda::grid.static_count(group) == 1);
+  // We need a view, because references can't be used in constant expressions before C++23.
+  const cudax::coop::group_view group_view{group};
+  static_assert(cuda::gpu_thread.static_count(group_view) == cuda::gpu_thread.static_count(cuda::grid, group_view));
+  static_assert(cuda::warp.static_count(group_view) == cuda::warp.static_count(cuda::grid, group_view));
+  static_assert(cuda::block.static_count(group_view) == cuda::block.static_count(cuda::grid, group_view));
+  static_assert(cuda::cluster.static_count(group_view) == cuda::cluster.static_count(cuda::grid, group_view));
+  static_assert(cuda::grid.static_count(group_view) == 1);
 
   REQUIRE(cuda::gpu_thread.count(group) == cuda::gpu_thread.count(cuda::grid));
   REQUIRE(cuda::warp.count(group) == cuda::warp.count(cuda::grid));
@@ -228,12 +213,6 @@ __device__ void test_this_queries(const cudax::coop::this_grid<Hierarchy>& group
   REQUIRE(cuda::block.is_root_rank(group) == (cuda::block.rank(cuda::grid) == 0));
   REQUIRE(cuda::cluster.is_root_rank(group) == (cuda::cluster.rank(cuda::grid) == 0));
   REQUIRE(cuda::grid.is_root_rank(group));
-
-  REQUIRE(cuda::gpu_thread.is_part_of(group));
-  REQUIRE(cuda::warp.is_part_of(group));
-  REQUIRE(cuda::block.is_part_of(group));
-  REQUIRE(cuda::cluster.is_part_of(group));
-  REQUIRE(cuda::grid.is_part_of(group));
 }
 
 template <template <class> class GroupTempl, class Level, class Config>

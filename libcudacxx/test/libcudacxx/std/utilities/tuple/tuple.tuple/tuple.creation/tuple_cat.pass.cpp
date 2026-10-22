@@ -16,6 +16,7 @@
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
+#include <cuda/std/ranges>
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
 
@@ -65,6 +66,58 @@ TEST_FUNC constexpr Element get(std::tuple<Element>&)
 }
 #endif // _CCCL_HAS_HOST_STD_LIB()
 } // namespace tuple_cat_get_hijack
+struct ExplicitCopy
+{
+  int value;
+  TEST_FUNC constexpr explicit ExplicitCopy(int v)
+      : value(v)
+  {}
+  TEST_FUNC constexpr explicit ExplicitCopy(const ExplicitCopy& other)
+      : value(other.value)
+  {}
+  TEST_FUNC constexpr ExplicitCopy(ExplicitCopy&& other)
+      : value(other.value)
+  {}
+};
+
+struct ExplicitMove
+{
+  int value;
+  TEST_FUNC constexpr explicit ExplicitMove(int v)
+      : value(v)
+  {}
+  TEST_FUNC constexpr ExplicitMove(const ExplicitMove& other)
+      : value(other.value)
+  {}
+  TEST_FUNC constexpr explicit ExplicitMove(ExplicitMove&& other)
+      : value(other.value)
+  {}
+};
+
+// Constructible from the staging tuple. tuple_cat must still copy the source element.
+struct StagingTupleConstructible
+{
+  int value;
+  TEST_FUNC constexpr StagingTupleConstructible(int v)
+      : value(v)
+  {}
+  template <class... _Ts>
+  TEST_FUNC constexpr StagingTupleConstructible(cuda::std::tuple<_Ts...> const&)
+      : value(99)
+  {}
+};
+
+struct ExplicitStagingTupleConstructible
+{
+  int value;
+  TEST_FUNC constexpr ExplicitStagingTupleConstructible(int v)
+      : value(v)
+  {}
+  template <class... _Ts>
+  TEST_FUNC constexpr explicit ExplicitStagingTupleConstructible(cuda::std::tuple<_Ts...> const&)
+      : value(99)
+  {}
+};
 
 TEST_FUNC constexpr bool test()
 {
@@ -354,6 +407,66 @@ TEST_FUNC constexpr bool test()
                  assert(cuda::std::get<0>(cat).value == 7);
                }))
 #endif // _CCCL_HAS_HOST_STD_LIB()
+
+  {
+    // Explicit copy from an lvalue reference, including the two-tuple path.
+    cuda::std::tuple<ExplicitCopy> first(ExplicitCopy(1));
+    cuda::std::tuple<ExplicitCopy> second(ExplicitCopy(2));
+    cuda::std::tuple<ExplicitCopy, ExplicitCopy> copied = cuda::std::tuple_cat(first, second);
+    assert(cuda::std::get<0>(copied).value == 1);
+    assert(cuda::std::get<1>(copied).value == 2);
+    assert(cuda::std::get<0>(first).value == 1);
+    assert(cuda::std::get<0>(second).value == 2);
+  }
+  {
+    // Explicit move from an rvalue reference.
+    cuda::std::tuple<ExplicitMove> moved = cuda::std::tuple_cat(cuda::std::tuple<ExplicitMove>(ExplicitMove(3)));
+    assert(cuda::std::get<0>(moved).value == 3);
+  }
+  {
+    // More than two inputs exercises the recursive path and still direct-initializes the result.
+    cuda::std::tuple<ExplicitCopy> tail(ExplicitCopy(7));
+    cuda::std::tuple<ExplicitMove, int, ExplicitCopy> combined =
+      cuda::std::tuple_cat(cuda::std::tuple<ExplicitMove>(ExplicitMove(5)), cuda::std::tuple<int>(6), tail);
+    assert(cuda::std::get<0>(combined).value == 5);
+    assert(cuda::std::get<1>(combined) == 6);
+    assert(cuda::std::get<2>(combined).value == 7);
+    assert(cuda::std::get<0>(tail).value == 7);
+  }
+  {
+    // A one-element result is built from the source element, not from the staging tuple.
+    cuda::std::tuple<StagingTupleConstructible> source(StagingTupleConstructible(7));
+    cuda::std::tuple<StagingTupleConstructible> result = cuda::std::tuple_cat(source);
+    assert(cuda::std::get<0>(result).value == 7);
+
+    cuda::std::tuple<ExplicitStagingTupleConstructible> explicit_source(ExplicitStagingTupleConstructible(7));
+    cuda::std::tuple<ExplicitStagingTupleConstructible> explicit_result = cuda::std::tuple_cat(explicit_source);
+    assert(cuda::std::get<0>(explicit_result).value == 7);
+
+    cuda::std::tuple<StagingTupleConstructible, int> two(StagingTupleConstructible(7), 1);
+    cuda::std::tuple<StagingTupleConstructible, int> two_result = cuda::std::tuple_cat(two);
+    assert(cuda::std::get<0>(two_result).value == 7);
+  }
+  {
+    int a[] = {1, 2, 3};
+    cuda::std::ranges::subrange<int*> view(a, a + 3);
+    cuda::std::tuple<int*, int*> result = cuda::std::tuple_cat(view);
+    assert(cuda::std::get<0>(result) == a);
+    assert(cuda::std::get<1>(result) == a + 3);
+
+    const cuda::std::ranges::subrange<int*> const_view(a, a + 3);
+    cuda::std::tuple<int*, int*, int> combined = cuda::std::tuple_cat(const_view, cuda::std::tuple<int>(4));
+    assert(cuda::std::get<0>(combined) == a);
+    assert(cuda::std::get<1>(combined) == a + 3);
+    assert(cuda::std::get<2>(combined) == 4);
+
+    cuda::std::tuple<int*, int*, int, int> recursive =
+      cuda::std::tuple_cat(view, cuda::std::tuple<int>(4), cuda::std::tuple<int>(5));
+    assert(cuda::std::get<0>(recursive) == a);
+    assert(cuda::std::get<1>(recursive) == a + 3);
+    assert(cuda::std::get<2>(recursive) == 4);
+    assert(cuda::std::get<3>(recursive) == 5);
+  }
 
   return true;
 }

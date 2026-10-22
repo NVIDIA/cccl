@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__iterator/common_iterator.h>
@@ -30,9 +31,9 @@
 #include <cuda/std/__ranges/range_adaptor.h>
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/view_interface.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>

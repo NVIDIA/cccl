@@ -28,6 +28,10 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/device_memory_resource.cuh>
 #include <cub/detail/env_dispatch.cuh>
+#include <cub/detail/future_value.cuh>
+#include <cub/detail/input_value.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/dispatch_scan_by_key.cuh>
@@ -37,6 +41,7 @@
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 #include <cuda/__execution/tune.h>
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
@@ -142,6 +147,7 @@ CUB_NAMESPACE_BEGIN
 //! @endrst
 struct DeviceScan
 {
+private:
   //! @cond
   template <ForceInclusive EnforceInclusive = ForceInclusive::No,
             bool StableReductionOrder       = false,
@@ -212,7 +218,7 @@ struct DeviceScan
     constexpr bool is_safe_integral_op =
       ::cuda::std::is_integral_v<accum_t> && detail::is_cuda_binary_operator<ScanOpT>;
     constexpr bool is_fp_plus_op =
-      ::cuda::std::is_floating_point_v<accum_t> && detail::is_cuda_std_plus_v<ScanOpT, accum_t>;
+      ::cuda::std::is_floating_point_v<accum_t> && ::cuda::__is_cuda_std_plus_v<ScanOpT, accum_t>;
 
     // run_to_run determinism is supported only with integral types with known operators, or floating-point types with
     // plus operator
@@ -288,6 +294,7 @@ struct DeviceScan
   }
   //! @endcond
 
+public:
   //! @name Exclusive scans
   //! @{
 
