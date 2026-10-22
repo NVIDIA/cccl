@@ -33,7 +33,7 @@ struct kernel_run_proof_check
 {
   TEST_DEVICE_FUNC void operator()()
   {
-    CHECK_DEVICE(kernel_run_proof);
+    REQUIRE_DEVICE(kernel_run_proof);
     kernel_run_proof = false;
   }
 };
