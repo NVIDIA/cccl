@@ -18,14 +18,16 @@
 //! [`ShuffleRecipe`] for one-item shifts with partial fresh output.
 //! [`AdjacentDifferenceRecipe`] selects Block neighbor subtraction with typed
 //! optional count and predecessor/successor controls.
+//! [`DiscontinuityRecipe`] selects Block head/tail flags with one or two i32
+//! outputs and optional neighbors of the input type.
 //! Device calls retain all participation, validity and scratch obligations of
 //! [`crate::Specialization`]. No allocation or synchronization policy is supplied.
 
 use crate::{
-    AdjacentDifferenceRecipe, AdjacentDifferenceRequest, Algorithm, Artifact, Dtype, Error,
-    ExchangeRecipe, ExchangeRequest, Layout, NativeRequest, Operation, Provider,
-    ReduceBatchedRecipe, ReduceBatchedRequest, ReduceForm, ReduceRecipe, ReduceRequest, Request,
-    Result, ScanRecipe, ScanRequest, ShuffleRecipe, ShuffleRequest,
+    AdjacentDifferenceRecipe, AdjacentDifferenceRequest, Algorithm, Artifact, DiscontinuityRecipe,
+    DiscontinuityRequest, Dtype, Error, ExchangeRecipe, ExchangeRequest, Layout, NativeRequest,
+    Operation, Provider, ReduceBatchedRecipe, ReduceBatchedRequest, ReduceForm, ReduceRecipe,
+    ReduceRequest, Request, Result, ScanRecipe, ScanRequest, ShuffleRecipe, ShuffleRequest,
 };
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
@@ -128,6 +130,19 @@ struct SpecializationRequest {
 
 impl SpecializationRequest {
     fn native(&self) -> Result<NativeRequest> {
+        if self.operation.starts_with("discontinuity_") {
+            let recipe = DiscontinuityRecipe::parse(&self.operation, &self.algorithm)?;
+            if self.warp_width.is_some() {
+                return Err(Error::message("Discontinuity requires a Block scope"));
+            }
+            return DiscontinuityRequest::block(
+                self.dtype.dtype()?,
+                recipe,
+                self.block,
+                self.items_per_thread,
+            )
+            .map(NativeRequest::Discontinuity);
+        }
         if self.operation.starts_with("adjacent_difference_") {
             let recipe = AdjacentDifferenceRecipe::parse(&self.operation, &self.algorithm)?;
             if self.warp_width.is_some() {
@@ -307,6 +322,30 @@ struct BatchResponse {
 
 fn arguments(request: NativeRequest) -> Vec<Argument> {
     let request = match request {
+        NativeRequest::Discontinuity(request) => {
+            let dtype = Scalar::from(request.dtype);
+            let mut arguments = vec![
+                Argument::ConstPointer(dtype),
+                Argument::MutPointer(Scalar::Signed(32)),
+            ];
+            if request.recipe.paired() {
+                arguments.push(Argument::MutPointer(Scalar::Signed(32)));
+            }
+            arguments.extend([
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+            ]);
+            if request.recipe.paired() {
+                arguments.push(Argument::MutPointer(Scalar::Unsigned(8)));
+            }
+            if request.recipe.predecessor() {
+                arguments.push(Argument::Value(dtype));
+            }
+            if request.recipe.successor() {
+                arguments.push(Argument::Value(dtype));
+            }
+            return arguments;
+        }
         NativeRequest::AdjacentDifference(request) => {
             let dtype = Scalar::from(request.dtype);
             let mut arguments = vec![
@@ -634,6 +673,35 @@ pub fn adjacent_difference_registration(
     .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
 }
 
+/// Encode a Block Discontinuity recipe for the existing provider executable.
+///
+/// Input dtype, exact Block geometry and payload extent arrive with
+/// specialization. Single-result recipes use four typed payload pointers;
+/// paired recipes use six, ordered input, heads, tails, input validity, heads
+/// validity, tails validity. Outputs are i32 regardless of input dtype.
+/// Optional predecessor and successor controls follow, in that order, with
+/// exactly the input type. Scratch is inserted at native parameter two by the
+/// existing ABI. See [`DiscontinuityRequest`] for initialization and reuse.
+///
+/// # Errors
+/// Rejects a nonabsolute executable or a path that cannot be encoded as JSON.
+pub fn discontinuity_registration(
+    executable: &Path,
+    recipe: DiscontinuityRecipe,
+) -> Result<String> {
+    if !executable.is_absolute() {
+        return Err(Error::message("provider executable path must be absolute"));
+    }
+    serde_json::to_string(&Registration {
+        version: VERSION,
+        provider: "cuda_coop",
+        executable,
+        operation: recipe.token(),
+        algorithm: "block",
+    })
+    .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct InputRequest {
@@ -802,6 +870,73 @@ mod tests {
         ReduceAlgorithm, ReduceBatchedLayout, ReduceOperator, ScanAlgorithm, ScanOperation,
         ScanOperator,
     };
+
+    #[test]
+    fn discontinuity_registration_preserves_mixed_output_abi() {
+        use DiscontinuityRecipe::*;
+        for (recipe, paired, neighbors) in [
+            (Heads, false, 0),
+            (HeadsPredecessor, false, 1),
+            (Tails, false, 0),
+            (TailsSuccessor, false, 1),
+            (HeadsAndTails, true, 0),
+            (HeadsAndTailsPredecessor, true, 1),
+            (HeadsAndTailsSuccessor, true, 1),
+            (HeadsAndTailsBoth, true, 2),
+        ] {
+            let registration: serde_json::Value = serde_json::from_str(
+                &discontinuity_registration(Path::new("/provider"), recipe).unwrap(),
+            )
+            .unwrap();
+            let mut request = SpecializationRequest {
+                operation: registration["operation"].as_str().unwrap().into(),
+                algorithm: registration["algorithm"].as_str().unwrap().into(),
+                dtype: Scalar::Float(64),
+                block: [4, 3, 2],
+                items_per_thread: 4,
+                warp_width: None,
+            };
+            let native = request.native().unwrap();
+            assert_eq!(
+                native,
+                NativeRequest::Discontinuity(
+                    DiscontinuityRequest::block(Dtype::F64, recipe, [4, 3, 2], 4).unwrap()
+                )
+            );
+            let mut expected = vec![
+                Argument::ConstPointer(Scalar::Float(64)),
+                Argument::MutPointer(Scalar::Signed(32)),
+            ];
+            if paired {
+                expected.push(Argument::MutPointer(Scalar::Signed(32)));
+            }
+            expected.extend([
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+            ]);
+            if paired {
+                expected.push(Argument::MutPointer(Scalar::Unsigned(8)));
+            }
+            expected.extend((0..neighbors).map(|_| Argument::Value(Scalar::Float(64))));
+            assert_eq!(arguments(native), expected);
+            assert!(!native.scratch_free() && !native.mutates_payload());
+            assert_eq!(registration["version"], 1);
+            assert_eq!(registration["provider"], "cuda_coop");
+            request.warp_width = Some(32);
+            assert!(request.native().is_err());
+        }
+        assert!(discontinuity_registration(Path::new("relative"), Heads).is_err());
+        assert!(
+            DiscontinuityRecipe::parse("discontinuity_heads_successor_validity_bits_v1", "block")
+                .is_err()
+        );
+        assert!(
+            DiscontinuityRecipe::parse("discontinuity_tails_predecessor_validity_bits_v1", "block")
+                .is_err()
+        );
+        assert!(DiscontinuityRecipe::parse(Heads.token(), "warp").is_err());
+        assert!(DiscontinuityRecipe::parse(Heads.token(), "sort").is_err());
+    }
 
     #[test]
     fn adjacent_difference_registration_preserves_typed_controls() {

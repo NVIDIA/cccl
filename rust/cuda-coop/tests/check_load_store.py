@@ -1432,6 +1432,130 @@ cases.update(
     ),
 )
 
+# Discontinuity preserves input and supplies one or two independent i32 results.
+# Scratch completion and unrelated global-memory completion remain separate.
+discontinuity = "let result=coop::discontinuity(block,&values,Default::default());"
+discontinuity_pair = "let (_heads,_tails)=coop::discontinuity(block,&values,coop::DiscontinuityOptions::default().mode(coop::HeadsAndTails));"
+discontinuity_manual = "let (heads,_tails)=coop::discontinuity(block,&values,coop::DiscontinuityOptions::default().mode(coop::HeadsAndTails).temp_storage(&mut scratch));values=heads;"
+cases.update(
+    discontinuity_generic_defaults=(
+        load + "fn forward<T:coop::Numeric,const N:usize,const A:usize>("
+        "block:coop::ThreadGroup<coop::Block>,input:&coop::ThreadData<T,N,A>)->coop::ThreadData<i32,N,A> "
+        "where coop::Alignment<A>:coop::SupportedAlignment {"
+        "coop::discontinuity(block,input,Default::default())}"
+        "fn project<T:coop::Numeric,M,const N:usize,const A:usize>("
+        "block:coop::ThreadGroup<coop::Block>,input:&coop::ThreadData<T,N,A>,mode:M)->M::Output "
+        "where coop::Alignment<A>:coop::SupportedAlignment,M:coop::DiscontinuityMode<T,(),(),N,A> {"
+        "coop::discontinuity(block,input,coop::DiscontinuityOptions::default().mode(mode))}"
+        "fn pair<T:coop::Numeric,const N:usize,const A:usize>("
+        "block:coop::ThreadGroup<coop::Block>,input:&coop::ThreadData<T,N,A>)->(coop::ThreadData<i32,N,A>,coop::ThreadData<i32,N,A>) "
+        "where coop::Alignment<A>:coop::SupportedAlignment {project(block,input,coop::HeadsAndTails)}"
+        "let default_result=forward(block,&values);"
+        "let mut one=coop::ThreadData::<_,1>::new();one.write(0,7_u8);"
+        "let one_result=forward(block,&mut one);"
+        "let mut aligned=coop::ThreadData::<_,4,16>::new();"
+        "aligned.write(0,0_f64);aligned.write(1,1.0);aligned.write(2,1.0);aligned.write(3,2.0);"
+        "let (mut heads,tails):(coop::ThreadData<_,4,16>,coop::ThreadData<_,4,16>)=pair(block,&mut aligned);"
+        "heads.write(0,default_result[0]^one_result[0]^tails[0]);"
+        + store.replace("&values", "&heads"),
+        None,
+    ),
+    discontinuity_recipes_partial_block=(
+        load + "let a=coop::discontinuity(block,&values,Default::default());"
+        "let b=coop::discontinuity(block,&values,coop::DiscontinuityOptions::default().tile_predecessor_item(7));"
+        "let c=coop::discontinuity(block,&values,coop::DiscontinuityOptions::default().mode(coop::Tails));"
+        "let d=coop::discontinuity(block,&values,coop::DiscontinuityOptions::default().tile_successor_item(7).mode(coop::Tails));"
+        "let (eh,et)=coop::discontinuity(block,&values,coop::DiscontinuityOptions::default().mode(coop::HeadsAndTails));"
+        "let (fh,ft)=coop::discontinuity(block,&values,coop::DiscontinuityOptions::default().mode(coop::HeadsAndTails).tile_predecessor_item(7));"
+        "let (gh,gt)=coop::discontinuity(block,&values,coop::DiscontinuityOptions::default().tile_successor_item(7).mode(coop::HeadsAndTails));"
+        "let (hh,ht)=coop::discontinuity(block,&values,coop::DiscontinuityOptions::default().tile_successor_item(7).tile_predecessor_item(7).mode(coop::HeadsAndTails));"
+        "values.write(0,a[0]^b[0]^c[0]^d[0]^eh[0]^et[0]^fh[0]^ft[0]^gh[0]^gt[0]^hh[0]^ht[0]);"
+        + store,
+        None,
+    ),
+    discontinuity_heads_successor=(
+        load + "let result=coop::discontinuity(block,&values,"
+        "coop::DiscontinuityOptions::default().tile_successor_item(0));",
+        "DiscontinuityMode",
+    ),
+    discontinuity_predecessor_then_tails=(
+        load + "let result=coop::discontinuity(block,&values,"
+        "coop::DiscontinuityOptions::default().tile_predecessor_item(0).mode(coop::Tails));",
+        "DiscontinuityMode",
+    ),
+    discontinuity_neighbor_type=(
+        load + "let result=coop::discontinuity(block,&values,"
+        "coop::DiscontinuityOptions::default().tile_predecessor_item(0_i64));",
+        "mismatched types",
+    ),
+    discontinuity_no_count=(
+        load + "let result=coop::discontinuity(block,&values,"
+        "coop::DiscontinuityOptions::default().valid_items(valid));",
+        "no method named `valid_items`",
+    ),
+    discontinuity_scalar=(
+        load + "let result=coop::discontinuity(block,&3_i32,Default::default());",
+        "mismatched types",
+    ),
+    discontinuity_warp=(
+        load
+        + "let result=coop::discontinuity(coop::this_warp(),&values,Default::default());",
+        "mismatched types",
+    ),
+    discontinuity_partition=(
+        load
+        + "let result=coop::discontinuity(block.group_by::<2>(),&values,Default::default());",
+        "mismatched types",
+    ),
+    discontinuity_varying_predecessor=(
+        load + "let result=coop::discontinuity(block,&values,"
+        "coop::DiscontinuityOptions::default().tile_predecessor_item(thread::threadIdx_x() as i32));",
+        "not proved block-uniform",
+    ),
+    discontinuity_varying_successor_pair=(
+        load + "let (_heads,_tails)=coop::discontinuity(block,&values,"
+        "coop::DiscontinuityOptions::default().mode(coop::HeadsAndTails).tile_successor_item(thread::threadIdx_x() as i32));",
+        "not proved block-uniform",
+    ),
+    discontinuity_lane_divergence=(
+        load + "if thread::threadIdx_x()&1==0 {" + discontinuity + "}",
+        "lane-varying",
+    ),
+    discontinuity_result_control=(
+        load + discontinuity + "if result[0]==0 {" + discontinuity + "}",
+        "lane-varying",
+    ),
+    discontinuity_storage_missing_barrier=(
+        load + new_storage + discontinuity_manual + discontinuity_manual,
+        "requires a full-block barrier",
+    ),
+    discontinuity_storage_completed=(
+        load + new_storage + discontinuity_manual + sync + discontinuity_manual + store,
+        None,
+    ),
+    discontinuity_storage_auto=(
+        load
+        + new_storage.replace("new()", "new().auto_sync()")
+        + discontinuity_manual
+        + discontinuity_manual
+        + store,
+        None,
+    ),
+    discontinuity_read_epoch=(
+        reload.replace(".valid_items(valid)", ".valid_items(valid).oob_default(0)")
+        + discontinuity_pair
+        + store,
+        "requires a barrier covering both accesses",
+    ),
+    discontinuity_read_completed=(
+        reload.replace(".valid_items(valid)", ".valid_items(valid).oob_default(0)")
+        + discontinuity_pair
+        + sync
+        + store,
+        None,
+    ),
+)
+
 if args.case:
     unknown = set(args.case).difference(cases)
     if unknown:

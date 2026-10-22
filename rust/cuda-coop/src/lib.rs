@@ -61,6 +61,8 @@
 //! It preserves full-readable input and returns a fully initialized fresh payload,
 //! copying any inactive count suffix unchanged. [`AdjacentDifferenceOptions`]
 //! selects direction, typed outside neighbors, count and existing scratch policy.
+//! [`discontinuity`] returns fresh i32 head or tail flags, or both payloads,
+//! preserving the full-readable input's extent and minimum alignment.
 //! Host payload tests need no GPU;
 //! executing hardware queries requires an Oxide-compiled CUDA kernel.
 
@@ -70,6 +72,7 @@
 
 mod adjacent_difference;
 mod alignment;
+mod discontinuity;
 mod exchange;
 mod group;
 mod load_store;
@@ -85,6 +88,9 @@ pub use adjacent_difference::{
 };
 pub use alignment::{Alignment, SupportedAlignment};
 pub use cuda_device::{CollectiveTiles, DisjointSlice};
+pub use discontinuity::{
+    DiscontinuityMode, DiscontinuityOptions, Heads, HeadsAndTails, Tails, discontinuity,
+};
 pub use exchange::{
     BlockedToStriped, ExchangeGroup, ExchangeMode, ExchangeOptions, StripedToBlocked, exchange,
 };

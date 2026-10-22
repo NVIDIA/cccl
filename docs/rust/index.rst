@@ -44,15 +44,17 @@ that idiom, including a short final tile. Counts and offsets describe the whole
 group's tile, and must be uniform across that group.
 
 The public operations include :doc:`load_store`, :doc:`scan`, :doc:`reduce`,
-:doc:`reduce_batched`, :doc:`exchange`, :doc:`shuffle` and
-:doc:`adjacent_difference`. Scan returns fresh per-group prefixes;
+:doc:`reduce_batched`, :doc:`exchange`, :doc:`shuffle`,
+:doc:`adjacent_difference` and :doc:`discontinuity`.
+Scan returns fresh per-group prefixes;
 Reduce returns a total only at each group's root. Batched reduction returns a fresh
 payload whose extent and valid slots follow its Warp width and output layout.
 Exchange converts between blocked and striped per-thread layouts.
 Shuffle shifts blocked values by one item, leaving the exposed edge invalid.
-Scan, Reduce, batched reduction, Exchange, Shuffle and Adjacent Difference preserve
-their input. Additional primitive families are under development. The crate is unpublished and its
-interface can change.
+Discontinuity returns head flags, tail flags or both as fresh ``i32`` payloads.
+Scan, Reduce, batched reduction, Exchange, Shuffle, Adjacent Difference and
+Discontinuity preserve their input. Additional primitive families are under
+development. The crate is unpublished and its interface can change.
 
 Build and run
 -------------
@@ -114,6 +116,7 @@ Read next
    exchange
    shuffle
    adjacent_difference
+   discontinuity
    provider
 
 Generate the API reference with ``cargo doc --workspace --no-deps`` from
