@@ -47,8 +47,9 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_scan
 {
-// Type of logical work positions. Output segments do not overlap, so the total work is at most the offset maximum
-// plus one, which the unsigned type of a signed offset holds. An unsigned offset uses 64 bits.
+// Type of logical work positions. Output segments do not overlap and every output position fits OffsetT, so for a
+// signed offset the total work is below 2^n by precondition and fits the unsigned type. An unsigned offset uses 64
+// bits.
 template <typename OffsetT>
 using load_balanced_work_t = ::cuda::std::
   conditional_t<::cuda::std::is_signed_v<OffsetT>, ::cuda::std::make_unsigned_t<OffsetT>, ::cuda::std::uint64_t>;
@@ -922,6 +923,37 @@ private:
       return;
     }
     const OffsetT tile_start = element_index(tile_begin, delta);
+    // Output deltas are uniform modulo 2^n, but iterator addition does not wrap: a tile whose output positions pass
+    // the end of OffsetT's range is stored as two runs, from tile_start up to the maximum and from the minimum on, so
+    // that no index wraps. Input positions end at a supplied OffsetT and cannot wrap.
+    if constexpr (has_output_deltas)
+    {
+      const delta_t positions_after_start =
+        static_cast<delta_t>(::cuda::std::numeric_limits<OffsetT>::max()) - static_cast<delta_t>(tile_start);
+      if (positions_after_start < static_cast<delta_t>(valid_items - 1))
+      {
+        const int items_before_wrap = static_cast<int>(positions_after_start) + 1;
+        auto run_before_wrap        = d_out + tile_start;
+        auto run_after_wrap         = d_out + ::cuda::std::numeric_limits<OffsetT>::min();
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int item = 0; item < items_per_thread; ++item)
+        {
+          const int local_index = static_cast<int>(threadIdx.x) * items_per_thread + item;
+          if (local_index < valid_items)
+          {
+            if (local_index < items_before_wrap)
+            {
+              run_before_wrap[local_index] = output_items[item];
+            }
+            else
+            {
+              run_after_wrap[local_index - items_before_wrap] = output_items[item];
+            }
+          }
+        }
+        return;
+      }
+    }
     if (valid_items == items_per_tile)
     {
       block_store_t(temp_storage.local.tile.store).Store(d_out + tile_start, output_items);

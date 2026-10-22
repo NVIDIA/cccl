@@ -714,12 +714,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_load_balanced(
   }
 
   // The work index holds num_segments + 1 prefixes indexed by OffsetT, scanned in at most max_tile_state_tiles
-  // tiles. Calls with more segments, or with a total above the OffsetT maximum, take one block per segment, which
+  // tiles. Calls with more segments, or with a total the work type cannot hold, take one block per segment, which
   // launches in pieces of at most INT32_MAX segments.
+  using work_t              = load_balanced_work_t<OffsetT>;
   constexpr auto offset_max = ::cuda::std::numeric_limits<OffsetT>::max();
   const bool fits_load_balanced =
     ::cuda::std::cmp_less(num_segments, offset_max) && num_segments <= max_work_index_segments
-    && (!num_items || ::cuda::std::cmp_less_equal(*num_items, offset_max));
+    && (!num_items || ::cuda::std::cmp_less_equal(*num_items, ::cuda::std::numeric_limits<work_t>::max()));
   if (!fits_load_balanced)
   {
     using fallback_output_begin_t = decltype(output_begin_offsets(segments));
@@ -760,8 +761,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_load_balanced(
         EnforceInclusive>{},
       launcher_factory);
   }
-
-  using work_t = load_balanced_work_t<OffsetT>;
 
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))

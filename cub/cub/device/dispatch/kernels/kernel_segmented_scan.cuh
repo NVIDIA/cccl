@@ -359,13 +359,16 @@ public:
         // mask.
         if (segment_size > 0)
         {
-          // Compared modulo 2^n, as positions are unsigned.
-          const logical_offset_t work_begin = prefix - segment_size;
-          const bool input_is_contiguous    = static_cast<logical_offset_t>(input_segment_begin) - work_begin
-                                           == static_cast<logical_offset_t>(temp_storage.block_input_begin);
+          // Compared modulo 2^n, as positions are unsigned. The block is stored by pointer addition, which does not
+          // wrap, so an output begin must also not lie below the block's. Input ends are supplied and cannot wrap.
+          const logical_offset_t work_begin  = prefix - segment_size;
+          const OffsetT output_segment_begin = static_cast<OffsetT>(output_begin_idx_it[work_id]);
+          const bool input_is_contiguous     = static_cast<logical_offset_t>(input_segment_begin) - work_begin
+                                            == static_cast<logical_offset_t>(temp_storage.block_input_begin);
           const bool output_is_contiguous =
-            static_cast<logical_offset_t>(static_cast<OffsetT>(output_begin_idx_it[work_id])) - work_begin
-            == static_cast<logical_offset_t>(temp_storage.block_output_begin);
+            static_cast<logical_offset_t>(output_segment_begin) - work_begin
+              == static_cast<logical_offset_t>(temp_storage.block_output_begin)
+            && output_segment_begin >= temp_storage.block_output_begin;
           if (!input_is_contiguous || !output_is_contiguous)
           {
             ::cuda::atomic_ref<unsigned int, ::cuda::thread_scope_block>{temp_storage.contiguous_mask}.store(

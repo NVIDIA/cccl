@@ -296,6 +296,9 @@ _CCCL_GLOBAL_CONSTANT auto segmented_scan_load_balancing = ::cuda::std::executio
 //! - With load balancing, a segment's floating-point sum may be grouped differently depending on the GPU and input
 //!   size.
 //! - Output segments must not overlap. Input segments may.
+//! - With either option, every output position (a segment's output begin offset plus an index within the segment)
+//!   must be representable by the offset type. With load balancing, 32-bit offsets and no ``num_items``, the total
+//!   number of items must also be less than 2^32. Use 64-bit offsets for larger ranges.
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_env_api.cu
 //!      :language: c++
