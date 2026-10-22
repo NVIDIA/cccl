@@ -70,8 +70,8 @@ struct bounds_checking_incrementer_t
   __device__ void operator()(IndexT i)
   {
     const auto idx = static_cast<long long>(i);
-    REQUIRE(idx >= 0);
-    REQUIRE(idx < num_items);
+    REQUIRE_DEVICE(idx >= 0);
+    REQUIRE_DEVICE(idx < num_items);
     atomicAdd(d_counts + idx, 1);
   }
 };
