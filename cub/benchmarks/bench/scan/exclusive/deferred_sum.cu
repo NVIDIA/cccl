@@ -46,7 +46,7 @@ try
   const auto elements = static_cast<std::size_t>(requested_elements);
 
   thrust::device_vector<T> input = generate(elements);
-  thrust::device_vector<T> output(elements);
+  thrust::device_vector<T> output(elements, thrust::default_init);
   thrust::device_vector<OffsetT> device_num_items(1, static_cast<OffsetT>(elements));
 
   const auto d_input     = thrust::raw_pointer_cast(input.data());
