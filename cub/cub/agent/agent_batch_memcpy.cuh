@@ -894,7 +894,7 @@ private:
     // Currently we do not go over the TLEV buffers in multiple iterations, so we need to make sure
     // we are able to be covered for the case that all our buffers are TLEV buffers
     static_assert(TLEV_BUFFERS_PER_THREAD >= BUFFERS_PER_THREAD,
-                  "Unsupported confiugraiton: The number of 'thread-level buffers' must be at least as large as the "
+                  "Unsupported configuration: The number of 'thread-level buffers' must be at least as large as the "
                   "number of overall buffers being processed by each thread.");
 
     // Read in the TLEV buffer partition (i.e., the buffers that require thread-level collaboration)
