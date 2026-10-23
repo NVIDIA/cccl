@@ -59,7 +59,8 @@
 
 namespace
 {
-constexpr int N = 1 << 14;
+constexpr int N                   = 1 << 14;
+constexpr const char* cudart_path = TEST_CUDART_PATH;
 
 void get_cc(int& cc_major, int& cc_minor)
 {
@@ -152,6 +153,7 @@ bool build_and_serialize(std::vector<char>& out_blob)
   const char* cub_path        = TEST_CUB_PATH;
   const char* thrust_path     = TEST_THRUST_PATH;
   const char* libcudacxx_path = TEST_LIBCUDACXX_PATH;
+  const char* ctk_path        = TEST_CTK_PATH;
 
   // --- 1. build_ex (fused), confirm payload is populated ---
   cccl_device_reduce_build_result_t fused_build{};
@@ -168,7 +170,7 @@ bool build_and_serialize(std::vector<char>& out_blob)
     cub_path,
     thrust_path,
     libcudacxx_path,
-    nullptr,
+    ctk_path,
     nullptr);
   if (rc != CUDA_SUCCESS)
   {
@@ -203,7 +205,7 @@ bool build_and_serialize(std::vector<char>& out_blob)
     cub_path,
     thrust_path,
     libcudacxx_path,
-    nullptr,
+    ctk_path,
     nullptr);
   if (rc != CUDA_SUCCESS)
   {
@@ -215,7 +217,7 @@ bool build_and_serialize(std::vector<char>& out_blob)
     fprintf(stderr, "FAIL: cccl_device_reduce_compile should not populate jit_compiler/reduce_fn\n");
     return false;
   }
-  rc = cccl_device_reduce_load(&split_build, nullptr);
+  rc = cccl_device_reduce_load(&split_build, cudart_path);
   if (rc != CUDA_SUCCESS)
   {
     fprintf(stderr, "FAIL: cccl_device_reduce_load: %d\n", (int) rc);
@@ -253,7 +255,14 @@ bool build_and_serialize(std::vector<char>& out_blob)
     fprintf(stderr, "FAIL: deserialize did not preserve accumulator_size/determinism\n");
     return false;
   }
-  rc = cccl_device_reduce_load(&deser_build, nullptr);
+  // The CUDA runtime path is required.
+  if (cccl_device_reduce_load(&deser_build, nullptr) != CUDA_ERROR_INVALID_VALUE
+      || cccl_device_reduce_load(&deser_build, "") != CUDA_ERROR_INVALID_VALUE)
+  {
+    fprintf(stderr, "FAIL: load without a CUDA runtime path should return CUDA_ERROR_INVALID_VALUE\n");
+    return false;
+  }
+  rc = cccl_device_reduce_load(&deser_build, cudart_path);
   if (rc != CUDA_SUCCESS)
   {
     fprintf(stderr, "FAIL: cccl_device_reduce_load (post-deserialize): %d\n", (int) rc);
@@ -299,7 +308,7 @@ bool build_and_serialize(std::vector<char>& out_blob)
 
   // Misuse is reported, not crashed on or leaked: load of an already loaded
   // result, and serialize with null output pointers.
-  if (cccl_device_reduce_load(&deser_build, nullptr) != CUDA_ERROR_INVALID_VALUE)
+  if (cccl_device_reduce_load(&deser_build, cudart_path) != CUDA_ERROR_INVALID_VALUE)
   {
     fprintf(stderr, "FAIL: load of an already loaded build_result should return CUDA_ERROR_INVALID_VALUE\n");
     return false;
@@ -320,6 +329,59 @@ bool build_and_serialize(std::vector<char>& out_blob)
     if (cccl_device_reduce_deserialize(&empty_build, empty_payload.data(), empty_payload.size()) == CUDA_SUCCESS)
     {
       fprintf(stderr, "FAIL: deserialize should have rejected an empty payload\n");
+      return false;
+    }
+  }
+
+  // The CUDA runtime version the library was built against is recorded, and
+  // `load` refuses a runtime that cannot satisfy it (a different major, or an
+  // older minor) and an unknown build version. A build against an older minor of the same major still loads.
+  {
+    const int built = deser_build.cudart_version;
+    if (built == 0)
+    {
+      fprintf(stderr, "FAIL: the CUDA runtime version was not recorded in the build result\n");
+      return false;
+    }
+    // blob_header: magic[8], algo_tag, os_arch_tag, cc, then cudart_version (u32).
+    constexpr size_t cudart_version_offset = 8 + 3 * sizeof(uint32_t);
+    auto load_with_cudart_version          = [&](int version) {
+      std::vector<char> tampered(static_cast<char*>(buf), static_cast<char*>(buf) + size);
+      const uint32_t v = static_cast<uint32_t>(version);
+      std::memcpy(tampered.data() + cudart_version_offset, &v, sizeof(v));
+      cccl_device_reduce_build_result_t tampered_build{};
+      if (cccl_device_reduce_deserialize(&tampered_build, tampered.data(), tampered.size()) != CUDA_SUCCESS)
+      {
+        fprintf(stderr, "FAIL: deserialize of a blob with cudart_version=%d\n", version);
+        std::exit(1);
+      }
+      CUresult load_rc = cccl_device_reduce_load(&tampered_build, cudart_path);
+      if ((load_rc == CUDA_SUCCESS) != (tampered_build.jit_compiler != nullptr))
+      {
+        fprintf(stderr, "FAIL: load must set jit_compiler exactly when it succeeds\n");
+        std::exit(1);
+      }
+      cccl_device_reduce_cleanup(&tampered_build);
+      return load_rc;
+    };
+    if (load_with_cudart_version(built + 1000) == CUDA_SUCCESS)
+    {
+      fprintf(stderr, "FAIL: load should reject a blob built against a newer CUDA runtime major\n");
+      return false;
+    }
+    if (load_with_cudart_version(built + 10) == CUDA_SUCCESS)
+    {
+      fprintf(stderr, "FAIL: load should reject a blob built against a newer CUDA runtime minor\n");
+      return false;
+    }
+    if (load_with_cudart_version(0) == CUDA_SUCCESS)
+    {
+      fprintf(stderr, "FAIL: load should reject a blob with an unknown CUDA runtime version\n");
+      return false;
+    }
+    if (load_with_cudart_version(built / 1000 * 1000) != CUDA_SUCCESS)
+    {
+      fprintf(stderr, "FAIL: load should accept a blob built against an older CUDA runtime minor\n");
       return false;
     }
   }
@@ -388,7 +450,7 @@ int run_child(const char* blob_path)
     fprintf(stderr, "child: deserialize failed: %d\n", (int) rc);
     return 1;
   }
-  rc = cccl_device_reduce_load(&build, nullptr);
+  rc = cccl_device_reduce_load(&build, cudart_path);
   if (rc != CUDA_SUCCESS)
   {
     fprintf(stderr, "child: load failed: %d\n", (int) rc);

@@ -96,7 +96,8 @@ try
     }
   }();
 
-  build_ptr->cc = cc_major * 10 + cc_minor;
+  build_ptr->cc             = cc_major * 10 + cc_minor;
+  build_ptr->cudart_version = cccl::detail::detect_cudart_version(ctk_path);
   cccl::detail::copy_compiled_library(result.compiler, build_ptr->payload, build_ptr->payload_size);
   build_ptr->jit_compiler = result.compiler;
   build_ptr->sort_fn      = result.fn_ptr;
@@ -174,7 +175,8 @@ try
     }
   }();
 
-  build_ptr->cc = cc_major * 10 + cc_minor;
+  build_ptr->cc             = cc_major * 10 + cc_minor;
+  build_ptr->cudart_version = cccl::detail::detect_cudart_version(ctk_path);
   cccl::detail::copy_bytes(result.library_bytes, build_ptr->payload, build_ptr->payload_size);
   // Zero-init fields set by _load, not _compile (matches v1's contract).
   build_ptr->jit_compiler = nullptr;
@@ -191,21 +193,19 @@ catch (const std::exception& exc)
   return CUDA_ERROR_UNKNOWN;
 }
 
-CUresult cccl_device_merge_sort_load(cccl_device_merge_sort_build_result_t* build_ptr, const char* ctk_path)
+CUresult cccl_device_merge_sort_load(cccl_device_merge_sort_build_result_t* build_ptr, const char* cudart_path)
 try
 {
-  if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0
-      || build_ptr->jit_compiler != nullptr)
+  if (cudart_path == nullptr || cudart_path[0] == '\0' || build_ptr == nullptr || build_ptr->payload == nullptr
+      || build_ptr->payload_size == 0 || build_ptr->jit_compiler != nullptr)
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  hostjit::CompilerConfig jit_config = cccl::detail::make_load_jit_config(ctk_path);
-
-  auto compiler = std::make_unique<hostjit::JITCompiler>(jit_config);
+  auto compiler = std::make_unique<hostjit::JITCompiler>(hostjit::CompilerConfig{});
   std::vector<char> library_bytes(
     static_cast<char*>(build_ptr->payload), static_cast<char*>(build_ptr->payload) + build_ptr->payload_size);
-  if (!compiler->loadFromBytes(library_bytes))
+  if (!compiler->loadFromBytes(library_bytes, cudart_path, build_ptr->cudart_version))
   {
     fprintf(stderr, "\nERROR in cccl_device_merge_sort_load(): %s\n", compiler->getLastError().c_str());
     return CUDA_ERROR_UNKNOWN;
@@ -260,6 +260,7 @@ try
   std::vector<char> blob = cccl::serialization_v2::write_blob(
     CCCL_SERIALIZATION_V2_ALGO_MERGE_SORT,
     build_ptr->cc,
+    build_ptr->cudart_version,
     {"cccl_jit_merge_sort"},
     extra,
     build_ptr->payload,
@@ -307,7 +308,8 @@ try
   result.key_type  = key_type;
   result.item_type = item_type;
 
-  result.cc = parsed.cc;
+  result.cc             = parsed.cc;
+  result.cudart_version = parsed.cudart_version;
   cccl::detail::copy_bytes(
     std::vector<char>(parsed.payload, parsed.payload + parsed.payload_size), result.payload, result.payload_size);
   result.jit_compiler = nullptr;

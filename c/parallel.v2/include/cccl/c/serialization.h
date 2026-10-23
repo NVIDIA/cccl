@@ -52,8 +52,12 @@ typedef enum cccl_serialization_algo_v2_t
 //   is populated while jit_compiler and the algorithm's function pointer stay
 //   null.
 // - _load makes a build_result produced by _compile or _deserialize runnable.
-//   ctk_path locates the CUDA Toolkit on this machine; pass NULL to
-//   auto-detect. Call it at most once per build_result.
+//   cudart_path is required: the full path to this machine's CUDA runtime
+//   library (libcudart.so.<major> on Linux, cudart64_<major>.dll on Windows),
+//   which is loaded first. Call it at most once per build_result. It fails if
+//   the CUDA runtime version the library was built against is unknown, or if
+//   this runtime has a different major version or an older minor. Build
+//   ahead-of-time artifacts with the oldest CUDA Toolkit you need to support.
 // - _serialize writes a self-describing byte buffer. On success *out_buf is a
 //   heap allocation the caller must free with cccl_serialization_v2_buffer_free,
 //   and *out_size is its length. It requires the payload to be populated.

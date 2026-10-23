@@ -60,10 +60,11 @@ struct blob_header
   uint32_t algo_tag; // cccl_serialization_algo_v2_t
   uint32_t os_arch_tag; // os_arch_tag_t
   uint32_t cc; // cc_major*10 + cc_minor
+  uint32_t cudart_version; // CUDART_VERSION the payload was built against, 0 if unknown
   uint32_t num_symbols; // number of exported symbol names that follow the header
 };
 #pragma pack(pop)
-static_assert(sizeof(blob_header) == 24, "blob_header layout must be stable");
+static_assert(sizeof(blob_header) == 28, "blob_header layout must be stable");
 
 // Serializes: header, then num_symbols length-prefixed (u32 length + bytes,
 // no NUL terminator) symbol-name strings in the order _load() must dlsym
@@ -75,6 +76,7 @@ static_assert(sizeof(blob_header) == 24, "blob_header layout must be stable");
 inline std::vector<char> write_blob(
   cccl_serialization_algo_v2_t algo,
   int cc,
+  int cudart_version,
   const std::vector<std::string>& symbol_names,
   const std::vector<char>& extra,
   const void* payload,
@@ -85,10 +87,11 @@ inline std::vector<char> write_blob(
 
   blob_header header{};
   std::memcpy(header.magic, k_blob_magic, sizeof(k_blob_magic));
-  header.algo_tag    = static_cast<uint32_t>(algo);
-  header.os_arch_tag = static_cast<uint32_t>(current_os_arch_tag());
-  header.cc          = static_cast<uint32_t>(cc);
-  header.num_symbols = static_cast<uint32_t>(symbol_names.size());
+  header.algo_tag       = static_cast<uint32_t>(algo);
+  header.os_arch_tag    = static_cast<uint32_t>(current_os_arch_tag());
+  header.cc             = static_cast<uint32_t>(cc);
+  header.cudart_version = static_cast<uint32_t>(cudart_version);
+  header.num_symbols    = static_cast<uint32_t>(symbol_names.size());
 
   auto append = [&](const void* p, size_t n) {
     const char* c = static_cast<const char*>(p);
@@ -118,6 +121,7 @@ struct parsed_blob
 {
   cccl_serialization_algo_v2_t algo_tag;
   int cc;
+  int cudart_version; // 0 if unknown
   std::vector<std::string> symbol_names;
   std::vector<char> extra; // algorithm-specific metadata, see write_blob()
   const char* payload;
@@ -158,8 +162,9 @@ inline parsed_blob read_blob(cccl_serialization_algo_v2_t expected_algo, const v
   }
 
   parsed_blob result{};
-  result.algo_tag = static_cast<cccl_serialization_algo_v2_t>(header.algo_tag);
-  result.cc       = static_cast<int>(header.cc);
+  result.algo_tag       = static_cast<cccl_serialization_algo_v2_t>(header.algo_tag);
+  result.cc             = static_cast<int>(header.cc);
+  result.cudart_version = static_cast<int>(header.cudart_version);
 
   for (uint32_t i = 0; i < header.num_symbols; ++i)
   {

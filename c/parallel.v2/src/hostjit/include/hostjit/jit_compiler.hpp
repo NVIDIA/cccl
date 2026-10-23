@@ -41,20 +41,18 @@ public:
   // serialize()/deserialize()). Writes the bytes to a cache file and loads
   // that.
   //
-  // On Linux, first resolves and dlopen(RTLD_GLOBAL)s this machine's own
-  // libcudart.so.<major> (via findCudaRuntimeLibrary(config_)) *before*
-  // loading the artifact. This is required for cross-machine portability:
-  // the artifact's own baked RPATH points at the *build* machine's CUDA
-  // Toolkit location, which may not exist here. Pre-resolving libcudart by
-  // SONAME makes the artifact's dependency satisfied before any path
-  // search (RPATH/RUNPATH/LD_LIBRARY_PATH/ld.so.cache) is ever consulted.
-  // On Windows there is no equivalent baked-path problem (DLL dependencies
-  // resolve by name via the standard search order), so no preload step is
-  // needed there — the caller is responsible for ensuring the CUDA
-  // Toolkit's bin directory (hosting cudart64_XX.dll) is on PATH.
+  // First loads `cudart_path`, this machine's CUDA runtime library
+  // (libcudart.so.<major> / cudart64_<major>.dll), so the artifact's cudart
+  // dependency resolves to it rather than to the build machine's toolkit
+  // (Linux: baked RPATH) or to whatever is on PATH (Windows).
+  //
+  // `built_cudart_version` is the CUDART_VERSION of the toolkit the artifact
+  // was built against. The load fails, with the cause in getLastError(), if
+  // either version is unknown, or if the runtime has a different major
+  // version or an older minor.
   //
   // Returns true on success, false on failure (see getLastError()).
-  bool loadFromBytes(const std::vector<char>& library_bytes);
+  bool loadFromBytes(const std::vector<char>& library_bytes, const std::string& cudart_path, int built_cudart_version);
 
   // Get function pointer by name
   // Returns nullptr if function not found

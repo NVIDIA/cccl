@@ -83,12 +83,30 @@ target_link_libraries(
     cccl.c.parallel.v2.hostjit_lib
     CUDA::cudart_static
 )
+# The shared CUDA runtime library _load preloads (CUDA::cudart's location is
+# the import library on Windows, so find the DLL itself there).
+if (WIN32)
+  file(
+    GLOB test_cudart_dll
+    "${CUDAToolkit_BIN_DIR}/x64/cudart64_*.dll"
+    "${CUDAToolkit_BIN_DIR}/cudart64_*.dll"
+  )
+  if (NOT test_cudart_dll)
+    message(FATAL_ERROR "cudart64_*.dll not found under ${CUDAToolkit_BIN_DIR}")
+  endif()
+  list(GET test_cudart_dll 0 test_cudart_path)
+else()
+  set(test_cudart_path "$<TARGET_FILE:CUDA::cudart>")
+endif()
+list(GET CUDAToolkit_INCLUDE_DIRS 0 CUDA_FIRST_INCLUDE_DIR)
 target_compile_definitions(
   cccl.c.parallel.v2.test.aot_reduce
   PRIVATE
     TEST_CUB_PATH="-I${CCCL_SOURCE_DIR}/cub"
     TEST_THRUST_PATH="-I${CCCL_SOURCE_DIR}/thrust"
     TEST_LIBCUDACXX_PATH="-I${CCCL_SOURCE_DIR}/libcudacxx/include"
+    TEST_CTK_PATH="-I${CUDA_FIRST_INCLUDE_DIR}"
+    TEST_CUDART_PATH="${test_cudart_path}"
 )
 add_test(
   NAME cccl.c.parallel.v2.test.aot_reduce

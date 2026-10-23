@@ -26,6 +26,7 @@ CCCL_C_EXTERN_C_BEGIN
 typedef struct cccl_device_transform_build_result_t
 {
   int cc;
+  int cudart_version; // CUDART_VERSION of the toolkit the payload was built against (0 = unknown)
   void* payload;
   size_t payload_size;
   void* jit_compiler;
@@ -77,7 +78,7 @@ CCCL_C_API CUresult cccl_device_unary_transform_compile(
   const cccl_build_config* config);
 
 CCCL_C_API CUresult
-cccl_device_unary_transform_load(cccl_device_transform_build_result_t* build_ptr, const char* ctk_path);
+cccl_device_unary_transform_load(cccl_device_transform_build_result_t* build_ptr, const char* cudart_path);
 
 CCCL_C_API CUresult cccl_device_unary_transform_serialize(
   const cccl_device_transform_build_result_t* build_ptr, void** out_buf, size_t* out_size);
@@ -136,7 +137,7 @@ CCCL_C_API CUresult cccl_device_binary_transform_compile(
   const cccl_build_config* config);
 
 CCCL_C_API CUresult
-cccl_device_binary_transform_load(cccl_device_transform_build_result_t* build_ptr, const char* ctk_path);
+cccl_device_binary_transform_load(cccl_device_transform_build_result_t* build_ptr, const char* cudart_path);
 
 CCCL_C_API CUresult cccl_device_binary_transform_serialize(
   const cccl_device_transform_build_result_t* build_ptr, void** out_buf, size_t* out_size);

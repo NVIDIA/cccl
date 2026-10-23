@@ -81,7 +81,8 @@ try
     }
   }();
 
-  build->cc = cc_major * 10 + cc_minor;
+  build->cc             = cc_major * 10 + cc_minor;
+  build->cudart_version = cccl::detail::detect_cudart_version(ctk_path);
   cccl::detail::copy_compiled_library(result.compiler, build->payload, build->payload_size);
   build->jit_compiler     = result.compiler;
   build->reduce_fn        = reinterpret_cast<void*>(result.fn_ptr);
@@ -147,7 +148,8 @@ try
     }
   }();
 
-  build->cc = cc_major * 10 + cc_minor;
+  build->cc             = cc_major * 10 + cc_minor;
+  build->cudart_version = cccl::detail::detect_cudart_version(ctk_path);
   cccl::detail::copy_bytes(result.library_bytes, build->payload, build->payload_size);
   // Zero-init fields set by _load, not _compile (matches v1's contract).
   build->jit_compiler     = nullptr;
@@ -164,20 +166,19 @@ catch (const std::exception& exc)
   return CUDA_ERROR_UNKNOWN;
 }
 
-CUresult cccl_device_reduce_load(cccl_device_reduce_build_result_t* build, const char* ctk_path)
+CUresult cccl_device_reduce_load(cccl_device_reduce_build_result_t* build, const char* cudart_path)
 try
 {
-  if (build == nullptr || build->payload == nullptr || build->payload_size == 0 || build->jit_compiler != nullptr)
+  if (cudart_path == nullptr || cudart_path[0] == '\0' || build == nullptr || build->payload == nullptr
+      || build->payload_size == 0 || build->jit_compiler != nullptr)
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  hostjit::CompilerConfig jit_config = cccl::detail::make_load_jit_config(ctk_path);
-
-  auto compiler = std::make_unique<hostjit::JITCompiler>(jit_config);
+  auto compiler = std::make_unique<hostjit::JITCompiler>(hostjit::CompilerConfig{});
   std::vector<char> library_bytes(
     static_cast<char*>(build->payload), static_cast<char*>(build->payload) + build->payload_size);
-  if (!compiler->loadFromBytes(library_bytes))
+  if (!compiler->loadFromBytes(library_bytes, cudart_path, build->cudart_version))
   {
     fprintf(stderr, "\nERROR in cccl_device_reduce_load(): %s\n", compiler->getLastError().c_str());
     return CUDA_ERROR_UNKNOWN;
@@ -339,7 +340,13 @@ try
       .take();
 
   std::vector<char> blob = cccl::serialization_v2::write_blob(
-    CCCL_SERIALIZATION_V2_ALGO_REDUCE, build->cc, {"cccl_jit_reduce"}, extra, build->payload, build->payload_size);
+    CCCL_SERIALIZATION_V2_ALGO_REDUCE,
+    build->cc,
+    build->cudart_version,
+    {"cccl_jit_reduce"},
+    extra,
+    build->payload,
+    build->payload_size);
 
   cccl::serialization_v2::release_blob(blob, out_buf, out_size);
 
@@ -378,7 +385,8 @@ try
   }
 
   cccl_device_reduce_build_result_t result{};
-  result.cc = parsed.cc;
+  result.cc             = parsed.cc;
+  result.cudart_version = parsed.cudart_version;
   cccl::detail::copy_bytes(
     std::vector<char>(parsed.payload, parsed.payload + parsed.payload_size), result.payload, result.payload_size);
   result.jit_compiler     = nullptr;

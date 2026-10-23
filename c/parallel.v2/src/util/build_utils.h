@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <cctype>
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -249,34 +251,6 @@ inline void copy_bytes(const std::vector<char>& bytes, void*& out_bytes, size_t&
   out_size  = bytes.size();
 }
 
-// Build a hostjit::CompilerConfig suitable for JITCompiler::loadFromBytes(),
-// honoring an optional caller-supplied ctk_path override (NULL = auto-detect
-// via detectDefaultConfig()). This is the load-time counterpart of
-// CubCall's own ctk_path handling at build time — needed because a
-// deserialized/persisted artifact's baked RPATH may point at a different
-// (build) machine's CUDA Toolkit; the loader must locate ITS OWN CUDA
-// Toolkit to preload libcudart before dlopen (see
-// hostjit::JITCompiler::loadFromBytes for why).
-inline hostjit::CompilerConfig make_load_jit_config(const char* ctk_path)
-{
-  hostjit::CompilerConfig config = hostjit::detectDefaultConfig();
-  std::string ctk_root_str       = parse_ctk_root(ctk_path);
-  if (!ctk_root_str.empty())
-  {
-    config.cuda_toolkit_path = ctk_root_str;
-    config.library_paths.clear();
-    for (const char* subdir : {"lib64", "lib"})
-    {
-      auto candidate = std::filesystem::path(ctk_root_str) / subdir;
-      if (std::filesystem::exists(candidate))
-      {
-        config.library_paths.push_back(candidate.string());
-      }
-    }
-  }
-  return config;
-}
-
 // Reads the compiled artifact (the native shared library) the JITCompiler
 // produced, so *_build_ex can populate build->payload and *_serialize works
 // whether a build_result came from the fused path or from _compile()+_load().
@@ -304,6 +278,37 @@ inline void copy_compiled_library(hostjit::JITCompiler* compiler, void*& out_byt
     delete compiler;
     throw;
   }
+}
+
+// CUDART_VERSION (major * 1000 + minor * 10) from the cuda_runtime_api.h the
+// library is compiled against: the one in `ctk_path` (the CUDA include
+// directory, optionally `-I`-prefixed), or in the auto-detected toolkit when
+// `ctk_path` is NULL. 0 if it cannot be determined. Recorded in the build
+// result so `*_load` can refuse a runtime that cannot satisfy the library's
+// cudart imports.
+inline int detect_cudart_version(const char* ctk_path)
+{
+  std::filesystem::path include_dir = strip_dash_i_prefix(ctk_path);
+  if (include_dir.empty())
+  {
+    std::string root = hostjit::detectDefaultConfig().cuda_toolkit_path;
+    if (root.empty())
+    {
+      return 0;
+    }
+    include_dir = std::filesystem::path(root) / "include";
+  }
+  std::ifstream header(include_dir / "cuda_runtime_api.h");
+  constexpr std::string_view define = "#define CUDART_VERSION";
+  for (std::string line; std::getline(header, line);)
+  {
+    if (line.starts_with(define) && line.size() > define.size()
+        && std::isspace(static_cast<unsigned char>(line[define.size()])))
+    {
+      return std::atoi(line.c_str() + define.size());
+    }
+  }
+  return 0;
 }
 
 // Free the JIT compiler and cubin buffer common to every build_result_t in

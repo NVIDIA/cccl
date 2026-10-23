@@ -15,7 +15,9 @@
 #include <hostjit/jit_compiler.hpp>
 
 #ifdef _WIN32
+#  define WIN32_LEAN_AND_MEAN
 #  include <process.h>
+#  include <windows.h>
 #else
 #  include <dlfcn.h>
 #  include <unistd.h>
@@ -564,7 +566,41 @@ bool JITCompiler::compileOnly(const std::string& source_code)
   return true;
 }
 
-bool JITCompiler::loadFromBytes(const std::vector<char>& library_bytes)
+namespace
+{
+// CUDART_VERSION encodes a release as major * 1000 + minor * 10.
+std::string cudartVersionString(int version)
+{
+  return std::to_string(version / 1000) + "." + std::to_string((version % 1000) / 10);
+}
+
+// An artifact imports cudart symbols from the headers it was built against:
+// the runtime must have the same major (the soname changes) and a minor at
+// least as new (a minor only adds exports). Returns an error message, or an
+// empty string if `local_version` is acceptable. A version of 0 is unknown.
+std::string checkCudartCompatible(int built_version, int local_version)
+{
+  if (built_version == 0)
+  {
+    return "the CUDA runtime version the artifact was built against is unknown";
+  }
+  if (local_version == 0)
+  {
+    return "cannot determine its version (cudaRuntimeGetVersion failed)";
+  }
+  if (built_version / 1000 == local_version / 1000 && local_version >= built_version)
+  {
+    return {};
+  }
+  return "the artifact was built against CUDA runtime " + cudartVersionString(built_version) + ", but this machine has "
+       + cudartVersionString(local_version)
+       + "; the runtime must have the same major version and a minor at least as new as the build's "
+         "(build ahead-of-time artifacts with the oldest CUDA Toolkit you need to support)";
+}
+} // namespace
+
+bool JITCompiler::loadFromBytes(
+  const std::vector<char>& library_bytes, const std::string& cudart_path, int built_cudart_version)
 {
   // Deliberately no validateConfig(): that requires the toolkit's headers, but
   // loading a prebuilt artifact only needs the runtime library, which a
@@ -601,19 +637,31 @@ bool JITCompiler::loadFromBytes(const std::vector<char>& library_bytes)
     }
   }
 
-#ifndef _WIN32
-  // Cross-machine portability: pre-resolve and dlopen(RTLD_GLOBAL) this
-  // machine's own libcudart.so.<major> *before* loading the artifact. The
-  // artifact's own baked RPATH points at the machine it was BUILT on,
-  // which may not have CUDA at that same path (e.g. a different pip
-  // install layout). Because glibc's dynamic loader checks already-mapped
-  // objects by SONAME before doing any path search (RPATH/RUNPATH/
-  // LD_LIBRARY_PATH/ld.so.cache/default paths), pre-loading the correct
-  // libcudart here satisfies the artifact's dependency regardless of what
-  // its baked RPATH says.
-  std::string cudart_path = findCudaRuntimeLibrary(config_);
-  if (!cudart_path.empty())
+  // Cross-machine portability: load this machine's own CUDA runtime *before*
+  // the artifact, so the artifact's cudart dependency resolves to it.
+  // - Linux: the artifact's baked RPATH points at the machine it was BUILT on,
+  //   which may not have CUDA at that path. glibc checks already-mapped
+  //   objects by SONAME before any path search, so a preloaded
+  //   libcudart.so.<major> (RTLD_GLOBAL) satisfies the dependency.
+  // - Windows: the artifact names cudart64_<major>.dll; the loader reuses an
+  //   already-loaded module of that name before searching, so the dependency
+  //   no longer relies on the toolkit's bin directory being on PATH.
+  // Never unloaded (matches the "never dlclose a JIT module" policy in
+  // loader.cpp, see #9367: other loaded JIT modules may still reference it).
   {
+    using get_version_fn = int (*)(int*);
+#ifdef _WIN32
+    SetLastError(0);
+    HMODULE cudart_handle =
+      LoadLibraryExW(std::filesystem::path(cudart_path).wstring().c_str(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
+    if (!cudart_handle)
+    {
+      last_error_ = "Failed to preload CUDA runtime (" + cudart_path + "): error " + std::to_string(GetLastError());
+      removeTempDirectory();
+      return false;
+    }
+    auto get_version = reinterpret_cast<get_version_fn>(GetProcAddress(cudart_handle, "cudaRuntimeGetVersion"));
+#else
     dlerror();
     void* cudart_handle = dlopen(cudart_path.c_str(), RTLD_NOW | RTLD_GLOBAL);
     if (!cudart_handle)
@@ -623,16 +671,26 @@ bool JITCompiler::loadFromBytes(const std::vector<char>& library_bytes)
       removeTempDirectory();
       return false;
     }
-    // Intentionally never dlclose'd (RTLD_GLOBAL; matches the "never
-    // dlclose a JIT module" policy already in loader.cpp, see #9367 —
-    // dlclose'ing here would risk unmapping libcudart while other loaded
-    // JIT modules in this process still reference it).
-  }
-  // If cudart_path is empty (couldn't find any CUDA Toolkit on this
-  // machine at all), fall through and let the subsequent load() fail
-  // naturally with a clear "cannot open shared object" error.
+    auto get_version = reinterpret_cast<get_version_fn>(dlsym(cudart_handle, "cudaRuntimeGetVersion"));
 #endif
-
+    // Fail early, with the cause, instead of with a raw loader error or an
+    // undefined-symbol error from loading the artifact.
+    int local_version = 0;
+    if (get_version)
+    {
+      int version = 0;
+      if (get_version(&version) == 0)
+      {
+        local_version = version;
+      }
+    }
+    if (auto error = checkCudartCompatible(built_cudart_version, local_version); !error.empty())
+    {
+      last_error_ = "Incompatible CUDA runtime " + cudart_path + ": " + error;
+      removeTempDirectory();
+      return false;
+    }
+  }
   if (!library_.load(lib_path))
   {
     last_error_ = "Failed to load library: " + library_.getLastError();
