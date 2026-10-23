@@ -192,7 +192,7 @@ cases.update(
     ),
     vectorize_missing_completion=(
         vectorize_load + vectorize_store + reload,
-        "requires a full-block barrier",
+        "requires a barrier covering both accesses",
     ),
 )
 
