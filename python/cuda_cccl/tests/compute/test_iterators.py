@@ -3,6 +3,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import sys
+
 import numpy as np
 import pytest
 from _utils.device_array import DeviceArray
@@ -11,6 +13,7 @@ import cuda.compute
 from cuda.compute import OpKind
 from cuda.compute._utils.protocols import (
     compute_c_contiguous_strides_in_bytes,
+    get_data_pointer,
 )
 from cuda.compute.iterators import (
     CacheModifiedInputIterator,
@@ -118,6 +121,45 @@ def test_reverse_output_iterator_equality():
 
     assert it1.kind == it2.kind == it3.kind
     assert it1.kind != it4.kind
+
+
+@pytest.mark.parametrize("dtype", [np.int32, np.int64, np.uint32, np.uint64])
+def test_reverse_counting_iterator_advance(dtype):
+    # Advancing a reverse iterator steps backward through the underlying
+    # sequence, the same way the device-side advance does.
+    it = ReverseIterator(CountingIterator(dtype(10))) + 2
+    assert np.frombuffer(bytes(it.state), dtype=dtype)[0] == 8
+
+
+@pytest.mark.parametrize("offset", [1, np.uint64(1)])
+def test_reverse_array_iterator_advance(offset):
+    h_input = np.arange(5, dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+
+    it = ReverseIterator(d_input) + offset
+
+    # ReverseIterator(d_input) starts at the last element, so one step
+    # forward is the element before it, not one past the end.
+    expected_ptr = get_data_pointer(d_input) + 3 * h_input.itemsize
+    assert int.from_bytes(bytes(it.state), sys.byteorder) == expected_ptr
+
+
+def test_reduce_advanced_reverse_counting_iterator():
+    num_items = 8
+    d_input = ReverseIterator(CountingIterator(np.int32(10))) + 2
+    h_init = np.array([0], dtype=np.int32)
+    d_output = DeviceArray.empty(1, np.int32)
+
+    cuda.compute.reduce_into(
+        d_in=d_input,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    # The input is 8, 7, ..., 1
+    assert d_output.copy_to_host()[0] == sum(range(1, num_items + 1))
 
 
 @pytest.mark.parametrize(
