@@ -418,15 +418,28 @@ struct HistogramPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::HistogramPolicy
   {
-    return {.threads_per_block                = 128,
-            .pixels_per_thread                = cc > cuda::compute_capability{9, 0} ? 16 : 7,
-            .vec_size                         = 4,
-            .load_algorithm                   = cub::BLOCK_LOAD_DIRECT,
-            .load_modifier                    = cub::LOAD_LDG,
-            .rle_compress                     = false,
-            .mem_preference                   = cub::SMEM,
-            .use_work_stealing                = false,
-            .init_kernel_pdl_trigger_max_bins = 2048};
+    return {
+      .threads_per_block                = 128,
+      .items_per_thread                 = cc > cuda::compute_capability{9, 0} ? 16 : 7,
+      .vec_size                         = 4,
+      .load_algorithm                   = cub::BLOCK_LOAD_DIRECT,
+      .load_modifier                    = cub::LOAD_LDG,
+      .rle_compress                     = false,
+      .mem_preference                   = cub::SMEM,
+      .use_work_stealing                = false,
+      .init_kernel_pdl_trigger_max_bins = 2048,
+      .high_bin_algorithm               = cub::HistogramHighBinAlgorithm::global_memory_privatized,
+      .histocache                       = {
+        .cache                   = cub::HistogramCacheAlgorithm::single_probe,
+        .spill                   = cub::HistogramSpillAlgorithm::global_memory_privatized,
+        .aggregation             = cub::HistogramAggregationAlgorithm::rle,
+        .cache_bytes_per_channel = 16384,
+        .cache_count_replicas    = 1,
+        .items_per_thread        = 4,
+        .threads_per_block       = 0,
+        .min_histogram_bytes     = 0,
+        .blocks_per_sm           = 0,
+        .grid_items              = 0}};
   }
 };
 // example-end histogram-even-policy-selector

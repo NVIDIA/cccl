@@ -245,6 +245,9 @@ function(
     endif()
 
     if ("${test_target}" MATCHES "nvrtc")
+      # nvrtc_args.h stores one command-line argument per include path. CUDAToolkit_INCLUDE_DIRS can be a CMake list,
+      # which would otherwise expand into one malformed semicolon-separated -I argument.
+      list(GET CUDAToolkit_INCLUDE_DIRS 0 NVRTC_CTK_INCLUDE_DIR)
       configure_file(
         "cmake/nvrtc_args.h.in"
         "${CMAKE_CURRENT_BINARY_DIR}/nvrtc_args.h"
