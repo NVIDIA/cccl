@@ -171,7 +171,7 @@ cases.update(
     ),
     striped_missing_completion=(
         striped_load + striped_store + reload,
-        "requires a full-block barrier",
+        "requires a barrier covering both accesses",
     ),
 )
 
