@@ -19,6 +19,7 @@ struct stream_registry_factory_t;
 #include <cuda/std/execution>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
+#include <cuda/std/type_traits>
 
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_device_segmented_scan_schedules.cuh"
@@ -303,7 +304,7 @@ catch (std::bad_alloc&)
 
 // The four output segments are disjoint and cover every int32 position, [-2^31, 2^31), so the total is 2^32, one
 // past the uint32_t maximum; the inputs overlap. Load balancing with 32-bit offsets requires a total below 2^32 unless
-// num_items is supplied, in which case the call takes the default path.
+// num_items is supplied, in which case a supplied total of 2^32 or more takes 64-bit work.
 CUB_TEST("Device segmented scan with load balancing and num_items handles a total of 2^32 with 32-bit offsets",
          "[segmented][scan][device]",
          CUB_LARGE)
@@ -358,26 +359,34 @@ catch (std::bad_alloc&)
   SUCCEED("exceeding memory is not a failure");
 }
 
-// The four output segments are disjoint and cover [-2^31, 2^31], so the total is 2^32 + 1 and the last output position
-// is one past the int32 maximum; the inputs overlap. The output iterator records each write in one bit per position,
-// so no output buffer is allocated, and counts writes outside the four segments. The default path scans each segment
-// in its own block and addresses outputs by pointer addition; num_items and load balancing require every output
-// position to fit the offset type.
-CUB_TEST("Device segmented scan handles output positions past the offset maximum with 32-bit offsets",
+// The four output segments are disjoint and cover 2^32 + 1 positions from -2^31 for signed offsets and from 0 for
+// unsigned ones, so the last output position is one past the maximum of a 32-bit offset type; the inputs overlap. The
+// output iterator records each write in one bit per position, so no output buffer is allocated, and counts writes
+// outside the four segments. The default path scans each segment in its own block and addresses outputs by pointer
+// addition; load balancing with a supplied total of 2^32 or more takes 64-bit work and 64-bit output positions.
+CUB_TEST("Device segmented scan handles output positions past the 32-bit offset maximum",
          "[segmented][scan][device]",
-         CUB_LARGE)
+         CUB_LARGE,
+         c2h::type_list<cuda::std::int32_t, cuda::std::uint32_t, cuda::std::int64_t>)
 try
 {
-  constexpr offset_t segment_items             = offset_t{1} << 30;
-  constexpr cuda::std::int64_t total_items     = (cuda::std::int64_t{1} << 32) + 1;
-  constexpr cuda::std::int64_t first_position  = cuda::std::numeric_limits<offset_t>::min();
-  const c2h::device_vector<offset_t> begins    = {0, 0, 0, 0};
-  const c2h::device_vector<offset_t> ends      = {segment_items, segment_items, segment_items, segment_items + 1};
-  const c2h::device_vector<offset_t> out_begin = {
-    cuda::std::numeric_limits<offset_t>::min(), -segment_items, 0, segment_items};
-  const offset_t* d_begins                  = thrust::raw_pointer_cast(begins.data());
-  const offset_t* d_ends                    = thrust::raw_pointer_cast(ends.data());
-  const offset_t* d_out_begin               = thrust::raw_pointer_cast(out_begin.data());
+  using test_offset_t                      = typename c2h::get<0, TestType>;
+  constexpr test_offset_t segment_items    = test_offset_t{1} << 30;
+  constexpr cuda::std::int64_t total_items = (cuda::std::int64_t{1} << 32) + 1;
+  constexpr cuda::std::int64_t first_position =
+    cuda::std::is_signed_v<test_offset_t>
+      ? cuda::std::int64_t{cuda::std::numeric_limits<cuda::std::int32_t>::min()}
+      : cuda::std::int64_t{0};
+  const auto output_begin = [](cuda::std::int64_t segment) {
+    return static_cast<test_offset_t>(first_position + segment * cuda::std::int64_t{segment_items});
+  };
+  const c2h::device_vector<test_offset_t> begins    = {0, 0, 0, 0};
+  const c2h::device_vector<test_offset_t> ends      = {segment_items, segment_items, segment_items, segment_items + 1};
+  const c2h::device_vector<test_offset_t> out_begin = {
+    output_begin(0), output_begin(1), output_begin(2), output_begin(3)};
+  const test_offset_t* d_begins             = thrust::raw_pointer_cast(begins.data());
+  const test_offset_t* d_ends               = thrust::raw_pointer_cast(ends.data());
+  const test_offset_t* d_out_begin          = thrust::raw_pointer_cast(out_begin.data());
   const auto d_in                           = cuda::constant_iterator<int>(int{1});
   constexpr cuda::std::int64_t num_segments = 4;
 
@@ -408,12 +417,57 @@ try
     helper.check_all_results_correct();
   };
 
-  run(cuda::std::execution::env{});
+  SECTION("default")
+  {
+    run(cuda::std::execution::env{});
+  }
+
+  SECTION("with load balancing and num_items")
+  {
+    run(cuda::std::execution::env{cub::segmented_scan_num_items(total_items), cub::segmented_scan_load_balancing});
+  }
 }
 catch (std::bad_alloc&)
 {
   // Exceeding memory is not a failure.
   SUCCEED("exceeding memory is not a failure");
+}
+
+// With 32-bit offsets, load balancing keeps 32-bit work without num_items and below a supplied total of 2^32, and takes
+// 64-bit work, whose work index needs more temporary storage, from a supplied total of 2^32. With 64-bit offsets the
+// work is 64-bit throughout. Only the temporary storage is queried.
+CUB_TEST("Device segmented scan with load balancing widens the work only for a supplied total of 2^32 or more",
+         "[segmented][scan][device]",
+         CUB_SMALL,
+         c2h::type_list<cuda::std::int32_t, cuda::std::uint32_t, cuda::std::int64_t>)
+{
+  using test_offset_t                       = typename c2h::get<0, TestType>;
+  constexpr cuda::std::int64_t num_segments = 4096;
+  constexpr cuda::std::int64_t total_2_32   = cuda::std::int64_t{1} << 32;
+  const auto d_begins                       = cuda::constant_iterator<test_offset_t>(test_offset_t{0});
+  const auto d_ends                         = cuda::constant_iterator<test_offset_t>(test_offset_t{1});
+  const auto d_in                           = cuda::constant_iterator<item_t>(item_t{1});
+  item_t* d_out                             = nullptr;
+
+  const auto bytes = [&](const auto& schedule_env) {
+    return schedule_allocation_size<cub::ForceInclusive::No, true>(
+      schedule_env, d_in, d_out, num_segments, d_begins, d_ends, d_begins, cuda::std::plus<>{}, cub::NullType{});
+  };
+  const size_t without_total = bytes(cuda::std::execution::env{cub::segmented_scan_load_balancing});
+  const size_t below_2_32 =
+    bytes(cuda::std::execution::env{cub::segmented_scan_num_items(total_2_32 - 1), cub::segmented_scan_load_balancing});
+  const size_t at_2_32 =
+    bytes(cuda::std::execution::env{cub::segmented_scan_num_items(total_2_32), cub::segmented_scan_load_balancing});
+
+  REQUIRE(below_2_32 == without_total);
+  if constexpr (sizeof(test_offset_t) == 4)
+  {
+    REQUIRE(at_2_32 > below_2_32);
+  }
+  else
+  {
+    REQUIRE(at_2_32 == below_2_32);
+  }
 }
 
 CUB_TEST("Device segmented scan with load balancing works with more segments than the offset type holds",
