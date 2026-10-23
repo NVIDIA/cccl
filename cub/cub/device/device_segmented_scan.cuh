@@ -311,6 +311,8 @@ _CCCL_GLOBAL_CONSTANT auto segmented_scan_load_balancing = ::cuda::std::executio
 //!   32-bit offsets and no ``num_items``, the total number of items must be below 2^32; as non-overlapping outputs
 //!   whose positions fit the offset type total at most 2^32, this excludes only a total of exactly 2^32, which writes
 //!   every negative output position. For a total of 2^32 or more, use 64-bit offsets or pass ``num_items``.
+//! - With either option, each input segment's length (its end offset minus its begin offset) must be representable by
+//!   the offset type.
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_env_api.cu
 //!      :language: c++
