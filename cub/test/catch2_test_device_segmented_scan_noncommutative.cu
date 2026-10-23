@@ -8,7 +8,6 @@
 #include <cuda/functional>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-#include <cuda/std/initializer_list>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
@@ -19,8 +18,8 @@
 
 #include "catch2_test_device_segmented_scan_utils.cuh"
 #include "cub_test_macros.h"
+#include <c2h/buffer_utils.cuh>
 #include <c2h/checked_memory_resource.cuh>
-#include <catch2_test_cuda_utils.cuh>
 
 /* Consider free monoid with two generators, ``q`` and ``p``, modulo defining relationship (``p * q == 1``).
  * Elements of this algebra are ``q^m * p^n``, identified by a pair of integral exponents. The identity
@@ -87,9 +86,7 @@ struct populate_input
 };
 }; // namespace impl
 
-using segmented_scan_test::Equals;
-using segmented_scan_test::make_device_buffer_from_host;
-using segmented_scan_test::make_host_buffer;
+using c2h::Equals;
 using segmented_scan_test::make_tabulated_host_buffer;
 
 CUB_TEST("Device inclusive segmented scan works with non-commutative operator", "[segmented][scan][device]", CUB_SMALL)
@@ -99,19 +96,18 @@ CUB_TEST("Device inclusive segmented scan works with non-commutative operator", 
 
   const unsigned num_items = 1'234'567;
 
-  auto [device, stream] = cub_test::make_current_device_and_owning_stream();
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
 
-  const auto h_offsets = make_host_buffer<unsigned>(
-    stream,
-    device,
-    cuda::std::initializer_list<unsigned>{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items});
+  const auto h_offsets = c2h::make_host_buffer<unsigned>(
+    stream, device, {0u, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items});
   const std::size_t num_segments = h_offsets.size() - 1;
   const auto item_count          = static_cast<std::size_t>(num_items);
 
   const auto h_input = make_tabulated_host_buffer<pair_t>(stream, device, item_count, impl::populate_input<unsigned>{});
 
-  auto offsets = make_device_buffer_from_host(stream, device, h_offsets);
-  auto input   = make_device_buffer_from_host(stream, device, h_input);
+  auto offsets = c2h::make_device_buffer<unsigned>(stream, device, h_offsets);
+  auto input   = c2h::make_device_buffer<pair_t>(stream, device, h_input);
 
   auto output = c2h::make_device_buffer<pair_t>(stream, device, h_input.size(), cuda::no_init);
 
@@ -152,7 +148,7 @@ CUB_TEST("Device inclusive segmented scan works with non-commutative operator", 
     stream.get());
   REQUIRE(cudaSuccess == status2);
 
-  auto h_expected = make_host_buffer<pair_t>(stream, device, h_input.size(), cuda::no_init);
+  auto h_expected = c2h::make_host_buffer<pair_t>(stream, device, h_input.size(), cuda::no_init);
 
   for (std::size_t segment_id = 0; segment_id < num_segments; ++segment_id)
   {
@@ -164,5 +160,6 @@ CUB_TEST("Device inclusive segmented scan works with non-commutative operator", 
       pair_t{0, 0});
   }
 
+  // Avoid printing all 1,234,567 elements; the matcher reports mismatch details.
   REQUIRE_THAT_QUIET(output, Equals(stream, h_expected));
 }

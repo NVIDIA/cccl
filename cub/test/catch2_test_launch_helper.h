@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <cuda/__algorithm/copy.h>
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/std/execution>
@@ -19,11 +18,11 @@
 #include <cuda_runtime_api.h>
 #include <stream_registry_factory.h>
 
+#include <c2h/buffer_utils.cuh>
 #include <c2h/catch2_test_macros.h>
 #include <c2h/checked_memory_resource.cuh>
 #include <c2h/device_and_stream.h>
 #include <catch2/generators/catch_generators_all.hpp>
-#include <catch2_test_cuda_utils.cuh>
 #include <catch2_test_memory_resources.h>
 
 //! @file
@@ -51,8 +50,9 @@
 //!   // codes and launch errors.
 //!   cub_reduce_sum(d_in, d_out, n, should_be_invoked_on_device);
 //!
-//!   // Tests with stream-ordered setup can pass a stream-like object as the first argument.
-//!   cub_reduce_sum(cuda::get_stream(stream), d_in, d_out, n, should_be_invoked_on_device);
+//!   // Tests with stream-ordered setup can pass a stream-like object supported by
+//!   // cuda::get_stream() as the trailing API argument.
+//!   cub_reduce_sum(d_in, d_out, n, should_be_invoked_on_device, stream);
 //! }
 //!
 //! ```
@@ -64,17 +64,18 @@
 //! // %PARAM% TEST_LAUNCH lid 0:1:2
 //! ```
 //!
-//! Graph capture backend of launch helper will add extra parameter to each call,
-//! so `cub_reduce_sum(d_in, d_out, n, should_be_invoked_on_device)` implicitly turns
-//! into `cub_reduce_sum(d_in, d_out, n, should_be_invoked_on_device, stream)`.
+//! The helper obtains the stream from the last API argument with cuda::get_stream(),
+//! or uses the default stream if no stream argument is supplied. Stream-like arguments
+//! are converted to raw handles before invoking the API.
 //!
-//! The stream-aware launch overload uses the caller-provided stream for host and
-//! graph launches. Device-side launches cannot consume a host stream; in that mode,
-//! the helper synchronizes the caller stream as a dependency boundary and invokes the
-//! wrapped API with its default stream argument.
+//! Host launches use the supplied stream. Device launches synchronize it before
+//! invoking the API on the device-side default stream. Graph launches capture on
+//! the supplied non-default stream, or a temporary stream when the default stream
+//! is requested, then execute the graph on the requested stream.
 //!
-//! If the wrapped API contains default parameters before stream, you'd want to explicitly
-//! specify those at all invocations that use graph launch or the stream-aware overload.
+//! Graph launches append a capture stream argument when the caller omits it.
+//! Explicitly specify any default parameters preceding the API's stream parameter
+//! when passing a stream or using graph launch.
 //!
 //! Consult with `test/catch2_test_launch_wrapper.cu` for more usage examples.
 
@@ -107,65 +108,6 @@
 
 #define ESCAPE_LIST(...) __VA_ARGS__
 
-namespace launch_helper_detail
-{
-inline cuda::device_ref device_for_stream(cuda::stream_ref stream)
-{
-  if (stream == ::cudaStream_t{})
-  {
-    return ::c2h::current_device();
-  }
-
-  return stream.device();
-}
-
-class scoped_current_device
-{
-public:
-  explicit scoped_current_device(cuda::device_ref device)
-  {
-    REQUIRE(cudaSuccess == cudaGetDevice(&m_previous_device));
-
-    if (m_previous_device != device.get())
-    {
-      REQUIRE(cudaSuccess == cudaSetDevice(device.get()));
-      m_restore = true;
-    }
-  }
-
-  scoped_current_device(const scoped_current_device&)            = delete;
-  scoped_current_device& operator=(const scoped_current_device&) = delete;
-
-  ~scoped_current_device() noexcept
-  {
-    if (m_restore)
-    {
-      (void) cudaSetDevice(m_previous_device);
-    }
-  }
-
-private:
-  int m_previous_device = 0;
-  bool m_restore        = false;
-};
-
-inline void synchronize(cuda::stream_ref stream)
-{
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(stream.get()));
-}
-
-template <typename T>
-T read_single(cuda::stream_ref stream, const cuda::device_buffer<T>& buffer)
-{
-  REQUIRE(buffer.size() == 1);
-
-  T result{};
-  cuda::copy_bytes(stream, buffer, cuda::std::span<T>{&result, 1});
-  stream.sync();
-  return result;
-}
-} // namespace launch_helper_detail
-
 // TODO(bgruber): make the following macro also produce a global instance of a functor, but to pass the template
 // arguments, we need variable templates from C++14.
 #define DECLARE_TMPL_LAUNCH_WRAPPER(API, WRAPPED_API_NAME, TMPL_PARAMS, TMPL_ARGS)                         \
@@ -176,47 +118,44 @@ T read_single(cuda::stream_ref stream, const cuda::device_buffer<T>& buffer)
     launch(WRAPPED_API_NAME##_invocable_t<TMPL_ARGS>{}, cuda::std::forward<As>(args)...);                  \
   }
 
+namespace launch_helper_detail
+{
 #if TEST_LAUNCH == 2
 
-template <class ActionT, class... Args>
-void launch(cuda::stream_ref stream, ActionT action, Args... args)
+template <bool HasStream, class ActionT, class... Args>
+void launch_impl(cuda::stream_ref stream, ActionT action, Args... args)
 {
-  const auto device = launch_helper_detail::device_for_stream(stream);
-  const launch_helper_detail::scoped_current_device device_scope{device};
+  cuda::stream owning_capture_stream{cuda::no_init};
+  auto capture_stream = stream;
+  if (c2h::detail::is_default_stream(stream))
+  {
+    owning_capture_stream = c2h::make_current_device_stream();
+    capture_stream        = owning_capture_stream;
+  }
 
   std::size_t temp_storage_bytes{};
-  cudaError_t error = action(nullptr, temp_storage_bytes, args..., stream.get());
+  cudaError_t error = action(nullptr, temp_storage_bytes, args..., capture_stream.get());
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == error);
 
-  {
-    // Keep temp_storage scoped so cuda::device_buffer deallocates on stream before the stream is destroyed.
-    auto temp_storage = c2h::make_device_buffer<cuda::std::uint8_t>(stream, device, temp_storage_bytes, cuda::no_init);
+  auto temp_storage = c2h::make_device_buffer<cuda::std::uint8_t>(
+    capture_stream, c2h::current_device(), temp_storage_bytes, cuda::no_init);
 
-    cudaGraph_t graph{};
-    REQUIRE(cudaSuccess == cudaStreamBeginCapture(stream.get(), cudaStreamCaptureModeGlobal));
-    error = action(temp_storage.data(), temp_storage_bytes, args..., stream.get());
-    REQUIRE(cudaSuccess == cudaStreamEndCapture(stream.get(), &graph));
-    REQUIRE(cudaSuccess == error);
+  cudaGraph_t graph{};
+  REQUIRE(cudaSuccess == cudaStreamBeginCapture(capture_stream.get(), cudaStreamCaptureModeGlobal));
+  error = action(temp_storage.data(), temp_storage_bytes, args..., capture_stream.get());
+  REQUIRE(cudaSuccess == cudaStreamEndCapture(capture_stream.get(), &graph));
+  REQUIRE(cudaSuccess == error);
 
-    cudaGraphExec_t exec{};
-    REQUIRE(cudaSuccess == cudaGraphInstantiate(&exec, graph, nullptr, nullptr, 0));
+  cudaGraphExec_t exec{};
+  REQUIRE(cudaSuccess == cudaGraphInstantiate(&exec, graph, nullptr, nullptr, 0));
 
-    REQUIRE(cudaSuccess == cudaGraphLaunch(exec, stream.get()));
-    launch_helper_detail::synchronize(stream);
+  // Launch on the requested stream, preserving ordering with the caller's preparation.
+  REQUIRE(cudaSuccess == cudaGraphLaunch(exec, stream.get()));
+  stream.sync();
 
-    REQUIRE(cudaSuccess == cudaGraphExecDestroy(exec));
-    REQUIRE(cudaSuccess == cudaGraphDestroy(graph));
-  }
-}
-
-template <class ActionT, class... Args>
-void launch(ActionT action, Args... args)
-{
-  cudaStream_t stream{};
-  REQUIRE(cudaSuccess == cudaStreamCreate(&stream));
-  launch(cuda::stream_ref{stream}, action, args...);
-  REQUIRE(cudaSuccess == cudaStreamDestroy(stream));
+  REQUIRE(cudaSuccess == cudaGraphExecDestroy(exec));
+  REQUIRE(cudaSuccess == cudaGraphDestroy(graph));
 }
 
 #elif TEST_LAUNCH == 1
@@ -248,84 +187,103 @@ __global__ void device_side_api_launch_kernel(
 #  endif // !_CCCL_CLANG_TIDY_INVOKED
 }
 
-// A host stream cannot be consumed by the device-side CUB call. The stream-aware
-// overload only uses it to make pending setup visible before launching the CDP kernel.
-
-template <class ActionT, class... Args>
-void launch(cuda::stream_ref stream, ActionT action, Args... args)
+template <bool HasStream, class ActionT, class... Args>
+void launch_impl(cuda::stream_ref stream, ActionT action, Args... args)
 {
-  const auto device = launch_helper_detail::device_for_stream(stream);
-  const launch_helper_detail::scoped_current_device device_scope{device};
-
+  const auto device         = c2h::current_device();
   auto d_error              = c2h::make_device_buffer<cudaError_t>(stream, device, 1, cuda::no_init);
   auto d_temp_storage_bytes = c2h::make_device_buffer<cuda::std::size_t>(stream, device, 1, cuda::no_init);
 
-  auto* const d_error_ptr              = d_error.data();
-  auto* const d_temp_storage_bytes_ptr = d_temp_storage_bytes.data();
+  // Host streams cannot be used by the device-side CUB call. Complete preparation
+  // before launching the parent kernel on the default stream.
+  const auto invoke = [&](cuda::std::uint8_t* temp_storage) {
+    stream.sync();
+    if constexpr (HasStream)
+    {
+      device_side_api_launch_kernel<<<1, 1>>>(
+        temp_storage, d_temp_storage_bytes.data(), d_error.data(), action, args..., cudaStream_t{});
+    }
+    else
+    {
+      device_side_api_launch_kernel<<<1, 1>>>(
+        temp_storage, d_temp_storage_bytes.data(), d_error.data(), action, args...);
+    }
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE(cudaSuccess == c2h::read_single(stream, d_error));
+  };
 
-  launch_helper_detail::synchronize(stream);
-  device_side_api_launch_kernel<<<1, 1>>>(nullptr, d_temp_storage_bytes_ptr, d_error_ptr, action, args...);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-  REQUIRE(cudaSuccess == launch_helper_detail::read_single(stream, d_error));
-
-  const auto temp_storage_bytes = launch_helper_detail::read_single(stream, d_temp_storage_bytes);
+  invoke(nullptr);
+  const auto temp_storage_bytes = c2h::read_single(stream, d_temp_storage_bytes);
   auto temp_storage = c2h::make_device_buffer<cuda::std::uint8_t>(stream, device, temp_storage_bytes, cuda::no_init);
-
-  launch_helper_detail::synchronize(stream);
-  device_side_api_launch_kernel<<<1, 1>>>(temp_storage.data(), d_temp_storage_bytes_ptr, d_error_ptr, action, args...);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-  REQUIRE(cudaSuccess == launch_helper_detail::read_single(stream, d_error));
-}
-
-template <class ActionT, class... Args>
-void launch(ActionT action, Args... args)
-{
-  auto [device, stream] = ::cub_test::make_current_device_and_owning_stream();
-  launch(cuda::stream_ref{stream}, action, args...);
+  invoke(temp_storage.data());
 }
 
 #elif TEST_LAUNCH == 0
 
-template <class ActionT, class... Args>
-void launch(ActionT action, Args... args)
+template <bool HasStream, class ActionT, class... Args>
+void launch_impl(cuda::stream_ref stream, ActionT action, Args... args)
 {
-  cuda::std::size_t temp_storage_bytes{};
-  cudaError_t error = action(nullptr, temp_storage_bytes, args...);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-  REQUIRE(cudaSuccess == error);
+  const auto invoke = [&](cuda::std::uint8_t* temp_storage, std::size_t& temp_storage_bytes) {
+    if constexpr (HasStream)
+    {
+      return action(temp_storage, temp_storage_bytes, args..., stream.get());
+    }
+    else
+    {
+      return action(temp_storage, temp_storage_bytes, args...);
+    }
+  };
 
+  std::size_t temp_storage_bytes{};
+  cudaError_t error = invoke(nullptr, temp_storage_bytes);
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == error);
   REQUIRE(temp_storage_bytes > 0); // required by API contract
 
   // randomly offset the temporary storage address by one byte
-  const int offset      = GENERATE(take(1, random(0, 1)));
-  auto [device, stream] = ::cub_test::make_current_device_and_owning_stream();
-  auto temp_storage =
-    c2h::make_device_buffer<cuda::std::uint8_t>(stream, device, temp_storage_bytes + offset, cuda::no_init);
+  const int offset  = GENERATE(take(1, random(0, 1)));
+  auto temp_storage = c2h::make_device_buffer<cuda::std::uint8_t>(
+    stream, c2h::current_device(), temp_storage_bytes + offset, cuda::no_init);
 
-  error = action(temp_storage.data() + offset, temp_storage_bytes, args...);
+  error = invoke(temp_storage.data() + offset, temp_storage_bytes);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  stream.sync();
   REQUIRE(cudaSuccess == error);
 }
 
-template <class ActionT, class... Args>
-void launch(cuda::stream_ref stream, ActionT action, Args... args)
-{
-  const auto device = launch_helper_detail::device_for_stream(stream);
-  const launch_helper_detail::scoped_current_device device_scope{device};
-  launch(action, args..., stream.get());
-}
-#else // TEST_LAUNCH == 2
+#else
 #  error "Unsupported TEST_LAUNCH value. Supported values are 0, 1, or 2"
-#endif // TEST_LAUNCH == 2
+#endif
 
-template <class ActionT, class StreamT, class... Args>
-auto launch(ActionT action, StreamT&& stream, Args... args) -> ::cuda::std::void_t<decltype(::cuda::get_stream(stream))>
+template <class ActionT, class TupleT, cuda::std::size_t... Is>
+void launch_with_stream(ActionT action, TupleT& args, cuda::std::index_sequence<Is...>)
 {
-  launch(::cuda::get_stream(stream), action, args...);
+  const auto stream = cuda::get_stream(cuda::std::get<sizeof...(Is)>(args));
+  launch_impl<true>(stream, action, cuda::std::get<Is>(args)...);
+}
+} // namespace launch_helper_detail
+
+template <class ActionT, class... Args>
+void launch(ActionT action, Args&&... args)
+{
+  if constexpr (sizeof...(Args) != 0)
+  {
+    using last_arg_t = cuda::std::tuple_element_t<sizeof...(Args) - 1, cuda::std::tuple<Args...>>;
+    if constexpr (cuda::std::is_invocable_v<cuda::get_stream_t, last_arg_t&>)
+    {
+      auto tuple = cuda::std::forward_as_tuple(args...);
+      launch_helper_detail::launch_with_stream(action, tuple, cuda::std::make_index_sequence<sizeof...(Args) - 1>{});
+    }
+    else
+    {
+      launch_helper_detail::launch_impl<false>(cuda::stream_ref{cudaStream_t{}}, action, args...);
+    }
+  }
+  else
+  {
+    launch_helper_detail::launch_impl<false>(cuda::stream_ref{cudaStream_t{}}, action);
+  }
 }
 
 struct get_expected_allocation_size_t
@@ -392,53 +350,55 @@ void launch_env(ActionT action, Args... args)
   const env_t env = cuda::std::get<env_idx>(tuple);
 
   // Environment-based API should use default stream if not specified in the environment
-  cudaStream_t stream{nullptr};
+  cuda::stream owning_stream{cuda::no_init};
+  cuda::stream_ref stream{cuda::stream_ref::value_type{}};
 
   if constexpr (cuda::std::execution::__queryable_with<env_t, cuda::get_stream_t>)
   {
     // Retrieve stream from the environment if present
-    stream = cuda::get_stream(env).get();
+    stream = cuda::get_stream(env);
   }
   else
   {
     // Create new stream one otherwise
-    REQUIRE(cudaStreamCreate(&stream) == cudaSuccess);
+    owning_stream = c2h::make_current_device_stream();
+    stream        = owning_stream;
   }
 
   // cuda graphs do not support default stream
-  REQUIRE(stream != cudaStream_t{nullptr});
+  REQUIRE(!c2h::detail::is_default_stream(stream));
 
   size_t bytes_allocated{};
   size_t bytes_deallocated{};
 
   static_assert(!cuda::std::execution::__queryable_with<env_t, cuda::mr::get_memory_resource_t>,
                 "Don't specify memory resource for launch tests.");
-  auto mr         = device_memory_resource{stream, &bytes_allocated, &bytes_deallocated};
+  auto mr         = device_memory_resource{stream.get(), &bytes_allocated, &bytes_deallocated};
   auto mr_env     = cuda::std::execution::prop{cuda::mr::get_memory_resource_t{}, mr};
-  auto stream_env = cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}};
+  auto stream_env = cuda::std::execution::prop{cuda::get_stream_t{}, stream};
   auto fixed_env  = cuda::std::execution::env{mr_env, stream_env, env};
 
   auto fixed_args = replace_back(cuda::std::make_index_sequence<env_idx>{}, tuple, fixed_env);
 
   cudaGraph_t graph{};
-  REQUIRE(cudaSuccess == cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
+  REQUIRE(cudaSuccess == cudaStreamBeginCapture(stream.get(), cudaStreamCaptureModeGlobal));
 
   cuda::std::apply(
     [stream, action](auto... args) {
       // Make sure specified stream is used
-      const stream_scope scope(stream);
+      const stream_scope scope(stream.get());
       const cudaError_t error = action(args...);
       REQUIRE(cudaSuccess == error);
     },
     fixed_args);
 
-  REQUIRE(cudaSuccess == cudaStreamEndCapture(stream, &graph));
+  REQUIRE(cudaSuccess == cudaStreamEndCapture(stream.get(), &graph));
 
   cudaGraphExec_t exec{};
   REQUIRE(cudaSuccess == cudaGraphInstantiate(&exec, graph, nullptr, nullptr, 0));
 
-  REQUIRE(cudaSuccess == cudaGraphLaunch(exec, stream));
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(stream));
+  REQUIRE(cudaSuccess == cudaGraphLaunch(exec, stream.get()));
+  stream.sync();
 
   // Make sure there are no memory leaks
   REQUIRE(bytes_deallocated == bytes_allocated);
@@ -447,11 +407,6 @@ void launch_env(ActionT action, Args... args)
 
   REQUIRE(cudaSuccess == cudaGraphExecDestroy(exec));
   REQUIRE(cudaSuccess == cudaGraphDestroy(graph));
-
-  if constexpr (!cuda::std::execution::__queryable_with<env_t, cuda::get_stream_t>)
-  {
-    REQUIRE(cudaSuccess == cudaStreamDestroy(stream));
-  }
 
   if constexpr (cuda::std::execution::__queryable_with<env_t, get_expected_allocation_size_t>)
   {
@@ -502,14 +457,13 @@ void launch_env(ActionT action, Args... args)
 
   const size_t expected_bytes_allocated = env.query(get_expected_allocation_size_t{});
 
-  auto [device, owning_stream] = ::cub_test::make_current_device_and_owning_stream();
-  const auto stream            = ::cuda::stream_ref{owning_stream};
-  auto d_error                 = c2h::make_device_buffer<cudaError_t>(stream, device, 1, cuda::no_init);
-  auto d_temp_storage =
-    c2h::make_device_buffer<cuda::std::uint8_t>(stream, device, expected_bytes_allocated, cuda::no_init);
+  auto owning_stream  = ::c2h::make_current_device_stream();
+  const auto stream   = ::cuda::stream_ref{owning_stream};
+  auto d_error        = c2h::make_device_buffer<cudaError_t>(stream, 1, cuda::no_init);
+  auto d_temp_storage = c2h::make_device_buffer<cuda::std::uint8_t>(stream, expected_bytes_allocated, cuda::no_init);
 
-  auto d_allocated   = c2h::make_device_buffer<cuda::std::size_t>(stream, device, 1, std::size_t{0});
-  auto d_deallocated = c2h::make_device_buffer<cuda::std::size_t>(stream, device, 1, std::size_t{0});
+  auto d_allocated   = c2h::make_device_buffer<cuda::std::size_t>(stream, 1, std::size_t{0});
+  auto d_deallocated = c2h::make_device_buffer<cuda::std::size_t>(stream, 1, std::size_t{0});
 
   auto* const d_error_ptr       = d_error.data();
   auto* const d_allocated_ptr   = d_allocated.data();
@@ -529,15 +483,21 @@ void launch_env(ActionT action, Args... args)
 
   cuda::std::apply(
     [&](auto... args) {
+      // The device-side call uses its own default stream. Complete setup on
+      // the environment's host stream before launching the parent kernel.
+      if constexpr (cuda::std::execution::__queryable_with<env_t, cuda::get_stream_t>)
+      {
+        cuda::get_stream(env).sync();
+      }
       device_side_api_launch_kernel_env<<<1, 1>>>(d_error_ptr, action, args...);
       REQUIRE(cudaSuccess == cudaPeekAtLastError());
       REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-      REQUIRE(cudaSuccess == launch_helper_detail::read_single(stream, d_error));
+      REQUIRE(cudaSuccess == c2h::read_single(stream, d_error));
     },
     fixed_args);
 
-  const auto allocated   = launch_helper_detail::read_single(stream, d_allocated);
-  const auto deallocated = launch_helper_detail::read_single(stream, d_deallocated);
+  const auto allocated   = c2h::read_single(stream, d_allocated);
+  const auto deallocated = c2h::read_single(stream, d_deallocated);
   REQUIRE(allocated == expected_bytes_allocated);
   REQUIRE(allocated == deallocated);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());

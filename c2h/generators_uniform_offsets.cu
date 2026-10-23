@@ -11,6 +11,8 @@
 
 #include <stdexcept>
 
+#include <c2h/detail/current_device.cuh>
+#include <c2h/detail/generators.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/generator_common.h>
 #include <c2h/generators.h>
@@ -29,9 +31,30 @@ struct greater_equal_op
 };
 
 template <typename Policy, typename T>
-std::size_t finish_uniform_offsets(
-  const Policy& policy, ::cuda::std::span<T> segment_offsets, T total_elements, std::size_t offsets_size)
+std::size_t gen_uniform_offsets_impl(
+  const Policy& policy,
+  seed_t seed,
+  ::cuda::std::span<T> segment_offsets,
+  T total_elements,
+  T min_segment_size,
+  T max_segment_size)
 {
+  const auto offsets_size = checked_uniform_offsets_size(total_elements);
+  if (segment_offsets.size() < offsets_size)
+  {
+    throw std::invalid_argument{"segment_offsets is too small for total_elements"};
+  }
+
+  // Query the Thrust policy's stream through ADL. Non-default streams must
+  // belong to the current C2H test device.
+  const auto stream = get_stream(policy);
+  if (stream != get_stream(device_policy))
+  {
+    assert_current_device(::cuda::stream_ref{stream}.device().get());
+  }
+
+  gen_values_between_impl(policy, seed, segment_offsets, min_segment_size, max_segment_size);
+
   const auto total_elements_size = offsets_size - 2;
 
   thrust::fill_n(policy, segment_offsets.begin() + total_elements_size, 1, total_elements + 1);
@@ -46,14 +69,8 @@ template <typename T>
 std::size_t gen_uniform_offsets(
   seed_t seed, ::cuda::std::span<T> segment_offsets, T total_elements, T min_segment_size, T max_segment_size)
 {
-  const auto offsets_size = checked_uniform_offsets_size(total_elements);
-  if (segment_offsets.size() < offsets_size)
-  {
-    throw std::invalid_argument{"segment_offsets is too small for total_elements"};
-  }
-
-  gen_values_between(seed, segment_offsets, min_segment_size, max_segment_size);
-  return finish_uniform_offsets(device_policy, segment_offsets, total_elements, offsets_size);
+  return gen_uniform_offsets_impl(
+    device_policy, seed, segment_offsets, total_elements, min_segment_size, max_segment_size);
 }
 
 template <typename T>
@@ -65,16 +82,8 @@ std::size_t gen_uniform_offsets(
   T min_segment_size,
   T max_segment_size)
 {
-  const auto offsets_size = checked_uniform_offsets_size(total_elements);
-  if (segment_offsets.size() < offsets_size)
-  {
-    throw std::invalid_argument{"segment_offsets is too small for total_elements"};
-  }
-
-  const auto policy = device_policy.on(stream.get());
-
-  gen_values_between(stream, seed, segment_offsets, min_segment_size, max_segment_size);
-  return finish_uniform_offsets(policy, segment_offsets, total_elements, offsets_size);
+  return gen_uniform_offsets_impl(
+    device_policy.on(stream.get()), seed, segment_offsets, total_elements, min_segment_size, max_segment_size);
 }
 
 template std::size_t gen_uniform_offsets(

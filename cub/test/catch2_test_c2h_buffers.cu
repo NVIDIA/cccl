@@ -4,6 +4,7 @@
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/memory_resource>
+#include <cuda/std/array>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/span>
@@ -23,6 +24,7 @@
 
 #include "cub_test_macros.h"
 #include <c2h/buffer_generators.cuh>
+#include <c2h/buffer_utils.cuh>
 #include <c2h/catch2_test_helper.h>
 #include <c2h/checked_memory_resource.cuh>
 #include <c2h/custom_type.h>
@@ -97,6 +99,33 @@ CUB_TEST("c2h vector matcher rejects ranges with different sizes", "[c2h][compar
   const c2h::host_vector<std::int32_t> expected{42};
 
   REQUIRE_FALSE(Equals(expected).match(actual));
+}
+
+CUB_TEST("c2h buffer matcher accepts host containers", "[c2h][buffers][comparison]", CUB_SMALL)
+{
+  const auto stream = c2h::make_current_device_stream();
+  const auto actual = c2h::make_device_buffer<int>(stream, {1, 2, 3});
+
+  const std::array<int, 3> expected_array{1, 2, 3};
+  const std::vector<int> expected_vector{1, 2, 3};
+  const cuda::std::array<int, 3> expected_cuda_array{1, 2, 3};
+  const auto expected_buffer = c2h::make_host_buffer<int>(stream, {1, 2, 3});
+
+  REQUIRE_THAT(actual, c2h::Equals(stream, expected_array));
+  REQUIRE_THAT(actual, c2h::Equals(stream, expected_vector));
+  REQUIRE_THAT(actual, c2h::Equals(stream, expected_cuda_array));
+  REQUIRE_THAT(actual, c2h::Equals(stream, expected_buffer));
+
+  const std::array<int, 3> different_values{1, 4, 3};
+  const std::vector<int> different_size{1, 2};
+  REQUIRE_FALSE(c2h::Equals(stream, different_values).match(actual));
+  REQUIRE_FALSE(c2h::Equals(stream, different_size).match(actual));
+
+  const auto empty = c2h::make_device_buffer<int>(stream, 0, cuda::no_init);
+  const std::vector<int> empty_expected;
+  REQUIRE_THAT(empty, c2h::Equals(stream, empty_expected));
+  REQUIRE_FALSE(c2h::Equals(stream, expected_array).match(empty));
+  REQUIRE_FALSE(c2h::Equals(stream, empty_expected).match(actual));
 }
 
 CUB_TEST("c2h comparison retains bounded mismatch details in order", "[c2h][comparison]", CUB_SMALL)
@@ -253,16 +282,50 @@ CUB_TEST("c2h offset buffers retain capacity after shrinking their logical size"
   }
 }
 
-CUB_TEST("c2h detail uniform offset generator validates destination size", "[c2h][buffers][generators]", CUB_SMALL)
+CUB_TEST("c2h detail uniform offset generators validate counts and destination size",
+         "[c2h][buffers][generators]",
+         CUB_SMALL)
 {
-  REQUIRE_THROWS_AS(
-    c2h::detail::gen_uniform_offsets(
-      c2h::seed_t{0},
-      cuda::std::span<cuda::std::int32_t>{},
-      cuda::std::int32_t{1},
-      cuda::std::int32_t{0},
-      cuda::std::int32_t{1}),
-    std::invalid_argument);
+  const auto stream         = c2h::make_current_device_stream();
+  const auto total_elements = GENERATE(std::int32_t{-1}, 0, 1, (std::numeric_limits<std::int32_t>::max)());
+
+  SECTION("default policy")
+  {
+    REQUIRE_THROWS_AS(
+      c2h::detail::gen_uniform_offsets(
+        c2h::seed_t{0}, cuda::std::span<std::int32_t>{}, total_elements, std::int32_t{0}, std::int32_t{1}),
+      std::invalid_argument);
+  }
+
+  SECTION("explicit stream")
+  {
+    REQUIRE_THROWS_AS(
+      c2h::detail::gen_uniform_offsets(
+        stream, c2h::seed_t{0}, cuda::std::span<std::int32_t>{}, total_elements, std::int32_t{0}, std::int32_t{1}),
+      std::invalid_argument);
+  }
+}
+
+using uniform_offset_types = c2h::type_list<std::int32_t, std::uint32_t, std::int64_t, std::uint64_t>;
+
+CUB_TEST("c2h uniform offset generators agree across execution streams",
+         "[c2h][buffers][generators]",
+         CUB_SMALL,
+         uniform_offset_types)
+{
+  using offset_t = c2h::get<0, TestType>;
+
+  const auto total_elements = GENERATE(offset_t{0}, offset_t{1}, offset_t{31});
+  const auto seed           = c2h::seed_t{1234};
+  const auto stream         = c2h::make_current_device_stream();
+
+  const auto expected_device                = c2h::gen_uniform_offsets(seed, total_elements, offset_t{0}, offset_t{5});
+  const c2h::host_vector<offset_t> expected = expected_device;
+  const auto actual = c2h::gen_uniform_offsets_buffers(stream, seed, total_elements, offset_t{0}, offset_t{5});
+  stream.sync();
+
+  REQUIRE(actual.size() == expected.size());
+  REQUIRE(std::equal(actual.h_items.begin(), actual.h_items.end(), expected.begin(), expected.end()));
 }
 
 CUB_TEST("c2h checked device memory resource creates device buffers", "[c2h][buffers][device_resource]", CUB_SMALL)

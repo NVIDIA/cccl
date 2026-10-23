@@ -231,6 +231,21 @@ make_host_buffer(::cuda::stream_ref stream, ::cuda::device_ref device, ::cuda::s
   return result;
 }
 
+//! @brief Creates an initialized host buffer backed by the checked C2H memory resource.
+//!
+//! @note This overload supports streams whose device cannot be queried, including the legacy default stream.
+//! @pre @p device must refer to the current C2H test device.
+//! @pre @p stream must be valid for @p device. The legacy default stream is supported.
+template <typename T>
+[[nodiscard]] auto
+make_host_buffer(cuda::stream_ref stream, cuda::device_ref device, std::size_t num_items, const T& value)
+{
+  auto result = ::c2h::make_host_buffer<T>(stream, device, num_items, cuda::no_init);
+  ::cuda::std::uninitialized_fill_n(result.begin(), num_items, value);
+
+  return result;
+}
+
 //! @brief Creates a host buffer backed by the checked C2H memory resource associated with @p stream.
 //!
 //! @pre Querying the device of @p stream must succeed and return the current C2H test device.

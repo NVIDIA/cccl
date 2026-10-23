@@ -27,6 +27,7 @@ DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedScan::InclusiveSegmentedScanInit,
 #include <cuda/__execution/tune.h>
 #include <cuda/buffer>
 #include <cuda/devices>
+#include <cuda/launch>
 #include <cuda/stream>
 
 #include <cstddef>
@@ -35,8 +36,8 @@ DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedScan::InclusiveSegmentedScanInit,
 
 #include "catch2_test_device_segmented_scan_utils.cuh"
 #include "cub_test_macros.h"
+#include <c2h/buffer_utils.cuh>
 #include <c2h/checked_memory_resource.cuh>
-#include <catch2_test_cuda_utils.cuh>
 
 namespace stdexec = cuda::std::execution;
 
@@ -44,14 +45,14 @@ namespace stdexec = cuda::std::execution;
 // Input data: {1,2,3,4,5,6,7,8}  - 3 segments of sizes 3, 2, 3 at input offsets {0,3,5,8}
 // Output layout: 10 slots with padding at positions 3 and 6; output begin offsets {0,4,7}
 
-using segmented_scan_test::Equals;
-using segmented_scan_test::make_host_buffer;
+using c2h::Equals;
 
 #if TEST_LAUNCH == 0
 
 CUB_TEST_CASE("Device segmented exclusive sum works with default environment", "[segmented_scan][device]", CUB_SMALL)
 {
-  const auto [device, stream] = cub_test::current_device_and_default_stream_ref();
+  const auto device = c2h::current_device();
+  const auto stream = c2h::default_stream_ref();
 
   const auto num_segments = ::cuda::std::int64_t{3};
   auto d_offsets          = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
@@ -63,13 +64,14 @@ CUB_TEST_CASE("Device segmented exclusive sum works with default environment", "
           == cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
             d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments));
 
-  const auto expected = make_host_buffer<int>(stream, device, {0, 8, 14, 21, 0, 3, 3, 0, 1});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  const auto expected = c2h::make_host_buffer<int>(stream, device, {0, 8, 14, 21, 0, 3, 3, 0, 1});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST_CASE("Device segmented exclusive scan works with default environment", "[segmented_scan][device]", CUB_SMALL)
 {
-  const auto [device, stream] = cub_test::current_device_and_default_stream_ref();
+  const auto device = c2h::current_device();
+  const auto stream = c2h::default_stream_ref();
 
   const auto num_segments = ::cuda::std::int64_t{3};
   auto d_offsets          = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
@@ -81,13 +83,14 @@ CUB_TEST_CASE("Device segmented exclusive scan works with default environment", 
           == cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
             d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, ::cuda::std::plus<>{}, 100));
 
-  const auto expected = make_host_buffer<int>(stream, device, {100, 108, 114, 121, 100, 103, 103, 100, 101});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  const auto expected = c2h::make_host_buffer<int>(stream, device, {100, 108, 114, 121, 100, 103, 103, 100, 101});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST_CASE("Device segmented inclusive sum works with default environment", "[segmented_scan][device]", CUB_SMALL)
 {
-  const auto [device, stream] = cub_test::current_device_and_default_stream_ref();
+  const auto device = c2h::current_device();
+  const auto stream = c2h::default_stream_ref();
 
   const auto num_segments = ::cuda::std::int64_t{3};
   auto d_offsets          = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
@@ -99,13 +102,14 @@ CUB_TEST_CASE("Device segmented inclusive sum works with default environment", "
           == cub::DeviceSegmentedScan::InclusiveSegmentedSum(
             d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments));
 
-  const auto expected = make_host_buffer<int>(stream, device, {8, 14, 21, 26, 3, 3, 12, 1, 3});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  const auto expected = c2h::make_host_buffer<int>(stream, device, {8, 14, 21, 26, 3, 3, 12, 1, 3});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST_CASE("Device segmented inclusive scan works with default environment", "[segmented_scan][device]", CUB_SMALL)
 {
-  const auto [device, stream] = cub_test::current_device_and_default_stream_ref();
+  const auto device = c2h::current_device();
+  const auto stream = c2h::default_stream_ref();
 
   const auto num_segments = ::cuda::std::int64_t{3};
   auto d_offsets          = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
@@ -117,15 +121,16 @@ CUB_TEST_CASE("Device segmented inclusive scan works with default environment", 
           == cub::DeviceSegmentedScan::InclusiveSegmentedScan(
             d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, ::cuda::std::plus<>{}));
 
-  const auto expected = make_host_buffer<int>(stream, device, {8, 14, 21, 26, 3, 3, 12, 1, 3});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  const auto expected = c2h::make_host_buffer<int>(stream, device, {8, 14, 21, 26, 3, 3, 12, 1, 3});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST_CASE("Device segmented inclusive scan init works with default environment",
               "[segmented_scan][device]",
               CUB_SMALL)
 {
-  const auto [device, stream] = cub_test::current_device_and_default_stream_ref();
+  const auto device = c2h::current_device();
+  const auto stream = c2h::default_stream_ref();
 
   const auto num_segments = ::cuda::std::int64_t{3};
   auto d_offsets          = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
@@ -137,15 +142,16 @@ CUB_TEST_CASE("Device segmented inclusive scan init works with default environme
           == cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
             d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, ::cuda::std::plus<>{}, 100));
 
-  const auto expected = make_host_buffer<int>(stream, device, {108, 114, 121, 126, 103, 103, 112, 101, 103});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  const auto expected = c2h::make_host_buffer<int>(stream, device, {108, 114, 121, 126, 103, 103, 112, 101, 103});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST_CASE("Device segmented exclusive sum with separate offsets works with default environment",
               "[segmented_scan][device]",
               CUB_SMALL)
 {
-  const auto [device, stream] = cub_test::current_device_and_default_stream_ref();
+  const auto device = c2h::current_device();
+  const auto stream = c2h::default_stream_ref();
 
   const auto sentinel     = -1;
   const auto num_segments = ::cuda::std::int64_t{3};
@@ -160,15 +166,16 @@ CUB_TEST_CASE("Device segmented exclusive sum with separate offsets works with d
           == cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
             d_in.data(), d_out.data(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments));
 
-  const auto expected = make_host_buffer<int>(stream, device, {0, 1, 3, sentinel, 0, 4, sentinel, 0, 6, 13});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  const auto expected = c2h::make_host_buffer<int>(stream, device, {0, 1, 3, sentinel, 0, 4, sentinel, 0, 6, 13});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST_CASE("Device segmented exclusive scan with separate offsets works with default environment",
               "[segmented_scan][device]",
               CUB_SMALL)
 {
-  const auto [device, stream] = cub_test::current_device_and_default_stream_ref();
+  const auto device = c2h::current_device();
+  const auto stream = c2h::default_stream_ref();
 
   const auto sentinel     = -1;
   const auto num_segments = ::cuda::std::int64_t{3};
@@ -185,15 +192,16 @@ CUB_TEST_CASE("Device segmented exclusive scan with separate offsets works with 
       d_in.data(), d_out.data(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, ::cuda::std::plus<>{}, 100));
 
   const auto expected =
-    make_host_buffer<int>(stream, device, {100, 101, 103, sentinel, 100, 104, sentinel, 100, 106, 113});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+    c2h::make_host_buffer<int>(stream, device, {100, 101, 103, sentinel, 100, 104, sentinel, 100, 106, 113});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST_CASE("Device segmented inclusive sum with separate offsets works with default environment",
               "[segmented_scan][device]",
               CUB_SMALL)
 {
-  const auto [device, stream] = cub_test::current_device_and_default_stream_ref();
+  const auto device = c2h::current_device();
+  const auto stream = c2h::default_stream_ref();
 
   const auto sentinel     = -1;
   const auto num_segments = ::cuda::std::int64_t{3};
@@ -208,15 +216,16 @@ CUB_TEST_CASE("Device segmented inclusive sum with separate offsets works with d
           == cub::DeviceSegmentedScan::InclusiveSegmentedSum(
             d_in.data(), d_out.data(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments));
 
-  const auto expected = make_host_buffer<int>(stream, device, {1, 3, 6, sentinel, 4, 9, sentinel, 6, 13, 21});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  const auto expected = c2h::make_host_buffer<int>(stream, device, {1, 3, 6, sentinel, 4, 9, sentinel, 6, 13, 21});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST_CASE("Device segmented inclusive scan with separate offsets works with default environment",
               "[segmented_scan][device]",
               CUB_SMALL)
 {
-  const auto [device, stream] = cub_test::current_device_and_default_stream_ref();
+  const auto device = c2h::current_device();
+  const auto stream = c2h::default_stream_ref();
 
   const auto sentinel     = -1;
   const auto num_segments = ::cuda::std::int64_t{3};
@@ -232,15 +241,16 @@ CUB_TEST_CASE("Device segmented inclusive scan with separate offsets works with 
     == cub::DeviceSegmentedScan::InclusiveSegmentedScan(
       d_in.data(), d_out.data(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, ::cuda::std::plus<>{}));
 
-  const auto expected = make_host_buffer<int>(stream, device, {1, 3, 6, sentinel, 4, 9, sentinel, 6, 13, 21});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  const auto expected = c2h::make_host_buffer<int>(stream, device, {1, 3, 6, sentinel, 4, 9, sentinel, 6, 13, 21});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST_CASE("Device segmented inclusive scan init with separate offsets works with default environment",
               "[segmented_scan][device]",
               CUB_SMALL)
 {
-  const auto [device, stream] = cub_test::current_device_and_default_stream_ref();
+  const auto device = c2h::current_device();
+  const auto stream = c2h::default_stream_ref();
 
   const auto sentinel     = -1;
   const auto num_segments = ::cuda::std::int64_t{3};
@@ -257,15 +267,60 @@ CUB_TEST_CASE("Device segmented inclusive scan init with separate offsets works 
       d_in.data(), d_out.data(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, ::cuda::std::plus<>{}, 100));
 
   const auto expected =
-    make_host_buffer<int>(stream, device, {101, 103, 106, sentinel, 104, 109, sentinel, 106, 113, 121});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+    c2h::make_host_buffer<int>(stream, device, {101, 103, 106, sentinel, 104, 109, sentinel, 106, 113, 121});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 #endif // TEST_LAUNCH == 0
 
+__global__ void prepare_segmented_sum_input(int* input, int* offsets)
+{
+  for (int i = 0; i < 8; ++i)
+  {
+    input[i] = i + 1;
+  }
+  offsets[0] = 0;
+  offsets[1] = 3;
+  offsets[2] = 5;
+  offsets[3] = 8;
+}
+
+CUB_TEST("Device segmented exclusive sum orders execution after stream setup", "[segmented_scan][device]", CUB_SMALL)
+{
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
+  constexpr auto num_segments = ::cuda::std::int64_t{3};
+  auto input                  = c2h::make_device_buffer<int>(stream, device, 8, cuda::no_init);
+  auto output                 = c2h::make_device_buffer<int>(stream, device, 8, cuda::no_init);
+  auto offsets                = c2h::make_device_buffer<int>(stream, device, 4, cuda::no_init);
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
+      nullptr,
+      expected_bytes_allocated,
+      input.data(),
+      output.data(),
+      offsets.data(),
+      offsets.data() + 1,
+      num_segments,
+      stream.get()));
+
+  const auto env    = stdexec::env{cuda::stream_ref{stream}, expected_allocation_size(expected_bytes_allocated)};
+  const auto config = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<1>());
+  // Leave preparation pending: the wrapper must preserve its ordering in every launch mode.
+  cuda::launch(stream, config, prepare_segmented_sum_input, input.data(), offsets.data());
+  device_segmented_exclusive_sum(input.data(), output.data(), offsets.data(), offsets.data() + 1, num_segments, env);
+
+  const auto expected = c2h::make_host_buffer<int>(stream, device, {0, 1, 3, 0, 4, 0, 6, 13});
+  REQUIRE_THAT(output, Equals(stream, expected));
+}
+
 CUB_TEST("Device segmented exclusive sum uses environment", "[segmented_scan][device]", CUB_SMALL)
 {
-  const auto [device, stream] = cub_test::current_device_and_default_stream_ref();
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
 
   const auto num_segments = ::cuda::std::int64_t{3};
   auto d_offsets          = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
@@ -279,17 +334,18 @@ CUB_TEST("Device segmented exclusive sum uses environment", "[segmented_scan][de
     == cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
       nullptr, expected_bytes_allocated, d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments));
 
-  const auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+  const auto env = stdexec::env{cuda::stream_ref{stream}, expected_allocation_size(expected_bytes_allocated)};
 
   device_segmented_exclusive_sum(d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, env);
 
-  const auto expected = make_host_buffer<int>(stream, device, {0, 8, 14, 21, 0, 3, 3, 0, 1});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  const auto expected = c2h::make_host_buffer<int>(stream, device, {0, 8, 14, 21, 0, 3, 3, 0, 1});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("Device segmented exclusive scan uses environment", "[segmented_scan][device]", CUB_SMALL)
 {
-  const auto [device, stream] = cub_test::current_device_and_default_stream_ref();
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
 
   const auto num_segments = ::cuda::std::int64_t{3};
   auto d_offsets          = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
@@ -311,18 +367,19 @@ CUB_TEST("Device segmented exclusive scan uses environment", "[segmented_scan][d
       ::cuda::std::plus<>{},
       100));
 
-  const auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+  const auto env = stdexec::env{cuda::stream_ref{stream}, expected_allocation_size(expected_bytes_allocated)};
 
   device_segmented_exclusive_scan(
     d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, ::cuda::std::plus<>{}, 100, env);
 
-  const auto expected = make_host_buffer<int>(stream, device, {100, 108, 114, 121, 100, 103, 103, 100, 101});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  const auto expected = c2h::make_host_buffer<int>(stream, device, {100, 108, 114, 121, 100, 103, 103, 100, 101});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("Device segmented inclusive sum uses environment", "[segmented_scan][device]", CUB_SMALL)
 {
-  const auto [device, stream] = cub_test::current_device_and_default_stream_ref();
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
 
   const auto num_segments = ::cuda::std::int64_t{3};
   auto d_offsets          = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
@@ -336,17 +393,18 @@ CUB_TEST("Device segmented inclusive sum uses environment", "[segmented_scan][de
     == cub::DeviceSegmentedScan::InclusiveSegmentedSum(
       nullptr, expected_bytes_allocated, d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments));
 
-  const auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+  const auto env = stdexec::env{cuda::stream_ref{stream}, expected_allocation_size(expected_bytes_allocated)};
 
   device_segmented_inclusive_sum(d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, env);
 
-  const auto expected = make_host_buffer<int>(stream, device, {8, 14, 21, 26, 3, 3, 12, 1, 3});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  const auto expected = c2h::make_host_buffer<int>(stream, device, {8, 14, 21, 26, 3, 3, 12, 1, 3});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("Device segmented inclusive scan uses environment", "[segmented_scan][device]", CUB_SMALL)
 {
-  const auto [device, stream] = cub_test::current_device_and_default_stream_ref();
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
 
   const auto num_segments = ::cuda::std::int64_t{3};
   auto d_offsets          = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
@@ -367,18 +425,19 @@ CUB_TEST("Device segmented inclusive scan uses environment", "[segmented_scan][d
       num_segments,
       ::cuda::std::plus<>{}));
 
-  const auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+  const auto env = stdexec::env{cuda::stream_ref{stream}, expected_allocation_size(expected_bytes_allocated)};
 
   device_segmented_inclusive_scan(
     d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, ::cuda::std::plus<>{}, env);
 
-  const auto expected = make_host_buffer<int>(stream, device, {8, 14, 21, 26, 3, 3, 12, 1, 3});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  const auto expected = c2h::make_host_buffer<int>(stream, device, {8, 14, 21, 26, 3, 3, 12, 1, 3});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("Device segmented inclusive scan init uses environment", "[segmented_scan][device]", CUB_SMALL)
 {
-  const auto [device, stream] = cub_test::current_device_and_default_stream_ref();
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
 
   const auto num_segments = ::cuda::std::int64_t{3};
   auto d_offsets          = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
@@ -400,18 +459,19 @@ CUB_TEST("Device segmented inclusive scan init uses environment", "[segmented_sc
       ::cuda::std::plus<>{},
       100));
 
-  const auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+  const auto env = stdexec::env{cuda::stream_ref{stream}, expected_allocation_size(expected_bytes_allocated)};
 
   device_segmented_inclusive_scan_init(
     d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, ::cuda::std::plus<>{}, 100, env);
 
-  const auto expected = make_host_buffer<int>(stream, device, {108, 114, 121, 126, 103, 103, 112, 101, 103});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  const auto expected = c2h::make_host_buffer<int>(stream, device, {108, 114, 121, 126, 103, 103, 112, 101, 103});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("Device segmented exclusive sum with separate offsets uses environment", "[segmented_scan][device]", CUB_SMALL)
 {
-  const auto [device, stream] = cub_test::current_device_and_default_stream_ref();
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
 
   const auto sentinel     = -1;
   const auto num_segments = ::cuda::std::int64_t{3};
@@ -435,18 +495,19 @@ CUB_TEST("Device segmented exclusive sum with separate offsets uses environment"
       d_out_off_it,
       num_segments));
 
-  const auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+  const auto env = stdexec::env{cuda::stream_ref{stream}, expected_allocation_size(expected_bytes_allocated)};
 
   device_segmented_exclusive_sum(
     d_in.data(), d_out.data(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, env);
 
-  const auto expected = make_host_buffer<int>(stream, device, {0, 1, 3, sentinel, 0, 4, sentinel, 0, 6, 13});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  const auto expected = c2h::make_host_buffer<int>(stream, device, {0, 1, 3, sentinel, 0, 4, sentinel, 0, 6, 13});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("Device segmented exclusive scan with separate offsets uses environment", "[segmented_scan][device]", CUB_SMALL)
 {
-  const auto [device, stream] = cub_test::current_device_and_default_stream_ref();
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
 
   const auto sentinel     = -1;
   const auto num_segments = ::cuda::std::int64_t{3};
@@ -472,19 +533,20 @@ CUB_TEST("Device segmented exclusive scan with separate offsets uses environment
       ::cuda::std::plus<>{},
       100));
 
-  const auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+  const auto env = stdexec::env{cuda::stream_ref{stream}, expected_allocation_size(expected_bytes_allocated)};
 
   device_segmented_exclusive_scan(
     d_in.data(), d_out.data(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, ::cuda::std::plus<>{}, 100, env);
 
   const auto expected =
-    make_host_buffer<int>(stream, device, {100, 101, 103, sentinel, 100, 104, sentinel, 100, 106, 113});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+    c2h::make_host_buffer<int>(stream, device, {100, 101, 103, sentinel, 100, 104, sentinel, 100, 106, 113});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("Device segmented inclusive sum with separate offsets uses environment", "[segmented_scan][device]", CUB_SMALL)
 {
-  const auto [device, stream] = cub_test::current_device_and_default_stream_ref();
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
 
   const auto sentinel     = -1;
   const auto num_segments = ::cuda::std::int64_t{3};
@@ -508,18 +570,19 @@ CUB_TEST("Device segmented inclusive sum with separate offsets uses environment"
       d_out_off_it,
       num_segments));
 
-  const auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+  const auto env = stdexec::env{cuda::stream_ref{stream}, expected_allocation_size(expected_bytes_allocated)};
 
   device_segmented_inclusive_sum(
     d_in.data(), d_out.data(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, env);
 
-  const auto expected = make_host_buffer<int>(stream, device, {1, 3, 6, sentinel, 4, 9, sentinel, 6, 13, 21});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  const auto expected = c2h::make_host_buffer<int>(stream, device, {1, 3, 6, sentinel, 4, 9, sentinel, 6, 13, 21});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("Device segmented inclusive scan with separate offsets uses environment", "[segmented_scan][device]", CUB_SMALL)
 {
-  const auto [device, stream] = cub_test::current_device_and_default_stream_ref();
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
 
   const auto sentinel     = -1;
   const auto num_segments = ::cuda::std::int64_t{3};
@@ -544,20 +607,21 @@ CUB_TEST("Device segmented inclusive scan with separate offsets uses environment
       num_segments,
       ::cuda::std::plus<>{}));
 
-  const auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+  const auto env = stdexec::env{cuda::stream_ref{stream}, expected_allocation_size(expected_bytes_allocated)};
 
   device_segmented_inclusive_scan(
     d_in.data(), d_out.data(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, ::cuda::std::plus<>{}, env);
 
-  const auto expected = make_host_buffer<int>(stream, device, {1, 3, 6, sentinel, 4, 9, sentinel, 6, 13, 21});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  const auto expected = c2h::make_host_buffer<int>(stream, device, {1, 3, 6, sentinel, 4, 9, sentinel, 6, 13, 21});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("Device segmented inclusive scan init with separate offsets uses environment",
          "[segmented_scan][device]",
          CUB_SMALL)
 {
-  const auto [device, stream] = cub_test::current_device_and_default_stream_ref();
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
 
   const auto sentinel     = -1;
   const auto num_segments = ::cuda::std::int64_t{3};
@@ -583,14 +647,14 @@ CUB_TEST("Device segmented inclusive scan init with separate offsets uses enviro
       ::cuda::std::plus<>{},
       100));
 
-  const auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+  const auto env = stdexec::env{cuda::stream_ref{stream}, expected_allocation_size(expected_bytes_allocated)};
 
   device_segmented_inclusive_scan_init(
     d_in.data(), d_out.data(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, ::cuda::std::plus<>{}, 100, env);
 
   const auto expected =
-    make_host_buffer<int>(stream, device, {101, 103, 106, sentinel, 104, 109, sentinel, 106, 113, 121});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+    c2h::make_host_buffer<int>(stream, device, {101, 103, 106, sentinel, 104, 109, sentinel, 106, 113, 121});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 #if TEST_LAUNCH != 1
@@ -623,95 +687,105 @@ using block_sizes =
 CUB_TEST("Device segmented exclusive sum can be tuned", "[segmented_scan][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  const auto [device, stream]              = cub_test::current_device_and_default_stream_ref();
-  const auto num_segments                  = ::cuda::std::int64_t{3};
-  auto d_offsets                           = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
-  const auto d_offsets_it                  = d_offsets.data();
-  auto d_out                               = c2h::make_device_buffer<int>(stream, device, 9, cuda::no_init);
-  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
-  auto d_in                                = block_size_extracting_constant_iterator(1, d_block_size.data());
-  const auto env                           = cuda::execution::tune(segmented_scan_tuning<target_block_size>{});
+  const auto device                        = c2h::current_device();
+  const cuda::stream stream{device};
+  const auto num_segments = ::cuda::std::int64_t{3};
+  auto d_offsets          = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
+  const auto d_offsets_it = d_offsets.data();
+  auto d_out              = c2h::make_device_buffer<int>(stream, device, 9, cuda::no_init);
+  auto d_block_size       = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+  auto d_in               = block_size_extracting_constant_iterator(1, d_block_size.data());
+  const auto env =
+    stdexec::env{cuda::stream_ref{stream}, cuda::execution::tune(segmented_scan_tuning<target_block_size>{})};
 
   device_segmented_exclusive_sum(d_in, d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, env);
-  REQUIRE(segmented_scan_test::read_single(stream, d_block_size) == target_block_size);
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST("Device segmented inclusive sum can be tuned", "[segmented_scan][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  const auto [device, stream]              = cub_test::current_device_and_default_stream_ref();
-  const auto num_segments                  = ::cuda::std::int64_t{3};
-  auto d_offsets                           = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
-  const auto d_offsets_it                  = d_offsets.data();
-  auto d_out                               = c2h::make_device_buffer<int>(stream, device, 9, cuda::no_init);
-  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
-  auto d_in                                = block_size_extracting_constant_iterator(1, d_block_size.data());
-  const auto env                           = cuda::execution::tune(segmented_scan_tuning<target_block_size>{});
+  const auto device                        = c2h::current_device();
+  const cuda::stream stream{device};
+  const auto num_segments = ::cuda::std::int64_t{3};
+  auto d_offsets          = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
+  const auto d_offsets_it = d_offsets.data();
+  auto d_out              = c2h::make_device_buffer<int>(stream, device, 9, cuda::no_init);
+  auto d_block_size       = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+  auto d_in               = block_size_extracting_constant_iterator(1, d_block_size.data());
+  const auto env =
+    stdexec::env{cuda::stream_ref{stream}, cuda::execution::tune(segmented_scan_tuning<target_block_size>{})};
 
   device_segmented_inclusive_sum(d_in, d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, env);
-  REQUIRE(segmented_scan_test::read_single(stream, d_block_size) == target_block_size);
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST("Device segmented exclusive scan can be tuned", "[segmented_scan][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  const auto [device, stream]              = cub_test::current_device_and_default_stream_ref();
-  const auto num_segments                  = ::cuda::std::int64_t{3};
-  auto d_offsets                           = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
-  const auto d_offsets_it                  = d_offsets.data();
-  auto d_in                                = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
-  auto d_out                               = c2h::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
-  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+  const auto device                        = c2h::current_device();
+  const cuda::stream stream{device};
+  const auto num_segments = ::cuda::std::int64_t{3};
+  auto d_offsets          = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
+  const auto d_offsets_it = d_offsets.data();
+  auto d_in               = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
+  auto d_out              = c2h::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
+  auto d_block_size       = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
   const block_size_extracting_op<::cuda::std::plus<>> scan_op{d_block_size.data()};
-  const auto env = cuda::execution::tune(segmented_scan_tuning<target_block_size>{});
+  const auto env =
+    stdexec::env{cuda::stream_ref{stream}, cuda::execution::tune(segmented_scan_tuning<target_block_size>{})};
 
   device_segmented_exclusive_scan(
     d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, scan_op, 100, env);
 
-  const auto expected = make_host_buffer<int>(stream, device, {100, 108, 114, 121, 100, 103, 103, 100, 101});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
-  REQUIRE(segmented_scan_test::read_single(stream, d_block_size) == target_block_size);
+  const auto expected = c2h::make_host_buffer<int>(stream, device, {100, 108, 114, 121, 100, 103, 103, 100, 101});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST("Device segmented inclusive scan can be tuned", "[segmented_scan][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  const auto [device, stream]              = cub_test::current_device_and_default_stream_ref();
-  const auto num_segments                  = ::cuda::std::int64_t{3};
-  auto d_offsets                           = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
-  const auto d_offsets_it                  = d_offsets.data();
-  auto d_in                                = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
-  auto d_out                               = c2h::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
-  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+  const auto device                        = c2h::current_device();
+  const cuda::stream stream{device};
+  const auto num_segments = ::cuda::std::int64_t{3};
+  auto d_offsets          = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
+  const auto d_offsets_it = d_offsets.data();
+  auto d_in               = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
+  auto d_out              = c2h::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
+  auto d_block_size       = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
   const block_size_extracting_op<::cuda::std::plus<>> scan_op{d_block_size.data()};
-  const auto env = cuda::execution::tune(segmented_scan_tuning<target_block_size>{});
+  const auto env =
+    stdexec::env{cuda::stream_ref{stream}, cuda::execution::tune(segmented_scan_tuning<target_block_size>{})};
 
   device_segmented_inclusive_scan(d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, scan_op, env);
 
-  const auto expected = make_host_buffer<int>(stream, device, {8, 14, 21, 26, 3, 3, 12, 1, 3});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
-  REQUIRE(segmented_scan_test::read_single(stream, d_block_size) == target_block_size);
+  const auto expected = c2h::make_host_buffer<int>(stream, device, {8, 14, 21, 26, 3, 3, 12, 1, 3});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST("Device segmented inclusive scan init can be tuned", "[segmented_scan][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  const auto [device, stream]              = cub_test::current_device_and_default_stream_ref();
-  const auto num_segments                  = ::cuda::std::int64_t{3};
-  auto d_offsets                           = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
-  const auto d_offsets_it                  = d_offsets.data();
-  auto d_in                                = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
-  auto d_out                               = c2h::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
-  auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
+  const auto device                        = c2h::current_device();
+  const cuda::stream stream{device};
+  const auto num_segments = ::cuda::std::int64_t{3};
+  auto d_offsets          = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
+  const auto d_offsets_it = d_offsets.data();
+  auto d_in               = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
+  auto d_out              = c2h::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
+  auto d_block_size       = c2h::make_device_buffer<unsigned int>(stream, device, {0u});
   const block_size_extracting_op<::cuda::std::plus<>> scan_op{d_block_size.data()};
-  const auto env = cuda::execution::tune(segmented_scan_tuning<target_block_size>{});
+  const auto env =
+    stdexec::env{cuda::stream_ref{stream}, cuda::execution::tune(segmented_scan_tuning<target_block_size>{})};
 
   device_segmented_inclusive_scan_init(
     d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, scan_op, 100, env);
 
-  const auto expected = make_host_buffer<int>(stream, device, {108, 114, 121, 126, 103, 103, 112, 101, 103});
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
-  REQUIRE(segmented_scan_test::read_single(stream, d_block_size) == target_block_size);
+  const auto expected = c2h::make_host_buffer<int>(stream, device, {108, 114, 121, 126, 103, 103, 112, 101, 103});
+  REQUIRE_THAT(d_out, Equals(stream, expected));
+  REQUIRE(c2h::read_single(stream, d_block_size) == target_block_size);
 }
 
 #endif // TEST_LAUNCH != 1

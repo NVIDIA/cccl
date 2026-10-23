@@ -19,23 +19,21 @@
 
 #include "catch2_test_device_segmented_scan_utils.cuh"
 #include "cub_test_macros.h"
-#include <catch2_test_cuda_utils.cuh>
+#include <c2h/buffer_utils.cuh>
 
-using segmented_scan_test::Equals;
-using segmented_scan_test::make_host_buffer;
+using c2h::Equals;
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum accepts stream", "[segmented_scan][env]", CUB_SMALL)
 {
+  const auto device = c2h::current_device();
+
   // example-begin exclusive-segmented-sum-env
-  const auto num_segments     = ::cuda::std::int64_t{3};
-  const auto [device, stream] = cub_test::make_current_device_and_owning_stream();
-  // Static host storage stays valid until the asynchronous copies complete.
-  static constexpr cuda::std::array<int, 4> d_offsets_values{0, 4, 7, 9};
-  auto d_offsets    = cuda::make_device_buffer<int>(stream, device, d_offsets_values);
+  const auto num_segments = cuda::std::int64_t{3};
+  const cuda::stream stream{device};
+  auto d_offsets    = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
   auto d_offsets_it = d_offsets.begin();
-  static constexpr cuda::std::array<int, 9> d_in_values{8, 6, 7, 5, 3, 0, 9, 1, 2};
-  auto d_in  = cuda::make_device_buffer<int>(stream, device, d_in_values);
-  auto d_out = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
+  auto d_in         = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
+  auto d_out        = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
 
   auto error = cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
     d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, stream);
@@ -44,24 +42,24 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum accepts stream", "[seg
     std::cerr << "cub::DeviceSegmentedScan::ExclusiveSegmentedSum failed with status: " << error << '\n';
   }
 
-  const auto expected = make_host_buffer<int>(stream, device, {0, 8, 14, 21, 0, 3, 3, 0, 1});
+  const cuda::std::array<int, 9> expected{0, 8, 14, 21, 0, 3, 3, 0, 1};
   // example-end exclusive-segmented-sum-env
 
   REQUIRE(error == cudaSuccess);
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan accepts stream", "[segmented_scan][env]", CUB_SMALL)
 {
+  const auto device = c2h::current_device();
+
   // example-begin exclusive-segmented-scan-env
-  const auto num_segments     = ::cuda::std::int64_t{3};
-  const auto [device, stream] = cub_test::make_current_device_and_owning_stream();
-  static constexpr cuda::std::array<int, 4> d_offsets_values{0, 4, 7, 9};
-  auto d_offsets    = cuda::make_device_buffer<int>(stream, device, d_offsets_values);
+  const auto num_segments = cuda::std::int64_t{3};
+  const cuda::stream stream{device};
+  auto d_offsets    = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
   auto d_offsets_it = d_offsets.begin();
-  static constexpr cuda::std::array<int, 9> d_in_values{8, 6, 7, 5, 3, 0, 9, 1, 2};
-  auto d_in  = cuda::make_device_buffer<int>(stream, device, d_in_values);
-  auto d_out = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
+  auto d_in         = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
+  auto d_out        = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
 
   auto error = cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
     d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, cuda::maximum<>{}, 4, stream);
@@ -70,24 +68,24 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan accepts stream", "[se
     std::cerr << "cub::DeviceSegmentedScan::ExclusiveSegmentedScan failed with status: " << error << '\n';
   }
 
-  const auto expected = make_host_buffer<int>(stream, device, {4, 8, 8, 8, 4, 4, 4, 4, 4});
+  const cuda::std::array<int, 9> expected{4, 8, 8, 8, 4, 4, 4, 4, 4};
   // example-end exclusive-segmented-scan-env
 
   REQUIRE(error == cudaSuccess);
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum accepts stream", "[segmented_scan][env]", CUB_SMALL)
 {
+  const auto device = c2h::current_device();
+
   // example-begin inclusive-segmented-sum-env
-  const auto num_segments     = ::cuda::std::int64_t{3};
-  const auto [device, stream] = cub_test::make_current_device_and_owning_stream();
-  static constexpr cuda::std::array<int, 4> d_offsets_values{0, 4, 7, 9};
-  auto d_offsets    = cuda::make_device_buffer<int>(stream, device, d_offsets_values);
+  const auto num_segments = ::cuda::std::int64_t{3};
+  const cuda::stream stream{device};
+  auto d_offsets    = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
   auto d_offsets_it = d_offsets.begin();
-  static constexpr cuda::std::array<int, 9> d_in_values{8, 6, 7, 5, 3, 0, 9, 1, 2};
-  auto d_in  = cuda::make_device_buffer<int>(stream, device, d_in_values);
-  auto d_out = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
+  auto d_in         = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
+  auto d_out        = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
 
   auto error = cub::DeviceSegmentedScan::InclusiveSegmentedSum(
     d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, stream);
@@ -96,24 +94,24 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum accepts stream", "[seg
     std::cerr << "cub::DeviceSegmentedScan::InclusiveSegmentedSum failed with status: " << error << '\n';
   }
 
-  const auto expected = make_host_buffer<int>(stream, device, {8, 14, 21, 26, 3, 3, 12, 1, 3});
+  const cuda::std::array<int, 9> expected{8, 14, 21, 26, 3, 3, 12, 1, 3};
   // example-end inclusive-segmented-sum-env
 
   REQUIRE(error == cudaSuccess);
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan accepts stream", "[segmented_scan][env]", CUB_SMALL)
 {
+  const auto device = c2h::current_device();
+
   // example-begin inclusive-segmented-scan-env
-  const auto num_segments     = ::cuda::std::int64_t{3};
-  const auto [device, stream] = cub_test::make_current_device_and_owning_stream();
-  static constexpr cuda::std::array<int, 4> d_offsets_values{0, 4, 7, 9};
-  auto d_offsets    = cuda::make_device_buffer<int>(stream, device, d_offsets_values);
+  const auto num_segments = ::cuda::std::int64_t{3};
+  const cuda::stream stream{device};
+  auto d_offsets    = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
   auto d_offsets_it = d_offsets.begin();
-  static constexpr cuda::std::array<int, 9> d_in_values{8, 6, 7, 5, 3, 0, 9, 1, 2};
-  auto d_in  = cuda::make_device_buffer<int>(stream, device, d_in_values);
-  auto d_out = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
+  auto d_in         = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
+  auto d_out        = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
 
   auto error = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
     d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, cuda::maximum<>{}, stream);
@@ -122,24 +120,24 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan accepts stream", "[se
     std::cerr << "cub::DeviceSegmentedScan::InclusiveSegmentedScan failed with status: " << error << '\n';
   }
 
-  const auto expected = make_host_buffer<int>(stream, device, {8, 8, 8, 8, 3, 3, 9, 1, 2});
+  const cuda::std::array<int, 9> expected{8, 8, 8, 8, 3, 3, 9, 1, 2};
   // example-end inclusive-segmented-scan-env
 
   REQUIRE(error == cudaSuccess);
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit accepts stream", "[segmented_scan][env]", CUB_SMALL)
 {
+  const auto device = c2h::current_device();
+
   // example-begin inclusive-segmented-scan-init-env
-  const auto num_segments     = ::cuda::std::int64_t{3};
-  const auto [device, stream] = cub_test::make_current_device_and_owning_stream();
-  static constexpr cuda::std::array<int, 4> d_offsets_values{0, 4, 7, 9};
-  auto d_offsets    = cuda::make_device_buffer<int>(stream, device, d_offsets_values);
+  const auto num_segments = ::cuda::std::int64_t{3};
+  const cuda::stream stream{device};
+  auto d_offsets    = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
   auto d_offsets_it = d_offsets.begin();
-  static constexpr cuda::std::array<int, 9> d_in_values{8, 6, 7, 5, 3, 0, 9, 1, 2};
-  auto d_in  = cuda::make_device_buffer<int>(stream, device, d_in_values);
-  auto d_out = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
+  auto d_in         = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
+  auto d_out        = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
 
   auto error = cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
     d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, cuda::maximum<>{}, 4, stream);
@@ -148,30 +146,29 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit accepts stream", 
     std::cerr << "cub::DeviceSegmentedScan::InclusiveSegmentedScanInit failed with status: " << error << '\n';
   }
 
-  const auto expected = make_host_buffer<int>(stream, device, {8, 8, 8, 8, 4, 4, 9, 4, 4});
+  const cuda::std::array<int, 9> expected{8, 8, 8, 8, 4, 4, 9, 4, 4};
   // example-end inclusive-segmented-scan-init-env
 
   REQUIRE(error == cudaSuccess);
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum (separate offsets) accepts stream",
          "[segmented_scan][env]",
          CUB_SMALL)
 {
+  const auto device = c2h::current_device();
+
   // example-begin exclusive-segmented-sum-separate-env
-  const auto sentinel         = -1;
-  const auto num_segments     = ::cuda::std::int64_t{3};
-  const auto [device, stream] = cub_test::make_current_device_and_owning_stream();
-  static constexpr cuda::std::array<int, 4> d_in_offsets_values{0, 3, 5, 8};
-  auto d_in_offsets = cuda::make_device_buffer<int>(stream, device, d_in_offsets_values);
-  static constexpr cuda::std::array<int, 3> d_out_offsets_values{0, 4, 7};
-  auto d_out_offsets = cuda::make_device_buffer<int>(stream, device, d_out_offsets_values);
+  const auto sentinel     = -1;
+  const auto num_segments = ::cuda::std::int64_t{3};
+  const cuda::stream stream{device};
+  auto d_in_offsets  = c2h::make_device_buffer<int>(stream, device, {0, 3, 5, 8});
+  auto d_out_offsets = c2h::make_device_buffer<int>(stream, device, {0, 4, 7});
   auto d_in_off_it   = d_in_offsets.begin();
   auto d_out_off_it  = d_out_offsets.begin();
-  static constexpr cuda::std::array<int, 8> d_in_values{1, 2, 3, 4, 5, 6, 7, 8};
-  auto d_in  = cuda::make_device_buffer<int>(stream, device, d_in_values);
-  auto d_out = cuda::make_device_buffer<int>(stream, device, 10, sentinel);
+  auto d_in          = c2h::make_device_buffer<int>(stream, device, {1, 2, 3, 4, 5, 6, 7, 8});
+  auto d_out         = cuda::make_device_buffer<int>(stream, device, 10, sentinel);
 
   auto error = cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
     d_in.begin(), d_out.begin(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, stream);
@@ -180,30 +177,29 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum (separate offsets) acc
     std::cerr << "cub::DeviceSegmentedScan::ExclusiveSegmentedSum failed with status: " << error << '\n';
   }
 
-  const auto expected = make_host_buffer<int>(stream, device, {0, 1, 3, sentinel, 0, 4, sentinel, 0, 6, 13});
+  const cuda::std::array<int, 10> expected{0, 1, 3, sentinel, 0, 4, sentinel, 0, 6, 13};
   // example-end exclusive-segmented-sum-separate-env
 
   REQUIRE(error == cudaSuccess);
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan (separate offsets) accepts stream",
          "[segmented_scan][env]",
          CUB_SMALL)
 {
+  const auto device = c2h::current_device();
+
   // example-begin exclusive-segmented-scan-separate-env
-  const auto sentinel         = -1;
-  const auto num_segments     = ::cuda::std::int64_t{3};
-  const auto [device, stream] = cub_test::make_current_device_and_owning_stream();
-  static constexpr cuda::std::array<int, 4> d_in_offsets_values{0, 3, 5, 8};
-  auto d_in_offsets = cuda::make_device_buffer<int>(stream, device, d_in_offsets_values);
-  static constexpr cuda::std::array<int, 3> d_out_offsets_values{0, 4, 7};
-  auto d_out_offsets = cuda::make_device_buffer<int>(stream, device, d_out_offsets_values);
+  const auto sentinel     = -1;
+  const auto num_segments = ::cuda::std::int64_t{3};
+  const cuda::stream stream{device};
+  auto d_in_offsets  = c2h::make_device_buffer<int>(stream, device, {0, 3, 5, 8});
+  auto d_out_offsets = c2h::make_device_buffer<int>(stream, device, {0, 4, 7});
   auto d_in_off_it   = d_in_offsets.begin();
   auto d_out_off_it  = d_out_offsets.begin();
-  static constexpr cuda::std::array<int, 8> d_in_values{3, 1, 4, 1, 5, 9, 2, 6};
-  auto d_in  = cuda::make_device_buffer<int>(stream, device, d_in_values);
-  auto d_out = cuda::make_device_buffer<int>(stream, device, 10, sentinel);
+  auto d_in          = c2h::make_device_buffer<int>(stream, device, {3, 1, 4, 1, 5, 9, 2, 6});
+  auto d_out         = cuda::make_device_buffer<int>(stream, device, 10, sentinel);
 
   auto error = cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
     d_in.begin(), d_out.begin(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, cuda::maximum<>{}, 2, stream);
@@ -212,30 +208,29 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan (separate offsets) ac
     std::cerr << "cub::DeviceSegmentedScan::ExclusiveSegmentedScan failed with status: " << error << '\n';
   }
 
-  const auto expected = make_host_buffer<int>(stream, device, {2, 3, 3, sentinel, 2, 2, sentinel, 2, 9, 9});
+  const cuda::std::array<int, 10> expected{2, 3, 3, sentinel, 2, 2, sentinel, 2, 9, 9};
   // example-end exclusive-segmented-scan-separate-env
 
   REQUIRE(error == cudaSuccess);
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum (separate offsets) accepts stream",
          "[segmented_scan][env]",
          CUB_SMALL)
 {
+  const auto device = c2h::current_device();
+
   // example-begin inclusive-segmented-sum-separate-env
-  const auto sentinel         = -1;
-  const auto num_segments     = ::cuda::std::int64_t{3};
-  const auto [device, stream] = cub_test::make_current_device_and_owning_stream();
-  static constexpr cuda::std::array<int, 4> d_in_offsets_values{0, 3, 5, 8};
-  auto d_in_offsets = cuda::make_device_buffer<int>(stream, device, d_in_offsets_values);
-  static constexpr cuda::std::array<int, 3> d_out_offsets_values{0, 4, 7};
-  auto d_out_offsets = cuda::make_device_buffer<int>(stream, device, d_out_offsets_values);
+  const auto sentinel     = -1;
+  const auto num_segments = ::cuda::std::int64_t{3};
+  const cuda::stream stream{device};
+  auto d_in_offsets  = c2h::make_device_buffer<int>(stream, device, {0, 3, 5, 8});
+  auto d_out_offsets = c2h::make_device_buffer<int>(stream, device, {0, 4, 7});
   auto d_in_off_it   = d_in_offsets.begin();
   auto d_out_off_it  = d_out_offsets.begin();
-  static constexpr cuda::std::array<int, 8> d_in_values{1, 2, 3, 4, 5, 6, 7, 8};
-  auto d_in  = cuda::make_device_buffer<int>(stream, device, d_in_values);
-  auto d_out = cuda::make_device_buffer<int>(stream, device, 10, sentinel);
+  auto d_in          = c2h::make_device_buffer<int>(stream, device, {1, 2, 3, 4, 5, 6, 7, 8});
+  auto d_out         = cuda::make_device_buffer<int>(stream, device, 10, sentinel);
 
   auto error = cub::DeviceSegmentedScan::InclusiveSegmentedSum(
     d_in.begin(), d_out.begin(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, stream);
@@ -244,30 +239,29 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum (separate offsets) acc
     std::cerr << "cub::DeviceSegmentedScan::InclusiveSegmentedSum failed with status: " << error << '\n';
   }
 
-  const auto expected = make_host_buffer<int>(stream, device, {1, 3, 6, sentinel, 4, 9, sentinel, 6, 13, 21});
+  const cuda::std::array<int, 10> expected{1, 3, 6, sentinel, 4, 9, sentinel, 6, 13, 21};
   // example-end inclusive-segmented-sum-separate-env
 
   REQUIRE(error == cudaSuccess);
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan (separate offsets) accepts stream",
          "[segmented_scan][env]",
          CUB_SMALL)
 {
+  const auto device = c2h::current_device();
+
   // example-begin inclusive-segmented-scan-separate-env
-  const auto sentinel         = -1;
-  const auto num_segments     = ::cuda::std::int64_t{3};
-  const auto [device, stream] = cub_test::make_current_device_and_owning_stream();
-  static constexpr cuda::std::array<int, 4> d_in_offsets_values{0, 3, 5, 8};
-  auto d_in_offsets = cuda::make_device_buffer<int>(stream, device, d_in_offsets_values);
-  static constexpr cuda::std::array<int, 3> d_out_offsets_values{0, 4, 7};
-  auto d_out_offsets = cuda::make_device_buffer<int>(stream, device, d_out_offsets_values);
+  const auto sentinel     = -1;
+  const auto num_segments = ::cuda::std::int64_t{3};
+  const cuda::stream stream{device};
+  auto d_in_offsets  = c2h::make_device_buffer<int>(stream, device, {0, 3, 5, 8});
+  auto d_out_offsets = c2h::make_device_buffer<int>(stream, device, {0, 4, 7});
   auto d_in_off_it   = d_in_offsets.begin();
   auto d_out_off_it  = d_out_offsets.begin();
-  static constexpr cuda::std::array<int, 8> d_in_values{3, 1, 4, 1, 5, 9, 2, 6};
-  auto d_in  = cuda::make_device_buffer<int>(stream, device, d_in_values);
-  auto d_out = cuda::make_device_buffer<int>(stream, device, 10, sentinel);
+  auto d_in          = c2h::make_device_buffer<int>(stream, device, {3, 1, 4, 1, 5, 9, 2, 6});
+  auto d_out         = cuda::make_device_buffer<int>(stream, device, 10, sentinel);
 
   auto error = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
     d_in.begin(), d_out.begin(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, cuda::maximum<>{}, stream);
@@ -276,30 +270,29 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan (separate offsets) ac
     std::cerr << "cub::DeviceSegmentedScan::InclusiveSegmentedScan failed with status: " << error << '\n';
   }
 
-  const auto expected = make_host_buffer<int>(stream, device, {3, 3, 4, sentinel, 1, 5, sentinel, 9, 9, 9});
+  const cuda::std::array<int, 10> expected{3, 3, 4, sentinel, 1, 5, sentinel, 9, 9, 9};
   // example-end inclusive-segmented-scan-separate-env
 
   REQUIRE(error == cudaSuccess);
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit (separate offsets) accepts stream",
          "[segmented_scan][env]",
          CUB_SMALL)
 {
+  const auto device = c2h::current_device();
+
   // example-begin inclusive-segmented-scan-init-separate-env
-  const auto sentinel         = -1;
-  const auto num_segments     = ::cuda::std::int64_t{3};
-  const auto [device, stream] = cub_test::make_current_device_and_owning_stream();
-  static constexpr cuda::std::array<int, 4> d_in_offsets_values{0, 3, 5, 8};
-  auto d_in_offsets = cuda::make_device_buffer<int>(stream, device, d_in_offsets_values);
-  static constexpr cuda::std::array<int, 3> d_out_offsets_values{0, 4, 7};
-  auto d_out_offsets = cuda::make_device_buffer<int>(stream, device, d_out_offsets_values);
+  const auto sentinel     = -1;
+  const auto num_segments = ::cuda::std::int64_t{3};
+  const cuda::stream stream{device};
+  auto d_in_offsets  = c2h::make_device_buffer<int>(stream, device, {0, 3, 5, 8});
+  auto d_out_offsets = c2h::make_device_buffer<int>(stream, device, {0, 4, 7});
   auto d_in_off_it   = d_in_offsets.begin();
   auto d_out_off_it  = d_out_offsets.begin();
-  static constexpr cuda::std::array<int, 8> d_in_values{3, 1, 4, 1, 5, 9, 2, 6};
-  auto d_in  = cuda::make_device_buffer<int>(stream, device, d_in_values);
-  auto d_out = cuda::make_device_buffer<int>(stream, device, 10, sentinel);
+  auto d_in          = c2h::make_device_buffer<int>(stream, device, {3, 1, 4, 1, 5, 9, 2, 6});
+  auto d_out         = cuda::make_device_buffer<int>(stream, device, 10, sentinel);
 
   auto error = cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
     d_in.begin(), d_out.begin(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, cuda::maximum<>{}, 7, stream);
@@ -308,11 +301,11 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit (separate offsets
     std::cerr << "cub::DeviceSegmentedScan::InclusiveSegmentedScanInit failed with status: " << error << '\n';
   }
 
-  const auto expected = make_host_buffer<int>(stream, device, {7, 7, 7, sentinel, 7, 7, sentinel, 9, 9, 9});
+  const cuda::std::array<int, 10> expected{7, 7, 7, sentinel, 7, 7, sentinel, 9, 9, 9};
   // example-end inclusive-segmented-scan-init-separate-env
 
   REQUIRE(error == cudaSuccess);
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 #if _CCCL_STD_VER >= 2020
@@ -337,16 +330,16 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan accepts a custom poli
          "[segmented_scan][env]",
          CUB_SMALL)
 {
+  const auto device = c2h::current_device();
+
   // example-begin segmented-scan-tuning
   const auto num_segments = ::cuda::std::int64_t{3};
-  auto [device, stream]   = cub_test::make_current_device_and_owning_stream();
+  cuda::stream stream{device};
   auto env = cuda::std::execution::env{cuda::stream_ref{stream}, cuda::execution::tune(SegmentedScanPolicySelector{})};
-  static constexpr cuda::std::array<int, 4> d_offsets_values{0, 4, 7, 9};
-  auto d_offsets    = cuda::make_device_buffer<int>(stream, device, d_offsets_values);
+  auto d_offsets    = c2h::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
   auto d_offsets_it = d_offsets.begin();
-  static constexpr cuda::std::array<int, 9> d_in_values{8, 6, 7, 5, 3, 0, 9, 1, 2};
-  auto d_in  = cuda::make_device_buffer<int>(stream, device, d_in_values);
-  auto d_out = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
+  auto d_in         = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
+  auto d_out        = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
 
   const auto error = cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
     d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, ::cuda::std::plus<>{}, 0, env);
@@ -355,11 +348,11 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan accepts a custom poli
     std::cerr << "cub::DeviceSegmentedScan::ExclusiveSegmentedScan failed with status: " << error << '\n';
   }
 
-  const auto expected = make_host_buffer<int>(stream, device, {0, 8, 14, 21, 0, 3, 3, 0, 1});
+  const cuda::std::array<int, 9> expected{0, 8, 14, 21, 0, 3, 3, 0, 1};
   // example-end segmented-scan-tuning
 
   REQUIRE(error == cudaSuccess);
-  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
+  REQUIRE_THAT(d_out, Equals(stream, expected));
 }
 
 #endif // _CCCL_STD_VER >= 2020
