@@ -13,9 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Reusable workflow that builds the CI matrix from ci/matrix.yaml and dispatches
-# all build/test job groups. Shared by the nightly and weekly scheduled workflows,
-# which only differ in the matrix `workflows` value and Slack alert preference.
+# Reusable workflow that builds the CI matrix and dispatches all build/test job
+# groups. Shared by the custom, nightly, and weekly workflows.
 name: "CI/Matrix Build"
 
 defaults:
@@ -29,14 +28,18 @@ on:
         description: "Space separated list of workflows in the matrix file to run (e.g. 'nightly' or 'weekly')."
         type: string
         required: true
+      matrix_ref:
+        description: "Commit SHA or ref in this repo containing the CI matrix."
+        type: string
+        required: false
+      matrix_path:
+        description: "Path to the CI matrix file, relative to the repository root."
+        type: string
+        required: false
       enable_slack_alert:
         description: "When true, also post failure notifications to the alert Slack channel (secrets.SLACK_CHANNEL_CI_ALERT) in addition to the log channel."
         type: boolean
         default: false
-      matrix_branch:
-        description: "Branch (in this repo) to checkout into '.private' so its matrix file can be sideloaded. When empty, no extra checkout is performed and 'matrix_file' is read from the current checkout."
-        type: string
-        default: ''
     outputs:
       failure_message:
         description: "Prepared workflow failure notification text, populated when verify-workflow detects failures."
@@ -51,27 +54,26 @@ jobs:
       contents: read
     outputs:
       workflow: ${{ steps.build-workflow.outputs.workflow }}
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
           persist-credentials: false
-      - name: Checkout matrix branch into .private
-        if: ${{ inputs.matrix_branch != '' }}
-        uses: actions/checkout@v6
+
+      - name: Download CI matrix
+        id: download-ci-matrix
+        uses: ./.github/actions/download-ci-matrix
         with:
-          persist-credentials: false
-          ref: ${{ inputs.matrix_branch }}
-          path: .private
+          matrix_ref: ${{ inputs.matrix_ref }}
+          matrix_path: ${{ inputs.matrix_path }}
+
       - name: Build workflow
         id: build-workflow
         uses: ./.github/actions/workflow-build
         with:
           workflows: ${{ inputs.workflows }}
-          # When sideloading from another branch, the matrix checkout is prefixed with
-          # '.private'. Otherwise use the path as-is from the current checkout
-          # (e.g. 'ci/matrix.yaml' for the default callers).
-          matrix_file: ${{ inputs.matrix_branch != '' && '.private/ci/matrix.yaml' || 'ci/matrix.yaml' }}
+          matrix_file: ${{ steps.download-ci-matrix.outputs.matrix }}
           slack_token: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
           slack_log: ${{ secrets.SLACK_CHANNEL_CI_LOG }}
           slack_alert: ${{ inputs.enable_slack_alert == true && secrets.SLACK_CHANNEL_CI_ALERT || '' }}
