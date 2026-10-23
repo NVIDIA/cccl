@@ -23,15 +23,19 @@
 
 #include <cuda/barrier>
 #include <cuda/hierarchy>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__iterator/next.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
+#include <cuda/std/__ranges/access.h>
+#include <cuda/std/__ranges/all.h>
+#include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__utility/declval.h>
-#include <cuda/std/span>
+#include <cuda/std/__utility/forward.h>
+#include <cuda/std/cstdint>
 
-#include <cuda/experimental/coop/__group/concepts.cuh>
 #include <cuda/experimental/coop/__group/fwd.cuh>
-#include <cuda/experimental/coop/__group/traits.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -172,49 +176,35 @@ public:
   }
 };
 
-template <class _Barrier, ::cuda::std::size_t _Np>
+template <class _RangeView>
 class barrier_synchronizer
 {
-  static_assert(__is_cuda_barrier_v<_Barrier>, "_Barrier must be cv-unqualified cuda::barrier type");
+  static_assert(__is_cuda_barrier_v<::cuda::std::ranges::range_value_t<_RangeView>>,
+                "_RangeView's value type must be cv-unqualified cuda::barrier type");
 
-  ::cuda::std::span<_Barrier, _Np> __barriers_;
+  using _Barrier = ::cuda::std::ranges::range_value_t<_RangeView>;
+
+  _RangeView __barriers_;
 
 public:
-  using barrier_type = _Barrier;
-
   template <class _Unit>
   using __synchronizer_instance = __barrier_synchronizer_instance<_Barrier, _Unit>;
 
-  _CCCL_DEVICE_API barrier_synchronizer(::cuda::std::span<_Barrier, _Np> __barriers) noexcept
-      : __barriers_(__barriers)
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(::cuda::std::is_same_v<_RangeView, ::cuda::std::ranges::views::all_t<_Range>>)
+  _CCCL_DEVICE_API barrier_synchronizer(_Range&& __barriers) noexcept(
+    noexcept(::cuda::std::ranges::views::all(::cuda::std::forward<_Range>(__barriers))))
+      : __barriers_{::cuda::std::ranges::views::all(::cuda::std::forward<_Range>(__barriers))}
   {}
-
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::span<_Barrier, _Np> barriers() const noexcept
-  {
-    return __barriers_;
-  }
 
   template <class _Unit, class _ParentGroup, class _MappingResult>
   [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance<_Unit>
-  make_instance(const _Unit&, const _ParentGroup& __parent, const _MappingResult& __mapping_result) const noexcept
+  make_instance(const _Unit&, const _ParentGroup& __parent, const _MappingResult& __mapping_result) noexcept
   {
     using _Level = typename _ParentGroup::level_type;
 
     static_assert(__is_sufficient_scope_for_v<__barrier_scope_v<_Barrier>, _Level>,
                   "_Barrier's thread scope is insufficient for group synchronization in _Level");
-
-    if constexpr (_MappingResult::static_group_count() != ::cuda::std::dynamic_extent
-                  && _Np != ::cuda::std::dynamic_extent)
-    {
-      static_assert(_MappingResult::static_group_count() <= _Np, "invalid number of barriers passed");
-    }
-    else
-    {
-      if (__mapping_result.is_valid())
-      {
-        _CCCL_ASSERT(__mapping_result.group_count() <= __barriers_.size(), "invalid number of barriers passed");
-      }
-    }
 
     ::cuda::std::size_t __nthread_in_unit     = 1;
     ::cuda::std::size_t __thread_rank_in_unit = 0;
@@ -227,7 +217,28 @@ public:
     _Barrier* __group_barrier_ptr = nullptr;
     if (__mapping_result.is_valid())
     {
-      __group_barrier_ptr = __barriers_.data() + __mapping_result.group_rank();
+      if constexpr (::cuda::std::ranges::sized_range<_RangeView>)
+      {
+        _CCCL_ASSERT(__mapping_result.group_count() <= __barriers_.size(), "invalid number of barriers passed");
+        __group_barrier_ptr = ::cuda::std::addressof(
+          *::cuda::std::ranges::next(::cuda::std::ranges::begin(__barriers_), __mapping_result.group_rank()));
+      }
+      else
+      {
+        ::cuda::std::uint32_t __i = 0;
+        auto __it                 = ::cuda::std::ranges::begin(__barriers_);
+        do
+        {
+          if (__i > 0)
+          {
+            ++__it;
+          }
+          _CCCL_ASSERT(__it != ::cuda::std::ranges::end(__barriers_),
+                       "insufficient amount of warp barriers were passed");
+        } while (__i++ < __mapping_result.group_rank());
+        __group_barrier_ptr = ::cuda::std::addressof(*__it);
+      }
+
       if (__mapping_result.unit_rank() == 0 && __thread_rank_in_unit == 0)
       {
         init(__group_barrier_ptr,
@@ -241,15 +252,11 @@ public:
   }
 };
 
-template <class _Barrier, ::cuda::std::size_t _Np>
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES barrier_synchronizer(::cuda::std::span<_Barrier, _Np>)
-  -> barrier_synchronizer<_Barrier, _Np>;
-
-_CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(__is_spannable<_Tp&> _CCCL_AND(!::cuda::std::__is_cuda_std_span_v<::cuda::std::remove_cv_t<_Tp>>))
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES barrier_synchronizer(_Tp&)
-  -> barrier_synchronizer<_SpanElementType<decltype(::cuda::std::span(::cuda::std::declval<_Tp&>()))>,
-                          decltype(::cuda::std::span(::cuda::std::declval<_Tp&>()))::extent>;
+_CCCL_TEMPLATE(class _Range)
+_CCCL_REQUIRES(
+  ::cuda::std::ranges::viewable_range<_Range> _CCCL_AND __is_cuda_barrier_v<::cuda::std::ranges::range_value_t<_Range>>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES barrier_synchronizer(_Range&&)
+  -> barrier_synchronizer<::cuda::std::ranges::views::all_t<_Range>>;
 } // namespace cuda::experimental::coop
 
 #endif // !_CCCL_DOXYGEN_INVOKED

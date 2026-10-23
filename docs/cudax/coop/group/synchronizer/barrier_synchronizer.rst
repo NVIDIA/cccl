@@ -7,14 +7,17 @@
 
   namespace cuda::experimental::coop {
 
-  template </*cuda-barrier-type*/ Barrier, ::cuda::std::size_t N>
+  template <typename RangeView>
   class barrier_synchronizer
   {
-    cuda::std::span<Barrier, N> /*barriers_*/; // exposition-only
+    RangeView /*barriers_*/; // exposition-only
 
   public:
-    __device__ barrier_synchronizer(cuda::std::span<Barrier, N> barriers) noexcept
-      : /*barriers_*/{barriers}
+    template <typename Range>
+      requires cuda::std::same_as<RangeView, cuda::std::ranges::views::all_t<Range>>
+    __device__ barrier_synchronizer(Range&& barriers)
+      noexcept(noexcept(cuda::std::ranges::views::all(cuda::std::forward<Range>(barriers))))
+      : /*barriers_*/{cuda::std::ranges::views::all(cuda::std::forward<Range>(barriers))}
     {}
 
     template <typename Unit, typename ParentGroup, typename MappingResult>
@@ -22,20 +25,20 @@
     auto make_instance(const Unit&, const ParentGroup&, const MappingResult&) const noexcept;
   };
 
-  template <typename Barrier, cuda::std::size_t N>
-  barrier_synchronizer(cuda::std::span<Barrier, N>) -> barrier_synchronizer<Barrier, N>;
-
-  template <typename Container>
-    requires /*is-spannable*/<Container>
-  barrier_synchronizer(Container&)
-    -> barrier_synchronizer</*span-element-type-of*/<Container>, /*span-element-extent-of*/<Container>>;
+  template <typename Range>
+    requires cuda::std::ranges::viewable_range<Range>
+      && /*is-cuda-barrier*/<cuda::std::ranges::range_value_t<Range>>
+  barrier_synchronizer(Range&&)
+    -> barrier_synchronizer<cuda::std::ranges::views::all_t<Range>>;
 
   } // namespace cuda::experimental::coop
 
 Overview
 --------
 
-``cuda::experimental::coop::barrier_synchronizer`` is a synchronizer that uses a ``cuda::barrier`` object to synchronize the group. The type is constructible from a contiguous range of uninitialized ``cuda::barrier`` objects, which are sequentially assigned to each of the created groups during the synchronizer instance creation. It can be used with any group for which the barriers have a sufficient scope.
+``cuda::experimental::coop::barrier_synchronizer`` is a synchronizer that uses a ``cuda::barrier`` object to synchronize the group. The type is constructible from a viewable range of uninitialized ``cuda::barrier`` objects. These barriers are initialized only once the ``make_instance(...)`` method is called.
+
+The barrier at position ``i`` in the range is assigned to the group with rank ``i`` in the mapping result. The range must provide at least as many barriers as there are groups. The barriers must be accessible to all participating threads, and their scope must be sufficient for the parent group's level.
 
 Users should always rely on template argument deduction and never set the template arguments themselves.
 
@@ -45,6 +48,8 @@ Examples
 .. code:: cuda
 
   #include <cuda/barrier>
+  #include <cuda/std/ranges>
+  #include <cuda/std/span>
 
   #include <cuda/experimental/coop/group>
 
@@ -58,6 +63,9 @@ Examples
     __shared__ cuda::barrier<cuda::thread_scope_block> block_barriers[8];
     cudax::coop::barrier_synchronizer s1{block_barriers};
 
-    // Barrier synchronizer that uses an array of device-scope barriers placed in global memory.
-    cudax::coop::barrier_synchronizer s2{device_barriers};
+    // Barrier synchronizer from a span of device-scope barriers placed in global memory.
+    cudax::coop::barrier_synchronizer s2{cuda::std::span{device_barriers}};
+
+    // A non-contiguous view assigns barriers in reverse order.
+    cudax::coop::barrier_synchronizer s3{cuda::std::ranges::views::reverse(block_barriers)};
   }
