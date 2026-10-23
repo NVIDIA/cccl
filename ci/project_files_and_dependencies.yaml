@@ -306,7 +306,6 @@ ignore_regexes:
   - '\.github/workflows/triage_rotation\.yml'
   - '\.github/workflows/update_branch_version\.yml'
   - '\.github/workflows/verify-devcontainers\.yml'
-  - '\.github/workflows/verify-devcontainers\.yml'
   - '\.github/workflows/label-review-teams\.yml'
   - '\.gitignore'
   - "benchmarks/scripts/" # Python+bash scripts for running benchmarks, not used in tests.
