@@ -51,6 +51,7 @@ set(
   graph/graph_child_move_ownership.cu
   graph/graph_ctx_low_level.cu
   graph/static_graph_ctx.cu
+  graph/throw_in_captured_body.cu
   hashtable/test.cu
   interface/cuda_kernel_chain-add_deps.cu
   interface/cuda_kernel_chain-add_deps_low_level.cu
