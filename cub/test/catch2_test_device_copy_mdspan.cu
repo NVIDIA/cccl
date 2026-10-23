@@ -33,6 +33,40 @@ CUB_TEST("DeviceCopy::Copy: empty mdspan", "[copy][mdspan]", CUB_SMALL)
   device_copy_mdspan(mdspan_in_empty, mdspan_out_empty);
 }
 
+CUB_TEST("DeviceCopy::Copy: mdspan with a zero extent", "[copy][mdspan]", CUB_SMALL)
+{
+  constexpr int sentinel = 42;
+  c2h::device_vector<int> d_input(1, 1);
+  c2h::device_vector<int> d_output(1, sentinel);
+  int* in_ptr  = thrust::raw_pointer_cast(d_input.data());
+  int* out_ptr = thrust::raw_pointer_cast(d_output.data());
+
+  SECTION("2D")
+  {
+    device_copy_mdspan(cuda::std::mdspan<int, dims_2d_t>(in_ptr, 0, 5),
+                       cuda::std::mdspan<int, dims_2d_t>(out_ptr, 0, 5));
+    device_copy_mdspan(cuda::std::mdspan<int, dims_2d_t>(in_ptr, 5, 0),
+                       cuda::std::mdspan<int, dims_2d_t>(out_ptr, 5, 0));
+  }
+
+  SECTION("4D")
+  {
+    device_copy_mdspan(cuda::std::mdspan<int, dims_4d_t>(in_ptr, 2, 3, 0, 4),
+                       cuda::std::mdspan<int, dims_4d_t>(out_ptr, 2, 3, 0, 4));
+  }
+
+  SECTION("2D strided")
+  {
+    using extents_t = cuda::std::dextents<int, 2>;
+    using mapping_t = cuda::std::layout_stride::mapping<extents_t>;
+    const mapping_t mapping{extents_t{0, 5}, cuda::std::array<int, 2>{1, 2}};
+    device_copy_mdspan(cuda::std::mdspan<int, extents_t, cuda::std::layout_stride>(in_ptr, mapping),
+                       cuda::std::mdspan<int, extents_t>(out_ptr, 0, 5));
+  }
+
+  REQUIRE(d_output[0] == sentinel);
+}
+
 CUB_TEST("DeviceCopy::Copy: 1D, 2D, 4D mdspan with matching layouts", "[copy][mdspan]", CUB_SMALL)
 {
   constexpr size_t num_items = 10000;

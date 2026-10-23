@@ -180,9 +180,9 @@ private:
   __zip_apply(const _Op& __op,
               const ::cuda::std::tuple<_Iterators...>& __tuple1,
               const ::cuda::std::tuple<_Iterators...>& __tuple2) //
-    noexcept(noexcept(__op(__tuple1, __tuple2, ::cuda::std::make_index_sequence<sizeof...(_Iterators)>())))
+    noexcept(noexcept(__op(__tuple1, __tuple2, ::cuda::std::index_sequence_for<_Iterators...>())))
   {
-    return __op(__tuple1, __tuple2, ::cuda::std::make_index_sequence<sizeof...(_Iterators)>());
+    return __op(__tuple1, __tuple2, ::cuda::std::index_sequence_for<_Iterators...>());
   }
 
 public:

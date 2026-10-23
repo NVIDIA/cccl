@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of libcu++ in the CUDA C++ Core Libraries,
+// Part of CUDASTF in CUDA C++ Core Libraries,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,16 +8,22 @@
 //
 //===----------------------------------------------------------------------===//
 
-// flags<Flags...> allows at most one overaligned_flag<N>.
+/**
+ * @file
+ * @brief Static error check: `<<` reads an action's return as an error code.
+ *
+ * `int` has no `status_traits`, so `<<` cannot tell what the `42` means; `->*` is the spelling that
+ * yields the value.
+ */
 
-#include <cuda/std/__simd_>
+#include <cuda/experimental/stf.cuh>
 
-#include "test_macros.h"
+using namespace cuda::experimental::stf;
 
-namespace simd = cuda::std::simd;
-
-int main(int, char**)
+int main()
 {
-  [[maybe_unused]] auto bad = simd::flag_overaligned<8> | simd::flag_overaligned<16>; // expected-error
-  return 0;
+  errsink(eh::notify) << [] {
+    return 42;
+  };
+  return EXIT_FAILURE;
 }
