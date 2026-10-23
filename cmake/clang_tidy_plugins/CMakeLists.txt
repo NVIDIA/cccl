@@ -128,7 +128,13 @@ function(_cccl_parse_clang_tidy_config source_file out_var)
 
   set(
     config
-    [==[{"Checks":["-*","-clang-diagnostic-*"],"CheckOptions":{},"ExtraArgs":[]}]==]
+    [==[{
+      "Checks": ["-*", "-clang-diagnostic-*"],
+      "CheckOptions": {},
+      "ExtraArgs": [],
+      "HeaderFileExtensions": ["", "h", "hh", "hpp", "hxx", "cuh", "inl", "ipp"],
+      "SystemHeaders": false
+    }]==]
   )
 
   file(STRINGS "${source_file}" lines)
@@ -277,6 +283,7 @@ function(cccl_create_clang_tidy_test plugin source)
   _cccl_ensure_plugin_is_built_for_test("${target}" "${plugin}")
 endfunction()
 
+add_subdirectory(avoid_internal_linkage_in_headers)
 add_subdirectory(modernize_type_traits)
 add_subdirectory(prefer_cuda_traits)
 add_subdirectory(simplify_type_traits)
