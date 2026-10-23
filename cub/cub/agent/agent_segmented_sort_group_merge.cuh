@@ -49,7 +49,18 @@ struct group_merge_expansion
   static constexpr int size = thread_choices() * ipt_choices;
   _CCCL_HOST_DEVICE_API static constexpr bin_config expanded_config(int bin)
   {
-    return {policy.min_threads << (bin / ipt_choices), policy.min_ipt + bin % ipt_choices};
+    // Enumerate supported pairs at compile time, without encoding bin positions.
+    for (int threads = policy.min_threads; threads <= policy.max_threads; threads *= 2)
+    {
+      for (int ipt = policy.min_ipt; ipt <= policy.max_ipt; ++ipt)
+      {
+        if (bin-- == 0)
+        {
+          return {threads, ipt};
+        }
+      }
+    }
+    _CCCL_UNREACHABLE();
   }
   template <::cuda::std::size_t... I>
   static auto expand(::cuda::std::index_sequence<I...>)
