@@ -29,6 +29,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__functional/invoke.h>
@@ -2255,7 +2256,7 @@ public:
   void __fix_type() noexcept
   {
     static_assert(
-      ::cuda::std::is_trivially_copyable_v<_Status> && sizeof(_Status) <= sizeof(__bytes_)
+      ::cuda::is_trivially_copyable_v<_Status> && sizeof(_Status) <= sizeof(__bytes_)
         && alignof(_Status) <= alignof(long long),
       "a chained status must be trivially copyable, at most 16 bytes, and aligned no more than a long long");
     if (__type_ == nullptr)
