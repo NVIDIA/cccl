@@ -4,9 +4,6 @@
 Merge-sorting key-value pairs
 ===============================
 
-This example requires Oxide's generic native-registration support. The revision
-currently pinned by the Cargo manifests does not yet include that support.
-
 ``merge_sort_pairs`` sorts keys and carries each associated value into two fresh
 blocked payloads:
 
@@ -46,7 +43,7 @@ validity and fresh result mutations are observed independently:
    :language: rust
    :start-after: // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-With an Oxide revision containing that support and ``nightly-2026-10-11``
+With the pinned Oxide revision and Rust ``1.99.1``
 installed, run from a complete CCCL checkout:
 
 .. code-block:: shell

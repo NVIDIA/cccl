@@ -35,7 +35,7 @@ whose result contains no initialized slots.
    :language: rust
    :start-after: // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-Use the Oxide revision selected by the manifests and ``nightly-2026-10-11``.
+Use the Oxide revision selected by the manifests and ``1.99.1``.
 With that toolchain installed, run from a complete CCCL checkout:
 
 .. code-block:: shell
@@ -86,8 +86,8 @@ input tile, fill missing items explicitly with a value suitable for the
 operator, as the sum example does with zero. Invalid outputs are not filled
 with zero or broadcast to other lanes.
 
-Calculated types on the pinned nightly
---------------------------------------
+Calculated types on the pinned compiler
+---------------------------------------
 
 The calculated return signature currently requires
 ``#![feature(generic_const_exprs)]`` in every crate that instantiates it,
@@ -98,7 +98,7 @@ Generic helpers repeat the extent expression in the well-formedness bound
 source above. Helpers generic over the group use
 ``<G as coop::ReduceBatchedGroup>::WIDTH`` in that expression.
 
-This is a limitation of the pinned nightly and calculated-result signature.
+This is a limitation of the pinned compiler and calculated-result signature.
 Ordinary payload, Load/Store, Scan and Reduce consumers do not need this
 feature gate. The provider also checks CUB's signed-index limit for the padded
 ``W * K`` extent.
