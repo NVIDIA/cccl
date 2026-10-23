@@ -38,7 +38,7 @@ result and obtain a block-output witness.
    :start-after: // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 Use the Oxide revision selected by the Cargo manifests and
-``nightly-2026-10-11``. From a complete CCCL checkout with that toolchain installed:
+``1.99.1``. From a complete CCCL checkout with that toolchain installed:
 
 .. code-block:: shell
 
