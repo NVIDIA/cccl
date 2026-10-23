@@ -37,7 +37,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // maps the bits of a double to an int64_t with the same order
-// -0 and +0 map to 0, NaNs have to handled by the caller
+// -0 and +0 map to 0, NaNs have to be handled by the caller
 [[nodiscard]] _CCCL_API inline int64_t __fp64_to_ordered_int(double __x) noexcept
 {
   const auto __x_as_int64 = static_cast<int64_t>(::cuda::std::__fp_get_storage(__x));
