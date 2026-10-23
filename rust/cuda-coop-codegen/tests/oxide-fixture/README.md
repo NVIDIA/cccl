@@ -20,7 +20,7 @@ python3 rust/cuda-coop-codegen/tests/run_oxide_fixture.py \
 
 The runner copies the fixture into the new output directory and patches only
 that copy to the supplied source checkout. It seeds dependency resolutions from
-that checkout's `vecadd` lockfile. The selected nightly must match Oxide's pin.
+that checkout's `vecadd` lockfile. The selected toolchain must match Oxide's pin.
 The log and command receipt are retained beside the copied consumer.
 
 The 480 cases cover i32 Direct/Transpose Load and Store, items 1/4, one/three
