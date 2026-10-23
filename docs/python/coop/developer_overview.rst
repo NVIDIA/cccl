@@ -38,8 +38,9 @@ threads, with two items per thread:
    @cuda.jit
    def copy_tile(source, destination, items_per_thread):
        block = coop.this_block()
-       items = coop.ThreadData(items_per_thread)
-       coop.load(block, source, items, algorithm="direct")
+       items = coop.load(
+           block, source, items_per_thread=items_per_thread, algorithm="direct"
+       )
        coop.store(block, destination, items, algorithm="direct")
 
 
@@ -56,9 +57,9 @@ sees device pointers in either case.
 
 Each thread owns a separate ``items`` payload. With the direct algorithm,
 thread 0 gets elements 0 and 1, thread 1 gets elements 2 and 3, and so on.
-The Load fills that payload; the Store writes it back. This is a *blocked*
-arrangement of the tile. ``ThreadData(items_per_thread)`` describes that
-many values per thread, not values shared by the block. Numba-CUDA-MLIR
+The Load returns that payload; the Store writes it back. This is a *blocked*
+arrangement of the tile. ``items_per_thread`` describes that many values
+per thread, not values shared by the block. Numba-CUDA-MLIR
 specializes the kernel for the ``items_per_thread`` argument.
 
 The :doc:`Load <visualizations/load>` and :doc:`Store <visualizations/store>`
@@ -80,7 +81,10 @@ operands. These arguments are positional-only. Options such as
 
 .. code-block:: python
 
-   coop.load(block, source, items, algorithm="direct", valid_items=n)
+   items = coop.load(
+       block, source, items_per_thread=items_per_thread,
+       algorithm="direct", valid_items=n,
+   )
    coop.store(block, destination, items, algorithm="direct", valid_items=n)
 
 In the API reference, ``/`` marks the end of the positional-only arguments
@@ -89,6 +93,10 @@ operands in their documented order, and use names for optional controls.
 This keeps the primitive call compact while making algorithm and partial-tile
 choices visible. New optional controls can be added without changing the
 operand order.
+
+Load also accepts an existing output as its third positional operand. That
+form returns ``None`` and obtains its extent from the payload. Supply exactly
+one of the output operand or the keyword-only ``items_per_thread`` count.
 
 ``cuda.compute`` uses keyword-only arguments for device-wide algorithms,
 as described in its :doc:`API conventions <../compute/index>`. Those calls
@@ -139,6 +147,10 @@ pointers address the input and this thread's output payload. For an
 operation returning a scalar, the wrapper writes that scalar through the
 return-value pointer. Scalar inputs can be passed by value; arrays and
 scratch storage use pointers.
+
+The Python returned-Load form uses this same output-pointer ABI. The compiler
+creates a fixed-size payload, passes it to the provider, and binds that
+payload to the Python result. It does not return a C++ array by value.
 
 These snippets explain the wrapper rather than reproduce its generated
 spelling. The real wrapper names encode the specialization and compilation
@@ -359,7 +371,7 @@ type inference, and some comes from the configured launch:
      - Load's typed source array
      - Infer the C++ element type and check the destination type.
    * - Items per thread
-     - ``ThreadData(items_per_thread)`` with a launch argument of ``2``
+     - Load's ``items_per_thread`` keyword with a launch argument of ``2``
      - Instantiate a fixed array extent of two.
    * - Algorithm
      - ``algorithm="direct"``
@@ -400,7 +412,10 @@ quantity measured within that group. A tail Load may use:
 .. code-block:: python
 
    # Inside a kernel, after clamping remaining to this block's tile size:
-   coop.load(block, source, items, valid_items=remaining, oob_default=0)
+   items = coop.load(
+       block, source, items_per_thread=items_per_thread,
+       valid_items=remaining, oob_default=0,
+   )
 
 The CUB specialization still describes the full tile. ``remaining`` says
 how many elements in that tile are valid on this invocation. It can be a
@@ -880,7 +895,8 @@ Both common and qualified ``ThreadData`` constructors accept an optional
 bytes when the compiler materializes payload storage. It does not assert
 alignment of the source or destination arrays passed to Load and Store.
 
-The dtype can also come from the surrounding operation. In this kernel
+The returned-Load form obtains its dtype from the source immediately. Direct
+construction also supports inference from later uses. In this output-form
 fragment, ``items_per_thread`` is a kernel argument and the Load's source
 establishes the dtype:
 
@@ -902,9 +918,10 @@ and fills the payload in blocked order;
 ``striped`` exposes the striped payload to the caller. The caller must
 choose Load and Store algorithms that agree on that arrangement.
 
-Load and Store return ``None``. Load fills the supplied output in place.
-Store follows CUB: transpose algorithms may rearrange the input payload
-in place. Invalid Load slots are unspecified unless a default is supplied.
+The output form of Load and all Store calls return ``None``. Load with
+``items_per_thread`` returns a payload instead. Store follows CUB: transpose
+algorithms may rearrange the input payload in place. Invalid Load slots are
+unspecified unless a default is supplied, for either Load form.
 
 The qualified namespace accepts additional compiler-specific values, such
 as local-array payloads where supported. Type support is still checked by
@@ -999,9 +1016,10 @@ A block operation can expose that reuse choice through ``TempStorage``:
 
    # Inside a kernel with an items_per_thread argument and one full tile.
    scratch = coop.TempStorage(auto_sync=True)
-   items = coop.ThreadData(items_per_thread)
-   coop.load(block, source, items,
-             algorithm="transpose", temp_storage=scratch)
+   items = coop.load(
+       block, source, items_per_thread=items_per_thread,
+       algorithm="transpose", temp_storage=scratch,
+   )
    coop.store(block, destination, items,
               algorithm="transpose", temp_storage=scratch)
 
@@ -1501,10 +1519,10 @@ set the two additional storage breakpoints listed below:
    @cuda.jit
    def copy_tile(source, destination, items_per_thread):
        block = coop.this_block()
-       items = coop.ThreadData(items_per_thread)
        scratch = coop.TempStorage(auto_sync=True)
-       coop.load(
-           block, source, items, algorithm="transpose", temp_storage=scratch
+       items = coop.load(
+           block, source, items_per_thread=items_per_thread,
+           algorithm="transpose", temp_storage=scratch,
        )
        coop.store(
            block, destination, items, algorithm="transpose", temp_storage=scratch

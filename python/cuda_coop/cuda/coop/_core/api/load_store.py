@@ -11,6 +11,8 @@ operation. The Python bodies reject calls outside a supported GPU kernel.
 
 from __future__ import annotations
 
+from typing import Any
+
 from cuda.coop._typing import (
     BlockLoadStoreAlgorithm,
     CommonThreadDataLike,
@@ -38,16 +40,22 @@ from .thread_group import BlockGroup, WarpGroup
 def load(
     group: BlockGroup | WarpGroup,
     source: object,
-    output: ThreadDataLike[_CommonNumericT],
+    output: ThreadDataLike[_CommonNumericT] | None = None,
     /,
     *,
+    items_per_thread: int | None = None,
+    alignment: int | None = None,
     algorithm: BlockLoadStoreAlgorithm | WarpLoadStoreAlgorithm = "direct",
     valid_items: ValidItems | None = None,
     oob_default: _CommonNumericT | float | None = None,
     offset: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
-) -> None:
-    """Load a group tile from memory into per-thread values.
+) -> ThreadDataLike[Any] | None:
+    """Load a group tile and return its per-thread values.
+
+    Prefer ``values = load(group, source, items_per_thread=N)`` for a fresh
+    payload. To populate an existing destination, pass ``output`` instead;
+    that form returns ``None``. Specify exactly one of these two forms.
 
     Parameters
     ----------
@@ -57,13 +65,29 @@ def load(
         an enclosing block size divisible by 32.
     source : array
         One-dimensional contiguous source array in device-accessible memory.
-        Its element dtype must match ``output``; an untyped ``ThreadData``
-        infers its dtype from this array. The array must contain all elements
+        Its element dtype determines the returned payload's dtype, or must
+        match an existing ``output``. An untyped output infers its dtype from
+        this array. The array must contain all elements
         selected by ``offset`` and ``valid_items``.
-    output : cuda.coop.ThreadDataLike
+    output : cuda.coop.ThreadDataLike, optional
         Writable :ref:`per-thread payload <coop-thread-data>`.
         Load populates this payload in place. The group's tile contains
         ``group_size * items_per_thread`` elements.
+        Omit ``items_per_thread`` and leave ``alignment=None`` when supplying
+        this destination. Use this form when aliases must observe the update
+        or the destination needs a lifetime established before this call.
+    items_per_thread : int, optional
+        Positive compile-time number of values returned for each thread.
+        Required when ``output`` is omitted. Even a count of one returns a
+        payload with indexed reads and writes, rather than a scalar.
+    alignment : int, optional
+        Compile-time minimum alignment in bytes for the returned payload,
+        with the same positive power-of-two rules as :func:`ThreadData`.
+        ``None`` lets the compiler choose; it may strengthen an explicit
+        request. Requires the ``items_per_thread`` form. For an existing
+        ``output``, specify alignment when constructing that payload instead.
+        This does not assert alignment of ``source`` or change scratch
+        alignment, which is configured through ``temp_storage``.
     algorithm : str, optional
         Compile-time load algorithm, default ``"direct"``. ``"direct"`` gives
         each thread consecutive elements (blocked order); ``"striped"`` gives
@@ -98,8 +122,11 @@ def load(
 
     Returns
     -------
-    None
-        The call populates ``output`` in place.
+    cuda.coop.ThreadDataLike or None
+        A fresh payload when ``items_per_thread`` is supplied. Its dtype and
+        extent are fixed, but invalid slots are unspecified unless
+        ``oob_default`` is given. Reassignment does not update aliases of an
+        earlier payload. Returns ``None`` when populating ``output`` in place.
 
     See Also
     --------

@@ -26,14 +26,12 @@ def test_device_helpers_example():
     from cuda import coop
 
     @cuda.jit(device=True, inline="always")
-    def load_into(group, source, items):
-        coop.load(group, source, items)
+    def load_values(group, source, items_per_thread):
+        return coop.load(group, source, items_per_thread=items_per_thread)
 
     @cuda.jit(device=True)
     def load_tile(group, source, items_per_thread):
-        items = coop.ThreadData(items_per_thread)
-        load_into(group, source, items)
-        return items
+        return load_values(group, source, items_per_thread)
 
     @cuda.jit
     def copy_tile(source, destination, items_per_thread):
