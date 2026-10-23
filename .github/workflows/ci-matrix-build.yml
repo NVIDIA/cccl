@@ -28,6 +28,10 @@ on:
         description: "Space separated list of workflows in the matrix file to run (e.g. 'nightly' or 'weekly')."
         type: string
         required: true
+      ci_profile:
+        description: "Profile to select from the CI_MATRICES repository variable."
+        type: string
+        required: false
       matrix_ref:
         description: "Commit SHA or ref in this repo containing the CI matrix."
         type: string
@@ -65,6 +69,8 @@ jobs:
         id: download-ci-matrix
         uses: ./.github/actions/download-ci-matrix
         with:
+          ci_profile: ${{ inputs.ci_profile }}
+          ci_matrices: ${{ vars.CI_MATRICES }}
           matrix_ref: ${{ inputs.matrix_ref }}
           matrix_path: ${{ inputs.matrix_path }}
 
@@ -73,7 +79,7 @@ jobs:
         uses: ./.github/actions/workflow-build
         with:
           workflows: ${{ inputs.workflows }}
-          matrix_file: ${{ steps.download-ci-matrix.outputs.matrix }}
+          matrix_files: ${{ steps.download-ci-matrix.outputs.matrix_files }}
           slack_token: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
           slack_log: ${{ secrets.SLACK_CHANNEL_CI_LOG }}
           slack_alert: ${{ inputs.enable_slack_alert == true && secrets.SLACK_CHANNEL_CI_ALERT || '' }}

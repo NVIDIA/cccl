@@ -47,6 +47,7 @@ jobs:
     secrets: inherit
     with:
       workflows: weekly
+      ci_profile: weekly
       matrix_ref: ${{ inputs.matrix_ref }}
       matrix_path: ${{ inputs.matrix_path }}
 

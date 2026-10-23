@@ -57,12 +57,15 @@ Six dispatcher workflows unfold the generated job list into GitHub matrix strate
 
 .. _infra-ci-matrix-selection:
 
-Choosing a matrix
-^^^^^^^^^^^^^^^^^
+Choosing matrix files
+^^^^^^^^^^^^^^^^^^^^^
 
 Nightly and weekly workflows accept two optional ``workflow_dispatch`` inputs.
-The matrix file must be in the same repository as the workflow run and follow the
+Matrix files must be in the same repository as the workflow run and follow the
 :ref:`matrix.yaml format <infra-ci-matrix-yaml>`.
+
+Setting either input selects a single matrix file and overrides ``CI_MATRICES``.
+An omitted ref or path uses the corresponding default below.
 
 .. list-table::
    :header-rows: 1
@@ -78,9 +81,34 @@ The matrix file must be in the same repository as the workflow run and follow th
      - Path to the matrix file, relative to the repository root.
      - ``ci/matrix.yaml``.
 
-Scheduled and push-triggered runs use these defaults. Selecting a matrix ref
-changes the configuration; the workflow's branch or tag still selects the code
-to build and test. PR, nightly, and weekly runs use their usual workflow keys.
+PR runs select the ``pull_request`` profile in the ``CI_MATRICES`` repository
+variable. When both inputs are blank, nightly and weekly runs default to the
+``nightly`` and ``weekly`` profiles, respectively.
+
+The variable maps profile names to named matrix definitions in ``path@ref``
+form. Matrix names may contain only ASCII letters, digits, hyphens, and
+underscores. For example:
+
+.. code-block:: json
+
+   {
+     "nightly": {
+       "extended": "ci/matrices/extended.yaml@ci-configs"
+     },
+     "pull_request": {
+       "standard": "ci/matrix.yaml",
+       "extended": "ci/matrices/extended.yaml@ci-configs"
+     }
+   }
+
+An omitted path or ref uses ``ci/matrix.yaml`` or the triggering commit,
+respectively. Each resolved path/ref pair must have one name within a profile;
+different names for the same pair cause an error. If the variable is unset or
+the selected profile defines no matrices, CI uses the single default matrix.
+
+Selecting a matrix ref changes the configuration; the workflow's branch or tag
+still selects the code to build and test. PR, nightly, and weekly runs use their
+usual workflow keys.
 
 Manual dispatch requires `write access to the repository
 <https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow>`_.
@@ -138,10 +166,13 @@ The build-workflow action
 
 The "build workflow from matrix" job runs the ``build-workflow`` action at
 ``.github/actions/workflow-build/``. Its script ``build-workflow.py`` reads
-the selected matrix file together with the change-detection output from
-``ci/inspect_changes.py`` and produces ``workflow/workflow.json``. That file holds
-named groups — "CUB GCC", for example — each carrying a ``standalone`` array and a
-``two_stage`` array of fully expanded job specs.
+each selected matrix file independently, using that file's tags, jobs, and
+exclusions. PR runs also use the change-detection output from
+``ci/inspect_changes.py``.
+The resulting jobs are merged into ``workflow/workflow.json``, combining shared
+builds and tests and assigning unique job IDs across the run. That file holds
+named groups — "CUB GCC", for example — each carrying a ``standalone`` array and
+a ``two_stage`` array of fully expanded job specs.
 
 A second script, ``prepare-workflow-dispatch.py``, splits ``workflow.json`` into
 ``dispatch.json``. This is the structure the GHA workflow is actually dispatched over.
