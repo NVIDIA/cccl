@@ -572,7 +572,7 @@ UNITTEST("cuda_safe_call")
  * `cudaCreateStream(&stream)`, with the note that the former call throws an exception in case of error.
  *
  * For the status types that specialize @ref status_traits, `cuda_try(status)` is equivalent to
- * `errsink(eh::unwind) << status`.
+ * `errsink(sump::unwind) << status`.
  *
  * @snippet this cuda_try1
  */
