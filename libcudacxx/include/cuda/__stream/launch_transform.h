@@ -135,8 +135,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __launch_transform_t
   _CCCL_REQUIRES(::cuda::std::convertible_to<_Stream, ::cuda::stream_ref> _CCCL_AND(
     !::cuda::std::is_reference_v<__transform_result_t<_Arg>>))
   [[nodiscard]] _CCCL_HOST_API auto operator()(
-    _Stream&& __stream, _Arg&& __arg, __optional_with_a_destructor<__transform_result_t<_Arg>>&& __storage = {}) const
-    -> decltype(auto)
+    _Stream&& __stream,
+    _Arg&& __arg,
+    __optional_with_a_destructor<__transform_result_t<_Arg>>&& __storage = ::cuda::std::nullopt) const -> decltype(auto)
   {
     // Calls to transform_launch_argument are intentionally unqualified so as to use ADL.
     if constexpr (__is_instantiable_with<__transformed_argument_t, __transform_result_t<_Arg>>)
