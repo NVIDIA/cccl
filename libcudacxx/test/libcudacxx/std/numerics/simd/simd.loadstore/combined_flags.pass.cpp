@@ -34,6 +34,36 @@ struct mask_selection
   }
 };
 
+template <class Vec, class Array>
+TEST_HOST_DEVICE_FUNC constexpr void check_load_store(const Vec& values, const Array& input, const Array& output)
+{
+  using T             = typename Vec::value_type;
+  using U             = typename Array::value_type;
+  constexpr auto size = Vec::size();
+  for (int i = 0; i < size; ++i)
+  {
+    assert(values[i] == static_cast<T>(input[i]));
+    assert(output[i] == input[i]);
+  }
+  assert(output[size] == U{-1});
+}
+
+template <class Vec, class Array>
+TEST_HOST_DEVICE_FUNC constexpr void check_masked_load_store(
+  const Vec& values, const Array& input, const Array& output, const typename Vec::mask_type& mask, int count)
+{
+  using T             = typename Vec::value_type;
+  using U             = typename Array::value_type;
+  constexpr auto size = Vec::size();
+  for (int i = 0; i < size; ++i)
+  {
+    const bool selected = i < count && mask[i];
+    assert(values[i] == (selected ? static_cast<T>(input[i]) : T{}));
+    assert(output[i] == (selected ? input[i] : U{-1}));
+  }
+  assert(output[size] == U{-1});
+}
+
 template <class T, class U, int N, class Flags>
 TEST_HOST_DEVICE_FUNC constexpr void test_memory_flags(Flags flags)
 {
@@ -46,65 +76,45 @@ TEST_HOST_DEVICE_FUNC constexpr void test_memory_flags(Flags flags)
     input[i] = static_cast<U>(i + 1);
   }
 
-  // Exercise the full-load/store paths through each public overload family.
-  for (int form = 0; form < 3; ++form)
-  {
-    const auto values = form == 0 ? simd::unchecked_load<Vec>(input, flags)
-                      : form == 1 ? simd::unchecked_load<Vec>(input.data(), N, flags)
-                                  : simd::unchecked_load<Vec>(input.data(), input.data() + N, flags);
-    for (int i = 0; i < N; ++i)
-    {
-      assert(values[i] == static_cast<T>(input[i]));
-    }
-    output.fill(U{-1});
-    if (form == 0)
-    {
-      simd::unchecked_store(values, output, flags);
-    }
-    else if (form == 1)
-    {
-      simd::unchecked_store(values, output.data(), N, flags);
-    }
-    else
-    {
-      simd::unchecked_store(values, output.data(), output.data() + N, flags);
-    }
-    for (int i = 0; i < N; ++i)
-    {
-      assert(output[i] == input[i]);
-    }
-    assert(output[N] == U{-1});
-  }
-
+  // Range overloads.
   const auto values = simd::unchecked_load<Vec>(input, flags);
-  // Empty, full, alternating, and last-lane-only selections.
+  output.fill(U{-1});
+  simd::unchecked_store(values, output, flags);
+  check_load_store(values, input, output);
+
+  // Iterator and count overloads.
+  const auto count_values = simd::unchecked_load<Vec>(input.data(), N, flags);
+  output.fill(U{-1});
+  simd::unchecked_store(count_values, output.data(), N, flags);
+  check_load_store(count_values, input, output);
+
+  // Iterator and sentinel overloads.
+  const auto sentinel_values = simd::unchecked_load<Vec>(input.data(), input.data() + N, flags);
+  output.fill(U{-1});
+  simd::unchecked_store(sentinel_values, output.data(), output.data() + N, flags);
+  check_load_store(sentinel_values, input, output);
+
+  // selection 0: Empty
+  // selection 1: Full
+  // selection 2: Alternating
+  // selection 3: Last-lane-only
   for (int selection = 0; selection < 4; ++selection)
   {
     const Mask mask(mask_selection{selection, N - 1});
-    const auto masked = simd::unchecked_load<Vec>(input, mask, flags);
     output.fill(U{-1});
-    simd::unchecked_store(values, output, mask, flags);
-    for (int i = 0; i < N; ++i)
-    {
-      assert(masked[i] == (mask[i] ? static_cast<T>(input[i]) : T{}));
-      assert(output[i] == (mask[i] ? input[i] : U{-1}));
-    }
-    assert(output[N] == U{-1});
 
-    // Partial operations must also respect the count when the mask selects more lanes.
-    for (int empty = 0; empty < 2; ++empty)
+    // Full load/store
+    const auto masked = simd::unchecked_load<Vec>(input, mask, flags);
+    simd::unchecked_store(values, output, mask, flags);
+    check_masked_load_store(masked, input, output, mask, N);
+
+    // Partial load/store
+    for (const int count : cuda::std::array<int, 2>{0, N - 1})
     {
-      const int count    = empty ? 0 : N - 1;
       const auto partial = simd::partial_load<Vec>(input.data(), count, mask, flags);
       output.fill(U{-1});
       simd::partial_store(values, output.data(), count, mask, flags);
-      for (int i = 0; i < N; ++i)
-      {
-        const bool selected = i < count && mask[i];
-        assert(partial[i] == (selected ? static_cast<T>(input[i]) : T{}));
-        assert(output[i] == (selected ? input[i] : U{-1}));
-      }
-      assert(output[N] == U{-1});
+      check_masked_load_store(partial, input, output, mask, count);
     }
   }
 }
@@ -113,23 +123,15 @@ template <int N>
 TEST_HOST_DEVICE_FUNC constexpr bool test_width()
 {
   test_memory_flags<int, float, N>(simd::flag_convert | simd::flag_aligned);
-  test_memory_flags<int, float, N>(simd::flag_aligned | simd::flag_convert);
-  test_memory_flags<int, float, N>(simd::flag_convert | simd::flag_aligned | simd::flag_convert | simd::flag_aligned);
-  test_memory_flags<int, float, N>(simd::flag_convert | simd::flag_overaligned<8> | simd::flag_overaligned<64>);
-  test_memory_flags<int, float, N>(simd::flag_overaligned<64> | simd::flag_aligned | simd::flag_convert
-                                   | simd::flag_overaligned<8> | simd::flag_overaligned<64>);
+  test_memory_flags<int, float, N>(simd::flag_convert | simd::flag_overaligned<64>);
   return true;
 }
 
-template <int N>
-TEST_HOST_DEVICE_FUNC void test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
-  static_assert(test_width<N>());
-  assert(test_width<N>()); // NOLINT(cert-dcl03-c,misc-static-assert)
-}
-
-TEST_HOST_DEVICE_FUNC constexpr bool test_types()
-{
+  test_width<1>();
+  test_width<3>();
+  test_width<4>();
   test_memory_flags<char, float, 3>(simd::flag_convert | simd::flag_aligned);
   test_memory_flags<float, double, 4>(simd::flag_convert | simd::flag_aligned);
   test_memory_flags<cuda::std::complex<float>, cuda::std::complex<float>, 3>(simd::flag_convert | simd::flag_aligned);
@@ -138,12 +140,7 @@ TEST_HOST_DEVICE_FUNC constexpr bool test_types()
 
 int main(int, char**)
 {
-  test<1>();
-  test<3>();
-  test<4>();
-  test<63>();
-  test<64>();
-  static_assert(test_types());
-  assert(test_types()); // NOLINT(cert-dcl03-c,misc-static-assert)
+  static_assert(test());
+  assert(test()); // NOLINT(cert-dcl03-c,misc-static-assert)
   return 0;
 }

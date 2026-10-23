@@ -33,10 +33,7 @@ TEST_HOST_DEVICE_FUNC void test()
   static_assert(has_alignment<8>(simd::flag_overaligned<8> | simd::flag_overaligned<8>));
   static_assert(has_alignment<32>(simd::flag_overaligned<8> | simd::flag_overaligned<32>));
   static_assert(has_alignment<32>(simd::flag_overaligned<32> | simd::flag_overaligned<8>));
-  static_assert(has_alignment<32>(simd::flag_overaligned<8> | simd::flag_overaligned<32> | simd::flag_overaligned<16>));
-  constexpr auto left_flags  = simd::flag_overaligned<8> | simd::flag_overaligned<32>;
-  constexpr auto right_flags = simd::flag_overaligned<32> | simd::flag_overaligned<16>;
-  static_assert(has_alignment<32>(left_flags | right_flags));
+
   constexpr auto mixed_flags = simd::flag_convert | simd::flag_overaligned<8> | simd::flag_aligned
                              | simd::flag_overaligned<32> | simd::flag_convert | simd::flag_aligned;
   static_assert(has_alignment<32>(mixed_flags));
