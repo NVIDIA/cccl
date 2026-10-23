@@ -36,9 +36,9 @@ struct search_types
 };
 
 using search_type_list = c2h::type_list<
-  search_types<cuda::std::int32_t, cub::detail::segmented_scan::load_balanced_work_t<cuda::std::int32_t>>,
+  search_types<cuda::std::int32_t, cub::detail::segmented_scan::load_balanced_work_t<cuda::std::int32_t, false>>,
   search_types<cuda::std::int32_t, cub::detail::segmented_scan::wide_load_balanced_work_t>,
-  search_types<cuda::std::int64_t, cub::detail::segmented_scan::load_balanced_work_t<cuda::std::int64_t>>>;
+  search_types<cuda::std::int64_t, cub::detail::segmented_scan::load_balanced_work_t<cuda::std::int64_t, false>>>;
 
 CUB_TEST("Load-balanced segmented scan finds the start and tail segments of a range",
          "[segmented_scan][device]",

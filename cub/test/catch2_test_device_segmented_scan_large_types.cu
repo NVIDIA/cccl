@@ -414,13 +414,18 @@ void check_large_accumulator(
 }
 
 // Whether the load-balanced kernel holds ValueT under the default policy, for raw pointers, separate output begin
-// offsets when SeparateOutput is set, and an initial value of type InitValueT (cub::NullType for none).
-template <typename ValueT, typename OffsetT, bool SeparateOutput, typename InitValueT = cub::NullType>
+// offsets when SeparateOutput is set, an initial value of type InitValueT (cub::NullType for none) and work of type
+// WorkT.
+template <typename ValueT,
+          typename OffsetT,
+          bool SeparateOutput,
+          typename InitValueT = cub::NullType,
+          typename WorkT      = cub::detail::segmented_scan::load_balanced_work_t<OffsetT, false>>
 inline constexpr bool load_balanced_kernel_holds = cub::detail::segmented_scan::default_load_balanced_policy_fits<
   const ValueT*,
   ValueT*,
   OffsetT,
-  cub::detail::segmented_scan::load_balanced_work_t<OffsetT>,
+  WorkT,
   cuda::std::plus<>,
   InitValueT,
   ValueT,
@@ -450,26 +455,34 @@ constexpr cuda::std::int64_t default_load_balanced_tile_items()
   return cuda::std::int64_t{policy.threads_per_block} * policy.items_per_thread;
 }
 
-// Static shared memory of the load-balanced kernel under the default policy for a scan with an initial value, for raw
-// pointers and output begin offsets that are the input's.
-template <typename ValueT, typename OffsetT, bool ForceInclusive>
+// Static shared memory of the load-balanced kernel under the policy PolicyGetter returns, by default CUB's, for a scan
+// with an initial value, for raw pointers and output begin offsets that are the input's.
+template <typename ValueT,
+          typename OffsetT,
+          bool ForceInclusive,
+          typename PolicyGetter = cub::detail::segmented_scan::default_load_balanced_policy_getter<ValueT>>
 inline constexpr size_t load_balanced_kernel_smem = cub::detail::segmented_scan::load_balanced_kernel_smem_bytes<
-  cub::detail::segmented_scan::default_load_balanced_policy_getter<ValueT>,
+  PolicyGetter,
   const ValueT*,
   ValueT*,
   OffsetT,
-  cub::detail::segmented_scan::load_balanced_work_t<OffsetT>,
+  cub::detail::segmented_scan::load_balanced_work_t<OffsetT, false>,
   cuda::std::plus<>,
   ValueT,
   ValueT,
   ForceInclusive,
   cub::detail::segmented_scan::noncontiguous_addressing<const OffsetT*, cub::detail::segmented_scan::reuse_input_begin>>;
 
-// Whether the load-balanced kernel's exclusive scan keeps one tail per thread under the default policy. Its storage
-// then exceeds that of the inclusive scan with an initial value, which keeps one tail.
-template <typename ValueT, typename OffsetT>
+// Whether the load-balanced kernel's exclusive scan keeps one tail per thread under the policy PolicyGetter returns, by
+// default CUB's. Its storage then exceeds that of the inclusive scan with an initial value, which keeps one tail.
+template <typename ValueT,
+          typename OffsetT,
+          typename PolicyGetter = cub::detail::segmented_scan::default_load_balanced_policy_getter<ValueT>>
 inline constexpr bool exclusive_scan_keeps_thread_tails =
-  (load_balanced_kernel_smem<ValueT, OffsetT, false> > load_balanced_kernel_smem<ValueT, OffsetT, true>);
+  (load_balanced_kernel_smem<ValueT,
+                             OffsetT,
+                             false,
+                             PolicyGetter> > load_balanced_kernel_smem<ValueT, OffsetT, true, PolicyGetter>);
 #endif // TEST_TYPES != 2
 } // namespace
 
@@ -566,6 +579,41 @@ CUB_TEST("Device segmented scan with load balancing scans a 64-byte accumulator 
     scan_forms<scan_form::inclusive, scan_form::exclusive>{});
 }
 
+// Two items per thread over 256 threads.
+struct two_item_tuning
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
+    -> cub::SegmentedScanLoadBalancedPolicy
+  {
+    return cub::SegmentedScanLoadBalancedPolicy{
+      256, 2, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_STORE_DIRECT, cub::BLOCK_SCAN_WARP_SCANS};
+  }
+};
+
+struct two_item_policy_getter
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()() const
+  {
+    return two_item_tuning{}(::cuda::compute_capability{});
+  }
+};
+
+CUB_TEST("Device segmented scan with load balancing scans a 192-byte accumulator exclusively with two items per "
+         "thread and one tail per block",
+         "[segmented][scan][device]",
+         CUB_SMALL)
+{
+  // One tail per thread would take 256 pairs of 196 bytes, past the shared memory limit.
+  using value_t = u32_array<48>;
+  STATIC_REQUIRE(!exclusive_scan_keeps_thread_tails<value_t, cuda::std::int32_t, two_item_policy_getter>);
+
+  check_large_accumulator<value_t, cuda::std::int32_t>(
+    cuda::std::int64_t{1} << 14,
+    512,
+    tuned_load_balanced_schedules<two_item_tuning>{},
+    scan_forms<scan_form::exclusive>{});
+}
+
 #  endif // TEST_LAUNCH != 1
 
 #endif // TEST_TYPES == 1
@@ -585,6 +633,27 @@ CUB_TEST("Device segmented scan with load balancing routes an accumulator too la
   // Load balancing takes one block per segment instead.
   STATIC_REQUIRE(!load_balanced_kernel_holds<value_t, cuda::std::int32_t, false>);
   STATIC_REQUIRE(!load_balanced_kernel_holds<value_t, cuda::std::int32_t, true>);
+}
+
+// Checks the routing at compile time only, so no kernel is instantiated for the type.
+CUB_TEST("Device segmented scan with load balancing routes an accumulator that only 32-bit work holds",
+         "[segmented][scan][device]",
+         CUB_SMALL)
+{
+  // The size of u32_array<3040>, without operators that would go unreferenced
+  struct value_t
+  {
+    cuda::std::uint32_t v[3040];
+  };
+  // With separate output begin offsets, a supplied total of 2^32 or more takes one block per segment and a smaller one
+  // is load balanced.
+  STATIC_REQUIRE(load_balanced_kernel_holds<value_t, cuda::std::int32_t, true>);
+  STATIC_REQUIRE(
+    !load_balanced_kernel_holds<value_t,
+                                cuda::std::int32_t,
+                                true,
+                                cub::NullType,
+                                cub::detail::segmented_scan::wide_load_balanced_work_t>);
 }
 
 #  if TEST_LAUNCH != 1
