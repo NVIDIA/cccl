@@ -9,10 +9,14 @@
 //===----------------------------------------------------------------------===//
 
 #include <cstdio>
+#include <cstring>
+#include <memory>
+#include <vector>
 
 #include <cccl/c/segmented_sort.h>
 #include <hostjit/codegen/cub_call.hpp>
 #include <util/build_utils.h>
+#include <util/serialization.h>
 
 using namespace hostjit::codegen;
 
@@ -60,6 +64,11 @@ CUresult cccl_device_segmented_sort_build_ex(
   const cccl_build_config* config)
 try
 {
+  if (build_ptr == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
   std::string cccl_include_str  = cccl::detail::parse_cccl_include_path(libcudacxx_path);
   std::string ctk_root_str      = cccl::detail::parse_ctk_root(ctk_path);
   const char* cccl_include_path = cccl_include_str.empty() ? nullptr : cccl_include_str.c_str();
@@ -157,7 +166,7 @@ try
     CubCall::compile({cb_copy, cb_overwrite}, cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
 
   build_ptr->cc = cc_major * 10 + cc_minor;
-  cccl::detail::copy_cubin(result.cubin, build_ptr->payload, build_ptr->payload_size);
+  cccl::detail::copy_compiled_library(result.compiler, build_ptr->payload, build_ptr->payload_size);
   build_ptr->jit_compiler      = result.compiler;
   build_ptr->sort_fn           = result.fn_ptrs[0];
   build_ptr->sort_fn_overwrite = result.fn_ptrs[1];
@@ -171,6 +180,261 @@ try
 catch (const std::exception& exc)
 {
   fprintf(stderr, "\nEXCEPTION in cccl_device_segmented_sort_build(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_segmented_sort_compile(
+  cccl_device_segmented_sort_build_result_t* build_ptr,
+  cccl_sort_order_t sort_order,
+  cccl_iterator_t d_keys_in,
+  cccl_iterator_t d_values_in,
+  cccl_iterator_t begin_offset_in,
+  cccl_iterator_t end_offset_in,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  const cccl_build_config* config)
+try
+{
+  if (build_ptr == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  std::string cccl_include_str  = cccl::detail::parse_cccl_include_path(libcudacxx_path);
+  std::string ctk_root_str      = cccl::detail::parse_ctk_root(ctk_path);
+  const char* cccl_include_path = cccl_include_str.empty() ? nullptr : cccl_include_str.c_str();
+  const char* ctk_root          = ctk_root_str.empty() ? nullptr : ctk_root_str.c_str();
+  cccl::detail::MergedBuildConfig merged(config, cub_path, thrust_path);
+
+  const bool keys_only = is_null_it(d_values_in);
+  const bool ascending = (sort_order == CCCL_ASCENDING);
+
+  cccl_iterator_t d_keys_out = d_keys_in;
+  d_keys_out.type            = CCCL_POINTER;
+  d_keys_out.state           = nullptr;
+  cccl_iterator_t d_values_out{};
+  d_values_out.type       = CCCL_POINTER;
+  d_values_out.state      = nullptr;
+  d_values_out.value_type = d_values_in.value_type;
+
+  const char* cub_algo;
+  if (keys_only)
+  {
+    cub_algo = ascending ? "cub::DeviceSegmentedSort::SortKeys" : "cub::DeviceSegmentedSort::SortKeysDescending";
+  }
+  else
+  {
+    cub_algo = ascending ? "cub::DeviceSegmentedSort::SortPairs" : "cub::DeviceSegmentedSort::SortPairsDescending";
+  }
+
+  auto cb_copy = [&] {
+    if (keys_only)
+    {
+      return CubCall::from("cub/device/device_segmented_sort.cuh")
+        .run(cub_algo)
+        .name("cccl_jit_segmented_sort")
+        .with(temp_storage,
+              temp_bytes,
+              in(d_keys_in),
+              out(d_keys_out),
+              num_items,
+              num_segments,
+              in(begin_offset_in),
+              in(end_offset_in),
+              stream);
+    }
+    return CubCall::from("cub/device/device_segmented_sort.cuh")
+      .run(cub_algo)
+      .name("cccl_jit_segmented_sort")
+      .with(temp_storage,
+            temp_bytes,
+            in(d_keys_in),
+            out(d_keys_out),
+            in(d_values_in),
+            out(d_values_out),
+            num_items,
+            num_segments,
+            in(begin_offset_in),
+            in(end_offset_in),
+            stream);
+  }();
+
+  auto cb_overwrite = [&] {
+    if (keys_only)
+    {
+      return CubCall::from("cub/device/device_segmented_sort.cuh")
+        .run(cub_algo)
+        .name("cccl_jit_segmented_sort_overwrite")
+        .with(temp_storage,
+              temp_bytes,
+              double_buffer(d_keys_in, d_keys_out, "d_keys_buffer"),
+              num_items,
+              num_segments,
+              in(begin_offset_in),
+              in(end_offset_in),
+              selector_out("d_keys_buffer"),
+              stream);
+    }
+    return CubCall::from("cub/device/device_segmented_sort.cuh")
+      .run(cub_algo)
+      .name("cccl_jit_segmented_sort_overwrite")
+      .with(temp_storage,
+            temp_bytes,
+            double_buffer(d_keys_in, d_keys_out, "d_keys_buffer"),
+            double_buffer(d_values_in, d_values_out, "d_values_buffer"),
+            num_items,
+            num_segments,
+            in(begin_offset_in),
+            in(end_offset_in),
+            selector_out("d_keys_buffer"),
+            stream);
+  }();
+
+  auto result =
+    CubCall::compileOnly({cb_copy, cb_overwrite}, cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
+
+  build_ptr->cc = cc_major * 10 + cc_minor;
+  cccl::detail::copy_bytes(result.library_bytes, build_ptr->payload, build_ptr->payload_size);
+  build_ptr->jit_compiler      = nullptr;
+  build_ptr->sort_fn           = nullptr;
+  build_ptr->sort_fn_overwrite = nullptr;
+  build_ptr->key_type          = d_keys_in.value_type;
+  build_ptr->value_type        = d_values_in.value_type;
+  build_ptr->order             = sort_order;
+  build_ptr->keys_only         = keys_only ? 1 : 0;
+
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_segmented_sort_compile(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_segmented_sort_load(cccl_device_segmented_sort_build_result_t* build_ptr, const char* ctk_path)
+try
+{
+  if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0
+      || build_ptr->jit_compiler != nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  hostjit::CompilerConfig jit_config = cccl::detail::make_load_jit_config(ctk_path);
+  auto compiler                      = std::make_unique<hostjit::JITCompiler>(jit_config);
+  std::vector<char> library_bytes(
+    static_cast<char*>(build_ptr->payload), static_cast<char*>(build_ptr->payload) + build_ptr->payload_size);
+  if (!compiler->loadFromBytes(library_bytes))
+  {
+    fprintf(stderr, "\nERROR in cccl_device_segmented_sort_load(): %s\n", compiler->getLastError().c_str());
+    return CUDA_ERROR_UNKNOWN;
+  }
+  using generic_fn_t = void*;
+  auto fn            = compiler->getFunction<generic_fn_t>("cccl_jit_segmented_sort");
+  auto fn_overwrite  = compiler->getFunction<generic_fn_t>("cccl_jit_segmented_sort_overwrite");
+  if (!fn || !fn_overwrite)
+  {
+    fprintf(stderr, "\nERROR in cccl_device_segmented_sort_load(): %s\n", compiler->getLastError().c_str());
+    return CUDA_ERROR_UNKNOWN;
+  }
+
+  build_ptr->jit_compiler      = compiler.release();
+  build_ptr->sort_fn           = fn;
+  build_ptr->sort_fn_overwrite = fn_overwrite;
+
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_segmented_sort_load(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_segmented_sort_serialize(
+  const cccl_device_segmented_sort_build_result_t* build_ptr, void** out_buf, size_t* out_size)
+try
+{
+  if (out_buf == nullptr || out_size == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  *out_buf  = nullptr;
+  *out_size = 0;
+  if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  // extra = {key_type (size,alignment,type: 2xu64+u32), value_type (same), order (u32), keys_only (u32)}
+  std::vector<char> extra =
+    cccl::serialization_v2::extra_writer{}
+      .put_type(build_ptr->key_type)
+      .put_type(build_ptr->value_type)
+      .put<uint32_t>(build_ptr->order)
+      .put<uint32_t>(build_ptr->keys_only)
+      .take();
+
+  std::vector<char> blob = cccl::serialization_v2::write_blob(
+    CCCL_SERIALIZATION_V2_ALGO_SEGMENTED_SORT,
+    build_ptr->cc,
+    {"cccl_jit_segmented_sort", "cccl_jit_segmented_sort_overwrite"},
+    extra,
+    build_ptr->payload,
+    build_ptr->payload_size);
+  cccl::serialization_v2::release_blob(blob, out_buf, out_size);
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_segmented_sort_serialize(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_segmented_sort_deserialize(
+  cccl_device_segmented_sort_build_result_t* build_ptr, const void* buf, size_t size)
+try
+{
+  if (build_ptr == nullptr || buf == nullptr || size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  cccl::serialization_v2::parsed_blob parsed =
+    cccl::serialization_v2::read_blob(CCCL_SERIALIZATION_V2_ALGO_SEGMENTED_SORT, buf, size);
+  if (parsed.symbol_names.size() != 2)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  cccl::serialization_v2::extra_reader extra(parsed.extra);
+  const auto key_type      = extra.get_type();
+  const auto value_type    = extra.get_type();
+  const auto order_u32     = extra.get<uint32_t>();
+  const auto keys_only_u32 = extra.get<uint32_t>();
+  if (!extra.ok() || order_u32 > CCCL_DESCENDING || keys_only_u32 > 1)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  cccl_device_segmented_sort_build_result_t result{};
+  result.key_type   = key_type;
+  result.value_type = value_type;
+
+  result.cc = parsed.cc;
+  cccl::detail::copy_bytes(
+    std::vector<char>(parsed.payload, parsed.payload + parsed.payload_size), result.payload, result.payload_size);
+  result.jit_compiler      = nullptr;
+  result.sort_fn           = nullptr;
+  result.sort_fn_overwrite = nullptr;
+  result.order             = static_cast<cccl_sort_order_t>(order_u32);
+  result.keys_only         = static_cast<int>(keys_only_u32);
+
+  *build_ptr = result;
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_segmented_sort_deserialize(): %s\n", exc.what());
   return CUDA_ERROR_UNKNOWN;
 }
 

@@ -6,8 +6,14 @@
 # example's imports so the imports stay grouped at the start of the example
 # body (after `# example-begin`).
 
-# Ahead-of-time compilation is only supported on the default (v1) backend; the
-# HostJIT (v2) backend raises NotImplementedError. Skip cleanly there so the
+# Single-cc ahead-of-time serialize/deserialize IS supported on the HostJIT
+# (v2) backend (see serialize_roundtrip.py in this directory). This specific
+# example uses multi-compute-capability AoT (compute_capability=[80, 90]),
+# which is not yet supported on v2: the Python orchestration layer is
+# backend-agnostic and works, but real multi-cc compilation currently hits a
+# pre-existing HostJIT/Clang PTX-ISA-version gap unrelated to AoT itself
+# (HostJIT's Clang emits PTX ISA 8.5 by default, which some CUB codegen
+# needs 8.6+ for on newer target architectures). Skip cleanly there so the
 # example runner treats it as a pass.
 import sys
 
@@ -17,7 +23,9 @@ except ImportError:
     USING_V2 = False
 
 if USING_V2:
-    print("ahead-of-time build is unsupported on the HostJIT (v2) backend; skipping.")
+    print(
+        "multi-cc ahead-of-time build is not yet supported on the HostJIT (v2) backend; skipping."
+    )
     sys.exit(0)
 
 # example-begin

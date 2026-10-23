@@ -633,6 +633,91 @@ hostjit::CompilerConfig CubCall::make_jit_config(
   return jit_config;
 }
 
+namespace
+{
+// CUBCALL_DUMP_SOURCE=<path>: write the generated source there.
+void dump_source(const std::string& cuda_source)
+{
+  if (const char* dump_path = std::getenv("CUBCALL_DUMP_SOURCE"))
+  {
+    std::ofstream f(dump_path);
+    f << cuda_source;
+  }
+}
+
+// Read the shared library a compileOnly() left in the compiler's temp dir.
+std::vector<char> read_artifact(const JITCompiler& compiler, const char* who)
+{
+#ifdef _WIN32
+  std::string lib_path = compiler.getArtifactsPath() + "\\cuda_code.dll";
+#else
+  std::string lib_path = compiler.getArtifactsPath() + "/libcuda_code.so";
+#endif
+  std::ifstream lib_file(lib_path, std::ios::binary);
+  if (!lib_file)
+  {
+    throw std::runtime_error(std::format("CubCall {}: could not read compiled artifact at {}", who, lib_path));
+  }
+  return std::vector<char>((std::istreambuf_iterator<char>(lib_file)), std::istreambuf_iterator<char>());
+}
+} // namespace
+
+// Shared by both multi-call entry points: checks the calls share one CUB
+// header and assembles the merged translation unit, with one
+// `namespace fn_<i> { ... }` per CubCall. The extern "C" _CCCL_VISIBILITY_EXPORT
+// symbols defined inside each namespace export under the global C-linkage name
+// (no mangling), so dlsym(handle, cb.fn_name_) finds them.
+std::string CubCall::merged_source(std::initializer_list<CubCall> calls, const char* who)
+{
+  if (calls.size() == 0)
+  {
+    throw std::runtime_error(std::format("CubCall::{}: empty CubCall list", who));
+  }
+
+  // All CubCalls must share the same CUB header — we emit it once at the top
+  // of the merged TU. (If a future use case needs heterogeneous includes,
+  // extend this to union the set; for now keep it strict so silent mismatches
+  // can't slip through.)
+  const std::string& shared_include = calls.begin()->include_;
+  for (const auto& cb : calls)
+  {
+    if (cb.include_ != shared_include)
+    {
+      throw std::runtime_error(
+        std::format("CubCall::{}: all CubCalls in a multi-compile must share the same .from(include) header", who));
+    }
+  }
+
+  // Detect whether any CubCall needs the env / tuple system includes.
+  bool any_tuple = false;
+  bool any_env   = false;
+  for (const auto& cb : calls)
+  {
+    any_tuple = any_tuple || cb.tuple_inputs_;
+    any_env   = any_env || needs_env_include(cb.args_);
+  }
+
+  std::string cuda_source = shared_includes(shared_include, any_tuple, any_env);
+  int i                   = 0;
+  for (const auto& cb : calls)
+  {
+    cuda_source += std::format("namespace fn_{} {{\n", i);
+    cuda_source += cb.body();
+    cuda_source += std::format("}} // namespace fn_{}\n\n", i);
+    ++i;
+  }
+
+  dump_source(cuda_source);
+  if (std::getenv("CUBCALL_PRINT_SOURCE"))
+  {
+    std::fprintf(stderr,
+                 "\n===== CubCall merged JIT source [%zu fns] =====\n%s\n===== end =====\n",
+                 calls.size(),
+                 cuda_source.c_str());
+  }
+  return cuda_source;
+}
+
 CubCallResult CubCall::compile(
   int cc_major, int cc_minor, cccl_build_config* config, const char* ctk_path, const char* cccl_include_path) const
 {
@@ -650,11 +735,7 @@ CubCallResult CubCall::compile(
 
   // 3. Generate source
   std::string cuda_source = source();
-  if (const char* dump_path = std::getenv("CUBCALL_DUMP_SOURCE"))
-  {
-    std::ofstream f(dump_path);
-    f << cuda_source;
-  }
+  dump_source(cuda_source);
 
   // 4. Compile. unique_ptr ensures the JITCompiler is freed if the next two
   // checks throw; .release() transfers ownership to CubCallResult on success.
@@ -680,6 +761,47 @@ CubCallResult CubCall::compile(
   auto cubin = compiler->getCubin();
 
   return CubCallResult{compiler.release(), reinterpret_cast<void*>(fn), std::move(cubin)};
+}
+
+CubCallCompileOnlyResult CubCall::compileOnly(
+  int cc_major, int cc_minor, cccl_build_config* config, const char* ctk_path, const char* cccl_include_path) const
+{
+  // 1. Configure compiler
+  auto jit_config = make_jit_config(cc_major, cc_minor, config, ctk_path, cccl_include_path, fn_name_);
+
+  // 2. Auto-collect bitcode from ops and iterators
+  uintptr_t unique_id = reinterpret_cast<uintptr_t>(this);
+  BitcodeCollector bitcode(jit_config, unique_id);
+
+  int op_idx  = 0;
+  int in_idx  = 0;
+  int out_idx = 0;
+  collect_bitcode(bitcode, op_idx, in_idx, out_idx);
+
+  // 3. Generate source
+  std::string cuda_source = source();
+  dump_source(cuda_source);
+
+  // 4. Compile (no load). Local JITCompiler — its temp dir/artifact is read
+  // into library_bytes below before this function returns and the compiler
+  // (and its temp dir) is destroyed.
+  JITCompiler compiler(jit_config);
+  if (!compiler.compileOnly(cuda_source))
+  {
+    std::string err = compiler.getLastError();
+    bitcode.cleanup();
+    throw std::runtime_error("CubCall compileOnly failed: " + err);
+  }
+
+  bitcode.cleanup();
+
+  // 5. Read the compiled artifact bytes.
+  std::vector<char> library_bytes = read_artifact(compiler, "compileOnly");
+
+  // 6. Copy cubin (for SASS inspection, same as compile())
+  auto cubin = compiler.getCubin();
+
+  return CubCallCompileOnlyResult{std::move(library_bytes), std::move(cubin)};
 }
 
 void CubCall::collect_bitcode(BitcodeCollector& bitcode, int& op_idx, int& in_idx, int& out_idx) const
@@ -726,33 +848,7 @@ MultiCubCallResult CubCall::compile(
   const char* ctk_path,
   const char* cccl_include_path)
 {
-  if (calls.size() == 0)
-  {
-    throw std::runtime_error("CubCall::compile: empty CubCall list");
-  }
-
-  // All CubCalls must share the same CUB header — we emit it once at the top
-  // of the merged TU. (If a future use case needs heterogeneous includes,
-  // extend this to union the set; for now keep it strict so silent mismatches
-  // can't slip through.)
-  const std::string& shared_include = calls.begin()->include_;
-  for (const auto& cb : calls)
-  {
-    if (cb.include_ != shared_include)
-    {
-      throw std::runtime_error("CubCall::compile: all CubCalls in a multi-compile must share the same .from(include) "
-                               "header");
-    }
-  }
-
-  // Detect whether any CubCall needs the env / tuple system includes.
-  bool any_tuple = false;
-  bool any_env   = false;
-  for (const auto& cb : calls)
-  {
-    any_tuple = any_tuple || cb.tuple_inputs_;
-    any_env   = any_env || needs_env_include(cb.args_);
-  }
+  std::string cuda_source = merged_source(calls, "compile");
 
   // entry_point_name is used to mark a single function as preserved during
   // internalization. Use the first CubCall's name as the primary entry; the
@@ -771,34 +867,6 @@ MultiCubCallResult CubCall::compile(
   for (const auto& cb : calls)
   {
     cb.collect_bitcode(bitcode, op_idx, in_idx, out_idx);
-  }
-
-  // Build the merged source: shared includes at TU scope, then one
-  // `namespace fn_<i> { ... body() }` per CubCall.
-  // The extern "C" _CCCL_VISIBILITY_EXPORT symbols defined inside each
-  // namespace export under the global C-linkage name (no mangling),
-  // so dlsym(handle, cb.fn_name_) finds them.
-  std::string cuda_source = shared_includes(shared_include, any_tuple, any_env);
-  int i                   = 0;
-  for (const auto& cb : calls)
-  {
-    cuda_source += std::format("namespace fn_{} {{\n", i);
-    cuda_source += cb.body();
-    cuda_source += std::format("}} // namespace fn_{}\n\n", i);
-    ++i;
-  }
-
-  if (const char* dump_path = std::getenv("CUBCALL_DUMP_SOURCE"))
-  {
-    std::ofstream f(dump_path);
-    f << cuda_source;
-  }
-  if (std::getenv("CUBCALL_PRINT_SOURCE"))
-  {
-    std::fprintf(stderr,
-                 "\n===== CubCall merged JIT source [%zu fns] =====\n%s\n===== end =====\n",
-                 calls.size(),
-                 cuda_source.c_str());
   }
 
   // Single Clang compile for the whole TU.
@@ -827,5 +895,46 @@ MultiCubCallResult CubCall::compile(
 
   auto cubin = compiler->getCubin();
   return MultiCubCallResult{compiler.release(), std::move(cubin), std::move(fn_ptrs)};
+}
+
+MultiCubCallCompileOnlyResult CubCall::compileOnly(
+  std::initializer_list<CubCall> calls,
+  int cc_major,
+  int cc_minor,
+  cccl_build_config* config,
+  const char* ctk_path,
+  const char* cccl_include_path)
+{
+  std::string cuda_source = merged_source(calls, "compileOnly");
+
+  auto jit_config = make_jit_config(cc_major, cc_minor, config, ctk_path, cccl_include_path, calls.begin()->fn_name_);
+
+  uintptr_t unique_id = reinterpret_cast<uintptr_t>(&*calls.begin());
+  BitcodeCollector bitcode(jit_config, unique_id);
+
+  int op_idx  = 0;
+  int in_idx  = 0;
+  int out_idx = 0;
+  for (const auto& cb : calls)
+  {
+    cb.collect_bitcode(bitcode, op_idx, in_idx, out_idx);
+  }
+
+  // Local JITCompiler — its temp dir/artifact is read into library_bytes
+  // below before this function returns and the compiler (and its temp dir)
+  // is destroyed. No dlopen (compileOnly, not compile).
+  JITCompiler compiler(jit_config);
+  if (!compiler.compileOnly(cuda_source))
+  {
+    std::string err = compiler.getLastError();
+    bitcode.cleanup();
+    throw std::runtime_error("CubCall::compileOnly (multi) compilation failed: " + err);
+  }
+  bitcode.cleanup();
+
+  std::vector<char> library_bytes = read_artifact(compiler, "compileOnly (multi)");
+
+  auto cubin = compiler.getCubin();
+  return MultiCubCallCompileOnlyResult{std::move(library_bytes), std::move(cubin)};
 }
 } // namespace hostjit::codegen

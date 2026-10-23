@@ -68,6 +68,30 @@ CCCL_C_API CUresult cccl_device_merge_sort_build_ex(
   const char* ctk_path,
   const cccl_build_config* config);
 
+// compile / load / serialize / deserialize: see the AoT contract in serialization.h.
+CCCL_C_API CUresult cccl_device_merge_sort_compile(
+  cccl_device_merge_sort_build_result_t* build,
+  cccl_iterator_t d_in_keys,
+  cccl_iterator_t d_in_items,
+  cccl_iterator_t d_out_keys,
+  cccl_iterator_t d_out_items,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  const cccl_build_config* config);
+
+CCCL_C_API CUresult cccl_device_merge_sort_load(cccl_device_merge_sort_build_result_t* build, const char* ctk_path);
+
+CCCL_C_API CUresult
+cccl_device_merge_sort_serialize(const cccl_device_merge_sort_build_result_t* build, void** out_buf, size_t* out_size);
+
+CCCL_C_API CUresult
+cccl_device_merge_sort_deserialize(cccl_device_merge_sort_build_result_t* build, const void* buf, size_t size);
+
 CCCL_C_API CUresult cccl_device_merge_sort(
   cccl_device_merge_sort_build_result_t build,
   void* d_temp_storage,

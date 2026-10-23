@@ -57,13 +57,12 @@ try:
 except ImportError:
     USING_V2 = False
 
-# Marker for tests that exercise real v1 serialization or NVRTC/LTO-IR
-# compilation. The fake-backed protocol tests (``_FakeBuildResult`` +
-# ``_PerCCBuildResults``) and pure-logic tests below are backend-agnostic and
-# deliberately run on both backends, so the skip is applied per-test here
-# rather than to the whole module.
-requires_serialization = pytest.mark.skipif(
-    USING_V2, reason="serialization not supported on v2 (HostJIT) backend"
+# These tests assert that op device code differs per target arch (v1 compiles
+# user ops to arch-specific LTO-IR). v2 compiles ops to arch-independent source
+# text, so the same bytes for every target is correct there.
+v1_only = pytest.mark.skipif(
+    USING_V2,
+    reason="v2 compiles user ops to arch-independent source, not per-arch LTO-IR",
 )
 
 
@@ -462,7 +461,6 @@ def _compilable_ccs(want=2):
 # ----------------------------------------------------------------------------
 
 
-@requires_serialization
 def test_proxy_single_cc_compile_is_not_loaded():
     ccs = _compilable_ccs(1)
     if not ccs:
@@ -474,7 +472,6 @@ def test_proxy_single_cc_compile_is_not_loaded():
     assert not builder.build_results[cc]._loaded
 
 
-@requires_serialization
 def test_proxy_multi_cc_compile_produces_one_build_result_per_cc():
     ccs = _compilable_ccs(2)
     if len(ccs) < 2:
@@ -484,7 +481,6 @@ def test_proxy_multi_cc_compile_produces_one_build_result_per_cc():
     assert all(not br._loaded for br in builder.build_results.values())
 
 
-@requires_serialization
 def test_multi_cc_serialize_deserialize_roundtrip_defers_load():
     ccs = _compilable_ccs(2)
     if len(ccs) < 2:
@@ -544,7 +540,7 @@ def _transform_case():
     return make, arch_bytes
 
 
-@requires_serialization
+@v1_only
 @pytest.mark.parametrize(
     "case", [_counting_case(), _transform_case()], ids=["counting", "transform"]
 )
@@ -589,7 +585,7 @@ def test_iterator_op_ltoir_tracks_target_cc_across_instance_reuse(case):
         assert arch_bytes(it) == ref[lo]
 
 
-@requires_serialization
+@v1_only
 def test_default_build_keys_device_code_on_resolved_device_cc(monkeypatch):
     ccs = _compilable_ccs(2)
     if len(ccs) < 2:
@@ -632,7 +628,7 @@ def test_default_build_keys_device_code_on_resolved_device_cc(monkeypatch):
     assert set(it._input_deref_op.keys()) == {hi_cc, lo_cc}
 
 
-@requires_serialization
+@v1_only
 def test_select_always_false_op_recompiles_per_target_cc():
     """``_always_false_op`` is a module-global cache whose LTO-IR is linked into
     every ``make_select`` build (as the three-way-partition's second predicate).
@@ -665,7 +661,6 @@ def test_select_always_false_op_recompiles_per_target_cc():
 # ----------------------------------------------------------------------------
 
 
-@requires_serialization
 def test_build_for_a_target_cc_needs_no_gpu():
     """``make_<algo>(compute_capability=...)`` compiles with no device present.
 
@@ -707,7 +702,6 @@ def test_build_for_a_target_cc_needs_no_gpu():
     assert result.returncode == 0, result.stderr
 
 
-@requires_serialization
 def test_unannotated_transform_iterator_construction_needs_no_gpu(monkeypatch):
     """Constructing an unannotated TransformIterator infers the lambda's return
     type; that inference is architecture-independent and must not query the
@@ -732,7 +726,6 @@ def test_unannotated_transform_iterator_construction_needs_no_gpu(monkeypatch):
     assert it.value_type == from_numpy_dtype(np.dtype(np.int64))
 
 
-@requires_serialization
 def test_select_deserialize_needs_no_gpu_and_no_recompile(monkeypatch):
     """``deserialize()`` must neither recompile device code nor require a GPU.
 
@@ -792,7 +785,6 @@ def test_select_deserialize_needs_no_gpu_and_no_recompile(monkeypatch):
 # ----------------------------------------------------------------------------
 
 
-@requires_serialization
 @pytest.mark.thread_unsafe(
     reason="Asserts the process-wide AOT build result is still unloaded before executing it; a concurrent instance's execution loads it first."
 )
@@ -814,7 +806,6 @@ def test_compile_only_then_lazy_load_and_execute():
     np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
 
 
-@requires_serialization
 def test_multi_cc_loads_only_the_current_device_build_result():
     # This test executes kernels, so it legitimately needs a GPU; ensure the
     # current device's cc is one of the built arches.
@@ -840,7 +831,6 @@ def test_multi_cc_loads_only_the_current_device_build_result():
     assert not loaded.build_results[other]._loaded
 
 
-@requires_serialization
 def test_fused_fast_path_unchanged_when_no_cc_given():
     h = np.arange(512, dtype=np.int32)
     d_in = DeviceArray.from_numpy(h)
@@ -880,7 +870,6 @@ def _same_cc_device_pair():
     return None
 
 
-@requires_serialization
 def test_second_device_loads_via_clone_without_recompiling():
     """On real same-cc GPUs, the first device loads the canonical build result
     in place and the second loads an independent serialize -> deserialize ->
@@ -921,7 +910,6 @@ def test_second_device_loads_via_clone_without_recompiling():
     assert loaded_b._loaded
 
 
-@requires_serialization
 def test_deserialized_wrapper_runs_on_both_devices():
     """One deserialized wrapper runs correctly on two same-cc GPUs: the first
     device to execute claims and loads the canonical result, the second loads
@@ -960,7 +948,6 @@ def test_deserialized_wrapper_runs_on_both_devices():
 # ----------------------------------------------------------------------------
 
 
-@requires_serialization
 def test_serialize_while_other_threads_execute():
     """serialize() must be safe while other threads run the same build.
 
@@ -1021,7 +1008,6 @@ def test_serialize_while_other_threads_execute():
     np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
 
 
-@requires_serialization
 def test_double_serialize_roundtrip_is_stable_and_executes():
     """serialize -> deserialize -> serialize -> deserialize is stable.
 
@@ -1057,7 +1043,6 @@ def test_double_serialize_roundtrip_is_stable_and_executes():
     np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
 
 
-@requires_serialization
 def test_default_build_on_second_same_cc_device_clones_payload(monkeypatch):
     """Real-GPU check of the shared default entry (see the fake-based
     test_default_build_second_same_cc_device_shares_the_entry for the

@@ -10,10 +10,13 @@
 
 #include <cstdio>
 #include <cstring>
+#include <memory>
+#include <vector>
 
 #include <cccl/c/scan.h>
 #include <hostjit/codegen/cub_call.hpp>
 #include <util/build_utils.h>
+#include <util/serialization.h>
 
 using namespace hostjit::codegen;
 
@@ -47,6 +50,10 @@ CUresult cccl_device_scan_build_ex(
 try
 {
   if (build_ptr == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  if (init_kind != CCCL_NO_INIT && init_kind != CCCL_VALUE_INIT && init_kind != CCCL_FUTURE_VALUE_INIT)
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
@@ -86,7 +93,7 @@ try
   }();
 
   build_ptr->cc = cc_major * 10 + cc_minor;
-  cccl::detail::copy_cubin(result.cubin, build_ptr->payload, build_ptr->payload_size);
+  cccl::detail::copy_compiled_library(result.compiler, build_ptr->payload, build_ptr->payload_size);
   build_ptr->jit_compiler    = result.compiler;
   build_ptr->scan_fn         = result.fn_ptr;
   build_ptr->force_inclusive = force_inclusive;
@@ -97,6 +104,189 @@ try
 catch (const std::exception& exc)
 {
   fprintf(stderr, "\nEXCEPTION in cccl_device_scan_build_ex(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_scan_compile(
+  cccl_device_scan_build_result_t* build_ptr,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  cccl_op_t op,
+  cccl_type_info init_type,
+  bool force_inclusive,
+  cccl_init_kind_t init_kind,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  const cccl_build_config* config)
+try
+{
+  if (build_ptr == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  if (init_kind != CCCL_NO_INIT && init_kind != CCCL_VALUE_INIT && init_kind != CCCL_FUTURE_VALUE_INIT)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  std::string cccl_include_str  = cccl::detail::parse_cccl_include_path(libcudacxx_path);
+  std::string ctk_root_str      = cccl::detail::parse_ctk_root(ctk_path);
+  const char* cccl_include_path = cccl_include_str.empty() ? nullptr : cccl_include_str.c_str();
+  const char* ctk_root          = ctk_root_str.empty() ? nullptr : ctk_root_str.c_str();
+  cccl::detail::MergedBuildConfig merged(config, cub_path, thrust_path);
+
+  CubCallCompileOnlyResult result = [&] {
+    auto base = CubCall::from("cub/device/device_scan.cuh").name("cccl_jit_scan");
+
+    if (init_kind == CCCL_NO_INIT)
+    {
+      return base.run("cub::DeviceScan::InclusiveScan")
+        .with(temp_storage, temp_bytes, in(d_in), out(d_out), op, num_items, stream)
+        .compileOnly(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
+    }
+    else if (init_kind == CCCL_VALUE_INIT)
+    {
+      const char* fn = force_inclusive ? "cub::DeviceScan::InclusiveScanInit" : "cub::DeviceScan::ExclusiveScan";
+      cccl_value_t init_val{init_type, nullptr};
+      return base.run(fn)
+        .with(temp_storage, temp_bytes, in(d_in), out(d_out), op, init_val, num_items, stream)
+        .compileOnly(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
+    }
+    else // CCCL_FUTURE_VALUE_INIT
+    {
+      const char* fn = force_inclusive ? "cub::DeviceScan::InclusiveScanInit" : "cub::DeviceScan::ExclusiveScan";
+      return base.run(fn)
+        .with(temp_storage, temp_bytes, in(d_in), out(d_out), op, future_val(init_type), num_items, stream)
+        .compileOnly(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
+    }
+  }();
+
+  build_ptr->cc = cc_major * 10 + cc_minor;
+  cccl::detail::copy_bytes(result.library_bytes, build_ptr->payload, build_ptr->payload_size);
+  build_ptr->jit_compiler    = nullptr;
+  build_ptr->scan_fn         = nullptr;
+  build_ptr->force_inclusive = force_inclusive;
+  build_ptr->init_kind       = init_kind;
+
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_scan_compile(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_scan_load(cccl_device_scan_build_result_t* build_ptr, const char* ctk_path)
+try
+{
+  if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0
+      || build_ptr->jit_compiler != nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  hostjit::CompilerConfig jit_config = cccl::detail::make_load_jit_config(ctk_path);
+  auto compiler                      = std::make_unique<hostjit::JITCompiler>(jit_config);
+  std::vector<char> library_bytes(
+    static_cast<char*>(build_ptr->payload), static_cast<char*>(build_ptr->payload) + build_ptr->payload_size);
+  if (!compiler->loadFromBytes(library_bytes))
+  {
+    fprintf(stderr, "\nERROR in cccl_device_scan_load(): %s\n", compiler->getLastError().c_str());
+    return CUDA_ERROR_UNKNOWN;
+  }
+  // Both scan_init_fn_t and scan_no_init_fn_t are extern "C" (void*, ...)
+  // functions exported under the same fixed name; only the arg count
+  // differs (dispatched at call time via build.init_kind), so a raw
+  // function-pointer getFunction<void*> works for either.
+  using generic_fn_t = void*;
+  auto fn            = compiler->getFunction<generic_fn_t>("cccl_jit_scan");
+  if (!fn)
+  {
+    fprintf(stderr, "\nERROR in cccl_device_scan_load(): %s\n", compiler->getLastError().c_str());
+    return CUDA_ERROR_UNKNOWN;
+  }
+
+  build_ptr->jit_compiler = compiler.release();
+  build_ptr->scan_fn      = fn;
+
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_scan_load(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_scan_serialize(const cccl_device_scan_build_result_t* build_ptr, void** out_buf, size_t* out_size)
+try
+{
+  if (out_buf == nullptr || out_size == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  *out_buf  = nullptr;
+  *out_size = 0;
+  if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  // extra = {force_inclusive (u8), init_kind (u32)}
+  std::vector<char> extra =
+    cccl::serialization_v2::extra_writer{}
+      .put<uint8_t>(build_ptr->force_inclusive ? 1 : 0)
+      .put<uint32_t>(build_ptr->init_kind)
+      .take();
+
+  std::vector<char> blob = cccl::serialization_v2::write_blob(
+    CCCL_SERIALIZATION_V2_ALGO_SCAN,
+    build_ptr->cc,
+    {"cccl_jit_scan"},
+    extra,
+    build_ptr->payload,
+    build_ptr->payload_size);
+  cccl::serialization_v2::release_blob(blob, out_buf, out_size);
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_scan_serialize(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_scan_deserialize(cccl_device_scan_build_result_t* build_ptr, const void* buf, size_t size)
+try
+{
+  if (build_ptr == nullptr || buf == nullptr || size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  cccl::serialization_v2::parsed_blob parsed =
+    cccl::serialization_v2::read_blob(CCCL_SERIALIZATION_V2_ALGO_SCAN, buf, size);
+  cccl::serialization_v2::extra_reader extra(parsed.extra);
+  const auto force_inclusive_u8 = extra.get<uint8_t>();
+  const auto init_kind_u32      = extra.get<uint32_t>();
+  if (!extra.ok() || init_kind_u32 > CCCL_NO_INIT)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  cccl_device_scan_build_result_t result{};
+  result.cc = parsed.cc;
+  cccl::detail::copy_bytes(
+    std::vector<char>(parsed.payload, parsed.payload + parsed.payload_size), result.payload, result.payload_size);
+  result.jit_compiler    = nullptr;
+  result.scan_fn         = nullptr;
+  result.force_inclusive = force_inclusive_u8 != 0;
+  result.init_kind       = static_cast<cccl_init_kind_t>(init_kind_u32);
+
+  *build_ptr = result;
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_scan_deserialize(): %s\n", exc.what());
   return CUDA_ERROR_UNKNOWN;
 }
 
