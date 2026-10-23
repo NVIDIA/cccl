@@ -56,6 +56,8 @@ struct ordered_histogram_level
 {
   int value{};
 
+  // nvcc warns when host/device annotations are attached to an explicitly defaulted constructor.
+  // NOLINTNEXTLINE(modernize-use-equals-default)
   _CCCL_HOST_DEVICE ordered_histogram_level() {}
   _CCCL_HOST_DEVICE explicit ordered_histogram_level(int value_)
       : value(value_)
