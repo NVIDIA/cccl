@@ -20,18 +20,23 @@ device-wide array into one value.
 A complete program
 ------------------
 
-The example uses a separate generic helper, inferred payload elements, and
+The example uses separate generic helpers, inferred payload elements, and
 ``ITEMS_PER_THREAD`` propagated from the host through the kernel. It checks
 one and four items per thread over three blocks, including a short input tail
-and full, short, and empty output buffers.
+and full, short, and empty output buffers. A full-input path combines built-in
+``Sum``, function-item wrapping addition, and a stateless maximum closure using
+one auto-sync scratch descriptor. It checks all three results and preserves
+the inputs.
 
 .. literalinclude:: ../../rust/cuda-coop/examples/reduce/src/main.rs
    :language: rust
    :start-after: // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-The helper fills the missing input tail with an explicit zero before summing.
-Every thread calls the reduction. Only afterwards does the kernel inspect the
-result and obtain a block-output witness.
+The sum helper fills the missing input tail with an explicit zero. The callable
+helper carries ``Op: ReduceOperator<i32>`` and passes the actual operator value
+through the consuming ``.binary_op(op)`` builder. Every thread calls each
+reduction. Only afterwards does the kernel inspect the retained results and
+obtain block-output witnesses.
 
 .. literalinclude:: ../../rust/cuda-coop/examples/reduce/helper/src/lib.rs
    :language: rust
@@ -86,9 +91,15 @@ All ten numeric types (``i8``, ``u8``, ``i16``, ``u16``, ``i32``, ``u32``,
 ``Max``. Integer types additionally support ``BitAnd``, ``BitOr`` and
 ``BitXor``. Operators retain the input dtype; narrow integers are not widened.
 CUB may regroup associative arithmetic, so floating-point totals need not
-match a sequential host reduction exactly. Custom operators are not yet
-supported. A generic helper can carry ``Op: ReduceOperator<T>`` and pass the
-actual operator value through ``.binary_op(op)``.
+match a sequential host reduction exactly. A generic helper can carry
+``Op: ReduceOperator<T>`` and pass the actual operator value through
+``.binary_op(op)``.
+
+Function items and stateless closures implementing
+``Fn(i32, i32) -> i32 + Copy`` support Block reduction with explicit ``Raking``
+and full input. The operator must be associative. Scalar input uses the same
+callable path as a one-item payload. Captured environments, function pointers,
+other types, Warp groups, other algorithms, and partial counts are unsupported.
 
 Block algorithms are ``WarpReductions`` (default), ``Raking`` and
 ``RakingCommutativeOnly``. The last requires a commutative operator; all

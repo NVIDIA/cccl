@@ -15,6 +15,20 @@ mod boundary;
 macro_rules! operators {
     ($(($name:ty, $kind:literal)),+ $(,)?) => {$ (
         impl sealed::Operator for $name { const KIND: u8 = $kind; }
+        impl<T: Numeric> sealed::Dispatch<T> for $name {
+            #[inline(always)]
+            fn reduce<
+                const ITEMS: usize, const ALIGN: usize, G: ReduceGroup<A, S>,
+                A: ReduceAlgorithm, C: sealed::Count, S: TempStorageLike,
+                const PAYLOAD: bool,
+            >(
+                input: &ThreadData<T, ITEMS, ALIGN>,
+                options: ReduceOptions<T, Self, A, C, S>,
+            ) -> Option<T>
+            where Alignment<ALIGN>: SupportedAlignment {
+                boundary::reduce::<T, ITEMS, ALIGN, G, Self, A, C, S, PAYLOAD>(input, options)
+            }
+        }
     )+};
 }
 operators!(
@@ -31,9 +45,14 @@ operators!(
 ///
 /// [`Sum`], [`Multiplies`], [`Min`] and [`Max`] accept all ten [`Numeric`] types.
 /// Bitwise operators accept only the eight integer types. Generic helpers may
-/// carry this bound and pass the actual operator value. Custom operators are
-/// not yet supported; all current operators permit the commutative algorithm.
-pub trait ReduceOperator<T: Numeric>: sealed::Operator {}
+/// carry this bound and pass the actual operator value. These built-in
+/// operators permit the commutative algorithm.
+///
+/// Function items and stateless closures implementing `Fn(i32, i32) -> i32 + Copy`
+/// support full-input Block reduction with explicit [`Raking`]. The operator
+/// must be associative. Captured environments, function pointers, other input
+/// types, other algorithms, Warp groups and partial counts are not supported.
+pub trait ReduceOperator<T: Numeric>: sealed::Operator + sealed::Dispatch<T> {}
 impl<T: Numeric> ReduceOperator<T> for Sum {}
 impl<T: Numeric> ReduceOperator<T> for Multiplies {}
 impl<T: Numeric> ReduceOperator<T> for Min {}
@@ -46,6 +65,41 @@ macro_rules! integer_operators {
     )+};
 }
 integer_operators!(i8, u8, i16, u16, i32, u32, i64, u64);
+
+impl<F: Fn(i32, i32) -> i32 + Copy> ReduceOperator<i32> for F {}
+impl<F: Fn(i32, i32) -> i32 + Copy> sealed::Operator for F {
+    const KIND: u8 = panic!("callable Reduce does not support batched reduction");
+}
+
+struct CallableBounds<G, A, C>(PhantomData<(G, A, C)>);
+impl<G: sealed::Group, A: sealed::Algorithm, C: sealed::Count> CallableBounds<G, A, C> {
+    const VALID: () = {
+        assert!(!G::WARP, "callable Reduce requires Block");
+        assert!(A::KIND == 2, "callable Reduce requires explicit Raking");
+        assert!(C::KIND == 0, "callable Reduce requires full input");
+    };
+}
+impl<F: Fn(i32, i32) -> i32 + Copy> sealed::Dispatch<i32> for F {
+    #[inline(always)]
+    fn reduce<
+        const ITEMS: usize,
+        const ALIGN: usize,
+        G: ReduceGroup<A, S>,
+        A: ReduceAlgorithm,
+        C: sealed::Count,
+        S: TempStorageLike,
+        const PAYLOAD: bool,
+    >(
+        input: &ThreadData<i32, ITEMS, ALIGN>,
+        options: ReduceOptions<i32, Self, A, C, S>,
+    ) -> Option<i32>
+    where
+        Alignment<ALIGN>: SupportedAlignment,
+    {
+        let () = CallableBounds::<G, A, C>::VALID;
+        boundary::callable(input, options.binary_op, options.storage)
+    }
+}
 
 /// CUB's raking Block reduction specialized for commutative operators.
 #[derive(Clone, Copy, Debug, Default)]
@@ -197,7 +251,9 @@ impl<T: Numeric> Default for ReduceOptions<T> {
     }
 }
 impl<T: Numeric, Op, A, Count, S> ReduceOptions<T, Op, A, Count, S> {
-    /// Select a built-in operator, retaining its actual generic value.
+    /// Select an operator, retaining its actual generic value.
+    ///
+    /// Stateless `i32` callables require Block, explicit [`Raking`] and full input.
     pub fn binary_op<Op2: ReduceOperator<T>>(self, op: Op2) -> ReduceOptions<T, Op2, A, Count, S> {
         ReduceOptions {
             binary_op: op,
@@ -357,7 +413,7 @@ impl<T: Numeric, G: GroupScope, C: sealed::Count> ReduceValue<T, G, C> for T {
     {
         let mut input = ThreadData::<_, 1>::new();
         input.write(0, self);
-        boundary::reduce::<T, 1, 1, G, Op, A, C, S, false>(&input, options)
+        Op::reduce::<1, 1, G, A, C, S, false>(&input, options)
     }
 }
 impl<T: Numeric, G: GroupScope, const I: usize, const ALIGN: usize> sealed::Value<T, G, ()>
@@ -380,7 +436,7 @@ where
     where
         G: ReduceGroup<A, S>,
     {
-        boundary::reduce::<T, I, ALIGN, G, Op, A, (), S, true>(self, options)
+        Op::reduce::<I, ALIGN, G, A, (), S, true>(self, options)
     }
 }
 impl<T: Numeric, G: GroupScope, const I: usize, const ALIGN: usize> sealed::Value<T, G, ()>
@@ -408,6 +464,24 @@ where
 }
 
 mod sealed {
+    use super::*;
+
+    pub trait Dispatch<T: Numeric>: Sized {
+        fn reduce<
+            const ITEMS: usize,
+            const ALIGN: usize,
+            G: ReduceGroup<A, S>,
+            A: ReduceAlgorithm,
+            C: Count,
+            S: TempStorageLike,
+            const PAYLOAD: bool,
+        >(
+            input: &ThreadData<T, ITEMS, ALIGN>,
+            options: ReduceOptions<T, Self, A, C, S>,
+        ) -> Option<T>
+        where
+            Alignment<ALIGN>: SupportedAlignment;
+    }
     pub trait Operator {
         const KIND: u8;
     }

@@ -14,11 +14,18 @@ fn main() {
     oxide::build_script().expect("cuda.coop native provider registration");
     if matches!(
         std::env::args().nth(1).as_deref(),
-        Some("--oxide-library-request-v1" | "--oxide-library-inputs-v1")
+        Some(
+            "--oxide-library-request-v1"
+                | "--oxide-library-request-v2"
+                | "--oxide-library-inputs-v1"
+        )
     ) {
         return;
     }
     let executable = std::env::current_exe().expect("cuda.coop provider executable");
+    let callable = oxide::reduce_callable_registration(&executable)
+        .expect("cuda.coop callable Reduce registration");
+    println!("cargo::rustc-env=COOP_REDUCE_RAKING_CALLABLE_PAYLOAD={callable}");
     for (recipe, name) in [
         (RunLengthDecodeRecipe::Window, "WINDOW"),
         (RunLengthDecodeRecipe::Into, "INTO"),

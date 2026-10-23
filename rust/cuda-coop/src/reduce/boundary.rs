@@ -1,7 +1,7 @@
 // Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-use super::{ReduceAlgorithm, ReduceGroup, ReduceOperator, ReduceOptions, sealed::Count};
+use super::{ReduceAlgorithm, ReduceGroup, ReduceOptions, sealed::Count};
 use crate::{Alignment, Numeric, SupportedAlignment, TempStorageLike, ThreadData};
 use cuda_device::library;
 
@@ -251,7 +251,7 @@ pub(super) fn reduce<
     const ITEMS: usize,
     const ALIGN: usize,
     G: ReduceGroup<A, S>,
-    Op: ReduceOperator<T>,
+    Op: super::sealed::Operator,
     A: ReduceAlgorithm,
     C: Count,
     S: TempStorageLike,
@@ -423,5 +423,54 @@ where
         }
     }
     // get checks root-only validity before reading the numerical output.
+    output.get(0)
+}
+
+fn raking_callable_payload() -> &'static str {
+    library::registration!("COOP_REDUCE_RAKING_CALLABLE_PAYLOAD")
+}
+
+unsafe extern "C" fn binary_thunk<F: Fn(i32, i32) -> i32>(
+    environment: *const F,
+    left: i32,
+    right: i32,
+) -> i32 {
+    // SAFETY: the synchronous checked call keeps its shared environment alive.
+    unsafe { (&*environment)(left, right) }
+}
+
+#[inline(always)]
+pub(super) fn callable<
+    const ITEMS: usize,
+    const ALIGN: usize,
+    F: Fn(i32, i32) -> i32 + Copy,
+    S: TempStorageLike,
+>(
+    input: &ThreadData<i32, ITEMS, ALIGN>,
+    operator: F,
+    storage: S,
+) -> Option<i32>
+where
+    Alignment<ALIGN>: SupportedAlignment,
+{
+    let mut output = ThreadData::<i32, 1>::new();
+    let (input, input_bits) = input.block_io_read_parts();
+    let (output_pointer, output_bits) = output.block_io_parts();
+    let payload = (input, output_pointer, input_bits, output_bits);
+    let storage = storage.into_raw();
+    // SAFETY: input and fresh output are distinct live payloads. The recipe
+    // checks every input bit, preserves input and writes only the root output.
+    // The compiler checks Block participation, scratch reuse and the genuine
+    // stateless callable. The environment borrow lives through this call.
+    unsafe {
+        library::checked_block_payload_callback_call_v1::<i32, _, _, _, _, _, _, ITEMS>(
+            raking_callable_payload,
+            storage,
+            (),
+            payload,
+            binary_thunk::<F>,
+            &operator,
+        )
+    }
     output.get(0)
 }

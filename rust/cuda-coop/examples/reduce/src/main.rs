@@ -9,6 +9,61 @@ use cuda_host::cuda_module;
 mod kernels {
     use super::*;
 
+    fn wrapping_add(left: i32, right: i32) -> i32 {
+        left.wrapping_add(right)
+    }
+
+    #[kernel]
+    #[launch_contract(domain = 1, block = (128, 1, 1), dynamic_shared = inferred)]
+    pub fn block_callable<const ITEMS_PER_THREAD: usize>(
+        input: &[i32],
+        mut sums: coop::DisjointSlice<i32, thread::BlockIndex>,
+        mut callable_sums: coop::DisjointSlice<i32, thread::BlockIndex>,
+        mut maxima: coop::DisjointSlice<i32, thread::BlockIndex>,
+    ) {
+        let block = coop::this_block();
+        let offset = block.rank_at::<coop::Grid>() as usize * 128 * ITEMS_PER_THREAD;
+        let mut values = coop::ThreadData::<_, ITEMS_PER_THREAD>::new();
+        coop::load(
+            block,
+            input,
+            &mut values,
+            coop::LoadOptions::default().offset(offset),
+        );
+        let before = values;
+        let mut scratch = coop::TempStorage::new().auto_sync();
+        let sum = coop_reduce_helper::reduce_values(block, &values, coop::Sum, &mut scratch);
+        let callable_sum =
+            coop_reduce_helper::reduce_values(block, &values, wrapping_add, &mut scratch);
+        let maximum = coop_reduce_helper::reduce_values(
+            block,
+            &values,
+            |left, right| if left > right { left } else { right },
+            &mut scratch,
+        );
+        for index in 0..ITEMS_PER_THREAD {
+            assert!(values.get(index) == before.get(index));
+        }
+        // All three collectives finish before any root-only output branch.
+        if let (Some(sum), Some(callable_sum), Some(maximum)) = (sum, callable_sum, maximum) {
+            if let Some(index) = thread::block_index()
+                && let Some(slot) = sums.get_mut(index)
+            {
+                *slot = sum;
+            }
+            if let Some(index) = thread::block_index()
+                && let Some(slot) = callable_sums.get_mut(index)
+            {
+                *slot = callable_sum;
+            }
+            if let Some(index) = thread::block_index()
+                && let Some(slot) = maxima.get_mut(index)
+            {
+                *slot = maximum;
+            }
+        }
+    }
+
     #[kernel]
     #[launch_contract(domain = 1, block = (128, 1, 1), dynamic_shared = inferred)]
     pub fn block_sum<const ITEMS_PER_THREAD: usize>(
@@ -75,6 +130,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     $items
                 );
             }
+
+            let input: Vec<i32> = (0..3 * tile).map(|i| (i % 29) as i32 - 14).collect();
+            let expected_sums: Vec<i32> = input.chunks(tile).map(|v| v.iter().sum()).collect();
+            let expected_maxima: Vec<i32> = input
+                .chunks(tile)
+                .map(|v| *v.iter().max().expect("nonempty block tile"))
+                .collect();
+            let source = DeviceBuffer::from_host(&stream, &input)?;
+            let sums = DeviceBuffer::from_host(&stream, &[-1_i32; 3])?;
+            let callable_sums = DeviceBuffer::from_host(&stream, &[-1_i32; 3])?;
+            let maxima = DeviceBuffer::from_host(&stream, &[-1_i32; 3])?;
+            let plan =
+                module.prepare_block_callable::<$items>(LaunchConfig1D::auto_shared(3, 128))?;
+            let (source, sums, callable_sums, maxima) = module
+                .block_callable_async_owned::<$items, _, _, _, _>(
+                    &plan,
+                    source,
+                    sums,
+                    callable_sums,
+                    maxima,
+                )
+                .sync()?;
+            assert_eq!(source.to_host_vec(&stream)?, input);
+            assert_eq!(sums.to_host_vec(&stream)?, expected_sums);
+            assert_eq!(callable_sums.to_host_vec(&stream)?, expected_sums);
+            assert_eq!(maxima.to_host_vec(&stream)?, expected_maxima);
+            println!(
+                "items/thread={}: 9 built-in/callable results and {} preserved inputs checked",
+                $items,
+                input.len(),
+            );
         }};
     }
     run!(1);

@@ -840,6 +840,22 @@ impl Provider {
     /// Rejects empty/duplicate requests and malformed targets as [`Self::compile`]
     /// does; native compilation and layout decoding errors retain their diagnostics.
     pub fn compile_native(&self, requests: &[NativeRequest], target: &str) -> Result<Artifact> {
+        self.compile_native_with_callbacks(requests, target, None)
+    }
+
+    fn compile_native_with_callbacks(
+        &self,
+        requests: &[NativeRequest],
+        target: &str,
+        callbacks: Option<&[oxide::Callback]>,
+    ) -> Result<Artifact> {
+        if let Some(callbacks) = callbacks {
+            if callbacks.len() != requests.len() {
+                return Err(Error::message(
+                    "callback count must match specialization count",
+                ));
+            }
+        }
         if !target.starts_with("compute_")
             || !target[8..].chars().all(|c| c.is_ascii_alphanumeric())
             || target.len() <= 8
@@ -852,7 +868,14 @@ impl Provider {
             return Err(Error::message("at least one specialization is required"));
         }
         for (index, request) in requests.iter().enumerate() {
-            if requests[..index].contains(request) {
+            if requests[..index]
+                .iter()
+                .enumerate()
+                .any(|(prior, candidate)| {
+                    candidate == request
+                        && callbacks.is_none_or(|callbacks| callbacks[prior] == callbacks[index])
+                })
+            {
                 return Err(Error::message("duplicate specialization in one batch"));
             }
         }
@@ -891,20 +914,30 @@ impl Provider {
         source.push_str("\ntemplate <unsigned long long Size, unsigned long long Alignment>\nextern __device__ unsigned char layout_probe;\n");
         let mut expressions = Vec::with_capacity(requests.len() * 2);
         let mut specializations = Vec::with_capacity(requests.len());
-        for &request in requests {
+        for (index, &request) in requests.iter().enumerate() {
+            let callback = callbacks.map(|callbacks| &callbacks[index]);
+            let source_for = |symbol: &str| match (request, callback) {
+                (NativeRequest::Reduce(reduce), Some(callback)) => {
+                    reduce.source_with_callback(symbol, Some(&callback.symbol))
+                }
+                (_, None) => request.source(symbol),
+                _ => unreachable!("callback recipes are validated before native compilation"),
+            };
             let mut hash = inputs.clone();
             for axis in request.block_shape() {
                 hash_field(&mut hash, &axis.to_le_bytes());
             }
-            hash_field(
-                &mut hash,
-                request.source("cuda_coop_specialization").as_bytes(),
-            );
+            hash_field(&mut hash, source_for("cuda_coop_specialization").as_bytes());
             let identity: [u8; 32] = hash.finalize().into();
             hash_field(&mut batch_identity, &identity);
             let suffix: String = identity.iter().map(|byte| format!("{byte:02x}")).collect();
-            let symbol = format!("cuda_coop_{}_{}", request.token(), suffix);
-            source.push_str(&request.source(&symbol));
+            let token = if callback.is_some() {
+                "reduce_callable".to_owned()
+            } else {
+                request.token()
+            };
+            let symbol = format!("cuda_coop_{token}_{suffix}");
+            source.push_str(&source_for(&symbol));
             expressions.push(format!("&layout_probe<sizeof({symbol}_detail::primitive::TempStorage), alignof({symbol}_detail::primitive::TempStorage)>"));
             expressions.push(format!("&layout_probe<sizeof({symbol}_detail::scratch_storage), alignof({symbol}_detail::scratch_storage)>"));
             specializations.push(Specialization {

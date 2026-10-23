@@ -289,6 +289,10 @@ impl ReduceRequest {
     }
 
     pub(crate) fn source(self, symbol: &str) -> String {
+        self.source_with_callback(symbol, None)
+    }
+
+    pub(crate) fn source_with_callback(self, symbol: &str, callback: Option<&str>) -> String {
         let (dtype, _) = self.dtype.native();
         let [x, y, z] = self.block;
         let items = self.items;
@@ -308,7 +312,13 @@ impl ReduceRequest {
             }
         };
         let counted = self.recipe.form() == ReduceForm::ScalarPrefix;
-        let controls = if counted { ", int valid" } else { "" };
+        let controls = if callback.is_some() {
+            ", const void* environment"
+        } else if counted {
+            ", int valid"
+        } else {
+            ""
+        };
         let group_size = self.width.unwrap_or(x * y * z);
         let validate_count = if counted {
             format!("if (valid < 1 || valid > {group_size}) __trap();")
@@ -321,7 +331,17 @@ impl ReduceRequest {
             "local_input[0]"
         };
         let count = if counted { ", valid" } else { "" };
-        let call = if self.recipe.operator() == ReduceOperator::Sum {
+        let callback_declaration = callback.map_or_else(String::new, |name| {
+            format!("extern \"C\" __device__ int {name}(const void*, int, int);\n")
+        });
+        let callback_functor = callback.map_or_else(String::new, |name| {
+            format!(
+                "struct binary_op {{ const void* environment;\n  __device__ int operator()(int a, int b) const {{ return {name}(environment, a, b); }}\n}};"
+            )
+        });
+        let call = if callback.is_some() {
+            format!("operation.Reduce({operand}, binary_op{{environment}})")
+        } else if self.recipe.operator() == ReduceOperator::Sum {
             format!("operation.Sum({operand}{count})")
         } else {
             format!(
@@ -343,10 +363,12 @@ impl ReduceRequest {
 #include <cub/util_ptx.cuh>
 #include <cuda/functional>
 #include <cuda/std/functional>
+{callback_declaration}
 namespace {symbol}_detail {{
 using value_type = {dtype};
 using primitive = {primitive};
 using scratch_storage = primitive::TempStorage;
+{callback_functor}
 }}
 extern "C" __device__ void {symbol}(const {dtype}* input, {dtype}* output,
     unsigned char* scratch, const unsigned char* input_bits, unsigned char* output_bits{controls}) {{
