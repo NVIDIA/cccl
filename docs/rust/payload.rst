@@ -6,7 +6,7 @@ Per-thread payloads
 
 The unpublished ``cuda-coop`` crate provides ``ThreadData`` and its sealed
 ``ThreadDataLike`` interface. It is a feature-free ``no_std`` crate using the
-pinned Oxide device dependency and ``nightly-2026-10-11`` toolchain. See
+pinned Oxide device dependency and ``1.99.1`` toolchain. See
 :doc:`groups` for physical and mapped group queries, and :doc:`load_store` for
 collective Load/Store and scratch storage.
 
