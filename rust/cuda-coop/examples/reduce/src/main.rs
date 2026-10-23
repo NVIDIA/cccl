@@ -20,6 +20,8 @@ mod kernels {
         mut sums: coop::DisjointSlice<i32, thread::BlockIndex>,
         mut callable_sums: coop::DisjointSlice<i32, thread::BlockIndex>,
         mut maxima: coop::DisjointSlice<i32, thread::BlockIndex>,
+        mut biased_sums: coop::DisjointSlice<i32, thread::BlockIndex>,
+        bias: i32,
     ) {
         let block = coop::this_block();
         let offset = block.rank_at::<coop::Grid>() as usize * 128 * ITEMS_PER_THREAD;
@@ -41,11 +43,19 @@ mod kernels {
             |left, right| if left > right { left } else { right },
             &mut scratch,
         );
+        let biased_sum = coop_reduce_helper::reduce_values(
+            block,
+            &values,
+            move |left, right| wrapping_add(wrapping_add(left, right), bias),
+            &mut scratch,
+        );
         for index in 0..ITEMS_PER_THREAD {
             assert!(values.get(index) == before.get(index));
         }
-        // All three collectives finish before any root-only output branch.
-        if let (Some(sum), Some(callable_sum), Some(maximum)) = (sum, callable_sum, maximum) {
+        // All four collectives finish before any root-only output branch.
+        if let (Some(sum), Some(callable_sum), Some(maximum), Some(biased_sum)) =
+            (sum, callable_sum, maximum, biased_sum)
+        {
             if let Some(index) = thread::block_index()
                 && let Some(slot) = sums.get_mut(index)
             {
@@ -60,6 +70,11 @@ mod kernels {
                 && let Some(slot) = maxima.get_mut(index)
             {
                 *slot = maximum;
+            }
+            if let Some(index) = thread::block_index()
+                && let Some(slot) = biased_sums.get_mut(index)
+            {
+                *slot = biased_sum;
             }
         }
     }
@@ -137,30 +152,41 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .chunks(tile)
                 .map(|v| *v.iter().max().expect("nonempty block tile"))
                 .collect();
-            let source = DeviceBuffer::from_host(&stream, &input)?;
-            let sums = DeviceBuffer::from_host(&stream, &[-1_i32; 3])?;
-            let callable_sums = DeviceBuffer::from_host(&stream, &[-1_i32; 3])?;
-            let maxima = DeviceBuffer::from_host(&stream, &[-1_i32; 3])?;
             let plan =
                 module.prepare_block_callable::<$items>(LaunchConfig1D::auto_shared(3, 128))?;
-            let (source, sums, callable_sums, maxima) = module
-                .block_callable_async_owned::<$items, _, _, _, _>(
-                    &plan,
-                    source,
-                    sums,
-                    callable_sums,
-                    maxima,
-                )
-                .sync()?;
-            assert_eq!(source.to_host_vec(&stream)?, input);
-            assert_eq!(sums.to_host_vec(&stream)?, expected_sums);
-            assert_eq!(callable_sums.to_host_vec(&stream)?, expected_sums);
-            assert_eq!(maxima.to_host_vec(&stream)?, expected_maxima);
-            println!(
-                "items/thread={}: 9 built-in/callable results and {} preserved inputs checked",
-                $items,
-                input.len(),
-            );
+            // The same compiled specialization receives two different capture values.
+            for bias in [-3_i32, 7] {
+                let expected_biased: Vec<i32> = expected_sums
+                    .iter()
+                    .map(|&sum| sum + (tile as i32 - 1) * bias)
+                    .collect();
+                let source = DeviceBuffer::from_host(&stream, &input)?;
+                let sums = DeviceBuffer::from_host(&stream, &[-1_i32; 3])?;
+                let callable_sums = DeviceBuffer::from_host(&stream, &[-1_i32; 3])?;
+                let maxima = DeviceBuffer::from_host(&stream, &[-1_i32; 3])?;
+                let biased_sums = DeviceBuffer::from_host(&stream, &[-1_i32; 3])?;
+                let (source, sums, callable_sums, maxima, biased_sums) = module
+                    .block_callable_async_owned::<$items, _, _, _, _, _>(
+                        &plan,
+                        source,
+                        sums,
+                        callable_sums,
+                        maxima,
+                        biased_sums,
+                        bias,
+                    )
+                    .sync()?;
+                assert_eq!(source.to_host_vec(&stream)?, input);
+                assert_eq!(sums.to_host_vec(&stream)?, expected_sums);
+                assert_eq!(callable_sums.to_host_vec(&stream)?, expected_sums);
+                assert_eq!(maxima.to_host_vec(&stream)?, expected_maxima);
+                assert_eq!(biased_sums.to_host_vec(&stream)?, expected_biased);
+                println!(
+                    "items/thread={}, bias={bias}: 12 built-in/callable results and {} preserved inputs checked",
+                    $items,
+                    input.len(),
+                );
+            }
         }};
     }
     run!(1);

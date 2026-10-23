@@ -30,11 +30,12 @@ pub fn sum_tile<T: coop::Numeric, const ITEMS_PER_THREAD: usize>(
     coop::sum(block, &values, Default::default())
 }
 
-/// Reduce a fully initialized i32 tile with a built-in or stateless operator.
+/// Reduce a fully initialized i32 tile with a built-in or callable operator.
 ///
 /// Every block member calls this helper. The associative operator is retained
 /// as its concrete type. Auto-sync scratch completes each reduction before
 /// the caller reuses it; the result is valid only at block rank zero.
+/// A captured i32 must have the same proved value throughout the block.
 pub fn reduce_values<Op: coop::ReduceOperator<i32>, const ITEMS_PER_THREAD: usize>(
     block: coop::ThreadGroup<coop::Block>,
     values: &coop::ThreadData<i32, ITEMS_PER_THREAD>,

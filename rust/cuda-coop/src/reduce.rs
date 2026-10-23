@@ -48,10 +48,12 @@ operators!(
 /// carry this bound and pass the actual operator value. These built-in
 /// operators permit the commutative algorithm.
 ///
-/// Function items and stateless closures implementing `Fn(i32, i32) -> i32 + Copy`
+/// Function items and closures implementing `Fn(i32, i32) -> i32 + Copy`
 /// support full-input Block reduction with explicit [`Raking`]. The operator
-/// must be associative. Captured environments, function pointers, other input
-/// types, other algorithms, Warp groups and partial counts are not supported.
+/// must be associative. A closure may capture one `i32` by value when the compiler
+/// proves that its value is identical for every thread in the block at the call.
+/// Other captures, function pointers, other input types, other algorithms, Warp
+/// groups and partial counts are not supported.
 pub trait ReduceOperator<T: Numeric>: sealed::Operator + sealed::Dispatch<T> {}
 impl<T: Numeric> ReduceOperator<T> for Sum {}
 impl<T: Numeric> ReduceOperator<T> for Multiplies {}
@@ -253,7 +255,8 @@ impl<T: Numeric> Default for ReduceOptions<T> {
 impl<T: Numeric, Op, A, Count, S> ReduceOptions<T, Op, A, Count, S> {
     /// Select an operator, retaining its actual generic value.
     ///
-    /// Stateless `i32` callables require Block, explicit [`Raking`] and full input.
+    /// `i32` callables require Block, explicit [`Raking`] and full input.
+    /// See [`ReduceOperator`] for supported captures and their uniformity rule.
     pub fn binary_op<Op2: ReduceOperator<T>>(self, op: Op2) -> ReduceOptions<T, Op2, A, Count, S> {
         ReduceOptions {
             binary_op: op,

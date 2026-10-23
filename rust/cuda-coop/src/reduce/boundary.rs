@@ -461,7 +461,7 @@ where
     // SAFETY: input and fresh output are distinct live payloads. The recipe
     // checks every input bit, preserves input and writes only the root output.
     // The compiler checks Block participation, scratch reuse and the genuine
-    // stateless callable. The environment borrow lives through this call.
+    // callable and any captured value. The environment borrow lives through this call.
     unsafe {
         library::checked_block_payload_callback_call_v1::<i32, _, _, _, _, _, _, ITEMS>(
             raking_callable_payload,

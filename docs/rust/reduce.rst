@@ -24,9 +24,11 @@ The example uses separate generic helpers, inferred payload elements, and
 ``ITEMS_PER_THREAD`` propagated from the host through the kernel. It checks
 one and four items per thread over three blocks, including a short input tail
 and full, short, and empty output buffers. A full-input path combines built-in
-``Sum``, function-item wrapping addition, and a stateless maximum closure using
-one auto-sync scratch descriptor. It checks all three results and preserves
-the inputs.
+``Sum``, function-item wrapping addition, a stateless maximum closure, and
+addition with a captured bias using one auto-sync scratch descriptor. It checks
+all four results and preserves the inputs. Two runtime bias values use the same
+compiled kernel; reducing a tile with bias adds ``(tile_size - 1) * bias`` to its
+ordinary sum.
 
 .. literalinclude:: ../../rust/cuda-coop/examples/reduce/src/main.rs
    :language: rust
@@ -95,11 +97,16 @@ match a sequential host reduction exactly. A generic helper can carry
 ``Op: ReduceOperator<T>`` and pass the actual operator value through
 ``.binary_op(op)``.
 
-Function items and stateless closures implementing
+Function items and closures implementing
 ``Fn(i32, i32) -> i32 + Copy`` support Block reduction with explicit ``Raking``
 and full input. The operator must be associative. Scalar input uses the same
-callable path as a one-item payload. Captured environments, function pointers,
-other types, Warp groups, other algorithms, and partial counts are unsupported.
+callable path as a one-item payload. A closure may capture one ``i32`` by value
+when the compiler proves that its value is identical for every thread in the
+block at the call. The example captures a kernel scalar argument with ``move``
+after the preceding native operations. A lane-derived value or an unknown
+value loaded from global memory does not establish this proof. Other captures,
+function pointers, other types, Warp groups, other algorithms, and partial
+counts are unsupported.
 
 Block algorithms are ``WarpReductions`` (default), ``Raking`` and
 ``RakingCommutativeOnly``. The last requires a commutative operator; all
