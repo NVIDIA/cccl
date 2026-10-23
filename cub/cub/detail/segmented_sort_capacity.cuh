@@ -102,13 +102,13 @@ _CCCL_HOST_DEVICE_API bin_config config_for_bin(int bin)
   }
 }
 
-template <typename Algorithm, typename PolicyGetter>
+template <typename Implementation>
 struct sort_entry
 {
-  using implementation                = typename Algorithm::template implementation<PolicyGetter>;
+  using implementation                = Implementation;
   using expansion                     = typename implementation::expansion;
   using capacities                    = typename expansion::capacities;
-  inline static constexpr auto tuning = PolicyGetter{}();
+  inline static constexpr auto tuning = implementation::policy;
   static constexpr int unit_threads   = implementation::unit_threads;
   static_assert(tuning.block_threads > 0 && tuning.block_threads <= 1024);
   static_assert(unit_threads > 0 && tuning.block_threads % unit_threads == 0);

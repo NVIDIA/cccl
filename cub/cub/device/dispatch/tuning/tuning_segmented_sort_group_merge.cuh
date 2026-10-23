@@ -88,9 +88,9 @@ struct group_merge_entries
       return PolicyGetter{}().large;
     }
   };
-  using type = sort_entries<sort_entry<group_merge_algorithm, warp_policy_getter>,
-                            sort_entry<group_merge_algorithm, small_policy_getter>,
-                            sort_entry<group_merge_algorithm, large_policy_getter>>;
+  using type = sort_entries<sort_entry<group_merge_implementation<warp_policy_getter>>,
+                            sort_entry<group_merge_implementation<small_policy_getter>>,
+                            sort_entry<group_merge_implementation<large_policy_getter>>>;
 };
 } // namespace detail::segmented_sort_capacity
 
