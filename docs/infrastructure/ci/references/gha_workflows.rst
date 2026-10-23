@@ -16,9 +16,9 @@ Workflow reference
 CI matrix
 ~~~~~~~~~
 
-Three trigger workflows select a matrix key and run it. Six dispatcher workflows
-unfold the generated job list into GitHub matrix strategies. Contributors rarely
-invoke any of these directly; they fire on push or schedule.
+Three entry-point workflows select matrix keys and run them. The PR workflow runs
+on push; nightly and weekly workflows run on schedules and support manual dispatch.
+Six dispatcher workflows unfold the generated job list into GitHub matrix strategies.
 
 .. list-table::
    :header-rows: 1
@@ -29,7 +29,7 @@ invoke any of these directly; they fire on push or schedule.
      - Purpose
    * - ``.github/workflows/ci-workflow-pull-request.yml``
      - Automatic
-     - Runs the ``pull_request`` matrix on every push to a ``pull-request/<N>`` branch.
+     - Runs the ``pull_request`` matrix on pushes to a ``pull-request/<N>`` branch.
    * - ``.github/workflows/ci-workflow-nightly.yml``
      - Both
      - Runs the broader ``nightly`` matrix on a weekday schedule, with AI failure analysis and Slack notifications.
@@ -54,6 +54,47 @@ invoke any of these directly; they fire on push or schedule.
    * - ``.github/workflows/workflow-dispatch-two-stage-windows.yml``
      - Automatic
      - Executes one producer/consumer chain on Windows.
+
+.. _infra-ci-matrix-selection:
+
+Choosing a matrix
+^^^^^^^^^^^^^^^^^
+
+Nightly and weekly workflows accept two optional ``workflow_dispatch`` inputs.
+The matrix file must be in the same repository as the workflow run and follow the
+:ref:`matrix.yaml format <infra-ci-matrix-yaml>`.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 50 30
+
+   * - Input
+     - Meaning
+     - Default when blank
+   * - ``matrix_ref``
+     - Commit SHA, branch, or tag containing the matrix file.
+     - The commit that triggered the run (``github.sha``).
+   * - ``matrix_path``
+     - Path to the matrix file, relative to the repository root.
+     - ``ci/matrix.yaml``.
+
+Scheduled and push-triggered runs use these defaults. Selecting a matrix ref
+changes the configuration; the workflow's branch or tag still selects the code
+to build and test. PR, nightly, and weekly runs use their usual workflow keys.
+
+Manual dispatch requires `write access to the repository
+<https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow>`_.
+Matrix files control job commands, environments, and runner selection, including
+self-hosted runners. Use matrix refs whose contents you trust.
+
+For example, run the full ``nightly`` matrix on code from ``my-feature`` using
+``ci/custom-matrix.yaml`` from the ``ci-matrices`` branch:
+
+.. code-block:: bash
+
+   gh workflow run ci-workflow-nightly.yml --ref my-feature \
+     -f matrix_ref=ci-matrices                             \
+     -f matrix_path=ci/custom-matrix.yaml
 
 Manual tools
 ~~~~~~~~~~~~
@@ -97,7 +138,7 @@ The build-workflow action
 
 The "build workflow from matrix" job runs the ``build-workflow`` action at
 ``.github/actions/workflow-build/``. Its script ``build-workflow.py`` reads
-``ci/matrix.yaml`` together with the change-detection output from
+the selected matrix file together with the change-detection output from
 ``ci/inspect_changes.py`` and produces ``workflow/workflow.json``. That file holds
 named groups — "CUB GCC", for example — each carrying a ``standalone`` array and a
 ``two_stage`` array of fully expanded job specs.

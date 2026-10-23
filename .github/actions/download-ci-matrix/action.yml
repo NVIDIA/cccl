@@ -1,0 +1,43 @@
+name: "Download CI Matrix"
+description: "Download a CI matrix from a ref and path in this repository."
+
+inputs:
+  matrix_ref:
+    description: >
+      Commit SHA or ref in this repo containing the CI matrix.
+    default: ""
+  matrix_path:
+    description: >
+      Path to the CI matrix file, relative to the repository root.
+    default: ""
+
+outputs:
+  matrix:
+    description: "Path to the downloaded CI matrix file."
+    value: ${{ steps.download.outputs.matrix }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Download CI matrix
+      id: download
+      shell: bash --noprofile --norc -euo pipefail {0}
+      env:
+        GH_TOKEN: ${{ github.token }}
+        INPUT_MATRIX_REF: ${{ inputs.matrix_ref }}
+        INPUT_MATRIX_PATH: ${{ inputs.matrix_path }}
+      run: |
+        default_matrix_ref="${GITHUB_SHA}"
+        default_matrix_path="ci/matrix.yaml"
+        ref="${INPUT_MATRIX_REF:-${default_matrix_ref}}"
+        path="${INPUT_MATRIX_PATH:-${default_matrix_path}}"
+        matrix_file="workflow/matrix.yaml"
+        echo "${path} @ ${ref} -> ${matrix_file}"
+
+        mkdir -p "$(dirname "${matrix_file}")"
+        gh api --method GET \
+          --header "Accept: application/vnd.github.raw+json" \
+          --raw-field "ref=${ref}" \
+          "repos/${GITHUB_REPOSITORY}/contents/${path}" > "${matrix_file}"
+
+        echo "matrix=${matrix_file}" >> "${GITHUB_OUTPUT}"
