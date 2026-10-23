@@ -144,7 +144,18 @@ dependencies = [
 name = "cuda-coop"
 version = "0.0.0"
 dependencies = [
+ "cuda-coop-codegen",
  "cuda-device",
+]
+
+[[package]]
+name = "cuda-coop-codegen"
+version = "0.0.0"
+dependencies = [
+ "libloading",
+ "serde",
+ "serde_json",
+ "sha2",
 ]
 
 [[package]]
