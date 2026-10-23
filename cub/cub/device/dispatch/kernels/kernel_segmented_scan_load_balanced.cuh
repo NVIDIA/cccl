@@ -39,7 +39,6 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/cstdint>
 
@@ -47,20 +46,27 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_scan
 {
-// Type of logical work positions. Output segments do not overlap and every output position fits OffsetT, so for a
-// signed offset the total work is below 2^n by precondition and fits the unsigned type. An unsigned offset uses 64
-// bits.
+// Type of logical work positions for n-bit offsets when the total work is below 2^n. Output segments do not overlap,
+// so outputs whose positions fit OffsetT total at most 2^n.
 template <typename OffsetT>
-using load_balanced_work_t = ::cuda::std::
-  conditional_t<::cuda::std::is_signed_v<OffsetT>, ::cuda::std::make_unsigned_t<OffsetT>, ::cuda::std::uint64_t>;
+using load_balanced_work_t = ::cuda::std::make_unsigned_t<OffsetT>;
+
+// Type of logical work positions when the total work may reach 2^32 with 32-bit offsets.
+using wide_load_balanced_work_t = ::cuda::std::uint64_t;
+
+// Type of an output position, a segment's output begin offset plus an index within the segment. Work wider than
+// OffsetT gives it 64 bits, so that output positions need not fit OffsetT.
+template <typename OffsetT, typename WorkT>
+using load_balanced_output_position_t =
+  ::cuda::std::conditional_t<(sizeof(WorkT) > sizeof(OffsetT)), ::cuda::std::int64_t, OffsetT>;
 
 // A range's begin and the segment holding it, and the segment holding the range's last item. tail_begin is the later
 // of the range's begin and that segment's head.
-template <typename OffsetT>
+template <typename OffsetT, typename WorkT>
 struct boundary_record
 {
-  load_balanced_work_t<OffsetT> offset;
-  load_balanced_work_t<OffsetT> tail_begin;
+  WorkT offset;
+  WorkT tail_begin;
   OffsetT first_segment;
   OffsetT tail_segment;
   bool is_head;
@@ -231,14 +237,11 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void warp_kary_upper_bound_offsets(
 }
 
 // Run by a full warp. range_begin is less than range_end.
-template <typename OffsetT>
-_CCCL_DEVICE _CCCL_FORCEINLINE boundary_record<OffsetT> make_even_boundary_record(
-  const load_balanced_work_t<OffsetT>* offsets,
-  OffsetT num_segments,
-  load_balanced_work_t<OffsetT> range_begin,
-  load_balanced_work_t<OffsetT> range_end)
+template <typename OffsetT, typename WorkT>
+_CCCL_DEVICE _CCCL_FORCEINLINE boundary_record<OffsetT, WorkT>
+make_even_boundary_record(const WorkT* offsets, OffsetT num_segments, WorkT range_begin, WorkT range_end)
 {
-  using work_t           = load_balanced_work_t<OffsetT>;
+  using work_t           = WorkT;
   const work_t values[2] = {range_begin, range_end - work_t{1}};
   OffsetT bounds[2];
   warp_kary_upper_bound_offsets(offsets, num_segments + OffsetT{1}, values, bounds);
@@ -271,21 +274,21 @@ struct reuse_input_begin
 
 // A work-index value that also records, for the input and for the output, whether some segment in its range is not
 // followed by a segment beginning at its end.
-template <typename OffsetT>
+template <typename WorkT>
 struct contiguity_work_index_value
 {
-  load_balanced_work_t<OffsetT> value;
+  WorkT value;
   bool noncontiguous_input;
   bool noncontiguous_output;
 };
 
-template <typename OffsetT>
+template <typename WorkT>
 struct contiguity_work_index_plus
 {
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE contiguity_work_index_value<OffsetT>
-  operator()(contiguity_work_index_value<OffsetT> lhs, contiguity_work_index_value<OffsetT> rhs) const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE contiguity_work_index_value<WorkT>
+  operator()(contiguity_work_index_value<WorkT> lhs, contiguity_work_index_value<WorkT> rhs) const
   {
-    return {static_cast<load_balanced_work_t<OffsetT>>(lhs.value + rhs.value),
+    return {static_cast<WorkT>(lhs.value + rhs.value),
             lhs.noncontiguous_input || rhs.noncontiguous_input,
             lhs.noncontiguous_output || rhs.noncontiguous_output};
   }
@@ -295,27 +298,27 @@ struct contiguity_work_index_plus
 inline constexpr unsigned int contiguous_input_flag  = 1;
 inline constexpr unsigned int contiguous_output_flag = 2;
 
-template <typename OffsetT>
-_CCCL_DEVICE _CCCL_FORCEINLINE load_balanced_work_t<OffsetT> make_work_index_value(OffsetT begin, OffsetT end)
+template <typename WorkT, typename OffsetT>
+_CCCL_DEVICE _CCCL_FORCEINLINE WorkT make_work_index_value(OffsetT begin, OffsetT end)
 {
-  using work_t            = load_balanced_work_t<OffsetT>;
   using unsigned_offset_t = ::cuda::std::make_unsigned_t<OffsetT>;
   if (end <= begin)
   {
-    return work_t{0};
+    return WorkT{0};
   }
-  return static_cast<work_t>(static_cast<unsigned_offset_t>(end))
-       - static_cast<work_t>(static_cast<unsigned_offset_t>(begin));
+  return static_cast<WorkT>(
+    static_cast<unsigned_offset_t>(static_cast<unsigned_offset_t>(end) - static_cast<unsigned_offset_t>(begin)));
 }
 
-// Whether a segment of size items at begin is followed by a segment beginning at next, modulo 2^n for n-bit offsets,
+// Whether a segment of size items at begin is followed by a segment beginning at next, modulo 2^n for n-bit positions,
 // as the main kernel adds address deltas.
-template <typename OffsetT>
-_CCCL_DEVICE _CCCL_FORCEINLINE bool is_followed_by(OffsetT begin, load_balanced_work_t<OffsetT> size, OffsetT next)
+template <typename PositionT, typename WorkT>
+_CCCL_DEVICE _CCCL_FORCEINLINE bool is_followed_by(PositionT begin, WorkT size, PositionT next)
 {
-  using unsigned_offset_t = ::cuda::std::make_unsigned_t<OffsetT>;
-  return static_cast<unsigned_offset_t>(static_cast<unsigned_offset_t>(next) - static_cast<unsigned_offset_t>(begin))
-      == static_cast<unsigned_offset_t>(size);
+  using unsigned_position_t = ::cuda::std::make_unsigned_t<PositionT>;
+  return static_cast<unsigned_position_t>(
+           static_cast<unsigned_position_t>(next) - static_cast<unsigned_position_t>(begin))
+      == static_cast<unsigned_position_t>(size);
 }
 
 //! @brief Scans segment sizes with a decoupled look-back into the work index, where work_index[i] is the number of
@@ -336,6 +339,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE bool is_followed_by(OffsetT begin, load_balanced_
 //! @tparam OffsetT
 //!   Integer type for global offsets
 //!
+//! @tparam WorkT
+//!   Unsigned integer type for logical work positions
+//!
 //! @tparam MainTileStateT
 //!   Tile status interface type of the main kernel
 //!
@@ -343,22 +349,24 @@ template <typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
           typename OutputBeginOffsetIteratorT,
           typename OffsetT,
+          typename WorkT,
           typename MainTileStateT>
 _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(work_index_threads) void device_segmented_scan_work_index_kernel(
   BeginOffsetIteratorT begin_offsets,
   EndOffsetIteratorT end_offsets,
   [[maybe_unused]] OutputBeginOffsetIteratorT output_begin_offsets,
   OffsetT num_segments,
-  load_balanced_work_t<OffsetT>* work_index,
-  ScanTileState<contiguity_work_index_value<OffsetT>> scan_state,
+  WorkT* work_index,
+  ScanTileState<contiguity_work_index_value<WorkT>> scan_state,
   int scan_tiles,
   MainTileStateT main_state,
   int main_tiles)
 {
-  using work_t                            = load_balanced_work_t<OffsetT>;
+  using work_t                            = WorkT;
+  using output_position_t                 = load_balanced_output_position_t<OffsetT, WorkT>;
   static constexpr bool has_output_begins = !::cuda::std::is_same_v<OutputBeginOffsetIteratorT, reuse_input_begin>;
-  using value_t                           = contiguity_work_index_value<OffsetT>;
-  using scan_op_t                         = contiguity_work_index_plus<OffsetT>;
+  using value_t                           = contiguity_work_index_value<WorkT>;
+  using scan_op_t                         = contiguity_work_index_plus<WorkT>;
   using exchange_t                        = BlockExchange<value_t, work_index_threads, work_index_items_per_thread>;
   using block_scan_t                      = BlockScan<value_t, work_index_threads, BLOCK_SCAN_WARP_SCANS>;
   using prefix_op_t                       = TilePrefixCallbackOp<value_t, scan_op_t, ScanTileState<value_t>>;
@@ -419,12 +427,15 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(work_index_threads) void device_segmen
         next_output_begin = static_cast<OffsetT>(output_begin_offsets[index + OffsetT{1}]);
       }
     }
-    const work_t size               = make_work_index_value(begin, end);
+    const work_t size               = make_work_index_value<work_t>(begin, end);
     sizes[item].value               = size;
     sizes[item].noncontiguous_input = has_next && !is_followed_by(begin, size, next_begin);
     if constexpr (has_output_begins)
     {
-      sizes[item].noncontiguous_output = has_next && !is_followed_by(output_begin, size, next_output_begin);
+      sizes[item].noncontiguous_output =
+        has_next
+        && !is_followed_by(
+          static_cast<output_position_t>(output_begin), size, static_cast<output_position_t>(next_output_begin));
     }
     else
     {
@@ -502,6 +513,9 @@ struct noncontiguous_addressing
 //! @tparam OffsetT
 //!   Integer type for global offsets
 //!
+//! @tparam WorkT
+//!   Unsigned integer type for logical work positions
+//!
 //! @tparam ScanOpT
 //!   Scan functor type
 //!
@@ -521,6 +535,7 @@ template <typename PolicyGetter,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
+          typename WorkT,
           typename ScanOpT,
           typename InitValueT,
           typename AccumT,
@@ -542,11 +557,14 @@ private:
   static constexpr int delta_table_size = items_per_tile + 1;
 
   using flag_value_t = KeyValuePair<int, AccumT>;
-  using work_t       = load_balanced_work_t<OffsetT>;
-  // Wrapping arithmetic: a segment's begin may lie below its work index, so deltas are stored modulo 2^n.
-  using delta_t        = ::cuda::std::make_unsigned_t<OffsetT>;
-  using pair_scan_op_t = ScanBySegmentOp<ScanOpT>;
-  using input_value_t  = it_value_t<InputIteratorT>;
+  using work_t       = WorkT;
+  // Wrapping arithmetic: a segment's begin may lie below its work index, so deltas are stored modulo 2^n. Input
+  // positions end at a supplied end offset and so fit OffsetT; output positions are output_position_t.
+  using delta_t           = ::cuda::std::make_unsigned_t<OffsetT>;
+  using output_position_t = load_balanced_output_position_t<OffsetT, WorkT>;
+  using output_delta_t    = ::cuda::std::make_unsigned_t<output_position_t>;
+  using pair_scan_op_t    = ScanBySegmentOp<ScanOpT>;
+  using input_value_t     = it_value_t<InputIteratorT>;
   using wrapped_input_iterator_t =
     ::cuda::std::conditional_t<::cuda::std::is_pointer_v<InputIteratorT>,
                                CacheModifiedInputIterator<policy.load_modifier, input_value_t, OffsetT>,
@@ -577,12 +595,12 @@ private:
   struct tile_deltas_t
   {
     Uninitialized<delta_t[delta_table_size]> input;
-    Uninitialized<delta_t[has_output_deltas ? delta_table_size : 1]> output;
+    Uninitialized<output_delta_t[has_output_deltas ? delta_table_size : 1]> output;
     typename block_count_scan_t::TempStorage count_scan;
     delta_t carried_input;
-    delta_t carried_output;
+    output_delta_t carried_output;
     delta_t uniform_input;
-    delta_t uniform_output;
+    output_delta_t uniform_output;
     bool input_is_uniform;
     bool output_is_uniform;
     bool input_is_contiguous;
@@ -606,7 +624,7 @@ private:
   // shared memory holds them. Otherwise it scans exclusively in the block and keeps one tail.
   static constexpr bool per_thread_tails =
     !is_inclusive
-    && sizeof(storage_t<threads_per_block>) + sizeof(boundary_record<OffsetT>) + sizeof(range_split<work_t>)
+    && sizeof(storage_t<threads_per_block>) + sizeof(boundary_record<OffsetT, work_t>) + sizeof(range_split<work_t>)
          <= max_smem_per_block;
 
   using _TempStorage = storage_t<per_thread_tails ? threads_per_block : 1>;
@@ -625,9 +643,21 @@ private:
     return static_cast<delta_t>(begin) - static_cast<delta_t>(work);
   }
 
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static output_delta_t make_output_delta(OffsetT begin, work_t work)
+  {
+    return static_cast<output_delta_t>(static_cast<output_position_t>(begin)) - static_cast<output_delta_t>(work);
+  }
+
+  // The position of work under delta, of type PositionT, whose unsigned type is DeltaT.
+  template <typename PositionT, typename DeltaT>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static PositionT position(work_t work, DeltaT delta)
+  {
+    return static_cast<PositionT>(static_cast<DeltaT>(work) + delta);
+  }
+
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static OffsetT element_index(work_t work, delta_t delta)
   {
-    return static_cast<OffsetT>(static_cast<delta_t>(work) + delta);
+    return position<OffsetT>(work, delta);
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static flag_value_t
@@ -671,7 +701,7 @@ private:
       {
         if (!deltas.output_is_contiguous)
         {
-          deltas.carried_output = make_delta(static_cast<OffsetT>(addressing.output_begin[first_segment]), head);
+          deltas.carried_output = make_output_delta(static_cast<OffsetT>(addressing.output_begin[first_segment]), head);
         }
       }
     }
@@ -738,7 +768,7 @@ private:
         {
           if (records_output)
           {
-            deltas.output.Alias()[entry] = make_delta(output_begin, head);
+            deltas.output.Alias()[entry] = make_output_delta(output_begin, head);
           }
         }
       }
@@ -775,9 +805,9 @@ private:
     auto& deltas          = temp_storage.deltas;
     const int first_entry = (entry_count > 0 && temp_storage.head_flags.Alias()[0] != 0) ? 1 : 0;
 
-    const auto check = [&](const delta_t* table, delta_t& uniform_delta, bool& is_uniform, delta_t& carried) {
-      const delta_t reference = table[first_entry];
-      bool mismatch           = false;
+    const auto check = [&](const auto* table, auto& uniform_delta, bool& is_uniform, auto& carried) {
+      const auto reference = table[first_entry];
+      bool mismatch        = false;
       for (int entry = first_entry + 1 + lane; entry <= entry_count; entry += detail::warp_threads)
       {
         mismatch = mismatch || table[entry] != reference;
@@ -915,37 +945,69 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void store_tile(
     work_t tile_begin, int valid_items, AccumT (&output_items)[items_per_thread], const int (&entries)[items_per_thread])
   {
-    auto& deltas          = temp_storage.deltas;
-    const bool is_uniform = has_output_deltas ? deltas.output_is_uniform : deltas.input_is_uniform;
-    const delta_t delta   = has_output_deltas ? deltas.uniform_output : deltas.uniform_input;
+    auto& deltas = temp_storage.deltas;
+    if constexpr (has_output_deltas)
+    {
+      store_items<output_position_t>(
+        tile_begin,
+        valid_items,
+        output_items,
+        entries,
+        deltas.output_is_uniform,
+        deltas.uniform_output,
+        deltas.output.Alias());
+    }
+    else
+    {
+      store_items<OffsetT>(
+        tile_begin,
+        valid_items,
+        output_items,
+        entries,
+        deltas.input_is_uniform,
+        deltas.uniform_input,
+        deltas.input.Alias());
+    }
+  }
+
+  template <typename PositionT, typename DeltaT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void store_items(
+    work_t tile_begin,
+    int valid_items,
+    AccumT (&output_items)[items_per_thread],
+    const int (&entries)[items_per_thread],
+    bool is_uniform,
+    DeltaT delta,
+    const DeltaT* table)
+  {
     if (!is_uniform)
     {
-      const delta_t* table = has_output_deltas ? deltas.output.Alias() : deltas.input.Alias();
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < items_per_thread; ++item)
       {
         const int local_index = static_cast<int>(threadIdx.x) * items_per_thread + item;
         if (local_index < valid_items)
         {
-          d_out[element_index(tile_begin + static_cast<work_t>(local_index), table[entries[item]])] =
+          d_out[position<PositionT>(tile_begin + static_cast<work_t>(local_index), table[entries[item]])] =
             output_items[item];
         }
       }
       return;
     }
-    const OffsetT tile_start = element_index(tile_begin, delta);
-    // Output deltas are uniform modulo 2^n, but iterator addition does not wrap: a tile whose output positions pass
-    // the end of OffsetT's range is stored as two runs, from tile_start up to the maximum and from the minimum on, so
-    // that no index wraps. Input positions end at a supplied OffsetT and cannot wrap.
-    if constexpr (has_output_deltas)
+    const PositionT tile_start = position<PositionT>(tile_begin, delta);
+    // Output deltas are uniform modulo 2^n for n-bit positions, but iterator addition does not wrap: a tile whose
+    // output positions pass the end of PositionT's range is stored as two runs, from tile_start up to the maximum and
+    // from the minimum on, so that no index wraps. Input positions end at a supplied OffsetT and cannot wrap, and
+    // 64-bit output positions do not reach the end of their range.
+    if constexpr (has_output_deltas && sizeof(PositionT) < sizeof(::cuda::std::uint64_t))
     {
-      const delta_t positions_after_start =
-        static_cast<delta_t>(::cuda::std::numeric_limits<OffsetT>::max()) - static_cast<delta_t>(tile_start);
-      if (positions_after_start < static_cast<delta_t>(valid_items - 1))
+      const DeltaT positions_after_start =
+        static_cast<DeltaT>(::cuda::std::numeric_limits<PositionT>::max()) - static_cast<DeltaT>(tile_start);
+      if (positions_after_start < static_cast<DeltaT>(valid_items - 1))
       {
         const int items_before_wrap = static_cast<int>(positions_after_start) + 1;
         auto run_before_wrap        = d_out + tile_start;
-        auto run_after_wrap         = d_out + ::cuda::std::numeric_limits<OffsetT>::min();
+        auto run_after_wrap         = d_out + ::cuda::std::numeric_limits<PositionT>::min();
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int item = 0; item < items_per_thread; ++item)
         {
@@ -1318,14 +1380,14 @@ public:
       const OffsetT output_origin = static_cast<OffsetT>(addressing.output_begin[0]);
       if (output_is_contiguous)
       {
-        deltas.uniform_output    = make_delta(output_origin, work_t{0});
+        deltas.uniform_output    = make_output_delta(output_origin, work_t{0});
         deltas.output_is_uniform = true;
       }
     }
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_suffix_first_range(
-    const boundary_record<OffsetT>& range,
+    const boundary_record<OffsetT, work_t>& range,
     work_t range_end,
     OffsetT num_segments,
     int tile_idx,
@@ -1361,6 +1423,7 @@ template <typename PolicyGetter,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
+          typename WorkT,
           typename ScanOpT,
           typename InitValueT,
           typename AccumT,
@@ -1372,12 +1435,13 @@ inline constexpr ::cuda::std::size_t load_balanced_kernel_smem_bytes =
          InputIteratorT,
          OutputIteratorT,
          OffsetT,
+         WorkT,
          ScanOpT,
          InitValueT,
          AccumT,
          ForceInclusive,
          AddressingT>::TempStorage)
-  + sizeof(boundary_record<OffsetT>) + sizeof(range_split<load_balanced_work_t<OffsetT>>);
+  + sizeof(boundary_record<OffsetT, WorkT>) + sizeof(range_split<WorkT>);
 
 //! @brief Scans the block's range of the work items. The work is split evenly across the blocks the grid
 //!        uses, and a range that begins inside a segment takes that segment's prefix from the blocks before it
@@ -1394,6 +1458,9 @@ inline constexpr ::cuda::std::size_t load_balanced_kernel_smem_bytes =
 //!
 //! @tparam OffsetT
 //!   Integer type for global offsets
+//!
+//! @tparam WorkT
+//!   Unsigned integer type for logical work positions
 //!
 //! @tparam ScanOpT
 //!   Scan functor type
@@ -1414,6 +1481,7 @@ template <typename LoadBalancedPolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
+          typename WorkT,
           typename ScanOpT,
           typename InitValueT,
           typename AccumT,
@@ -1427,7 +1495,7 @@ __launch_bounds__(current_policy<LoadBalancedPolicySelector>().threads_per_block
   _CCCL_KERNEL_ATTRIBUTES void device_segmented_scan_load_balanced_kernel(
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    const load_balanced_work_t<OffsetT>* work_index,
+    const WorkT* work_index,
     OffsetT num_segments,
     ScanOpT scan_op,
     InitValueT init_value,
@@ -1438,7 +1506,7 @@ __launch_bounds__(current_policy<LoadBalancedPolicySelector>().threads_per_block
     ReduceByKeyScanTileState<AccumT, int> tile_state,
     AddressingT addressing)
 {
-  using work_t                 = load_balanced_work_t<OffsetT>;
+  using work_t                 = WorkT;
   static constexpr auto policy = current_policy<LoadBalancedPolicySelector>();
   static_assert(policy.load_modifier != CacheLoadModifier::LOAD_LDG,
                 "The memory consistency model does not apply to texture accesses");
@@ -1457,6 +1525,7 @@ __launch_bounds__(current_policy<LoadBalancedPolicySelector>().threads_per_block
     InputIteratorT,
     OutputIteratorT,
     OffsetT,
+    WorkT,
     ScanOpT,
     ActualInitValueT,
     AccumT,
@@ -1464,7 +1533,7 @@ __launch_bounds__(current_policy<LoadBalancedPolicySelector>().threads_per_block
     AddressingT>;
 
   __shared__ typename agent_t::TempStorage temp_storage;
-  __shared__ boundary_record<OffsetT> begin_record;
+  __shared__ boundary_record<OffsetT, work_t> begin_record;
   __shared__ range_split<work_t> split;
   static_assert(
     load_balanced_kernel_smem_bytes<
@@ -1472,6 +1541,7 @@ __launch_bounds__(current_policy<LoadBalancedPolicySelector>().threads_per_block
       InputIteratorT,
       OutputIteratorT,
       OffsetT,
+      WorkT,
       ScanOpT,
       ActualInitValueT,
       AccumT,
@@ -1524,8 +1594,8 @@ __launch_bounds__(current_policy<LoadBalancedPolicySelector>().threads_per_block
     return;
   }
 
-  const boundary_record<OffsetT> begin = begin_record;
-  const work_t end                     = even_split_boundary(split.total, virtual_blocks, block + 1);
+  const boundary_record<OffsetT, work_t> begin = begin_record;
+  const work_t end                             = even_split_boundary(split.total, virtual_blocks, block + 1);
   agent.consume_suffix_first_range(begin, end, num_segments, block, tile_state);
 }
 } // namespace detail::segmented_scan

@@ -89,6 +89,20 @@ inline constexpr bool begin_offsets_comparable =
   && ::cuda::std::is_same_v<::cuda::std::remove_cv_t<::cuda::std::remove_pointer_t<BeginOffsetIteratorInputT>>,
                             ::cuda::std::remove_cv_t<::cuda::std::remove_pointer_t<BeginOffsetIteratorOutputT>>>;
 
+// The total item count that env supplies, or ::cuda::std::nullopt when it supplies none.
+template <typename EnvT>
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto supplied_num_items([[maybe_unused]] const EnvT& env)
+{
+  if constexpr (::cuda::std::execution::__queryable_with<EnvT, get_segmented_scan_num_items_t>)
+  {
+    return ::cuda::std::int64_t{get_segmented_scan_num_items_t{}(env)};
+  }
+  else
+  {
+    return ::cuda::std::nullopt;
+  }
+}
+
 template <ForceInclusive EnforceInclusive,
           bool ReuseInputBegin,
           typename EnvT,
@@ -117,12 +131,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_from_env(
 {
   if constexpr (::cuda::std::execution::__queryable_with<EnvT, get_segmented_scan_load_balancing_t>)
   {
-    // NOLINTNEXTLINE(misc-const-correctness)
-    ::cuda::std::optional<::cuda::std::int64_t> num_items;
-    if constexpr (::cuda::std::execution::__queryable_with<EnvT, get_segmented_scan_num_items_t>)
-    {
-      num_items = get_segmented_scan_num_items_t{}(env);
-    }
+    const auto num_items = supplied_num_items(env);
 
     using accum_t = deduced_accum_t<ScanOpT, InitValueT, it_value_t<InputIteratorT>>;
     using tuning_env_t =
@@ -297,9 +306,10 @@ _CCCL_GLOBAL_CONSTANT auto segmented_scan_load_balancing = ::cuda::std::executio
 //!   size.
 //! - Output segments must not overlap. Input segments may.
 //! - With either option, every output position (a segment's output begin offset plus an index within the segment)
-//!   must be representable by the offset type. With load balancing, signed 32-bit offsets and no ``num_items``, the
-//!   total number of items must also not be exactly 2^32 (non-overlapping outputs whose positions fit the offset type
-//!   total at most 2^32). Use 64-bit offsets or pass ``num_items`` for such a range.
+//!   must be representable by the offset type, except with load balancing, 32-bit offsets and a ``num_items`` of 2^32
+//!   or more. With load balancing, 32-bit offsets and no ``num_items``, the total number of items must be below 2^32;
+//!   as non-overlapping outputs whose positions fit the offset type total at most 2^32, this excludes only a total of
+//!   exactly 2^32. For a total of 2^32 or more, use 64-bit offsets or pass ``num_items``.
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_env_api.cu
 //!      :language: c++
