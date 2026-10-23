@@ -62,6 +62,7 @@ import os
 import re
 import struct
 import sys
+from pathlib import Path
 
 import yaml
 
@@ -1410,7 +1411,7 @@ def parse_workflow_dispatch_groups(args, workflow_name):
     return workflow_dispatch_groups
 
 
-def write_outputs(final_workflow):
+def write_outputs(final_workflow, output_dir):
     job_list = []
     runner_counts = {}
     id_to_full_job_name = {}
@@ -1457,16 +1458,16 @@ def write_outputs(final_workflow):
 
     runner_json = {"heading": runner_heading, "body": runner_counts_table}
 
-    os.makedirs("workflow", exist_ok=True)
-    write_json_file("workflow/workflow.json", final_workflow)
-    write_json_file("workflow/job_ids.json", id_to_full_job_name)
-    write_text_file("workflow/job_list.txt", "\n".join(job_list))
-    write_json_file("workflow/runner_summary.json", runner_json)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    write_json_file(output_dir / "workflow.json", final_workflow)
+    write_json_file(output_dir / "job_ids.json", id_to_full_job_name)
+    write_text_file(output_dir / "job_list.txt", "\n".join(job_list))
+    write_json_file(output_dir / "runner_summary.json", runner_json)
 
 
-def write_override_matrix(override_matrix):
-    os.makedirs("workflow", exist_ok=True)
-    write_json_file("workflow/override.json", override_matrix)
+def write_override_matrix(override_matrix, output_dir):
+    output_dir.mkdir(parents=True, exist_ok=True)
+    write_json_file(output_dir / "override.json", override_matrix)
 
 
 def print_gha_workflow(args):
@@ -1476,7 +1477,7 @@ def print_gha_workflow(args):
         if override_matrix and len(override_matrix) > 0:
             print(f"::notice::Using 'override' workflow instead of '{workflow_names}'")
             workflow_names = ["override"]
-            write_override_matrix(override_matrix)
+            write_override_matrix(override_matrix, args.output_dir)
 
     final_workflow = {}
     for workflow_name in workflow_names:
@@ -1488,7 +1489,7 @@ def print_gha_workflow(args):
 
     final_workflow = finalize_workflow_dispatch_groups(final_workflow)
 
-    write_outputs(final_workflow)
+    write_outputs(final_workflow, args.output_dir)
 
 
 def print_devcontainer_info(args):
@@ -1566,6 +1567,12 @@ def preprocess_matrix_yaml(matrix):
 def main():
     parser = argparse.ArgumentParser(description="Compute matrix for workflow")
     parser.add_argument("matrix_file", help="Path to the matrix YAML file")
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("workflow"),
+        help="Directory for generated workflow files (default: %(default)s).",
+    )
     parser_mode_group = parser.add_argument_group(
         "Output Mode", "Must specify one of these options."
     )

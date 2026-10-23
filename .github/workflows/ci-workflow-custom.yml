@@ -49,5 +49,6 @@ jobs:
     secrets: inherit
     with:
       workflows: ${{ inputs.workflows }}
+      ci_profile: ""
       matrix_ref: ${{ inputs.matrix_ref }}
       matrix_path: ${{ inputs.matrix_path }}
