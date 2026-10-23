@@ -26,7 +26,9 @@
 //! assert_eq!(items[0], 9);
 //! ```
 //!
-//! Device queries use Oxide and the pinned `nightly-2026-10-11` toolchain.
+//! Device queries use Oxide and the pinned `1.99.1` toolchain.
+//! Plain Cargo commands also require `RUSTC_BOOTSTRAP=1`, set by this workspace's
+//! `.cargo/config.toml`; standalone consumers must supply that setting themselves.
 //! [`this_block`] and the other dimension-free group constructors describe
 //! the executing thread's current launch. Queries grant no collective
 //! participation or synchronization guarantee. This crate supplies no
