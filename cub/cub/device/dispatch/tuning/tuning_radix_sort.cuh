@@ -835,7 +835,8 @@ _CCCL_HOST_DEVICE_API constexpr auto get_sm100_tuning(int key_size, int value_si
     // ipt_21.tpb_256 1.220607  1.000239  1.196400  1.390471
     if (value_size == 4 && offset_size == 8) return small_key_tuning_values{256, 21};
 
-    // if (value_size == 8 && offset_size == 8) // same as previous tuning
+    // ipt_22.tpb_352 1.208726  1.025035  1.189955  1.320080
+    if (value_size == 8 && offset_size == 8) return small_key_tuning_values{352, 22};
 
     // if (value_size == 16 && offset_size == 8) // same as previous tuning
 
@@ -1971,7 +1972,11 @@ struct policy_selector
 
     if (cc >= ::cuda::compute_capability{10, 0})
     {
-      return make_onesweep_small_key_policy(get_sm100_tuning(key_size, value_size, offset_size, key_type));
+      // Only the sm100 int64 key-value tuning with 64-bit offsets overrides the large-key policy
+      const bool use_tuning_for_large_keys =
+        cc < ::cuda::compute_capability{10, 1} && key_type == type_t::int64 && value_size == 8 && offset_size == 8;
+      return make_onesweep_small_key_policy(
+        get_sm100_tuning(key_size, value_size, offset_size, key_type), use_tuning_for_large_keys);
     }
 
     if (cc >= ::cuda::compute_capability{9, 0})

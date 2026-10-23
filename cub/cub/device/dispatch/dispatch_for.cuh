@@ -15,6 +15,7 @@
 
 #include <cub/agent/agent_for.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/kernels/kernel_for_each.cuh>
 #include <cub/device/dispatch/tuning/tuning_for.cuh>
@@ -22,8 +23,6 @@
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
-
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__host_stdlib/sstream>
@@ -61,7 +60,7 @@ invoke_dynamic_block_size(OffsetT num_items, OpT op, cudaStream_t stream, ForPol
     "");
 
   if (const auto error = CubDebug(
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+        detail::TripleChevronFactory{}(
           static_cast<unsigned int>(num_tiles), static_cast<unsigned int>(threads_per_block), 0, stream)
           .doit(kernel, num_items, op)))
   {
@@ -97,7 +96,7 @@ invoke_static_block_size(OffsetT num_items, OpT op, cudaStream_t stream, ForPoli
     "");
 
   if (const auto error = CubDebug(
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+        detail::TripleChevronFactory{}(
           static_cast<unsigned int>(num_tiles), static_cast<unsigned int>(threads_per_block), 0, stream)
           .doit(detail::for_each::static_kernel<PolicySelector, OffsetT, OpT>, num_items, op)))
   {
