@@ -788,7 +788,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartit
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     return Invoke<ActivePolicyT>(
-      detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
+      detail::scan::DeviceCompactInitKernelSource<ScanTileStateT, NumSelectedIteratorT>::InitKernel(),
       detail::select::DeviceSelectSweepKernel<
         detail::select::policy_selector_from_hub<PolicyHub>,
         InputIteratorT,
@@ -987,7 +987,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
 
     if (const auto error = CubDebug(
           launcher_factory(init_grid_size, init_kernel_threads, 0, stream)
-            .doit(detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
+            .doit(detail::scan::DeviceCompactInitKernelSource<ScanTileStateT, NumSelectedIteratorT>::InitKernel(),
                   tile_status,
                   current_num_tiles,
                   d_num_selected_out)))

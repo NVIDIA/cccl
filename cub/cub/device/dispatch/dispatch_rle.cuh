@@ -542,7 +542,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     return Invoke<ActivePolicyT>(
-      detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
+      detail::scan::DeviceCompactInitKernelSource<ScanTileStateT, NumRunsOutputIteratorT>::InitKernel(),
       detail::rle::DeviceRleSweepKernel<
         detail::rle::policy_selector_from_hub<PolicyHub>,
         InputIteratorT,
@@ -733,7 +733,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     _CUB_LOG_KERNEL_LAUNCH("device_scan_init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
     if (const auto error = CubDebug(
           detail::TripleChevronFactory{}(init_grid_size, init_kernel_threads, 0, stream)
-            .doit(&detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
+            .doit(detail::scan::DeviceCompactInitKernelSource<ScanTileStateT, NumRunsOutputIteratorT>::InitKernel(),
                   tile_status,
                   num_current_tiles,
                   d_num_runs_out)))

@@ -237,7 +237,7 @@ template <typename KeysIt1,
         ::cuda::std::max(1, static_cast<int>(::cuda::ceil_div(num_tiles, Offset{init_kernel_threads})));
       if (const auto error = CubDebug(
             launcher_factory(init_grid_size, init_kernel_threads, 0, stream)
-              .doit(detail::scan::DeviceCompactInitKernel<scan_tile_state_t, NumSelectedIteratorT>,
+              .doit(detail::scan::DeviceCompactInitKernelSource<scan_tile_state_t, NumSelectedIteratorT>::InitKernel(),
                     tile_state,
                     static_cast<int>(num_tiles),
                     d_num_selected_out)))

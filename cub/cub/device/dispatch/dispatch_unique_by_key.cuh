@@ -52,8 +52,10 @@ template <typename PolicySelectorT,
 
 struct DeviceUniqueByKeyKernelSource
 {
-  CUB_DEFINE_KERNEL_GETTER(CompactInitKernel,
-                           detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>);
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto CompactInitKernel()
+  {
+    return detail::scan::DeviceCompactInitKernelSource<ScanTileStateT, NumSelectedIteratorT>::InitKernel();
+  }
 
   CUB_DEFINE_KERNEL_GETTER(
     UniqueByKeySweepKernel,

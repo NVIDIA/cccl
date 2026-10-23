@@ -174,7 +174,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
     _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
     if (const auto error = CubDebug(
           detail::TripleChevronFactory{}(init_grid_size, init_kernel_threads, 0, stream)
-            .doit(&detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
+            .doit(detail::scan::DeviceCompactInitKernelSource<ScanTileStateT, NumRunsOutputIteratorT>::InitKernel(),
                   tile_state,
                   num_current_tiles,
                   d_num_runs_out)))

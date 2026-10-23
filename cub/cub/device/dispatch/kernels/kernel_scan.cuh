@@ -210,6 +210,12 @@ DeviceCompactInitKernel(ScanTileStateT tile_state, const int num_tiles, NumSelec
   }
 }
 
+template <typename ScanTileStateT, typename NumSelectedIteratorT>
+struct DeviceCompactInitKernelSource
+{
+  CUB_DEFINE_KERNEL_GETTER(InitKernel, DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>);
+};
+
 _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int get_device_scan_launch_bounds() noexcept
