@@ -229,3 +229,31 @@ CUB_TEST("DeviceFor::ForEachInLayout no duplicates", "[ForEachInLayout][no_dupli
   auto num_of_once_marked_items = thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1);
   REQUIRE(num_of_once_marked_items == num_items);
 }
+
+struct call_counter_t
+{
+  int* d_count;
+
+  template <class... Ts>
+  __device__ void operator()(Ts...) const
+  {
+    atomicAdd(d_count, 1);
+  }
+};
+
+CUB_TEST(
+  "DeviceFor::ForEachInLayout handles extents with a zero dimension", "[ForEachInLayout][device]", CUB_SMALL, layouts)
+{
+  using layout_t  = c2h::get<0, TestType>;
+  using ext_t     = cuda::std::dextents<int, 3>;
+  using mapping_t = typename layout_t::template mapping<ext_t>;
+
+  c2h::device_vector<int> count(1, 0);
+  const call_counter_t op{thrust::raw_pointer_cast(count.data())};
+
+  device_for_each_in_layout(mapping_t{ext_t{0, 3, 4}}, op);
+  device_for_each_in_layout(mapping_t{ext_t{3, 0, 4}}, op);
+  device_for_each_in_layout(mapping_t{ext_t{3, 4, 0}}, op);
+
+  REQUIRE(count[0] == 0);
+}

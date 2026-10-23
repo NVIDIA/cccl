@@ -278,7 +278,8 @@ try
     static_cast<int>(d_samples.value_type.size),
     num_channels,
     num_active_channels,
-    is_evenly_segmented};
+    is_evenly_segmented,
+    cccl_type_enum_to_cub_type(d_samples.value_type.type)};
 
   const auto active_policy = policy_sel(cc);
 

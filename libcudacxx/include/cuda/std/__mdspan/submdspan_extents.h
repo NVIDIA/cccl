@@ -23,19 +23,14 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
-#include <cuda/std/__fwd/mdspan.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__mdspan/concepts.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__mdspan/submdspan_helper.h>
-#include <cuda/std/__tuple_dir/tuple_like.h>
-#include <cuda/std/__tuple_dir/tuple_size.h>
-#include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/__type_traits/integral_constant_like.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__utility/integer_sequence.h>
-#include <cuda/std/array>
 #include <cuda/std/tuple>
 
 #include <cuda/std/__cccl/prologue.h>

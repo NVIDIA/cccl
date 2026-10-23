@@ -3530,6 +3530,7 @@ UNITTEST("alternation and repetition nested under & and |")
   // same expressions written with the alternation outermost always compiled, which is why the
   // documented forms (`notify & retry * 3 | subst(-1)`) never exposed it.
   using namespace ::cuda::experimental::stf::exception_policies;
+#  if _CCCL_HAS_EXCEPTIONS()
   struct key : ::std::logic_error
   {
     key()
@@ -3564,15 +3565,16 @@ UNITTEST("alternation and repetition nested under & and |")
   EXPECT((on_throw(catch_only<key>(subst(1)) | (catch_only<boom>(subst(2)) | subst(3))) << throw_other) == 3);
 
   // `*` with a value-answering fallback, nested under `&`.
-  int n = 0;
-  EXPECT((on_throw(notify(quiet) & (retry * 2 | subst(-1))) << [&]() -> int {
-           if (++n < 3)
-           {
-             throw boom();
-           }
-           return n;
-         })
-         == 3);
+  int n                = 0;
+  const auto third_try = [&]() -> int {
+    ++n;
+    if (n < 3)
+    {
+      throw boom();
+    }
+    return n;
+  };
+  EXPECT((on_throw(notify(quiet) & (retry * 2 | subst(-1))) << third_try) == 3);
   n = 0;
   EXPECT((on_throw(notify(quiet) & (retry * 1 | subst(-1))) << [&]() -> int {
            ++n;
@@ -3601,6 +3603,7 @@ UNITTEST("alternation and repetition nested under & and |")
     throw boom();
   };
   EXPECT(&r == &cell);
+#  endif // _CCCL_HAS_EXCEPTIONS()
 };
 
 UNITTEST("policy inventory")

@@ -14,17 +14,21 @@
 #endif // no system header
 
 #include <cub/detail/deferred_parameter.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/rfa.cuh>
+#include <cub/detail/uninitialized_copy.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/util_arch.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#include <cuda/__argument/argument.h>
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/min_max.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -48,7 +52,7 @@ struct deterministic_num_items
 template <typename KernelNumItemsT>
 struct deterministic_num_items<KernelNumItemsT, false>
 {
-  using element_t = it_value_t<KernelNumItemsT>;
+  using element_t = typename ::cuda::args::__traits<KernelNumItemsT>::element_type;
   using type      = ::cuda::std::conditional_t<
     ::cuda::std::is_signed_v<element_t> && sizeof(element_t) == 4,
     int,

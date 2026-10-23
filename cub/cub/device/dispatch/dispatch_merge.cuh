@@ -15,14 +15,13 @@
 
 #include <cub/agent/agent_merge.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
 #include <cub/util_vsmem.cuh>
-
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__host_stdlib/sstream>
@@ -266,8 +265,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       const int partition_grid_size = static_cast<int>(::cuda::ceil_div(num_diagonals, threads_per_partition_block));
 
       if (const auto error = CubDebug(
-            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-              partition_grid_size, threads_per_partition_block, 0, stream)
+            launcher_factory(partition_grid_size, threads_per_partition_block, 0, stream)
               .doit(device_partition_merge_path_kernel<
                       PolicySelector,
                       KeyIt1,
@@ -297,8 +295,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     // merge kernel
     {
       if (const auto error = CubDebug(
-            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-              static_cast<int>(num_tiles), static_cast<int>(AgentT::threads_per_block), 0, stream)
+            launcher_factory(static_cast<int>(num_tiles), static_cast<int>(AgentT::threads_per_block), 0, stream)
               .doit(
                 device_merge_kernel<PolicySelector, KeyIt1, ValueIt1, KeyIt2, ValueIt2, KeyIt3, ValueIt3, Offset, CompareOp>,
                 d_keys1,

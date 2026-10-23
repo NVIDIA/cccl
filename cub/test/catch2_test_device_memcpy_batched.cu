@@ -14,6 +14,7 @@
 #include "catch2_test_device_memcpy_batched_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -107,9 +108,9 @@ try
 
   REQUIRE(d_out == h_out);
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
+  c2h::skip_if_allocation_failure();
 }
 
 CUB_TEST("DeviceMemcpy::Batched works for a very large buffer",
@@ -141,9 +142,9 @@ try
   const bool all_equal = thrust::equal(d_out.cbegin(), d_out.cend(), input_data_it);
   REQUIRE(all_equal == true);
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
+  c2h::skip_if_allocation_failure();
 }
 
 CUB_TEST("DeviceMemcpy::Batched works for a very large number of buffer",
@@ -224,7 +225,7 @@ try
 
   REQUIRE(d_out == h_out);
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
+  c2h::skip_if_allocation_failure();
 }

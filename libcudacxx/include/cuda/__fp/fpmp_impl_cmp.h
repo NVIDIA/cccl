@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -35,8 +35,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 #if !(defined _CCCL_FPMP_USE_LIB)
 /*
  * --------------------------------------------------------------------
@@ -146,37 +145,37 @@ template <>
 _CCCL_HOST_DEVICE_API inline bool
 __fpmp2_cmp_eq<float>(const float __x_hi, const float __x_lo, const float __y_hi, const float __y_lo) noexcept
 {
-  return __fp32mp2_cmp_eq(__x_hi, __x_lo, __y_hi, __y_lo);
+  return ::cuda::__fp32mp2_cmp_eq(__x_hi, __x_lo, __y_hi, __y_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline bool
 __fpmp2_cmp_ne<float>(const float __x_hi, const float __x_lo, const float __y_hi, const float __y_lo) noexcept
 {
-  return __fp32mp2_cmp_ne(__x_hi, __x_lo, __y_hi, __y_lo);
+  return ::cuda::__fp32mp2_cmp_ne(__x_hi, __x_lo, __y_hi, __y_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline bool
 __fpmp2_cmp_lt<float>(const float __x_hi, const float __x_lo, const float __y_hi, const float __y_lo) noexcept
 {
-  return __fp32mp2_cmp_lt(__x_hi, __x_lo, __y_hi, __y_lo);
+  return ::cuda::__fp32mp2_cmp_lt(__x_hi, __x_lo, __y_hi, __y_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline bool
 __fpmp2_cmp_gt<float>(const float __x_hi, const float __x_lo, const float __y_hi, const float __y_lo) noexcept
 {
-  return __fp32mp2_cmp_gt(__x_hi, __x_lo, __y_hi, __y_lo);
+  return ::cuda::__fp32mp2_cmp_gt(__x_hi, __x_lo, __y_hi, __y_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline bool
 __fpmp2_cmp_le<float>(const float __x_hi, const float __x_lo, const float __y_hi, const float __y_lo) noexcept
 {
-  return __fp32mp2_cmp_le(__x_hi, __x_lo, __y_hi, __y_lo);
+  return ::cuda::__fp32mp2_cmp_le(__x_hi, __x_lo, __y_hi, __y_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline bool
 __fpmp2_cmp_ge<float>(const float __x_hi, const float __x_lo, const float __y_hi, const float __y_lo) noexcept
 {
-  return __fp32mp2_cmp_ge(__x_hi, __x_lo, __y_hi, __y_lo);
+  return ::cuda::__fp32mp2_cmp_ge(__x_hi, __x_lo, __y_hi, __y_lo);
 }
 
 // -- fp64 template specializations --
@@ -184,41 +183,41 @@ template <>
 _CCCL_HOST_DEVICE_API inline bool
 __fpmp2_cmp_eq<double>(const double __x_hi, const double __x_lo, const double __y_hi, const double __y_lo) noexcept
 {
-  return __fp64mp2_cmp_eq(__x_hi, __x_lo, __y_hi, __y_lo);
+  return ::cuda::__fp64mp2_cmp_eq(__x_hi, __x_lo, __y_hi, __y_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline bool
 __fpmp2_cmp_ne<double>(const double __x_hi, const double __x_lo, const double __y_hi, const double __y_lo) noexcept
 {
-  return __fp64mp2_cmp_ne(__x_hi, __x_lo, __y_hi, __y_lo);
+  return ::cuda::__fp64mp2_cmp_ne(__x_hi, __x_lo, __y_hi, __y_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline bool
 __fpmp2_cmp_lt<double>(const double __x_hi, const double __x_lo, const double __y_hi, const double __y_lo) noexcept
 {
-  return __fp64mp2_cmp_lt(__x_hi, __x_lo, __y_hi, __y_lo);
+  return ::cuda::__fp64mp2_cmp_lt(__x_hi, __x_lo, __y_hi, __y_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline bool
 __fpmp2_cmp_gt<double>(const double __x_hi, const double __x_lo, const double __y_hi, const double __y_lo) noexcept
 {
-  return __fp64mp2_cmp_gt(__x_hi, __x_lo, __y_hi, __y_lo);
+  return ::cuda::__fp64mp2_cmp_gt(__x_hi, __x_lo, __y_hi, __y_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline bool
 __fpmp2_cmp_le<double>(const double __x_hi, const double __x_lo, const double __y_hi, const double __y_lo) noexcept
 {
-  return __fp64mp2_cmp_le(__x_hi, __x_lo, __y_hi, __y_lo);
+  return ::cuda::__fp64mp2_cmp_le(__x_hi, __x_lo, __y_hi, __y_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline bool
 __fpmp2_cmp_ge<double>(const double __x_hi, const double __x_lo, const double __y_hi, const double __y_lo) noexcept
 {
-  return __fp64mp2_cmp_ge(__x_hi, __x_lo, __y_hi, __y_lo);
+  return ::cuda::__fp64mp2_cmp_ge(__x_hi, __x_lo, __y_hi, __y_lo);
 }
 
 #endif // _CCCL_FPMP_USE_LIB
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

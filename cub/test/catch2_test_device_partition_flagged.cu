@@ -21,6 +21,7 @@
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 template <class T, class FlagT>
 static c2h::host_vector<T> get_reference(const c2h::device_vector<T>& in, const c2h::device_vector<FlagT>& flags)
@@ -493,8 +494,7 @@ try
   REQUIRE(num_selected_out[0] == cut_off_index);
   check_result_helper.check_all_results_correct();
 }
-catch (std::bad_alloc&)
+catch (...)
 {
-  // Exceeding memory is not a failure.
-  SUCCEED("exceeding memory is not a failure");
+  c2h::skip_if_allocation_failure();
 }

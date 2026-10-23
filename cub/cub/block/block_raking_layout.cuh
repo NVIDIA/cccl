@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 
 CUB_NAMESPACE_BEGIN
 

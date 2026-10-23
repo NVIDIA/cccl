@@ -217,7 +217,12 @@ class LinuxLocalTI(DefaultTargetInfo):
         )
         flags += ["-lm", "-lgcc_s", "-lgcc"]
         if enable_threads:
-            flags += ["-lpthread", "-lrt"]
+            if self.full_config.cxx.type == "nvcc":
+                # These are host-only libraries. Passing them to nvlink makes it
+                # warn about glibc's empty compatibility archives under -Werror.
+                flags += ["-Xlinker=-lpthread,-lrt"]
+            else:
+                flags += ["-lpthread", "-lrt"]
         flags += ["-lc"]
         builtins_lib = self.full_config.get_lit_conf("builtins_library")
         if builtins_lib:

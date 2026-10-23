@@ -11,7 +11,7 @@
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__cstddef/types.h>
 
-#include <cuda/experimental/__multi_gpu/concepts.h>
+#include <cuda/experimental/mgmn/concepts>
 
 #include <testing.cuh>
 
