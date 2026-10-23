@@ -21,7 +21,7 @@ jobs:
       github.event.issue.pull_request &&
       github.event.issue.state == 'open' &&
       github.event.comment.user.type == 'User' &&
-      contains(github.event.comment.body, '/sass diff')
+      contains(github.event.comment.body, '/sass diff ok')
     runs-on: ubuntu-slim
 
     steps:
@@ -38,8 +38,9 @@ jobs:
             // and
             //
             // /sass diff ok [<short SHA>](<link to full commit SHA>)
-            const plainMatch = /(?:^|\s)\/sass diff\s+ok\s+([0-9a-f]{40})\b/.exec(comment.body);
-            const linkMatch  = /(?:^|\s)\/sass diff\s+ok\s+\[([0-9a-f]{7,40})\]\((https:\/\/github\.com\/[^\s)]+\/([0-9a-f]{40}))\)/.exec(comment.body);
+            const body = comment.body.trim();
+            const plainMatch = /^\/sass diff ok\s+([0-9a-f]{40})$/.exec(body);
+            const linkMatch  = /^\/sass diff ok\s+\[([0-9a-f]{7,40})\]\((https:\/\/github\.com\/[^\s)]+\/([0-9a-f]{40}))\)$/.exec(body);
 
             let sha;
 

@@ -613,11 +613,7 @@ jobs:
 
   sass-results:
     name: Post SASS comparison results
-    if: >-
-      ${{
-        needs.build-workflow.outputs.sass_enabled == 'true' &&
-        needs.build-workflow.outputs.pr_number != ''
-      }}
+    if: needs.build-workflow.outputs.sass_enabled == 'true'
     needs: [build-workflow, dispatch-sass-diff]
     permissions:
       actions: read
@@ -778,24 +774,12 @@ jobs:
           fi
           check_result "dispatch-bench" "${expected_bench_result}" "${{needs.dispatch-bench.result}}"
 
-          # Test emptiness in the expression. `toJSON` pretty-prints multi-line output,
-          # and the embedded newlines break the `[[ ]]` conditional.
-          expected_sass_result="skipped"
-          if [[ "${{ needs.build-workflow.outputs.sass_enabled }}" == "true" ]] \
-            && [[ "${{ fromJSON(needs.build-workflow.outputs.sass_matrix).include[0] != null }}" == "true" ]]; then
-            expected_sass_result="success"
-          fi
-          check_result "dispatch-sass-diff" "${expected_sass_result}" "${{needs.dispatch-sass-diff.result}}"
-
-          # sass-results skips when dispatch-sass-diff fails. dispatch-sass-diff reports
-          # that failure, so only check sass-results when the dispatch job succeeded.
-          if [[ "${{ needs.dispatch-sass-diff.result }}" == "${expected_sass_result}" ]]; then
-            expected_sass_results_result="skipped"
-            if [[ "${expected_sass_result}" == "success" ]] \
-              && [[ "${{ needs.build-workflow.outputs.pr_number }}" != "" ]]; then
-              expected_sass_results_result="success"
-            fi
-            check_result "sass-results" "${expected_sass_results_result}" "${{needs.sass-results.result}}"
+          if [[ "${{ needs.build-workflow.outputs.sass_enabled }}" == "true" ]]; then
+            # sass-results can only succeed after dispatch-sass-diff succeeds.
+            check_result "sass-results" "success" "${{needs.sass-results.result}}"
+          else
+            check_result "dispatch-sass-diff" "skipped" "${{needs.dispatch-sass-diff.result}}"
+            check_result "sass-results"       "skipped" "${{needs.sass-results.result}}"
           fi
 
           bench_enabled="${{ needs.build-workflow.outputs.bench_enabled }}"
