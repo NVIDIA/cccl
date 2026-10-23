@@ -36,7 +36,7 @@ retaining the other:
    :language: rust
    :start-after: // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-With the matching Oxide and ``nightly-2026-10-11`` installed, run from a complete
+With the matching Oxide and ``1.99.1`` installed, run from a complete
 CCCL checkout:
 
 .. code-block:: shell

@@ -4,9 +4,6 @@
 Ranking integer key digits
 ==========================
 
-This example requires Oxide's generic native-registration support. The revision
-currently pinned by the Cargo manifests does not yet include that support.
-
 ``radix_rank_keys`` assigns each input item its zero-based position in the
 stable order of selected key digits across a complete Block:
 
@@ -43,7 +40,7 @@ the preserved payload and source keys:
    :language: rust
    :start-after: // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-With an Oxide revision containing that support and ``nightly-2026-10-11``
+With the pinned Oxide revision and Rust ``1.99.1``
 installed, run from a complete CCCL checkout:
 
 .. code-block:: shell

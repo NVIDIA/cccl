@@ -4,9 +4,6 @@
 Sorting integer keys
 ====================
 
-This example requires Oxide's generic native-registration support. The revision
-currently pinned by the Cargo manifests does not yet include that support.
-
 ``radix_sort_keys`` stably sorts a complete Block's integer keys and returns a
 fresh payload with the same type, item count and alignment. Default options
 sort all bits in ascending order:
@@ -39,7 +36,7 @@ ties. Independent host sorts check all results and input preservation:
    :language: rust
    :start-after: // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-With an Oxide revision containing that support and ``nightly-2026-10-11``
+With the pinned Oxide revision and Rust ``1.99.1``
 installed, run from a complete CCCL checkout:
 
 .. code-block:: shell
