@@ -339,15 +339,24 @@ cases.update(
     ),
     warp_read_after_write=(
         warp_load + warp_store + warp_reload,
-        "requires a full-block barrier",
+        "requires a barrier covering both accesses",
     ),
     warp_read_after_completion=(
         warp_load + warp_store + "thread::sync_threads();" + warp_reload,
         None,
     ),
-    warp_write_after_read=(warp_reload + warp_store, "requires a full-block barrier"),
-    warp_to_block=(warp_load + warp_store + reload, "requires a full-block barrier"),
-    warp_from_block=(load + store + warp_reload, "requires a full-block barrier"),
+    warp_write_after_read=(
+        warp_reload + warp_store,
+        "requires a barrier covering both accesses",
+    ),
+    warp_to_block=(
+        warp_load + warp_store + reload,
+        "requires a barrier covering both accesses",
+    ),
+    warp_from_block=(
+        load + store + warp_reload,
+        "requires a barrier covering both accesses",
+    ),
     warp_from_block_completed=(
         load + store + "thread::sync_threads();" + warp_reload,
         None,
@@ -356,7 +365,7 @@ cases.update(
         "values.write(0,0_i32);"
         + warp_helper
         + "put(warp,&mut output,offset);put(warp,&mut output,offset);",
-        "requires a full-block barrier",
+        "requires a barrier covering both accesses",
     ),
     warp_helper_completed=(
         "values.write(0,0_i32);"
@@ -365,7 +374,7 @@ cases.update(
         None,
     ),
     warp_sibling_cycle=(warp_loop + warp_load, None),
-    warp_cycle_then_block=(warp_loop + load, "lane-varying"),
+    warp_cycle_then_block=(warp_loop + load, None),
     warp_lane_cycle=(
         warp_loop.replace("i<q+1", "i<thread::threadIdx_x() as usize+1") + warp_load,
         "lane-varying",
@@ -375,7 +384,7 @@ cases.update(
         + warp_loop
         + "}cycles(input);"
         + load,
-        "lane-varying",
+        None,
     ),
     warp_partial_geometry=(warp_load, "complete physical warps"),
     warp_transpose=(
