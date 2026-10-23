@@ -133,7 +133,7 @@ impl<T: Numeric, Op, L> ReduceBatchedOptions<T, Op, L> {
 /// group's `sync()` when a later global access depends on preceding accesses.
 ///
 /// This crate and each crate instantiating the calculated result signature use
-/// nightly `generic_const_exprs`. Ordinary payload/Load/Scan/Reduce consumers do
+/// unstable `generic_const_exprs`. Ordinary payload/Load/Scan/Reduce consumers do
 /// not need that feature. Generic helpers carry the explicit well-formedness
 /// bound, as below; no caller-chosen output extent is needed.
 ///

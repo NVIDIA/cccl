@@ -4,9 +4,6 @@
 Decoding run lengths
 ========================
 
-This example requires Oxide's generic native-registration support. The revision
-currently pinned by the Cargo manifests does not yet include that support.
-
 ``run_length_decode`` returns a fresh window from a run-length encoded stream.
 ``run_length_decode_into`` writes the complete stream into a checked destination
 and returns its total length to every Block member:
@@ -41,7 +38,7 @@ window tails and untouched destination margins:
    :language: rust
    :start-after: // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-With an Oxide revision containing that support and ``nightly-2026-10-11``
+With the pinned Oxide revision and Rust ``1.99.1``
 installed, run from a complete CCCL checkout:
 
 .. code-block:: shell

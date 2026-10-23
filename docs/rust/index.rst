@@ -65,10 +65,6 @@ associated numeric values into independent fresh payloads. TopK selects the
 smallest or largest keys and associated pairs into fresh unsorted prefixes.
 Run Length Decode returns a fresh decoded window or writes the complete stream
 into a checked destination.
-Histogram, Radix Sort, Radix Rank, Merge Sort Pairs, TopK and Run Length Decode
-require generic
-native-registration support
-beyond the currently pinned Oxide revision; their guides explain the compiler requirement.
 Scan, Reduce, batched reduction, Exchange, Shuffle, Adjacent Difference,
 Discontinuity, Histogram, Radix Sort, Radix Rank, Merge Sort, TopK and
 Run Length Decode preserve
@@ -80,7 +76,7 @@ Build and run
 -------------
 
 Use the Oxide revision selected by the Cargo manifests and the pinned Rust
-nightly. The example's initial native configuration is Linux, CUDA 13.3 and an
+1.99.1 toolchain. The example's initial native configuration is Linux, CUDA 13.3 and an
 NVIDIA GPU. From a complete CCCL checkout with the matching Oxide installed:
 
 .. code-block:: shell
@@ -88,6 +84,17 @@ NVIDIA GPU. From a complete CCCL checkout with the matching Oxide installed:
    cd rust/cuda-coop/examples/scan
    CUDA_HOME=/usr/local/cuda-13.3 CUDA_PATH=/usr/local/cuda-13.3 \
      cargo oxide run --arch sm_120 --materialize-cubin
+
+Run plain Cargo commands from within ``rust/`` so they use its configuration.
+For a standalone crate, ``cargo oxide`` enables the unstable Rust features
+required by ``cuda-coop`` and ``cuda-device``. Plain ``cargo build``, ``test``,
+``clippy`` and ``doc`` also need this setting in that crate's
+``.cargo/config.toml``:
+
+.. code-block:: toml
+
+   [env]
+   RUSTC_BOOTSTRAP = "1"
 
 Choose the architecture for your GPU. The kernel's launch contract declares
 its exact block shape. Preparing a launch checks that shape and uses the
