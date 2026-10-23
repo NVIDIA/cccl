@@ -864,8 +864,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_load_balanced(
       _CCCL_ASSERT(active_policy.items_per_thread > 0, "Policy value for items_per_thread is not positive");
 
       const int threads_per_block = active_policy.threads_per_block;
-      const work_t tile_size =
-        static_cast<work_t>(threads_per_block) * static_cast<work_t>(active_policy.items_per_thread);
 
       int blocks_per_sm{};
       if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
@@ -893,6 +891,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_load_balanced(
 
       if constexpr (has_num_items)
       {
+        const work_t tile_size =
+          static_cast<work_t>(threads_per_block) * static_cast<work_t>(active_policy.items_per_thread);
         capacity =
           (::cuda::std::max) (1,
                               load_balanced_block_count(

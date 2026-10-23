@@ -39,7 +39,7 @@ namespace
 template <int Words>
 struct u32_array
 {
-  cuda::std::uint32_t v[Words];
+  cuda::std::uint32_t v[Words]{};
 
   __host__ __device__ friend u32_array operator+(const u32_array& lhs, const u32_array& rhs)
   {
