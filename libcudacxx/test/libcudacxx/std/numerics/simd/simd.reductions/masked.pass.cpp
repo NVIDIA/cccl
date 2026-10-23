@@ -112,7 +112,7 @@ TEST_HOST_DEVICE_FUNC bool test_runtime()
 int main(int, char**)
 {
   static_assert(test());
-  assert(test()); // NOLINT(cert-dcl03-c,misc-static-assert)
+  assert(test()); // NOLINT(misc-static-assert)
   assert(test_runtime());
   return 0;
 }
