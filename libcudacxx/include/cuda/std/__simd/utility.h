@@ -78,6 +78,8 @@ template <typename _Range, typename = void>
 inline constexpr bool __has_tuple_size_v = false;
 
 template <typename _Range>
+// Accessing the member directly keeps an incomplete tuple_size in the immediate context for SFINAE.
+// NOLINTNEXTLINE(cccl-modernize-type-traits)
 inline constexpr bool __has_tuple_size_v<_Range, void_t<decltype(tuple_size<remove_cvref_t<_Range>>::value)>> = true;
 
 template <typename _Range, typename = void>
