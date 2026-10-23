@@ -39,7 +39,8 @@ use crate::{
     RadixRankKeysRecipe, RadixRankKeysRequest, RadixSortKeysRecipe, RadixSortKeysRequest,
     RadixSortPairsRecipe, RadixSortPairsRequest, ReduceBatchedRecipe, ReduceBatchedRequest,
     ReduceForm, ReduceRecipe, ReduceRequest, Request, Result, ScanRecipe, ScanRequest,
-    ShuffleRecipe, ShuffleRequest,
+    ShuffleRecipe, ShuffleRequest, TopKCount, TopKKeysRequest, TopKPairsRequest, TopKRecipe,
+    TopKSelection,
 };
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
@@ -142,6 +143,32 @@ struct SpecializationRequest {
 
 impl SpecializationRequest {
     fn native(&self) -> Result<NativeRequest> {
+        if self.operation.starts_with("topk_") {
+            if self.algorithm != "block" || self.warp_width.is_some() {
+                return Err(Error::message(
+                    "TopK requires a Block recipe without Warp width",
+                ));
+            }
+            let (recipe, value) = TopKRecipe::parse(&self.operation)?;
+            return if let Some(value) = value {
+                TopKPairsRequest::block(
+                    self.dtype.dtype()?,
+                    value,
+                    recipe,
+                    self.block,
+                    self.items_per_thread,
+                )
+                .map(NativeRequest::TopKPairs)
+            } else {
+                TopKKeysRequest::block(
+                    self.dtype.dtype()?,
+                    recipe,
+                    self.block,
+                    self.items_per_thread,
+                )
+                .map(NativeRequest::TopKKeys)
+            };
+        }
         if self.operation.starts_with("merge_sort_pairs_") {
             let dtype = self.dtype.dtype()?;
             let (recipe, value) = MergeSortPairsRecipe::parse(&self.operation, &self.algorithm)?;
@@ -433,6 +460,39 @@ struct BatchResponse {
 
 fn arguments(request: NativeRequest) -> Vec<Argument> {
     let request = match request {
+        NativeRequest::TopKKeys(request) => {
+            let key = Scalar::from(request.dtype);
+            let mut args = vec![
+                Argument::ConstPointer(key),
+                Argument::MutPointer(key),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+                Argument::Value(Scalar::Signed(64)),
+            ];
+            if request.recipe.valid_items.is_some() {
+                args.push(Argument::Value(Scalar::Signed(64)));
+            }
+            return args;
+        }
+        NativeRequest::TopKPairs(request) => {
+            let key = Scalar::from(request.keys.dtype);
+            let value = Scalar::from(request.value_dtype);
+            let mut args = vec![
+                Argument::ConstPointer(key),
+                Argument::MutPointer(key),
+                Argument::ConstPointer(value),
+                Argument::MutPointer(value),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+                Argument::Value(Scalar::Signed(64)),
+            ];
+            if request.keys.recipe.valid_items.is_some() {
+                args.push(Argument::Value(Scalar::Signed(64)));
+            }
+            return args;
+        }
         NativeRequest::MergeSortPairs(request) => {
             let key = Scalar::from(request.key_dtype);
             let value = Scalar::from(request.value_dtype);
@@ -826,6 +886,44 @@ pub fn shuffle_registration(executable: &Path, recipe: ShuffleRecipe) -> Result<
         provider: "cuda_coop",
         executable,
         operation: recipe.token(),
+        algorithm: "block",
+    })
+    .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
+}
+
+/// Encode one of eight tracked Block TopK registration templates.
+///
+/// `pairs` selects two input/output planes; `partial` adds a signed64 validity
+/// control after k. The API's family-local constant formatter replaces only
+/// the closed count fields and, for pairs, the three-byte value tag. The key
+/// dtype, exact Block and extent arrive through the genuine checked marker.
+/// Scratch is injected at slot 2: keys use six/seven native arguments and
+/// pairs ten/eleven. See [`TopKKeysRequest`] and [`TopKPairsRequest`] for input,
+/// validity, selection and shared-storage obligations.
+///
+/// # Errors
+/// Rejects a nonabsolute executable or JSON encoding failure.
+pub fn topk_registration_template(
+    executable: &Path,
+    selection: TopKSelection,
+    pairs: bool,
+    partial: bool,
+) -> Result<String> {
+    if !executable.is_absolute() {
+        return Err(Error::message("provider executable path must be absolute"));
+    }
+    let recipe = TopKRecipe {
+        selection,
+        k: TopKCount::Runtime,
+        valid_items: partial.then_some(TopKCount::Runtime),
+    };
+    // i32 occupies exactly the same three-byte field as every sealed value tag.
+    let operation = recipe.token(pairs.then_some(Dtype::I32));
+    serde_json::to_string(&Registration {
+        version: VERSION,
+        provider: "cuda_coop",
+        executable,
+        operation: &operation,
         algorithm: "block",
     })
     .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
@@ -1282,6 +1380,66 @@ fn write_response(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn topk_mixed_abi_and_static_admission() {
+        use super::*;
+        let recipe = TopKRecipe {
+            selection: TopKSelection::Min,
+            k: TopKCount::Static(17),
+            valid_items: Some(TopKCount::Static(31)),
+        };
+        let request = SpecializationRequest {
+            operation: recipe.token(Some(Dtype::F64)),
+            algorithm: "block".into(),
+            dtype: Scalar::Signed(32),
+            block: [64, 1, 1],
+            items_per_thread: 4,
+            warp_width: None,
+        };
+        let args = arguments(request.native().unwrap());
+        assert_eq!(
+            args,
+            vec![
+                Argument::ConstPointer(Scalar::Signed(32)),
+                Argument::MutPointer(Scalar::Signed(32)),
+                Argument::ConstPointer(Scalar::Float(64)),
+                Argument::MutPointer(Scalar::Float(64)),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+                Argument::Value(Scalar::Signed(64)),
+                Argument::Value(Scalar::Signed(64))
+            ]
+        );
+        let too_small = SpecializationRequest {
+            block: [1, 1, 1],
+            items_per_thread: 1,
+            ..request
+        };
+        assert!(too_small.native().is_err());
+        let full = TopKRecipe {
+            selection: TopKSelection::Max,
+            k: TopKCount::Runtime,
+            valid_items: None,
+        };
+        let request = SpecializationRequest {
+            operation: full.token(None),
+            block: [33, 1, 1],
+            items_per_thread: 9,
+            ..too_small
+        };
+        assert_eq!(arguments(request.native().unwrap()).len(), 5);
+        assert!(
+            SpecializationRequest {
+                warp_width: Some(32),
+                ..request
+            }
+            .native()
+            .is_err()
+        );
+    }
+
     use super::*;
     use crate::{
         ReduceAlgorithm, ReduceBatchedLayout, ReduceOperator, ScanAlgorithm, ScanOperation,

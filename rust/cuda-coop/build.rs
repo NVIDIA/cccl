@@ -7,7 +7,7 @@ use cuda_coop_codegen::{
     HistogramAlgorithm, MergeSortKeysRecipe, MergeSortPairsRecipe, Operation, RadixRankKeysRecipe,
     RadixSortKeysRecipe, RadixSortPairsRecipe, ReduceAlgorithm, ReduceBatchedLayout,
     ReduceBatchedRecipe, ReduceForm, ReduceOperator, ReduceRecipe, ScanAlgorithm, ScanOperation,
-    ScanOperator, ScanRecipe, ShuffleRecipe, oxide,
+    ScanOperator, ScanRecipe, ShuffleRecipe, TopKSelection, oxide,
 };
 
 fn main() {
@@ -19,6 +19,17 @@ fn main() {
         return;
     }
     let executable = std::env::current_exe().expect("cuda.coop provider executable");
+    for (direction, selection) in [("MIN", TopKSelection::Min), ("MAX", TopKSelection::Max)] {
+        for (kind, pairs) in [("KEYS", false), ("PAIRS", true)] {
+            for (extent, partial) in [("FULL", false), ("PARTIAL", true)] {
+                let registration =
+                    oxide::topk_registration_template(&executable, selection, pairs, partial)
+                        .expect("cuda.coop TopK registration");
+                println!("cargo::rustc-env=COOP_TOPK_{direction}_{kind}_{extent}={registration}");
+            }
+        }
+    }
+
     for (recipe, name) in [
         (MergeSortKeysRecipe::AscendingFull, "ASCENDING_FULL"),
         (MergeSortKeysRecipe::DescendingFull, "DESCENDING_FULL"),

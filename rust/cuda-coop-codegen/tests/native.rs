@@ -12,8 +12,126 @@ use cuda_coop_codegen::{
     RadixSortPairsRecipe, RadixSortPairsRequest, ReduceAlgorithm, ReduceBatchedLayout,
     ReduceBatchedRecipe, ReduceBatchedRequest, ReduceForm, ReduceOperator, ReduceRequest, Request,
     ScanAlgorithm, ScanOperation, ScanOperator, ScanRequest, ShuffleRecipe, ShuffleRequest,
+    TopKCount, TopKKeysRequest, TopKPairsRequest, TopKRecipe, TopKSelection,
 };
 use std::{env, path::Path, time::Instant};
+
+#[test]
+#[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
+fn native_mixed_topk_recipes() -> Result<(), Box<dyn std::error::Error>> {
+    use TopKCount::{Runtime, Static};
+    use TopKSelection::{Max, Min};
+    let toolkit = env::var("CUDA_HOME")?;
+    let target = env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let provider = Provider::from_checkout(&checkout, &toolkit)?;
+    let mut requests = Vec::new();
+    // Exact four first-example routes, at each generic N instantiation.
+    for n in [1, 4] {
+        requests.push(NativeRequest::TopKKeys(TopKKeysRequest::block(
+            Dtype::I32,
+            TopKRecipe {
+                selection: Min,
+                k: Static(17),
+                valid_items: None,
+            },
+            [64, 1, 1],
+            n,
+        )?));
+        requests.push(NativeRequest::TopKKeys(TopKKeysRequest::block(
+            Dtype::I32,
+            TopKRecipe {
+                selection: Max,
+                k: Runtime,
+                valid_items: Some(Runtime),
+            },
+            [64, 1, 1],
+            n,
+        )?));
+        requests.push(NativeRequest::TopKPairs(TopKPairsRequest::block(
+            Dtype::I32,
+            Dtype::F64,
+            TopKRecipe {
+                selection: Min,
+                k: Static(17),
+                valid_items: Some(Static(31)),
+            },
+            [64, 1, 1],
+            n,
+        )?));
+        requests.push(NativeRequest::TopKPairs(TopKPairsRequest::block(
+            Dtype::I32,
+            Dtype::F64,
+            TopKRecipe {
+                selection: Max,
+                k: Runtime,
+                valid_items: Some(Runtime),
+            },
+            [64, 1, 1],
+            n,
+        )?));
+    }
+    // Other key/value widths, a singleton, a non-warp-multiple Block and N9
+    // map tails. Static empty and k>valid remain legal specialization inputs.
+    for (key, value, b, n, selection, k, valid_items) in [
+        (Dtype::I8, Dtype::U8, 1, 1, Min, Static(0), Some(Static(0))),
+        (
+            Dtype::U8,
+            Dtype::I8,
+            33,
+            9,
+            Max,
+            Static(17),
+            Some(Static(7)),
+        ),
+        (Dtype::I16, Dtype::U16, 33, 1, Min, Runtime, None),
+        (Dtype::U16, Dtype::I16, 64, 4, Max, Runtime, Some(Runtime)),
+        (Dtype::U32, Dtype::I32, 33, 9, Min, Runtime, Some(Runtime)),
+        (Dtype::I64, Dtype::U32, 64, 4, Max, Runtime, None),
+        (Dtype::U64, Dtype::I64, 64, 4, Min, Runtime, Some(Runtime)),
+        (Dtype::F32, Dtype::U64, 64, 4, Max, Runtime, None),
+        (Dtype::F64, Dtype::F32, 64, 4, Min, Runtime, Some(Runtime)),
+    ] {
+        requests.push(NativeRequest::TopKPairs(TopKPairsRequest::block(
+            key,
+            value,
+            TopKRecipe {
+                selection,
+                k,
+                valid_items,
+            },
+            [b, 1, 1],
+            n,
+        )?));
+    }
+    let artifact = provider.compile_native(&requests, &target)?;
+    assert_eq!(artifact.specializations.len(), 17);
+    assert!(!artifact.ltoir.is_empty());
+    let mut identities = std::collections::HashSet::new();
+    for (request, entry) in requests.iter().zip(&artifact.specializations) {
+        assert!(identities.insert(entry.identity));
+        assert!(!entry.mutates_payload && !entry.scratch_free);
+        assert_eq!(entry.scratch, entry.cub_layout);
+        assert!(entry.scratch.size > 0 && entry.scratch.alignment.is_power_of_two());
+        eprintln!("{request:?}: {entry:?}");
+    }
+    for (a, b) in [(0, 1), (2, 3), (4, 5), (6, 7)] {
+        assert_eq!(
+            artifact.specializations[a].scratch,
+            artifact.specializations[b].scratch
+        );
+        assert_ne!(
+            artifact.specializations[a].identity,
+            artifact.specializations[b].identity
+        );
+    }
+    eprintln!(
+        "{} LTO bytes, {} specializations",
+        artifact.ltoir.len(),
+        artifact.specializations.len()
+    );
+    Ok(())
+}
 
 #[test]
 #[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
