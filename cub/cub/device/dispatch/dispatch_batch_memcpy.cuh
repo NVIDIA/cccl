@@ -19,25 +19,26 @@
 
 #include <cub/agent/agent_batch_memcpy.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
+#include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/lazy_trait.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/temporary_storage.cuh>
-#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_batch_memcpy.cuh>
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_ptx.cuh>
-
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -491,7 +492,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     }
 
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
+          detail::TripleChevronFactory{}(init_grid_size, init_kernel_threads, 0, stream)
             .doit(init_scan_states_kernel, buffer_scan_tile_state, block_scan_tile_state, num_current_tiles)))
     {
       return error;
@@ -502,7 +503,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     }
 
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+          detail::TripleChevronFactory{}(
             batch_memcpy_grid_size, active_policy.lookback.small_buffer.threads_per_block, 0, stream)
             .doit(batch_memcpy_non_blev_kernel,
                   input_buffer_it + current_buffer_offset,
@@ -524,8 +525,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     }
 
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-            batch_memcpy_blev_grid_size, blev_threads_per_block, 0, stream)
+          detail::TripleChevronFactory{}(batch_memcpy_blev_grid_size, blev_threads_per_block, 0, stream)
             .doit(multi_block_memcpy_kernel,
                   d_blev_src_buffers,
                   d_blev_dst_buffers,

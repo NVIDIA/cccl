@@ -15,24 +15,36 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/non_void_value.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
+#include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_reduce.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
-#include <cub/util_type.cuh> // for cub::detail::non_void_value_t, cub::detail::it_value_t
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/__utility/in_range.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/readable_traits.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_empty.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
+
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 
@@ -271,88 +283,84 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedReduce") D
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   InvokePasses(DeviceSegmentedReduceKernelT segmented_reduce_kernel, ActivePolicyT policy = {})
   {
-    cudaError error = cudaSuccess;
-
-    do
+    // Return if the caller is simply requesting the size of the storage
+    // allocation
+    if (d_temp_storage == nullptr)
     {
-      // Return if the caller is simply requesting the size of the storage
-      // allocation
-      if (d_temp_storage == nullptr)
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
+
+    // Init kernel configuration (computes kernel occupancy)
+    [[maybe_unused]] detail::KernelConfig segmented_reduce_config;
+    if (const auto error =
+          CubDebug(segmented_reduce_config.Init(segmented_reduce_kernel, policy.SegmentedReduce(), launcher_factory)))
+    {
+      return error;
+    }
+
+    const auto num_segments_per_invocation =
+      static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
+    const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
+
+    for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
+    {
+      const auto current_seg_offset = invocation_index * num_segments_per_invocation;
+      const auto num_current_segments =
+        ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
+
+      // Log device_reduce_sweep_kernel configuration
+      _CUB_LOG_KERNEL_LAUNCH(
+        "SegmentedDeviceReduceKernel",
+        static_cast<int>(num_current_segments),
+        1,
+        1,
+        policy.SegmentedReduce().ThreadsPerBlock(),
+        0,
+        stream,
+        ", SM occupancy: %d",
+        segmented_reduce_config.sm_occupancy);
+
+      // Invoke DeviceSegmentedReduceKernel
+      if (const auto error = CubDebug(
+            launcher_factory(static_cast<::cuda::std::uint32_t>(num_current_segments),
+                             policy.SegmentedReduce().ThreadsPerBlock(),
+                             0,
+                             stream)
+              .doit(segmented_reduce_kernel,
+                    d_in,
+                    d_out,
+                    d_begin_offsets,
+                    d_end_offsets,
+                    static_cast<int>(num_current_segments),
+                    reduction_op,
+                    init,
+                    0)))
       {
-        temp_storage_bytes = 1;
-        return cudaSuccess;
+        return error;
       }
 
-      // Init kernel configuration (computes kernel occupancy)
-      [[maybe_unused]] detail::KernelConfig segmented_reduce_config;
-      error =
-        CubDebug(segmented_reduce_config.Init(segmented_reduce_kernel, policy.SegmentedReduce(), launcher_factory));
-      if (cudaSuccess != error)
+      // Check for failure to launch
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
       {
-        break;
+        return error;
       }
 
-      const auto num_segments_per_invocation =
-        static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
-      const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
-
-      for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
+      if (invocation_index + 1 < num_invocations)
       {
-        const auto current_seg_offset = invocation_index * num_segments_per_invocation;
-        const auto num_current_segments =
-          ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
-
-        // Log device_reduce_sweep_kernel configuration
-        _CUB_LOG_KERNEL_LAUNCH(
-          "SegmentedDeviceReduceKernel",
-          static_cast<int>(num_current_segments),
-          1,
-          1,
-          policy.SegmentedReduce().ThreadsPerBlock(),
-          0,
-          stream,
-          ", SM occupancy: %d",
-          segmented_reduce_config.sm_occupancy);
-
-        // Invoke DeviceSegmentedReduceKernel
-        launcher_factory(static_cast<::cuda::std::uint32_t>(num_current_segments),
-                         policy.SegmentedReduce().ThreadsPerBlock(),
-                         0,
-                         stream)
-          .doit(segmented_reduce_kernel,
-                d_in,
-                d_out,
-                d_begin_offsets,
-                d_end_offsets,
-                static_cast<int>(num_current_segments),
-                reduction_op,
-                init,
-                0);
-
-        // Check for failure to launch
-        error = CubDebug(cudaPeekAtLastError());
-        if (cudaSuccess != error)
-        {
-          break;
-        }
-
-        if (invocation_index + 1 < num_invocations)
-        {
-          d_out += num_current_segments;
-          d_begin_offsets += num_current_segments;
-          d_end_offsets += num_current_segments;
-        }
-
-        // Sync the stream if specified to flush runtime errors
-        error = CubDebug(detail::DebugSyncStream(stream));
-        if (cudaSuccess != error)
-        {
-          break;
-        }
+        d_out += num_current_segments;
+        d_begin_offsets += num_current_segments;
+        d_end_offsets += num_current_segments;
       }
-    } while (false);
 
-    return error;
+      // Sync the stream if specified to flush runtime errors
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      {
+        return error;
+      }
+    }
+
+    return cudaSuccess;
   }
 
   /// Invocation

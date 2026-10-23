@@ -38,8 +38,6 @@
 
 #  include <nv/target>
 
-#  include <cuda_runtime_api.h>
-
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
@@ -192,7 +190,9 @@ public:
 
     [[nodiscard]] _CCCL_DEVICE_API unsigned int __error_count(status_source __source) const noexcept
     {
-      if (!__encodes_fabric_errors(__source))
+      // A completed wait without a report carries no error status, so there is nothing to decode. Skipping the decoder
+      // also keeps this path working on devices and drivers that do not support fabric status decoding.
+      if (!__report_predicate_ || !__encodes_fabric_errors(__source))
       {
         return 0;
       }

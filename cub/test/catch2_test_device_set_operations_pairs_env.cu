@@ -135,12 +135,10 @@ void check_pairs(const c2h::device_vector<int>& keys1,
   const int num = num_selected[0];
   REQUIRE(num == static_cast<int>(reference.size()));
 
-  c2h::host_vector<int> keys_out_h(keys_out);
-  keys_out_h.resize(num);
+  c2h::host_vector<int> keys_out_h(keys_out.begin(), keys_out.begin() + num);
   REQUIRE(reference == keys_out_h);
 
-  c2h::host_vector<int> values_out_h(values_out);
-  values_out_h.resize(num);
+  c2h::host_vector<int> values_out_h(values_out.begin(), values_out.begin() + num);
   for (int i = 0; i < num; ++i)
   {
     const int key = keys_out_h[i];
@@ -329,7 +327,7 @@ CUB_TEST("DeviceSetOps pairs can be tuned", "[set_ops][device]", CUB_SMALL, key_
   auto keys_out     = c2h::device_vector<int>(keys1.size() + keys2.size(), thrust::default_init);
   auto vals_out     = c2h::device_vector<int>(keys1.size() + keys2.size(), thrust::default_init);
   auto num          = c2h::device_vector<int>(1, thrust::default_init);
-  auto d_block_size = c2h::device_vector<unsigned int>(1, thrust::default_init);
+  auto d_block_size = c2h::device_vector<unsigned int>(1, 0u);
 
   const block_size_extracting_op<::cuda::std::less<>> block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
   auto env = ::cuda::execution::tune(set_ops_tuning<target_block_size>{});

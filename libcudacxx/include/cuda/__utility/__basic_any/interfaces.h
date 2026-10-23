@@ -29,6 +29,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_class.h>
+#include <cuda/std/__type_traits/negation.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/type_set.h>
 

@@ -204,7 +204,7 @@ DECLARE_UNARY_LOGICAL_FUNCTIONAL_UNITTEST(logical_not, LogicalNot);
 
 // TODO(bgruber): replace by cuda::std::as_const in C++14
 template <class Tp>
-typename ::cuda::std::add_const<Tp>::type& as_const(Tp& t) noexcept
+::cuda::std::add_const_t<Tp>& as_const(Tp& t) noexcept
 {
   return t;
 }

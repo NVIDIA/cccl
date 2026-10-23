@@ -15,9 +15,9 @@
 
 #include <cub/agent/agent_histogram.cuh>
 #include <cub/block/block_load.cuh>
+#include <cub/detail/numeric_traits.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>

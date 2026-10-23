@@ -20,8 +20,8 @@
 
 #include <cub/block/specializations/block_scan_raking.cuh>
 #include <cub/block/specializations/block_scan_warp_scans.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/operations.h>
