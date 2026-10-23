@@ -57,7 +57,10 @@ struct full_op_t
     using warp_topk_t = cub::detail::WarpBitonicTopK<KeyT, MaxK, warp_threads, ValueT, Algo>;
     __shared__ typename warp_topk_t::TempStorage temp_storage[WarpsPerBlock];
     warp_topk_t{temp_storage[threadIdx.x / warp_threads]}.TopK(keys, values, CustomLess{}, calc_k(MaxK));
-    __syncwarp(); // reuse temp_storage in the next benchmark iteration
+    if constexpr (Algo == WarpBitonicTopKAlgorithm::buffered)
+    {
+      __syncwarp(); // reuse temp_storage in the next benchmark iteration; algo eager doesn't use temp_storage
+    }
   }
 };
 
@@ -71,13 +74,14 @@ void full(nvbench::state& state,
                              nvbench::enum_type<Len>>)
 {
   constexpr int warps_per_block = calc_run_params<mode>().block_dim / warp_threads;
-  run_topk_bench<full_op_t<warps_per_block, MaxK, Algo>, mode, KeyT, ValueT, Len, MaxK>(state);
+  run_topk_bench<full_op_t<warps_per_block, MaxK, Algo>, mode, KeyT, ValueT, Len, MaxK>(state, Len);
 }
 
 NVBENCH_BENCH_TYPES(full, NVBENCH_TYPE_AXES(modes, algos, key_types, value_types, max_k_values, len_values))
   .set_type_axes_names({"mode", "algo", "KeyT", "ValueT", "max_k", "len"});
 
-// The partial overload with oob_default performs nearly the same as the full overload, so do not benchmark it
+// The partial overload with oob_default simply pads the input and calls the full overload, so it doesn't need a
+// separate benchmark
 
 template <int WarpsPerBlock, int MaxK, WarpBitonicTopKAlgorithm Algo>
 struct partial_op_t
@@ -90,7 +94,10 @@ struct partial_op_t
     __shared__ typename warp_topk_t::TempStorage temp_storage[WarpsPerBlock];
 
     warp_topk_t{temp_storage[threadIdx.x / warp_threads]}.TopK(keys, values, CustomLess{}, calc_k(MaxK), valid_items);
-    __syncwarp(); // reuse temp_storage in the next benchmark iteration
+    if constexpr (Algo == WarpBitonicTopKAlgorithm::buffered)
+    {
+      __syncwarp(); // reuse temp_storage in the next benchmark iteration; algo eager doesn't use temp_storage
+    }
   }
 };
 
@@ -104,7 +111,12 @@ void partial(nvbench::state& state,
                                 nvbench::enum_type<Len>>)
 {
   constexpr int warps_per_block = calc_run_params<mode>().block_dim / warp_threads;
-  run_topk_bench<partial_op_t<warps_per_block, MaxK, Algo>, mode, KeyT, ValueT, Len, MaxK>(state);
+  // Set valid_items to Len - 1 because:
+  // (1) It reflects a realistic workload in which most items are valid. Because for best efficiency,
+  //     ItemsPerThread should be ceil(valid_items / warp_threads).
+  // (2) It exercises the partial-processing branch.
+  // (3) It matches full_op_t's workload and avoids adding a valid_items axis that would bloat benchmark combinations.
+  run_topk_bench<partial_op_t<warps_per_block, MaxK, Algo>, mode, KeyT, ValueT, Len, MaxK>(state, Len - 1);
 }
 
 NVBENCH_BENCH_TYPES(partial, NVBENCH_TYPE_AXES(modes, algos, key_types, value_types, max_k_values, len_values))
@@ -132,7 +144,10 @@ __global__ void iterator_kernel(int num_iterations, KeyT* keys_in, ValueT* value
       keys_in + offset, values_in + offset, CustomLess{}, k, num_items, keys_out, values_out);
     sink(keys_out);
     sink(values_out);
-    __syncwarp(); // reused temp_storage in the next iteration
+    if constexpr (Algo == WarpBitonicTopKAlgorithm::buffered)
+    {
+      __syncwarp(); // reused temp_storage in the next iteration; algo eager doesn't use temp_storage
+    }
   }
 }
 
