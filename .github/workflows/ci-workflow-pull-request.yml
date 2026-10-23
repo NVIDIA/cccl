@@ -651,6 +651,8 @@ jobs:
 
       - name: Render the comment
         id: compose
+        env:
+          CHECK_RUN_ID: ${{ job.check_run_id }}
         run: |
           # download-artifact puts the artifact of each matrix job into its own
           # directory under sass-comment, named after the artifact:
@@ -683,6 +685,13 @@ jobs:
 
           python3 ci/sass/render_report.py "${inputs[@]}" --output "${comment_path}"
 
+          cat >> "${comment_path}" <<EOF
+          <!-- sass-diff-GITHUB_SHA:${GITHUB_SHA} -->
+          <!-- sass-diff-GITHUB_RUN_ID:${GITHUB_RUN_ID} -->
+          <!-- sass-diff-GITHUB_RUN_ATTEMPT:${GITHUB_RUN_ATTEMPT} -->
+          <!-- sass-diff-CHECK_RUN_ID:${CHECK_RUN_ID} -->
+          EOF
+
           cat "${comment_path}" >> "${GITHUB_STEP_SUMMARY}"
           echo "SASS outcome: ${outcome}."
           {
@@ -710,6 +719,12 @@ jobs:
           number: ${{ needs.build-workflow.outputs.pr_number }}
           hide: true
           hide_classify: "OUTDATED"
+
+      - name: Require SASS approval
+        if: steps.compose.outputs.outcome == 'CHANGE'
+        run: |
+          echo "::error::SASS changes require approval with /sass diff ok ${GITHUB_SHA}"
+          exit 1
 
   # Check all other job statuses. This job gates branch protection checks.
   ci:

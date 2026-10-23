@@ -1,0 +1,222 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+name: Approve SASS Diff
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  pull-requests: read
+  issues: write
+  actions: read
+  checks: write
+
+jobs:
+  approve:
+    # Expressions cannot match regexes; the first step validates the complete command.
+    if: >-
+      github.repository == 'NVIDIA/cccl' &&
+      github.event.issue.pull_request &&
+      github.event.issue.state == 'open' &&
+      github.event.comment.user.type == 'User' &&
+      github.event.comment.user.id != github.event.issue.user.id &&
+      contains(github.event.comment.body, '/sass')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate approval command
+        id: request
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { comment, issue } = context.payload;
+            // Match both:
+            //
+            // /sass diff ok <full SHA>
+            //
+            // and
+            //
+            // /sass diff ok [<short SHA>](<link to full commit SHA>)
+            const plainMatch = /(?:^|\s)\/sass\s+diff\s+ok\s+([0-9a-f]{40})\b/.exec(comment.body);
+            const linkMatch  = /(?:^|\s)\/sass\s+diff\s+ok\s+\[([0-9a-f]{7,40})\]\((https:\/\/github\.com\/[^\s)]+\/([0-9a-f]{40}))\)/.exec(comment.body);
+
+            let sha;
+
+            if (plainMatch) {
+              sha = plainMatch[1];
+            } else if (linkMatch) {
+              sha = linkMatch[3];
+              // Check both the visible label and destination before accepting a commit link.
+              const repoUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}`;
+              if (
+                !sha.startsWith(linkMatch[1]) ||
+                ![`${repoUrl}/pull/${issue.number}/commits/${sha}`, `${repoUrl}/commit/${sha}`].includes(linkMatch[2])
+              ) {
+                return;
+              }
+            } else {
+              return;
+            }
+
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: issue.number,
+            });
+
+            if (pr.head.sha !== sha) {
+              return;
+            }
+
+            core.setOutput("sha", sha);
+
+      # GITHUB_TOKEN cannot read organization membership. Limit the app token to that lookup.
+      - name: Create membership token
+        if: steps.request.outputs.sha != ''
+        id: membership
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.CCCL_AUTH_APP_ID }}
+          private-key: ${{ secrets.CCCL_AUTH_APP_PEM }}
+          owner: NVIDIA
+          repositories: cccl
+          permission-members: read
+
+      - name: Verify team membership
+        if: steps.request.outputs.sha != ''
+        id: authorization
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ steps.membership.outputs.token }}
+          script: |
+            // This endpoint includes child-team members and avoids membership lookup errors for nonmembers.
+            const pages = github.paginate.iterator(github.rest.teams.listMembersInOrg, {
+              org: "NVIDIA",
+              team_slug: "cccl-codeowners",
+              per_page: 100,
+            });
+            for await (const { data: members } of pages) {
+              if (!members.some((member) => member.id === context.payload.comment.user.id)) {
+                continue;
+              }
+              core.setOutput("authorized", "true");
+              return;
+            }
+
+      - name: Find the matching SASS comment and approve
+        if: steps.authorization.outputs.authorized == 'true'
+        uses: actions/github-script@v8
+        env:
+          SHA: ${{ steps.request.outputs.sha }}
+        with:
+          script: |
+            const { comment, issue } = context.payload;
+            const number = issue.number;
+            const sha = process.env.SHA;
+            const marker = `<!-- sass-diff-GITHUB_SHA:${sha} -->`;
+            // GraphQL exposes whether a comment is hidden; the REST endpoint does not.
+            const query = `
+              query($owner: String!, $repo: String!, $number: Int!, $before: String) {
+                repository(owner: $owner, name: $repo) {
+                  pullRequest(number: $number) {
+                    comments(last: 1, before: $before) {
+                      nodes {
+                        fullDatabaseId
+                        body
+                        isMinimized
+                      }
+                      pageInfo {
+                        hasPreviousPage
+                        startCursor
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+            let before = null;
+            let report;
+
+            while (true) {
+              const { repository } = await github.graphql(query, {
+                ...context.repo,
+                number,
+                before,
+              });
+
+              const comments = repository.pullRequest.comments;
+              report = comments.nodes[0];
+              // An earlier command cannot approve a later report.
+              if (
+                report &&
+                BigInt(report.fullDatabaseId) < BigInt(comment.id) &&
+                report.body.split(/\r?\n/).includes(marker)
+              ) {
+                // We have found a report, but it has been minimized (marked hidden).
+                // The only scenario in which this could happen is if the user has manually
+                // hidden the previous report, and then launched a new pipeline and tried to
+                // /sass diff ok before the new pipeline finished. We should not honor this.
+                if (report.isMinimized) {
+                  return;
+                }
+                break;
+              }
+              if (!comments.pageInfo.hasPreviousPage) {
+                // Didn't find a comment, so nothing to do. Likely the user has tried
+                // to /sass diff ok before a SASS diff has been posted.
+                return;
+              }
+              before = comments.pageInfo.startCursor;
+            }
+
+            const run_id = Number(report.body.match(/^<!-- sass-diff-GITHUB_RUN_ID:(\d+) -->$/m)[1]);
+            const attempt = Number(report.body.match(/^<!-- sass-diff-GITHUB_RUN_ATTEMPT:(\d+) -->$/m)[1]);
+            const check_run_id = Number(report.body.match(/^<!-- sass-diff-CHECK_RUN_ID:(\d+) -->$/m)[1]);
+
+            // Read the check itself because an earlier approval can already have changed its conclusion.
+            //
+            // This can happen if a user posts 2 /sass diff ok comments in a row
+            const { data: check } = await github.rest.checks.get({
+              ...context.repo,
+              check_run_id,
+            });
+            if (check.status !== "completed" || check.conclusion !== "failure") {
+              return;
+            }
+
+            const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {
+              ...context.repo,
+              run_id,
+              attempt_number: attempt,
+              per_page: 100,
+            });
+            const aggregate = jobs.find((job) => job.check_run_url === check.url);
+
+            // Only the approval gate is overridable. Build, reporting, and cleanup failures must remain failures.
+            const failures = aggregate.steps.filter(
+              (step) => step.conclusion !== "success" && step.conclusion !== "skipped"
+            );
+            if (
+              failures.length !== 1 ||
+              failures[0].name !== "Require SASS approval" ||
+              failures[0].conclusion !== "failure"
+            ) {
+              return;
+            }
+
+            await github.rest.checks.update({
+              ...context.repo,
+              check_run_id,
+              conclusion: "success",
+              output: {
+                title: "SASS changes approved",
+                summary: `Approved by @${comment.user.login}: ${comment.html_url}`,
+              },
+            });
+
+            await github.rest.reactions.createForIssueComment({
+              ...context.repo,
+              comment_id: comment.id,
+              content: "+1",
+            });
