@@ -1,0 +1,17 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+[package]
+name = "coop-run-length-decode-tests"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+cuda-coop = { path = "../.." }
+cuda-device = { git = "https://github.com/tpn/cuda-rust.git", rev = "38d18d9996d2b2b09140b2bde8a59a3a26d0df9e" }
+cuda-host = { git = "https://github.com/tpn/cuda-rust.git", rev = "38d18d9996d2b2b09140b2bde8a59a3a26d0df9e", features = ["async"] }
+cuda-core = { git = "https://github.com/tpn/cuda-rust.git", rev = "38d18d9996d2b2b09140b2bde8a59a3a26d0df9e" }
+cuda-async = { git = "https://github.com/tpn/cuda-rust.git", rev = "38d18d9996d2b2b09140b2bde8a59a3a26d0df9e" }

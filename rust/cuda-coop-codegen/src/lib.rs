@@ -100,6 +100,7 @@ mod merge_sort;
 mod radix_sort;
 mod reduce;
 mod reduce_batched;
+mod run_length;
 mod scan;
 mod shuffle;
 mod topk;
@@ -116,6 +117,7 @@ pub use radix_sort::{
 };
 pub use reduce::{ReduceAlgorithm, ReduceForm, ReduceOperator, ReduceRecipe, ReduceRequest};
 pub use reduce_batched::{ReduceBatchedLayout, ReduceBatchedRecipe, ReduceBatchedRequest};
+pub use run_length::{RunLengthDecodeRecipe, RunLengthDecodeRequest};
 pub use scan::{ScanAlgorithm, ScanOperation, ScanOperator, ScanRecipe, ScanRequest};
 pub use shuffle::{ShuffleRecipe, ShuffleRequest};
 pub use topk::{TopKCount, TopKKeysRequest, TopKPairsRequest, TopKRecipe, TopKSelection};
@@ -497,6 +499,8 @@ impl Request {
 /// One member of an ordered native batch, with family-specific validated inputs.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum NativeRequest {
+    /// Checked Block decode window or complete destination write.
+    RunLengthDecode(RunLengthDecodeRequest),
     /// Existing Load/Store operation and layout algorithm.
     LoadStore(Request),
     /// Numeric Scan with preserved input and fresh initialized output.
@@ -534,6 +538,7 @@ pub enum NativeRequest {
 impl NativeRequest {
     fn block_shape(self) -> [u32; 3] {
         match self {
+            Self::RunLengthDecode(request) => request.block_shape(),
             Self::LoadStore(request) => request.block_shape(),
             Self::Scan(request) => request.block_shape(),
             Self::Reduce(request) => request.block_shape(),
@@ -555,6 +560,7 @@ impl NativeRequest {
 
     fn source(self, symbol: &str) -> String {
         match self {
+            Self::RunLengthDecode(request) => request.source(symbol),
             Self::LoadStore(request) => source(request, symbol),
             Self::Scan(request) => request.source(symbol),
             Self::Reduce(request) => request.source(symbol),
@@ -576,6 +582,11 @@ impl NativeRequest {
 
     fn token(self) -> String {
         match self {
+            Self::RunLengthDecode(request) => {
+                request
+                    .recipe
+                    .token(request.length, request.decoded, request.offset)
+            }
             Self::LoadStore(request) => request.operation.token().into(),
             Self::Scan(request) => request.recipe.operation().token(),
             Self::Reduce(request) => request.recipe.token(),
@@ -612,7 +623,8 @@ impl NativeRequest {
             | Self::MergeSortKeys(_)
             | Self::MergeSortPairs(_)
             | Self::TopKKeys(_)
-            | Self::TopKPairs(_) => false,
+            | Self::TopKPairs(_)
+            | Self::RunLengthDecode(_) => false,
         }
     }
 
@@ -636,7 +648,8 @@ impl NativeRequest {
             | Self::MergeSortKeys(_)
             | Self::MergeSortPairs(_)
             | Self::TopKKeys(_)
-            | Self::TopKPairs(_) => false,
+            | Self::TopKPairs(_)
+            | Self::RunLengthDecode(_) => false,
         }
     }
 }

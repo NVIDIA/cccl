@@ -18,6 +18,77 @@ use std::{env, path::Path, time::Instant};
 
 #[test]
 #[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
+fn native_run_length_decode() -> Result<(), Box<dyn std::error::Error>> {
+    use cuda_coop_codegen::{RunLengthDecodeRecipe as R, RunLengthDecodeRequest};
+    let toolkit = env::var("CUDA_HOME")?;
+    let target = env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let provider = Provider::from_checkout(&checkout, &toolkit)?;
+    let mut requests = Vec::new();
+    for n in [1, 4] {
+        for recipe in [R::Window, R::Into] {
+            requests.push(NativeRequest::RunLengthDecode(
+                RunLengthDecodeRequest::block(
+                    Dtype::I64,
+                    Dtype::U64,
+                    recipe,
+                    3,
+                    Dtype::U64,
+                    [32, 1, 1],
+                    n,
+                )?,
+            ));
+        }
+    }
+    // Independent scalar widths, signed controls, partial physical warps and
+    // N9/D9 bitmap tails; no device execution is involved in this native test.
+    for (value, length, b, n, d, recipe, offset) in [
+        (Dtype::I8, Dtype::I8, 1, 1, 1, R::Window, Dtype::I64),
+        (Dtype::U8, Dtype::U8, 33, 9, 9, R::Into, Dtype::U64),
+        (Dtype::I16, Dtype::I16, 33, 1, 3, R::Window, Dtype::I64),
+        (Dtype::U16, Dtype::U16, 32, 4, 3, R::Into, Dtype::U64),
+        (Dtype::I32, Dtype::I32, 32, 4, 3, R::Window, Dtype::I64),
+        (Dtype::U32, Dtype::U32, 33, 9, 1, R::Into, Dtype::U64),
+        (Dtype::U64, Dtype::I64, 64, 4, 3, R::Window, Dtype::I64),
+        (Dtype::F32, Dtype::U64, 32, 4, 3, R::Into, Dtype::U64),
+        (Dtype::F64, Dtype::U64, 32, 4, 9, R::Window, Dtype::U64),
+    ] {
+        requests.push(NativeRequest::RunLengthDecode(
+            RunLengthDecodeRequest::block(value, length, recipe, d, offset, [b, 1, 1], n)?,
+        ));
+    }
+    let artifact = provider.compile_native(&requests, &target)?;
+    assert_eq!(artifact.specializations.len(), requests.len());
+    let mut identities = std::collections::HashSet::new();
+    for (request, entry) in requests.iter().zip(&artifact.specializations) {
+        assert!(identities.insert(entry.identity));
+        assert!(!entry.scratch_free);
+        assert!(!entry.mutates_payload);
+        // Scratch includes the validation scan, not only CUB's decoder table.
+        assert!(entry.scratch.size >= entry.cub_layout.size);
+        assert!(entry.scratch.alignment >= entry.cub_layout.alignment);
+        assert!(entry.scratch.alignment.is_power_of_two());
+        eprintln!(
+            "{request:?}: CUB {:?}, scratch {:?}",
+            entry.cub_layout, entry.scratch
+        );
+    }
+    for start in [0, 2] {
+        assert_eq!(
+            artifact.specializations[start].scratch,
+            artifact.specializations[start + 1].scratch
+        );
+    }
+    eprintln!(
+        "{} Run Length Decode specializations: {} LTO bytes",
+        requests.len(),
+        artifact.ltoir.len()
+    );
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
 fn native_mixed_topk_recipes() -> Result<(), Box<dyn std::error::Error>> {
     use TopKCount::{Runtime, Static};
     use TopKSelection::{Max, Min};

@@ -96,6 +96,7 @@ mod merge_sort;
 mod radix_sort;
 mod reduce;
 mod reduce_batched;
+mod run_length;
 mod scan;
 mod shuffle;
 mod temp_storage;
@@ -137,6 +138,10 @@ pub use reduce::{
 pub use reduce_batched::{
     BatchedOutputLayout, Blocked, ReduceBatchedGroup, ReduceBatchedOptions, batched_extent,
     reduce_batched,
+};
+pub use run_length::{
+    RunLength, RunLengthDecodeIntoOptions, RunLengthDecodeOffset, RunLengthDecodeOptions,
+    RunLengthOffset, run_length_decode, run_length_decode_into,
 };
 pub use scan::{
     BitAnd, BitOr, BitXor, Exclusive, ExclusiveScanOptions, Inclusive, InclusiveScanOptions, Max,

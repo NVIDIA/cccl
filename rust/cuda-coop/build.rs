@@ -6,8 +6,8 @@ use cuda_coop_codegen::{
     AdjacentDifferenceRecipe, Algorithm, DiscontinuityRecipe, Dtype, ExchangeMode, ExchangeRecipe,
     HistogramAlgorithm, MergeSortKeysRecipe, MergeSortPairsRecipe, Operation, RadixRankKeysRecipe,
     RadixSortKeysRecipe, RadixSortPairsRecipe, ReduceAlgorithm, ReduceBatchedLayout,
-    ReduceBatchedRecipe, ReduceForm, ReduceOperator, ReduceRecipe, ScanAlgorithm, ScanOperation,
-    ScanOperator, ScanRecipe, ShuffleRecipe, TopKSelection, oxide,
+    ReduceBatchedRecipe, ReduceForm, ReduceOperator, ReduceRecipe, RunLengthDecodeRecipe,
+    ScanAlgorithm, ScanOperation, ScanOperator, ScanRecipe, ShuffleRecipe, TopKSelection, oxide,
 };
 
 fn main() {
@@ -19,6 +19,15 @@ fn main() {
         return;
     }
     let executable = std::env::current_exe().expect("cuda.coop provider executable");
+    for (recipe, name) in [
+        (RunLengthDecodeRecipe::Window, "WINDOW"),
+        (RunLengthDecodeRecipe::Into, "INTO"),
+    ] {
+        let registration = oxide::run_length_decode_registration_template(&executable, recipe)
+            .expect("cuda.coop Run Length Decode registration");
+        println!("cargo::rustc-env=COOP_RUN_LENGTH_DECODE_{name}={registration}");
+    }
+
     for (direction, selection) in [("MIN", TopKSelection::Min), ("MAX", TopKSelection::Max)] {
         for (kind, pairs) in [("KEYS", false), ("PAIRS", true)] {
             for (extent, partial) in [("FULL", false), ("PARTIAL", true)] {
