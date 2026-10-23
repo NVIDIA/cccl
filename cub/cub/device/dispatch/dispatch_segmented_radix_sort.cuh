@@ -288,8 +288,6 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
     int& current_bit,
     PassConfigT& pass_config)
   {
-    cudaError error = cudaSuccess;
-
     // The number of bits to process in this pass
     const int pass_bits = ::cuda::std::min(pass_config.radix_bits, (end_bit - current_bit));
 
@@ -347,8 +345,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
       }
 
       // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
       {
         return error;
       }
@@ -360,8 +357,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -370,7 +366,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
     // Update current bit once all segments have been processed for the current pass
     current_bit += pass_bits;
 
-    return error;
+    return cudaSuccess;
   }
 
   /// PassConfig data structure
