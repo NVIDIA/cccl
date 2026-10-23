@@ -3,7 +3,10 @@
 
 #pragma once
 
+#include <cub/device/device_transform.cuh>
+
 #include <cuda/__algorithm/copy.h>
+#include <cuda/__algorithm/fill.h>
 #include <cuda/__cccl_config>
 #include <cuda/__container/resizable_buffer.h>
 #include <cuda/buffer>
@@ -41,12 +44,25 @@ template <typename T>
   return ::c2h::make_device_buffer<T>(stream, num_items, cuda::no_init);
 }
 
-// custom_type_t generation only overwrites key and val, so initialize the remaining members from min.
+// custom_type_t generation only overwrites key and val. Initialize policy members
+// from min and padding bytes to zero before any whole-object copies.
 template <template <typename> class... Ps>
 [[nodiscard]] cuda::device_buffer<custom_type_t<Ps...>>
 make_generator_buffer(cuda::stream_ref stream, std::size_t num_items, const custom_type_t<Ps...>& min)
 {
-  return ::c2h::make_device_buffer<custom_type_t<Ps...>>(stream, num_items, min);
+  auto result = ::c2h::make_device_buffer<custom_type_t<Ps...>>(stream, num_items, cuda::no_init);
+  if (num_items != 0)
+  {
+    ::cuda::fill_bytes(stream, result, 0);
+    _CCCL_TRY_RUNTIME_API(
+      cub::DeviceTransform::Fill,
+      "Failed to initialize custom-type policy members",
+      result.data(),
+      num_items,
+      min,
+      stream.get());
+  }
+  return result;
 }
 } // namespace detail
 

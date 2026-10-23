@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#include <cuda/__algorithm/fill.h>
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/memory_resource>
@@ -493,6 +494,8 @@ CUB_TEST("c2h buffer generators populate checked CUDA buffers", "[c2h][buffers][
   custom_expected.val = 37;
 
   auto d_custom = c2h::make_device_buffer<custom_type>(stream, num_items, cuda::no_init);
+  // The generator writes only key and val. Whole-object copies also read policy members and padding bytes.
+  cuda::fill_bytes(stream, d_custom, 0);
   c2h::gen(c2h::seed_t{9012}, d_custom, custom_expected, custom_expected);
   const auto h_custom = c2h::make_host_buffer<custom_type>(stream, d_custom);
   stream.sync();
@@ -501,4 +504,8 @@ CUB_TEST("c2h buffer generators populate checked CUDA buffers", "[c2h][buffers][
     return value == custom_expected;
   });
   REQUIRE(custom_values_match);
+
+  const auto custom_buffers =
+    c2h::gen_buffers<custom_type>(stream, c2h::seed_t{9012}, num_items, custom_expected, custom_expected);
+  REQUIRE_THAT(custom_buffers.d_items, c2h::Equals(stream, h_custom));
 }
