@@ -8,10 +8,22 @@
 
 cccl_get_libcudacxx()
 
+option(
+  LIBCUDACXX_ENABLE_FAST_MATH
+  "Enable fast math for internal libcu++ testing."
+  OFF
+)
+# Internal testing option; users should set CMAKE_CUDA_FLAGS instead.
+mark_as_advanced(LIBCUDACXX_ENABLE_FAST_MATH)
+
 function(libcudacxx_build_compiler_targets)
   set(cuda_compile_options)
   set(cxx_compile_options)
   set(cxx_compile_definitions)
+
+  if (LIBCUDACXX_ENABLE_FAST_MATH)
+    list(APPEND cuda_compile_options "--use_fast_math")
+  endif()
 
   #  if (CCCL_USE_LIBCXX)
   #    list(APPEND cxx_compile_options "-stdlib=libc++")
