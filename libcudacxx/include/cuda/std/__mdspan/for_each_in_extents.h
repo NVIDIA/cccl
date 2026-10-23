@@ -31,7 +31,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Exts, size_t... _Is>
 [[nodiscard]] _CCCL_API constexpr auto
-__drop_highest_rank_from_extents_impl(const _Exts& __exts, integer_sequence<size_t, _Is...>) noexcept
+__drop_highest_rank_from_extents_impl(const _Exts& __exts, index_sequence<_Is...>) noexcept
 {
   return extents<typename _Exts::index_type, _Exts::static_extent(_Is + 1)...>{__exts.extent(_Is + 1)...};
 }

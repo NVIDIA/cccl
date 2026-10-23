@@ -76,6 +76,7 @@ function(cccl_create_clang_tidy_plugin TARGET)
     "${TARGET}"
     PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}
+      ${CMAKE_CURRENT_FUNCTION_LIST_DIR}
       ${CLANG_INCLUDE_DIRS}
       ${LLVM_INCLUDE_DIRS}
   )
@@ -278,3 +279,4 @@ endfunction()
 
 add_subdirectory(modernize_type_traits)
 add_subdirectory(prefer_cuda_traits)
+add_subdirectory(simplify_type_traits)

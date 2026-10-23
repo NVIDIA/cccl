@@ -3,7 +3,7 @@
 
 // clang-format off
 // CLANG_TIDY_CONFIG_BEGIN
-// Checks: cccl-modernize-type-traits
+// Checks: cccl-simplify-type-traits
 // CLANG_TIDY_CONFIG_END
 
 // Both namespace levels can contain inline ABI namespaces.
@@ -36,30 +36,30 @@ using remove_volatile_t = T;
 // CHECK-MESSAGES-NOT: warning:
 template <typename T>
 using implicit_const = cuda::std::remove_const_t<cuda::std::remove_volatile_t<T>>;
-// CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use simplified type alias [cccl-modernize-type-traits]
+// CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use simplified type alias [cccl-simplify-type-traits]
 // CHECK-MESSAGES-NOT: warning:
-// CHECK-FIXES-LABEL: - DiagnosticName: cccl-modernize-type-traits
+// CHECK-FIXES-LABEL: - DiagnosticName: cccl-simplify-type-traits
 // CHECK-FIXES: ReplacementText: {{'?}}::cuda::std::remove_cv_t{{'?}}{{$}}
 
 template <typename T>
 using implicit_volatile = cuda::std::remove_volatile_t<cuda::std::remove_const_t<T>>;
-// CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use simplified type alias [cccl-modernize-type-traits]
+// CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use simplified type alias [cccl-simplify-type-traits]
 // CHECK-MESSAGES-NOT: warning:
-// CHECK-FIXES-LABEL: - DiagnosticName: cccl-modernize-type-traits
+// CHECK-FIXES-LABEL: - DiagnosticName: cccl-simplify-type-traits
 // CHECK-FIXES: ReplacementText: {{'?}}::cuda::std::remove_cv_t{{'?}}{{$}}
 
 template <typename T>
 using explicit_const = cuda::abi::std::version::remove_const_t<cuda::abi::std::version::remove_volatile_t<T>>;
-// CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use simplified type alias [cccl-modernize-type-traits]
+// CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use simplified type alias [cccl-simplify-type-traits]
 // CHECK-MESSAGES-NOT: warning:
-// CHECK-FIXES-LABEL: - DiagnosticName: cccl-modernize-type-traits
+// CHECK-FIXES-LABEL: - DiagnosticName: cccl-simplify-type-traits
 // CHECK-FIXES: ReplacementText: {{'?}}::cuda::std::remove_cv_t{{'?}}{{$}}
 
 template <typename T>
 using explicit_volatile = cuda::abi::std::version::remove_volatile_t<cuda::abi::std::version::remove_const_t<T>>;
-// CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use simplified type alias [cccl-modernize-type-traits]
+// CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use simplified type alias [cccl-simplify-type-traits]
 // CHECK-MESSAGES-NOT: warning:
-// CHECK-FIXES-LABEL: - DiagnosticName: cccl-modernize-type-traits
+// CHECK-FIXES-LABEL: - DiagnosticName: cccl-simplify-type-traits
 // CHECK-FIXES: ReplacementText: {{'?}}::cuda::std::remove_cv_t{{'?}}{{$}}
 
 // Ordinary nested namespaces must not match the standard trait namespace.

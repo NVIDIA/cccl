@@ -357,6 +357,27 @@ In C++23, the ``if consteval`` statement (`link <https://en.cppreference.com/w/c
 | ``_CCCL_IF_NOT_CONSTEVAL_DEFAULT`` | Equivalent to ``if !consteval`` statement (fallbacks to ``if constexpr (false)``) |
 +------------------------------------+-----------------------------------------------------------------------------------+
 
+**Compile-Time Constant Detection**
+
+``_CCCL_IS_CONSTANT_P(...)`` checks whether the compiler can determine the value of an expression at compile time.
+It expands to ``__builtin_constant_p(...)`` when the builtin is available, and to ``false`` otherwise.
+The expression is not evaluated, so its side effects do not occur.
+See the `GCC builtin documentation <https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html#index-__builtin_constant_p>`_
+for details.
+
+.. code-block:: c++
+
+    if (_CCCL_IS_CONSTANT_P(value) && value == 0)
+    {
+        // Optimized implementation for a known zero value.
+    }
+    else
+    {
+        // General implementation, also valid when value is zero.
+    }
+
+Unlike ``_CCCL_IF_CONSTEVAL``, this macro tests an expression's value rather than whether the current evaluation occurs in a constant-evaluated context.
+
 **Exception Macros**
 
 CUDA doesn't support exceptions in device code, however, sometimes we need to write host/device functions that use exceptions on host and ``__trap()`` on device. CCCL provides a set of macros that should be used in place of the standard C++ keywords to make the code compile in both, host and device code.

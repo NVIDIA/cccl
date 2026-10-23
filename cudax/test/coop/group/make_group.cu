@@ -11,6 +11,8 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/cstddef>
+#include <cuda/std/optional>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
@@ -31,16 +33,35 @@ __device__ void test_make_group(Args&&... args)
   group.sync_aligned();
 }
 
-template <template <class...> class GroupTempl, class... Args>
-__device__ void test_make_group_non_exhaustive(bool is_valid, Args&&... args)
+template <template <class...> class GroupTempl,
+          bool IsAlwaysExhaustive,
+          class Unit,
+          class ParentGroup,
+          class Mapping,
+          class Synchronizer>
+__device__ void test_make_group_non_exhaustive(
+  bool is_valid, const Unit& unit, const ParentGroup& parent, Mapping&& mapping, Synchronizer&& synchronizer)
 {
-  auto group = cudax::coop::make_group<GroupTempl>(cudax::coop::non_exhaustive, cuda::std::forward<Args>(args)...);
+  const auto init_mapping_result = cudax::coop::__make_init_group_mapping_result<Unit>(parent);
+  using MappingResult        = decltype(mapping.map(cudax::coop::non_exhaustive, unit, parent, init_mapping_result));
+  using SynchronizerInstance = decltype(synchronizer.make_instance(unit, parent, cuda::std::declval<MappingResult>()));
+  using Group                = GroupTempl<Unit, ParentGroup, MappingResult, SynchronizerInstance>;
 
-  static_assert(
-    cuda::std::is_same_v<cuda::std::optional<decltype(GroupTempl{cuda::std::forward<Args>(args)...})>, decltype(group)>);
-  static_assert(
-    noexcept(GroupTempl{cuda::std::forward<Args>(args)...})
-    == noexcept(cudax::coop::make_group<GroupTempl>(cudax::coop::non_exhaustive, cuda::std::forward<Args>(args)...)));
+  auto group = cudax::coop::make_group<GroupTempl>(
+    cudax::coop::non_exhaustive,
+    unit,
+    parent,
+    cuda::std::forward<Mapping>(mapping),
+    cuda::std::forward<Synchronizer>(synchronizer));
+
+  static_assert(cuda::std::is_same_v<cuda::std::optional<Group>, decltype(group)>);
+  static_assert(MappingResult::is_always_exhaustive() == IsAlwaysExhaustive);
+  static_assert(noexcept(cudax::coop::make_group<GroupTempl>(
+    cudax::coop::non_exhaustive,
+    unit,
+    parent,
+    cuda::std::forward<Mapping>(mapping),
+    cuda::std::forward<Synchronizer>(synchronizer))));
 
   REQUIRE(group.has_value() == is_valid);
   if (group)
@@ -79,11 +100,46 @@ struct TestKernel
     test_make_group<cudax::coop::group_view>(cuda::gpu_thread, cudax::coop::this_warp{config});
 
     // Test non-exhaustive generic group.
-    test_make_group_non_exhaustive<cudax::coop::generic_group>(
+    test_make_group_non_exhaustive<cudax::coop::generic_group, false>(
       cuda::gpu_thread.rank(cuda::warp) < 28,
       cuda::gpu_thread,
       cudax::coop::this_warp{config},
-      cudax::coop::group_by{cudax::coop::non_exhaustive, 7},
+      cudax::coop::group_by{7},
+      cudax::coop::lane_synchronizer{});
+
+    test_make_group_non_exhaustive<cudax::coop::generic_group, false>(
+      cuda::gpu_thread.rank(cuda::warp) < 28,
+      cuda::gpu_thread,
+      cudax::coop::this_warp{config},
+      cudax::coop::group_by{cuda::std::cw<7>},
+      cudax::coop::lane_synchronizer{});
+
+    test_make_group_non_exhaustive<cudax::coop::generic_group, true>(
+      true,
+      cuda::gpu_thread,
+      cudax::coop::this_warp{config},
+      cudax::coop::group_by{cuda::std::cw<4>},
+      cudax::coop::lane_synchronizer{});
+
+    test_make_group_non_exhaustive<cudax::coop::generic_group, false>(
+      cuda::gpu_thread.rank(cuda::warp) < 16,
+      cuda::gpu_thread,
+      cudax::coop::this_warp{config},
+      cudax::coop::group_as{cuda::std::index_sequence<4, 12>{}},
+      cudax::coop::lane_synchronizer{});
+
+    test_make_group_non_exhaustive<cudax::coop::generic_group, false>(
+      cuda::gpu_thread.rank(cuda::warp) < 16,
+      cuda::gpu_thread,
+      cudax::coop::this_warp{config},
+      cudax::coop::take{cuda::std::cw<16>},
+      cudax::coop::lane_synchronizer{});
+
+    test_make_group_non_exhaustive<cudax::coop::generic_group, false>(
+      false,
+      cuda::gpu_thread,
+      cudax::coop::this_warp{config},
+      cudax::coop::take{cuda::std::cw<0>},
       cudax::coop::lane_synchronizer{});
   }
 };
