@@ -375,8 +375,11 @@ struct effect_t
 
   _F __f_;
 
+  // maybe_unused: when f is nullary, only the discarded constexpr branch reads the failure;
+  // gcc 9 reports it as set-but-unused.
   template <class _Fn>
-  void on_thrown(const ::std::exception* __exception, const ::cuda::std::source_location, _Fn&) noexcept(
+  void
+  on_thrown([[maybe_unused]] const ::std::exception* __exception, const ::cuda::std::source_location, _Fn&) noexcept(
     ::cuda::std::is_nothrow_invocable_v<_F&, const ::std::exception*> || ::cuda::std::is_nothrow_invocable_v<_F&>)
   {
     if constexpr (::cuda::std::is_invocable_v<_F&, const ::std::exception*>)
@@ -391,7 +394,7 @@ struct effect_t
   }
 
   template <class _Status, class _Fn>
-  void on_returned(const _Status __status, const ::cuda::std::source_location, _Fn&) noexcept(
+  void on_returned([[maybe_unused]] const _Status __status, const ::cuda::std::source_location, _Fn&) noexcept(
     ::cuda::std::is_nothrow_invocable_v<_F&, _Status> || ::cuda::std::is_nothrow_invocable_v<_F&>)
   {
     if constexpr (::cuda::std::is_invocable_v<_F&, _Status>)
