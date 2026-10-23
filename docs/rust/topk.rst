@@ -4,9 +4,6 @@
 Selecting TopK keys and pairs
 ================================
 
-This example requires Oxide's generic native-registration support. The revision
-currently pinned by the Cargo manifests does not yet include that support.
-
 ``topk_min_keys`` and ``topk_max_keys`` return the smallest or largest keys in a
 fresh, unsorted payload. ``topk_min_pairs`` and ``topk_max_pairs`` also carry each
 associated value into an independently typed fresh payload:
@@ -42,7 +39,7 @@ association, preserved inputs, prefix validity and independent result mutation:
    :language: rust
    :start-after: // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-With an Oxide revision containing that support and ``nightly-2026-10-11``
+With the pinned Oxide revision and Rust ``1.99.1``
 installed, run from a complete CCCL checkout:
 
 .. code-block:: shell
