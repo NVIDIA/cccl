@@ -16,12 +16,36 @@ unchanged. Merge Sort supports all ten ``Numeric`` types, including ``f32`` and
 ``f64``. Equal keys have no stable-tie guarantee; floating keys must satisfy the
 comparison's strict weak ordering requirements. No NaN total order is supplied.
 
+Stateless comparators
+---------------------
+
+Full-input Block ``i32`` Keys also accepts function items and zero-capture
+``Fn(i32, i32) -> bool + Copy`` closures through ``order``:
+
+.. code-block:: rust
+
+   let descending = coop::merge_sort_keys(
+       block, &keys,
+       coop::MergeSortOptions::default().order(|left, right| left > right),
+   );
+
+True means that the left key precedes the right. The comparator must define a
+strict weak ordering; ties remain unordered. Callable sorting keeps the same
+fresh result, input validity and temporary-storage rules. Captures, function
+pointers, partial tiles, Warp groups and Pairs are rejected at compile time for
+callable orders. Closures that call methods on their keys may need explicit
+``i32`` parameter types.
+Built-in ascending and descending orders retain their existing type and group
+support.
+
 A complete program
 ------------------
 
 This helper keeps the item count and alignment generic. It returns a full
 ascending result, a descending prefix and the original payload. The partial
-operation takes a group-uniform signed count and a sentinel of the key type:
+operation takes a group-uniform signed count and a sentinel of the key type.
+The second helper forwards ``MergeSortOptions`` under the existing nongeneric
+``MergeSortOrder`` bound, preserving the actual comparator and selected storage:
 
 .. literalinclude:: ../../rust/cuda-coop/examples/merge_sort_keys/helper/src/lib.rs
    :language: rust
@@ -30,7 +54,12 @@ operation takes a group-uniform signed count and a sentinel of the key type:
 The host instantiates one and four items per thread on two 4-by-4-by-4 Blocks.
 It uses ``i64`` keys with at least 32-byte alignment, checks both sorted results,
 verifies input preservation and result validity, and mutates one result while
-retaining the other:
+retaining the other. A second kernel uses three 128-thread Blocks with ``i32``
+keys, including duplicates and both integer extremes. For one and four items
+per thread it combines built-in ascending, an even-first function item and a
+descending closure. Ascending and even-first reuse auto-sync scratch; the
+descending closure uses implicit storage. All three results remain live, and
+the host checks every result, validity bit and preserved input:
 
 .. literalinclude:: ../../rust/cuda-coop/examples/merge_sort_keys/src/main.rs
    :language: rust

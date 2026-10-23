@@ -164,3 +164,54 @@ where
     }
     (output_keys, output_values)
 }
+
+fn callable_full() -> &'static str {
+    library::registration!("COOP_MERGE_SORT_KEYS_CALLABLE_FULL")
+}
+
+unsafe extern "C" fn compare_thunk<F: Fn(i32, i32) -> bool>(
+    environment: *const F,
+    left: i32,
+    right: i32,
+) -> i32 {
+    // SAFETY: the marker borrows the actual operator for this synchronous call.
+    (unsafe { (&*environment)(left, right) }) as i32
+}
+
+#[inline(always)]
+pub(super) fn callable<
+    T: Numeric,
+    F: Fn(i32, i32) -> bool + Copy,
+    S: TempStorageLike,
+    const N: usize,
+    const ALIGN: usize,
+>(
+    input: &ThreadData<T, N, ALIGN>,
+    operator: F,
+    storage: S,
+) -> ThreadData<T, N, ALIGN>
+where
+    Alignment<ALIGN>: SupportedAlignment,
+{
+    let mut output = ThreadData::<T, N, ALIGN>::new();
+    let (input_pointer, input_bits) = input.block_io_read_parts();
+    let (output_pointer, output_bits) = output.block_io_parts();
+    let payload = (input_pointer, output_pointer, input_bits, output_bits);
+    let storage = storage.into_raw();
+    // SAFETY: input and fresh same-shape output are distinct live payloads. The
+    // full recipe checks all input bits before copying, preserves input, and
+    // writes every output bit. The compiler admits the actual i32 callable,
+    // complete Block participation and scratch reuse. Its shared environment
+    // remains live for this synchronous call; the C thunk converts bool to i32.
+    unsafe {
+        library::checked_block_payload_callback_call_v1::<T, _, _, _, _, _, _, N>(
+            callable_full,
+            storage,
+            (),
+            payload,
+            compare_thunk::<F>,
+            &operator,
+        )
+    }
+    output
+}

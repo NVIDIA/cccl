@@ -12,9 +12,12 @@ use cuda_device::library;
 
 mod boundary;
 
-/// A sealed built-in Merge Sort order: [`Ascending`] or [`Descending`].
+/// A sealed Merge Sort order or stateless i32 key comparator.
 ///
-/// Both orders compare keys in their original numeric type. Merge Sort does
+/// [`Ascending`] and [`Descending`] compare keys in their original numeric type.
+/// Full-input Block i32 Keys also accepts function items and zero-capture
+/// `Fn(i32, i32) -> bool + Copy` closures. True means the left key precedes the
+/// right; the comparator must define a strict weak ordering. Merge Sort does
 /// not guarantee the relative order of equal keys.
 pub trait MergeSortOrder: sealed::Order {}
 
@@ -99,7 +102,7 @@ macro_rules! logical_groups {
 }
 logical_groups!(1, 2, 4, 8, 16, 32);
 
-/// Built-in order and optional count/sentinel for [`merge_sort_keys`] or [`merge_sort_pairs`].
+/// Order and optional count/sentinel for [`merge_sort_keys`] or [`merge_sort_pairs`].
 ///
 /// `T` is inferred from the input. Only canonical [`Default`] is implemented:
 /// ascending order, every input and implicit scratch. Builders consume options
@@ -132,7 +135,9 @@ impl<T: Numeric> Default for MergeSortOptions<T> {
 }
 
 impl<T: Numeric, O, P, S> MergeSortOptions<T, O, P, S> {
-    /// Select ascending or descending order, preserving the count and sentinel.
+    /// Select a built-in order or stateless i32 Keys comparator, retaining other options.
+    ///
+    /// Closures that call methods on their keys may need explicit `i32` parameter types.
     pub fn order<O2: MergeSortOrder>(self, order: O2) -> MergeSortOptions<T, O2, P, S> {
         MergeSortOptions {
             order,
@@ -212,8 +217,9 @@ impl<T: Numeric, O, P, S> MergeSortOptions<T, O, P, S> {
 /// Implicit scratch is compiler-planned, with synchronization before dirty reuse.
 /// Explicit Block storage retains its manual/auto-sync/exclusive policy. CUB
 /// synchronization does not complete unrelated global accesses; use
-/// `cuda_device::thread::sync_threads()` when needed. No custom comparator is
-/// supplied. Execution requires an
+/// `cuda_device::thread::sync_threads()` when needed. Full-input Block i32 Keys
+/// also accepts the stateless comparators described by [`MergeSortOrder`].
+/// Execution requires an
 /// Oxide-compiled CUDA kernel. Generic T/N/ALIGN callers need no
 /// `generic_const_exprs` feature.
 ///
@@ -241,7 +247,7 @@ where
     G: MergeSortGroup<S>,
     Alignment<ALIGN>: SupportedAlignment,
 {
-    boundary::merge_sort_keys::<T, G, O, P, S, ITEMS_PER_THREAD, ALIGN>(keys, options)
+    O::keys::<T, G, P, S, ITEMS_PER_THREAD, ALIGN>(keys, options)
 }
 
 /// Merge-sort associated keys and values into two fresh blocked payloads.
@@ -259,6 +265,7 @@ where
 /// even beyond the prefix or at count zero. Invalid counts or either missing
 /// input bit trap before numeric reads. Both outputs have the same valid
 /// prefix; suffix [`ThreadData::get`] calls return `None`.
+/// Callable comparator orders are rejected at compile time for Pairs.
 ///
 /// Each value follows its associated key without numeric conversion. Equal
 /// keys have no stable-tie guarantee. Floating keys must satisfy strict weak
@@ -316,6 +323,7 @@ where
 }
 
 mod sealed {
+    use super::*;
     pub trait Value {
         const ASCENDING_FULL_REGISTRATION: &'static str;
         const DESCENDING_FULL_REGISTRATION: &'static str;
@@ -344,6 +352,17 @@ mod sealed {
     }
     pub trait Order {
         const DESCENDING: bool;
+        fn keys<T, G, P, S, const N: usize, const ALIGN: usize>(
+            input: &ThreadData<T, N, ALIGN>,
+            options: MergeSortOptions<T, Self, P, S>,
+        ) -> ThreadData<T, N, ALIGN>
+        where
+            Self: Sized,
+            T: Numeric,
+            P: MergeSortPrefix<T>,
+            S: TempStorageLike,
+            G: MergeSortGroup<S>,
+            Alignment<ALIGN>: SupportedAlignment;
     }
     pub trait Prefix<T>: Copy {
         const PARTIAL: bool;
@@ -352,12 +371,68 @@ mod sealed {
 
 impl sealed::Order for Ascending {
     const DESCENDING: bool = false;
+    fn keys<T, G, P, S, const N: usize, const ALIGN: usize>(
+        input: &ThreadData<T, N, ALIGN>,
+        options: MergeSortOptions<T, Self, P, S>,
+    ) -> ThreadData<T, N, ALIGN>
+    where
+        T: Numeric,
+        P: MergeSortPrefix<T>,
+        S: TempStorageLike,
+        G: MergeSortGroup<S>,
+        Alignment<ALIGN>: SupportedAlignment,
+    {
+        boundary::merge_sort_keys::<T, G, Self, P, S, N, ALIGN>(input, options)
+    }
 }
 impl MergeSortOrder for Ascending {}
 impl sealed::Order for Descending {
     const DESCENDING: bool = true;
+    fn keys<T, G, P, S, const N: usize, const ALIGN: usize>(
+        input: &ThreadData<T, N, ALIGN>,
+        options: MergeSortOptions<T, Self, P, S>,
+    ) -> ThreadData<T, N, ALIGN>
+    where
+        T: Numeric,
+        P: MergeSortPrefix<T>,
+        S: TempStorageLike,
+        G: MergeSortGroup<S>,
+        Alignment<ALIGN>: SupportedAlignment,
+    {
+        boundary::merge_sort_keys::<T, G, Self, P, S, N, ALIGN>(input, options)
+    }
 }
 impl MergeSortOrder for Descending {}
+
+struct CallableBounds<T, G, P, F>(PhantomData<(T, G, P, F)>);
+impl<T, G: sealed::Group, P: sealed::Prefix<T>, F> CallableBounds<T, G, P, F> {
+    const VALID: () = {
+        assert!(!G::WARP, "callable Merge Sort requires Block");
+        assert!(!P::PARTIAL, "callable Merge Sort requires full input");
+        assert!(
+            core::mem::size_of::<F>() == 0,
+            "callable Merge Sort requires a stateless operator"
+        );
+    };
+}
+impl<F: Fn(i32, i32) -> bool + Copy> sealed::Order for F {
+    const DESCENDING: bool = panic!("callable Merge Sort Pairs is unsupported");
+    fn keys<T, G, P, S, const N: usize, const ALIGN: usize>(
+        input: &ThreadData<T, N, ALIGN>,
+        options: MergeSortOptions<T, Self, P, S>,
+    ) -> ThreadData<T, N, ALIGN>
+    where
+        T: Numeric,
+        P: MergeSortPrefix<T>,
+        S: TempStorageLike,
+        G: MergeSortGroup<S>,
+        Alignment<ALIGN>: SupportedAlignment,
+    {
+        let () = CallableBounds::<T, G, P, F>::VALID;
+        boundary::callable(input, options.order, options.storage)
+    }
+}
+impl<F: Fn(i32, i32) -> bool + Copy> MergeSortOrder for F {}
 impl<T: Numeric> sealed::Prefix<T> for () {
     const PARTIAL: bool = false;
 }

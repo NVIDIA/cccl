@@ -42,3 +42,20 @@ where
     );
     (ascending, descending, input)
 }
+
+/// Sort full i32 Keys with either a built-in order or a stateless comparator.
+///
+/// The comparator defines a strict weak ordering. Its concrete type and the
+/// selected storage are retained through this unchanged generic order bound.
+pub fn sort_values<O: coop::MergeSortOrder, S: coop::TempStorageLike, const N: usize>(
+    block: coop::ThreadGroup<coop::Block>,
+    input: &coop::ThreadData<i32, N>,
+    options: coop::MergeSortOptions<i32, O, (), S>,
+) -> coop::ThreadData<i32, N> {
+    coop::merge_sort_keys(block, input, options)
+}
+
+/// Order even keys before odd keys, then order each parity numerically.
+pub fn even_first(left: i32, right: i32) -> bool {
+    (left & 1) < (right & 1) || ((left & 1) == (right & 1) && left < right)
+}

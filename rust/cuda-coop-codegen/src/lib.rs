@@ -920,6 +920,9 @@ impl Provider {
                 (NativeRequest::Reduce(reduce), Some(callback)) => {
                     reduce.source_with_callback(symbol, Some(&callback.symbol))
                 }
+                (NativeRequest::MergeSortKeys(sort), Some(callback)) => {
+                    sort.source_with_callback(symbol, Some(&callback.symbol))
+                }
                 (_, None) => request.source(symbol),
                 _ => unreachable!("callback recipes are validated before native compilation"),
             };
@@ -931,10 +934,10 @@ impl Provider {
             let identity: [u8; 32] = hash.finalize().into();
             hash_field(&mut batch_identity, &identity);
             let suffix: String = identity.iter().map(|byte| format!("{byte:02x}")).collect();
-            let token = if callback.is_some() {
-                "reduce_callable".to_owned()
-            } else {
-                request.token()
+            let token = match (request, callback) {
+                (NativeRequest::Reduce(_), Some(_)) => "reduce_callable".to_owned(),
+                (NativeRequest::MergeSortKeys(_), Some(_)) => "merge_sort_keys_callable".to_owned(),
+                _ => request.token(),
             };
             let symbol = format!("cuda_coop_{token}_{suffix}");
             source.push_str(&source_for(&symbol));

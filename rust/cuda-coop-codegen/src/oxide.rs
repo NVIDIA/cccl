@@ -6,7 +6,8 @@
 //! A dependency build script can serve as its already-built provider executable:
 //! normal Cargo execution embeds [`registration`] in a device crate constant;
 //! `--oxide-library-request-v1` execution passes stdin/stdout to [`serve`];
-//! `--oxide-library-request-v2` serves compiler-admitted callable Reduce requests;
+//! `--oxide-library-request-v2` serves compiler-admitted callable Reduce and
+//! Merge Sort Keys comparator requests;
 //! `--oxide-library-inputs-v1` passes them to [`serve_inputs`] during macro expansion.
 //! Use `cuda_device::library::registration!` in the getter to track these inputs.
 //! The compiler reads the registration getter's constant MIR and invokes this
@@ -32,7 +33,8 @@
 //! Device calls retain all participation, validity and scratch obligations of
 //! [`crate::Specialization`]. No allocation or synchronization policy is supplied.
 //! Callable Reduce uses i32 full-input Block Raking and the same payload validity
-//! and root-result ABI. Its thunk and borrowed environment come from Oxide's
+//! and root-result ABI. Callable Merge Sort Keys uses full-input Block i32 and a
+//! stateless comparator. Their thunks and borrowed environments come from Oxide's
 //! checked callback marker; the provider does not select or execute Rust code.
 
 use crate::{
@@ -157,13 +159,9 @@ struct CallbackRequest {
 
 impl CallbackRequest {
     fn native(&self) -> Result<NativeRequest> {
-        if self.operation != "reduce_callable_payload_validity_bits_v1"
-            || self.algorithm != "raking"
-            || self.dtype != Scalar::Signed(32)
-            || self.warp_width.is_some()
-        {
+        if self.dtype != Scalar::Signed(32) || self.warp_width.is_some() {
             return Err(Error::message(
-                "callable Reduce requires the i32 Block payload raking recipe",
+                "callable recipes require i32 Block payloads",
             ));
         }
         if self.callback.symbol.is_empty()
@@ -182,18 +180,32 @@ impl CallbackRequest {
             || self.callback.result != Scalar::Signed(32)
         {
             return Err(Error::message(
-                "callable Reduce requires a C identifier and the (const environment*, i32, i32) -> i32 callback ABI",
+                "callable recipes require a C identifier and the (const environment*, i32, i32) -> i32 callback ABI",
             ));
         }
-        ReduceRequest::block(
-            Dtype::I32,
-            ReduceOperator::Sum,
-            ReduceAlgorithm::Raking,
-            ReduceForm::Payload,
-            self.block,
-            self.items_per_thread,
-        )
-        .map(NativeRequest::Reduce)
+        match (self.operation.as_str(), self.algorithm.as_str()) {
+            ("reduce_callable_payload_validity_bits_v1", "raking") => ReduceRequest::block(
+                Dtype::I32,
+                ReduceOperator::Sum,
+                ReduceAlgorithm::Raking,
+                ReduceForm::Payload,
+                self.block,
+                self.items_per_thread,
+            )
+            .map(NativeRequest::Reduce),
+            ("merge_sort_keys_callable_payload_validity_bits_v1", "block") => {
+                MergeSortKeysRequest::block(
+                    Dtype::I32,
+                    MergeSortKeysRecipe::AscendingFull,
+                    self.block,
+                    self.items_per_thread,
+                )
+                .map(NativeRequest::MergeSortKeys)
+            }
+            _ => Err(Error::message(
+                "unsupported callable operation or algorithm",
+            )),
+        }
     }
 }
 
@@ -936,6 +948,27 @@ pub fn reduce_callable_registration(executable: &Path) -> Result<String> {
         executable,
         operation: "reduce_callable_payload_validity_bits_v1",
         algorithm: "raking",
+    })
+    .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
+}
+
+/// Register full-input i32 Block Merge Sort Keys with a stateless Rust comparator.
+///
+/// The compiler supplies a genuine i32-return thunk under protocol version two;
+/// the native comparator converts its result to bool. Output retains all keys.
+///
+/// # Errors
+/// Rejects a nonabsolute executable or a path that cannot be encoded as JSON.
+pub fn merge_sort_keys_callable_registration(executable: &Path) -> Result<String> {
+    if !executable.is_absolute() {
+        return Err(Error::message("provider executable path must be absolute"));
+    }
+    serde_json::to_string(&Registration {
+        version: VERSION,
+        provider: "cuda_coop",
+        executable,
+        operation: "merge_sort_keys_callable_payload_validity_bits_v1",
+        algorithm: "block",
     })
     .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
 }
@@ -1692,6 +1725,102 @@ mod tests {
         let length = u64::from_le_bytes(response[8..16].try_into()?) as usize;
         let header: serde_json::Value = serde_json::from_slice(&response[24..24 + length])?;
         assert_eq!(header["version"], 2);
+        for entry in header["specializations"].as_array().unwrap() {
+            assert_eq!(
+                entry["arguments"],
+                serde_json::json!([
+                    {"kind":"const_pointer","scalar":{"kind":"signed","bits":32}},
+                    {"kind":"mut_pointer","scalar":{"kind":"signed","bits":32}},
+                    {"kind":"const_pointer","scalar":{"kind":"unsigned","bits":8}},
+                    {"kind":"mut_pointer","scalar":{"kind":"unsigned","bits":8}}
+                ])
+            );
+        }
+        Ok(())
+    }
+
+    fn comparator_request(symbol: &str, items: u32) -> serde_json::Value {
+        let mut request = callable_request(symbol, items);
+        request["operation"] =
+            serde_json::json!("merge_sort_keys_callable_payload_validity_bits_v1");
+        request["algorithm"] = serde_json::json!("block");
+        request
+    }
+
+    #[test]
+    fn callable_merge_sort_is_closed_before_toolkit() {
+        let mut base = comparator_request("rust_compare", 4);
+        base["warp_width"] = serde_json::Value::Null;
+        let parsed: CallbackRequest = serde_json::from_value(base.clone()).unwrap();
+        assert!(matches!(
+            parsed.native().unwrap(),
+            NativeRequest::MergeSortKeys(_)
+        ));
+        assert!(serde_json::from_value::<SpecializationRequest>(base.clone()).is_err());
+        for (path, value) in [
+            (
+                "/operation",
+                serde_json::json!("merge_sort_keys_ascending_partial_validity_bits_v1"),
+            ),
+            ("/algorithm", serde_json::json!("warp")),
+            ("/dtype/kind", serde_json::json!("unsigned")),
+            ("/dtype/bits", serde_json::json!(64)),
+            ("/warp_width", serde_json::json!(8)),
+            ("/block/0", serde_json::json!(33)),
+            ("/items_per_thread", serde_json::json!(0)),
+        ] {
+            let mut request = base.clone();
+            *request.pointer_mut(path).unwrap() = value;
+            let parsed: CallbackRequest = serde_json::from_value(request).unwrap();
+            assert!(parsed.native().is_err(), "{path}");
+        }
+    }
+
+    #[test]
+    #[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
+    fn native_callable_merge_sort_identity_and_layout()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let requests = [
+            comparator_request("rust_even_first", 1),
+            comparator_request("rust_even_first", 4),
+            comparator_request("rust_descending", 4),
+        ]
+        .into_iter()
+        .map(serde_json::from_value::<CallbackRequest>)
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+        let native = requests
+            .iter()
+            .map(CallbackRequest::native)
+            .collect::<Result<Vec<_>>>()?;
+        let callbacks = requests
+            .into_iter()
+            .map(|request| request.callback)
+            .collect::<Vec<_>>();
+        let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let provider = Provider::from_checkout(&checkout, std::env::var("CUDA_HOME")?)?;
+        let target =
+            std::env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
+        let artifact =
+            provider.compile_native_with_callbacks(&native, &target, Some(&callbacks))?;
+        let builtin = provider.compile_native(&native[..2], &target)?;
+        let identities = artifact
+            .specializations
+            .iter()
+            .map(|s| s.identity)
+            .collect::<std::collections::HashSet<_>>();
+        assert_eq!(identities.len(), 3);
+        for (index, entry) in artifact.specializations.iter().enumerate() {
+            let original = &builtin.specializations[index.min(1)];
+            assert_ne!(entry.identity, original.identity);
+            assert_eq!(entry.cub_layout, original.cub_layout);
+            assert_eq!(entry.scratch, original.scratch);
+            assert!(!entry.scratch_free && !entry.mutates_payload && entry.scratch.size > 0);
+        }
+        let mut response = Vec::new();
+        write_response(&native, artifact, &mut response, 2)?;
+        assert_eq!(&response[..8], b"OXDLIB02");
+        let length = u64::from_le_bytes(response[8..16].try_into()?) as usize;
+        let header: serde_json::Value = serde_json::from_slice(&response[24..24 + length])?;
         for entry in header["specializations"].as_array().unwrap() {
             assert_eq!(
                 entry["arguments"],

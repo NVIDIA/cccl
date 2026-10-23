@@ -1951,6 +1951,65 @@ cases.update(
     ),
 )
 
+# Callable Keys retains the existing order bound and admits only the first closed recipe.
+merge_compare = "coop::merge_sort_keys(block,&values,coop::MergeSortOptions::default().order(|left,right| left<right));"
+cases.update(
+    merge_sort_callable_generic=(
+        "fn sorted<O:coop::MergeSortOrder,S:coop::TempStorageLike>"
+        "(block:coop::ThreadGroup<coop::Block>,values:&coop::ThreadData<i32,4>,"
+        "options:coop::MergeSortOptions<i32,O,(),S>)->coop::ThreadData<i32,4>"
+        "{coop::merge_sort_keys(block,values,options)}"
+        "fn before(left:i32,right:i32)->bool {left<right}"
+        + load
+        + "let mut scratch=coop::TempStorage::new().auto_sync();"
+        "let _=sorted(block,&values,coop::MergeSortOptions::default().temp_storage(&mut scratch));"
+        "let _=sorted(block,&values,coop::MergeSortOptions::default().order(before).temp_storage(&mut scratch));"
+        "let result=sorted(block,&values,coop::MergeSortOptions::default().temp_storage(&mut scratch).order(|left,right| left>right));"
+        + store.replace("&values", "&result"),
+        None,
+    ),
+    merge_sort_callable_warp=(
+        load + merge_compare.replace("(block,", "(coop::this_warp(),"),
+        "callable Merge Sort requires Block",
+    ),
+    merge_sort_callable_partial=(
+        load + merge_compare.replace(".order(", ".valid_items(1,i32::MAX).order("),
+        "callable Merge Sort requires full input",
+    ),
+    merge_sort_callable_pairs=(
+        load
+        + merge_compare.replace(
+            "merge_sort_keys(block,&values,", "merge_sort_pairs(block,&values,&values,"
+        ),
+        "callable Merge Sort Pairs is unsupported",
+    ),
+    merge_sort_callable_capture=(
+        load
+        + "let shift=1_i32;"
+        + merge_compare.replace(
+            "|left,right| left<right",
+            "|left:i32,right:i32| left.wrapping_add(shift)<right.wrapping_add(shift)",
+        ),
+        "callable Merge Sort requires a stateless operator",
+    ),
+    merge_sort_callable_fn_pointer=(
+        load
+        + "let before:fn(i32,i32)->bool=|left,right| left<right;"
+        + merge_compare.replace("|left,right| left<right", "before"),
+        "callable Merge Sort requires a stateless operator",
+    ),
+    merge_sort_callable_dtype=(
+        "values.write(0,0_i32);let mut keys=coop::ThreadData::<i64,4>::new();for i in 0..4 {keys.write(i,0); }"
+        + merge_compare.replace("&values", "&keys"),
+        "callback version one supports i32 only",
+    ),
+    merge_sort_callable_cuda_body=(
+        load
+        + merge_compare.replace("left<right", "left<right && thread::threadIdx_x()==0"),
+        "scalar callback cannot reach CUDA",
+    ),
+)
+
 # Merge Sort Pairs keeps independent value types, extents and result owners.
 merge_pairs = "let (result,pair_result)=coop::merge_sort_pairs(block,&values,&associated,Default::default());"
 merge_pairs_manual = merge_pairs.replace(

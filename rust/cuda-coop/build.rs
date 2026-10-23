@@ -26,6 +26,9 @@ fn main() {
     let callable = oxide::reduce_callable_registration(&executable)
         .expect("cuda.coop callable Reduce registration");
     println!("cargo::rustc-env=COOP_REDUCE_RAKING_CALLABLE_PAYLOAD={callable}");
+    let comparator = oxide::merge_sort_keys_callable_registration(&executable)
+        .expect("cuda.coop callable Merge Sort Keys registration");
+    println!("cargo::rustc-env=COOP_MERGE_SORT_KEYS_CALLABLE_FULL={comparator}");
     for (recipe, name) in [
         (RunLengthDecodeRecipe::Window, "WINDOW"),
         (RunLengthDecodeRecipe::Into, "INTO"),

@@ -179,6 +179,10 @@ impl MergeSortKeysRequest {
     }
 
     pub(crate) fn source(self, symbol: &str) -> String {
+        self.source_with_callback(symbol, None)
+    }
+
+    pub(crate) fn source_with_callback(self, symbol: &str, callback: Option<&str>) -> String {
         let (dtype, _) = self.dtype.native();
         let [x, y, z] = self.block;
         let items = self.items;
@@ -201,7 +205,7 @@ impl MergeSortKeysRequest {
             MergeSortKeysRecipe::AscendingFull | MergeSortKeysRecipe::AscendingPartial => "<",
             MergeSortKeysRecipe::DescendingFull | MergeSortKeysRecipe::DescendingPartial => ">",
         };
-        let (parameters, bounds, arguments, count) = if self.recipe.partial() {
+        let (mut parameters, bounds, arguments, count) = if self.recipe.partial() {
             (
                 format!(", long long valid_items, {dtype} sentinel"),
                 format!("if (valid_items < 0 || valid_items > {tile}) __trap();"),
@@ -211,19 +215,32 @@ impl MergeSortKeysRequest {
         } else {
             (String::new(), String::new(), "", tile.to_string())
         };
+        let declaration = callback.map_or_else(String::new, |name| {
+            format!("extern \"C\" __device__ int {name}(const void*, int, int);\n")
+        });
+        let environment = if callback.is_some() {
+            parameters.push_str(", const void* environment");
+            "environment"
+        } else {
+            ""
+        };
+        let comparator = callback.map_or_else(
+            || format!(
+                "struct compare {{\n  __device__ __forceinline__ bool operator()(value_type lhs, value_type rhs) const {{\n    return lhs {comparison} rhs;\n  }}\n}};"
+            ),
+            |name| format!(
+                "struct compare {{ const void* environment;\n  __device__ __forceinline__ bool operator()(int lhs, int rhs) const {{\n    return {name}(environment, lhs, rhs) != 0;\n  }}\n}};"
+            ),
+        );
         format!(
             r#"
 #include <cub/{header}>
 #include <cub/util_type.cuh>
-namespace {symbol}_detail {{
+{declaration}namespace {symbol}_detail {{
 using value_type = {dtype};
 using primitive = {primitive};
 using scratch_storage = primitive::TempStorage;
-struct compare {{
-  __device__ __forceinline__ bool operator()(value_type lhs, value_type rhs) const {{
-    return lhs {comparison} rhs;
-  }}
-}};
+{comparator}
 }}
 extern "C" __device__ void {symbol}(const {dtype}* input, {dtype}* output,
     unsigned char* scratch, const unsigned char* input_bits, unsigned char* output_bits{parameters}) {{
@@ -238,7 +255,7 @@ extern "C" __device__ void {symbol}(const {dtype}* input, {dtype}* output,
 #pragma unroll
   for (int i = 0; i < {items}; ++i) local_keys[i] = input[i];
   primitive operation{{*reinterpret_cast<scratch_storage*>(scratch)}};
-  operation.Sort(local_keys, compare{{}}{arguments});
+  operation.Sort(local_keys, compare{{{environment}}}{arguments});
   const int rank = static_cast<int>({rank});
 #pragma unroll
   for (int i = 0; i < {items}; ++i) {{
