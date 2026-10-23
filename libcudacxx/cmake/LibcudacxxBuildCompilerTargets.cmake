@@ -22,7 +22,7 @@ function(libcudacxx_build_compiler_targets)
   set(cxx_compile_definitions)
 
   if (LIBCUDACXX_ENABLE_FAST_MATH)
-    list(APPEND cuda_compile_options "--use_fast_math")
+    list(APPEND cuda_compile_options "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--use_fast_math>")
   endif()
 
   #  if (CCCL_USE_LIBCXX)
