@@ -496,12 +496,18 @@ struct when_t
   using __exception_sink_tag = void;
   _Pred __pred_;
 
+  static constexpr bool __nothrow_pred =
+    ::cuda::std::is_invocable_v<_Pred&, const ::std::exception*>
+      ? ::cuda::std::is_nothrow_invocable_v<_Pred&, const ::std::exception*>
+      : ::cuda::std::is_nothrow_invocable_v<_Pred&>;
+
   // The claim is the predicate. It is not pure: a composite asks it only where the hook would
   // have run, and after a yes the hook body (`__claimed`) has nothing left to do, so the
-  // predicate is evaluated exactly once either way.
+  // predicate is evaluated exactly once either way. A predicate may throw; a composite that
+  // asks the claim outside its try treats the throw as the hook's forward (see `__policy_or`).
   // maybe_unused: when the predicate is nullary, only the discarded constexpr
   // branch reads __exception; gcc 9 reports it as set-but-unused.
-  __claim __claims([[maybe_unused]] const ::std::exception* __exception)
+  __claim __claims([[maybe_unused]] const ::std::exception* __exception) noexcept(__nothrow_pred)
   {
     if constexpr (::cuda::std::is_invocable_v<_Pred&, const ::std::exception*>)
     {
@@ -1088,6 +1094,11 @@ template <class _P>
 inline constexpr bool __has_claim =
   ::cuda::std::_IsValidExpansion<__claims_of, ::cuda::std::remove_reference_t<_P>>::value;
 
+// Whether asking the claim can throw: only a predicate's can, since a predicate is user code.
+template <class _P>
+inline constexpr bool __nothrow_claim =
+  noexcept(::cuda::std::declval<_P&>().__claims(::cuda::std::declval<const ::std::exception*>()));
+
 template <class _P>
 using __pure_claim_tag_of = typename _P::__pure_claim_tag;
 
@@ -1535,7 +1546,7 @@ struct __policy_and : __composite_hooks<_L, _R>
   // whole sequence before anything has run, and it is the only element that runs nothing before
   // deciding. A later selector is asked in its own position, after the effects before it.
   template <class _LL = _L, ::cuda::std::enable_if_t<__has_claim<_LL>, int> = 0>
-  __claim __claims(const ::std::exception* __exception)
+  __claim __claims(const ::std::exception* __exception) noexcept(__nothrow_claim<_LL>)
   {
     return this->__l_.__claims(__exception);
   }
@@ -1634,7 +1645,28 @@ struct __policy_or : __composite_hooks<_L, _R>
     [[maybe_unused]] bool __use_claimed = false;
     if constexpr (__has_claim<_L>)
     {
-      const __claim __c = this->__l_.__claims(__exception);
+      __claim __c = __claim::__unknown;
+      if constexpr (__nothrow_claim<_L>)
+      {
+        __c = this->__l_.__claims(__exception);
+      }
+      else
+      {
+        // A predicate that throws is a hook that throws, which is the forward: the right arm
+        // sees the predicate's exception, as it does when the predicate runs inside the hook.
+        _CCCL_TRY
+        {
+          __c = this->__l_.__claims(__exception);
+        }
+        _CCCL_CATCH (const ::std::exception& __e)
+        {
+          return __right(&__e, __loc, __fn);
+        }
+        _CCCL_CATCH_ALL
+        {
+          return __right(nullptr, __loc, __fn);
+        }
+      }
       if (__c == __claim::__no)
       {
         return __right(__exception, __loc, __fn);
@@ -1678,7 +1710,7 @@ struct __policy_or : __composite_hooks<_L, _R>
   template <class _LL                                                                     = _L,
             class _RR                                                                     = _R,
             ::cuda::std::enable_if_t<__has_pure_claim<_LL> && __has_pure_claim<_RR>, int> = 0>
-  __claim __claims(const ::std::exception* __exception)
+  __claim __claims(const ::std::exception* __exception) noexcept(__nothrow_claim<_LL> && __nothrow_claim<_RR>)
   {
     const __claim __l = this->__l_.__claims(__exception);
     if (__l == __claim::__yes)
@@ -1778,7 +1810,36 @@ struct __policy_pow : __forwards_success<_P>
       [[maybe_unused]] bool __use_claimed = false;
       if constexpr (__has_claim<_P>)
       {
-        const __claim __c = this->__p_.__claims(__cur);
+        __claim __c = __claim::__unknown;
+        if constexpr (__nothrow_claim<_P>)
+        {
+          __c = this->__p_.__claims(__cur);
+        }
+        else
+        {
+          // A throwing predicate declines this repetition with its own exception, as a throw
+          // from the hook does below.
+          _CCCL_TRY
+          {
+            __c = this->__p_.__claims(__cur);
+          }
+          _CCCL_CATCH (const ::std::exception& __e)
+          {
+            if (__left == 1)
+            {
+              _CCCL_RETHROW;
+            }
+            return __self(__self, &__e, __left - 1);
+          }
+          _CCCL_CATCH_ALL
+          {
+            if (__left == 1)
+            {
+              _CCCL_RETHROW;
+            }
+            return __self(__self, nullptr, __left - 1);
+          }
+        }
         if (__c == __claim::__no)
         {
           if constexpr (__has_pure_claim<_P>)
@@ -1840,7 +1901,7 @@ struct __policy_pow : __forwards_success<_P>
   // The repetition's claim is the repeated policy's, when pure: a no is a no for every
   // repetition.
   template <class _PP = _P, ::cuda::std::enable_if_t<__has_pure_claim<_PP>, int> = 0>
-  __claim __claims(const ::std::exception* __exception)
+  __claim __claims(const ::std::exception* __exception) noexcept(__nothrow_claim<_PP>)
   {
     return this->__p_.__claims(__exception);
   }
@@ -3967,6 +4028,24 @@ UNITTEST("selecting arms decline by return")
           << throw_boom)
          == 1);
   EXPECT(evals == 1);
+
+  // A predicate that throws forwards its own exception, as any hook that throws does: the next
+  // arm of `|` sees it, and under `*` it declines that repetition.
+  int thrown          = 0;
+  const auto bad_pred = [&](const ::std::exception*) -> bool {
+    ++thrown;
+    throw ::std::invalid_argument("predicate");
+  };
+  static_assert(!detail::__nothrow_claim<decltype(when(bad_pred, subst(1)))>);
+  static_assert(detail::__nothrow_claim<decltype(two)>);
+  EXPECT((on_throw(when(bad_pred, subst(1)) | catch_only<::std::invalid_argument>(subst(3)) | subst(0)) << throw_boom)
+         == 3);
+  EXPECT(thrown == 1);
+  thrown = 0;
+  EXPECT(
+    (on_throw(when(bad_pred, subst(1)) * 2 | catch_only<::std::invalid_argument>(subst(4)) | subst(0)) << throw_boom)
+    == 4);
+  EXPECT(thrown == 2);
 
   // An effect ahead of a selecting arm still runs when that arm declines: the sequence's claim
   // is its head's, and `notify` has none.
