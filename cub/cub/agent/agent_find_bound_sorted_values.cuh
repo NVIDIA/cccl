@@ -112,7 +112,7 @@ struct agent_t
   CompareOp compare_op;
 
   template <bool IsFullTile>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void consume_tile(int tile_idx, Offset diag0, int total_in_tile)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void consume_tile(Offset tile_idx, Offset diag0, int total_in_tile)
   {
     const Offset range_beg = range_beg_offsets[tile_idx];
     const Offset range_end = range_beg_offsets[tile_idx + 1];
@@ -197,16 +197,16 @@ struct agent_t
       {
         // Match LowerBound/UpperBound when the output iterator has a void value_type.
         using output_value_t     = cub::detail::non_void_value_t<OutputIt, ::cuda::std::ptrdiff_t>;
-        d_output[values_beg + j] = static_cast<output_value_t>(range_beg + i);
+        const Offset bound       = range_beg + i;
+        d_output[values_beg + j] = static_cast<output_value_t>(bound);
         ++j;
         --needles_remaining;
       }
     }
   }
 
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()(Offset tile_idx)
   {
-    const int tile_idx = static_cast<int>(blockIdx.x);
     const Offset diag0 = static_cast<Offset>(tile_size) * tile_idx;
     // The following expression is equivalent to
     // cuda::std::min(static_cast<Offset>(tile_size) + diag0, range_count + values_count)
