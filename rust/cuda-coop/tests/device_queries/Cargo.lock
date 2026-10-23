@@ -439,8 +439,7 @@ checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 [[package]]
 name = "oxide-artifacts"
 version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74d9a941c0c43d2dceaf25f5c9ca4c9f9cceb28dfa5e4e3cfd14e476f003e7c9"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=96caed46c776eb49226137eac849e795b83b7ce0#96caed46c776eb49226137eac849e795b83b7ce0"
 dependencies = [
  "object",
 ]
