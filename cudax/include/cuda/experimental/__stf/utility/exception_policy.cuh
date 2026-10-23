@@ -7758,10 +7758,11 @@ UNITTEST("error sinks: composites and the bridge on a code")
   store(::cuda::std::span<char>(buffer)) << cudaErrorInvalidValue;
   EXPECT(::std::string_view{buffer}.find("cudaErrorInvalidValue") != ::std::string_view::npos);
   // A substitution of the status type keeps the code channel noexcept; the bridge does not, since
-  // building the exception may throw.
-  using subst_carrier = decltype(subst(cudaSuccess));
+  // building the exception may throw. The queries name the carrier: applying a sink directly
+  // converts it with a defaulted source_location, which nvcc reports as potentially throwing.
+  using subst_carrier = sump::detail::__on_throw_policy<decltype(subst(cudaSuccess))>;
   static_assert(noexcept(::cuda::std::declval<subst_carrier>() << ::cuda::std::declval<cudaError_t>()));
-  using bridged_carrier = decltype(error_sinks_test::succeed_on<cuda_exception>{});
+  using bridged_carrier = sump::detail::__on_throw_policy<error_sinks_test::succeed_on<cuda_exception>>;
   static_assert(!noexcept(::cuda::std::declval<bridged_carrier>() << ::cuda::std::declval<cudaError_t>()));
 };
 
