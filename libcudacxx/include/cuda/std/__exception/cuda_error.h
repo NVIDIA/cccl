@@ -24,6 +24,7 @@
 #endif // no system header
 
 #include <cuda/__driver/entry_point.h> // IWYU pragma: keep
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__cstring/memcpy.h>
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__exception/msg_storage.h>
@@ -32,7 +33,6 @@
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__utility/typeid.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/source_location>
@@ -178,8 +178,7 @@ class cuda_error : public ::std::runtime_error
   template <class _Status>
   _CCCL_HOST_API void __store(const _Status& __status) noexcept
   {
-    static_assert(::cuda::std::is_trivially_copyable_v<_Status>,
-                  "cuda_error: a status type must be trivially copyable");
+    static_assert(::cuda::is_trivially_copyable_v<_Status>, "cuda_error: a status type must be trivially copyable");
     static_assert(sizeof(_Status) <= __status_capacity, "cuda_error: a status type must fit in sixteen bytes");
     ::cuda::std::memcpy(__status_bytes_, &__status, sizeof(_Status));
   }
