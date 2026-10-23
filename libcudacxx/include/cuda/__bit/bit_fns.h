@@ -88,13 +88,11 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
   constexpr auto __nbits = ::cuda::std::__num_bits_v<_Tp>;
   _CCCL_ASSERT(__rank >= 0 && __rank < __nbits, "rank out of range");
   int __ret{};
-#if defined(_CCCL_BUILTIN_CONSTANT_P)
-  if (_CCCL_BUILTIN_CONSTANT_P(__rank) && __rank == __nbits - 1)
+  if (_CCCL_IS_CONSTANT_P(__rank) && __rank == __nbits - 1)
   {
     __ret = (__value == static_cast<_Tp>(-1)) ? __nbits - 1 : -1;
   }
   else
-#endif // _CCCL_BUILTIN_CONSTANT_P
   {
     __ret = ::cuda::__bit_fns_impl(__value, __rank);
   }
