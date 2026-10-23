@@ -384,6 +384,7 @@ CUDA doesn't support exceptions in device code, however, sometimes we need to wr
 .. note::
 
   ``_CCCL_THROW`` requires to include the ``<stdexcept>`` header, regardless exceptions are enabled or not.
+  Likewise, the nested-exception macros require ``<cuda/std/__host_stdlib/exception>``.
   The nested-exception macros are host-only library calls underneath; on device, and in a build without exceptions,
   they terminate like ``_CCCL_THROW`` and ``_CCCL_RETHROW``. Prefer ``_CCCL_THROW_MAYBE_WITH_NESTED`` where the code
   may run outside a handler: ``std::throw_with_nested`` called with no active exception stores an empty cause, and

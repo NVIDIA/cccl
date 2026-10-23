@@ -23,7 +23,6 @@
 
 #include <cuda/std/__exception/terminate.h> // IWYU pragma: keep
 #include <cuda/std/__host_stdlib/cstdio> // IWYU pragma: keep
-#include <cuda/std/__host_stdlib/exception> // IWYU pragma: keep
 
 #include <nv/target>
 
@@ -70,6 +69,7 @@ _CCCL_END_NAMESPACE_CUDA_STD
 //                                    (inside a handler), and a plain X otherwise. std::throw_with_nested
 //                                    outside a handler would store an empty cause, and rethrowing that
 //                                    cause later terminates; this form is safe in both places.
+//   Like _CCCL_THROW with <stdexcept>, these need the caller to include <cuda/std/__host_stdlib/exception>.
 
 // Expand to keywords only for host code when exceptions are enabled. nvc++ in CUDA mode traps when an exception is
 // thrown in device code.
