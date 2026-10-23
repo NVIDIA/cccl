@@ -31,8 +31,10 @@ from cuda.core.system import get_num_devices
 
 import cuda.compute._cccl_interop as cccl_interop
 from cuda.compute import (
+    OpKind,
     ProxyArray,
     deserialize,
+    make_merge_sort,
     make_select,
     make_unary_transform,
     serialize,
@@ -48,6 +50,7 @@ from cuda.compute._cccl_interop import (
     key_to_cc,
     normalize_compute_capabilities,
 )
+from cuda.compute._proxy import PROXY_PLACEHOLDER_ADDRESS
 from cuda.compute._target_cc import target_cc
 from cuda.compute.iterators import CountingIterator, TransformIterator
 from cuda.compute.types import from_numpy_dtype
@@ -460,6 +463,29 @@ def _compilable_ccs(want=2):
 # ----------------------------------------------------------------------------
 # No-GPU compile via proxies (needs the built extension, but no device data)
 # ----------------------------------------------------------------------------
+
+
+@requires_serialization
+@pytest.mark.parametrize("with_values", [False, True], ids=["keys_only", "pairs"])
+def test_proxy_compile_sorts_with_optional_values(with_values):
+    # The C library tells a keys-only sort from a key-value sort by whether the
+    # values iterator's pointer state is NULL. A ProxyArray therefore binds a
+    # non-NULL placeholder address, so a proxy values array compiles as present
+    # and a proxy keys array is never mistaken for an absent one.
+    ccs = _compilable_ccs(1)
+    if not ccs:
+        pytest.skip("toolchain compiles for no target arch")
+    values = ProxyArray(np.float32) if with_values else None
+    sorter = make_merge_sort(
+        d_in_keys=ProxyArray(np.int32),
+        d_in_values=values,
+        d_out_keys=ProxyArray(np.int32),
+        d_out_values=values,
+        op=OpKind.LESS,
+        compute_capability=ccs[0],
+    )
+    assert sorter.d_in_keys_cccl.state == PROXY_PLACEHOLDER_ADDRESS
+    assert (sorter.d_in_values_cccl.state == PROXY_PLACEHOLDER_ADDRESS) is with_values
 
 
 @requires_serialization

@@ -20,7 +20,7 @@ try:
 except ImportError:
     from cuda.core.experimental._utils.cuda_utils import CUDAError
 
-from ._utils.protocols import get_dtype, get_shape, is_device_array
+from ._utils.protocols import get_dtype, get_shape, is_contiguous, is_device_array
 from .struct import _Struct
 
 try:
@@ -500,6 +500,32 @@ def _bind_default_build(
         )
 
 
+def _proxy_device_arrays(args: tuple, kwargs: dict) -> tuple[tuple, dict]:
+    """Replace device-array arguments with dtype-only ``ProxyArray`` placeholders.
+
+    A factory builds an algorithm from its arguments' *types*; the arrays' data
+    is bound at ``__call__``. Building from proxies therefore produces the same
+    algorithm, but the wrapper, which lives in the process-wide wrapper cache,
+    is never constructed from (and so can never retain) a caller's allocation,
+    and the single-phase and ahead-of-time (``ProxyArray``) build paths are
+    identical. Non-contiguous arrays are left as is so the build keeps raising
+    the same error it does today. Objects that merely contain arrays (iterators,
+    ``DoubleBuffer``) are not device arrays and pass through unchanged.
+    """
+    from ._proxy import ProxyArray
+
+    def proxy(value):
+        if (
+            is_device_array(value)
+            and not isinstance(value, ProxyArray)
+            and is_contiguous(value)
+        ):
+            return ProxyArray(get_dtype(value))
+        return value
+
+    return tuple(proxy(a) for a in args), {k: proxy(v) for k, v in kwargs.items()}
+
+
 class _CacheWithRegisteredKeyFunctions:
     """
     Decorator to cache the result of the decorated function.
@@ -574,8 +600,9 @@ class _CacheWithRegisteredKeyFunctions:
                 )
                 _thread_local.factory_device_info = target
                 try:
+                    build_args, build_kwargs = _proxy_device_arrays(args, kwargs)
                     with target_cc(target_cc_arg):
-                        result = func(*args, **kwargs)
+                        result = func(*build_args, **build_kwargs)
                 finally:
                     _thread_local.factory_device_info = previous_device_info
                 cache[cache_key] = result
