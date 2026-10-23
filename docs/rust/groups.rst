@@ -12,8 +12,10 @@ physical groups through ``thread()``, ``warp()``, ``block()``, ``cluster()`` and
 ``grid()``. ``Hierarchy`` aliases ``ThreadHierarchy``.
 
 Queries run in an Oxide-compiled kernel with the workspace's pinned
-``nightly-2026-10-11`` toolchain. The device dependency is pinned in Cargo; there
-is no backend-selection feature. Host payload tests require no CUDA installation.
+``1.99.1`` toolchain. The device dependency is pinned in Cargo; there
+is no backend-selection feature. Plain Cargo commands need the workspace's
+unstable-feature configuration; see :doc:`index` for standalone crate setup.
+Host payload tests require no CUDA installation.
 The host provider remains independently usable on Rust 1.85.
 
 Rank and count
