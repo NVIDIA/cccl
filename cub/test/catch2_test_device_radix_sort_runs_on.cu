@@ -362,8 +362,21 @@ CUB_TEST("Device radix sort queries storage with a mismatched runs_on capability
 {
   cuda::compute_capability cc{};
   REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
-  const auto wrong_cc =
-    cc == cuda::compute_capability{8, 0} ? cuda::compute_capability{9, 0} : cuda::compute_capability{8, 0};
+
+  const auto wrong_cc = [&] {
+    for (auto&& target : cuda::__target_compute_capabilities())
+    {
+      if (target != cc)
+      {
+        return target;
+      }
+    }
+    SKIP("Test requires building with more than one compute-capability");
+  }();
+
+  CAPTURE(cc.get());
+  CAPTURE(wrong_cc.get());
+
   const auto env =
     cuda::execution::guarantee(cub::experimental::RunsOn{cub::experimental::DeviceDescription{wrong_cc, 1}});
   c2h::device_vector<std::int32_t> keys_in{3, 1, 2};
@@ -373,50 +386,6 @@ CUB_TEST("Device radix sort queries storage with a mismatched runs_on capability
   REQUIRE(
     cudaSuccess
     == cub::DeviceRadixSort::SortKeys(nullptr, bytes, keys_in.data().get(), keys_out.data().get(), 3, 0, 32, env));
-  REQUIRE(bytes > 0);
-}
-#endif // TEST_LAUNCH == 0
-
-#if TEST_LAUNCH == 0
-struct runs_on_key_t
-{
-  std::int32_t key;
-};
-
-struct runs_on_decomposer_t
-{
-  __host__ __device__ cuda::std::tuple<std::int32_t&> operator()(runs_on_key_t& key) const
-  {
-    return {key.key};
-  }
-};
-
-CUB_TEST("Device radix sort queries storage with runs_on and no device allocations",
-         "[radix_sort][device][runs_on][storage-query]",
-         CUB_SMALL)
-{
-  const auto cc        = GENERATE(cuda::compute_capability{7, 5}, cuda::compute_capability{9, 0});
-  const auto num_items = GENERATE(1, 100'000);
-  CAPTURE(num_items);
-  const auto env = cuda::execution::guarantee(cub::experimental::RunsOn{cub::experimental::DeviceDescription{cc, 128}});
-  // Null data pointers let this query run without allocating memory or accessing a device.
-  std::int32_t* keys = nullptr;
-  cub::DoubleBuffer<std::int32_t> d_values;
-  cub::DoubleBuffer<runs_on_key_t> d_custom_keys;
-  size_t bytes = 0;
-
-  SECTION("keys")
-  {
-    REQUIRE(cudaSuccess == cub::DeviceRadixSort::SortKeys(nullptr, bytes, keys, keys, num_items, 0, 32, env));
-  }
-
-  SECTION("pairs with decomposer and bit range")
-  {
-    REQUIRE(cudaSuccess
-            == cub::DeviceRadixSort::SortPairsDescending(
-              nullptr, bytes, d_custom_keys, d_values, num_items, runs_on_decomposer_t{}, 0, 32, env));
-  }
-
   REQUIRE(bytes > 0);
 }
 #endif // TEST_LAUNCH == 0

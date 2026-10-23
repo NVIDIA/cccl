@@ -23,6 +23,7 @@
 #include <cub/agent/agent_reduce_by_key.cuh>
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/non_void_value.cuh>
 #include <cub/detail/null_type.cuh>
@@ -34,8 +35,6 @@
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_vsmem.cuh>
-
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/std/__host_stdlib/sstream>
 
@@ -453,9 +452,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
       _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
 
       // Invoke init_kernel to initialize tile descriptors
-      error = CubDebug(
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
-          .doit(init_kernel, tile_state, num_tiles, d_num_runs_out));
+      error = CubDebug(detail::TripleChevronFactory{}(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+                         .doit(init_kernel, tile_state, num_tiles, d_num_runs_out));
       if (cudaSuccess != error)
       {
         break;
@@ -515,7 +513,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
 
         // Invoke reduce_by_key_kernel
         error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(scan_grid_size, threads_per_block, 0, stream)
+          detail::TripleChevronFactory{}(scan_grid_size, threads_per_block, 0, stream)
             .doit(reduce_by_key_kernel,
                   d_keys_in,
                   d_unique_out,
@@ -767,7 +765,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_tiles, init_kernel_threads));
     _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
+          detail::TripleChevronFactory{}(init_grid_size, init_kernel_threads, 0, stream)
             .doit(detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
                   tile_state,
                   num_tiles,
@@ -837,7 +835,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
         reduce_by_key_sm_occupancy,
         start_tile);
       if (const auto error = CubDebug(
-            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(scan_grid_size, threads_per_block, 0, stream)
+            detail::TripleChevronFactory{}(scan_grid_size, threads_per_block, 0, stream)
               .doit(reduce_by_key_kernel,
                     d_keys_in,
                     d_unique_out,
