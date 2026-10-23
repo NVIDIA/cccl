@@ -21,22 +21,29 @@
 #endif // no system header
 
 #include <cub/agent/agent_reduce_by_key.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/delay_constructor.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/non_void_value.cuh>
 #include <cub/detail/null_type.cuh>
-#include <cub/device/dispatch/dispatch_common.cuh>
-#include <cub/device/dispatch/dispatch_scan.cuh>
+#include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
-#include <cub/thread/thread_operators.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
+#include <cub/util_temporary_storage.cuh>
 #include <cub/util_vsmem.cuh>
 
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__tuple_dir/tuple.h>
 
 CUB_NAMESPACE_BEGIN
 
