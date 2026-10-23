@@ -51,7 +51,7 @@ struct TestKernel1
     const cudax::coop::generic_group group2{
       cuda::gpu_thread,
       group1,
-      cudax::coop::group_as{cuda::std::integer_sequence<cuda::std::size_t, 8, 8>{}},
+      cudax::coop::group_as{cuda::std::index_sequence<8, 8>{}},
       cudax::coop::lane_synchronizer{}};
     test_group_membership(group2, 8, rank % 8);
     REQUIRE(group2.count(group1) == 2);
@@ -91,7 +91,7 @@ struct TestKernel2
     const cudax::coop::generic_group group2{
       cuda::gpu_thread,
       group1,
-      cudax::coop::group_as{cuda::std::integer_sequence<cuda::std::size_t, 16, 16>{}},
+      cudax::coop::group_as{cuda::std::index_sequence<16, 16>{}},
       cudax::coop::lane_synchronizer{}};
     test_group_membership(group2, 16, rank % 16);
     REQUIRE(group2.count(group1) == 2);

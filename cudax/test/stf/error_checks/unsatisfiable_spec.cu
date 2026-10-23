@@ -10,63 +10,45 @@
 
 /**
  * @file
- * @brief Ensure an error is raised if we try to ask for an unreasonnable
+ * @brief Ensure an error is reported if we try to ask for an unreasonable
  *        amount of resources in a thread hierarchy spec
  */
 
 #include <cuda/experimental/stf.cuh>
 
-#include <csignal>
+#include <cstdio>
+#include <cstdlib>
+#include <stdexcept>
 
 using namespace cuda::experimental::stf;
 
-bool should_abort = false;
-
-void cleanupRoutine(int /*unused*/)
-{
-  if (should_abort)
-  {
-    exit(EXIT_SUCCESS);
-  }
-  else
-  {
-    fprintf(stderr, "Unexpected SIGABRT !\n");
-    exit(EXIT_FAILURE);
-  }
-}
-
 int main()
 {
-  /* Setup an handler to catch the SIGABRT signal during the programming error */
-#ifndef NDEBUG
-#  if _CCCL_COMPILER(MSVC)
-  signal(SIGABRT, &cleanupRoutine);
-#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC)
-  struct sigaction sigabrt_action{};
-  memset(&sigabrt_action, 0, sizeof(sigabrt_action));
-  sigabrt_action.sa_handler = &cleanupRoutine;
-
-  if (sigaction(SIGABRT, &sigabrt_action, nullptr) != 0)
-  {
-    perror("sigaction SIGABRT");
-    exit(EXIT_FAILURE);
-  }
-#  endif // !_CCCL_COMPILER(MSVC)
-
   context ctx;
 
   int X[128];
   auto lX = ctx.logical_data(X);
 
-  should_abort = true;
+  bool caught = false;
+  try
+  {
+    // We are asking an unreasonable amount of threads per block
+    auto spec = con(con<128000>());
+    ctx.launch(spec, lX.rw())->*[] __device__(auto th, auto X) {
+      X[th.rank()] = th.rank();
+    };
+  }
+  catch (const ::std::invalid_argument& e)
+  {
+    caught = true;
+    fprintf(stderr, "Caught expected error: %s\n", e.what());
+  }
 
-  // We are asking an unreasonnable amount of threads per block
-  auto spec = con(con<128000>());
-  ctx.launch(spec, lX.rw())->*[] __device__(auto th, auto X) {
+  // A satisfiable spec still works afterwards.
+  ctx.launch(con(con<128>()), lX.rw())->*[] __device__(auto th, auto X) {
     X[th.rank()] = th.rank();
   };
+  ctx.finalize();
 
-  assert(0 && "This should not be reached");
-  return EXIT_FAILURE;
-#endif
+  return caught ? EXIT_SUCCESS : EXIT_FAILURE;
 }
