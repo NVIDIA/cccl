@@ -29,6 +29,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__functional/invoke.h>
@@ -2254,7 +2255,7 @@ public:
   void __fix_type() noexcept
   {
     static_assert(
-      ::cuda::std::is_trivially_copyable_v<_Status> && sizeof(_Status) <= sizeof(__bytes_)
+      ::cuda::is_trivially_copyable_v<_Status> && sizeof(_Status) <= sizeof(__bytes_)
         && alignof(_Status) <= alignof(long long),
       "a chained status must be trivially copyable, at most 16 bytes, and aligned no more than a long long");
     if (__type_ == nullptr)
@@ -4392,7 +4393,7 @@ UNITTEST("alternation and repetition nested under & and |")
   // instantiated the body, whose `__interpret_answer<void>` of a `subst` arm hard-failed. The
   // same expressions written with the alternation outermost always compiled, which is why the
   // documented forms (`notify & retry * 3 | subst(-1)`) never exposed it.
-  using namespace ::cuda::experimental::stf::exception_policies;
+  using namespace ::cuda::experimental::stf::eh;
 #  if _CCCL_HAS_EXCEPTIONS()
   struct key : ::std::logic_error
   {
@@ -4418,14 +4419,14 @@ UNITTEST("alternation and repetition nested under & and |")
   ::std::ostringstream quiet;
 
   // `|` with a value answer as the right operand of `&` (the paper's figure shape).
-  EXPECT((on_throw(notify(quiet) & (catch_only<key>(subst(1)) | subst(2))) << throw_boom) == 2);
-  EXPECT((on_throw(notify(quiet) & (catch_only<key>(subst(1)) | subst(2))) << throw_key) == 1);
+  EXPECT((errsink(notify(quiet) & (catch_only<key>(subst(1)) | subst(2)))->*throw_boom) == 2);
+  EXPECT((errsink(notify(quiet) & (catch_only<key>(subst(1)) | subst(2)))->*throw_key) == 1);
 
   // Three arms, both associations.
-  EXPECT((on_throw(catch_only<key>(subst(1)) | catch_only<boom>(subst(2)) | subst(3)) << throw_boom) == 2);
-  EXPECT((on_throw(catch_only<key>(subst(1)) | catch_only<boom>(subst(2)) | subst(3)) << throw_other) == 3);
-  EXPECT((on_throw(catch_only<key>(subst(1)) | (catch_only<boom>(subst(2)) | subst(3))) << throw_key) == 1);
-  EXPECT((on_throw(catch_only<key>(subst(1)) | (catch_only<boom>(subst(2)) | subst(3))) << throw_other) == 3);
+  EXPECT((errsink(catch_only<key>(subst(1)) | catch_only<boom>(subst(2)) | subst(3))->*throw_boom) == 2);
+  EXPECT((errsink(catch_only<key>(subst(1)) | catch_only<boom>(subst(2)) | subst(3))->*throw_other) == 3);
+  EXPECT((errsink(catch_only<key>(subst(1)) | (catch_only<boom>(subst(2)) | subst(3)))->*throw_key) == 1);
+  EXPECT((errsink(catch_only<key>(subst(1)) | (catch_only<boom>(subst(2)) | subst(3)))->*throw_other) == 3);
 
   // `*` with a value-answering fallback, nested under `&`.
   int n                = 0;
@@ -4437,9 +4438,9 @@ UNITTEST("alternation and repetition nested under & and |")
     }
     return n;
   };
-  EXPECT((on_throw(notify(quiet) & (retry * 2 | subst(-1))) << third_try) == 3);
+  EXPECT((errsink(notify(quiet) & (retry * 2 | subst(-1)))->*third_try) == 3);
   n = 0;
-  EXPECT((on_throw(notify(quiet) & (retry * 1 | subst(-1))) << [&]() -> int {
+  EXPECT((errsink(notify(quiet) & (retry * 1 | subst(-1)))->*[&]() -> int {
            ++n;
            throw boom();
          })
@@ -4453,16 +4454,16 @@ UNITTEST("alternation and repetition nested under & and |")
       return true;
     },
     noop);
-  EXPECT((on_throw((tick & catch_only<key>(subst(1))) | (tick & subst(2))) << throw_boom) == 2);
+  EXPECT((errsink((tick & catch_only<key>(subst(1))) | (tick & subst(2)))->*throw_boom) == 2);
   EXPECT(effects == 2);
 
   // The outermost forms that always worked still do.
-  EXPECT((on_throw(notify(quiet) & catch_only<key>(subst(1)) | subst(2)) << throw_boom) == 2);
-  EXPECT((on_throw(retry * 2 | subst(-1)) << throw_boom) == -1);
+  EXPECT((errsink(notify(quiet) & catch_only<key>(subst(1)) | subst(2))->*throw_boom) == 2);
+  EXPECT((errsink(retry * 2 | subst(-1))->*throw_boom) == -1);
 
   // Reference results keep their reference answer through a nested alternation.
   static int cell = 7;
-  int& r          = on_throw(notify(quiet) & (catch_only<key>(cell) | cell)) << []() -> int& {
+  int& r          = errsink(notify(quiet) & (catch_only<key>(cell) | cell))->*[]() -> int& {
     throw boom();
   };
   EXPECT(&r == &cell);
