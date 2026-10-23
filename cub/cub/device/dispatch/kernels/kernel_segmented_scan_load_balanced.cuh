@@ -39,6 +39,7 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/cstdint>
 
@@ -46,10 +47,15 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_scan
 {
-// Type of logical work positions for n-bit offsets when the total work is below 2^n. Output segments do not overlap,
-// so outputs whose positions fit OffsetT total at most 2^n.
-template <typename OffsetT>
-using load_balanced_work_t = ::cuda::std::make_unsigned_t<OffsetT>;
+// Type of logical work positions for n-bit offsets, where TotalIsSupplied says whether the call supplies the total item
+// count. Output segments do not overlap, so outputs whose positions fit OffsetT total at most 2^n. n-bit work holds a
+// supplied total below 2^n and, by precondition, the total for a signed OffsetT, which reaches 2^n only when every
+// negative output position is written. An unsigned OffsetT without a supplied total uses 64 bits.
+template <typename OffsetT, bool TotalIsSupplied>
+using load_balanced_work_t =
+  ::cuda::std::conditional_t<::cuda::std::is_signed_v<OffsetT> || TotalIsSupplied,
+                             ::cuda::std::make_unsigned_t<OffsetT>,
+                             ::cuda::std::uint64_t>;
 
 // Type of logical work positions when the total work may reach 2^32 with 32-bit offsets.
 using wide_load_balanced_work_t = ::cuda::std::uint64_t;
@@ -273,13 +279,15 @@ struct reuse_input_begin
 {};
 
 // A work-index value that also records, for the input and for the output, whether some segment in its range is not
-// followed by a segment beginning at its end.
+// followed by a segment beginning at its end, and whether some output segment in its range ends at the last output
+// position.
 template <typename WorkT>
 struct contiguity_work_index_value
 {
   WorkT value;
   bool noncontiguous_input;
   bool noncontiguous_output;
+  bool output_reaches_maximum;
 };
 
 template <typename WorkT>
@@ -290,13 +298,15 @@ struct contiguity_work_index_plus
   {
     return {static_cast<WorkT>(lhs.value + rhs.value),
             lhs.noncontiguous_input || rhs.noncontiguous_input,
-            lhs.noncontiguous_output || rhs.noncontiguous_output};
+            lhs.noncontiguous_output || rhs.noncontiguous_output,
+            lhs.output_reaches_maximum || rhs.output_reaches_maximum};
   }
 };
 
 // Bits of work_index[num_segments + 1].
-inline constexpr unsigned int contiguous_input_flag  = 1;
-inline constexpr unsigned int contiguous_output_flag = 2;
+inline constexpr unsigned int contiguous_input_flag       = 1;
+inline constexpr unsigned int contiguous_output_flag      = 2;
+inline constexpr unsigned int output_reaches_maximum_flag = 4;
 
 template <typename WorkT, typename OffsetT>
 _CCCL_DEVICE _CCCL_FORCEINLINE WorkT make_work_index_value(OffsetT begin, OffsetT end)
@@ -321,11 +331,24 @@ _CCCL_DEVICE _CCCL_FORCEINLINE bool is_followed_by(PositionT begin, WorkT size, 
       == static_cast<unsigned_position_t>(size);
 }
 
+// Whether a segment of size items at begin holds the last position of PositionT. Only then can a segment that follows
+// it modulo 2^n for n-bit positions begin at PositionT's first position.
+template <typename PositionT, typename WorkT>
+_CCCL_DEVICE _CCCL_FORCEINLINE bool reaches_maximum(PositionT begin, WorkT size)
+{
+  using unsigned_position_t = ::cuda::std::make_unsigned_t<PositionT>;
+  return size != WorkT{0}
+      && static_cast<unsigned_position_t>(
+           static_cast<unsigned_position_t>(begin) + static_cast<unsigned_position_t>(size - WorkT{1}))
+           == static_cast<unsigned_position_t>(::cuda::std::numeric_limits<PositionT>::max());
+}
+
 //! @brief Scans segment sizes with a decoupled look-back into the work index, where work_index[i] is the number of
 //!        items in the segments before segment i, for i in [0, num_segments], and stores in
 //!        work_index[num_segments + 1] contiguous_input_flag if every input segment is followed by a segment beginning
-//!        at its end and contiguous_output_flag if every output segment is. The grid also initializes the main
-//!        kernel's tile state. scan_state is initialized by a previous launch when scan_tiles is greater than one.
+//!        at its end, contiguous_output_flag if every output segment is and none holds the last output position, and
+//!        output_reaches_maximum_flag if one does. The grid also initializes the main kernel's tile state. scan_state
+//!        is initialized by a previous launch when scan_tiles is greater than one.
 //!
 //! @tparam BeginOffsetIteratorT
 //!   Random-access input iterator type for the segment beginning offsets
@@ -365,11 +388,15 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(work_index_threads) void device_segmen
   using work_t                            = WorkT;
   using output_position_t                 = load_balanced_output_position_t<OffsetT, WorkT>;
   static constexpr bool has_output_begins = !::cuda::std::is_same_v<OutputBeginOffsetIteratorT, reuse_input_begin>;
-  using value_t                           = contiguity_work_index_value<WorkT>;
-  using scan_op_t                         = contiguity_work_index_plus<WorkT>;
-  using exchange_t                        = BlockExchange<value_t, work_index_threads, work_index_items_per_thread>;
-  using block_scan_t                      = BlockScan<value_t, work_index_threads, BLOCK_SCAN_WARP_SCANS>;
-  using prefix_op_t                       = TilePrefixCallbackOp<value_t, scan_op_t, ScanTileState<value_t>>;
+  // Input positions end at a supplied end offset, so only output positions reach the maximum, and 64-bit output
+  // positions do not.
+  static constexpr bool output_may_reach_maximum =
+    has_output_begins && sizeof(output_position_t) < sizeof(::cuda::std::uint64_t);
+  using value_t      = contiguity_work_index_value<WorkT>;
+  using scan_op_t    = contiguity_work_index_plus<WorkT>;
+  using exchange_t   = BlockExchange<value_t, work_index_threads, work_index_items_per_thread>;
+  using block_scan_t = BlockScan<value_t, work_index_threads, BLOCK_SCAN_WARP_SCANS>;
+  using prefix_op_t  = TilePrefixCallbackOp<value_t, scan_op_t, ScanTileState<value_t>>;
   struct storage_t
   {
     typename prefix_op_t::TempStorage prefix;
@@ -427,9 +454,11 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(work_index_threads) void device_segmen
         next_output_begin = static_cast<OffsetT>(output_begin_offsets[index + OffsetT{1}]);
       }
     }
-    const work_t size               = make_work_index_value<work_t>(begin, end);
-    sizes[item].value               = size;
-    sizes[item].noncontiguous_input = has_next && !is_followed_by(begin, size, next_begin);
+    const work_t size                  = make_work_index_value<work_t>(begin, end);
+    sizes[item].value                  = size;
+    sizes[item].noncontiguous_input    = has_next && !is_followed_by(begin, size, next_begin);
+    sizes[item].noncontiguous_output   = false;
+    sizes[item].output_reaches_maximum = false;
     if constexpr (has_output_begins)
     {
       sizes[item].noncontiguous_output =
@@ -437,12 +466,18 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(work_index_threads) void device_segmen
         && !is_followed_by(
           static_cast<output_position_t>(output_begin), size, static_cast<output_position_t>(next_output_begin));
     }
-    else
+    if constexpr (output_may_reach_maximum)
     {
-      sizes[item].noncontiguous_output = false;
+      sizes[item].output_reaches_maximum = reaches_maximum(static_cast<output_position_t>(output_begin), size);
     }
   }
   exchange_t(storage.tile.exchange).StripedToBlocked(sizes, sizes);
+  [[maybe_unused]] work_t blocked_sizes[work_index_items_per_thread];
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int item = 0; item < work_index_items_per_thread; ++item)
+  {
+    blocked_sizes[item] = sizes[item].value;
+  }
   __syncthreads();
 
   if (tile == 0)
@@ -459,6 +494,11 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(work_index_threads) void device_segmen
     prefix_op_t prefix_op(scan_state, storage.prefix, scan_op_t{}, tile);
     block_scan_t(storage.tile.scan).InclusiveScan(sizes, sizes, scan_op_t{}, prefix_op);
   }
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int item = 0; item < work_index_items_per_thread; ++item)
+  {
+    _CCCL_ASSERT(sizes[item].value >= blocked_sizes[item], "the total item count fits the load-balanced work type");
+  }
   __syncthreads();
 
   exchange_t(storage.tile.exchange).BlockedToStriped(sizes, sizes);
@@ -471,11 +511,13 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(work_index_threads) void device_segmen
       work_index[segment + 1] = sizes[item].value;
       if (segment + 1 == segments)
       {
-        const bool noncontiguous_output =
-          has_output_begins ? sizes[item].noncontiguous_output : sizes[item].noncontiguous_input;
-        work_index[segment + 2] = static_cast<work_t>(
+        const bool output_reaches_maximum = sizes[item].output_reaches_maximum;
+        const bool noncontiguous_output = has_output_begins ? sizes[item].noncontiguous_output || output_reaches_maximum
+                                                            : sizes[item].noncontiguous_input;
+        work_index[segment + 2]         = static_cast<work_t>(
           (sizes[item].noncontiguous_input ? 0u : contiguous_input_flag)
-          | (noncontiguous_output ? 0u : contiguous_output_flag));
+          | (noncontiguous_output ? 0u : contiguous_output_flag)
+          | (output_reaches_maximum ? output_reaches_maximum_flag : 0u));
       }
     }
   }
@@ -563,8 +605,12 @@ private:
   using delta_t           = ::cuda::std::make_unsigned_t<OffsetT>;
   using output_position_t = load_balanced_output_position_t<OffsetT, WorkT>;
   using output_delta_t    = ::cuda::std::make_unsigned_t<output_position_t>;
-  using pair_scan_op_t    = ScanBySegmentOp<ScanOpT>;
-  using input_value_t     = it_value_t<InputIteratorT>;
+  // Whether an output segment may hold the last output position, as the work index records. 64-bit output positions
+  // do not reach it.
+  static constexpr bool output_may_reach_maximum =
+    has_output_deltas && sizeof(output_position_t) < sizeof(::cuda::std::uint64_t);
+  using pair_scan_op_t = ScanBySegmentOp<ScanOpT>;
+  using input_value_t  = it_value_t<InputIteratorT>;
   using wrapped_input_iterator_t =
     ::cuda::std::conditional_t<::cuda::std::is_pointer_v<InputIteratorT>,
                                CacheModifiedInputIterator<policy.load_modifier, input_value_t, OffsetT>,
@@ -605,6 +651,7 @@ private:
     bool output_is_uniform;
     bool input_is_contiguous;
     bool output_is_contiguous;
+    bool output_reaches_maximum;
   };
 
   // Entry 0 holds the look-back's result and, with one entry, the inclusive pair of the tile's last valid item. With
@@ -799,7 +846,7 @@ private:
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void finish_tile_deltas(int entry_count)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void finish_tile_deltas(int entry_count, work_t tile_begin, work_t tile_end)
   {
     const int lane        = static_cast<int>(threadIdx.x);
     auto& deltas          = temp_storage.deltas;
@@ -829,6 +876,18 @@ private:
       if (!deltas.output_is_contiguous)
       {
         check(deltas.output.Alias(), deltas.uniform_output, deltas.output_is_uniform, deltas.carried_output);
+        if constexpr (output_may_reach_maximum)
+        {
+          // Output deltas are uniform modulo 2^n for n-bit positions, but iterator addition does not wrap: a tile
+          // whose output positions pass the last one is stored item by item, each from its own position.
+          if (lane == 0 && deltas.output_reaches_maximum && deltas.output_is_uniform)
+          {
+            const output_delta_t positions_after_start =
+              static_cast<output_delta_t>(::cuda::std::numeric_limits<output_position_t>::max())
+              - static_cast<output_delta_t>(position<output_position_t>(tile_begin, deltas.uniform_output));
+            deltas.output_is_uniform = positions_after_start >= static_cast<output_delta_t>(tile_end - tile_begin - 1);
+          }
+        }
       }
     }
   }
@@ -859,7 +918,7 @@ private:
     }
     const int entry_count = discover_heads(tile_begin, tile_end, num_segments, records_input, records_output);
     __syncwarp();
-    finish_tile_deltas(entry_count);
+    finish_tile_deltas(entry_count, tile_begin, tile_end);
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void load_noncontiguous_tile(
@@ -995,38 +1054,6 @@ private:
       return;
     }
     const PositionT tile_start = position<PositionT>(tile_begin, delta);
-    // Output deltas are uniform modulo 2^n for n-bit positions, but iterator addition does not wrap: a tile whose
-    // output positions pass the end of PositionT's range is stored as two runs, from tile_start up to the maximum and
-    // from the minimum on, so that no index wraps. Input positions end at a supplied OffsetT and cannot wrap, and
-    // 64-bit output positions do not reach the end of their range.
-    if constexpr (has_output_deltas && sizeof(PositionT) < sizeof(::cuda::std::uint64_t))
-    {
-      const DeltaT positions_after_start =
-        static_cast<DeltaT>(::cuda::std::numeric_limits<PositionT>::max()) - static_cast<DeltaT>(tile_start);
-      if (positions_after_start < static_cast<DeltaT>(valid_items - 1))
-      {
-        const int items_before_wrap = static_cast<int>(positions_after_start) + 1;
-        auto run_before_wrap        = d_out + tile_start;
-        auto run_after_wrap         = d_out + ::cuda::std::numeric_limits<PositionT>::min();
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int item = 0; item < items_per_thread; ++item)
-        {
-          const int local_index = static_cast<int>(threadIdx.x) * items_per_thread + item;
-          if (local_index < valid_items)
-          {
-            if (local_index < items_before_wrap)
-            {
-              run_before_wrap[local_index] = output_items[item];
-            }
-            else
-            {
-              run_after_wrap[local_index - items_before_wrap] = output_items[item];
-            }
-          }
-        }
-        return;
-      }
-    }
     if (valid_items == items_per_tile)
     {
       block_store_t(temp_storage.tile.store).Store(d_out + tile_start, output_items);
@@ -1367,9 +1394,10 @@ public:
     const bool input_is_contiguous  = (contiguity & contiguous_input_flag) != 0;
     const bool output_is_contiguous = (contiguity & contiguous_output_flag) != 0;
 
-    auto& deltas                = temp_storage.deltas;
-    deltas.input_is_contiguous  = input_is_contiguous;
-    deltas.output_is_contiguous = output_is_contiguous;
+    auto& deltas                  = temp_storage.deltas;
+    deltas.input_is_contiguous    = input_is_contiguous;
+    deltas.output_is_contiguous   = output_is_contiguous;
+    deltas.output_reaches_maximum = (contiguity & output_reaches_maximum_flag) != 0;
     if (input_is_contiguous)
     {
       deltas.uniform_input    = make_delta(input_origin, work_t{0});

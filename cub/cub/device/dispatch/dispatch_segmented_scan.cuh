@@ -717,7 +717,7 @@ template <
     EndOffsetIteratorT,
     OutputBeginOffsetIteratorT,
     OffsetT,
-    load_balanced_work_t<OffsetT>,
+    load_balanced_work_t<OffsetT, !::cuda::std::is_same_v<NumItemsT, ::cuda::std::nullopt_t>>,
     ScanOpT,
     InitValueT,
     AccumT,
@@ -754,6 +754,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_load_balanced(
   PolicySelector policy_selector                                            = {},
   [[maybe_unused]] LoadBalancedPolicySelector load_balanced_policy_selector = {},
   KernelSource kernel_source                                                = {},
+  [[maybe_unused]] WideKernelSource wide_kernel_source                      = {},
   KernelLauncherFactory launcher_factory                                    = {})
 {
   static_assert(::cuda::std::is_integral_v<OffsetT> && sizeof(OffsetT) >= 4 && sizeof(OffsetT) <= 8,
@@ -972,13 +973,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_load_balanced(
     }
   };
 
-  // With n-bit offsets the work is n bits wide, which requires a total below 2^n. A supplied total of 2^n or more
-  // takes 64-bit work.
-  if constexpr (has_num_items && !::cuda::std::is_same_v<load_balanced_work_t<OffsetT>, wide_load_balanced_work_t>)
+  // A supplied total that the work type of kernel_source cannot hold takes the 64-bit work of wide_kernel_source.
+  using work_t = typename KernelSource::work_t;
+  if constexpr (has_num_items && !::cuda::std::is_same_v<work_t, typename WideKernelSource::work_t>)
   {
-    if (::cuda::std::cmp_greater(num_items, ::cuda::std::numeric_limits<load_balanced_work_t<OffsetT>>::max()))
+    if (::cuda::std::cmp_greater(num_items, ::cuda::std::numeric_limits<work_t>::max()))
     {
-      return dispatch_balanced(WideKernelSource{});
+      return dispatch_balanced(wide_kernel_source);
     }
   }
   return dispatch_balanced(kernel_source);

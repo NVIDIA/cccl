@@ -307,9 +307,10 @@ _CCCL_GLOBAL_CONSTANT auto segmented_scan_load_balancing = ::cuda::std::executio
 //! - Output segments must not overlap. Input segments may.
 //! - With either option, every output position (a segment's output begin offset plus an index within the segment)
 //!   must be representable by the offset type, except with load balancing, 32-bit offsets and a ``num_items`` of 2^32
-//!   or more. With load balancing, 32-bit offsets and no ``num_items``, the total number of items must be below 2^32;
-//!   as non-overlapping outputs whose positions fit the offset type total at most 2^32, this excludes only a total of
-//!   exactly 2^32. For a total of 2^32 or more, use 64-bit offsets or pass ``num_items``.
+//!   or more. ``d_out`` advanced by any output position must lie in the output sequence. With load balancing, signed
+//!   32-bit offsets and no ``num_items``, the total number of items must be below 2^32; as non-overlapping outputs
+//!   whose positions fit the offset type total at most 2^32, this excludes only a total of exactly 2^32, which writes
+//!   every negative output position. For a total of 2^32 or more, use 64-bit offsets or pass ``num_items``.
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_env_api.cu
 //!      :language: c++
