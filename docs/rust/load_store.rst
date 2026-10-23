@@ -26,7 +26,7 @@ shim, provider, or scratch argument.
 Its ``cuda-coop`` dependency supplies the native specialization during the normal
 Oxide build.
 
-Use the Oxide revision selected by the manifests and ``nightly-2026-10-11``.
+Use the Oxide revision selected by the manifests and ``1.99.1``.
 The initial native configuration is Linux with CUDA 13.3 and a supported NVIDIA
 GPU. From a complete CCCL checkout, with that Oxide toolchain installed:
 
