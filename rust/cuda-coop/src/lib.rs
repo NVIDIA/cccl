@@ -26,7 +26,9 @@
 //! assert_eq!(items[0], 9);
 //! ```
 //!
-//! Device queries use Oxide and the pinned `nightly-2026-10-11` toolchain.
+//! Device queries use Oxide and the pinned `1.99.1` toolchain.
+//! Plain Cargo commands also require `RUSTC_BOOTSTRAP=1`, set by this workspace's
+//! `.cargo/config.toml`; standalone consumers must supply that setting themselves.
 //! [`this_block`] and the other dimension-free group constructors describe
 //! the executing thread's current launch. Queries grant no collective
 //! participation or synchronization guarantee. [`load`] and [`store`] support
@@ -50,7 +52,7 @@
 //! [`reduce_batched`] independently reduces each payload slot across physical or
 //! power-of-two logical Warp groups. Its fresh partial payload has a calculated
 //! extent and explicit striped or blocked result ownership. The defining crate
-//! and callers instantiating these calculated signatures enable nightly
+//! and callers instantiating these calculated signatures enable unstable
 //! `generic_const_exprs`; ordinary non-calculated consumers remain feature-free.
 //! [`exchange`] converts between blocked and striped layouts on complete Blocks
 //! and physical or power-of-two logical Warp groups. It preserves input and
