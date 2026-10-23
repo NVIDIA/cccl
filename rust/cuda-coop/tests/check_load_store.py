@@ -189,7 +189,7 @@ cases.update(
             ".valid_items(valid)", ".valid_items(valid).temp_storage(&mut scratch)"
         )
         + reload,
-        "requires a full-block barrier",
+        "requires a barrier covering both accesses",
     ),
     storage_exclusive_sites=(
         new_storage.replace("new()", "new().exclusive()")
