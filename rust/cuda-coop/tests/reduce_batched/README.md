@@ -1,7 +1,7 @@
 # Public batched Reduce fixture
 
 This standalone test uses the public `cuda_coop` API and the pinned Oxide
-toolchain in `Cargo.toml`. It enables nightly `generic_const_exprs` for the
+toolchain in `Cargo.toml`. It enables unstable `generic_const_exprs` for the
 operation-derived result extent; callers do not supply an output size.
 
 The positive mode runs 14 cases and checks 1,792 per-lane reports. Six typed
