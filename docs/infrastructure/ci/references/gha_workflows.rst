@@ -16,9 +16,10 @@ Workflow reference
 CI matrix
 ~~~~~~~~~
 
-Three trigger workflows select a matrix key and run it. Six dispatcher workflows
-unfold the generated job list into GitHub matrix strategies. Contributors rarely
-invoke any of these directly; they fire on push or schedule.
+Four entry-point workflows select matrix keys and run them. The PR workflow runs
+on push, nightly/weekly workflows run on schedules or manually, and the custom
+workflow runs manually. Six dispatcher workflows unfold the generated job list
+into GitHub matrix strategies.
 
 .. list-table::
    :header-rows: 1
@@ -36,6 +37,9 @@ invoke any of these directly; they fire on push or schedule.
    * - ``.github/workflows/ci-workflow-weekly.yml``
      - Both
      - Runs the exhaustive ``weekly`` matrix on a Sunday schedule, with AI failure analysis and Slack notifications.
+   * - ``.github/workflows/ci-workflow-custom.yml``
+     - Manual
+     - Runs the requested full matrices without change detection; defaults to ``nightly``.
    * - ``.github/workflows/workflow-dispatch-standalone-group-linux.yml``
      - Automatic
      - Dispatches an array of standalone Linux jobs as a matrix.
@@ -54,6 +58,14 @@ invoke any of these directly; they fire on push or schedule.
    * - ``.github/workflows/workflow-dispatch-two-stage-windows.yml``
      - Automatic
      - Executes one producer/consumer chain on Windows.
+
+Custom workflow
+^^^^^^^^^^^^^^^
+
+The custom workflow accepts a ``workflows`` input with a space-separated list
+of workflow keys from the matrix file. It defaults to ``nightly``. For example,
+``nightly weekly`` runs both matrices. All selected matrices run in full, without
+change detection.
 
 Manual tools
 ~~~~~~~~~~~~
