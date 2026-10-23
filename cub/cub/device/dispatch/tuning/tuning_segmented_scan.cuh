@@ -18,10 +18,14 @@
 #include <cub/block/block_store.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
-#include <cub/util_device.cuh>
 
 #include <cuda/__cmath/round_up.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/ostream>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/util_device.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 
