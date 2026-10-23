@@ -13,7 +13,7 @@
 // also guarded, so the test still runs where the flag does not take.
 // ADDITIONAL_COMPILE_OPTIONS_HOST: -frtti, --rtti, /GR
 
-#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/nested_exception_macros.h>
 #include <cuda/std/__host_stdlib/exception>
 #include <cuda/std/cassert>
 
