@@ -1,32 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-#
-# ruff: noqa: E402 — the v2-skip block below intentionally precedes the
-# example's imports so the imports stay grouped at the start of the example
-# body (after `# example-begin`).
-
-# Single-cc ahead-of-time serialize/deserialize IS supported on the HostJIT
-# (v2) backend (see serialize_roundtrip.py in this directory). This specific
-# example uses multi-compute-capability AoT (compute_capability=[80, 90]),
-# which is not yet supported on v2: the Python orchestration layer is
-# backend-agnostic and works, but real multi-cc compilation currently hits a
-# pre-existing HostJIT/Clang PTX-ISA-version gap unrelated to AoT itself
-# (HostJIT's Clang emits PTX ISA 8.5 by default, which some CUB codegen
-# needs 8.6+ for on newer target architectures). Skip cleanly there so the
-# example runner treats it as a pass.
-import sys
-
-try:
-    from cuda.compute._build_info import USING_V2
-except ImportError:
-    USING_V2 = False
-
-if USING_V2:
-    print(
-        "multi-cc ahead-of-time build is not yet supported on the HostJIT (v2) backend; skipping."
-    )
-    sys.exit(0)
 
 # example-begin
 """

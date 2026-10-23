@@ -1043,6 +1043,10 @@ def test_double_serialize_roundtrip_is_stable_and_executes():
     np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
 
 
+@pytest.mark.skipif(
+    USING_V2,
+    reason="v2 still keys default builds per device (_BACKEND_SERIALIZES_BUILD_RESULTS)",
+)
 def test_default_build_on_second_same_cc_device_clones_payload(monkeypatch):
     """Real-GPU check of the shared default entry (see the fake-based
     test_default_build_second_same_cc_device_shares_the_entry for the

@@ -1,3 +1,13 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
 // AoT (compile/load/serialize/deserialize) coverage for cccl_device_reduce
 // on the v2 (HostJIT) backend.
 //
@@ -29,6 +39,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -480,20 +491,18 @@ int main(int argc, char** argv)
     return 1;
   }
 
-  char blob_path[] = "/tmp/cccl_v2_aot_test_XXXXXX";
 #ifndef _WIN32
-  int fd = mkstemp(blob_path);
-  if (fd < 0)
+  const std::string blob_file =
+    (std::filesystem::temp_directory_path() / ("cccl_v2_aot_test_" + std::to_string(getpid()) + ".blob")).string();
+  const char* blob_path = blob_file.c_str();
   {
-    fprintf(stderr, "FAIL: mkstemp failed\n");
-    return 1;
-  }
-  ssize_t written = write(fd, blob.data(), blob.size());
-  close(fd);
-  if (written < 0 || static_cast<size_t>(written) != blob.size())
-  {
-    fprintf(stderr, "FAIL: could not write blob to temp file\n");
-    return 1;
+    std::ofstream out(blob_file, std::ios::binary);
+    out.write(blob.data(), static_cast<std::streamsize>(blob.size()));
+    if (!out)
+    {
+      fprintf(stderr, "FAIL: could not write blob to %s\n", blob_path);
+      return 1;
+    }
   }
 
   // --- 4. genuinely separate OS process: fork()+exec() this same binary in
@@ -502,7 +511,7 @@ int main(int argc, char** argv)
   if (pid < 0)
   {
     fprintf(stderr, "FAIL: fork() failed\n");
-    unlink(blob_path);
+    std::filesystem::remove(blob_file);
     return 1;
   }
   if (pid == 0)
@@ -516,10 +525,10 @@ int main(int argc, char** argv)
   if (waitpid(pid, &status, 0) < 0)
   {
     fprintf(stderr, "FAIL: waitpid failed\n");
-    unlink(blob_path);
+    std::filesystem::remove(blob_file);
     return 1;
   }
-  unlink(blob_path);
+  std::filesystem::remove(blob_file);
   if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
   {
     fprintf(stderr, "FAIL: child process (separate OS process, fresh dlopen) did not exit 0 (status=%d)\n", status);
@@ -530,7 +539,6 @@ int main(int argc, char** argv)
   fprintf(stderr,
           "[4/5] SKIPPED on Windows: cross-process fork()+exec() coverage not yet implemented "
           "here; needs a CreateProcess-based equivalent.\n");
-  (void) blob_path;
 #endif
 
   printf("ALL AoT reduce checks PASSED\n");
