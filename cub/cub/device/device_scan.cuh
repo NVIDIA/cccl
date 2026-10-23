@@ -237,7 +237,7 @@ struct DeviceScan
             typename InitValueT,
             typename NumItemsT,
             typename EnvT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t scan_impl_env(
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t scan_impl_single_phase(
     InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, InitValueT init, NumItemsT num_items, const EnvT& env)
   {
     using traits_t = scan_env_traits<InputIteratorT, OutputIteratorT, ScanOpT, InitValueT, NumItemsT, EnvT>;
@@ -256,7 +256,7 @@ struct DeviceScan
             typename InitValueT,
             typename NumItemsT,
             typename EnvT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t scan_impl_env(
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t scan_impl_two_phase(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
@@ -434,7 +434,7 @@ struct DeviceScan
     // Initial value
     const init_value_t init_value{};
 
-    return scan_impl_env(
+    return scan_impl_two_phase(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -514,7 +514,7 @@ struct DeviceScan
     using init_value_t = cub::detail::it_value_t<InputIteratorT>;
     const init_value_t init_value{};
 
-    return scan_impl_env(
+    return scan_impl_single_phase(
       d_in, d_out, ::cuda::std::plus<>{}, detail::InputValue<init_value_t>(init_value), num_items, env);
   }
 
@@ -791,7 +791,7 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScan");
 
-    return scan_impl_env(
+    return scan_impl_two_phase(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -898,7 +898,7 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveScan");
 
-    return scan_impl_env(d_in, d_out, scan_op, detail::InputValue<InitValueT>(init_value), num_items, env);
+    return scan_impl_single_phase(d_in, d_out, scan_op, detail::InputValue<InitValueT>(init_value), num_items, env);
   }
 
   //! @rst
@@ -1228,7 +1228,7 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScan");
 
-    return scan_impl_env(
+    return scan_impl_two_phase(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -1536,7 +1536,7 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveScan");
 
-    return scan_impl_env(
+    return scan_impl_single_phase(
       d_in, d_out, scan_op, detail::InputValue<InitValueT, InitValueIterT>(init_value), num_items, env);
   }
 
@@ -1643,7 +1643,7 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveSum");
 
-    return scan_impl_env(
+    return scan_impl_two_phase(
       d_temp_storage, temp_storage_bytes, d_in, d_out, ::cuda::std::plus<>{}, NullType{}, num_items, env);
   }
 
@@ -1854,7 +1854,7 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveSum");
 
-    return scan_impl_env(d_in, d_out, ::cuda::std::plus<>{}, NullType{}, num_items, env);
+    return scan_impl_single_phase(d_in, d_out, ::cuda::std::plus<>{}, NullType{}, num_items, env);
   }
 
   //! @rst
@@ -1975,7 +1975,7 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScan");
 
-    return scan_impl_env(d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, NullType{}, num_items, env);
+    return scan_impl_two_phase(d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, NullType{}, num_items, env);
   }
 
   //! @rst
@@ -2071,7 +2071,7 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanInit");
 
-    return scan_impl_env<ForceInclusive::Yes>(
+    return scan_impl_two_phase<ForceInclusive::Yes>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -2328,7 +2328,7 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveScan");
 
-    return scan_impl_env(d_in, d_out, scan_op, NullType{}, num_items, env);
+    return scan_impl_single_phase(d_in, d_out, scan_op, NullType{}, num_items, env);
   }
 
   //! @rst
@@ -2418,7 +2418,7 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveScanInit");
 
-    return scan_impl_env<ForceInclusive::Yes>(
+    return scan_impl_single_phase<ForceInclusive::Yes>(
       d_in, d_out, scan_op, detail::InputValue<InitValueT>(init_value), num_items, env);
   }
 
@@ -2519,7 +2519,7 @@ struct DeviceScan
 
     auto __fut = FutureValue<__init_value_type, InitValueIterT>{::cuda::args::__unwrap(init_value)};
 
-    return scan_impl_env<ForceInclusive::Yes>(
+    return scan_impl_single_phase<ForceInclusive::Yes>(
       d_in, d_out, scan_op, detail::InputValue<__init_value_type, InitValueIterT>(__fut), num_items, env);
   }
 
@@ -2627,7 +2627,7 @@ struct DeviceScan
 
     auto __fut = FutureValue<__init_value_type, InitValueIterT>{::cuda::args::__unwrap(init_value)};
 
-    return scan_impl_env<ForceInclusive::Yes>(
+    return scan_impl_two_phase<ForceInclusive::Yes>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
