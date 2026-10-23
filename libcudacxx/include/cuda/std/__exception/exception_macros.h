@@ -23,6 +23,7 @@
 
 #include <cuda/std/__exception/terminate.h> // IWYU pragma: keep
 #include <cuda/std/__host_stdlib/cstdio> // IWYU pragma: keep
+#include <cuda/std/__host_stdlib/exception> // IWYU pragma: keep
 
 #include <nv/target>
 
@@ -59,6 +60,16 @@ _CCCL_END_NAMESPACE_CUDA_STD
 //
 // Notes:
 //   - the catch clause must always bind to a named variable
+//
+// Nested exceptions follow the same pattern:
+//   _CCCL_THROW_WITH_NESTED(X, ...)  replaces  std::throw_with_nested(X(...)): throws an X that carries the
+//                                    active exception as its nested cause (use inside a catch clause)
+//   _CCCL_RETHROW_IF_NESTED(e)       replaces  std::rethrow_if_nested(e): rethrows the cause nested in `e`
+//                                    if there is one, and has no effect otherwise
+//   _CCCL_THROW_MAYBE_WITH_NESTED(X, ...)  throws an X with the active exception nested when there is one
+//                                    (inside a handler), and a plain X otherwise. std::throw_with_nested
+//                                    outside a handler would store an empty cause, and rethrowing that
+//                                    cause later terminates; this form is safe in both places.
 
 // Expand to keywords only for host code when exceptions are enabled. nvc++ in CUDA mode traps when an exception is
 // thrown in device code.
@@ -77,6 +88,28 @@ _CCCL_END_NAMESPACE_CUDA_STD
       NV_IF_ELSE_TARGET(NV_IS_HOST, (throw _TYPE(__VA_ARGS__);), (::cuda::std::terminate();)) \
     } while (0)
 #  define _CCCL_RETHROW throw
+
+#  define _CCCL_THROW_WITH_NESTED(_TYPE, ...)                                                                     \
+    do                                                                                                            \
+    {                                                                                                             \
+      NV_IF_ELSE_TARGET(NV_IS_HOST, (::std::throw_with_nested(_TYPE(__VA_ARGS__));), (::cuda::std::terminate();)) \
+    } while (0)
+#  define _CCCL_RETHROW_IF_NESTED(...)                                                                     \
+    do                                                                                                     \
+    {                                                                                                      \
+      NV_IF_ELSE_TARGET(NV_IS_HOST, (::std::rethrow_if_nested(__VA_ARGS__);), (::cuda::std::terminate();)) \
+    } while (0)
+#  define _CCCL_THROW_MAYBE_WITH_NESTED(_TYPE, ...)                                                \
+    do                                                                                             \
+    {                                                                                              \
+      NV_IF_ELSE_TARGET(                                                                           \
+        NV_IS_HOST,                                                                                \
+        (                                                                                          \
+          if (::std::current_exception()) { ::std::throw_with_nested(_TYPE(__VA_ARGS__)); } else { \
+            throw _TYPE(__VA_ARGS__);                                                              \
+          }),                                                                                      \
+        (::cuda::std::terminate();))                                                               \
+    } while (0)
 #else // ^^^ use exceptions ^^^ / vvv no exceptions vvv
 #  define _CCCL_TRY     \
     if constexpr (true) \
@@ -121,6 +154,10 @@ _CCCL_END_NAMESPACE_CUDA_STD
       } while (0)
 #  endif // !_CCCL_HOSTJIT()
 #  define _CCCL_RETHROW ::cuda::std::terminate()
+
+#  define _CCCL_THROW_WITH_NESTED(_TYPE, ...)       _CCCL_THROW(_TYPE, __VA_ARGS__)
+#  define _CCCL_THROW_MAYBE_WITH_NESTED(_TYPE, ...) _CCCL_THROW(_TYPE, __VA_ARGS__)
+#  define _CCCL_RETHROW_IF_NESTED(...)              ::cuda::std::terminate()
 #endif // ^^^ no exceptions ^^^
 
 #include <cuda/std/__cccl/epilogue.h>
