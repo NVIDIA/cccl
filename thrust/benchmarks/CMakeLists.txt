@@ -23,11 +23,20 @@ function(get_recursive_subdirs subdirs)
   set(${subdirs} "${dirs}" PARENT_SCOPE)
 endfunction()
 
-function(add_bench target_name bench_name bench_src)
+set(SASS_OBJECTS_DIR "${CMAKE_CURRENT_BINARY_DIR}/objects")
+
+function(add_bench target_name bench_name bench_src config_device)
   set(bench_target ${bench_name})
   set(${target_name} ${bench_target} PARENT_SCOPE)
 
   cccl_add_executable(${bench_target} SOURCES "${bench_src}")
+  if ("${config_device}" STREQUAL "CUDA")
+    # Target objects exclude linked helper kernels from SASS comparisons.
+    file(
+      GENERATE OUTPUT "${SASS_OBJECTS_DIR}/${bench_target}.objects"
+      CONTENT "$<JOIN:$<TARGET_OBJECTS:${bench_target}>,\n>\n"
+    )
+  endif()
   target_link_libraries(
     ${bench_target}
     PRIVATE #
@@ -70,7 +79,7 @@ function(add_bench_dir bench_dir)
       register_cccl_benchmark("${bench_name}" "")
 
       string(APPEND bench_name ".base")
-      add_bench(base_bench_target ${bench_name} "${real_bench_src}")
+      add_bench(base_bench_target ${bench_name} "${real_bench_src}" "${config_device}")
       cccl_configure_target(${bench_name})
       target_link_libraries(${bench_name} PRIVATE ${thrust_target})
 

@@ -30,6 +30,10 @@
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
+#include <cuda/std/__type_traits/is_default_constructible.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_volatile.h>
+#include <cuda/std/__type_traits/remove_reference.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -842,7 +846,13 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_STORE_VECTORIZE)
     {
-      if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>)
+      if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>
+                    && ::cuda::std::is_same_v<detail::it_value_t<OutputIteratorT>, T>
+                    // handles contiguous iterators wrapping volatile pointers, like span<volatile int>::iterator
+                    && !::cuda::std::is_volatile_v<
+                       ::cuda::std::remove_reference_t<detail::it_reference_t<OutputIteratorT>>>
+                    // needed to default construct vectors of T
+                    && ::cuda::std::is_default_constructible_v<T>)
       {
         StoreDirectBlockedVectorized(linear_tid, ::cuda::std::to_address(block_itr), items);
       }
