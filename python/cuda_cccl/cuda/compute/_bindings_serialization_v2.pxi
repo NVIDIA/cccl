@@ -110,6 +110,8 @@ def _reduce_compile(
     cdef const char *thrust_path = common_data.thrust_path_get_c_str()
     cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
     cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+    cdef _BuildConfig _bc = _get_build_config()
+    cdef cccl_build_config* _cfg = _bc.ptr()
     with nogil:
         status = cccl_device_reduce_compile(
             &self.build_data,
@@ -125,7 +127,7 @@ def _reduce_compile(
             thrust_path,
             libcudacxx_path,
             ctk_path,
-            NULL,
+            _cfg,
         )
     if status != 0:
         raise RuntimeError(f"Failed compiling reduce, error code: {status}")
@@ -224,6 +226,8 @@ def _scan_compile(
     cdef const char *thrust_path = common_data.thrust_path_get_c_str()
     cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
     cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+    cdef _BuildConfig _bc = _get_build_config()
+    cdef cccl_build_config* _cfg = _bc.ptr()
     with nogil:
         status = cccl_device_scan_compile(
             &self.build_data,
@@ -239,7 +243,7 @@ def _scan_compile(
             thrust_path,
             libcudacxx_path,
             ctk_path,
-            NULL,
+            _cfg,
         )
     if status != 0:
         raise RuntimeError(f"Failed compiling scan, error code: {status}")
@@ -338,6 +342,8 @@ def _segmented_reduce_compile(
     cdef const char *thrust_path = common_data.thrust_path_get_c_str()
     cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
     cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+    cdef _BuildConfig _bc = _get_build_config()
+    cdef cccl_build_config* _cfg = _bc.ptr()
     with nogil:
         status = cccl_device_segmented_reduce_compile(
             &self.build_data,
@@ -353,7 +359,7 @@ def _segmented_reduce_compile(
             thrust_path,
             libcudacxx_path,
             ctk_path,
-            NULL,
+            _cfg,
         )
     if status != 0:
         raise RuntimeError(f"Failed compiling segmented_reduce, error code: {status}")
@@ -452,6 +458,8 @@ def _unique_by_key_compile(
     cdef const char *thrust_path = common_data.thrust_path_get_c_str()
     cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
     cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+    cdef _BuildConfig _bc = _get_build_config()
+    cdef cccl_build_config* _cfg = _bc.ptr()
     with nogil:
         status = cccl_device_unique_by_key_compile(
             &self.build_data,
@@ -467,7 +475,7 @@ def _unique_by_key_compile(
             thrust_path,
             libcudacxx_path,
             ctk_path,
-            NULL,
+            _cfg,
         )
     if status != 0:
         raise RuntimeError(f"Failed compiling unique_by_key, error code: {status}")
@@ -564,6 +572,8 @@ def _merge_sort_compile(
     cdef const char *thrust_path = common_data.thrust_path_get_c_str()
     cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
     cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+    cdef _BuildConfig _bc = _get_build_config()
+    cdef cccl_build_config* _cfg = _bc.ptr()
     with nogil:
         status = cccl_device_merge_sort_compile(
             &self.build_data,
@@ -578,7 +588,7 @@ def _merge_sort_compile(
             thrust_path,
             libcudacxx_path,
             ctk_path,
-            NULL,
+            _cfg,
         )
     if status != 0:
         raise RuntimeError(f"Failed compiling merge_sort, error code: {status}")
@@ -675,6 +685,8 @@ def _radix_sort_compile(
     cdef const char *thrust_path = common_data.thrust_path_get_c_str()
     cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
     cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+    cdef _BuildConfig _bc = _get_build_config()
+    cdef cccl_build_config* _cfg = _bc.ptr()
     with nogil:
         status = cccl_device_radix_sort_compile(
             &self.build_data,
@@ -689,7 +701,7 @@ def _radix_sort_compile(
             thrust_path,
             libcudacxx_path,
             ctk_path,
-            NULL,
+            _cfg,
         )
     if status != 0:
         raise RuntimeError(f"Failed compiling radix_sort, error code: {status}")
@@ -782,6 +794,8 @@ def _unary_transform_compile(
     cdef const char *thrust_path = common_data.thrust_path_get_c_str()
     cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
     cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+    cdef _BuildConfig _bc = _get_build_config()
+    cdef cccl_build_config* _cfg = _bc.ptr()
     with nogil:
         status = cccl_device_unary_transform_compile(
             &self.build_data,
@@ -794,7 +808,7 @@ def _unary_transform_compile(
             thrust_path,
             libcudacxx_path,
             ctk_path,
-            NULL,
+            _cfg,
         )
     if status != 0:
         raise RuntimeError(f"Failed compiling unary_transform, error code: {status}")
@@ -889,6 +903,8 @@ def _binary_transform_compile(
     cdef const char *thrust_path = common_data.thrust_path_get_c_str()
     cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
     cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+    cdef _BuildConfig _bc = _get_build_config()
+    cdef cccl_build_config* _cfg = _bc.ptr()
     with nogil:
         status = cccl_device_binary_transform_compile(
             &self.build_data,
@@ -902,7 +918,7 @@ def _binary_transform_compile(
             thrust_path,
             libcudacxx_path,
             ctk_path,
-            NULL,
+            _cfg,
         )
     if status != 0:
         raise RuntimeError(f"Failed compiling binary_transform, error code: {status}")
@@ -1007,6 +1023,8 @@ def _histogram_compile(
     cdef const char *thrust_path = common_data.thrust_path_get_c_str()
     cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
     cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+    cdef _BuildConfig _bc = _get_build_config()
+    cdef cccl_build_config* _cfg = _bc.ptr()
     with nogil:
         status = cccl_device_histogram_compile(
             &self.build_data,
@@ -1025,7 +1043,7 @@ def _histogram_compile(
             thrust_path,
             libcudacxx_path,
             ctk_path,
-            NULL,
+            _cfg,
         )
     if status != 0:
         raise RuntimeError(f"Failed compiling histogram, error code: {status}")
@@ -1122,6 +1140,8 @@ def _binary_search_compile(
     cdef const char *thrust_path = common_data.thrust_path_get_c_str()
     cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
     cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+    cdef _BuildConfig _bc = _get_build_config()
+    cdef cccl_build_config* _cfg = _bc.ptr()
     with nogil:
         status = cccl_device_binary_search_compile(
             &self.build_data,
@@ -1136,7 +1156,7 @@ def _binary_search_compile(
             thrust_path,
             libcudacxx_path,
             ctk_path,
-            NULL,
+            _cfg,
         )
     if status != 0:
         raise RuntimeError(f"Failed compiling binary_search, error code: {status}")
@@ -1237,6 +1257,8 @@ def _three_way_partition_compile(
     cdef const char *thrust_path = common_data.thrust_path_get_c_str()
     cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
     cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+    cdef _BuildConfig _bc = _get_build_config()
+    cdef cccl_build_config* _cfg = _bc.ptr()
     with nogil:
         status = cccl_device_three_way_partition_compile(
             &self.build_data,
@@ -1253,7 +1275,7 @@ def _three_way_partition_compile(
             thrust_path,
             libcudacxx_path,
             ctk_path,
-            NULL,
+            _cfg,
         )
     if status != 0:
         raise RuntimeError(f"Failed compiling three_way_partition, error code: {status}")
@@ -1350,6 +1372,8 @@ def _segmented_sort_compile(
     cdef const char *thrust_path = common_data.thrust_path_get_c_str()
     cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
     cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+    cdef _BuildConfig _bc = _get_build_config()
+    cdef cccl_build_config* _cfg = _bc.ptr()
     with nogil:
         status = cccl_device_segmented_sort_compile(
             &self.build_data,
@@ -1364,7 +1388,7 @@ def _segmented_sort_compile(
             thrust_path,
             libcudacxx_path,
             ctk_path,
-            NULL,
+            _cfg,
         )
     if status != 0:
         raise RuntimeError(f"Failed compiling segmented_sort, error code: {status}")
