@@ -16,9 +16,10 @@ compiler integration development. Additional collective algorithms and Warp
 capabilities remain under development. The crate is unpublished and its interface
 can change.
 
-Device code uses the pinned Oxide dependency and ``nightly-2026-10-11``.
+Device code uses the pinned Oxide dependency and ``1.99.1``.
 The host provider supports Rust 1.85 independently; validate it with
-``cargo +1.85.0 test -p cuda-coop-codegen --locked`` from ``rust/``.
+``RUSTC_BOOTSTRAP=-1 cargo +1.85.0 test -p cuda-coop-codegen --locked``
+from ``rust/``; this disables unstable features for the provider check.
 
 The workspace is separate from CCCL's CMake build. Building the existing C++
 libraries does not require Rust, and the provider does not depend on Python.
@@ -90,15 +91,19 @@ supplies ``B`` batches and receives capacity ``ceil(B/W)`` at Warp width ``W``.
 Its striped or blocked layout marks only actual batch results initialized.
 The native request carries ``B`` and derives the output extent; the Rust API
 uses the same calculation in its return type. See :doc:`reduce_batched` for
-the current nightly feature and generic-signature requirements. The provider
+the unstable feature and generic-signature requirements. The provider
 queries this operation's actual CUB storage, including a nonzero empty-type
 layout, and retains ordinary group replication and reuse planning.
 
 Compile a provider
 ------------------
 
-Use the pinned toolchain in ``rust/rust-toolchain.toml``. Host tests, lint checks,
-and rustdoc builds need no CUDA installation. Running native compilation requires
+Run Cargo from within ``rust/`` using the pinned toolchain in
+``rust/rust-toolchain.toml``. The workspace
+configuration enables the unstable Rust features required by Oxide and
+``cuda-coop`` on that compiler. Cargo finds this configuration from the working
+directory; ``--manifest-path`` alone does not select it. Host tests, lint checks, and rustdoc builds
+need no CUDA installation. Running native compilation requires
 a Linux CUDA toolkit with NVRTC LTO support; CUDA 13.3 is the initial validation
 toolkit. A GPU and CUDA context are not required.
 

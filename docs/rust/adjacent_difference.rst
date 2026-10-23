@@ -36,7 +36,7 @@ The host program specializes one and four items per thread:
    :language: rust
    :start-after: // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-Use the Oxide revision selected by the manifests and ``nightly-2026-10-11``.
+Use the Oxide revision selected by the manifests and ``1.99.1``.
 With that toolchain installed, run from a complete CCCL checkout:
 
 .. code-block:: shell
