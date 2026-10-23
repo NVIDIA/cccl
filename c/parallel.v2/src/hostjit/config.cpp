@@ -1,9 +1,6 @@
-#include <cctype>
 #include <cstdlib>
 #include <filesystem>
 #include <string>
-#include <system_error>
-#include <utility>
 
 #include <cuda.h>
 
@@ -309,81 +306,5 @@ bool validateConfig(const CompilerConfig& config, std::string* error_message)
   }
 
   return true;
-}
-
-std::string findCudaRuntimeLibrary(const CompilerConfig& config)
-{
-  namespace fs = std::filesystem;
-  // Non-throwing overloads throughout: a missing/unreadable directory just means "not here".
-  std::error_code ec;
-  // directory_iterator order is unspecified, so collect every match and pick
-  // deterministically: the highest CUDA major (cudart64_<major>.dll /
-  // libcudart.so.<major>), ties and unversioned names broken by name.
-  auto major_of = [](const std::string& name, const std::string& prefix) {
-    int major = -1;
-    if (name.size() > prefix.size() && std::isdigit(static_cast<unsigned char>(name[prefix.size()])))
-    {
-      major = std::atoi(name.c_str() + prefix.size());
-    }
-    return major;
-  };
-  auto pick = [&](const fs::path& dir, auto matches, const std::string& prefix) -> std::string {
-    std::string best;
-    for (fs::directory_iterator it(dir, ec), end; !ec && it != end; it.increment(ec))
-    {
-      auto name = it->path().filename().string();
-      if (!matches(name))
-      {
-        continue;
-      }
-      auto key      = std::make_pair(major_of(name, prefix), name);
-      auto best_key = std::make_pair(major_of(best, prefix), best);
-      if (best.empty() || key > best_key)
-      {
-        best = name;
-      }
-    }
-    return best;
-  };
-#ifdef _WIN32
-  for (const auto& subdir : {"bin/x64", "bin"})
-  {
-    fs::path dir = fs::path(config.cuda_toolkit_path) / subdir;
-    if (!fs::exists(dir, ec))
-    {
-      continue;
-    }
-    auto name = pick(
-      dir,
-      [](const std::string& n) {
-        return n.starts_with("cudart64_") && n.ends_with(".dll");
-      },
-      "cudart64_");
-    if (!name.empty())
-    {
-      return name;
-    }
-  }
-  return {};
-#else
-  for (const auto& lib_path : config.library_paths)
-  {
-    if (!fs::exists(lib_path, ec))
-    {
-      continue;
-    }
-    auto name = pick(
-      lib_path,
-      [](const std::string& n) {
-        return n.starts_with("libcudart.so");
-      },
-      "libcudart.so.");
-    if (!name.empty())
-    {
-      return (fs::path(lib_path) / name).string();
-    }
-  }
-  return {};
-#endif
 }
 } // namespace hostjit

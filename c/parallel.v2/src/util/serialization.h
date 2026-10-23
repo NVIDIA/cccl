@@ -24,18 +24,10 @@
 namespace cccl::serialization_v2
 {
 // Opaque 8-byte marker identifying a CCCL C parallel v2 (HostJIT)
-// serialization blob. Deliberately distinct from v1's "CCCLSER1" so a v1
-// blob can never be mistaken for a v2 one (or vice versa) — the two
-// backends' payloads are fundamentally different formats (a driver-loadable
-// device blob for v1, a full native shared library for v2).
+// serialization blob.
 inline constexpr char k_blob_magic[8] = {'C', 'C', 'C', 'L', 'S', 'E', 'V', '2'};
 
 // Which OS/CPU architecture a blob's shared-library payload was built for.
-// Rejected before ever calling dlopen/LoadLibrary on the payload — see
-// read_blob(). Cross-OS/cross-arch portability is explicitly out of scope
-// (inherent to native shared libraries); same-OS-family portability
-// (Linux->Linux, Windows->Windows, regardless of exact CUDA Toolkit
-// install path) is the supported case — see hostjit::JITCompiler::loadFromBytes.
 enum class os_arch_tag_t : uint32_t
 {
   LINUX_X86_64  = 0,
@@ -57,11 +49,10 @@ constexpr os_arch_tag_t current_os_arch_tag()
 #endif
 }
 
-// Fixed-layout header at the start of every v2 blob. Packed POD; layout is
-// part of the on-disk format, do not reorder. No package-version field is
-// carried here: that compatibility check is handled by the Python
-// _serialization/codec.py layer (the same package-version gate used for
-// v1), not this C layer — matching v1's util/serialization.h design.
+// Fixed-layout header at the start of every blob. Packed POD; layout is
+// part of the on-disk format, do not reorder. No version field is carried
+// here: blob compatibility is not handled at this layer and must be managed
+// by the caller.
 #pragma pack(push, 1)
 struct blob_header
 {
@@ -133,16 +124,7 @@ struct parsed_blob
   size_t payload_size;
 };
 
-// Parses and validates a blob written by write_blob(). Throws
-// std::runtime_error with a descriptive message on any validation failure
-// (bad magic, wrong algorithm, wrong OS/architecture, truncated buffer, trailing bytes) —
-// callers must validate before ever calling dlopen/LoadLibrary on the
-// payload. Deliberately does NOT check `cc` against the current device:
-// that would make deserialize() require a live GPU, which breaks the
-// no-GPU / cross-cc AoT use case — a cc mismatch instead surfaces later, at
-// kernel-launch time, as cudaErrorNoKernelImageForDevice. An explicit early
-// cc check belongs at _load() time instead (where a live device is a
-// reasonable thing to assume), not here.
+// Parses and validates a blob written by write_blob().
 inline parsed_blob read_blob(cccl_serialization_algo_v2_t expected_algo, const void* buf, size_t size)
 {
   const char* p = static_cast<const char*>(buf);
