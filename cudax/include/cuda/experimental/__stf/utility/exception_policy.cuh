@@ -1315,9 +1315,38 @@ inline constexpr bool __has_claim =
   ::cuda::std::_IsValidExpansion<__claims_of, ::cuda::std::remove_reference_t<_P>>::value;
 
 // Whether asking the claim can throw: only a predicate's can, since a predicate is user code.
+// Defined for every policy (true without a claim), and `__ask_claim` answers `__unknown` for a
+// policy without one, so code that names neither `__claims` nor the trait's operand directly
+// compiles inside generic lambdas, where nvcc 12.0 instantiates discarded constexpr branches.
 template <class _P>
-inline constexpr bool __nothrow_claim =
-  noexcept(::cuda::std::declval<_P&>().__claims(::cuda::std::declval<const ::std::exception*>()));
+constexpr bool __nothrow_claim_impl()
+{
+  if constexpr (__has_claim<_P>)
+  {
+    return noexcept(::cuda::std::declval<_P&>().__claims(::cuda::std::declval<const ::std::exception*>()));
+  }
+  else
+  {
+    return true;
+  }
+}
+
+template <class _P>
+inline constexpr bool __nothrow_claim = __nothrow_claim_impl<_P>();
+
+template <class _P>
+_CCCL_FORCEINLINE __claim
+__ask_claim(_P& __p, [[maybe_unused]] const ::std::exception* __exception) noexcept(__nothrow_claim<_P>)
+{
+  if constexpr (__has_claim<_P>)
+  {
+    return __p.__claims(__exception);
+  }
+  else
+  {
+    return __claim::__unknown;
+  }
+}
 
 template <class _P>
 using __pure_claim_tag_of = typename _P::__pure_claim_tag;
@@ -2233,7 +2262,7 @@ struct __policy_pow : __forwards_success<_P>
         __claim __c = __claim::__unknown;
         if constexpr (__nothrow_claim<_P>)
         {
-          __c = this->__p_.__claims(__cur);
+          __c = __ask_claim(this->__p_, __cur);
         }
         else
         {
@@ -2241,7 +2270,7 @@ struct __policy_pow : __forwards_success<_P>
           // from the hook does below.
           _CCCL_TRY
           {
-            __c = this->__p_.__claims(__cur);
+            __c = __ask_claim(this->__p_, __cur);
           }
           _CCCL_CATCH (const ::std::exception& __e)
           {
