@@ -126,6 +126,12 @@
 #  undef _CCCL_BUILTIN_CONSTANT_P
 #endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 4) && _CCCL_DEVICE_COMPILATION()
 
+#if defined(_CCCL_BUILTIN_CONSTANT_P)
+#  define _CCCL_IS_CONSTANT_P(...) _CCCL_BUILTIN_CONSTANT_P(__VA_ARGS__)
+#else // ^^^ _CCCL_BUILTIN_CONSTANT_P ^^^ / vvv !_CCCL_BUILTIN_CONSTANT_P vvv
+#  define _CCCL_IS_CONSTANT_P(...) false
+#endif // ^^^ !_CCCL_BUILTIN_CONSTANT_P ^^^
+
 #if _CCCL_CHECK_BUILTIN(builtin_expect) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_EXPECT(_EXPR, _VAL) __builtin_expect(_EXPR, _VAL)
 #else // ^^^ has __builtin_expect ^^^ / vvv no __builtin_expect vvv
