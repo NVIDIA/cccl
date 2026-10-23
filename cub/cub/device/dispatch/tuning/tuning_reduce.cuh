@@ -522,7 +522,7 @@ struct policy_selector
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_deterministic_tuning(::cuda::compute_capability cc) const
     -> ReducePolicy
   {
-    if (cc >= ::cuda::compute_capability{10, 0} && cc < ::cuda::compute_capability{10, 1} && offset_size == 8)
+    if (cc >= ::cuda::compute_capability{10, 0} && cc < ::cuda::compute_capability{10, 7} && offset_size == 8)
     {
       // tunings from cub/benchmarks/bench/reduce/deterministic.cu. These are raw measured values and must not be
       // passed through scale_mem_bound. Only tuned for 64-bit offsets; 32-bit offsets fall through.
