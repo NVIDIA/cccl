@@ -3,9 +3,12 @@
 matrix.yaml reference
 =====================
 
-``ci/matrix.yaml`` is the authoritative definition of CCCL's CI job matrix. It declares
+``ci/matrix.yaml`` is the default definition of CCCL's CI job matrix. It declares
 the workflows, the toolchain and hardware vocabulary jobs draw from, and the per-workflow
 job entries that expand into individual GitHub Actions jobs.
+
+Manual runs can use another matrix ref and path in the same repository; see
+:ref:`infra-ci-matrix-selection`.
 
 Top-level keys
 --------------

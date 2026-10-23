@@ -21,6 +21,16 @@ defaults:
     shell: bash --noprofile --norc -euo pipefail {0}
 
 on:
+  workflow_dispatch:
+    inputs:
+      matrix_ref:
+        description: "Commit SHA or ref in this repo containing the CI matrix (defaults to the triggering commit)."
+        type: string
+        required: false
+      matrix_path:
+        description: "Path to the CI matrix file, relative to the repository root."
+        type: string
+        required: false
   push:
     branches:
       - "pull-request/[0-9]+"
@@ -68,15 +78,18 @@ jobs:
           output rapids_enabled  "${{ !contains(github.event.head_commit.message, '[skip-rapids]')  && !fromJSON(env.skip_tpt) }}"
           output matx_enabled    "${{ !contains(github.event.head_commit.message, '[skip-matx]')    && !fromJSON(env.skip_tpt) }}"
           output pytorch_enabled "${{ !contains(github.event.head_commit.message, '[skip-pytorch]') && !fromJSON(env.skip_tpt) }}"
+
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
           # `git merge-base` below needs the history of both sides.
           fetch-depth: 0
           persist-credentials: false
+
       - name: Lookup PR info
         id: get-pr-info
         uses: nv-gha-runners/get-pr-info@main
+
       - name: Export PR info
         id: export-pr-info
         env:
@@ -86,6 +99,14 @@ jobs:
           echo "pr_number=${{ fromJSON(steps.get-pr-info.outputs.pr-info).number }}" | tee -a "${GITHUB_OUTPUT}"
           git fetch origin "${BASE_SHA}" -q
           echo "merge_base_sha=$(git merge-base "${BASE_SHA}" "${GITHUB_SHA}")" | tee -a "${GITHUB_OUTPUT}"
+
+      - name: Download CI matrix
+        id: download-ci-matrix
+        uses: ./.github/actions/download-ci-matrix
+        with:
+          matrix_ref: ${{ inputs.matrix_ref }}
+          matrix_path: ${{ inputs.matrix_path }}
+
       - name: Build benchmark dispatch matrix
         id: build-bench-matrix
         run: |
@@ -106,8 +127,11 @@ jobs:
             echo "bench_enabled=true"
             echo "bench_matrix=${bench_matrix_json}"
           } >> "${GITHUB_OUTPUT}"
+
       - name: Build compile-time benchmark dispatch matrix
         id: build-compile-time-matrix
+        env:
+          MATRIX_FILE: ${{ steps.download-ci-matrix.outputs.matrix }}
         run: |
           if [[ "${{ contains(github.event.head_commit.message, '[skip-compile-time-bench]') }}" == "true" ]]; then
             echo "Commit message contains [skip-compile-time-bench]; skipping compile-time benchmark dispatch."
@@ -118,7 +142,7 @@ jobs:
             exit 0
           fi
 
-          compile_time_matrix_json="$(./ci/compile_time/parse_matrix.py "ci/matrix.yaml" --workflow pull_request)"
+          compile_time_matrix_json="$(./ci/compile_time/parse_matrix.py "${MATRIX_FILE}" --workflow pull_request)"
           compile_time_enabled="$(
             jq -r 'if (.include // []) == [] then "false" else "true" end' \
               <<< "${compile_time_matrix_json}"
@@ -128,10 +152,12 @@ jobs:
             echo "compile_time_enabled=${compile_time_enabled}"
             echo "compile_time_matrix=${compile_time_matrix_json}"
           } >> "${GITHUB_OUTPUT}"
+
       - name: Build SASS diff dispatch matrix
         id: build-sass-matrix
         env:
           BASE_SHA: ${{ steps.export-pr-info.outputs.base_sha }}
+          MATRIX_FILE: ${{ steps.download-ci-matrix.outputs.matrix }}
         run: |
           set -u
 
@@ -167,7 +193,7 @@ jobs:
           )
 
           sass_matrix_json="$(
-            ./ci/sass/parse_matrix.py "ci/matrix.yaml" \
+            ./ci/sass/parse_matrix.py "${MATRIX_FILE}" \
               --workflow pull_request \
               --projects "${projects[@]}"
           )"
@@ -181,6 +207,7 @@ jobs:
             echo "sass_enabled=${sass_enabled}"
             echo "sass_matrix=${sass_matrix_json}"
           } >> "${GITHUB_OUTPUT}"
+
       - name: Detect .branch_notes changes
         id: branch-notes-dirt
         env:
@@ -208,6 +235,7 @@ jobs:
             echo "${branch_notes_dirt}"
             echo "EOF"
           } >> "${GITHUB_OUTPUT}"
+
       - name: Build workflow
         # Skip building the matrix when disabled, but still gather PR info for downstream jobs
         if: steps.export-flags.outputs.matrix_enabled == 'true'
@@ -217,6 +245,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           pr_number: ${{ steps.export-pr-info.outputs.pr_number }}
           allow_override: "true"
+          matrix_file: ${{ steps.download-ci-matrix.outputs.matrix }}
           inspect_changes_script: 'ci/inspect_changes.py'
           inspect_changes_base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
           workflows: |-

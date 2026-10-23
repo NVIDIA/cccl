@@ -65,12 +65,16 @@ The same key may be used for both.
 Building the job matrix
 -----------------------
 
-``ci/matrix.yaml`` is the authoritative matrix definition, described in detail at
+``ci/matrix.yaml`` is the default matrix definition, described in detail at
 :ref:`infra-ci-matrix-yaml`. The ``build-workflow`` action
-(``.github/actions/workflow-build/``) reads it and produces the concrete job list for
-the run. The workflow key is ``pull_request`` for PRs and ``nightly`` or ``weekly``
-for scheduled runs. Custom runs select one or more workflow keys with the
-``workflows`` input, which defaults to ``nightly``.
+(``.github/actions/workflow-build/``) reads the selected matrix and produces the
+concrete job list for the run. The workflow key is ``pull_request`` for PRs and
+``nightly`` or ``weekly`` for scheduled runs. Custom runs select one or more
+workflow keys with the ``workflows`` input, which defaults to ``nightly``.
+
+Manual runs can select a different matrix ref and path within the same repository.
+See :ref:`infra-ci-matrix-selection` for the inputs and an example. These inputs
+select the matrix configuration; the workflow ref selects the code under test.
 
 Before expansion, ``ci/inspect_changes.py`` compares the PR against its merge base and
 reports which projects changed, the mechanism covered at
