@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import functools
+import hashlib
 import threading
 import types
 import weakref
@@ -717,7 +718,12 @@ class CachableFunction:
         return hash(self._identity)
 
     def __repr__(self):
-        return f"<CachableFunction {self._name}>"
+        # Iterators derive device symbol names from str() of their cache key
+        # (see IteratorBase._get_uid), so the repr must distinguish functions
+        # that compare unequal: two same-named operators with different bodies
+        # must not share a symbol. Hash the identity rather than printing it.
+        digest = hashlib.sha256(repr(self._identity).encode()).hexdigest()[:16]
+        return f"<CachableFunction {self._name} {digest}>"
 
 
 # Register keyers for built-in types

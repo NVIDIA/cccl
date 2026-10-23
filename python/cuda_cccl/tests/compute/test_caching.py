@@ -13,9 +13,17 @@ from _utils.device_array import DeviceArray
 from cuda.core import Device
 
 import cuda.compute
-from cuda.compute import OpKind, TransformIterator
+from cuda.compute import OpKind, TransformIterator, types
 
 NUM_ITEMS = 1024
+
+
+def _require_jit_backend():
+    """Skip when the JIT backend is absent, as on the minimal extras."""
+    pytest.importorskip(
+        "numba_cuda_mlir",
+        reason="Python-callable operators require numba-cuda-mlir",
+    )
 
 
 def _double(x):
@@ -33,6 +41,7 @@ def _run_reduce_into():
 
 
 def _run_reduce_into_transform_iterator():
+    _require_jit_backend()
     d_in = DeviceArray.from_numpy(np.arange(NUM_ITEMS, dtype=np.int32))
     d_out = DeviceArray.empty(1, np.int32)
     h_init = np.zeros(1, dtype=np.int32)
@@ -46,7 +55,31 @@ def _run_reduce_into_transform_iterator():
     return [d_in, d_out]
 
 
+def _run_reduce_into_transform_iterator_with_captured_array():
+    _require_jit_backend()
+    # A stateful transform op: the TransformIterator's cache key must not
+    # embed the op adapter, which holds the function and its captured array.
+    # Stateful ops cannot infer their return type, so it is given explicitly.
+    scale = DeviceArray.from_numpy(np.array([3], dtype=np.int32))
+
+    def scale_op(x):
+        return x * scale[0]
+
+    d_in = DeviceArray.from_numpy(np.arange(NUM_ITEMS, dtype=np.int32))
+    d_out = DeviceArray.empty(1, np.int32)
+    h_init = np.zeros(1, dtype=np.int32)
+    cuda.compute.reduce_into(
+        d_in=TransformIterator(d_in, scale_op, value_type=types.int32),
+        d_out=d_out,
+        num_items=NUM_ITEMS,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+    return [d_in, d_out, scale]
+
+
 def _run_unary_transform_with_captured_array():
+    _require_jit_backend()
     # ``scale`` is captured by the operator's closure, which makes this a
     # stateful operator. The operator is keyed in the caches through
     # CachableFunction, which must not keep the function, and with it the
@@ -87,12 +120,14 @@ def _run_unique_by_key():
     [
         _run_reduce_into,
         _run_reduce_into_transform_iterator,
+        _run_reduce_into_transform_iterator_with_captured_array,
         _run_unary_transform_with_captured_array,
         _run_unique_by_key,
     ],
     ids=[
         "reduce_into",
         "reduce_into_transform_iterator",
+        "reduce_into_transform_iterator_with_captured_array",
         "unary_transform_with_captured_array",
         "unique_by_key",
     ],
