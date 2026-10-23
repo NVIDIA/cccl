@@ -100,189 +100,186 @@ struct group_merge_expansion
 // merge_warp_groups_runtime (merge_warp_groups.cuh) in the LRB prototype.
 // This ascending numeric worker omits the FP-twiddle and half-presort paths.
 // Warp work units have independent scratch and never use CTA barriers.
-struct group_merge_algorithm
+template <typename PolicyGetter>
+struct group_merge_implementation
 {
-  template <typename PolicyGetter>
-  struct implementation
+  inline static constexpr auto policy = PolicyGetter{}();
+  using expansion                     = group_merge_expansion<PolicyGetter>;
+  static constexpr bool is_warp       = policy.max_threads <= 32;
+  static constexpr int unit_threads   = is_warp ? 32 : policy.block_threads;
+  static_assert(policy.block_threads % 32 == 0);
+  static_assert(is_warp || policy.min_threads >= 64);
+  static_assert(policy.block_threads % policy.max_threads == 0);
+  static_assert(policy.min_ipt >= 5 && policy.max_ipt <= 15, "GroupMerge workers support IPT 5..15");
+
+  template <typename Key>
+  _CCCL_HOST_DEVICE_API static constexpr size_t scratch_bytes()
   {
-    inline static constexpr auto policy = PolicyGetter{}();
-    using expansion                     = group_merge_expansion<PolicyGetter>;
-    static constexpr bool is_warp       = policy.max_threads <= 32;
-    static constexpr int unit_threads   = is_warp ? 32 : policy.block_threads;
-    static_assert(policy.block_threads % 32 == 0);
-    static_assert(is_warp || policy.min_threads >= 64);
-    static_assert(policy.block_threads % policy.max_threads == 0);
-    static_assert(policy.min_ipt >= 5 && policy.max_ipt <= 15, "GroupMerge workers support IPT 5..15");
-
-    template <typename Key>
-    _CCCL_HOST_DEVICE_API static constexpr size_t scratch_bytes()
+    return sizeof(Key) * (policy.block_threads * policy.max_ipt + (is_warp ? policy.block_threads / 32 : 1));
+  }
+  _CCCL_DEVICE_API static void sync()
+  {
+    if constexpr (is_warp)
     {
-      return sizeof(Key) * (policy.block_threads * policy.max_ipt + (is_warp ? policy.block_threads / 32 : 1));
+      __syncwarp();
     }
-    _CCCL_DEVICE_API static void sync()
+    else
     {
-      if constexpr (is_warp)
-      {
-        __syncwarp();
-      }
-      else
-      {
-        __syncthreads();
-      }
+      __syncthreads();
     }
+  }
 
-    template <int ItemsPerThread, typename Key, typename BeginIterator, typename EndIterator>
-    _CCCL_DEVICE_API static void sort_segment(
-      unsigned slot,
-      bin_config config,
-      const partition_result& bins,
-      BeginIterator begins,
-      EndIterator ends,
-      const Key* in,
-      Key* out,
-      Key* scratch)
+  template <int ItemsPerThread, typename Key, typename BeginIterator, typename EndIterator>
+  _CCCL_DEVICE_API static void sort_segment(
+    unsigned slot,
+    bin_config config,
+    const partition_result& bins,
+    BeginIterator begins,
+    EndIterator ends,
+    const Key* in,
+    Key* out,
+    Key* scratch)
+  {
+    const ::cuda::std::less<Key> compare{};
+    const int lane = threadIdx.x % unit_threads;
+    if constexpr (is_warp)
     {
-      const ::cuda::std::less<Key> compare{};
-      const int lane = threadIdx.x % unit_threads;
-      if constexpr (is_warp)
+      scratch += (threadIdx.x / 32) * (32 * policy.max_ipt + 1);
+    }
+    const int group_lane   = lane % config.threads;
+    const int group_base   = (lane / config.threads) * config.threads * ItemsPerThread;
+    const bool active      = slot != ~0u;
+    const unsigned segment = active ? bins.segment_ids[slot] : 0;
+    const auto begin       = active ? begins[segment] : ::cuda::std::remove_cvref_t<decltype(begins[segment])>{};
+    const int count        = active ? static_cast<int>(ends[segment] - begin) : 0;
+    Key keys[ItemsPerThread];
+    for (int item = 0; item < ItemsPerThread; ++item)
+    {
+      const int local             = item * config.threads + group_lane;
+      scratch[group_base + local] = local < count ? in[begin + local] : Key{};
+    }
+    // SerialMerge prefetches one unused key beyond its runs.
+    if (lane == 0)
+    {
+      scratch[unit_threads * ItemsPerThread] = Key{};
+    }
+    sync();
+    for (int item = 0; item < ItemsPerThread; ++item)
+    {
+      keys[item] = scratch[group_base + group_lane * ItemsPerThread + item];
+    }
+    if (group_lane * ItemsPerThread < count)
+    {
+      Key max_key = keys[0];
+      for (int item = 1; item < ItemsPerThread; ++item)
       {
-        scratch += (threadIdx.x / 32) * (32 * policy.max_ipt + 1);
-      }
-      const int group_lane   = lane % config.threads;
-      const int group_base   = (lane / config.threads) * config.threads * ItemsPerThread;
-      const bool active      = slot != ~0u;
-      const unsigned segment = active ? bins.segment_ids[slot] : 0;
-      const auto begin       = active ? begins[segment] : ::cuda::std::remove_cvref_t<decltype(begins[segment])>{};
-      const int count        = active ? static_cast<int>(ends[segment] - begin) : 0;
-      Key keys[ItemsPerThread];
-      for (int item = 0; item < ItemsPerThread; ++item)
-      {
-        const int local             = item * config.threads + group_lane;
-        scratch[group_base + local] = local < count ? in[begin + local] : Key{};
-      }
-      // SerialMerge prefetches one unused key beyond its runs.
-      if (lane == 0)
-      {
-        scratch[unit_threads * ItemsPerThread] = Key{};
-      }
-      sync();
-      for (int item = 0; item < ItemsPerThread; ++item)
-      {
-        keys[item] = scratch[group_base + group_lane * ItemsPerThread + item];
-      }
-      if (group_lane * ItemsPerThread < count)
-      {
-        Key max_key = keys[0];
-        for (int item = 1; item < ItemsPerThread; ++item)
+        if (group_lane * ItemsPerThread + item < count)
         {
-          if (group_lane * ItemsPerThread + item < count)
-          {
-            max_key = compare(max_key, keys[item]) ? keys[item] : max_key;
-          }
-          else
-          {
-            keys[item] = max_key;
-          }
+          max_key = compare(max_key, keys[item]) ? keys[item] : max_key;
         }
-        NullType values[ItemsPerThread];
-        StableOddEvenSort(keys, values, compare);
-      }
-      for (int merged_threads = 2; merged_threads <= config.threads; merged_threads *= 2)
-      {
-        sync();
-        for (int item = 0; item < ItemsPerThread; ++item)
+        else
         {
-          scratch[lane * ItemsPerThread + item] = keys[item];
+          keys[item] = max_key;
         }
-        sync();
-        const int start     = (lane & ~(merged_threads - 1)) * ItemsPerThread;
-        const int valid_end = group_base + count;
-        const int first     = (::cuda::std::min) (valid_end, start);
-        const int middle    = (::cuda::std::min) (valid_end, first + merged_threads / 2 * ItemsPerThread);
-        const int last      = (::cuda::std::min) (valid_end, middle + merged_threads / 2 * ItemsPerThread);
-        const int diag      = (::cuda::std::min) (last - first, (lane & (merged_threads - 1)) * ItemsPerThread);
-        const int split = MergePath(scratch + first, scratch + middle, middle - first, last - middle, diag, compare);
-        int indices[ItemsPerThread];
-        SerialMerge(
-          scratch,
-          first + split,
-          middle + diag - split,
-          middle - first - split,
-          last - middle - diag + split,
-          keys,
-          indices,
-          compare,
-          Key{});
       }
+      NullType values[ItemsPerThread];
+      StableOddEvenSort(keys, values, compare);
+    }
+    for (int merged_threads = 2; merged_threads <= config.threads; merged_threads *= 2)
+    {
       sync();
       for (int item = 0; item < ItemsPerThread; ++item)
       {
         scratch[lane * ItemsPerThread + item] = keys[item];
       }
       sync();
-      for (int item = 0; item < ItemsPerThread; ++item)
-      {
-        const int local = item * config.threads + group_lane;
-        if (local < count)
-        {
-          out[begin + local] = scratch[group_base + local];
-        }
-      }
-      sync();
+      const int start     = (lane & ~(merged_threads - 1)) * ItemsPerThread;
+      const int valid_end = group_base + count;
+      const int first     = (::cuda::std::min) (valid_end, start);
+      const int middle    = (::cuda::std::min) (valid_end, first + merged_threads / 2 * ItemsPerThread);
+      const int last      = (::cuda::std::min) (valid_end, middle + merged_threads / 2 * ItemsPerThread);
+      const int diag      = (::cuda::std::min) (last - first, (lane & (merged_threads - 1)) * ItemsPerThread);
+      const int split     = MergePath(scratch + first, scratch + middle, middle - first, last - middle, diag, compare);
+      int indices[ItemsPerThread];
+      SerialMerge(
+        scratch,
+        first + split,
+        middle + diag - split,
+        middle - first - split,
+        last - middle - diag + split,
+        keys,
+        indices,
+        compare,
+        Key{});
     }
-
-    template <typename Key, typename BeginIterator, typename EndIterator>
-    _CCCL_DEVICE_API static void invoke(
-      unsigned slot,
-      bin_config config,
-      const partition_result& bins,
-      BeginIterator begins,
-      EndIterator ends,
-      const Key* in,
-      Key* out,
-      Key* scratch)
+    sync();
+    for (int item = 0; item < ItemsPerThread; ++item)
     {
-      // Match the source workers: select a fixed register-array size with a switch.
-      switch (config.items_per_thread)
+      scratch[lane * ItemsPerThread + item] = keys[item];
+    }
+    sync();
+    for (int item = 0; item < ItemsPerThread; ++item)
+    {
+      const int local = item * config.threads + group_lane;
+      if (local < count)
       {
-        case 5:
-          sort_segment<5>(slot, config, bins, begins, ends, in, out, scratch);
-          break;
-        case 6:
-          sort_segment<6>(slot, config, bins, begins, ends, in, out, scratch);
-          break;
-        case 7:
-          sort_segment<7>(slot, config, bins, begins, ends, in, out, scratch);
-          break;
-        case 8:
-          sort_segment<8>(slot, config, bins, begins, ends, in, out, scratch);
-          break;
-        case 9:
-          sort_segment<9>(slot, config, bins, begins, ends, in, out, scratch);
-          break;
-        case 10:
-          sort_segment<10>(slot, config, bins, begins, ends, in, out, scratch);
-          break;
-        case 11:
-          sort_segment<11>(slot, config, bins, begins, ends, in, out, scratch);
-          break;
-        case 12:
-          sort_segment<12>(slot, config, bins, begins, ends, in, out, scratch);
-          break;
-        case 13:
-          sort_segment<13>(slot, config, bins, begins, ends, in, out, scratch);
-          break;
-        case 14:
-          sort_segment<14>(slot, config, bins, begins, ends, in, out, scratch);
-          break;
-        case 15:
-          sort_segment<15>(slot, config, bins, begins, ends, in, out, scratch);
-          break;
-        default:
-          _CCCL_UNREACHABLE();
+        out[begin + local] = scratch[group_base + local];
       }
     }
-  };
+    sync();
+  }
+
+  template <typename Key, typename BeginIterator, typename EndIterator>
+  _CCCL_DEVICE_API static void invoke(
+    unsigned slot,
+    bin_config config,
+    const partition_result& bins,
+    BeginIterator begins,
+    EndIterator ends,
+    const Key* in,
+    Key* out,
+    Key* scratch)
+  {
+    // Match the source workers: select a fixed register-array size with a switch.
+    switch (config.items_per_thread)
+    {
+      case 5:
+        sort_segment<5>(slot, config, bins, begins, ends, in, out, scratch);
+        break;
+      case 6:
+        sort_segment<6>(slot, config, bins, begins, ends, in, out, scratch);
+        break;
+      case 7:
+        sort_segment<7>(slot, config, bins, begins, ends, in, out, scratch);
+        break;
+      case 8:
+        sort_segment<8>(slot, config, bins, begins, ends, in, out, scratch);
+        break;
+      case 9:
+        sort_segment<9>(slot, config, bins, begins, ends, in, out, scratch);
+        break;
+      case 10:
+        sort_segment<10>(slot, config, bins, begins, ends, in, out, scratch);
+        break;
+      case 11:
+        sort_segment<11>(slot, config, bins, begins, ends, in, out, scratch);
+        break;
+      case 12:
+        sort_segment<12>(slot, config, bins, begins, ends, in, out, scratch);
+        break;
+      case 13:
+        sort_segment<13>(slot, config, bins, begins, ends, in, out, scratch);
+        break;
+      case 14:
+        sort_segment<14>(slot, config, bins, begins, ends, in, out, scratch);
+        break;
+      case 15:
+        sort_segment<15>(slot, config, bins, begins, ends, in, out, scratch);
+        break;
+      default:
+        _CCCL_UNREACHABLE();
+    }
+  }
 };
 } // namespace detail::segmented_sort_capacity
 
