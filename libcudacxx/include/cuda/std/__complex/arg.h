@@ -23,6 +23,7 @@
 
 #include <cuda/std/__cmath/inverse_trigonometric_functions.h>
 #include <cuda/std/__complex/complex.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__type_traits/is_integral.h>
 

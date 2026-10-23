@@ -7,7 +7,7 @@
 //
 //  fpmp2_stat wraps fpmp2 and mirrors its API, so it has to mirror this property
 //  too: the named free functions live at namespace scope and can be reached as
-//  cudax::name(x), not only through ADL. See the companion test
+//  cuda::name(x), not only through ADL. See the companion test
 //  units/fpmp/qualified_calls.pass.cpp for why that matters.
 //
 //  The reset and read entry points are host-only and CUDA-only, so only their
@@ -28,8 +28,6 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
 template <class T>
 TEST_HOST_DEVICE_FUNC bool same(const T& __a, const T& __b)
 {
@@ -49,19 +47,19 @@ TEST_HOST_DEVICE_FUNC void test_named()
   // The qualified spelling is itself the check that it is a namespace member, since
   // qualified lookup does not find a hidden friend - this line stops compiling if it
   // moves back into the class, even though ADL would still find the unqualified one.
-  assert(same(cudax::renormalize(a), renormalize(a)));
-  assert(static_cast<double>(cudax::renormalize(a)) == 3.0);
+  assert(same(cuda::renormalize(a), renormalize(a)));
+  assert(static_cast<double>(cuda::renormalize(a)) == 3.0);
 
-  assert(same(cudax::sqrt(c), sqrt(c)));
-  assert(static_cast<double>(cudax::sqrt(c)) == 2.0);
+  assert(same(cuda::sqrt(c), sqrt(c)));
+  assert(static_cast<double>(cuda::sqrt(c)) == 2.0);
 
-  assert(same(cudax::rsqrt(c), rsqrt(c)));
+  assert(same(cuda::rsqrt(c), rsqrt(c)));
 
-  assert(same(cudax::fma(a, b, c), fma(a, b, c)));
-  assert(static_cast<double>(cudax::fma(a, b, c)) == 8.5); // 3 * 1.5 + 4
+  assert(same(cuda::fma(a, b, c), fma(a, b, c)));
+  assert(static_cast<double>(cuda::fma(a, b, c)) == 8.5); // 3 * 1.5 + 4
 
-  assert(same(cudax::mad(a, b, c), mad(a, b, c)));
-  assert(static_cast<double>(cudax::mad(a, b, c)) == 8.5);
+  assert(same(cuda::mad(a, b, c), mad(a, b, c)));
+  assert(static_cast<double>(cuda::mad(a, b, c)) == 8.5);
 }
 
 // An instrumented value must give the same answer as the plain one it wraps: the
@@ -74,8 +72,8 @@ TEST_HOST_DEVICE_FUNC void test_matches_plain()
   const Stat sc(4.0);
   const Plain pc(4.0);
 
-  assert(static_cast<double>(cudax::renormalize(sa)) == static_cast<double>(cudax::renormalize(pa)));
-  assert(static_cast<double>(cudax::sqrt(sc)) == static_cast<double>(cudax::sqrt(pc)));
+  assert(static_cast<double>(cuda::renormalize(sa)) == static_cast<double>(cuda::renormalize(pa)));
+  assert(static_cast<double>(cuda::sqrt(sc)) == static_cast<double>(cuda::sqrt(pc)));
 }
 
 template <class T>
@@ -86,18 +84,18 @@ TEST_HOST_DEVICE_FUNC void test_type()
 
 TEST_HOST_DEVICE_FUNC void test()
 {
-  test_type<cudax::fp32mp2_stat>();
-  test_type<cudax::fp32mp2_stat_low>();
-  test_type<cudax::fp32mp2_stat_mid>();
-  test_type<cudax::fp32mp2_stat_high>();
+  test_type<cuda::fp32mp2_stat>();
+  test_type<cuda::fp32mp2_stat_low>();
+  test_type<cuda::fp32mp2_stat_mid>();
+  test_type<cuda::fp32mp2_stat_high>();
 
-  test_type<cudax::fp64mp2_stat>();
-  test_type<cudax::fp64mp2_stat_low>();
-  test_type<cudax::fp64mp2_stat_mid>();
-  test_type<cudax::fp64mp2_stat_high>();
+  test_type<cuda::fp64mp2_stat>();
+  test_type<cuda::fp64mp2_stat_low>();
+  test_type<cuda::fp64mp2_stat_mid>();
+  test_type<cuda::fp64mp2_stat_high>();
 
-  test_matches_plain<cudax::fp32mp2_stat, cudax::fp32mp2>();
-  test_matches_plain<cudax::fp64mp2_stat, cudax::fp64mp2>();
+  test_matches_plain<cuda::fp32mp2_stat, cuda::fp32mp2>();
+  test_matches_plain<cuda::fp64mp2_stat, cuda::fp64mp2>();
 }
 
 int main(int, char**)

@@ -72,8 +72,8 @@ TEST_CASE("TestConstantIteratorIncrement", "[constant_iterator]")
 
   REQUIRE(-2 == lhs - rhs);
 }
-static_assert(cuda::std::is_trivially_copy_constructible<thrust::constant_iterator<int>>::value);
-static_assert(cuda::std::is_trivially_copyable<thrust::constant_iterator<int>>::value);
+static_assert(cuda::std::is_trivially_copy_constructible_v<thrust::constant_iterator<int>>);
+static_assert(cuda::std::is_trivially_copyable_v<thrust::constant_iterator<int>>);
 
 TEST_CASE("TestConstantIteratorIncrementBig", "[constant_iterator]")
 {

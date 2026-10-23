@@ -33,7 +33,6 @@ jobs:
   build-workflow:
     name: Build workflow from matrix
     runs-on: ubuntu-latest
-    if: ${{ github.repository == 'NVIDIA/cccl' }}
     permissions:
       contents: read
       pull-requests: write
@@ -145,12 +144,13 @@ jobs:
             exit 0
           fi
 
-          # Only compare SASS when CUB, or something CUB is built from, changed.
+          # Only compare SASS for the projects that changed, or that are built from
+          # something that changed.
           #
           # Redirect GITHUB_OUTPUT to our file so that the outputs do not land in this
           # step's outputs, where they would collide with the ones `build-workflow` writes
           # later.
-          echo "::group::Inspect changes for CUB"
+          echo "::group::Inspect changes for SASS"
 
           dirty_report="${RUNNER_TEMP}/sass-inspect-changes.txt"
 
@@ -162,16 +162,15 @@ jobs:
           echo "SASS job changes"
           cat "${dirty_report}"
 
-          if ! grep -Eq '^(FULL|LITE)_BUILD=.*\bcub\b' "${dirty_report}"; then
-            echo "CUB is not affected by this change; skipping SASS diff dispatch."
-            {
-              echo "sass_enabled=false"
-              echo 'sass_matrix={"include":[]}'
-            } >> "${GITHUB_OUTPUT}"
-            exit 0
-          fi
+          mapfile -t projects < <(
+            sed -n -E 's/^(FULL|LITE)_BUILD=//p' "${dirty_report}" | grep -oE '[^ ]+'
+          )
 
-          sass_matrix_json="$(./ci/sass/parse_matrix.py "ci/matrix.yaml" --workflow pull_request)"
+          sass_matrix_json="$(
+            ./ci/sass/parse_matrix.py "ci/matrix.yaml" \
+              --workflow pull_request \
+              --projects "${projects[@]}"
+          )"
           sass_enabled="$(
             jq -r 'if (.include // []) == [] then "false" else "true" end' \
               <<< "${sass_matrix_json}"
@@ -220,7 +219,12 @@ jobs:
           allow_override: "true"
           inspect_changes_script: 'ci/inspect_changes.py'
           inspect_changes_base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
-          workflows: ${{ github.repository == 'NVIDIA/cccl' && 'pull_request' || 'pull_request_fork' }}
+          workflows: |-
+            ${{ case(
+              github.event.repository.fork, 'pull_request_fork',
+              contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner), 'pull_request',
+              'pull_request_fork'
+            ) }}
 
   dispatch-groups-linux-two-stage:
     name: ${{ matrix.name }}
@@ -313,6 +317,7 @@ jobs:
       - dispatch-groups-linux-standalone
       - dispatch-groups-windows-standalone
     permissions:
+      actions: read
       contents: read
       pull-requests: write # Posts a comment back to the PR.
     runs-on: ubuntu-latest
@@ -332,11 +337,7 @@ jobs:
   verify-devcontainers:
     name: Verify Dev Containers
     needs: build-workflow
-    if: >-
-      ${{
-           needs.build-workflow.outputs.vdc_enabled == 'true' &&
-           github.repository == 'NVIDIA/cccl'
-      }}
+    if: ${{ needs.build-workflow.outputs.vdc_enabled == 'true' }}
     permissions:
       id-token: write
       contents: read
@@ -350,10 +351,11 @@ jobs:
     if: >-
       ${{
         needs.build-workflow.outputs.pr_number &&
-        needs.build-workflow.outputs.docs_enabled == 'true' &&
-        github.repository == 'NVIDIA/cccl'
+        needs.build-workflow.outputs.docs_enabled == 'true'
       }}
-    runs-on: ${{ github.repository == 'NVIDIA/cccl' && 'linux-amd64-cpu32' || 'ubuntu-latest' }}
+    runs-on: |-
+      ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) &&
+          'linux-amd64-cpu32' || 'ubuntu-latest' }}
     permissions:
       contents: read
     steps:
@@ -373,7 +375,7 @@ jobs:
     if: >-
       ${{
         needs.build-workflow.outputs.rapids_enabled == 'true' &&
-        github.repository == 'NVIDIA/cccl'
+        contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner)
       }}
     secrets: inherit
     permissions:
@@ -390,7 +392,7 @@ jobs:
     if: >-
       ${{
         needs.build-workflow.outputs.matx_enabled == 'true' &&
-        github.repository == 'NVIDIA/cccl'
+        contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner)
       }}
     secrets: inherit
     permissions:
@@ -404,7 +406,7 @@ jobs:
     if: >-
       ${{
         needs.build-workflow.outputs.pytorch_enabled == 'true' &&
-        github.repository == 'NVIDIA/cccl'
+        contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner)
       }}
     secrets: inherit
     permissions:
@@ -419,7 +421,7 @@ jobs:
     needs:
       - dispatch-groups-linux-two-stage
       - dispatch-groups-linux-standalone
-    if: ${{ !cancelled() && github.repository == 'NVIDIA/cccl' }}
+    if: ${{ !cancelled() }}
     permissions:
       contents: read
     steps:
@@ -453,7 +455,8 @@ jobs:
         run: |
           echo "Artifact contents:"
           find artifact -name "*.whl" -type f
-          pip install $(find artifact -name "*.whl" -type f | head -1)[cu13]
+          wheel=$(find artifact -name "*.whl" -type f | head -1)
+          pip install "${wheel}[cu13]"
 
       - name: Test CPU-only import
         if: steps.check-wheel.outputs.skip != 'true'
@@ -498,7 +501,7 @@ jobs:
       arch: ${{ matrix.arch }}
       base_ref: ${{ matrix.base_ref }}
       test_ref: ${{ matrix.test_ref }}
-      cub_filters: ${{ matrix.cub_filters }}
+      cpp_filters: ${{ matrix.cpp_filters }}
       python_filters: ${{ matrix.python_filters }}
       nvbench_args: ${{ matrix.nvbench_args }}
       nvbench_compare_args: ${{ matrix.nvbench_compare_args }}
@@ -560,6 +563,7 @@ jobs:
     uses: ./.github/workflows/sass-diff.yml
     with:
       id: ${{ matrix.id }}
+      project: ${{ matrix.project }}
       launch_args: ${{ matrix.launch_args }}
       preset: ${{ matrix.preset }}
       archs: ${{ matrix.archs }}
@@ -579,7 +583,7 @@ jobs:
     needs: [build-workflow, dispatch-bench]
     permissions:
       pull-requests: write
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Determine outcome
         id: outcome
@@ -618,31 +622,46 @@ jobs:
     permissions:
       actions: read
       pull-requests: write
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
+      - name: Checkout the SASS scripts
+        uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            ci/sass
+            ci/matrix.yaml
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+        # Needed for render_report.py
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
+        with:
+          python-version: '3.14'
+
+        # Needed for render_report.py
+      - name: Install the SASS script dependencies
+        run: pip install pyyaml
+
       - name: Download the SASS comment artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: sass-*-comment
           path: sass-comment
 
-      - name: Determine the outcome
+      - name: Render the comment
         id: compose
         run: |
-          # The sass-diff job is a matrix job (presumably to organize it into a drop-down
-          # in the UI). download-artifact will put each sub-job into a separate directory
-          # under sass-comment, keyed by the job ID:
+          # download-artifact puts the artifact of each matrix job into its own
+          # directory under sass-comment, named after the artifact:
           #
           # sass-comment/
-          #   1/
-          #     summary.md
-          #   2/
-          #     summary.md
-          #   ...
-          #
-          # But there is currently only ever 1 job for it that runs, so we could remove
-          # the matrix handling code for it. Then this just becomes a bunch of
-          # straight-line code without the for-loop or the find call below.
+          #   sass-cub-benchmarks-comment/
+          #     report.json
+          #     meta.json
+          #     analysis.json
+          #   sass-thrust-benchmarks-comment/
+          #     ...
           mapfile -t entries < <(find sass-comment -mindepth 1 -maxdepth 1 -type d | sort)
 
           if [[ "${#entries[@]}" -eq 0 ]]; then
@@ -654,18 +673,15 @@ jobs:
           comment_path="${RUNNER_TEMP}/sass-results-comment.md"
 
           outcome=NO_CHANGE
+          inputs=()
           for entry in "${entries[@]}"; do
-            if [[ ! -s "${entry}/summary.md" ]]; then
-              echo "::error::${entry} has no summary."
-              exit 1
-            fi
-
             if jq -e '[.targets[].changed] | any' "${entry}/report.json" > /dev/null; then
               outcome=CHANGE
             fi
-
-            cat "${entry}/summary.md" >> "${comment_path}"
+            inputs+=(--input "${entry}")
           done
+
+          python3 ci/sass/render_report.py "${inputs[@]}" --output "${comment_path}"
 
           cat "${comment_path}" >> "${GITHUB_STEP_SUMMARY}"
           echo "SASS outcome: ${outcome}."
@@ -712,7 +728,7 @@ jobs:
       - dispatch-bench
       - dispatch-sass-diff
       - sass-results
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Check results
         run: |
@@ -877,7 +893,7 @@ jobs:
     needs: analyze-failures
     permissions:
       pull-requests: write
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Append to CI Workflow Results
         uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5

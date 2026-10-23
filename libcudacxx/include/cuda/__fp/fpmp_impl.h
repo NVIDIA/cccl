@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -105,8 +105,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 // ===================================================================
 // Internal implementation vocabulary and helpers (moved from fpmp_common.h;
 // fpmp_common.h now carries only the public API surface).
@@ -537,7 +536,7 @@ inline constexpr bool __fpmp2_is_lossless_int_v =
 // the fallback is the appropriate arithmetic operation
 //
 // The CUDA intrinsics are called as ::__dadd_rn etc. because these wrappers live in
-// cuda::experimental, where <cuda/fpemu> declares same-named overloads for its own
+// cuda, where <cuda/fpemu> declares same-named overloads for its own
 // types: unqualified lookup would stop there and never reach the global scope.
 */
 _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_internal_fabs(float __x) noexcept
@@ -890,7 +889,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_trunc(const _FpType __x) n
 {
   if constexpr (__fpmp2_is_fp32_v<_FpType>)
   {
-    const _FpType __abs_x = __fpmp_internal_fabs(__x);
+    const _FpType __abs_x = ::cuda::__fpmp_internal_fabs(__x);
     if (__abs_x >= _FpType(0x1.0p23f))
     {
       return __x;
@@ -902,8 +901,8 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_trunc(const _FpType __x) n
         return ::__int2float_rz(__xi);
       }),
       ({
-        const int32_t __xi = __fpmp_fp2int_rz(__x);
-        return __fpmp_int2fp_rz<_FpType>(__xi);
+        const int32_t __xi = ::cuda::__fpmp_fp2int_rz(__x);
+        return ::cuda::__fpmp_int2fp_rz<_FpType>(__xi);
       }))
   }
   else
@@ -917,7 +916,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_floor(const _FpType __x) n
 {
   if constexpr (__fpmp2_is_fp32_v<_FpType>)
   {
-    const _FpType __abs_x = __fpmp_internal_fabs(__x);
+    const _FpType __abs_x = ::cuda::__fpmp_internal_fabs(__x);
     if (__abs_x >= _FpType(0x1.0p23f))
     {
       return __x;
@@ -940,7 +939,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_ceil(const _FpType __x) no
 {
   if constexpr (__fpmp2_is_fp32_v<_FpType>)
   {
-    const _FpType __abs_x = __fpmp_internal_fabs(__x);
+    const _FpType __abs_x = ::cuda::__fpmp_internal_fabs(__x);
     if (__abs_x >= _FpType(0x1.0p23f))
     {
       return __x;
@@ -966,8 +965,8 @@ template <typename _FpType>
 _CCCL_TRIVIAL_HOST_DEVICE_API _FpType
 __fpmp_two_mult_fma(const _FpType __x, const _FpType __y, _FpType* const __res_lo) noexcept
 {
-  _FpType __res_hi = __fpmp_mul_rn(__x, __y);
-  *__res_lo        = __fpmp_fma_rn(__x, __y, -__res_hi);
+  _FpType __res_hi = ::cuda::__fpmp_mul_rn(__x, __y);
+  *__res_lo        = ::cuda::__fpmp_fma_rn(__x, __y, -__res_hi);
   return __res_hi;
 }
 
@@ -979,9 +978,9 @@ template <typename _FpType>
 _CCCL_TRIVIAL_HOST_DEVICE_API _FpType
 __fpmp_fast_two_sum(const _FpType __x, const _FpType __y, _FpType* const __res_lo) noexcept
 {
-  _FpType __res_hi = __fpmp_add_rn(__x, __y);
-  _FpType __diff   = __fpmp_sub_rn(__res_hi, __x);
-  *__res_lo        = __fpmp_sub_rn(__y, __diff);
+  _FpType __res_hi = ::cuda::__fpmp_add_rn(__x, __y);
+  _FpType __diff   = ::cuda::__fpmp_sub_rn(__res_hi, __x);
+  *__res_lo        = ::cuda::__fpmp_sub_rn(__y, __diff);
   return __res_hi;
 }
 
@@ -991,12 +990,12 @@ template <typename _FpType>
 _CCCL_TRIVIAL_HOST_DEVICE_API _FpType
 __fpmp_two_sum(const _FpType __x, const _FpType __y, _FpType* const __res_lo) noexcept
 {
-  _FpType __res_hi  = __fpmp_add_rn(__x, __y);
-  _FpType __a_prime = __fpmp_sub_rn(__res_hi, __y);
-  _FpType __b_prime = __fpmp_sub_rn(__res_hi, __a_prime);
-  _FpType __delta_a = __fpmp_sub_rn(__x, __a_prime);
-  _FpType __delta_b = __fpmp_sub_rn(__y, __b_prime);
-  *__res_lo         = __fpmp_add_rn(__delta_a, __delta_b);
+  _FpType __res_hi  = ::cuda::__fpmp_add_rn(__x, __y);
+  _FpType __a_prime = ::cuda::__fpmp_sub_rn(__res_hi, __y);
+  _FpType __b_prime = ::cuda::__fpmp_sub_rn(__res_hi, __a_prime);
+  _FpType __delta_a = ::cuda::__fpmp_sub_rn(__x, __a_prime);
+  _FpType __delta_b = ::cuda::__fpmp_sub_rn(__y, __b_prime);
+  *__res_lo         = ::cuda::__fpmp_add_rn(__delta_a, __delta_b);
   return __res_hi;
 }
 
@@ -1007,7 +1006,7 @@ _CCCL_HOST_DEVICE_API constexpr void __fpmp_from_double(const double __x, float*
   *__res_hi = (float) __x;
   *__res_lo = (float) (__x - (double) (float) __x);
 }
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

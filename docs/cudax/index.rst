@@ -12,6 +12,7 @@ CUDA Experimental
    graph
    places
    stf
+   coop/index
    API reference <api/index>
 
 ``CUDA Experimental`` (``cudax``) provides experimental new features that are still in development and subject to change.
@@ -25,6 +26,7 @@ Specifically, ``cudax`` provides:
    - dimensions description functionality
    - :ref:`places <cudax-places>` for managing execution and data affinity across devices
    - :ref:`an implementation of the STF (Sequential Task Flow) programming model <stf>`
+   - :ref:`CCCL Cooperative <cudax-coop>`
 
 Stability Guarantees
 ---------------------

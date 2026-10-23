@@ -28,10 +28,9 @@
 #include <cuda/std/__cmath/fma.h>
 #include <cuda/std/__cmath/hyperbolic_functions.h>
 #include <cuda/std/__cmath/isfinite.h>
-#include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/__cmath/isnan.h>
-#include <cuda/std/__cmath/trigonometric_functions.h>
 #include <cuda/std/__complex/complex.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/numbers>
 

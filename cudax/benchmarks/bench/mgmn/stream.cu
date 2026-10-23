@@ -18,8 +18,8 @@
 #include <cuda/stream>
 
 #include <cuda/experimental/__device/logical_device.cuh>
-#include <cuda/experimental/__multi_gpu/algorithm/transform/transform.h>
-#include <cuda/experimental/__multi_gpu/nccl_communicator.h>
+#include <cuda/experimental/mgmn/nccl_communicators>
+#include <cuda/experimental/mgmn/transform>
 
 #include <stdexcept>
 #include <string>

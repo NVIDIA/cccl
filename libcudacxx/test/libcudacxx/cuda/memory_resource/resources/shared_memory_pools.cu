@@ -90,11 +90,11 @@ template <typename PoolType>
 void shared_pool_static_asserts()
 {
   // Shared pools must be copyable (unlike owning pools)
-  static_assert(cuda::std::is_copy_constructible<PoolType>::value);
-  static_assert(cuda::std::is_copy_assignable<PoolType>::value);
-  static_assert(cuda::std::is_move_constructible<PoolType>::value);
-  static_assert(cuda::std::is_move_assignable<PoolType>::value);
-  static_assert(!cuda::std::is_trivially_destructible<PoolType>::value);
+  static_assert(cuda::std::is_copy_constructible_v<PoolType>);
+  static_assert(cuda::std::is_copy_assignable_v<PoolType>);
+  static_assert(cuda::std::is_move_constructible_v<PoolType>);
+  static_assert(cuda::std::is_move_assignable_v<PoolType>);
+  static_assert(!cuda::std::is_trivially_destructible_v<PoolType>);
 }
 
 template void shared_pool_static_asserts<cuda::shared_device_memory_pool>();

@@ -24,14 +24,11 @@
 #include <cuda/__cmath/sincos.h>
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/hypot.h>
-#include <cuda/std/__cmath/inverse_trigonometric_functions.h>
 #include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__cmath/signbit.h>
-#include <cuda/std/__cmath/trigonometric_functions.h>
 #include <cuda/std/__complex/complex.h>
-#include <cuda/std/__complex/vector_support.h>
-#include <cuda/std/__type_traits/is_extended_arithmetic.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/limits>

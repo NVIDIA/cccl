@@ -20,10 +20,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_constructible.h>
-#include <cuda/std/__type_traits/is_scalar.h>
-#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__type_traits/is_constructible.h> // IWYU pragma: keep
+#include <cuda/std/__utility/declval.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
