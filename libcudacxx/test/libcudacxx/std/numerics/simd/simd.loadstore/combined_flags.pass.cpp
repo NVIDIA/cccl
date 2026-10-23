@@ -73,7 +73,7 @@ TEST_HOST_DEVICE_FUNC constexpr void test_memory_flags(Flags flags)
   alignas(512) cuda::std::array<U, N + 1> output{};
   for (int i = 0; i <= N; ++i)
   {
-    input[i] = static_cast<U>(i + 1);
+    input[i] = static_cast<U>(static_cast<float>(i + 1));
   }
 
   // Range overloads.
@@ -119,11 +119,15 @@ TEST_HOST_DEVICE_FUNC constexpr void test_memory_flags(Flags flags)
   }
 }
 
+// Compose flags outside function templates to avoid a GCC 11 ICE in C++20.
+constexpr auto aligned_flags     = simd::flag_convert | simd::flag_aligned;
+constexpr auto overaligned_flags = simd::flag_convert | simd::flag_overaligned<64>;
+
 template <int N>
 TEST_HOST_DEVICE_FUNC constexpr bool test_width()
 {
-  test_memory_flags<int, float, N>(simd::flag_convert | simd::flag_aligned);
-  test_memory_flags<int, float, N>(simd::flag_convert | simd::flag_overaligned<64>);
+  test_memory_flags<int, float, N>(aligned_flags);
+  test_memory_flags<int, float, N>(overaligned_flags);
   return true;
 }
 
@@ -132,9 +136,9 @@ TEST_HOST_DEVICE_FUNC constexpr bool test()
   test_width<1>();
   test_width<3>();
   test_width<4>();
-  test_memory_flags<char, float, 3>(simd::flag_convert | simd::flag_aligned);
-  test_memory_flags<float, double, 4>(simd::flag_convert | simd::flag_aligned);
-  test_memory_flags<cuda::std::complex<float>, cuda::std::complex<float>, 3>(simd::flag_convert | simd::flag_aligned);
+  test_memory_flags<char, float, 3>(aligned_flags);
+  test_memory_flags<float, double, 4>(aligned_flags);
+  test_memory_flags<cuda::std::complex<float>, cuda::std::complex<float>, 3>(aligned_flags);
   return true;
 }
 
