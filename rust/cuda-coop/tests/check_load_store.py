@@ -126,7 +126,7 @@ cases.update(
     ),
     transpose_no_trailing_completion=(
         transpose_load + transpose_store + reload,
-        "requires a full-block barrier",
+        "requires a barrier covering both accesses",
     ),
     transpose_varying_count=(
         transpose_load.replace(
