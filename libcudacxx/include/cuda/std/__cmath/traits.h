@@ -22,16 +22,27 @@
 #endif // no system header
 
 #include <cuda/std/__cmath/isnan.h>
+#include <cuda/std/__floating_point/storage.h>
 #include <cuda/std/__host_stdlib/math.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_extended_arithmetic.h>
 #include <cuda/std/__type_traits/promote.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 #include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+// maps the bits of a double to an int64_t with the same order
+// -0 and +0 map to 0, NaNs have to handled by the caller
+[[nodiscard]] _CCCL_API inline int64_t __fp64_to_ordered_int(double __x) noexcept
+{
+  const auto __x_as_int64 = static_cast<int64_t>(::cuda::std::__fp_get_storage(__x));
+  return __x_as_int64 < 0 ? ::cuda::std::numeric_limits<int64_t>::min() - __x_as_int64 : __x_as_int64;
+}
 
 // isgreater
 
@@ -42,6 +53,17 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
   {
     return false;
   }
+  return __x > __y;
+}
+
+[[nodiscard]] _CCCL_API inline bool __device_isgreater(double __x, double __y) noexcept
+{
+  if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
+  {
+    return false;
+  }
+  _CCCL_DISPATCH_SLOW_FP64_TARGET(
+    return ::cuda::std::__fp64_to_ordered_int(__x) > ::cuda::std::__fp64_to_ordered_int(__y);)
   return __x > __y;
 }
 
@@ -82,6 +104,17 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
   return __x >= __y;
 }
 
+[[nodiscard]] _CCCL_API inline bool __device_isgreaterequal(double __x, double __y) noexcept
+{
+  if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
+  {
+    return false;
+  }
+  _CCCL_DISPATCH_SLOW_FP64_TARGET(
+    return ::cuda::std::__fp64_to_ordered_int(__x) >= ::cuda::std::__fp64_to_ordered_int(__y);)
+  return __x >= __y;
+}
+
 #if _CCCL_CHECK_BUILTIN(builtin_isgreaterequal) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_ISGREATEREQUAL(...) __builtin_isgreaterequal(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_isgreaterequal)
@@ -116,6 +149,17 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
   {
     return false;
   }
+  return __x < __y;
+}
+
+[[nodiscard]] _CCCL_API inline bool __device_isless(double __x, double __y) noexcept
+{
+  if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
+  {
+    return false;
+  }
+  _CCCL_DISPATCH_SLOW_FP64_TARGET(
+    return ::cuda::std::__fp64_to_ordered_int(__x) < ::cuda::std::__fp64_to_ordered_int(__y);)
   return __x < __y;
 }
 
@@ -156,6 +200,17 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
   return __x <= __y;
 }
 
+[[nodiscard]] _CCCL_API inline bool __device_islessequal(double __x, double __y) noexcept
+{
+  if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
+  {
+    return false;
+  }
+  _CCCL_DISPATCH_SLOW_FP64_TARGET(
+    return ::cuda::std::__fp64_to_ordered_int(__x) <= ::cuda::std::__fp64_to_ordered_int(__y);)
+  return __x <= __y;
+}
+
 #if _CCCL_CHECK_BUILTIN(builtin_islessequal) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_ISLESSEQUAL(...) __builtin_islessequal(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_islessequal)
@@ -190,6 +245,21 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
   {
     return false;
   }
+  return __x < __y || __x > __y;
+}
+
+[[nodiscard]] _CCCL_API inline bool __device_islessgreater(double __x, double __y) noexcept
+{
+  if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
+  {
+    return false;
+  }
+  // Non-NaN values are unequal iff their bits differ, except for -0 and +0
+  // Comparing the bits directly is cheaper than mapping both values to ordered integers
+  // ((x | y) << 1) == 0 drops the sign bit and is true only if both are +-0
+  _CCCL_DISPATCH_SLOW_FP64_TARGET(
+    const auto __x_bits = ::cuda::std::__fp_get_storage(__x); const auto __y_bits = ::cuda::std::__fp_get_storage(__y);
+    return __x_bits != __y_bits && ((__x_bits | __y_bits) << 1) != 0;)
   return __x < __y || __x > __y;
 }
 
