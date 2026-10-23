@@ -22,9 +22,9 @@
 
 #include <cub/block/block_load.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/util_math.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__ptx/instructions/get_sreg.h>

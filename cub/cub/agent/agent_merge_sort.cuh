@@ -16,10 +16,12 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_merge_sort.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_namespace.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/std/__algorithm/min.h>
 

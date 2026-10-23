@@ -19,12 +19,15 @@
 
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_reduce.cuh>
+#include <cub/detail/cub_vector.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/type_traits.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/grid/grid_mapping.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/min.h>

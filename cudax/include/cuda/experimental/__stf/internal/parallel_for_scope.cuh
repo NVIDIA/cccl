@@ -25,6 +25,7 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/void_t.h>
@@ -41,6 +42,7 @@
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
 
 #include <memory>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 
@@ -721,21 +723,7 @@ public:
       {
         if (record_time)
         {
-          cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
-          cuda_safe_call(cudaEventSynchronize(end_event));
-
-          float milliseconds = 0;
-          cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
-
-          if (dot.is_tracing())
-          {
-            dot.template add_vertex_timing<typename context::task_type>(t, milliseconds, device);
-          }
-
-          if (statistics.is_calibrating())
-          {
-            statistics.log_task_time(t, milliseconds);
-          }
+          statistics.record_task_timing(t, start_event, end_event, t.get_stream(), dot, device);
         }
       }
 
@@ -826,8 +814,7 @@ public:
       {
         if constexpr (::cuda::std::is_same_v<partitioner_t, null_partition>)
         {
-          fprintf(stderr, "Fatal: Grid execution requires a partitioner.\n");
-          abort();
+          _CCCL_THROW(::std::logic_error, "grid execution requires a partitioner");
         }
         else
         {

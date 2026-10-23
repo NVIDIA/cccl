@@ -14,11 +14,11 @@
 #endif // no system header
 
 #include <cub/agent/agent_reduce.cuh>
+#include <cub/detail/key_value_pair.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_macro.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/determinism.h>
