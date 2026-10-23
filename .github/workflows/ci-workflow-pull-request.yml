@@ -64,6 +64,7 @@ jobs:
       matx_enabled: ${{ steps.export-flags.outputs.matx_enabled }}
       pytorch_enabled: ${{ steps.export-flags.outputs.pytorch_enabled }}
       branch_notes_dirt: ${{ steps.branch-notes-dirt.outputs.branch_notes_dirt }}
+
     steps:
       - name: Export workflow flags
         id: export-flags
@@ -104,6 +105,8 @@ jobs:
         id: download-ci-matrix
         uses: ./.github/actions/download-ci-matrix
         with:
+          ci_profile: pull_request
+          ci_matrices: ${{ vars.CI_MATRICES }}
           matrix_ref: ${{ inputs.matrix_ref }}
           matrix_path: ${{ inputs.matrix_path }}
 
@@ -131,7 +134,7 @@ jobs:
       - name: Build compile-time benchmark dispatch matrix
         id: build-compile-time-matrix
         env:
-          MATRIX_FILE: ${{ steps.download-ci-matrix.outputs.matrix }}
+          MATRIX_FILES: ${{ steps.download-ci-matrix.outputs.matrix_files }}
         run: |
           if [[ "${{ contains(github.event.head_commit.message, '[skip-compile-time-bench]') }}" == "true" ]]; then
             echo "Commit message contains [skip-compile-time-bench]; skipping compile-time benchmark dispatch."
@@ -142,22 +145,36 @@ jobs:
             exit 0
           fi
 
-          compile_time_matrix_json="$(./ci/compile_time/parse_matrix.py "${MATRIX_FILE}" --workflow pull_request)"
+          # Save each parser result before combining the selected matrix files.
+          matrix_outputs=()
+          for matrix_file in ${MATRIX_FILES}; do
+            output="$(dirname "${matrix_file}")/compile-time.json"
+            ./ci/compile_time/parse_matrix.py \
+              "${matrix_file}" \
+              --workflow pull_request > "${output}"
+            matrix_outputs+=("${output}")
+          done
+
+          # Transform paths to label:path before passing to merge
+          mkdir -p workflow
+          printf '%s\n' "${matrix_outputs[@]}" | \
+            awk -F/ '{print $(NF-1) ":" $0}' | \
+            xargs ./ci/util/merge_dispatch_matrix.py > workflow/compile-time.json
           compile_time_enabled="$(
             jq -r 'if (.include // []) == [] then "false" else "true" end' \
-              <<< "${compile_time_matrix_json}"
+              workflow/compile-time.json
           )"
 
           {
             echo "compile_time_enabled=${compile_time_enabled}"
-            echo "compile_time_matrix=${compile_time_matrix_json}"
+            echo "compile_time_matrix=$(cat workflow/compile-time.json)"
           } >> "${GITHUB_OUTPUT}"
 
       - name: Build SASS diff dispatch matrix
         id: build-sass-matrix
         env:
           BASE_SHA: ${{ steps.export-pr-info.outputs.base_sha }}
-          MATRIX_FILE: ${{ steps.download-ci-matrix.outputs.matrix }}
+          MATRIX_FILES: ${{ steps.download-ci-matrix.outputs.matrix_files }}
         run: |
           set -u
 
@@ -192,20 +209,30 @@ jobs:
             sed -n -E 's/^(FULL|LITE)_BUILD=//p' "${dirty_report}" | grep -oE '[^ ]+'
           )
 
-          sass_matrix_json="$(
-            ./ci/sass/parse_matrix.py "${MATRIX_FILE}" \
+          # Save each parser result before combining the selected matrix files.
+          matrix_outputs=()
+          for matrix_file in ${MATRIX_FILES}; do
+            output="$(dirname "${matrix_file}")/sass-diff.json"
+            ./ci/sass/parse_matrix.py "${matrix_file}" \
               --workflow pull_request \
-              --projects "${projects[@]}"
-          )"
+              --projects "${projects[@]}" > "${output}"
+            matrix_outputs+=("${output}")
+          done
+
+          # Transform paths to label:path before passing to merge
+          mkdir -p workflow
+          printf '%s\n' "${matrix_outputs[@]}" | \
+            awk -F/ '{print $(NF-1) ":" $0}' | \
+            xargs ./ci/util/merge_dispatch_matrix.py > workflow/sass-diff.json
           sass_enabled="$(
             jq -r 'if (.include // []) == [] then "false" else "true" end' \
-              <<< "${sass_matrix_json}"
+              workflow/sass-diff.json
           )"
 
           echo "SASS enabled: ${sass_enabled}"
           {
             echo "sass_enabled=${sass_enabled}"
-            echo "sass_matrix=${sass_matrix_json}"
+            echo "sass_matrix=$(cat workflow/sass-diff.json)"
           } >> "${GITHUB_OUTPUT}"
 
       - name: Detect .branch_notes changes
@@ -245,7 +272,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           pr_number: ${{ steps.export-pr-info.outputs.pr_number }}
           allow_override: "true"
-          matrix_file: ${{ steps.download-ci-matrix.outputs.matrix }}
+          matrix_files: ${{ steps.download-ci-matrix.outputs.matrix_files }}
           inspect_changes_script: 'ci/inspect_changes.py'
           inspect_changes_base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
           workflows: |-

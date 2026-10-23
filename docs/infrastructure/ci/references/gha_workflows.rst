@@ -39,7 +39,7 @@ matrix strategies.
      - Runs the exhaustive ``weekly`` matrix on a Sunday schedule, with AI failure analysis and Slack notifications.
    * - ``.github/workflows/ci-workflow-custom.yml``
      - Manual
-     - Runs the requested full matrices without change detection; defaults to ``nightly``.
+     - Runs the requested workflow keys in full without change detection; defaults to ``nightly``.
    * - ``.github/workflows/workflow-dispatch-standalone-group-linux.yml``
      - Automatic
      - Dispatches an array of standalone Linux jobs as a matrix.
@@ -64,17 +64,20 @@ Custom workflow
 
 The custom workflow accepts a ``workflows`` input with a space-separated list
 of workflow keys from the matrix file. It defaults to ``nightly``. For example,
-``nightly weekly`` runs both matrices. All selected matrices run in full, without
-change detection.
+``nightly weekly`` runs both workflows. All selected workflows run in full,
+without change detection.
 
 .. _infra-ci-matrix-selection:
 
-Choosing a matrix
-^^^^^^^^^^^^^^^^^
+Choosing matrix files
+^^^^^^^^^^^^^^^^^^^^^
 
-All four entry points accept two optional ``workflow_dispatch`` inputs. The
-matrix file must be in the same repository as the workflow run and follow the
+All four entry points accept two optional ``workflow_dispatch`` inputs. Matrix
+files must be in the same repository as the workflow run and follow the
 :ref:`matrix.yaml format <infra-ci-matrix-yaml>`.
+
+Setting either input selects a single matrix file and overrides ``CI_MATRICES``.
+An omitted ref or path uses the corresponding default below.
 
 .. list-table::
    :header-rows: 1
@@ -90,10 +93,34 @@ matrix file must be in the same repository as the workflow run and follow the
      - Path to the matrix file, relative to the repository root.
      - ``ci/matrix.yaml``.
 
-Scheduled and push-triggered runs use these defaults. Selecting a matrix ref
-changes the configuration; the workflow's branch or tag still selects the code
-to build and test. PR, nightly, and weekly runs use their usual workflow keys;
-custom runs use the ``workflows`` input.
+When both inputs are blank, PR, nightly, and weekly runs select matrix files
+from their respective ``pull_request``, ``nightly``, and ``weekly`` profiles in
+the ``CI_MATRICES`` repository variable. Custom runs use the default matrix.
+
+The variable maps profile names to named matrix definitions in ``path@ref``
+form. Matrix names may contain only ASCII letters, digits, hyphens, and
+underscores. For example:
+
+.. code-block:: json
+
+   {
+     "nightly": {
+       "extended": "ci/matrices/extended.yaml@ci-configs"
+     },
+     "pull_request": {
+       "standard": "ci/matrix.yaml",
+       "extended": "ci/matrices/extended.yaml@ci-configs"
+     }
+   }
+
+An omitted path or ref uses ``ci/matrix.yaml`` or the triggering commit,
+respectively. Each resolved path/ref pair must have one name within a profile;
+different names for the same pair cause an error. If the variable is unset or
+the selected profile defines no matrices, CI uses the single default matrix.
+
+Selecting a matrix ref changes the configuration; the workflow's branch or tag
+still selects the code to build and test. PR, nightly, and weekly runs use their
+usual workflow keys; custom runs use the ``workflows`` input.
 
 For example, run the full ``nightly`` matrix on code from ``my-feature`` using
 ``ci/custom-matrix.yaml`` from the ``ci-matrices`` branch:
@@ -150,10 +177,12 @@ The build-workflow action
 
 The "build workflow from matrix" job runs the ``build-workflow`` action at
 ``.github/actions/workflow-build/``. Its script ``build-workflow.py`` reads
-the selected matrix file together with the change-detection output from
-``ci/inspect_changes.py`` and produces ``workflow/workflow.json``. That file holds
-named groups — "CUB GCC", for example — each carrying a ``standalone`` array and a
-``two_stage`` array of fully expanded job specs.
+each selected matrix file independently, using that file's tags, jobs, and
+exclusions together with the change-detection output from ``ci/inspect_changes.py``.
+The resulting jobs are merged into ``workflow/workflow.json``, combining shared
+builds and tests and assigning unique job IDs across the run. That file holds
+named groups — "CUB GCC", for example — each carrying a ``standalone`` array and
+a ``two_stage`` array of fully expanded job specs.
 
 A second script, ``prepare-workflow-dispatch.py``, splits ``workflow.json`` into
 ``dispatch.json``. This is the structure the GHA workflow is actually dispatched over.

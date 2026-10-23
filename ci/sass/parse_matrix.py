@@ -80,7 +80,7 @@ def parse_matrix(
     return {
         "include": [
             matrix_entry(matrix, config)
-            for config in matrix["sass"][workflow]
+            for config in matrix.get("sass", {}).get(workflow, [])
             if config["project"] in projects
         ]
     }
