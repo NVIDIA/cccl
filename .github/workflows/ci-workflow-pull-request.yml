@@ -728,6 +728,10 @@ jobs:
 
   # Check all other job statuses. This job gates branch protection checks.
   ci:
+    # !! Important: do NOT change the name of the
+    # !! job. .github/workflows/sass-diff-approve.yml searches for a job called exactly
+    # !! "CI" to find this one so that it can be rerun after a /sass diff ok comment. You
+    # !! must update the name there if this ever changes.
     name: CI
     # !! Important: This job is used for branch protection checks.
     # !! Need to use always() instead of !cancelled() because skipped jobs count as success

@@ -10,7 +10,7 @@ on:
 permissions:
   pull-requests: read
   issues: write
-  actions: read
+  actions: write
   checks: write
 
 jobs:
@@ -21,9 +21,8 @@ jobs:
       github.event.issue.pull_request &&
       github.event.issue.state == 'open' &&
       github.event.comment.user.type == 'User' &&
-      github.event.comment.user.id != github.event.issue.user.id &&
-      contains(github.event.comment.body, '/sass')
-    runs-on: ubuntu-latest
+      contains(github.event.comment.body, '/sass diff')
+    runs-on: ubuntu-slim
 
     steps:
       - name: Validate approval command
@@ -39,8 +38,8 @@ jobs:
             // and
             //
             // /sass diff ok [<short SHA>](<link to full commit SHA>)
-            const plainMatch = /(?:^|\s)\/sass\s+diff\s+ok\s+([0-9a-f]{40})\b/.exec(comment.body);
-            const linkMatch  = /(?:^|\s)\/sass\s+diff\s+ok\s+\[([0-9a-f]{7,40})\]\((https:\/\/github\.com\/[^\s)]+\/([0-9a-f]{40}))\)/.exec(comment.body);
+            const plainMatch = /(?:^|\s)\/sass diff\s+ok\s+([0-9a-f]{40})\b/.exec(comment.body);
+            const linkMatch  = /(?:^|\s)\/sass diff\s+ok\s+\[([0-9a-f]{7,40})\]\((https:\/\/github\.com\/[^\s)]+\/([0-9a-f]{40}))\)/.exec(comment.body);
 
             let sha;
 
@@ -66,6 +65,26 @@ jobs:
             });
 
             if (pr.head.sha !== sha) {
+              return;
+            }
+
+            // Acknowledge that we have received the comment
+            await github.rest.reactions.createForIssueComment({
+              ...context.repo,
+              comment_id: context.payload.comment.id,
+              content: "eyes",
+            });
+
+            if (comment.user.id === pr.user.id) {
+              const body =
+                `Error: @${comment.user.login}, you cannot approve SASS changes ` +
+                "on your own pull request :raised_eyebrow:. " +
+                "Please ask another CCCL developer to approve the SASS diff.";
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: issue.number,
+                body,
+              });
               return;
             }
 
@@ -96,13 +115,37 @@ jobs:
               team_slug: "cccl-codeowners",
               per_page: 100,
             });
+
+            let found = false;
+
             for await (const { data: members } of pages) {
-              if (!members.some((member) => member.id === context.payload.comment.user.id)) {
-                continue;
+              if (members.some((member) => member.id === context.payload.comment.user.id)) {
+                found = true;
+                break;
               }
-              core.setOutput("authorized", "true");
-              return;
             }
+
+            core.setOutput("authorized", found);
+
+        # Needs a separate step to the one above because the above uses the temporary
+        # github token which only has members: read permissions and cannot post
+        # comments. This one uses the default job-wide GITHUB_TOKEN which can post
+        # comments.
+      - name: Report unauthorized approval
+        if: steps.authorization.outputs.authorized == 'false'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const body =
+              `Error: @${context.payload.comment.user.login}, ` +
+              "only CCCL developers may approve SASS changes. " +
+              "Please ask a member of `cccl-codeowners` to review the SASS diffs.";
+
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: context.payload.issue.number,
+              body,
+            });
 
       - name: Find the matching SASS comment and approve
         if: steps.authorization.outputs.authorized == 'true'
@@ -214,6 +257,32 @@ jobs:
                 summary: `Approved by @${comment.user.login}: ${comment.html_url}`,
               },
             });
+
+            // We now need to rerun the "CI" job so that the updated status result ends up in a
+            // successful CI.
+            const updatedJobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {
+              ...context.repo,
+              run_id,
+              attempt_number: attempt,
+              per_page: 100,
+            });
+
+            // Unfortunately github provides no stable way of mapping the yaml key to
+            // the job ID, so we need to do a named search.
+            const ci = updatedJobs.find((job) => job.name === "CI");
+            if (!ci) {
+              throw new Error(
+                `Failed to find "CI" job in workflow run ${run_id}, attempt ${attempt}. ` +
+                "This is a bug in CI itself"
+              );
+            }
+
+            if (ci.status === "completed" && ci.conclusion === "failure") {
+              await github.rest.actions.reRunJobForWorkflowRun({
+                ...context.repo,
+                job_id: ci.id,
+              });
+            }
 
             await github.rest.reactions.createForIssueComment({
               ...context.repo,
