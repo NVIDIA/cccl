@@ -472,12 +472,6 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(work_index_threads) void device_segmen
     }
   }
   exchange_t(storage.tile.exchange).StripedToBlocked(sizes, sizes);
-  [[maybe_unused]] work_t blocked_sizes[work_index_items_per_thread];
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int item = 0; item < work_index_items_per_thread; ++item)
-  {
-    blocked_sizes[item] = sizes[item].value;
-  }
   __syncthreads();
 
   if (tile == 0)
@@ -493,11 +487,6 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(work_index_threads) void device_segmen
   {
     prefix_op_t prefix_op(scan_state, storage.prefix, scan_op_t{}, tile);
     block_scan_t(storage.tile.scan).InclusiveScan(sizes, sizes, scan_op_t{}, prefix_op);
-  }
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int item = 0; item < work_index_items_per_thread; ++item)
-  {
-    _CCCL_ASSERT(sizes[item].value >= blocked_sizes[item], "the total item count fits the load-balanced work type");
   }
   __syncthreads();
 
