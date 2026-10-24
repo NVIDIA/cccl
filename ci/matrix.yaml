@@ -230,6 +230,8 @@ workflows:
     - {jobs: ['test'], project: 'nvbench_helper', ctk: ['12.0', '12.X'], cxx: ['gcc10', 'clang14'], gpu: 't4'}
     - {jobs: ['test'], project: 'nvbench_helper', ctk: '13.0', cxx: ['gcc15', 'clang20'], gpu: 't4'}
     - {jobs: ['test'], project: 'nvbench_helper', ctk: '13.X', cxx: ['gcc',   'clang'],   gpu: 't4'}
+    - {jobs: ['build', 'test'], project: 'samples', ctk: '13.X', cxx: 'gcc14',    std: 17, gpu: 't4', sm: 'gpu'}
+    - {jobs: ['build'],         project: 'samples', ctk: '13.X', cxx: 'msvc2022', std: 17, sm: 75}
     # NVHPC build
     - {jobs: ['build'], cxx: 'nvhpc', ctk: 'nvhpc', std: 'max', project: ['libcudacxx', 'thrust', 'stdpar'], cpu: 'amd64'}
     - {jobs: ['build_nolid'], cxx: 'nvhpc', ctk: 'nvhpc', std: 'max', project: 'cub', cpu: 'amd64'}
@@ -301,6 +303,9 @@ workflows:
     - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: 'msvc', gpu: 'l4'}
     # Python against c.parallel v2 (HostJIT-based)
     - {jobs: ['test'], project: 'python_v2', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
+    # Sample coverage when CCCL headers change.
+    - {jobs: ['build', 'test'], project: 'samples', ctk: '13.X', cxx: 'gcc14',    std: 17, gpu: 't4', sm: 'gpu'}
+    - {jobs: ['build'],         project: 'samples', ctk: '13.X', cxx: 'msvc2022', std: 17, sm: 75}
 
   nightly:
     # CTK 12.0 full matrix build: default projects
@@ -439,6 +444,8 @@ workflows:
     - {jobs: ['test'], project: 'nvbench_helper', ctk: '12.X', cxx: ['gcc10', 'clang14'], gpu: 't4'}
     - {jobs: ['test'], project: 'nvbench_helper', ctk: '13.0', cxx: ['gcc15', 'clang20'], gpu: 'rtx2080'}
     - {jobs: ['test'], project: 'nvbench_helper', ctk: '13.X', cxx: ['gcc',   'clang'],   gpu: ['t4', 'rtx2080']}
+    - {jobs: ['build', 'test'], project: 'samples', ctk: ['12.X', '13.X'], cxx: ['gcc12', 'gcc14', 'clang19'], std: 17, gpu: 't4', sm: 'gpu'}
+    - {jobs: ['build'],         project: 'samples', ctk: ['12.X', '13.X'], cxx: ['msvc2019', 'msvc2022'],     std: 17, sm: 75}
     # NVHPC build
     - {jobs: ['build'], cxx: 'nvhpc-prev', ctk: 'nvhpc-prev', std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     - {jobs: ['build'], cxx: 'nvhpc',      ctk: 'nvhpc',      std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
@@ -563,6 +570,8 @@ workflows:
     - {jobs: ['test'], project: 'nvbench_helper', ctk: '12.X', cxx: ['gcc10', 'clang14'], gpu: 't4'}
     - {jobs: ['test'], project: 'nvbench_helper', ctk: '13.0', cxx: ['gcc15', 'clang20'], gpu: 'rtx2080'}
     - {jobs: ['test'], project: 'nvbench_helper', ctk: '13.X', cxx: ['gcc',   'clang'],   gpu: 't4'}
+    - {jobs: ['build', 'test'], project: 'samples', ctk: ['12.X', '13.X'], cxx: ['gcc', 'clang'],       std: 17, gpu: 't4', sm: 'gpu'}
+    - {jobs: ['build'],         project: 'samples', ctk: ['12.X', '13.X'], cxx: ['msvc2019', 'msvc2022'], std: 17, sm: 75}
     # NVHPC build
     - {jobs: ['build'], cxx: 'nvhpc-prev', ctk: 'nvhpc-prev', std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     - {jobs: ['build'], cxx: 'nvhpc',      ctk: 'nvhpc',      std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
@@ -835,6 +844,11 @@ jobs:
   test_py_coop_numba_mlir_compile: { name: "Compile cuda.coop Numba-CUDA-MLIR (GPU hidden)", gpu: false, needs: 'build', force_producer_ctk: "pybuild", invoke: { prefix: 'test', args: '-stage numba-mlir-compile'} }
   test_py_coop_numba_mlir_runtime: { name: "Test cuda.coop Numba-CUDA-MLIR (L4)", gpu: true, needs: 'build', force_producer_ctk: "pybuild", invoke: { prefix: 'test', args: '-stage numba-mlir-runtime'} }
 
+  # CCCL samples: driven by ci/build_samples.sh / ci/test_samples.sh /
+  # ci/windows/build_samples.ps1.
+  build_samples: { name: 'Build', gpu: false, invoke: { prefix: 'build' } }
+  test_samples:  { name: 'Test',  gpu: true, needs: 'build_samples', invoke: { prefix: 'test' } }
+
   # Run jobs for 'target' project (ci/util/build_and_test_targets.sh):
   run_cpu: { gpu: false }
   run_gpu: { gpu: true  }
@@ -940,6 +954,15 @@ projects:
     job_map:
       build: []
       test: ['test_nobuild']
+
+  # CCCL samples. Standalone CMake project at samples/ - not part of the
+  # CCCL top-level build. Samples pin C++17.
+  samples:
+    name: 'CCCL Samples'
+    stds: [17]
+    job_map:
+      build: ['build_samples']
+      test: ['test_samples']
 
   # Run specific build_and_test_targets.sh invocations across the CI matrix.
   # Use the override workflow and supply arguments via the `args` tag.
