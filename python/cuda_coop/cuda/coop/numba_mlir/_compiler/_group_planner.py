@@ -913,9 +913,9 @@ class _GroupCallPlanner:
     def _result_source(self, definition: Any, index: int | None = None):
         """Find the argument policy for a registered group call's result.
 
-        For example, planning ``sum(group, sum(group, value))`` needs the
-        inner Sum result's element type before either public call has been
-        replaced.
+        For example, planning ``store(group, output, exchange(group,
+        values))`` needs the Exchange result's element type and per-thread
+        item count before either public call has been replaced.
 
         Return the selected ``GroupResultSource`` and bound public arguments,
         or ``None`` for an unrelated call or invalid result selection. Without

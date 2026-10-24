@@ -105,6 +105,14 @@ See :ref:`scan operators and prefixes <coop-scans>`.
 .. autofunction:: exclusive_scan
 .. autofunction:: inclusive_scan
 
+Data rearrangement
+^^^^^^^^^^^^^^^^^^
+
+See :ref:`blocked and striped layouts <coop-data-layouts>`.
+
+.. autofunction:: exchange
+.. autofunction:: shuffle
+
 Comparison sorting
 ^^^^^^^^^^^^^^^^^^
 
@@ -183,6 +191,14 @@ Scan
 .. autofunction:: inclusive_sum
 .. autofunction:: exclusive_scan
 .. autofunction:: inclusive_scan
+
+
+Data rearrangement
+^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: exchange
+.. autofunction:: shuffle
+
 Comparison sorting
 ^^^^^^^^^^^^^^^^^^
 
