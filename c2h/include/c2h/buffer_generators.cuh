@@ -52,7 +52,7 @@ template <typename T>
 // from min and padding bytes to zero before any whole-object copies.
 template <template <typename> class... Ps>
 [[nodiscard]] cuda::device_buffer<custom_type_t<Ps...>>
-make_generator_buffer(cuda::stream_ref stream, std::size_t num_items, const custom_type_t<Ps...>& min)
+make_generator_buffer(cuda::stream_ref stream, std::size_t num_items, [[maybe_unused]] const custom_type_t<Ps...>& min)
 {
   auto result = ::c2h::make_device_buffer<custom_type_t<Ps...>>(stream, num_items, cuda::no_init);
   if (num_items != 0)
