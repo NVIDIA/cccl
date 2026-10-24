@@ -1,0 +1,17 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+[package]
+name = "coop-radix-sort-pairs-tests"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+cuda-coop = { path = "../.." }
+cuda-device = { git = "https://github.com/tpn/cuda-rust.git", rev = "96caed46c776eb49226137eac849e795b83b7ce0" }
+cuda-host = { git = "https://github.com/tpn/cuda-rust.git", rev = "96caed46c776eb49226137eac849e795b83b7ce0", features = ["async"] }
+cuda-core = { git = "https://github.com/tpn/cuda-rust.git", rev = "96caed46c776eb49226137eac849e795b83b7ce0" }
+cuda-async = { git = "https://github.com/tpn/cuda-rust.git", rev = "96caed46c776eb49226137eac849e795b83b7ce0" }
