@@ -1,0 +1,137 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+name: Review team labels
+
+on:
+  pull_request_target:
+    # Validate every update so this check can be required without path-filter skips.
+    types: [opened, reopened, synchronize, ready_for_review, review_requested]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review-team-labels:
+    name: Review team labels
+    if: github.repository == 'NVIDIA/cccl'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate mappings and label teams and paths
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        with:
+          script: |
+            const teamLabels = {
+              'nvidia/cccl-thrust-codeowners': ['thrust'],
+              'nvidia/cccl-cub-codeowners': ['cub'],
+              'nvidia/cccl-libcudacxx-codeowners': ['libcu++'],
+              'nvidia/cccl-cudax-codeowners': ['cudax'],
+              'nvidia/cccl-c-codeowners': ['c'],
+              'nvidia/cccl-python-codeowners': ['python'],
+              'nvidia/cccl-cuco-codeowners': ['cuco'],
+              'nvidia/cccl-infra-codeowners': ['infra'],
+              'nvidia/cccl-cmake-codeowners': ['infra'],
+              'nvidia/cccl-benchmark-codeowners': ['bench'],
+              'nvidia/cccl-codeowners': [],
+            };
+            const pathLabels = {
+              'docs/': ['docs'],
+              'python/cuda_cccl/cuda/compute/': ['cuda.compute'],
+              'python/cuda_coop/': ['cuda.coop'],
+              'cudax/include/cuda/experimental/mgmn/': ['MGMN'],
+              'cudax/test/multi_gpu/': ['MGMN'],
+              'nvrtcc/': ['nvrtcc'],
+              'cudax/include/cuda/experimental/__stf/': ['stf'],
+              'cudax/include/cuda/experimental/stf.cuh': ['stf'],
+              'cudax/test/stf/': ['stf'],
+              'cudax/examples/stf/': ['stf'],
+              'c/experimental/stf/': ['stf'],
+              'python/cuda_stf/': ['stf'],
+              'docs/cudax/stf': ['stf'],
+              'docs/python/stf': ['stf'],
+            };
+
+            const pr = context.payload.pull_request;
+            const existingLabels = new Set(
+              (await github.paginate(github.rest.issues.listLabelsForRepo, {
+                ...context.repo,
+                per_page: 100,
+              })).map(label => label.name),
+            );
+
+            // Read proposed CODEOWNERS as data; the mapping comes from the trusted workflow.
+            const { data } = await github.rest.repos.getContent({
+              ...context.repo,
+              path: '.github/CODEOWNERS',
+              ref: pr.head.sha,
+            });
+
+            const codeowners = Buffer.from(data.content, 'base64').toString('utf8');
+            const teams = new Set();
+            for (const line of codeowners.split('\n')) {
+              const entry = line.split('#')[0];
+              for (const match of entry.matchAll(/(?:^|\s)@([\w-]+\/[\w-]+)(?=\s|$)/g)) {
+                teams.add(match[1].toLowerCase());
+              }
+            }
+
+            // PR updates do not include the review_requested event's requested_team field.
+            const { data: reviewers } = await github.rest.pulls.listRequestedReviewers({
+              ...context.repo,
+              pull_number: pr.number,
+            });
+            const requestedTeamNames = new Set(
+              reviewers.teams.map(team => `${context.repo.owner}/${team.slug}`.toLowerCase()),
+            );
+            // Preserve the triggering request if a review completes before this job runs.
+            const requestedTeam = context.payload.requested_team;
+            if (requestedTeam) {
+              requestedTeamNames.add(`${context.repo.owner}/${requestedTeam.slug}`.toLowerCase());
+            }
+            for (const team of requestedTeamNames) teams.add(team);
+
+            const errors = [];
+            for (const team of teams) {
+              if (!Object.hasOwn(teamLabels, team)) {
+                errors.push(`Missing mapping for @${team}. Add labels or [] to label-review-teams.yml.`);
+              }
+            }
+
+            for (const [source, labels] of [...Object.entries(teamLabels), ...Object.entries(pathLabels)]) {
+              for (const label of labels) {
+                if (!existingLabels.has(label)) {
+                  errors.push(`Missing repository label "${label}" mapped from ${source}.`);
+                }
+              }
+            }
+
+            if (errors.length) {
+              throw new Error(errors.join('\n'));
+            }
+
+            const labels = new Set();
+            for (const team of requestedTeamNames) {
+              for (const label of teamLabels[team]) labels.add(label);
+            }
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              ...context.repo,
+              pull_number: pr.number,
+              per_page: 100,
+            });
+
+            for (const [path, pathLabelsToAdd] of Object.entries(pathLabels)) {
+              // Renames affect both the old and new directories.
+              if (files.some(file => file.filename.startsWith(path) || file.previous_filename?.startsWith(path))) {
+                for (const label of pathLabelsToAdd) labels.add(label);
+              }
+            }
+
+            if (labels.size) {
+              await github.rest.issues.addLabels({
+                ...context.repo,
+                issue_number: pr.number,
+                labels: [...labels],
+              });
+            }
