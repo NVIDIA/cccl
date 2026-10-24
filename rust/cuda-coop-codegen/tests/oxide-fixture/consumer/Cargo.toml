@@ -1,0 +1,19 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+[package]
+name = "coop-marker-fixture"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+cuda-device.workspace = true
+cuda-host.workspace = true
+cuda-core.workspace = true
+oxide-artifacts.workspace = true
+coop-marker-fixture-helper = { path = "../helper" }
+
+[features]
+checked = ["coop-marker-fixture-helper/checked"]
+root-context = ["checked"]
