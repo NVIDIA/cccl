@@ -5,7 +5,13 @@
 
 #include <cub/device/device_transform.cuh>
 
+#include <thrust/sequence.h>
+
+#include <cuda/functional>
+#include <cuda/iterator>
+
 #include <algorithm>
+#include <numeric>
 
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
@@ -74,6 +80,115 @@ CUB_TEST("DeviceTransform::Transform vectorized store widening from uint8",
   c2h::host_vector<out_t> reference_h(num_items, thrust::no_init);
   std::transform(in_h.begin(), in_h.end(), reference_h.begin(), cast_to<out_t>{});
   REQUIRE(reference_h == result);
+}
+
+struct plus_one_t
+{
+  __host__ __device__ int operator()(int value) const
+  {
+    return value + 1;
+  }
+};
+
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <typename Out>
+struct proclaims_copyable_arguments<cast_to<Out>> : ::cuda::std::true_type
+{};
+
+template <>
+struct proclaims_copyable_arguments<plus_one_t> : ::cuda::std::true_type
+{};
+_CCCL_END_NAMESPACE_CUDA
+
+// The input is a transform iterator over a pointer, so the kernel loads the stored elements and the functor runs on
+// that copy. Counts include a partial last tile and a pointer that is not 16-byte aligned.
+CUB_TEST("DeviceTransform vectorized load of a contiguous transform iterator", "[device][transform]", CUB_SMALL)
+{
+  const int num_items = GENERATE(4096, 4097, 100000);
+  c2h::device_vector<int> in(num_items + 1);
+  thrust::sequence(c2h::device_policy, in.begin(), in.end());
+  auto* d_in = thrust::raw_pointer_cast(in.data());
+
+  c2h::device_vector<int> result(num_items, thrust::no_init);
+  transform_many(cuda::std::make_tuple(cuda::transform_iterator(d_in, plus_one_t{})),
+                 result.begin(),
+                 num_items,
+                 cuda::std::identity{});
+
+  c2h::host_vector<int> reference(num_items);
+  std::iota(reference.begin(), reference.end(), 1);
+  REQUIRE(reference == result);
+
+  c2h::device_vector<int> shifted(num_items - 1, thrust::no_init);
+  transform_many(cuda::std::make_tuple(cuda::transform_iterator(d_in + 1, plus_one_t{})),
+                 shifted.begin(),
+                 num_items - 1,
+                 cuda::std::identity{});
+
+  c2h::host_vector<int> shifted_reference(num_items - 1);
+  std::iota(shifted_reference.begin(), shifted_reference.end(), 2);
+  REQUIRE(shifted_reference == shifted);
+}
+
+// Widening changes the stored type and the value type. The kernel has to load the stored bytes, then apply the functor.
+CUB_TEST("DeviceTransform contiguous transform iterator widens the stored type", "[device][transform]", CUB_SMALL)
+{
+  const int num_items = GENERATE(4096, 4097, 100000);
+  c2h::device_vector<std::uint8_t> in(num_items + 1);
+  thrust::sequence(c2h::device_policy, in.begin(), in.end());
+  auto* d_in = thrust::raw_pointer_cast(in.data());
+
+  c2h::device_vector<int> result(num_items, thrust::no_init);
+  transform_many(cuda::std::make_tuple(cuda::transform_iterator(d_in, cast_to<int>{})),
+                 result.begin(),
+                 num_items,
+                 cuda::std::identity{});
+
+  c2h::host_vector<std::uint8_t> in_h = in;
+  c2h::host_vector<int> reference(num_items);
+  std::transform(in_h.begin(), in_h.begin() + num_items, reference.begin(), cast_to<int>{});
+  REQUIRE(reference == result);
+
+  c2h::device_vector<int> shifted(num_items - 1, thrust::no_init);
+  transform_many(cuda::std::make_tuple(cuda::transform_iterator(d_in + 1, cast_to<int>{})),
+                 shifted.begin(),
+                 num_items - 1,
+                 cuda::std::identity{});
+
+  c2h::host_vector<int> shifted_reference(num_items - 1);
+  std::transform(in_h.begin() + 1, in_h.begin() + num_items, shifted_reference.begin(), cast_to<int>{});
+  REQUIRE(shifted_reference == shifted);
+}
+
+// Depends on the address of its argument, so it does not proclaim copyable arguments
+struct index_from_address_t
+{
+  const int* base;
+
+  __host__ __device__ int operator()(const int& value) const
+  {
+    return static_cast<int>(&value - base);
+  }
+};
+
+// The functor of the transform iterator computes the index of an element from its address in the input
+CUB_TEST("DeviceTransform invokes the functor of a contiguous transform iterator on the input",
+         "[device][transform]",
+         CUB_SMALL)
+{
+  const int num_items = GENERATE(4096, 4097, 100000);
+  c2h::device_vector<int> in(num_items);
+  const int* d_in = thrust::raw_pointer_cast(in.data());
+
+  c2h::device_vector<int> result(num_items, thrust::no_init);
+  transform_many(cuda::std::make_tuple(cuda::transform_iterator(d_in, index_from_address_t{d_in})),
+                 result.begin(),
+                 num_items,
+                 cuda::std::identity{});
+
+  c2h::host_vector<int> reference(num_items);
+  std::iota(reference.begin(), reference.end(), 0);
+  REQUIRE(reference == result);
 }
 
 #if TEST_LAUNCH == 0

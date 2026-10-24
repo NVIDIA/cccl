@@ -20,6 +20,8 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/iterator_adaptor.h>
 
+#include <cuda/__functional/address_stability.h>
+#include <cuda/__iterator/contiguous_iterator_adaptor.h>
 #include <cuda/std/__functional/invoke.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -184,6 +186,17 @@ public:
       , input_function(input_function)
       , output_function(output_function)
   {}
+
+  //! @brief Retargets the stored iterator at @p __ptr. The stored functors are left unchanged. The input functor is
+  //! then invoked on the elements at @p __ptr, so it must proclaim copyable arguments.
+  //! @param[in] __ptr The address that replaces the contiguous storage this adaptor reads from and writes to.
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(::cuda::proclaims_copyable_arguments_v<InputFunction> _CCCL_AND(
+    ::cuda::__iterator_can_rebase<Iterator, _Tp> || ::cuda::std::is_pointer_v<Iterator>))
+  _CCCL_HOST_DEVICE void __rebase(_Tp* __ptr) &
+  {
+    ::cuda::__rebase_contiguous_iterator_adaptor(this->base_reference(), __ptr);
+  }
 
   //! \cond
 
