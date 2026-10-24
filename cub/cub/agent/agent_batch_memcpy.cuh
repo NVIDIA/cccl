@@ -33,6 +33,7 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/round_up.h>
+#include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/type_identity.h>
@@ -1097,6 +1098,11 @@ public:
 
     // Ensure we can repurpose the temporary storage required by EnqueueBLEVBuffers
     __syncthreads();
+
+    // Start loading the next BLEV task early while this task finishes
+    // copying the rest of its data.
+
+    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 
     // Copy warp-level buffers
     BatchMemcpyWLEVBuffers(
