@@ -86,12 +86,19 @@ static int min_ptx_isa_for_sm(int sm)
 
 int main()
 {
+  // Like the other freestanding tests, a CUDA runtime failure is a test
+  // failure: the per-GPU ISA check below must not be skipped silently.
   int device = 0;
   cudaDeviceProp prop{};
-  if (cudaGetDevice(&device) != cudaSuccess || cudaGetDeviceProperties(&prop, device) != cudaSuccess)
+  cudaError_t err = cudaGetDevice(&device);
+  if (err == cudaSuccess)
   {
-    std::printf("no CUDA device; compile-time checks passed\n");
-    return 0;
+    err = cudaGetDeviceProperties(&prop, device);
+  }
+  if (err != cudaSuccess)
+  {
+    std::fprintf(stderr, "CUDA runtime initialization failed: %s\n", cudaGetErrorString(err));
+    return 1;
   }
   const int sm  = prop.major * 10 + prop.minor;
   const int isa = libnvcc_ptx_isa_for_sm(sm);
