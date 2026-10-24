@@ -1,0 +1,19 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+[package]
+name = "coop-discontinuity"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+members = ["helper"]
+
+[dependencies]
+cuda-coop = { path = "../.." }
+coop-discontinuity-helper = { path = "helper" }
+cuda-device = { git = "https://github.com/tpn/cuda-rust.git", rev = "732bec8e2166c33b9b851860363c81baa475203e" }
+cuda-host = { git = "https://github.com/tpn/cuda-rust.git", rev = "732bec8e2166c33b9b851860363c81baa475203e", features = ["async"] }
+cuda-core = { git = "https://github.com/tpn/cuda-rust.git", rev = "732bec8e2166c33b9b851860363c81baa475203e" }
+cuda-async = { git = "https://github.com/tpn/cuda-rust.git", rev = "732bec8e2166c33b9b851860363c81baa475203e" }
