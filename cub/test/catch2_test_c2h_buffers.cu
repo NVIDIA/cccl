@@ -1,9 +1,14 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#include <cuda/__algorithm/fill.h>
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/memory_resource>
+#include <cuda/std/array>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
 
@@ -13,11 +18,15 @@
 #include <cstdint>
 #include <limits>
 #include <new>
+#include <stdexcept>
+#include <vector>
 
 #include <cuda_runtime_api.h>
 
 #include "cub_test_macros.h"
 #include <c2h/buffer_generators.cuh>
+#include <c2h/buffer_utils.cuh>
+#include <c2h/catch2_test_helper.h>
 #include <c2h/checked_memory_resource.cuh>
 #include <c2h/custom_type.h>
 #include <c2h/detail/env.cuh>
@@ -85,10 +94,239 @@ CUB_TEST("c2h checked host allocation rejects invalid alignments", "[c2h][buffer
   REQUIRE_THROWS_AS(c2h::detail::checked_host_allocate(0, 0, 3), std::bad_alloc);
 }
 
+CUB_TEST("c2h vector matcher rejects ranges with different sizes", "[c2h][comparison]", CUB_SMALL)
+{
+  const c2h::host_vector<std::int32_t> actual;
+  const c2h::host_vector<std::int32_t> expected{42};
+
+  REQUIRE_FALSE(Equals(expected).match(actual));
+}
+
+CUB_TEST("c2h buffer matcher accepts host containers", "[c2h][buffers][comparison]", CUB_SMALL)
+{
+  const auto stream = c2h::make_current_device_stream();
+  const auto actual = c2h::make_device_buffer<int>(stream, {1, 2, 3});
+
+  const std::array<int, 3> expected_array{1, 2, 3};
+  const std::vector<int> expected_vector{1, 2, 3};
+  const cuda::std::array<int, 3> expected_cuda_array{1, 2, 3};
+  const auto expected_buffer = c2h::make_host_buffer<int>(stream, {1, 2, 3});
+
+  REQUIRE_THAT(actual, c2h::Equals(stream, expected_array));
+  REQUIRE_THAT(actual, c2h::Equals(stream, expected_vector));
+  REQUIRE_THAT(actual, c2h::Equals(stream, expected_cuda_array));
+  REQUIRE_THAT(actual, c2h::Equals(stream, expected_buffer));
+
+  const std::array<int, 3> different_values{1, 4, 3};
+  const std::vector<int> different_size{1, 2};
+  REQUIRE_FALSE(c2h::Equals(stream, different_values).match(actual));
+  REQUIRE_FALSE(c2h::Equals(stream, different_size).match(actual));
+
+  const auto empty = c2h::make_device_buffer<int>(stream, 0, cuda::no_init);
+  const std::vector<int> empty_expected;
+  REQUIRE_THAT(empty, c2h::Equals(stream, empty_expected));
+  REQUIRE_FALSE(c2h::Equals(stream, expected_array).match(empty));
+  REQUIRE_FALSE(c2h::Equals(stream, empty_expected).match(actual));
+}
+
+CUB_TEST("c2h comparison retains bounded mismatch details in order", "[c2h][comparison]", CUB_SMALL)
+{
+  const auto mismatch_count = GENERATE(std::size_t{0}, 1, 5, 6, 10, 11, 15, 16);
+  const auto first_mismatch = GENERATE(std::size_t{0}, 2, 4);
+  CAPTURE(mismatch_count, first_mismatch);
+
+  // Leave matching values between mismatches so element indices differ from mismatch ordinals.
+  const auto num_items = first_mismatch + 2 * mismatch_count + 1;
+  std::vector<int> expected(num_items);
+  for (std::size_t i = 0; i < num_items; ++i)
+  {
+    expected[i] = static_cast<int>(i + 1);
+  }
+  auto actual = expected;
+  for (std::size_t i = 0; i < mismatch_count; ++i)
+  {
+    const auto index = first_mismatch + 2 * i;
+    actual[index]    = -expected[index];
+  }
+
+  const auto result = c2h::detail::compare_host_ranges(actual, expected);
+  REQUIRE(result.actual_size == num_items);
+  REQUIRE(result.expected_size == num_items);
+  REQUIRE(result.total_mismatches == mismatch_count);
+
+  const auto first_count = (std::min) (mismatch_count, std::size_t{5});
+  REQUIRE(result.first_mismatches.size() == first_count);
+  for (std::size_t i = 0; i < first_count; ++i)
+  {
+    const auto index = first_mismatch + 2 * i;
+    CAPTURE(i, index);
+    CHECK(result.first_mismatches[i].index == index);
+    CHECK(result.first_mismatches[i].actual == actual[index]);
+    CHECK(result.first_mismatches[i].expected == expected[index]);
+  }
+
+  REQUIRE(result.last_mismatches.has_value() == (mismatch_count > 5));
+  if (result.last_mismatches)
+  {
+    const auto last_count = (std::min) (mismatch_count - first_count, std::size_t{5});
+    REQUIRE(result.last_mismatches->size() == last_count);
+    for (std::size_t i = 0; i < last_count; ++i)
+    {
+      const auto index = first_mismatch + 2 * (mismatch_count - last_count + i);
+      CAPTURE(i, index);
+      CHECK((*result.last_mismatches)[i].index == index);
+      CHECK((*result.last_mismatches)[i].actual == actual[index]);
+      CHECK((*result.last_mismatches)[i].expected == expected[index]);
+    }
+  }
+
+  const auto good_count = mismatch_count == 0 ? std::size_t{0} : (std::min) (first_mismatch, std::size_t{3});
+  REQUIRE(result.good_values.size() == good_count);
+  for (std::size_t i = 0; i < good_count; ++i)
+  {
+    const auto index = first_mismatch - good_count + i;
+    CAPTURE(i, index);
+    CHECK(result.good_values[i].index == index);
+    CHECK(result.good_values[i].value == expected[index]);
+  }
+}
+
 CUB_TEST("c2h checked memory rejects sizes that overflow padding", "[c2h][buffers][device_resource]", CUB_SMALL)
 {
   REQUIRE(
     c2h::detail::check_free_device_memory((std::numeric_limits<std::size_t>::max)()) == cudaErrorMemoryAllocation);
+}
+
+CUB_TEST("c2h uniform offset size validation rejects invalid element counts", "[c2h][buffers][generators]", CUB_SMALL)
+{
+  REQUIRE(c2h::detail::checked_uniform_offsets_size(cuda::std::int32_t{0}) == 2);
+  REQUIRE(c2h::detail::checked_uniform_offsets_size(cuda::std::int32_t{1}) == 3);
+
+  REQUIRE_THROWS_AS(c2h::detail::checked_uniform_offsets_size(cuda::std::int32_t{-1}), std::invalid_argument);
+  REQUIRE_THROWS_AS(c2h::detail::checked_uniform_offsets_size((cuda::std::numeric_limits<cuda::std::int32_t>::max)()),
+                    std::invalid_argument);
+  REQUIRE_THROWS_AS(
+    c2h::detail::checked_uniform_offsets_size((cuda::std::numeric_limits<cuda::std::uint64_t>::max)() - 1),
+    std::invalid_argument);
+}
+
+CUB_TEST("c2h uniform offset generators validate sizes before allocation", "[c2h][buffers][generators]", CUB_SMALL)
+{
+  const auto seed = c2h::seed_t{0};
+
+  REQUIRE_THROWS_AS(
+    c2h::gen_uniform_offsets(seed, cuda::std::int32_t{-1}, cuda::std::int32_t{0}, cuda::std::int32_t{1}),
+    std::invalid_argument);
+
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
+  REQUIRE_THROWS_AS(c2h::gen_uniform_offsets_device_buffer(
+                      stream, seed, cuda::std::int32_t{-1}, cuda::std::int32_t{0}, cuda::std::int32_t{1}),
+                    std::invalid_argument);
+}
+
+namespace
+{
+template <typename T, std::size_t N>
+struct check_device_offsets
+{
+  std::size_t expected_size;
+  std::size_t expected_capacity;
+  std::array<T, N> expected;
+
+  void operator()(cuda::stream_ref stream,
+                  const cuda::__resizable_buffer<T, cuda::mr::device_accessible>& offsets) const
+  {
+    REQUIRE(offsets.size() == expected_size);
+    REQUIRE(offsets.capacity() == expected_capacity);
+
+    const auto host = c2h::make_host_buffer<T>(stream, offsets.first(offsets.size()));
+    stream.sync();
+
+    REQUIRE(std::equal(host.begin(), host.end(), expected.begin(), expected.begin() + expected_size));
+  }
+};
+template <typename T, std::size_t N>
+check_device_offsets(std::size_t, std::size_t, const std::array<T, N>&) -> check_device_offsets<T, N>;
+} // namespace
+
+CUB_TEST("c2h offset buffers retain capacity after shrinking their logical size",
+         "[c2h][buffers][generators]",
+         CUB_SMALL)
+{
+  const auto stream         = c2h::make_current_device_stream();
+  const auto total_elements = GENERATE(std::int32_t{0}, 8);
+  const std::array<std::int32_t, 5> expected{0, 2, 4, 6, 8};
+  const auto num_elements      = static_cast<std::size_t>(total_elements);
+  const auto expected_size     = num_elements / 2 + 1;
+  const auto expected_capacity = num_elements + 2;
+
+  REQUIRE(1 <= expected_size);
+  REQUIRE(expected_size <= expected.size());
+  REQUIRE(total_elements == expected[expected_size - 1]);
+
+  const check_device_offsets verify_device_offsets{expected_size, expected_capacity, expected};
+
+  SECTION("device buffer")
+  {
+    const auto offsets = c2h::gen_uniform_offsets_device_buffer(stream, c2h::seed_t{1234}, total_elements, 2, 2);
+    verify_device_offsets(stream, offsets);
+  }
+
+  SECTION("device and host buffers")
+  {
+    const auto buffers = c2h::gen_uniform_offsets_buffers(stream, c2h::seed_t{1234}, total_elements, 2, 2);
+    verify_device_offsets(stream, buffers.d_items);
+    REQUIRE(buffers.size() == expected_size);
+    REQUIRE(
+      std::equal(buffers.h_items.begin(), buffers.h_items.end(), expected.begin(), expected.begin() + expected_size));
+  }
+}
+
+CUB_TEST("c2h detail uniform offset generators validate counts and destination size",
+         "[c2h][buffers][generators]",
+         CUB_SMALL)
+{
+  const auto stream         = c2h::make_current_device_stream();
+  const auto total_elements = GENERATE(std::int32_t{-1}, 0, 1, (std::numeric_limits<std::int32_t>::max)());
+
+  SECTION("default policy")
+  {
+    REQUIRE_THROWS_AS(
+      c2h::detail::gen_uniform_offsets(
+        c2h::seed_t{0}, cuda::std::span<std::int32_t>{}, total_elements, std::int32_t{0}, std::int32_t{1}),
+      std::invalid_argument);
+  }
+
+  SECTION("explicit stream")
+  {
+    REQUIRE_THROWS_AS(
+      c2h::detail::gen_uniform_offsets(
+        stream, c2h::seed_t{0}, cuda::std::span<std::int32_t>{}, total_elements, std::int32_t{0}, std::int32_t{1}),
+      std::invalid_argument);
+  }
+}
+
+using uniform_offset_types = c2h::type_list<std::int32_t, std::uint32_t, std::int64_t, std::uint64_t>;
+
+CUB_TEST("c2h uniform offset generators agree across execution streams",
+         "[c2h][buffers][generators]",
+         CUB_SMALL,
+         uniform_offset_types)
+{
+  using offset_t = c2h::get<0, TestType>;
+
+  const auto total_elements = GENERATE(offset_t{0}, offset_t{1}, offset_t{31});
+  const auto seed           = c2h::seed_t{1234};
+  const auto stream         = c2h::make_current_device_stream();
+
+  const auto expected_device                = c2h::gen_uniform_offsets(seed, total_elements, offset_t{0}, offset_t{5});
+  const c2h::host_vector<offset_t> expected = expected_device;
+  const auto actual = c2h::gen_uniform_offsets_buffers(stream, seed, total_elements, offset_t{0}, offset_t{5});
+  stream.sync();
+
+  REQUIRE(actual.size() == expected.size());
+  REQUIRE(std::equal(actual.h_items.begin(), actual.h_items.end(), expected.begin(), expected.end()));
 }
 
 CUB_TEST("c2h checked device memory resource creates device buffers", "[c2h][buffers][device_resource]", CUB_SMALL)
@@ -256,6 +494,8 @@ CUB_TEST("c2h buffer generators populate checked CUDA buffers", "[c2h][buffers][
   custom_expected.val = 37;
 
   auto d_custom = c2h::make_device_buffer<custom_type>(stream, num_items, cuda::no_init);
+  // The generator writes only key and val. Whole-object copies also read policy members and padding bytes.
+  cuda::fill_bytes(stream, d_custom, 0);
   c2h::gen(c2h::seed_t{9012}, d_custom, custom_expected, custom_expected);
   const auto h_custom = c2h::make_host_buffer<custom_type>(stream, d_custom);
   stream.sync();
@@ -264,4 +504,8 @@ CUB_TEST("c2h buffer generators populate checked CUDA buffers", "[c2h][buffers][
     return value == custom_expected;
   });
   REQUIRE(custom_values_match);
+
+  const auto custom_buffers =
+    c2h::gen_buffers<custom_type>(stream, c2h::seed_t{9012}, num_items, custom_expected, custom_expected);
+  REQUIRE_THAT(custom_buffers.d_items, c2h::Equals(stream, h_custom));
 }

@@ -9,10 +9,10 @@
 
 namespace c2h::detail
 {
-//! @brief Verifies that @p device is the current CUDA device.
-//!
-//! C2H tests run on the device selected by their `--device` argument. Operations using device-bound resources must
-//! remain on that device rather than changing the current device implicitly.
+// Verifies that device is the current CUDA device.
+//
+// C2H tests run on the device selected by their `--device` argument. Operations using device-bound resources must
+// remain on that device rather than changing the current device implicitly.
 _CCCL_HOST_API inline void assert_current_device(int device) noexcept
 {
   int current_device{};

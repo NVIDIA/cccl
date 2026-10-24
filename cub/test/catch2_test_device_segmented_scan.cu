@@ -5,16 +5,37 @@
 
 #include <cub/device/device_segmented_scan.cuh>
 
+#include <cuda/__algorithm/copy.h>
+#include <cuda/buffer>
+#include <cuda/cmath>
+#include <cuda/devices>
+#include <cuda/functional>
+#include <cuda/std/iterator>
+#include <cuda/std/limits>
+#include <cuda/std/span>
+#include <cuda/std/type_traits>
+#include <cuda/stream>
+
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
+#include <tuple>
+#include <type_traits>
 #include <utility>
 
-#include "catch2_test_device_reduce.cuh" // for reference_extended_fp
-#include "catch2_test_device_scan.cuh"
-#include "catch2_test_launch_helper.h"
-#include "cub_test_macros.h"
+#include <cub_test_macros.h>
+#include <cuda_runtime_api.h>
+
+#include <c2h/buffer_generators.cuh>
+#include <c2h/buffer_utils.cuh>
+#include <c2h/checked_memory_resource.cuh>
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
+#include <c2h/test_util_vec.h>
+#include <c2h/utility.h>
+#include <catch2_test_device_segmented_scan_utils.cuh>
+#include <catch2_test_launch_helper.h>
+#include <catch2_test_numeric_helpers.cuh>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::InclusiveSegmentedSum, device_inclusive_segmented_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::ExclusiveSegmentedSum, device_exclusive_segmented_sum);
@@ -62,27 +83,26 @@ type_pair<custom_t>
 #endif
 
 template <typename ValueT, typename OffsetT>
-bool check_segment(const c2h::host_vector<ValueT>& h_output,
-                   const c2h::host_vector<ValueT>& h_ref,
-                   OffsetT begin_offset,
-                   OffsetT end_offset)
+bool check_segment(const ValueT* h_output, const ValueT* h_ref, OffsetT begin_offset, OffsetT end_offset)
 {
+  using value_t = ValueT;
+
   bool correct = true;
   for (OffsetT pos = begin_offset; pos < end_offset; ++pos)
   {
-    if constexpr (cuda::std::is_floating_point_v<ValueT>)
+    if constexpr (cuda::std::is_floating_point_v<value_t>)
     {
-      ValueT ref_v  = h_ref[pos];
-      ValueT act_v  = h_output[pos];
-      ValueT diff   = (ref_v - act_v);
-      ValueT adiff  = (diff > ValueT{0}) ? diff : -diff;
-      ValueT ref_av = (ref_v > ValueT{0}) ? ref_v : -ref_v;
-      ValueT act_av = (act_v > ValueT{0}) ? act_v : -act_v;
+      value_t ref_v  = h_ref[pos];
+      value_t act_v  = h_output[pos];
+      value_t diff   = (ref_v - act_v);
+      value_t adiff  = (diff > value_t{0}) ? diff : -diff;
+      value_t ref_av = (ref_v > value_t{0}) ? ref_v : -ref_v;
+      value_t act_av = (act_v > value_t{0}) ? act_v : -act_v;
 
-      ValueT eps = ::cuda::std::numeric_limits<ValueT>::epsilon();
-      correct    = correct && (adiff < 3 * eps + 2 * eps * (::cuda::std::max(ref_av, act_av)));
+      value_t eps = ::cuda::std::numeric_limits<value_t>::epsilon();
+      correct     = correct && (adiff < 3 * eps + 2 * eps * (::cuda::std::max(ref_av, act_av)));
     }
-    else if constexpr (cuda::std::is_same_v<ValueT, half_t> || cuda::std::is_same_v<ValueT, bfloat16_t>)
+    else if constexpr (cuda::std::is_same_v<value_t, half_t> || cuda::std::is_same_v<value_t, bfloat16_t>)
     {
       const float ref_v = h_ref[pos];
       const float act_v = h_output[pos];
@@ -117,10 +137,10 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
          full_type_list,
          offsets)
 {
-  using params   = params_t<TestType>;
-  using input_t  = typename params::item_t;
-  using output_t = typename params::output_t;
-  using offset_t = typename c2h::get<1, TestType>;
+  using item_pair_t = typename c2h::get<0, TestType>;
+  using input_t     = typename item_pair_t::input_t;
+  using output_t    = typename item_pair_t::output_t;
+  using offset_t    = typename c2h::get<1, TestType>;
 
   constexpr offset_t min_items = 2 * 1024;
   constexpr offset_t max_items = 384 * 1024;
@@ -139,33 +159,48 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
 
   REQUIRE(small_size > 0);
 
-  // Range of segment sizes to generate
-  // Note that the segment range [0, 1] may also include one last segment with more than 1 items
+  // Range of segment sizes to generate. Ranges starting at 0 exercise empty segments.
   const std::tuple<offset_t, offset_t> seg_size_range =
     GENERATE_COPY(table<offset_t, offset_t>({{0, small_size}, {medium_size, large_size}, {large_size, num_items}}));
   INFO("Test seg_size_range: [" << std::get<0>(seg_size_range) << ", " << std::get<1>(seg_size_range) << ")");
 
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
+
   // Generate input segments
-  c2h::device_vector<offset_t> d_segment_offsets = c2h::gen_uniform_offsets<offset_t>(
-    C2H_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
-  const offset_t num_segments = static_cast<offset_t>(d_segment_offsets.size() - 1);
-  auto d_offsets_it           = thrust::raw_pointer_cast(d_segment_offsets.data());
+  auto segment_offsets = c2h::gen_uniform_offsets_buffers<offset_t>(
+    stream, C2H_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
+  const auto& h_segment_offsets = segment_offsets.h_items;
+
+  const auto* h_segment_offsets_ptr = h_segment_offsets.data();
+  const offset_t num_segments       = static_cast<offset_t>(h_segment_offsets.size() - 1);
+  auto d_offsets_it                 = segment_offsets.d_items.data();
 
   INFO("Num segments: " << num_segments);
-  CAPTURE(c2h::type_name<input_t>(), c2h::type_name<output_t>(), c2h::type_name<offset_t>);
+  CAPTURE(c2h::type_name<input_t>(), c2h::type_name<output_t>(), c2h::type_name<offset_t>());
 
   // Generate input data
-  c2h::device_vector<input_t> in_items(num_items);
-  c2h::gen(C2H_SEED(2), in_items);
-  auto d_in_it = thrust::raw_pointer_cast(in_items.data());
+  const auto item_count = static_cast<std::size_t>(num_items);
 
-  c2h::device_vector<output_t> output_vec(num_items);
-  auto d_out_it = thrust::raw_pointer_cast(output_vec.data());
+  auto input_buffers  = c2h::gen_buffers<input_t>(stream, C2H_SEED(2), item_count);
+  auto& in_items      = input_buffers.d_items;
+  const auto& h_input = input_buffers.h_items;
 
-  c2h::host_vector<offset_t> h_segment_offsets = d_segment_offsets;
-  const c2h::host_vector<input_t> h_input      = in_items;
-  c2h::host_vector<output_t> h_output(num_items);
-  c2h::host_vector<output_t> h_ref(num_items);
+  const auto* h_input_ptr = h_input.data();
+  auto d_in_it            = in_items.data();
+
+  auto output_vec = c2h::make_device_buffer<output_t>(stream, device, item_count, cuda::no_init);
+  auto d_out_it   = output_vec.data();
+
+  auto h_output = c2h::make_host_buffer<output_t>(stream, device, item_count, cuda::no_init);
+  auto h_ref    = c2h::make_host_buffer<output_t>(stream, device, item_count, cuda::no_init);
+
+  const auto* h_output_ptr = h_output.data();
+  auto* h_ref_ptr          = h_ref.data();
+
+  const auto verify_segment = [&](offset_t i) {
+    return check_segment(h_output_ptr, h_ref_ptr, h_segment_offsets_ptr[i], h_segment_offsets_ptr[i + 1]);
+  };
 
   SECTION("exclusive segmented scan")
   {
@@ -173,33 +208,32 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
 
     // check 3 offset iterators API
     device_exclusive_segmented_scan(
-      d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, d_offsets_it, num_segments, op_t{}, output_t{});
+      d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, d_offsets_it, num_segments, op_t{}, output_t{}, stream);
 
-    h_output = output_vec;
+    c2h::copy_to_host(stream, output_vec, h_output);
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
       compute_exclusive_scan_reference(
-        h_input.cbegin() + h_segment_offsets[i],
-        h_input.cbegin() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
-        h_ref.begin() + h_segment_offsets[i],
+        h_input_ptr + h_segment_offsets_ptr[i],
+        h_input_ptr + h_segment_offsets_ptr[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
+        h_ref_ptr + h_segment_offsets_ptr[i],
         output_t{},
         op_t{});
 
-      const bool correct = check_segment(
-        h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
+      const bool correct = verify_segment(i);
       REQUIRE(correct);
     }
 
     // check 2 offset iterators API
-    device_exclusive_segmented_scan(d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, num_segments, op_t{}, output_t{});
+    device_exclusive_segmented_scan(
+      d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, num_segments, op_t{}, output_t{}, stream);
 
-    h_output = output_vec;
+    c2h::copy_to_host(stream, output_vec, h_output);
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
-      const bool correct = check_segment(
-        h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
+      const bool correct = verify_segment(i);
       REQUIRE(correct);
     }
   }
@@ -214,38 +248,43 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
 
     // check 3 offset iterators API
     device_inclusive_segmented_scan(
-      unwrap_it(d_in_it), unwrap_it(d_out_it), d_offsets_it, d_offsets_it + 1, d_offsets_it, num_segments, scan_op);
+      unwrap_it(d_in_it),
+      unwrap_it(d_out_it),
+      d_offsets_it,
+      d_offsets_it + 1,
+      d_offsets_it,
+      num_segments,
+      scan_op,
+      stream);
 
-    h_output = output_vec;
+    c2h::copy_to_host(stream, output_vec, h_output);
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
       compute_inclusive_scan_reference(
-        h_input.cbegin() + h_segment_offsets[i],
-        h_input.cbegin() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
-        h_ref.begin() + h_segment_offsets[i],
+        h_input_ptr + h_segment_offsets_ptr[i],
+        h_input_ptr + h_segment_offsets_ptr[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
+        h_ref_ptr + h_segment_offsets_ptr[i],
         scan_op,
         h_accum_t{});
 
-      const bool correct = check_segment(
-        h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
+      const bool correct = verify_segment(i);
       REQUIRE(correct);
     }
 
     if constexpr (::cuda::std::is_same_v<input_t, output_t>)
     {
-      output_vec = in_items;
+      cuda::copy_bytes(stream, in_items, output_vec);
 
       // check 2 iterators API for in-place scan
       device_inclusive_segmented_scan(
-        unwrap_it(d_out_it), unwrap_it(d_out_it), d_offsets_it, d_offsets_it + 1, num_segments, scan_op);
+        unwrap_it(d_out_it), unwrap_it(d_out_it), d_offsets_it, d_offsets_it + 1, num_segments, scan_op, stream);
 
-      h_output = output_vec;
+      c2h::copy_to_host(stream, output_vec, h_output);
 
       for (offset_t i = 0; i < num_segments; ++i)
       {
-        const bool correct = check_segment(
-          h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
+        const bool correct = verify_segment(i);
         REQUIRE(correct);
       }
     }
@@ -276,35 +315,34 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
       d_offsets_it,
       num_segments,
       scan_op,
-      init_value);
+      init_value,
+      stream);
 
-    h_output = output_vec;
+    c2h::copy_to_host(stream, output_vec, h_output);
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
       compute_inclusive_scan_reference(
-        h_input.cbegin() + h_segment_offsets[i],
-        h_input.cbegin() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
-        h_ref.begin() + h_segment_offsets[i],
+        h_input_ptr + h_segment_offsets_ptr[i],
+        h_input_ptr + h_segment_offsets_ptr[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
+        h_ref_ptr + h_segment_offsets_ptr[i],
         scan_op,
         h_accum_t{init_value});
       // Verify result
-      const bool correct = check_segment(
-        h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
+      const bool correct = verify_segment(i);
       REQUIRE(correct);
     }
 
     // check 2 offset iterators API
     device_inclusive_segmented_scan_with_init(
-      unwrap_it(d_in_it), unwrap_it(d_out_it), d_offsets_it, d_offsets_it + 1, num_segments, scan_op, init_value);
+      unwrap_it(d_in_it), unwrap_it(d_out_it), d_offsets_it, d_offsets_it + 1, num_segments, scan_op, init_value, stream);
 
-    h_output = output_vec;
+    c2h::copy_to_host(stream, output_vec, h_output);
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
       // Verify result
-      const bool correct = check_segment(
-        h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
+      const bool correct = verify_segment(i);
       REQUIRE(correct);
     }
   }
@@ -315,33 +353,32 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
     using op_t = cuda::std::plus<>;
 
     // check 3 offset iterators API
-    device_exclusive_segmented_sum(d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, d_offsets_it, num_segments);
+    device_exclusive_segmented_sum(
+      d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, d_offsets_it, num_segments, stream);
 
-    h_output = output_vec;
+    c2h::copy_to_host(stream, output_vec, h_output);
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
       compute_exclusive_scan_reference(
-        h_input.cbegin() + h_segment_offsets[i],
-        h_input.cbegin() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
-        h_ref.begin() + h_segment_offsets[i],
+        h_input_ptr + h_segment_offsets_ptr[i],
+        h_input_ptr + h_segment_offsets_ptr[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
+        h_ref_ptr + h_segment_offsets_ptr[i],
         output_t{},
         cuda::std::plus<>{});
 
-      const bool correct = check_segment(
-        h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
+      const bool correct = verify_segment(i);
       REQUIRE(correct);
     }
 
     // check 2 offset iterators API
-    device_exclusive_segmented_sum(d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, num_segments);
+    device_exclusive_segmented_sum(d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, num_segments, stream);
 
-    h_output = output_vec;
+    c2h::copy_to_host(stream, output_vec, h_output);
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
-      const bool correct = check_segment(
-        h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
+      const bool correct = verify_segment(i);
       REQUIRE(correct);
     }
   }
@@ -351,33 +388,32 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
     using op_t = cuda::std::plus<>;
 
     // check 3 offset iterators API
-    device_inclusive_segmented_sum(d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, d_offsets_it, num_segments);
+    device_inclusive_segmented_sum(
+      d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, d_offsets_it, num_segments, stream);
 
-    h_output = output_vec;
+    c2h::copy_to_host(stream, output_vec, h_output);
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
       compute_inclusive_scan_reference(
-        h_input.cbegin() + h_segment_offsets[i],
-        h_input.cbegin() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
-        h_ref.begin() + h_segment_offsets[i],
+        h_input_ptr + h_segment_offsets_ptr[i],
+        h_input_ptr + h_segment_offsets_ptr[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
+        h_ref_ptr + h_segment_offsets_ptr[i],
         cuda::std::plus<>{},
         output_t{});
 
-      const bool correct = check_segment(
-        h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
+      const bool correct = verify_segment(i);
       REQUIRE(correct);
     }
 
     // check 2 offset iterators API
-    device_inclusive_segmented_sum(d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, num_segments);
+    device_inclusive_segmented_sum(d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, num_segments, stream);
 
-    h_output = output_vec;
+    c2h::copy_to_host(stream, output_vec, h_output);
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
-      const bool correct = check_segment(
-        h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
+      const bool correct = verify_segment(i);
       REQUIRE(correct);
     }
   }
