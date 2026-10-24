@@ -55,7 +55,7 @@ make_generator_buffer(cuda::stream_ref stream, std::size_t num_items, const cust
   {
     ::cuda::fill_bytes(stream, result, 0);
     _CCCL_TRY_RUNTIME_API(
-      cub::DeviceTransform::Fill,
+      CUB_NS_QUALIFIER::DeviceTransform::Fill,
       "Failed to initialize custom-type policy members",
       result.data(),
       num_items,
