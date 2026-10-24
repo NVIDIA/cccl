@@ -62,6 +62,320 @@ def _compile(kernel, *arg_types, block=(32, 1, 1)):
     )
 
 
+@pytest.mark.parametrize("qualified", [False, True])
+@pytest.mark.parametrize("dtype", [None, types.int32])
+def test_release_explicit_region_returns_shared_array(qualified, dtype):
+    from cuda import coop as common_coop
+
+    module = coop if qualified else common_coop
+
+    @cuda.jit(chip="sm_90")
+    def kernel(output):
+        storage = module.TempStorage(128)
+        view = storage.release(dtype)
+        view[cuda.threadIdx.x] = 7
+        cuda.syncthreads()
+        output[cuda.threadIdx.x] = view[cuda.threadIdx.x]
+
+    _compile(kernel, types.int32[::1])
+
+
+@pytest.mark.parametrize("action", ["primitive", "release", "bound_method"])
+@pytest.mark.parametrize("conditional", [False, True])
+def test_release_consumes_aliases_on_reachable_paths(action, conditional):
+    @cuda.jit(chip="sm_90")
+    def kernel(source, flag):
+        storage = coop.TempStorage(128)
+        alias = storage
+        release = alias.release
+        if not conditional or flag:
+            storage.release()
+        if action == "primitive":
+            items = coop.ThreadData(items_per_thread=1)
+            coop.load(
+                coop.this_block(),
+                source,
+                items,
+                algorithm="direct",
+                temp_storage=alias,
+            )
+        elif action == "release":
+            alias.release()
+        else:
+            release()
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError, match="after release.*reachable"
+    ):
+        _compile(kernel, types.int32[::1], types.boolean)
+
+
+def test_release_in_loop_consumes_outer_instance_on_backedge():
+    @cuda.jit(chip="sm_90")
+    def kernel(output, count):
+        storage = coop.TempStorage(128)
+        for i in range(count):
+            view = storage.release()
+            output[i] = len(view)
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError, match="after release.*reachable"
+    ):
+        _compile(kernel, types.int32[::1], types.int32)
+
+
+def test_release_in_mutually_exclusive_branches_and_fresh_loop_instances():
+    @cuda.jit(chip="sm_90")
+    def kernel(output, flag, count):
+        for i in range(count):
+            storage = coop.TempStorage(128)
+            if flag:
+                view = storage.release(types.int32)
+            else:
+                view = storage.release(types.int32)
+            view[cuda.threadIdx.x] = i
+            cuda.syncthreads()
+            output[cuda.threadIdx.x] = view[cuda.threadIdx.x]
+            cuda.syncthreads()
+
+    _compile(kernel, types.int32[::1], types.boolean, types.int32)
+
+
+@pytest.mark.parametrize("size", [None, 7])
+def test_release_requires_nonempty_compatible_region(size):
+    @cuda.jit(chip="sm_90")
+    def kernel(output):
+        storage = coop.TempStorage(size)
+        view = storage.release(types.int32)
+        output[0] = len(view)
+
+    message = "nonempty region" if size is None else "not divisible"
+    with pytest.raises(CoopSinglePhaseRewriteError, match=message):
+        _compile(kernel, types.int32[::1])
+
+
+def test_release_in_helper_consumes_callers_descriptor():
+    @cuda.jit(device=True, inline="always")
+    def handoff(storage):
+        return storage.release()
+
+    @cuda.jit(chip="sm_90")
+    def kernel(source):
+        storage = coop.TempStorage(128)
+        view = handoff(storage)
+        source[0] = len(view)
+        storage.release()
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError, match="after release.*reachable"
+    ):
+        _compile(kernel, types.int32[::1])
+
+
+def test_release_rejects_stale_alias_after_loop_local_reconstruction():
+    @cuda.jit(chip="sm_90")
+    def kernel(output, count):
+        stale = coop.TempStorage(128, auto_sync=True)
+        for i in range(count):
+            storage = coop.TempStorage(128, auto_sync=True)
+            if i > 0:
+                stale.release()
+            stale = storage
+            view = storage.release()
+            output[i] = len(view)
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError, match="after release.*reachable"
+    ):
+        _compile(kernel, types.int32[::1], types.int32)
+
+
+@pytest.mark.parametrize("break_after_release", [False, True])
+def test_release_exit_or_backedge(break_after_release):
+    @cuda.jit(chip="sm_90")
+    def kernel(output, count):
+        storage = coop.TempStorage(128)
+        for i in range(count):
+            view = storage.release()
+            output[i] = len(view)
+            if break_after_release:
+                break
+            else:
+                continue
+
+    if break_after_release:
+        _compile(kernel, types.int32[::1], types.int32)
+    else:
+        with pytest.raises(
+            CoopSinglePhaseRewriteError, match="after release.*reachable"
+        ):
+            _compile(kernel, types.int32[::1], types.int32)
+
+
+def test_release_after_repeated_cooperative_uses():
+    @cuda.jit(chip="sm_90")
+    def kernel(source, output, count):
+        storage = coop.TempStorage(auto_sync=True)
+        items = coop.ThreadData(items_per_thread=1)
+        for i in range(count):
+            coop.load(
+                coop.this_block(),
+                source,
+                items,
+                algorithm="transpose",
+                temp_storage=storage,
+            )
+        view = storage.release(types.int32)
+        output[0] = len(view)
+
+    _compile(kernel, types.int32[::1], types.int32[::1], types.int32)
+
+
+def test_release_then_break_does_not_consume_continuing_loop_path():
+    @cuda.jit(chip="sm_90")
+    def kernel(source, output, count, flag):
+        storage = coop.TempStorage(128, auto_sync=True)
+        items = coop.ThreadData(items_per_thread=1)
+        for i in range(count):
+            if flag:
+                view = storage.release()
+                output[0] = len(view)
+                break
+            coop.load(coop.this_block(), source, items, temp_storage=storage)
+
+    _compile(
+        kernel, types.int32[::1], types.int32[::1], types.int32, types.boolean
+    )
+
+
+def test_release_rejects_runtime_dtype():
+    @cuda.jit(chip="sm_90")
+    def kernel(output, dtype):
+        storage = coop.TempStorage(128)
+        view = storage.release(dtype)
+        output[0] = len(view)
+
+    with pytest.raises(CoopSinglePhaseRewriteError, match="compile-time"):
+        _compile(kernel, types.int32[::1], types.int32)
+
+
+def test_release_method_cannot_escape_to_container():
+    @cuda.jit(chip="sm_90")
+    def kernel(output):
+        storage = coop.TempStorage(128)
+        methods = (storage.release,)
+        output[0] = len(methods)
+
+    with pytest.raises(CoopSinglePhaseRewriteError, match="bound methods"):
+        _compile(kernel, types.int32[::1])
+
+
+@pytest.mark.parametrize("conditional_binding", ["descriptor", "method"])
+def test_release_requires_binding_on_every_path(conditional_binding):
+    if conditional_binding == "descriptor":
+
+        @cuda.jit(chip="sm_90")
+        def kernel(output, flag):
+            if flag:
+                storage = coop.TempStorage(128)
+            view = storage.release()
+            output[0] = len(view)
+
+    else:
+
+        @cuda.jit(chip="sm_90")
+        def kernel(output, flag):
+            storage = coop.TempStorage(128)
+            if flag:
+                release = storage.release
+            view = release()
+            output[0] = len(view)
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError, match="every reachable path"
+    ):
+        _compile(kernel, types.int32[::1], types.boolean)
+
+
+def test_release_rejects_merged_independent_descriptor_regions():
+    @cuda.jit(chip="sm_90")
+    def kernel(source, output, flag):
+        first = coop.TempStorage(128, auto_sync=True)
+        second = coop.TempStorage(128, auto_sync=True)
+        selected = first if flag else second
+        items = coop.ThreadData(items_per_thread=1)
+        coop.load(coop.this_block(), source, items, temp_storage=selected)
+        left = first.release(types.int32)
+        right = second.release(types.int32)
+        left[0] = 1
+        right[0] = 2
+        output[0] = left[0] + right[0]
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError, match="distinct constructor"
+    ):
+        _compile(kernel, types.int32[::1], types.int32[::1], types.boolean)
+
+
+def test_release_rejects_descriptor_missing_on_zero_trip_loop():
+    @cuda.jit(chip="sm_90")
+    def kernel(output, count):
+        for i in range(count):
+            storage = coop.TempStorage(128)
+        view = storage.release()
+        output[0] = len(view)
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError, match="every reachable path"
+    ):
+        _compile(kernel, types.int32[::1], types.int32)
+
+
+@pytest.mark.parametrize("dtype", [types.boolean, types.complex128])
+def test_release_rejects_unsupported_or_unaligned_dtype(dtype):
+    @cuda.jit(chip="sm_90")
+    def kernel(output):
+        storage = coop.TempStorage(128)
+        view = storage.release(dtype)
+        output[0] = len(view)
+
+    message = "numeric scalar" if dtype == types.boolean else "alignment"
+    with pytest.raises(CoopSinglePhaseRewriteError, match=message):
+        _compile(kernel, types.int32[::1])
+
+
+def test_release_retains_last_primitive_barrier_without_adding_one():
+    def count_barriers(auto_sync, release_storage):
+        @cuda.jit(chip="sm_90")
+        def kernel(source, output):
+            storage = coop.TempStorage(auto_sync=auto_sync)
+            items = coop.ThreadData(items_per_thread=1)
+            coop.load(
+                coop.this_block(),
+                source,
+                items,
+                algorithm="transpose",
+                temp_storage=storage,
+            )
+            if release_storage:
+                view = storage.release(types.int32)
+                view[cuda.threadIdx.x] = items[0]
+                output[cuda.threadIdx.x] = view[cuda.threadIdx.x]
+            else:
+                output[cuda.threadIdx.x] = items[0]
+
+        compiled = _compile(kernel, types.int32[::1], types.int32[::1])
+        return compiled.ptx.count("bar.sync")
+
+    # CUB owns its internal barriers. Release preserves the primitive's
+    # requested trailing barrier and adds none of its own.
+    without_sync = count_barriers(False, False)
+    with_sync = count_barriers(True, False)
+    assert with_sync == without_sync + 1
+    assert count_barriers(False, True) == without_sync
+    assert count_barriers(True, True) == with_sync
+
+
 @pytest.mark.parametrize(
     "qualified", (False, True), ids=("common", "qualified")
 )

@@ -154,6 +154,9 @@ class TempStorageLike(Protocol):
     auto_sync: bool
     sharing: TempStorageSharing
 
+    def release(self, dtype: object | None = None) -> Any:
+        """Consume the descriptor and return its complete shared array."""
+
 __all__ = [
     "BlockLoadStoreAlgorithm",
     "LoadStoreAlgorithm",
