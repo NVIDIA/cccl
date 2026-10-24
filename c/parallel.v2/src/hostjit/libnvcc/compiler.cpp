@@ -948,7 +948,7 @@ public:
       std::filesystem::remove(output_temp_path, ignored);
       // A concurrent writer may have landed the (identical) PCH first; that
       // counts as success for this builder too.
-      if (!std::filesystem::exists(pch_output_path))
+      if (!pathExists(pch_output_path))
       {
         diagnostics += "Failed to move PCH into place: " + rename_error.message();
         return false;
