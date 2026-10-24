@@ -229,11 +229,10 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with three offsets
 {
   const std::string& algo_name = "cub::DeviceSegmentedScan::InclusiveSegmentedSum[3 offsets]";
   const auto device            = c2h::current_device();
+  const cuda::stream stream{device};
 
   // example-begin inclusive-segmented-sum-three-offsets
   // Sequence of 16 values, representing 4x4 matrix in row-major layout
-  const cuda::stream stream{device};
-
   auto input = c2h::make_device_buffer<int>(stream, device, {1, 1, 1, 1, -1, -1, -1, -1, 2, 2, 2, 2, -2, -2, -2, -2});
 
   // begin offsets for each of 4 rows
