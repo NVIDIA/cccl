@@ -93,7 +93,7 @@ class take;
 
 // synchronizers
 
-template <class _Barrier, ::cuda::std::size_t _Np>
+template <class _RangeView>
 class barrier_synchronizer;
 
 template <class _Range>
