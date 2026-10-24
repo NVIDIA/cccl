@@ -1,0 +1,15 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+[package]
+name = "cuda-coop"
+version = "0.0.0"
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+cuda-device = { git = "https://github.com/tpn/cuda-rust.git", rev = "96caed46c776eb49226137eac849e795b83b7ce0" }
+
+[lints]
+workspace = true
