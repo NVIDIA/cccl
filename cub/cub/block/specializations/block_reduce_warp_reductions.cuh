@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/uninitialized.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/warp/specializations/warp_reduce_shfl.cuh>

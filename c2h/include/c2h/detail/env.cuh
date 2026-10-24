@@ -3,31 +3,51 @@
 
 #pragma once
 
+#include <cuda/std/charconv>
+#include <cuda/std/type_traits>
+
 #include <cstddef>
 #include <cstdlib>
-#include <optional>
-#include <string>
+#include <cstring>
 
 namespace c2h::detail
 {
-inline std::optional<std::string> get_env(const char* name)
+template <typename T>
+[[nodiscard]] inline T parse_env_integer(const char* value) noexcept
+{
+  static_assert(::cuda::std::is_integral_v<T>);
+
+  if (value == nullptr)
+  {
+    return T{};
+  }
+
+  const char* const end = value + ::std::strlen(value);
+  T result{};
+  const auto conversion_result = ::cuda::std::from_chars(value, end, result);
+  if (conversion_result.ec != ::cuda::std::errc{} || conversion_result.ptr != end)
+  {
+    return T{};
+  }
+
+  return result;
+}
+
+template <typename T>
+[[nodiscard]] inline T get_env_as_integer(const char* name) noexcept
 {
 #ifdef _WIN32
-  char* buf       = nullptr;
-  std::size_t len = 0;
+  char* buf         = nullptr;
+  ::std::size_t len = 0;
   if (_dupenv_s(&buf, &len, name) || !buf)
   {
-    return std::nullopt;
+    return T{};
   }
-  std::string val(buf);
-  free(buf);
-  return val;
+  const T result = parse_env_integer<T>(buf);
+  ::std::free(buf);
+  return result;
 #else
-  if (const char* v = std::getenv(name))
-  {
-    return std::string(v);
-  }
-  return std::nullopt;
+  return parse_env_integer<T>(::std::getenv(name));
 #endif
 }
 } // namespace c2h::detail

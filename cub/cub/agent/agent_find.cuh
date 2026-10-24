@@ -4,10 +4,11 @@
 #pragma once
 #include <cub/config.cuh>
 
+#include <cub/detail/cub_vector.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
@@ -85,8 +86,7 @@ struct agent_t
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE bool
-  ConsumeTile(OffsetT tile_offset, ::cuda::std::integral_constant<bool, true> /*CAN_VECTORIZE*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE bool ConsumeTile(OffsetT tile_offset, ::cuda::std::true_type /*CAN_VECTORIZE*/)
   {
     using InputT  = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
     using VectorT = typename CubVector<InputT, VecSize>::Type;
@@ -126,8 +126,7 @@ struct agent_t
     return false;
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE bool
-  ConsumeTile(OffsetT tile_offset, ::cuda::std::integral_constant<bool, false> /*CAN_VECTORIZE*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE bool ConsumeTile(OffsetT tile_offset, ::cuda::std::false_type /*CAN_VECTORIZE*/)
   {
     for (int i = 0; i < ItemsPerThread; ++i)
     {

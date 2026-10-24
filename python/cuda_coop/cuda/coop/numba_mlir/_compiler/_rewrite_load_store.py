@@ -1,0 +1,819 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""Apply Load/Store-specific payload and scalar rules during call rewriting.
+
+Registered hooks merge planned or inferred per-thread payload shape and dtype,
+validate optional counts and defaults, and recognize scalar Store operands.
+Scalar Stores need a one-element local array for the provider ABI. Emission
+checks the exact dtype before boxing so assignment cannot hide a conversion.
+Unknown scalar types remain the responsibility of the later compiler typing
+pass, and these helpers do not prove runtime bounds or thread uniformity.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from numbers import Integral
+from typing import TYPE_CHECKING, NoReturn
+
+from numba_cuda_mlir import cuda as _cuda_module
+
+from cuda.coop._core import (
+    ArgumentBinding,
+    BindingKind,
+    GroupLoadStoreSemantics,
+)
+
+from ._group_rewriting import GroupRewriteContext
+from ._rewrite_payload import PayloadInference
+from ._rewrite_support import (
+    _GLOBAL_NAME_COUNTER,
+    _UNRESOLVED,
+    CoopSinglePhaseRewriteError,
+    _dtype_values_match,
+    _next_global_name,
+    _RewriteMatch,
+    ir,
+)
+
+if TYPE_CHECKING:
+    from numba_cuda_mlir.numba_cuda.types import Function
+
+
+@dataclass(frozen=True)
+class _LoadStoreMatchMetadata:
+    """Carry the scalar Store boxing decision from analysis to emission.
+
+    A true ``box_root_store_scalar`` asks the operand hook to replace the
+    scalar with a local array of the inferred dtype and extent.
+    """
+
+    box_root_store_scalar: bool = False
+
+
+class _ExactStoreScalar:
+    """Check a scalar's exact dtype before boxing can introduce a cast.
+
+    Parameters
+    ----------
+    dtype : object
+        Payload compiler dtype that the scalar must match during typing.
+    """
+
+    def __init__(self, dtype: object) -> None:
+        self.dtype = dtype
+        self._numba_type = None
+
+    @property
+    def _numba_type_(self) -> Function:
+        """Build the compiler function type for an exact-dtype identity check.
+
+        Scalar Store lowering boxes a value into a local array, whose
+        assignment could silently cast a runtime scalar to the destination
+        dtype. This callable's overload checks the argument type before that
+        assignment and returns an inline identity implementation only when the
+        types match. Compare the scalar types inside literal wrappers.
+
+        The overload template and resulting function type are created lazily
+        and cached on this validator instance. The callable itself is a
+        compiler hook; it does not perform the identity operation in Python.
+
+        Returns
+        -------
+        numba_types.Function
+            Function type with an overload that raises ``TypingError`` for
+            a dtype mismatch; otherwise, it returns the input unchanged.
+        """
+
+        import numba_cuda_mlir.numba_cuda.types as _numba_types
+        from numba_cuda_mlir.extending import (
+            _NumbaCudaMlirOverloadFunctionTemplate,
+        )
+        from numba_cuda_mlir.numba_cuda.core.errors import TypingError
+        from numba_cuda_mlir.numba_cuda.typing.templates import (
+            make_overload_template,
+        )
+
+        if self._numba_type is None:
+            dtype = self.dtype
+
+            def validate(value):
+                actual_dtype = getattr(value, "literal_type", value)
+                if actual_dtype != dtype:
+                    raise TypingError(
+                        f"cuda.coop.numba_mlir.store value dtype "
+                        f"{actual_dtype} does not match destination dtype "
+                        f"{dtype}"
+                    )
+
+                def impl(value):
+                    return value
+
+                return impl
+
+            template = make_overload_template(
+                self,
+                validate,
+                {"no_cpython_wrapper": True, "nopython": True},
+                strict=True,
+                inline="always",
+                prefer_literal=False,
+                base=_NumbaCudaMlirOverloadFunctionTemplate,
+            )
+            self._numba_type = _numba_types.Function(template)
+        return self._numba_type
+
+    def __call__(self, value: object) -> NoReturn:
+        raise RuntimeError(
+            "Store scalar validation requires device compilation"
+        )
+
+
+class _LoadStoreRewrite:
+    """Apply Load/Store rules through the operation registry's hooks."""
+
+    @staticmethod
+    def _validate_oob_default(
+        context: GroupRewriteContext,
+        *,
+        runtime_args: list[ir.Var],
+        factory_kwargs: dict[str, object],
+    ) -> None:
+        """Check Load padding against the inferred payload dtype.
+
+        Static padding is coerced with its scalar provenance and replaced by a
+        normalized static binding. Runtime padding must have the payload's
+        exact supported numeric dtype; it is not implicitly narrowed or
+        widened. Locate that operand after the two array operands and any
+        runtime valid-item count. If its type is still unknown, leave
+        validation for later typing.
+
+        Parameters
+        ----------
+        context : GroupRewriteContext
+            Access to scalar provenance and available IR variable types.
+        runtime_args : list of ir.Var
+            Provider operands in the order produced by argument splitting.
+        factory_kwargs : dict of str to object
+            Inferred dtype and control bindings. A static ``oob_default``
+            binding is replaced in place by its normalized value.
+
+        Returns
+        -------
+        None
+            Omitted bindings need no validation. Other bindings are checked
+            using the dtype information currently available.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            Static padding cannot be converted under the scalar rules, a
+            runtime operand is missing, or its known dtype is unsupported
+            or mismatched.
+        """
+
+        binding = factory_kwargs.get("oob_default")
+        if not isinstance(binding, ArgumentBinding) or (
+            binding.kind is BindingKind.OMITTED
+        ):
+            return
+        if binding.kind is BindingKind.STATIC:
+            from ._parameters import coerce_static_scalar
+
+            payload_dtype = factory_kwargs.get("dtype")
+            if payload_dtype is None:
+                raise CoopSinglePhaseRewriteError(
+                    "cuda.coop.numba_mlir.load requires an inferred dtype "
+                    "before validating oob_default"
+                )
+            provenance = context.static_scalar_provenance(binding.value)
+            source_dtype = (
+                None
+                if provenance is _UNRESOLVED or provenance is None
+                else provenance.dtype
+            )
+            try:
+                normalized = coerce_static_scalar(
+                    binding.value,
+                    payload_dtype,
+                    operation="load",
+                    parameter="oob_default",
+                    source_dtype=source_dtype,
+                )
+            except (TypeError, ValueError) as exc:
+                raise CoopSinglePhaseRewriteError(str(exc)) from exc
+            factory_kwargs["oob_default"] = ArgumentBinding.static(normalized)
+            return
+
+        runtime_index = 2
+        valid_items = factory_kwargs.get("num_valid_items")
+        if (
+            isinstance(valid_items, ArgumentBinding)
+            and valid_items.kind is BindingKind.RUNTIME
+        ):
+            runtime_index += 1
+        if runtime_index >= len(runtime_args) or not isinstance(
+            runtime_args[runtime_index], ir.Var
+        ):
+            raise CoopSinglePhaseRewriteError(
+                "cuda.coop.numba_mlir.load runtime oob_default is missing "
+                "its runtime value"
+            )
+
+        value_var = runtime_args[runtime_index]
+        value_dtype = context.numba_type(value_var)
+        if value_dtype is None:
+            value_dtype = context.dtype(value_var)
+        if value_dtype is None:
+            return
+
+        from ._parameters import _validate_common_numeric_dtype
+
+        try:
+            value_dtype = _validate_common_numeric_dtype(
+                value_dtype,
+                operation="load",
+                parameter="oob_default",
+            )
+        except (TypeError, ValueError) as exc:
+            raise CoopSinglePhaseRewriteError(str(exc)) from exc
+        payload_dtype = factory_kwargs.get("dtype")
+        if payload_dtype is not None and not _dtype_values_match(
+            value_dtype,
+            payload_dtype,
+        ):
+            raise CoopSinglePhaseRewriteError(
+                f"cuda.coop.numba_mlir.load runtime oob_default dtype "
+                f"{value_dtype} does not match payload dtype {payload_dtype}"
+            )
+
+    @staticmethod
+    def _validate_load_store_runtime_controls(
+        context: GroupRewriteContext,
+        *,
+        op_name: str,
+        runtime_args: list[ir.Var],
+        factory_kwargs: dict[str, object],
+    ) -> None:
+        """Check Load/Store controls before provider creation.
+
+        Static valid-item counts must be integral rather than boolean. Static
+        offsets must additionally be nonnegative and fit signed 64-bit
+        storage. For runtime valid-item counts and offsets, check known dtypes
+        while leaving unknown types for later inference. This method does not
+        prove runtime value ranges, memory bounds, or group uniformity, nor
+        does it enforce the static valid-item count's tile bound.
+
+        The operand cursor follows the provider ABI: memory and payload first,
+        then runtime valid-item count, runtime padding, and optional offset.
+        Load padding receives its separate dtype/coercion check.
+
+        Parameters
+        ----------
+        context : GroupRewriteContext
+            Known compiler types and scalar provenance for each operand.
+        op_name : str
+            Registered ``"load"`` or ``"store"`` operation.
+        runtime_args : list of ir.Var
+            Operands already ordered by argument splitting.
+        factory_kwargs : dict of str to object
+            Specialization values and scalar bindings; static Load padding
+            may be normalized in place.
+
+        Returns
+        -------
+        None
+            Known control values and types satisfy the checks.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            The operation is unsupported, or a known control is invalid.
+        """
+
+        if op_name not in {"load", "store"}:
+            raise CoopSinglePhaseRewriteError(
+                f"unsupported Numba-CUDA-MLIR operation {op_name!r}"
+            )
+
+        valid_items = factory_kwargs.get("num_valid_items")
+        if (
+            isinstance(valid_items, ArgumentBinding)
+            and valid_items.kind is BindingKind.STATIC
+            and (
+                isinstance(valid_items.value, bool)
+                or not isinstance(valid_items.value, Integral)
+            )
+        ):
+            raise CoopSinglePhaseRewriteError(
+                f"coop {op_name} valid_items must be an integer"
+            )
+
+        offset = factory_kwargs.get("offset")
+        if (
+            isinstance(offset, ArgumentBinding)
+            and offset.kind is BindingKind.STATIC
+        ):
+            if isinstance(offset.value, bool) or not isinstance(
+                offset.value, Integral
+            ):
+                raise CoopSinglePhaseRewriteError(
+                    f"coop {op_name} offset must be an integer"
+                )
+            normalized_offset = int(offset.value)
+            if normalized_offset < 0:
+                raise CoopSinglePhaseRewriteError(
+                    "coop load/store static offset must be nonnegative"
+                )
+            if normalized_offset > (1 << 63) - 1:
+                raise CoopSinglePhaseRewriteError(
+                    "coop load/store static offset must fit "
+                    "a signed 64-bit integer"
+                )
+
+        checks: list[tuple[str, int]] = []
+        cursor = 2
+        if (
+            isinstance(valid_items, ArgumentBinding)
+            and valid_items.kind is BindingKind.RUNTIME
+        ):
+            checks.append(("valid_items", cursor))
+            cursor += 1
+        oob_default = factory_kwargs.get("oob_default")
+        if (
+            isinstance(oob_default, ArgumentBinding)
+            and oob_default.kind is BindingKind.RUNTIME
+        ):
+            cursor += 1
+        if len(runtime_args) > cursor:
+            checks.append(("offset", cursor))
+
+        from ._parameters import _validate_runtime_integer_dtype
+
+        for parameter, index in checks:
+            if index >= len(runtime_args) or not isinstance(
+                runtime_args[index], ir.Var
+            ):
+                raise CoopSinglePhaseRewriteError(
+                    f"coop {op_name} {parameter} must be an integer"
+                )
+            value_type = context.numba_type(runtime_args[index])
+            if value_type is None:
+                value_type = context.dtype(runtime_args[index])
+            if value_type is None:
+                continue
+            try:
+                _validate_runtime_integer_dtype(
+                    value_type,
+                    operation=op_name,
+                    parameter=parameter,
+                )
+            except TypeError as exc:
+                raise CoopSinglePhaseRewriteError(str(exc)) from exc
+
+        if op_name == "load":
+            _LoadStoreRewrite._validate_oob_default(
+                context,
+                runtime_args=runtime_args,
+                factory_kwargs=factory_kwargs,
+            )
+
+    @staticmethod
+    def _infer_load_store_payload(
+        context: GroupRewriteContext,
+        inference: PayloadInference,
+    ) -> None:
+        """Reconcile Load/Store payload shape and dtype.
+
+        Planned calls reuse their checked dtype and extent while still merging
+        explicit factory inputs and populating constructor allocation state.
+        Calls without a Load/Store plan infer these facts from their operands.
+
+        Without a supported Load/Store plan, array payloads supply their
+        static extent; scalars imply one item per thread. Prefer the memory
+        element dtype when available, while checking it against any known
+        payload dtype. For an untyped Store array, inspect typed writes before
+        recording a destination-derived dtype so an incompatible producer
+        cannot be hidden by the destination type. This fallback also checks
+        static scalar coercion against the destination dtype; known runtime
+        scalar dtypes must match it exactly.
+
+        Both paths record dtypes through payload aliases for later constructor
+        lowering. This phase updates inference metadata; boxing a scalar into
+        the provider's array operand happens during runtime-argument emission.
+
+        Parameters
+        ----------
+        context : GroupRewriteContext
+            Access to payload, dtype, write, and scalar provenance.
+        inference : PayloadInference
+            Mutable Load/Store inference state. Runtime operands are
+            memory then payload; factory keywords and payload dtype caches
+            may be updated.
+
+        Returns
+        -------
+        None
+            Known shape and dtype facts are merged into the inference state.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            Known memory and payload dtypes conflict, static scalar
+            conversion fails, or inferred values violate the supported
+            numeric contract.
+        """
+
+        payload_var, payload_specification = inference.candidate(1)
+        plan = inference.lowering_plan
+        if (
+            plan is not None
+            and plan.unsupported is None
+            and isinstance(plan.call.operation, GroupLoadStoreSemantics)
+        ):
+            from .._lowering._core import NumbaMlirCoreAdapter
+
+            semantics = plan.call.operation
+            dtype = NumbaMlirCoreAdapter().normalize_dtype(semantics.dtype)
+            inference.infer_kwarg(
+                "items_per_thread", semantics.items_per_thread
+            )
+            inference.infer_kwarg(
+                "items_per_thread",
+                payload_specification.items_per_thread
+                if payload_specification is not None
+                else 1,
+            )
+            inference.infer_kwarg("dtype", dtype)
+            if payload_specification is not None and payload_var is not None:
+                # Allocation still needs constructor and alias state. The plan
+                # has already checked memory, payload writes and scalar widths.
+                context.record_thread_data_dtype(payload_var, dtype)
+            return
+
+        memory_var = (
+            inference.runtime_args[0] if inference.runtime_args else None
+        )
+        memory_dtype = (
+            context.dtype(memory_var)
+            if isinstance(memory_var, ir.Var)
+            else None
+        )
+
+        payload_is_array = payload_specification is not None
+        if payload_specification is None:
+            payload_dtype = (
+                context.dtype(payload_var)
+                if isinstance(payload_var, ir.Var)
+                else None
+            )
+            inference.infer_kwarg("items_per_thread", 1)
+            inference.infer_kwarg(
+                "dtype",
+                memory_dtype if memory_dtype is not None else payload_dtype,
+            )
+        else:
+            inference.infer_kwarg(
+                "items_per_thread", payload_specification.items_per_thread
+            )
+            payload_dtype = payload_specification.dtype
+            if payload_dtype is None and payload_var is not None:
+                payload_dtype = context.dtype(payload_var)
+            if (
+                inference.op_name == "store"
+                and payload_dtype is None
+                and payload_var is not None
+            ):
+                payload_dtype = context.infer_thread_data_write_dtype(
+                    payload_var
+                )
+            inferred_dtype = (
+                memory_dtype if memory_dtype is not None else payload_dtype
+            )
+            if inferred_dtype is None:
+                inferred_dtype = inference.factory_value("dtype")
+            inference.infer_kwarg("dtype", inferred_dtype)
+            if inferred_dtype is not None and payload_var is not None:
+                context.record_thread_data_dtype(payload_var, inferred_dtype)
+
+        from ._parameters import _validate_common_numeric_dtype
+
+        if inference.op_name == "store" and not payload_is_array:
+            provenance = context.static_scalar_provenance(payload_var)
+            if provenance is not _UNRESOLVED and memory_dtype is not None:
+                from ._parameters import coerce_static_scalar
+
+                try:
+                    coerce_static_scalar(
+                        provenance.value,
+                        memory_dtype,
+                        operation="store",
+                        parameter="value",
+                        source_dtype=provenance.dtype,
+                    )
+                except (TypeError, ValueError) as exc:
+                    raise CoopSinglePhaseRewriteError(str(exc)) from exc
+                payload_dtype = memory_dtype
+
+        provider_dtype = inference.factory_value("dtype")
+
+        if provider_dtype is not None:
+            try:
+                _validate_common_numeric_dtype(
+                    provider_dtype, operation=inference.op_name
+                )
+            except (TypeError, ValueError) as exc:
+                raise CoopSinglePhaseRewriteError(str(exc)) from exc
+        if payload_dtype is not None:
+            try:
+                _validate_common_numeric_dtype(
+                    payload_dtype,
+                    operation=inference.op_name,
+                )
+            except (TypeError, ValueError) as exc:
+                raise CoopSinglePhaseRewriteError(str(exc)) from exc
+        if (
+            memory_dtype is not None
+            and payload_dtype is not None
+            and not _dtype_values_match(memory_dtype, payload_dtype)
+        ):
+            if inference.op_name != "store" or payload_is_array:
+                raise CoopSinglePhaseRewriteError(
+                    f"cuda.coop.numba_mlir.{inference.op_name} memory dtype "
+                    f"{memory_dtype} does not match payload dtype "
+                    f"{payload_dtype}"
+                )
+            raise CoopSinglePhaseRewriteError(
+                f"cuda.coop.numba_mlir.store value dtype {payload_dtype} "
+                f"does not match destination dtype {memory_dtype}"
+            )
+
+
+def infer_load_store_payload(
+    context: GroupRewriteContext,
+    inference: PayloadInference,
+) -> None:
+    """Expose Load/Store payload inference to the operation registry."""
+
+    _LoadStoreRewrite._infer_load_store_payload(context, inference)
+
+
+def validate_load_store_runtime_controls(
+    context: GroupRewriteContext,
+    *,
+    op_name: str,
+    runtime_args: list[ir.Var],
+    factory_kwargs: dict[str, object],
+) -> None:
+    """Expose Load/Store scalar-control checks to the operation registry."""
+
+    _LoadStoreRewrite._validate_load_store_runtime_controls(
+        context,
+        op_name=op_name,
+        runtime_args=runtime_args,
+        factory_kwargs=factory_kwargs,
+    )
+
+
+def analyze_load_store_match(
+    context: GroupRewriteContext,
+    *,
+    op_name: str,
+    runtime_args: tuple[ir.Var, ...],
+    factory_kwargs: dict[str, object],
+) -> _LoadStoreMatchMetadata:
+    """Consume Load/Store markers and identify scalar boxing.
+
+    Remove the private ``_common_root_operation`` and ``_group_root_store``
+    markers from factory keywords so they are not passed to the provider.
+    The common-API marker requires supported numeric dtypes for memory and
+    array operands. Scalar inference and the later typing guard handle scalar
+    Store values, so they need no array payload specification here.
+
+    A public group Store with no recognized per-thread array records a boxing
+    request for either the common or backend-qualified API. The helper
+    ``prepare_load_store_runtime_args`` supplies the required array operand.
+    This analysis emits no runtime statements.
+
+    Parameters
+    ----------
+    context : GroupRewriteContext
+        Access to operand dtypes and per-thread payload specifications.
+    op_name : str
+        Load/Store operation whose private markers are being consumed.
+    runtime_args : tuple of ir.Var
+        Ordered provider operands, starting with memory and payload.
+    factory_kwargs : dict of str to object
+        Specialization values; private family markers are popped in place.
+
+    Returns
+    -------
+    _LoadStoreMatchMetadata
+        Whether Store needs a local array to hold its scalar operand.
+
+    Raises
+    ------
+    CoopSinglePhaseRewriteError
+        Private markers are inconsistent or common-API operand dtypes cannot
+        be established or are unsupported.
+    """
+
+    group_root_store = factory_kwargs.pop("_group_root_store", False)
+    common_root_operation = factory_kwargs.pop("_common_root_operation", None)
+    if not isinstance(group_root_store, bool):
+        raise CoopSinglePhaseRewriteError(
+            "_group_root_store must be a compile-time bool"
+        )
+    if common_root_operation is not None:
+        if common_root_operation != op_name:
+            raise CoopSinglePhaseRewriteError(
+                "_common_root_operation does not match "
+                "the rewritten group operation"
+            )
+        from ._parameters import _validate_common_numeric_dtype
+
+        operand_names = (
+            ("source", "output")
+            if op_name == "load"
+            else ("destination", "value")
+        )
+        operands = list(zip(operand_names, runtime_args))
+        if op_name == "store" and len(runtime_args) >= 2:
+            value_is_array = context.thread_data(runtime_args[1])
+            if value_is_array is None:
+                operands = operands[:1]
+        for operand_name, operand in operands:
+            operand_dtype = context.dtype(operand)
+            if operand_dtype is None:
+                raise CoopSinglePhaseRewriteError(
+                    f"Failed to infer cuda.coop.{common_root_operation} "
+                    f"{operand_name} dtype for common API validation."
+                )
+            try:
+                _validate_common_numeric_dtype(
+                    operand_dtype,
+                    operation=op_name,
+                )
+            except (TypeError, ValueError) as exc:
+                raise CoopSinglePhaseRewriteError(str(exc)) from exc
+    box_root_store_scalar = False
+    if group_root_store:
+        if op_name != "store" or len(runtime_args) < 2:
+            raise CoopSinglePhaseRewriteError(
+                "_group_root_store is valid only for root store calls"
+            )
+        box_root_store_scalar = context.thread_data(runtime_args[1]) is None
+    return _LoadStoreMatchMetadata(box_root_store_scalar=box_root_store_scalar)
+
+
+def prepare_load_store_runtime_args(
+    context: GroupRewriteContext,
+    block: ir.Block,
+    *,
+    match: _RewriteMatch,
+    runtime_args: list[ir.Var],
+    scope: ir.Scope | None,
+    loc: ir.Loc,
+) -> list[ir.Var]:
+    """Build a local-array payload for a scalar group Store value.
+
+    Use the inferred item count and dtype to allocate the provider's payload,
+    then assign the scalar to every item. A scalar without static provenance
+    first passes through ``_ExactStoreScalar`` so compiler typing rejects a
+    dtype mismatch before array assignment can silently cast it. Static values
+    have already been checked using scalar coercion rules.
+
+    Calls without a boxing request return their operand list unchanged. For
+    boxed calls, append preparation statements before the eventual provider
+    call and replace only its payload operand.
+
+    Parameters
+    ----------
+    context : GroupRewriteContext
+        Access to static scalar provenance for the Store value.
+    block : ir.Block
+        IR block receiving allocation, validation, and item assignments.
+    match : _RewriteMatch
+        Match with Load/Store family metadata and inferred factory inputs.
+    runtime_args : list of ir.Var
+        Ordered operands, mutated at index one when boxing is required.
+    scope : ir.Scope or None
+        Scope assigned to generated variables.
+    loc : ir.Loc
+        Source location assigned to generated statements and variables.
+
+    Returns
+    -------
+    list of ir.Var
+        The supplied list with the scalar payload replaced by a local
+        array, or the original operands when boxing is unnecessary.
+
+    Raises
+    ------
+    CoopSinglePhaseRewriteError
+        Family metadata, the Store value, or inferred dtype/extent is
+        missing or invalid. Later typing rejects runtime scalar mismatches.
+    """
+
+    metadata = match.family_metadata
+    if not isinstance(metadata, _LoadStoreMatchMetadata):
+        raise CoopSinglePhaseRewriteError("missing Load/Store family metadata")
+    if not metadata.box_root_store_scalar:
+        return runtime_args
+    if len(runtime_args) < 2:
+        raise CoopSinglePhaseRewriteError(
+            "root store is missing its value argument"
+        )
+    dtype = match.factory_kwargs.get("dtype")
+    if dtype is None:
+        raise CoopSinglePhaseRewriteError(
+            "root store requires an inferred dtype"
+        )
+    items_per_thread = match.factory_kwargs.get("items_per_thread", 1)
+    if (
+        isinstance(items_per_thread, bool)
+        or not isinstance(items_per_thread, int)
+        or items_per_thread < 1
+    ):
+        raise CoopSinglePhaseRewriteError(
+            "root store requires an inferred positive items_per_thread"
+        )
+
+    def new_var(stem: str) -> ir.Var:
+        return ir.Var(
+            scope,
+            f"__coop_root_store_{stem}_{next(_GLOBAL_NAME_COUNTER)}__",
+            loc,
+        )
+
+    module_var = new_var("cuda")
+    local_var = new_var("local")
+    array_fn = new_var("array")
+    shape_var = new_var("shape")
+    dtype_var = new_var("dtype")
+    payload = new_var("payload")
+    block.append(
+        ir.Assign(
+            ir.Global(_next_global_name("root_store_cuda"), _cuda_module, loc),
+            module_var,
+            loc,
+        )
+    )
+    block.append(
+        ir.Assign(ir.Expr.getattr(module_var, "local", loc), local_var, loc)
+    )
+    block.append(
+        ir.Assign(ir.Expr.getattr(local_var, "array", loc), array_fn, loc)
+    )
+    block.append(ir.Assign(ir.Const(items_per_thread, loc), shape_var, loc))
+    block.append(
+        ir.Assign(
+            ir.Global(_next_global_name("root_store_dtype"), dtype, loc),
+            dtype_var,
+            loc,
+        )
+    )
+    block.append(
+        ir.Assign(
+            ir.Expr.call(array_fn, [shape_var, dtype_var], (), loc),
+            payload,
+            loc,
+        )
+    )
+    value = runtime_args[1]
+    if context.static_scalar_provenance(value) is _UNRESOLVED:
+        validator = new_var("validate")
+        checked_value = new_var("checked_value")
+        block.append(
+            ir.Assign(
+                ir.Global(
+                    _next_global_name("store_scalar"),
+                    _ExactStoreScalar(dtype),
+                    loc,
+                ),
+                validator,
+                loc,
+            )
+        )
+        block.append(
+            ir.Assign(
+                ir.Expr.call(validator, [value], (), loc), checked_value, loc
+            )
+        )
+        value = checked_value
+    for item_index in range(items_per_thread):
+        index_var = new_var(f"index_{item_index}")
+        block.append(ir.Assign(ir.Const(item_index, loc), index_var, loc))
+        block.append(ir.SetItem(payload, index_var, value, loc))
+    runtime_args[1] = payload
+    return runtime_args
+
+
+__all__ = [
+    "analyze_load_store_match",
+    "infer_load_store_payload",
+    "prepare_load_store_runtime_args",
+    "validate_load_store_runtime_controls",
+]

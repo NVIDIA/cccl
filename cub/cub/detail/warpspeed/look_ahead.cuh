@@ -13,8 +13,10 @@
 #endif // no system header
 
 #include <cub/detail/iket_support.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/strong_load.cuh>
 #include <cub/detail/strong_store.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/detail/warpspeed/special_registers.cuh>
 #include <cub/thread/thread_store.cuh>
 #include <cub/warp/specializations/warp_redux.cuh>

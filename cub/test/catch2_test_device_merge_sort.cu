@@ -22,6 +22,7 @@
 #include "catch2_test_device_merge_sort_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -441,11 +442,9 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
       // Verify results
       arrays.verify_unstable_key_sort(num_items, is_descending, arrays.keys_in);
     }
-    catch (std::bad_alloc& e)
+    catch (...)
     {
-      const std::size_t num_bytes = num_items * sizeof(key_t);
-      std::cerr << "Skipping merge sort test with " << num_items << " elements (" << num_bytes
-                << " bytes): " << e.what() << "\n";
+      c2h::skip_if_allocation_failure();
     }
   }
 
@@ -468,11 +467,9 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
       const bool is_correct = thrust::equal(expected_result_it, expected_result_it + num_items, keys_in_out.begin());
       REQUIRE(is_correct == true);
     }
-    catch (std::bad_alloc& e)
+    catch (...)
     {
-      const std::size_t num_bytes = num_items * sizeof(key_t);
-      std::cerr << "Skipping merge sort test with " << num_items << " elements (" << num_bytes
-                << " bytes): " << e.what() << "\n";
+      c2h::skip_if_allocation_failure();
     }
   }
 
@@ -496,11 +493,9 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
       const bool is_correct = thrust::equal(expected_result_it, expected_result_it + num_items, keys_in_out.cbegin());
       REQUIRE(is_correct == true);
     }
-    catch (std::bad_alloc& e)
+    catch (...)
     {
-      const std::size_t num_bytes = num_items * sizeof(key_t);
-      std::cerr << "Skipping merge sort test with " << num_items << " elements (" << num_bytes
-                << " bytes): " << e.what() << "\n";
+      c2h::skip_if_allocation_failure();
     }
   }
 }

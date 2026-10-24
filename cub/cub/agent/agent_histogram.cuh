@@ -19,9 +19,12 @@
 #endif // no system header
 
 #include <cub/block/block_load.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/cub_vector.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/format.h>
@@ -383,7 +386,8 @@ struct AgentHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   LoadFullAlignedTile(OffsetT block_offset, SampleT (&samples)[pixels_per_thread][NumChannels])
   {
-    if constexpr (NumActiveChannels == 1)
+    // The vectorized load can only load whole tiles if the samples per thread are a multiple of the vector size
+    if constexpr (NumActiveChannels == 1 && samples_per_thread % vec_size == 0)
     {
       using AliasedVecs = VecT[vecs_per_thread];
       const WrappedVecsIteratorT d_wrapped_vecs(reinterpret_cast<VecT*>(d_native_samples + block_offset));
@@ -542,6 +546,16 @@ struct AgentHistogram
     }
   }
 
+  // The shared memory of BLOCK_LOAD_TRANSPOSE is reused when loading the next tile. The work-stealing ConsumeTiles
+  // already synchronizes between tiles.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void SyncBeforeNextTile()
+  {
+    if constexpr (AgentHistogramPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_TRANSPOSE)
+    {
+      __syncthreads();
+    }
+  }
+
   //! @brief Consume row tiles.  Specialized for even-share (striped across thread blocks)
   //!
   //! @param num_row_pixels
@@ -570,11 +584,13 @@ struct AgentHistogram
         {
           // Consume partial tile
           ConsumeTile<IsAligned, false>(tile_offset, num_remaining);
+          SyncBeforeNextTile();
           break;
         }
 
         // Consume full tile
         ConsumeTile<IsAligned, true>(tile_offset, tile_samples);
+        SyncBeforeNextTile();
         tile_offset += gridDim.x * tile_samples;
       }
     }

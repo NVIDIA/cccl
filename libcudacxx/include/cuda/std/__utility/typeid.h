@@ -40,15 +40,17 @@
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/compare>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_function.h>
 #include <cuda/std/__type_traits/is_member_function_pointer.h>
-#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/remove_cv.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/remove_pointer.h>
-#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/string_view>
+
+#if _CCCL_COMPILER(GCC, <, 9)
+#  include <cuda/std/__type_traits/integral_constant.h>
+#  include <cuda/std/__utility/integer_sequence.h>
+#endif // _CCCL_COMPILER(GCC, <, 9)
 
 #if !defined(_CCCL_NO_TYPEID)
 #  include <typeinfo>

@@ -60,7 +60,7 @@ inline constexpr bool __tuple_like_with_size = false;
 
 template <class _Tuple, size_t _ExpectedSize>
 inline constexpr bool __tuple_like_with_size<_Tuple, _ExpectedSize, true> =
-  _ExpectedSize == tuple_size<remove_cvref_t<_Tuple>>::value;
+  _ExpectedSize == tuple_size_v<remove_cvref_t<_Tuple>>;
 
 template <class... _Types>
 struct __tuple_constraints;

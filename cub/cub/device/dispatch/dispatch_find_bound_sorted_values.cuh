@@ -19,17 +19,18 @@
 
 #include <cub/agent/agent_find_bound_sorted_values.cuh>
 #include <cub/block/block_merge_sort.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/tuning/tuning_find_bound_sorted_values.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
-#include <cub/util_type.cuh>
-
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/std/__algorithm/min.h>
-#include <cuda/std/limits>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 #  include <sstream>
@@ -47,16 +48,20 @@ _CCCL_KERNEL_ATTRIBUTES void device_partition_find_bound_sorted_values_kernel(
   _CCCL_GRID_CONSTANT const NeedlesIt d_values,
   _CCCL_GRID_CONSTANT const Offset values_count,
   _CCCL_GRID_CONSTANT const Offset num_diagonals,
+  _CCCL_GRID_CONSTANT const Offset start_block,
   _CCCL_GRID_CONSTANT Offset* const range_beg_offsets,
   PartitionCompOp partition_comp)
 {
   constexpr FindBoundSortedValuesPolicy policy = current_policy<PolicySelector>();
   constexpr int tile_size                      = policy.threads_per_block * policy.items_per_thread;
 
-  const Offset diagonal_idx = static_cast<Offset>(blockDim.x) * blockIdx.x + threadIdx.x;
+  const Offset diagonal_idx = static_cast<Offset>(blockDim.x) * (start_block + blockIdx.x) + threadIdx.x;
   if (diagonal_idx < num_diagonals)
   {
-    const Offset diagonal = ::cuda::std::min(diagonal_idx * static_cast<Offset>(tile_size), range_count + values_count);
+    // the expression cuda::std::min(diagonal_idx * static_cast<Offset>(tile_size), range_count + values_count) can
+    // overflow the offset type
+    const Offset diagonal =
+      diagonal_idx == num_diagonals - 1 ? range_count + values_count : diagonal_idx * static_cast<Offset>(tile_size);
     range_beg_offsets[diagonal_idx] =
       cub::MergePath(d_range, d_values, range_count, values_count, diagonal, partition_comp);
   }
@@ -76,6 +81,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     _CCCL_GRID_CONSTANT const OutputIt d_output,
     _CCCL_GRID_CONSTANT const Offset range_count,
     _CCCL_GRID_CONSTANT const Offset values_count,
+    _CCCL_GRID_CONSTANT const Offset start_tile,
     _CCCL_GRID_CONSTANT Offset* const range_beg_offsets,
     CompareOp comp)
 {
@@ -93,7 +99,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 
   __shared__ typename AgentT::TempStorage temp_storage;
 
-  AgentT{temp_storage.Alias(), d_range, d_values, d_output, range_count, values_count, range_beg_offsets, comp}();
+  AgentT{temp_storage.Alias(), d_range, d_values, d_output, range_count, values_count, range_beg_offsets, comp}(
+    start_tile + blockIdx.x);
 }
 
 template <typename Mode,
@@ -156,15 +163,23 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   auto partition_comp = Mode::make_partition_comp(comp);
 
+  int max_dim_x;
+  if (const auto error = CubDebug(launcher_factory.MaxGridDimX(max_dim_x)))
+  {
+    return error;
+  }
+
+  // Split both passes into grids that fit the device limit, keeping global block and tile indices in Offset.
+  constexpr int threads_per_partition_block = 256;
+  const Offset num_partition_blocks         = ::cuda::ceil_div(num_diagonals, Offset{threads_per_partition_block});
+  for (Offset start_block = 0; start_block < num_partition_blocks;)
   {
     // Lightweight pass; not worth exposing through the tuning system.
-    constexpr int threads_per_partition_block = 256;
     const int partition_grid_size =
-      static_cast<int>(::cuda::ceil_div(num_diagonals, Offset{threads_per_partition_block}));
+      static_cast<int>(::cuda::std::min(static_cast<Offset>(max_dim_x), num_partition_blocks - start_block));
 
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-            partition_grid_size, threads_per_partition_block, 0, stream)
+          launcher_factory(partition_grid_size, threads_per_partition_block, 0, stream)
             .doit(device_partition_find_bound_sorted_values_kernel<PolicySelector,
                                                                    HaystackIt,
                                                                    NeedlesIt,
@@ -175,6 +190,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                   d_values,
                   values_count,
                   num_diagonals,
+                  start_block,
                   range_beg_offsets,
                   partition_comp)))
     {
@@ -184,12 +200,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     {
       return error;
     }
+    start_block += static_cast<Offset>(partition_grid_size);
   }
 
+  for (Offset start_tile = 0; start_tile < num_tiles;)
   {
+    const int search_grid_size =
+      static_cast<int>(::cuda::std::min(static_cast<Offset>(max_dim_x), num_tiles - start_tile));
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-            static_cast<int>(num_tiles), active_policy.threads_per_block, 0, stream)
+          launcher_factory(search_grid_size, active_policy.threads_per_block, 0, stream)
             .doit(
               device_find_bound_sorted_values_kernel<PolicySelector, Mode, HaystackIt, NeedlesIt, OutputIt, Offset, CompareOp>,
               d_range,
@@ -197,6 +216,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
               d_output,
               range_count,
               values_count,
+              start_tile,
               range_beg_offsets,
               comp)))
     {
@@ -206,6 +226,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     {
       return error;
     }
+    start_tile += static_cast<Offset>(search_grid_size);
   }
 
   return cudaSuccess;

@@ -13,29 +13,42 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/cc_dispatch.cuh>
+#include <cub/agent/agent_reduce_by_key.cuh>
+#include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
-#include <cub/detail/logging.cuh>
+#include <cub/detail/non_void_value.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce_by_key.cuh>
-#include <cub/device/dispatch/kernels/kernel_rle_encode_lookahead.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_encode.cuh>
-#include <cub/util_debug.cuh>
-#include <cub/util_device.cuh>
-#include <cub/util_temporary_storage.cuh>
+#include <cub/util_vsmem.cuh>
 
-#include <thrust/type_traits/is_contiguous_iterator.h>
-#include <thrust/type_traits/unwrap_contiguous_iterator.h>
-
-#include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
-#include <cuda/__memory/align_up.h>
-#include <cuda/__type_traits/is_trivially_copyable.h>
-#include <cuda/iterator>
-#include <cuda/std/__host_stdlib/sstream>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/cstdint>
+#include <cuda/__iterator/constant_iterator.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/functional>
-#include <cuda/std/limits>
+
+#if __cccl_ptx_isa >= 920
+#  include <thrust/detail/config.h>
+
+#  include <cub/detail/cc_dispatch.cuh>
+#  include <cub/detail/logging.cuh>
+#  include <cub/device/dispatch/kernels/kernel_rle_encode_lookahead.cuh>
+#  include <cub/util_debug.cuh>
+#  include <cub/util_device.cuh>
+#  include <cub/util_temporary_storage.cuh>
+
+#  include <thrust/type_traits/is_contiguous_iterator.h>
+#  include <thrust/type_traits/unwrap_contiguous_iterator.h>
+
+#  include <cuda/__cmath/ceil_div.h>
+#  include <cuda/__type_traits/is_trivially_copyable.h>
+#  include <cuda/std/__limits/numeric_limits.h>
+#  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/cstdint>
+
+#  include <nv/target>
+#endif // __cccl_ptx_isa >= 920
 
 CUB_NAMESPACE_BEGIN
 

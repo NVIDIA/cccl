@@ -18,6 +18,7 @@
 #  include <thrust/system/cuda/config.h>
 
 #  include <thrust/detail/raw_pointer_cast.h>
+#  include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 
 #  include <cuda/std/__utility/swap.h>
