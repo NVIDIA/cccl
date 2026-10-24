@@ -57,10 +57,12 @@ if ($env:GITHUB_ACTIONS -and $artifactTag) {
 
 Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS, $ENABLE_TILE)
 
-foreach ($preset in $presets) {
-    test_preset "Thrust ($preset)" $preset
-}
-
-If($CURRENT_PATH -ne "ci") {
-    popd
+try {
+    foreach ($preset in $presets) {
+        test_preset "Thrust ($preset)" $preset
+    }
+} finally {
+    If($CURRENT_PATH -ne "ci") {
+        popd
+    }
 }

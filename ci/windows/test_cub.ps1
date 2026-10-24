@@ -67,8 +67,10 @@ if ($env:GITHUB_ACTIONS -and $artifactTag) {
     & "$PSScriptRoot/build_cub.ps1" @PSBoundParameters
 }
 
-test_preset "CUB ($PRESET)" "$PRESET"
-
-If($CURRENT_PATH -ne "ci") {
-    popd
+try {
+    test_preset "CUB ($PRESET)" "$PRESET"
+} finally {
+    If($CURRENT_PATH -ne "ci") {
+        popd
+    }
 }
