@@ -270,5 +270,6 @@ CUB_TEST_CASE("Vectorized block load converts from iterators of a different valu
   test_vectorized_full_tile_load<long long>(
     d_input, cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_DEFAULT, int>(ptr));
   test_vectorized_full_tile_load<int>(d_input, cuda::std::span<volatile int>(ptr, d_input.size()).begin());
+  test_vectorized_full_tile_load<int>(d_input, static_cast<volatile int*>(ptr));
 }
 #endif
