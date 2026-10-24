@@ -382,12 +382,9 @@ _CCCL_HOST_API ::cuda::std::expected<cluster_launch_shape, cudaError_t> select_c
     {
       return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(cudaErrorInvalidValue);
     }
-    // `max_blocks_per_cluster == 0` -> the full hardware ceiling; a non-zero knob narrows it, clamped to that ceiling.
-    // A cap narrower than a segment needs pushes it into the oversize/streaming fallback below.
-    const int eff_max_blocks_per_cluster =
-      (policy.max_blocks_per_cluster == 0)
-        ? *hw_cluster_ceiling
-        : (::cuda::std::min) (policy.max_blocks_per_cluster, *hw_cluster_ceiling);
+    // The policy's own bound (`max_cluster_blocks()`) clamped to the hardware ceiling. A cap narrower than a segment
+    // needs pushes it into the oversize/streaming fallback below.
+    const int eff_max_blocks_per_cluster = (::cuda::std::min) (policy.max_cluster_blocks(), *hw_cluster_ceiling);
 
     // Wave-aware selection: the free variable is the cluster block count (one cluster per segment), paired with the
     // smallest SMEM that keeps the segment fully resident (fewer blocks = more SMEM/fewer clusters-per-wave, more =
@@ -578,7 +575,7 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
   using key_it_t = it_value_t<KeyInputItItT>;
   using key_t    = it_value_t<key_it_t>;
   using layout_t = batched_topk_cluster::smem_block_tile_layout<key_t, chunk_bytes, load_align_bytes>;
-  static_assert(is_valid_cluster_policy(policy));
+  static_assert(is_valid_cluster_policy(policy), "the cluster policy violates is_valid_cluster_policy");
   static_assert(load_align_bytes % int{sizeof(key_t)} == 0);
 
   // Tightest upper bound the segment-size argument carries -- for a static-bounded per-segment sequence a loose type

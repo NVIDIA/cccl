@@ -13,17 +13,24 @@
 //!      shared memory. Each block accumulates a block-private histogram with a
 //!      shared `atomicAdd` (cheap, SMEM-local), which stays mutually atomic with
 //!      the DSMEM reductions below (see `load_and_histogram_first_pass`).
-//!   2. After a cluster-wide barrier, every non-leader block walks its
-//!      histogram and reduces its bucket counts into the leader block's `hist`
-//!      via cluster-scope DSMEM atomics. The leader's `hist` therefore plays
-//!      a dual role: its own block-private histogram in step 1, then the
-//!      cluster-merged histogram after the second cluster sync.
+//!   2. Every non-leader block walks its histogram and reduces its bucket
+//!      counts into the leader block's `hist` via cluster-scope DSMEM
+//!      reductions. The leader's `hist` therefore plays a dual role: its own
+//!      block-private histogram in step 1, then the cluster-merged histogram
+//!      once all reductions landed.
 //!   3. The leader block prefix-scans `hist` (a block-wide scan) and identifies
 //!      the bucket of the k-th key; its owning lane updates the cluster-shared
-//!      `state`. Every block
-//!      reads the leader's `state.result` pair (splitter bucket plus
-//!      early-stop flag) from the leader via DSMEM at the end of each pass and
-//!      folds the bucket into its own local splitter key.
+//!      `state`. At the end of each pass every block obtains the leader's
+//!      `state.result` pair (splitter bucket plus early-stop flag) and folds the
+//!      bucket into its own local splitter key.
+//!
+//! Cross-CTA synchronization: with PTX ISA >= 8.6 (`use_mbarrier_sync`) steps 2
+//! and 3 are one-sided mbarrier handshakes -- the leader waits for the
+//! reductions (`red.async`), then pushes its `state` into every working block's
+//! own copy (`st.async`), which waits for it -- with fences restricted to
+//! shared memory; a relaxed cluster barrier at startup is the only cluster
+//! barrier. Older toolkits rendezvous the cluster with `barrier.cluster` around
+//! each step and every block reads the leader's `state` through DSMEM.
 //!
 //! The final filter places each block's output through per-CTA shared-memory
 //! atomics, seeded by a cross-CTA prefix scan of two independent 32-bit DSMEM
@@ -67,10 +74,14 @@
 #include <cuda/__memory/align_up.h>
 #include <cuda/__memory/ptr_rebind.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
+#include <cuda/__ptx/instructions/fence.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>
+#include <cuda/__ptx/instructions/mbarrier_complete_tx.h>
 #include <cuda/__ptx/instructions/mbarrier_init.h>
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
+#include <cuda/__ptx/instructions/red_async.h>
+#include <cuda/__ptx/instructions/st_async.h>
 #include <cuda/argument>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
@@ -87,6 +98,23 @@
 #include <cuda/std/span>
 
 #include <nv/target>
+
+// TODO(cccl): temporary benchmarking toggles for `use_mbarrier_sync`; keep the faster variants and remove all three
+// before merging.
+//   CUB_DETAIL_CLUSTER_TOPK_FOLD_SKIP_EMPTY_BUCKETS=1: skip empty buckets in the fold, settling their bytes with one
+//     `mbarrier.complete_tx` per warp.
+//   CUB_DETAIL_CLUSTER_TOPK_PUBLISH_CONSUMER_ARMS=1: receivers arm their own publish barrier. Relies on `st.async`
+//     releasing the leader's prior shared-memory writes, which the CUDA documentation does not guarantee.
+//   CUB_DETAIL_CLUSTER_TOPK_FORCE_BARRIER_SYNC=1: use the `barrier.cluster` path even with PTX ISA >= 8.6.
+#ifndef CUB_DETAIL_CLUSTER_TOPK_FORCE_BARRIER_SYNC
+#  define CUB_DETAIL_CLUSTER_TOPK_FORCE_BARRIER_SYNC 0
+#endif
+#ifndef CUB_DETAIL_CLUSTER_TOPK_FOLD_SKIP_EMPTY_BUCKETS
+#  define CUB_DETAIL_CLUSTER_TOPK_FOLD_SKIP_EMPTY_BUCKETS 0
+#endif
+#ifndef CUB_DETAIL_CLUSTER_TOPK_PUBLISH_CONSUMER_ARMS
+#  define CUB_DETAIL_CLUSTER_TOPK_PUBLISH_CONSUMER_ARMS 0
+#endif
 
 CUB_NAMESPACE_BEGIN
 
@@ -213,7 +241,8 @@ struct agent_batched_topk_cluster
 
   // Cluster-shared state: lives in the leader block's shared memory and is reached from every block of the cluster
   // through DSMEM. Nested here so its counters reuse the kernel's fixed 32-bit `offset_t`/`out_offset_t` directly.
-  struct state_t
+  // 16-byte aligned for the single `st.async` that publishes it (`publish_pass_state`).
+  struct alignas(16) state_t
   {
     // Remaining problem size for the running pass: the candidate count `num_cluster_candidates` and the still-wanted
     // rank `leftover_k`. The two 32-bit fields live in an 8-byte-aligned pair so every block can pull both from the
@@ -241,6 +270,7 @@ struct agent_batched_topk_cluster
     size_state size;
     pass_result result;
   };
+  static_assert(sizeof(state_t) == 16, "the published cluster state must be exactly one 16-byte st.async payload");
   using size_state_t  = typename state_t::size_state;
   using pass_result_t = typename state_t::pass_result;
 
@@ -253,6 +283,13 @@ struct agent_batched_topk_cluster
   // An explicit index tie-break picks among keys that compare equal, so -0.0 and +0.0 must rank equal. Without one,
   // any set of tied keys is a valid result and the extra normalization is skipped.
   static constexpr bool normalize_minus_zero = TieBreak != ::cuda::execution::tie_break::__tie_break_t::__unspecified;
+
+  // PTX ISA >= 8.6 (`.sync_restrict` fences, `.relaxed` mbarrier ops): the per-pass fold and publish and the prefix
+  // scan are one-sided mbarrier handshakes whose fences cover only shared memory, leaving one relaxed cluster barrier
+  // at startup. Otherwise every rendezvous is a `barrier.cluster`, whose release/acquire also orders global memory.
+  static constexpr bool use_mbarrier_sync = __cccl_ptx_isa >= 860 && CUB_DETAIL_CLUSTER_TOPK_FORCE_BARRIER_SYNC == 0;
+  static constexpr bool fold_skips_empty_buckets = CUB_DETAIL_CLUSTER_TOPK_FOLD_SKIP_EMPTY_BUCKETS != 0;
+  static constexpr bool publish_consumer_arms    = CUB_DETAIL_CLUSTER_TOPK_PUBLISH_CONSUMER_ARMS != 0;
 
   // Push direction of the cross-CTA prefix scan (`prime_placement_counters`). The leader must be *last* in scan
   // order so it derives its own (merged-away) counts from the predecessor sum: deterministic-prefer-smaller puts the
@@ -390,8 +427,8 @@ struct agent_batched_topk_cluster
   // block can reach the leader's fields at a known offset via DSMEM. Each
   // block populates its own `hist` block-locally; after the first cluster
   // sync the non-leader blocks reduce their bucket counts into the leader's
-  // `hist` through DSMEM atomics. `state` is meaningful only in the leader
-  // block; the other blocks reach it exclusively through the DSMEM mapping.
+  // `hist` through DSMEM atomics. Only the leader's `state` is authoritative: the mbarrier path pushes it into every
+  // working block's copy each pass, the barrier path reads it through DSMEM.
   // `selected_offset_counter`/`tie_offset_counter` are the final-filter output-slot counters, but they first serve as
   // the cross-CTA scan accumulators: peers add their selected/tied counts into them through DSMEM
   // (`add_remote_prefix`) while this block seeds its own tie base locally, leaving each counter primed with this
@@ -407,6 +444,10 @@ struct agent_batched_topk_cluster
     offset_t tie_offset_counter;
     offset_t num_local_strictly_selected;
     offset_t num_local_candidates;
+    // Handshake mbarriers of the mbarrier path (see the section above `cluster_arrive_relaxed`). `pass_mbar`: one phase
+    // per pass, tracking the fold on the leader and the state publish elsewhere. `prefix_mbar`: the prefix scan.
+    ::cuda::std::uint64_t pass_mbar;
+    ::cuda::std::uint64_t prefix_mbar;
     typename block_scan_t::TempStorage scan_storage;
     // One mbarrier handle per pipeline stage, shared by the resident load and the overflow stream and reused
     // (ping-ponged) across radix passes; all are initialized once up front by `init_load_barriers`.
@@ -643,11 +684,13 @@ struct agent_batched_topk_cluster
     chunk_partition local_partition;
     unsigned leader_rank;
     // `shared::cluster` addresses of the leader's `state` and `hist[0]`, remapped via `mapa` in
-    // `compute_segment_layout`. Every block reads the leader's per-pass results from `leader_state32`; a cluster block
-    // also reduces histograms into `leader_hist32 + i * sizeof(offset_t)` (unused on the single-CTA path, which never
-    // reduces).
+    // `compute_segment_layout` (barrier path only, `!use_mbarrier_sync`). Every block reads the leader's per-pass
+    // results from `leader_state32`; a cluster block also reduces histograms into `leader_hist32 + i *
+    // sizeof(offset_t)` (unused on the single-CTA path, which never reduces).
     ::cuda::std::uint32_t leader_state32;
     ::cuda::std::uint32_t leader_hist32;
+    // The leader's storage in this block's DSMEM window, the fold target (mbarrier path, multi-CTA only).
+    _TempStorage* leader_storage;
     offset_t num_local_resident_chunks;
     offset_t num_local_overflow_chunks;
     offset_t resident_base;
@@ -821,6 +864,23 @@ private:
                  :
                  : "r"(remote_tied), "r"(num_local_tied_for_scan)
                  : "memory");
+  }
+
+  // mbarrier-path `add_remote_prefix`, completing on the target's `prefix_mbar` (see `exchange_prefixes`).
+  _CCCL_DEVICE _CCCL_FORCEINLINE void add_remote_prefix_async(
+    [[maybe_unused]] unsigned target_rank,
+    [[maybe_unused]] offset_t num_local_selected_for_scan,
+    [[maybe_unused]] offset_t num_local_tied_for_scan)
+  {
+#if __cccl_ptx_isa >= 860
+    _TempStorage* const remote = map_to_rank(&temp_storage, target_rank);
+    ::cuda::ptx::red_async(
+      ::cuda::ptx::op_add, &remote->selected_offset_counter, num_local_selected_for_scan, &remote->prefix_mbar);
+    ::cuda::ptx::red_async(
+      ::cuda::ptx::op_add, &remote->tie_offset_counter, num_local_tied_for_scan, &remote->prefix_mbar);
+#else // __cccl_ptx_isa < 860
+    _CCCL_UNREACHABLE();
+#endif // __cccl_ptx_isa >= 860
   }
 
   // Parallel prefix sum (cub::BlockScan) over the leader's merged histogram
@@ -1218,6 +1278,296 @@ private:
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // mbarrier-based cluster synchronization (`use_mbarrier_sync`)
+  // ---------------------------------------------------------------------------
+  // Every cross-CTA access is a push (`red.async`, `st.async`, remote mbarrier arrive/complete-tx) into a block that
+  // waits on the mbarrier tracking exactly that push; nobody reads a peer's shared memory or touches an idle rank.
+  // Senders never wait for their pushes: PTX only requires the *target* CTA to stay alive until a shared-memory
+  // operation completes. Fences cover only shared memory and waits are `.relaxed`, so no handshake waits on global
+  // memory. Each handshake mbarrier expects one arrival per phase:
+  //   * `pass_mbar`, one phase per pass (parity `pass & 1`), armed by the leader: on itself for the fold, remotely on
+  //     every other working block for the publish. No phase can complete before all owner threads observed the
+  //     previous one: a non-leader folds only after the block barrier before Step 2 (after its publish wait), and the
+  //     leader publishes only after a block barrier following its fold wait.
+  //   * `prefix_mbar`, a single phase armed by its owner. Separate from `pass_mbar` because a fast predecessor's push
+  //     may arrive while the block still waits on its last publish.
+
+  // Orders no memory: callers fence first. `.aligned`: all threads reach it under a uniform branch.
+  _CCCL_DEVICE _CCCL_FORCEINLINE static void cluster_arrive_relaxed()
+  {
+    asm volatile("barrier.cluster.arrive.relaxed.aligned;" : : : "memory");
+  }
+
+  // Releases this thread's (after a block barrier: the block's) prior shared::cta accesses to the cluster for a
+  // following relaxed arrival or remote mbarrier op. Unlike `.release.cluster`, it does not wait for global memory.
+  _CCCL_DEVICE _CCCL_FORCEINLINE static void release_shared_to_cluster()
+  {
+#if __cccl_ptx_isa >= 860
+    ::cuda::ptx::fence_sync_restrict(::cuda::ptx::sem_release, ::cuda::ptx::space_shared, ::cuda::ptx::scope_cluster);
+#else // __cccl_ptx_isa < 860
+    _CCCL_UNREACHABLE();
+#endif // __cccl_ptx_isa >= 860
+  }
+
+  // Startup arrival of the mbarrier path: publishes the zeroed `hist`/counters, `state` and the handshake mbarriers
+  // without ordering global memory. The matching `cluster_wait` is deferred into the first pass.
+  _CCCL_DEVICE _CCCL_FORCEINLINE static void cluster_or_block_arrive_relaxed(bool is_single_cta)
+  {
+    if (is_single_cta)
+    {
+      __syncthreads();
+    }
+    else
+    {
+      release_shared_to_cluster();
+      cluster_arrive_relaxed();
+    }
+  }
+
+  // Called by every thread that reads the tracked data. A `.relaxed` try-wait plus a shared-memory acquire fence avoids
+  // the L1 invalidation an `.acquire.cluster` try-wait performs on every wait.
+  _CCCL_DEVICE _CCCL_FORCEINLINE static void
+  wait_handshake([[maybe_unused]] ::cuda::std::uint64_t* mbar, [[maybe_unused]] ::cuda::std::uint32_t parity)
+  {
+#if __cccl_ptx_isa >= 860
+    _CCCL_PRAGMA_NOUNROLL()
+    while (!::cuda::ptx::mbarrier_try_wait_parity(::cuda::ptx::sem_relaxed, ::cuda::ptx::scope_cluster, mbar, parity))
+    {
+    }
+    ::cuda::ptx::fence_sync_restrict(::cuda::ptx::sem_acquire, ::cuda::ptx::space_cluster, ::cuda::ptx::scope_cluster);
+#else // __cccl_ptx_isa < 860
+    _CCCL_UNREACHABLE();
+#endif // __cccl_ptx_isa >= 860
+  }
+
+  // One thread arms the current phase with its single arrival plus `tx_bytes`. Incoming complete-tx may run ahead (the
+  // tx-count goes transiently negative); the pending arrival keeps the phase open.
+  _CCCL_DEVICE _CCCL_FORCEINLINE static void
+  arm_handshake([[maybe_unused]] ::cuda::std::uint64_t* mbar, [[maybe_unused]] ::cuda::std::uint32_t tx_bytes)
+  {
+#if __cccl_ptx_isa >= 860
+    ::cuda::ptx::mbarrier_arrive_expect_tx(
+      ::cuda::ptx::sem_relaxed, ::cuda::ptx::scope_cta, ::cuda::ptx::space_shared, mbar, tx_bytes);
+#else // __cccl_ptx_isa < 860
+    _CCCL_UNREACHABLE();
+#endif // __cccl_ptx_isa >= 860
+  }
+
+  // Generic DSMEM pointer to `*ptr`'s counterpart in cluster block `rank`. The intrinsic is only declared for SM 9.0+
+  // device passes, the only ones that reach the agent (see `Process`).
+  template <typename T>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T* map_to_rank(T* ptr, [[maybe_unused]] unsigned rank)
+  {
+    T* remote = ptr;
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (remote = static_cast<T*>(::__cluster_map_shared_rank(ptr, rank));));
+    return remote;
+  }
+
+  // Initialize the handshake mbarriers (block leader, before the startup arrival publishes them).
+  _CCCL_DEVICE _CCCL_FORCEINLINE void init_handshake_barriers()
+  {
+    ::cuda::ptx::mbarrier_init(&temp_storage.pass_mbar, 1u);
+    ::cuda::ptx::mbarrier_init(&temp_storage.prefix_mbar, 1u);
+    ::cuda::ptx::fence_mbarrier_init(::cuda::ptx::sem_release, ::cuda::ptx::scope_cluster);
+  }
+
+  // Step 2 of the mbarrier path: every working non-leader delivers exactly `num_buckets * sizeof(offset_t)` bytes to
+  // the leader's `pass_mbar` per pass; empty buckets skipped with `fold_skips_empty_buckets` are settled by one
+  // `complete_tx` per warp. `red.async`'s complete-tx releases at cluster scope, which (with the block barrier before
+  // Step 2) orders this block's reads of its `state` copy before the next publish overwrites it; the fence gives a warp
+  // that sends nothing the same guarantee.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void fold_hist_into_leader()
+  {
+#if __cccl_ptx_isa >= 860
+    offset_t* const remote_hist                              = layout.leader_storage->hist;
+    ::cuda::std::uint64_t* const remote_mbar                 = &layout.leader_storage->pass_mbar;
+    [[maybe_unused]] ::cuda::std::uint32_t num_skipped_bytes = 0;
+    const auto reduce_bucket                                 = [&](int i) {
+      const offset_t num_local_bucket_keys = temp_storage.hist[i];
+      if constexpr (fold_skips_empty_buckets)
+      {
+        if (num_local_bucket_keys == 0)
+        {
+          num_skipped_bytes += ::cuda::std::uint32_t{sizeof(offset_t)};
+          return;
+        }
+      }
+      ::cuda::ptx::red_async(::cuda::ptx::op_add, remote_hist + i, num_local_bucket_keys, remote_mbar);
+    };
+    // Same split as `reset_hist`: unroll the full strided rounds, then at most one more guarded bucket.
+    constexpr int full_rounds = num_buckets / policy.threads_per_block;
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int r = 0; r < full_rounds; ++r)
+    {
+      reduce_bucket(r * policy.threads_per_block + tid);
+    }
+    if constexpr (num_buckets % policy.threads_per_block != 0)
+    {
+      if (const int i = full_rounds * policy.threads_per_block + tid; i < num_buckets)
+      {
+        reduce_bucket(i);
+      }
+    }
+    if constexpr (fold_skips_empty_buckets)
+    {
+      // `__reduce_add_sync` is only declared for SM 8.0+ device passes, and this non-dependent call is looked up even
+      // when the branch is discarded.
+      NV_IF_TARGET(NV_PROVIDES_SM_90,
+                   (const ::cuda::std::uint32_t num_warp_skipped_bytes = __reduce_add_sync(~0u, num_skipped_bytes);
+                    if (num_warp_skipped_bytes != 0 && tid % detail::warp_threads == 0) {
+                      release_shared_to_cluster();
+                      ::cuda::ptx::mbarrier_complete_tx(
+                        ::cuda::ptx::sem_relaxed,
+                        ::cuda::ptx::scope_cluster,
+                        ::cuda::ptx::space_cluster,
+                        remote_mbar,
+                        num_warp_skipped_bytes);
+                    }));
+    }
+#else // __cccl_ptx_isa < 860
+    _CCCL_UNREACHABLE();
+#endif // __cccl_ptx_isa >= 860
+  }
+
+  // Leader half of the fold; afterwards the merged `hist` is complete and visible to every leader thread.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void await_hist_fold(int pass)
+  {
+    constexpr auto num_hist_bytes = static_cast<::cuda::std::uint32_t>(num_buckets * int{sizeof(offset_t)});
+    const ::cuda::std::uint32_t num_fold_bytes = (layout.num_logical_cluster_blocks - 1u) * num_hist_bytes;
+    _CCCL_ASSERT(layout.num_logical_cluster_blocks <= static_cast<unsigned>(policy.max_cluster_blocks())
+                   && num_fold_bytes <= static_cast<::cuda::std::uint32_t>(mbarrier_max_tx_count),
+                 "the histogram fold exceeds the mbarrier tx-count range (cluster wider than the dispatch allows)");
+    if (is_block_leader)
+    {
+      arm_handshake(&temp_storage.pass_mbar, num_fold_bytes);
+    }
+    wait_handshake(&temp_storage.pass_mbar, static_cast<::cuda::std::uint32_t>(pass) & 1u);
+  }
+
+  // Leader half of the publish; lane `t` serves rank `t`. `st.async` only orders same-address accesses, so the fence
+  // plus the remote relaxed arrival (which also arms the receiver for the payload) is what orders this pass's `hist`
+  // accesses (BlockScan reads, reset) before the receiver's next fold. The caller's block barrier puts every thread's
+  // accesses into the issuing lanes' history.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void publish_pass_state()
+  {
+#if __cccl_ptx_isa >= 860
+    struct state_words
+    {
+      ::cuda::std::uint32_t words[4];
+    };
+    _CCCL_PRAGMA_NOUNROLL()
+    for (unsigned rank = threadIdx.x; rank < layout.num_logical_cluster_blocks; rank += policy.threads_per_block)
+    {
+      if (rank == layout.leader_rank)
+      {
+        continue;
+      }
+      _TempStorage* const remote = map_to_rank(&temp_storage, rank);
+      const auto payload         = ::cuda::std::bit_cast<state_words>(temp_storage.state);
+      release_shared_to_cluster();
+      if constexpr (!publish_consumer_arms)
+      {
+        ::cuda::ptx::mbarrier_arrive_expect_tx(
+          ::cuda::ptx::sem_relaxed,
+          ::cuda::ptx::scope_cluster,
+          ::cuda::ptx::space_cluster,
+          &remote->pass_mbar,
+          ::cuda::std::uint32_t{sizeof(state_t)});
+      }
+      ::cuda::ptx::st_async(reinterpret_cast<::cuda::std::uint32_t*>(&remote->state), payload.words, &remote->pass_mbar);
+    }
+#else // __cccl_ptx_isa < 860
+    _CCCL_UNREACHABLE();
+#endif // __cccl_ptx_isa >= 860
+  }
+
+  // Replaces the barrier path's post-publish cluster barrier. Each role passes a block barrier after this pass's
+  // `reset_hist`, ordering the reset before the next pass's histogram atomics (which the cluster barrier used to do).
+  _CCCL_DEVICE _CCCL_FORCEINLINE void exchange_pass_state(int pass)
+  {
+    if (is_single_cta)
+    {
+      __syncthreads();
+    }
+    else if (cluster_block_rank == layout.leader_rank)
+    {
+      __syncthreads();
+      publish_pass_state();
+    }
+    else
+    {
+      if constexpr (publish_consumer_arms)
+      {
+        if (is_block_leader)
+        {
+          arm_handshake(&temp_storage.pass_mbar, ::cuda::std::uint32_t{sizeof(state_t)});
+        }
+      }
+      wait_handshake(&temp_storage.pass_mbar, static_cast<::cuda::std::uint32_t>(pass) & 1u);
+      __syncthreads();
+    }
+  }
+
+  // The mbarrier path reads this block's own `state` copy, the barrier path the leader's through DSMEM.
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE pass_result_t load_pass_result()
+  {
+    if constexpr (use_mbarrier_sync)
+    {
+      return temp_storage.state.result;
+    }
+    else
+    {
+      return leader_state_load<pass_result_t>(offsetof(state_t, result));
+    }
+  }
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE size_state_t load_final_size()
+  {
+    if constexpr (use_mbarrier_sync)
+    {
+      return temp_storage.state.size;
+    }
+    else
+    {
+      return leader_state_load<size_state_t>(offsetof(state_t, size));
+    }
+  }
+
+  // Every working non-leader pushes its counts to every successor, zeros included, so each block expects exactly one
+  // push per predecessor. The closing block barrier also publishes the local tie-base seed.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  exchange_prefixes(offset_t num_local_selected_for_scan, offset_t num_local_tied_for_scan)
+  {
+    _CCCL_ASSERT(cluster_block_rank < layout.num_logical_cluster_blocks, "idle ranks take no part in the prefix scan");
+    if constexpr (is_scan_descending)
+    {
+      // Lower ranks follow; leader (rank 0) last.
+      _CCCL_PRAGMA_NOUNROLL()
+      for (unsigned rank = threadIdx.x; rank < cluster_block_rank; rank += policy.threads_per_block)
+      {
+        add_remote_prefix_async(rank, num_local_selected_for_scan, num_local_tied_for_scan);
+      }
+    }
+    else
+    {
+      // Higher working ranks follow; leader (the last logical rank) last.
+      _CCCL_PRAGMA_NOUNROLL()
+      for (unsigned rank = cluster_block_rank + 1u + threadIdx.x; rank < layout.num_logical_cluster_blocks;
+           rank += policy.threads_per_block)
+      {
+        add_remote_prefix_async(rank, num_local_selected_for_scan, num_local_tied_for_scan);
+      }
+    }
+    const unsigned num_preceding =
+      is_scan_descending ? (layout.num_logical_cluster_blocks - 1u - cluster_block_rank) : cluster_block_rank;
+    if (is_block_leader)
+    {
+      arm_handshake(&temp_storage.prefix_mbar, num_preceding * 2u * ::cuda::std::uint32_t{sizeof(offset_t)});
+    }
+    wait_handshake(&temp_storage.prefix_mbar, 0u);
+    __syncthreads();
+  }
+
   struct cross_cta_prefixes
   {
     offset_t selected_prefix; // exclusive selected prefix across CTAs
@@ -1227,9 +1577,9 @@ private:
   // `num_local_selected_for_scan`/`num_local_tied_for_scan` counts into every successor's selected/tie counter in
   // `is_scan_descending` order (the leader is last and pushes to nobody, so it holds the full predecessor sum) and
   // adds its own tie-region base `num_cluster_selected` to its own tie counter. All are commutative `red.add`s into
-  // the counters zeroed in `process_impl` (so a single post-push barrier suffices), leaving
-  // `selected_offset_counter = selected_prefix` and `tie_offset_counter = num_cluster_selected + tie_prefix` -- the
-  // absolute output-slot bases `place_one` expects.
+  // the counters zeroed in `process_impl`, so only post-push synchronization is needed (a cluster barrier, or each
+  // block's wait in `exchange_prefixes`), leaving `selected_offset_counter = selected_prefix` and
+  // `tie_offset_counter = num_cluster_selected + tie_prefix` -- the absolute output-slot bases `place_one` expects.
   //
   // Returns this CTA's exclusive selected/tie prefixes for the driver's region math (the non-deterministic path uses
   // only `selected_prefix`); `is_single_cta` yields both zero (selected stays 0, tie is just
@@ -1249,41 +1599,47 @@ private:
       return cross_cta_prefixes{offset_t{0}, offset_t{0}};
     }
     // Fold this CTA's tie base into `tie_offset_counter`, racing the peers' cluster-scope tie-prefix pushes into the
-    // same counter (`add_remote_prefix`); `atomicAdd`'s default `.gpu` scope stays mutually atomic with those
+    // same counter (`add_remote_prefix[_async]`); `atomicAdd`'s default `.gpu` scope stays mutually atomic with those
     // `.cluster` pushes (see the histogram hot path for the scope argument).
     if (is_block_leader)
     {
       atomicAdd(&temp_storage.tie_offset_counter, num_cluster_selected);
     }
-    if (num_local_selected_for_scan != offset_t{0} || num_local_tied_for_scan != offset_t{0})
+    if constexpr (use_mbarrier_sync)
     {
-      // Only working (non-leader) ranks reach here with a nonzero count; idle ranks / the leader push 0.
-      _CCCL_ASSERT(cluster_block_rank < layout.num_logical_cluster_blocks,
-                   "a nonzero prefix count must come from a working rank");
-      if constexpr (is_scan_descending)
-      {
-        // Lower ranks follow; leader last.
-        _CCCL_PRAGMA_NOUNROLL()
-        for (unsigned rank = threadIdx.x; rank < cluster_block_rank; rank += policy.threads_per_block)
-        {
-          add_remote_prefix(rank, num_local_selected_for_scan, num_local_tied_for_scan);
-        }
-      }
-      else
-      {
-        // Higher ranks follow. Stops at `num_logical_cluster_blocks` since idle ranks own nothing; the leader at the
-        // last logical rank is last.
-        _CCCL_PRAGMA_NOUNROLL()
-        for (unsigned rank = cluster_block_rank + 1u + threadIdx.x; rank < layout.num_logical_cluster_blocks;
-             rank += policy.threads_per_block)
-        {
-          add_remote_prefix(rank, num_local_selected_for_scan, num_local_tied_for_scan);
-        }
-      }
+      exchange_prefixes(num_local_selected_for_scan, num_local_tied_for_scan);
     }
-    // TODO(cccl): idle ranks arrive here only to keep this barrier reachable; a sub-cluster mbarrier over the working
-    // ranks would let them exit (see the pass loop).
-    cluster_or_block_sync(is_single_cta);
+    else
+    {
+      if (num_local_selected_for_scan != offset_t{0} || num_local_tied_for_scan != offset_t{0})
+      {
+        // Only working (non-leader) ranks reach here with a nonzero count; idle ranks / the leader push 0.
+        _CCCL_ASSERT(cluster_block_rank < layout.num_logical_cluster_blocks,
+                     "a nonzero prefix count must come from a working rank");
+        if constexpr (is_scan_descending)
+        {
+          // Lower ranks follow; leader last.
+          _CCCL_PRAGMA_NOUNROLL()
+          for (unsigned rank = threadIdx.x; rank < cluster_block_rank; rank += policy.threads_per_block)
+          {
+            add_remote_prefix(rank, num_local_selected_for_scan, num_local_tied_for_scan);
+          }
+        }
+        else
+        {
+          // Higher ranks follow. Stops at `num_logical_cluster_blocks` since idle ranks own nothing; the leader at the
+          // last logical rank is last.
+          _CCCL_PRAGMA_NOUNROLL()
+          for (unsigned rank = cluster_block_rank + 1u + threadIdx.x; rank < layout.num_logical_cluster_blocks;
+               rank += policy.threads_per_block)
+          {
+            add_remote_prefix(rank, num_local_selected_for_scan, num_local_tied_for_scan);
+          }
+        }
+      }
+      // Idle ranks arrive here only to keep this barrier reachable (the mbarrier path lets them exit after startup).
+      cluster_or_block_sync(is_single_cta);
+    }
     // The local seed guarantees the tie counter carries at least `num_cluster_selected` (postcondition of the fused
     // prime).
     _CCCL_ASSERT(temp_storage.tie_offset_counter >= num_cluster_selected,
@@ -2008,11 +2364,10 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   write_nondeterministic_topk(IdentifyOp identify_op, KeyOutIt block_keys_out, smem_keys_t resident_keys)
   {
-    // Leader's remaining tie count after the passes, pulled while every block is still coupled to the pass loop's final
-    // cluster barrier (a later re-read could touch an already-returned leader) in one 64-bit `size`-pair load. Only
-    // `leftover_k` drives the filter (the back region places against it directly); `num_cluster_candidates` bounds the
-    // debug check below.
-    const size_state_t size                    = leader_state_load<size_state_t>(offsetof(state_t, size));
+    // Leader's remaining tie count after the passes. Read now: on the barrier path a later re-read could touch an
+    // already-returned leader. Only `leftover_k` drives the filter (the back region places against it directly);
+    // `num_cluster_candidates` bounds the debug check below.
+    const size_state_t size                    = load_final_size();
     const out_offset_t num_cluster_tie_winners = size.leftover_k;
     _CCCL_ASSERT(num_cluster_tie_winners > out_offset_t{0} && num_cluster_tie_winners <= k
                    && static_cast<offset_t>(num_cluster_tie_winners) <= size.num_cluster_candidates,
@@ -2102,11 +2457,10 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   write_deterministic_topk(IdentifyOp identify_op, KeyOutIt block_keys_out, smem_keys_t resident_keys)
   {
-    // Cache the leader's final `size` pair now, while every block is still tightly coupled to the pass loop's final
-    // cluster barrier -- a post-scan re-read of the leader's `state` could touch an already-returned leader (barrier
-    // gone). One aligned 64-bit DSMEM load pulls both fields: the tied count and the remaining `k`. Early stop is
-    // not special-cased: `num_cluster_tied == num_cluster_tie_winners` then makes every CTA `block_selects_all_tied`.
-    const size_state_t size                    = leader_state_load<size_state_t>(offsetof(state_t, size));
+    // The leader's final tied count and remaining `k`. Read now: on the barrier path a post-scan re-read could touch an
+    // already-returned leader. Early stop is not special-cased: `num_cluster_tied == num_cluster_tie_winners` then
+    // makes every CTA `block_selects_all_tied`.
+    const size_state_t size                    = load_final_size();
     const offset_t num_cluster_tied            = size.num_cluster_candidates;
     const out_offset_t num_cluster_tie_winners = size.leftover_k;
     // Guards the unsigned `k - num_cluster_tie_winners` below: the remaining tie count is positive and fits both `k`
@@ -2743,10 +3097,10 @@ private:
 
     // Logical cluster blocks: the CTAs that actually receive chunks (at least `policy.min_chunks_per_block` each), <=
     // the launched `num_full_cluster_blocks`. Ranks at or beyond it are idle -- they own no chunks, consume nothing,
-    // and never lead -- but stay resident and still arrive at every cluster barrier (a returned CTA would hang the
-    // barrier; see the TODOs at the barrier sites). Derived from this CTA's head-aligned `num_cluster_chunks` so it
-    // matches the partition exactly. Collapses to 1 on the single-CTA path and stays at `num_full_cluster_blocks` for
-    // host-exact sizes (the dispatch already matched it).
+    // never lead, and no peer touches their shared memory. On the barrier path they stay resident to arrive at every
+    // cluster barrier; on the mbarrier path they return after the startup barrier (see `run`). Derived from this CTA's
+    // head-aligned `num_cluster_chunks` so it matches the partition exactly. Collapses to 1 on the single-CTA path and
+    // stays at `num_full_cluster_blocks` for host-exact sizes (the dispatch already matched it).
     layout.num_logical_cluster_blocks = is_single_cta ? 1u : num_full_cluster_blocks;
     if constexpr (enable_runtime_single_cta)
     {
@@ -2817,22 +3171,30 @@ private:
 
     // `state`, `hist[0]`, and `leader_rank` are all loop-invariant across the radix passes, so the DSMEM remaps the
     // blocks use to reach the leader (its per-pass `state` and the Step 2 histogram reduction target) are hoisted here,
-    // once per segment, rather than repeated every pass. `leader_state32` is always mapped -- the single-CTA path runs
-    // in a size-1 cluster, so rank 0 maps to itself and the state reads take the same `ld.shared::cluster` path as a
-    // wide cluster. `leader_hist32` is skipped there because the single CTA never reduces (`cluster_block_rank ==
-    // leader_rank`).
-    const ::cuda::std::uint32_t state_smem32 =
-      static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(&temp_storage.state));
-    asm("mapa.shared::cluster.u32 %0, %1, %2;"
-        : "=r"(layout.leader_state32)
-        : "r"(state_smem32), "r"(layout.leader_rank));
-    if (!is_single_cta)
+    // once per segment, rather than repeated every pass.
+    if constexpr (use_mbarrier_sync)
     {
-      const ::cuda::std::uint32_t hist_smem32 =
-        static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(temp_storage.hist));
+      // Only the fold targets the leader; the single CTA never folds.
+      layout.leader_storage = is_single_cta ? &temp_storage : map_to_rank(&temp_storage, layout.leader_rank);
+    }
+    else
+    {
+      // `leader_state32` is always mapped -- the single-CTA path runs in a size-1 cluster, so rank 0 maps to itself
+      // and the state reads take the same `ld.shared::cluster` path as a wide cluster. `leader_hist32` is skipped there
+      // because the single CTA never reduces (`cluster_block_rank == leader_rank`).
+      const ::cuda::std::uint32_t state_smem32 =
+        static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(&temp_storage.state));
       asm("mapa.shared::cluster.u32 %0, %1, %2;"
-          : "=r"(layout.leader_hist32)
-          : "r"(hist_smem32), "r"(layout.leader_rank));
+          : "=r"(layout.leader_state32)
+          : "r"(state_smem32), "r"(layout.leader_rank));
+      if (!is_single_cta)
+      {
+        const ::cuda::std::uint32_t hist_smem32 =
+          static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(temp_storage.hist));
+        asm("mapa.shared::cluster.u32 %0, %1, %2;"
+            : "=r"(layout.leader_hist32)
+            : "r"(hist_smem32), "r"(layout.leader_rank));
+      }
     }
 
     // Resident vs. streaming split, decided independently per CTA (CTAs need not agree -- cross-CTA traffic and every
@@ -2992,13 +3354,13 @@ private:
 
       // Local barrier is enough here: all Step 1 / Step 2 writes to `hist[]` are atomic at compatible scopes (see Step
       // 1 dispatch). The cluster-wide ordering before Step 3's leader read of the merged `hist[]` is supplied by the
-      // split post-reduction cluster wait further below.
+      // leader's fold wait (mbarrier path) or the split post-reduction cluster wait (barrier path) further below.
       __syncthreads();
 
       // First pass only: complete the deferred initial cluster barrier here. `process_impl` issued its matching
-      // `cluster_arrive` right after zeroing `state`/`hist`, so the cluster-arrival latency overlapped the fused
-      // first-pass load + histogram. The wait must precede the first cross-CTA access -- the Step-2 reductions just
-      // below, which need the leader's `hist` visibly zeroed.
+      // arrival right after zeroing `state`/`hist`, so the cluster-arrival latency overlapped the fused first-pass
+      // load + histogram. The wait must precede the first cross-CTA access -- the Step-2 reductions just below, which
+      // need the leader's `hist` visibly zeroed (and the leader's first publish, which needs initialized receivers).
       if (is_first_pass)
       {
         cluster_or_block_wait(is_single_cta);
@@ -3007,8 +3369,15 @@ private:
       // Step 2: non-leader blocks reduce their per-bucket raw counts into the leader's `hist` via cluster-scope DSMEM
       // atomics. The leader skips this to avoid double-counting its own contribution; idle ranks
       // (`>= num_logical_cluster_blocks`) have an all-zero histogram, so they skip the reduction entirely (the loop
-      // would only read zeros).
-      if (cluster_block_rank != layout.leader_rank && !layout.is_idle_rank)
+      // would only read zeros; on the mbarrier path they have already exited).
+      if constexpr (use_mbarrier_sync)
+      {
+        if (cluster_block_rank != layout.leader_rank && !layout.is_idle_rank)
+        {
+          fold_hist_into_leader();
+        }
+      }
+      else if (cluster_block_rank != layout.leader_rank && !layout.is_idle_rank)
       {
         // Reduce each non-zero bucket into the leader's `hist` through DSMEM: `layout.leader_hist32` is this block's
         // `hist[0]` remapped to the leader's `shared::cluster` window (identical per-CTA layouts, `mapa` hoisted into
@@ -3045,12 +3414,14 @@ private:
         }
       }
 
-      // Split the post-reduction cluster barrier: arrive once the reductions are released, then overlap the
-      // non-leaders' own-histogram scan (block-local) with the cluster-arrival latency, and only wait before the leader
-      // reads the merged `hist`.
-      // TODO(cccl): idle ranks arrive here only because the cluster barrier spans the whole launched cluster. An
-      // mbarrier over just the active ranks would let them exit and free their SM slots instead of spinning here.
-      cluster_or_block_arrive(is_single_cta);
+      // Barrier path: split the post-reduction cluster barrier -- arrive once the reductions are released, then overlap
+      // the non-leaders' own-histogram scan (block-local) with the cluster-arrival latency, and only wait before the
+      // leader reads the merged `hist`. Idle ranks arrive here only because the cluster barrier spans the whole
+      // launched cluster. The mbarrier path has no rendezvous here; only the leader waits (for the fold, below).
+      if constexpr (!use_mbarrier_sync)
+      {
+        cluster_or_block_arrive(is_single_cta);
+      }
 
       // Step 3 (non-leader half, run in the arrive->wait window): each non-leader exclusive-scans its *own* (un-merged)
       // histogram into registers -- the leader is otherwise the only block doing useful work at Step 3. Once the leader
@@ -3071,11 +3442,21 @@ private:
         block_scan_t(temp_storage.scan_storage).ExclusiveSum(local_hist_vals, local_prefixes);
       }
 
-      cluster_or_block_wait(is_single_cta);
+      if constexpr (use_mbarrier_sync)
+      {
+        if (!is_single_cta && cluster_block_rank == layout.leader_rank)
+        {
+          await_hist_fold(pass);
+        }
+      }
+      else
+      {
+        cluster_or_block_wait(is_single_cta);
+      }
 
       // Step 3 (leader half): the leader prefix-scans the merged `hist` (raw counts, all reductions now visible) and
       // updates the cluster-shared `state`. Subsequent reads (end-of-pass fold, last filter) observe these writes after
-      // the next cluster sync.
+      // the end-of-pass exchange below.
       if (cluster_block_rank == layout.leader_rank)
       {
         leader_identify_kth_bucket();
@@ -3088,15 +3469,22 @@ private:
         __syncthreads();
         reset_hist();
       }
-      // TODO(cccl): see the barrier above -- idle ranks arrive here only to keep the cluster barrier reachable.
-      cluster_or_block_sync(is_single_cta);
+      // End-of-pass exchange: publish the leader's `state` (mbarrier path, see `exchange_pass_state`) or rendezvous
+      // the whole cluster (barrier path; idle ranks arrive here only to keep the cluster barrier reachable).
+      if constexpr (use_mbarrier_sync)
+      {
+        exchange_pass_state(pass);
+      }
+      else
+      {
+        cluster_or_block_sync(is_single_cta);
+      }
 
-      // End-of-pass splitter fold. Every block pulls the leader's just-published `result` pair once through DSMEM (a
-      // single naturally-aligned `u64`, ordered by the `cluster_or_block_sync()` above) and reads both halves from
-      // that one load: working threads fold the `kth_bucket` digit into their own `kth_key_bits_local` (so the full
-      // splitter key is reconstructed locally without a broadcast), and every block -- including idle ranks -- reuses
-      // the same value for the uniform early-stop check below, so the whole cluster breaks together.
-      const pass_result_t pass_result = leader_state_load<pass_result_t>(offsetof(state_t, result));
+      // End-of-pass splitter fold. Every block reads the leader's just-published `result` pair once and uses both
+      // halves: working threads fold the `kth_bucket` digit into their own `kth_key_bits_local` (so the full splitter
+      // key is reconstructed locally without a broadcast), and every block -- including idle ranks on the barrier path
+      // -- reuses the same value for the uniform early-stop check below, so the whole cluster breaks together.
+      const pass_result_t pass_result = load_pass_result();
       if (!layout.is_idle_rank)
       {
         const int bucket = static_cast<int>(pass_result.kth_bucket);
@@ -3147,6 +3535,17 @@ private:
     _CCCL_ASSERT(k > out_offset_t{0} && static_cast<segment_size_val_t>(k) < segment_size,
                  "radix path requires 0 < k < segment size");
     compute_segment_layout();
+
+    // An idle rank takes part in no handshake and is never targeted, so on the mbarrier path it completes the startup
+    // cluster barrier (the path's last, so none is in progress when it exits) and returns, freeing its SM slot.
+    if constexpr (use_mbarrier_sync)
+    {
+      if (layout.is_idle_rank)
+      {
+        cluster_wait();
+        return;
+      }
+    }
 
     // Per-block local copy of `kth_key_bits` so each key check hits the block's own SMEM rather than DSMEM during the
     // histogram loop. Built up one splitter digit per pass from the leader's published `kth_bucket` (see
@@ -3215,10 +3614,10 @@ private:
     }
 
     // No cluster barrier after the final filter pass: both filter paths place output via block-local SMEM atomics into
-    // gmem, so the last cross-CTA DSMEM access is the scan's counter push in `prime_placement_counters`, already fenced
-    // by its post-push cluster barrier (and `early_stop` is cached pre-scan). With no shared-memory access to another
-    // block after the scan, a block can return without risking a "cluster target block not present" fault from a
-    // straggler.
+    // gmem, so the last cross-CTA DSMEM access is the scan's counter push in `prime_placement_counters` (and
+    // `early_stop` is cached pre-scan). On the barrier path its post-push cluster barrier fences it. On the mbarrier
+    // path each push lands in a block that waits for exactly those bytes before returning; a sender may return with
+    // pushes in flight, since PTX only requires the *target* CTA to stay alive.
   }
 
   // Copies an entire segment `input[i] -> output[i]` for the select-all fast path (`k >= segment_size`). Keys and
@@ -3378,8 +3777,8 @@ private:
       return;
     }
 
-    // Each block's elected leader thread initializes its block-local `state`. Only the leader block's copy is read (its
-    // own scan directly, other blocks over DSMEM via `leader_state32`), but the leader's rank is unknown here
+    // Each block's elected leader thread initializes its block-local `state`. Only the leader block's copy is
+    // authoritative, but the leader's rank is unknown here
     // (`compute_segment_layout` derives it later from the runtime logical cluster size), so every block initializes
     // unconditionally to guarantee the eventual leader's `state` is valid before the first read.
     if (is_block_leader)
@@ -3388,19 +3787,33 @@ private:
       temp_storage.state.result = pass_result_t{};
       // Front-load the scan accumulators so the initial cluster barrier below (arrive here, wait in the first pass)
       // publishes the zeros to all ranks: the final filter's `prime_placement_counters` then adds into already-zeroed
-      // `selected_offset_counter`/`tie_offset_counter` (its own local seed + peers' DSMEM pushes, needing only a
-      // post-push barrier). `num_local_candidates` is zeroed too so idle/leader ranks that never write it read 0.
+      // `selected_offset_counter`/`tie_offset_counter` (its own local seed + peers' DSMEM pushes).
+      // `num_local_candidates` is zeroed too so idle/leader ranks that never write it read 0.
       temp_storage.selected_offset_counter     = 0;
       temp_storage.tie_offset_counter          = 0;
       temp_storage.num_local_strictly_selected = 0;
       temp_storage.num_local_candidates        = 0;
+      if constexpr (use_mbarrier_sync)
+      {
+        if (!is_single_cta)
+        {
+          init_handshake_barriers();
+        }
+      }
     }
     reset_hist();
     // Only arrive here; the matching wait is deferred to just before the first cross-CTA reduction in
     // `run_radix_passes`' first pass, so the cluster-arrival latency overlaps the fused first-pass load + histogram.
     // Safe because nothing between here and that wait touches another rank's DSMEM (the first-pass histogram writes
     // only block-local `hist`; the leader's `state` and the scan counters are untouched until later).
-    cluster_or_block_arrive(is_single_cta);
+    if constexpr (use_mbarrier_sync)
+    {
+      cluster_or_block_arrive_relaxed(is_single_cta);
+    }
+    else
+    {
+      cluster_or_block_arrive(is_single_cta);
+    }
 
     [[maybe_unused]] const bool is_ok =
       detail::params::dispatch_discrete(select_directions, segment_id, [this](auto direction_tag) {

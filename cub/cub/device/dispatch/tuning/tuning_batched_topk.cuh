@@ -254,12 +254,26 @@ struct cluster_topk_policy
   // at any cap: a segment that no longer fits resident simply streams the remainder from global memory.
   int max_blocks_per_cluster; //!< Upper bound on the launched cluster width (CTAs per segment); 0 = unrestricted (the
                               //!< hardware cluster-width ceiling, queried from the runtime). Non-zero is additionally
-                              //!< clamped to that same ceiling. A cap narrower than a segment needs pushes it into the
-                              //!< streaming fallback (cap 1 -> single-CTA streaming).
+                              //!< clamped to that same ceiling and must not exceed `max_cluster_blocks()`. A cap
+                              //!< narrower than a segment needs pushes it into the streaming fallback (cap 1 ->
+                              //!< single-CTA streaming).
   int max_chunk_slots_per_block; //!< Upper bound on resident chunk slots per block; 0 = unrestricted (the full
                                  //!< shared-memory budget: the hardware opt-in budget). A smaller cap shrinks each
                                  //!< CTA's resident capacity (and thus its dynamic shared-memory request), so a smaller
                                  //!< segment overflows into the streaming path.
+
+  //! Widest cluster this policy allows, before the hardware ceiling: the leader's per-pass histogram fold (32-bit
+  //! counts from every other CTA) must fit one mbarrier transaction count, and a non-zero `max_blocks_per_cluster`
+  //! narrows that further.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int max_cluster_blocks() const
+  {
+    const int histogram_bytes = (1 << bits_per_pass) * int{sizeof(::cuda::std::uint32_t)};
+    // The leader does not send its own histogram, hence the extra CTA.
+    const int max_fold_blocks = 1 + mbarrier_max_tx_count / histogram_bytes;
+    return (max_blocks_per_cluster > 0 && max_blocks_per_cluster < max_fold_blocks)
+           ? max_blocks_per_cluster
+           : max_fold_blocks;
+  }
 
   // Equality/streaming make this a regular type (required by the `policy_selector` concept / `dispatch_compute_cap`).
   _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const cluster_topk_policy& lhs, const cluster_topk_policy& rhs)
@@ -320,7 +334,8 @@ struct cluster_topk_policy
 // (e.g. from a `tune` override) trips `launch_cluster_arm`'s `static_assert(is_valid_cluster_policy(policy))` with a
 // clear message instead of a cryptic failure deep in the agent (or a host-side divide-by-zero in the launch-shape
 // math). The block_tile byte geometry constraints stem from the aligned bulk-copy (TMA) load path, which addresses
-// gmem/smem in `load_align_bytes`-sized, aligned units.
+// gmem/smem in `load_align_bytes`-sized, aligned units. An explicit `max_blocks_per_cluster` wider than the histogram
+// fold allows would be narrowed silently by `max_cluster_blocks()`, so it is rejected instead.
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto is_valid_cluster_policy(cluster_topk_policy policy) -> bool
 {
   return policy.chunk_bytes > 0 && policy.load_align_bytes >= bulk_copy_min_align
@@ -330,7 +345,7 @@ struct cluster_topk_policy
       && policy.bits_per_pass >= 1 && policy.bits_per_pass <= 16 && policy.histogram_items_per_thread > 0
       && policy.tie_break_items_per_thread > 0 && policy.copy_items_per_thread > 0
       && policy.single_block_max_seg_size >= 0 && policy.max_blocks_per_cluster >= 0
-      && policy.max_chunk_slots_per_block >= 0;
+      && policy.max_blocks_per_cluster <= policy.max_cluster_blocks() && policy.max_chunk_slots_per_block >= 0;
 }
 
 static_assert(is_valid_cluster_policy(make_cluster_policy()));
