@@ -15,7 +15,6 @@
 // LLVM fatal error ("PTX version 8.5 does not support target 'sm_103'") or an
 // lld "incompatible with elf_x86_64" link failure deep inside a HostJIT build.
 
-#include <cassert>
 #include <cstdio>
 
 #include <cuda_runtime.h>
@@ -104,7 +103,17 @@ int main()
     sm,
     isa,
     min_ptx_isa_for_sm(sm));
-  assert(isa >= min_ptx_isa_for_sm(sm) && "libnvcc PTX ISA table is too old for this GPU");
-  assert(isa >= 78 && "PTX ISA floor");
+  // Explicit checks rather than assert(): the test suite builds Release
+  // (NDEBUG), and this check must fail there too.
+  if (isa < min_ptx_isa_for_sm(sm))
+  {
+    std::fprintf(stderr, "libnvcc PTX ISA table is too old for sm_%d: PTX %d < %d\n", sm, isa, min_ptx_isa_for_sm(sm));
+    return 1;
+  }
+  if (isa < 78)
+  {
+    std::fprintf(stderr, "PTX ISA floor violated for sm_%d: PTX %d < 78\n", sm, isa);
+    return 1;
+  }
   return 0;
 }
