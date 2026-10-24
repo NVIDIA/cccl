@@ -58,12 +58,14 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline bool __device_isgreater(double __x, double __y) noexcept
 {
+  // compute comparison before NaN check, so compiler emits no branch around it
+  _CCCL_DISPATCH_SLOW_FP64_TARGET(
+    const bool __is_greater = ::cuda::std::__fp64_to_ordered_int(__x) > ::cuda::std::__fp64_to_ordered_int(__y);
+    return !(::cuda::std::isnan(__x) || ::cuda::std::isnan(__y)) && __is_greater;)
   if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
   {
     return false;
   }
-  _CCCL_DISPATCH_SLOW_FP64_TARGET(
-    return ::cuda::std::__fp64_to_ordered_int(__x) > ::cuda::std::__fp64_to_ordered_int(__y);)
   return __x > __y;
 }
 
@@ -106,12 +108,14 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline bool __device_isgreaterequal(double __x, double __y) noexcept
 {
+  // compute comparison before NaN check, so compiler emits no branch around it
+  _CCCL_DISPATCH_SLOW_FP64_TARGET(
+    const bool __is_greater_equal = ::cuda::std::__fp64_to_ordered_int(__x) >= ::cuda::std::__fp64_to_ordered_int(__y);
+    return !(::cuda::std::isnan(__x) || ::cuda::std::isnan(__y)) && __is_greater_equal;)
   if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
   {
     return false;
   }
-  _CCCL_DISPATCH_SLOW_FP64_TARGET(
-    return ::cuda::std::__fp64_to_ordered_int(__x) >= ::cuda::std::__fp64_to_ordered_int(__y);)
   return __x >= __y;
 }
 
@@ -154,12 +158,14 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline bool __device_isless(double __x, double __y) noexcept
 {
+  // compute comparison before NaN check, so compiler emits no branch around it
+  _CCCL_DISPATCH_SLOW_FP64_TARGET(
+    const bool __is_less = ::cuda::std::__fp64_to_ordered_int(__x) < ::cuda::std::__fp64_to_ordered_int(__y);
+    return !(::cuda::std::isnan(__x) || ::cuda::std::isnan(__y)) && __is_less;)
   if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
   {
     return false;
   }
-  _CCCL_DISPATCH_SLOW_FP64_TARGET(
-    return ::cuda::std::__fp64_to_ordered_int(__x) < ::cuda::std::__fp64_to_ordered_int(__y);)
   return __x < __y;
 }
 
@@ -202,12 +208,14 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 
 [[nodiscard]] _CCCL_API inline bool __device_islessequal(double __x, double __y) noexcept
 {
+  // compute comparison before NaN check, so compiler emits no branch around it
+  _CCCL_DISPATCH_SLOW_FP64_TARGET(
+    const bool __is_less_equal = ::cuda::std::__fp64_to_ordered_int(__x) <= ::cuda::std::__fp64_to_ordered_int(__y);
+    return !(::cuda::std::isnan(__x) || ::cuda::std::isnan(__y)) && __is_less_equal;)
   if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
   {
     return false;
   }
-  _CCCL_DISPATCH_SLOW_FP64_TARGET(
-    return ::cuda::std::__fp64_to_ordered_int(__x) <= ::cuda::std::__fp64_to_ordered_int(__y);)
   return __x <= __y;
 }
 
