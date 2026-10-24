@@ -1,0 +1,95 @@
+// Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+//! Private unsafe fixture wrappers, with no public collective API contract.
+#![no_std]
+
+macro_rules! registration {
+    ($name:ident, $variable:literal) => {
+        fn $name() -> &'static str {
+            cuda_device::library::registration!($variable)
+        }
+    };
+}
+registration!(direct_load_full, "COOP_DIRECT_LOAD_FULL");
+registration!(direct_load_filled, "COOP_DIRECT_LOAD_FILLED");
+registration!(direct_store_full, "COOP_DIRECT_STORE_FULL");
+registration!(direct_store_partial, "COOP_DIRECT_STORE_PARTIAL");
+registration!(transpose_load_full, "COOP_TRANSPOSE_LOAD_FULL");
+registration!(transpose_load_filled, "COOP_TRANSPOSE_LOAD_FILLED");
+registration!(transpose_store_full, "COOP_TRANSPOSE_STORE_FULL");
+registration!(transpose_store_partial, "COOP_TRANSPOSE_STORE_PARTIAL");
+
+/// # Safety
+/// All threads participate with one block-wide input origin, valid count and
+/// fill selection. The caller satisfies the exact CUB ABI and collective requirements.
+#[inline(never)]
+pub unsafe fn load<const ITEMS_PER_THREAD: usize, const TRANSPOSE: bool>(
+    input: *const i32,
+    values: *mut i32,
+    valid: i32,
+    filled: bool,
+) {
+    unsafe {
+        if filled {
+            if TRANSPOSE {
+                cuda_device::library::call_v1::<i32, _, _, 128, ITEMS_PER_THREAD>(
+                    transpose_load_filled,
+                    (input, values, valid, -7_i32),
+                );
+            } else {
+                cuda_device::library::call_v1::<i32, _, _, 128, ITEMS_PER_THREAD>(
+                    direct_load_filled,
+                    (input, values, valid, -7_i32),
+                );
+            }
+        } else if TRANSPOSE {
+            cuda_device::library::call_v1::<i32, _, _, 128, ITEMS_PER_THREAD>(
+                transpose_load_full,
+                (input, values),
+            );
+        } else {
+            cuda_device::library::call_v1::<i32, _, _, 128, ITEMS_PER_THREAD>(
+                direct_load_full,
+                (input, values),
+            );
+        }
+    }
+}
+
+/// # Safety
+/// The payload is initialized. All threads participate with one block-wide
+/// output origin, valid count and partial selection, satisfying the exact CUB ABI.
+#[inline(never)]
+pub unsafe fn store<const ITEMS_PER_THREAD: usize, const TRANSPOSE: bool>(
+    output: *mut i32,
+    values: *mut i32,
+    valid: i32,
+    partial: bool,
+) {
+    unsafe {
+        if partial {
+            if TRANSPOSE {
+                cuda_device::library::call_v1::<i32, _, _, 128, ITEMS_PER_THREAD>(
+                    transpose_store_partial,
+                    (output, values, valid),
+                );
+            } else {
+                cuda_device::library::call_v1::<i32, _, _, 128, ITEMS_PER_THREAD>(
+                    direct_store_partial,
+                    (output, values, valid),
+                );
+            }
+        } else if TRANSPOSE {
+            cuda_device::library::call_v1::<i32, _, _, 128, ITEMS_PER_THREAD>(
+                transpose_store_full,
+                (output, values),
+            );
+        } else {
+            cuda_device::library::call_v1::<i32, _, _, 128, ITEMS_PER_THREAD>(
+                direct_store_full,
+                (output, values),
+            );
+        }
+    }
+}

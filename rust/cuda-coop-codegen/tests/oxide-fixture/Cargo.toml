@@ -1,0 +1,13 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+[workspace]
+members = ["api", "helper", "consumer"]
+default-members = ["consumer"]
+resolver = "3"
+
+[workspace.dependencies]
+cuda-device = "0.2.1"
+cuda-host = "0.2.1"
+cuda-core = "0.4.0"
+oxide-artifacts = { version = "0.2.1", features = ["object-read"] }
