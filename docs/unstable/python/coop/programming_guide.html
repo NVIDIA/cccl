@@ -1,0 +1,1567 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>cuda.coop Programming Guide &#8212; CUDA Core Compute Libraries</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+
+
+    <script src="../../_static/documentation_options.js?v=bbe6ed3a"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=5ceeb459"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'python/coop/programming_guide';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://NVIDIA.github.io/cccl/nv-versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'unstable';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <script src="../../_static/deduplicate_toc.js?v=abc5616f"></script>
+
+    <link rel="canonical" href="https://NVIDIA.github.io/cccl/python/coop/programming_guide.html" />
+    <link rel="icon" href="../../_static/favicon.png"/>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="cuda.coop Developer Overview" href="developer_overview.html" />
+    <link rel="prev" title="Configuration" href="configuration.html" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="unstable" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+
+
+  </head>
+
+  <body data-default-mode="">
+
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../cccl/index.html">CCCL C++ Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../libcudacxx/index.html">libcu++</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/setup.html">Setup</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/getting.html">Getting libcu++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/building_and_testing.html">Building &amp; Testing libcu++</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/standard_api.html">Standard API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/algorithms_library.html">Algorithms Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/c_library.html">C Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/concepts_library.html">Concepts Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/container_library.html">Container Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/execution_library.html">Execution Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/numerics_library.html">Numerics Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/ranges_library.html">Ranges Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/synchronization_library.html">Synchronization Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/time_library.html">Time Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/type_support.html">Type Support Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/utility_library.html">Utility Library</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/extended_api.html">Extended API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/macros.html">Macros</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/bit.html">Bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/execution_model.html">Execution model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/exceptions.html">Exception Handling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_model.html">Memory model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/thread_groups.html">Thread Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/synchronization_primitives.html">Synchronization Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/asynchronous_operations.html">Asynchronous Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_access_properties.html">Memory access properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/functional.html">Functional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/iterators.html">Fancy Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/type_traits.html">Type traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/vector_tuple_protocol.html">Vector Tuple Protocol</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/numeric.html">Numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/simd.html">SIMD</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/random.html">Random</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory.html">Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_resource.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/math.html">Math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/fp.html">FP Component</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/mdspan.html">Mdspan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/warp.html">Warp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/utility.html">Utility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/work_stealing.html">Work stealing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/stream.html">Streams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/event.html">Events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/algorithm.html">Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/legacy_resources.html">Legacy resources</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/examples.html">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/instructions.html">PTX Instructions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/pragmas.html">PTX Pragmas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/tile.html">CUDA Tile support</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cub/index.html">CUB</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/index.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/thread_level.html">Thread-level Primitives</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/warp_wide.html">Warp-Wide “Collective” Primitives</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api/warp.html">Warp-wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/block_wide.html">Block-Wide “Collective” Primitives</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api/block.html">Block-wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/device_wide.html">Device-Wide Primitives</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api/device.html">Device-wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/environment.html">Execution Environments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/determinism.html">Determinism</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/benchmarking.html">Benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/tuning.html">Tunings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/tuning_infra.html">Automated Tuning Infrastructure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/api/index.html">API reference</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/developer_overview.html">Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/block_scope.html">Block-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/device_scope.html">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/test_overview.html">CUB Tests</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../thrust/index.html">Thrust</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/algorithms.html">Algorithms</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/algorithms/copying.html">Copying</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/algorithms/merging.html">Merging</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/algorithms/prefix_sum.html">Prefix sums</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/algorithms/reductions.html">Reductions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/algorithms/reordering.html">Reordering</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/algorithms/searching.html">Searching</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/algorithms/set_operations.html">Set Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/algorithms/sorting.html">Sorting</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/algorithms/transformations.html">Transformations</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/containers.html">Containers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/classthrust_1_1host__vector.html">thrust::host_vector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/classthrust_1_1device__vector.html">thrust::device_vector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__containers_1ga4a980d5c4f2e1843c6f2139216dac7fc.html">thrust::universal_host_pinned_vector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__containers_1ga74d92bb13ce59a1fa025cfb8dc4fbaa0.html">thrust::universal_vector</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/function_objects.html">Function Objects</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/function_objects/adaptors.html">Function Object Adaptors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/function_objects/placeholder.html">Placeholder Objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/function_objects/predefined.html">Function Objects</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/iterators.html">Iterators</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga1f3d8a73d04fa5823eadb68308d3d810.html">thrust::make_transform_input_output_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga2265d864e1e8bd7f297559eb7f08b8e8.html">thrust::make_constant_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga4f2edada3feda60b0abe3650dcea65ac.html">thrust::make_counting_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga549a86af93e685d3a6b539cc1b24f50e.html">thrust::make_permutation_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga56e698ac979cc389b19e089e345a2297.html">thrust::make_tabulate_output_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga5af828629716c6ea8f93e489470c4b02.html">thrust::make_strided_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga6bc8a980eab36d724ee7912c6d4e6d14.html">thrust::make_transform_output_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga999b5157d2e341f2c92be25a5bb85469.html">thrust::make_discard_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1gaa2438805284fb0ac36829328819d52f3.html">thrust::make_zip_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1gaad803009f6b4759363ec08a96de01cd8.html">thrust::make_transform_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1gab1e9bf724c638af51d3a02f3ff1d4e80.html">thrust::make_shuffle_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__traits_1ga07227760c8422364daec7a72d21803cd.html">thrust::iterator_traversal_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__traits_1ga582d0a9dd09f407b743a8dcea3e5a7cb.html">thrust::iterator_system_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__traits_1ga6bbc4f5672e0638f4fb040db3a3ea90b.html">thrust::iterator_reference_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__traits_1ga9410f26f50e2038f458b0274dd0a39cf.html">thrust::iterator_pointer_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__traits_1ga9768cd2705c09755d0dd2cf7a1cd84cc.html">thrust::iterator_traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__traits_1gadffd965cb3b426d99eab1f6506c30ed6.html">thrust::iterator_difference_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__traits_1gae8bd11a16155201e9778f4c75680a299.html">thrust::iterator_value_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__tags_1ga20e12ff89385c6c4658f39316e91e7ab.html">thrust::bidirectional_host_iterator_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__tags_1ga52f67176b2139d334ad3fc1b93558fd6.html">thrust::random_access_host_iterator_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__tags_1gaaa2d3281a2028d43aa8a6ab49ec70f6d.html">thrust::output_host_iterator_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__tags_1gaaee0807fd12662c9c768a596c56224dd.html">thrust::input_host_iterator_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__tags_1gaf265cb57247c2f8b81477cdac757f252.html">thrust::forward_host_iterator_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__tag__utilities_1ga931a99cbb9d6073f2d1bca493dda5163.html">thrust::retag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterator__tag__utilities_1gad9db2309839c1adf493522c6e879d0f5.html">thrust::reinterpret_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/structthrust_1_1bidirectional__traversal__tag.html">thrust::bidirectional_traversal_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/structthrust_1_1forward__traversal__tag.html">thrust::forward_traversal_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/structthrust_1_1incrementable__traversal__tag.html">thrust::incrementable_traversal_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/structthrust_1_1no__traversal__tag.html">thrust::no_traversal_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/structthrust_1_1random__access__traversal__tag.html">thrust::random_access_traversal_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/structthrust_1_1single__pass__traversal__tag.html">thrust::single_pass_traversal_tag</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/memory_management.html">Memory Management</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/memory_management/allocators.html">Allocators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/memory_management/memory_resources.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management.html">Memory Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1ga085f1930b39e9d7331267f39c75785a8.html">thrust::device_pointer_cast</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1ga1a350740a6ade432f3781096df91f162.html">thrust::device_free</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1ga1c393e01036d27ed0c0ab2a1750957dc.html">thrust::device_delete</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1ga45b46200ffdb02a4ef9191103e6f12b9.html">thrust::device_malloc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1ga50cdf0d543be6da1dd4d3f9ba3e38105.html">thrust::malloc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1ga72bb86f95d3b115663a0d9fb668165fa.html">thrust::return_temporary_buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1ga85e62452603ffae3dc05c681841aefba.html">thrust::swap</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1ga86a38bc1d1e0801e1a7b9abe186645ba.html">thrust::device_new</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1ga987c4cb56d112d9fbedee453df25bc31.html">thrust::free</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1gaa7bf641aa7af0b0dfccf11fc42bbfb6b.html">thrust::raw_pointer_cast</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1gae72a6da67baf8579e17836fe2c31a641.html">thrust::raw_reference_cast</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__memory__management_1gafa54f974b47c05fc24814aa1eb28d584.html">thrust::get_temporary_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/numerics.html">Numerics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers.html">Complex Numbers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga040f9fbb88115eebdb8dd423c5e7e134.html">thrust::operator&lt;&lt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga0d00cfa41156151dc1dcd5e254c646be.html">thrust::sqrt</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga10d992afe589adffa671b976a5225b3e.html">thrust::sinh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga2402d40d11cc358cbd8a15f0d3e0a640.html">thrust::asin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga2ec4be34f6b564b8e143ea57e0fa9a94.html">thrust::cosh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga2ffc507023dd15495760fee46cdbebf9.html">thrust::acosh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga35e716adc045312f862c2bf561f0f07e.html">thrust::abs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga43083869bf43ea7965c742797b2dde74.html">thrust::log10</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga4a3a56ebc4cd4390daf813feb058228f.html">thrust::atanh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga4aea440ee8f92a90b9c1cc5070349614.html">thrust::cos</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga4c8bdbf96d6533ba08aad19b8844205a.html">thrust::exp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga4d1b06b9e0ae6849982172915e04d70b.html">thrust::asinh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga564cffab4edc9458fbf036dbda49964e.html">thrust::pow</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga5c23c580733a912c4a782c4ec023c6b1.html">thrust::norm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga6cdba0f86d026da897aed8d758298544.html">thrust::operator/</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga7038bbec1ad0891c7e84cf49691de669.html">thrust::arg</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga8224f8e3822afe73300642b65b339331.html">thrust::log</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga8a71b59095aad09fb37a4d63df982320.html">thrust::operator*</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga8afd023e30b61d23806633f29010bc69.html">thrust::proj</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga8ff5d15853a4f98d229636510adcca97.html">thrust::tan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga93a39be3e9ec0ce730540be08267928e.html">thrust::operator&gt;&gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga969f3d40a0d9f7a2bcfdce2a83233edc.html">thrust::conj</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga992a76b40905fb6cddb8e4ff9bdd0306.html">thrust::polar</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga999d22f32e88807f5b629905eab61646.html">thrust::operator==</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1ga9a987acfaaa1f71722c2cc80426db066.html">thrust::operator-</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1gaa8228e3d100b0eb806d42b325f6a95d8.html">thrust::acos</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1gaaa0d52f6873d7cc2cb39bfa64040c69b.html">thrust::operator!=</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1gab608ce4c32a54c6e849ece60df42a036.html">thrust::tanh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1gae3cb9b2e1de24c92ea91a61eb9477c0e.html">thrust::atan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1gaf838b7d375bd0bcf2e86938cdbe49aff.html">thrust::sin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__complex__numbers_1gaf8d90cd8139cb521bbcdc3b4adcf2e03.html">thrust::operator+</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/parallel_execution_policies.html">Parallel Execution Policies</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__execution__policies.html">Parallel Execution Policies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__execution__policies_1ga61bff7f6dead1da5c85eaafa9f9f5ded.html">thrust::device</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__execution__policies_1gaebabcc1c0958344babfccdcf379915e5.html">thrust::host</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/random.html">Random Number Generators</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/random/predefined.html">Random Number Engines with Predefined Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/random/distributions.html">Random Number Distributions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/random/engine.html">Random Number Engines</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/random/engine_adaptors.html">Random Number Engine Adaptors</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/system.html">System</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/system/systems.html">Systems</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/system/diagnostics.html">System Diagnostics</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/utility.html">Utility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/utility/pair.html">Pair</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/utility/tuple.html">Tuple</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/utility/type_traits.html">Type Traits</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/api/index.html">API reference</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/developer_overview.html">Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/cmake_options.html">Developer CMake Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/systems.html">Thrust systems</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cudax/index.html">CUDA Experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cudax/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/container.html">Containers library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1uninitialized__buffer.html">cuda::experimental::uninitialized_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/graph.html">Graphs library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph.html">cuda::experimental::graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__builder.html">cuda::experimental::graph_builder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__builder__ref.html">cuda::experimental::graph_builder_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__memory__resource.html">cuda::experimental::graph_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__node__ref.html">cuda::experimental::graph_node_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of.html">cuda::experimental::stf::graphed_interface_of</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; mdspan&lt; T, P… &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; scalar_view&lt; T &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; void_interface &gt;</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cudax/places.html">Places</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/stf.html">CUDASTF</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/stf/custom_data_interface.html">Implementation of the <code class="docutils literal notranslate"><span class="pre">matrix</span></code> class</a></li>
+
+
+
+
+
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/stf/lower_level_api.html">Lower-level API</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/coop/index.html">CCCL Cooperative</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/coop/group/index.html">CCCL Cooperative Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/coop/algorithm/index.html">CCCL Cooperative Algorithms</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cudax/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/determinism.html">Determinism</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/config_macros.html">CCCL configuration macros</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/3.0_migration_guide.html">CCCL 2.x ‐ CCCL 3.0 migration guide</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/development/index.html">CCCL Development Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/coding_conventions.html">CCCL C++ Coding Conventions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/review_checks.html">CCCL Review Checks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/macro.html">CCCL Internal Macros</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/testing.html">CCCL Testing Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/build_and_bisect_tools.html">Build and Bisect Utilities</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cccl/development/visibility.html">Symbol Visibility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/host_stub_visibility.html">Host Stub Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/device_kernel_visibility.html">Device Kernel Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/different_architectures.html">Linking TUs compiled with different architectures</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/debugger_setup.html">General Debugging</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../index.html">CCCL Python Libraries</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../setup.html">Setup and Installation</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../compute/index.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../compute/index.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../compute/developer_overview.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> Developer Overview</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="../coop.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>: Cooperative Group Primitives</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../coop.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="concepts.html">Programming concepts</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="visualizations/index.html">Visualizations</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="visualizations/load.html">Load</a></li>
+<li class="toctree-l4"><a class="reference internal" href="visualizations/store.html">Store</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="glossary.html">Glossary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faqs.html">FAQs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html">Configuration</a></li>
+<li class="toctree-l3 current active"><a aria-current="page" class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> Programming Guide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="developer_overview.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> Developer Overview</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../stf.html"><code class="docutils literal notranslate"><span class="pre">cuda.stf._experimental</span></code>: Sequential Task Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../resources.html">Resources</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api_reference.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../compute_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> API Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../coop_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> API Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stf_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.stf._experimental</span></code> API Reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../contributors/index.html">Contributor Docs</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../contributors/how_tos/index.html">How Tos</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../contributors/how_tos/install_build_test.html">Install, Build, Test</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../contributors/how_tos/targeted_builds.html">Build and run targeted tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../contributors/how_tos/launching.html">Launching a container</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../contributors/how_tos/vscode_cmake_tools.html">Using CMake Presets via VS Code GUI extension</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../contributors/how_tos/creating_a_pull_request.html">Creating a Pull Request</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../contributors/how_tos/reproducing_ci.html">Reproducing CI locally</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../contributors/how_tos/override_matrix.html">Override matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../contributors/how_tos/adding_build_target.html">Adding a build target</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../contributors/code_of_conduct.html">Code of Conduct</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../contributors/license.html">License</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../maintainers/index.html">Maintainer Docs</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../maintainers/how_tos/index.html">How Tos</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../maintainers/backport_process.html">How to commit fixes to release branches (backport process)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../maintainers/how_tos/compile_time.html">Run compile-time benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../maintainers/how_tos/plan_work_with_github_issues.html">How To Plan Work with GitHub Issues</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../maintainers/how_tos/adding_ci_coverage.html">Adding CI coverage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../maintainers/how_tos/adding_new_devcontainer.html">Adding a new devcontainer toolchain</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../maintainers/references/index.html">References</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../maintainers/branching_strategy.html">Git Methodology</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../maintainers/coderabbit.html">CodeRabbit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../maintainers/references/compile_time.html">Compile-time benchmark reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../infrastructure/index.html">Infrastructure</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../infrastructure/ci/references/index.html">CI Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/ci/references/ci_overview.html">CI overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/ci/references/change_detection.html">Change detection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/ci/references/matrix_yaml.html">matrix.yaml reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/ci/references/ci_scripts.html">CI scripts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/ci/references/ci_artifacts.html">Artifact system</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/ci/references/gha_workflows.html">GitHub Actions workflows</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/ci/references/skip_tags.html">Skip tags</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../infrastructure/cmake/references/index.html">CMake Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/cmake/references/preset_reference.html">Preset reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/cmake/references/cmake_modules.html">CMake helper modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/cmake/references/architecture_flags.html">Architecture flags</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../infrastructure/devcontainer/references/index.html">Devcontainer Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/devcontainer/references/devcontainer_overview.html">Devcontainer overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../infrastructure/devcontainer/references/launch_sh_reference.html">launch.sh reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">CCCL Python Libraries</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../coop.html" class="nav-link"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>: Cooperative Group Primitives</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> Programming Guide</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="cuda-coop-programming-guide">
+<span id="id1"></span><h1><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> Programming Guide<a class="headerlink" href="#cuda-coop-programming-guide" title="Link to this heading">#</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> lets threads cooperate inside a Python GPU kernel. You can
+load a tile, operate on its per-thread values, and write the result
+without leaving the kernel. You choose the participating group and the data
+each thread contributes.</p>
+<p>The <a class="reference internal" href="visualizations/index.html"><span class="doc">visualizations</span></a> show how values move through
+these operations. Each explorer includes an example kernel and lets you
+step through the algorithm. The <a class="reference internal" href="glossary.html"><span class="doc">glossary</span></a> defines terms and
+layouts; the <a class="reference internal" href="faqs.html"><span class="doc">FAQs</span></a> explain common API choices.</p>
+<p>This guide assumes you have written a CUDA kernel and know how threads,
+blocks, and device arrays work. The examples use Numba-CUDA-MLIR. The
+<a class="reference internal" href="../coop.html"><span class="doc">installation instructions</span></a> describe the matching
+<code class="docutils literal notranslate"><span class="pre">cuda-coop</span></code> extra; the current backend requires
+<code class="docutils literal notranslate"><span class="pre">numba-cuda-mlir&gt;=0.5.0,&lt;0.6</span></code>. Check the
+<a class="reference internal" href="developer_overview.html#coop-numba-validation"><span class="std std-ref">validation scope</span></a> for environment coverage.
+Keep a compiled kernel in its original CUDA context; see the
+<a class="reference internal" href="#coop-numba-context-lifetime"><span class="std std-ref">device and context-lifetime limitation</span></a>
+before reusing a dispatcher across devices or recreated contexts.</p>
+<p>This guide describes the experimental Numba-CUDA-MLIR 0.5.x API.
+Operation support varies by group and backend. The examples below use
+supported block and warp operations.</p>
+<section id="requirements">
+<span id="coop-numba-requirements"></span><h2>Requirements<a class="headerlink" href="#requirements" title="Link to this heading">#</a></h2>
+<p>Use Python 3.10 through 3.14 and <code class="docutils literal notranslate"><span class="pre">numba-cuda-mlir&gt;=0.5.0,&lt;0.6</span></code>. The
+<a class="reference internal" href="../coop.html"><span class="doc">installation instructions</span></a> describe the <code class="docutils literal notranslate"><span class="pre">cuda-coop</span></code> extra
+matching your CUDA major version. Running the examples requires a
+CUDA-capable GPU. The developer guide’s
+<a class="reference internal" href="developer_overview.html#coop-numba-validation"><span class="std std-ref">validation scope</span></a> describes the environments
+covered by CI. Before reusing compiled kernels, check the
+<a class="reference internal" href="#coop-numba-context-lifetime"><span class="std std-ref">device and context-lifetime rules</span></a> and
+<a class="reference internal" href="#coop-numba-kernel-cache"><span class="std std-ref">disk-cache behavior</span></a>.</p>
+</section>
+<section id="a-first-kernel-copying-a-tile">
+<h2>A first kernel: copying a tile<a class="headerlink" href="#a-first-kernel-copying-a-tile" title="Link to this heading">#</a></h2>
+<p>The <a class="reference internal" href="../coop_api.html#cuda.coop.load" title="cuda.coop.load"><code class="xref py py-func docutils literal notranslate"><span class="pre">cuda.coop.load()</span></code></a> reference contains a complete, tested copy kernel,
+including allocation, launch, partial-tile handling, and an output check.
+All threads participate in Load and Store, while <code class="docutils literal notranslate"><span class="pre">valid_items</span></code> selects the
+valid prefix of the final tile. The examples below use these imports:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numba_cuda_mlir</span><span class="w"> </span><span class="kn">import</span> <span class="n">cuda</span><span class="p">,</span> <span class="n">types</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda</span><span class="w"> </span><span class="kn">import</span> <span class="n">coop</span>
+</pre></div>
+</div>
+</section>
+<section id="choosing-the-common-or-qualified-api">
+<span id="coop-programming-api-choice"></span><h2>Choosing the common or qualified API<a class="headerlink" href="#choosing-the-common-or-qualified-api" title="Link to this heading">#</a></h2>
+<p>The common API is imported with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">numba_cuda_mlir</span><span class="w"> </span><span class="kn">import</span> <span class="n">cuda</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda</span><span class="w"> </span><span class="kn">import</span> <span class="n">coop</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> expresses operations through a common vocabulary of groups,
+numeric values, <code class="docutils literal notranslate"><span class="pre">ThreadData</span></code>, and <code class="docutils literal notranslate"><span class="pre">TempStorage</span></code>. The kernel
+compiler uses its registered backend to implement those calls. Start here
+when these operations cover your kernel’s needs. Numba-CUDA-MLIR is the first
+backend; CUTLASS support is planned.</p>
+<p>The qualified import selects the Numba-CUDA-MLIR API explicitly:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">cuda.coop.numba_mlir</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">numba_coop</span>
+</pre></div>
+</div>
+<p>Both imports can be used in the same program. This guide uses <code class="docutils literal notranslate"><span class="pre">coop</span></code> for
+common calls and <code class="docutils literal notranslate"><span class="pre">numba_coop</span></code> for qualified calls so the choice is visible.
+In a program that uses only the qualified API, importing it as <code class="docutils literal notranslate"><span class="pre">coop</span></code> is
+also fine.</p>
+<p>The qualified API accepts Numba-specific payloads and adds controls to
+several operations:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 24.0%" />
+<col style="width: 34.0%" />
+<col style="width: 42.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Need</p></th>
+<th class="head"><p>Common API</p></th>
+<th class="head"><p>Numba-CUDA-MLIR-qualified API</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Fixed data per thread</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ThreadData</span></code>; scalar inputs where the operation accepts them</p></td>
+<td><p>Also accepts fixed local arrays in supported array operations;
+exposes <code class="docutils literal notranslate"><span class="pre">local</span></code> and <code class="docutils literal notranslate"><span class="pre">shared</span></code> memory namespaces</p></td>
+</tr>
+<tr class="row-odd"><td><p>Load/Store algorithms and explicit scratch</p></td>
+<td><p>String algorithm selectors and <code class="docutils literal notranslate"><span class="pre">TempStorage</span></code> on supported block calls</p></td>
+<td><p>Same shared controls; qualifying the import is unnecessary for these</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The common API defines backend-independent contracts. You must still
+check that the selected backend implements the requested group, dtype, and
+operation. The kernels here also contain Numba launch and indexing code;
+porting the complete kernel to another DSL involves those parts too.</p>
+<section id="registering-the-compiler-backend">
+<h3>Registering the compiler backend<a class="headerlink" href="#registering-the-compiler-backend" title="Link to this heading">#</a></h3>
+<p>Register explicitly on the host before compiling when imports may occur in
+any order, as in a library or notebook:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">cuda</span><span class="w"> </span><span class="kn">import</span> <span class="n">coop</span>
+
+<span class="n">coop</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">"numba-cuda-mlir"</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">numba_cuda_mlir</span><span class="w"> </span><span class="kn">import</span> <span class="n">cuda</span>
+</pre></div>
+</div>
+<p>Repeated calls are safe. <code class="docutils literal notranslate"><span class="pre">&quot;numba_cuda_mlir&quot;</span></code> is also accepted. Importing
+Numba-CUDA-MLIR before <code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> activates the backend automatically;
+importing <code class="docutils literal notranslate"><span class="pre">cuda.coop.numba_mlir</span> <span class="pre">as</span> <span class="pre">numba_coop</span></code> does so explicitly and gives
+you the backend namespace. See <a class="reference internal" href="concepts.html#coop-backend-registration"><span class="std std-ref">backend registration</span></a> for details.</p>
+<p>These primitive calls belong inside kernels compiled by a compatible
+backend. Registration itself is a host-side operation.</p>
+</section>
+</section>
+<section id="compilation-and-kernel-reuse">
+<h2>Compilation and kernel reuse<a class="headerlink" href="#compilation-and-kernel-reuse" title="Link to this heading">#</a></h2>
+<section id="cuda-devices-and-context-lifetime">
+<span id="coop-numba-context-lifetime"></span><h3>CUDA devices and context lifetime<a class="headerlink" href="#cuda-devices-and-context-lifetime" title="Link to this heading">#</a></h3>
+<p>With Numba-CUDA-MLIR 0.5.0 through 0.5.4, select the CUDA device before a
+kernel’s first compilation and keep its dispatcher and configured launch
+callables in that CUDA context. Reusing them on another device or after
+destroying and recreating the context is not qualified: the compiler can
+reuse architecture, compiled overload, or launch state from the original
+context. This also applies to kernels that use <code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>.</p>
+<p>The upstream <a class="reference external" href="https://github.com/NVIDIA/numba-cuda-mlir/pull/314">context-isolation fix</a> must be released and
+qualified with this integration before relying on that reuse. Switching
+devices does not require re-registering <code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>; registration installs
+compiler hooks and does not repair dispatcher context state.</p>
+</section>
+<section id="disk-caching">
+<span id="coop-numba-kernel-cache"></span><h3>Disk caching<a class="headerlink" href="#disk-caching" title="Link to this heading">#</a></h3>
+<p>With Numba-CUDA-MLIR 0.5.x, activating the <code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> backend disables
+the compiler’s <code class="docutils literal notranslate"><span class="pre">cache=True</span></code> disk cache for all kernels in that process.
+Compiled kernels still have an in-memory cache. The provider cache controlled
+by <code class="docutils literal notranslate"><span class="pre">CUDA_COOP_ENABLE_CACHE</span></code> is separate; see
+<a class="reference internal" href="developer_overview.html#coop-numba-compilation-reuse"><span class="std std-ref">compiler activation and reuse</span></a> for its
+configuration and lifetime.</p>
+</section>
+</section>
+<section id="groups-which-threads-cooperate">
+<span id="coop-thread-groups"></span><h2>Groups: which threads cooperate<a class="headerlink" href="#groups-which-threads-cooperate" title="Link to this heading">#</a></h2>
+<p>A group defines the participants in an operation. <code class="docutils literal notranslate"><span class="pre">this_block()</span></code> uses
+all threads in the current block; <code class="docutils literal notranslate"><span class="pre">this_warp()</span></code> uses a complete physical
+warp of 32 threads. <code class="docutils literal notranslate"><span class="pre">this_warp().group_by(8)</span></code> partitions it into four
+consecutive logical warps of eight threads. The compiler obtains the block
+shape from the kernel launch; the group factories take no size arguments.</p>
+<p>Load and Store support blocks, physical warps, and logical warp widths of
+1, 2, 4, 8, 16, or 32. Warp operations require a block size divisible by 32.
+The partition width is a compile-time constant. Every member of a
+participating group must reach the same primitive invocation.</p>
+<p>The common API also declares other hierarchy descriptors. Their presence
+does not imply executable operations or queries on those scopes in this
+backend.</p>
+<section id="participation-and-synchronization">
+<span id="coop-participation"></span><h3>Participation and synchronization<a class="headerlink" href="#participation-and-synchronization" title="Link to this heading">#</a></h3>
+<p>Every required participant must reach the same primitive invocation.
+For a block operation, a branch around the call must be uniform across the
+block. For a logical-warp operation, it must be uniform within that logical
+warp. Complete sibling logical groups can follow different paths.</p>
+<p>In particular, putting a block primitive inside <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">index</span> <span class="pre">&lt;</span> <span class="pre">count</span></code>
+breaks participation on a partial tile. Keep the primitive outside the
+per-element condition. For a partial Load, supply <code class="docutils literal notranslate"><span class="pre">valid_items</span></code> and
+<code class="docutils literal notranslate"><span class="pre">oob_default</span></code>, or initialize invalid slots after the Load and before reading
+them. An early return by some block threads has the same problem if the
+remaining threads later execute a block primitive.</p>
+<p>Use <code class="docutils literal notranslate"><span class="pre">cuda.syncthreads()</span></code> for explicit block synchronization in
+Numba kernels. Every thread in the block must reach the barrier.</p>
+<p>An operation’s scratch-reuse barrier protects its temporary storage.
+Automatic synchronization inserts a trailing barrier after each call that
+consumes scratch. It does not prove that arbitrary user control flow is safe;
+every member must still reach the primitive and its barrier.
+Arrange synchronization for your own shared-memory communication as well.
+Constructing a group or a <code class="docutils literal notranslate"><span class="pre">ThreadData</span></code> object does not synchronize threads.</p>
+</section>
+</section>
+<section id="threaddata-the-part-of-a-tile-owned-by-one-thread">
+<span id="coop-thread-data"></span><h2><code class="docutils literal notranslate"><span class="pre">ThreadData</span></code>: the part of a tile owned by one thread<a class="headerlink" href="#threaddata-the-part-of-a-tile-owned-by-one-thread" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">coop.ThreadData(items_per_thread)</span></code> gives each thread that many slots.
+With 128 threads, the group owns <code class="docutils literal notranslate"><span class="pre">128</span> <span class="pre">*</span> <span class="pre">items_per_thread</span></code> values. Each
+thread indexes its own slots with <code class="docutils literal notranslate"><span class="pre">items[i]</span></code>. Each thread accesses only
+its own slots.</p>
+<p><a class="reference internal" href="../coop_api.html#cuda.coop.ThreadDataLike" title="cuda.coop.ThreadDataLike"><code class="xref py py-class docutils literal notranslate"><span class="pre">ThreadDataLike</span></code></a> names the common payload interface used
+in API signatures. It describes the item count, dtype, and indexed reads and
+writes. Use <a class="reference internal" href="../coop_api.html#cuda.coop.ThreadData" title="cuda.coop.ThreadData"><code class="xref py py-func docutils literal notranslate"><span class="pre">ThreadData()</span></code></a> to construct a payload for the
+active compiler backend. Other payload representations require support from
+that backend.</p>
+<p>The item count must be a positive compile-time integer. Pass
+<code class="docutils literal notranslate"><span class="pre">items_per_thread</span></code> as a kernel argument; the compiler specializes the
+kernel for each supplied value. You can also use <code class="docutils literal notranslate"><span class="pre">items.items_per_thread</span></code>
+as a loop bound:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">items</span><span class="o">.</span><span class="n">items_per_thread</span><span class="p">):</span>
+    <span class="n">items</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">items</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Initialize every slot before reading it. Constructing <code class="docutils literal notranslate"><span class="pre">ThreadData</span></code> does
+not fill it with zeros. A full Load initializes the entire payload; a
+partial Load leaves out-of-bounds slots unspecified unless <code class="docutils literal notranslate"><span class="pre">oob_default</span></code> is
+provided. Initialize those slots after the Load or supply <code class="docutils literal notranslate"><span class="pre">oob_default</span></code>
+before reading them.</p>
+<section id="blocked-and-striped-order">
+<span id="coop-data-layouts"></span><h3>Blocked and striped order<a class="headerlink" href="#blocked-and-striped-order" title="Link to this heading">#</a></h3>
+<p>The glossary defines <a class="reference internal" href="glossary.html#term-blocked"><span class="xref std std-term">blocked</span></a> and <a class="reference internal" href="glossary.html#term-striped"><span class="xref std std-term">striped</span></a> ownership and
+compares their <a class="reference internal" href="glossary.html#coop-glossary-layouts"><span class="std std-ref">layouts</span></a>.</p>
+<p>A primitive needs to know how the per-thread slots correspond to the
+group’s tile. Here is a small layout illustration with four threads and
+two items each. The numbers are positions in the tile; this illustration
+does not prescribe a supported CUDA launch size.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Thread rank</p></th>
+<th class="head"><p>Blocked: <code class="docutils literal notranslate"><span class="pre">items[0],</span> <span class="pre">items[1]</span></code></p></th>
+<th class="head"><p>Striped: <code class="docutils literal notranslate"><span class="pre">items[0],</span> <span class="pre">items[1]</span></code></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>0, 1</p></td>
+<td><p>0, 4</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>2, 3</p></td>
+<td><p>1, 5</p></td>
+</tr>
+<tr class="row-even"><td><p>2</p></td>
+<td><p>4, 5</p></td>
+<td><p>2, 6</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>6, 7</p></td>
+<td><p>3, 7</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>For group size <code class="docutils literal notranslate"><span class="pre">G</span></code>, items per thread <code class="docutils literal notranslate"><span class="pre">K</span></code>, thread rank <code class="docutils literal notranslate"><span class="pre">t</span></code>, and local
+item index <code class="docutils literal notranslate"><span class="pre">i</span></code>, blocked order uses tile position <code class="docutils literal notranslate"><span class="pre">t</span> <span class="pre">*</span> <span class="pre">K</span> <span class="pre">+</span> <span class="pre">i</span></code>.
+Striped order uses <code class="docutils literal notranslate"><span class="pre">t</span> <span class="pre">+</span> <span class="pre">i</span> <span class="pre">*</span> <span class="pre">G</span></code>.</p>
+<p>The payload does not carry a runtime layout tag that corrects mismatched
+operations. The algorithms you call determine the interpretation. Pairing
+a striped Load with a direct Store without a conversion permutes the data.</p>
+<p>Compare the <a class="reference internal" href="visualizations/load.html"><span class="doc">Load</span></a> and
+<a class="reference internal" href="visualizations/store.html"><span class="doc">Store</span></a> visualizations to see how each algorithm
+maps memory positions to per-thread slots.</p>
+</section>
+<section id="dtypes-and-storage">
+<h3>Dtypes and storage<a class="headerlink" href="#dtypes-and-storage" title="Link to this heading">#</a></h3>
+<p>The current numeric payload types are signed and unsigned integers of 8,
+16, 32, or 64 bits, and 32- or 64-bit floating point. Boolean, half
+precision, complex, and structured payloads are outside this contract.</p>
+<p>Leave the constructor’s element type unspecified for normal use. Load infers
+it from the source, and Store can establish it from the destination.
+Supported typed assignments also provide the element type; use a typed
+scalar when your computation needs a particular width or precision.
+Inference follows the backend’s supported producers and assignments.
+Conflicting type requirements are errors. See <a class="reference internal" href="faqs.html#coop-faq-thread-data-dtype"><span class="std std-ref">element-type inference</span></a> for cases that need additional information.</p>
+<p>Load writes into the payload supplied by the caller. Transpose Store
+algorithms may rearrange their input payload in place, as in CUB. Copy values
+before Store if they are needed later. Both operations return <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<p>Numba can promote integer arithmetic. Store requires an exact match to the
+destination dtype, so cast computed values when necessary, as in the
+<code class="docutils literal notranslate"><span class="pre">types.int32</span></code> assignment above. Accumulation dtype also matters: an
+integer sum can overflow, and parallel floating-point sums can differ from
+a sequential CPU sum because of evaluation order.</p>
+<p>The compiler can keep payload elements in registers. Indexing patterns,
+address-taking, and register pressure influence the final placement.
+Increasing the item count increases the amount of live data per thread.</p>
+<p>The optional <code class="docutils literal notranslate"><span class="pre">alignment</span></code> keyword requests a minimum power-of-two alignment
+in bytes when the compiler materializes the payload. For example,
+<code class="docutils literal notranslate"><span class="pre">coop.ThreadData(items_per_thread,</span> <span class="pre">alignment=16)</span></code> requests at least
+16-byte alignment. The compiler may strengthen it. This setting applies
+to payload storage; alignment of the input and output arrays remains a
+separate property.</p>
+</section>
+</section>
+<section id="load-operate-store">
+<h2>Load, operate, store<a class="headerlink" href="#load-operate-store" title="Link to this heading">#</a></h2>
+<p>Load and Store accept one-dimensional contiguous arrays. <code class="docutils literal notranslate"><span class="pre">offset</span></code> counts
+elements from the array’s beginning. <code class="docutils literal notranslate"><span class="pre">valid_items</span></code> counts elements in
+the valid prefix of the selected group’s tile. Both must be uniform within
+that group.</p>
+<p>For a block, a tile holds <code class="docutils literal notranslate"><span class="pre">block_threads</span> <span class="pre">*</span> <span class="pre">items_per_thread</span></code> elements.
+For a physical or logical warp, it holds
+<code class="docutils literal notranslate"><span class="pre">warp_width</span> <span class="pre">*</span> <span class="pre">items_per_thread</span></code> elements. Clamp the valid count to that
+range before calling Load or Store. An out-of-range runtime count causes
+a device trap and invalidates the CUDA context.</p>
+<p>Load leaves invalid slots unspecified unless you pass <code class="docutils literal notranslate"><span class="pre">oob_default</span></code>,
+even if those slots were initialized before Load.
+Store leaves destination elements outside the valid prefix untouched.
+Supply an operation-appropriate identity when processing padded data:
+zero for sum, one for multiplication, and a suitable upper or lower bound
+for minimum or maximum. For a runtime <code class="docutils literal notranslate"><span class="pre">oob_default</span></code>, use exactly the
+payload dtype and the same value across the group.</p>
+<section id="algorithm-choices">
+<h3>Algorithm choices<a class="headerlink" href="#algorithm-choices" title="Link to this heading">#</a></h3>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 20.0%" />
+<col style="width: 35.0%" />
+<col style="width: 20.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Algorithm</p></th>
+<th class="head"><p>Payload order</p></th>
+<th class="head"><p>Memory access and rearrangement</p></th>
+<th class="head"><p>Groups</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;direct&quot;</span></code></p></td>
+<td><p>Blocked</p></td>
+<td><p>Each thread accesses its consecutive items</p></td>
+<td><p>Block and Warp</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;striped&quot;</span></code></p></td>
+<td><p>Striped</p></td>
+<td><p>Neighboring threads access neighboring elements at each item index</p></td>
+<td><p>Block and Warp</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;vectorize&quot;</span></code></p></td>
+<td><p>Blocked</p></td>
+<td><p>Uses vector accesses where the specialization and alignment allow</p></td>
+<td><p>Block and Warp</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;transpose&quot;</span></code></p></td>
+<td><p>Blocked</p></td>
+<td><p>Uses striped accesses and shared scratch to rearrange values</p></td>
+<td><p>Block and Warp</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;warp_transpose&quot;</span></code></p></td>
+<td><p>Blocked</p></td>
+<td><p>Rearranges through warp-sized portions of the block tile</p></td>
+<td><p>Block</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;warp_transpose_timesliced&quot;</span></code></p></td>
+<td><p>Blocked</p></td>
+<td><p>Reuses scratch across those portions</p></td>
+<td><p>Block</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The two block warp-transpose variants require a block size divisible by
+32. Use string selectors. Begin with <code class="docutils literal notranslate"><span class="pre">direct</span></code> for a simple kernel;
+measure alternatives with the actual dtype, item count, and surrounding
+work. Coalesced accesses can justify rearrangement costs, but the best
+choice depends on the kernel.</p>
+</section>
+<section id="warp-tile-addresses">
+<h3>Warp tile addresses<a class="headerlink" href="#warp-tile-addresses" title="Link to this heading">#</a></h3>
+<p>Warp Load and Store automatically add the group’s origin within the
+block. For width <code class="docutils literal notranslate"><span class="pre">G</span></code> and <code class="docutils literal notranslate"><span class="pre">K</span></code> items per thread, this origin is
+<code class="docutils literal notranslate"><span class="pre">(linear_thread_rank</span> <span class="pre">//</span> <span class="pre">G)</span> <span class="pre">*</span> <span class="pre">G</span> <span class="pre">*</span> <span class="pre">K</span></code>. The explicit <code class="docutils literal notranslate"><span class="pre">offset</span></code> is added
+after that origin. In a multi-block traversal, pass the block’s global
+tile origin as <code class="docutils literal notranslate"><span class="pre">offset</span></code>.</p>
+<p>The valid count still belongs to each individual group. Compute it using
+both the block origin and the group’s origin:</p>
+<div class="highlight-python notranslate" id="coop-pg-warp-copy"><div class="highlight"><pre><span></span><span class="nd">@cuda</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">copy_warp_tiles</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">destination</span><span class="p">,</span> <span class="n">count</span><span class="p">,</span> <span class="n">items_per_thread</span><span class="p">):</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">coop</span><span class="o">.</span><span class="n">this_warp</span><span class="p">()</span><span class="o">.</span><span class="n">group_by</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+    <span class="n">items</span> <span class="o">=</span> <span class="n">coop</span><span class="o">.</span><span class="n">ThreadData</span><span class="p">(</span><span class="n">items_per_thread</span><span class="p">)</span>
+    <span class="n">block_origin</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">blockIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">cuda</span><span class="o">.</span><span class="n">blockDim</span><span class="o">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">items_per_thread</span>
+    <span class="n">group_origin</span> <span class="o">=</span> <span class="p">(</span><span class="n">cuda</span><span class="o">.</span><span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">//</span> <span class="mi">8</span><span class="p">)</span> <span class="o">*</span> <span class="mi">8</span> <span class="o">*</span> <span class="n">items_per_thread</span>
+    <span class="n">valid</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+        <span class="nb">max</span><span class="p">(</span><span class="n">count</span> <span class="o">-</span> <span class="n">block_origin</span> <span class="o">-</span> <span class="n">group_origin</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="mi">8</span> <span class="o">*</span> <span class="n">items_per_thread</span>
+    <span class="p">)</span>
+
+    <span class="n">coop</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
+        <span class="n">group</span><span class="p">,</span>
+        <span class="n">source</span><span class="p">,</span>
+        <span class="n">items</span><span class="p">,</span>
+        <span class="n">offset</span><span class="o">=</span><span class="n">block_origin</span><span class="p">,</span>
+        <span class="n">valid_items</span><span class="o">=</span><span class="n">valid</span><span class="p">,</span>
+        <span class="n">oob_default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">coop</span><span class="o">.</span><span class="n">store</span><span class="p">(</span>
+        <span class="n">group</span><span class="p">,</span> <span class="n">destination</span><span class="p">,</span> <span class="n">items</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">block_origin</span><span class="p">,</span> <span class="n">valid_items</span><span class="o">=</span><span class="n">valid</span>
+    <span class="p">)</span>
+
+<span class="k">for</span> <span class="n">items_per_thread</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
+    <span class="n">source</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">531</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="n">destination</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full_like</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">blocks</span> <span class="o">=</span> <span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">size</span> <span class="o">+</span> <span class="mi">128</span> <span class="o">*</span> <span class="n">items_per_thread</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="p">(</span>
+        <span class="mi">128</span> <span class="o">*</span> <span class="n">items_per_thread</span>
+    <span class="p">)</span>
+    <span class="n">copy_warp_tiles</span><span class="p">[</span><span class="n">blocks</span><span class="p">,</span> <span class="mi">128</span><span class="p">](</span>
+        <span class="n">source</span><span class="p">,</span> <span class="n">destination</span><span class="p">,</span> <span class="n">source</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">items_per_thread</span>
+    <span class="p">)</span>
+    <span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">destination</span><span class="p">,</span> <span class="n">source</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Adding <code class="docutils literal notranslate"><span class="pre">group_origin</span></code> to <code class="docutils literal notranslate"><span class="pre">offset</span></code> here would count it twice. This
+automatic origin applies to Warp Load and Store; ordinary array indexing
+in a kernel uses exactly the index you write.</p>
+</section>
+</section>
+<section id="device-helpers">
+<span id="coop-numba-device-helpers"></span><h2>Device helpers<a class="headerlink" href="#device-helpers" title="Link to this heading">#</a></h2>
+<p>Use <code class="docutils literal notranslate"><span class="pre">&#64;cuda.jit(device=True)</span></code> to put cooperative operations in a reusable
+helper. Pass a group and a <code class="docutils literal notranslate"><span class="pre">ThreadData</span></code> payload as arguments just as you
+would pass them to an operation in the kernel. The group still names the
+caller’s participating threads; each thread passes its own payload. Changes
+to that payload’s items are visible to the caller.</p>
+<p>Cooperative helpers must be inlined into the calling kernel before planning.
+Numba-CUDA-MLIR defaults device helpers to <code class="docutils literal notranslate"><span class="pre">inline=&quot;always&quot;</span></code>; the example
+spells it out on <code class="docutils literal notranslate"><span class="pre">load_into</span></code>. <code class="docutils literal notranslate"><span class="pre">inline=&quot;never&quot;</span></code> prevents this frontend
+inlining and is unsupported for a helper containing cooperative operations.
+Inlining during later optimization or device linking comes too late to
+supply the group and payload information this planner needs.</p>
+<p>This example uses nested helpers. <code class="docutils literal notranslate"><span class="pre">load_tile</span></code> creates a payload, passes it
+and the group to <code class="docutils literal notranslate"><span class="pre">load_into</span></code>, and returns the initialized payload to the
+kernel. Load infers the element type from <code class="docutils literal notranslate"><span class="pre">source</span></code>:</p>
+<div class="highlight-python notranslate" id="coop-pg-device-helpers"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numba_cuda_mlir</span><span class="w"> </span><span class="kn">import</span> <span class="n">cuda</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda</span><span class="w"> </span><span class="kn">import</span> <span class="n">coop</span>
+
+<span class="nd">@cuda</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">inline</span><span class="o">=</span><span class="s2">"always"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_into</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">items</span><span class="p">):</span>
+    <span class="n">coop</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">items</span><span class="p">)</span>
+
+<span class="nd">@cuda</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_tile</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">items_per_thread</span><span class="p">):</span>
+    <span class="n">items</span> <span class="o">=</span> <span class="n">coop</span><span class="o">.</span><span class="n">ThreadData</span><span class="p">(</span><span class="n">items_per_thread</span><span class="p">)</span>
+    <span class="n">load_into</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">items</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">items</span>
+
+<span class="nd">@cuda</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">copy_tile</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">destination</span><span class="p">,</span> <span class="n">items_per_thread</span><span class="p">):</span>
+    <span class="n">block</span> <span class="o">=</span> <span class="n">coop</span><span class="o">.</span><span class="n">this_block</span><span class="p">()</span>
+    <span class="n">items</span> <span class="o">=</span> <span class="n">load_tile</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">items_per_thread</span><span class="p">)</span>
+    <span class="n">coop</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">destination</span><span class="p">,</span> <span class="n">items</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">items_per_thread</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
+    <span class="n">expected</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">128</span> <span class="o">*</span> <span class="n">items_per_thread</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="n">source</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">to_device</span><span class="p">(</span><span class="n">expected</span><span class="p">)</span>
+    <span class="n">destination</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">device_array_like</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+    <span class="n">copy_tile</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">128</span><span class="p">](</span><span class="n">source</span><span class="p">,</span> <span class="n">destination</span><span class="p">,</span> <span class="n">items_per_thread</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">destination</span><span class="o">.</span><span class="n">copy_to_host</span><span class="p">(),</span> <span class="n">expected</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>After inlining, the planner can see the helpers’ operations, group arguments,
+and payload uses together. The calling kernel supplies the compiler context
+and launch dimensions. An inlined helper can also create or return a group.
+<code class="docutils literal notranslate"><span class="pre">coop.this_block()</span></code> inside the helper refers to the same block as the
+caller. Group descriptors are resolved during compilation and have no
+separate runtime representation for an out-of-line device call.</p>
+<p>Every required group member must reach each cooperative call inside the
+helper, including through nested calls or loops. Moving an operation into a
+helper does not change its participation or synchronization requirements.
+Cooperative operations inside standalone operation callbacks remain
+unsupported; those callbacks may perform ordinary device computation.</p>
+<p>An ordinary <code class="docutils literal notranslate"><span class="pre">inline=&quot;never&quot;</span></code> helper can index and modify a payload whose
+element type is already established. It receives a local array, so
+<code class="docutils literal notranslate"><span class="pre">items.items_per_thread</span></code> is unavailable there. Continue using the original
+payload in the caller: returning the array from an out-of-line helper loses
+the payload metadata needed by subsequent common cooperative calls. Inline
+helpers that need that metadata or return a payload for those calls.</p>
+<p>Ordinary scalar helpers can also remain out of line. Their return values may
+need a typed assignment or another supported operation to establish a
+<code class="docutils literal notranslate"><span class="pre">ThreadData</span></code> element type, even when the helper has an explicit signature.
+This is separate from cooperative helper inlining; see
+<a class="reference internal" href="faqs.html#coop-faq-thread-data-dtype"><span class="std std-ref">element-type inference</span></a> for workarounds.</p>
+<p>Keep cooperative group mappings, operation selectors, and payload or storage
+shapes known at compile time. The current planner does not support
+<code class="docutils literal notranslate"><span class="pre">literal_unroll</span></code> values that determine these properties. Write those calls
+with compile-time constants. Ordinary runtime loops with fixed cooperative
+shapes, and unrelated uses of <code class="docutils literal notranslate"><span class="pre">literal_unroll</span></code>, remain supported.</p>
+</section>
+<section id="tempstorage-scratch-used-during-a-primitive">
+<span id="tempstorage-scratch-used-during-a-collective"></span><span id="coop-temp-storage"></span><h2><code class="docutils literal notranslate"><span class="pre">TempStorage</span></code>: scratch used during a primitive<a class="headerlink" href="#tempstorage-scratch-used-during-a-primitive" title="Link to this heading">#</a></h2>
+<p>Some algorithms exchange intermediate values through shared memory.
+By default, <code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> allocates the scratch they need and inserts
+the required reuse barrier. Start with that behavior.</p>
+<p><a class="reference internal" href="../coop_api.html#cuda.coop.TempStorageLike" title="cuda.coop.TempStorageLike"><code class="xref py py-class docutils literal notranslate"><span class="pre">TempStorageLike</span></code></a> names the common interface for explicit
+scratch descriptors in API signatures. Construct one inside the kernel with
+<a class="reference internal" href="../coop_api.html#cuda.coop.TempStorage" title="cuda.coop.TempStorage"><code class="xref py py-func docutils literal notranslate"><span class="pre">TempStorage()</span></code></a>. Its <code class="docutils literal notranslate"><span class="pre">size_in_bytes</span></code>, <code class="docutils literal notranslate"><span class="pre">alignment</span></code>,
+<code class="docutils literal notranslate"><span class="pre">auto_sync</span></code>, and <code class="docutils literal notranslate"><span class="pre">sharing</span></code> properties control capacity, alignment,
+synchronization, and allocation sharing. The active compiler backend must
+recognize the descriptor.</p>
+<p>An explicit descriptor lets several supported block calls reuse an
+allocation. Its contents are opaque; keep application values in
+<code class="docutils literal notranslate"><span class="pre">ThreadData</span></code> or your own arrays.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Calls</p></th>
+<th class="head"><p>Scratch behavior in the current backend</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Direct, striped, or vectorize Load/Store</p></td>
+<td><p>No shared scratch or reuse barrier</p></td>
+</tr>
+<tr class="row-odd"><td><p>Block transpose-family Load/Store</p></td>
+<td><p>Automatic scratch, or an explicit <code class="docutils literal notranslate"><span class="pre">TempStorage</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Warp transpose Load/Store</p></td>
+<td><p>Automatic scratch per group; explicit descriptors are rejected</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<section id="capacity-alignment-and-lifetime">
+<h3>Capacity, alignment, and lifetime<a class="headerlink" href="#capacity-alignment-and-lifetime" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">TempStorage()</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">sharing=&quot;shared&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">auto_sync=False</span></code>,
+leaving reuse synchronization to the caller. <code class="docutils literal notranslate"><span class="pre">size_in_bytes=None</span></code> and
+<code class="docutils literal notranslate"><span class="pre">alignment=None</span></code> let the compiler determine the requirements. An explicit
+capacity must be large enough for the operations using it. An explicit
+<code class="docutils literal notranslate"><span class="pre">alignment</span></code> requests a minimum positive power of two in bytes; the compiler
+can strengthen it.
+Only <code class="docutils literal notranslate"><span class="pre">size_in_bytes</span></code> may be positional. The other options are keyword-only.</p>
+<p><code class="docutils literal notranslate"><span class="pre">sharing=&quot;exclusive&quot;</span></code> gives distinct call sites separate slices. With
+<code class="docutils literal notranslate"><span class="pre">auto_sync=False</span></code>, those calls need no barrier solely to reuse each other’s
+scratch. This uses more shared memory than sharing a slice. A loop reuses each
+call site’s slice on its next iteration, so that reuse still needs a barrier.
+<code class="docutils literal notranslate"><span class="pre">sharing</span></code> and <code class="docutils literal notranslate"><span class="pre">auto_sync</span></code> are independent controls; application data
+dependencies may require additional synchronization. See
+<a class="reference internal" href="faqs.html#coop-faq-exclusive-storage"><span class="std std-ref">the exclusive-storage FAQ</span></a>.</p>
+<p>Omitted storage also participates in the backend’s shared-memory plan and
+launch accounting. The compiler may reuse its scratch across compatible calls
+and inserts the required reuse barriers.</p>
+<p>With the default <code class="docutils literal notranslate"><span class="pre">auto_sync=False</span></code>, the kernel must provide reuse barriers.
+Put an explicit block barrier before a later call reuses the same scratch,
+including between loop iterations.</p>
+<p>Set <code class="docutils literal notranslate"><span class="pre">auto_sync=True</span></code> to insert automatic trailing barriers for scratch
+reuse. Without an explicit descriptor, the compiler synchronizes scratch
+automatically. An unrelated memory access between calls does not establish a
+block barrier. The compiler rejects merging multiple manually synchronized
+<code class="docutils literal notranslate"><span class="pre">TempStorage</span></code> constructors into one descriptor, including conditional
+definitions. Use one constructor and keep its synchronization explicit. This
+restriction reflects what the planner can establish; it does not mean that
+every rejected program necessarily races.</p>
+<p>Scratch lasts for the kernel’s execution on that block. It cannot carry
+state between blocks or kernel launches. Keep persistent application state
+in a separate payload.</p>
+<p>When the combined scratch requirement exceeds the default static shared-memory
+limit, the backend can use dynamic shared memory, subject to the GPU’s opt-in
+limit. Numba-CUDA-MLIR automatically includes those required bytes in the
+launch configuration. You do not need to copy a compiler-reported byte count
+into the launch yourself. Requirements above the device limit are rejected.
+The required dynamic byte count is a minimum: launch-time shared bytes are not
+added to it as a separate allocation. Dynamic cooperative backing supports
+alignment requirements up to 16 bytes.</p>
+<p>With the currently supported compiler, do not combine user dynamic or
+runtime-sized <code class="docutils literal notranslate"><span class="pre">cuda.shared.array</span></code> allocations with cooperative scratch.
+User static shared arrays may coexist with static cooperative backing, but are
+rejected when the cooperative backing becomes dynamic, including an implicit
+oversized allocation. These checks apply after helper inlining. Keep both
+allocations static within the device limit, use global memory for the user
+buffer, or separate the work into kernels. Storage-free operations do not
+create this conflict. The compatibility restrictions remain until a released
+compiler with the shared-memory fix has passed the coexistence tests.</p>
+<p>Extra shared memory can reduce resident blocks per multiprocessor. The
+default inferred allocation and unsized shared descriptor are sufficient
+for the kernels above; use an explicit capacity when you have a reason to
+reserve that amount of shared memory.</p>
+</section>
+</section>
+<section id="checking-and-tuning-a-kernel">
+<h2>Checking and tuning a kernel<a class="headerlink" href="#checking-and-tuning-a-kernel" title="Link to this heading">#</a></h2>
+<p>Check results before comparing algorithms. Useful cases include one full
+tile, several tiles, a single valid element in the final tile, and an empty
+input handled on the host. Layout conversions are easier to inspect with
+distinct input values. Compare computed values against a CPU reference with
+a suitable accumulation dtype and floating-point tolerance.</p>
+<p>Keep launch dimensions, logical-warp widths, payload extents, and algorithm
+choices consistent with the code. The compiler specializes group operations
+using these facts. A runtime tile offset or valid count can change from
+one call to the next; the size of a <code class="docutils literal notranslate"><span class="pre">ThreadData</span></code> payload must be known
+at compile time.</p>
+<p>Warm up the kernel before timing it, use device-resident arrays, and account
+for asynchronous execution with CUDA events or explicit synchronization.
+Then vary one choice at a time: threads per block, items per thread, or a
+Load/Store algorithm. More items per thread can amortize primitive
+work while increasing register pressure. Scratch-heavy choices consume
+shared memory and can reduce occupancy. Measure the complete kernel,
+including conversions and synchronization.</p>
+<p>If compilation fails, check the group/operation combination, payload dtype,
+static parameters, and import order first. The <a class="reference internal" href="../coop_api.html"><span class="doc">API reference</span></a> records exact signatures; the <a class="reference internal" href="../coop.html"><span class="doc">overview</span></a>
+collects operation restrictions and configuration. For generated-source
+diagnostics and the compiler integration, see the
+<a class="reference internal" href="developer_overview.html"><span class="doc">Developer Overview</span></a>.</p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="configuration.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Configuration</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="developer_overview.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> Developer Overview</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#requirements">Requirements</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-first-kernel-copying-a-tile">A first kernel: copying a tile</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#choosing-the-common-or-qualified-api">Choosing the common or qualified API</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#registering-the-compiler-backend">Registering the compiler backend</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#compilation-and-kernel-reuse">Compilation and kernel reuse</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda-devices-and-context-lifetime">CUDA devices and context lifetime</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#disk-caching">Disk caching</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#groups-which-threads-cooperate">Groups: which threads cooperate</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#participation-and-synchronization">Participation and synchronization</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#threaddata-the-part-of-a-tile-owned-by-one-thread"><code class="docutils literal notranslate"><span class="pre">ThreadData</span></code>: the part of a tile owned by one thread</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#blocked-and-striped-order">Blocked and striped order</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#dtypes-and-storage">Dtypes and storage</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#load-operate-store">Load, operate, store</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#algorithm-choices">Algorithm choices</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#warp-tile-addresses">Warp tile addresses</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#device-helpers">Device helpers</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tempstorage-scratch-used-during-a-primitive"><code class="docutils literal notranslate"><span class="pre">TempStorage</span></code>: scratch used during a primitive</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#capacity-alignment-and-lifetime">Capacity, alignment, and lifetime</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#checking-and-tuning-a-kernel">Checking and tuning a kernel</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2026, NVIDIA Corporation.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.1.
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
