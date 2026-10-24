@@ -79,8 +79,18 @@ template <class _Tp>
 #endif // ^^^ !_CCCL_BUILTIN_ISFINITE ^^^
 }
 
+[[nodiscard]] _CCCL_API constexpr bool __isfinite_storage(double __x) noexcept
+{
+  return (::cuda::std::__fp64_classify_storage(__x) & __fp_exp_mask_of_v<double>) != __fp_exp_mask_of_v<double>;
+}
+
 [[nodiscard]] _CCCL_API constexpr bool isfinite(double __x) noexcept
 {
+  // See isnan(double): use an integer comparison on GPUs with slow FP64
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  {
+    _CCCL_DISPATCH_SLOW_FP64_TARGET(return ::cuda::std::__isfinite_storage(__x);)
+  }
 #if defined(_CCCL_BUILTIN_ISFINITE)
   return _CCCL_BUILTIN_ISFINITE(__x);
 #else // ^^^ _CCCL_BUILTIN_ISFINITE ^^^ / vvv !_CCCL_BUILTIN_ISFINITE vvv
