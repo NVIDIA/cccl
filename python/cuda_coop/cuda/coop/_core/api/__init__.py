@@ -11,6 +11,7 @@ to recognize cooperative operations without changing the public call syntax.
 from .load_store import load, store
 from .merge_sort import merge_sort_keys as merge_sort_keys
 from .merge_sort import merge_sort_pairs as merge_sort_pairs
+from .radix_sort import radix_rank_keys, radix_sort_keys, radix_sort_pairs
 from .reduce import reduce, sum
 from .scan import (
     exclusive_scan,
@@ -62,6 +63,9 @@ __all__ = [
     "load",
     "merge_sort_keys",
     "merge_sort_pairs",
+    "radix_rank_keys",
+    "radix_sort_keys",
+    "radix_sort_pairs",
     "reduce",
     "scan",
     "store",

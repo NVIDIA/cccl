@@ -160,11 +160,11 @@ barriers automatically. See :ref:`exclusive scratch slices
 synchronization.
 
 Explicit descriptors control scratch for block transpose-family Load/Store,
-Block Scan, and Block Merge Sort. Storage-free block Load/Store accept and
-validate a descriptor but do not use it. Warp operations reject explicit
-descriptors. The compiler allocates any scratch required by CUB operations.
-See :ref:`temporary storage <coop-temp-storage>` for the complete contract and
-shared-memory restrictions.
+Block Scan, Block Merge Sort, and Block Radix Sort. Storage-free block
+Load/Store accept and validate a descriptor but do not use it. Warp operations
+reject explicit descriptors. The compiler allocates any scratch required by
+CUB operations. See :ref:`temporary storage <coop-temp-storage>` for the
+complete contract and shared-memory restrictions.
 
 .. _coop-faq-installed-extra:
 

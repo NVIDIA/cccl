@@ -12,7 +12,7 @@ Construct TempStorage inside each kernel. During compilation, the compiler
 rebuilds the descriptor from its compile-time constant arguments and
 validates them. The compiler rejects a descriptor that comes from a module
 global. The ``local`` and ``shared`` namespaces and the Reduce, Sum, Scan,
-and Merge Sort markers load on first access.
+Merge Sort, Radix Sort, and Radix Rank markers load on first access.
 """
 
 import importlib
@@ -36,6 +36,11 @@ from ._thread_group import (
 
 if TYPE_CHECKING:
     from ._group._merge_sort import merge_sort_keys, merge_sort_pairs
+    from ._group._radix_sort import (
+        radix_rank_keys,
+        radix_sort_keys,
+        radix_sort_pairs,
+    )
     from ._group._reduce import reduce, sum
     from ._group._scan import (
         exclusive_scan,
@@ -62,6 +67,9 @@ __all__ = [
     "local",
     "merge_sort_keys",
     "merge_sort_pairs",
+    "radix_rank_keys",
+    "radix_sort_keys",
+    "radix_sort_pairs",
     "reduce",
     "scan",
     "shared",
@@ -86,6 +94,9 @@ def __getattr__(name):
     if name in {
         "merge_sort_keys",
         "merge_sort_pairs",
+        "radix_rank_keys",
+        "radix_sort_keys",
+        "radix_sort_pairs",
         "exclusive_scan",
         "exclusive_sum",
         "inclusive_scan",
@@ -97,6 +108,9 @@ def __getattr__(name):
         module_name = {
             "merge_sort_keys": "_group._merge_sort",
             "merge_sort_pairs": "_group._merge_sort",
+            "radix_rank_keys": "_group._radix_sort",
+            "radix_sort_keys": "_group._radix_sort",
+            "radix_sort_pairs": "_group._radix_sort",
             "exclusive_scan": "_group._scan",
             "exclusive_sum": "_group._scan",
             "inclusive_scan": "_group._scan",

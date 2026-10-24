@@ -207,8 +207,9 @@ class GroupPlanningContext:
     ) -> bool:
         """Check the payload-origin restriction required by the common API.
 
-        Follow aliases to ThreadData constructors. An unresolved cycle raises
-        a diagnostic that names the operation and parameter.
+        Follow aliases, generated result markers, and earlier group results
+        to ThreadData constructors. An unresolved cycle raises a diagnostic
+        that names the operation and parameter.
         """
 
         return self.__planner._thread_data_operand_state(
@@ -559,6 +560,14 @@ class GroupPlanningContext:
 
         return self.__planner._typed_payload_like(*args, **kwargs)
 
+    def box_group_operand(
+        self, *args: Any, **kwargs: Any
+    ) -> tuple[ir.Var, bool]:
+        return self.__planner._boxed_group_operand(*args, **kwargs)
+
+    def result_value(self, *args: Any, **kwargs: Any) -> ir.Var:
+        return self.__planner._result_value(*args, **kwargs)
+
     def planning_binding(self, value: Any) -> ArgumentBinding:
         """Classify a scalar control from its explicit static provenance.
 
@@ -705,7 +714,7 @@ class GroupPlanningContext:
         index: int | None,
         seen: set[str],
     ) -> Any | None:
-        """Infer result dtype from its registered source argument.
+        """Infer a registered result's fixed or argument-derived dtype.
 
         The context's dtype traversal calls this before provider rewriting.
         It follows the public operation's result policy so a chain of group
@@ -713,9 +722,9 @@ class GroupPlanningContext:
         yet.
 
         ``index`` selects a tuple result or is ``None`` for a direct result.
-        Return ``None`` when the call has no matching policy or that policy
-        has no dtype source. Reuse the caller's recursion path when inspecting
-        the bound argument so cyclic result dependencies remain guarded.
+        A fixed dtype takes precedence, so rank results do not inherit the key
+        type. Otherwise follow the policy's named argument using the caller's
+        recursion path. Return ``None`` if no policy or dtype source applies.
 
         Parameters
         ----------
@@ -735,6 +744,8 @@ class GroupPlanningContext:
         if resolved is None:
             return None
         result, bound = resolved
+        if result.fixed_dtype is not None:
+            return result.fixed_dtype
         if result.dtype_parameter is None:
             return None
         return self.dtype(bound.arguments[result.dtype_parameter], seen=seen)
@@ -954,9 +965,10 @@ class GroupPlanningContext:
         and tuple-projection keys already on the recursion path. Return a
         normalized dtype or ``None`` when the source supplies no known dtype.
 
-        Generated payload markers inherit their prototype's dtype. A direct
-        registered result follows its dtype-source argument before the
-        planner attempts ordinary scalar-call inference.
+        Generated payload markers either inherit their prototype's dtype or
+        select fixed int32 output. Registered results use their declared dtype
+        policy, including fixed types or source-argument dtypes, before
+        scalar-call inference.
         """
 
         if isinstance(definition, ir.Var):
@@ -1028,6 +1040,11 @@ class GroupPlanningContext:
                     return normalize_dtype_param(dtype)
             return None
         if function is _typed_group_payload_like and definition.args:
+            if (
+                len(definition.args) >= 3
+                and self.constant(definition.args[2]) == "int32"
+            ):
+                return _numba_types.int32
             return self.dtype(definition.args[0], seen=seen)
         result_dtype = self._result_dtype(definition, index=None, seen=seen)
         if result_dtype is not None:

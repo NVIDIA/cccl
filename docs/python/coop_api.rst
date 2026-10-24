@@ -113,6 +113,15 @@ See :ref:`sorting keys and associated values <coop-merge-sort>`.
 .. autofunction:: merge_sort_keys
 .. autofunction:: merge_sort_pairs
 
+Radix sorting and ranking
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+See :ref:`radix sorting and digit ranks <coop-radix>`.
+
+.. autofunction:: radix_sort_keys
+.. autofunction:: radix_sort_pairs
+.. autofunction:: radix_rank_keys
+
 
 .. _coop-numba-extensions:
 
@@ -169,3 +178,10 @@ Comparison sorting
 
 .. autofunction:: merge_sort_keys
 .. autofunction:: merge_sort_pairs
+
+Radix sorting and ranking
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: radix_sort_keys
+.. autofunction:: radix_sort_pairs
+.. autofunction:: radix_rank_keys
