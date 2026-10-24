@@ -141,7 +141,12 @@ struct warp_reduce_batched_wspro
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < max_out_per_thread; ++i)
       {
-        outputs[i] = intermediate_outputs[i];
+        const auto batch_idx =
+          ToBlocked ? logical_lane_id * max_out_per_thread + i : i * LogicalWarpThreads + logical_lane_id;
+        if (batch_idx < Batches)
+        {
+          outputs[i] = intermediate_outputs[i];
+        }
       }
     }
     return true;
