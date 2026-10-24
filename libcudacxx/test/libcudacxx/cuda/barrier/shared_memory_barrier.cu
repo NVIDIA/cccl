@@ -8,26 +8,23 @@
 //
 //===----------------------------------------------------------------------===//
 
-// TODO: Re-enable once CI drivers can resolve the fabric status decoder device symbols.
-// Older drivers fail to load this test's GPU module before the test can check driver support.
-// UNSUPPORTED: true
-
-// UNSUPPORTED: nvrtc
-// UNSUPPORTED: nvcc-12, nvcc-13.0, nvcc-13.1, nvcc-13.2, nvcc-13.3
-// UNSUPPORTED: pre-sm-90
-
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
-
 #include <cuda/barrier>
-#include <cuda/std/cassert>
+#include <cuda/devices>
+#include <cuda/hierarchy>
+#include <cuda/launch>
+#include <cuda/ptx>
 #include <cuda/std/chrono>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
+#include <cuda/stream>
 
 #include <new> // IWYU pragma: keep (needed for placement new)
 
-#include "test_macros.h"
+#include <testing.cuh>
+
+#include <c2h/device_and_stream.h>
+
+#if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC) && _CCCL_CUDACC_AT_LEAST(13, 4)
 
 static_assert(cuda::std::is_default_constructible_v<cuda::shared_memory_barrier<>>);
 static_assert(!cuda::std::is_constructible_v<cuda::shared_memory_barrier<>, cuda::std::ptrdiff_t>);
@@ -61,7 +58,7 @@ TEST_DEVICE_FUNC void execute_on_thread_zero(Fn&& fn)
 template <class Fn0, class Fn1>
 TEST_DEVICE_FUNC void concurrent_threads_launch(Fn0 fn0, Fn1 fn1)
 {
-  assert(blockDim.x == 2);
+  REQUIRE(blockDim.x == 2);
 
   __syncthreads();
 
@@ -96,7 +93,7 @@ TEST_DEVICE_FUNC void test_concurrent_arrive_and_wait()
 {
   cuda::shared_memory_barrier<Scope>* bar = construct_barrier<0, Scope>(2);
 
-  auto worker = [=] __device__ {
+  auto worker = [=] {
     for (int i = 0; i != 10; ++i)
     {
       bar->arrive_and_wait(cuda::ignore_status);
@@ -111,11 +108,11 @@ TEST_DEVICE_FUNC void test_concurrent_arrive_wait()
 {
   cuda::shared_memory_barrier<Scope>* bar = construct_barrier<1, Scope>(2);
 
-  auto awaiter = [=] __device__ {
+  auto awaiter = [=] {
     auto token = bar->arrive();
     bar->wait(token, cuda::ignore_status);
   };
-  auto arriver = [=] __device__ {
+  auto arriver = [=] {
     (void) bar->arrive();
   };
 
@@ -132,10 +129,10 @@ TEST_DEVICE_FUNC void test_concurrent_arrive_and_drop()
 {
   cuda::shared_memory_barrier<Scope>* bar = construct_barrier<2, Scope>(2);
 
-  auto dropper = [=] __device__ {
+  auto dropper = [=] {
     bar->arrive_and_drop();
   };
-  auto arriver = [=] __device__ {
+  auto arriver = [=] {
     bar->arrive_and_wait(cuda::ignore_status);
     bar->arrive_and_wait(cuda::ignore_status);
   };
@@ -149,13 +146,13 @@ TEST_DEVICE_FUNC void test_concurrent_try_wait_for()
   cuda::shared_memory_barrier<Scope>* bar = construct_barrier<3, Scope>(2);
   cuda::std::chrono::nanoseconds delay(0);
 
-  auto awaiter = [=] __device__ {
+  auto awaiter = [=] {
     auto token = bar->arrive();
     while (!bar->try_wait_for(token, delay, cuda::ignore_status))
     {
     }
   };
-  auto arriver = [=] __device__ {
+  auto arriver = [=] {
     (void) bar->arrive();
   };
 
@@ -168,14 +165,14 @@ TEST_DEVICE_FUNC void test_concurrent_try_wait_until()
   cuda::shared_memory_barrier<Scope>* bar = construct_barrier<4, Scope>(2);
   cuda::std::chrono::duration<int> delay(0);
 
-  auto awaiter = [=] __device__ {
+  auto awaiter = [=] {
     auto token      = bar->arrive();
     auto until_time = cuda::std::chrono::system_clock::now() + delay;
     while (!bar->try_wait_until(token, until_time, cuda::ignore_status))
     {
     }
   };
-  auto arriver = [=] __device__ {
+  auto arriver = [=] {
     (void) bar->arrive();
   };
 
@@ -192,10 +189,10 @@ TEST_DEVICE_FUNC void test_concurrent_wait_phase()
     (void) bar->arrive();
   });
 
-  auto awaiter = [=] __device__ {
+  auto awaiter = [=] {
     bar->wait(phase, cuda::ignore_status);
   };
-  auto arriver = [=] __device__ {
+  auto arriver = [=] {
     (void) bar->arrive();
   };
 
@@ -218,12 +215,12 @@ TEST_DEVICE_FUNC void test_concurrent_try_wait_phase_for()
     (void) bar->arrive();
   });
 
-  auto awaiter = [=] __device__ {
+  auto awaiter = [=] {
     while (!bar->try_wait_for(phase, delay, cuda::ignore_status))
     {
     }
   };
-  auto arriver = [=] __device__ {
+  auto arriver = [=] {
     (void) bar->arrive();
   };
 
@@ -241,13 +238,13 @@ TEST_DEVICE_FUNC void test_concurrent_try_wait_phase_until()
     (void) bar->arrive();
   });
 
-  auto awaiter = [=] __device__ {
+  auto awaiter = [=] {
     auto until_time = cuda::std::chrono::system_clock::now() + delay;
     while (!bar->try_wait_until(phase, until_time, cuda::ignore_status))
     {
     }
   };
-  auto arriver = [=] __device__ {
+  auto arriver = [=] {
     (void) bar->arrive();
   };
 
@@ -265,12 +262,12 @@ TEST_DEVICE_FUNC void test_concurrent_try_wait_conditional_phase_for()
     (void) bar->arrive();
   });
 
-  auto awaiter = [=] __device__ {
+  auto awaiter = [=] {
     while (!bar->try_wait_conditional_phase_for(phase, delay))
     {
     }
   };
-  auto arriver = [=] __device__ {
+  auto arriver = [=] {
     (void) bar->arrive();
   };
 
@@ -288,13 +285,13 @@ TEST_DEVICE_FUNC void test_concurrent_try_wait_conditional_phase_until()
     (void) bar->arrive();
   });
 
-  auto awaiter = [=] __device__ {
+  auto awaiter = [=] {
     auto until_time = cuda::std::chrono::system_clock::now() + delay;
     while (!bar->try_wait_conditional_phase_until(phase, until_time))
     {
     }
   };
-  auto arriver = [=] __device__ {
+  auto arriver = [=] {
     (void) bar->arrive();
   };
 
@@ -319,16 +316,16 @@ TEST_DEVICE_FUNC void test_shared_memory_barrier_choreography()
 template <cuda::thread_scope Scope>
 TEST_DEVICE_FUNC void check_success_status(const typename cuda::shared_memory_barrier<Scope>::operation_status& status)
 {
-  assert(status.complete());
-  assert(!status.has_report());
+  REQUIRE(status.complete());
+  REQUIRE(!status.has_report());
 
-  assert(status.get_error_count(cuda::status_source::generic_fabric) == 0);
+  REQUIRE(status.get_error_count(cuda::status_source::generic_fabric) == 0);
 
   unsigned int visited = 0;
   status.for_each_error(cuda::status_source::generic_fabric, [&](cudaFabricOpStatusInfo) {
     ++visited;
   });
-  assert(visited == 0);
+  REQUIRE(visited == 0);
 }
 
 template <cuda::thread_scope Scope>
@@ -352,7 +349,7 @@ template <cuda::thread_scope Scope>
 TEST_DEVICE_FUNC void test_tx_wait(cuda::shared_memory_barrier<Scope>* bar, int tx_count, int arrive_count = 1)
 {
   auto token = bar->arrive_tx(arrive_count, tx_count);
-  assert(!bar->test_wait(token, cuda::ignore_status));
+  REQUIRE(!bar->test_wait(token, cuda::ignore_status));
   complete_tx<Scope>(*bar, tx_count);
   bar->wait(token, cuda::ignore_status);
 
@@ -380,45 +377,45 @@ TEST_DEVICE_FUNC void test_test_waits(cuda::shared_memory_barrier<Scope>* bar)
   typename cuda::shared_memory_barrier<Scope>::arrival_token token;
   execute_on_thread_zero([&] {
     token = bar->arrive();
-    assert(!bar->test_wait(token, cuda::ignore_status));
+    REQUIRE(!bar->test_wait(token, cuda::ignore_status));
 
     auto status = bar->test_wait(token, cuda::return_status);
-    assert(!status.complete());
-    assert(!status.has_report());
+    REQUIRE(!status.complete());
+    REQUIRE(!status.has_report());
 
     // The other thread has not arrived, so every poll must return an incomplete status with no report.
     // Reassignment also checks that incomplete results can be overwritten without an inspection failure.
     for (int i = 0; i != 4; ++i)
     {
       status = bar->try_wait(token, cuda::return_status);
-      assert(!status.complete());
-      assert(!status.has_report());
+      REQUIRE(!status.complete());
+      REQUIRE(!status.has_report());
 
       status = bar->try_wait_for(token, cuda::std::chrono::nanoseconds(1), cuda::return_status);
-      assert(!status.complete());
-      assert(!status.has_report());
+      REQUIRE(!status.complete());
+      REQUIRE(!status.has_report());
 
       status = bar->try_wait_until(
         token, cuda::std::chrono::system_clock::now() - cuda::std::chrono::seconds(1), cuda::return_status);
-      assert(!status.complete());
-      assert(!status.has_report());
+      REQUIRE(!status.complete());
+      REQUIRE(!status.has_report());
 
       status = bar->test_wait(0, cuda::return_status);
-      assert(!status.complete());
-      assert(!status.has_report());
+      REQUIRE(!status.complete());
+      REQUIRE(!status.has_report());
 
       status = bar->try_wait(0, cuda::return_status);
-      assert(!status.complete());
-      assert(!status.has_report());
+      REQUIRE(!status.complete());
+      REQUIRE(!status.has_report());
 
       status = bar->try_wait_for(0, cuda::std::chrono::nanoseconds(1), cuda::return_status);
-      assert(!status.complete());
-      assert(!status.has_report());
+      REQUIRE(!status.complete());
+      REQUIRE(!status.has_report());
 
       status = bar->try_wait_until(
         0, cuda::std::chrono::system_clock::now() - cuda::std::chrono::seconds(1), cuda::return_status);
-      assert(!status.complete());
-      assert(!status.has_report());
+      REQUIRE(!status.complete());
+      REQUIRE(!status.has_report());
     }
   });
 
@@ -430,7 +427,7 @@ TEST_DEVICE_FUNC void test_test_waits(cuda::shared_memory_barrier<Scope>* bar)
   __syncthreads();
 
   execute_on_thread_zero([&] {
-    assert(bar->test_wait(token, cuda::ignore_status));
+    REQUIRE(bar->test_wait(token, cuda::ignore_status));
 
     auto status = bar->test_wait(token, cuda::return_status);
     check_success_status<Scope>(status);
@@ -476,7 +473,7 @@ TEST_DEVICE_FUNC void test_phase_waits(cuda::shared_memory_barrier<Scope>* bar)
   (void) bar->arrive();
   bar->wait(0, cuda::ignore_status);
 
-  assert(bar->test_wait(0, cuda::ignore_status));
+  REQUIRE(bar->test_wait(0, cuda::ignore_status));
 
   auto status = bar->test_wait(0, cuda::return_status);
   check_success_status<Scope>(status);
@@ -487,10 +484,10 @@ TEST_DEVICE_FUNC void test_phase_waits(cuda::shared_memory_barrier<Scope>* bar)
   check_success_status<Scope>(status);
 
   bar->wait_conditional_phase(0);
-  assert(bar->test_wait_conditional_phase(0));
-  assert(bar->try_wait_conditional_phase(0));
-  assert(bar->try_wait_conditional_phase_for(0, cuda::std::chrono::nanoseconds(1)));
-  assert(
+  REQUIRE(bar->test_wait_conditional_phase(0));
+  REQUIRE(bar->try_wait_conditional_phase(0));
+  REQUIRE(bar->try_wait_conditional_phase_for(0, cuda::std::chrono::nanoseconds(1)));
+  REQUIRE(
     bar->try_wait_conditional_phase_until(0, cuda::std::chrono::system_clock::now() + cuda::std::chrono::seconds(1)));
 
   bar->arrive_and_wait(cuda::ignore_status);
@@ -502,14 +499,14 @@ TEST_DEVICE_FUNC void test_phase_waits(cuda::shared_memory_barrier<Scope>* bar)
 
   bar->arrive_and_wait(cuda::ignore_status);
 
-  assert(bar->try_wait_for(2, cuda::std::chrono::nanoseconds(1), cuda::ignore_status));
+  REQUIRE(bar->try_wait_for(2, cuda::std::chrono::nanoseconds(1), cuda::ignore_status));
 
   status = bar->try_wait_for(2, cuda::std::chrono::nanoseconds(1), cuda::return_status);
   check_success_status<Scope>(status);
 
   bar->arrive_and_wait(cuda::ignore_status);
 
-  assert(bar->try_wait_until(
+  REQUIRE(bar->try_wait_until(
     3, cuda::std::chrono::system_clock::now() + cuda::std::chrono::seconds(1), cuda::ignore_status));
 
   status =
@@ -540,28 +537,45 @@ TEST_DEVICE_FUNC void test_shared_memory_barrier_sm90_extensions()
   test_tx_wait<Scope>(batched_bar, 1024, 2);
 }
 
-TEST_DEVICE_FUNC void test_shared_memory_barrier_device()
+template <cuda::thread_scope Scope>
+__global__ void test_shared_memory_barrier_kernel()
 {
-  NV_IF_TARGET(
-    NV_PROVIDES_SM_90,
-    (test_shared_memory_barrier_choreography<cuda::thread_scope_block>();
-     test_shared_memory_barrier_common_extensions<cuda::thread_scope_block>();
-     test_shared_memory_barrier_sm90_extensions<cuda::thread_scope_block>();
-     // Cluster-scoped operations on local storage; this does not test cross-CTA communication.
-     test_shared_memory_barrier_choreography<cuda::thread_scope_cluster>();
-     test_shared_memory_barrier_common_extensions<cuda::thread_scope_cluster>();
-     test_shared_memory_barrier_sm90_extensions<cuda::thread_scope_cluster>();))
+  NV_IF_TARGET(NV_PROVIDES_SM_90,
+               (test_shared_memory_barrier_choreography<Scope>(); test_shared_memory_barrier_common_extensions<Scope>();
+                test_shared_memory_barrier_sm90_extensions<Scope>();))
 }
 
-int main(int, char**)
-{
-  NV_DISPATCH_TARGET(
-    NV_IS_HOST,
-    (
-      // Required by the device-side concurrent_threads_launch helper.
-      cuda_thread_count = 2;),
-    NV_IS_DEVICE,
-    (test_shared_memory_barrier_device();))
+#endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC) && _CCCL_CUDACC_AT_LEAST(13, 4)
 
-  return 0;
+C2H_TEST("shared_memory_barrier", "[barrier]")
+{
+#if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC) && _CCCL_CUDACC_AT_LEAST(13, 4)
+  // Do not reference a kernel until the driver is known to provide the fabric status decoder device symbols.
+  if (cuda::__driver::__version_below(13, 4))
+  {
+    return;
+  }
+
+  auto device = c2h::current_device();
+  if (device.attribute(cuda::device_attributes::compute_capability_major) < 9)
+  {
+    return;
+  }
+
+  cuda::stream stream{device};
+  const auto config = cuda::make_config(cuda::block_dims<2>(), cuda::grid_dims<1>());
+
+  SECTION("block scope")
+  {
+    cuda::launch(stream, config, test_shared_memory_barrier_kernel<cuda::thread_scope_block>);
+    stream.sync();
+  }
+  SECTION("cluster scope on local shared memory")
+  {
+    cuda::launch(stream, config, test_shared_memory_barrier_kernel<cuda::thread_scope_cluster>);
+    stream.sync();
+  }
+#else // ^^^ CUDA 13.4+ ^^^ / vvv older toolkits vvv
+  return;
+#endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC) && _CCCL_CUDACC_AT_LEAST(13, 4)
 }
