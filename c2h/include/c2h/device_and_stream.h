@@ -27,7 +27,7 @@ namespace c2h
 // Returns a reference to the legacy default stream without changing the current device.
 // The handle uses whichever device is current when work is submitted; it does not
 // retain an association with the device that was current when this function was called.
-[[nodiscard]] inline cuda::stream_ref default_stream_ref() noexcept
+[[nodiscard]] constexpr cuda::stream_ref default_stream_ref() noexcept
 {
   return cuda::stream_ref{cuda::stream_ref::value_type{}};
 }
