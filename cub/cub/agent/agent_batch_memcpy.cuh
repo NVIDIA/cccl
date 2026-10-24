@@ -33,6 +33,7 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/round_up.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/type_identity.h>
@@ -48,19 +49,31 @@ template <uint32_t ThreadsPerBlock,
           uint32_t TlevBytesPerThread,
           bool PreferPow2Bits,
           uint32_t BlockLevelTileSize,
+          uint32_t Group4LevelThreshold,
+          uint32_t Group8LevelThreshold,
+          uint32_t Group16LevelThreshold,
           uint32_t WarpLevelThreshold,
           uint32_t BlockLevelThreshold,
           class BuffDelayConstructor,
           class BlockDelayConstructor>
 struct agent_batch_memcpy_policy
 {
-  static constexpr uint32_t BLOCK_THREADS         = ThreadsPerBlock;
-  static constexpr uint32_t BUFFERS_PER_THREAD    = BuffersPerThread;
-  static constexpr uint32_t TLEV_BYTES_PER_THREAD = TlevBytesPerThread;
-  static constexpr uint32_t PREFER_POW2_BITS      = PreferPow2Bits;
-  static constexpr uint32_t BLOCK_LEVEL_TILE_SIZE = BlockLevelTileSize;
-  static constexpr uint32_t WARP_LEVEL_THRESHOLD  = WarpLevelThreshold;
-  static constexpr uint32_t BLOCK_LEVEL_THRESHOLD = BlockLevelThreshold;
+  static constexpr uint32_t BLOCK_THREADS           = ThreadsPerBlock;
+  static constexpr uint32_t BUFFERS_PER_THREAD      = BuffersPerThread;
+  static constexpr uint32_t TLEV_BYTES_PER_THREAD   = TlevBytesPerThread;
+  static constexpr uint32_t PREFER_POW2_BITS        = PreferPow2Bits;
+  static constexpr uint32_t BLOCK_LEVEL_TILE_SIZE   = BlockLevelTileSize;
+  static constexpr uint32_t GROUP4_LEVEL_THRESHOLD  = Group4LevelThreshold;
+  static constexpr uint32_t GROUP8_LEVEL_THRESHOLD  = Group8LevelThreshold;
+  static constexpr uint32_t GROUP16_LEVEL_THRESHOLD = Group16LevelThreshold;
+  static constexpr uint32_t WARP_LEVEL_THRESHOLD    = WarpLevelThreshold;
+  static constexpr uint32_t BLOCK_LEVEL_THRESHOLD   = BlockLevelThreshold;
+
+  // A buffer's size class is the number of thresholds its size exceeds, which only selects the intended group size if
+  // the thresholds are ordered
+  static_assert(GROUP4_LEVEL_THRESHOLD <= GROUP8_LEVEL_THRESHOLD && GROUP8_LEVEL_THRESHOLD <= GROUP16_LEVEL_THRESHOLD
+                  && GROUP16_LEVEL_THRESHOLD <= WARP_LEVEL_THRESHOLD && WARP_LEVEL_THRESHOLD <= BLOCK_LEVEL_THRESHOLD,
+                "Size class thresholds must satisfy group4 <= group8 <= group16 <= warp <= block level threshold");
 
   using buff_delay_constructor  = BuffDelayConstructor;
   using block_delay_constructor = BlockDelayConstructor;
@@ -69,6 +82,8 @@ struct agent_batch_memcpy_policy
 
 // TODO(bgruber): drop in CCCL 4.0
 //! Deprecated [Since 3.5]
+//! This policy has no group thresholds: it uses the default ones of the tuning API, capped at the warp-level threshold
+//! so that the thresholds stay ordered.
 template <uint32_t ThreadsPerBlock,
           uint32_t BuffersPerThread,
           uint32_t TlevBytesPerThread,
@@ -85,6 +100,9 @@ using AgentBatchMemcpyPolicy
     TlevBytesPerThread,
     PreferPow2Bits,
     BlockLevelTileSize,
+    ::cuda::std::min(uint32_t{8}, WarpLevelThreshold),
+    ::cuda::std::min(uint32_t{192}, WarpLevelThreshold),
+    ::cuda::std::min(uint32_t{384}, WarpLevelThreshold),
     WarpLevelThreshold,
     BlockLevelThreshold,
     BuffDelayConstructor,
@@ -256,6 +274,13 @@ GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
 }
 
 /**
+ * @brief Largest number of bytes for which the range that `GetAlignedPtrs` returns can be empty, in which case
+ * `vectorized_copy` copies the bytes one by one. Larger copies always contain at least one aligned \p VectorT.
+ */
+template <typename VectorT>
+inline constexpr int max_bytewise_size = 2 * int{sizeof(VectorT)} + 4;
+
+/**
  * @brief Cooperatively copies \p num_bytes from \p src to \p dest using vectorized stores of type
  * \p VectorT for addresses within [dest, dest + num_bytes) that are aligned to \p VectorT. A
  * byte-wise copy is used for byte-ranges that are not aligned to \p VectorT.
@@ -283,26 +308,86 @@ vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const vo
   // If byte range for which we can use vectorized copies is empty -> use byte-wise copies
   if (aligned_range.out_end <= aligned_range.out_begin)
   {
-    for (ByteOffsetT ichar = thread_rank; ichar < num_bytes; ichar += LogicalWarpSize)
+    _CCCL_ASSERT(num_bytes <= static_cast<ByteOffsetT>(max_bytewise_size<VectorT>),
+                 "vectorized_copy: an empty vector range implies at most max_bytewise_size<VectorT> bytes");
+    constexpr int small_rounds = ::cuda::ceil_div(max_bytewise_size<VectorT>, LogicalWarpSize);
+    char bytes[small_rounds];
+    for (int k = 0; k < small_rounds; ++k)
     {
-      out_ptr[ichar] = in_ptr[ichar];
+      const ByteOffsetT i = static_cast<ByteOffsetT>(thread_rank + k * LogicalWarpSize);
+      if (i < num_bytes)
+      {
+        bytes[k] = in_ptr[i];
+      }
+    }
+    for (int k = 0; k < small_rounds; ++k)
+    {
+      const ByteOffsetT i = static_cast<ByteOffsetT>(thread_rank + k * LogicalWarpSize);
+      if (i < num_bytes)
+      {
+        out_ptr[i] = bytes[k];
+      }
     }
   }
   else
   {
-    // Copy bytes in range `[dest, aligned_range.out_begin)`
-    out_ptr += thread_rank;
-    in_ptr += thread_rank;
-    while (out_ptr < reinterpret_cast<char*>(aligned_range.out_begin))
+    constexpr int max_head_tail_size = sizeof(VectorT) + 2;
+    constexpr int edge_rounds        = ::cuda::ceil_div(max_head_tail_size, LogicalWarpSize);
+    const auto head_size             = static_cast<int>(reinterpret_cast<char*>(aligned_range.out_begin) - out_ptr);
+    char* const tail_out             = reinterpret_cast<char*>(aligned_range.out_end);
+    const auto tail_size             = static_cast<int>((out_ptr + num_bytes) - tail_out);
+    _CCCL_ASSERT(head_size >= 0 && tail_size >= 0, "vectorized_copy: negative head or tail size");
+    _CCCL_ASSERT(head_size <= max_head_tail_size && tail_size <= max_head_tail_size,
+                 "vectorized_copy: head or tail larger than assumed maximum size");
+    const auto num_vectors = aligned_range.out_end - aligned_range.out_begin;
+
+    // The head, the tail and the first round of vectors are all loaded before any of them is stored.
+    // Logical warps larger than a warp (the block-level kernel) load the first
+    // round in the main loop instead, since the extra registers would lower that kernel's occupancy.
+    constexpr bool load_first_round_early = LogicalWarpSize <= warp_threads;
+    char head_bytes[edge_rounds];
+    char tail_bytes[edge_rounds];
+    for (int k = 0; k < edge_rounds; ++k)
     {
-      *out_ptr = *in_ptr;
-      out_ptr += LogicalWarpSize;
-      in_ptr += LogicalWarpSize;
+      const int i = thread_rank + k * LogicalWarpSize;
+      if (i < head_size)
+      {
+        head_bytes[k] = in_ptr[i];
+      }
+      if (i < tail_size)
+      {
+        tail_bytes[k] = aligned_range.in_end[i];
+      }
+    }
+    const bool has_first_vector = load_first_round_early && thread_rank < num_vectors;
+    // LoadVector fills the vector before it is stored.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    VectorT first_vector;
+    if (has_first_vector)
+    {
+      LoadVector(aligned_range.in_begin + thread_rank * sizeof(VectorT), first_vector);
+    }
+    for (int k = 0; k < edge_rounds; ++k)
+    {
+      const int i = thread_rank + k * LogicalWarpSize;
+      if (i < head_size)
+      {
+        out_ptr[i] = head_bytes[k];
+      }
+      if (i < tail_size)
+      {
+        tail_out[i] = tail_bytes[k];
+      }
+    }
+    if (has_first_vector)
+    {
+      aligned_range.out_begin[thread_rank] = first_vector;
     }
 
-    // Copy bytes in range `[aligned_range.out_begin, aligned_range.out_end)`
-    VectorT* aligned_range_begin = aligned_range.out_begin + thread_rank;
-    const char* in_aligned_begin = aligned_range.in_begin + thread_rank * sizeof(VectorT);
+    // Remaining rounds of vectors, `[aligned_range.out_begin + first_loop_vector, aligned_range.out_end)`
+    constexpr int first_loop_vector = load_first_round_early ? LogicalWarpSize : 0;
+    VectorT* aligned_range_begin    = aligned_range.out_begin + thread_rank + first_loop_vector;
+    const char* in_aligned_begin    = aligned_range.in_begin + (thread_rank + first_loop_vector) * sizeof(VectorT);
     while (aligned_range_begin < aligned_range.out_end)
     {
       // LoadVector fills the output object before it is copied.
@@ -312,16 +397,6 @@ vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const vo
       *aligned_range_begin = data_in;
       in_aligned_begin += sizeof(VectorT) * LogicalWarpSize;
       aligned_range_begin += LogicalWarpSize;
-    }
-
-    // Copy bytes in range `[aligned_range.out_end, dest + num_bytes)`.
-    out_ptr = reinterpret_cast<char*>(aligned_range.out_end) + thread_rank;
-    in_ptr  = aligned_range.in_end + thread_rank;
-    while (out_ptr < static_cast<char*>(dest) + num_bytes)
-    {
-      *out_ptr = *in_ptr;
-      out_ptr += LogicalWarpSize;
-      in_ptr += LogicalWarpSize;
     }
   }
 }
@@ -525,7 +600,10 @@ private:
   static constexpr uint32_t TLEV_BUFFERS_PER_THREAD = BUFFERS_PER_THREAD;
   static constexpr uint32_t BLEV_BUFFERS_PER_THREAD = BUFFERS_PER_THREAD;
 
-  static constexpr uint32_t WARP_LEVEL_THRESHOLD = AgentMemcpySmallBuffersPolicyT::WARP_LEVEL_THRESHOLD;
+  static constexpr uint32_t GROUP4_LEVEL_THRESHOLD  = AgentMemcpySmallBuffersPolicyT::GROUP4_LEVEL_THRESHOLD;
+  static constexpr uint32_t GROUP8_LEVEL_THRESHOLD  = AgentMemcpySmallBuffersPolicyT::GROUP8_LEVEL_THRESHOLD;
+  static constexpr uint32_t GROUP16_LEVEL_THRESHOLD = AgentMemcpySmallBuffersPolicyT::GROUP16_LEVEL_THRESHOLD;
+  static constexpr uint32_t WARP_LEVEL_THRESHOLD    = AgentMemcpySmallBuffersPolicyT::WARP_LEVEL_THRESHOLD;
 
   static constexpr uint32_t BLOCK_LEVEL_THRESHOLD = AgentMemcpySmallBuffersPolicyT::BLOCK_LEVEL_THRESHOLD;
 
@@ -535,6 +613,9 @@ private:
   enum class size_class : uint32_t
   {
     TLEV = 0,
+    WLEV4,
+    WLEV8,
+    WLEV16,
     WLEV,
     BLEV,
     NUM_SIZE_CLASSES,
@@ -648,7 +729,7 @@ private:
       // Stage 1: histogram over the size classes in preparation for partitioning buffers by size
       typename BlockSizeClassScanT::TempStorage size_scan_storage;
 
-      // Stage 2: Communicate the number ofer buffers requiring block-level collaboration
+      // Stage 2: Communicate the number of buffers requiring block-level collaboration
       typename BLevBuffScanPrefixCallbackOpT::TempStorage buffer_scan_callback;
 
       // Stage 3; batch memcpy buffers that require only thread-level collaboration
@@ -717,8 +798,22 @@ private:
   }
 
   /**
-   * @brief Computes the histogram over the number of buffers belonging to each of the three
-   * size-classes (TLEV, WLEV, BLEV).
+   * @brief Returns the size class of a buffer.
+   */
+  _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t GetBufferSizeClass(BufferSizeT buffer_size)
+  {
+    uint32_t buffer_size_class = 0;
+    buffer_size_class += buffer_size > GROUP4_LEVEL_THRESHOLD ? 1U : 0U;
+    buffer_size_class += buffer_size > GROUP8_LEVEL_THRESHOLD ? 1U : 0U;
+    buffer_size_class += buffer_size > GROUP16_LEVEL_THRESHOLD ? 1U : 0U;
+    buffer_size_class += buffer_size > WARP_LEVEL_THRESHOLD ? 1U : 0U;
+    buffer_size_class += buffer_size > BLOCK_LEVEL_THRESHOLD ? 1U : 0U;
+    return buffer_size_class;
+  }
+
+  /**
+   * @brief Computes the histogram over the number of buffers belonging to each of the
+   * size-classes (TLEV, WLEV4, WLEV8, WLEV16, WLEV, BLEV).
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE VectorizedSizeClassCounterT
   GetBufferSizeClassHistogram(const BufferSizeT (&buffer_sizes)[BUFFERS_PER_THREAD])
@@ -731,9 +826,7 @@ private:
       // Whether to increment ANY of the buffer size classes at all
       const uint32_t increment = buffer_sizes[i] > 0 ? 1U : 0U;
       // Identify the buffer's size class
-      uint32_t buffer_size_class = 0;
-      buffer_size_class += buffer_sizes[i] > WARP_LEVEL_THRESHOLD ? 1U : 0U;
-      buffer_size_class += buffer_sizes[i] > BLOCK_LEVEL_THRESHOLD ? 1U : 0U;
+      const uint32_t buffer_size_class = GetBufferSizeClass(buffer_sizes[i]);
 
       // Increment the count of the respective size class
       vectorized_counters.add(buffer_size_class, increment);
@@ -760,9 +853,7 @@ private:
     {
       if (buffer_sizes[i] > 0)
       {
-        uint32_t buffer_size_class = 0;
-        buffer_size_class += buffer_sizes[i] > WARP_LEVEL_THRESHOLD ? 1U : 0U;
-        buffer_size_class += buffer_sizes[i] > BLOCK_LEVEL_THRESHOLD ? 1U : 0U;
+        const uint32_t buffer_size_class    = GetBufferSizeClass(buffer_sizes[i]);
         const uint32_t write_offset         = vectorized_offsets.get(buffer_size_class);
         buffers_by_size_class[write_offset] = {static_cast<TLevBufferSizeT>(buffer_sizes[i]), buffer_id};
         vectorized_offsets.add(buffer_size_class, 1U);
@@ -842,9 +933,10 @@ private:
   }
 
   /**
-   * @brief Read in all the buffers of this tile that require warp-level collaboration and copy
-   * their bytes to the corresponding destination buffer
+   * @brief Read in all the buffers of this tile that require warp-level (or, for LogicalWarpSize < 32,
+   * sub-warp-level) collaboration and copy their bytes to the corresponding destination buffer
    */
+  template <uint32_t LogicalWarpSize>
   _CCCL_DEVICE _CCCL_FORCEINLINE void BatchMemcpyWLEVBuffers(
     BufferTuple* buffers_by_size_class,
     InputBufferIt tile_buffer_srcs,
@@ -852,13 +944,14 @@ private:
     BufferSizeIteratorT tile_buffer_sizes,
     BlockBufferOffsetT num_wlev_buffers)
   {
-    const int32_t warp_id              = static_cast<int32_t>(threadIdx.x / warp_threads);
-    constexpr uint32_t warps_per_block = BLOCK_THREADS / warp_threads;
+    const int32_t group_id              = static_cast<int32_t>(threadIdx.x / LogicalWarpSize);
+    constexpr uint32_t groups_per_block = BLOCK_THREADS / LogicalWarpSize;
 
-    for (BlockBufferOffsetT buffer_offset = warp_id; buffer_offset < num_wlev_buffers; buffer_offset += warps_per_block)
+    for (BlockBufferOffsetT buffer_offset = group_id; buffer_offset < num_wlev_buffers;
+         buffer_offset += groups_per_block)
     {
       const auto buffer_id = buffers_by_size_class[buffer_offset].buffer_id;
-      copy_items<IsMemcpy, warp_threads, InputBufferT, OutputBufferT, BufferSizeT>(
+      copy_items<IsMemcpy, LogicalWarpSize, InputBufferT, OutputBufferT, BufferSizeT>(
         tile_buffer_srcs[buffer_id], tile_buffer_dsts[buffer_id], tile_buffer_sizes[buffer_id]);
     }
   }
@@ -1086,8 +1179,8 @@ public:
 
     // Copy block-level buffers
     EnqueueBLEVBuffers(
-      &temp_storage.staged.buffers_by_size_class[size_class_agg.get(static_cast<uint32_t>(size_class::TLEV))
-                                                 + size_class_agg.get(static_cast<uint32_t>(size_class::WLEV))],
+      &temp_storage.staged
+         .buffers_by_size_class[buffer_count - size_class_agg.get(static_cast<uint32_t>(size_class::BLEV))],
       tile_buffer_srcs,
       tile_buffer_dsts,
       tile_buffer_sizes,
@@ -1098,9 +1191,32 @@ public:
     // Ensure we can repurpose the temporary storage required by EnqueueBLEVBuffers
     __syncthreads();
 
-    // Copy warp-level buffers
-    BatchMemcpyWLEVBuffers(
-      &temp_storage.staged.buffers_by_size_class[size_class_agg.get(static_cast<uint32_t>(size_class::TLEV))],
+    // Copy sub-warp-level and warp-level buffers, the partitions of which follow the TLEV partition
+    BufferTuple* class_buffers =
+      &temp_storage.staged.buffers_by_size_class[size_class_agg.get(static_cast<uint32_t>(size_class::TLEV))];
+    BatchMemcpyWLEVBuffers<4>(
+      class_buffers,
+      tile_buffer_srcs,
+      tile_buffer_dsts,
+      tile_buffer_sizes,
+      size_class_agg.get(static_cast<uint32_t>(size_class::WLEV4)));
+    class_buffers += size_class_agg.get(static_cast<uint32_t>(size_class::WLEV4));
+    BatchMemcpyWLEVBuffers<8>(
+      class_buffers,
+      tile_buffer_srcs,
+      tile_buffer_dsts,
+      tile_buffer_sizes,
+      size_class_agg.get(static_cast<uint32_t>(size_class::WLEV8)));
+    class_buffers += size_class_agg.get(static_cast<uint32_t>(size_class::WLEV8));
+    BatchMemcpyWLEVBuffers<16>(
+      class_buffers,
+      tile_buffer_srcs,
+      tile_buffer_dsts,
+      tile_buffer_sizes,
+      size_class_agg.get(static_cast<uint32_t>(size_class::WLEV16)));
+    class_buffers += size_class_agg.get(static_cast<uint32_t>(size_class::WLEV16));
+    BatchMemcpyWLEVBuffers<warp_threads>(
+      class_buffers,
       tile_buffer_srcs,
       tile_buffer_dsts,
       tile_buffer_sizes,
