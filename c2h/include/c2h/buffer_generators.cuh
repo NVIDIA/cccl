@@ -66,9 +66,9 @@ make_generator_buffer(cuda::stream_ref stream, std::size_t num_items, const cust
 }
 } // namespace detail
 
-//! @brief Generates random values in @p data using its associated stream.
-//!
-//! @pre Querying the device of the stream associated with @p data must succeed and return the current C2H test device.
+// Generates random values in data using its associated stream.
+//
+// Requires: Querying the device of the stream associated with data must succeed and return the current C2H test device.
 template <template <typename> class... Ps>
 void gen(seed_t seed,
          cuda::device_buffer<custom_type_t<Ps...>>& data,
@@ -79,9 +79,9 @@ void gen(seed_t seed,
     data.stream(), seed, reinterpret_cast<char*>(data.data()), min, max, data.size(), sizeof(custom_type_t<Ps...>));
 }
 
-//! @brief Generates random values in @p data using its associated stream.
-//!
-//! @pre Querying the device of the stream associated with @p data must succeed and return the current C2H test device.
+// Generates random values in data using its associated stream.
+//
+// Requires: Querying the device of the stream associated with data must succeed and return the current C2H test device.
 template <typename T>
 void gen(seed_t seed,
          cuda::device_buffer<T>& data,
@@ -91,17 +91,17 @@ void gen(seed_t seed,
   ::c2h::detail::gen_values_between(data.stream(), seed, data.first(data.size()), min, max);
 }
 
-//! @brief Holds generated device and host buffers for the same logical sequence.
-//!
-//! @c h_items contains the complete logical sequence. The corresponding sequence is stored in @c d_items, which may
-//! retain additional allocation capacity beyond its logical size.
+// Holds generated device and host buffers for the same logical sequence.
+//
+// h_items contains the complete logical sequence. The corresponding sequence is stored in d_items, which may
+// retain additional allocation capacity beyond its logical size.
 template <typename T, typename DeviceBuffer = cuda::device_buffer<T>>
 struct device_host_buffers
 {
   DeviceBuffer d_items;
   cuda::host_buffer<T> h_items;
 
-  //! @brief Returns the number of logical items shared by both buffers.
+  // Returns the number of logical items shared by both buffers.
   [[nodiscard]] std::size_t size() const noexcept
   {
     _CCCL_ASSERT(d_items.size() == h_items.size(), "Device and host buffers must have the same logical size");
@@ -109,9 +109,9 @@ struct device_host_buffers
   }
 };
 
-//! @brief Generates random data with the existing c2h device generator and returns device and host buffers.
-//!
-//! @pre Querying the device of @p stream must succeed and return the current C2H test device.
+// Generates random data with the existing c2h device generator and returns device and host buffers.
+//
+// Requires: Querying the device of stream must succeed and return the current C2H test device.
 template <typename T>
 [[nodiscard]] device_host_buffers<T> gen_buffers(
   cuda::stream_ref stream,
@@ -129,9 +129,9 @@ template <typename T>
   return {::cuda::std::move(d_items), ::cuda::std::move(h_items)};
 }
 
-//! @brief Generates random data with the existing c2h device generator and returns it in host pageable memory.
-//!
-//! @pre Querying the device of @p stream must succeed and return the current C2H test device.
+// Generates random data with the existing c2h device generator and returns it in host pageable memory.
+//
+// Requires: Querying the device of stream must succeed and return the current C2H test device.
 template <typename T>
 [[nodiscard]] cuda::host_buffer<T> gen_host_buffer(
   cuda::stream_ref stream,
@@ -144,9 +144,9 @@ template <typename T>
   return ::cuda::std::move(buffers.h_items);
 }
 
-//! @brief Generates uniform segment offsets with the existing c2h device generator and returns them in device memory.
-//!
-//! @pre @c stream must not be the legacy default stream.
+// Generates uniform segment offsets with the existing c2h device generator and returns them in device memory.
+//
+// Requires: stream must not be the legacy default stream.
 template <typename T>
 [[nodiscard]] cuda::__resizable_buffer<T, cuda::mr::device_accessible> gen_uniform_offsets_device_buffer(
   cuda::stream_ref stream, seed_t seed, T total_elements, T min_segment_size, T max_segment_size)
@@ -164,9 +164,9 @@ template <typename T>
   return d_segment_offsets;
 }
 
-//! @brief Generates uniform segment offsets with the existing c2h device generator and returns device and host buffers.
-//!
-//! @pre @c stream must not be the legacy default stream.
+// Generates uniform segment offsets with the existing c2h device generator and returns device and host buffers.
+//
+// Requires: stream must not be the legacy default stream.
 template <typename T>
 [[nodiscard]] device_host_buffers<T, cuda::__resizable_buffer<T, cuda::mr::device_accessible>>
 gen_uniform_offsets_buffers(

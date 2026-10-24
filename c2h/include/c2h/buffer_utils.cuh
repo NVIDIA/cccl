@@ -7,6 +7,7 @@
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/std/span>
+#include <cuda/std/type_traits>
 #include <cuda/stream>
 
 #include <sstream>
@@ -56,11 +57,13 @@ inline void synchronize_device(cuda::device_ref device)
 }
 } // namespace detail
 
-//! @brief Copies device items to an equally sized host range and waits for completion.
-//! @note The legacy default stream is supported.
+// Copies device items to an equally sized host range and waits for completion.
+// Note: The legacy default stream is supported.
 template <typename DeviceItems, typename HostItems>
 void copy_to_host(cuda::stream_ref stream, const DeviceItems& device_items, HostItems& host_items)
 {
+  static_assert(cuda::std::is_same_v<typename DeviceItems::value_type, typename HostItems::value_type>,
+                "copy_to_host requires matching element types");
   REQUIRE(device_items.size() == host_items.size());
   if (device_items.size() == 0)
   {
@@ -84,8 +87,8 @@ void copy_to_host(cuda::stream_ref stream, const DeviceItems& device_items, Host
   }
 }
 
-//! @brief Reads the only element of a device buffer and waits for the copy to complete.
-//! @pre @p buffer contains exactly one element.
+// Reads the only element of a device buffer and waits for the copy to complete.
+// Requires: buffer contains exactly one element.
 template <typename T>
 [[nodiscard]] T read_single(cuda::stream_ref stream, const cuda::device_buffer<T>& buffer)
 {
