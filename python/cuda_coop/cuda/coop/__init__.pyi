@@ -8,6 +8,8 @@ from ._core.api.exchange import exchange
 from ._core.api.load_store import load, store
 from ._core.api.merge_sort import merge_sort_keys as merge_sort_keys
 from ._core.api.merge_sort import merge_sort_pairs as merge_sort_pairs
+from ._core.api.neighbors import adjacent_difference as adjacent_difference
+from ._core.api.neighbors import discontinuity as discontinuity
 from ._core.api.radix_sort import (
     radix_rank_keys,
     radix_sort_keys,
@@ -56,6 +58,8 @@ __all__ = [
     "ThreadGroup",
     "ThreadHierarchy",
     "__version__",
+    "adjacent_difference",
+    "discontinuity",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
