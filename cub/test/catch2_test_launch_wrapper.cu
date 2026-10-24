@@ -80,12 +80,9 @@ struct cub_api_example_t
     NV_IF_ELSE_TARGET(
       NV_IS_HOST,
       ({
-#if TEST_LAUNCH == 2
         // Default-stream graph execution captures on a temporary non-default stream.
-        if (expected_host_stream != cudaStream_t{} && stream != expected_host_stream)
-#else
-        if (stream != expected_host_stream)
-#endif
+        const bool skip_check = (TEST_LAUNCH == 2) && expected_host_stream == cudaStream_t{};
+        if (!skip_check && stream != expected_host_stream)
         {
           return cudaErrorInvalidResourceHandle;
         }
