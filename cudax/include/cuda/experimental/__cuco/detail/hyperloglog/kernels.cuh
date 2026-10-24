@@ -21,8 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__memory/as_bytes_vectorized.h>
 #include <cuda/std/__memory/assume_aligned.h>
-#include <cuda/std/array>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 
@@ -67,9 +67,8 @@ template <int _VectorSize, class _RefType>
 _CCCL_KERNEL_ATTRIBUTES void
 __add_shmem_vectorized(const typename _RefType::__value_type* __first, ::cuda::std::int64_t __n, _RefType __ref)
 {
-  using __value_type = typename _RefType::__value_type;
-  // TODO: replace with ::cuda::__vector_type
-  using __vector_type    = ::cuda::std::array<__value_type, _VectorSize>;
+  using __value_type     = typename _RefType::__value_type;
+  using __vector_type    = ::cuda::__as_bytes_vectorized_t<__value_type, _VectorSize>;
   using __local_ref_type = typename _RefType::template __rebind_scope<::cuda::std::thread_scope_block>;
 
   // Base address of dynamic shared memory is guaranteed to be aligned to at least 16 bytes which is
@@ -93,7 +92,7 @@ __add_shmem_vectorized(const typename _RefType::__value_type* __first, ::cuda::s
       ::cuda::std::assume_aligned<sizeof(__vector_type)>(__first + __idx * _VectorSize));
     for (int i = 0; i < _VectorSize; ++i)
     {
-      __local_ref.__add(__vec[i]);
+      __local_ref.__add(__vec.template __alias<__value_type>(i));
     }
 
     __idx += __loop_stride;
