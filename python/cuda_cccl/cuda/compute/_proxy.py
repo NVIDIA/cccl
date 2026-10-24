@@ -23,6 +23,14 @@ _PROXY_DATA_ERROR = (
     "Pass a real device array when calling the compiled algorithm."
 )
 
+# Build-time placeholder address for a ProxyArray's CCCL iterator. The C library
+# reads a pointer iterator's NULL state as "this optional array was not passed"
+# (keys-only sorts), so a proxy must present a non-NULL address to be compiled
+# as a present array. The value is never dereferenced: a build does not launch,
+# and a proxy cannot be executed (get_data_pointer raises), so the real address
+# is always bound by __call__ before any launch.
+PROXY_PLACEHOLDER_ADDRESS = 0x1000
+
 _PROXY_VALUE_DATA_ERROR = (
     "ProxyValue has no data — it is a build-time placeholder only. "
     "Pass a real scalar or numpy array when calling the compiled algorithm."

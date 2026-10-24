@@ -52,7 +52,9 @@ API conventions
 
 * **Output semantics** — Algorithms write results into a user-provided array or iterator
   rather than returning them. This keeps memory ownership explicit and lifetimes under
-  your control.
+  your control. As with any asynchronous CUDA launch, ``cuda.compute`` does not keep
+  the arrays you pass alive: keep your own references until the work submitted on the
+  stream has completed.
 
 * **Operators** — Many algorithms accept an ``op`` parameter. This can be a built-in
   :class:`OpKind <cuda.compute.op.OpKind>` value or a

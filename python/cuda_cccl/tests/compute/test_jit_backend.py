@@ -293,10 +293,9 @@ def test_operator_compiles_after_the_backend_has_already_compiled():
         # Only now import cuda.compute and compile an operator through it.
         from cuda.compute import _mlir
         from cuda.compute._jit import _compile_op_impl
-        from cuda.compute._caching import CachableFunction
 
         int32 = _mlir.types.int32
-        _compile_op_impl(CachableFunction(lambda x: x + 1), (int32,), int32, (8, 9))
+        _compile_op_impl(lambda x: x + 1, (int32,), int32, (8, 9))
         """
     )
     result = subprocess.run(
@@ -360,7 +359,7 @@ def test_clear_all_caches_drops_compiled_device_code():
     import cuda.compute
     from cuda.compute import CountingIterator, OpKind, TransformIterator
     from cuda.compute._cpp_compile import compile_cpp_op_code, compile_cpp_to_ltoir
-    from cuda.compute._jit import _compile_op_impl
+    from cuda.compute._jit import _compile_op_cache
     from cuda.compute.algorithms._select import _always_false_op
 
     def add_one(x):
@@ -393,14 +392,18 @@ def test_clear_all_caches_drops_compiled_device_code():
         )
         assert int(d_num.copy_to_host()[0]) == 4
 
-    memos = (_compile_op_impl, compile_cpp_op_code, _always_false_op)
+    # The compiled-operator memo is a plain dict (every miss adds an entry);
+    # the other two are lru_caches.
+    memos = (compile_cpp_op_code, _always_false_op)
 
     first = make_iter()
     run_reduce(first)
     run_select()
+    assert len(_compile_op_cache) > 0
     assert all(m.cache_info().currsize > 0 for m in memos)
 
     cuda.compute.clear_all_caches()
+    assert len(_compile_op_cache) == 0
     assert all(m.cache_info().currsize == 0 for m in memos)
     assert compile_cpp_to_ltoir.cache_info().currsize == 0
 
@@ -408,10 +411,11 @@ def test_clear_all_caches_drops_compiled_device_code():
     # is cold exactly when every memo misses again.
     run_reduce(make_iter())
     run_select()
+    assert len(_compile_op_cache) > 0
     assert all(m.cache_info().misses > 0 for m in memos)
 
     # Reusing the live iterator relinks the ops memoized on it: no recompile.
     cuda.compute.clear_all_caches()
     run_reduce(first)
-    assert _compile_op_impl.cache_info().misses == 0
+    assert len(_compile_op_cache) == 0
     assert compile_cpp_op_code.cache_info().misses == 0

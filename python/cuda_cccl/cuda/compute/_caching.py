@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import functools
+import hashlib
 import threading
 import types
 import weakref
@@ -19,7 +20,7 @@ try:
 except ImportError:
     from cuda.core.experimental._utils.cuda_utils import CUDAError
 
-from ._utils.protocols import get_dtype, get_shape, is_device_array
+from ._utils.protocols import get_dtype, get_shape, is_contiguous, is_device_array
 from .struct import _Struct
 
 try:
@@ -499,6 +500,32 @@ def _bind_default_build(
         )
 
 
+def _proxy_device_arrays(args: tuple, kwargs: dict) -> tuple[tuple, dict]:
+    """Replace device-array arguments with dtype-only ``ProxyArray`` placeholders.
+
+    A factory builds an algorithm from its arguments' *types*; the arrays' data
+    is bound at ``__call__``. Building from proxies therefore produces the same
+    algorithm, but the wrapper, which lives in the process-wide wrapper cache,
+    is never constructed from (and so can never retain) a caller's allocation,
+    and the single-phase and ahead-of-time (``ProxyArray``) build paths are
+    identical. Non-contiguous arrays are left as is so the build keeps raising
+    the same error it does today. Objects that merely contain arrays (iterators,
+    ``DoubleBuffer``) are not device arrays and pass through unchanged.
+    """
+    from ._proxy import ProxyArray
+
+    def proxy(value):
+        if (
+            is_device_array(value)
+            and not isinstance(value, ProxyArray)
+            and is_contiguous(value)
+        ):
+            return ProxyArray(get_dtype(value))
+        return value
+
+    return tuple(proxy(a) for a in args), {k: proxy(v) for k, v in kwargs.items()}
+
+
 class _CacheWithRegisteredKeyFunctions:
     """
     Decorator to cache the result of the decorated function.
@@ -573,8 +600,9 @@ class _CacheWithRegisteredKeyFunctions:
                 )
                 _thread_local.factory_device_info = target
                 try:
+                    build_args, build_kwargs = _proxy_device_arrays(args, kwargs)
                     with target_cc(target_cc_arg):
-                        result = func(*args, **kwargs)
+                        result = func(*build_args, **build_kwargs)
                 finally:
                     _thread_local.factory_device_info = previous_device_info
                 cache[cache_key] = result
@@ -662,7 +690,7 @@ def clear_all_caches():
     _clear_wrapper_caches()
     _process_wide_build_results_cache.clear()
     # Auxiliary caches registered process-wide (_jit._infer_return_type, the
-    # compiled-operator memo _jit._compile_op_impl, and the NVRTC memos in
+    # compiled-operator memo _jit.compile_op, and the NVRTC memos in
     # _cpp_compile) must be cleared too, so builds after a clear really are
     # cold. Factory entries' cache_clear is idempotent with
     # _clear_wrapper_caches above. Snapshot the registry first: a lazy import
@@ -674,19 +702,18 @@ def clear_all_caches():
 
 class CachableFunction:
     """
-    A type that wraps a function and provides custom comparison
-    (__eq__) and hash (__hash__) implementations.
+    A cache key for a function, with comparison (__eq__) and hash (__hash__)
+    based on its bytecode, constants, and closures, while ignoring other
+    attributes such as its docstring.
 
-    The purpose of this class is to enable caching and comparison of
-    functions based on their bytecode, constants, and closures, while
-    ignoring other attributes such as their names or docstrings.
+    It does not hold a reference to the function it was built from.
     """
 
     # TODO: eventually, move this class to _jit.py as it only
     # has to do with caching of Python callables that will be
     # JIT compiled.
     def __init__(self, func):
-        self._func = func
+        self._name = func.__name__
 
         closure = func.__closure__ if func.__closure__ is not None else []
         contents = []
@@ -718,7 +745,12 @@ class CachableFunction:
         return hash(self._identity)
 
     def __repr__(self):
-        return str(self._func)
+        # Iterators derive device symbol names from str() of their cache key
+        # (see IteratorBase._get_uid), so the repr must distinguish functions
+        # that compare unequal: two same-named operators with different bodies
+        # must not share a symbol. Hash the identity rather than printing it.
+        digest = hashlib.sha256(repr(self._identity).encode()).hexdigest()[:16]
+        return f"<CachableFunction {self._name} {digest}>"
 
 
 # Register keyers for built-in types

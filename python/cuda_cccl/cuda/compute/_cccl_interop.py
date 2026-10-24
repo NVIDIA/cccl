@@ -97,7 +97,7 @@ def _is_well_known_op(op: OpKind) -> bool:
 
 
 def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
-    from ._proxy import ProxyArray
+    from ._proxy import PROXY_PLACEHOLDER_ADDRESS, ProxyArray
 
     if not is_contiguous(array):
         raise ValueError("Non-contiguous arrays are not supported.")
@@ -105,10 +105,14 @@ def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
 
     info = _type_info_from_dtype(dtype)
     state_info = _type_info_from_dtype(np.intp)
-    # A ProxyArray has no GPU allocation: leave the pointer NULL for build-time
-    # (ahead-of-time) compilation. The real pointer is bound at __call__ via
-    # set_cccl_iterator_state().
-    state = None if isinstance(array, ProxyArray) else get_data_pointer(array)
+    # A ProxyArray has no GPU allocation: bind a placeholder address for the
+    # build (see PROXY_PLACEHOLDER_ADDRESS for why it is not NULL). The real
+    # pointer is bound at __call__ via set_cccl_iterator_state().
+    state = (
+        PROXY_PLACEHOLDER_ADDRESS
+        if isinstance(array, ProxyArray)
+        else get_data_pointer(array)
+    )
     return Iterator(
         state_info.alignment,
         IteratorKind.POINTER,
@@ -228,15 +232,22 @@ def get_value_type(
 
 
 def set_cccl_iterator_state(cccl_it: Iterator, input_it):
+    """Bind the per-call state of ``input_it`` to the cached ``cccl_it``.
+
+    Only the pointer value (or state bytes) is bound; ``input_it`` itself is
+    not kept alive by ``cccl_it``. The caller holds ``input_it`` for the
+    duration of the call, which is all the launch needs, whereas ``cccl_it``
+    belongs to an algorithm object that lives in the process-wide wrapper
+    cache.
+    """
     if cccl_it.is_ptr_kind:
-        ptr = get_data_pointer(input_it)
-        cccl_it.bind_pointer_state(ptr, input_it)
+        cccl_it.bind_pointer_state(get_data_pointer(input_it))
     else:
         state_ = input_it.state
         if isinstance(state_, (IteratorState, Pointer)):
             cccl_it.state = state_
         else:
-            cccl_it.state = make_pointer_object(state_, input_it)
+            cccl_it.state = make_pointer_object(state_)
 
 
 @functools.lru_cache()
