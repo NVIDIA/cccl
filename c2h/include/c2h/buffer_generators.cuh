@@ -3,14 +3,18 @@
 
 #pragma once
 
-#include <cub/device/device_transform.cuh>
+#include <cuda/__cccl_config>
+
+#if _CCCL_CUDA_COMPILATION()
+#  include <cub/device/device_transform.cuh>
+#endif // _CCCL_CUDA_COMPILATION()
 
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__algorithm/fill.h>
-#include <cuda/__cccl_config>
 #include <cuda/__container/resizable_buffer.h>
 #include <cuda/buffer>
 #include <cuda/devices>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/limits>
 #include <cuda/std/utility>
 #include <cuda/stream>
@@ -54,6 +58,7 @@ make_generator_buffer(cuda::stream_ref stream, std::size_t num_items, const cust
   if (num_items != 0)
   {
     ::cuda::fill_bytes(stream, result, 0);
+#if _CCCL_CUDA_COMPILATION()
     _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceTransform::Fill,
       "Failed to initialize custom-type policy members",
@@ -61,6 +66,10 @@ make_generator_buffer(cuda::stream_ref stream, std::size_t num_items, const cust
       num_items,
       min,
       stream.get());
+#else // _CCCL_CUDA_COMPILATION()
+    static_assert(::cuda::std::__always_false_v<custom_type_t<Ps...>>,
+                  "A CUDA compiler is required to initialize custom-type generator buffers");
+#endif // _CCCL_CUDA_COMPILATION()
   }
   return result;
 }
