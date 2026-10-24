@@ -349,8 +349,17 @@ void launch_env(ActionT action, Args... args)
   tpl_t tuple(args...);
   const env_t env = cuda::std::get<env_idx>(tuple);
 
-  // Environment-based API should use default stream if not specified in the environment
-  cuda::stream owning_stream{cuda::no_init};
+  // Keep a capture stream alive when the environment does not provide one.
+  [[maybe_unused]] const auto owning_stream = [] {
+    if constexpr (cuda::std::execution::__queryable_with<env_t, cuda::get_stream_t>)
+    {
+      return cuda::stream{cuda::no_init};
+    }
+    else
+    {
+      return c2h::make_current_device_stream();
+    }
+  }();
   cuda::stream_ref stream{cuda::stream_ref::value_type{}};
 
   if constexpr (cuda::std::execution::__queryable_with<env_t, cuda::get_stream_t>)
@@ -360,9 +369,7 @@ void launch_env(ActionT action, Args... args)
   }
   else
   {
-    // Create new stream one otherwise
-    owning_stream = c2h::make_current_device_stream();
-    stream        = owning_stream;
+    stream = owning_stream;
   }
 
   // cuda graphs do not support default stream
