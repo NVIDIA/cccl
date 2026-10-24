@@ -5,9 +5,10 @@
 """Infer Scan payload types and check optional provider operands.
 
 Group planning selects a Scan provider before every payload has a concrete
-Numba type. These callbacks reconcile input, result, seed, and aggregate
-types before provider specialization. Runtime operands follow one order:
-payloads, then an optional seed, lane count, and aggregate output.
+Numba type. These callbacks reconcile input, result, seed, state, and
+aggregate types before provider specialization. Runtime operands follow
+one order: payloads, then an optional seed, callback state, lane count,
+and aggregate output. State has its own dtype and never widens the scan.
 """
 
 from __future__ import annotations
@@ -204,16 +205,143 @@ def _validate_initial_value(
         )
 
 
+def _validate_prefix_state(
+    context: GroupRewriteContext,
+    inference: PayloadInference,
+    *,
+    index: int,
+) -> int:
+    """Check a prefix callback and consume its optional state operand.
+
+    ``infer_scan_payload`` calls this after the public call has been
+    converted to provider argument order. This second check also handles
+    direct provider calls, which may not have passed through public
+    group planning.
+
+    ``index`` points after the payloads and any runtime seed in the device
+    arguments. A stateful callback consumes one array there; stateless or
+    absent callbacks leave the index unchanged. Return the next index so
+    later checks can find the valid-lane count and aggregate output.
+
+    Reject callbacks combined with an initial value or aggregate output.
+    Require state only for ``StatefulFunction`` and validate its one-item
+    extent and exact numeric dtype. Record the descriptor dtype on an
+    untyped state payload so its later allocation uses the same type.
+
+    Parameters
+    ----------
+    context : GroupRewriteContext
+        Operand provenance and dtype records for the active
+        provider-call rewrite, before ordinary Numba type inference.
+    inference : PayloadInference
+        This call's runtime operands and mutable factory keywords.
+        Inferred shapes and types must agree with explicit factory
+        choices.
+    index : int
+        First optional operand after the input/output payloads and
+        any runtime seed, excluding the scratch pointer. The return
+        value advances this index only for a stateful callback.
+    """
+
+    from .._stateful_function import StatefulFunction
+
+    prefix_callback = inference.factory_kwargs.get("prefix_op")
+    has_state = bool(inference.factory_kwargs.get("prefix_state"))
+    stateful = isinstance(prefix_callback, StatefulFunction)
+
+    if prefix_callback is None:
+        if has_state:
+            raise CoopSinglePhaseRewriteError(
+                "coop scan prefix_state requires a prefix callback"
+            )
+        return index
+    initial = inference.factory_kwargs.get("initial_value")
+    if (
+        isinstance(initial, ArgumentBinding)
+        and initial.kind is not BindingKind.OMITTED
+    ):
+        raise CoopSinglePhaseRewriteError(
+            "coop scan initial_value and prefix "
+            "callbacks are mutually exclusive"
+        )
+    if inference.factory_kwargs.get("block_aggregate"):
+        raise CoopSinglePhaseRewriteError(
+            "coop scan block_aggregate and prefix "
+            "callbacks are mutually exclusive"
+        )
+    if stateful and not has_state:
+        raise CoopSinglePhaseRewriteError(
+            "coop scan StatefulFunction prefix callbacks require prefix_state"
+        )
+    if not stateful and has_state:
+        raise CoopSinglePhaseRewriteError(
+            "coop scan stateless prefix callbacks do not accept prefix_state"
+        )
+    if not stateful:
+        if not callable(prefix_callback):
+            raise CoopSinglePhaseRewriteError(
+                "coop scan prefix_op must be a stateless device callable or "
+                "StatefulFunction"
+            )
+        return index
+    if index >= len(inference.runtime_args):
+        raise CoopSinglePhaseRewriteError(
+            "coop scan prefix_state is missing its runtime value"
+        )
+
+    state = inference.runtime_args[index]
+    specification = context.thread_data(state)
+    if specification is None:
+        raise CoopSinglePhaseRewriteError(
+            "coop scan prefix_state must be a "
+            "one-item ThreadData or local array"
+        )
+    if specification.items_per_thread != 1:
+        raise CoopSinglePhaseRewriteError(
+            "coop scan prefix_state must contain exactly one item"
+        )
+    try:
+        descriptor_dtype = _validate_common_numeric_dtype(
+            prefix_callback.dtype,
+            operation="scan",
+            parameter="prefix_state",
+        )
+        state_dtype = _payload_dtype(context, state, specification)
+        if state_dtype is not None:
+            state_dtype = _validate_common_numeric_dtype(
+                state_dtype,
+                operation="scan",
+                parameter="prefix_state",
+            )
+    except (TypeError, ValueError) as exc:
+        raise CoopSinglePhaseRewriteError(str(exc)) from exc
+    if state_dtype is not None and not _dtype_values_match(
+        state_dtype,
+        descriptor_dtype,
+    ):
+        raise CoopSinglePhaseRewriteError(
+            "coop scan prefix_state dtype must exactly match StatefulFunction "
+            f"dtype {descriptor_dtype}; got {state_dtype}"
+        )
+    context.record_thread_data_dtype(state, descriptor_dtype)
+    return index + 1
+
+
 def infer_scan_payload(
     context: GroupRewriteContext,
     inference: PayloadInference,
 ) -> None:
-    """Reconcile Scan input, result, seed, and aggregate types.
+    """Reconcile Scan payload types and validate optional operands.
 
     Block array inputs and results must have the same fixed extent and
     dtype. Scalar providers reject array operands. Record inferred metadata
     on ThreadData values and factory arguments so allocation and provider
-    specialization agree, then validate any seed and aggregate operands.
+    specialization agree, then validate the seed, callback state, and
+    aggregate output.
+
+    State uses the callback descriptor's dtype, independently of the scan
+    value. Advance through optional runtime operands in registration order
+    so adding state cannot make an aggregate check inspect the wrong array.
     """
 
     is_block_array = inference.op_name == "block_scan_array"
@@ -310,6 +438,11 @@ def infer_scan_payload(
     cursor = base_count
     if _runtime_binding(inference.factory_kwargs.get("initial_value")):
         cursor += 1
+    cursor = _validate_prefix_state(
+        context,
+        inference,
+        index=cursor,
+    )
     if _runtime_binding(inference.factory_kwargs.get("valid_items")):
         cursor += 1
     aggregate_name = (

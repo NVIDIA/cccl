@@ -32,6 +32,7 @@ from cuda.coop._core import (
     GroupScanSemantics,
     PythonOperator,
     Reference,
+    StatefulOperator,
     StorageOwnership,
     SynchronizationScope,
     ThreadGroup,
@@ -54,6 +55,7 @@ from ._parameters import (
     _validate_runtime_integer_dtype,
     coerce_static_scalar,
     make_typed_cpp_literal,
+    normalize_dtype_param,
 )
 from ._rewrite_scan import infer_scan_payload, validate_scan_runtime_controls
 
@@ -74,11 +76,12 @@ _PLAN_ROUTES = {
 
 
 class _ScanPlanning:
-    """Translate one Scan call using the kernel's shared planning context.
+    """Translate a Scan call using the kernel's shared planning context.
 
     The context supplies launch geometry and facts about Numba values. This
-    class adds Scan-specific constraints, such as scalar-only Warp inputs
-    and the initial value required by a non-sum exclusive scan.
+    class adds Scan-specific constraints, such as scalar-only Warp inputs.
+    A non-sum exclusive scan needs an initial value or a block prefix
+    callback; a stateful callback also needs a separate state array.
     """
 
     def __init__(self, context: GroupPlanningContext) -> None:
@@ -202,8 +205,8 @@ class _ScanPlanning:
 
         Runtime seeds must already have the payload dtype. Static seeds are
         converted under the scalar-literal rules and embedded in typed C++
-        expressions. Inclusive scans reject any seed because their first
-        output starts with the first input value.
+        expressions. Inclusive scans in this API take no initial_value; use
+        exclusive mode for a seed, or a block prefix_op for a computed prefix.
 
         Parameters
         ----------
@@ -260,6 +263,140 @@ class _ScanPlanning:
                 Dependency("T"),
                 name="initial_value",
             ),
+        )
+
+    def _prefix_callback(
+        self,
+        operation: str,
+        group: ThreadGroup,
+        bound: inspect.BoundArguments,
+    ) -> tuple[
+        Any | None,
+        PythonOperator | StatefulOperator | None,
+        Any | None,
+    ]:
+        """Validate a block prefix callback and separate its runtime state.
+
+        ``_plan`` calls this before choosing the Scan overload. Separating
+        the callback descriptor from its state array lets later
+        specialization compile one callback implementation while each kernel
+        call supplies its own mutable state.
+
+        The callback must be constant. A plain callable becomes a stateless
+        unary operator. A ``StatefulFunction`` also requires a one-item
+        array with the descriptor's exact numeric dtype. Its dtype may differ
+        from the scanned value dtype. Reject state for a stateless callback.
+
+        Return the callback IR reference, shared operator descriptor, and
+        state IR reference. The descriptor specializes the provider; the state
+        remains a runtime operand. Return three ``None`` values when
+        no callback is present.
+
+        Parameters
+        ----------
+        operation : str
+            Canonical public operation name, used in diagnostics and
+            generated temporary names.
+        group : ThreadGroup
+            Resolved participating group, which must be a block when a
+            prefix callback is supplied.
+        bound : inspect.BoundArguments
+            Public call arguments after signature binding and default
+            application. Runtime values remain IR variables; selectors
+            are resolved through the context.
+        """
+
+        prefix_ref = bound.arguments.get("prefix_op")
+        has_prefix = not self._context.is_none(prefix_ref)
+
+        state = bound.arguments.get("prefix_state")
+        has_state = not self._context.is_none(state)
+        if not has_prefix:
+            if has_state:
+                raise ValueError(
+                    "cuda.coop.numba_mlir scan "
+                    "prefix_state requires a prefix callback"
+                )
+            return None, None, None
+        if group.kind != "block":
+            raise NotImplementedError(
+                "cuda.coop.numba_mlir scan prefix "
+                "callbacks apply only to block groups"
+            )
+
+        callback = self._context.constant(prefix_ref)
+        from .._stateful_function import StatefulFunction
+
+        if isinstance(callback, StatefulFunction):
+            if not has_state:
+                raise ValueError(
+                    "cuda.coop.numba_mlir scan "
+                    "StatefulFunction prefix callbacks "
+                    "require a third positional prefix_state argument"
+                )
+            if not self._context.is_array(operation, state):
+                raise TypeError(
+                    "cuda.coop.numba_mlir scan prefix_state must be a one-item "
+                    "ThreadData or local array"
+                )
+            if self._context.array_extent(state) != 1:
+                raise ValueError(
+                    "cuda.coop.numba_mlir scan prefix_state must contain "
+                    "exactly one item"
+                )
+            descriptor_dtype = _validate_common_numeric_dtype(
+                normalize_dtype_param(callback.dtype),
+                operation="scan",
+                parameter="prefix_state",
+            )
+            state_dtype = self._context.dtype(state)
+            if state_dtype is None:
+                state_dtype = self._context.payload_write_dtype(state)
+            if state_dtype is not None:
+                state_dtype = _validate_common_numeric_dtype(
+                    state_dtype,
+                    operation="scan",
+                    parameter="prefix_state",
+                )
+                if state_dtype != descriptor_dtype:
+                    raise TypeError(
+                        "cuda.coop.numba_mlir scan prefix_state dtype "
+                        f"{state_dtype} does not match StatefulFunction dtype "
+                        f"{descriptor_dtype}"
+                    )
+            from .._lowering._core import NumbaMlirCoreAdapter
+
+            operator = StatefulOperator(
+                op_tokenizer=_numba_semantic_token,
+                op=callback.op,
+                state_dtype=NumbaMlirCoreAdapter().core_dtype(descriptor_dtype),
+                ret_dtype=Dependency("T"),
+                arg_dtypes=(Dependency("T"),),
+                name="prefix_op",
+            )
+            return prefix_ref, operator, state
+
+        if has_state:
+            raise ValueError(
+                "cuda.coop.numba_mlir scan stateless prefix callbacks do not "
+                "accept prefix_state"
+            )
+        normalized = _normalize_numba_callable(callback)
+        if not callable(normalized):
+            raise TypeError(
+                "cuda.coop.numba_mlir scan prefix_op must be a stateless "
+                "device callable or StatefulFunction"
+            )
+        return (
+            prefix_ref,
+            PythonOperator(
+                op_tokenizer=_numba_semantic_token,
+                ret_dtype=Dependency("T"),
+                arg_dtypes=(Dependency("T"),),
+                op=normalized,
+                name="prefix_op",
+            ),
+            None,
         )
 
     def _aggregate_output(self, operation: str, value: Any, dtype: Any) -> bool:
@@ -363,13 +500,26 @@ class _ScanPlanning:
         group: ThreadGroup,
         bound: inspect.BoundArguments,
         is_common_root: bool,
-    ) -> tuple[GroupLoweringPlan, str, Any, ArgumentBinding, bool]:
+    ) -> tuple[
+        GroupLoweringPlan,
+        str,
+        Any,
+        ArgumentBinding,
+        bool,
+        Any | None,
+        Any | None,
+    ]:
         """Resolve arguments into a supported shared-core Scan plan.
 
         Infer the value dtype and item count, validate the operator and
         optional operands, and select the primitive for the group and launch.
-        Return the plan plus operator, seed-binding, and payload facts needed
-        to assemble the provider call without repeating inference.
+        A block prefix callback supplies the prefix in place of an explicit
+        initial value and cannot be combined with an aggregate output. Keep
+        its state separate from the scanned payload and the seed binding.
+
+        Return the plan, operator token and callable, initial-value binding,
+        array-form flag, and callback and state IR references. These facts let
+        provider-call construction proceed without repeating inference.
         """
 
         mode, raw_scan_op = self._operation_options(operation, bound)
@@ -428,6 +578,11 @@ class _ScanPlanning:
             dtype=dtype,
             is_common_root=is_common_root,
         )
+        prefix_callback, prefix_operator, prefix_state = self._prefix_callback(
+            operation,
+            group,
+            bound,
+        )
 
         initial_raw = bound.arguments.get("initial_value")
         initial_binding, initial_value = self._initial_binding(
@@ -439,6 +594,7 @@ class _ScanPlanning:
             mode == "exclusive"
             and operator_kind != "sum"
             and initial_binding.kind is BindingKind.OMITTED
+            and prefix_operator is None
         ):
             raise ValueError(
                 "cuda.coop.numba_mlir non-sum exclusive scans require "
@@ -446,6 +602,20 @@ class _ScanPlanning:
             )
         aggregate_raw = bound.arguments.get("aggregate_output")
         aggregate = self._aggregate_output(operation, aggregate_raw, dtype)
+        if (
+            prefix_operator is not None
+            and initial_binding.kind is not BindingKind.OMITTED
+        ):
+            raise ValueError(
+                "cuda.coop.numba_mlir scan initial_value and prefix callbacks "
+                "are mutually exclusive"
+            )
+        if prefix_operator is not None and aggregate:
+            raise ValueError(
+                "cuda.coop.numba_mlir scan "
+                "aggregate_output and prefix callbacks "
+                "are mutually exclusive"
+            )
 
         valid_raw = bound.arguments.get("valid_items")
         valid_items = self._context.planning_binding(valid_raw)
@@ -481,6 +651,7 @@ class _ScanPlanning:
                 scan_operator=scan_operator,
                 initial_value=initial_value,
                 aggregate=aggregate,
+                prefix_callback=prefix_operator,
             ),
             cub_algorithm=algorithm,
             valid_items=valid_items,
@@ -499,7 +670,15 @@ class _ScanPlanning:
                     "a compile-time TempStorage descriptor"
                 )
             plan = self._caller_storage_plan(plan, descriptor)
-        return plan, operator_kind, scan_op, initial_binding, is_array
+        return (
+            plan,
+            operator_kind,
+            scan_op,
+            initial_binding,
+            is_array,
+            prefix_callback,
+            prefix_state,
+        )
 
     @staticmethod
     def _provider(plan: GroupLoweringPlan, *, is_array: bool) -> Any:
@@ -583,12 +762,25 @@ class _ScanPlanning:
 
         Array scans allocate a fresh result payload and return that payload
         through an alias; scalar scans use the provider's return value. Pass
-        seeds and lane counts (static bindings or runtime IR values),
-        aggregate outputs, and storage descriptors to the shared rewrite,
-        which orders runtime operands and accounts for storage.
+        seeds and lane counts (static bindings or runtime IR values), callback
+        state, aggregate outputs, and storage descriptors to the shared
+        rewrite, which orders runtime operands and accounts for storage.
+
+        The callback reference is a factory specialization input. Its state
+        reference is a runtime operand, although both initially travel through
+        factory keywords. Registration tells the rewrite which keywords to
+        remove from factory arguments and append to the device call.
         """
 
-        plan, operator_kind, scan_op, initial_binding, is_array = self._plan(
+        (
+            plan,
+            operator_kind,
+            scan_op,
+            initial_binding,
+            is_array,
+            prefix_callback,
+            prefix_state,
+        ) = self._plan(
             operation=operation,
             group=group,
             bound=bound,
@@ -672,6 +864,10 @@ class _ScanPlanning:
                 initial_binding,
                 bound.arguments.get("initial_value"),
             )
+        if prefix_callback is not None:
+            factory_kwargs["prefix_op"] = prefix_callback
+        if prefix_state is not None:
+            factory_kwargs["prefix_state"] = prefix_state
         aggregate_output = bound.arguments.get("aggregate_output")
         if not self._context.is_none(aggregate_output):
             aggregate_name = (
@@ -740,6 +936,8 @@ _BLOCK_REWRITE_KWARGS = frozenset(
         "initial_value",
         "items_per_thread",
         "mode",
+        "prefix_op",
+        "prefix_state",
         "scan_op",
         "threads_per_block",
         "value_kind",
@@ -755,8 +953,12 @@ for _operation, _runtime_counts in (
             factory_namespaces=frozenset({"block"}),
             dtype_factory_kwargs=frozenset({"dtype"}),
             runtime_arg_counts=_runtime_counts,
-            runtime_factory_kwargs=("initial_value", "block_aggregate"),
-            runtime_factory_kw_prerequisites=(),
+            runtime_factory_kwargs=(
+                "initial_value",
+                "prefix_state",
+                "block_aggregate",
+            ),
+            runtime_factory_kw_prerequisites=(("prefix_state", "prefix_op"),),
             allowed_factory_kwargs=_BLOCK_REWRITE_KWARGS,
             required_factory_kwargs=frozenset(
                 {

@@ -25,6 +25,7 @@ from .._types import (
     Pointer,
     PythonOperator,
     Reference,
+    StatefulOperator,
     TemplateParameter,
     TempStorageParameter,
 )
@@ -57,8 +58,8 @@ def normalize_block_scan_algorithm(
     Accept an enum member, a lowercase member name such as ``"raking"``, or
     its CUB spelling with or without the ``BlockScanAlgorithm`` enum scope.
     Unknown spellings raise ``ValueError``. This helper does not strip
-    whitespace or fold case. Callers that accept user selectors, such as the
-    Numba ``_block_scan_algorithm``, normalize them first.
+    whitespace or fold case. Frontends that accept user selectors normalize
+    them first.
     """
 
     if isinstance(algorithm, BlockScanAlgorithm):
@@ -125,8 +126,9 @@ def _block_scan_parameters(call: ScanSemantics) -> tuple[Any, ...]:
 
     Both forms start with temporary storage. Scalar output is marked as the
     logical return value. Array output uses a separate buffer that the backend
-    must provide. Append the optional seed, operator, and aggregate in CUB
-    call order. The aggregate is a separate scalar side output.
+    must provide. Append the optional seed, operator, prefix callback, and
+    aggregate in CUB call order. A prefix callback computes a seed from the
+    input aggregate; it cannot be combined with a seed or aggregate output.
     """
 
     parameters: list[Any] = [TempStorageParameter()]
@@ -163,6 +165,8 @@ def _block_scan_parameters(call: ScanSemantics) -> tuple[Any, ...]:
         parameters.append(call.initial_value)
     if call.scan_operator is not None:
         parameters.append(call.scan_operator)
+    if call.prefix_callback is not None:
+        parameters.append(call.prefix_callback)
     if call.aggregate:
         parameters.append(
             Pointer(
@@ -187,6 +191,7 @@ def make_block_scan_specialization(
     value_kind: str | ScanValueKind,
     scan_operator: CxxOperator | PythonOperator | None = None,
     initial_value: CxxFunction | Reference | None = None,
+    prefix_operator: PythonOperator | StatefulOperator | None = None,
     block_aggregate: bool = False,
 ) -> BlockScanSpecialization:
     """Bind a block shape and Scan operation to a concrete CUB overload.
@@ -217,6 +222,9 @@ def make_block_scan_specialization(
     initial_value : CxxFunction or Reference, optional
         Static expression or runtime scalar that seeds an exclusive scan.
         Its dtype must match the payload or refer to ``Dependency("T")``.
+    prefix_operator : PythonOperator or StatefulOperator, optional
+        Callback descriptor that computes a seed from the input aggregate.
+        It cannot be combined with initial_value or block_aggregate.
     block_aggregate : bool, optional
         Request a scalar side output for all members, excluding the seed.
 
@@ -229,17 +237,17 @@ def make_block_scan_specialization(
     Raises
     ------
     TypeError
-        An operator, initial-value descriptor, or aggregate flag is invalid.
+        An operator, prefix, seed descriptor, or aggregate flag is invalid.
     ValueError
         Block dimensions, algorithm, or Scan shape are invalid, or a seed is
         supplied without an operator. See ``make_scan_semantics`` for shared
-        shape and initial-value checks.
+        shape, initial-value, and mutually exclusive callback checks.
 
     Notes
     -----
-    This low-level builder can describe a custom exclusive scan without a
-    seed. CUB leaves its first output undefined. Group planning requires a
-    seed for that form before exposing it through the group API.
+    This low-level builder can describe a custom exclusive scan with neither
+    a seed nor a prefix callback. CUB leaves its first output undefined. Group
+    planning requires one of those seed sources before exposing that form.
     """
 
     algorithm = normalize_block_scan_algorithm(algorithm)
@@ -258,6 +266,7 @@ def make_block_scan_specialization(
         scan_operator=scan_operator,
         initial_value=initial_value,
         aggregate=block_aggregate,
+        prefix_callback=prefix_operator,
     )
     if call.initial_value is not None and call.scan_operator is None:
         raise ValueError(
@@ -303,6 +312,11 @@ def make_block_scan_specialization(
                 None
                 if call.scan_operator is None
                 else type(call.scan_operator).__qualname__
+            ),
+            "prefix_callback": (
+                None
+                if call.prefix_callback is None
+                else type(call.prefix_callback).__qualname__
             ),
             "aggregate": call.aggregate,
             "aggregate_excludes_initial": call.aggregate,

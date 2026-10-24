@@ -112,6 +112,7 @@ To work on the integration, follow a kernel through the
 
 .. raw:: html
 
+   <span id="block-prefix-callbacks"></span>
    <span id="build-time-cmake-variables"></span>
    <span id="compilation-and-headers"></span>
    <span id="configuration"></span>
