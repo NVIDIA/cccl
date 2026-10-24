@@ -11,8 +11,8 @@ descriptors can also be created on the host and used as kernel globals.
 Construct TempStorage inside each kernel. During compilation, the compiler
 rebuilds the descriptor from its compile-time constant arguments and
 validates them. The compiler rejects a descriptor that comes from a module
-global. The ``local`` and ``shared`` namespaces and the Reduce, Sum, and Scan
-markers load on first access.
+global. The ``local`` and ``shared`` namespaces and the Reduce, Sum, Scan,
+and Merge Sort markers load on first access.
 """
 
 import importlib
@@ -35,6 +35,7 @@ from ._thread_group import (
 )
 
 if TYPE_CHECKING:
+    from ._group._merge_sort import merge_sort_keys, merge_sort_pairs
     from ._group._reduce import reduce, sum
     from ._group._scan import (
         exclusive_scan,
@@ -59,6 +60,8 @@ __all__ = [
     "inclusive_sum",
     "load",
     "local",
+    "merge_sort_keys",
+    "merge_sort_pairs",
     "reduce",
     "scan",
     "shared",
@@ -73,14 +76,16 @@ __all__ = [
 
 
 def __getattr__(name):
-    """Load optional operation markers and allocation helpers on first use.
+    """Load operation markers and allocation namespaces.
 
-    Cache the resolved export in this module so later access reuses the same
-    callable. This keeps their imports out of basic namespace initialization.
+    Resolve these exports on first use and cache each object in this module.
+    This keeps their imports out of basic namespace initialization.
     Unknown names raise ``AttributeError`` as normal module lookup requires.
     """
 
     if name in {
+        "merge_sort_keys",
+        "merge_sort_pairs",
         "exclusive_scan",
         "exclusive_sum",
         "inclusive_scan",
@@ -90,6 +95,8 @@ def __getattr__(name):
         "sum",
     }:
         module_name = {
+            "merge_sort_keys": "_group._merge_sort",
+            "merge_sort_pairs": "_group._merge_sort",
             "exclusive_scan": "_group._scan",
             "exclusive_sum": "_group._scan",
             "inclusive_scan": "_group._scan",
