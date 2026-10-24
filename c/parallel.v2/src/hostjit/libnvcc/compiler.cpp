@@ -729,11 +729,15 @@ static void appendSystemIncludePaths(std::vector<std::string>& args, const Compi
   // Debian/Ubuntu multiarch layouts keep the libc headers that <limits.h>
   // and friends include under /usr/include/<multiarch>. The clang driver adds
   // that directory; the cc1 invocations here must do it themselves.
-  const std::string multiarch = std::string("/usr/include/") + HOSTJIT_MULTIARCH;
-  if (pathExists(multiarch))
+  // HOSTJIT_MULTIARCH is empty on distributions without multiarch.
+  if (HOSTJIT_MULTIARCH[0] != '\0')
   {
-    args.push_back("-internal-isystem");
-    args.push_back(multiarch);
+    const std::string multiarch = std::string("/usr/include/") + HOSTJIT_MULTIARCH;
+    if (pathExists(multiarch))
+    {
+      args.push_back("-internal-isystem");
+      args.push_back(multiarch);
+    }
   }
 #endif
 }

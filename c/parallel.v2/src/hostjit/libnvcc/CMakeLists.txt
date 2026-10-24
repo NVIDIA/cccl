@@ -97,6 +97,9 @@ target_compile_definitions(
     CLANG_RESOURCE_DIR="${llvm_project_BINARY_DIR}/lib/clang/${LLVM_VERSION_MAJOR}"
     CLANG_HEADERS_DIR="${llvm_project_SOURCE_DIR}/clang/lib/Headers"
     HOSTJIT_INCLUDE_DIR="${_hostjit_include_dir}"
+    # Debian/Ubuntu multiarch tuple as the host compiler reports it
+    # (`-print-multiarch`); empty on distributions without multiarch.
+    HOSTJIT_MULTIARCH="${CMAKE_LIBRARY_ARCHITECTURE}"
 )
 
 # A toolkit is required because we need to call into nvfatbin/nvjitlink.

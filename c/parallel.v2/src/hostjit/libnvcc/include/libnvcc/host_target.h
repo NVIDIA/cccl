@@ -17,25 +17,27 @@
 // HOSTJIT_HOST_TRIPLE   clang -triple / -aux-triple for the host
 // HOSTJIT_HOST_CPU      clang -target-cpu / -aux-target-cpu for the host
 // HOSTJIT_LLD_EMULATION ld.lld -m value for the host object format
-// HOSTJIT_MULTIARCH     Debian/Ubuntu multiarch directory name under
-//                       /usr/include (libc keeps bits/ there; cc1 does not
-//                       add it on its own, the clang driver normally does)
+//
+// HOSTJIT_MULTIARCH is not selected here: it is the Debian/Ubuntu multiarch
+// tuple the host compiler reports (CMAKE_LIBRARY_ARCHITECTURE), passed by
+// libnvcc's CMake target, and empty on distributions without multiarch.
 
 #if defined(_WIN32)
 #  define HOSTJIT_HOST_TRIPLE   "x86_64-pc-windows-msvc"
 #  define HOSTJIT_HOST_CPU      "x86-64"
 #  define HOSTJIT_LLD_EMULATION "i386pep"
-#  define HOSTJIT_MULTIARCH     ""
 #elif defined(__aarch64__)
 #  define HOSTJIT_HOST_TRIPLE   "aarch64-unknown-linux-gnu"
 #  define HOSTJIT_HOST_CPU      "generic"
 #  define HOSTJIT_LLD_EMULATION "aarch64linux"
-#  define HOSTJIT_MULTIARCH     "aarch64-linux-gnu"
 #elif defined(__x86_64__)
 #  define HOSTJIT_HOST_TRIPLE   "x86_64-pc-linux-gnu"
 #  define HOSTJIT_HOST_CPU      "x86-64"
 #  define HOSTJIT_LLD_EMULATION "elf_x86_64"
-#  define HOSTJIT_MULTIARCH     "x86_64-linux-gnu"
 #else
 #  error "libnvcc: unsupported host architecture; add it to host_target.h"
+#endif
+
+#ifndef HOSTJIT_MULTIARCH
+#  define HOSTJIT_MULTIARCH ""
 #endif
