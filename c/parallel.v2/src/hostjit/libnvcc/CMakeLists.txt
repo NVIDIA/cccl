@@ -40,7 +40,8 @@ set(
 
 # List options must be set before CPMAddPackage
 set(LLVM_ENABLE_PROJECTS "clang;lld" CACHE STRING "" FORCE)
-set(LLVM_TARGETS_TO_BUILD "X86;NVPTX" CACHE STRING "" FORCE)
+# Host code generation needs the build host's backend; device code is NVPTX.
+set(LLVM_TARGETS_TO_BUILD "X86;AArch64;NVPTX" CACHE STRING "" FORCE)
 
 CPMAddPackage(
   NAME llvm_project
@@ -96,6 +97,9 @@ target_compile_definitions(
     CLANG_RESOURCE_DIR="${llvm_project_BINARY_DIR}/lib/clang/${LLVM_VERSION_MAJOR}"
     CLANG_HEADERS_DIR="${llvm_project_SOURCE_DIR}/clang/lib/Headers"
     HOSTJIT_INCLUDE_DIR="${_hostjit_include_dir}"
+    # Debian/Ubuntu multiarch tuple as the host compiler reports it
+    # (`-print-multiarch`); empty on distributions without multiarch.
+    HOSTJIT_MULTIARCH="${CMAKE_LIBRARY_ARCHITECTURE}"
 )
 
 # A toolkit is required because we need to call into nvfatbin/nvjitlink.
@@ -128,6 +132,11 @@ target_link_libraries(
     LLVMX86AsmParser
     LLVMX86Desc
     LLVMX86Info
+    LLVMAArch64CodeGen
+    LLVMAArch64AsmParser
+    LLVMAArch64Desc
+    LLVMAArch64Info
+    LLVMAArch64Utils
     LLVMNVPTXCodeGen
     LLVMNVPTXDesc
     LLVMNVPTXInfo

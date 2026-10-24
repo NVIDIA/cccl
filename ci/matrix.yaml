@@ -175,6 +175,9 @@ workflows:
     # entire matrix. Currently blocked on libnvfatbin availability for CUDA <12.4.
     - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: 'gcc13', gpu: 't4'}
     - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: 'msvc', gpu: 'l4'}
+    # arm64 host coverage of v2: libnvcc's host-side cc1/lld invocations and
+    # LLVM target list follow the build host (libnvcc/host_target.h).
+    - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: 'gcc13', cpu: 'arm64', gpu: 'l4'}
     # Python against c.parallel v2 (HostJIT-based). Single point of coverage
     # for the v2 Python path; the main `python` matrix continues to test
     # against v1 until v2 replaces it. The minimal row proves the minimal extras
@@ -299,6 +302,8 @@ workflows:
     # c.parallel v2 (HostJIT-based).
     - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: 'gcc13', gpu: 't4'}
     - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: 'msvc', gpu: 'l4'}
+    # arm64 host coverage of v2 (libnvcc/host_target.h).
+    - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: 'gcc13', cpu: 'arm64', gpu: 'l4'}
     # Python against c.parallel v2 (HostJIT-based)
     - {jobs: ['test'], project: 'python_v2', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
 
@@ -364,6 +369,9 @@ workflows:
     - {jobs: ['test_lid0'], cpu: 'arm64', project: 'cub',        std: '20', cxx: 'gcc', gpu: 'gb300', sm: 'gpu'}
     - {jobs: ['test'],      cpu: 'arm64', project: 'libcudacxx', std: 'max', cxx: 'clang', gpu: 'gb300', sm: 'gpu', cmake_options: '-Dlibcudacxx_LIT_PARALLEL_LEVEL=1'}
     - {jobs: ['test_lid0'], cpu: 'arm64', project: 'cub',        std: 'max', cxx: 'clang', gpu: 'gb300', sm: 'gpu'}
+    # c.parallel v2 (HostJIT) on GB300 (sm_103, arm64): exercises the PTX ISA
+    # selection (libnvcc/ptx_isa.h) on an SM LLVM only accepts at PTX 8.8.
+    - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: 'gcc13', cpu: 'arm64', gpu: 'gb300'}
     # Misc:
     - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '12.X', std: 'all', cxx: ['gcc14', 'clang19']}
     - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '13.X', std: ['17', '20'], cxx: 'gcc'}
