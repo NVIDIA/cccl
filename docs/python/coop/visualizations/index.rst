@@ -6,13 +6,15 @@
 Visualizations
 ==============
 
-Explore how ``cuda.coop`` Load and Store move values between memory and
-per-thread payloads. Change the settings, step through the stages, and select
-a value to follow its ownership. These diagrams show data movement; their
-timing and geometry do not predict GPU performance.
+Explore how ``cuda.coop`` moves values between memory and per-thread
+payloads and reduces a group's inputs to one aggregate.
+Change the settings, step through the stages, and select a value to follow
+its ownership. These diagrams show data movement; their timing and geometry
+do not predict GPU performance.
 
 .. toctree::
    :maxdepth: 1
 
    load
    store
+   reduce
