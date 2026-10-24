@@ -72,6 +72,10 @@ public:
     {
       cuda_try(cudaSetDevice(d));
 
+      // Pool properties (release threshold) are not set here: every place
+      // allocates through libcu++'s resolved default pools, whose policy site
+      // (`cuda::__get_default_memory_pool`) owns them. Only peer access and
+      // the peer mapping of the pool are set up.
       cudaMemPool_t mempool = cuda_try<cudaDeviceGetDefaultMemPool>(d);
 
       for (int peer_d = 0; peer_d < ndevices; peer_d++)
@@ -81,9 +85,6 @@ public:
           continue;
         }
         int can_access_peer = cuda_try<cudaDeviceCanAccessPeer>(d, peer_d);
-
-        uint64_t threshold = UINT64_MAX;
-        cuda_try(cudaMemPoolSetAttribute(mempool, cudaMemPoolAttrReleaseThreshold, &threshold));
 
         if (can_access_peer)
         {
