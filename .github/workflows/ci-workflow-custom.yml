@@ -13,11 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# On-demand workflow that sideloads a CI matrix file from a different branch of
-# this repo and runs the full nightly build matrix defined there. Unlike the
-# scheduled workflows, this always builds a full matrix (no inspect-changes) and
-# fetches the specified branch into '.private' inside ci-matrix-build so the
-# sideloaded matrix file is available to the workflow-build step.
+# On-demand workflow that runs the requested full build matrices from a
+# configurable ref and path in this repo (no inspect-changes).
 name: custom
 
 defaults:
@@ -27,10 +24,19 @@ defaults:
 on:
   workflow_dispatch:
     inputs:
-      matrix_branch:
-        description: "Branch (in this repo) containing the CI matrix file to sideload."
-        required: true
+      workflows:
+        description: "Space separated list of workflows in the matrix file to run."
         type: string
+        required: false
+        default: nightly
+      matrix_ref:
+        description: "Commit SHA or ref in this repo containing the CI matrix (defaults to the triggering commit)."
+        type: string
+        required: false
+      matrix_path:
+        description: "Path to the CI matrix file, relative to the repository root."
+        type: string
+        required: false
 
 concurrency:
   group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
@@ -42,5 +48,7 @@ jobs:
     uses: ./.github/workflows/ci-matrix-build.yml
     secrets: inherit
     with:
-      workflows: nightly
-      matrix_branch: ${{ inputs.matrix_branch }}
+      workflows: ${{ inputs.workflows }}
+      ci_profile: ""
+      matrix_ref: ${{ inputs.matrix_ref }}
+      matrix_path: ${{ inputs.matrix_path }}
