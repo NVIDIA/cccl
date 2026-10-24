@@ -225,7 +225,7 @@ struct AgentSegmentedRadixSort
 
         if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
         {
-          temp_storage.unbound_sort.reverse_counts_out[threadIdx.x] = bin_offset[track];
+          temp_storage.unbound_sort.reverse_counts_out[bin_idx] = bin_offset[track];
         }
       }
 
