@@ -326,7 +326,8 @@ template <SortOrder Order,
           typename ValueT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
-          typename OffsetT>
+          typename OffsetT,
+          typename SegmentIndexIteratorT = const local_segment_index_t*>
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_sort_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
@@ -335,8 +336,8 @@ __launch_bounds__(current_policy<PolicySelector>().small_segment.threads_per_blo
     const local_segment_index_t small_segments,
     const local_segment_index_t medium_segments,
     const local_segment_index_t medium_blocks,
-    const local_segment_index_t* const d_small_segments_indices,
-    const local_segment_index_t* const d_medium_segments_indices,
+    const SegmentIndexIteratorT d_small_segments_indices,
+    const SegmentIndexIteratorT d_medium_segments_indices,
     const KeyT* const d_keys_in,
     KeyT* const d_keys_out,
     const ValueT* const d_values_in,
@@ -464,13 +465,14 @@ template <SortOrder Order,
           typename ValueT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
-          typename OffsetT>
+          typename OffsetT,
+          typename SegmentIndexIteratorT = const local_segment_index_t*>
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_sort_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(current_policy<PolicySelector>().large_segment.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedSortKernelLarge(
-    const local_segment_index_t* const d_segments_indices,
+    const SegmentIndexIteratorT d_segments_indices,
     const KeyT* d_keys_in_orig,
     KeyT* d_keys_out_orig,
     device_double_buffer<KeyT> d_keys_double_buffer,
