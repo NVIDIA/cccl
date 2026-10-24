@@ -62,6 +62,7 @@ from .scan import (
     make_block_scan_specialization,
     normalize_block_scan_algorithm,
 )
+from .topk import BlockTopKSpecialization, make_block_topk_specialization
 
 __all__ = [
     "ArgumentBinding",
@@ -89,6 +90,7 @@ __all__ = [
     "BlockScanAlgorithm",
     "BlockScanSpecialization",
     "BlockStoreAlgorithm",
+    "BlockTopKSpecialization",
     "RadixBitRange",
     "RadixOrder",
     "binding",
@@ -106,6 +108,7 @@ __all__ = [
     "make_block_reduce_specialization",
     "make_block_scan_specialization",
     "make_block_store_specialization",
+    "make_block_topk_specialization",
     "make_radix_bit_range",
     "normalize_block_dim",
     "normalize_block_reduce_algorithm",

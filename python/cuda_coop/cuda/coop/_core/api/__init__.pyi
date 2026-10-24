@@ -26,6 +26,7 @@ from .thread_group import (
     this_thread,
     this_warp,
 )
+from .topk import topk_max_keys, topk_max_pairs, topk_min_keys, topk_min_pairs
 
 __all__ = [
     "Hierarchy",
@@ -54,4 +55,8 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]
