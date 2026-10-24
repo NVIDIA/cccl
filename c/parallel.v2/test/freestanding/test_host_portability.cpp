@@ -110,8 +110,6 @@ int main()
     sm,
     isa,
     min_ptx_isa_for_sm(sm));
-  // Explicit checks rather than assert(): the test suite builds Release
-  // (NDEBUG), and this check must fail there too.
   if (isa < min_ptx_isa_for_sm(sm))
   {
     std::fprintf(stderr, "libnvcc PTX ISA table is too old for sm_%d: PTX %d < %d\n", sm, isa, min_ptx_isa_for_sm(sm));
