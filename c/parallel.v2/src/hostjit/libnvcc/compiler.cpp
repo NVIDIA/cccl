@@ -730,7 +730,7 @@ static void appendSystemIncludePaths(std::vector<std::string>& args, const Compi
   // and friends include under /usr/include/<multiarch>. The clang driver adds
   // that directory; the cc1 invocations here must do it themselves.
   const std::string multiarch = std::string("/usr/include/") + HOSTJIT_MULTIARCH;
-  if (std::filesystem::exists(multiarch))
+  if (pathExists(multiarch))
   {
     args.push_back("-internal-isystem");
     args.push_back(multiarch);
