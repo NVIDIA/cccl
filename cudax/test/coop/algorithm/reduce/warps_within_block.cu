@@ -317,7 +317,10 @@ C2H_TEST("reduce/warps_within_block Integral Type Tests",
   for (int num_items = 1; num_items <= max_size; ++num_items)
   {
     auto reference_result = cuda::std::accumulate(
-      h_in.begin(), h_in.begin() + num_items * nwarps_in_group * warp_size, operator_identity, reduce_op);
+      h_in.begin(),
+      h_in.begin() + static_cast<typename decltype(h_in)::difference_type>(num_items) * nwarps_in_group * warp_size,
+      operator_identity,
+      reduce_op);
     run_reduce_kernel(stream, num_items, d_in, d_out, reduce_op);
     verify_results(reference_result, c2h::host_vector<value_t>(d_out)[0]);
   }
@@ -339,7 +342,10 @@ C2H_TEST(
   for (int num_items = 1; num_items <= max_size; ++num_items)
   {
     auto reference_result = cuda::std::accumulate(
-      h_in.begin(), h_in.begin() + num_items * nwarps_in_group * warp_size, operator_identity, reduce_op);
+      h_in.begin(),
+      h_in.begin() + static_cast<typename decltype(h_in)::difference_type>(num_items) * nwarps_in_group * warp_size,
+      operator_identity,
+      reduce_op);
     run_reduce_kernel(stream, num_items, d_in, d_out, reduce_op);
     verify_results(reference_result, c2h::host_vector<value_t>(d_out)[0]);
   }
@@ -360,7 +366,10 @@ C2H_TEST("reduce/warps_within_block Broadcasted", "[reduce][warps_within_block]"
   {
     c2h::device_vector<value_t> d_out(nwarps_in_group * warp_size);
     auto reference_result = cuda::std::accumulate(
-      h_in.begin(), h_in.begin() + num_items * nwarps_in_group * warp_size, operator_identity, reduce_op);
+      h_in.begin(),
+      h_in.begin() + static_cast<typename decltype(h_in)::difference_type>(num_items) * nwarps_in_group * warp_size,
+      operator_identity,
+      reduce_op);
     run_reduce_kernel(stream, num_items, d_in, d_out, reduce_op, cuda::std::true_type{});
     verify_results(c2h::host_vector<value_t>(nwarps_in_group * warp_size, reference_result),
                    c2h::host_vector<value_t>(d_out));

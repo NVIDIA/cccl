@@ -128,8 +128,10 @@ int main()
     {
       if (u != v)
       {
-        printf(
-          "Jaccard similarity between vertex %d and vertex %d: %f\n", u, v, jaccard_similarities[u * num_vertices + v]);
+        printf("Jaccard similarity between vertex %d and vertex %d: %f\n",
+               u,
+               v,
+               jaccard_similarities[static_cast<size_t>(u) * num_vertices + v]);
       }
     }
   }

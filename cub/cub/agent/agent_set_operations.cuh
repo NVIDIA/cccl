@@ -16,6 +16,7 @@
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_merge_sort.cuh>
 #include <cub/block/block_scan.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
@@ -546,7 +547,7 @@ struct agent_set_op
 
     for (int item = static_cast<int>(threadIdx.x); item < tile_output_count; item += block_threads)
     {
-      output[tile_output_prefix + item] = shared[item];
+      output[static_cast<it_difference_t<OutputIt>>(tile_output_prefix) + item] = shared[item];
     }
   }
 
@@ -682,6 +683,11 @@ struct agent_set_op
 
     if (IsLastTile && threadIdx.x == 0)
     {
+      // This is a case where *output_count is something like int32_t while
+      // `tile_output_prefix + tile_output_count` is OffsetT, i.e. uint32_t. There is pretty
+      // much no safe way to cast here without potential loss of precision.
+      //
+      // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
       *output_count = tile_output_prefix + tile_output_count;
     }
   }

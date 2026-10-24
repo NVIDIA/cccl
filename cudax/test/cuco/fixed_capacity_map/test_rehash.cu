@@ -183,7 +183,7 @@ C2H_TEST("fixed_capacity_map rehash", "[container]", key_types, mapped_types, cg
   constexpr key_type empty_key_sentinel   = key_type{-1};
   constexpr key_type erased_key_sentinel  = key_type{-2};
   constexpr mapped_type empty_value       = mapped_type{-1};
-  constexpr ::cuda::std::size_t requested = num_keys * 2;
+  constexpr ::cuda::std::size_t requested = static_cast<::cuda::std::size_t>(num_keys) * 2;
 
   const ::cuda::stream stream{::cuda::device_ref{0}};
   const auto mr    = ::cuda::device_default_memory_pool(::cuda::device_ref{0});

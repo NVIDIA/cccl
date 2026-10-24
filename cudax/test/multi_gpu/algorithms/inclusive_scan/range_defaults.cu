@@ -77,7 +77,8 @@ MULTI_GPU_TEST("inclusive_scan, range overloads default values", )
 
     for (cuda::std::size_t i = 0; i < out.size(); ++i)
     {
-      const auto expected_for_rank = exp_span.subspan(comms[i].rank() * values_per_rank, values_per_rank);
+      const auto expected_for_rank =
+        exp_span.subspan(static_cast<cuda::std::size_t>(comms[i].rank()) * values_per_rank, values_per_rank);
       const auto expected =
         cuda::make_buffer<T>(out[i].stream(), cuda::mr::legacy_pinned_memory_resource{}, expected_for_rank);
 

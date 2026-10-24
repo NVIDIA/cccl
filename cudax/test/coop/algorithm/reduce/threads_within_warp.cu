@@ -225,8 +225,11 @@ C2H_TEST("reduce/threads_within_warp Integral Type Tests",
   const cuda::stream stream{cuda::devices[0]};
   for (int num_items = 1; num_items <= max_size; ++num_items)
   {
-    auto reference_result =
-      cuda::std::accumulate(h_in.begin(), h_in.begin() + num_items * nthreads_in_group, operator_identity, reduce_op);
+    auto reference_result = cuda::std::accumulate(
+      h_in.begin(),
+      h_in.begin() + static_cast<typename decltype(h_in)::difference_type>(num_items) * nthreads_in_group,
+      operator_identity,
+      reduce_op);
     run_reduce_kernel(stream, nthreads_in_group_t{}, num_items, d_in, d_out, reduce_op);
     verify_results(reference_result, c2h::host_vector<value_t>(d_out)[0]);
   }
@@ -252,8 +255,11 @@ C2H_TEST("reduce/threads_within_warp Floating-Point Type Tests",
   const cuda::stream stream{cuda::devices[0]};
   for (int num_items = 1; num_items <= max_size; ++num_items)
   {
-    auto reference_result =
-      cuda::std::accumulate(h_in.begin(), h_in.begin() + num_items * nthreads_in_group, operator_identity, reduce_op);
+    auto reference_result = cuda::std::accumulate(
+      h_in.begin(),
+      h_in.begin() + static_cast<typename decltype(h_in)::difference_type>(num_items) * nthreads_in_group,
+      operator_identity,
+      reduce_op);
     run_reduce_kernel(stream, nthreads_in_group_t{}, num_items, d_in, d_out, reduce_op);
     verify_results(reference_result, c2h::host_vector<value_t>(d_out)[0]);
   }
@@ -276,8 +282,11 @@ C2H_TEST(
   for (int num_items = 1; num_items <= max_size; ++num_items)
   {
     c2h::device_vector<value_t> d_out(nthreads_in_group);
-    auto reference_result =
-      cuda::std::accumulate(h_in.begin(), h_in.begin() + num_items * nthreads_in_group, operator_identity, reduce_op);
+    auto reference_result = cuda::std::accumulate(
+      h_in.begin(),
+      h_in.begin() + static_cast<typename decltype(h_in)::difference_type>(num_items) * nthreads_in_group,
+      operator_identity,
+      reduce_op);
     run_reduce_kernel(stream, nthreads_in_group_t{}, num_items, d_in, d_out, reduce_op, cuda::std::true_type{});
     verify_results(c2h::host_vector<value_t>(nthreads_in_group, reference_result), c2h::host_vector<value_t>(d_out));
   }
