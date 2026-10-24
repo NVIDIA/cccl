@@ -1017,6 +1017,10 @@ struct BlockRadixRankMatchEarlyCounts
       {
         __syncwarp(WARP_MASK);
         // TODO: handle RADIX_DIGITS % WARP_THREADS != 0 if it becomes necessary
+        static_assert(
+          RADIX_DIGITS % WARP_THREADS == 0,
+          "BlockRadixRankMatchEarlyCounts: 2^RadixBits must be a multiple of the warp size (32) if NumParts > 1 "
+          "(e.g., RadixSortPolicy: onesweep.radix_bits must be at least 5 if onesweep.rank_private_partitions > 1)");
         constexpr int WARP_BINS_PER_THREAD = RADIX_DIGITS / WARP_THREADS;
         int bins[WARP_BINS_PER_THREAD];
 

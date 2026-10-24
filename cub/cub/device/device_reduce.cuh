@@ -189,7 +189,10 @@ inline constexpr bool is_non_deterministic_v =
 struct DeviceReduce
 {
 private:
-  template <typename EnvT,
+  // NondeterminismFellBackToRunToRun is true if the user requested determinism::not_guaranteed, but we fell back to
+  // run_to_run
+  template <bool NondeterminismFellBackToRunToRun = false,
+            typename EnvT,
             typename InputIteratorT,
             typename OutputIteratorT,
             typename ReductionOpT,
@@ -262,7 +265,7 @@ private:
         detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT, Determinism>;
       return detail::dispatch_with_env_and_tuning<default_policy_selector>(
         env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
-          return detail::reduce::dispatch<accum_t>(
+          return detail::reduce::dispatch<accum_t, /* StableReductionOrder */ true, NondeterminismFellBackToRunToRun>(
             storage,
             bytes,
             d_in,
@@ -360,7 +363,10 @@ private:
         ::cuda::execution::determinism::run_to_run_t,
         default_determinism_t>;
 
-      return reduce_impl(d_in, d_out, num_items, reduction_op, transform_op, init, determinism_t{}, env);
+      constexpr bool fell_back_to_run_to_run =
+        no_determinism && ::cuda::std::is_same_v<determinism_t, ::cuda::execution::determinism::run_to_run_t>;
+      return reduce_impl<fell_back_to_run_to_run>(
+        d_in, d_out, num_items, reduction_op, transform_op, init, determinism_t{}, env);
     }
   }
 
