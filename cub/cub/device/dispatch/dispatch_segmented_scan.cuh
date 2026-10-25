@@ -32,7 +32,6 @@
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/__cmath/mul_hi.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/invoke.h>
@@ -535,51 +534,20 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   _CCCL_UNREACHABLE();
 }
 
-// Segments per block such that a block holds about two tiles of items at the mean segment size. Scan several segments
-// only when at least four fit.
+// Segments per block: two tiles of items divided by the mean segment length, at most max_segments. Scan several
+// segments only when at least four fit.
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int segments_per_block_for_mean(
   int tile_items, int max_segments, ::cuda::std::int64_t num_segments, ::cuda::std::int64_t num_items) noexcept
 {
-  if (tile_items <= 0 || num_items <= 0)
+  if (num_segments <= 0 || num_items <= 0)
   {
     return 1;
   }
 
-  const auto factor        = ::cuda::std::uint64_t{2} * static_cast<::cuda::std::uint64_t>(tile_items);
-  const auto segment_count = static_cast<::cuda::std::uint64_t>(num_segments);
-  const auto numerator     = factor * segment_count;
-  const auto numerator_hi  = ::cuda::mul_hi(factor, segment_count);
-  const auto denominator   = static_cast<::cuda::std::uint64_t>(num_items);
-
-  ::cuda::std::uint64_t segments = 0;
-  if (numerator_hi == 0)
-  {
-    segments = numerator / denominator;
-  }
-  else
-  {
-    ::cuda::std::uint64_t lower = 0;
-    ::cuda::std::uint64_t upper = static_cast<::cuda::std::uint64_t>(max_segments);
-    while (lower < upper)
-    {
-      const auto candidate    = lower + (upper - lower + 1) / 2;
-      const auto candidate_lo = candidate * denominator;
-      const auto candidate_hi = ::cuda::mul_hi(candidate, denominator);
-      if (candidate_hi < numerator_hi || (candidate_hi == numerator_hi && candidate_lo <= numerator))
-      {
-        lower = candidate;
-      }
-      else
-      {
-        upper = candidate - 1;
-      }
-    }
-    segments = lower;
-  }
-
-  return segments >= 4
-         ? static_cast<int>((::cuda::std::min) (segments, static_cast<::cuda::std::uint64_t>(max_segments)))
-         : 1;
+  // A mean below one item, with more segments than items, counts as one.
+  const auto mean_items = (::cuda::std::max) (num_items / num_segments, ::cuda::std::int64_t{1});
+  const auto segments   = 2 * ::cuda::std::int64_t{tile_items} / mean_items;
+  return segments >= 4 ? static_cast<int>((::cuda::std::min) (segments, ::cuda::std::int64_t{max_segments})) : 1;
 }
 
 // The one-segment-per-block dispatch with block b taking segments [b * n, (b + 1) * n), where n is selected from

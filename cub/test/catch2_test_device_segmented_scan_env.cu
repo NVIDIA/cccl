@@ -117,13 +117,14 @@ CUB_TEST_CASE("Device segmented scan rejects a negative num_items", "[segmented_
 CUB_TEST_CASE("Device segmented scan selects segments per block from num_items", "[segmented_scan][device]", CUB_SMALL)
 {
   using cub::detail::segmented_scan::segments_per_block_for_mean;
-  constexpr auto int64_max = cuda::std::numeric_limits<cuda::std::int64_t>::max();
 
   STATIC_REQUIRE(segments_per_block_for_mean(512, 16, 11, 3072) == 1);
   STATIC_REQUIRE(segments_per_block_for_mean(512, 16, 12, 3072) == 4);
   STATIC_REQUIRE(segments_per_block_for_mean(512, 16, 16, 3072) == 5);
   STATIC_REQUIRE(segments_per_block_for_mean(512, 16, 1024, 2048) == 16);
-  STATIC_REQUIRE(segments_per_block_for_mean(2, 512, int64_max, int64_max) == 4);
+  STATIC_REQUIRE(segments_per_block_for_mean(512, 16, 4096, 2048) == 16);
+  STATIC_REQUIRE(segments_per_block_for_mean(512, 16, 0, 2048) == 1);
+  STATIC_REQUIRE(segments_per_block_for_mean(512, 16, 1024, 0) == 1);
 }
 
 CUB_TEST_CASE("Device segmented inclusive scan works with default environment", "[segmented_scan][device]", CUB_SMALL)
