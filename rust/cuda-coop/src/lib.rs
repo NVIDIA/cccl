@@ -44,6 +44,11 @@
 //! Mode, built-in operator and Block algorithm are selected statically through
 //! [`ScanOptions`], with exclusive sum as the default. Scan preserves its input
 //! and uses the same compiler-checked scratch and participation rules.
+//! [`reduce`] and [`sum`] return `Some(total)` only at group rank zero, with
+//! `None` at other participants. They accept scalars or borrowed payloads on
+//! Blocks and Warp groups, including guarded non-exhaustive widths 17–31.
+//! [`ReduceOptions`] selects the operator, Block algorithm, scalar count and
+//! storage without changing the input.
 //! Host payload tests need no GPU;
 //! executing hardware queries requires an Oxide-compiled CUDA kernel.
 
@@ -52,6 +57,7 @@
 mod alignment;
 mod group;
 mod load_store;
+mod reduce;
 mod scan;
 mod temp_storage;
 mod thread_data;
@@ -61,6 +67,10 @@ pub use cuda_device::{CollectiveTiles, DisjointSlice};
 pub use load_store::{
     Algorithm, Direct, LoadOptions, LoadSource, LoadStoreGroup, StoreOptions, StoreValue, Striped,
     Transpose, Vectorize, WarpTranspose, WarpTransposeTimesliced, load, store,
+};
+pub use reduce::{
+    RakingCommutativeOnly, ReduceAlgorithm, ReduceGroup, ReduceOperator, ReduceOptions,
+    ReduceValue, SumOptions, WarpReductions, reduce, sum,
 };
 pub use scan::{
     BitAnd, BitOr, BitXor, Exclusive, ExclusiveScanOptions, Inclusive, InclusiveScanOptions, Max,

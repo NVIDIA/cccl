@@ -43,8 +43,9 @@ as the remaining input length capped at the tile size. The kernel above shows
 that idiom, including a short final tile. Counts and offsets describe the whole
 group's tile, and must be uniform across that group.
 
-The public operations include :doc:`load_store` and :doc:`scan`. Scan returns
-fresh per-group prefixes while preserving its input. Additional primitive
+The public operations include :doc:`load_store`, :doc:`scan` and :doc:`reduce`.
+Scan returns fresh per-group prefixes; Reduce returns a total only at each
+group's root. Both preserve their input. Additional primitive
 families are under development. The crate is unpublished and its interface can
 change.
 
@@ -114,6 +115,7 @@ Read next
    groups
    load_store
    scan
+   reduce
    provider
 
 Generate the API reference with ``cargo doc --workspace --no-deps`` from

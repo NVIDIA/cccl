@@ -1,23 +1,29 @@
 // Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-//! Version-one host transport for the Oxide library-operation marker.
+//! Host transport for the Oxide library-operation marker.
 //!
 //! A dependency build script can serve as its already-built provider executable:
 //! normal Cargo execution embeds [`registration`] in a device crate constant;
 //! `--oxide-library-request-v1` execution passes stdin/stdout to [`serve`];
+//! `--oxide-library-request-v2` serves compiler-admitted callable Reduce requests;
 //! `--oxide-library-inputs-v1` passes them to [`serve_inputs`] during macro expansion.
 //! Use `cuda_device::library::registration!` in the getter to track these inputs.
 //! The compiler reads the registration getter's constant MIR and invokes this
 //! host process. This module never invokes Cargo or executes device Rust code.
 //! The protocol supports raw i32 and typed validity Load/Store recipes documented
-//! by [`Operation`], and numeric Block/scalar Warp Scan through [`ScanRecipe`].
+//! by [`Operation`], numeric Block/scalar Warp Scan through [`ScanRecipe`], and
+//! root-result scalar/payload Reduce through [`ReduceRecipe`].
 //! Device calls retain all participation, validity and scratch obligations of
 //! [`crate::Specialization`]. No allocation or synchronization policy is supplied.
+//! Callable Reduce uses i32 full-input Block Raking and the same payload validity
+//! and root-result ABI. Its thunk and borrowed environment come from Oxide's
+//! checked callback marker; the provider does not select or execute Rust code.
 
 use crate::{
-    Algorithm, Artifact, Dtype, Error, Layout, NativeRequest, Operation, Provider, Request, Result,
-    ScanRecipe, ScanRequest,
+    Algorithm, Artifact, Dtype, Error, Layout, NativeRequest, Operation, Provider, ReduceAlgorithm,
+    ReduceForm, ReduceOperator, ReduceRecipe, ReduceRequest, Request, Result, ScanRecipe,
+    ScanRequest,
 };
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
@@ -99,11 +105,75 @@ enum Argument {
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct BatchRequest {
+struct BatchRequest<Request = SpecializationRequest> {
     version: u32,
     target: String,
     cuda_root: PathBuf,
-    requests: Vec<SpecializationRequest>,
+    requests: Vec<Request>,
+}
+
+/// The compiler batches callback requests separately under protocol version two.
+#[derive(Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Callback {
+    pub(crate) symbol: String,
+    arguments: Vec<Argument>,
+    result: Scalar,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CallbackRequest {
+    operation: String,
+    algorithm: String,
+    dtype: Scalar,
+    block: [u32; 3],
+    items_per_thread: u32,
+    #[serde(default)]
+    warp_width: Option<u32>,
+    callback: Callback,
+}
+
+impl CallbackRequest {
+    fn native(&self) -> Result<NativeRequest> {
+        if self.operation != "reduce_callable_payload_validity_bits_v1"
+            || self.algorithm != "raking"
+            || self.dtype != Scalar::Signed(32)
+            || self.warp_width.is_some()
+        {
+            return Err(Error::message(
+                "callable Reduce requires the i32 Block payload raking recipe",
+            ));
+        }
+        if self.callback.symbol.is_empty()
+            || !self
+                .callback
+                .symbol
+                .bytes()
+                .enumerate()
+                .all(|(i, b)| b == b'_' || b.is_ascii_alphabetic() || (i > 0 && b.is_ascii_digit()))
+            || self.callback.arguments
+                != [
+                    Argument::ConstPointer(Scalar::Unsigned(8)),
+                    Argument::Value(Scalar::Signed(32)),
+                    Argument::Value(Scalar::Signed(32)),
+                ]
+            || self.callback.result != Scalar::Signed(32)
+        {
+            return Err(Error::message(
+                "callable Reduce requires a C identifier and the (const environment*, i32, i32) -> i32 callback ABI",
+            ));
+        }
+        ReduceRequest::block(
+            Dtype::I32,
+            ReduceOperator::Sum,
+            ReduceAlgorithm::Raking,
+            ReduceForm::Payload,
+            self.block,
+            self.items_per_thread,
+        )
+        .map(NativeRequest::Reduce)
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -120,6 +190,25 @@ struct SpecializationRequest {
 
 impl SpecializationRequest {
     fn native(&self) -> Result<NativeRequest> {
+        if self.operation.starts_with("reduce_") {
+            let recipe = ReduceRecipe::parse(&self.operation, &self.algorithm)?;
+            let dtype = self.dtype.dtype()?;
+            let request = match (recipe, self.warp_width) {
+                (ReduceRecipe::Block(op, algorithm, form), None) => ReduceRequest::block(
+                    dtype,
+                    op,
+                    algorithm,
+                    form,
+                    self.block,
+                    self.items_per_thread,
+                )?,
+                (ReduceRecipe::Warp(op, form), Some(width)) => {
+                    ReduceRequest::warp(dtype, op, form, self.block, width, self.items_per_thread)?
+                }
+                _ => return Err(Error::message("Reduce recipe disagrees with Warp scope")),
+            };
+            return Ok(NativeRequest::Reduce(request));
+        }
         if self.operation.starts_with("scan_") {
             let recipe = ScanRecipe::parse(&self.operation, &self.algorithm)?;
             let dtype = self.dtype.dtype()?;
@@ -226,6 +315,19 @@ struct BatchResponse {
 
 fn arguments(request: NativeRequest) -> Vec<Argument> {
     let request = match request {
+        NativeRequest::Reduce(request) => {
+            let dtype = Scalar::from(request.dtype);
+            let mut arguments = vec![
+                Argument::ConstPointer(dtype),
+                Argument::MutPointer(dtype),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+            ];
+            if request.recipe.form() == ReduceForm::ScalarPrefix {
+                arguments.push(Argument::Value(Scalar::Signed(32)));
+            }
+            return arguments;
+        }
         NativeRequest::Scan(request) => {
             let dtype = Scalar::from(request.dtype);
             let mut arguments = vec![
@@ -294,6 +396,14 @@ pub fn build_script() -> Result<()> {
     match std::env::args().nth(1).as_deref() {
         Some("--oxide-library-request-v1") => {
             return serve(&checkout, std::io::stdin().lock(), std::io::stdout().lock());
+        }
+        Some("--oxide-library-request-v2") => {
+            return serve_version(
+                &checkout,
+                std::io::stdin().lock(),
+                std::io::stdout().lock(),
+                2,
+            );
         }
         Some("--oxide-library-inputs-v1") => {
             return serve_inputs(&checkout, std::io::stdin().lock(), std::io::stdout().lock());
@@ -368,6 +478,50 @@ pub fn scan_registration(executable: &Path, recipe: ScanRecipe) -> Result<String
         provider: "cuda_coop",
         executable,
         operation: &recipe.operation().token(),
+        algorithm: recipe.algorithm_token(),
+    })
+    .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
+}
+
+/// Register full-input i32 Block Reduce with a compiler-admitted Rust callable.
+///
+/// The compiler supplies the concrete thunk and environment through protocol
+/// version two. Input validity and root-only output use the payload ABI.
+///
+/// # Errors
+/// Rejects a nonabsolute executable or a path that cannot be encoded as JSON.
+pub fn reduce_callable_registration(executable: &Path) -> Result<String> {
+    if !executable.is_absolute() {
+        return Err(Error::message("provider executable path must be absolute"));
+    }
+    serde_json::to_string(&Registration {
+        version: VERSION,
+        provider: "cuda_coop",
+        executable,
+        operation: "reduce_callable_payload_validity_bits_v1",
+        algorithm: "raking",
+    })
+    .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
+}
+
+/// Encode one Reduce recipe for the existing dependency provider executable.
+///
+/// ScalarPrefix adds one signed 32-bit uniform count. Scalar and Payload add
+/// no controls; their distinct identities preserve scalar-only count support.
+/// Warp recipes use implicit algorithm selection. Dtype, geometry and input
+/// extent arrive with specialization; the output always has one slot.
+///
+/// # Errors
+/// Rejects a nonabsolute executable or a path that cannot be encoded as JSON.
+pub fn reduce_registration(executable: &Path, recipe: ReduceRecipe) -> Result<String> {
+    if !executable.is_absolute() {
+        return Err(Error::message("provider executable path must be absolute"));
+    }
+    serde_json::to_string(&Registration {
+        version: VERSION,
+        provider: "cuda_coop",
+        executable,
+        operation: &recipe.token(),
         algorithm: recipe.algorithm_token(),
     })
     .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
@@ -462,13 +616,46 @@ pub fn serve_inputs(checkout: &Path, input: impl Read, mut output: impl Write) -
 /// Rejects malformed/version-mismatched requests, unsupported types/recipes,
 /// invalid geometry, and duplicate specializations. Native compiler errors
 /// retain NVRTC diagnostics. No response is written until compilation succeeds.
-pub fn serve(checkout: &Path, input: impl Read, mut output: impl Write) -> Result<()> {
+pub fn serve(checkout: &Path, input: impl Read, output: impl Write) -> Result<()> {
+    serve_version(checkout, input, output, VERSION)
+}
+
+fn serve_version(
+    checkout: &Path,
+    input: impl Read,
+    mut output: impl Write,
+    version: u32,
+) -> Result<()> {
     let mut bytes = Vec::new();
     input
         .take((MAX_HEADER + 1) as u64)
         .read_to_end(&mut bytes)?;
     if bytes.len() > MAX_HEADER {
         return Err(Error::message("provider request exceeds 1 MiB"));
+    }
+    if version == 2 {
+        let request: BatchRequest<CallbackRequest> =
+            serde_json::from_slice(&bytes).map_err(|error| {
+                Error::message(format!("invalid callback provider request: {error}"))
+            })?;
+        if request.version != version {
+            return Err(Error::message(
+                "callback provider requires protocol version 2",
+            ));
+        }
+        let requests = request
+            .requests
+            .iter()
+            .map(CallbackRequest::native)
+            .collect::<Result<Vec<_>>>()?;
+        let callbacks = request
+            .requests
+            .into_iter()
+            .map(|request| request.callback)
+            .collect::<Vec<_>>();
+        let artifact = Provider::from_checkout(checkout, &request.cuda_root)?
+            .compile_native_with_callbacks(&requests, &request.target, Some(&callbacks))?;
+        return write_response(&requests, artifact, &mut output, version);
     }
     let request: BatchRequest = serde_json::from_slice(&bytes)
         .map_err(|error| Error::message(format!("invalid provider request: {error}")))?;
@@ -485,13 +672,14 @@ pub fn serve(checkout: &Path, input: impl Read, mut output: impl Write) -> Resul
         .collect::<Result<_>>()?;
     let artifact = Provider::from_checkout(checkout, &request.cuda_root)?
         .compile_native(&requests, &request.target)?;
-    write_response(&requests, artifact, &mut output)
+    write_response(&requests, artifact, &mut output, version)
 }
 
 fn write_response(
     requests: &[NativeRequest],
     artifact: Artifact,
     output: &mut impl Write,
+    version: u32,
 ) -> Result<()> {
     if artifact.ltoir.is_empty() || artifact.ltoir.len() > MAX_LTO {
         return Err(Error::message(
@@ -509,6 +697,8 @@ fn write_response(
                     .map_err(|_| Error::message("request index exceeds u32"))?,
                 identity: entry.identity,
                 symbol: entry.symbol,
+                // Both protocols describe only the caller's payload/uniform
+                // tuple. Oxide inserts scratch and the V2 environment itself.
                 arguments: arguments(*request),
                 cub_layout: entry.cub_layout.try_into()?,
                 scratch: entry.scratch.try_into()?,
@@ -518,7 +708,7 @@ fn write_response(
         })
         .collect::<Result<Vec<_>>>()?;
     let header = serde_json::to_vec(&BatchResponse {
-        version: VERSION,
+        version,
         batch_identity: artifact.identity,
         specializations,
     })
@@ -526,7 +716,7 @@ fn write_response(
     if header.len() > MAX_HEADER {
         return Err(Error::message("provider response header exceeds 1 MiB"));
     }
-    output.write_all(MAGIC)?;
+    output.write_all(if version == 2 { b"OXDLIB02" } else { MAGIC })?;
     output.write_all(&(header.len() as u64).to_le_bytes())?;
     output.write_all(&(artifact.ltoir.len() as u64).to_le_bytes())?;
     output.write_all(&header)?;
@@ -536,8 +726,256 @@ fn write_response(
 
 #[cfg(test)]
 mod tests {
+    fn callable_request(symbol: &str, items: u32) -> serde_json::Value {
+        serde_json::json!({
+            "operation":"reduce_callable_payload_validity_bits_v1", "algorithm":"raking",
+            "dtype":{"kind":"signed","bits":32}, "block":[128,1,1], "items_per_thread":items,
+            "callback":{
+                "symbol":symbol,
+                "arguments":[
+                    {"kind":"const_pointer","scalar":{"kind":"unsigned","bits":8}},
+                    {"kind":"value","scalar":{"kind":"signed","bits":32}},
+                    {"kind":"value","scalar":{"kind":"signed","bits":32}}
+                ],
+                "result":{"kind":"signed","bits":32}
+            }
+        })
+    }
+
+    #[test]
+    fn callable_protocol_rejects_wrong_recipe_or_thunk_before_toolkit() {
+        let base = callable_request("rust_reduce_thunk", 4);
+        assert!(serde_json::from_value::<SpecializationRequest>(base.clone()).is_err());
+        let mut missing = base.clone();
+        missing.as_object_mut().unwrap().remove("callback");
+        assert!(serde_json::from_value::<CallbackRequest>(missing).is_err());
+        let parsed: CallbackRequest = serde_json::from_value(base.clone()).unwrap();
+        assert!(parsed.native().is_ok());
+        for (path, value) in [
+            (
+                "/operation",
+                serde_json::json!("reduce_sum_payload_validity_bits_v1"),
+            ),
+            ("/algorithm", serde_json::json!("warp_reductions")),
+            ("/dtype/bits", serde_json::json!(64)),
+            ("/block/0", serde_json::json!(0)),
+            ("/items_per_thread", serde_json::json!(0)),
+            ("/callback/symbol", serde_json::json!("bad;symbol")),
+            (
+                "/callback/arguments/0/kind",
+                serde_json::json!("mut_pointer"),
+            ),
+            ("/callback/result/bits", serde_json::json!(64)),
+        ] {
+            let mut request = base.clone();
+            *request.pointer_mut(path).unwrap() = value;
+            let request = serde_json::json!({"version":2, "target":"compute_120", "cuda_root":"/absent", "requests":[request]});
+            let mut output = Vec::new();
+            let error = serve_version(
+                Path::new("/absent"),
+                request.to_string().as_bytes(),
+                &mut output,
+                2,
+            )
+            .unwrap_err();
+            assert!(!error.to_string().contains("No such file"), "{error}");
+            assert!(output.is_empty());
+        }
+    }
+
+    #[test]
+    #[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
+    fn native_callable_reduce_identity_and_v2_response()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let requests = [
+            callable_request("rust_add", 1),
+            callable_request("rust_add", 4),
+            callable_request("rust_max", 4),
+        ]
+        .into_iter()
+        .map(serde_json::from_value::<CallbackRequest>)
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+        let native = requests
+            .iter()
+            .map(CallbackRequest::native)
+            .collect::<Result<Vec<_>>>()?;
+        let callbacks = requests
+            .into_iter()
+            .map(|request| request.callback)
+            .collect::<Vec<_>>();
+        let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let provider = Provider::from_checkout(&checkout, std::env::var("CUDA_HOME")?)?;
+        let target =
+            std::env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
+        let artifact =
+            provider.compile_native_with_callbacks(&native, &target, Some(&callbacks))?;
+        let identities = artifact
+            .specializations
+            .iter()
+            .map(|s| s.identity)
+            .collect::<std::collections::HashSet<_>>();
+        assert_eq!(identities.len(), 3);
+        assert!(
+            artifact
+                .specializations
+                .iter()
+                .all(|s| !s.scratch_free && !s.mutates_payload && s.scratch.size > 0)
+        );
+        let builtin = provider.compile_native(&native[..1], &target)?;
+        assert!(!identities.contains(&builtin.specializations[0].identity));
+        let mut response = Vec::new();
+        write_response(&native, artifact, &mut response, 2)?;
+        assert_eq!(&response[..8], b"OXDLIB02");
+        let length = u64::from_le_bytes(response[8..16].try_into()?) as usize;
+        let header: serde_json::Value = serde_json::from_slice(&response[24..24 + length])?;
+        assert_eq!(header["version"], 2);
+        for entry in header["specializations"].as_array().unwrap() {
+            assert_eq!(
+                entry["arguments"],
+                serde_json::json!([
+                    {"kind":"const_pointer","scalar":{"kind":"signed","bits":32}},
+                    {"kind":"mut_pointer","scalar":{"kind":"signed","bits":32}},
+                    {"kind":"const_pointer","scalar":{"kind":"unsigned","bits":8}},
+                    {"kind":"mut_pointer","scalar":{"kind":"unsigned","bits":8}}
+                ])
+            );
+        }
+        Ok(())
+    }
+
     use super::*;
-    use crate::{ScanAlgorithm, ScanOperation, ScanOperator};
+    use crate::{ReduceAlgorithm, ReduceOperator, ScanAlgorithm, ScanOperation, ScanOperator};
+
+    #[test]
+    fn reduce_registration_preserves_scalar_count_and_payload_abi() {
+        for (dtype, recipe, items) in [
+            (
+                Dtype::I8,
+                ReduceRecipe::Block(
+                    ReduceOperator::Sum,
+                    ReduceAlgorithm::WarpReductions,
+                    ReduceForm::Payload,
+                ),
+                1,
+            ),
+            (
+                Dtype::U16,
+                ReduceRecipe::Block(
+                    ReduceOperator::Min,
+                    ReduceAlgorithm::Raking,
+                    ReduceForm::ScalarPrefix,
+                ),
+                1,
+            ),
+            (
+                Dtype::F64,
+                ReduceRecipe::Warp(ReduceOperator::Max, ReduceForm::Scalar),
+                1,
+            ),
+            (
+                Dtype::I32,
+                ReduceRecipe::Warp(ReduceOperator::BitXor, ReduceForm::Payload),
+                9,
+            ),
+        ] {
+            let registration: serde_json::Value =
+                serde_json::from_str(&reduce_registration(Path::new("/provider"), recipe).unwrap())
+                    .unwrap();
+            let scalar = Scalar::from(dtype);
+            let request = SpecializationRequest {
+                operation: registration["operation"].as_str().unwrap().into(),
+                algorithm: registration["algorithm"].as_str().unwrap().into(),
+                dtype: scalar,
+                block: [4, 4, 4],
+                items_per_thread: items,
+                warp_width: matches!(recipe, ReduceRecipe::Warp(..)).then_some(17),
+            }
+            .native()
+            .unwrap();
+            let mut expected = vec![
+                Argument::ConstPointer(scalar),
+                Argument::MutPointer(scalar),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+            ];
+            if recipe.form() == ReduceForm::ScalarPrefix {
+                expected.push(Argument::Value(Scalar::Signed(32)));
+            }
+            assert_eq!(arguments(request), expected);
+            assert_eq!(registration["provider"], "cuda_coop");
+        }
+    }
+
+    #[test]
+    fn rejects_invalid_reduce_before_opening_toolkit() {
+        let base = serde_json::json!({"version":1,"target":"compute_120","cuda_root":"/absent", "requests":[{
+            "operation":"reduce_bit_xor_payload_validity_bits_v1","algorithm":"raking",
+            "dtype":{"kind":"signed","bits":32},"block":[8,4,2],"items_per_thread":9,"warp_width":null
+        }]});
+        for (path, value, diagnostic) in [
+            (
+                "/requests/0/dtype",
+                serde_json::json!({"kind":"float","bits":32}),
+                "integer",
+            ),
+            (
+                "/requests/0/algorithm",
+                serde_json::json!("raking_memoize"),
+                "Reduce algorithm",
+            ),
+            (
+                "/requests/0/operation",
+                serde_json::json!("reduce_sum_prefix_validity_bits_v1"),
+                "exactly one",
+            ),
+            (
+                "/requests/0/operation",
+                serde_json::json!("reduce_sum_payload_prefix_validity_bits_v1"),
+                "Reduce operator",
+            ),
+            (
+                "/requests/0/items_per_thread",
+                serde_json::json!(0),
+                "positive items",
+            ),
+            (
+                "/requests/0/warp_width",
+                serde_json::json!(17),
+                "Warp scope",
+            ),
+            (
+                "/requests/0/block",
+                serde_json::json!([u32::MAX, 4, 4]),
+                "positive axes",
+            ),
+        ] {
+            let mut request = base.clone();
+            *request.pointer_mut(path).unwrap() = value;
+            let error = serve(
+                Path::new("/absent"),
+                request.to_string().as_bytes(),
+                Vec::new(),
+            )
+            .unwrap_err();
+            assert!(error.to_string().contains(diagnostic), "{error}");
+        }
+        for (block, width, diagnostic) in [
+            ([48, 1, 1], 17, "complete physical warps"),
+            ([64, 1, 1], 15, "guarded prefix"),
+        ] {
+            let mut request = base.clone();
+            request["requests"][0]["algorithm"] = "warp".into();
+            request["requests"][0]["block"] = serde_json::json!(block);
+            request["requests"][0]["warp_width"] = width.into();
+            let error = serve(
+                Path::new("/absent"),
+                request.to_string().as_bytes(),
+                Vec::new(),
+            )
+            .unwrap_err();
+            assert!(error.to_string().contains(diagnostic), "{error}");
+        }
+    }
 
     #[test]
     fn scan_registration_preserves_typed_seed_and_empty_controls() {

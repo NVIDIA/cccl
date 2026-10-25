@@ -3,7 +3,7 @@
 
 //! Native, host-only CUB specialization for Rust cooperative algorithms.
 //!
-//! This private development crate compiles block and Warp Load/Store and Scan providers with
+//! This private development crate compiles block and Warp Load/Store, Scan and Reduce providers with
 //! NVRTC. It returns linkable LTO-IR and the exact C++ scratch layout from the
 //! **same compilation**, without a CUDA context, GPU or Python dependency.
 //! It is a compiler building block, not a device API or a package release.
@@ -34,7 +34,12 @@
 //! per lane with implicit algorithm selection. Scan checks every input validity
 //! bit, preserves the input, and initializes every fresh output slot. Seeded
 //! exclusive forms carry one runtime value of exactly the input dtype.
-//! [`Provider::compile_native`] batches both families in one native compilation.
+//! [`ReduceRequest`] preserves scalar or fixed-payload inputs and produces one
+//! initialized scalar only at group rank zero. Scalar forms optionally take a
+//! nonempty valid prefix; payload forms include every item. Blocks select
+//! RakingCommutativeOnly, Raking or WarpReductions. Warp reductions also support
+//! guarded low-lane prefixes of widths 17..31 within each physical warp.
+//! [`Provider::compile_native`] batches these families in one native compilation.
 //!
 //! [`Provider::from_checkout`] snapshots the selected CCCL and CUDA headers;
 //! [`Provider::compile`] uses those exact bytes and loaded NVRTC to emit an
@@ -64,7 +69,9 @@
 #![deny(unsafe_code)]
 
 mod headers;
+mod reduce;
 mod scan;
+pub use reduce::{ReduceAlgorithm, ReduceForm, ReduceOperator, ReduceRecipe, ReduceRequest};
 pub use scan::{ScanAlgorithm, ScanOperation, ScanOperator, ScanRecipe, ScanRequest};
 #[allow(unsafe_code)]
 mod nvrtc;
@@ -448,6 +455,8 @@ pub enum NativeRequest {
     LoadStore(Request),
     /// Numeric Scan with preserved input and fresh initialized output.
     Scan(ScanRequest),
+    /// Numeric reduction with preserved input and a fresh root-only scalar.
+    Reduce(ReduceRequest),
 }
 
 impl NativeRequest {
@@ -455,6 +464,7 @@ impl NativeRequest {
         match self {
             Self::LoadStore(request) => source(request, symbol),
             Self::Scan(request) => request.source(symbol),
+            Self::Reduce(request) => request.source(symbol),
         }
     }
 
@@ -462,13 +472,14 @@ impl NativeRequest {
         match self {
             Self::LoadStore(request) => request.operation.token().into(),
             Self::Scan(request) => request.recipe.operation().token(),
+            Self::Reduce(request) => request.recipe.token(),
         }
     }
 
     fn scratch_free(self) -> bool {
         match self {
             Self::LoadStore(request) => request.algorithm.scratch_free(),
-            Self::Scan(_) => false,
+            Self::Scan(_) | Self::Reduce(_) => false,
         }
     }
 
@@ -477,8 +488,8 @@ impl NativeRequest {
             Self::LoadStore(request) => {
                 !request.operation.is_load() && !request.algorithm.scratch_free()
             }
-            // Scan writes a fresh output, never rearranges its input payload.
-            Self::Scan(_) => false,
+            // Scan and Reduce write fresh outputs, never rearranging inputs.
+            Self::Scan(_) | Self::Reduce(_) => false,
         }
     }
 }
@@ -497,8 +508,8 @@ pub struct Layout {
 /// # Device ABI obligations
 ///
 /// The memory-tile and payload-layout requirements below describe Load/Store.
-/// Scan uses lane-private input and fresh output; its ABI and validity contract
-/// are documented by [`ScanRequest`].
+/// Scan and Reduce use lane-private input and fresh output; their ABI and
+/// validity contracts are documented by [`ScanRequest`] and [`ReduceRequest`].
 ///
 /// Every thread in the selected group executes the provider in converged control
 /// flow. The group is the exact block, or one aligned Warp of the selected width.
@@ -649,16 +660,32 @@ impl Provider {
         self.compile_native(&requests, target)
     }
 
-    /// Compile one ordered mixed Load/Store and Scan batch in a single NVRTC program.
+    /// Compile one ordered mixed Load/Store, Scan and Reduce batch in one NVRTC program.
     ///
     /// Per-specialization identity is independent of unrelated batch members.
-    /// Scan scratch describes one group and includes the actual CUB TempStorage,
+    /// Scan/Reduce scratch describes one group and includes the actual CUB TempStorage,
     /// even when its C++ empty type occupies one byte. The caller plans replication.
     ///
     /// # Errors
     /// Rejects empty/duplicate requests and malformed targets as [`Self::compile`]
     /// does; native compilation and layout decoding errors retain their diagnostics.
     pub fn compile_native(&self, requests: &[NativeRequest], target: &str) -> Result<Artifact> {
+        self.compile_native_with_callbacks(requests, target, None)
+    }
+
+    fn compile_native_with_callbacks(
+        &self,
+        requests: &[NativeRequest],
+        target: &str,
+        callbacks: Option<&[oxide::Callback]>,
+    ) -> Result<Artifact> {
+        if let Some(callbacks) = callbacks {
+            if callbacks.len() != requests.len() {
+                return Err(Error::message(
+                    "callback count must match specialization count",
+                ));
+            }
+        }
         if !target.starts_with("compute_")
             || !target[8..].chars().all(|c| c.is_ascii_alphanumeric())
             || target.len() <= 8
@@ -671,7 +698,14 @@ impl Provider {
             return Err(Error::message("at least one specialization is required"));
         }
         for (index, request) in requests.iter().enumerate() {
-            if requests[..index].contains(request) {
+            if requests[..index]
+                .iter()
+                .enumerate()
+                .any(|(prior, candidate)| {
+                    candidate == request
+                        && callbacks.is_none_or(|callbacks| callbacks[prior] == callbacks[index])
+                })
+            {
                 return Err(Error::message("duplicate specialization in one batch"));
             }
         }
@@ -692,6 +726,7 @@ impl Provider {
             include_bytes!("nvrtc.rs"),
             include_bytes!("block_io.cuh"),
             include_bytes!("scan.rs"),
+            include_bytes!("reduce.rs"),
         ] {
             hash_field(&mut inputs, bytes);
         }
@@ -703,17 +738,27 @@ impl Provider {
         source.push_str("\ntemplate <unsigned long long Size, unsigned long long Alignment>\nextern __device__ unsigned char layout_probe;\n");
         let mut expressions = Vec::with_capacity(requests.len() * 2);
         let mut specializations = Vec::with_capacity(requests.len());
-        for &request in requests {
+        for (index, &request) in requests.iter().enumerate() {
+            let callback = callbacks.map(|callbacks| &callbacks[index]);
+            let source_for = |symbol: &str| match (request, callback) {
+                (NativeRequest::Reduce(reduce), Some(callback)) => {
+                    reduce.source_with_callback(symbol, Some(&callback.symbol))
+                }
+                (_, None) => request.source(symbol),
+                _ => unreachable!("callback recipes are validated before native compilation"),
+            };
             let mut hash = inputs.clone();
-            hash_field(
-                &mut hash,
-                request.source("cuda_coop_specialization").as_bytes(),
-            );
+            hash_field(&mut hash, source_for("cuda_coop_specialization").as_bytes());
             let identity: [u8; 32] = hash.finalize().into();
             hash_field(&mut batch_identity, &identity);
             let suffix: String = identity.iter().map(|byte| format!("{byte:02x}")).collect();
-            let symbol = format!("cuda_coop_{}_{}", request.token(), suffix);
-            source.push_str(&request.source(&symbol));
+            let token = if callback.is_some() {
+                "reduce_callable".to_owned()
+            } else {
+                request.token()
+            };
+            let symbol = format!("cuda_coop_{token}_{suffix}");
+            source.push_str(&source_for(&symbol));
             expressions.push(format!("&layout_probe<sizeof({symbol}_detail::primitive::TempStorage), alignof({symbol}_detail::primitive::TempStorage)>"));
             expressions.push(format!("&layout_probe<sizeof({symbol}_detail::scratch_storage), alignof({symbol}_detail::scratch_storage)>"));
             specializations.push(Specialization {

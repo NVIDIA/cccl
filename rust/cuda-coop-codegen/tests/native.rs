@@ -4,10 +4,173 @@
 //! Real native compiler coverage; ordinary host tests need no CUDA installation.
 
 use cuda_coop_codegen::{
-    Algorithm, Dtype, Layout, NativeRequest, Operation, Provider, Request, ScanAlgorithm,
-    ScanOperation, ScanOperator, ScanRequest,
+    Algorithm, Dtype, Layout, NativeRequest, Operation, Provider, ReduceAlgorithm, ReduceForm,
+    ReduceOperator, ReduceRequest, Request, ScanAlgorithm, ScanOperation, ScanOperator,
+    ScanRequest,
 };
 use std::{env, path::Path, time::Instant};
+
+#[test]
+#[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
+fn native_mixed_reduce_recipes() -> Result<(), Box<dyn std::error::Error>> {
+    let toolkit = env::var("CUDA_HOME")?;
+    let target = env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let provider = Provider::from_checkout(&checkout, &toolkit)?;
+    let requests = [1, 4].map(|items| {
+        ReduceRequest::block(
+            Dtype::I32,
+            ReduceOperator::Sum,
+            ReduceAlgorithm::WarpReductions,
+            ReduceForm::Payload,
+            [128, 1, 1],
+            items,
+        )
+        .map(NativeRequest::Reduce)
+    });
+    let mut requests = requests
+        .into_iter()
+        .collect::<cuda_coop_codegen::Result<Vec<_>>>()?;
+    // Distribute types, operators, forms and algorithms rather than multiplying
+    // independent dimensions. Payload extents cross the packed-mask byte boundary.
+    let types = [
+        Dtype::I8,
+        Dtype::U8,
+        Dtype::I16,
+        Dtype::U16,
+        Dtype::I32,
+        Dtype::U32,
+        Dtype::I64,
+        Dtype::U64,
+        Dtype::F32,
+        Dtype::F64,
+    ];
+    let operators = [
+        ReduceOperator::Sum,
+        ReduceOperator::Multiplies,
+        ReduceOperator::BitAnd,
+        ReduceOperator::BitOr,
+        ReduceOperator::BitXor,
+        ReduceOperator::Min,
+        ReduceOperator::Max,
+    ];
+    let algorithms = [
+        ReduceAlgorithm::RakingCommutativeOnly,
+        ReduceAlgorithm::Raking,
+        ReduceAlgorithm::WarpReductions,
+    ];
+    let forms = [
+        ReduceForm::Scalar,
+        ReduceForm::ScalarPrefix,
+        ReduceForm::Payload,
+    ];
+    for (index, dtype) in types.into_iter().enumerate() {
+        let operator = match dtype {
+            Dtype::F32 => ReduceOperator::Min,
+            Dtype::F64 => ReduceOperator::Max,
+            _ => operators[index % operators.len()],
+        };
+        let form = forms[index % forms.len()];
+        requests.push(NativeRequest::Reduce(ReduceRequest::block(
+            dtype,
+            operator,
+            algorithms[index % algorithms.len()],
+            form,
+            if index % 2 == 0 {
+                [4, 4, 4]
+            } else {
+                [11, 3, 1]
+            },
+            if form == ReduceForm::Payload {
+                if index % 2 == 0 { 4 } else { 9 }
+            } else {
+                1
+            },
+        )?));
+    }
+    for (index, width) in [1, 2, 4, 8, 16].into_iter().chain(17..=32).enumerate() {
+        let dtype = types[index % types.len()];
+        let operator = match dtype {
+            Dtype::F32 => ReduceOperator::Min,
+            Dtype::F64 => ReduceOperator::Max,
+            _ => operators[index % operators.len()],
+        };
+        let form = forms[index % forms.len()];
+        requests.push(NativeRequest::Reduce(ReduceRequest::warp(
+            dtype,
+            operator,
+            form,
+            [4, 4, 4],
+            width,
+            if form == ReduceForm::Payload {
+                if index % 2 == 0 { 4 } else { 9 }
+            } else {
+                1
+            },
+        )?));
+    }
+    requests.push(NativeRequest::LoadStore(Request::new_typed(
+        Dtype::I32,
+        Operation::LoadFullValidity,
+        Algorithm::Direct,
+        64,
+        4,
+    )?));
+    requests.push(NativeRequest::Scan(ScanRequest::block(
+        Dtype::I32,
+        ScanOperation::ExclusiveSum,
+        ScanAlgorithm::Raking,
+        [4, 4, 4],
+        4,
+    )?));
+    let artifact = provider.compile_native(&requests, &target)?;
+    assert_eq!(artifact.specializations.len(), requests.len());
+    assert!(!artifact.ltoir.is_empty());
+    let mut identities = std::collections::HashSet::new();
+    let mut symbols = std::collections::HashSet::new();
+    for (request, entry) in requests.iter().zip(&artifact.specializations) {
+        assert!(identities.insert(entry.identity));
+        assert!(symbols.insert(&entry.symbol));
+        if matches!(request, NativeRequest::LoadStore(_)) {
+            assert!(entry.scratch_free);
+            assert_eq!(entry.scratch.size, 0);
+        } else {
+            assert_eq!(entry.cub_layout, entry.scratch);
+            assert!(entry.scratch.size > 0 && entry.scratch.alignment.is_power_of_two());
+            assert!(!entry.scratch_free && !entry.mutates_payload);
+        }
+        eprintln!(
+            "{request:?}: CUB {:?}, scratch {:?}",
+            entry.cub_layout, entry.scratch
+        );
+    }
+    let single = provider.compile_native(&requests[..1], &target)?;
+    assert_eq!(
+        single.specializations[0].identity,
+        artifact.specializations[0].identity
+    );
+    assert_eq!(
+        single.specializations[0].symbol,
+        artifact.specializations[0].symbol
+    );
+    assert_eq!(
+        single.specializations[0].scratch,
+        artifact.specializations[0].scratch
+    );
+    assert!(
+        provider
+            .compile_native(&[requests[0]; 2], &target)
+            .unwrap_err()
+            .to_string()
+            .contains("duplicate")
+    );
+    eprintln!(
+        "{} mixed Reduce/Scan/Load specializations, {} LTO bytes",
+        requests.len(),
+        artifact.ltoir.len()
+    );
+    Ok(())
+}
 
 #[test]
 #[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
