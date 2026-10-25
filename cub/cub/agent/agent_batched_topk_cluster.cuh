@@ -99,23 +99,6 @@
 
 #include <nv/target>
 
-// TODO(cccl): temporary benchmarking toggles for `use_mbarrier_sync`; keep the faster variants and remove all three
-// before merging.
-//   CUB_DETAIL_CLUSTER_TOPK_FOLD_SKIP_EMPTY_BUCKETS=1: skip empty buckets in the fold, settling their bytes with one
-//     `mbarrier.complete_tx` per warp.
-//   CUB_DETAIL_CLUSTER_TOPK_PUBLISH_CONSUMER_ARMS=1: receivers arm their own publish barrier. Relies on `st.async`
-//     releasing the leader's prior shared-memory writes, which the CUDA documentation does not guarantee.
-//   CUB_DETAIL_CLUSTER_TOPK_FORCE_BARRIER_SYNC=1: use the `barrier.cluster` path even with PTX ISA >= 8.6.
-#ifndef CUB_DETAIL_CLUSTER_TOPK_FORCE_BARRIER_SYNC
-#  define CUB_DETAIL_CLUSTER_TOPK_FORCE_BARRIER_SYNC 0
-#endif
-#ifndef CUB_DETAIL_CLUSTER_TOPK_FOLD_SKIP_EMPTY_BUCKETS
-#  define CUB_DETAIL_CLUSTER_TOPK_FOLD_SKIP_EMPTY_BUCKETS 0
-#endif
-#ifndef CUB_DETAIL_CLUSTER_TOPK_PUBLISH_CONSUMER_ARMS
-#  define CUB_DETAIL_CLUSTER_TOPK_PUBLISH_CONSUMER_ARMS 0
-#endif
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::batched_topk_cluster
@@ -287,9 +270,7 @@ struct agent_batched_topk_cluster
   // PTX ISA >= 8.6 (`.sync_restrict` fences, `.relaxed` mbarrier ops): the per-pass fold and publish and the prefix
   // scan are one-sided mbarrier handshakes whose fences cover only shared memory, leaving one relaxed cluster barrier
   // at startup. Otherwise every rendezvous is a `barrier.cluster`, whose release/acquire also orders global memory.
-  static constexpr bool use_mbarrier_sync = __cccl_ptx_isa >= 860 && CUB_DETAIL_CLUSTER_TOPK_FORCE_BARRIER_SYNC == 0;
-  static constexpr bool fold_skips_empty_buckets = CUB_DETAIL_CLUSTER_TOPK_FOLD_SKIP_EMPTY_BUCKETS != 0;
-  static constexpr bool publish_consumer_arms    = CUB_DETAIL_CLUSTER_TOPK_PUBLISH_CONSUMER_ARMS != 0;
+  static constexpr bool use_mbarrier_sync = __cccl_ptx_isa >= 860;
 
   // Push direction of the cross-CTA prefix scan (`prime_placement_counters`). The leader must be *last* in scan
   // order so it derives its own (merged-away) counts from the predecessor sum: deterministic-prefer-smaller puts the
@@ -1373,25 +1354,22 @@ private:
   }
 
   // Step 2 of the mbarrier path: every working non-leader delivers exactly `num_buckets * sizeof(offset_t)` bytes to
-  // the leader's `pass_mbar` per pass; empty buckets skipped with `fold_skips_empty_buckets` are settled by one
-  // `complete_tx` per warp. `red.async`'s complete-tx releases at cluster scope, which (with the block barrier before
-  // Step 2) orders this block's reads of its `state` copy before the next publish overwrites it; the fence gives a warp
-  // that sends nothing the same guarantee.
+  // the leader's `pass_mbar` per pass; skipped empty buckets are settled by one `complete_tx` per warp. `red.async`'s
+  // complete-tx releases at cluster scope, which (with the block barrier before Step 2) orders this block's reads of
+  // its `state` copy before the next publish overwrites it; the fence gives a warp that sends nothing the same
+  // guarantee.
   _CCCL_DEVICE _CCCL_FORCEINLINE void fold_hist_into_leader()
   {
 #if __cccl_ptx_isa >= 860
-    offset_t* const remote_hist                              = layout.leader_storage->hist;
-    ::cuda::std::uint64_t* const remote_mbar                 = &layout.leader_storage->pass_mbar;
-    [[maybe_unused]] ::cuda::std::uint32_t num_skipped_bytes = 0;
-    const auto reduce_bucket                                 = [&](int i) {
+    offset_t* const remote_hist              = layout.leader_storage->hist;
+    ::cuda::std::uint64_t* const remote_mbar = &layout.leader_storage->pass_mbar;
+    ::cuda::std::uint32_t num_skipped_bytes  = 0;
+    const auto reduce_bucket                 = [&](int i) {
       const offset_t num_local_bucket_keys = temp_storage.hist[i];
-      if constexpr (fold_skips_empty_buckets)
+      if (num_local_bucket_keys == 0)
       {
-        if (num_local_bucket_keys == 0)
-        {
-          num_skipped_bytes += ::cuda::std::uint32_t{sizeof(offset_t)};
-          return;
-        }
+        num_skipped_bytes += ::cuda::std::uint32_t{sizeof(offset_t)};
+        return;
       }
       ::cuda::ptx::red_async(::cuda::ptx::op_add, remote_hist + i, num_local_bucket_keys, remote_mbar);
     };
@@ -1409,22 +1387,19 @@ private:
         reduce_bucket(i);
       }
     }
-    if constexpr (fold_skips_empty_buckets)
-    {
-      // `__reduce_add_sync` is only declared for SM 8.0+ device passes, and this non-dependent call is looked up even
-      // when the branch is discarded.
-      NV_IF_TARGET(NV_PROVIDES_SM_90,
-                   (const ::cuda::std::uint32_t num_warp_skipped_bytes = __reduce_add_sync(~0u, num_skipped_bytes);
-                    if (num_warp_skipped_bytes != 0 && tid % detail::warp_threads == 0) {
-                      release_shared_to_cluster();
-                      ::cuda::ptx::mbarrier_complete_tx(
-                        ::cuda::ptx::sem_relaxed,
-                        ::cuda::ptx::scope_cluster,
-                        ::cuda::ptx::space_cluster,
-                        remote_mbar,
-                        num_warp_skipped_bytes);
-                    }));
-    }
+    // `__reduce_add_sync` is only declared for SM 8.0+ device passes, and this non-dependent call is looked up whenever
+    // the agent is parsed (only SM 9.0+ passes reach the agent, see `Process`).
+    NV_IF_TARGET(NV_PROVIDES_SM_90,
+                 (const ::cuda::std::uint32_t num_warp_skipped_bytes = __reduce_add_sync(~0u, num_skipped_bytes);
+                  if (num_warp_skipped_bytes != 0 && tid % detail::warp_threads == 0) {
+                    release_shared_to_cluster();
+                    ::cuda::ptx::mbarrier_complete_tx(
+                      ::cuda::ptx::sem_relaxed,
+                      ::cuda::ptx::scope_cluster,
+                      ::cuda::ptx::space_cluster,
+                      remote_mbar,
+                      num_warp_skipped_bytes);
+                  }));
 #else // __cccl_ptx_isa < 860
     _CCCL_UNREACHABLE();
 #endif // __cccl_ptx_isa >= 860
@@ -1466,15 +1441,12 @@ private:
       _TempStorage* const remote = map_to_rank(&temp_storage, rank);
       const auto payload         = ::cuda::std::bit_cast<state_words>(temp_storage.state);
       release_shared_to_cluster();
-      if constexpr (!publish_consumer_arms)
-      {
-        ::cuda::ptx::mbarrier_arrive_expect_tx(
-          ::cuda::ptx::sem_relaxed,
-          ::cuda::ptx::scope_cluster,
-          ::cuda::ptx::space_cluster,
-          &remote->pass_mbar,
-          ::cuda::std::uint32_t{sizeof(state_t)});
-      }
+      ::cuda::ptx::mbarrier_arrive_expect_tx(
+        ::cuda::ptx::sem_relaxed,
+        ::cuda::ptx::scope_cluster,
+        ::cuda::ptx::space_cluster,
+        &remote->pass_mbar,
+        ::cuda::std::uint32_t{sizeof(state_t)});
       ::cuda::ptx::st_async(reinterpret_cast<::cuda::std::uint32_t*>(&remote->state), payload.words, &remote->pass_mbar);
     }
 #else // __cccl_ptx_isa < 860
@@ -1497,13 +1469,6 @@ private:
     }
     else
     {
-      if constexpr (publish_consumer_arms)
-      {
-        if (is_block_leader)
-        {
-          arm_handshake(&temp_storage.pass_mbar, ::cuda::std::uint32_t{sizeof(state_t)});
-        }
-      }
       wait_handshake(&temp_storage.pass_mbar, static_cast<::cuda::std::uint32_t>(pass) & 1u);
       __syncthreads();
     }
