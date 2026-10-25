@@ -75,7 +75,7 @@ runs:
         echo "SCCACHE_BUCKET=rapids-sccache-devs" | tee -a "${GITHUB_ENV}"
         echo "SCCACHE_REGION=us-east-2" | tee -a "${GITHUB_ENV}"
         echo "SCCACHE_IDLE_TIMEOUT=0" | tee -a "${GITHUB_ENV}"
-        echo "SCCACHE_S3_KEY_PREFIX=cccl-test/sccache-v0.18.0-rapids.7" | tee -a "${GITHUB_ENV}"
+        echo "SCCACHE_S3_KEY_PREFIX=cccl-test/sccache-v0.18.0-rapids.7-2" | tee -a "${GITHUB_ENV}"
         echo "SCCACHE_S3_USE_SSL=true" | tee -a "${GITHUB_ENV}"
         echo "SCCACHE_S3_NO_CREDENTIALS=false" | tee -a "${GITHUB_ENV}"
 

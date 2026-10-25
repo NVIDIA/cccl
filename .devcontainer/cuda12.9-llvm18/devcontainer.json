@@ -40,7 +40,7 @@
     "SCCACHE_DIST_REQUEST_TIMEOUT": "${localEnv:SCCACHE_DIST_REQUEST_TIMEOUT:7140}",
     "SCCACHE_IDLE_TIMEOUT": "${localEnv:SCCACHE_IDLE_TIMEOUT:0}",
     "SCCACHE_REGION": "us-east-2",
-    "SCCACHE_S3_KEY_PREFIX": "cccl-test/sccache-v0.18.0-rapids.7",
+    "SCCACHE_S3_KEY_PREFIX": "cccl-test/sccache-v0.18.0-rapids.7-2",
     "SCCACHE_SERVER_LOG": "${localEnv:SCCACHE_SERVER_LOG:sccache=debug}",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
     "DEVCONTAINER_NAME": "cuda12.9-llvm18",
