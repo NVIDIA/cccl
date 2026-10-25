@@ -63,7 +63,9 @@ class ExpectedSyntheticProvider:
 
     def update(self) -> bool:
         self.child = _expected_child(self.raw_value)
-        return True
+        # The held member can switch between value and error, so do not let
+        # LLDB reuse cached children across stops.
+        return False
 
     def num_children(self) -> int:
         return 1 if self.child is not None else 0
