@@ -1149,6 +1149,175 @@ cases.update(
     ),
 )
 
+# Exchange preserves extent/alignment and input ownership. Fresh output does not
+# establish participation or complete an unrelated global-memory access.
+exchange = "values=coop::exchange(block,&values,Default::default());"
+exchange_warp = "let warp=coop::this_warp().group_by_non_exhaustive::<8>();"
+cases.update(
+    exchange_generic_defaults=(
+        load
+        + "fn forward<T:coop::Numeric,G:coop::ExchangeGroup,const N:usize,const A:usize>("
+        "group:coop::ThreadGroup<G>,input:&coop::ThreadData<T,N,A>)->coop::ThreadData<T,N,A> "
+        "where coop::Alignment<A>:coop::SupportedAlignment {"
+        "coop::exchange(group,input,Default::default())}"
+        "fn selected<T:coop::Numeric,G:coop::ExchangeGroup,M:coop::ExchangeMode,const N:usize,const A:usize>("
+        "group:coop::ThreadGroup<G>,input:&coop::ThreadData<T,N,A>,options:coop::ExchangeOptions<M>)"
+        "->coop::ThreadData<T,N,A> where coop::Alignment<A>:coop::SupportedAlignment {"
+        "coop::exchange(group,input,options)}"
+        "values=forward(block,&values);"
+        "values=selected(block,&mut values,coop::ExchangeOptions::default());"
+        "let mut one=coop::ThreadData::<_,1>::new();one.write(0,7_i32);"
+        "let _one=forward(block,&mut one);"
+        "let mut aligned=coop::ThreadData::<_,4,16>::new();"
+        "aligned.write(0,0_i32);aligned.write(1,1);aligned.write(2,2);aligned.write(3,3);"
+        "let aligned_result:coop::ThreadData<_,4,16>=selected(block,&mut aligned,"
+        "coop::ExchangeOptions::default().mode(coop::BlockedToStriped));"
+        + store.replace("&values", "&aligned_result"),
+        None,
+    ),
+    exchange_warp_siblings=(
+        load
+        + "values=coop::exchange(coop::this_warp(),&values,Default::default());"
+        + exchange_warp
+        + "if warp.rank_at::<coop::Warp>()&1==0 {"
+        "values=coop::exchange(warp,&values,Default::default());"
+        "values=coop::exchange(warp,&values,coop::ExchangeOptions::default().mode(coop::BlockedToStriped));}"
+        + store,
+        None,
+    ),
+    exchange_block_partial_block=(load + exchange + store, None),
+    exchange_block_partition=(
+        load
+        + "let _result=coop::exchange(block.group_by::<2>(),&values,Default::default());",
+        "ExchangeGroup",
+    ),
+    exchange_prefix17=(
+        load + "let group=coop::this_warp().group_by_non_exhaustive::<17>();"
+        "if group.is_member()!=0 {let _result=coop::exchange(group,&values,Default::default());}",
+        "ExchangeGroup",
+    ),
+    exchange_bad_mode=(
+        load + "struct StripedToBlocked;"
+        "let _result=coop::exchange(block,&values,coop::ExchangeOptions::default().mode(StripedToBlocked));",
+        "ExchangeMode",
+    ),
+    exchange_block_lane_divergence=(
+        load + "if thread::threadIdx_x()&1==0 {" + exchange + "}",
+        "lane-varying",
+    ),
+    exchange_warp_lane_divergence=(
+        load
+        + exchange_warp
+        + "if thread::threadIdx_x()&1==0 {let _result=coop::exchange(warp,&values,Default::default());}",
+        "lane-varying",
+    ),
+    exchange_warp_partial_block=(
+        load
+        + "let _result=coop::exchange(coop::this_warp(),&values,Default::default());",
+        "complete physical warps",
+    ),
+    exchange_result_control=(
+        load + "let result=coop::exchange(block,&values,Default::default());"
+        "if result.get(0)==Some(0) {" + exchange + "}",
+        "lane-varying",
+    ),
+    exchange_read_epoch=(
+        reload + exchange + store,
+        "requires a barrier covering both accesses",
+    ),
+    exchange_read_completed=(reload + exchange + sync + store, None),
+)
+
+# Shuffle preserves its input but returns one invalid edge. Neither result
+# values nor validity prove participation or unrelated global-memory completion.
+shuffle = "let result=coop::shuffle(block,&values,Default::default());"
+cases.update(
+    shuffle_generic_defaults=(
+        load + "fn forward<T:coop::Numeric,const N:usize,const A:usize>("
+        "block:coop::ThreadGroup<coop::Block>,input:&coop::ThreadData<T,N,A>)->coop::ThreadData<T,N,A> "
+        "where coop::Alignment<A>:coop::SupportedAlignment {"
+        "coop::shuffle(block,input,Default::default())}"
+        "fn selected<T:coop::Numeric,M:coop::ShuffleMode,const N:usize,const A:usize>("
+        "block:coop::ThreadGroup<coop::Block>,input:&coop::ThreadData<T,N,A>,options:coop::ShuffleOptions<M>)"
+        "->coop::ThreadData<T,N,A> where coop::Alignment<A>:coop::SupportedAlignment {"
+        "coop::shuffle(block,input,options)}"
+        "let default_result=forward(block,&values);"
+        "let explicit_result=selected(block,&mut values,coop::ShuffleOptions::default().distance::<1>().mode(coop::Down));"
+        "let mut one=coop::ThreadData::<_,1>::new();one.write(0,7_i32);"
+        "let one_result=forward(block,&mut one);"
+        "let mut aligned=coop::ThreadData::<_,4,16>::new();"
+        "aligned.write(0,0_i32);aligned.write(1,1);aligned.write(2,2);aligned.write(3,3);"
+        "let mut aligned_result:coop::ThreadData<_,4,16>=selected(block,&mut aligned,"
+        "coop::ShuffleOptions::default().mode(coop::Up).distance::<1>());"
+        "aligned_result.write(0,default_result.get(0).unwrap_or(0));"
+        "aligned_result.write(1,explicit_result.get(0).unwrap_or(0));"
+        "aligned_result.write(2,one_result.get(0).unwrap_or(0));"
+        + store.replace("&values", "&aligned_result"),
+        None,
+    ),
+    shuffle_block_partial_block=(
+        load
+        + shuffle
+        + "let mut repaired=result;if repaired.get(3).is_none(){repaired.write(3,0);}"
+        + store.replace("&values", "&repaired"),
+        None,
+    ),
+    shuffle_distance_zero=(
+        load
+        + "let result=coop::shuffle(block,&values,coop::ShuffleOptions::default().distance::<0>());"
+        + store,
+        "Shuffle supports only distance one",
+    ),
+    shuffle_distance_two=(
+        load
+        + "let result=coop::shuffle(block,&values,coop::ShuffleOptions::default().distance::<2>());"
+        + store,
+        "Shuffle supports only distance one",
+    ),
+    shuffle_warp_group=(
+        load
+        + "let result=coop::shuffle(coop::this_warp(),&values,Default::default());",
+        "mismatched types",
+    ),
+    shuffle_block_partition=(
+        load
+        + "let result=coop::shuffle(block.group_by::<2>(),&values,Default::default());",
+        "mismatched types",
+    ),
+    shuffle_scalar=(
+        load + "let result=coop::shuffle(block,&3_i32,Default::default());",
+        "mismatched types",
+    ),
+    shuffle_bad_mode=(
+        load + "struct Up;"
+        "let result=coop::shuffle(block,&values,coop::ShuffleOptions::default().mode(Up));",
+        "ShuffleMode",
+    ),
+    shuffle_lane_divergence=(
+        load + "if thread::threadIdx_x()&1==0 {" + shuffle + "}",
+        "lane-varying",
+    ),
+    shuffle_result_control=(
+        load
+        + "let first=coop::shuffle(block,&values,coop::ShuffleOptions::default().mode(coop::Up));"
+        "if first.get(0).is_some() {" + shuffle + "}",
+        "lane-varying",
+    ),
+    shuffle_read_epoch=(
+        reload.replace(".valid_items(valid)", ".valid_items(valid).oob_default(0)")
+        + shuffle
+        + store,
+        "requires a barrier covering both accesses",
+    ),
+    shuffle_read_completed=(
+        reload.replace(".valid_items(valid)", ".valid_items(valid).oob_default(0)")
+        + shuffle
+        + sync
+        + store,
+        None,
+    ),
+)
+
 if args.case:
     unknown = set(args.case).difference(cases)
     if unknown:

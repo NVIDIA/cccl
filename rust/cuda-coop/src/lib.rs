@@ -54,6 +54,11 @@
 //! extent and explicit striped or blocked result ownership. The defining crate
 //! and callers instantiating these calculated signatures enable unstable
 //! `generic_const_exprs`; ordinary non-calculated consumers remain feature-free.
+//! [`exchange`] converts between blocked and striped layouts on complete Blocks
+//! and physical or power-of-two logical Warp groups. It preserves input and
+//! returns a fresh payload with the same type, extent and alignment.
+//! [`shuffle`] shifts a complete block's values by one item, preserving input
+//! and returning the same payload shape with one invalid boundary slot.
 //! Host payload tests need no GPU;
 //! executing hardware queries requires an Oxide-compiled CUDA kernel.
 
@@ -62,16 +67,21 @@
 #![allow(incomplete_features)]
 
 mod alignment;
+mod exchange;
 mod group;
 mod load_store;
 mod reduce;
 mod reduce_batched;
 mod scan;
+mod shuffle;
 mod temp_storage;
 mod thread_data;
 
 pub use alignment::{Alignment, SupportedAlignment};
 pub use cuda_device::{CollectiveTiles, DisjointSlice};
+pub use exchange::{
+    BlockedToStriped, ExchangeGroup, ExchangeMode, ExchangeOptions, StripedToBlocked, exchange,
+};
 pub use load_store::{
     Algorithm, Direct, LoadOptions, LoadSource, LoadStoreGroup, StoreOptions, StoreValue, Striped,
     Transpose, Vectorize, WarpTranspose, WarpTransposeTimesliced, load, store,
@@ -90,6 +100,7 @@ pub use scan::{
     ScanOptions, ScanValue, Sum, SumScanOptions, WarpScans, exclusive_scan, exclusive_sum,
     inclusive_scan, inclusive_sum, scan,
 };
+pub use shuffle::{Down, ShuffleMode, ShuffleOptions, Up, shuffle};
 pub use temp_storage::{StorageReservation, TempStorage, TempStorageLike};
 pub use thread_data::{Numeric, ThreadData, ThreadDataLike};
 
