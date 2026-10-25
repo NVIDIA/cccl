@@ -47,7 +47,8 @@ The public operations include :doc:`load_store`, :doc:`scan`, :doc:`reduce`,
 :doc:`reduce_batched`, :doc:`exchange`, :doc:`shuffle`,
 :doc:`adjacent_difference`, :doc:`discontinuity`, :doc:`histogram`,
 :doc:`radix_sort_keys`, :doc:`radix_sort_pairs`, :doc:`radix_rank_keys`,
-:doc:`merge_sort_keys`, :doc:`merge_sort_pairs` and :doc:`topk`.
+:doc:`merge_sort_keys`, :doc:`merge_sort_pairs`, :doc:`topk` and
+:doc:`run_length_decode`.
 Scan returns fresh per-group prefixes;
 Reduce returns a total only at each group's root. Batched reduction returns a fresh
 payload whose extent and valid slots follow its Warp width and output layout.
@@ -62,8 +63,11 @@ selected-digit position as a fresh ``i32`` payload. Merge Sort Keys sorts numeri
 keys or a selected prefix into a fresh payload. Merge Sort Pairs carries
 associated numeric values into independent fresh payloads. TopK selects the
 smallest or largest keys and associated pairs into fresh unsorted prefixes.
+Run Length Decode returns a fresh decoded window or writes the complete stream
+into a checked destination.
 Scan, Reduce, batched reduction, Exchange, Shuffle, Adjacent Difference,
-Discontinuity, Histogram, Radix Sort, Radix Rank, Merge Sort and TopK preserve
+Discontinuity, Histogram, Radix Sort, Radix Rank, Merge Sort, TopK and
+Run Length Decode preserve
 their inputs.
 Additional primitive families are under development. The crate is unpublished
 and its interface can change.
@@ -147,6 +151,7 @@ Read next
    merge_sort_keys
    merge_sort_pairs
    topk
+   run_length_decode
    provider
 
 Generate the API reference with ``cargo doc --workspace --no-deps`` from

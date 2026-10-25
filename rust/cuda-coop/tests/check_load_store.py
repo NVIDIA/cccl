@@ -2189,6 +2189,79 @@ cases.update(
     ),
 )
 
+# Run Length Decode keeps input and output extents independent and total unproved.
+run_lengths = "let mut lengths=coop::ThreadData::<i64,4,16>::new();for i in 0..4 {lengths.write(i,0); }"
+run_window = "let result=coop::run_length_decode(block,&values,&lengths,coop::RunLengthDecodeOptions::<3>::default());"
+run_into = "let total=coop::run_length_decode_into(block,&values,&lengths,&mut output,coop::RunLengthDecodeIntoOptions::<3>::default().destination_offset(offset as u64));"
+run_manual = run_window.replace("::default()", "::default().temp_storage(&mut scratch)")
+cases.update(
+    run_length_generic_extents=(
+        "fn decode<T:coop::Numeric,L:coop::RunLength,O:coop::RunLengthDecodeOffset,"
+        "S:coop::TempStorageLike,const N:usize,const D:usize,const VA:usize,const LA:usize>("
+        "g:coop::ThreadGroup<coop::Block>,v:&coop::ThreadData<T,N,VA>,"
+        "n:&coop::ThreadData<L,N,LA>,o:coop::RunLengthDecodeOptions<D,O,S>)"
+        "->coop::ThreadData<T,D,VA> where coop::Alignment<VA>:coop::SupportedAlignment,"
+        "coop::Alignment<LA>:coop::SupportedAlignment {coop::run_length_decode(g,v,n,o)}"
+        + load
+        + run_lengths
+        + "let result:coop::ThreadData<i32,3>=decode(block,&values,&lengths,"
+        "coop::RunLengthDecodeOptions::<3>::default().decoded_window_offset_const::<0>());"
+        + "coop::store(block,&mut output,&result,coop::StoreOptions::default().offset(offset));",
+        None,
+    ),
+    run_length_storage_completed=(
+        load
+        + run_lengths
+        + new_storage
+        + run_manual
+        + sync
+        + run_manual
+        + sync
+        + "let mut scratch=coop::TempStorage::new().auto_sync();"
+        + run_manual
+        + run_manual
+        + sync
+        + "let _=result.get(0);"
+        + store,
+        None,
+    ),
+    run_length_into_completed=(load + run_lengths + run_into + sync + reload, None),
+    run_length_into_missing_completion=(
+        load + run_lengths + run_into + reload,
+        "requires a barrier covering both accesses",
+    ),
+    run_length_total_control=(
+        load
+        + run_lengths
+        + run_into
+        + sync
+        + run_window.replace("::default()", "::default().decoded_window_offset(total)"),
+        "not proved block-uniform",
+    ),
+    run_length_varying_window_offset=(
+        load
+        + run_lengths
+        + run_window.replace(
+            "::default()", "::default().decoded_window_offset(thread::threadIdx_x())"
+        ),
+        "not proved block-uniform",
+    ),
+    run_length_varying_destination_offset=(
+        load
+        + run_lengths
+        + run_into.replace("offset as u64", "thread::threadIdx_x() as u64"),
+        "not proved block-uniform",
+    ),
+    run_length_unequal_extents=(
+        load + run_lengths.replace("i64,4,16", "i64,3,16") + run_window,
+        "mismatched types",
+    ),
+    run_length_storage_missing_completion=(
+        load + run_lengths + new_storage + run_manual + run_manual,
+        "requires a full-block barrier",
+    ),
+)
+
 if args.case:
     unknown = set(args.case).difference(cases)
     if unknown:

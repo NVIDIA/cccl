@@ -6,8 +6,8 @@ use cuda_coop_codegen::{
     AdjacentDifferenceRecipe, Algorithm, DiscontinuityRecipe, Dtype, ExchangeMode, ExchangeRecipe,
     HistogramAlgorithm, MergeSortKeysRecipe, MergeSortPairsRecipe, Operation, RadixRankKeysRecipe,
     RadixSortKeysRecipe, RadixSortPairsRecipe, ReduceAlgorithm, ReduceBatchedLayout,
-    ReduceBatchedRecipe, ReduceForm, ReduceOperator, ReduceRecipe, ScanAlgorithm, ScanOperation,
-    ScanOperator, ScanRecipe, ShuffleRecipe, TopKSelection, oxide,
+    ReduceBatchedRecipe, ReduceForm, ReduceOperator, ReduceRecipe, RunLengthDecodeRecipe,
+    ScanAlgorithm, ScanOperation, ScanOperator, ScanRecipe, ShuffleRecipe, TopKSelection, oxide,
 };
 
 fn main() {
@@ -29,6 +29,15 @@ fn main() {
     let comparator = oxide::merge_sort_keys_callable_registration(&executable)
         .expect("cuda.coop callable Merge Sort Keys registration");
     println!("cargo::rustc-env=COOP_MERGE_SORT_KEYS_CALLABLE_FULL={comparator}");
+    for (recipe, name) in [
+        (RunLengthDecodeRecipe::Window, "WINDOW"),
+        (RunLengthDecodeRecipe::Into, "INTO"),
+    ] {
+        let registration = oxide::run_length_decode_registration_template(&executable, recipe)
+            .expect("cuda.coop Run Length Decode registration");
+        println!("cargo::rustc-env=COOP_RUN_LENGTH_DECODE_{name}={registration}");
+    }
+
     for (direction, selection) in [("MIN", TopKSelection::Min), ("MAX", TopKSelection::Max)] {
         for (kind, pairs) in [("KEYS", false), ("PAIRS", true)] {
             for (extent, partial) in [("FULL", false), ("PARTIAL", true)] {

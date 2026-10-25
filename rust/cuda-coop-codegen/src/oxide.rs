@@ -45,8 +45,8 @@ use crate::{
     RadixRankKeysRecipe, RadixRankKeysRequest, RadixSortKeysRecipe, RadixSortKeysRequest,
     RadixSortPairsRecipe, RadixSortPairsRequest, ReduceAlgorithm, ReduceBatchedRecipe,
     ReduceBatchedRequest, ReduceForm, ReduceOperator, ReduceRecipe, ReduceRequest, Request, Result,
-    ScanRecipe, ScanRequest, ShuffleRecipe, ShuffleRequest, TopKCount, TopKKeysRequest,
-    TopKPairsRequest, TopKRecipe, TopKSelection,
+    RunLengthDecodeRecipe, RunLengthDecodeRequest, ScanRecipe, ScanRequest, ShuffleRecipe,
+    ShuffleRequest, TopKCount, TopKKeysRequest, TopKPairsRequest, TopKRecipe, TopKSelection,
 };
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
@@ -223,6 +223,25 @@ struct SpecializationRequest {
 
 impl SpecializationRequest {
     fn native(&self) -> Result<NativeRequest> {
+        if self.operation.starts_with("run_length_decode_") {
+            if self.algorithm != "block" || self.warp_width.is_some() {
+                return Err(Error::message(
+                    "Run Length Decode requires a Block recipe without Warp width",
+                ));
+            }
+            let (recipe, length, decoded, offset) = RunLengthDecodeRecipe::parse(&self.operation)?;
+            return RunLengthDecodeRequest::block(
+                self.dtype.dtype()?,
+                length,
+                recipe,
+                decoded,
+                offset,
+                self.block,
+                self.items_per_thread,
+            )
+            .map(NativeRequest::RunLengthDecode);
+        }
+
         if self.operation.starts_with("topk_") {
             if self.algorithm != "block" || self.warp_width.is_some() {
                 return Err(Error::message(
@@ -540,6 +559,34 @@ struct BatchResponse {
 
 fn arguments(request: NativeRequest) -> Vec<Argument> {
     let request = match request {
+        NativeRequest::RunLengthDecode(request) => {
+            let value = Scalar::from(request.dtype);
+            let length = Scalar::from(request.length);
+            let mut args = match request.recipe {
+                RunLengthDecodeRecipe::Window => vec![
+                    Argument::ConstPointer(value),
+                    Argument::MutPointer(value),
+                    Argument::ConstPointer(length),
+                    Argument::ConstPointer(Scalar::Unsigned(8)),
+                    Argument::ConstPointer(Scalar::Unsigned(8)),
+                    Argument::MutPointer(Scalar::Unsigned(8)),
+                ],
+                RunLengthDecodeRecipe::Into => vec![
+                    Argument::MutPointer(value),
+                    Argument::ConstPointer(value),
+                    Argument::ConstPointer(length),
+                    Argument::ConstPointer(Scalar::Unsigned(8)),
+                    Argument::ConstPointer(Scalar::Unsigned(8)),
+                    Argument::MutPointer(Scalar::Unsigned(32)),
+                ],
+            };
+            args.push(Argument::Value(Scalar::from(request.offset)));
+            if request.recipe == RunLengthDecodeRecipe::Into {
+                args.extend((0..4).map(|_| Argument::Value(Scalar::Unsigned(64))));
+            }
+            return args;
+        }
+
         NativeRequest::TopKKeys(request) => {
             let key = Scalar::from(request.dtype);
             let mut args = vec![
@@ -1049,6 +1096,35 @@ pub fn topk_registration_template(
     };
     // i32 occupies exactly the same three-byte field as every sealed value tag.
     let operation = recipe.token(pairs.then_some(Dtype::I32));
+    serde_json::to_string(&Registration {
+        version: VERSION,
+        provider: "cuda_coop",
+        executable,
+        operation: &operation,
+        algorithm: "block",
+    })
+    .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
+}
+
+/// Encode a tracked Run Length Decode registration template.
+///
+/// The device getter supplies the sealed integer length/control tags and positive
+/// decoded extent. Value type, run extent and 1D Block shape come from the marker.
+/// Window has six payload pointers plus one wide offset; Into has a global
+/// destination, five local pointers, and offset/allocation/ownership controls.
+/// Scratch is inserted at slot 2, producing eight or twelve native arguments.
+/// See [`RunLengthDecodeRequest`] for validity, bounds and storage obligations.
+///
+/// # Errors
+/// Rejects a nonabsolute provider executable or JSON encoding failure.
+pub fn run_length_decode_registration_template(
+    executable: &Path,
+    recipe: RunLengthDecodeRecipe,
+) -> Result<String> {
+    if !executable.is_absolute() {
+        return Err(Error::message("provider executable path must be absolute"));
+    }
+    let operation = recipe.token(Dtype::U32, 1, Dtype::U64);
     serde_json::to_string(&Registration {
         version: VERSION,
         provider: "cuda_coop",
