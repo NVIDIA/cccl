@@ -46,6 +46,9 @@ struct group_merge_expansion
     }
     return count;
   }
+  static_assert(thread_choices() == 1 || policy.max_ipt < 2 * policy.min_ipt,
+                "GroupMerge policy: with multiple thread counts, max_ipt must be < 2 * min_ipt so that threads * ipt "
+                "strictly increases across bins (bin order must equal capacity order)");
   static constexpr int size = thread_choices() * ipt_choices;
   _CCCL_HOST_DEVICE_API static constexpr bin_config expanded_config(int bin)
   {
@@ -66,34 +69,14 @@ struct group_merge_expansion
   static auto expand(::cuda::std::index_sequence<I...>)
     -> capacity_list<(expanded_config(I).threads * expanded_config(I).items_per_thread)...>;
   using capacities = decltype(expand(::cuda::std::make_index_sequence<size>{}));
-  _CCCL_HOST_DEVICE_API static constexpr bin_config select(int capacity)
-  {
-    bin_config selected{};
-    int best_capacity = 0;
-    for (int threads = policy.min_threads; threads <= policy.max_threads; threads *= 2)
-    {
-      for (int ipt = policy.min_ipt; ipt <= policy.max_ipt; ++ipt)
-      {
-        if (threads * ipt >= capacity && (!best_capacity || threads * ipt < best_capacity))
-        {
-          selected      = {threads, ipt};
-          best_capacity = threads * ipt;
-        }
-      }
-    }
-    return selected;
-  }
-  template <int Capacity>
-  struct selection
-  {
-    inline static constexpr auto chosen = select(Capacity);
-    static_assert(Capacity > 0 && chosen.threads != 0);
-    using type = bin_shape<chosen.threads, chosen.items_per_thread>;
-  };
-  template <int Capacity>
-  using config_for_capacity = typename selection<Capacity>::type;
   template <int Bin>
-  using config_for_bin = config_for_capacity<capacities::bounds[Bin]>;
+  struct bin_selection
+  {
+    inline static constexpr bin_config chosen = expanded_config(Bin);
+    using type                                = bin_shape<chosen.threads, chosen.items_per_thread>;
+  };
+  template <int Bin>
+  using config_for_bin = typename bin_selection<Bin>::type;
 };
 
 // Adapted from call_group_merge_runtime_impl (sort_block_combined.cuh) and
@@ -129,6 +112,9 @@ struct group_merge_implementation
     }
   }
 
+  // NaN ordering is unspecified; -0 and +0 compare equal and their relative order
+  // is not guaranteed. This does not match radix-sort ordering used for large
+  // segments in DeviceSegmentedSort. Decide the contract before public dispatch.
   template <int ItemsPerThread, typename Key, typename BeginIterator, typename EndIterator>
   _CCCL_DEVICE_API static void sort_segment(
     unsigned slot,
