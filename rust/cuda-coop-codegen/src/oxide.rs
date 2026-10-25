@@ -20,7 +20,8 @@
 //! [`AdjacentDifferenceRecipe`] selects Block neighbor subtraction with typed
 //! optional count and predecessor/successor controls.
 //! [`DiscontinuityRecipe`] selects Block head/tail flags with one or two i32
-//! outputs and optional neighbors of the input type.
+//! outputs and optional neighbors of the input type. [`HistogramRecipe`] selects
+//! bounded integer samples with an independent counter type and output extent.
 //! Device calls retain all participation, validity and scratch obligations of
 //! [`crate::Specialization`]. No allocation or synchronization policy is supplied.
 //! Callable Reduce uses i32 full-input Block Raking and the same payload validity
@@ -29,10 +30,10 @@
 
 use crate::{
     AdjacentDifferenceRecipe, AdjacentDifferenceRequest, Algorithm, Artifact, DiscontinuityRecipe,
-    DiscontinuityRequest, Dtype, Error, ExchangeRecipe, ExchangeRequest, Layout, NativeRequest,
-    Operation, Provider, ReduceAlgorithm, ReduceBatchedRecipe, ReduceBatchedRequest, ReduceForm,
-    ReduceOperator, ReduceRecipe, ReduceRequest, Request, Result, ScanRecipe, ScanRequest,
-    ShuffleRecipe, ShuffleRequest,
+    DiscontinuityRequest, Dtype, Error, ExchangeRecipe, ExchangeRequest, HistogramAlgorithm,
+    HistogramRecipe, HistogramRequest, Layout, NativeRequest, Operation, Provider, ReduceAlgorithm,
+    ReduceBatchedRecipe, ReduceBatchedRequest, ReduceForm, ReduceOperator, ReduceRecipe,
+    ReduceRequest, Request, Result, ScanRecipe, ScanRequest, ShuffleRecipe, ShuffleRequest,
 };
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
@@ -199,6 +200,19 @@ struct SpecializationRequest {
 
 impl SpecializationRequest {
     fn native(&self) -> Result<NativeRequest> {
+        if self.operation.starts_with("histogram_") {
+            let recipe = HistogramRecipe::parse(&self.operation, &self.algorithm)?;
+            if self.warp_width.is_some() {
+                return Err(Error::message("Histogram requires a Block scope"));
+            }
+            return HistogramRequest::block(
+                self.dtype.dtype()?,
+                recipe,
+                self.block,
+                self.items_per_thread,
+            )
+            .map(NativeRequest::Histogram);
+        }
         if self.operation.starts_with("discontinuity_") {
             let recipe = DiscontinuityRecipe::parse(&self.operation, &self.algorithm)?;
             if self.warp_width.is_some() {
@@ -391,6 +405,14 @@ struct BatchResponse {
 
 fn arguments(request: NativeRequest) -> Vec<Argument> {
     let request = match request {
+        NativeRequest::Histogram(request) => {
+            return vec![
+                Argument::ConstPointer(Scalar::from(request.dtype)),
+                Argument::MutPointer(Scalar::from(request.recipe.counter)),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+            ];
+        }
         NativeRequest::Discontinuity(request) => {
             let dtype = Scalar::from(request.dtype);
             let mut arguments = vec![
@@ -800,6 +822,38 @@ pub fn discontinuity_registration(
     .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
 }
 
+/// Encode a tracked Histogram registration template for one algorithm.
+///
+/// The operation contains `xxx` for a sealed i32/u32/i64/u64 counter tag and
+/// ten zero digits each for the total bin count and per-lane output extent.
+/// A device getter fills those fixed-width fields in its associated constant,
+/// retaining the [`serve_inputs`] dependency query from `registration!`.
+/// The unfilled template is not a valid specialization.
+///
+/// Input type/extent and exact Block shape arrive through the genuine marker.
+/// Output type/extent are independent. Native arguments are input, output,
+/// scratch, input bitmap, output bitmap; there are no scalar controls.
+/// See [`HistogramRequest`] for preflight, output validity and scratch reuse.
+///
+/// # Errors
+/// Rejects a nonabsolute provider executable or an unencodable path.
+pub fn histogram_registration_template(
+    executable: &Path,
+    algorithm: HistogramAlgorithm,
+) -> Result<String> {
+    if !executable.is_absolute() {
+        return Err(Error::message("provider executable path must be absolute"));
+    }
+    serde_json::to_string(&Registration {
+        version: VERSION,
+        provider: "cuda_coop",
+        executable,
+        operation: crate::histogram::TEMPLATE_OPERATION,
+        algorithm: algorithm.token(),
+    })
+    .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct InputRequest {
@@ -1121,6 +1175,77 @@ mod tests {
         ReduceAlgorithm, ReduceBatchedLayout, ReduceOperator, ScanAlgorithm, ScanOperation,
         ScanOperator,
     };
+
+    #[test]
+    fn histogram_template_decoding_and_independent_counter_abi() {
+        for (algorithm, counter, bins, output_items) in [
+            (HistogramAlgorithm::Sort, Dtype::U64, 65, 2),
+            (HistogramAlgorithm::Atomic, Dtype::I32, 1, 9),
+            (HistogramAlgorithm::Sort, Dtype::I64, 33, 1),
+            (HistogramAlgorithm::Atomic, Dtype::U32, 65, 3),
+        ] {
+            let template =
+                histogram_registration_template(Path::new("/provider"), algorithm).unwrap();
+            let mut registration: serde_json::Value = serde_json::from_str(&template).unwrap();
+            assert_eq!(
+                registration["operation"],
+                crate::histogram::TEMPLATE_OPERATION
+            );
+            let recipe = HistogramRecipe::new(algorithm, counter, bins, output_items).unwrap();
+            registration["operation"] = recipe.token().into();
+            let request = SpecializationRequest {
+                operation: registration["operation"].as_str().unwrap().into(),
+                algorithm: registration["algorithm"].as_str().unwrap().into(),
+                dtype: Scalar::Unsigned(8),
+                block: [64, 1, 1],
+                items_per_thread: 4,
+                warp_width: None,
+            };
+            let native = request.native().unwrap();
+            assert_eq!(
+                native,
+                NativeRequest::Histogram(
+                    HistogramRequest::block(Dtype::U8, recipe, [64, 1, 1], 4).unwrap()
+                )
+            );
+            assert_eq!(
+                arguments(native),
+                vec![
+                    Argument::ConstPointer(Scalar::Unsigned(8)),
+                    Argument::MutPointer(Scalar::from(counter)),
+                    Argument::ConstPointer(Scalar::Unsigned(8)),
+                    Argument::MutPointer(Scalar::Unsigned(8)),
+                ]
+            );
+            assert!(
+                SpecializationRequest {
+                    warp_width: Some(32),
+                    ..request
+                }
+                .native()
+                .is_err()
+            );
+        }
+        for operation in [
+            crate::histogram::TEMPLATE_OPERATION,
+            "histogram_u64_bins65_k0000000002_validity_bits_v1",
+            "histogram_u64_bins0000000065_k0000000002_validity_bits_v2",
+            "histogram_f64_bins0000000065_k0000000002_validity_bits_v1",
+            "histogram_u64_bins0000000000_k0000000002_validity_bits_v1",
+            "histogram_u64_bins2147483648_k0000000002_validity_bits_v1",
+            "histogram_u64_bins9999999999_k0000000002_validity_bits_v1",
+            "histogram_u64_bins0000000065_k+000000002_validity_bits_v1",
+            "histogram_u64_bins0000000065_k0000000000_validity_bits_v1",
+        ] {
+            assert!(HistogramRecipe::parse(operation, "sort").is_err());
+        }
+        let valid = "histogram_u64_bins0000000065_k0000000002_validity_bits_v1";
+        assert!(HistogramRecipe::parse(valid, "block").is_err());
+        assert!(
+            histogram_registration_template(Path::new("relative"), HistogramAlgorithm::Atomic)
+                .is_err()
+        );
+    }
 
     #[test]
     fn discontinuity_registration_preserves_mixed_output_abi() {

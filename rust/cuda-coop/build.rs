@@ -4,9 +4,9 @@
 //! Register the owning host provider for native cooperative operations.
 use cuda_coop_codegen::{
     AdjacentDifferenceRecipe, Algorithm, DiscontinuityRecipe, ExchangeMode, ExchangeRecipe,
-    Operation, ReduceAlgorithm, ReduceBatchedLayout, ReduceBatchedRecipe, ReduceForm,
-    ReduceOperator, ReduceRecipe, ScanAlgorithm, ScanOperation, ScanOperator, ScanRecipe,
-    ShuffleRecipe, oxide,
+    HistogramAlgorithm, Operation, ReduceAlgorithm, ReduceBatchedLayout, ReduceBatchedRecipe,
+    ReduceForm, ReduceOperator, ReduceRecipe, ScanAlgorithm, ScanOperation, ScanOperator,
+    ScanRecipe, ShuffleRecipe, oxide,
 };
 
 fn main() {
@@ -25,6 +25,14 @@ fn main() {
     let callable = oxide::reduce_callable_registration(&executable)
         .expect("cuda.coop callable Reduce registration");
     println!("cargo::rustc-env=COOP_REDUCE_RAKING_CALLABLE_PAYLOAD={callable}");
+    for (algorithm, name) in [
+        (HistogramAlgorithm::Atomic, "ATOMIC"),
+        (HistogramAlgorithm::Sort, "SORT"),
+    ] {
+        let value = oxide::histogram_registration_template(&executable, algorithm)
+            .expect("cuda.coop histogram registration template");
+        println!("cargo::rustc-env=COOP_HISTOGRAM_{name}={value}");
+    }
     for (recipe, name) in [
         (DiscontinuityRecipe::Heads, "HEADS"),
         (DiscontinuityRecipe::HeadsPredecessor, "HEADS_PREDECESSOR"),

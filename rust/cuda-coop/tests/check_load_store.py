@@ -1556,6 +1556,92 @@ cases.update(
     ),
 )
 
+# Histogram has independent input T/N/ALIGN and counter C/K, with default Atomic.
+# Internal counter readiness does not complete unrelated global-memory accesses.
+histogram = "let result=coop::histogram(block,&values,coop::HistogramOptions::<129>::default().counter_type::<i64>().bins_per_thread::<2>());"
+histogram_manual = histogram.replace(
+    ".bins_per_thread::<2>()", ".bins_per_thread::<2>().temp_storage(&mut scratch)"
+)
+cases.update(
+    histogram_generic_defaults=(
+        load + "fn forward<T:coop::HistogramSample,C:coop::HistogramCounter,"
+        "const N:usize,const A:usize,const BINS:usize,const K:usize>("
+        "block:coop::ThreadGroup<coop::Block>,input:&coop::ThreadData<T,N,A>,"
+        "options:coop::HistogramOptions<BINS,C,K>)->coop::ThreadData<C,K> "
+        "where coop::Alignment<A>:coop::SupportedAlignment {"
+        "coop::histogram(block,input,options)}"
+        "let mut aligned=coop::ThreadData::<_,4,16>::new();"
+        "aligned.write(0,values[0]);aligned.write(1,values[1]);"
+        "aligned.write(2,values[2]);aligned.write(3,values[3]);"
+        "let result:coop::ThreadData<i64,2>=forward(block,&mut aligned,"
+        "coop::HistogramOptions::<129>::default().counter_type::<i64>().bins_per_thread::<2>());"
+        "values.write(0,result[0] as i32);" + store,
+        None,
+    ),
+    histogram_storage_completed=(
+        load + new_storage + histogram_manual + sync + histogram_manual + store,
+        None,
+    ),
+    histogram_storage_auto=(
+        load
+        + new_storage.replace("new()", "new().auto_sync()")
+        + histogram_manual
+        + histogram_manual
+        + store,
+        None,
+    ),
+    histogram_read_completed=(
+        reload.replace(".valid_items(valid)", ".valid_items(valid).oob_default(0)")
+        + histogram
+        + sync
+        + store,
+        None,
+    ),
+    histogram_insufficient_capacity=(
+        load
+        + "let result=coop::histogram(block,&values,coop::HistogramOptions::<129>::default());",
+        "Histogram output capacity is smaller than its bin count",
+    ),
+    histogram_multidimensional=(
+        load + histogram,
+        "Histogram requires a 1D Block with 1..=1024 threads",
+    ),
+    histogram_warp=(
+        load + histogram.replace("histogram(block,", "histogram(coop::this_warp(),"),
+        "mismatched types",
+    ),
+    histogram_zero_bins=(
+        load + histogram.replace("::<129>", "::<0>"),
+        "Histogram requires positive bins <= i32::MAX",
+    ),
+    histogram_zero_output=(
+        load + histogram.replace("bins_per_thread::<2>", "bins_per_thread::<0>"),
+        "ThreadData requires at least one item",
+    ),
+    histogram_bins_encoder_bound=(
+        load + histogram.replace("::<129>", "::<2147483648>"),
+        "Histogram requires positive bins <= i32::MAX",
+    ),
+    histogram_lane_divergence=(
+        load + "if thread::threadIdx_x()&1==0 {" + histogram + "}",
+        "lane-varying",
+    ),
+    histogram_result_control=(
+        load + histogram + "if result[0]==0 {" + histogram + "}",
+        "lane-varying",
+    ),
+    histogram_storage_missing_barrier=(
+        load + new_storage + histogram_manual + histogram_manual,
+        "requires a full-block barrier",
+    ),
+    histogram_read_epoch=(
+        reload.replace(".valid_items(valid)", ".valid_items(valid).oob_default(0)")
+        + histogram
+        + store,
+        "requires a barrier covering both accesses",
+    ),
+)
+
 if args.case:
     unknown = set(args.case).difference(cases)
     if unknown:
@@ -1606,6 +1692,10 @@ for name, (body, diagnostic) in cases.items():
     if name == "block_zero_raw_numeric":
         case_prefix = case_prefix.replace(
             "dynamic_shared=inferred", "dynamic_shared=512"
+        )
+    if name == "histogram_multidimensional":
+        case_prefix = case_prefix.replace(
+            "domain=1,block=(128,1,1)", "domain=3,block=(4,4,8)"
         )
     if name == "warp_partial_geometry":
         case_prefix = case_prefix.replace("block=(64,1,1)", "block=(48,1,1)")
