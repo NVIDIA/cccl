@@ -4,9 +4,10 @@
 //! Register the owning host provider for native cooperative operations.
 use cuda_coop_codegen::{
     AdjacentDifferenceRecipe, Algorithm, DiscontinuityRecipe, Dtype, ExchangeMode, ExchangeRecipe,
-    HistogramAlgorithm, Operation, RadixRankKeysRecipe, RadixSortKeysRecipe, RadixSortPairsRecipe,
-    ReduceAlgorithm, ReduceBatchedLayout, ReduceBatchedRecipe, ReduceForm, ReduceOperator,
-    ReduceRecipe, ScanAlgorithm, ScanOperation, ScanOperator, ScanRecipe, ShuffleRecipe, oxide,
+    HistogramAlgorithm, MergeSortKeysRecipe, MergeSortPairsRecipe, Operation, RadixRankKeysRecipe,
+    RadixSortKeysRecipe, RadixSortPairsRecipe, ReduceAlgorithm, ReduceBatchedLayout,
+    ReduceBatchedRecipe, ReduceForm, ReduceOperator, ReduceRecipe, ScanAlgorithm, ScanOperation,
+    ScanOperator, ScanRecipe, ShuffleRecipe, oxide,
 };
 
 fn main() {
@@ -25,6 +26,51 @@ fn main() {
     let callable = oxide::reduce_callable_registration(&executable)
         .expect("cuda.coop callable Reduce registration");
     println!("cargo::rustc-env=COOP_REDUCE_RAKING_CALLABLE_PAYLOAD={callable}");
+    let comparator = oxide::merge_sort_keys_callable_registration(&executable)
+        .expect("cuda.coop callable Merge Sort Keys registration");
+    println!("cargo::rustc-env=COOP_MERGE_SORT_KEYS_CALLABLE_FULL={comparator}");
+    for (recipe, name) in [
+        (MergeSortKeysRecipe::AscendingFull, "ASCENDING_FULL"),
+        (MergeSortKeysRecipe::DescendingFull, "DESCENDING_FULL"),
+        (MergeSortKeysRecipe::AscendingPartial, "ASCENDING_PARTIAL"),
+        (MergeSortKeysRecipe::DescendingPartial, "DESCENDING_PARTIAL"),
+    ] {
+        let value = oxide::merge_sort_keys_registration(&executable, recipe)
+            .expect("cuda.coop merge sort keys registration");
+        println!("cargo::rustc-env=COOP_MERGE_SORT_KEYS_{name}={value}");
+        let value = oxide::warp_merge_sort_keys_registration(&executable, recipe)
+            .expect("cuda.coop Warp merge sort keys registration");
+        println!("cargo::rustc-env=COOP_MERGE_SORT_KEYS_WARP_{name}={value}");
+    }
+    for (recipe, form) in [
+        (MergeSortPairsRecipe::AscendingFull, "ASCENDING_FULL"),
+        (MergeSortPairsRecipe::DescendingFull, "DESCENDING_FULL"),
+        (MergeSortPairsRecipe::AscendingPartial, "ASCENDING_PARTIAL"),
+        (
+            MergeSortPairsRecipe::DescendingPartial,
+            "DESCENDING_PARTIAL",
+        ),
+    ] {
+        for (dtype, name) in [
+            (Dtype::I8, "I8"),
+            (Dtype::U8, "U8"),
+            (Dtype::I16, "I16"),
+            (Dtype::U16, "U16"),
+            (Dtype::I32, "I32"),
+            (Dtype::U32, "U32"),
+            (Dtype::I64, "I64"),
+            (Dtype::U64, "U64"),
+            (Dtype::F32, "F32"),
+            (Dtype::F64, "F64"),
+        ] {
+            let value = oxide::merge_sort_pairs_registration(&executable, recipe, dtype)
+                .expect("cuda.coop merge sort pairs registration");
+            println!("cargo::rustc-env=COOP_MERGE_SORT_PAIRS_{form}_{name}={value}");
+            let value = oxide::warp_merge_sort_pairs_registration(&executable, recipe, dtype)
+                .expect("cuda.coop Warp merge sort pairs registration");
+            println!("cargo::rustc-env=COOP_MERGE_SORT_PAIRS_WARP_{form}_{name}={value}");
+        }
+    }
     for bits in 1..=8 {
         for (recipe, order) in [
             (RadixRankKeysRecipe::Ascending(bits), "ASCENDING"),

@@ -6,7 +6,8 @@
 //! A dependency build script can serve as its already-built provider executable:
 //! normal Cargo execution embeds [`registration`] in a device crate constant;
 //! `--oxide-library-request-v1` execution passes stdin/stdout to [`serve`];
-//! `--oxide-library-request-v2` serves compiler-admitted callable Reduce requests;
+//! `--oxide-library-request-v2` serves compiler-admitted callable Reduce and
+//! Merge Sort Keys comparator requests;
 //! `--oxide-library-inputs-v1` passes them to [`serve_inputs`] during macro expansion.
 //! Use `cuda_device::library::registration!` in the getter to track these inputs.
 //! The compiler reads the registration getter's constant MIR and invokes this
@@ -27,16 +28,20 @@
 //! carries an independent numeric value type into a fresh paired output.
 //! [`RadixRankKeysRecipe`] selects stable i32 ranks with a static digit width
 //! and signed64 begin/end-constraint controls, preserving input-slot order.
+//! [`MergeSortKeysRecipe`] selects numeric Block/Warp sorting with full output or a
+//! signed64 count and key-typed sentinel for prefix-valid output.
 //! Device calls retain all participation, validity and scratch obligations of
 //! [`crate::Specialization`]. No allocation or synchronization policy is supplied.
 //! Callable Reduce uses i32 full-input Block Raking and the same payload validity
-//! and root-result ABI. Its thunk and borrowed environment come from Oxide's
+//! and root-result ABI. Callable Merge Sort Keys uses full-input Block i32 and a
+//! stateless comparator. Their thunks and borrowed environments come from Oxide's
 //! checked callback marker; the provider does not select or execute Rust code.
 
 use crate::{
     AdjacentDifferenceRecipe, AdjacentDifferenceRequest, Algorithm, Artifact, DiscontinuityRecipe,
     DiscontinuityRequest, Dtype, Error, ExchangeRecipe, ExchangeRequest, HistogramAlgorithm,
-    HistogramRecipe, HistogramRequest, Layout, NativeRequest, Operation, Provider,
+    HistogramRecipe, HistogramRequest, Layout, MergeSortKeysRecipe, MergeSortKeysRequest,
+    MergeSortPairsRecipe, MergeSortPairsRequest, NativeRequest, Operation, Provider,
     RadixRankKeysRecipe, RadixRankKeysRequest, RadixSortKeysRecipe, RadixSortKeysRequest,
     RadixSortPairsRecipe, RadixSortPairsRequest, ReduceAlgorithm, ReduceBatchedRecipe,
     ReduceBatchedRequest, ReduceForm, ReduceOperator, ReduceRecipe, ReduceRequest, Request, Result,
@@ -153,13 +158,9 @@ struct CallbackRequest {
 
 impl CallbackRequest {
     fn native(&self) -> Result<NativeRequest> {
-        if self.operation != "reduce_callable_payload_validity_bits_v1"
-            || self.algorithm != "raking"
-            || self.dtype != Scalar::Signed(32)
-            || self.warp_width.is_some()
-        {
+        if self.dtype != Scalar::Signed(32) || self.warp_width.is_some() {
             return Err(Error::message(
-                "callable Reduce requires the i32 Block payload raking recipe",
+                "callable recipes require i32 Block payloads",
             ));
         }
         if self.callback.symbol.is_empty()
@@ -178,18 +179,32 @@ impl CallbackRequest {
             || self.callback.result != Scalar::Signed(32)
         {
             return Err(Error::message(
-                "callable Reduce requires a C identifier and the (const environment*, i32, i32) -> i32 callback ABI",
+                "callable recipes require a C identifier and the (const environment*, i32, i32) -> i32 callback ABI",
             ));
         }
-        ReduceRequest::block(
-            Dtype::I32,
-            ReduceOperator::Sum,
-            ReduceAlgorithm::Raking,
-            ReduceForm::Payload,
-            self.block,
-            self.items_per_thread,
-        )
-        .map(NativeRequest::Reduce)
+        match (self.operation.as_str(), self.algorithm.as_str()) {
+            ("reduce_callable_payload_validity_bits_v1", "raking") => ReduceRequest::block(
+                Dtype::I32,
+                ReduceOperator::Sum,
+                ReduceAlgorithm::Raking,
+                ReduceForm::Payload,
+                self.block,
+                self.items_per_thread,
+            )
+            .map(NativeRequest::Reduce),
+            ("merge_sort_keys_callable_payload_validity_bits_v1", "block") => {
+                MergeSortKeysRequest::block(
+                    Dtype::I32,
+                    MergeSortKeysRecipe::AscendingFull,
+                    self.block,
+                    self.items_per_thread,
+                )
+                .map(NativeRequest::MergeSortKeys)
+            }
+            _ => Err(Error::message(
+                "unsupported callable operation or algorithm",
+            )),
+        }
     }
 }
 
@@ -207,6 +222,51 @@ struct SpecializationRequest {
 
 impl SpecializationRequest {
     fn native(&self) -> Result<NativeRequest> {
+        if self.operation.starts_with("merge_sort_pairs_") {
+            let dtype = self.dtype.dtype()?;
+            let (recipe, value) = MergeSortPairsRecipe::parse(&self.operation, &self.algorithm)?;
+            return match (self.algorithm.as_str(), self.warp_width) {
+                ("block", None) => MergeSortPairsRequest::block(
+                    dtype,
+                    value,
+                    recipe,
+                    self.block,
+                    self.items_per_thread,
+                ),
+                ("warp", Some(width)) => MergeSortPairsRequest::warp(
+                    dtype,
+                    value,
+                    recipe,
+                    self.block,
+                    width,
+                    self.items_per_thread,
+                ),
+                _ => Err(Error::message(
+                    "Merge Sort Pairs scope and width must agree",
+                )),
+            }
+            .map(NativeRequest::MergeSortPairs);
+        }
+        if self.operation.starts_with("merge_sort_keys_") {
+            let recipe = MergeSortKeysRecipe::parse(&self.operation, &self.algorithm)?;
+            let dtype = self.dtype.dtype()?;
+            return match (self.algorithm.as_str(), self.warp_width) {
+                ("block", None) => {
+                    MergeSortKeysRequest::block(dtype, recipe, self.block, self.items_per_thread)
+                }
+                ("warp", Some(width)) => MergeSortKeysRequest::warp(
+                    dtype,
+                    recipe,
+                    self.block,
+                    width,
+                    self.items_per_thread,
+                ),
+                _ => Err(Error::message(
+                    "Merge Sort Keys scope and warp width disagree",
+                )),
+            }
+            .map(NativeRequest::MergeSortKeys);
+        }
         if self.operation.starts_with("radix_rank_keys_") {
             let recipe = RadixRankKeysRecipe::parse(&self.operation, &self.algorithm)?;
             if self.warp_width.is_some() {
@@ -453,6 +513,37 @@ struct BatchResponse {
 
 fn arguments(request: NativeRequest) -> Vec<Argument> {
     let request = match request {
+        NativeRequest::MergeSortPairs(request) => {
+            let key = Scalar::from(request.key_dtype);
+            let value = Scalar::from(request.value_dtype);
+            let mut arguments = vec![
+                Argument::ConstPointer(key),
+                Argument::MutPointer(key),
+                Argument::ConstPointer(value),
+                Argument::MutPointer(value),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+            ];
+            if request.recipe.partial() {
+                arguments.extend([Argument::Value(Scalar::Signed(64)), Argument::Value(key)]);
+            }
+            return arguments;
+        }
+        NativeRequest::MergeSortKeys(request) => {
+            let dtype = Scalar::from(request.dtype);
+            let mut arguments = vec![
+                Argument::ConstPointer(dtype),
+                Argument::MutPointer(dtype),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+            ];
+            if request.recipe.partial() {
+                arguments.extend([Argument::Value(Scalar::Signed(64)), Argument::Value(dtype)]);
+            }
+            return arguments;
+        }
         NativeRequest::RadixRankKeys(request) => {
             return vec![
                 Argument::ConstPointer(Scalar::from(request.dtype)),
@@ -754,6 +845,27 @@ pub fn reduce_callable_registration(executable: &Path) -> Result<String> {
     .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
 }
 
+/// Register full-input i32 Block Merge Sort Keys with a stateless Rust comparator.
+///
+/// The compiler supplies a genuine i32-return thunk under protocol version two;
+/// the native comparator converts its result to bool. Output retains all keys.
+///
+/// # Errors
+/// Rejects a nonabsolute executable or a path that cannot be encoded as JSON.
+pub fn merge_sort_keys_callable_registration(executable: &Path) -> Result<String> {
+    if !executable.is_absolute() {
+        return Err(Error::message("provider executable path must be absolute"));
+    }
+    serde_json::to_string(&Registration {
+        version: VERSION,
+        provider: "cuda_coop",
+        executable,
+        operation: "merge_sort_keys_callable_payload_validity_bits_v1",
+        algorithm: "block",
+    })
+    .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
+}
+
 /// Encode one Reduce recipe for the existing dependency provider executable.
 ///
 /// ScalarPrefix adds one signed 32-bit uniform count. Scalar and Payload add
@@ -845,6 +957,118 @@ pub fn shuffle_registration(executable: &Path, recipe: ShuffleRecipe) -> Result<
         executable,
         operation: recipe.token(),
         algorithm: "block",
+    })
+    .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
+}
+
+/// Encode one of four Block Merge Sort Keys order/prefix registrations.
+///
+/// Key dtype, exact XYZ and per-lane extent arrive with specialization. Four
+/// typed pointers describe preserved input and fresh output with independent
+/// packed validity. Full recipes have no controls; partial recipes append a
+/// signed64 count and sentinel of exactly the key type. Scratch is inserted at
+/// slot 2, giving five or seven native arguments. See [`MergeSortKeysRequest`]
+/// for input validity, sentinel ordering, scratch and participation obligations.
+///
+/// # Errors
+/// Rejects a nonabsolute executable or a path that cannot be encoded as JSON.
+pub fn merge_sort_keys_registration(
+    executable: &Path,
+    recipe: MergeSortKeysRecipe,
+) -> Result<String> {
+    if !executable.is_absolute() {
+        return Err(Error::message("provider executable path must be absolute"));
+    }
+    serde_json::to_string(&Registration {
+        version: VERSION,
+        provider: "cuda_coop",
+        executable,
+        operation: recipe.token(),
+        algorithm: "block",
+    })
+    .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
+}
+
+/// Encode one of four physical/logical Warp Merge Sort Keys registrations.
+///
+/// Uses the same typed five/seven-argument native ABI as
+/// [`merge_sort_keys_registration`]. The genuine checked Warp marker supplies
+/// the logical width and exact enclosing XYZ Block at specialization. Only
+/// widths 1/2/4/8/16/32 and complete physical warps are supported. Controls agree
+/// within each group; the compiler supplies its independent scratch replica.
+/// See [`MergeSortKeysRequest`] for input, validity and sentinel obligations.
+///
+/// # Errors
+/// Rejects a nonabsolute executable or a path that cannot be encoded as JSON.
+pub fn warp_merge_sort_keys_registration(
+    executable: &Path,
+    recipe: MergeSortKeysRecipe,
+) -> Result<String> {
+    if !executable.is_absolute() {
+        return Err(Error::message("provider executable path must be absolute"));
+    }
+    serde_json::to_string(&Registration {
+        version: VERSION,
+        provider: "cuda_coop",
+        executable,
+        operation: recipe.token(),
+        algorithm: "warp",
+    })
+    .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
+}
+
+/// Encode one of forty independently typed Block Merge Sort Pairs registrations.
+///
+/// Key dtype, exact XYZ and shared extent arrive with specialization. Value
+/// dtype is selected here; eight payload pointers preserve both input types
+/// and their separate validity maps. Scratch at slot 2 gives nine native
+/// arguments, or eleven when a partial recipe appends `(i64 count, K sentinel)`.
+/// See [`MergeSortPairsRequest`] for participation, validity and scratch rules.
+///
+/// # Errors
+/// Rejects a nonabsolute executable or a path that cannot be encoded as JSON.
+pub fn merge_sort_pairs_registration(
+    executable: &Path,
+    recipe: MergeSortPairsRecipe,
+    value_dtype: Dtype,
+) -> Result<String> {
+    if !executable.is_absolute() {
+        return Err(Error::message("provider executable path must be absolute"));
+    }
+    serde_json::to_string(&Registration {
+        version: VERSION,
+        provider: "cuda_coop",
+        executable,
+        operation: &recipe.token(value_dtype),
+        algorithm: "block",
+    })
+    .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
+}
+
+/// Encode one of forty independently typed Warp Merge Sort Pairs registrations.
+///
+/// Key dtype, exact XYZ and shared extent arrive with specialization. Value
+/// dtype is selected here; eight payload pointers preserve both input types
+/// and their separate validity maps. Scratch at slot 2 gives nine native
+/// arguments, or eleven when a partial recipe appends `(i64 count, K sentinel)`.
+/// See [`MergeSortPairsRequest`] for participation, validity and scratch rules.
+///
+/// # Errors
+/// Rejects a nonabsolute executable or a path that cannot be encoded as JSON.
+pub fn warp_merge_sort_pairs_registration(
+    executable: &Path,
+    recipe: MergeSortPairsRecipe,
+    value_dtype: Dtype,
+) -> Result<String> {
+    if !executable.is_absolute() {
+        return Err(Error::message("provider executable path must be absolute"));
+    }
+    serde_json::to_string(&Registration {
+        version: VERSION,
+        provider: "cuda_coop",
+        executable,
+        operation: &recipe.token(value_dtype),
+        algorithm: "warp",
     })
     .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
 }
@@ -1341,11 +1565,294 @@ mod tests {
         Ok(())
     }
 
+    fn comparator_request(symbol: &str, items: u32) -> serde_json::Value {
+        let mut request = callable_request(symbol, items);
+        request["operation"] =
+            serde_json::json!("merge_sort_keys_callable_payload_validity_bits_v1");
+        request["algorithm"] = serde_json::json!("block");
+        request
+    }
+
+    #[test]
+    fn callable_merge_sort_is_closed_before_toolkit() {
+        let mut base = comparator_request("rust_compare", 4);
+        base["warp_width"] = serde_json::Value::Null;
+        let parsed: CallbackRequest = serde_json::from_value(base.clone()).unwrap();
+        assert!(matches!(
+            parsed.native().unwrap(),
+            NativeRequest::MergeSortKeys(_)
+        ));
+        assert!(serde_json::from_value::<SpecializationRequest>(base.clone()).is_err());
+        for (path, value) in [
+            (
+                "/operation",
+                serde_json::json!("merge_sort_keys_ascending_partial_validity_bits_v1"),
+            ),
+            ("/algorithm", serde_json::json!("warp")),
+            ("/dtype/kind", serde_json::json!("unsigned")),
+            ("/dtype/bits", serde_json::json!(64)),
+            ("/warp_width", serde_json::json!(8)),
+            ("/block/0", serde_json::json!(33)),
+            ("/items_per_thread", serde_json::json!(0)),
+        ] {
+            let mut request = base.clone();
+            *request.pointer_mut(path).unwrap() = value;
+            let parsed: CallbackRequest = serde_json::from_value(request).unwrap();
+            assert!(parsed.native().is_err(), "{path}");
+        }
+    }
+
+    #[test]
+    #[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
+    fn native_callable_merge_sort_identity_and_layout()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let requests = [
+            comparator_request("rust_even_first", 1),
+            comparator_request("rust_even_first", 4),
+            comparator_request("rust_descending", 4),
+        ]
+        .into_iter()
+        .map(serde_json::from_value::<CallbackRequest>)
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+        let native = requests
+            .iter()
+            .map(CallbackRequest::native)
+            .collect::<Result<Vec<_>>>()?;
+        let callbacks = requests
+            .into_iter()
+            .map(|request| request.callback)
+            .collect::<Vec<_>>();
+        let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let provider = Provider::from_checkout(&checkout, std::env::var("CUDA_HOME")?)?;
+        let target =
+            std::env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
+        let artifact =
+            provider.compile_native_with_callbacks(&native, &target, Some(&callbacks))?;
+        let builtin = provider.compile_native(&native[..2], &target)?;
+        let identities = artifact
+            .specializations
+            .iter()
+            .map(|s| s.identity)
+            .collect::<std::collections::HashSet<_>>();
+        assert_eq!(identities.len(), 3);
+        for (index, entry) in artifact.specializations.iter().enumerate() {
+            let original = &builtin.specializations[index.min(1)];
+            assert_ne!(entry.identity, original.identity);
+            assert_eq!(entry.cub_layout, original.cub_layout);
+            assert_eq!(entry.scratch, original.scratch);
+            assert!(!entry.scratch_free && !entry.mutates_payload && entry.scratch.size > 0);
+        }
+        let mut response = Vec::new();
+        write_response(&native, artifact, &mut response, 2)?;
+        assert_eq!(&response[..8], b"OXDLIB02");
+        let length = u64::from_le_bytes(response[8..16].try_into()?) as usize;
+        let header: serde_json::Value = serde_json::from_slice(&response[24..24 + length])?;
+        for entry in header["specializations"].as_array().unwrap() {
+            assert_eq!(
+                entry["arguments"],
+                serde_json::json!([
+                    {"kind":"const_pointer","scalar":{"kind":"signed","bits":32}},
+                    {"kind":"mut_pointer","scalar":{"kind":"signed","bits":32}},
+                    {"kind":"const_pointer","scalar":{"kind":"unsigned","bits":8}},
+                    {"kind":"mut_pointer","scalar":{"kind":"unsigned","bits":8}}
+                ])
+            );
+        }
+        Ok(())
+    }
+
     use super::*;
     use crate::{
         ReduceAlgorithm, ReduceBatchedLayout, ReduceOperator, ScanAlgorithm, ScanOperation,
         ScanOperator,
     };
+
+    #[test]
+    fn merge_sort_pairs_registration_preserves_independent_payload_and_sentinel() {
+        for value in [
+            Dtype::I8,
+            Dtype::U8,
+            Dtype::I16,
+            Dtype::U16,
+            Dtype::I32,
+            Dtype::U32,
+            Dtype::I64,
+            Dtype::U64,
+            Dtype::F32,
+            Dtype::F64,
+        ] {
+            for recipe in [
+                MergeSortPairsRecipe::AscendingFull,
+                MergeSortPairsRecipe::DescendingFull,
+                MergeSortPairsRecipe::AscendingPartial,
+                MergeSortPairsRecipe::DescendingPartial,
+            ] {
+                for warp in [false, true] {
+                    let encoded = if warp {
+                        warp_merge_sort_pairs_registration(Path::new("/provider"), recipe, value)
+                    } else {
+                        merge_sort_pairs_registration(Path::new("/provider"), recipe, value)
+                    }
+                    .unwrap();
+                    let registration: serde_json::Value = serde_json::from_str(&encoded).unwrap();
+                    let mut request = SpecializationRequest {
+                        operation: registration["operation"].as_str().unwrap().into(),
+                        algorithm: registration["algorithm"].as_str().unwrap().into(),
+                        dtype: Scalar::Float(64),
+                        block: [4, 4, 4],
+                        items_per_thread: 9,
+                        warp_width: warp.then_some(8),
+                    };
+                    let native = request.native().unwrap();
+                    let expected = if warp {
+                        MergeSortPairsRequest::warp(Dtype::F64, value, recipe, [4, 4, 4], 8, 9)
+                    } else {
+                        MergeSortPairsRequest::block(Dtype::F64, value, recipe, [4, 4, 4], 9)
+                    }
+                    .unwrap();
+                    assert_eq!(native, NativeRequest::MergeSortPairs(expected));
+                    let mut abi = vec![
+                        Argument::ConstPointer(Scalar::Float(64)),
+                        Argument::MutPointer(Scalar::Float(64)),
+                        Argument::ConstPointer(Scalar::from(value)),
+                        Argument::MutPointer(Scalar::from(value)),
+                        Argument::ConstPointer(Scalar::Unsigned(8)),
+                        Argument::MutPointer(Scalar::Unsigned(8)),
+                        Argument::ConstPointer(Scalar::Unsigned(8)),
+                        Argument::MutPointer(Scalar::Unsigned(8)),
+                    ];
+                    if recipe.partial() {
+                        abi.extend([
+                            Argument::Value(Scalar::Signed(64)),
+                            Argument::Value(Scalar::Float(64)),
+                        ]);
+                    }
+                    assert_eq!(arguments(native), abi);
+                    assert!(!native.mutates_payload() && !native.scratch_free());
+                    request.warp_width = if warp { None } else { Some(8) };
+                    assert!(request.native().is_err());
+                }
+            }
+        }
+        for operation in [
+            "merge_sort_pairs_ascending_full_f16_validity_bits_v1",
+            "merge_sort_pairs_ascending_full_f64_validity_bits_v2",
+            "merge_sort_pairs_ascending_partial_validity_bits_v1",
+        ] {
+            assert!(MergeSortPairsRecipe::parse(operation, "block").is_err());
+        }
+        assert!(
+            MergeSortPairsRecipe::parse(
+                "merge_sort_pairs_ascending_full_f64_validity_bits_v1",
+                "custom"
+            )
+            .is_err()
+        );
+        assert!(
+            merge_sort_pairs_registration(
+                Path::new("relative"),
+                MergeSortPairsRecipe::AscendingFull,
+                Dtype::F64
+            )
+            .is_err()
+        );
+        assert!(
+            warp_merge_sort_pairs_registration(
+                Path::new("relative"),
+                MergeSortPairsRecipe::AscendingFull,
+                Dtype::F64
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn merge_sort_keys_registration_preserves_count_and_sentinel_types() {
+        for (recipe, dtype) in [
+            (MergeSortKeysRecipe::AscendingFull, Scalar::Signed(8)),
+            (MergeSortKeysRecipe::DescendingFull, Scalar::Float(32)),
+            (MergeSortKeysRecipe::AscendingPartial, Scalar::Unsigned(64)),
+            (MergeSortKeysRecipe::DescendingPartial, Scalar::Float(64)),
+        ] {
+            let registration: serde_json::Value = serde_json::from_str(
+                &merge_sort_keys_registration(Path::new("/provider"), recipe).unwrap(),
+            )
+            .unwrap();
+            let mut request = SpecializationRequest {
+                operation: registration["operation"].as_str().unwrap().into(),
+                algorithm: registration["algorithm"].as_str().unwrap().into(),
+                dtype,
+                block: [4, 4, 4],
+                items_per_thread: 9,
+                warp_width: None,
+            };
+            let native = request.native().unwrap();
+            assert_eq!(
+                native,
+                NativeRequest::MergeSortKeys(
+                    MergeSortKeysRequest::block(dtype.dtype().unwrap(), recipe, [4, 4, 4], 9)
+                        .unwrap()
+                )
+            );
+            let mut expected = vec![
+                Argument::ConstPointer(dtype),
+                Argument::MutPointer(dtype),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+            ];
+            if recipe.partial() {
+                expected.extend([Argument::Value(Scalar::Signed(64)), Argument::Value(dtype)]);
+            }
+            assert_eq!(arguments(native), expected);
+            assert!(!native.mutates_payload() && !native.scratch_free());
+            request.warp_width = Some(32);
+            assert!(request.native().is_err());
+            request.warp_width = None;
+            request.block = [3, 5, 2];
+            assert!(request.native().is_err());
+
+            let warp: serde_json::Value = serde_json::from_str(
+                &warp_merge_sort_keys_registration(Path::new("/provider"), recipe).unwrap(),
+            )
+            .unwrap();
+            request.operation = warp["operation"].as_str().unwrap().into();
+            request.algorithm = warp["algorithm"].as_str().unwrap().into();
+            request.block = [4, 4, 6];
+            assert!(request.native().is_err()); // No authenticated width.
+            request.warp_width = Some(8);
+            let native = request.native().unwrap();
+            assert_eq!(
+                native,
+                NativeRequest::MergeSortKeys(
+                    MergeSortKeysRequest::warp(dtype.dtype().unwrap(), recipe, [4, 4, 6], 8, 9)
+                        .unwrap()
+                )
+            );
+            assert_eq!(arguments(native), expected);
+            assert!(!native.mutates_payload() && !native.scratch_free());
+            request.warp_width = Some(17);
+            assert!(request.native().is_err());
+        }
+        assert!(
+            merge_sort_keys_registration(Path::new("relative"), MergeSortKeysRecipe::AscendingFull)
+                .is_err()
+        );
+        assert!(
+            warp_merge_sort_keys_registration(
+                Path::new("relative"),
+                MergeSortKeysRecipe::AscendingFull
+            )
+            .is_err()
+        );
+        for (operation, algorithm) in [
+            ("merge_sort_keys_ascending_full_validity_bits_v1", "other"),
+            ("merge_sort_keys_ascending_full_validity_bits_v2", "block"),
+            ("merge_sort_keys_custom_full_validity_bits_v1", "block"),
+            ("merge_sort_pairs_ascending_full_validity_bits_v1", "block"),
+        ] {
+            assert!(MergeSortKeysRecipe::parse(operation, algorithm).is_err());
+        }
+    }
 
     #[test]
     fn radix_sort_pairs_registration_preserves_independent_value_abi() {

@@ -1873,6 +1873,220 @@ cases.update(
     ),
 )
 
+# Merge Sort uses complete groups, typed partial controls and existing scratch epochs.
+merge_sort = "let result=coop::merge_sort_keys(block,&values,Default::default());"
+merge_sort_manual = merge_sort.replace(
+    "Default::default()", "coop::MergeSortOptions::default().temp_storage(&mut scratch)"
+)
+cases.update(
+    merge_sort_generic=(
+        "fn sorted<T:coop::Numeric,G:coop::MergeSortGroup<S>,O:coop::MergeSortOrder,"
+        "P:coop::MergeSortPrefix<T>,S:coop::TempStorageLike,const N:usize,const A:usize>"
+        "(g:coop::ThreadGroup<G>,v:&coop::ThreadData<T,N,A>,o:coop::MergeSortOptions<T,O,P,S>)"
+        "->coop::ThreadData<T,N,A> where coop::Alignment<A>:coop::SupportedAlignment"
+        "{coop::merge_sort_keys(g,v,o)}"
+        + load
+        + "let _=sorted(block,&values,Default::default());"
+        "let group=coop::this_warp().group_by::<8>();"
+        "let _=sorted(group,&values,coop::MergeSortOptions::default()"
+        ".order(coop::Descending).valid_items(8,i32::MIN));"
+        "let _=sorted(group,&values,coop::MergeSortOptions::default()"
+        ".valid_items(8,i32::MIN).order(coop::Descending));",
+        None,
+    ),
+    merge_sort_storage_completed=(
+        load
+        + new_storage
+        + merge_sort_manual
+        + sync
+        + merge_sort_manual
+        + sync
+        + store,
+        None,
+    ),
+    merge_sort_auto_epoch_completed=(
+        reload.replace(".valid_items(valid)", ".valid_items(valid).oob_default(0)")
+        + sync
+        + new_storage.replace("new()", "new().auto_sync()")
+        + merge_sort_manual
+        + merge_sort_manual
+        + sync
+        + store,
+        None,
+    ),
+    merge_sort_nonpower_partial_block=(load + merge_sort, "power-of-two Block"),
+    merge_sort_warp_partial_geometry=(
+        load + merge_sort.replace("(block,", "(coop::this_warp(),"),
+        "complete physical warps",
+    ),
+    merge_sort_varying_count=(
+        load
+        + merge_sort.replace(
+            "Default::default()",
+            "coop::MergeSortOptions::default().valid_items(thread::threadIdx_x() as i64,i32::MAX)",
+        ),
+        "not proved block-uniform",
+    ),
+    merge_sort_varying_sentinel=(
+        load
+        + merge_sort.replace(
+            "Default::default()",
+            "coop::MergeSortOptions::default().valid_items(1,thread::threadIdx_x() as i32)",
+        ),
+        "not proved block-uniform",
+    ),
+    merge_sort_result_control=(
+        load + merge_sort + "if result[0]==0 {" + merge_sort + "}",
+        "lane-varying",
+    ),
+    merge_sort_storage_missing_barrier=(
+        load + new_storage + merge_sort_manual + merge_sort_manual,
+        "requires a full-block barrier",
+    ),
+    merge_sort_read_epoch=(
+        reload.replace(".valid_items(valid)", ".valid_items(valid).oob_default(0)")
+        + merge_sort
+        + store,
+        "requires a barrier covering both accesses",
+    ),
+)
+
+# Callable Keys retains the existing order bound and admits only the first closed recipe.
+merge_compare = "coop::merge_sort_keys(block,&values,coop::MergeSortOptions::default().order(|left,right| left<right));"
+cases.update(
+    merge_sort_callable_generic=(
+        "fn sorted<O:coop::MergeSortOrder,S:coop::TempStorageLike>"
+        "(block:coop::ThreadGroup<coop::Block>,values:&coop::ThreadData<i32,4>,"
+        "options:coop::MergeSortOptions<i32,O,(),S>)->coop::ThreadData<i32,4>"
+        "{coop::merge_sort_keys(block,values,options)}"
+        "fn before(left:i32,right:i32)->bool {left<right}"
+        + load
+        + "let mut scratch=coop::TempStorage::new().auto_sync();"
+        "let _=sorted(block,&values,coop::MergeSortOptions::default().temp_storage(&mut scratch));"
+        "let _=sorted(block,&values,coop::MergeSortOptions::default().order(before).temp_storage(&mut scratch));"
+        "let result=sorted(block,&values,coop::MergeSortOptions::default().temp_storage(&mut scratch).order(|left,right| left>right));"
+        + store.replace("&values", "&result"),
+        None,
+    ),
+    merge_sort_callable_warp=(
+        load + merge_compare.replace("(block,", "(coop::this_warp(),"),
+        "callable Merge Sort requires Block",
+    ),
+    merge_sort_callable_partial=(
+        load + merge_compare.replace(".order(", ".valid_items(1,i32::MAX).order("),
+        "callable Merge Sort requires full input",
+    ),
+    merge_sort_callable_pairs=(
+        load
+        + merge_compare.replace(
+            "merge_sort_keys(block,&values,", "merge_sort_pairs(block,&values,&values,"
+        ),
+        "callable Merge Sort Pairs is unsupported",
+    ),
+    merge_sort_callable_capture=(
+        load
+        + "let shift=1_i32;"
+        + merge_compare.replace(
+            "|left,right| left<right",
+            "|left:i32,right:i32| left.wrapping_add(shift)<right.wrapping_add(shift)",
+        ),
+        "callable Merge Sort requires a stateless operator",
+    ),
+    merge_sort_callable_fn_pointer=(
+        load
+        + "let before:fn(i32,i32)->bool=|left,right| left<right;"
+        + merge_compare.replace("|left,right| left<right", "before"),
+        "callable Merge Sort requires a stateless operator",
+    ),
+    merge_sort_callable_dtype=(
+        "values.write(0,0_i32);let mut keys=coop::ThreadData::<i64,4>::new();for i in 0..4 {keys.write(i,0); }"
+        + merge_compare.replace("&values", "&keys"),
+        "callback version one supports i32 only",
+    ),
+    merge_sort_callable_cuda_body=(
+        load
+        + merge_compare.replace("left<right", "left<right && thread::threadIdx_x()==0"),
+        "scalar callback cannot reach CUDA",
+    ),
+)
+
+# Merge Sort Pairs keeps independent value types, extents and result owners.
+merge_pairs = "let (result,pair_result)=coop::merge_sort_pairs(block,&values,&associated,Default::default());"
+merge_pairs_manual = merge_pairs.replace(
+    "Default::default()", "coop::MergeSortOptions::default().temp_storage(&mut scratch)"
+)
+cases.update(
+    merge_pairs_generic=(
+        "fn sorted<K:coop::Numeric,V:coop::MergeSortValue,G:coop::MergeSortGroup<S>,"
+        "O:coop::MergeSortOrder,P:coop::MergeSortPrefix<K>,S:coop::TempStorageLike,"
+        "const N:usize,const KA:usize,const VA:usize>(g:coop::ThreadGroup<G>,"
+        "keys:&coop::ThreadData<K,N,KA>,values:&coop::ThreadData<V,N,VA>,"
+        "o:coop::MergeSortOptions<K,O,P,S>)"
+        "->(coop::ThreadData<K,N,KA>,coop::ThreadData<V,N,VA>) "
+        "where coop::Alignment<KA>:coop::SupportedAlignment,coop::Alignment<VA>:coop::SupportedAlignment"
+        "{coop::merge_sort_pairs(g,keys,values,o)}"
+        + load
+        + pair_values
+        + "let _=sorted(block,&values,&associated,Default::default());"
+        "let (result,pair_result)=sorted(block,&values,&associated,coop::MergeSortOptions::default()"
+        ".valid_items(valid as i64,i32::MIN).order(coop::Descending));"
+        "let _:coop::ThreadData<f64,4,32>=pair_result;"
+        + store.replace("&values", "&result"),
+        None,
+    ),
+    merge_pairs_storage_completed=(
+        load
+        + pair_values
+        + new_storage
+        + merge_pairs_manual.replace("result,pair_result", "first,first_values")
+        + sync
+        + merge_pairs_manual
+        + sync
+        + "values.write(0,first[0]+result[0]+first_values[0] as i32+pair_result[0] as i32);"
+        + "let mut scratch=coop::TempStorage::new().auto_sync();"
+        + merge_pairs_manual
+        + merge_pairs_manual
+        + sync
+        + store,
+        None,
+    ),
+    merge_pairs_unequal_extent=(
+        load
+        + pair_values.replace("f64,4,32", "f64,3,32").replace("0..4", "0..3")
+        + merge_pairs,
+        "mismatched types",
+    ),
+    merge_pairs_value_sentinel=(
+        load
+        + pair_values
+        + merge_pairs.replace(
+            "Default::default()",
+            "coop::MergeSortOptions::default().valid_items(1,0_f64)",
+        ),
+        "mismatched types",
+    ),
+    merge_pairs_value_result_type=(
+        load
+        + pair_values
+        + merge_pairs
+        + "let _:coop::ThreadData<i32,4,32>=pair_result;",
+        "mismatched types",
+    ),
+    merge_pairs_value_control=(
+        load
+        + pair_values
+        + merge_pairs
+        + "if pair_result[0]==0.0 {"
+        + merge_pairs
+        + "}",
+        "lane-varying",
+    ),
+    merge_pairs_storage_missing_barrier=(
+        load + pair_values + new_storage + merge_pairs_manual + merge_pairs_manual,
+        "requires a full-block barrier",
+    ),
+)
+
 if args.case:
     unknown = set(args.case).difference(cases)
     if unknown:
@@ -1933,6 +2147,8 @@ for name, (body, diagnostic) in cases.items():
         case_prefix = case_prefix.replace(
             "domain=1,block=(128,1,1)", "domain=3,block=(4,4,8)"
         )
+    if name == "merge_sort_warp_partial_geometry":
+        case_prefix = case_prefix.replace("block=(128,1,1)", "block=(48,1,1)")
     if name == "warp_partial_geometry":
         case_prefix = case_prefix.replace("block=(64,1,1)", "block=(48,1,1)")
     elif name.endswith("_partial_block"):

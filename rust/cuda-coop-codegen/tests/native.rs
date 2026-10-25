@@ -6,13 +6,286 @@
 use cuda_coop_codegen::{
     AdjacentDifferenceRecipe, AdjacentDifferenceRequest, Algorithm, DiscontinuityRecipe,
     DiscontinuityRequest, Dtype, ExchangeMode, ExchangeRecipe, ExchangeRequest, HistogramAlgorithm,
-    HistogramRecipe, HistogramRequest, Layout, NativeRequest, Operation, Provider,
+    HistogramRecipe, HistogramRequest, Layout, MergeSortKeysRecipe, MergeSortKeysRequest,
+    MergeSortPairsRecipe, MergeSortPairsRequest, NativeRequest, Operation, Provider,
     RadixRankKeysRecipe, RadixRankKeysRequest, RadixSortKeysRecipe, RadixSortKeysRequest,
     RadixSortPairsRecipe, RadixSortPairsRequest, ReduceAlgorithm, ReduceBatchedLayout,
     ReduceBatchedRecipe, ReduceBatchedRequest, ReduceForm, ReduceOperator, ReduceRequest, Request,
     ScanAlgorithm, ScanOperation, ScanOperator, ScanRequest, ShuffleRecipe, ShuffleRequest,
 };
 use std::{env, path::Path, time::Instant};
+
+#[test]
+#[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
+fn native_mixed_merge_sort_pairs_recipes() -> Result<(), Box<dyn std::error::Error>> {
+    use MergeSortPairsRecipe::{
+        AscendingFull, AscendingPartial, DescendingFull, DescendingPartial,
+    };
+    let toolkit = env::var("CUDA_HOME")?;
+    let target = env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let provider = Provider::from_checkout(&checkout, &toolkit)?;
+    // First N1/N4 example, then independent numeric types and Warp widths.
+    // None means complete Block; Some(width) means one Warp group's layout.
+    let rows = [
+        (Dtype::I32, Dtype::F64, [4, 4, 4], None, 1, AscendingFull),
+        (
+            Dtype::I32,
+            Dtype::F64,
+            [4, 4, 4],
+            None,
+            1,
+            DescendingPartial,
+        ),
+        (Dtype::I32, Dtype::F64, [4, 4, 4], None, 4, AscendingFull),
+        (
+            Dtype::I32,
+            Dtype::F64,
+            [4, 4, 4],
+            None,
+            4,
+            DescendingPartial,
+        ),
+        (
+            Dtype::I8,
+            Dtype::U64,
+            [64, 1, 1],
+            Some(1),
+            9,
+            AscendingPartial,
+        ),
+        (
+            Dtype::U8,
+            Dtype::I64,
+            [64, 1, 1],
+            Some(2),
+            4,
+            DescendingFull,
+        ),
+        (
+            Dtype::I16,
+            Dtype::F32,
+            [64, 1, 1],
+            Some(4),
+            4,
+            AscendingFull,
+        ),
+        (
+            Dtype::U16,
+            Dtype::I32,
+            [4, 4, 6],
+            Some(8),
+            9,
+            DescendingPartial,
+        ),
+        (
+            Dtype::U32,
+            Dtype::I8,
+            [64, 1, 1],
+            Some(16),
+            4,
+            AscendingPartial,
+        ),
+        (
+            Dtype::I64,
+            Dtype::U8,
+            [64, 1, 1],
+            Some(32),
+            4,
+            DescendingFull,
+        ),
+        (Dtype::U64, Dtype::I16, [1, 1, 1], None, 1, AscendingFull),
+        (
+            Dtype::F32,
+            Dtype::U16,
+            [4, 4, 4],
+            None,
+            9,
+            DescendingPartial,
+        ),
+        (Dtype::F64, Dtype::U32, [4, 4, 4], None, 4, AscendingPartial),
+    ];
+    let mut requests = Vec::new();
+    for (key, value, block, width, items, recipe) in rows {
+        let request = if let Some(width) = width {
+            MergeSortPairsRequest::warp(key, value, recipe, block, width, items)?
+        } else {
+            MergeSortPairsRequest::block(key, value, recipe, block, items)?
+        };
+        requests.push(NativeRequest::MergeSortPairs(request));
+    }
+    requests.extend([
+        NativeRequest::MergeSortKeys(MergeSortKeysRequest::block(
+            Dtype::I32,
+            MergeSortKeysRecipe::AscendingFull,
+            [4, 4, 4],
+            4,
+        )?),
+        NativeRequest::MergeSortKeys(MergeSortKeysRequest::warp(
+            Dtype::F64,
+            MergeSortKeysRecipe::DescendingPartial,
+            [64, 1, 1],
+            8,
+            4,
+        )?),
+    ]);
+    let artifact = provider.compile_native(&requests, &target)?;
+    assert_eq!(artifact.specializations.len(), 15);
+    assert!(!artifact.ltoir.is_empty());
+    let mut identities = std::collections::HashSet::new();
+    for (request, entry) in requests.iter().zip(&artifact.specializations) {
+        assert!(identities.insert(entry.identity));
+        assert!(!entry.mutates_payload && !entry.scratch_free);
+        assert_eq!(entry.scratch, entry.cub_layout);
+        assert!(entry.scratch.size > 0 && entry.scratch.alignment.is_power_of_two());
+        eprintln!("{request:?}: {entry:?}");
+    }
+    // Full/partial use the complete pair union, including its padded element.
+    for (full, partial) in [(0, 1), (2, 3)] {
+        assert_eq!(
+            artifact.specializations[full].scratch,
+            artifact.specializations[partial].scratch
+        );
+        assert_ne!(
+            artifact.specializations[full].identity,
+            artifact.specializations[partial].identity
+        );
+    }
+    assert_eq!(
+        artifact.specializations[0].scratch,
+        Layout {
+            size: 65 * 8,
+            alignment: 8
+        }
+    );
+    assert_eq!(
+        artifact.specializations[2].scratch,
+        Layout {
+            size: 257 * 8,
+            alignment: 8
+        }
+    );
+    // The i32-only control cannot stand in for the mixed i32/f64 pair layout.
+    assert!(artifact.specializations[2].scratch.size > artifact.specializations[13].scratch.size);
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
+fn native_mixed_merge_sort_keys_recipes() -> Result<(), Box<dyn std::error::Error>> {
+    use MergeSortKeysRecipe::{AscendingFull, AscendingPartial, DescendingFull, DescendingPartial};
+    let toolkit = env::var("CUDA_HOME")?;
+    let target = env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let provider = Provider::from_checkout(&checkout, &toolkit)?;
+    // The public N1/N4 example, then distributed numeric types and bitmap tails.
+    let rows = [
+        (Dtype::I64, [4, 4, 4], 1, AscendingFull),
+        (Dtype::I64, [4, 4, 4], 1, DescendingPartial),
+        (Dtype::I64, [4, 4, 4], 4, AscendingFull),
+        (Dtype::I64, [4, 4, 4], 4, DescendingPartial),
+        (Dtype::I8, [1, 1, 1], 9, AscendingPartial),
+        (Dtype::U8, [2, 2, 2], 9, DescendingFull),
+        (Dtype::I16, [64, 1, 1], 4, AscendingFull),
+        (Dtype::U16, [64, 1, 1], 4, DescendingPartial),
+        (Dtype::I32, [8, 4, 1], 9, AscendingPartial),
+        (Dtype::U32, [32, 1, 1], 1, DescendingFull),
+        (Dtype::U64, [64, 1, 1], 4, AscendingPartial),
+        (Dtype::F32, [4, 4, 4], 4, AscendingFull),
+        (Dtype::F64, [4, 4, 4], 4, DescendingPartial),
+    ];
+    let mut requests = Vec::new();
+    for (dtype, block, items, recipe) in rows {
+        requests.push(NativeRequest::MergeSortKeys(MergeSortKeysRequest::block(
+            dtype, recipe, block, items,
+        )?));
+    }
+    requests.extend([
+        NativeRequest::RadixSortKeys(RadixSortKeysRequest::block(
+            Dtype::I64,
+            RadixSortKeysRecipe::Ascending,
+            [4, 4, 4],
+            4,
+        )?),
+        NativeRequest::Histogram(HistogramRequest::block(
+            Dtype::U8,
+            HistogramRecipe::new(HistogramAlgorithm::Sort, Dtype::U64, 65, 2)?,
+            [64, 1, 1],
+            4,
+        )?),
+    ]);
+    // Append the six actual Warp widths; preserve the original fifteen entries.
+    let warp_rows = [
+        (Dtype::U8, [64, 1, 1], 1, 1, AscendingFull),
+        (Dtype::I16, [64, 1, 1], 2, 4, DescendingPartial),
+        (Dtype::U32, [64, 1, 1], 4, 4, AscendingFull),
+        (Dtype::I32, [4, 4, 6], 8, 9, DescendingPartial),
+        (Dtype::U64, [64, 1, 1], 16, 4, DescendingPartial),
+        (Dtype::I64, [64, 1, 1], 32, 4, AscendingPartial),
+    ];
+    for (dtype, block, width, items, recipe) in warp_rows {
+        requests.push(NativeRequest::MergeSortKeys(MergeSortKeysRequest::warp(
+            dtype, recipe, block, width, items,
+        )?));
+    }
+    let artifact = provider.compile_native(&requests, &target)?;
+    assert_eq!(artifact.specializations.len(), 21);
+    assert!(!artifact.ltoir.is_empty());
+    let mut identities = std::collections::HashSet::new();
+    let mut symbols = std::collections::HashSet::new();
+    for (request, entry) in requests.iter().zip(&artifact.specializations) {
+        assert!(identities.insert(entry.identity));
+        assert!(symbols.insert(&entry.symbol));
+        assert!(!entry.mutates_payload && !entry.scratch_free);
+        if matches!(request, NativeRequest::Histogram(_)) {
+            assert!(entry.scratch.size >= entry.cub_layout.size);
+            assert!(entry.scratch.alignment >= entry.cub_layout.alignment);
+        } else {
+            assert_eq!(entry.scratch, entry.cub_layout);
+        }
+        assert!(entry.scratch.size > 0 && entry.scratch.alignment.is_power_of_two());
+        eprintln!("{request:?}: {entry:?}");
+    }
+    // Full/partial ordering uses the same complete CUB storage, including padding.
+    for (full, partial) in [(0, 1), (2, 3)] {
+        assert_eq!(
+            artifact.specializations[full].scratch,
+            artifact.specializations[partial].scratch
+        );
+        assert_ne!(
+            artifact.specializations[full].identity,
+            artifact.specializations[partial].identity
+        );
+    }
+    for (index, (_, block, items, _)) in rows.iter().enumerate() {
+        let entry = &artifact.specializations[index];
+        let scalar_bytes = match rows[index].0 {
+            Dtype::I8 | Dtype::U8 => 1,
+            Dtype::I16 | Dtype::U16 => 2,
+            Dtype::I32 | Dtype::U32 | Dtype::F32 => 4,
+            Dtype::I64 | Dtype::U64 | Dtype::F64 => 8,
+        };
+        let padded_tile = (block.iter().product::<u32>() * items + 1) as usize;
+        assert!(entry.scratch.size >= padded_tile * scalar_bytes);
+    }
+    for (index, (dtype, _, width, items, _)) in warp_rows.iter().enumerate() {
+        let scalar_bytes = match dtype {
+            Dtype::U8 => 1,
+            Dtype::I16 => 2,
+            Dtype::U32 | Dtype::I32 => 4,
+            Dtype::U64 | Dtype::I64 => 8,
+            _ => unreachable!(),
+        };
+        let padded_tile = (width * items + 1) as usize;
+        assert!(artifact.specializations[15 + index].scratch.size >= padded_tile * scalar_bytes);
+    }
+    eprintln!(
+        "{} LTO bytes, {} specializations",
+        artifact.ltoir.len(),
+        artifact.specializations.len()
+    );
+    Ok(())
+}
 
 #[test]
 #[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
