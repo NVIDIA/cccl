@@ -85,21 +85,21 @@ struct range_split
   int virtual_blocks;
 };
 
+// Tiles each block should receive before the grid grows past one wave
+inline constexpr int min_tiles_per_block = 16;
+// Most waves of resident blocks the grid launches
+inline constexpr int max_factor = 5;
+
 // Returns min(tiles, F x resident_blocks), where
 // F = clamp(floor(tiles / (min_tiles_per_block x resident_blocks)), 1, max_factor).
-// A zero min_tiles_per_block forces F = max_factor.
 template <typename WorkT>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int load_balanced_block_count(
-  WorkT total_work, WorkT tile_size, int resident_blocks, int min_tiles_per_block, int max_factor)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int
+load_balanced_block_count(WorkT total_work, WorkT tile_size, int resident_blocks)
 {
   const WorkT tiles      = ::cuda::ceil_div(total_work, tile_size);
   const WorkT wave_tiles = static_cast<WorkT>(resident_blocks);
-  WorkT factor           = static_cast<WorkT>(max_factor);
-  if (min_tiles_per_block > 0)
-  {
-    // Divides twice, as min_tiles_per_block x resident_blocks may exceed WorkT
-    factor = ::cuda::std::clamp(tiles / static_cast<WorkT>(min_tiles_per_block) / wave_tiles, WorkT{1}, factor);
-  }
+  const WorkT factor     = ::cuda::std::clamp(
+    tiles / (static_cast<WorkT>(min_tiles_per_block) * wave_tiles), WorkT{1}, static_cast<WorkT>(max_factor));
   return static_cast<int>((::cuda::std::min) (tiles, factor * wave_tiles));
 }
 
@@ -316,8 +316,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE WorkT make_work_index_value(OffsetT begin, Offset
   {
     return WorkT{0};
   }
-  return static_cast<WorkT>(
-    static_cast<unsigned_offset_t>(static_cast<unsigned_offset_t>(end) - static_cast<unsigned_offset_t>(begin)));
+  return static_cast<WorkT>(static_cast<unsigned_offset_t>(end) - static_cast<unsigned_offset_t>(begin));
 }
 
 // Whether a segment of size items at begin is followed by a segment beginning at next, modulo 2^n for n-bit positions,
@@ -523,7 +522,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(work_index_threads) void device_segmen
 //!   reuse_input_begin
 //!
 template <typename InputBeginIteratorT, typename OutputBeginIteratorT = reuse_input_begin>
-struct noncontiguous_addressing
+struct segment_addressing
 {
   InputBeginIteratorT input_begin;
   OutputBeginIteratorT output_begin;
@@ -560,7 +559,7 @@ struct noncontiguous_addressing
 //!   Scan inclusively although an initial value is provided
 //!
 //! @tparam AddressingT
-//!   Specialization of noncontiguous_addressing
+//!   Specialization of segment_addressing
 //!
 template <typename PolicyGetter,
           typename InputIteratorT,
@@ -689,11 +688,6 @@ private:
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static PositionT position(work_t work, DeltaT delta)
   {
     return static_cast<PositionT>(static_cast<DeltaT>(work) + delta);
-  }
-
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static OffsetT element_index(work_t work, delta_t delta)
-  {
-    return position<OffsetT>(work, delta);
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static flag_value_t
@@ -935,7 +929,7 @@ private:
     const delta_t tile_delta = deltas.uniform_input;
     const bool gather        = !deltas.input_is_uniform;
     const bool needs_entries = gather || (has_output_deltas && !deltas.output_is_uniform);
-    const OffsetT tile_start = element_index(tile_begin, tile_delta);
+    const OffsetT tile_start = position<OffsetT>(tile_begin, tile_delta);
     AccumT values[items_per_thread];
     if (needs_entries)
     {
@@ -957,7 +951,7 @@ private:
         values[item] =
           local_index < valid_items
             ? static_cast<AccumT>(
-                d_in[element_index(tile_begin + static_cast<work_t>(local_index), input_deltas[entries[item]])])
+                d_in[position<OffsetT>(tile_begin + static_cast<work_t>(local_index), input_deltas[entries[item]])])
             : filler;
       }
     }
@@ -1073,7 +1067,7 @@ private:
     work_t tile_begin, work_t tile_end, OffsetT num_segments, flag_value_t (&items)[items_per_thread], delta_t delta)
   {
     const int valid_items    = static_cast<int>(tile_end - tile_begin);
-    const OffsetT tile_start = element_index(tile_begin, delta);
+    const OffsetT tile_start = position<OffsetT>(tile_begin, delta);
     AccumT values[items_per_thread];
 
     if (valid_items == items_per_tile)
@@ -1122,7 +1116,7 @@ private:
       const work_t tile_size   = (::cuda::std::min) (range_end - tile_begin, static_cast<work_t>(items_per_tile));
       const work_t tile_end    = tile_begin + tile_size;
       const int valid_items    = static_cast<int>(tile_size);
-      const OffsetT tile_start = element_index(tile_begin, delta);
+      const OffsetT tile_start = position<OffsetT>(tile_begin, delta);
       AccumT values[items_per_thread];
       AccumT tile_aggregate{};
       if (valid_items == items_per_tile)
@@ -1211,15 +1205,6 @@ private:
     }
     __syncthreads();
     return temp_storage.tails.Alias()[0];
-  }
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  publish_without_lookback(flag_value_t range_aggregate, int tile_idx, scan_tile_state_t& tile_state)
-  {
-    if (threadIdx.x == 0)
-    {
-      tile_state.SetInclusive(tile_idx, range_aggregate);
-    }
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE flag_value_t scan_range(
@@ -1423,7 +1408,10 @@ public:
 
     const flag_value_t suffix_aggregate =
       scan_range(range.tail_begin, range_end, num_segments, flag_value_t{}, range.tail_segment);
-    publish_without_lookback(suffix_aggregate, tile_idx, tile_state);
+    if (threadIdx.x == 0)
+    {
+      tile_state.SetInclusive(tile_idx, suffix_aggregate);
+    }
 
     if (range.tail_begin == range_begin)
     {
@@ -1492,7 +1480,7 @@ inline constexpr ::cuda::std::size_t load_balanced_kernel_smem_bytes =
 //!   Scan inclusively although an initial value is provided
 //!
 //! @tparam AddressingT
-//!   Specialization of noncontiguous_addressing
+//!   Specialization of segment_addressing
 //!
 template <typename LoadBalancedPolicySelector,
           typename InputIteratorT,
@@ -1517,8 +1505,6 @@ __launch_bounds__(current_policy<LoadBalancedPolicySelector>().threads_per_block
     ScanOpT scan_op,
     InitValueT init_value,
     int resident_blocks,
-    int min_tiles_per_block,
-    int max_factor,
     int capacity,
     ReduceByKeyScanTileState<AccumT, int> tile_state,
     AddressingT addressing)
@@ -1579,12 +1565,7 @@ __launch_bounds__(current_policy<LoadBalancedPolicySelector>().threads_per_block
     agent.initialize_addressing(num_segments);
     split.total = work_index[num_segments];
     split.virtual_blocks =
-      (::cuda::std::min) (load_balanced_block_count(
-                            split.total,
-                            static_cast<work_t>(tile_size),
-                            resident_blocks,
-                            min_tiles_per_block,
-                            max_factor),
+      (::cuda::std::min) (load_balanced_block_count(split.total, static_cast<work_t>(tile_size), resident_blocks),
                           capacity);
   }
 

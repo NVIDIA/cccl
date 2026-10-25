@@ -430,7 +430,7 @@ inline constexpr bool load_balanced_kernel_holds = cub::detail::segmented_scan::
   InitValueT,
   ValueT,
   false,
-  cub::detail::segmented_scan::noncontiguous_addressing<
+  cub::detail::segmented_scan::segment_addressing<
     const OffsetT*,
     cuda::std::conditional_t<SeparateOutput, const OffsetT*, cub::detail::segmented_scan::reuse_input_begin>>>;
 
@@ -471,7 +471,7 @@ inline constexpr size_t load_balanced_kernel_smem = cub::detail::segmented_scan:
   ValueT,
   ValueT,
   ForceInclusive,
-  cub::detail::segmented_scan::noncontiguous_addressing<const OffsetT*, cub::detail::segmented_scan::reuse_input_begin>>;
+  cub::detail::segmented_scan::segment_addressing<const OffsetT*, cub::detail::segmented_scan::reuse_input_begin>>;
 
 // Whether the load-balanced kernel's exclusive scan keeps one tail per thread under the policy PolicyGetter returns, by
 // default CUB's. Its storage then exceeds that of the inclusive scan with an initial value, which keeps one tail.

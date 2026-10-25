@@ -105,7 +105,7 @@ struct device_segmented_scan_kernel_source
 template <typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
           typename OutputBeginOffsetIteratorT = reuse_input_begin>
-struct noncontiguous_segments
+struct segment_offsets
 {
   BeginOffsetIteratorT begin;
   EndOffsetIteratorT end;
@@ -113,19 +113,16 @@ struct noncontiguous_segments
 };
 
 template <typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename OutputBeginOffsetIteratorT>
-using noncontiguous_segments_offset_t = common_iterator_value_t<
+using segment_offset_t = common_iterator_value_t<
   BeginOffsetIteratorT,
   EndOffsetIteratorT,
   ::cuda::std::conditional_t<::cuda::std::is_same_v<OutputBeginOffsetIteratorT, reuse_input_begin>,
                              BeginOffsetIteratorT,
                              OutputBeginOffsetIteratorT>>;
 
-static_assert(::cuda::std::is_same_v<noncontiguous_segments_offset_t<const int*, const long long*, reuse_input_begin>,
-                                     common_iterator_value_t<const int*, const long long*, const int*>>);
-
 template <typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename OutputBeginOffsetIteratorT>
-[[nodiscard]] CUB_RUNTIME_FUNCTION auto output_begin_offsets(
-  noncontiguous_segments<BeginOffsetIteratorT, EndOffsetIteratorT, OutputBeginOffsetIteratorT> segments)
+[[nodiscard]] CUB_RUNTIME_FUNCTION auto
+output_begin_offsets(segment_offsets<BeginOffsetIteratorT, EndOffsetIteratorT, OutputBeginOffsetIteratorT> segments)
 {
   if constexpr (::cuda::std::is_same_v<OutputBeginOffsetIteratorT, reuse_input_begin>)
   {
@@ -156,7 +153,7 @@ struct device_segmented_scan_load_balanced_kernel_source
   using work_t                  = WorkT;
   using work_index_scan_state_t = ScanTileState<contiguity_work_index_value<WorkT>>;
   using scan_tile_state_t       = ReduceByKeyScanTileState<AccumT, int>;
-  using addressing_t            = noncontiguous_addressing<BeginOffsetIteratorT, OutputBeginOffsetIteratorT>;
+  using addressing_t            = segment_addressing<BeginOffsetIteratorT, OutputBeginOffsetIteratorT>;
 
   CUB_DEFINE_KERNEL_GETTER(segmented_scan_load_balanced_init_kernel,
                            device_segmented_scan_load_balanced_init_kernel<work_index_scan_state_t>);
@@ -227,29 +224,6 @@ inline constexpr int max_tile_state_tiles = ::cuda::std::numeric_limits<int>::ma
 inline constexpr ::cuda::std::int64_t max_work_index_segments =
   ::cuda::std::int64_t{max_tile_state_tiles} * work_index_tile_items;
 
-static_assert(::cuda::ceil_div(max_work_index_segments, ::cuda::std::int64_t{work_index_tile_items})
-              == max_tile_state_tiles);
-static_assert(::cuda::ceil_div(max_work_index_segments + 1, ::cuda::std::int64_t{work_index_tile_items})
-              > max_tile_state_tiles);
-
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr bool
-load_balanced_grid_size(int blocks_per_sm, int sm_count, int grid_subscription_factor, int& grid_size)
-{
-  if (blocks_per_sm <= 0 || sm_count <= 0 || grid_subscription_factor <= 0
-      || blocks_per_sm > max_tile_state_tiles / sm_count)
-  {
-    return false;
-  }
-
-  const int resident_capacity = blocks_per_sm * sm_count;
-  if (resident_capacity > max_tile_state_tiles / grid_subscription_factor)
-  {
-    return false;
-  }
-  grid_size = resident_capacity * grid_subscription_factor;
-  return true;
-}
-
 struct work_index_plan
 {
   int scan_tiles;
@@ -260,19 +234,9 @@ struct work_index_plan
 template <typename KernelSource>
 CUB_RUNTIME_FUNCTION cudaError_t plan_work_index(::cuda::std::int64_t num_segments, work_index_plan& plan)
 {
-  plan                             = {};
-  const ::cuda::std::int64_t tiles = ::cuda::ceil_div(num_segments, ::cuda::std::int64_t{work_index_tile_items});
-  if (tiles > max_tile_state_tiles)
-  {
-    return CubDebug(cudaErrorInvalidValue);
-  }
-  plan.scan_tiles         = static_cast<int>(tiles);
-  using work_t            = typename KernelSource::work_t;
-  constexpr auto max_size = ::cuda::std::numeric_limits<size_t>::max();
-  if (static_cast<::cuda::std::uint64_t>(num_segments) > max_size / sizeof(work_t) - 2)
-  {
-    return CubDebug(cudaErrorInvalidValue);
-  }
+  using work_t    = typename KernelSource::work_t;
+  plan            = {};
+  plan.scan_tiles = static_cast<int>(::cuda::ceil_div(num_segments, ::cuda::std::int64_t{work_index_tile_items}));
   // num_segments + 1 prefix sums of the segment sizes, then the contiguity flags
   plan.index_bytes = static_cast<size_t>(num_segments + 2) * sizeof(work_t);
   if (plan.scan_tiles > 1)
@@ -672,10 +636,9 @@ template <
   typename ScanOpT,
   typename InitValueT,
   typename NumItemsT,
-  typename AccumT = deduced_accum_t<ScanOpT, InitValueT, it_value_t<InputIteratorT>>,
-  typename OffsetT =
-    noncontiguous_segments_offset_t<BeginOffsetIteratorT, EndOffsetIteratorT, OutputBeginOffsetIteratorT>,
-  typename PolicySelector             = policy_selector_from_types<AccumT>,
+  typename AccumT         = deduced_accum_t<ScanOpT, InitValueT, it_value_t<InputIteratorT>>,
+  typename OffsetT        = segment_offset_t<BeginOffsetIteratorT, EndOffsetIteratorT, OutputBeginOffsetIteratorT>,
+  typename PolicySelector = policy_selector_from_types<AccumT>,
   typename LoadBalancedPolicySelector = load_balanced_policy_selector_from_types<AccumT>,
   typename KernelSource               = device_segmented_scan_load_balanced_kernel_source<
     LoadBalancedPolicySelector,
@@ -714,7 +677,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_load_balanced(
   InputIteratorT d_in,
   OutputIteratorT d_out,
   ::cuda::std::int64_t num_segments,
-  noncontiguous_segments<BeginOffsetIteratorT, EndOffsetIteratorT, OutputBeginOffsetIteratorT> segments,
+  segment_offsets<BeginOffsetIteratorT, EndOffsetIteratorT, OutputBeginOffsetIteratorT> segments,
   ScanOpT scan_op,
   InitValueT init_value,
   [[maybe_unused]] NumItemsT num_items,
@@ -845,30 +808,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_load_balanced(
         return error;
       }
 
-      // Tiles each block should receive before the grid grows past one wave
-      constexpr int min_tiles_per_block = 16;
-      // Most waves of resident blocks the grid launches
-      constexpr int max_factor = 5;
-      int resident_blocks{};
-      int capacity{};
-      if (!load_balanced_grid_size(blocks_per_sm, sm_count, 1, resident_blocks)
-          || !load_balanced_grid_size(blocks_per_sm, sm_count, max_factor, capacity))
+      if (blocks_per_sm <= 0)
       {
         return cudaErrorInvalidValue;
       }
+      const int resident_blocks = blocks_per_sm * sm_count;
+      int capacity              = resident_blocks * max_factor;
 
       if constexpr (has_num_items)
       {
         const work_t tile_size =
           static_cast<work_t>(threads_per_block) * static_cast<work_t>(active_policy.items_per_thread);
         capacity =
-          (::cuda::std::max) (1,
-                              load_balanced_block_count(
-                                static_cast<work_t>(num_items),
-                                tile_size,
-                                resident_blocks,
-                                min_tiles_per_block,
-                                max_factor));
+          (::cuda::std::max) (1, load_balanced_block_count(static_cast<work_t>(num_items), tile_size, resident_blocks));
       }
 
       using scan_tile_state_t = typename source_t::scan_tile_state_t;
@@ -925,8 +877,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_load_balanced(
             scan_op,
             init_value,
             resident_blocks,
-            min_tiles_per_block,
-            max_factor,
             capacity,
             tile_state,
             typename source_t::addressing_t{segments.begin, segments.output_begin})))

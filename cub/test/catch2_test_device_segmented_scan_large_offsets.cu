@@ -36,6 +36,12 @@ namespace
 using item_t   = cuda::std::uint8_t;
 using offset_t = cuda::std::int32_t;
 
+// Without output begin offsets, the offset type is the common type of the input begin and end offsets.
+static_assert(
+  cuda::std::is_same_v<cub::detail::segmented_scan::
+                         segment_offset_t<const int*, const long long*, cub::detail::segmented_scan::reuse_input_begin>,
+                       cub::detail::common_iterator_value_t<const int*, const long long*, const int*>>);
+
 // Every input item is 1, so the inclusive sum at position k of a segment is k + 1, truncated to item_t.
 struct expected_ones_sum
 {
