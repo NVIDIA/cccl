@@ -2087,6 +2087,108 @@ cases.update(
     ),
 )
 
+# TopK retains independent payloads and the existing count/storage obligations.
+topk_pairs = "let (result,pair_result)=coop::topk_min_pairs(block,&values,&associated,coop::TopKOptions::default().k_const::<17>());"
+topk_manual = topk_pairs.replace(
+    ".k_const::<17>()", ".k_const::<17>().temp_storage(&mut scratch)"
+)
+cases.update(
+    topk_exclusive_exact_capacity=(
+        "for i in 0..4 { values.write(i, (thread::threadIdx_x() as usize*4+i) as i32); }"
+        "let mut scratch=coop::TempStorage::new().with_capacity::<2112>().exclusive();"
+        "let _result=coop::topk_min_keys(block,&values,"
+        "coop::TopKOptions::default().k_const::<17>().temp_storage(&mut scratch));",
+        None,
+    ),
+    topk_generic_counts=(
+        "fn selected<K:coop::Numeric,V:coop::TopKValue,C:coop::TopKSelectionCount,"
+        "P:coop::TopKValidItems,S:coop::TempStorageLike,const N:usize,const KA:usize,const VA:usize>("
+        "g:coop::ThreadGroup<coop::Block>,keys:&coop::ThreadData<K,N,KA>,"
+        "values:&coop::ThreadData<V,N,VA>,o:coop::TopKOptions<C,P,S>)"
+        "->(coop::ThreadData<K,N,KA>,coop::ThreadData<V,N,VA>) "
+        "where coop::Alignment<KA>:coop::SupportedAlignment,coop::Alignment<VA>:coop::SupportedAlignment"
+        "{coop::topk_min_pairs(g,keys,values,o)}"
+        + load
+        + pair_values
+        + "let _=selected(block,&values,&associated,coop::TopKOptions::default().k_const::<17>());"
+        "let _=selected(block,&values,&associated,coop::TopKOptions::default().k(17).valid_items_const::<31>());"
+        "let (result,pair_result)=selected(block,&values,&associated,coop::TopKOptions::default()"
+        ".valid_items(valid as i64).k_const::<17>());"
+        "let _:coop::ThreadData<f64,4,32>=pair_result;"
+        + store.replace("&values", "&result").replace(
+            ".valid_items(valid)", ".valid_items(valid.min(17))"
+        ),
+        None,
+    ),
+    topk_storage_completed=(
+        load
+        + pair_values
+        + new_storage
+        + topk_manual.replace("result,pair_result", "empty,empty_values").replace(
+            "::<17>", "::<0>"
+        )
+        + sync
+        + topk_manual.replace("result,pair_result", "first,first_values")
+        + sync
+        + "let mut scratch=coop::TempStorage::new().auto_sync();"
+        + topk_manual
+        + topk_manual
+        + sync
+        + "let _=(empty.get(0),empty_values.get(0),first.get(0),first_values.get(0),result.get(0),pair_result.get(0));"
+        + store,
+        None,
+    ),
+    topk_static_k_tile=(
+        load + pair_values + topk_pairs.replace("::<17>", "::<513>"),
+        "TopK static count exceeds the Block tile",
+    ),
+    topk_static_valid_tile=(
+        load
+        + pair_values
+        + topk_pairs.replace(".k_const::<17>()", ".k(17).valid_items_const::<513>()"),
+        "TopK static count exceeds the Block tile",
+    ),
+    topk_varying_k=(
+        load
+        + pair_values
+        + topk_pairs.replace(
+            ".k_const::<17>()", ".k(cuda_device::thread::threadIdx_x() as i64)"
+        ),
+        "not proved block-uniform",
+    ),
+    topk_varying_valid=(
+        load
+        + pair_values
+        + topk_pairs.replace(
+            ".k_const::<17>()",
+            ".k_const::<17>().valid_items(cuda_device::thread::threadIdx_x() as i64)",
+        ),
+        "not proved block-uniform",
+    ),
+    topk_unequal_extent=(
+        load
+        + pair_values.replace("f64,4,32", "f64,3,32").replace("0..4", "0..3")
+        + topk_pairs,
+        "mismatched types",
+    ),
+    topk_value_control=(
+        load + pair_values + topk_pairs + "if pair_result[0]==0.0 {" + topk_pairs + "}",
+        "lane-varying",
+    ),
+    topk_empty_storage_missing_barrier=(
+        load
+        + pair_values
+        + new_storage
+        + topk_manual.replace("::<17>", "::<0>")
+        + topk_manual,
+        "requires a full-block barrier",
+    ),
+    topk_multidimensional=(
+        load + pair_values + topk_pairs,
+        "TopK requires a complete one-dimensional Block",
+    ),
+)
+
 if args.case:
     unknown = set(args.case).difference(cases)
     if unknown:
@@ -2144,6 +2246,12 @@ for name, (body, diagnostic) in cases.items():
             "dynamic_shared=inferred", "dynamic_shared=512"
         )
     if name == "histogram_multidimensional":
+        case_prefix = case_prefix.replace(
+            "domain=1,block=(128,1,1)", "domain=3,block=(4,4,8)"
+        )
+    if name == "topk_exclusive_exact_capacity":
+        case_prefix = case_prefix.replace("block=(128,1,1)", "block=(64,1,1)")
+    if name == "topk_multidimensional":
         case_prefix = case_prefix.replace(
             "domain=1,block=(128,1,1)", "domain=3,block=(4,4,8)"
         )

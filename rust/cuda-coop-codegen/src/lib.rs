@@ -102,6 +102,7 @@ mod reduce;
 mod reduce_batched;
 mod scan;
 mod shuffle;
+mod topk;
 pub use adjacent_difference::{AdjacentDifferenceRecipe, AdjacentDifferenceRequest};
 pub use discontinuity::{DiscontinuityRecipe, DiscontinuityRequest};
 pub use exchange::{ExchangeMode, ExchangeRecipe, ExchangeRequest};
@@ -117,6 +118,7 @@ pub use reduce::{ReduceAlgorithm, ReduceForm, ReduceOperator, ReduceRecipe, Redu
 pub use reduce_batched::{ReduceBatchedLayout, ReduceBatchedRecipe, ReduceBatchedRequest};
 pub use scan::{ScanAlgorithm, ScanOperation, ScanOperator, ScanRecipe, ScanRequest};
 pub use shuffle::{ShuffleRecipe, ShuffleRequest};
+pub use topk::{TopKCount, TopKKeysRequest, TopKPairsRequest, TopKRecipe, TopKSelection};
 #[allow(unsafe_code)]
 mod nvrtc;
 pub mod oxide;
@@ -523,6 +525,10 @@ pub enum NativeRequest {
     MergeSortKeys(MergeSortKeysRequest),
     /// Numeric Block/Warp merge sort preserving associated key/value inputs.
     MergeSortPairs(MergeSortPairsRequest),
+    /// Unsorted Block keys with a fresh selected prefix.
+    TopKKeys(TopKKeysRequest),
+    /// Unsorted Block pairs with independently typed fresh selected outputs.
+    TopKPairs(TopKPairsRequest),
 }
 
 impl NativeRequest {
@@ -542,6 +548,8 @@ impl NativeRequest {
             Self::RadixRankKeys(request) => request.block_shape(),
             Self::MergeSortKeys(request) => request.block_shape(),
             Self::MergeSortPairs(request) => request.block_shape(),
+            Self::TopKKeys(request) => request.block_shape(),
+            Self::TopKPairs(request) => request.block_shape(),
         }
     }
 
@@ -561,6 +569,8 @@ impl NativeRequest {
             Self::RadixRankKeys(request) => request.source(symbol),
             Self::MergeSortKeys(request) => request.source(symbol),
             Self::MergeSortPairs(request) => request.source(symbol),
+            Self::TopKKeys(request) => request.source(symbol),
+            Self::TopKPairs(request) => request.source(symbol),
         }
     }
 
@@ -580,6 +590,8 @@ impl NativeRequest {
             Self::RadixRankKeys(request) => request.recipe.token(),
             Self::MergeSortKeys(request) => request.recipe.token().into(),
             Self::MergeSortPairs(request) => request.recipe.token(request.value_dtype),
+            Self::TopKKeys(request) => request.recipe.token(None),
+            Self::TopKPairs(request) => request.keys.recipe.token(Some(request.value_dtype)),
         }
     }
 
@@ -598,7 +610,9 @@ impl NativeRequest {
             | Self::RadixSortPairs(_)
             | Self::RadixRankKeys(_)
             | Self::MergeSortKeys(_)
-            | Self::MergeSortPairs(_) => false,
+            | Self::MergeSortPairs(_)
+            | Self::TopKKeys(_)
+            | Self::TopKPairs(_) => false,
         }
     }
 
@@ -620,7 +634,9 @@ impl NativeRequest {
             | Self::RadixSortPairs(_)
             | Self::RadixRankKeys(_)
             | Self::MergeSortKeys(_)
-            | Self::MergeSortPairs(_) => false,
+            | Self::MergeSortPairs(_)
+            | Self::TopKKeys(_)
+            | Self::TopKPairs(_) => false,
         }
     }
 }
@@ -649,6 +665,7 @@ pub struct Layout {
 /// [`RadixRankKeysRequest`] returns fresh i32 ranks independently of key type.
 /// [`MergeSortKeysRequest`] sorts Block/Warp numeric keys with full or prefix-valid output.
 /// [`MergeSortPairsRequest`] carries independently typed associated values.
+/// [`TopKKeysRequest`] and [`TopKPairsRequest`] select an unsorted fresh prefix.
 ///
 /// Every thread in the selected group executes the provider in converged control
 /// flow. The group is the exact block, or one aligned Warp of the selected width.

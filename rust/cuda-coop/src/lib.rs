@@ -102,6 +102,7 @@ mod scan;
 mod shuffle;
 mod temp_storage;
 mod thread_data;
+mod topk;
 
 pub use adjacent_difference::{
     AdjacentDifferenceDirection, AdjacentDifferenceOptions, Left, Right, adjacent_difference,
@@ -148,6 +149,10 @@ pub use scan::{
 pub use shuffle::{Down, ShuffleMode, ShuffleOptions, Up, shuffle};
 pub use temp_storage::{StorageReservation, TempStorage, TempStorageLike};
 pub use thread_data::{Numeric, ThreadData, ThreadDataLike};
+pub use topk::{
+    TopKCount, TopKOptions, TopKSelectionCount, TopKValidItems, TopKValue, topk_max_keys,
+    topk_max_pairs, topk_min_keys, topk_min_pairs,
+};
 
 pub use group::{
     Block, Cluster, Grid, GroupScope, Hierarchy, Level, QueryAt, QueryInteger, Thread, ThreadGroup,
