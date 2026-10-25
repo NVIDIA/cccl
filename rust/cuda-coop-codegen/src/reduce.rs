@@ -25,7 +25,7 @@ pub enum ReduceOperator {
 }
 
 impl ReduceOperator {
-    fn token(self) -> &'static str {
+    pub(crate) fn token(self) -> &'static str {
         match self {
             Self::Sum => "sum",
             Self::Multiplies => "multiplies",
@@ -37,7 +37,7 @@ impl ReduceOperator {
         }
     }
 
-    fn parse(token: &str) -> Result<Self> {
+    pub(crate) fn parse(token: &str) -> Result<Self> {
         match token {
             "sum" => Ok(Self::Sum),
             "multiplies" => Ok(Self::Multiplies),
@@ -50,7 +50,7 @@ impl ReduceOperator {
         }
     }
 
-    fn functor(self) -> &'static str {
+    pub(crate) fn functor(self) -> &'static str {
         match self {
             Self::Sum => "cuda::std::plus<value_type>",
             Self::Multiplies => "cuda::std::multiplies<value_type>",
@@ -282,6 +282,10 @@ impl ReduceRequest {
             items,
             width,
         })
+    }
+
+    pub(crate) fn block_shape(self) -> [u32; 3] {
+        self.block
     }
 
     pub(crate) fn source(self, symbol: &str) -> String {

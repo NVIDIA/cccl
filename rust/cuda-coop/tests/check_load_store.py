@@ -3,9 +3,9 @@
 
 """Compile public collective participation, result and resource-epoch contrasts.
 
-Use the same Cargo config/backend as the qualified public example. The config
-is optional for an installed compatible Oxide revision; local source integration
-can supply explicit Cargo patches without changing checked-in manifests.
+Use the qualified installed Oxide CLI and its matching automatic backend, or
+supply an explicit --backend for a labelled local compiler candidate. The optional
+Cargo config supports local source integration without changing manifests.
 """
 
 import argparse
@@ -17,7 +17,11 @@ from pathlib import Path
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--cargo-oxide", required=True, type=Path)
-parser.add_argument("--backend", required=True, type=Path)
+parser.add_argument(
+    "--backend",
+    type=Path,
+    help="Explicit candidate backend; omitted uses the installed CLI cache",
+)
 parser.add_argument("--output", required=True, type=Path)
 parser.add_argument("--cargo-config", type=Path)
 parser.add_argument(
@@ -1067,6 +1071,84 @@ cases.update(
     ),
 )
 
+# Batched reductions return a calculated partial payload. Result validity is
+# lane-local and does not replace participation or global-access completion.
+batched_group = "let group=coop::this_warp().group_by::<8>();"
+batched_call = "let _result=coop::reduce_batched(group,&values,Default::default());"
+cases.update(
+    batched_generic_defaults=(
+        load + "fn forward<T:coop::Numeric,G:coop::ReduceBatchedGroup,const B:usize>("
+        "group:coop::ThreadGroup<G>,input:&coop::ThreadData<T,B>)"
+        "->coop::ThreadData<T,{coop::batched_extent(B,G::WIDTH)}> "
+        "where [();coop::batched_extent(B,G::WIDTH)]: {"
+        "coop::reduce_batched(group,input,Default::default())}"
+        "fn selected<T:coop::Numeric,G:coop::ReduceBatchedGroup,Op:coop::ReduceOperator<T>,const B:usize>("
+        "group:coop::ThreadGroup<G>,input:&coop::ThreadData<T,B>,op:Op)"
+        "->coop::ThreadData<T,{coop::batched_extent(B,G::WIDTH)}> "
+        "where [();coop::batched_extent(B,G::WIDTH)]: {"
+        "coop::reduce_batched(group,input,coop::ReduceBatchedOptions::default().binary_op(op).output_layout(coop::Blocked))}"
+        "let _result=forward(coop::this_warp().group_by::<8>(),&mut values);"
+        "let _result=selected(coop::this_warp(),&values,coop::Min);",
+        None,
+    ),
+    batched_scalar=(
+        load
+        + "let _result=coop::reduce_batched(coop::this_warp(),&1_i32,Default::default());",
+        "mismatched types",
+    ),
+    batched_block=(
+        load + "let _result=coop::reduce_batched(block,&values,Default::default());",
+        "ReduceBatchedGroup",
+    ),
+    batched_prefix17=(
+        load + "let group=coop::this_warp().group_by_non_exhaustive::<17>();"
+        "if group.is_member()!=0 {" + batched_call + "}",
+        "ReduceBatchedGroup",
+    ),
+    batched_lane_divergence=(
+        load + batched_group + "if thread::threadIdx_x()&1==0 {" + batched_call + "}",
+        "lane-varying",
+    ),
+    batched_read_epoch=(
+        reload + batched_group + batched_call + store,
+        "requires a barrier covering both accesses",
+    ),
+    batched_read_completed=(
+        reload + batched_group + batched_call + sync + store,
+        None,
+    ),
+    batched_result_is_not_participation=(
+        load
+        + batched_group
+        + "let result=coop::reduce_batched(group,&values,Default::default());"
+        "if result.get(0).is_some() {" + batched_call + "}",
+        "lane-varying",
+    ),
+    batched_count=(
+        load + "let _result=coop::reduce_batched(coop::this_warp(),&values,"
+        "coop::ReduceBatchedOptions::default().valid_items(valid));",
+        "no method named `valid_items`",
+    ),
+    batched_storage=(
+        load
+        + new_storage
+        + "let _result=coop::reduce_batched(coop::this_warp(),&values,"
+        "coop::ReduceBatchedOptions::default().temp_storage(&mut scratch));",
+        "no method named `temp_storage`",
+    ),
+    batched_algorithm=(
+        load + "let _result=coop::reduce_batched(coop::this_warp(),&values,"
+        "coop::ReduceBatchedOptions::default().algorithm(coop::Raking));",
+        "no method named `algorithm`",
+    ),
+    batched_float_bitwise=(
+        "values.write(0,0_i32);let mut floats=coop::ThreadData::<_,4>::new();"
+        "floats.write(0,1_f32);let _result=coop::reduce_batched(coop::this_warp(),&floats,"
+        "coop::ReduceBatchedOptions::default().binary_op(coop::BitAnd));",
+        "ReduceOperator<f32>",
+    ),
+)
+
 if args.case:
     unknown = set(args.case).difference(cases)
     if unknown:
@@ -1088,16 +1170,24 @@ if args.cargo_config:
     command += ["--config", str(args.cargo_config.resolve())]
 env = os.environ.copy()
 env.update(
-    CUDA_OXIDE_BACKEND=str(args.backend.resolve()),
     CUDA_HOME=str(args.cuda_root.resolve()),
     CUDA_PATH=str(args.cuda_root.resolve()),
 )
+if args.backend:
+    env["CUDA_OXIDE_BACKEND"] = str(args.backend.resolve())
+else:
+    env.pop("CUDA_OXIDE_BACKEND", None)
 results = []
 for name, (body, diagnostic) in cases.items():
     block_warp = name.startswith(("warp_transpose_", "warp_timesliced_"))
     case_prefix = warp_prefix if name.startswith("warp_") and not block_warp else prefix
     if name.startswith("logical_"):
         case_prefix = logical_prefix
+    if name.startswith("batched_"):
+        case_prefix = case_prefix.replace(
+            "use cuda_coop as coop;",
+            "#![feature(generic_const_exprs)]\n#![allow(incomplete_features)]\nuse cuda_coop as coop;",
+        )
     if name == "logical_width1_origin":
         case_prefix = case_prefix.replace(
             "valid:usize)",
@@ -1137,7 +1227,11 @@ for name, (body, diagnostic) in cases.items():
     print(name, "PASS" if passed else "FAIL", flush=True)
 (output / "results.json").write_text(
     json.dumps(
-        {"command": command, "backend": env["CUDA_OXIDE_BACKEND"], "cases": results},
+        {
+            "command": command,
+            "backend": env.get("CUDA_OXIDE_BACKEND"),
+            "cases": results,
+        },
         indent=2,
     )
     + "\n"

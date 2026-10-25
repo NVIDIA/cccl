@@ -4,11 +4,237 @@
 //! Real native compiler coverage; ordinary host tests need no CUDA installation.
 
 use cuda_coop_codegen::{
-    Algorithm, Dtype, Layout, NativeRequest, Operation, Provider, ReduceAlgorithm, ReduceForm,
-    ReduceOperator, ReduceRequest, Request, ScanAlgorithm, ScanOperation, ScanOperator,
-    ScanRequest,
+    Algorithm, Dtype, Layout, NativeRequest, Operation, Provider, ReduceAlgorithm,
+    ReduceBatchedLayout, ReduceBatchedRecipe, ReduceBatchedRequest, ReduceForm, ReduceOperator,
+    ReduceRequest, Request, ScanAlgorithm, ScanOperation, ScanOperator, ScanRequest,
 };
 use std::{env, path::Path, time::Instant};
+
+#[test]
+#[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
+fn native_warp_shape_identity() -> Result<(), Box<dyn std::error::Error>> {
+    let toolkit = env::var("CUDA_HOME")?;
+    let target = env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let provider = Provider::from_checkout(&checkout, &toolkit)?;
+    let mut requests = Vec::new();
+    // Two shapes have the same total threads. Warp bodies can otherwise be
+    // identical even though each root needs a distinct specialization record.
+    for block in [[64, 1, 1], [128, 1, 1], [8, 4, 2]] {
+        requests.extend([
+            NativeRequest::LoadStore(
+                Request::new_typed_with_shape(
+                    Dtype::I32,
+                    Operation::LoadMaskedValidity,
+                    Algorithm::Transpose,
+                    block,
+                    4,
+                )?
+                .with_warp_width(32)?,
+            ),
+            NativeRequest::Scan(ScanRequest::warp(
+                Dtype::I32,
+                ScanOperation::ExclusiveSum,
+                block,
+                32,
+            )?),
+            NativeRequest::Reduce(ReduceRequest::warp(
+                Dtype::I32,
+                ReduceOperator::Sum,
+                ReduceForm::Payload,
+                block,
+                32,
+                4,
+            )?),
+            NativeRequest::ReduceBatched(ReduceBatchedRequest::warp(
+                Dtype::I32,
+                ReduceBatchedRecipe::new(ReduceOperator::Sum, ReduceBatchedLayout::Striped),
+                block,
+                32,
+                4,
+            )?),
+        ]);
+    }
+    let artifact = provider.compile_native(&requests, &target)?;
+    assert_eq!(artifact.specializations.len(), 12);
+    assert!(!artifact.ltoir.is_empty());
+    let mut identities = std::collections::HashSet::new();
+    let mut symbols = std::collections::HashSet::new();
+    let parameters = |symbol: &str| {
+        artifact
+            .source
+            .split_once(&format!("void {symbol}("))
+            .expect("compiled native wrapper")
+            .1
+            .split_once(") {")
+            .expect("native parameter list")
+            .0
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ")
+    };
+    for (index, entry) in artifact.specializations.iter().enumerate() {
+        assert!(identities.insert(entry.identity));
+        assert!(symbols.insert(&entry.symbol));
+        let first = &artifact.specializations[index % 4];
+        assert_eq!(entry.cub_layout, first.cub_layout);
+        assert_eq!(entry.scratch, first.scratch);
+        assert!(entry.scratch.size > 0);
+        assert!(!entry.scratch_free && !entry.mutates_payload);
+        assert_eq!(parameters(&entry.symbol), parameters(&first.symbol));
+        eprintln!(
+            "{:?}: CUB {:?}, scratch {:?}",
+            requests[index], entry.cub_layout, entry.scratch
+        );
+    }
+    requests.reverse();
+    let reordered = provider.compile_native(&requests, &target)?;
+    assert_eq!(
+        reordered.specializations.len(),
+        artifact.specializations.len()
+    );
+    assert!(!reordered.ltoir.is_empty());
+    assert_ne!(reordered.identity, artifact.identity);
+    for (entry, previous) in reordered
+        .specializations
+        .iter()
+        .zip(artifact.specializations.iter().rev())
+    {
+        assert_eq!(entry.identity, previous.identity);
+        assert_eq!(entry.symbol, previous.symbol);
+        assert_eq!(entry.cub_layout, previous.cub_layout);
+        assert_eq!(entry.scratch, previous.scratch);
+        assert_eq!(entry.scratch_free, previous.scratch_free);
+        assert_eq!(entry.mutates_payload, previous.mutates_payload);
+    }
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
+fn native_mixed_reduce_batched_recipes() -> Result<(), Box<dyn std::error::Error>> {
+    let toolkit = env::var("CUDA_HOME")?;
+    let target = env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let provider = Provider::from_checkout(&checkout, &toolkit)?;
+    let mut requests = Vec::new();
+    for (width, batches, layout) in [
+        (32, 1, ReduceBatchedLayout::Striped),
+        (8, 4, ReduceBatchedLayout::Striped),
+        (8, 10, ReduceBatchedLayout::Striped),
+        (8, 10, ReduceBatchedLayout::Blocked),
+        (1, 9, ReduceBatchedLayout::Blocked),
+        (8, 65, ReduceBatchedLayout::Striped),
+        (8, 65, ReduceBatchedLayout::Blocked),
+    ] {
+        requests.push(NativeRequest::ReduceBatched(ReduceBatchedRequest::warp(
+            Dtype::I32,
+            ReduceBatchedRecipe::new(ReduceOperator::Sum, layout),
+            [128, 1, 1],
+            width,
+            batches,
+        )?));
+    }
+    // Spread types/operators/widths over cases rather than taking their product.
+    for (index, (dtype, op)) in [
+        (Dtype::I8, ReduceOperator::Sum),
+        (Dtype::U8, ReduceOperator::Multiplies),
+        (Dtype::I16, ReduceOperator::Min),
+        (Dtype::U16, ReduceOperator::Max),
+        (Dtype::I32, ReduceOperator::BitAnd),
+        (Dtype::U32, ReduceOperator::BitOr),
+        (Dtype::I64, ReduceOperator::BitXor),
+        (Dtype::U64, ReduceOperator::Sum),
+        (Dtype::F32, ReduceOperator::Min),
+        (Dtype::F64, ReduceOperator::Max),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        requests.push(NativeRequest::ReduceBatched(ReduceBatchedRequest::warp(
+            dtype,
+            ReduceBatchedRecipe::new(
+                op,
+                if index % 2 == 0 {
+                    ReduceBatchedLayout::Striped
+                } else {
+                    ReduceBatchedLayout::Blocked
+                },
+            ),
+            [4, 4, 4],
+            [1, 2, 4, 8, 16, 32][index % 6],
+            [1, 4, 10, 9, 65][index % 5],
+        )?));
+    }
+    requests.push(NativeRequest::LoadStore(Request::new_typed(
+        Dtype::I32,
+        Operation::LoadFullValidity,
+        Algorithm::Direct,
+        64,
+        4,
+    )?));
+    requests.push(NativeRequest::Scan(ScanRequest::warp(
+        Dtype::I32,
+        ScanOperation::ExclusiveSum,
+        [4, 4, 4],
+        8,
+    )?));
+    requests.push(NativeRequest::Reduce(ReduceRequest::warp(
+        Dtype::I32,
+        ReduceOperator::Sum,
+        ReduceForm::Payload,
+        [4, 4, 4],
+        8,
+        4,
+    )?));
+    let artifact = provider.compile_native(&requests, &target)?;
+    assert_eq!(artifact.specializations.len(), requests.len());
+    assert!(!artifact.ltoir.is_empty());
+    let mut identities = std::collections::HashSet::new();
+    let mut symbols = std::collections::HashSet::new();
+    for (request, entry) in requests.iter().zip(&artifact.specializations) {
+        assert!(identities.insert(entry.identity));
+        assert!(symbols.insert(&entry.symbol));
+        if matches!(request, NativeRequest::LoadStore(_)) {
+            assert!(entry.scratch_free);
+            assert_eq!(entry.scratch.size, 0);
+        } else {
+            assert_eq!(entry.cub_layout, entry.scratch);
+            assert!(entry.scratch.size > 0 && entry.scratch.alignment.is_power_of_two());
+            assert!(!entry.scratch_free && !entry.mutates_payload);
+        }
+        eprintln!(
+            "{request:?}: CUB {:?}, scratch {:?}",
+            entry.cub_layout, entry.scratch
+        );
+    }
+    let single = provider.compile_native(&requests[..1], &target)?;
+    assert_eq!(
+        single.specializations[0].identity,
+        artifact.specializations[0].identity
+    );
+    assert_eq!(
+        single.specializations[0].symbol,
+        artifact.specializations[0].symbol
+    );
+    assert_eq!(
+        single.specializations[0].scratch,
+        artifact.specializations[0].scratch
+    );
+    assert!(
+        provider
+            .compile_native(&[requests[0]; 2], &target)
+            .unwrap_err()
+            .to_string()
+            .contains("duplicate")
+    );
+    eprintln!(
+        "{} mixed batched Reduce/Load/Scan/Reduce specializations, {} LTO bytes",
+        requests.len(),
+        artifact.ltoir.len()
+    );
+    Ok(())
+}
 
 #[test]
 #[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]

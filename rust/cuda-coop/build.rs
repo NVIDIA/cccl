@@ -1,10 +1,10 @@
 // Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-//! Register the owning host provider for native Load, Store, Scan and Reduce.
+//! Register the owning host provider for native Load, Store, Scan, Reduce and batched reduction.
 use cuda_coop_codegen::{
-    Algorithm, Operation, ReduceAlgorithm, ReduceForm, ReduceOperator, ReduceRecipe, ScanAlgorithm,
-    ScanOperation, ScanOperator, ScanRecipe, oxide,
+    Algorithm, Operation, ReduceAlgorithm, ReduceBatchedLayout, ReduceBatchedRecipe, ReduceForm,
+    ReduceOperator, ReduceRecipe, ScanAlgorithm, ScanOperation, ScanOperator, ScanRecipe, oxide,
 };
 
 fn main() {
@@ -32,6 +32,17 @@ fn main() {
         (ReduceOperator::BitOr, "BIT_OR"),
         (ReduceOperator::BitXor, "BIT_XOR"),
     ] {
+        for (layout, suffix) in [
+            (ReduceBatchedLayout::Striped, "STRIPED"),
+            (ReduceBatchedLayout::Blocked, "BLOCKED"),
+        ] {
+            let value = oxide::reduce_batched_registration(
+                &executable,
+                ReduceBatchedRecipe::new(operator, layout),
+            )
+            .expect("cuda.coop batched reduce registration");
+            println!("cargo::rustc-env=COOP_REDUCE_BATCHED_{name}_{suffix}={value}");
+        }
         for (form, suffix) in [
             (ReduceForm::Scalar, "SCALAR"),
             (ReduceForm::ScalarPrefix, "PREFIX"),

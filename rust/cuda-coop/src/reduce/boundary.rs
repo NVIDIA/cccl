@@ -236,6 +236,15 @@ registrations!(
     (warp_bit_xor_payload, "COOP_REDUCE_WARP_BIT_XOR_PAYLOAD"),
 );
 
+struct Selection<Op, C, const PAYLOAD: bool>(core::marker::PhantomData<(Op, C)>);
+impl<Op: super::sealed::Operator, C: Count, const PAYLOAD: bool> Selection<Op, C, PAYLOAD> {
+    const KIND: u8 = if PAYLOAD {
+        14 + Op::KIND
+    } else {
+        7 * C::KIND + Op::KIND
+    };
+}
+
 #[inline(always)]
 pub(super) fn reduce<
     T: Numeric,
@@ -283,13 +292,7 @@ where
     // The checked marker enforces participation, scalar-control uniformity,
     // layout and scratch reuse; no global-memory completion is fabricated.
     unsafe {
-        match const {
-            if PAYLOAD {
-                14 + Op::KIND
-            } else {
-                7 * C::KIND + Op::KIND
-            }
-        } {
+        match Selection::<Op, C, PAYLOAD>::KIND {
             0 => call!(
                 raking_commutative_only_sum_scalar,
                 raking_sum_scalar,

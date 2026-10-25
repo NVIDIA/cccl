@@ -3,7 +3,7 @@
 
 //! Per-thread payloads and CUDA hierarchy queries for Rust `cuda.coop`.
 //!
-//! This unpublished, feature-free `no_std` crate provides [`ThreadData`] and
+//! This unpublished `no_std` crate provides [`ThreadData`] and
 //! its sealed [`ThreadDataLike`] interface. Each slot starts unwritten.
 //! [`ThreadData::write`] initializes one slot; checked access exposes only
 //! initialized values. Copies and moves preserve each slot's validity.
@@ -49,15 +49,23 @@
 //! Blocks and Warp groups, including guarded non-exhaustive widths 17–31.
 //! [`ReduceOptions`] selects the operator, Block algorithm, scalar count and
 //! storage without changing the input.
+//! [`reduce_batched`] independently reduces each payload slot across physical or
+//! power-of-two logical Warp groups. Its fresh partial payload has a calculated
+//! extent and explicit striped or blocked result ownership. The defining crate
+//! and callers instantiating these calculated signatures enable unstable
+//! `generic_const_exprs`; ordinary non-calculated consumers remain feature-free.
 //! Host payload tests need no GPU;
 //! executing hardware queries requires an Oxide-compiled CUDA kernel.
 
 #![no_std]
+#![feature(generic_const_exprs)]
+#![allow(incomplete_features)]
 
 mod alignment;
 mod group;
 mod load_store;
 mod reduce;
+mod reduce_batched;
 mod scan;
 mod temp_storage;
 mod thread_data;
@@ -71,6 +79,10 @@ pub use load_store::{
 pub use reduce::{
     RakingCommutativeOnly, ReduceAlgorithm, ReduceGroup, ReduceOperator, ReduceOptions,
     ReduceValue, SumOptions, WarpReductions, reduce, sum,
+};
+pub use reduce_batched::{
+    BatchedOutputLayout, Blocked, ReduceBatchedGroup, ReduceBatchedOptions, batched_extent,
+    reduce_batched,
 };
 pub use scan::{
     BitAnd, BitOr, BitXor, Exclusive, ExclusiveScanOptions, Inclusive, InclusiveScanOptions, Max,

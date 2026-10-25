@@ -2,6 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 [env]
-# cuda-device uses f16.
+# cuda-coop uses generic_const_exprs; cuda-device uses f16.
 # Enable these features in processes Cargo launches from this tree.
 RUSTC_BOOTSTRAP = "1"
