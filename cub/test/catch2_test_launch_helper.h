@@ -270,7 +270,9 @@ void launch(ActionT action, Args&&... args)
   if constexpr (sizeof...(Args) != 0)
   {
     using last_arg_t = cuda::std::tuple_element_t<sizeof...(Args) - 1, cuda::std::tuple<Args...>>;
-    if constexpr (cuda::std::is_invocable_v<cuda::get_stream_t, last_arg_t&>)
+    // MSVC 19.29 can report C1004 when the trait using this local alias appears directly in if constexpr.
+    constexpr bool has_stream = cuda::std::is_invocable_v<cuda::get_stream_t, last_arg_t&>;
+    if constexpr (has_stream)
     {
       auto tuple = cuda::std::forward_as_tuple(args...);
       launch_helper_detail::launch_with_stream(action, tuple, cuda::std::make_index_sequence<sizeof...(Args) - 1>{});
