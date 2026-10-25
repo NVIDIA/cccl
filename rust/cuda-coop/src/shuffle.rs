@@ -104,7 +104,7 @@ impl<const DISTANCE: usize> Distance<DISTANCE> {
 /// contribute to a valid output; otherwise execution traps before native
 /// numeric reads. Oxide plans implicit shared scratch from the actual CUB
 /// layout and synchronizes before reuse. Shuffle does not promise global-memory
-/// completion: use the block's `sync()` for dependent global accesses.
+/// completion: use `cuda_device::thread::sync_threads()` for dependent global accesses.
 /// Unsupported groups, modes or distances fail compilation. Execution requires
 /// an Oxide-compiled CUDA kernel; host code can check the signatures.
 ///

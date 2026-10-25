@@ -3,9 +3,10 @@
 
 //! Register the owning host provider for native cooperative operations.
 use cuda_coop_codegen::{
-    Algorithm, ExchangeMode, ExchangeRecipe, Operation, ReduceAlgorithm, ReduceBatchedLayout,
-    ReduceBatchedRecipe, ReduceForm, ReduceOperator, ReduceRecipe, ScanAlgorithm, ScanOperation,
-    ScanOperator, ScanRecipe, ShuffleRecipe, oxide,
+    AdjacentDifferenceRecipe, Algorithm, DiscontinuityRecipe, ExchangeMode, ExchangeRecipe,
+    Operation, ReduceAlgorithm, ReduceBatchedLayout, ReduceBatchedRecipe, ReduceForm,
+    ReduceOperator, ReduceRecipe, ScanAlgorithm, ScanOperation, ScanOperator, ScanRecipe,
+    ShuffleRecipe, oxide,
 };
 
 fn main() {
@@ -24,6 +25,51 @@ fn main() {
     let callable = oxide::reduce_callable_registration(&executable)
         .expect("cuda.coop callable Reduce registration");
     println!("cargo::rustc-env=COOP_REDUCE_RAKING_CALLABLE_PAYLOAD={callable}");
+    for (recipe, name) in [
+        (DiscontinuityRecipe::Heads, "HEADS"),
+        (DiscontinuityRecipe::HeadsPredecessor, "HEADS_PREDECESSOR"),
+        (DiscontinuityRecipe::Tails, "TAILS"),
+        (DiscontinuityRecipe::TailsSuccessor, "TAILS_SUCCESSOR"),
+        (DiscontinuityRecipe::HeadsAndTails, "HEADS_AND_TAILS"),
+        (
+            DiscontinuityRecipe::HeadsAndTailsPredecessor,
+            "HEADS_AND_TAILS_PREDECESSOR",
+        ),
+        (
+            DiscontinuityRecipe::HeadsAndTailsSuccessor,
+            "HEADS_AND_TAILS_SUCCESSOR",
+        ),
+        (
+            DiscontinuityRecipe::HeadsAndTailsBoth,
+            "HEADS_AND_TAILS_BOTH",
+        ),
+    ] {
+        let value = oxide::discontinuity_registration(&executable, recipe)
+            .expect("cuda.coop discontinuity registration");
+        println!("cargo::rustc-env=COOP_DISCONTINUITY_{name}={value}");
+    }
+    for (recipe, name) in [
+        (AdjacentDifferenceRecipe::LeftFull, "LEFT_FULL"),
+        (
+            AdjacentDifferenceRecipe::LeftFullPredecessor,
+            "LEFT_FULL_PREDECESSOR",
+        ),
+        (AdjacentDifferenceRecipe::LeftPartial, "LEFT_PARTIAL"),
+        (
+            AdjacentDifferenceRecipe::LeftPartialPredecessor,
+            "LEFT_PARTIAL_PREDECESSOR",
+        ),
+        (AdjacentDifferenceRecipe::RightFull, "RIGHT_FULL"),
+        (
+            AdjacentDifferenceRecipe::RightFullSuccessor,
+            "RIGHT_FULL_SUCCESSOR",
+        ),
+        (AdjacentDifferenceRecipe::RightPartial, "RIGHT_PARTIAL"),
+    ] {
+        let value = oxide::adjacent_difference_registration(&executable, recipe)
+            .expect("cuda.coop adjacent difference registration");
+        println!("cargo::rustc-env=COOP_ADJACENT_DIFFERENCE_{name}={value}");
+    }
     for (recipe, name) in [(ShuffleRecipe::Down, "DOWN"), (ShuffleRecipe::Up, "UP")] {
         let value = oxide::shuffle_registration(&executable, recipe)
             .expect("cuda.coop shuffle registration");
