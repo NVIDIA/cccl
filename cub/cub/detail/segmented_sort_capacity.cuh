@@ -23,7 +23,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort_capacity
 {
-// Partition sees only these bounds, including one implicit overflow bin.
+// Partition uses capacity bounds supplied by sorting entries, without their configurations.
 template <int... Bounds>
 struct capacity_list
 {
@@ -43,6 +43,7 @@ struct capacity_list
   }
   static_assert(valid(), "capacities must be positive and strictly increasing");
 
+  // Find the smallest capacity covering length; size denotes the implicit overflow bin.
   template <int Begin = 0, int End = size, typename Offset>
   _CCCL_HOST_DEVICE_API static constexpr int first_fit(Offset length)
   {
@@ -58,6 +59,7 @@ struct capacity_list
   }
 };
 
+// Flatten entry capacities in launch order, preserving each entry's bin order.
 template <typename... Lists>
 struct concatenate_capacities;
 template <typename List>
@@ -70,6 +72,7 @@ struct concatenate_capacities<capacity_list<Left...>, capacity_list<Right...>, R
     : concatenate_capacities<capacity_list<Left..., Right...>, Rest...>
 {};
 
+// Encode one bin's configuration in a type for compile-time mapping.
 template <int Threads, int ItemsPerThread>
 struct bin_shape
 {
@@ -77,15 +80,15 @@ struct bin_shape
   static constexpr int items_per_thread = ItemsPerThread;
 };
 
-// One selected bin configuration; the launch policy describes the supported range.
+// Store the same pair as values, allowing runtime bin selection to use one return type.
 struct bin_config
 {
   int threads;
   int items_per_thread;
 };
 
-// The algorithm supplies a constant configuration for each local bin. Runtime
-// dispatch only selects a leaf; configuration search is evaluated at compile time.
+// An expansion enumerates a sorter's bins: capacities and a config_for_bin<Bin> type.
+// The runtime local bin selects a leaf whose configuration is known at compile time.
 template <typename Expansion, int Begin = 0, int End = Expansion::capacities::size>
 _CCCL_HOST_DEVICE_API bin_config config_for_bin(int bin)
 {
@@ -102,6 +105,7 @@ _CCCL_HOST_DEVICE_API bin_config config_for_bin(int bin)
   }
 }
 
+// Describe one sorting launch: its worker, supported bins, and launch settings.
 template <typename Implementation>
 struct sort_entry
 {
@@ -109,17 +113,20 @@ struct sort_entry
   using expansion                     = typename implementation::expansion;
   using capacities                    = typename expansion::capacities;
   inline static constexpr auto tuning = implementation::policy;
+  // Threads per independently scheduled work unit (warp or block), which may pack several segments.
   static constexpr int unit_threads   = implementation::unit_threads;
   static_assert(tuning.block_threads > 0 && tuning.block_threads <= 1024);
   static_assert(unit_threads > 0 && tuning.block_threads % unit_threads == 0);
   static_assert(tuning.blocks_per_sm > 0 && tuning.min_blocks_per_sm > 0);
   static_assert(capacities::valid());
+  // Let the kernel obtain a local bin's configuration through its entry.
   _CCCL_HOST_DEVICE_API static bin_config config(int bin)
   {
     return config_for_bin<expansion>(bin);
   }
 };
 
+// Combine launches into one partition capacity list; each entry owns a consecutive range.
 template <typename... Entries>
 struct sort_entries
 {
@@ -132,6 +139,7 @@ struct sort_entries
   static_assert(capacities::valid(),
                 "Capacities of consecutive sort entries must be strictly increasing: the largest capacity of entry N "
                 "(max_threads * max_ipt) must be below the smallest of entry N+1 (min_threads * min_ipt).");
+  // First bin of this entry in the flattened list; entry-local bin indices start at zero.
   _CCCL_HOST_DEVICE_API static constexpr int bin_begin(int entry_index)
   {
     constexpr int counts[] = {Entries::capacities::size...};
@@ -144,9 +152,10 @@ struct sort_entries
   }
 };
 
+// Non-owning views into temporary storage; all bins share one segment-ID queue.
 struct partition_result
 {
-  unsigned* bin_offsets{}; // size + 2 values: bounded bins followed by overflow
+  unsigned* bin_offsets{}; // Bounded bin count + 2 offsets, including overflow's end.
   unsigned* segment_ids{};
 };
 } // namespace detail::segmented_sort_capacity
