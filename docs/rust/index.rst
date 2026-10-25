@@ -5,28 +5,28 @@
 =====================
 
 Write group-first cooperative operations in an ordinary generic Rust kernel.
-This kernel copies partial block tiles through a reusable helper in another
-crate. The item count stays a const generic from the host launch through the
-kernel and helper:
+This kernel computes exclusive prefixes for partial block tiles through a
+reusable helper in another crate. The item count stays a const generic from the
+host launch through the kernel and helper:
 
-.. literalinclude:: ../../rust/cuda-coop/examples/load_store/src/main.rs
+.. literalinclude:: ../../rust/cuda-coop/examples/scan/src/main.rs
    :language: rust
-   :lines: 12-35
+   :lines: 12-34
    :dedent: 4
 
-The helper uses the following calls for a partial tile. ``ThreadData`` infers its
-element type from ``input``. Load fills the payload in place; Store writes the
-valid prefix and leaves the rest of the destination unchanged:
+The helper infers the payload element type from ``input``. Load initializes
+the payload, filling the missing tail with zero. Scan returns fresh prefixes
+without changing its input, and Store writes the valid output prefix:
 
-.. literalinclude:: ../../rust/cuda-coop/examples/load_store/helper/src/lib.rs
+.. literalinclude:: ../../rust/cuda-coop/examples/scan/helper/src/lib.rs
    :language: rust
-   :lines: 55-73
-   :dedent: 8
+   :lines: 20-38
+   :dedent: 4
 
-The complete :doc:`load_store` example includes the helper, imports, host
-allocation and launch. It runs Direct, Striped, Vectorize, Transpose,
-WarpTranspose and WarpTransposeTimesliced with one and four items per thread.
-These listings come directly from that executable source.
+The complete :doc:`scan` example includes the helper, imports, host allocation
+and launch for one and four items per thread. These listings come directly
+from that executable source. The :doc:`load_store` tutorial develops the
+underlying tile-copy and temporary-storage operations.
 
 Start with a kernel
 -------------------
@@ -43,10 +43,10 @@ as the remaining input length capped at the tile size. The kernel above shows
 that idiom, including a short final tile. Counts and offsets describe the whole
 group's tile, and must be uniform across that group.
 
-The current public operations are Load and Store, with the supported groups,
-algorithms and numeric types described in :doc:`load_store`. Additional
-primitive families are under development. The crate is unpublished and its
-interface can change.
+The public operations include :doc:`load_store` and :doc:`scan`. Scan returns
+fresh per-group prefixes while preserving its input. Additional primitive
+families are under development. The crate is unpublished and its interface can
+change.
 
 Build and run
 -------------
@@ -57,7 +57,7 @@ NVIDIA GPU. From a complete CCCL checkout with the matching Oxide installed:
 
 .. code-block:: shell
 
-   cd rust/cuda-coop/examples/load_store
+   cd rust/cuda-coop/examples/scan
    CUDA_HOME=/usr/local/cuda-13.3 CUDA_PATH=/usr/local/cuda-13.3 \
      cargo oxide run --arch sm_120 --materialize-cubin
 
@@ -80,7 +80,7 @@ provider build script, manual linker inputs or scratch-byte calculation.
 How compilation works
 ---------------------
 
-``cargo oxide`` discovers the concrete Load/Store uses, including those inside
+``cargo oxide`` discovers the concrete cooperative calls, including those inside
 generic helpers from another crate. The dependency's host provider specializes
 CUB for their types, item counts, algorithms and launch geometry. NVRTC returns
 device LTO-IR and the actual C++ temporary-storage layouts. Oxide checks
@@ -113,6 +113,7 @@ Read next
    payload
    groups
    load_store
+   scan
    provider
 
 Generate the API reference with ``cargo doc --workspace --no-deps`` from

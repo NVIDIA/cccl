@@ -3,7 +3,7 @@
 
 //! Native, host-only CUB specialization for Rust cooperative algorithms.
 //!
-//! This private development crate compiles block and Warp Load/Store providers with
+//! This private development crate compiles block and Warp Load/Store and Scan providers with
 //! NVRTC. It returns linkable LTO-IR and the exact C++ scratch layout from the
 //! **same compilation**, without a CUDA context, GPU or Python dependency.
 //! It is a compiler building block, not a device API or a package release.
@@ -27,6 +27,14 @@
 //! Physical and logical Warp requests support Direct, Striped, Vectorize and
 //! Transpose at power-of-two widths from 1 through 32, within complete physical
 //! warps. Their scratch layout describes one group, not the complete block.
+//!
+//! [`ScanRequest`] selects a separate numeric Scan family: all ten dtypes, seven
+//! built-in operators (bitwise for integers only), inclusive or exclusive output,
+//! and Raking/RakingMemoize/WarpScans for Blocks. Warp Scan accepts one scalar
+//! per lane with implicit algorithm selection. Scan checks every input validity
+//! bit, preserves the input, and initializes every fresh output slot. Seeded
+//! exclusive forms carry one runtime value of exactly the input dtype.
+//! [`Provider::compile_native`] batches both families in one native compilation.
 //!
 //! [`Provider::from_checkout`] snapshots the selected CCCL and CUDA headers;
 //! [`Provider::compile`] uses those exact bytes and loaded NVRTC to emit an
@@ -56,6 +64,8 @@
 #![deny(unsafe_code)]
 
 mod headers;
+mod scan;
+pub use scan::{ScanAlgorithm, ScanOperation, ScanOperator, ScanRecipe, ScanRequest};
 #[allow(unsafe_code)]
 mod nvrtc;
 pub mod oxide;
@@ -431,6 +441,48 @@ impl Request {
     }
 }
 
+/// One member of an ordered native batch, with family-specific validated inputs.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum NativeRequest {
+    /// Existing Load/Store operation and layout algorithm.
+    LoadStore(Request),
+    /// Numeric Scan with preserved input and fresh initialized output.
+    Scan(ScanRequest),
+}
+
+impl NativeRequest {
+    fn source(self, symbol: &str) -> String {
+        match self {
+            Self::LoadStore(request) => source(request, symbol),
+            Self::Scan(request) => request.source(symbol),
+        }
+    }
+
+    fn token(self) -> String {
+        match self {
+            Self::LoadStore(request) => request.operation.token().into(),
+            Self::Scan(request) => request.recipe.operation().token(),
+        }
+    }
+
+    fn scratch_free(self) -> bool {
+        match self {
+            Self::LoadStore(request) => request.algorithm.scratch_free(),
+            Self::Scan(_) => false,
+        }
+    }
+
+    fn mutates_payload(self) -> bool {
+        match self {
+            Self::LoadStore(request) => {
+                !request.operation.is_load() && !request.algorithm.scratch_free()
+            }
+            // Scan writes a fresh output, never rearranges its input payload.
+            Self::Scan(_) => false,
+        }
+    }
+}
+
 /// Byte size and minimum byte alignment of a storage region.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Layout {
@@ -443,6 +495,10 @@ pub struct Layout {
 /// One CUB specialization and its exact storage requirements.
 ///
 /// # Device ABI obligations
+///
+/// The memory-tile and payload-layout requirements below describe Load/Store.
+/// Scan uses lane-private input and fresh output; its ABI and validity contract
+/// are documented by [`ScanRequest`].
 ///
 /// Every thread in the selected group executes the provider in converged control
 /// flow. The group is the exact block, or one aligned Warp of the selected width.
@@ -585,6 +641,24 @@ impl Provider {
     /// compilation. Unsupported targets/instantiations return NVRTC's log. An
     /// unrecognized layout name fails closed instead of guessing storage sizes.
     pub fn compile(&self, requests: &[Request], target: &str) -> Result<Artifact> {
+        let requests: Vec<_> = requests
+            .iter()
+            .copied()
+            .map(NativeRequest::LoadStore)
+            .collect();
+        self.compile_native(&requests, target)
+    }
+
+    /// Compile one ordered mixed Load/Store and Scan batch in a single NVRTC program.
+    ///
+    /// Per-specialization identity is independent of unrelated batch members.
+    /// Scan scratch describes one group and includes the actual CUB TempStorage,
+    /// even when its C++ empty type occupies one byte. The caller plans replication.
+    ///
+    /// # Errors
+    /// Rejects empty/duplicate requests and malformed targets as [`Self::compile`]
+    /// does; native compilation and layout decoding errors retain their diagnostics.
+    pub fn compile_native(&self, requests: &[NativeRequest], target: &str) -> Result<Artifact> {
         if !target.starts_with("compute_")
             || !target[8..].chars().all(|c| c.is_ascii_alphanumeric())
             || target.len() <= 8
@@ -617,6 +691,7 @@ impl Provider {
             include_bytes!("headers.rs"),
             include_bytes!("nvrtc.rs"),
             include_bytes!("block_io.cuh"),
+            include_bytes!("scan.rs"),
         ] {
             hash_field(&mut inputs, bytes);
         }
@@ -632,13 +707,13 @@ impl Provider {
             let mut hash = inputs.clone();
             hash_field(
                 &mut hash,
-                self::source(request, "cuda_coop_specialization").as_bytes(),
+                request.source("cuda_coop_specialization").as_bytes(),
             );
             let identity: [u8; 32] = hash.finalize().into();
             hash_field(&mut batch_identity, &identity);
             let suffix: String = identity.iter().map(|byte| format!("{byte:02x}")).collect();
-            let symbol = format!("cuda_coop_{}_{}", request.operation.token(), suffix);
-            source.push_str(&self::source(request, &symbol));
+            let symbol = format!("cuda_coop_{}_{}", request.token(), suffix);
+            source.push_str(&request.source(&symbol));
             expressions.push(format!("&layout_probe<sizeof({symbol}_detail::primitive::TempStorage), alignof({symbol}_detail::primitive::TempStorage)>"));
             expressions.push(format!("&layout_probe<sizeof({symbol}_detail::scratch_storage), alignof({symbol}_detail::scratch_storage)>"));
             specializations.push(Specialization {
@@ -652,8 +727,8 @@ impl Provider {
                     size: 0,
                     alignment: 1,
                 },
-                scratch_free: request.algorithm.scratch_free(),
-                mutates_payload: !request.operation.is_load() && !request.algorithm.scratch_free(),
+                scratch_free: request.scratch_free(),
+                mutates_payload: request.mutates_payload(),
             });
         }
         let output = self

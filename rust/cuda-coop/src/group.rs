@@ -412,6 +412,7 @@ pub enum WarpsWithinBlock<const N: usize, const EXHAUSTIVE: bool = true> {}
 impl<const N: usize, const E: bool> ThreadsWithinWarp<N, E> {
     const POWER_OF_TWO: bool = N > 0 && N <= 32 && N.is_power_of_two();
     const COMPLETE: bool = N > 0 && N <= 32 && 32 % N == 0;
+    const PREFIX: bool = !E && N >= 17 && N <= 31;
     const VALID: () = {
         assert!(N > 0 && N <= 32, "lane partition size must be in 1..=32");
         assert!(
@@ -430,6 +431,8 @@ impl<const N: usize, const E: bool> sealed::Scope for ThreadsWithinWarp<N, E> {
     fn member() -> u8 {
         if Self::COMPLETE {
             1
+        } else if Self::PREFIX {
+            library::warp_prefix_member_v1::<N>()
         } else {
             ((thread_rank_block() % 32) < (32 / N as u32) * N as u32) as u8
         }

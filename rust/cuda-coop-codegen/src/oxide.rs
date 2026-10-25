@@ -10,12 +10,15 @@
 //! Use `cuda_device::library::registration!` in the getter to track these inputs.
 //! The compiler reads the registration getter's constant MIR and invokes this
 //! host process. This module never invokes Cargo or executes device Rust code.
-//! The protocol supports raw i32 and typed validity recipes for all six block algorithms
-//! documented by [`Operation`].
+//! The protocol supports raw i32 and typed validity Load/Store recipes documented
+//! by [`Operation`], and numeric Block/scalar Warp Scan through [`ScanRecipe`].
 //! Device calls retain all participation, validity and scratch obligations of
 //! [`crate::Specialization`]. No allocation or synchronization policy is supplied.
 
-use crate::{Algorithm, Artifact, Dtype, Error, Layout, Operation, Provider, Request, Result};
+use crate::{
+    Algorithm, Artifact, Dtype, Error, Layout, NativeRequest, Operation, Provider, Request, Result,
+    ScanRecipe, ScanRequest,
+};
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -116,7 +119,29 @@ struct SpecializationRequest {
 }
 
 impl SpecializationRequest {
-    fn native(&self) -> Result<Request> {
+    fn native(&self) -> Result<NativeRequest> {
+        if self.operation.starts_with("scan_") {
+            let recipe = ScanRecipe::parse(&self.operation, &self.algorithm)?;
+            let dtype = self.dtype.dtype()?;
+            let request = match (recipe, self.warp_width) {
+                (ScanRecipe::Block(operation, algorithm), None) => ScanRequest::block(
+                    dtype,
+                    operation,
+                    algorithm,
+                    self.block,
+                    self.items_per_thread,
+                )?,
+                (ScanRecipe::Warp(operation), Some(width)) if self.items_per_thread == 1 => {
+                    ScanRequest::warp(dtype, operation, self.block, width)?
+                }
+                _ => {
+                    return Err(Error::message(
+                        "Scan recipe disagrees with Warp scope or scalar extent",
+                    ));
+                }
+            };
+            return Ok(NativeRequest::Scan(request));
+        }
         let operation = match self.operation.as_str() {
             "load_full" => Operation::LoadFull,
             "load_filled" => Operation::LoadFilled,
@@ -156,8 +181,8 @@ impl SpecializationRequest {
             self.items_per_thread,
         )?;
         match self.warp_width {
-            Some(width) => request.with_warp_width(width),
-            None => Ok(request),
+            Some(width) => request.with_warp_width(width).map(NativeRequest::LoadStore),
+            None => Ok(NativeRequest::LoadStore(request)),
         }
     }
 }
@@ -199,7 +224,23 @@ struct BatchResponse {
     specializations: Vec<SpecializationResponse>,
 }
 
-fn arguments(request: Request) -> Vec<Argument> {
+fn arguments(request: NativeRequest) -> Vec<Argument> {
+    let request = match request {
+        NativeRequest::Scan(request) => {
+            let dtype = Scalar::from(request.dtype);
+            let mut arguments = vec![
+                Argument::ConstPointer(dtype),
+                Argument::MutPointer(dtype),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+            ];
+            if request.recipe.operation().seeded() {
+                arguments.push(Argument::Value(dtype));
+            }
+            return arguments;
+        }
+        NativeRequest::LoadStore(request) => request,
+    };
     let operation = request.operation();
     let dtype = Scalar::from(request.dtype());
     let shared_payload =
@@ -305,6 +346,29 @@ pub fn registration(
             Algorithm::WarpTranspose => "warp_transpose",
             Algorithm::WarpTransposeTimesliced => "warp_transpose_timesliced",
         },
+    })
+    .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
+}
+
+/// Encode one Scan recipe for the existing dependency provider executable.
+///
+/// The Block recipe selects a Block Scan algorithm; the Warp recipe has no
+/// explicit algorithm. Dtype, geometry and extent arrive with specialization.
+/// Seeded exclusive operations take one runtime value of exactly that dtype;
+/// inclusive and zero-seeded sum take no scalar controls.
+///
+/// # Errors
+/// Rejects a nonabsolute executable or a path that cannot be encoded as JSON.
+pub fn scan_registration(executable: &Path, recipe: ScanRecipe) -> Result<String> {
+    if !executable.is_absolute() {
+        return Err(Error::message("provider executable path must be absolute"));
+    }
+    serde_json::to_string(&Registration {
+        version: VERSION,
+        provider: "cuda_coop",
+        executable,
+        operation: &recipe.operation().token(),
+        algorithm: recipe.algorithm_token(),
     })
     .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
 }
@@ -420,11 +484,15 @@ pub fn serve(checkout: &Path, input: impl Read, mut output: impl Write) -> Resul
         .map(SpecializationRequest::native)
         .collect::<Result<_>>()?;
     let artifact = Provider::from_checkout(checkout, &request.cuda_root)?
-        .compile(&requests, &request.target)?;
+        .compile_native(&requests, &request.target)?;
     write_response(&requests, artifact, &mut output)
 }
 
-fn write_response(requests: &[Request], artifact: Artifact, output: &mut impl Write) -> Result<()> {
+fn write_response(
+    requests: &[NativeRequest],
+    artifact: Artifact,
+    output: &mut impl Write,
+) -> Result<()> {
     if artifact.ltoir.is_empty() || artifact.ltoir.len() > MAX_LTO {
         return Err(Error::message(
             "native LTO buffer must contain 1..=256 MiB bytes",
@@ -469,6 +537,136 @@ fn write_response(requests: &[Request], artifact: Artifact, output: &mut impl Wr
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{ScanAlgorithm, ScanOperation, ScanOperator};
+
+    #[test]
+    fn scan_registration_preserves_typed_seed_and_empty_controls() {
+        for (dtype, recipe) in [
+            (
+                Dtype::I8,
+                ScanRecipe::Block(
+                    ScanOperation::Exclusive(ScanOperator::Min),
+                    ScanAlgorithm::Raking,
+                ),
+            ),
+            (
+                Dtype::U16,
+                ScanRecipe::Warp(ScanOperation::Exclusive(ScanOperator::Sum)),
+            ),
+            (
+                Dtype::F64,
+                ScanRecipe::Warp(ScanOperation::Inclusive(ScanOperator::Max)),
+            ),
+            (
+                Dtype::I32,
+                ScanRecipe::Block(ScanOperation::ExclusiveSum, ScanAlgorithm::WarpScans),
+            ),
+        ] {
+            let registration: serde_json::Value =
+                serde_json::from_str(&scan_registration(Path::new("/provider"), recipe).unwrap())
+                    .unwrap();
+            let scalar = Scalar::from(dtype);
+            let request = SpecializationRequest {
+                operation: registration["operation"].as_str().unwrap().into(),
+                algorithm: registration["algorithm"].as_str().unwrap().into(),
+                dtype: scalar,
+                block: [4, 4, 4],
+                items_per_thread: 1,
+                warp_width: matches!(recipe, ScanRecipe::Warp(_)).then_some(8),
+            }
+            .native()
+            .unwrap();
+            let mut expected = vec![
+                Argument::ConstPointer(scalar),
+                Argument::MutPointer(scalar),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+            ];
+            if recipe.operation().seeded() {
+                expected.push(Argument::Value(scalar));
+            }
+            assert_eq!(arguments(request), expected);
+            assert_eq!(registration["provider"], "cuda_coop");
+        }
+    }
+
+    #[test]
+    fn rejects_invalid_scan_before_opening_toolkit() {
+        let base = serde_json::json!({"version":1,"target":"compute_120","cuda_root":"/absent", "requests":[{
+            "operation":"scan_inclusive_bit_xor_validity_bits_v1","algorithm":"raking",
+            "dtype":{"kind":"signed","bits":32},"block":[8,4,2],"items_per_thread":9,"warp_width":null
+        }]});
+        for (path, value, diagnostic) in [
+            (
+                "/requests/0/dtype",
+                serde_json::json!({"kind":"float","bits":32}),
+                "integer",
+            ),
+            (
+                "/requests/0/algorithm",
+                serde_json::json!("transpose"),
+                "Scan algorithm",
+            ),
+            (
+                "/requests/0/operation",
+                serde_json::json!("scan_exclusive_min_validity_bits_v1"),
+                "seed form",
+            ),
+            (
+                "/requests/0/operation",
+                serde_json::json!("scan_inclusive_sum_seeded_validity_bits_v1"),
+                "Scan operator",
+            ),
+            (
+                "/requests/0/items_per_thread",
+                serde_json::json!(0),
+                "positive items",
+            ),
+            (
+                "/requests/0/warp_width",
+                serde_json::json!(8),
+                "scope or scalar extent",
+            ),
+        ] {
+            let mut request = base.clone();
+            *request.pointer_mut(path).unwrap() = value;
+            let error = serve(
+                Path::new("/absent"),
+                request.to_string().as_bytes(),
+                Vec::new(),
+            )
+            .unwrap_err();
+            assert!(error.to_string().contains(diagnostic), "{error}");
+        }
+        for (block, items, width, diagnostic) in [
+            ([48, 1, 1], 1, 8, "complete physical warps"),
+            ([64, 1, 1], 4, 8, "scalar extent"),
+            ([64, 1, 1], 1, 3, "power of two"),
+        ] {
+            let mut request = base.clone();
+            request["requests"][0]["algorithm"] = "warp".into();
+            request["requests"][0]["block"] = serde_json::json!(block);
+            request["requests"][0]["items_per_thread"] = items.into();
+            request["requests"][0]["warp_width"] = width.into();
+            let error = serve(
+                Path::new("/absent"),
+                request.to_string().as_bytes(),
+                Vec::new(),
+            )
+            .unwrap_err();
+            assert!(error.to_string().contains(diagnostic), "{error}");
+        }
+        assert!(
+            ScanRequest::block(
+                Dtype::I32,
+                ScanOperation::ExclusiveSum,
+                ScanAlgorithm::WarpScans,
+                [8, 3, 2],
+                1
+            )
+            .is_err()
+        );
+    }
 
     #[test]
     fn typed_validity_abi_preserves_width_and_separate_flags() {
@@ -558,7 +756,7 @@ mod tests {
                 if operation.counted() {
                     expected.push(Argument::Value(Scalar::Signed(32)));
                 }
-                assert_eq!(arguments(request), expected);
+                assert_eq!(arguments(NativeRequest::LoadStore(request)), expected);
             }
         }
         for scalar in [Scalar::Signed(1), Scalar::Unsigned(128), Scalar::Float(16)] {
@@ -632,7 +830,9 @@ mod tests {
                 items_per_thread: 4,
                 warp_width: None,
             };
-            let native = request.native().unwrap();
+            let NativeRequest::LoadStore(native) = request.native().unwrap() else {
+                panic!("expected Load/Store")
+            };
             assert_eq!(native.block_shape(), [8, 4, 4]);
             assert_eq!(native.block_threads(), 128);
             assert_eq!(native.dtype(), request.dtype.dtype().unwrap());
