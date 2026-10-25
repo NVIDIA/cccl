@@ -3,10 +3,10 @@
 
 //! Register the owning host provider for native cooperative operations.
 use cuda_coop_codegen::{
-    AdjacentDifferenceRecipe, Algorithm, DiscontinuityRecipe, ExchangeMode, ExchangeRecipe,
-    HistogramAlgorithm, Operation, ReduceAlgorithm, ReduceBatchedLayout, ReduceBatchedRecipe,
-    ReduceForm, ReduceOperator, ReduceRecipe, ScanAlgorithm, ScanOperation, ScanOperator,
-    ScanRecipe, ShuffleRecipe, oxide,
+    AdjacentDifferenceRecipe, Algorithm, DiscontinuityRecipe, Dtype, ExchangeMode, ExchangeRecipe,
+    HistogramAlgorithm, Operation, RadixRankKeysRecipe, RadixSortKeysRecipe, RadixSortPairsRecipe,
+    ReduceAlgorithm, ReduceBatchedLayout, ReduceBatchedRecipe, ReduceForm, ReduceOperator,
+    ReduceRecipe, ScanAlgorithm, ScanOperation, ScanOperator, ScanRecipe, ShuffleRecipe, oxide,
 };
 
 fn main() {
@@ -25,6 +25,45 @@ fn main() {
     let callable = oxide::reduce_callable_registration(&executable)
         .expect("cuda.coop callable Reduce registration");
     println!("cargo::rustc-env=COOP_REDUCE_RAKING_CALLABLE_PAYLOAD={callable}");
+    for bits in 1..=8 {
+        for (recipe, order) in [
+            (RadixRankKeysRecipe::Ascending(bits), "ASCENDING"),
+            (RadixRankKeysRecipe::Descending(bits), "DESCENDING"),
+        ] {
+            let value = oxide::radix_rank_keys_registration(&executable, recipe)
+                .expect("cuda.coop radix rank keys registration");
+            println!("cargo::rustc-env=COOP_RADIX_RANK_KEYS_{order}_{bits}={value}");
+        }
+    }
+    for (recipe, name) in [
+        (RadixSortKeysRecipe::Ascending, "ASCENDING"),
+        (RadixSortKeysRecipe::Descending, "DESCENDING"),
+    ] {
+        let value = oxide::radix_sort_keys_registration(&executable, recipe)
+            .expect("cuda.coop radix sort keys registration");
+        println!("cargo::rustc-env=COOP_RADIX_SORT_KEYS_{name}={value}");
+    }
+    for (recipe, order) in [
+        (RadixSortPairsRecipe::Ascending, "ASCENDING"),
+        (RadixSortPairsRecipe::Descending, "DESCENDING"),
+    ] {
+        for (dtype, name) in [
+            (Dtype::I8, "I8"),
+            (Dtype::U8, "U8"),
+            (Dtype::I16, "I16"),
+            (Dtype::U16, "U16"),
+            (Dtype::I32, "I32"),
+            (Dtype::U32, "U32"),
+            (Dtype::I64, "I64"),
+            (Dtype::U64, "U64"),
+            (Dtype::F32, "F32"),
+            (Dtype::F64, "F64"),
+        ] {
+            let value = oxide::radix_sort_pairs_registration(&executable, recipe, dtype)
+                .expect("cuda.coop radix sort pairs registration");
+            println!("cargo::rustc-env=COOP_RADIX_SORT_PAIRS_{order}_{name}={value}");
+        }
+    }
     for (algorithm, name) in [
         (HistogramAlgorithm::Atomic, "ATOMIC"),
         (HistogramAlgorithm::Sort, "SORT"),

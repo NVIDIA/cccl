@@ -6,12 +6,242 @@
 use cuda_coop_codegen::{
     AdjacentDifferenceRecipe, AdjacentDifferenceRequest, Algorithm, DiscontinuityRecipe,
     DiscontinuityRequest, Dtype, ExchangeMode, ExchangeRecipe, ExchangeRequest, HistogramAlgorithm,
-    HistogramRecipe, HistogramRequest, Layout, NativeRequest, Operation, Provider, ReduceAlgorithm,
-    ReduceBatchedLayout, ReduceBatchedRecipe, ReduceBatchedRequest, ReduceForm, ReduceOperator,
-    ReduceRequest, Request, ScanAlgorithm, ScanOperation, ScanOperator, ScanRequest, ShuffleRecipe,
-    ShuffleRequest,
+    HistogramRecipe, HistogramRequest, Layout, NativeRequest, Operation, Provider,
+    RadixRankKeysRecipe, RadixRankKeysRequest, RadixSortKeysRecipe, RadixSortKeysRequest,
+    RadixSortPairsRecipe, RadixSortPairsRequest, ReduceAlgorithm, ReduceBatchedLayout,
+    ReduceBatchedRecipe, ReduceBatchedRequest, ReduceForm, ReduceOperator, ReduceRequest, Request,
+    ScanAlgorithm, ScanOperation, ScanOperator, ScanRequest, ShuffleRecipe, ShuffleRequest,
 };
 use std::{env, path::Path, time::Instant};
+
+#[test]
+#[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
+fn native_mixed_radix_rank_keys_recipes() -> Result<(), Box<dyn std::error::Error>> {
+    use RadixRankKeysRecipe::{Ascending, Descending};
+    let toolkit = env::var("CUDA_HOME")?;
+    let target = env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let provider = Provider::from_checkout(&checkout, &toolkit)?;
+    // The public XYZ example, then width limits, bitmap tails and unsigned keys.
+    let rows = [
+        (Dtype::I64, [4, 4, 4], 1, Ascending(3)),
+        (Dtype::I64, [4, 4, 4], 1, Descending(3)),
+        (Dtype::I64, [4, 4, 4], 4, Ascending(3)),
+        (Dtype::I64, [4, 4, 4], 4, Descending(3)),
+        (Dtype::I32, [33, 1, 1], 9, Ascending(1)),
+        (Dtype::U32, [1, 1, 1], 1, Descending(8)),
+        (Dtype::U64, [64, 1, 1], 4, Ascending(4)),
+    ];
+    let mut requests = Vec::new();
+    for (dtype, block, items, recipe) in rows {
+        requests.push(NativeRequest::RadixRankKeys(RadixRankKeysRequest::block(
+            dtype, recipe, block, items,
+        )?));
+    }
+    requests.extend([
+        NativeRequest::RadixSortKeys(RadixSortKeysRequest::block(
+            Dtype::I64,
+            RadixSortKeysRecipe::Ascending,
+            [4, 4, 4],
+            4,
+        )?),
+        NativeRequest::RadixSortPairs(RadixSortPairsRequest::block(
+            Dtype::I32,
+            Dtype::F64,
+            RadixSortPairsRecipe::Descending,
+            [4, 4, 4],
+            4,
+        )?),
+    ]);
+    let artifact = provider.compile_native(&requests, &target)?;
+    assert_eq!(artifact.specializations.len(), 9);
+    assert!(!artifact.ltoir.is_empty());
+    let mut identities = std::collections::HashSet::new();
+    let mut symbols = std::collections::HashSet::new();
+    for (request, entry) in requests.iter().zip(&artifact.specializations) {
+        assert!(identities.insert(entry.identity));
+        assert!(symbols.insert(&entry.symbol));
+        assert!(!entry.mutates_payload && !entry.scratch_free);
+        assert_eq!(entry.scratch, entry.cub_layout);
+        assert!(entry.scratch.size > 0 && entry.scratch.alignment.is_power_of_two());
+        eprintln!(
+            "{request:?}: CUB {:?}, scratch {:?}",
+            entry.cub_layout, entry.scratch
+        );
+    }
+    // Rank TempStorage depends on geometry/width, not key count or direction.
+    for entry in &artifact.specializations[1..4] {
+        assert_eq!(entry.scratch, artifact.specializations[0].scratch);
+    }
+    eprintln!(
+        "{} LTO bytes, {} specializations",
+        artifact.ltoir.len(),
+        artifact.specializations.len()
+    );
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
+fn native_mixed_radix_sort_pairs_recipes() -> Result<(), Box<dyn std::error::Error>> {
+    use RadixSortPairsRecipe::{Ascending, Descending};
+    let toolkit = env::var("CUDA_HOME")?;
+    let target = env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let provider = Provider::from_checkout(&checkout, &toolkit)?;
+    // Independent key/value widths, both directions, XYZ and bitmap tails.
+    // Only the first pair repeats types and geometry to distinguish order.
+    let rows = [
+        (Dtype::I32, Dtype::F64, [4, 4, 4], 4, Ascending),
+        (Dtype::I32, Dtype::F64, [4, 4, 4], 4, Descending),
+        (Dtype::U32, Dtype::I8, [33, 1, 1], 9, Descending),
+        (Dtype::I64, Dtype::U8, [32, 1, 1], 1, Ascending),
+        (Dtype::U64, Dtype::I16, [64, 1, 1], 4, Descending),
+        (Dtype::I32, Dtype::U16, [4, 4, 4], 4, Ascending),
+        (Dtype::U32, Dtype::I32, [1, 1, 1], 1, Descending),
+        (Dtype::I64, Dtype::U32, [33, 1, 1], 4, Ascending),
+        (Dtype::U64, Dtype::I64, [32, 1, 1], 4, Descending),
+        (Dtype::I32, Dtype::U64, [64, 1, 1], 4, Ascending),
+        (Dtype::U32, Dtype::F32, [4, 4, 4], 4, Descending),
+    ];
+    let mut requests = Vec::new();
+    for (key, value, block, items, recipe) in rows {
+        requests.push(NativeRequest::RadixSortPairs(RadixSortPairsRequest::block(
+            key, value, recipe, block, items,
+        )?));
+    }
+    requests.extend([
+        NativeRequest::RadixSortKeys(RadixSortKeysRequest::block(
+            Dtype::I32,
+            RadixSortKeysRecipe::Ascending,
+            [4, 4, 4],
+            4,
+        )?),
+        NativeRequest::Discontinuity(DiscontinuityRequest::block(
+            Dtype::F64,
+            DiscontinuityRecipe::HeadsAndTailsBoth,
+            [4, 4, 4],
+            4,
+        )?),
+    ]);
+    let artifact = provider.compile_native(&requests, &target)?;
+    assert_eq!(artifact.specializations.len(), 13);
+    assert!(!artifact.ltoir.is_empty());
+    let mut identities = std::collections::HashSet::new();
+    let mut symbols = std::collections::HashSet::new();
+    for (request, entry) in requests.iter().zip(&artifact.specializations) {
+        assert!(identities.insert(entry.identity));
+        assert!(symbols.insert(&entry.symbol));
+        assert!(!entry.mutates_payload && !entry.scratch_free);
+        assert_eq!(entry.scratch, entry.cub_layout);
+        assert!(entry.scratch.size > 0 && entry.scratch.alignment.is_power_of_two());
+        eprintln!(
+            "{request:?}: CUB {:?}, scratch {:?}",
+            entry.cub_layout, entry.scratch
+        );
+    }
+    assert_eq!(
+        artifact.specializations[0].scratch,
+        artifact.specializations[1].scratch
+    );
+    // Pair scratch includes the value exchange, even if the ranker dominates.
+    assert!(artifact.specializations[0].scratch.size >= artifact.specializations[11].scratch.size);
+    assert!(artifact.specializations[0].scratch.alignment >= std::mem::align_of::<f64>());
+    eprintln!(
+        "{} LTO bytes, {} specializations",
+        artifact.ltoir.len(),
+        artifact.specializations.len()
+    );
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
+fn native_mixed_radix_sort_keys_recipes() -> Result<(), Box<dyn std::error::Error>> {
+    use RadixSortKeysRecipe::{Ascending, Descending};
+    let toolkit = env::var("CUDA_HOME")?;
+    let target = env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let provider = Provider::from_checkout(&checkout, &toolkit)?;
+    // Four key types, both directions, XYZ, non-warp geometry and bitmap tails.
+    // The last two rows distinguish order and exact shape at the same capacity.
+    let rows = [
+        (Dtype::I64, [4, 4, 4], 1, Ascending),
+        (Dtype::I64, [4, 4, 4], 4, Descending),
+        (Dtype::I32, [33, 1, 1], 9, Ascending),
+        (Dtype::U32, [1, 1, 1], 1, Descending),
+        (Dtype::U64, [64, 1, 1], 4, Ascending),
+        (Dtype::I64, [4, 4, 4], 4, Ascending),
+        (Dtype::I64, [64, 1, 1], 4, Ascending),
+    ];
+    let mut requests = Vec::new();
+    for (dtype, block, items, recipe) in rows {
+        requests.push(NativeRequest::RadixSortKeys(RadixSortKeysRequest::block(
+            dtype, recipe, block, items,
+        )?));
+    }
+    requests.extend([
+        NativeRequest::LoadStore(Request::new_typed(
+            Dtype::I32,
+            Operation::LoadFullValidity,
+            Algorithm::Direct,
+            64,
+            4,
+        )?),
+        NativeRequest::AdjacentDifference(AdjacentDifferenceRequest::block(
+            Dtype::I32,
+            AdjacentDifferenceRecipe::LeftPartialPredecessor,
+            [64, 1, 1],
+            4,
+        )?),
+        NativeRequest::Histogram(HistogramRequest::block(
+            Dtype::U8,
+            HistogramRecipe::new(HistogramAlgorithm::Sort, Dtype::U64, 65, 2)?,
+            [64, 1, 1],
+            4,
+        )?),
+    ]);
+    let artifact = provider.compile_native(&requests, &target)?;
+    assert_eq!(artifact.specializations.len(), 10);
+    assert!(!artifact.ltoir.is_empty());
+    let mut identities = std::collections::HashSet::new();
+    let mut symbols = std::collections::HashSet::new();
+    for (index, (request, entry)) in requests.iter().zip(&artifact.specializations).enumerate() {
+        assert!(identities.insert(entry.identity));
+        assert!(symbols.insert(&entry.symbol));
+        assert!(!entry.mutates_payload);
+        if index < rows.len() {
+            assert_eq!(entry.scratch, entry.cub_layout);
+            assert!(entry.scratch.size > 0 && entry.scratch.alignment.is_power_of_two());
+            assert!(!entry.scratch_free);
+        }
+        eprintln!(
+            "{request:?}: CUB {:?}, scratch {:?}",
+            entry.cub_layout, entry.scratch
+        );
+    }
+    assert_eq!(
+        artifact.specializations[1].scratch,
+        artifact.specializations[5].scratch
+    );
+    assert_eq!(
+        artifact.specializations[5].scratch,
+        artifact.specializations[6].scratch
+    );
+    assert!(artifact.specializations[7].scratch_free);
+    assert_eq!(artifact.specializations[7].scratch.size, 0);
+    assert_eq!(
+        artifact.specializations[8].scratch,
+        artifact.specializations[8].cub_layout
+    );
+    assert!(artifact.specializations[9].scratch.size > artifact.specializations[9].cub_layout.size);
+    eprintln!(
+        "{} LTO bytes, {} specializations",
+        artifact.ltoir.len(),
+        artifact.specializations.len()
+    );
+    Ok(())
+}
 
 #[test]
 #[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]

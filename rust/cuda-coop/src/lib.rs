@@ -68,6 +68,13 @@
 //! [`histogram`] counts a complete 1D Block's samples into fresh striped counters.
 //! [`HistogramOptions`] selects the required bin count, independent counter type
 //! and extent, Atomic or Sort algorithm, and existing scratch policy.
+//! [`radix_sort_keys`] stably sorts a complete XYZ Block's integer keys into a
+//! fresh blocked payload, preserving input. [`RadixSortOptions`] selects static
+//! order, independent static/runtime bit endpoints and existing scratch policy.
+//! [`radix_sort_pairs`] carries associated numeric values through the same stable
+//! ordering, returning fresh key/value payloads with independent alignments.
+//! [`radix_rank_keys`] returns fresh naturally aligned i32 ranks for selected
+//! key digits. [`RadixRankOptions`] selects static width/order and begin/end.
 //! Host payload tests need no GPU;
 //! executing hardware queries requires an Oxide-compiled CUDA kernel.
 
@@ -82,6 +89,7 @@ mod exchange;
 mod group;
 mod histogram;
 mod load_store;
+mod radix_sort;
 mod reduce;
 mod reduce_batched;
 mod scan;
@@ -107,6 +115,11 @@ pub use histogram::{
 pub use load_store::{
     Algorithm, Direct, LoadOptions, LoadSource, LoadStoreGroup, StoreOptions, StoreValue, Striped,
     Transpose, Vectorize, WarpTranspose, WarpTransposeTimesliced, load, store,
+};
+pub use radix_sort::{
+    Ascending, Descending, RadixBit, RadixKey, RadixRankBits, RadixRankOptions, RadixRankWidth,
+    RadixSortBit, RadixSortOptions, RadixSortOrder, RadixValue, radix_rank_keys, radix_sort_keys,
+    radix_sort_pairs,
 };
 pub use reduce::{
     RakingCommutativeOnly, ReduceAlgorithm, ReduceGroup, ReduceOperator, ReduceOptions,

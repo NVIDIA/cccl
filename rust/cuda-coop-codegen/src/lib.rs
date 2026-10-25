@@ -4,8 +4,8 @@
 //! Native, host-only CUB specialization for Rust cooperative algorithms.
 //!
 //! This private development crate compiles Load/Store, Scan, Reduce, batched
-//! Reduce, Exchange, Shuffle, Adjacent Difference, Discontinuity and Histogram
-//! with NVRTC.
+//! Reduce, Exchange, Shuffle, Adjacent Difference, Discontinuity, Histogram
+//! and Radix Sort Keys/Pairs and Rank Keys with NVRTC.
 //! It returns linkable LTO-IR and the exact C++ scratch layout from the
 //! **same compilation**, without a CUDA context, GPU or Python dependency.
 //! It is a compiler building block, not a device API or a package release.
@@ -56,7 +56,12 @@
 //! and returning fresh i32 head flags, tail flags or both, with complete validity.
 //! [`HistogramRequest`] counts bounded integer samples in a complete 1D Block,
 //! with independent counter type/output extent and initialized zero padding.
-//! [`Provider::compile_native`] batches these families in one native compilation.
+//! [`RadixSortKeysRequest`] stably sorts a complete integer Block tile over a
+//! uniform bit range, preserving input and producing fresh blocked keys.
+//! [`RadixSortPairsRequest`] carries independently typed values with each key
+//! into fresh paired outputs. [`RadixRankKeysRequest`] returns stable selected-digit
+//! i32 ranks in original input-slot order. [`Provider::compile_native`] batches these families
+//! in one native compilation.
 //!
 //! [`Provider::from_checkout`] snapshots the selected CCCL and CUDA headers;
 //! [`Provider::compile`] uses those exact bytes and loaded NVRTC to emit an
@@ -90,6 +95,7 @@ mod discontinuity;
 mod exchange;
 mod headers;
 mod histogram;
+mod radix_sort;
 mod reduce;
 mod reduce_batched;
 mod scan;
@@ -98,6 +104,10 @@ pub use adjacent_difference::{AdjacentDifferenceRecipe, AdjacentDifferenceReques
 pub use discontinuity::{DiscontinuityRecipe, DiscontinuityRequest};
 pub use exchange::{ExchangeMode, ExchangeRecipe, ExchangeRequest};
 pub use histogram::{HistogramAlgorithm, HistogramRecipe, HistogramRequest};
+pub use radix_sort::{
+    RadixRankKeysRecipe, RadixRankKeysRequest, RadixSortKeysRecipe, RadixSortKeysRequest,
+    RadixSortPairsRecipe, RadixSortPairsRequest,
+};
 pub use reduce::{ReduceAlgorithm, ReduceForm, ReduceOperator, ReduceRecipe, ReduceRequest};
 pub use reduce_batched::{ReduceBatchedLayout, ReduceBatchedRecipe, ReduceBatchedRequest};
 pub use scan::{ScanAlgorithm, ScanOperation, ScanOperator, ScanRecipe, ScanRequest};
@@ -498,6 +508,12 @@ pub enum NativeRequest {
     Discontinuity(DiscontinuityRequest),
     /// Bounded integer samples with independent counter type and output extent.
     Histogram(HistogramRequest),
+    /// Stable Block radix sort with preserved input and fresh blocked keys.
+    RadixSortKeys(RadixSortKeysRequest),
+    /// Stable Block radix sort preserving independently typed key/value inputs.
+    RadixSortPairs(RadixSortPairsRequest),
+    /// Stable selected-digit Block ranks with preserved keys and fresh i32 output.
+    RadixRankKeys(RadixRankKeysRequest),
 }
 
 impl NativeRequest {
@@ -512,6 +528,9 @@ impl NativeRequest {
             Self::AdjacentDifference(request) => request.block_shape(),
             Self::Discontinuity(request) => request.block_shape(),
             Self::Histogram(request) => request.block_shape(),
+            Self::RadixSortKeys(request) => request.block_shape(),
+            Self::RadixSortPairs(request) => request.block_shape(),
+            Self::RadixRankKeys(request) => request.block_shape(),
         }
     }
 
@@ -526,6 +545,9 @@ impl NativeRequest {
             Self::AdjacentDifference(request) => request.source(symbol),
             Self::Discontinuity(request) => request.source(symbol),
             Self::Histogram(request) => request.source(symbol),
+            Self::RadixSortKeys(request) => request.source(symbol),
+            Self::RadixSortPairs(request) => request.source(symbol),
+            Self::RadixRankKeys(request) => request.source(symbol),
         }
     }
 
@@ -540,6 +562,9 @@ impl NativeRequest {
             Self::AdjacentDifference(request) => request.recipe.token().into(),
             Self::Discontinuity(request) => request.recipe.token().into(),
             Self::Histogram(request) => request.recipe.token(),
+            Self::RadixSortKeys(request) => request.recipe.token().into(),
+            Self::RadixSortPairs(request) => request.recipe.token(request.value_dtype),
+            Self::RadixRankKeys(request) => request.recipe.token(),
         }
     }
 
@@ -553,7 +578,10 @@ impl NativeRequest {
             | Self::Shuffle(_)
             | Self::AdjacentDifference(_)
             | Self::Discontinuity(_)
-            | Self::Histogram(_) => false,
+            | Self::Histogram(_)
+            | Self::RadixSortKeys(_)
+            | Self::RadixSortPairs(_)
+            | Self::RadixRankKeys(_) => false,
         }
     }
 
@@ -570,7 +598,10 @@ impl NativeRequest {
             | Self::Shuffle(_)
             | Self::AdjacentDifference(_)
             | Self::Discontinuity(_)
-            | Self::Histogram(_) => false,
+            | Self::Histogram(_)
+            | Self::RadixSortKeys(_)
+            | Self::RadixSortPairs(_)
+            | Self::RadixRankKeys(_) => false,
         }
     }
 }
@@ -590,10 +621,13 @@ pub struct Layout {
 ///
 /// The memory-tile and payload-layout requirements below describe Load/Store.
 /// Scan, Reduce, batched Reduce, Exchange, Shuffle, Adjacent Difference,
-/// Discontinuity and Histogram use lane-private input and fresh output. Their
+/// Discontinuity, Histogram and Radix Sort Keys use lane-private input and fresh output. Their
 /// ABI and validity contracts are documented by [`ScanRequest`], [`ReduceRequest`],
 /// [`ReduceBatchedRequest`], [`ExchangeRequest`], [`ShuffleRequest`],
-/// [`AdjacentDifferenceRequest`], [`DiscontinuityRequest`] and [`HistogramRequest`].
+/// [`AdjacentDifferenceRequest`], [`DiscontinuityRequest`], [`HistogramRequest`]
+/// and [`RadixSortKeysRequest`]. [`RadixSortPairsRequest`] returns fresh keys and
+/// independently typed associated values while preserving both inputs.
+/// [`RadixRankKeysRequest`] returns fresh i32 ranks independently of key type.
 ///
 /// Every thread in the selected group executes the provider in converged control
 /// flow. The group is the exact block, or one aligned Warp of the selected width.
@@ -747,7 +781,7 @@ impl Provider {
     /// Compile an ordered mixed batch of the supported families in one NVRTC program.
     ///
     /// Per-specialization identity is independent of unrelated batch members.
-    /// Scan/Reduce/batched Reduce/Exchange/Shuffle/Adjacent Difference/Discontinuity
+    /// Scan/Reduce/batched Reduce/Exchange/Shuffle/Adjacent Difference/Discontinuity/Radix Sort Keys
     /// scratch describes one group and includes the actual CUB TempStorage, even
     /// when its C++ empty type occupies one byte. The caller plans replication.
     ///
