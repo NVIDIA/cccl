@@ -1,0 +1,61 @@
+=============== expected.value_int begin ===============
+const cuda::std::expected<int, int> & = {
+  value = 42
+}
+=============== expected.value_int end ===============
+=============== expected.value_double begin ===============
+const cuda::std::expected<double, int> & = {
+  value = 3.1400000000000001
+}
+=============== expected.value_double end ===============
+=============== expected.value_zero begin ===============
+const cuda::std::expected<int, int> & = {
+  value = 0
+}
+=============== expected.value_zero end ===============
+=============== expected.error_int begin ===============
+const cuda::std::expected<int, int> & = {
+  error = 7
+}
+=============== expected.error_int end ===============
+=============== expected.error_struct begin ===============
+const cuda::std::expected<int, error_info> & = {
+  error = {
+    code = 5,
+    line = 120
+  }
+}
+=============== expected.error_struct end ===============
+=============== expected.update.before begin ===============
+const cuda::std::expected<int, int> & = {
+  value = 1
+}
+=============== expected.update.before end ===============
+=============== expected.update.after begin ===============
+const cuda::std::expected<int, int> & = {
+  error = 2
+}
+=============== expected.update.after end ===============
+=============== expected.alias begin ===============
+const cuda::std::expected<int, error_info> & = {
+  value = 17
+}
+=============== expected.alias end ===============
+=============== expected.nested begin ===============
+cuda::std::array<cuda::std::expected<int, int>, 2> = {
+  [0] = cuda::std::expected<int, int> = {
+    value = 13
+  },
+  [1] = cuda::std::expected<int, int> = {
+    error = 9
+  }
+}
+=============== expected.nested end ===============
+=============== expected_void.value begin ===============
+const cuda::std::expected<void, int> & has value
+=============== expected_void.value end ===============
+=============== expected_void.error begin ===============
+const cuda::std::expected<void, int> & = {
+  error = 3
+}
+=============== expected_void.error end ===============

@@ -1,0 +1,58 @@
+=============== expected.value_int begin ===============
+(const cuda::std::expected<int, int> &) <address>: {
+  value = 42
+}
+=============== expected.value_int end ===============
+=============== expected.value_double begin ===============
+(const cuda::std::expected<double, int> &) <address>: {
+  value = 3.1400000000000001
+}
+=============== expected.value_double end ===============
+=============== expected.value_zero begin ===============
+(const cuda::std::expected<int, int> &) <address>: {
+  value = 0
+}
+=============== expected.value_zero end ===============
+=============== expected.error_int begin ===============
+(const cuda::std::expected<int, int> &) <address>: {
+  error = 7
+}
+=============== expected.error_int end ===============
+=============== expected.error_struct begin ===============
+(const cuda::std::expected<int, error_info> &) <address>: {
+  error = (code = 5, line = 120)
+}
+=============== expected.error_struct end ===============
+=============== expected.update.before begin ===============
+(const cuda::std::expected<int, int> &) <address>: {
+  value = 1
+}
+=============== expected.update.before end ===============
+=============== expected.update.after begin ===============
+(const cuda::std::expected<int, int> &) <address>: {
+  error = 2
+}
+=============== expected.update.after end ===============
+=============== expected.alias begin ===============
+(const cuda::std::expected<int, error_info> &) <address>: {
+  value = 17
+}
+=============== expected.alias end ===============
+=============== expected.nested begin ===============
+(const cuda::std::array<cuda::std::expected<int, int>, 2> &) <address>: {
+  [0] = {
+    value = 13
+  }
+  [1] = {
+    error = 9
+  }
+}
+=============== expected.nested end ===============
+=============== expected_void.value begin ===============
+(const cuda::std::expected<void, int> &) <address> has value
+=============== expected_void.value end ===============
+=============== expected_void.error begin ===============
+(const cuda::std::expected<void, int> &) <address>: {
+  error = 3
+}
+=============== expected_void.error end ===============
