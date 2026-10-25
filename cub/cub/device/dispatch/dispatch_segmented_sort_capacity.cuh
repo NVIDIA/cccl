@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/agent/agent_segmented_sort_group_merge.cuh>
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/segmented_sort_capacity.cuh>
@@ -27,6 +28,35 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort_capacity
 {
+template <typename PolicyGetter>
+struct group_merge_entries
+{
+  struct warp_policy_getter
+  {
+    _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
+    {
+      return PolicyGetter{}().warp;
+    }
+  };
+  struct small_policy_getter
+  {
+    _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
+    {
+      return PolicyGetter{}().small;
+    }
+  };
+  struct large_policy_getter
+  {
+    _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
+    {
+      return PolicyGetter{}().large;
+    }
+  };
+  using type = sort_entries<sort_entry<group_merge_implementation<warp_policy_getter>>,
+                            sort_entry<group_merge_implementation<small_policy_getter>>,
+                            sort_entry<group_merge_implementation<large_policy_getter>>>;
+};
+
 // These pointers alias caller-provided global storage. It must remain valid until
 // every operation queued on the stream has completed, as with other CUB algorithms.
 // Empty ranges are skipped; singletons use the same sorting path as other ranges.
@@ -133,10 +163,6 @@ CUB_RUNTIME_FUNCTION cudaError_t launch_entry(
     return cudaErrorInvalidConfiguration;
   }
   const unsigned long long blocks = static_cast<unsigned long long>(sm_count) * Entry::tuning.blocks_per_sm;
-  if (blocks > 2147483647u)
-  {
-    return cudaErrorInvalidConfiguration;
-  }
   if (const auto error = CubDebug(launcher(static_cast<unsigned>(blocks), Entry::tuning.block_threads, bytes, stream)
                                     .doit(kernel, bins, begins, ends, in, out)))
   {
@@ -202,6 +228,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch(
   cudaStream_t stream = 0,
   Launcher launcher   = {})
 {
+  static_assert(sizeof(Key) <= 8, "Keys wider than 8 bytes require an architecture-specific GroupMerge policy");
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher.PtxComputeCap(cc)))
   {

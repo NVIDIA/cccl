@@ -129,7 +129,9 @@ struct sort_entries
   template <::cuda::std::size_t I>
   using entry      = ::cuda::std::tuple_element_t<I, entries>;
   using capacities = typename concatenate_capacities<typename Entries::capacities...>::type;
-  static_assert(capacities::valid());
+  static_assert(capacities::valid(),
+                "Capacities of consecutive sort entries must be strictly increasing: the largest capacity of entry N "
+                "(max_threads * max_ipt) must be below the smallest of entry N+1 (min_threads * min_ipt).");
   _CCCL_HOST_DEVICE_API static constexpr int bin_begin(int entry_index)
   {
     constexpr int counts[] = {Entries::capacities::size...};

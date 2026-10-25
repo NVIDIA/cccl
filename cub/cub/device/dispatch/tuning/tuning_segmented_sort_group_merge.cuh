@@ -13,8 +13,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_segmented_sort_group_merge.cuh>
-#include <cub/detail/segmented_sort_capacity.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <cuda/__device/compute_capability.h>
@@ -54,6 +52,10 @@ struct group_merge_launch_policy
 
 // One implementation choice: three GroupMerge launches. Architecture-specific
 // tuning values belong in this selector; other launch compositions are independent.
+// Currently ignores compute capability. Keys wider than 8 bytes are intentionally
+// unsupported until architecture-specific policies are added.
+// TODO: Account for each architecture's shared-memory limit when enabling wider
+// keys, while keeping the concatenated entry capacities strictly increasing.
 template <typename Key>
 struct group_merge_policy_selector
 {
@@ -63,34 +65,6 @@ struct group_merge_policy_selector
     return {
       {256, 1, 32, 9, 15, 128, 1}, {256, 64, 256, 9, 15, 128, 1}, {large_threads, 512, large_threads, 9, 15, 2, 1}};
   }
-};
-template <typename PolicyGetter>
-struct group_merge_entries
-{
-  struct warp_policy_getter
-  {
-    _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
-    {
-      return PolicyGetter{}().warp;
-    }
-  };
-  struct small_policy_getter
-  {
-    _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
-    {
-      return PolicyGetter{}().small;
-    }
-  };
-  struct large_policy_getter
-  {
-    _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
-    {
-      return PolicyGetter{}().large;
-    }
-  };
-  using type = sort_entries<sort_entry<group_merge_implementation<warp_policy_getter>>,
-                            sort_entry<group_merge_implementation<small_policy_getter>>,
-                            sort_entry<group_merge_implementation<large_policy_getter>>>;
 };
 } // namespace detail::segmented_sort_capacity
 
