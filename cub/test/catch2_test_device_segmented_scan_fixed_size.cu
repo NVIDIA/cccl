@@ -182,7 +182,7 @@ CUB_TEST("DeviceSegmentedScan fixed-size overloads accept cuda::args segment siz
          static_segment_sizes)
 {
   constexpr int segment_size = c2h::get<0, TestType>::value;
-  const auto num_segments    = static_cast<cuda::std::int64_t>(GENERATE(1, 17, (1 << 16) / segment_size + 1));
+  const auto num_segments    = static_cast<cuda::std::int64_t>(GENERATE_COPY(1, 17, (1 << 16) / segment_size + 1));
   const auto num_items       = num_segments * segment_size;
   CAPTURE(segment_size, num_segments);
 

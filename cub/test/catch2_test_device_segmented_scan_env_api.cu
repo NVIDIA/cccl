@@ -335,7 +335,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum (fixed size) accepts s
   // example-begin exclusive-segmented-sum-fixed-size-env
   // Two segments of four items each: [8, 6, 7, 5] and [3, 0, 9, 1]
   ::cuda::std::int64_t num_segments = 2;
-  int segment_size                  = 4;
+  const int segment_size            = 4;
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1};
   thrust::device_vector<int> d_out(d_in.size());
 
@@ -364,7 +364,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan (fixed size) accepts 
   // example-begin exclusive-segmented-scan-fixed-size-env
   // Two segments of four items each: [8, 6, 7, 5] and [3, 0, 9, 1]
   ::cuda::std::int64_t num_segments = 2;
-  int segment_size                  = 4;
+  const int segment_size            = 4;
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1};
   thrust::device_vector<int> d_out(d_in.size());
 
@@ -423,7 +423,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan (fixed size) accepts 
   // example-begin inclusive-segmented-scan-fixed-size-env
   // Two segments of four items each: [8, 6, 7, 5] and [3, 0, 9, 1]
   ::cuda::std::int64_t num_segments = 2;
-  int segment_size                  = 4;
+  const int segment_size            = 4;
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1};
   thrust::device_vector<int> d_out(d_in.size());
 
@@ -452,7 +452,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit (fixed size) acce
   // example-begin inclusive-segmented-scan-init-fixed-size-env
   // Two segments of four items each: [8, 6, 7, 5] and [3, 0, 9, 1]
   ::cuda::std::int64_t num_segments = 2;
-  int segment_size                  = 4;
+  const int segment_size            = 4;
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1};
   thrust::device_vector<int> d_out(d_in.size());
 

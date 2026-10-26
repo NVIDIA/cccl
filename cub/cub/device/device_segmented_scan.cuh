@@ -2779,8 +2779,8 @@ public:
   //! @rst
   //! Computes a device-wide segmented exclusive prefix sum over segments of identical size.
   //!
-  //! .. versionadded:: 3.6.0
-  //!    First appears in CUDA Toolkit 13.6.
+  //! .. versionadded:: 3.7.0
+  //!    First appears in CUDA Toolkit 13.7.
   //!
   //! - Results are not deterministic for computation of prefix sum on floating-point types
   //!   and may vary from run to run.
@@ -2864,8 +2864,8 @@ public:
   //! @rst
   //! Computes a device-wide segmented exclusive prefix sum over segments of identical size.
   //!
-  //! .. versionadded:: 3.6.0
-  //!    First appears in CUDA Toolkit 13.6.
+  //! .. versionadded:: 3.7.0
+  //!    First appears in CUDA Toolkit 13.7.
   //!
   //! - Results are not deterministic for computation of prefix sum on floating-point types
   //!   and may vary from run to run.
@@ -2947,8 +2947,8 @@ public:
   //! binary associative ``scan_op`` functor. The ``init_value`` value is applied as the initial value, and is
   //! assigned to the first element in each output segment.
   //!
-  //! .. versionadded:: 3.6.0
-  //!    First appears in CUDA Toolkit 13.6.
+  //! .. versionadded:: 3.7.0
+  //!    First appears in CUDA Toolkit 13.7.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
@@ -3048,8 +3048,8 @@ public:
   //! binary associative ``scan_op`` functor. The ``init_value`` value is applied as the initial value, and is
   //! assigned to the first element in each output segment.
   //!
-  //! .. versionadded:: 3.6.0
-  //!    First appears in CUDA Toolkit 13.6.
+  //! .. versionadded:: 3.7.0
+  //!    First appears in CUDA Toolkit 13.7.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
@@ -3139,8 +3139,8 @@ public:
   //! @rst
   //! Computes a device-wide segmented inclusive prefix sum over segments of identical size.
   //!
-  //! .. versionadded:: 3.6.0
-  //!    First appears in CUDA Toolkit 13.6.
+  //! .. versionadded:: 3.7.0
+  //!    First appears in CUDA Toolkit 13.7.
   //!
   //! - Results are not deterministic for computation of prefix sum on floating-point types
   //!   and may vary from run to run.
@@ -3222,8 +3222,8 @@ public:
   //! @rst
   //! Computes a device-wide segmented inclusive prefix sum over segments of identical size.
   //!
-  //! .. versionadded:: 3.6.0
-  //!    First appears in CUDA Toolkit 13.6.
+  //! .. versionadded:: 3.7.0
+  //!    First appears in CUDA Toolkit 13.7.
   //!
   //! - Results are not deterministic for computation of prefix sum on floating-point types
   //!   and may vary from run to run.
@@ -3295,8 +3295,8 @@ public:
   //! Computes a device-wide segmented inclusive prefix scan over segments of identical size using the specified
   //! binary associative ``scan_op`` functor.
   //!
-  //! .. versionadded:: 3.6.0
-  //!    First appears in CUDA Toolkit 13.6.
+  //! .. versionadded:: 3.7.0
+  //!    First appears in CUDA Toolkit 13.7.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
@@ -3380,8 +3380,8 @@ public:
   //! Computes a device-wide segmented inclusive prefix scan over segments of identical size using the specified
   //! binary associative ``scan_op`` functor.
   //!
-  //! .. versionadded:: 3.6.0
-  //!    First appears in CUDA Toolkit 13.6.
+  //! .. versionadded:: 3.7.0
+  //!    First appears in CUDA Toolkit 13.7.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
@@ -3465,8 +3465,8 @@ public:
   //! ``init_value`` value and the first value in each input segment is assigned to the first value of the
   //! corresponding output segment.
   //!
-  //! .. versionadded:: 3.6.0
-  //!    First appears in CUDA Toolkit 13.6.
+  //! .. versionadded:: 3.7.0
+  //!    First appears in CUDA Toolkit 13.7.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
@@ -3569,8 +3569,8 @@ public:
   //! ``init_value`` value and the first value in each input segment is assigned to the first value of the
   //! corresponding output segment.
   //!
-  //! .. versionadded:: 3.6.0
-  //!    First appears in CUDA Toolkit 13.6.
+  //! .. versionadded:: 3.7.0
+  //!    First appears in CUDA Toolkit 13.7.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
