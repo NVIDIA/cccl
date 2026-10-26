@@ -90,27 +90,21 @@ template <class _Tp>
 #endif // ^^^ !_CCCL_BUILTIN_ISINF ^^^
 }
 
-// Storage for the integer classification of double on GPUs with slow FP64. On SM100+ (new NVVM), integer checks on the
-// storage are turned back into double comparisons, e.g. a check for the infinity pattern becomes fabs(x) == inf. Hide
-// the storage from the optimizer there.
-[[nodiscard]] _CCCL_API constexpr uint64_t __fp64_classify_storage(double __x) noexcept
+[[nodiscard]] _CCCL_API constexpr bool __isinf_storage(double __x) noexcept
 {
   auto __storage = ::cuda::std::__fp_get_storage(__x);
 #if !_CCCL_TILE_COMPILATION() // asm statement is unsupported in tile code
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    // asm is not allowed in a constexpr function before C++20, so wrap it in a lambda
+    // On SM100+ (new NVVM), integer checks on the storage are turned back into double comparisons, e.g. a check for
+    // the infinity pattern becomes fabs(x) == inf, so hide the storage from the optimizer. asm is not allowed in a
+    // constexpr function before C++20, so wrap it in a lambda.
     NV_IF_TARGET(NV_PROVIDES_SM_100, ([&] {
                    asm("mov.b64 %0, %0;" : "+l"(__storage));
                  }();))
   }
 #endif // !_CCCL_TILE_COMPILATION()
-  return __storage;
-}
-
-[[nodiscard]] _CCCL_API constexpr bool __isinf_storage(double __x) noexcept
-{
-  return (::cuda::std::__fp64_classify_storage(__x) & __fp_exp_mant_mask_of_v<double>) == __fp_exp_mask_of_v<double>;
+  return (__storage & __fp_exp_mant_mask_of_v<double>) == __fp_exp_mask_of_v<double>;
 }
 
 [[nodiscard]] _CCCL_API constexpr bool isinf(double __x) noexcept
