@@ -5,14 +5,15 @@
 """Expose cooperative operations and activate their Numba-CUDA-MLIR planner.
 
 Import this qualified API on the host before compiling kernels. Importing it
-loads the supported compiler runtime and registers the whole-function
-planner. Primitive calls and ThreadData are kernel constructs. Group
-descriptors can also be created on the host and used as kernel globals.
-Construct TempStorage inside each kernel. During compilation, the compiler
-rebuilds the descriptor from its compile-time constant arguments and
-validates them. The compiler rejects a descriptor that comes from a module
-global. The ``local`` and ``shared`` namespaces and the Reduce, Sum, Scan,
-Merge Sort, Radix Sort, and Radix Rank markers load on first access.
+loads the supported compiler runtime and registers the compiler pass that
+plans and replaces cooperative calls across each kernel before typing.
+Primitive calls and ThreadData are kernel constructs. Group descriptors can
+also be created on the host and used as kernel globals. Construct
+TempStorage inside each kernel. During compilation, the compiler rebuilds
+the descriptor from its compile-time constant arguments and validates them.
+The compiler rejects a descriptor that comes from a module global. The
+module loads Load and Store during initialization. Other operation markers,
+and the ``local`` and ``shared`` namespaces load on first access.
 """
 
 import importlib
@@ -49,6 +50,12 @@ if TYPE_CHECKING:
         inclusive_sum,
         scan,
     )
+    from ._group._topk import (
+        topk_max_keys,
+        topk_max_pairs,
+        topk_min_keys,
+        topk_min_pairs,
+    )
     from ._thread_data import local, shared
 
 __all__ = [
@@ -80,6 +87,10 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]
 
 
@@ -104,6 +115,10 @@ def __getattr__(name):
         "reduce",
         "scan",
         "sum",
+        "topk_max_keys",
+        "topk_max_pairs",
+        "topk_min_keys",
+        "topk_min_pairs",
     }:
         module_name = {
             "merge_sort_keys": "_group._merge_sort",
@@ -118,6 +133,10 @@ def __getattr__(name):
             "reduce": "_group._reduce",
             "scan": "_group._scan",
             "sum": "_group._reduce",
+            "topk_max_keys": "_group._topk",
+            "topk_max_pairs": "_group._topk",
+            "topk_min_keys": "_group._topk",
+            "topk_min_pairs": "_group._topk",
         }[name]
         value = getattr(
             importlib.import_module(f"{__name__}.{module_name}"), name
