@@ -279,7 +279,7 @@ _CCCL_HOST_DEVICE constexpr auto memcpy_async_dyn_smem_for_tile_size(
   return smem_size;
 }
 
-constexpr int bulk_copy_size_multiple = 16;
+inline constexpr int bulk_copy_size_multiple = 16;
 
 _CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(::cuda::compute_capability cc) -> int
 {

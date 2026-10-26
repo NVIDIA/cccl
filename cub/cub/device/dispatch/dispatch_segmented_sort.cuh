@@ -348,7 +348,7 @@ struct policy_selector_from_hub
 };
 
 // Partition selects large and small groups. The middle group is not selected.
-static constexpr size_t num_selected_groups = 2;
+inline constexpr size_t num_selected_groups = 2;
 } // namespace detail::segmented_sort
 
 // TODO(bgruber): remove in CCCL 4.0

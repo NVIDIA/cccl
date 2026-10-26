@@ -83,7 +83,7 @@ struct index_to_expected_partition_op
 };
 
 template <typename SelectedItT, typename RejectedItT>
-static index_to_expected_partition_op<SelectedItT, RejectedItT> make_index_to_expected_partition_op(
+index_to_expected_partition_op<SelectedItT, RejectedItT> make_index_to_expected_partition_op(
   SelectedItT expected_selected_it, RejectedItT expected_rejected_it, std::int64_t expected_num_selected)
 {
   return index_to_expected_partition_op<SelectedItT, RejectedItT>{
