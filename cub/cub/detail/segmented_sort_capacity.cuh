@@ -48,7 +48,7 @@ struct capacity_list
 
   // Find the smallest capacity covering length; size denotes the implicit overflow bin.
   template <int Begin = 0, int End = size, typename Offset>
-  _CCCL_HOST_DEVICE_API static constexpr int first_fit(Offset length)
+  _CCCL_HOST_DEVICE_API static constexpr int first_fit([[maybe_unused]] Offset length)
   {
     if constexpr (Begin == End)
     {
