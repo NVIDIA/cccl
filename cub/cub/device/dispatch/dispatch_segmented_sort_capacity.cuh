@@ -207,15 +207,18 @@ CUB_RUNTIME_FUNCTION cudaError_t launch_entries(
     return error;
   }
   cudaError_t error = cudaSuccess;
-  auto launch       = [&](auto index) {
-    constexpr int i = decltype(index)::value;
-    if (error == cudaSuccess)
-    {
-      error = launch_entry<typename Plan::template entry<i>>(
-        {bins.bin_offsets + Plan::bin_begin(i), bins.segment_ids}, begins, ends, in, out, sm_count, stream, launcher);
-    }
-  };
-  (launch(::cuda::std::integral_constant<int, EntryIndices>{}), ...);
+  ((error = error == cudaSuccess
+            ? launch_entry<typename Plan::template entry<EntryIndices>>(
+                {bins.bin_offsets + Plan::bin_begin(EntryIndices), bins.segment_ids},
+                begins,
+                ends,
+                in,
+                out,
+                sm_count,
+                stream,
+                launcher)
+            : error),
+   ...);
   return error;
 }
 

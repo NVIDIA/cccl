@@ -95,7 +95,7 @@ struct bin_config
 // An expansion enumerates a sorter's bins: capacities and a config_for_bin<Bin> type.
 // The runtime local bin selects a leaf whose configuration is known at compile time.
 template <typename Expansion, int Begin = 0, int End = Expansion::capacities::size>
-_CCCL_HOST_DEVICE_API bin_config config_for_bin(int bin)
+_CCCL_HOST_DEVICE_API constexpr bin_config config_for_bin(int bin)
 {
   static_assert(Begin < End);
   if constexpr (End - Begin == 1)
@@ -125,7 +125,7 @@ struct sort_entry
   static_assert(tuning.blocks_per_sm > 0 && tuning.min_blocks_per_sm > 0);
   static_assert(capacities::valid());
   // Let the kernel obtain a local bin's configuration through its entry.
-  _CCCL_HOST_DEVICE_API static bin_config config(int bin)
+  _CCCL_HOST_DEVICE_API static constexpr bin_config config(int bin)
   {
     return config_for_bin<expansion>(bin);
   }
