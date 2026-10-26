@@ -176,7 +176,7 @@ if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
     " -lcudart"
   )
 elseif (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVIDIA")
-  if (LIBCUDACXX_ENABLE_FAST_MATH)
+  if (CCCL_ENABLE_FASTMATH)
     string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " --use_fast_math")
   endif()
 

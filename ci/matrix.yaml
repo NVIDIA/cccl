@@ -128,9 +128,9 @@ workflows:
     - {jobs: ['test_nolid', 'test_lid0'], project: 'cub', std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtxa6000'}
     - {jobs: ['test_lid1',  'test_lid2'], project: 'cub', std: 'max', cxx: ['gcc'],                  gpu: 'rtxa6000'}
     # Fast math
-    - {jobs: ['test'], project: 'libcudacxx', std: 20, ctk: '13.X', cxx: 'gcc13', gpu: 't4', sm: 'gpu', cmake_options: '-DLIBCUDACXX_ENABLE_FAST_MATH=ON'}
-    - {jobs: ['test'], project: ['thrust', 'cudax'], std: 20, ctk: '13.X', cxx: 'gcc13', gpu: 't4', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=--use_fast_math'}
-    - {jobs: ['test_nolid', 'test_lid0'], project: 'cub', std: 20, ctk: '13.X', cxx: 'gcc13', gpu: 't4', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=--use_fast_math'}
+    - {jobs: ['test'], project: 'libcudacxx', std: 20, ctk: '13.X', cxx: 'gcc13', gpu: 't4', sm: 'gpu', cmake_options: '-DCCCL_ENABLE_FASTMATH=ON'}
+    - {jobs: ['test'], project: ['thrust', 'cudax'], std: 20, ctk: '13.X', cxx: 'gcc13', gpu: 't4', sm: 'gpu', cmake_options: '-DCCCL_ENABLE_FASTMATH=ON'}
+    - {jobs: ['test_nolid', 'test_lid0'], project: 'cub', std: 20, ctk: '13.X', cxx: 'gcc13', gpu: 't4', sm: 'gpu', cmake_options: '-DCCCL_ENABLE_FASTMATH=ON'}
     # H100 coverage:
     - {jobs: ['test_nolid', 'test_lid0'], project: 'cub',                   std: 'max', gpu: 'h100' }
     - {jobs: ['test_gpu'],                project: 'thrust',                std: 'max', gpu: 'h100' }
