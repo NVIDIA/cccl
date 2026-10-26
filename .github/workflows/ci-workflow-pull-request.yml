@@ -361,6 +361,29 @@ jobs:
         with:
           upload_workflow_artifact: "false"
 
+  # Temporary PR validation: remove this job and its failure-analysis references before merging.
+  build-flashinfer:
+    name: Build FlashInfer (temporary PR validation)
+    needs: build-workflow
+    if: >-
+      ${{
+        github.repository == 'NVIDIA/cccl' &&
+        !contains(github.event.head_commit.message, '[bench-only]')
+      }}
+    runs-on: linux-amd64-cpu16m
+    container:
+      image: flashinfer/flashinfer-ci-cu134:latest
+    timeout-minutes: 1440
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Build FlashInfer
+        run: ./ci/flashinfer/build_flashinfer.sh
+
   # Test that cuda.compute can be imported on a CPU-only machine (no CUDA drivers).
   test-cpu-import:
     name: Test CPU-only import
@@ -790,12 +813,14 @@ jobs:
         (
           needs.build-workflow.result == 'failure' ||
           needs.ci.result == 'failure' ||
+          needs.build-flashinfer.result == 'failure' ||
           needs.bench-results.result == 'failure'
         )
       }}
     needs:
       - build-workflow
       - ci
+      - build-flashinfer
       - bench-results
     permissions:
       actions: read
