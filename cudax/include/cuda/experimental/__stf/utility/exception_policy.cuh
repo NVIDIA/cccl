@@ -5202,7 +5202,7 @@ UNITTEST("error sinks")
           return "reported";
         }
       }
-      return text;
+      return ::std::string{text}; // the whole report, for the failure message
     };
     EXPECT(reported(yield_line) == "reported");
     EXPECT(reported(shift_line) == "reported");
