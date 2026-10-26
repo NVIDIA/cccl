@@ -394,3 +394,14 @@ what separates the rows goes with it: the summation error disappears from both s
 parts company with ``float``, and the unpacked form comes back level with ``double`` rather than
 ahead of it. Neither measurement is the truthful one in general. The one that applies is whichever
 matches where your accumulator lives.
+
+Optimization guide
+------------------
+
+``fpemu`` pays for ``double``'s semantics in integer and FP32 instructions, so it wins only where
+FP64 is rationed, and how much it wins depends on keeping the pack and unpack out of the loop and on
+matching the accuracy level to the computation. The
+:ref:`FP optimization guide <libcudacxx-extended-api-fp-optimization-guide-fpemu>` collects that
+advice, and its :ref:`Choosing the type <libcudacxx-extended-api-fp-optimization-guide-choosing>`
+section places ``fpemu`` against ``fpmp`` and native ``double`` — including the three-way choice
+around ``double`` on a rationed part, where the two representations and ``fp32mp2`` compete.
