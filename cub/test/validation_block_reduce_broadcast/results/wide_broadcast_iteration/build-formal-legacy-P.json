@@ -1,0 +1,40 @@
+{
+  "variant": "patch",
+  "torch": "2.7.0+cu128",
+  "cuda": "12.8",
+  "source_sha": "76db7e3f3ab0d665fc87282b0160a321e51e698e",
+  "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "files": [
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/iteration-hybrid-v2/cub/cub/block/block_reduce.cuh",
+      "bytes": 29500,
+      "sha256": "d5737af3698d46525d4ead85cca5de05fe0d9e5794f4907b31505c11bcbd781b"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/iteration-hybrid-v2/cub/cub/block/specializations/block_reduce_warp_reductions.cuh",
+      "bytes": 9985,
+      "sha256": "f7437da751e4ceeb95e7aba45e6ed8d86cc4bf9340080fd27f1d6b0ead0d41a7"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/validation_block_reduce_broadcast/bindings.cpp",
+      "bytes": 516,
+      "sha256": "84eff6522ef789a264ec7c098637140bd333797092d3062e99a4b48e9389644a"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/validation_block_reduce_broadcast/normalization.cu",
+      "bytes": 4530,
+      "sha256": "b937987278fee09cb81dd6c4a01f07355742426f4f4f67d2236965f362347c41"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/formal-legacy-P/cccl_patch_h20.so",
+      "bytes": 596032,
+      "sha256": "6d41e2544883b801d7613c4685103ef97bc478288f00b07f9610056a6f48cf2f"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/formal-legacy-P/build.ninja",
+      "bytes": 2753,
+      "sha256": "f910c819c8f585f25e921f91543db60b4a975b8e35ef514ec16e7819f5a09c23"
+    }
+  ],
+  "library": "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/formal-legacy-P/cccl_patch_h20.so"
+}

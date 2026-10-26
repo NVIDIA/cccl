@@ -1,0 +1,40 @@
+{
+  "variant": "baseline",
+  "torch": "2.7.0+cu128",
+  "cuda": "12.8",
+  "source_sha": "0909f9ee05c632af18fba74a366b657370a12aee",
+  "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "files": [
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/baseline/cub/cub/block/block_reduce.cuh",
+      "bytes": 26871,
+      "sha256": "8f2347cfb0cf8b9502b9c2612bcebc986ec8d3fdff2b5ed5ee7ac0e9b734d97a"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/baseline/cub/cub/block/specializations/block_reduce_warp_reductions.cuh",
+      "bytes": 8658,
+      "sha256": "7b148adbfdb5ed30b0393ea706d225959605013e681d7a47f745c6942874ea27"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/tools/consumer_integer/bindings.cpp",
+      "bytes": 516,
+      "sha256": "84eff6522ef789a264ec7c098637140bd333797092d3062e99a4b48e9389644a"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/tools/consumer_integer/normalization.cu",
+      "bytes": 3827,
+      "sha256": "7962ad0bc85e72cc069ef1cc660e558e91c1deacd9b334a3f035f010bde3ade1"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/formal-integer-A/cccl_baseline_h20.so",
+      "bytes": 394840,
+      "sha256": "3425665ac0515afdd4713f58f5d1136b2c038a29cef9c634927107cf39fe4bc8"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/formal-integer-A/build.ninja",
+      "bytes": 2647,
+      "sha256": "954afbf570a499434f86fd83c335070ba31b717ba578147d1b237c464d570021"
+    }
+  ],
+  "library": "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/formal-integer-A/cccl_baseline_h20.so"
+}

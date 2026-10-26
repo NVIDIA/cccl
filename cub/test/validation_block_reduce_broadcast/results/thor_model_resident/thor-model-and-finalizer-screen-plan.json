@@ -1,0 +1,80 @@
+[
+  {
+    "label": "thor-model-torch-order-b1-screen",
+    "command": [
+      "/home/jwipc/projects/host-gateway/.vllm/bin/python",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/model_generation_screen.py",
+      "--candidate",
+      "hybrid-v2",
+      "--consumer-mode",
+      "torch-order",
+      "--batch-size",
+      "1",
+      "--baseline-build",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/torch_order-A",
+      "--candidate-build",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/torch_order-P",
+      "--checkpoint",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/models/iteration-qwen3-mirror",
+      "--output",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/thor-model-torch-order-b1-screen.json"
+    ],
+    "cwd": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001",
+    "log": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/thor-model-torch-order-b1-screen.log"
+  },
+  {
+    "label": "thor-model-torch-order-b16-screen",
+    "command": [
+      "/home/jwipc/projects/host-gateway/.vllm/bin/python",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/model_generation_screen.py",
+      "--candidate",
+      "hybrid-v2",
+      "--consumer-mode",
+      "torch-order",
+      "--batch-size",
+      "16",
+      "--baseline-build",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/torch_order-A",
+      "--candidate-build",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/torch_order-P",
+      "--checkpoint",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/models/iteration-qwen3-mirror",
+      "--output",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/thor-model-torch-order-b16-screen.json"
+    ],
+    "cwd": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001",
+    "log": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/thor-model-torch-order-b16-screen.log"
+  },
+  {
+    "label": "thor-fa-finalizer-A",
+    "command": [
+      "/home/jwipc/projects/host-gateway/.vllm/bin/python",
+      "/home/jwipc/experiments/fa-sink-finalizer-blackwell-20261001/finalizer_probe.py",
+      "--output",
+      "/home/jwipc/experiments/fa-sink-finalizer-blackwell-20261001/evidence/thor-fa-finalizer-A.json"
+    ],
+    "cwd": "/home/jwipc/experiments/fa-sink-finalizer-blackwell-20261001",
+    "env": {
+      "PYTHONPATH": "/home/jwipc/experiments/fa-sink-finalizer-blackwell-20261001/imports/A:/home/jwipc/experiments/flashattention-direct-20261001/deps-48:/home/jwipc/experiments/flashattention-direct-20261001/deps-lite",
+      "FLASH_ATTENTION_CUTE_DSL_CACHE_ENABLED": "0",
+      "CUTE_DSL_DISABLE_FILE_CACHING": "True"
+    },
+    "log": "/home/jwipc/experiments/fa-sink-finalizer-blackwell-20261001/evidence/thor-fa-finalizer-A.log"
+  },
+  {
+    "label": "thor-fa-finalizer-P",
+    "command": [
+      "/home/jwipc/projects/host-gateway/.vllm/bin/python",
+      "/home/jwipc/experiments/fa-sink-finalizer-blackwell-20261001/finalizer_probe.py",
+      "--output",
+      "/home/jwipc/experiments/fa-sink-finalizer-blackwell-20261001/evidence/thor-fa-finalizer-P.json"
+    ],
+    "cwd": "/home/jwipc/experiments/fa-sink-finalizer-blackwell-20261001",
+    "env": {
+      "PYTHONPATH": "/home/jwipc/experiments/fa-sink-finalizer-blackwell-20261001/imports/P:/home/jwipc/experiments/flashattention-direct-20261001/deps-48:/home/jwipc/experiments/flashattention-direct-20261001/deps-lite",
+      "FLASH_ATTENTION_CUTE_DSL_CACHE_ENABLED": "0",
+      "CUTE_DSL_DISABLE_FILE_CACHING": "True"
+    },
+    "log": "/home/jwipc/experiments/fa-sink-finalizer-blackwell-20261001/evidence/thor-fa-finalizer-P.log"
+  }
+]

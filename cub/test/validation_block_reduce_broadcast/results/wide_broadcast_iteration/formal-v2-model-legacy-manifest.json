@@ -1,0 +1,163 @@
+{
+  "artifacts": {
+    "legacy-8192": {
+      "A": {
+        "source_sha": "0909f9ee05c632af18fba74a366b657370a12aee",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "d590750c22f4ae49d7d6c6361d477d308ab1174971d8e71e52882152b79aeeb6"
+      },
+      "P": {
+        "source_sha": "76db7e3f3ab0d665fc87282b0160a321e51e698e",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "6d41e2544883b801d7613c4685103ef97bc478288f00b07f9610056a6f48cf2f"
+      }
+    },
+    "legacy-65536": {
+      "A": {
+        "source_sha": "0909f9ee05c632af18fba74a366b657370a12aee",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "d590750c22f4ae49d7d6c6361d477d308ab1174971d8e71e52882152b79aeeb6"
+      },
+      "P": {
+        "source_sha": "76db7e3f3ab0d665fc87282b0160a321e51e698e",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "6d41e2544883b801d7613c4685103ef97bc478288f00b07f9610056a6f48cf2f"
+      }
+    },
+    "retained-8192": {
+      "A": {
+        "source_sha": "0909f9ee05c632af18fba74a366b657370a12aee",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "c535a50dcffa2cde3aa5a09c88aa1df0d8ed39ef5d2a00ab5c2113c62cc98eeb"
+      },
+      "P": {
+        "source_sha": "76db7e3f3ab0d665fc87282b0160a321e51e698e",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "211662c0c54b065db998a060b098858bf7d0bc29c7dcafd81e73fa55bdfe8be0"
+      }
+    },
+    "retained-65536": {
+      "A": {
+        "source_sha": "0909f9ee05c632af18fba74a366b657370a12aee",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "c535a50dcffa2cde3aa5a09c88aa1df0d8ed39ef5d2a00ab5c2113c62cc98eeb"
+      },
+      "P": {
+        "source_sha": "76db7e3f3ab0d665fc87282b0160a321e51e698e",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "211662c0c54b065db998a060b098858bf7d0bc29c7dcafd81e73fa55bdfe8be0"
+      }
+    },
+    "integer-8192": {
+      "A": {
+        "source_sha": "0909f9ee05c632af18fba74a366b657370a12aee",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "3425665ac0515afdd4713f58f5d1136b2c038a29cef9c634927107cf39fe4bc8"
+      },
+      "P": {
+        "source_sha": "76db7e3f3ab0d665fc87282b0160a321e51e698e",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "518db0d3bb188b743ee9fab38c4873b98461dc2060ff61049b490452a645cd2d"
+      }
+    },
+    "integer-65536": {
+      "A": {
+        "source_sha": "0909f9ee05c632af18fba74a366b657370a12aee",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "3425665ac0515afdd4713f58f5d1136b2c038a29cef9c634927107cf39fe4bc8"
+      },
+      "P": {
+        "source_sha": "76db7e3f3ab0d665fc87282b0160a321e51e698e",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "518db0d3bb188b743ee9fab38c4873b98461dc2060ff61049b490452a645cd2d"
+      }
+    },
+    "model-b1": {
+      "A": {
+        "source_sha": "0909f9ee05c632af18fba74a366b657370a12aee",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "c535a50dcffa2cde3aa5a09c88aa1df0d8ed39ef5d2a00ab5c2113c62cc98eeb"
+      },
+      "P": {
+        "source_sha": "76db7e3f3ab0d665fc87282b0160a321e51e698e",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "211662c0c54b065db998a060b098858bf7d0bc29c7dcafd81e73fa55bdfe8be0"
+      }
+    },
+    "model-b16": {
+      "A": {
+        "source_sha": "0909f9ee05c632af18fba74a366b657370a12aee",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "c535a50dcffa2cde3aa5a09c88aa1df0d8ed39ef5d2a00ab5c2113c62cc98eeb"
+      },
+      "P": {
+        "source_sha": "76db7e3f3ab0d665fc87282b0160a321e51e698e",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "211662c0c54b065db998a060b098858bf7d0bc29c7dcafd81e73fa55bdfe8be0"
+      }
+    },
+    "model-legacy-b1": {
+      "A": {
+        "source_sha": "0909f9ee05c632af18fba74a366b657370a12aee",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "d590750c22f4ae49d7d6c6361d477d308ab1174971d8e71e52882152b79aeeb6"
+      },
+      "P": {
+        "source_sha": "76db7e3f3ab0d665fc87282b0160a321e51e698e",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "6d41e2544883b801d7613c4685103ef97bc478288f00b07f9610056a6f48cf2f"
+      }
+    },
+    "model-legacy-b16": {
+      "A": {
+        "source_sha": "0909f9ee05c632af18fba74a366b657370a12aee",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "d590750c22f4ae49d7d6c6361d477d308ab1174971d8e71e52882152b79aeeb6"
+      },
+      "P": {
+        "source_sha": "76db7e3f3ab0d665fc87282b0160a321e51e698e",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "6d41e2544883b801d7613c4685103ef97bc478288f00b07f9610056a6f48cf2f"
+      }
+    }
+  },
+  "protocol": "# Original-consumer full-model follow-up protocol\n\nThe retained __expf model native gate failed before P. The original expf\nconsumer preserved native Qwen3 tokens at both frozen prompt lengths in the\nindependent diagnostic; the Torch-only wrapper matched all native logits exactly.\nThe retained failure and its predeclared, unexecuted model plans remain archived.\n\nUse the independently rebuilt original expf consumer for model screening and\nformal model estimates. Preserve the same checkpoint, all 28 BF16 layers, prompt\ntext, batch1/batch16, lengths128/512, 32 greedy tokens, fresh KV state, native-token\ngate, all-step logits, baseline-only FP64-normalization budget and exact P-vs-A\nlogit requirement. Do not change the source API or substitute prompts to bypass\nthe retained failure. Each screening process owns one resident weight set and\nrecords parameter addresses/versions across its APPA/PAAP arms.\n\nOnly after both batch screens pass, run eight balanced independent-process\nAPPA/PAAP quartets per batch. Use five timed complete generations per case,\ntwo warmups, eight whole-quartet resampling units, 10,000 bootstrap draws and\nfixed seed11504. Retain the 1% useful model speedup threshold. Native correctness\nruns in every worker; native latency context is recorded in the independent\nresident screens rather than repeatedly timed in every formal A/P worker.\nAny foreign selected-GPU process invalidates the entire quartet. Both lengths,\nall negative and invalid cases remain reported; no micro-to-model extrapolation.\n",
+  "harnesses": [
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/tools/consumer_legacy/benchmark.py",
+      "sha256": "5e3a712dd16d1b0151f2c70c595eb543284134f1c4f15a988e132afbba82fd31"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/tools/consumer_legacy/common.py",
+      "sha256": "3aacf34535aa9097dbea73a147e9d58da497c084986651c7a7cce00dcc473b5e"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/tools/consumer_retained/benchmark.py",
+      "sha256": "76167587aa5885ede4a685713b0583cc4220bab291c34f8907724ee2c322c952"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/tools/consumer_retained/common.py",
+      "sha256": "3aacf34535aa9097dbea73a147e9d58da497c084986651c7a7cce00dcc473b5e"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/tools/consumer_integer/benchmark.py",
+      "sha256": "e7cc4ba607d8081264e230c07b5c741fb4a54fc4d4c3c7bbf3d1af85eaa4a529"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/tools/consumer_integer/common.py",
+      "sha256": "3aacf34535aa9097dbea73a147e9d58da497c084986651c7a7cce00dcc473b5e"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/tools/gpu_plan.py",
+      "sha256": "2d4c45daa063a6b818c2a3d30cb7078c143bf61088908840cead3253ea556835"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/tools/model_generation_screen.py",
+      "sha256": "955f1932c45acbf67b9828908e822c9957f78d41c3f7d97ca60aa7af680509cc"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/tools/fa_model_sink_iteration.py",
+      "sha256": "1271a3f77836520d8970cb64f16263da0e3ac091cc26f6fd13e0742fd501bbfd"
+    }
+  ]
+}

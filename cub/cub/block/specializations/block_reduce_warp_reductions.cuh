@@ -58,7 +58,8 @@ namespace detail
 //!
 //! @tparam WarpAggregateThreshold
 //!   Minimum number of warps required to use the parallel warp-0 reduction path.
-//!   -1 (default) or 0: always use sequential path.
+//!   -1 (default): use sequential path, except for supported hardware broadcast reductions.
+//!   0: always use sequential path.
 //!   >0: use parallel path when warps >= threshold.
 //!   Values below -1 are rejected via static_assert.
 template <typename T,
@@ -157,9 +158,12 @@ struct BlockReduceWarpReductions
   //! @tparam FullTile
   //!   **[inferred]** Whether this is a full tile
   //!
+  //! @tparam Broadcast
+  //!   Whether every thread receives the block aggregate
+  //!
   //! @tparam ReductionOp
   //!   **[inferred]** Binary reduction operator type
-  template <bool FullTile, typename ReductionOp>
+  template <bool FullTile, bool Broadcast = false, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(ReductionOp reduction_op, T warp_aggregate, int num_valid)
   {
     // Share lane aggregates
@@ -176,11 +180,27 @@ struct BlockReduceWarpReductions
     constexpr int effective_threshold     = WarpAggregateThreshold > 0 ? WarpAggregateThreshold : warps + 1;
     constexpr bool use_parallel_reduction = (warps >= effective_threshold) && (threads_per_block >= warp_threads);
 
+    if constexpr (Broadcast && WarpAggregateThreshold == -1 && even_warp_multiple && warps > 4
+                  && ::cuda::has_identity_element_v<ReductionOp, T> && is_warp_redux_op_supported_sm80<ReductionOp, T>)
+    {
+      const int valid_warps = FullTile ? warps : ::cuda::ceil_div(num_valid, logical_warp_size);
+      const T partial =
+        lane_id < valid_warps ? temp_storage.warp_aggregates[lane_id] : ::cuda::identity_element<ReductionOp, T>();
+      const T aggregate =
+        WarpReduceInternal(temp_storage.warp_reduce[warp_id]).template Reduce<true>(partial, warp_threads, reduction_op);
+      return ShuffleIndex<warp_threads>(aggregate, 0, 0xffffffff);
+    }
+
     // TODO(WarpShuffle PR): replace with cub::WarpReduce<T, warps>.
     if constexpr (!use_parallel_reduction)
     {
-      // Single-thread sequential reduction over warp aggregates.
-      if (linear_tid == 0)
+      if constexpr (Broadcast && warps <= 4)
+      {
+        // Start from the same warp and fold in the same order in every thread.
+        warp_aggregate = temp_storage.warp_aggregates[0];
+      }
+
+      if ((Broadcast && warps <= 4) || linear_tid == 0)
       {
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int warp_idx = 1; warp_idx < warps; ++warp_idx)
@@ -192,7 +212,6 @@ struct BlockReduceWarpReductions
           }
         }
       }
-      return warp_aggregate;
     }
     else
     {
@@ -211,8 +230,19 @@ struct BlockReduceWarpReductions
         constexpr bool all_lanes_valid = FullTile && (warps == logical_lanes);
         warp_aggregate                 = warp_reduce.template Reduce<all_lanes_valid>(val, num_warps, reduction_op);
       }
-      return warp_aggregate;
     }
+
+    if constexpr (Broadcast && (warps > 4 || use_parallel_reduction))
+    {
+      if (linear_tid == 0)
+      {
+        detail::uninitialized_copy_single(&temp_storage.block_prefix, warp_aggregate);
+      }
+      __syncthreads();
+      return temp_storage.block_prefix;
+    }
+
+    return warp_aggregate;
   }
 
   //! @rst
@@ -238,11 +268,14 @@ struct BlockReduceWarpReductions
   //! @rst
   //! Computes a thread block-wide reduction using the specified reduction operator.
   //! The first num_valid threads each contribute one reduction partial.
-  //! The return value is only valid for *thread*\ :sub:`0`.
+  //! The return value is only valid for *thread*\ :sub:`0` unless Broadcast is true.
   //! @endrst
   //!
   //! @tparam FullTile
   //!   **[inferred]** Whether this is a full tile
+  //!
+  //! @tparam Broadcast
+  //!   Whether every thread receives the block aggregate
   //!
   //! @tparam ReductionOp
   //!   **[inferred]** Binary reduction operator type
@@ -255,7 +288,7 @@ struct BlockReduceWarpReductions
   //!
   //! @param[in] reduction_op
   //!   Binary reduction operator
-  template <bool FullTile, typename ReductionOp>
+  template <bool FullTile, bool Broadcast = false, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int num_valid, ReductionOp reduction_op)
   {
     const int warp_offset = warp_id * logical_warp_size;
@@ -272,7 +305,7 @@ struct BlockReduceWarpReductions
     // The atomic accumulation of warp aggregates is only valid for addition
     if constexpr (IsDeterministic || !::cuda::__is_cuda_std_plus_v<ReductionOp, T>)
     {
-      return ApplyWarpAggregates<FullTile>(reduction_op, warp_aggregate, num_valid);
+      return ApplyWarpAggregates<FullTile, Broadcast>(reduction_op, warp_aggregate, num_valid);
     }
     else
     {
