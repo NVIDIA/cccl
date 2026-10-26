@@ -79,7 +79,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_partition(
   cudaStream_t stream = 0,
   Launcher launcher   = {})
 {
-  constexpr int bins   = Capacities::size + 1;
+  constexpr int bins = Capacities::size + 1;
   // One allocation holds counts, offsets (with an end sentinel), and cursors; the other holds IDs.
   const size_t sizes[] = {sizeof(unsigned) * (3 * bins + 1), sizeof(unsigned) * size_t{num_segments}};
   void* allocations[2]{};
