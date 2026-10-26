@@ -26,6 +26,8 @@
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
+#include <cuda/__memory/as_bytes_vectorized.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
@@ -215,8 +217,9 @@ struct AgentHistogram
     (PrivatizedSmemBins > 0) ? BlockHistogramMemoryPreference{AgentHistogramPolicyT::MEM_PREFERENCE} : GMEM;
 
   using SampleT = it_value_t<SampleIteratorT>;
-  using PixelT  = typename CubVector<SampleT, NumChannels>::Type;
-  using VecT    = typename CubVector<SampleT, vec_size>::Type;
+  // Cache modified loads are at most 16 bytes wide, so they gain nothing from a stricter alignment
+  using PixelT = ::cuda::__as_bytes_vectorized_t<SampleT, NumChannels>;
+  using VecT   = ::cuda::__as_bytes_vectorized_t<SampleT, vec_size>;
 
   /// Input iterator wrapper type (for applying cache modifier)
   // Wrap the native input pointer with CacheModifiedInputIterator or directly use the supplied input iterator type
