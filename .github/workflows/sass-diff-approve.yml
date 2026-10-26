@@ -27,7 +27,7 @@ jobs:
     steps:
       - name: Validate approval command
         id: request
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
             const { comment, issue } = context.payload;
@@ -95,7 +95,7 @@ jobs:
       - name: Create membership token
         if: steps.request.outputs.sha != ''
         id: membership
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ secrets.CCCL_AUTH_APP_ID }}
           private-key: ${{ secrets.CCCL_AUTH_APP_PEM }}
@@ -106,7 +106,7 @@ jobs:
       - name: Verify team membership
         if: steps.request.outputs.sha != ''
         id: authorization
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ steps.membership.outputs.token }}
           script: |
@@ -134,7 +134,7 @@ jobs:
         # comments.
       - name: Report unauthorized approval
         if: steps.authorization.outputs.authorized == 'false'
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
             const body =
@@ -150,7 +150,7 @@ jobs:
 
       - name: Find the matching SASS comment and approve
         if: steps.authorization.outputs.authorized == 'true'
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           SHA: ${{ steps.request.outputs.sha }}
         with:
