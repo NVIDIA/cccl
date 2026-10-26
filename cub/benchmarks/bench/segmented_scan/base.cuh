@@ -87,7 +87,7 @@ void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   state.add_element_count(elements, "Elements");
   state.add_global_memory_reads<T>(elements);
-  state.add_global_memory_reads<OffsetT>(segment_count);
+  state.add_global_memory_reads<OffsetT>(segments_count);
   state.add_global_memory_writes<T>(elements);
 
   caching_allocator_t alloc;
