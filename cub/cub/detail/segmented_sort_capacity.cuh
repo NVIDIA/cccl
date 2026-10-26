@@ -138,8 +138,8 @@ struct sort_entries
   static constexpr int size = sizeof...(Entries);
   static_assert(size > 0);
   using entries = ::cuda::std::tuple<Entries...>;
-  template <::cuda::std::size_t I>
-  using entry      = ::cuda::std::tuple_element_t<I, entries>;
+  template <::cuda::std::size_t EntryIndex>
+  using entry      = ::cuda::std::tuple_element_t<EntryIndex, entries>;
   using capacities = typename concatenate_capacities<typename Entries::capacities...>::type;
   static_assert(capacities::valid(),
                 "Capacities of consecutive sort entries must be strictly increasing: the largest capacity of entry N "
