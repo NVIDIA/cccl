@@ -31,7 +31,7 @@ struct group_merge_policy
   int max_threads;
   int min_ipt;
   int max_ipt;
-  int blocks_per_sm;     // Grid-size multiplier: launch SM count * blocks_per_sm blocks.
+  int blocks_per_sm; // Grid-size multiplier: launch SM count * blocks_per_sm blocks.
   int min_blocks_per_sm; // __launch_bounds__ target for compiler register allocation, not the grid size.
   // Compare all settings when matching policies.
   _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const group_merge_policy& a, const group_merge_policy& b)
