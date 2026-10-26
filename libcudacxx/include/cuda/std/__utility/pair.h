@@ -25,6 +25,7 @@
 #  include <cuda/std/__compare/synth_three_way.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/different_from.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/unwrap_ref.h>
@@ -38,17 +39,15 @@
 #include <cuda/std/__tuple_dir/tuple_indices.h>
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
+#include <cuda/std/__tuple_dir/tuple_types.h>
 #include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_assignable.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_copy_assignable.h>
-#include <cuda/std/__type_traits/is_default_constructible.h>
-#include <cuda/std/__type_traits/is_implicitly_default_constructible.h>
 #include <cuda/std/__type_traits/is_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
@@ -56,14 +55,16 @@
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
-#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_swappable.h>
-#include <cuda/std/__type_traits/make_const_lvalue_ref.h>
+#include <cuda/std/__type_traits/nat.h>
 #include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/sfinae_traits.h>
+#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/piecewise_construct.h>
 

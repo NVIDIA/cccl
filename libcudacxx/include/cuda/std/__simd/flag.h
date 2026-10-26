@@ -23,6 +23,7 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__memory/is_valid_alignment.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/is_same.h>
 
@@ -69,8 +70,6 @@ struct flags
 {
   static_assert((true && ... && __is_flag_type_v<_Flags>),
                 "Every flag type must be one of convert_flag, aligned_flag, or overaligned_flag<N>");
-  static_assert((0 + ... + static_cast<int>(__overaligned_value_v<_Flags> != 0)) <= 1,
-                "At most one overaligned_flag is allowed");
   // we cannot use __is_valid_alignment because 0 has a different meaning
   static_assert((true && ...
                  && (__overaligned_value_v<_Flags> == 0 || ::cuda::is_power_of_two(__overaligned_value_v<_Flags>))),
@@ -104,7 +103,7 @@ template <typename... _Flags>
 inline constexpr bool __has_overaligned_flag_v = (false || ... || (__overaligned_value_v<_Flags> != 0));
 
 template <typename... _Flags>
-inline constexpr size_t __overaligned_alignment_v = (size_t{0} | ... | __overaligned_value_v<_Flags>);
+inline constexpr size_t __overaligned_alignment_v = ::cuda::std::max({size_t{0}, __overaligned_value_v<_Flags>...});
 
 _CCCL_END_NAMESPACE_CUDA_STD_SIMD
 

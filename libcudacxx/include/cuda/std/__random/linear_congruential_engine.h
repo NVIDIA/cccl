@@ -255,7 +255,7 @@ public:
   }
   _CCCL_HOST_DEVICE_API constexpr void seed(result_type __s = default_seed) noexcept
   {
-    seed(integral_constant<bool, _Mv == 0>(), integral_constant<bool, _Cv == 0>(), __s);
+    seed(bool_constant<_Mv == 0>(), bool_constant<_Cv == 0>(), __s);
   }
   template <class _Sseq, enable_if_t<__is_seed_sequence<_Sseq, linear_congruential_engine>, int> = 0>
   _CCCL_HOST_DEVICE_API constexpr void seed(_Sseq& __q) noexcept
