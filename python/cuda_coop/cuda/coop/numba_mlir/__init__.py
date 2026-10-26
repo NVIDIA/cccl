@@ -40,6 +40,7 @@ from ._thread_group import (
 if TYPE_CHECKING:
     from ._group._exchange import exchange
     from ._group._merge_sort import merge_sort_keys, merge_sort_pairs
+    from ._group._neighbors import adjacent_difference, discontinuity
     from ._group._radix_sort import (
         radix_rank_keys,
         radix_sort_keys,
@@ -72,6 +73,8 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
+    "adjacent_difference",
+    "discontinuity",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
@@ -111,6 +114,8 @@ def __getattr__(name):
     """
 
     if name in {
+        "adjacent_difference",
+        "discontinuity",
         "merge_sort_keys",
         "merge_sort_pairs",
         "radix_rank_keys",
@@ -131,6 +136,8 @@ def __getattr__(name):
         "topk_min_pairs",
     }:
         module_name = {
+            "adjacent_difference": "_group._neighbors",
+            "discontinuity": "_group._neighbors",
             "merge_sort_keys": "_group._merge_sort",
             "merge_sort_pairs": "_group._merge_sort",
             "radix_rank_keys": "_group._radix_sort",
