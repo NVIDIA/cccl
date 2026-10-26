@@ -270,5 +270,56 @@ CUB_TEST_CASE("Vectorized block load converts from iterators of a different valu
   test_vectorized_full_tile_load<long long>(
     d_input, cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_DEFAULT, int>(ptr));
   test_vectorized_full_tile_load<int>(d_input, cuda::std::span<volatile int>(ptr, d_input.size()).begin());
+  test_vectorized_full_tile_load<int>(d_input, static_cast<volatile int*>(ptr));
+}
+
+template <int VecSize, int ItemsPerThread, typename T, typename InputIteratorT>
+__global__ void load_direct_blocked_vectorized_kernel(InputIteratorT input, T* output)
+{
+  T data[ItemsPerThread];
+  cub::LoadDirectBlockedVectorized<cub::CacheLoadModifier::LOAD_DEFAULT, VecSize>(
+    static_cast<int>(threadIdx.x), input, data);
+  for (int i = 0; i < ItemsPerThread; i++)
+  {
+    output[threadIdx.x * ItemsPerThread + i] = data[i];
+  }
+}
+
+template <int VecSize, int ItemsPerThread, int ThreadsInBlock, typename T, typename InputIteratorT>
+void test_load_direct_blocked_vectorized(const c2h::device_vector<T>& d_expected, InputIteratorT input)
+{
+  REQUIRE(d_expected.size() == ItemsPerThread * ThreadsInBlock);
+
+  c2h::device_vector<T> d_output(d_expected.size(), thrust::no_init);
+  load_direct_blocked_vectorized_kernel<VecSize, ItemsPerThread>
+    <<<1, ThreadsInBlock>>>(input, thrust::raw_pointer_cast(d_output.data()));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE(d_expected == d_output);
+}
+
+// Offset 0 takes the vectorized loads. Offset 1 misaligns the vectors of multiple items, which use the scalar fallback.
+// An offset of 16 bytes misaligns the vectors wider than 16 bytes, which fall back to 16-byte vectors.
+CUB_TEST("LoadDirectBlockedVectorized loads the items of a thread with vectors of VecSize items",
+         "[load][block]",
+         CUB_SMALL,
+         types)
+{
+  using type                     = c2h::get<0, TestType>;
+  constexpr int items_per_thread = 16;
+  constexpr int threads_in_block = 64;
+  constexpr int tile_size        = items_per_thread * threads_in_block;
+
+  const int offset = GENERATE(0, 1, static_cast<int>(16 / sizeof(type)));
+  c2h::device_vector<type> d_expected(tile_size);
+  c2h::gen(C2H_SEED(1), d_expected);
+  c2h::device_vector<type> d_input(tile_size + offset);
+  thrust::copy_n(d_expected.begin(), tile_size, d_input.begin() + offset);
+  const type* input = thrust::raw_pointer_cast(d_input.data()) + offset;
+
+  test_load_direct_blocked_vectorized<0, items_per_thread, threads_in_block>(d_expected, input);
+  test_load_direct_blocked_vectorized<1, items_per_thread, threads_in_block>(d_expected, input);
+  test_load_direct_blocked_vectorized<4, items_per_thread, threads_in_block>(d_expected, input);
+  test_load_direct_blocked_vectorized<16, items_per_thread, threads_in_block>(d_expected, input);
 }
 #endif
