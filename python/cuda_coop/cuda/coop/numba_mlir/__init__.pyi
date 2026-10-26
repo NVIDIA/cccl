@@ -4,6 +4,8 @@
 
 from .._core.api import TempStorageLike, ThreadDataLike
 from ._group._load_store import load, store
+from ._group._merge_sort import merge_sort_keys as merge_sort_keys
+from ._group._merge_sort import merge_sort_pairs as merge_sort_pairs
 from ._group._reduce import reduce, sum
 from ._group._scan import (
     exclusive_scan,
@@ -39,6 +41,8 @@ __all__ = [
     "inclusive_sum",
     "load",
     "local",
+    "merge_sort_keys",
+    "merge_sort_pairs",
     "reduce",
     "scan",
     "shared",
