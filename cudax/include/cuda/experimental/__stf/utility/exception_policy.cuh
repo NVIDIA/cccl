@@ -1166,7 +1166,7 @@ struct backoff_t
   //! @brief The code-channel hook: re-runs a status-returning action after each delay while its
   //! result fails; exhaustion passes the latest status through. An exception from a re-run escapes.
   template <class _Status, class _Fn>
-  detail::__status_answer<_Status> handle(_Status __status, const ::cuda::std::source_location, _Fn& __fn) const
+  detail::__status_answer<_Status> on_returned(_Status __status, const ::cuda::std::source_location, _Fn& __fn) const
   {
     static_assert(::cuda::std::is_same_v<::cuda::std::remove_cvref_t<decltype(__fn())>, _Status>,
                   "re-running on the code channel needs an action that returns the same status type");
@@ -7496,6 +7496,25 @@ UNITTEST("error sinks: retry on a status-returning action")
   };
   EXPECT(c2.status<cudaError_t>() == cudaErrorNotReady); // exhausted: forwarded
   EXPECT(n == 3); // one attempt plus two retries
+};
+
+UNITTEST("error sinks: backoff on a status-returning action")
+{
+  using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::sump;
+  int n  = 0;
+  auto c = errsink(backoff(3, ::std::chrono::milliseconds{1})) << [&]() noexcept {
+    return ++n < 3 ? cudaErrorNotReady : cudaSuccess;
+  };
+  EXPECT(!c.forwarded());
+  EXPECT(n == 3);
+  n       = 0;
+  auto c2 = errsink(backoff(2, ::std::chrono::milliseconds{1})) << [&]() noexcept {
+    ++n;
+    return cudaErrorNotReady;
+  };
+  EXPECT(c2.status<cudaError_t>() == cudaErrorNotReady); // exhausted: forwarded
+  EXPECT(n == 3); // one attempt plus two re-runs
 };
 
 UNITTEST("error sinks: (notify & retry) * 3")
