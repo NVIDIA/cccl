@@ -41,7 +41,6 @@ Example
     #include <cuda/bit>
     #include <cuda/std/cassert>
     #include <cuda/std/cstdint>
-    #include <cuda_runtime_api.h>
 
     __global__ void bit_msb_kernel() {
         assert(cuda::bit_msb(uint32_t{0}) == -1);
