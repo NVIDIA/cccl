@@ -123,6 +123,11 @@ def check_numba_surface(
     mapped_warps = block.group_by(2)
     byte_values = coop.ThreadData(items_per_thread=1, dtype=np.int8)
     values = coop.ThreadData(items_per_thread=2, dtype=np.uint16, alignment=16)
+    ranks = coop.ThreadData(items_per_thread=2, dtype=np.int32)
+    flags = coop.ThreadData(items_per_thread=2, dtype=np.uint8)
+    read_only_values = _ReadOnlyThreadData(np.uint16(1))
+    read_only_ranks = _ReadOnlyThreadData(np.int32(0))
+    read_only_flags = _ReadOnlyThreadData(np.uint8(1))
     int32_aggregate = coop.ThreadData(items_per_thread=1, dtype=np.int32)
     uint16_aggregate = coop.ThreadData(items_per_thread=1, dtype=np.uint16)
     storage = coop.TempStorage(alignment=16, sharing="shared")
@@ -205,6 +210,51 @@ def check_numba_surface(
         ),
         None,
     )
+    assert_type(
+        coop.exchange(block, values, mode="blocked_to_warp_striped"),
+        coop.ThreadDataLike[np.uint16],
+    )
+    assert_type(
+        coop.exchange(
+            block,
+            values,
+            mode="scatter_to_striped_flagged",
+            ranks=ranks,
+            valid_flags=flags,
+        ),
+        coop.ThreadDataLike[np.uint16],
+    )
+    assert_type(
+        coop.exchange(
+            logical_warp,
+            values,
+            mode="blocked_to_striped",
+        ),
+        coop.ThreadDataLike[np.uint16],
+    )
+    assert_type(
+        coop.shuffle(block, values, mode="down"),
+        coop.ThreadDataLike[np.uint16],
+    )
+    assert_type(
+        coop.exchange(block, read_only_values, mode="blocked_to_striped"),
+        coop.ThreadDataLike[np.uint16],
+    )
+    assert_type(
+        coop.exchange(
+            block,
+            read_only_values,
+            mode="scatter_to_striped_flagged",
+            ranks=read_only_ranks,
+            valid_flags=read_only_flags,
+        ),
+        coop.ThreadDataLike[np.uint16],
+    )
+    assert_type(
+        coop.shuffle(block, read_only_values, mode="up"),
+        coop.ThreadDataLike[np.uint16],
+    )
+    assert_type(coop.shuffle(block, np.int32(4), mode="rotate"), np.int32)
     assert_type(coop.store(block, destination, byte_values), None)
     assert_type(
         coop.load(
