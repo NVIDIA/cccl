@@ -50,7 +50,7 @@ array_kernel(KeyT* keys_in, KeyT* keys_out, ValueT* values_in, ValueT* values_ou
 
   // Thread-local storage
   KeyT keys[ItemsPerThread];
-  [[maybe_unused]] ValueT values[ItemsPerThread];
+  [[maybe_unused]] ValueT values[ItemsPerThread]; // NOLINT(misc-const-correctness)
 
   // Instantiate warp-scope algorithm
   __shared__ typename warp_topk_t::TempStorage temp_storage[TotalWarps];
