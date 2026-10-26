@@ -2975,7 +2975,8 @@ decltype(auto) __run_under([[maybe_unused]] __on_throw_policy<_Reaction>& __poli
       _Expr __status = status_traits<_Expr>::success();
       // Set when the exception path answered the status: it is fed like a returned one, but it
       // is no success of the action's, so the success hook does not see it.
-      bool __answered = false;
+      // Set only in the catch clauses, which the device pass discards.
+      bool __answered = false; // NOLINT(misc-const-correctness)
       _CCCL_TRY
       {
         __status = __f();
@@ -4382,6 +4383,8 @@ public:
   template <class _P,
             ::cuda::std::enable_if_t<!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_P>, dynamic>, int> = 0,
             ::cuda::std::enable_if_t<detail::__normalizes_to_exception_sink_v<_P>, int>                      = 0>
+  // Constrained above; the check only recognizes std::enable_if, not cuda::std::enable_if_t.
+  // NOLINTNEXTLINE(bugprone-forwarding-reference-overload)
   dynamic(_P&& __p)
       : __p_(new __model<detail::__normalized_t<_P>>(detail::__normalize(::cuda::std::forward<_P>(__p))))
   {}
@@ -6526,7 +6529,8 @@ UNITTEST("store")
 template <class _Build>
 bool __erasure_rejects(_Build&& __build)
 {
-  bool __thrown = false;
+  // Set only in the catch clause, which the device pass discards.
+  bool __thrown = false; // NOLINT(misc-const-correctness)
   _CCCL_TRY
   {
     __build();
