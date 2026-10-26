@@ -180,11 +180,14 @@ TEST_FUNC void test_fp64_edge_cases(float val)
   assert(eq(cuda::std::fmin(-val, -0.5 * one), -1.0));
 
   // on device -0 < +0 for fmax and fmin
+  // libcu++ does not use the fmax/fmin builtins under NVRTC, the fallback on fast fp64 targets may return either zero
+#if !TEST_COMPILER(NVRTC)
   NV_IF_TARGET(NV_IS_DEVICE,
                (assert(!cuda::std::signbit(cuda::std::fmax(zero, nzero)));
                 assert(!cuda::std::signbit(cuda::std::fmax(nzero, zero)));
                 assert(cuda::std::signbit(cuda::std::fmin(zero, nzero)));
                 assert(cuda::std::signbit(cuda::std::fmin(nzero, zero)));))
+#endif // !TEST_COMPILER(NVRTC)
 }
 
 template <class T>
