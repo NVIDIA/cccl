@@ -58,14 +58,16 @@ typedef enum cccl_serialization_algo_v2_t
 //   the CUDA runtime version the library was built against is unknown, or if
 //   this runtime has a different major version or an older minor. Build
 //   ahead-of-time artifacts with the oldest CUDA Toolkit you need to support.
+//   It returns CUDA_ERROR_NO_BINARY_FOR_GPU if the current device has a
+//   different compute-capability major, or an older minor, than the library
+//   was built for.
 // - _serialize writes a self-describing byte buffer. On success *out_buf is a
 //   heap allocation the caller must free with cccl_serialization_v2_buffer_free,
 //   and *out_size is its length. It requires the payload to be populated.
 // - _deserialize reconstructs a build_result from such a buffer; it must still
 //   be loaded before use. On failure the build_result is left unchanged. It
-//   rejects a blob built for a different OS or CPU architecture, and does not
-//   check compute capability against a live device: a mismatch surfaces at
-//   execution time.
+//   rejects a blob built for a different OS or CPU architecture. It needs no
+//   GPU: compute capability is checked by _load.
 //
 // Frees a buffer returned by any cccl_device_<algo>_serialize call.
 // Required because allocations cross the cccl.c.parallel.v2 shared-library

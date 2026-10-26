@@ -143,6 +143,12 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
+  if (auto error = cccl::detail::check_device_compute_capability(build_ptr->cc); !error.empty())
+  {
+    fprintf(stderr, "\nERROR in cccl_device_unary_transform_load(): %s\n", error.c_str());
+    return CUDA_ERROR_NO_BINARY_FOR_GPU;
+  }
+
   auto compiler = std::make_unique<hostjit::JITCompiler>(hostjit::CompilerConfig{});
   std::vector<char> library_bytes(
     static_cast<char*>(build_ptr->payload), static_cast<char*>(build_ptr->payload) + build_ptr->payload_size);
@@ -353,6 +359,12 @@ try
       || build_ptr->payload_size == 0 || build_ptr->jit_compiler != nullptr)
   {
     return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  if (auto error = cccl::detail::check_device_compute_capability(build_ptr->cc); !error.empty())
+  {
+    fprintf(stderr, "\nERROR in cccl_device_binary_transform_load(): %s\n", error.c_str());
+    return CUDA_ERROR_NO_BINARY_FOR_GPU;
   }
 
   auto compiler = std::make_unique<hostjit::JITCompiler>(hostjit::CompilerConfig{});

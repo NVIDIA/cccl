@@ -21,6 +21,8 @@
 #include <string_view>
 #include <vector>
 
+#include <cuda.h>
+
 #include <cccl/c/types.h>
 #include <hostjit/config.hpp>
 #include <hostjit/jit_compiler.hpp>
@@ -309,6 +311,34 @@ inline int detect_cudart_version(const char* ctk_path)
     }
   }
   return 0;
+}
+
+// Checks that the current device can run a library compiled for `build_cc`
+// (cc_major * 10 + cc_minor), with v1's rule (c/parallel/src/serialization.cpp):
+// SASS runs only on the same major and a device minor >= the target's.
+// Returns an error message, or an empty string if compatible or if the device
+// cannot be determined (the current context's device, else device 0).
+inline std::string check_device_compute_capability(int build_cc)
+{
+  CUdevice dev{};
+  if (cuCtxGetDevice(&dev) != CUDA_SUCCESS && (cuInit(0) != CUDA_SUCCESS || cuDeviceGet(&dev, 0) != CUDA_SUCCESS))
+  {
+    return {};
+  }
+  int major = 0;
+  int minor = 0;
+  if (cuDeviceGetAttribute(&major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, dev) != CUDA_SUCCESS
+      || cuDeviceGetAttribute(&minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, dev) != CUDA_SUCCESS)
+  {
+    return {};
+  }
+  if (build_cc / 10 == major && minor >= build_cc % 10)
+  {
+    return {};
+  }
+  return "the library was built for sm_" + std::to_string(build_cc) + " but the current device is sm_"
+       + std::to_string(major) + std::to_string(minor)
+       + "; it requires the same compute-capability major and a device minor >= the target minor";
 }
 
 // Free the JIT compiler and cubin buffer common to every build_result_t in

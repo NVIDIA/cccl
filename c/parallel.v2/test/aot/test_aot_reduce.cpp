@@ -397,6 +397,31 @@ bool build_and_serialize(std::vector<char>& out_blob)
     }
   }
 
+  // `load` refuses a library built for a different compute-capability major
+  // than the current device's.
+  {
+    std::vector<char> tampered(static_cast<char*>(buf), static_cast<char*>(buf) + size);
+    // blob_header: magic[8], algo_tag, os_arch_tag, then cc (u32).
+    const uint32_t other_cc = static_cast<uint32_t>((cc_major + 1) * 10 + cc_minor);
+    std::memcpy(tampered.data() + 8 + 2 * sizeof(uint32_t), &other_cc, sizeof(other_cc));
+    cccl_device_reduce_build_result_t tampered_build{};
+    if (cccl_device_reduce_deserialize(&tampered_build, tampered.data(), tampered.size()) != CUDA_SUCCESS)
+    {
+      fprintf(stderr, "FAIL: deserialize of a blob with cc=%u\n", other_cc);
+      return false;
+    }
+    const CUresult load_rc = cccl_device_reduce_load(&tampered_build, cudart_path);
+    cccl_device_reduce_cleanup(&tampered_build);
+    if (load_rc != CUDA_ERROR_NO_BINARY_FOR_GPU)
+    {
+      fprintf(stderr,
+              "FAIL: load of a blob built for sm_%u should return CUDA_ERROR_NO_BINARY_FOR_GPU, got %d\n",
+              other_cc,
+              (int) load_rc);
+      return false;
+    }
+  }
+
   // A null build_result is reported, not dereferenced.
   if (cccl_device_reduce_build_ex(
         nullptr,

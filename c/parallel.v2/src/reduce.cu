@@ -175,6 +175,12 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
+  if (auto error = cccl::detail::check_device_compute_capability(build->cc); !error.empty())
+  {
+    fprintf(stderr, "\nERROR in cccl_device_reduce_load(): %s\n", error.c_str());
+    return CUDA_ERROR_NO_BINARY_FOR_GPU;
+  }
+
   auto compiler = std::make_unique<hostjit::JITCompiler>(hostjit::CompilerConfig{});
   std::vector<char> library_bytes(
     static_cast<char*>(build->payload), static_cast<char*>(build->payload) + build->payload_size);

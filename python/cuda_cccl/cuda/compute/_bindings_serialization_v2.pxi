@@ -78,8 +78,7 @@ def _reduce_deserialize(blob, load=True, check_cc=True):
     # yet (no separate pre-flight header check) -- deserialize() itself
     # validates magic/algo/os-arch and raises a descriptive RuntimeError.
     # check_cc is accepted for API-shape parity with v1 but is a no-op here:
-    # v2 deserialize doesn't check cc against a live device; a cc mismatch
-    # surfaces later, at call time.
+    # v2 checks compute capability against the current device in _load.
     with nogil:
         status = cccl_device_reduce_deserialize(
             &self.build_data, buf_ptr, buf_size)
