@@ -200,7 +200,7 @@ struct WarpReduceShfl
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void FullShuffleReduce(T& input, ReductionOp reduction_op)
   {
     ::cuda::static_for<steps>([&](const auto step) {
-      const T tmp = ::cuda::device::warp_shuffle_down<LogicalWarpThreads>(input, 1u << step, member_mask);
+      const T tmp = ::cuda::device::warp_shuffle_down<LogicalWarpThreads>(input, 1u << step, member_mask).data;
       input       = reduction_op(input, tmp);
     });
   }
