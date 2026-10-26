@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
+// Private GroupMerge defaults: supported thread/IPT ranges and settings for each sorting launch.
+
 #pragma once
 
 #include <cub/config.cuh>
@@ -21,6 +23,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort_capacity
 {
+// Settings for one launch; min/max_threads describe cooperation per segment, not block size.
 struct group_merge_policy
 {
   int block_threads;
@@ -28,8 +31,9 @@ struct group_merge_policy
   int max_threads;
   int min_ipt;
   int max_ipt;
-  int blocks_per_sm;
-  int min_blocks_per_sm;
+  int blocks_per_sm;     // Grid-size multiplier: launch SM count * blocks_per_sm blocks.
+  int min_blocks_per_sm; // __launch_bounds__ target for compiler register allocation, not the grid size.
+  // Compare all settings when matching policies.
   _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const group_merge_policy& a, const group_merge_policy& b)
   {
     return a.block_threads == b.block_threads && a.min_threads == b.min_threads && a.max_threads == b.max_threads
@@ -38,11 +42,14 @@ struct group_merge_policy
   }
 };
 
+// Bundle the three sorting launches: each member supplies a separate group_merge_policy
+// for the warp/sub-warp, small-block, or large-block kernel. The dispatcher creates one entry per member.
 struct group_merge_launch_policy
 {
   group_merge_policy warp;
   group_merge_policy small;
   group_merge_policy large;
+  // Compare the complete three-launch policy.
   _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const group_merge_launch_policy& a, const group_merge_launch_policy& b)
   {
@@ -59,6 +66,7 @@ struct group_merge_launch_policy
 template <typename Key>
 struct group_merge_policy_selector
 {
+  // Select internal defaults by key width; architecture-specific values can be added here.
   _CCCL_HOST_DEVICE_API constexpr group_merge_launch_policy operator()(::cuda::compute_capability) const
   {
     constexpr int large_threads = sizeof(Key) <= 4 ? 1024 : 512;

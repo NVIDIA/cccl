@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
+// Focused checks for capacity mapping, ID partitioning, and the internal bounded GroupMerge sorting path.
+
 #include <cub/device/dispatch/dispatch_segmented_sort_capacity.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
 
@@ -26,6 +28,7 @@ struct irregular_expansion
     cuda::std::tuple<capacity::bin_shape<4, 9>, capacity::bin_shape<8, 10>, capacity::bin_shape<16, 9>>>;
 };
 
+// Check generic bounds, irregular configuration mapping, overflow IDs, and empty-workspace reuse.
 CUB_TEST("Capacity partition accepts arbitrary bounds without sort tuning", "[segmented][sort][device]", CUB_SMALL)
 {
   for (int bin = 0; bin < 3; ++bin)
@@ -72,6 +75,7 @@ CUB_TEST("Capacity partition accepts arbitrary bounds without sort tuning", "[se
   REQUIRE(offsets == c2h::host_vector<unsigned>(capacities::size + 2, 0));
 }
 
+// Exercise capacity boundaries and all launch groups, including repeated work and untouched overflow.
 CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
          "[segmented][sort][device]",
          CUB_SMALL,
@@ -197,6 +201,7 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   REQUIRE(c2h::host_vector<key_type>(d_out) == expected);
 }
 
+// Check supported floating-point comparisons without imposing radix-sort signed-zero ordering.
 CUB_TEST("Capacity sort orders infinities and treats signed zeros as equivalent",
          "[segmented][sort][device]",
          CUB_SMALL,
