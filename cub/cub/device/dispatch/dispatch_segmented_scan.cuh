@@ -813,15 +813,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_load_balanced(
         return cudaErrorInvalidValue;
       }
       const int resident_blocks = blocks_per_sm * sm_count;
-      int capacity              = resident_blocks * max_factor;
-
-      if constexpr (has_num_items)
-      {
-        const work_t tile_size =
-          static_cast<work_t>(threads_per_block) * static_cast<work_t>(active_policy.items_per_thread);
-        capacity =
-          (::cuda::std::max) (1, load_balanced_block_count(static_cast<work_t>(num_items), tile_size, resident_blocks));
-      }
+      const int capacity        = [&] {
+        if constexpr (has_num_items)
+        {
+          const work_t tile_size =
+            static_cast<work_t>(threads_per_block) * static_cast<work_t>(active_policy.items_per_thread);
+          const int blocks = load_balanced_block_count(static_cast<work_t>(num_items), tile_size, resident_blocks);
+          return (::cuda::std::max) (1, blocks);
+        }
+        else
+        {
+          return resident_blocks * max_factor;
+        }
+      }();
 
       using scan_tile_state_t = typename source_t::scan_tile_state_t;
       size_t tile_state_bytes{};
