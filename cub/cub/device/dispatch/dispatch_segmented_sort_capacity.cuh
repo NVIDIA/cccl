@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
+// Assemble private sorting entries, manage temporary storage, and launch partitioning followed by sorting.
+
 #pragma once
 
 #include <cub/config.cuh>
@@ -28,9 +30,11 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort_capacity
 {
+// Adapt each member of the combined policy into one implementation and ordered sorting entry.
 template <typename PolicyGetter>
 struct group_merge_entries
 {
+  // Each getter exposes just one launch's settings to group_merge_implementation.
   struct warp_policy_getter
   {
     _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
@@ -57,6 +61,7 @@ struct group_merge_entries
                             sort_entry<group_merge_implementation<large_policy_getter>>>;
 };
 
+// Query or use temporary storage, then count, prefix, and scatter IDs into capacity bins.
 // These pointers alias caller-provided global storage. It must remain valid until
 // every operation queued on the stream has completed, as with other CUB algorithms.
 // Empty ranges are skipped; singletons use the same sorting path as other ranges.
@@ -75,6 +80,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_partition(
   Launcher launcher   = {})
 {
   constexpr int bins   = Capacities::size + 1;
+  // One allocation holds counts, offsets (with an end sentinel), and cursors; the other holds IDs.
   const size_t sizes[] = {sizeof(unsigned) * (3 * bins + 1), sizeof(unsigned) * size_t{num_segments}};
   void* allocations[2]{};
   if (const auto error = CubDebug(alias_temporaries(temp_storage, temp_storage_bytes, allocations, sizes)))
@@ -134,6 +140,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_partition(
   return CubDebug(DebugSyncStream(stream));
 }
 
+// Configure shared scratch, validate occupancy, and launch one entry with a policy-sized grid.
 template <typename Entry, typename Key, typename BeginIterator, typename EndIterator, typename Launcher>
 CUB_RUNTIME_FUNCTION cudaError_t launch_entry(
   partition_result bins,
@@ -158,6 +165,7 @@ CUB_RUNTIME_FUNCTION cudaError_t launch_entry(
   {
     return error;
   }
+  // Zero resident blocks means this kernel cannot execute with the requested resources.
   if (!occupancy)
   {
     return cudaErrorInvalidConfiguration;
@@ -175,6 +183,8 @@ CUB_RUNTIME_FUNCTION cudaError_t launch_entry(
   return CubDebug(DebugSyncStream(stream));
 }
 
+// Launch each entry in order, shifting its offset view while retaining the shared ID queue.
+// The index sequence enumerates entry types at compile time.
 template <typename Plan,
           typename Key,
           typename BeginIterator,

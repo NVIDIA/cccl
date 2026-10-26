@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
+// Contract between partitioning and sorting: capacity bounds, bin configurations, and partition results.
+
 #pragma once
 
 #include <cub/config.cuh>
@@ -23,13 +25,14 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort_capacity
 {
-// Partition uses capacity bounds supplied by sorting entries, without their configurations.
+// Ordered capacity bounds supplied by sorting entries; partition finds the smallest fitting bin.
 template <int... Bounds>
 struct capacity_list
 {
   static constexpr int size = sizeof...(Bounds);
   inline static constexpr ::cuda::std::array<int, size> bounds{{Bounds...}};
 
+  // Require nonempty, positive, strictly increasing bounds for binary-search routing.
   _CCCL_HOST_DEVICE_API static constexpr bool valid()
   {
     for (int i = 0; i < size; ++i)
@@ -73,6 +76,7 @@ struct concatenate_capacities<capacity_list<Left...>, capacity_list<Right...>, R
 {};
 
 // Encode one bin's configuration in a type for compile-time mapping.
+// group_merge_expansion::config_for_bin<Bin> supplies this type to the lookup below.
 template <int Threads, int ItemsPerThread>
 struct bin_shape
 {
@@ -80,7 +84,8 @@ struct bin_shape
   static constexpr int items_per_thread = ItemsPerThread;
 };
 
-// Store the same pair as values, allowing runtime bin selection to use one return type.
+// Configuration values returned by config_for_bin to sort_entry_kernel for work packing
+// and passed to the GroupMerge worker. Also used during compile-time capacity expansion.
 struct bin_config
 {
   int threads;
