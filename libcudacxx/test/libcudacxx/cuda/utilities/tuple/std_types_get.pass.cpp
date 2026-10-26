@@ -25,6 +25,8 @@
 
 #include "test_macros.h"
 
+TEST_DIAG_SUPPRESS_MSVC(4244) // 'initializing': conversion from '_Ty' to '_Ty', possible loss of data
+
 void test_array()
 {
   std::array<int, 3> arr{1, 2, 3};
