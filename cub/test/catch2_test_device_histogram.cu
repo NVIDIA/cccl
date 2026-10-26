@@ -726,6 +726,38 @@ CUB_TEST("DeviceHistogram::HistogramRange levels/samples aliasing", "[histogram_
   }
 }
 
+CUB_TEST("DeviceHistogram::HistogramEven works with unaligned samples",
+         "[histogram_even][device]",
+         CUB_SMALL,
+         c2h::type_list<std::int32_t, std::int64_t>)
+{
+  using sample_t           = c2h::get<0, TestType>;
+  constexpr int num_levels = 257;
+  const int num_samples    = GENERATE(1000, 1 << 20);
+  const int offset         = GENERATE(0, 1, 2, 3);
+  CAPTURE(c2h::type_name<sample_t>(), num_samples, offset);
+
+  c2h::device_vector<sample_t> d_samples(num_samples + offset);
+  c2h::gen(C2H_SEED(1), d_samples, sample_t{0}, sample_t{num_levels - 2});
+  auto d_histogram = c2h::device_vector<int>(num_levels - 1);
+
+  histogram_even(
+    thrust::raw_pointer_cast(d_samples.data()) + offset,
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_levels,
+    sample_t{0},
+    sample_t{num_levels - 1},
+    num_samples);
+
+  const auto h_samples = c2h::host_vector<sample_t>(d_samples);
+  auto h_histogram     = c2h::host_vector<int>(num_levels - 1);
+  for (int i = offset; i < num_samples + offset; ++i)
+  {
+    ++h_histogram[static_cast<int>(h_samples[i])];
+  }
+  CHECK(d_histogram == h_histogram);
+}
+
 // Limit this large-memory reproducer to the host launch path.
 #if TEST_LAUNCH == 0
 CUB_TEST("DeviceHistogram::MultiHistogramEven large privatized offsets", "[histogram_even][device]", CUB_LARGE)

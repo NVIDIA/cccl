@@ -20,14 +20,11 @@
 
 #include <cub/block/block_load.cuh>
 #include <cub/detail/constant.cuh>
-#include <cub/detail/cub_vector.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
-#include <cuda/__memory/as_bytes_vectorized.h>
-#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
@@ -146,18 +143,22 @@ using AgentHistogramPolicy
 
 namespace detail::histogram
 {
-// Return a native pixel pointer (specialized for CacheModifiedInputIterator types)
-template <CacheLoadModifier Modifier, typename ValueT, typename OffsetT>
-_CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(CacheModifiedInputIterator<Modifier, ValueT, OffsetT> itr)
+// The vectorized counterparts of the direct and striped arrangements check the alignment of every tile and load
+// misaligned tiles item by item. Multiple channels are loaded in a blocked arrangement instead of a striped one,
+// because all samples of a pixel must belong to the same thread
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL BlockLoadAlgorithm
+vectorized_load_algorithm(BlockLoadAlgorithm algorithm, int num_channels)
 {
-  return itr.ptr;
-}
-
-// Return a native pixel pointer (specialized for other types)
-template <typename IteratorT>
-_CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(IteratorT itr)
-{
-  return nullptr;
+  switch (algorithm)
+  {
+    case BLOCK_LOAD_DIRECT:
+      return BLOCK_LOAD_VECTORIZE;
+    case BLOCK_LOAD_STRIPED:
+    case BLOCK_LOAD_STRIPED_VECTORIZED:
+      return num_channels == 1 ? BLOCK_LOAD_STRIPED_VECTORIZED : BLOCK_LOAD_VECTORIZE;
+    default:
+      return algorithm;
+  }
 }
 
 //! @brief AgentHistogram implements a stateful abstraction of CUDA thread blocks for participating
@@ -203,11 +204,9 @@ template <typename AgentHistogramPolicyT,
           typename OffsetT>
 struct AgentHistogram
 {
-  static constexpr int vec_size                    = AgentHistogramPolicyT::VEC_SIZE;
   static constexpr int threads_per_block           = AgentHistogramPolicyT::BLOCK_THREADS;
   static constexpr int pixels_per_thread           = AgentHistogramPolicyT::PIXELS_PER_THREAD;
   static constexpr int samples_per_thread          = pixels_per_thread * NumChannels;
-  static constexpr int vecs_per_thread             = samples_per_thread / vec_size;
   static constexpr int tile_pixels                 = pixels_per_thread * threads_per_block;
   static constexpr int tile_samples                = samples_per_thread * threads_per_block;
   static constexpr bool is_rle_compress            = AgentHistogramPolicyT::IS_RLE_COMPRESS;
@@ -215,11 +214,10 @@ struct AgentHistogram
   static constexpr CacheLoadModifier load_modifier = AgentHistogramPolicyT::LOAD_MODIFIER;
   static constexpr auto mem_preference =
     (PrivatizedSmemBins > 0) ? BlockHistogramMemoryPreference{AgentHistogramPolicyT::MEM_PREFERENCE} : GMEM;
+  static constexpr BlockLoadAlgorithm load_algorithm =
+    vectorized_load_algorithm(AgentHistogramPolicyT::LOAD_ALGORITHM, NumChannels);
 
   using SampleT = it_value_t<SampleIteratorT>;
-  // Cache modified loads are at most 16 bytes wide, so they gain nothing from a stricter alignment
-  using PixelT = ::cuda::__as_bytes_vectorized_t<SampleT, NumChannels>;
-  using VecT   = ::cuda::__as_bytes_vectorized_t<SampleT, vec_size>;
 
   /// Input iterator wrapper type (for applying cache modifier)
   // Wrap the native input pointer with CacheModifiedInputIterator or directly use the supplied input iterator type
@@ -228,33 +226,20 @@ struct AgentHistogram
     ::cuda::std::_If<::cuda::std::is_pointer_v<SampleIteratorT>,
                      CacheModifiedInputIterator<load_modifier, SampleT, OffsetT>,
                      SampleIteratorT>;
-  using WrappedPixelIteratorT = CacheModifiedInputIterator<load_modifier, PixelT, OffsetT>;
-  using WrappedVecsIteratorT  = CacheModifiedInputIterator<load_modifier, VecT, OffsetT>;
-  using BlockLoadSampleT =
-    BlockLoad<SampleT, threads_per_block, samples_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
-  using BlockLoadPixelT =
-    BlockLoad<PixelT, threads_per_block, pixels_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
-  using BlockLoadVecT = BlockLoad<VecT, threads_per_block, vecs_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
+  using BlockLoadSampleT = BlockLoad<SampleT, threads_per_block, samples_per_thread, load_algorithm>;
 
   struct _TempStorage
   {
     // Smem needed for block-privatized smem histogram (with 1 word of padding)
     CounterT histograms[NumActiveChannels][PrivatizedSmemBins + 1];
     int tile_idx;
-
-    union
-    {
-      typename BlockLoadSampleT::TempStorage sample_load;
-      typename BlockLoadPixelT::TempStorage pixel_load;
-      typename BlockLoadVecT::TempStorage vec_load;
-    };
+    typename BlockLoadSampleT::TempStorage sample_load;
   };
 
   using TempStorage = Uninitialized<_TempStorage>;
 
   _TempStorage& temp_storage;
   WrappedSampleIteratorT d_wrapped_samples; // with cache modifier applied, if possible
-  SampleT* d_native_samples; // possibly nullptr if unavailable
   const int* num_output_bins; // one for each channel
   const int* num_privatized_bins; // one for each channel
   CounterT* d_privatized_histograms[NumActiveChannels]; // one for each channel
@@ -385,64 +370,20 @@ struct AgentHistogram
     }
   }
 
-  // Load full, aligned tile using pixel iterator
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  LoadFullAlignedTile(OffsetT block_offset, SampleT (&samples)[pixels_per_thread][NumChannels])
-  {
-    // The vectorized load can only load whole tiles if the samples per thread are a multiple of the vector size
-    if constexpr (NumActiveChannels == 1 && samples_per_thread % vec_size == 0)
-    {
-      using AliasedVecs = VecT[vecs_per_thread];
-      const WrappedVecsIteratorT d_wrapped_vecs(reinterpret_cast<VecT*>(d_native_samples + block_offset));
-      // Load using a wrapped vec iterator
-      BlockLoadVecT{temp_storage.vec_load}.Load(d_wrapped_vecs, reinterpret_cast<AliasedVecs&>(samples));
-    }
-    else
-    {
-      using AliasedPixels = PixelT[pixels_per_thread];
-      const WrappedPixelIteratorT d_wrapped_pixels(reinterpret_cast<PixelT*>(d_native_samples + block_offset));
-      // Load using a wrapped pixel iterator
-      BlockLoadPixelT{temp_storage.pixel_load}.Load(d_wrapped_pixels, reinterpret_cast<AliasedPixels&>(samples));
-    }
-  }
-
-  template <bool IsFullTile, bool IsAligned>
+  template <bool IsFullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   LoadTile(OffsetT block_offset, int valid_samples, SampleT (&samples)[pixels_per_thread][NumChannels])
   {
+    using AliasedSamples = SampleT[samples_per_thread];
     if constexpr (IsFullTile)
     {
-      if constexpr (IsAligned)
-      {
-        LoadFullAlignedTile(block_offset, samples);
-      }
-      else
-      {
-        // Load using sample iterator
-        using AliasedSamples = SampleT[samples_per_thread];
-        BlockLoadSampleT{temp_storage.sample_load}.Load(
-          d_wrapped_samples + block_offset, reinterpret_cast<AliasedSamples&>(samples));
-      }
+      BlockLoadSampleT{temp_storage.sample_load}.Load(
+        d_wrapped_samples + block_offset, reinterpret_cast<AliasedSamples&>(samples));
     }
     else
     {
-      if constexpr (IsAligned)
-      {
-        // Load partially-full, aligned tile using the pixel iterator
-        using AliasedPixels = PixelT[pixels_per_thread];
-        const WrappedPixelIteratorT d_wrapped_pixels((PixelT*) (d_native_samples + block_offset));
-        const int valid_pixels = valid_samples / NumChannels;
-
-        // Load using a wrapped pixel iterator
-        BlockLoadPixelT{temp_storage.pixel_load}.Load(
-          d_wrapped_pixels, reinterpret_cast<AliasedPixels&>(samples), valid_pixels);
-      }
-      else
-      {
-        using AliasedSamples = SampleT[samples_per_thread];
-        BlockLoadSampleT{temp_storage.sample_load}.Load(
-          d_wrapped_samples + block_offset, reinterpret_cast<AliasedSamples&>(samples), valid_samples);
-      }
+      BlockLoadSampleT{temp_storage.sample_load}.Load(
+        d_wrapped_samples + block_offset, reinterpret_cast<AliasedSamples&>(samples), valid_samples);
     }
   }
 
@@ -465,19 +406,17 @@ struct AgentHistogram
 
   //! @brief Consume a tile of data samples
   //!
-  //! @tparam IsAligned
-  //!   Whether the tile offset is aligned (vec-aligned for single-channel, pixel-aligned for multi-channel)
-  //!
   //! @tparam IsFullTile
   //!  Whether the tile is full
-  template <bool IsAligned, bool IsFullTile>
+  template <bool IsFullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(OffsetT block_offset, int valid_samples)
   {
     SampleT samples[pixels_per_thread][NumChannels];
     bool is_valid[pixels_per_thread];
 
-    LoadTile<IsFullTile, IsAligned>(block_offset, valid_samples, samples);
-    MarkValid<IsFullTile, AgentHistogramPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_STRIPED>(is_valid, valid_samples);
+    LoadTile<IsFullTile>(block_offset, valid_samples, samples);
+    // Partial tiles of the striped vectorized algorithm are loaded in the striped arrangement of single samples
+    MarkValid<IsFullTile, load_algorithm == BLOCK_LOAD_STRIPED_VECTORIZED>(is_valid, valid_samples);
 
     if (prefer_smem)
     {
@@ -502,7 +441,6 @@ struct AgentHistogram
   //!
   //! @param tiles_per_row
   //!   Number of image tiles per row
-  template <bool IsAligned>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTiles(
     OffsetT num_row_pixels,
     OffsetT num_rows,
@@ -527,12 +465,12 @@ struct AgentHistogram
       {
         // Consume a partially-full tile at the end of the row
         OffsetT num_remaining = (num_row_pixels * NumChannels) - col_offset;
-        ConsumeTile<IsAligned, false>(tile_offset, num_remaining);
+        ConsumeTile<false>(tile_offset, num_remaining);
       }
       else
       {
         // Consume full tile
-        ConsumeTile<IsAligned, true>(tile_offset, tile_samples);
+        ConsumeTile<true>(tile_offset, tile_samples);
       }
 
       __syncthreads();
@@ -553,7 +491,7 @@ struct AgentHistogram
   // already synchronizes between tiles.
   _CCCL_DEVICE _CCCL_FORCEINLINE void SyncBeforeNextTile()
   {
-    if constexpr (AgentHistogramPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_TRANSPOSE)
+    if constexpr (load_algorithm == BLOCK_LOAD_TRANSPOSE)
     {
       __syncthreads();
     }
@@ -569,7 +507,6 @@ struct AgentHistogram
   //!
   //! @param row_stride_samples
   //!   The number of samples between starts of consecutive rows in the region of interest
-  template <bool IsAligned>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTiles(
     OffsetT num_row_pixels, OffsetT num_rows, OffsetT row_stride_samples, int, GridQueue<int>, ::cuda::std::false_type)
   {
@@ -586,13 +523,13 @@ struct AgentHistogram
         if (num_remaining < tile_samples)
         {
           // Consume partial tile
-          ConsumeTile<IsAligned, false>(tile_offset, num_remaining);
+          ConsumeTile<false>(tile_offset, num_remaining);
           SyncBeforeNextTile();
           break;
         }
 
         // Consume full tile
-        ConsumeTile<IsAligned, true>(tile_offset, tile_samples);
+        ConsumeTile<true>(tile_offset, tile_samples);
         SyncBeforeNextTile();
         tile_offset += gridDim.x * tile_samples;
       }
@@ -639,7 +576,6 @@ struct AgentHistogram
     const PrivatizedDecodeOpT* privatized_decode_op)
       : temp_storage(temp_storage.Alias())
       , d_wrapped_samples(d_samples)
-      , d_native_samples(NativePointer(d_wrapped_samples))
       , num_output_bins(num_output_bins)
       , num_privatized_bins(num_privatized_bins)
       , d_output_histograms(d_output_histograms)
@@ -680,36 +616,9 @@ struct AgentHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTiles(
     OffsetT num_row_pixels, OffsetT num_rows, OffsetT row_stride_samples, int tiles_per_row, GridQueue<int> tile_queue)
   {
-    // Check whether all row starting offsets are vec-aligned (in single-channel) or pixel-aligned (in multi-channel)
-    constexpr int vec_mask   = alignof(VecT) - 1;
-    constexpr int pixel_mask = alignof(PixelT) - 1;
-    const size_t row_bytes   = sizeof(SampleT) * row_stride_samples;
-
-    const bool vec_aligned_rows =
-      (NumChannels == 1) && (samples_per_thread % vec_size == 0) && // Single channel
-      ((size_t(d_native_samples) & vec_mask) == 0) && // ptr is quad-aligned
-      ((num_rows == 1) || ((row_bytes & vec_mask) == 0)); // number of row-samples is a multiple of the alignment of the
-                                                          // quad
-
-    const bool pixel_aligned_rows =
-      (NumChannels > 1) && // Multi channel
-      ((size_t(d_native_samples) & pixel_mask) == 0) && // ptr is pixel-aligned
-      ((row_bytes & pixel_mask) == 0); // number of row-samples is a multiple of the alignment of the pixel
-
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-
-    // Whether rows are aligned and can be vectorized
-    if ((d_native_samples != nullptr) && (vec_aligned_rows || pixel_aligned_rows))
-    {
-      ConsumeTiles<true>(
-        num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue, bool_constant_v<is_work_stealing>);
-    }
-    else
-    {
-      ConsumeTiles<false>(
-        num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue, bool_constant_v<is_work_stealing>);
-    }
-
+    ConsumeTiles(
+      num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue, bool_constant_v<is_work_stealing>);
     _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // omitting makes no difference in cub.bench.histogram.even.base
   }
 
