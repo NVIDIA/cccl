@@ -329,6 +329,7 @@ ignore_regexes:
   - 'cccl-version.json'
   - 'ci/bench/'
   - 'ci/bench.+yaml'
+  - 'ci/flashinfer/'
   - 'ci/matx/'
   - 'ci/pytorch/'
   - 'ci/rapids/'
