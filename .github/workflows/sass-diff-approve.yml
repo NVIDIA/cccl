@@ -31,6 +31,7 @@ jobs:
         with:
           script: |
             const { comment, issue } = context.payload;
+            core.info(`Validate comment ${comment.id} from @${comment.user.login} on PR #${issue.number}.`);
             // Match both:
             //
             // /sass diff ok <full SHA>
@@ -46,26 +47,32 @@ jobs:
 
             if (plainMatch) {
               sha = plainMatch[1];
+              core.info(`Command contains a plain commit SHA: ${sha}.`);
             } else if (linkMatch) {
               sha = linkMatch[3];
+              core.info(`Command contains a commit link for SHA ${sha}.`);
               // Check both the visible label and destination before accepting a commit link.
               const repoUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}`;
               if (
                 !sha.startsWith(linkMatch[1]) ||
                 ![`${repoUrl}/pull/${issue.number}/commits/${sha}`, `${repoUrl}/commit/${sha}`].includes(linkMatch[2])
               ) {
+                core.info("Ignore command: the commit label or link destination does not match the expected commit.");
                 return;
               }
             } else {
+              core.info("Ignore comment: the command format is invalid.");
               return;
             }
 
+            core.info(`Read the current head of PR #${issue.number}.`);
             const { data: pr } = await github.rest.pulls.get({
               ...context.repo,
               pull_number: issue.number,
             });
 
             if (pr.head.sha !== sha) {
+              core.info(`Ignore command: requested SHA ${sha} does not match PR head ${pr.head.sha}.`);
               return;
             }
 
@@ -89,6 +96,7 @@ jobs:
               return;
             }
 
+            core.info(`Command is valid for SHA ${sha}.`);
             core.setOutput("sha", sha);
 
       # GITHUB_TOKEN cannot read organization membership. Limit the app token to that lookup.
@@ -110,6 +118,7 @@ jobs:
         with:
           github-token: ${{ steps.membership.outputs.token }}
           script: |
+            core.info(`Check NVIDIA/cccl-codeowners membership for @${context.payload.comment.user.login}.`);
             // This endpoint includes child-team members and avoids membership lookup errors for nonmembers.
             const pages = github.paginate.iterator(github.rest.teams.listMembersInOrg, {
               org: "NVIDIA",
@@ -118,14 +127,18 @@ jobs:
             });
 
             let found = false;
+            let pageCount = 0;
 
             for await (const { data: members } of pages) {
+              pageCount += 1;
+              core.info(`Search membership page ${pageCount} with ${members.length} entries.`);
               if (members.some((member) => member.id === context.payload.comment.user.id)) {
                 found = true;
                 break;
               }
             }
 
+            core.info(`Team authorization for @${context.payload.comment.user.login}: ${found}.`);
             core.setOutput("authorized", found);
 
         # Needs a separate step to the one above because the above uses the temporary
@@ -182,6 +195,8 @@ jobs:
             let before = null;
             let report;
 
+            core.info(`Search PR #${number} for a SASS report for SHA ${sha} before command ${comment.id}.`);
+
             while (true) {
               const { repository } = await github.graphql(query, {
                 ...context.repo,
@@ -191,17 +206,20 @@ jobs:
 
               const comments = repository.pullRequest.comments;
               report = comments.nodes[0];
+              core.debug(`Inspect comment ${report?.fullDatabaseId ?? "none"}; hidden=${report?.isMinimized ?? "unknown"}.`);
               // An earlier command cannot approve a later report.
               if (
                 report &&
                 BigInt(report.fullDatabaseId) < BigInt(comment.id) &&
                 report.body.split(/\r?\n/).includes(marker)
               ) {
+                core.info(`Matching SASS report: comment ${report.fullDatabaseId}.`);
                 // We have found a report, but it has been minimized (marked hidden).
                 // The only scenario in which this could happen is if the user has manually
                 // hidden the previous report, and then launched a new pipeline and tried to
                 // /sass diff ok before the new pipeline finished. We should not honor this.
                 if (report.isMinimized) {
+                  core.info("Ignore approval: the matching SASS report is hidden.");
                   return;
                 }
                 break;
@@ -209,14 +227,17 @@ jobs:
               if (!comments.pageInfo.hasPreviousPage) {
                 // Didn't find a comment, so nothing to do. Likely the user has tried
                 // to /sass diff ok before a SASS diff has been posted.
+                core.info("Ignore approval: no matching SASS report precedes the command.");
                 return;
               }
               before = comments.pageInfo.startCursor;
             }
 
+            core.info(`Read workflow and check identifiers from report ${report.fullDatabaseId}.`);
             const run_id = Number(report.body.match(/^<!-- sass-diff-GITHUB_RUN_ID:(\d+) -->$/m)[1]);
             const attempt = Number(report.body.match(/^<!-- sass-diff-GITHUB_RUN_ATTEMPT:(\d+) -->$/m)[1]);
             const check_run_id = Number(report.body.match(/^<!-- sass-diff-CHECK_RUN_ID:(\d+) -->$/m)[1]);
+            core.info(`Report identifies workflow run ${run_id}, attempt ${attempt}, check ${check_run_id}.`);
 
             // Read the check itself because an earlier approval can already have changed its conclusion.
             //
@@ -225,10 +246,13 @@ jobs:
               ...context.repo,
               check_run_id,
             });
+            core.info(`Check ${check_run_id}: status=${check.status}, conclusion=${check.conclusion}.`);
             if (check.status !== "completed" || check.conclusion !== "failure") {
+              core.info("Ignore approval: the check must be completed with a failure conclusion.");
               return;
             }
 
+            core.info(`List jobs for workflow run ${run_id}, attempt ${attempt}.`);
             const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {
               ...context.repo,
               run_id,
@@ -236,16 +260,19 @@ jobs:
               per_page: 100,
             });
             const aggregate = jobs.find((job) => job.check_run_url === check.url);
+            core.info(`Found ${jobs.length} jobs. Matching SASS job: ${aggregate?.id ?? "none"}.`);
 
             // Only the approval gate is overridable. Build, reporting, and cleanup failures must remain failures.
             const failures = aggregate.steps.filter(
               (step) => step.conclusion !== "success" && step.conclusion !== "skipped"
             );
+            core.info(`Steps without success or skipped conclusions: ${JSON.stringify(failures.map(({ name, conclusion }) => ({ name, conclusion })))}.`);
             if (
               failures.length !== 1 ||
               failures[0].name !== "Require SASS approval" ||
               failures[0].conclusion !== "failure"
             ) {
+              core.info("Ignore approval: the approval gate must be the only failed step, with all other steps successful or skipped.");
               return;
             }
 
@@ -258,9 +285,11 @@ jobs:
                 summary: `Approved by @${comment.user.login}: ${comment.html_url}`,
               },
             });
+            core.info(`Check ${check_run_id} now has a success conclusion.`);
 
             // We now need to rerun the "CI" job so that the updated status result ends up in a
             // successful CI.
+            core.info(`Refresh jobs for workflow run ${run_id}, attempt ${attempt}, to locate CI.`);
             const updatedJobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {
               ...context.repo,
               run_id,
@@ -272,17 +301,22 @@ jobs:
             // the job ID, so we need to do a named search.
             const ci = updatedJobs.find((job) => job.name === "CI");
             if (!ci) {
+              core.error(`No CI job exists among ${updatedJobs.length} jobs for run ${run_id}, attempt ${attempt}.`);
               throw new Error(
                 `Failed to find "CI" job in workflow run ${run_id}, attempt ${attempt}. ` +
                 "This is a bug in CI itself"
               );
             }
 
+            core.info(`CI job ${ci.id}: status=${ci.status}, conclusion=${ci.conclusion}.`);
             if (ci.status === "completed" && ci.conclusion === "failure") {
               await github.rest.actions.reRunJobForWorkflowRun({
                 ...context.repo,
                 job_id: ci.id,
               });
+              core.info(`GitHub accepts the rerun request for CI job ${ci.id}.`);
+            } else {
+              core.info("Skip CI rerun: the job is not completed with a failure conclusion.");
             }
 
             await github.rest.reactions.createForIssueComment({
@@ -290,3 +324,4 @@ jobs:
               comment_id: comment.id,
               content: "+1",
             });
+            core.info(`Approval processing is complete for PR #${number}, SHA ${sha}, check ${check_run_id}.`);
