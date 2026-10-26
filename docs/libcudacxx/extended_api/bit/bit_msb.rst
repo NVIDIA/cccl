@@ -54,5 +54,5 @@ Example
         cudaDeviceSynchronize();
         return 0;
     }
-    
+
 `See it on Godbolt 🔗 <https://godbolt.org/z/4sYvo5jxW>`__
