@@ -16,7 +16,6 @@
 #endif // no system header
 
 #include <cub/agent/agent_segmented_sort_group_merge.cuh>
-#include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/segmented_sort_capacity.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_sort_capacity.cuh>
@@ -30,36 +29,13 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort_capacity
 {
-// Adapt each member of the combined policy into one implementation and ordered sorting entry.
-template <typename PolicyGetter>
-struct group_merge_entries
-{
-  // Each getter exposes just one launch's settings to group_merge_implementation.
-  struct warp_policy_getter
-  {
-    _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
-    {
-      return PolicyGetter{}().warp;
-    }
-  };
-  struct small_policy_getter
-  {
-    _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
-    {
-      return PolicyGetter{}().small_block;
-    }
-  };
-  struct large_policy_getter
-  {
-    _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
-    {
-      return PolicyGetter{}().large;
-    }
-  };
-  using type = sort_entries<sort_entry<group_merge_implementation<warp_policy_getter>>,
-                            sort_entry<group_merge_implementation<small_policy_getter>>,
-                            sort_entry<group_merge_implementation<large_policy_getter>>>;
-};
+// Compose the current three launches from independently specified entry policies.
+// Named getters keep structural policy objects out of NVCC/MSVC C++20 launch stubs.
+template <typename Key>
+using group_merge_entries =
+  sort_entries<sort_entry<group_merge_implementation<group_merge_warp_policy_getter>>,
+               sort_entry<group_merge_implementation<group_merge_small_policy_getter>>,
+               sort_entry<group_merge_implementation<group_merge_large_policy_getter<Key>>>>;
 
 // Query or use temporary storage, then count, prefix, and scatter IDs into capacity bins.
 // These pointers alias caller-provided global storage. It must remain valid until
@@ -242,25 +218,18 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch(
   Launcher launcher   = {})
 {
   static_assert(sizeof(Key) <= 8, "Keys wider than 8 bytes require an architecture-specific GroupMerge policy");
-  ::cuda::compute_capability cc{};
-  if (const auto error = CubDebug(launcher.PtxComputeCap(cc)))
+  using plan = group_merge_entries<Key>;
+  if (const auto error = dispatch_partition<typename plan::capacities>(
+        temp_storage, temp_storage_bytes, begins, ends, num_segments, result, stream, launcher))
   {
     return error;
   }
-  return dispatch_compute_cap(group_merge_policy_selector<Key>{}, cc, [&](auto getter) -> cudaError_t {
-    using plan = typename group_merge_entries<decltype(getter)>::type;
-    if (const auto error = dispatch_partition<typename plan::capacities>(
-          temp_storage, temp_storage_bytes, begins, ends, num_segments, result, stream, launcher))
-    {
-      return error;
-    }
-    if (!temp_storage || !num_segments)
-    {
-      return cudaSuccess;
-    }
-    return launch_entries<plan>(
-      result, begins, ends, in, out, stream, launcher, ::cuda::std::make_index_sequence<plan::size>{});
-  });
+  if (!temp_storage || !num_segments)
+  {
+    return cudaSuccess;
+  }
+  return launch_entries<plan>(
+    result, begins, ends, in, out, stream, launcher, ::cuda::std::make_index_sequence<plan::size>{});
 }
 } // namespace detail::segmented_sort_capacity
 
