@@ -68,6 +68,7 @@ int main(int, char**)
   test_has_not_trivial_copy_constructor<A>();
   test_has_not_trivial_copy_constructor<Abstract>();
   test_has_not_trivial_copy_constructor<NotEmpty>();
+  test_has_not_trivial_copy_constructor<int&&>();
 
   test_is_trivially_copy_constructible<int&>();
   test_is_trivially_copy_constructible<Union>();
