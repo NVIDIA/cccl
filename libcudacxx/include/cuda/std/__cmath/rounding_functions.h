@@ -43,7 +43,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
   using __storage_t          = __fp_storage_of_t<__float128>;
   constexpr auto __fmt       = __fp_format_of_v<__float128>;
   constexpr int __mant_nbits = __fp_mant_nbits_v<__fmt>;
-  const int __exp = ::cuda::std::__fp_get_exp(__x);
+  const auto __bits          = ::cuda::std::__fp_get_storage(__x);
+  const int __exp            = ::cuda::std::__fp_get_exp(__x);
 
   if (__exp >= __mant_nbits)
   {
