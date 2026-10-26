@@ -10,9 +10,14 @@
 // <cmath>
 
 #include <cuda/std/__floating_point/fp.h>
+#include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
+
+#include <nv/target>
 
 #include "comparison.h"
 #include "test_macros.h"
@@ -106,6 +111,82 @@ TEST_FUNC constexpr void test_fmin(T val)
   }
 }
 
+TEST_FUNC void test_fp64_min_max(double x, double y, double max, double min)
+{
+  assert(eq(cuda::std::fmax(x, y), max));
+  assert(eq(cuda::std::fmin(x, y), min));
+}
+
+// double has an integer implementation on slow fp64 targets
+// check the cases where the integer mapping can go wrong
+TEST_FUNC void test_fp64_edge_cases(float val)
+{
+  // values are derived from val at runtime
+  double one   = val;
+  double two   = one + one;
+  double zero  = one - one;
+  double nzero = -zero;
+  double inf   = cuda::std::numeric_limits<double>::infinity() * one;
+  double max   = cuda::std::numeric_limits<double>::max() * one;
+  double dmin  = cuda::std::numeric_limits<double>::denorm_min() * one;
+  double nan   = cuda::std::numeric_limits<double>::quiet_NaN();
+  double nnan  = cuda::std::copysign(nan, -one);
+  // nvcc quiets signaling NaN constants in device code, so the bits are built at runtime
+  double snan =
+    cuda::std::bit_cast<double>(cuda::std::uint64_t{0x7ff4'0000'0000'0000} * static_cast<cuda::std::uint64_t>(val));
+
+  //                x      y      fmax   fmin
+  // signed zeros compare equal
+  // only the value is checked
+  test_fp64_min_max(zero, nzero, zero, zero);
+  test_fp64_min_max(nzero, zero, zero, zero);
+  assert(cuda::std::signbit(cuda::std::fmax(nzero, nzero)));
+  assert(cuda::std::signbit(cuda::std::fmin(nzero, nzero)));
+
+  // negative values are ordered in reverse to their bit patterns
+  test_fp64_min_max(-one, -two, -one, -two);
+  test_fp64_min_max(-two, -one, -one, -two);
+  test_fp64_min_max(-one, one, one, -one);
+  test_fp64_min_max(-one, -one, -one, -one);
+
+  // infinities and limits
+  test_fp64_min_max(-inf, -max, -max, -inf);
+  test_fp64_min_max(max, inf, inf, max);
+
+  // denormals
+  test_fp64_min_max(dmin, zero, dmin, zero);
+  test_fp64_min_max(-dmin, nzero, nzero, -dmin);
+  test_fp64_min_max(-dmin, dmin, dmin, -dmin);
+
+  // negative NaNs map below -inf, but the other value must still be returned
+  test_fp64_min_max(nnan, -one, -one, -one);
+  test_fp64_min_max(-one, nnan, -one, -one);
+  test_fp64_min_max(nnan, -inf, -inf, -inf);
+  test_fp64_min_max(snan, one, one, one);
+  test_fp64_min_max(one, snan, one, one);
+
+  // two NaNs return a NaN, the payload and whether a signaling NaN is quieted are unspecified
+  assert(cuda::std::isnan(cuda::std::fmax(nan, nan)));
+  assert(cuda::std::isnan(cuda::std::fmin(nan, nan)));
+  assert(cuda::std::isnan(cuda::std::fmax(nnan, nan)));
+  assert(cuda::std::isnan(cuda::std::fmin(nnan, nan)));
+  assert(cuda::std::isnan(cuda::std::fmax(snan, snan)));
+  assert(cuda::std::isnan(cuda::std::fmin(snan, snan)));
+  assert(cuda::std::isnan(cuda::std::fmax(nan, snan)));
+  assert(cuda::std::isnan(cuda::std::fmin(snan, nan)));
+
+  // mixed arguments are promoted to double
+  assert(eq(cuda::std::fmax(-val, -0.5 * one), -0.5));
+  assert(eq(cuda::std::fmin(-val, -0.5 * one), -1.0));
+
+  // on device -0 < +0 for fmax and fmin
+  NV_IF_TARGET(NV_IS_DEVICE,
+               (assert(!cuda::std::signbit(cuda::std::fmax(zero, nzero)));
+                assert(!cuda::std::signbit(cuda::std::fmax(nzero, zero)));
+                assert(cuda::std::signbit(cuda::std::fmin(zero, nzero)));
+                assert(cuda::std::signbit(cuda::std::fmin(nzero, zero)));))
+}
+
 template <class T>
 TEST_FUNC constexpr bool test(T val)
 {
@@ -147,6 +228,8 @@ TEST_FUNC bool test(float val)
   test<__int128_t>(static_cast<__int128_t>(static_cast<int>(val)));
   test<__uint128_t>(static_cast<__uint128_t>(static_cast<int>(val)));
 #endif // _CCCL_HAS_INT128()
+
+  test_fp64_edge_cases(val);
 
   return true;
 }
