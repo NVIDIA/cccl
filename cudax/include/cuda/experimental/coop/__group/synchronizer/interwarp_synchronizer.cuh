@@ -86,7 +86,7 @@ template <class _RangeView>
 class interwarp_synchronizer
 {
   static_assert(::cuda::std::is_convertible_v<::cuda::std::ranges::range_value_t<_RangeView>, __interwarp_barrier_id>,
-                "_Range's value_type must be convertible to the interwarp barrier id");
+                "_RangeView's value_type must be convertible to the interwarp barrier id");
 
   _RangeView __barrier_ids_;
 
