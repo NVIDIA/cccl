@@ -19,6 +19,7 @@
 #include <cub/util_macro.cuh>
 #include <cub/warp/warp_scan.cuh>
 
+#include <cuda/__bit/bit_fns.h>
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__memory/ptr_rebind.h>
 #include <cuda/ptx>
@@ -191,27 +192,6 @@ struct alignas(16) prefix_t<OffT, true>
     return static_cast<OffT>(packed_open_len);
   }
 };
-
-// position of the n-th set bit of flag_mask, requires popc(flag_mask) > rank. Implementation is binary search.
-// __fns(flag_mask, 0, rank+1) computes the same thing but has NO hardware op on sm_100a and is slower
-// TODO (Nan): as per discussion with Federico, this could be in libcudacxx
-_CCCL_DEVICE_API _CCCL_FORCEINLINE int nth_set_bit(unsigned flag_mask, int rank)
-{
-  // each step: if the wanted bit is not among the low half's set bits, skip that half entirely
-  int bit_position = 0;
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int half_width = 16; half_width >= 1; half_width /= 2)
-  {
-    const int set_bits_in_low_half = __popc(flag_mask & ((1u << half_width) - 1u));
-    if (rank >= set_bits_in_low_half)
-    {
-      rank -= set_bits_in_low_half;
-      bit_position += half_width;
-      flag_mask >>= half_width;
-    }
-  }
-  return bit_position;
-}
 
 struct warp_tile_run_scan_t
 {
@@ -473,7 +453,7 @@ struct head_flag_decode_t
     const int flag_word_run_count = __popc(flag_word);
     // position of my head inside the word
     const int head_bit_in_word =
-      nth_set_bit(flag_word, (run_rank_in_word < flag_word_run_count) ? run_rank_in_word : 0);
+      ::cuda::bit_fns(flag_word, (run_rank_in_word < flag_word_run_count) ? run_rank_in_word : 0);
     const int head_pos_in_warp_tile = flag_word_idx * 32 + head_bit_in_word;
     // where does my run end? try find the position of next head in word
     const int next_head_in_word = flag_word_idx * 32 + __ffs(flag_word & (~1u << head_bit_in_word)) - 1;
