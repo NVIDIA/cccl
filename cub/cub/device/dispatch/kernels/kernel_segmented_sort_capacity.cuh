@@ -29,7 +29,7 @@ __launch_bounds__(256) _CCCL_KERNEL_ATTRIBUTES void partition_kernel(
   BeginIterator begins, EndIterator ends, unsigned num_segments, unsigned* counts_or_cursors, unsigned* ids)
 {
   __shared__ unsigned counts[Capacities::size + 1];
-  __shared__ unsigned starts[Capacities::size + 1];
+  [[maybe_unused]] __shared__ unsigned starts[Capacities::size + 1]; // Read only in the scatter pass.
   for (int bin = threadIdx.x; bin <= Capacities::size; bin += blockDim.x)
   {
     counts[bin] = 0;
