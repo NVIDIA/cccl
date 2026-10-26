@@ -2018,7 +2018,7 @@ struct __policy_or : __composite_hooks<_L, _R>
     // with the same funnel pointer and nothing is thrown. `__yes` runs the arm's hook body past
     // its selection. `__unknown` (a non-std exception, or a non-class listed type) takes the
     // general path, where the arm re-observes and declines by rethrowing.
-    [[maybe_unused]] bool __use_claimed = false;
+    [[maybe_unused]] bool __use_claimed = false; // NOLINT(misc-const-correctness): set only when the arm has a claim
     if constexpr (__has_claim<_L>)
     {
       __claim __c = __claim::__unknown;
@@ -2197,7 +2197,7 @@ struct __policy_pow : __forwards_success<_P>
       // A selecting policy is asked before each repetition. A type-based (pure) claim that says
       // no would say no to every repetition, so the whole repetition declines at once; a
       // predicate's no declines this repetition only, since the predicate may have state.
-      [[maybe_unused]] bool __use_claimed = false;
+      [[maybe_unused]] bool __use_claimed = false; // NOLINT(misc-const-correctness): set only when the arm has a claim
       if constexpr (__has_claim<_P>)
       {
         __claim __c = __claim::__unknown;
