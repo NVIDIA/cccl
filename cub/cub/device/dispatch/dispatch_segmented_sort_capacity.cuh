@@ -46,7 +46,7 @@ struct group_merge_entries
   {
     _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
     {
-      return PolicyGetter{}().small;
+      return PolicyGetter{}().small_block;
     }
   };
   struct large_policy_getter
@@ -190,7 +190,7 @@ template <typename Plan,
           typename BeginIterator,
           typename EndIterator,
           typename Launcher,
-          ::cuda::std::size_t... I>
+          ::cuda::std::size_t... EntryIndices>
 CUB_RUNTIME_FUNCTION cudaError_t launch_entries(
   partition_result bins,
   BeginIterator begins,
@@ -199,7 +199,7 @@ CUB_RUNTIME_FUNCTION cudaError_t launch_entries(
   Key* out,
   cudaStream_t stream,
   Launcher launcher,
-  ::cuda::std::index_sequence<I...>)
+  ::cuda::std::index_sequence<EntryIndices...>)
 {
   int sm_count = 0;
   if (const auto error = CubDebug(launcher.MultiProcessorCount(sm_count)))
@@ -215,7 +215,7 @@ CUB_RUNTIME_FUNCTION cudaError_t launch_entries(
         {bins.bin_offsets + Plan::bin_begin(i), bins.segment_ids}, begins, ends, in, out, sm_count, stream, launcher);
     }
   };
-  (launch(::cuda::std::integral_constant<int, I>{}), ...);
+  (launch(::cuda::std::integral_constant<int, EntryIndices>{}), ...);
   return error;
 }
 

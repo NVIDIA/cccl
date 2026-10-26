@@ -47,13 +47,13 @@ struct group_merge_policy
 struct group_merge_launch_policy
 {
   group_merge_policy warp;
-  group_merge_policy small;
+  group_merge_policy small_block;
   group_merge_policy large;
   // Compare the complete three-launch policy.
   _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const group_merge_launch_policy& a, const group_merge_launch_policy& b)
   {
-    return a.warp == b.warp && a.small == b.small && a.large == b.large;
+    return a.warp == b.warp && a.small_block == b.small_block && a.large == b.large;
   }
 };
 
