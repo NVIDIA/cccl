@@ -16,6 +16,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_segmented_sort_group_merge.cuh>
+#include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/segmented_sort_capacity.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_sort_capacity.cuh>
@@ -31,11 +32,11 @@ namespace detail::segmented_sort_capacity
 {
 // Compose the current three launches from independently specified entry policies.
 // Named getters keep structural policy objects out of NVCC/MSVC C++20 launch stubs.
-template <typename Key>
+template <typename Key, int TuningArch>
 using group_merge_entries =
-  sort_entries<sort_entry<group_merge_implementation<group_merge_warp_policy_getter>>,
-               sort_entry<group_merge_implementation<group_merge_small_policy_getter>>,
-               sort_entry<group_merge_implementation<group_merge_large_policy_getter<Key>>>>;
+  sort_entries<sort_entry<group_merge_implementation<group_merge_warp_policy_getter<TuningArch>>>,
+               sort_entry<group_merge_implementation<group_merge_small_policy_getter<TuningArch>>>,
+               sort_entry<group_merge_implementation<group_merge_large_policy_getter<TuningArch, Key>>>>;
 
 // Query or use temporary storage, then count, prefix, and scatter IDs into capacity bins.
 // These pointers alias caller-provided global storage. It must remain valid until
@@ -218,18 +219,33 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch(
   Launcher launcher   = {})
 {
   static_assert(sizeof(Key) <= 8, "Keys wider than 8 bytes require an architecture-specific GroupMerge policy");
-  using plan = group_merge_entries<Key>;
-  if (const auto error = dispatch_partition<typename plan::capacities>(
-        temp_storage, temp_storage_bytes, begins, ends, num_segments, result, stream, launcher))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher.PtxComputeCap(cc)))
   {
     return error;
   }
-  if (!temp_storage || !num_segments)
-  {
-    return cudaSuccess;
-  }
-  return launch_entries<plan>(
-    result, begins, ends, in, out, stream, launcher, ::cuda::std::make_index_sequence<plan::size>{});
+  return dispatch_compute_cap(group_merge_tuning_arch_selector{}, cc, [&](auto arch) -> cudaError_t {
+    constexpr int tuning_arch = decltype(arch){}();
+    if constexpr (tuning_arch < 90)
+    {
+      return cudaErrorNotSupported;
+    }
+    else
+    {
+      using plan = group_merge_entries<Key, tuning_arch>;
+      if (const auto error = dispatch_partition<typename plan::capacities>(
+            temp_storage, temp_storage_bytes, begins, ends, num_segments, result, stream, launcher))
+      {
+        return error;
+      }
+      if (!temp_storage || !num_segments)
+      {
+        return cudaSuccess;
+      }
+      return launch_entries<plan>(
+        result, begins, ends, in, out, stream, launcher, ::cuda::std::make_index_sequence<plan::size>{});
+    }
+  });
 }
 } // namespace detail::segmented_sort_capacity
 
