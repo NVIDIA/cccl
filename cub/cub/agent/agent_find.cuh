@@ -5,7 +5,6 @@
 #include <cub/config.cuh>
 
 #include <cub/block/block_load.cuh>
-#include <cub/detail/cub_vector.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
@@ -13,9 +12,7 @@
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
-#include <cuda/__memory/as_bytes_vectorized.h>
-#include <cuda/__memory/is_aligned.h>
-#include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/__iterator/transform_iterator.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 
 #if !_CCCL_HAS_NV_ATOMIC_BUILTINS()
@@ -34,18 +31,12 @@ template <int ThreadsPerBlock,
           typename PredicateT>
 struct agent_t
 {
-  // The input value type
-  using InputT = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
-
-  // Cache modified loads are at most 16 bytes wide, so they gain nothing from a stricter alignment
-  using VectorT = ::cuda::__as_bytes_vectorized_t<InputT, VecSize>;
-
   static constexpr int tile_size = ThreadsPerBlock * ItemsPerThread;
 
-  // Can vectorize according to the policy if the input iterator is a native pointer to a primitive type
+  // Only contiguous inputs use the arrangement of vectors, because item-wise loads of other inputs in that arrangement
+  // are slower than coalesced ones
   static constexpr bool attempt_vectorization =
-    (VecSize > 1) && (ItemsPerThread % VecSize == 0) && (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>)
-    && ::cuda::is_trivially_copyable_v<InputT> && !::cuda::std::is_volatile_v<InputT>;
+    (VecSize > 1) && (ItemsPerThread % VecSize == 0) && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>;
 
   static constexpr CacheLoadModifier load_modifier = LoadModifier;
 
@@ -65,32 +56,18 @@ struct agent_t
   OffsetT* found_pos_ptr;
   OffsetT num_items;
 
-  template <typename Iterator = InputIteratorT, bool CanVectorize = attempt_vectorization>
-  _CCCL_DEVICE _CCCL_FORCEINLINE bool is_aligned_and_full_tile(OffsetT tile_offset)
-  {
-    if constexpr (CanVectorize)
-    {
-      static_assert(::cuda::std::is_pointer_v<Iterator>);
-
-      const bool full_tile = (tile_offset + tile_size) <= num_items;
-
-      // Check alignment at the actual load position (d_in + tile_offset)
-      return full_tile && ::cuda::is_aligned(d_in + tile_offset, sizeof(VectorT));
-    }
-    else
-    {
-      return false;
-    }
-  }
-
   _CCCL_DEVICE _CCCL_FORCEINLINE bool ConsumeTile(OffsetT tile_offset, ::cuda::std::true_type /*CAN_VECTORIZE*/)
   {
-    using InputT = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
+    // Only full tiles are loaded with vectors. Checking this here instead of in Process() avoids a duplicated
+    // item-wise loop when vectorization is not attempted
+    if (tile_offset + tile_size > num_items)
+    {
+      return ConsumeTile(tile_offset, ::cuda::std::false_type{});
+    }
 
-    alignas(VectorT) unsigned char input_bytes[ItemsPerThread * sizeof(InputT)];
-    auto& input_items = *reinterpret_cast<InputT(*)[ItemsPerThread]>(input_bytes);
-    InternalLoadDirectStripedVectorized<ThreadsPerBlock, VecSize, LoadModifier>(
-      static_cast<int>(threadIdx.x), d_in + tile_offset, input_items);
+    bool predicates[ItemsPerThread];
+    LoadDirectStripedVectorized<ThreadsPerBlock, VecSize, LoadModifier>(
+      static_cast<int>(threadIdx.x), ::cuda::transform_iterator{d_in + tile_offset, predicate}, predicates);
 
     for (int i = 0; i < ItemsPerThread; ++i)
     {
@@ -100,7 +77,7 @@ struct agent_t
 
       OffsetT index = tile_offset + vector_of_tile * VecSize + element_in_vector;
 
-      if (index < num_items && predicate(input_items[i]))
+      if (index < num_items && predicates[i])
       {
         atomicMin(&temp_storage.block_result, index);
         // every thread goes over multiple elements per thread for every tile. If a thread finds a local minimum it
@@ -165,10 +142,7 @@ struct agent_t
         return;
       }
 
-      const bool found_thread =
-        is_aligned_and_full_tile(tile_offset)
-          ? ConsumeTile(tile_offset, ::cuda::std::bool_constant<attempt_vectorization>{})
-          : ConsumeTile(tile_offset, ::cuda::std::false_type{});
+      const bool found_thread = ConsumeTile(tile_offset, ::cuda::std::bool_constant<attempt_vectorization>{});
 
       const bool found_block = __syncthreads_or(found_thread);
       if (found_block)
