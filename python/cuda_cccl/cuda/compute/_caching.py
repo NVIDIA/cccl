@@ -672,6 +672,31 @@ def clear_all_caches():
         cached_func.cache_clear()
 
 
+def _code_constants_key(consts):
+    """Make a type-aware key for a code object's ``co_consts``.
+
+    Plain tuple equality treats ``1``, ``1.0`` and ``True`` as equal (and
+    ``0.0`` as equal to ``-0.0``), so functions differing only in the type or
+    sign of a literal would share a cache entry and reuse each other's
+    compiled code and inferred return type.
+    """
+    keys = []
+    for c in consts:
+        if isinstance(c, tuple):
+            keys.append((type(c), _code_constants_key(c)))
+        elif isinstance(c, frozenset):
+            keys.append((type(c), frozenset(_code_constants_key(c))))
+        elif isinstance(c, types.CodeType):
+            # Code object equality already compares constants by type.
+            keys.append(c)
+        elif isinstance(c, (float, complex)):
+            # repr() separates 0.0 from -0.0 and makes NaN equal to itself.
+            keys.append((type(c), repr(c)))
+        else:
+            keys.append((type(c), c))
+    return tuple(keys)
+
+
 class CachableFunction:
     """
     A type that wraps a function and provides custom comparison
@@ -696,7 +721,7 @@ class CachableFunction:
         self._identity = (
             func.__name__,
             func.__code__.co_code,
-            func.__code__.co_consts,
+            _code_constants_key(func.__code__.co_consts),
             tuple(contents),
             tuple(
                 # if `name` is found in __globals__, try and hash
