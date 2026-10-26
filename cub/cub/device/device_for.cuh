@@ -32,6 +32,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/call_or.h>
+#include <cuda/__memory/as_bytes_vectorized.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__fwd/mdspan.h>
@@ -103,8 +104,9 @@ struct DeviceFor
     // TODO Can be extracted into tuning
     constexpr static int vec_size = 4;
 
-    // Type of the vector that is used to load the input data
-    using vector_t = typename CubVector<T, vec_size>::Type;
+    // Type of the vector that is used to load the input data, with vectors of at most 16 bytes, so that input aligned
+    // to 16 bytes is vectorized
+    using vector_t = ::cuda::__as_bytes_vectorized_t<T, vec_size, 16ull>;
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(OffsetT i)
     {
@@ -124,7 +126,7 @@ struct DeviceFor
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int j = 0; j < vec_size; j++)
         {
-          (void) op(*(reinterpret_cast<const T*>(&vec) + j));
+          (void) op(vec.template __alias<T>(j));
         }
       }
     }
