@@ -226,24 +226,20 @@ Kernels and their generated C++
    }
    </style>
 
-The following pairs use source captured while compiling real kernels. These
-captures use one block of 128 threads. The copy kernels process 256
-``int32`` values, with two values per thread; the Scan processes 128 values,
-one per thread.
+The Load/Store pairs below use source captured while compiling real kernels.
+These captures use one block of 128 threads to copy 256 ``int32`` values,
+with two values per thread.
 
 The C++ excerpts retain the emitted types, casts, and calls. Generated
 identifiers have been shortened to names such as ``load_impl`` and
 ``load_abi``, and whitespace has been formatted to fit the page. The copy
 excerpts show the no-offset Load helper and its ABI wrapper. Their full
-translation units also contain Store and offset overloads. The Scan excerpt
-shows the helper that accepts a scratch pointer.
+translation units also contain Store and offset overloads.
 
-The :download:`original captures <source_dumps/captures.zip>` contain all
-three unmodified translation units and a manifest with their checksums and
-the identifier substitutions used here. They were captured with
-Numba-CUDA-MLIR 0.5.1, targeting compute capability 12.0. Generated names
-and the set of emitted overloads can change with the compiler, toolkit, and
-source checkout.
+These excerpts were captured with Numba-CUDA-MLIR 0.5.1, targeting compute
+capability 12.0. Generate the complete source with the commands below to
+inspect the output for your checkout. Generated names and the set of emitted
+overloads can change with the compiler, toolkit, and source checkout.
 
 Capturing the source yourself
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -358,31 +354,17 @@ also contains ``_alloc`` variants with local ``__shared__`` storage and
 Scan with a Python device operator
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. grid:: 1 1 2 2
-   :gutter: 3
-   :class-container: coop-shim-pair
+.. literalinclude:: ../../../python/cuda_coop/examples/numba_mlir/source_dumps.py
+   :language: python
+   :start-after: # docs: start dump-scan
+   :end-before: # docs: end dump-scan
 
-   .. grid-item::
-
-      Python kernel and operator
-
-      .. literalinclude:: ../../../python/cuda_coop/examples/numba_mlir/source_dumps.py
-         :language: python
-         :start-after: # docs: start dump-scan
-         :end-before: # docs: end dump-scan
-
-   .. grid-item::
-
-      Generated C++: Scan excerpt
-
-      .. literalinclude:: source_dumps/scan.cpp.txt
-         :language: cpp
-         :start-after: // excerpt-begin
-
-The generated source declares ``maximum_device`` and wraps its call in a
-C++ lambda for CUB's ``InclusiveScan``. Numba compiles the Python
-``maximum`` function into a separate LTO-IR input that supplies the declared
-device symbol. Its Python body therefore has no C++ definition in this dump.
+Run the ``scan`` command above to inspect this kernel's generated C++ in
+``coop-source-dumps/scan``. It declares a device symbol for the Python
+operator and wraps its call in a C++ lambda for CUB's ``InclusiveScan``.
+Numba compiles the Python ``maximum`` function into a separate LTO-IR input
+that supplies the declared device symbol. Its Python body therefore has no
+C++ definition in this dump.
 
 The scalar input arrives by value as ``input``. The wrapper creates
 references for CUB's input and output arguments, invokes Scan, and writes
