@@ -31,8 +31,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if defined(_CCCL_BUILTIN_IS_MEMBER_POINTER) && !defined(_LIBCUDACXX_USE_IS_MEMBER_POINTER_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_member_pointer : public integral_constant<bool, _CCCL_BUILTIN_IS_MEMBER_POINTER(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_member_pointer : public bool_constant<_CCCL_BUILTIN_IS_MEMBER_POINTER(_Tp)>
 {};
 
 template <class _Tp>

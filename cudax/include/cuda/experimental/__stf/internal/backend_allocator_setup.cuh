@@ -26,8 +26,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
+
 #include <cuda/experimental/__stf/allocators/cached_allocator.cuh>
 #include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
+
+#include <stdexcept>
+#include <string>
 
 namespace cuda::experimental::stf
 {
@@ -49,43 +54,50 @@ auto allocators_create_and_attach(ctx_impl_t& i, Args&&... args)
   return res;
 };
 
-template <typename ctx_impl_t>
-void backend_ctx_set_default_allocator(ctx_impl_t& i, block_allocator_untyped& uncached)
+//! Read CUDASTF_DEFAULT_ALLOCATOR ("cached" when unset). An unknown value throws
+//! std::invalid_argument; callers read the selection before they touch any context state, so a bad
+//! value leaves the context as it was.
+inline ::std::string default_allocator_from_env()
 {
-  const char* default_alloc_env = getenv("CUDASTF_DEFAULT_ALLOCATOR");
-  if (default_alloc_env)
+  const char* env = getenv("CUDASTF_DEFAULT_ALLOCATOR");
+  ::std::string kind(env ? env : "cached");
+  if (kind != "cached" && kind != "uncached" && kind != "cached_fifo" && kind != "pooled")
   {
-    ::std::string default_alloc_str(default_alloc_env);
-    if (default_alloc_str == "uncached")
-    {
-      i.default_allocator = uncached;
-    }
-    else if (default_alloc_str == "cached")
-    {
-      i.default_allocator = allocators_create_and_attach<cached_block_allocator>(i, uncached);
-    }
-    else if (default_alloc_str == "cached_fifo")
-    {
-      i.default_allocator = allocators_create_and_attach<cached_block_allocator_fifo>(i, uncached);
-    }
-    else if (default_alloc_str == "pooled")
-    {
-      i.default_allocator = allocators_create_and_attach<pooled_allocator>(i);
-    }
-    else
-    {
-      fprintf(stderr, "Error: invalid CUDASTF_DEFAULT_ALLOCATOR value.\n");
-      abort();
-    }
+    _CCCL_THROW(::std::invalid_argument,
+                ::std::string("invalid CUDASTF_DEFAULT_ALLOCATOR value '").append(kind).append("'"));
+  }
+  return kind;
+}
+
+template <typename ctx_impl_t>
+void backend_ctx_set_default_allocator(ctx_impl_t& i, block_allocator_untyped& uncached, const ::std::string& kind)
+{
+  if (kind == "uncached")
+  {
+    i.default_allocator = uncached;
+  }
+  else if (kind == "cached_fifo")
+  {
+    i.default_allocator = allocators_create_and_attach<cached_block_allocator_fifo>(i, uncached);
+  }
+  else if (kind == "pooled")
+  {
+    i.default_allocator = allocators_create_and_attach<pooled_allocator>(i);
   }
   else
   {
-    // Default allocator = cached
+    // "cached", the default
     i.default_allocator = allocators_create_and_attach<cached_block_allocator>(i, uncached);
   }
 
   // Make it possible to customize the context-wide default allocator (use the default one for now)
   i.custom_allocator = i.default_allocator;
+}
+
+template <typename ctx_impl_t>
+void backend_ctx_set_default_allocator(ctx_impl_t& i, block_allocator_untyped& uncached)
+{
+  backend_ctx_set_default_allocator(i, uncached, default_allocator_from_env());
 }
 
 /**
@@ -99,10 +111,12 @@ void backend_ctx_set_default_allocator(ctx_impl_t& i, block_allocator_untyped& u
 template <typename ctx_impl_t, typename uncached_allocator_t>
 void backend_ctx_setup_allocators(ctx_impl_t& i)
 {
+  // Read the selection first: an invalid value must not leave a half-configured context.
+  const auto kind      = default_allocator_from_env();
   i.uncached_allocator = allocators_create_and_attach<uncached_allocator_t>(i);
 
   // Select the default allocator based on this uncached allocator
-  backend_ctx_set_default_allocator(i, i.uncached_allocator);
+  backend_ctx_set_default_allocator(i, i.uncached_allocator, kind);
 }
 
 /**
@@ -116,9 +130,12 @@ void backend_ctx_setup_allocators(ctx_impl_t& i)
 template <typename ctx_impl_t>
 void backend_ctx_update_uncached_allocator(ctx_impl_t& i, block_allocator_untyped uncached_allocator)
 {
+  // Read the selection first, so a bad CUDASTF_DEFAULT_ALLOCATOR leaves every allocator as it was.
+  const auto kind = default_allocator_from_env();
+
   // Update the uncached allocator
   i.uncached_allocator = uncached_allocator;
 
-  backend_ctx_set_default_allocator(i, uncached_allocator);
+  backend_ctx_set_default_allocator(i, uncached_allocator, kind);
 }
 } // namespace cuda::experimental::stf::reserved

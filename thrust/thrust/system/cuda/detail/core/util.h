@@ -117,7 +117,7 @@ struct has_sm_tuning : has_sm_tuning_impl<SM, typename P<lowest_supported_sm_arc
 //   otherwise move on to the next sm in the sm_list
 template <template <class> class P, class SM, class... SMs>
 struct specialize_plan_impl_match<P, typelist<SM, SMs...>>
-    : ::cuda::std::conditional<has_sm_tuning<P, SM>::value, P<SM>, specialize_plan_impl_match<P, typelist<SMs...>>>::type
+    : ::cuda::std::conditional_t<has_sm_tuning<P, SM>::value, P<SM>, specialize_plan_impl_match<P, typelist<SMs...>>>
 {};
 
 #if _CCCL_CUDA_COMPILER(NVHPC)
@@ -251,7 +251,7 @@ struct return_Plan
 
 template <class Agent>
 struct get_plan
-    : ::cuda::std::conditional<has_Plan<Agent>::value, return_Plan<Agent>, ::cuda::std::type_identity<AgentPlan>>::type
+    : ::cuda::std::conditional_t<has_Plan<Agent>::value, return_Plan<Agent>, ::cuda::std::type_identity<AgentPlan>>
 {};
 
 // returns AgentPlan corresponding to a given ptx version

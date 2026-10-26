@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/config.cuh>
+#include <thrust/system/cuda/config.h>
 
 #include <cub/util_device.cuh>
 

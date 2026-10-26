@@ -263,7 +263,7 @@ projects:
     lite_dependencies: [libcudacxx_public, cub_public, thrust_public]
     full_dependencies: []
     include_regexes:
-      - '\.github/workflows/build-matx\.yml'
+      - '\.github/workflows/build-matx\.yml$'
       - 'ci/matx/'
 
   pytorch:
@@ -272,7 +272,7 @@ projects:
     lite_dependencies: [libcudacxx_public, cub_public, thrust_public]
     full_dependencies: []
     include_regexes:
-      - '\.github/workflows/build-pytorch\.yml'
+      - '\.github/workflows/build-pytorch\.yml$'
       - 'ci/pytorch/'
 
   rapids:
@@ -281,7 +281,7 @@ projects:
     lite_dependencies: [libcudacxx_public, cub_public, thrust_public]
     full_dependencies: []
     include_regexes:
-      - '\.github/workflows/build-rapids\.yml'
+      - '\.github/workflows/build-rapids\.yml$'
       - 'ci/rapids/'
 
   # This is a dummy project, and only really serves to encode dependencies. Any time any
@@ -314,7 +314,11 @@ ignore_regexes:
   - '^libcudacxx/test/LICENSE\.TXT$'
   - '.+\.md$'
   - '\.branch_notes/'
+  - '^\.agent/'
+  - '^\.claude/'
   - '\.coderabbit\.yaml'
+  - '^\.codespell-ignore\.txt$'
+  - '^\.cursor/'
   - '\.clang-format'
   - '\.clangd'
   # Do not add .clang-tidy to this list. If we modify .clang-tidy to either add or remove
@@ -323,25 +327,39 @@ ignore_regexes:
   #
   # - '\.clang-tidy'
   - '\.devcontainer/img'
+  - '^\.gdbinit$'
+  - '^\.gersemi/'
+  - '^\.gersemirc$'
   - '\.git-blame-ignore-revs'
+  - '^\.github/actionlint\.yaml$'
   - '\.github/actions/docs-build'
+  - '^\.github/actions/version-update/'
   - '\.github/CODEOWNERS'
   - '\.github/copy-pr-bot\.yaml'
   - '\.github/ISSUE_TEMPLATE/'
   - '\.github/problem-matchers/problem-matcher\.json'
+  - '^\.github/release\.yml$'
   - '\.github/workflows/backport-prs\.yml'
   - '\.github/workflows/bench.*\.yml'
   - '\.github/workflows/compile-time-bench\.yml'
   - '\.github/workflows/build-docs\.yml'
+  - '^\.github/workflows/docs-deploy\.yml$'
   - '\.github/workflows/git-bisect\.yml'
+  - '^\.github/workflows/new-version-tagging\.yml$'
   - '\.github/workflows/project_automation.*\.yml'
   - '\.github/workflows/release.*\.yml'
+  - '^\.github/workflows/secret-scan-pulse\.yml$'
   - '\.github/workflows/triage_rotation\.yml'
-  - '\.github/workflows/update_branch_version\.yml'
+  - '^\.github/workflows/update-branch-version\.yml$'
   - '\.github/workflows/verify-devcontainers\.yml'
   - '\.gitignore'
+  - '^\.lldbinit$'
+  - '^\.pre-commit-config\.yaml$'
+  - '^\.shellcheckrc$'
+  - '^\.vscode/launch\.json$'
   - "benchmarks/scripts/" # Python+bash scripts for running benchmarks, not used in tests.
   - 'cccl-version.json'
   - 'ci/bench/'
   - 'ci/bench.+yaml'
+  - '^ci/util/pre-commit/'
   - 'docs/'

@@ -28,14 +28,10 @@ function(_cccl_create_tidy_plugins ret_var)
 
   get_property(plugins GLOBAL PROPERTY CCCL_TIDY_PLUGINS)
   if (NOT plugins)
-    # TODO (jfaibussowit):
-    #
-    # Enable this check once we actually have clang-tidy plugins
-    #
-    # message(
-    #   FATAL_ERROR
-    #   "clang-tidy plugins failed to propagate the list of configured plugins."
-    # )
+    message(
+      FATAL_ERROR
+      "clang-tidy plugins failed to propagate the list of configured plugins."
+    )
   endif()
   set(${ret_var} "${plugins}" PARENT_SCOPE)
 endfunction()

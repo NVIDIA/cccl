@@ -28,6 +28,16 @@ llvm_map_components_to_libnames(CCCL_LLVM_LIBS core)
 
 define_property(GLOBAL PROPERTY CCCL_TIDY_PLUGINS)
 
+# This is because the clang-tidy job in CI is usually run when CCCL itself is in a debug
+# build (since this allows clang-tidy to see asserts in the code). But we want to build
+# the actual plugins in release mode so they aren't slow.
+option(
+  CCCL_CLANG_TIDY_PLUGIN_RESPECT_CMAKE_BUILD_TYPE
+  "Respect the current cmake build type when building clang-tidy plugins instead of always building in release mode"
+  OFF
+)
+mark_as_advanced(CCCL_CLANG_TIDY_PLUGIN_RESPECT_CMAKE_BUILD_TYPE)
+
 #[=======================================================================[.rst:
 cccl_create_clang_tidy_plugin
 -----------------------------
@@ -66,6 +76,7 @@ function(cccl_create_clang_tidy_plugin TARGET)
     "${TARGET}"
     PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}
+      ${CMAKE_CURRENT_FUNCTION_LIST_DIR}
       ${CLANG_INCLUDE_DIRS}
       ${LLVM_INCLUDE_DIRS}
   )
@@ -74,6 +85,16 @@ function(cccl_create_clang_tidy_plugin TARGET)
     "${TARGET}"
     PRIVATE cccl::clang-tidy ${CCCL_LLVM_LIBS} clangToolingRefactoring
   )
+
+  if (NOT CCCL_CLANG_TIDY_PLUGIN_RESPECT_CMAKE_BUILD_TYPE)
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+      message(
+        STATUS
+        "Building clang-tidy plugin with release flags, even for debug builds"
+      )
+    endif()
+    target_compile_options("${TARGET}" PRIVATE -O3 -g)
+  endif()
   cccl_ensure_metatargets("${TARGET}")
 
   set_property(GLOBAL APPEND PROPERTY CCCL_TIDY_PLUGINS "${TARGET}")
@@ -255,3 +276,7 @@ function(cccl_create_clang_tidy_test plugin source)
   )
   _cccl_ensure_plugin_is_built_for_test("${target}" "${plugin}")
 endfunction()
+
+add_subdirectory(modernize_type_traits)
+add_subdirectory(prefer_cuda_traits)
+add_subdirectory(simplify_type_traits)
