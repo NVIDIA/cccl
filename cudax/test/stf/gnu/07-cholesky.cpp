@@ -699,6 +699,8 @@ int main(int argc, char** argv)
 
   ctx.finalize();
 
+  // finalize() does not wait for work recorded in a stream returned by fence().
+  cuda_safe_call(cudaEventSynchronize(stopEvent_pdpotrf));
   cuda_safe_call(cudaEventElapsedTime(&milliseconds_pdpotrf, startEvent_pdpotrf, stopEvent_pdpotrf));
 
   double gflops_pdpotrf = 1.0 / 3.0 * ((double) N * (double) N * (double) N) / (1000000000.0);

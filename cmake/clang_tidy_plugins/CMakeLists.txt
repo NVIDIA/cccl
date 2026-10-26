@@ -13,7 +13,9 @@ if (PROJECT_IS_TOP_LEVEL)
 endif()
 
 # We need compile-commands in all cases so that clang-tidy tests work
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+if (NOT CMAKE_EXPORT_COMPILE_COMMANDS)
+  message(FATAL_ERROR "Clang-tidy tests require compile_commands.json")
+endif()
 
 # Some package managers (conda) have separate LLVM and clang development packages.
 # Finding just LLVM or just clang does not guarantee that the other is installed, so need
@@ -25,6 +27,16 @@ separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
 llvm_map_components_to_libnames(CCCL_LLVM_LIBS core)
 
 define_property(GLOBAL PROPERTY CCCL_TIDY_PLUGINS)
+
+# This is because the clang-tidy job in CI is usually run when CCCL itself is in a debug
+# build (since this allows clang-tidy to see asserts in the code). But we want to build
+# the actual plugins in release mode so they aren't slow.
+option(
+  CCCL_CLANG_TIDY_PLUGIN_RESPECT_CMAKE_BUILD_TYPE
+  "Respect the current cmake build type when building clang-tidy plugins instead of always building in release mode"
+  OFF
+)
+mark_as_advanced(CCCL_CLANG_TIDY_PLUGIN_RESPECT_CMAKE_BUILD_TYPE)
 
 #[=======================================================================[.rst:
 cccl_create_clang_tidy_plugin
@@ -64,28 +76,33 @@ function(cccl_create_clang_tidy_plugin TARGET)
     "${TARGET}"
     PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}
+      ${CMAKE_CURRENT_FUNCTION_LIST_DIR}
       ${CLANG_INCLUDE_DIRS}
       ${LLVM_INCLUDE_DIRS}
   )
   target_compile_definitions("${TARGET}" PRIVATE ${LLVM_DEFINITIONS_LIST})
   target_link_libraries(
     "${TARGET}"
-    PRIVATE ${CCCL_LLVM_LIBS} clangTidy clangToolingRefactoring
+    PRIVATE cccl::clang-tidy ${CCCL_LLVM_LIBS} clangToolingRefactoring
   )
+
+  if (NOT CCCL_CLANG_TIDY_PLUGIN_RESPECT_CMAKE_BUILD_TYPE)
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+      message(
+        STATUS
+        "Building clang-tidy plugin with release flags, even for debug builds"
+      )
+    endif()
+    target_compile_options("${TARGET}" PRIVATE -O3 -g)
+  endif()
+  cccl_ensure_metatargets("${TARGET}")
 
   set_property(GLOBAL APPEND PROPERTY CCCL_TIDY_PLUGINS "${TARGET}")
 endfunction()
 
 find_program(
   CCCL_FILECHECK
-  NAMES
-    FileCheck
-    FileCheck-23
-    FileCheck-22
-    FileCheck-21
-    FileCheck-20
-    FileCheck-19
-    FileCheck-18
+  NAMES FileCheck FileCheck-${LLVM_VERSION_MAJOR}
   HINTS "${LLVM_TOOLS_BINARY_DIR}"
   REQUIRED
 )
@@ -260,5 +277,6 @@ function(cccl_create_clang_tidy_test plugin source)
   _cccl_ensure_plugin_is_built_for_test("${target}" "${plugin}")
 endfunction()
 
-# The parent enables testing after configuring this directory.
-enable_testing()
+add_subdirectory(modernize_type_traits)
+add_subdirectory(prefer_cuda_traits)
+add_subdirectory(simplify_type_traits)

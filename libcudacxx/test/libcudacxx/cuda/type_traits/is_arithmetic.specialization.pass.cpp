@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/type_traits>
+#include <cuda/__type_traits/is_arithmetic.h>
 
 #include "test_macros.h"
 
@@ -19,21 +19,19 @@ struct FloatingPointSpecialization
 {};
 
 template <>
-constexpr bool cuda::is_arithmetic_v<UserSpecialization> = true;
+constexpr bool cuda::__is_arithmetic_v<UserSpecialization> = true;
 
 template <>
 constexpr bool cuda::is_floating_point_v<FloatingPointSpecialization> = true;
 
 TEST_FUNC void test_specialization()
 {
-  static_assert(cuda::is_arithmetic_v<UserSpecialization>);
-  static_assert(cuda::is_arithmetic<UserSpecialization>::value);
-  static_assert(cuda::is_arithmetic_v<FloatingPointSpecialization>);
-  static_assert(cuda::is_arithmetic<FloatingPointSpecialization>::value);
-  static_assert(!cuda::is_arithmetic_v<UserSpecialization&>);
-  static_assert(!cuda::is_arithmetic_v<UserSpecialization*>);
-  static_assert(!cuda::is_arithmetic_v<FloatingPointSpecialization&>);
-  static_assert(!cuda::is_arithmetic_v<FloatingPointSpecialization*>);
+  static_assert(cuda::__is_arithmetic_v<UserSpecialization>);
+  static_assert(cuda::__is_arithmetic_v<FloatingPointSpecialization>);
+  static_assert(!cuda::__is_arithmetic_v<UserSpecialization&>);
+  static_assert(!cuda::__is_arithmetic_v<UserSpecialization*>);
+  static_assert(!cuda::__is_arithmetic_v<FloatingPointSpecialization&>);
+  static_assert(!cuda::__is_arithmetic_v<FloatingPointSpecialization*>);
 }
 
 int main(int, char**)

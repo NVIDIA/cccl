@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -55,8 +55,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 //! @brief Unpack a packed binary64 value into the public unpacked ABI.
 //!
 //! Fully-accurate, method-independent, full-range prologue: the sign/exponent/
@@ -168,7 +167,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_pack(__fpbits64_unpa
   }
 
   __uint32x2 __mantissa32 = ::cuda::std::bit_cast<__uint32x2>(__x.mantissa);
-  __mantissa32            = __round<_Rm>(__mantissa32, 0, __sign);
+  __mantissa32            = ::cuda::__round<_Rm>(__mantissa32, 0, __sign);
 
   const bool __is_nan = (__exponent >= (int) (0x0007ff00 - __fpemu_bias - 2048 - 1 - 128 + 0xC));
 
@@ -200,7 +199,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_pack(__fpbits64_unpa
     else
     {
       int32_t __sat_exp = 0;
-      __fp64_ovfl_sat<_Rm>(__sign, __sat_exp, __mantissa32);
+      ::cuda::__fp64_ovfl_sat<_Rm>(__sign, __sat_exp, __mantissa32);
       __mantissa32.x[1] |= (uint32_t) __sat_exp << _CCCL_FP64_HI_MANT_SHIFT;
     }
   }
@@ -208,7 +207,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_pack(__fpbits64_unpa
   __mantissa32.x[1] += __x.sign;
   return ::cuda::std::bit_cast<__fpbits64>(__mantissa32);
 }
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -32,35 +32,30 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! Tells whether a type is an arithmetic type, including extended floating point types. Users
 //! are allowed to specialize this template for their own types.
 template <class _Tp>
-inline constexpr bool is_arithmetic_v = ::cuda::std::is_arithmetic_v<_Tp> || is_floating_point_v<_Tp>;
-
-// we define the trait as alias, so users cannot specialize it (they should specialize the
-// variable template instead)
-template <class _Tp>
-using is_arithmetic = ::cuda::std::bool_constant<is_arithmetic_v<_Tp>>;
+inline constexpr bool __is_arithmetic_v = ::cuda::std::is_arithmetic_v<_Tp> || is_floating_point_v<_Tp>;
 
 // If the CUDA half types don't have the proper conversion operators or arithmetic operators
 // then they don't qualify as arithmetic operators.
 #if _CCCL_HAS_NVFP16() && defined(__CUDA_NO_HALF_OPERATORS__)
 template <>
-inline constexpr bool is_arithmetic_v<__half> = false;
+inline constexpr bool __is_arithmetic_v<__half> = false;
 template <>
-inline constexpr bool is_arithmetic_v<const __half> = false;
+inline constexpr bool __is_arithmetic_v<const __half> = false;
 template <>
-inline constexpr bool is_arithmetic_v<volatile __half> = false;
+inline constexpr bool __is_arithmetic_v<volatile __half> = false;
 template <>
-inline constexpr bool is_arithmetic_v<const volatile __half> = false;
+inline constexpr bool __is_arithmetic_v<const volatile __half> = false;
 #endif // _CCCL_HAS_NVFP16
 
 #if _CCCL_HAS_NVBF16() && defined(__CUDA_NO_BFLOAT16_OPERATORS__)
 template <>
-inline constexpr bool is_arithmetic_v<__nv_bfloat16> = false;
+inline constexpr bool __is_arithmetic_v<__nv_bfloat16> = false;
 template <>
-inline constexpr bool is_arithmetic_v<const __nv_bfloat16> = false;
+inline constexpr bool __is_arithmetic_v<const __nv_bfloat16> = false;
 template <>
-inline constexpr bool is_arithmetic_v<volatile __nv_bfloat16> = false;
+inline constexpr bool __is_arithmetic_v<volatile __nv_bfloat16> = false;
 template <>
-inline constexpr bool is_arithmetic_v<const volatile __nv_bfloat16> = false;
+inline constexpr bool __is_arithmetic_v<const volatile __nv_bfloat16> = false;
 #endif // _CCCL_HAS_NVBF16
 
 _CCCL_END_NAMESPACE_CUDA

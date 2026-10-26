@@ -14,9 +14,9 @@ Overview
 
 This document is the per-function reference for the ``fpmp`` multi-precision types of the CCCL FP component: measured accuracy, special-value behavior and GPU performance, for every function the two types implement.
 
-The types live in namespace ``cuda::experimental``, abbreviated ``cudax::`` here and in the examples. Arithmetic and the math functions both come in with ``<cuda/fpmp>``. Names appear unqualified in the tables below for width; every one of them is a ``cudax::`` name.
+The types live in namespace ``cuda``. Arithmetic and the math functions both come in with ``<cuda/fpmp>``. Names appear unqualified in the tables below for width; every one of them is a ``cuda::`` name.
 
-Each function is reported at three accuracy levels, ``low``, ``def`` and ``high``. ``def`` is the default selector and is equal to ``mid``, not to ``high``; ``mid`` is the name to use in code (``cudax::fpmp2_accuracy::mid``).
+Each function is reported at three accuracy levels, ``low``, ``def`` and ``high``. ``def`` is the default selector and is equal to ``mid``, not to ``high``; ``mid`` is the name to use in code (``cuda::fpmp2_accuracy::mid``).
 
 .. _libcudacxx-extended-api-fp-fpmp-spec-test-platforms:
 
@@ -26,11 +26,11 @@ Test Platforms
 =================== =========== === =========
 GPU                 Clock (MHz) SMs FP64:FP32
 =================== =========== === =========
-NVIDIA B300 SXM6 AC 2032        148 1:32
+NVIDIA B300 SXM6 AC 2032        148 1:64
 NVIDIA B200         1965        148 1:2
 =================== =========== === =========
 
-FP64:FP32 is the rate at which the part runs double precision against single, measured here and rounded to the nearest power of two. It is the single number that decides which of these types is worth using: ``fp32mp2`` is built on FP32 and ``fp64mp2`` on FP64, so each one wins on the hardware where the other's arithmetic is the scarce resource.
+FP64:FP32 is the rate at which the part runs double precision against single, as NVIDIA specifies it: results per clock per SM, from the throughput table in the CUDA C++ Best Practices Guide. A benchmark that times the two side by side can read a narrower gap, since its FP32 baseline runs below peak. It is the single number that decides which of these types is worth using: ``fp32mp2`` is built on FP32 and ``fp64mp2`` on FP64, so each one wins on the hardware where the other's arithmetic is the scarce resource.
 
 .. _libcudacxx-extended-api-fp-fpmp-spec-supported-data-types:
 

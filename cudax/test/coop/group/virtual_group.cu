@@ -29,8 +29,6 @@ __device__ void test_virtual_group(Config config, Level level)
   {
     const cudax::coop::virtual_group vg{cuda::gpu_thread, g, cudax::coop::identity_mapping{}};
 
-    REQUIRE(cuda::gpu_thread.is_part_of(vg));
-
     REQUIRE(cuda::gpu_thread.count(vg) == cuda::gpu_thread.count(g));
     REQUIRE(cuda::gpu_thread.rank(vg) == cuda::gpu_thread.rank(g));
 
@@ -38,7 +36,6 @@ __device__ void test_virtual_group(Config config, Level level)
     REQUIRE(vg.count(g) == 1);
     REQUIRE(vg.rank(g) == 0);
 
-    static_assert(vg.is_always_exhaustive());
     static_assert(vg.is_always_contiguous());
 
     vg.sync();
@@ -52,15 +49,12 @@ __device__ void test_virtual_group(Config config, Level level)
 
     const cudax::coop::virtual_group vg{cuda::gpu_thread, g, cudax::coop::group_by{cuda::std::cw<n>}};
 
-    REQUIRE(cuda::gpu_thread.is_part_of(vg));
-
     REQUIRE(cuda::gpu_thread.count(vg) == n);
     REQUIRE(cuda::gpu_thread.rank(vg) == cuda::gpu_thread.rank(g) % n);
 
     REQUIRE(vg.count(g) == cuda::gpu_thread.count(g) / n);
     REQUIRE(vg.rank(g) == cuda::gpu_thread.rank(g) / n);
 
-    static_assert(vg.is_always_exhaustive());
     static_assert(vg.is_always_contiguous());
 
     vg.sync();

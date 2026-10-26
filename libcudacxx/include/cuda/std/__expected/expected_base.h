@@ -20,14 +20,11 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__concepts/invocable.h>
 #include <cuda/std/__expected/unexpect.h>
+#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__tuple_dir/sfinae_helpers.h>
-#include <cuda/std/__type_traits/is_assignable.h>
-#include <cuda/std/__type_traits/is_constructible.h>
-#include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_copy_assignable.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
@@ -44,7 +41,6 @@
 #include <cuda/std/__type_traits/is_trivially_destructible.h>
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
 #include <cuda/std/__type_traits/is_trivially_move_constructible.h>
-#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/delegate_constructors.h>
 #include <cuda/std/__utility/exception_guard.h>
 #include <cuda/std/__utility/forward.h>

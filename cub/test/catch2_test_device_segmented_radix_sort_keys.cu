@@ -20,6 +20,7 @@
 #include "catch2_segmented_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 #include <c2h/extended_types.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -496,9 +497,9 @@ try
   // Verify the keys are sorted correctly
   verification_helper.verify_sorted(out_keys, offsets + num_empty_segments, num_segments - num_empty_segments);
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Skipping segmented radix sort test, insufficient GPU memory. " << e.what() << "\n";
+  c2h::skip_if_allocation_failure();
 }
 
 // Currently, size of a single segment in DeviceRadixSort is limited to INT_MAX
@@ -544,9 +545,9 @@ try
   // Verify the keys are sorted correctly
   verification_helper.verify_sorted(out_keys);
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Skipping segmented radix sort test, insufficient GPU memory. " << e.what() << "\n";
+  c2h::skip_if_allocation_failure();
 }
 #  endif // defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
 #endif // defined(SINGLE_TEST_CASE_INSTANTIATION)

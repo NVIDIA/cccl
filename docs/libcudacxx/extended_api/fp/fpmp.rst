@@ -26,7 +26,7 @@ reaches 104 significand bits out of ordinary FP64 operations.
 
 Which of the two applies is decided by one number, the rate at which the part runs FP64 against
 FP32, and the :doc:`specification <fpmp_spec>` lists it for every platform measured — 1:2 on B200
-against 1:32 on B300. ``fp64mp2`` spends FP64 throughput, so it is the cheap route to quad-like
+against 1:64 on B300. ``fp64mp2`` spends FP64 throughput, so it is the cheap route to quad-like
 precision on a part where FP64 runs close to FP32, and a costly one where FP64 is rationed: a
 software binary128 is integer code and is not competing for the units ``fp64mp2`` needs.
 ``fp32mp2`` is the mirror image, and wins exactly where ``fp64mp2`` struggles.
@@ -108,6 +108,8 @@ IEEE-754, so ``is_iec559`` is ``false``:
 The minimum exponent is raised relative to the component type because both halves have to stay
 normal for the pair to carry its full significand.
 
+.. _libcudacxx-extended-api-fp-fpmp-80-bit:
+
 Retiring 80-bit CPU code
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -174,12 +176,10 @@ accuracy-explicit functions:
 
 .. code-block:: cuda
 
-    namespace cudax = cuda::experimental;
-
-    using ffloat = cudax::fp32mp2_low;              // low accuracy for the bulk of the work
+    using ffloat = cuda::fp32mp2_low;              // low accuracy for the bulk of the work
     ffloat a = ..., b = ...;
 
-    ffloat r = cudax::add<cudax::fpmp2_accuracy::high>(a, b);   // this one step at high
+    ffloat r = cuda::add<cuda::fpmp2_accuracy::high>(a, b);   // this one step at high
 
 ``add``, ``sub``, ``mul``, ``div``, ``fma`` and ``mad`` all take the level this way. The result
 type is the operand type, so nothing else in the expression changes — useful where a low-accuracy
@@ -197,7 +197,7 @@ Using the types
 
 One header carries the whole interface, the transcendental math functions included.
 
-The component lives in ``cuda::experimental`` namespace. Two spellings
+The component lives in the ``cuda`` namespace. Two spellings
 then appear, and the convention below is worth following even though, for most of these functions,
 either one compiles. The standard-named math functions are left **unqualified**, found by
 argument-dependent lookup. The component's own functions have no counterpart for ``double``, so
@@ -206,11 +206,9 @@ so:
 
 .. code-block:: cuda
 
-    namespace cudax = cuda::experimental;
-
-    cudax::fp64mp2 x{2.0};
+    cuda::fp64mp2 x{2.0};
     auto r = sqrt(x);                  // unqualified: ADL finds the fpmp2 overload
-    auto s = cudax::renormalize(x);    // component-specific; renormalize(x) also compiles
+    auto s = cuda::renormalize(x);    // component-specific; renormalize(x) also compiles
 
 Leaving the standard names unqualified is what lets an existing body of ``double`` code keep its
 call sites unchanged when the type underneath is swapped. ``sqrt(x)`` beats ``::sqrt(double)`` for
@@ -235,8 +233,8 @@ exactly is a narrowing conversion, and by default it must be written out:
 
 .. code-block:: cuda
 
-    cudax::fp32mp2 x = 1.2345678901234567;                                 // error by default
-    cudax::fp32mp2 y = static_cast<cudax::fp32mp2>(1.2345678901234567);    // correct, and constexpr
+    cuda::fp32mp2 x = 1.2345678901234567;                                // error by default
+    cuda::fp32mp2 y = static_cast<cuda::fp32mp2>(1.2345678901234567);    // correct, and constexpr
 
 The reason is that an implicit narrowing conversion has only one place to go — the single-limb
 constructor, which sets ``lo`` to zero and reports nothing. A value would silently arrive carrying
@@ -329,8 +327,8 @@ arithmetic will use, so it does not change by accident:
 
 .. code-block:: cuda
 
-    cudax::fp32mp2_low fast = ...;
-    cudax::fp32mp2     safe(fast);      // explicit; renormalizes on the way
+    cuda::fp32mp2_low fast = ...;
+    cuda::fp32mp2     safe(fast);      // explicit; renormalizes on the way
 
 Conversion **out of** ``low`` renormalizes. The reason is the state ``low`` leaves its results
 in: they can carry overlapping limbs, while the ``mid`` and ``high`` algorithms are written
@@ -379,7 +377,7 @@ hardware where FP64 is rationed:
   ``remainder``
 - **Probability** — ``normcdfinv``, and ``icdf`` for ``fp32mp2`` only, which turns a 32- or 64-bit
   uniform integer into a Gaussian variate. Taking an integer rather than a pair, it is the one
-  function here that ADL cannot find, so it has to be written ``cudax::icdf(bits)``, and its
+  function here that ADL cannot find, so it has to be written ``cuda::icdf(bits)``, and its
   accuracy level is a defaulted template parameter rather than a deduced one
 - **Special** — ``boys_f0``, the zeroth-order Boys function
 
@@ -407,6 +405,8 @@ stores, copies and reading ``hi()``/``lo()``, with a bit-preserving round-trip a
 copyability retained. A volatile lvalue is not an operand: arithmetic takes ``const fpmp2&``, so
 compute on a non-volatile copy and store the result back, exactly as the compiler does for a
 built-in ``volatile double``.
+
+.. _libcudacxx-extended-api-fp-fpmp-math-accuracy:
 
 Math function accuracy
 ----------------------
@@ -561,7 +561,22 @@ to get past.
 pair operation is a run of operations on the limbs, and on these parts those are the rationed FP64
 ones.
 The digits past ``double`` are therefore bought at a real price, unlike the ones below it, and how
-bearable that price is follows from the FP64 throughput underneath.
+bearable that price is follows from the FP64 throughput underneath. Where FP64 runs at full rate the
+comparison that matters is against software binary128, and the :doc:`specification <fpmp_spec>` has
+it per function: on B200 a ``mid`` addition is 7.8× faster than software binary128 and division
+17.8×, while on B300 binary128 is 1.4–4× faster than ``fp64mp2`` operation for operation.
+
+Optimization guide
+------------------
+
+``fp32mp2`` pays for its digits in FP32 instructions and wins only where FP64 is rationed;
+``fp64mp2`` pays in FP64 instructions and wins only where FP64 runs at full rate. Past that first
+decision, what a kernel gets out of either type depends on where its conversions sit, which accuracy
+level each step runs at, and whether its reductions go through atomics. The
+:ref:`FP optimization guide <libcudacxx-extended-api-fp-optimization-guide-fpmp>` covers those
+choices for both types, with per-operation costs, and its opening section on
+:ref:`choosing the type <libcudacxx-extended-api-fp-optimization-guide-choosing>` places ``fpmp``
+against the other components.
 
 References
 ----------

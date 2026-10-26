@@ -21,9 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <nv/target>
+
 #if _CCCL_HOSTED()
 #  if _CCCL_HAS_THREAD_API(PTHREAD)
-#    include <sched.h>
+#    include <sched.h> // IWYU pragma: keep
 #  endif // _CCCL_HAS_THREAD_API(PTHREAD)
 #  if _CCCL_HAS_THREAD_API(WIN32)
 #    include <windows.h>

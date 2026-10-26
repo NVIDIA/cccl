@@ -62,8 +62,8 @@ TEST_CASE("TestReverseIteratorDevicePtrOperatorArrow", "[reverse_iterator]")
 
   REQUIRE(reverse.operator->() == raw);
 }
-static_assert(cuda::std::is_trivially_copy_constructible<thrust::reverse_iterator<int*>>::value);
-static_assert(cuda::std::is_trivially_copyable<thrust::reverse_iterator<int*>>::value);
+static_assert(cuda::std::is_trivially_copy_constructible_v<thrust::reverse_iterator<int*>>);
+static_assert(cuda::std::is_trivially_copyable_v<thrust::reverse_iterator<int*>>);
 
 TEST_CASE("TestReverseIteratorIncrement", "[reverse_iterator]")
 {

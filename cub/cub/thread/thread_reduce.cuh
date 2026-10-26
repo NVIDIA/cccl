@@ -31,7 +31,9 @@
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_one_of.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -131,7 +133,7 @@ CUB_NAMESPACE_BEGIN
 //!   <tt>T operator()(const T &a, const T &b)</tt>
 //!
 //! @param[in] input
-//!   Array-like input
+//!   Array-like input. Must not be empty; use the overload taking a prefix to reduce possibly empty inputs.
 //!
 //! @param[in] reduction_op
 //!   Binary reduction operator
@@ -198,7 +200,7 @@ namespace detail
 
 template <typename T, typename ReductionOp, int Length>
 inline constexpr bool enable_sm90_simd_reduction_v =
-  is_one_of_v<T, int16_t, uint16_t> && is_cuda_minimum_maximum_v<ReductionOp, T> && Length >= 10;
+  ::cuda::std::__is_one_of_v<T, int16_t, uint16_t> && is_cuda_minimum_maximum_v<ReductionOp, T> && Length >= 10;
 
 //----------------------------------------------------------------------------------------------------------------------
 // SM80 SIMD
@@ -245,13 +247,14 @@ inline constexpr bool enable_sm70_simd_reduction_v = false;
 
 template <typename T, typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm90_v =
-  is_one_of_v<T, int32_t, uint32_t> && is_cuda_minimum_maximum_v<ReductionOp, T>;
+  ::cuda::std::__is_one_of_v<T, int32_t, uint32_t> && is_cuda_minimum_maximum_v<ReductionOp, T>;
 
 #  if _CCCL_HAS_NVFP16()
 
 template <typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm90_v<__half2, ReductionOp> =
-  is_cuda_minimum_maximum_v<ReductionOp, __half2> || is_one_of_v<ReductionOp, SimdMin<__half>, SimdMax<__half>>;
+  is_cuda_minimum_maximum_v<ReductionOp, __half2>
+  || ::cuda::std::__is_one_of_v<ReductionOp, SimdMin<__half>, SimdMax<__half>>;
 
 #  endif // _CCCL_HAS_NVFP16()
 
@@ -260,7 +263,7 @@ inline constexpr bool enable_ternary_reduction_sm90_v<__half2, ReductionOp> =
 template <typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm90_v<__nv_bfloat162, ReductionOp> =
   is_cuda_minimum_maximum_v<ReductionOp, __nv_bfloat162>
-  || is_one_of_v<ReductionOp, SimdMin<__nv_bfloat16>, SimdMax<__nv_bfloat16>>;
+  || ::cuda::std::__is_one_of_v<ReductionOp, SimdMin<__nv_bfloat16>, SimdMax<__nv_bfloat16>>;
 
 #  endif // _CCCL_HAS_NVBF16()
 
@@ -390,7 +393,7 @@ ThreadReducePartial(const Input& input, ReductionOp reduction_op, int valid_item
 {
   static_assert(is_fixed_size_random_access_range_v<Input>,
                 "Input must support the subscript operator[] and have a compile-time size");
-  static_assert(has_binary_call_operator<ReductionOp, ValueT>::value,
+  static_assert(::cuda::std::__is_callable_v<ReductionOp, ValueT, ValueT>,
                 "ReductionOp must have the binary call operator: operator(ValueT, ValueT)");
   if constexpr (static_size_v<Input> == 1)
   {
@@ -415,10 +418,13 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
   using namespace cub::detail;
   static_assert(is_fixed_size_random_access_range_v<Input>,
                 "Input must support the subscript operator[] and have a compile-time size");
-  static_assert(has_binary_call_operator<ReductionOp, ValueT>::value,
+  static_assert(::cuda::std::__is_callable_v<ReductionOp, ValueT, ValueT>,
                 "ReductionOp must have the binary call operator: operator(ValueT, ValueT)");
 
   static constexpr auto length = static_size_v<Input>;
+  static_assert(length > 0,
+                "ThreadReduce without a prefix requires a non-empty input. Use the overload taking a prefix to reduce "
+                "possibly empty inputs");
   if constexpr (length == 1)
   {
     return static_cast<AccumT>(input[0]);
@@ -453,9 +459,11 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
     if constexpr (enable_ternary_reduction_sm90_v<ValueT, ReductionOp>)
     {
       // with the current tuning policies, SM90/int32/+ uses too many registers (TODO: fix tuning policy)
-      if constexpr ((::cuda::__is_cuda_std_plus_v<ReductionOp, PromT> && is_one_of_v<PromT, int32_t, uint32_t>)
+      if constexpr ((::cuda::__is_cuda_std_plus_v<ReductionOp, PromT>
+                     && ::cuda::std::__is_one_of_v<PromT, int32_t, uint32_t>)
                     // the compiler generates bad code for int8/uint8 and min/max for SM90
-                    || (is_cuda_minimum_maximum_v<ReductionOp, ValueT> && is_one_of_v<PromT, int8_t, uint8_t>) )
+                    || (is_cuda_minimum_maximum_v<ReductionOp, ValueT>
+                        && ::cuda::std::__is_one_of_v<PromT, int8_t, uint8_t>) )
       {
         NV_IF_TARGET(NV_PROVIDES_SM_90, (return ThreadReduceSequential<PromT>(input, reduction_op);));
       }
@@ -493,7 +501,8 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
 //! @param[in] prefix
 //!   Prefix to seed reduction with
 //!
-//! @return Aggregate of type <tt>cuda::std::__accumulator_t<ReductionOp, ValueT, PrefixT></tt>
+//! @return Aggregate of type <tt>cuda::std::__accumulator_t<ReductionOp, ValueT, PrefixT></tt>. For an empty
+//! @p input, this is @p prefix.
 //!
 template <typename Input,
           typename ReductionOp,
@@ -506,7 +515,7 @@ ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
   using namespace cub::detail;
   static_assert(is_fixed_size_random_access_range_v<Input>,
                 "Input must support the subscript operator[] and have a compile-time size");
-  static_assert(has_binary_call_operator<ReductionOp, ValueT>::value,
+  static_assert(::cuda::std::__is_callable_v<ReductionOp, ValueT, ValueT>,
                 "ReductionOp must have the binary call operator: operator(ValueT, ValueT)");
   constexpr int length = static_size_v<Input>;
   // copy to a temporary array of type AccumT
