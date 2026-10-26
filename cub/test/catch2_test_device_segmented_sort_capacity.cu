@@ -82,9 +82,7 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
          c2h::type_list<int, double>)
 {
   using key_type       = c2h::get<0, TestType>;
-  using selector       = capacity::group_merge_policy_selector<key_type>;
-  using getter         = cub::detail::policy_getter<selector, 75>;
-  using plan           = typename capacity::group_merge_entries<getter>::type;
+  using plan           = capacity::group_merge_entries<key_type>;
   using capacities     = typename plan::capacities;
   using warp_expansion = typename plan::template entry<0>::expansion;
   const int bin        = warp_expansion::capacities::first_fit(37);

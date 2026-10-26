@@ -17,8 +17,6 @@
 
 #include <cub/util_namespace.cuh>
 
-#include <cuda/__device/compute_capability.h>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort_capacity
@@ -33,45 +31,35 @@ struct group_merge_policy
   int max_ipt;
   int blocks_per_sm; // Grid-size multiplier: launch SM count * blocks_per_sm blocks.
   int min_blocks_per_sm; // __launch_bounds__ target for compiler register allocation, not the grid size.
-  // Compare all settings when matching policies.
-  _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const group_merge_policy& a, const group_merge_policy& b)
-  {
-    return a.block_threads == b.block_threads && a.min_threads == b.min_threads && a.max_threads == b.max_threads
-        && a.min_ipt == b.min_ipt && a.max_ipt == b.max_ipt && a.blocks_per_sm == b.blocks_per_sm
-        && a.min_blocks_per_sm == b.min_blocks_per_sm;
-  }
 };
 
-// Bundle the three sorting launches: each member supplies a separate group_merge_policy
-// for the warp/sub-warp, small-block, or large-block kernel. The dispatcher creates one entry per member.
-struct group_merge_launch_policy
+// Each private getter supplies one sorting entry's settings directly. These defaults
+// are architecture-independent; architecture-specific tuning remains follow-up work.
+struct group_merge_warp_policy_getter
 {
-  group_merge_policy warp;
-  group_merge_policy small_block;
-  group_merge_policy large;
-  // Compare the complete three-launch policy.
-  _CCCL_HOST_DEVICE_API friend constexpr bool
-  operator==(const group_merge_launch_policy& a, const group_merge_launch_policy& b)
+  _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
   {
-    return a.warp == b.warp && a.small_block == b.small_block && a.large == b.large;
+    return {256, 1, 32, 9, 15, 128, 1};
   }
 };
 
-// One implementation choice: three GroupMerge launches. Architecture-specific
-// tuning values belong in this selector; other launch compositions are independent.
-// Currently ignores compute capability. Keys wider than 8 bytes are intentionally
-// unsupported until architecture-specific policies are added.
-// TODO: Account for each architecture's shared-memory limit when enabling wider
-// keys, while keeping the concatenated entry capacities strictly increasing.
+struct group_merge_small_policy_getter
+{
+  _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
+  {
+    return {256, 64, 256, 9, 15, 128, 1};
+  }
+};
+
+// Limit cooperating threads for larger keys to bound shared-memory scratch.
+// Keys wider than 8 bytes need architecture-specific policies before being enabled.
 template <typename Key>
-struct group_merge_policy_selector
+struct group_merge_large_policy_getter
 {
-  // Select internal defaults by key width; architecture-specific values can be added here.
-  _CCCL_HOST_DEVICE_API constexpr group_merge_launch_policy operator()(::cuda::compute_capability) const
+  _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
   {
-    constexpr int large_threads = sizeof(Key) <= 4 ? 1024 : 512;
-    return {
-      {256, 1, 32, 9, 15, 128, 1}, {256, 64, 256, 9, 15, 128, 1}, {large_threads, 512, large_threads, 9, 15, 2, 1}};
+    constexpr int threads = sizeof(Key) <= 4 ? 1024 : 512;
+    return {threads, 512, threads, 9, 15, 2, 1};
   }
 };
 } // namespace detail::segmented_sort_capacity
