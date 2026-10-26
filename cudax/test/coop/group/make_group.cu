@@ -11,6 +11,7 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/optional>
 #include <cuda/std/type_traits>
@@ -125,7 +126,7 @@ struct TestKernel
       cuda::gpu_thread.rank(cuda::warp) < 16,
       cuda::gpu_thread,
       cudax::coop::this_warp{config},
-      cudax::coop::group_as{cuda::std::index_sequence<4, 12>{}},
+      cudax::coop::group_as{cuda::std::array{4, 12}},
       cudax::coop::lane_synchronizer{});
 
     test_make_group_non_exhaustive<cudax::coop::generic_group, false>(

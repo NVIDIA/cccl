@@ -30,6 +30,8 @@
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
@@ -97,6 +99,22 @@ inline ::std::ostream& operator<<(::std::ostream& os, ScanByKeyAlgorithm algo)
   return os << CUB_NS_QUALIFIER::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED()
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::ScanByKeyAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::ScanByKeyAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 //! The tuning policy for all ByKey algorithms in @ref DeviceScan.
 struct ScanByKeyPolicy

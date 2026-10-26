@@ -24,6 +24,7 @@
 // IWYU pragma: begin_exports
 #include <cuda/__bit/bit_ffs.h>
 #include <cuda/__bit/bit_fns.h>
+#include <cuda/__bit/bit_msb.h>
 #include <cuda/__bit/bit_reverse.h>
 #include <cuda/__bit/bit_trunc.h>
 #include <cuda/__bit/bitfield.h>

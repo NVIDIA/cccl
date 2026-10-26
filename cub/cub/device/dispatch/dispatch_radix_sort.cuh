@@ -294,16 +294,20 @@ private:
       policy.radix_bits);
 
     // Invoke upsweep_kernel with same grid size as downsweep_kernel
-    launcher_factory(1, policy.threads_per_block, 0, stream)
-      .doit(single_tile_kernel,
-            d_keys.Current(),
-            d_keys.Alternate(),
-            d_values.Current(),
-            d_values.Alternate(),
-            num_items,
-            begin_bit,
-            end_bit,
-            decomposer);
+    if (const auto error = CubDebug(
+          launcher_factory(1, policy.threads_per_block, 0, stream)
+            .doit(single_tile_kernel,
+                  d_keys.Current(),
+                  d_keys.Alternate(),
+                  d_values.Current(),
+                  d_values.Alternate(),
+                  num_items,
+                  begin_bit,
+                  end_bit,
+                  decomposer)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -364,15 +368,19 @@ public:
     const int pass_spine_length = pass_config.even_share.grid_size * pass_config.radix_digits;
 
     // Invoke upsweep_kernel with same grid size as downsweep_kernel
-    launcher_factory(pass_config.even_share.grid_size, pass_config.upsweep_config.threads_per_block, 0, stream)
-      .doit(pass_config.upsweep_kernel,
-            d_keys_in,
-            d_spine,
-            num_items,
-            current_bit,
-            pass_bits,
-            pass_config.even_share,
-            decomposer);
+    if (const auto error = CubDebug(
+          launcher_factory(pass_config.even_share.grid_size, pass_config.upsweep_config.threads_per_block, 0, stream)
+            .doit(pass_config.upsweep_kernel,
+                  d_keys_in,
+                  d_spine,
+                  num_items,
+                  current_bit,
+                  pass_bits,
+                  pass_config.even_share,
+                  decomposer)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -390,8 +398,11 @@ public:
     _CUB_LOG_KERNEL_LAUNCH("scan_kernel", 1, 1, 1, pass_config.scan_config.threads_per_block, 0, stream, "");
 
     // Invoke scan_kernel
-    launcher_factory(1, pass_config.scan_config.threads_per_block, 0, stream)
-      .doit(pass_config.scan_kernel, d_spine, pass_spine_length);
+    if (const auto error = CubDebug(launcher_factory(1, pass_config.scan_config.threads_per_block, 0, stream)
+                                      .doit(pass_config.scan_kernel, d_spine, pass_spine_length)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -418,18 +429,22 @@ public:
       pass_config.downsweep_config.sm_occupancy);
 
     // Invoke downsweep_kernel
-    launcher_factory(pass_config.even_share.grid_size, pass_config.downsweep_config.threads_per_block, 0, stream)
-      .doit(pass_config.downsweep_kernel,
-            d_keys_in,
-            d_keys_out,
-            d_values_in,
-            d_values_out,
-            d_spine,
-            num_items,
-            current_bit,
-            pass_bits,
-            pass_config.even_share,
-            decomposer);
+    if (const auto error = CubDebug(
+          launcher_factory(pass_config.even_share.grid_size, pass_config.downsweep_config.threads_per_block, 0, stream)
+            .doit(pass_config.downsweep_kernel,
+                  d_keys_in,
+                  d_keys_out,
+                  d_values_in,
+                  d_values_out,
+                  d_spine,
+                  num_items,
+                  current_bit,
+                  pass_bits,
+                  pass_config.even_share,
+                  decomposer)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
