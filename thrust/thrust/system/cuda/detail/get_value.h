@@ -20,6 +20,8 @@
 #  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cross_system.h>
 
+#  include <cuda/std/__memory/addressof.h>
+
 #  include <nv/target>
 
 THRUST_NAMESPACE_BEGIN
@@ -41,7 +43,7 @@ _CCCL_HOST_DEVICE thrust::detail::it_value_t<Pointer> get_value(execution_policy
       thrust::detail::it_value_t<Pointer> result;
       host_system_tag host_tag;
       cross_system<host_system_tag, DerivedPolicy> systems(host_tag, exec);
-      assign_value(systems, &result, ptr);
+      assign_value(systems, ::cuda::std::addressof(result), ptr);
       return result;
     }
   };

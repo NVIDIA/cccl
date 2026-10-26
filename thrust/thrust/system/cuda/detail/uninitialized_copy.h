@@ -22,6 +22,7 @@
 
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/incrementable_traits.h>
+#  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__new/device_new.h>
 #  include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
 #  include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
@@ -51,7 +52,7 @@ struct functor
   {
     InputType const& in = raw_reference_cast(input[idx]);
     OutputType& out     = raw_reference_cast(output[idx]);
-    ::new (static_cast<void*>(&out)) OutputType(in);
+    ::new (static_cast<void*>(::cuda::std::addressof(out))) OutputType(in);
   }
 };
 } // namespace __uninitialized_copy

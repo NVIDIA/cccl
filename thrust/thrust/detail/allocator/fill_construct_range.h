@@ -19,6 +19,7 @@
 #include <thrust/uninitialized_fill.h>
 
 #include <cuda/std/__host_stdlib/memory>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__memory/pointer_traits.h>
 
@@ -47,7 +48,7 @@ struct construct2_via_allocator
   template <typename T>
   inline _CCCL_HOST_DEVICE void operator()(T& x)
   {
-    ::cuda::std::allocator_traits<Allocator>::construct(a, &x, arg);
+    ::cuda::std::allocator_traits<Allocator>::construct(a, ::cuda::std::addressof(x), arg);
   }
 };
 template <typename Allocator, typename Pointer, typename Size, typename T>
