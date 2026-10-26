@@ -93,9 +93,13 @@ An omitted ref or path uses the corresponding default below.
      - Path to the matrix file, relative to the repository root.
      - ``ci/matrix.yaml``.
 
-When both inputs are blank, PR, nightly, and weekly runs select matrix files
-from their respective ``pull_request``, ``nightly``, and ``weekly`` profiles in
-the ``CI_MATRICES`` repository variable. Custom runs use the default matrix.
+When both inputs are blank, PR, nightly, and weekly runs default to the
+``pull_request``, ``nightly``, and ``weekly`` profiles, respectively, in the
+``CI_MATRICES`` repository variable. Custom runs use the default matrix.
+
+Nightly and weekly manual dispatches also accept an optional ``ci_profile``
+input to select a different profile. A blank value uses ``nightly`` or
+``weekly``, respectively.
 
 The variable maps profile names to named matrix definitions in ``path@ref``
 form. Matrix names may contain only ASCII letters, digits, hyphens, and
