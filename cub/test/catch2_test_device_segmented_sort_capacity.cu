@@ -37,6 +37,9 @@ CUB_TEST("Capacity partition accepts arbitrary bounds without sort tuning", "[se
     REQUIRE(config.threads == (4 << bin));
     REQUIRE(config.items_per_thread == (bin == 1 ? 10 : 9));
   }
+  static_assert(capacity::group_merge_tuning_arch_selector{}(cuda::compute_capability{8, 9}) == 0);
+  static_assert(capacity::group_merge_tuning_arch_selector{}(cuda::compute_capability{9, 0}) == 90);
+  static_assert(capacity::group_merge_tuning_arch_selector{}(cuda::compute_capability{12, 0}) == 90);
   using capacities = capacity::capacity_list<3, 10, 21>;
   static_assert(capacities::first_fit(3) == 0 && capacities::first_fit(4) == 1);
   static_assert(capacities::first_fit(21) == 2 && capacities::first_fit(22) == 3);
@@ -82,7 +85,7 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
          c2h::type_list<int, double>)
 {
   using key_type       = c2h::get<0, TestType>;
-  using plan           = capacity::group_merge_entries<key_type>;
+  using plan           = capacity::group_merge_entries<key_type, 90>;
   using capacities     = typename plan::capacities;
   using warp_expansion = typename plan::template entry<0>::expansion;
   const int bin        = warp_expansion::capacities::first_fit(37);
@@ -150,7 +153,15 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
       result,
       stream);
   };
-  REQUIRE(run(nullptr) == cudaSuccess);
+  const auto query_status = run(nullptr);
+  cuda::compute_capability cc{};
+  REQUIRE(cub::detail::ptx_compute_cap(cc) == cudaSuccess);
+  if (cc < cuda::compute_capability{9, 0})
+  {
+    REQUIRE(query_status == cudaErrorNotSupported);
+    return;
+  }
+  REQUIRE(query_status == cudaSuccess);
   c2h::device_vector<unsigned char> storage(bytes);
   REQUIRE(run(thrust::raw_pointer_cast(storage.data())) == cudaSuccess);
   REQUIRE(cudaStreamSynchronize(stream) == cudaSuccess);
@@ -228,7 +239,15 @@ CUB_TEST("Capacity sort orders infinities and treats signed zeros as equivalent"
       result,
       stream);
   };
-  REQUIRE(run(nullptr) == cudaSuccess);
+  const auto query_status = run(nullptr);
+  cuda::compute_capability cc{};
+  REQUIRE(cub::detail::ptx_compute_cap(cc) == cudaSuccess);
+  if (cc < cuda::compute_capability{9, 0})
+  {
+    REQUIRE(query_status == cudaErrorNotSupported);
+    return;
+  }
+  REQUIRE(query_status == cudaSuccess);
   c2h::device_vector<unsigned char> storage(bytes);
   REQUIRE(run(thrust::raw_pointer_cast(storage.data())) == cudaSuccess);
   REQUIRE(cudaStreamSynchronize(stream) == cudaSuccess);

@@ -17,6 +17,8 @@
 
 #include <cub/util_namespace.cuh>
 
+#include <cuda/__device/compute_capability.h>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort_capacity
@@ -33,18 +35,32 @@ struct group_merge_policy
   int min_blocks_per_sm; // __launch_bounds__ target for compiler register allocation, not the grid size.
 };
 
-// Each private getter supplies one sorting entry's settings directly. These defaults
-// are architecture-independent; architecture-specific tuning remains follow-up work.
+// Select a tuning architecture, not a policy object. SM90 settings currently cover
+// SM90 and newer; zero marks unsupported older targets. Add newer tuning tiers here.
+struct group_merge_tuning_arch_selector
+{
+  _CCCL_HOST_DEVICE_API constexpr int operator()(::cuda::compute_capability cc) const
+  {
+    return cc >= ::cuda::compute_capability{9, 0} ? 90 : 0;
+  }
+};
+
+// Each entry supplies its own reusable getter, parameterized by tuning architecture.
+// The current values form the SM90 baseline; individual getters can add newer tunings.
+template <int TuningArch>
 struct group_merge_warp_policy_getter
 {
+  static_assert(TuningArch >= 90);
   _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
   {
     return {256, 1, 32, 9, 15, 128, 1};
   }
 };
 
+template <int TuningArch>
 struct group_merge_small_policy_getter
 {
+  static_assert(TuningArch >= 90);
   _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
   {
     return {256, 64, 256, 9, 15, 128, 1};
@@ -53,9 +69,10 @@ struct group_merge_small_policy_getter
 
 // Limit cooperating threads for larger keys to bound shared-memory scratch.
 // Keys wider than 8 bytes need architecture-specific policies before being enabled.
-template <typename Key>
+template <int TuningArch, typename Key>
 struct group_merge_large_policy_getter
 {
+  static_assert(TuningArch >= 90);
   _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
   {
     constexpr int threads = sizeof(Key) <= 4 ? 1024 : 512;
