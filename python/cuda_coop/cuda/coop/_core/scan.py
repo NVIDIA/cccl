@@ -24,6 +24,7 @@ from ._types import (
     Dependency,
     PythonOperator,
     Reference,
+    StatefulOperator,
 )
 
 
@@ -86,6 +87,9 @@ def normalize_scan_operator_alias(value: object) -> str | None:
     return _SCAN_OPERATOR_ALIASES.get(token)
 
 
+_PREFIX_CALLBACKS = (PythonOperator, StatefulOperator)
+
+
 def _initial_dtype_matches(
     dtype: Any, initial_value: CxxFunction | Reference
 ) -> bool:
@@ -107,8 +111,9 @@ class ScanSemantics:
     """Describe the input, operator, and outputs of one scan.
 
     Use ``make_scan_semantics`` to validate this record. The record has no
-    group size or CUB algorithm choice. Its identity includes the operator
-    and seed descriptors, so different call forms stay distinct.
+    group size or CUB algorithm choice. Its identity includes the operator,
+    seed, and prefix-callback descriptors, so different call forms stay
+    distinct.
 
     Attributes
     ----------
@@ -129,6 +134,10 @@ class ScanSemantics:
     aggregate : bool
         Whether to request a separate scalar reduction of the inputs. This
         aggregate excludes the initial value and is available to every member.
+    prefix_callback : PythonOperator or StatefulOperator or None
+        Block callback that receives the input aggregate and returns a seed
+        for the scan. A stateful descriptor also identifies mutable state.
+        This form excludes both initial_value and a separate aggregate.
     """
 
     dtype: Any
@@ -138,6 +147,7 @@ class ScanSemantics:
     scan_operator: CxxOperator | PythonOperator | None = None
     initial_value: CxxFunction | Reference | None = None
     aggregate: bool = False
+    prefix_callback: PythonOperator | StatefulOperator | None = None
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:
@@ -150,6 +160,7 @@ class ScanSemantics:
             semantic_token(self.scan_operator),
             semantic_token(self.initial_value),
             self.aggregate,
+            semantic_token(self.prefix_callback),
         )
 
     def __eq__(self, other: object) -> bool:
@@ -170,13 +181,14 @@ def make_scan_semantics(
     scan_operator: CxxOperator | PythonOperator | None = None,
     initial_value: CxxFunction | Reference | None = None,
     aggregate: bool = False,
+    prefix_callback: PythonOperator | StatefulOperator | None = None,
 ) -> ScanSemantics:
     """Validate Scan shape and value descriptors independently of a group.
 
     This checks the operation's intrinsic constraints. Group planning later
     checks supported groups and CUB call variants. In particular, this builder
     allows a custom exclusive operator without an initial value; group
-    planning rejects that form because CUB leaves the first output undefined.
+    planning requires a seed or prefix callback to define the first output.
 
     Parameters
     ----------
@@ -197,6 +209,11 @@ def make_scan_semantics(
         literal conversion before constructing this descriptor.
     aggregate : bool, optional
         Request a separate scalar aggregate that excludes the seed.
+    prefix_callback : PythonOperator or StatefulOperator, optional
+        Block callback that supplies the seed from the input aggregate.
+        Mutually exclusive with initial_value and aggregate output. Group
+        planning checks the block-only restriction; the backend compiles
+        the callback and handles any mutable state.
 
     Returns
     -------
@@ -206,11 +223,13 @@ def make_scan_semantics(
     Raises
     ------
     TypeError
-        An operator or initial-value descriptor is unsupported, the initial
-        dtype differs from the payload, or ``aggregate`` is not a boolean.
+        An operator, prefix, or initial-value descriptor is unsupported.
+        The initial dtype differs from the payload, or ``aggregate`` is
+        not a boolean.
     ValueError
         The dtype is missing, an enum value or item count is invalid, scalar
-        form has multiple items, or an inclusive scan has an initial value.
+        form has multiple items, an inclusive scan has an initial value, or a
+        prefix callback is combined with an initial value or aggregate.
     """
 
     if dtype is None:
@@ -240,6 +259,18 @@ def make_scan_semantics(
             raise ValueError("inclusive scans do not accept an initial value")
     if not isinstance(aggregate, bool):
         raise TypeError("aggregate must be a bool")
+    if prefix_callback is not None and not isinstance(
+        prefix_callback, _PREFIX_CALLBACKS
+    ):
+        raise TypeError(f"unsupported scan prefix callback {prefix_callback!r}")
+    if initial_value is not None and prefix_callback is not None:
+        raise ValueError(
+            "scan initial value and prefix callback are mutually exclusive"
+        )
+    if aggregate and prefix_callback is not None:
+        raise ValueError(
+            "scan aggregate and prefix callback are mutually exclusive"
+        )
 
     return ScanSemantics(
         dtype=dtype,
@@ -249,6 +280,7 @@ def make_scan_semantics(
         scan_operator=scan_operator,
         initial_value=initial_value,
         aggregate=aggregate,
+        prefix_callback=prefix_callback,
     )
 
 
