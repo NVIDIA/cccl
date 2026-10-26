@@ -37,9 +37,9 @@
 #  include <cuda/__mdspan/__copy/simplify_paired.h>
 #  include <cuda/__mdspan/__copy/tensor_copy_utils.h>
 #  include <cuda/__mdspan/__copy/tensor_query.h>
-#  include <cuda/__mdspan/__copy/vector_access.h>
 #  include <cuda/__mdspan/host_device_mdspan.h>
 #  include <cuda/__mdspan/traits.h>
+#  include <cuda/__memory/__vectorized_storage.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__algorithm/max.h>
@@ -276,7 +276,7 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
 
     // check the preconditions for the vectorized case
     constexpr bool __are_vectorizable_copy =
-      sizeof(_TpIn) <= __max_vector_access && ::cuda::is_power_of_two(sizeof(_TpIn)) && __are_byte_copyable;
+      sizeof(_TpIn) <= __max_memory_access_width && ::cuda::is_power_of_two(sizeof(_TpIn)) && __are_byte_copyable;
 
     // (1) contiguous case
     if constexpr (__have_default_accessors)
