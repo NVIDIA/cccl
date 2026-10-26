@@ -498,7 +498,8 @@ private:
   __suspend_time_hint(::cuda::std::chrono::nanoseconds __hint) noexcept
   {
     constexpr auto __max_hint = (::cuda::std::numeric_limits<::cuda::std::uint32_t>::max)();
-    return __hint.count() > __max_hint ? __max_hint : static_cast<::cuda::std::uint32_t>(__hint.count());
+    _CCCL_ASSERT(__hint.count() <= __max_hint, "Suspension-time hint must fit in a 32-bit unsigned nanosecond count.");
+    return static_cast<::cuda::std::uint32_t>(__hint.count());
   }
 
   template <class _WaitArg>
@@ -781,10 +782,12 @@ public:
 
   //! @brief Makes one wait attempt for an arrival token's phase with a suspension-time hint and returns the status.
   //!
-  //! A positive hint is passed to a single PTX `mbarrier.try_wait` instruction, clamped to the maximum 32-bit
-  //! unsigned nanosecond value. It is a hint, not a deadline guarantee; no software retry loop is performed.
+  //! A positive hint is passed to a single PTX `mbarrier.try_wait` instruction.
+  //! It is a hint, not a deadline guarantee; no software retry loop is performed.
   //! A nonpositive hint performs a single `test_wait` check instead.
+  //! For longer timeouts, use `try_wait_for`.
   //!
+  //! @pre `__hint.count() <= UINT32_MAX`.
   //! @param __token Arrival token to wait on.
   //! @param __hint Suggested suspension time in nanoseconds.
   //! @return Completion and report status for the wait attempt.
@@ -796,10 +799,12 @@ public:
 
   //! @brief Makes one wait attempt for an arrival token's phase with a suspension-time hint and ignores status.
   //!
-  //! A positive hint is passed to a single PTX `mbarrier.try_wait` instruction, clamped to the maximum 32-bit
-  //! unsigned nanosecond value. It is a hint, not a deadline guarantee; no software retry loop is performed.
+  //! A positive hint is passed to a single PTX `mbarrier.try_wait` instruction.
+  //! It is a hint, not a deadline guarantee; no software retry loop is performed.
   //! A nonpositive hint performs a single `test_wait` check instead.
+  //! For longer timeouts, use `try_wait_for`.
   //!
+  //! @pre `__hint.count() <= UINT32_MAX`.
   //! @param __token Arrival token to wait on.
   //! @param __hint Suggested suspension time in nanoseconds.
   //! @return `true` if the phase completed, otherwise `false`.
@@ -906,10 +911,12 @@ public:
 
   //! @brief Makes one wait attempt for a primary phase with a suspension-time hint and returns the status.
   //!
-  //! A positive hint is passed to a single PTX `mbarrier.try_wait.parity` instruction, clamped to the maximum 32-bit
-  //! unsigned nanosecond value. It is a hint, not a deadline guarantee; no software retry loop is performed.
+  //! A positive hint is passed to a single PTX `mbarrier.try_wait.parity` instruction.
+  //! It is a hint, not a deadline guarantee; no software retry loop is performed.
   //! A nonpositive hint performs a single `test_wait` check instead.
+  //! For longer timeouts, use `try_wait_for`.
   //!
+  //! @pre `__hint.count() <= UINT32_MAX`.
   //! @param __phase Primary phase value to wait on.
   //! @param __hint Suggested suspension time in nanoseconds.
   //! @return Completion and report status for the wait attempt.
@@ -921,10 +928,12 @@ public:
 
   //! @brief Makes one wait attempt for a primary phase with a suspension-time hint and ignores status.
   //!
-  //! A positive hint is passed to a single PTX `mbarrier.try_wait.parity` instruction, clamped to the maximum 32-bit
-  //! unsigned nanosecond value. It is a hint, not a deadline guarantee; no software retry loop is performed.
+  //! A positive hint is passed to a single PTX `mbarrier.try_wait.parity` instruction.
+  //! It is a hint, not a deadline guarantee; no software retry loop is performed.
   //! A nonpositive hint performs a single `test_wait` check instead.
+  //! For longer timeouts, use `try_wait_for`.
   //!
+  //! @pre `__hint.count() <= UINT32_MAX`.
   //! @param __phase Primary phase value to wait on.
   //! @param __hint Suggested suspension time in nanoseconds.
   //! @return `true` if the phase completed, otherwise `false`.
@@ -982,10 +991,12 @@ public:
   //! @brief Makes one wait attempt for a conditional phase with a suspension-time hint.
   //!
   //! The conditional phase advances only when the primary phase completes without a report.
-  //! A positive hint is passed to a single PTX `mbarrier.try_wait.parity` instruction, clamped to the maximum 32-bit
-  //! unsigned nanosecond value. It is a hint, not a deadline guarantee; no software retry loop is performed.
+  //! A positive hint is passed to a single PTX `mbarrier.try_wait.parity` instruction.
+  //! It is a hint, not a deadline guarantee; no software retry loop is performed.
   //! A nonpositive hint performs a single `test_wait_conditional_phase` check instead.
+  //! For longer timeouts, use `try_wait_conditional_phase_for`.
   //!
+  //! @pre `__hint.count() <= UINT32_MAX`.
   //! @param __phase Conditional phase value to wait on.
   //! @param __hint Suggested suspension time in nanoseconds.
   //! @return `true` if the conditional phase completed, otherwise `false`.

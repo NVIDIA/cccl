@@ -465,13 +465,7 @@ TEST_DEVICE_FUNC void test_wait_hints(cuda::shared_memory_barrier<Scope>* bar)
 
   execute_on_thread_zero([&] {
     // Completed waits must succeed even at the hint limits, without waiting for the hint to expire.
-    for (auto hint :
-         {nanoseconds::min(),
-          nanoseconds{0},
-          nanoseconds{1},
-          nanoseconds{4294967295LL},
-          nanoseconds{4294967296LL},
-          nanoseconds::max()})
+    for (auto hint : {nanoseconds::min(), nanoseconds{0}, nanoseconds{1}, nanoseconds{4294967295LL}})
     {
       auto status = bar->try_wait(token, hint, cuda::return_status);
       check_success_status<Scope>(status);
