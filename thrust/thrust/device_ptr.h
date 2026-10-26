@@ -20,8 +20,27 @@
 
 #include <thrust/memory.h>
 
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>
+
+THRUST_NAMESPACE_BEGIN
+template <typename T>
+class device_reference;
+template <typename T>
+class device_ptr;
+THRUST_NAMESPACE_END
+
+// Specialize `std::iterator_traits` (picked up by cuda::std::iterator_traits), because device_ptr would otherwise
+// inherit the injected class name of its base class as its nested pointer type. Just reuse the specialization for the
+// base class. We do this before device_ptr is defined so the specialization is correctly used inside the definition.
+template <typename T>
+struct std::iterator_traits<THRUST_NS_QUALIFIER::device_ptr<T>>
+    : std::iterator_traits<THRUST_NS_QUALIFIER::pointer<T,
+                                                        THRUST_NS_QUALIFIER::device_system_tag,
+                                                        THRUST_NS_QUALIFIER::device_reference<T>,
+                                                        THRUST_NS_QUALIFIER::device_ptr<T>>>
+{};
 
 THRUST_NAMESPACE_BEGIN
 
@@ -32,9 +51,6 @@ THRUST_NAMESPACE_BEGIN
  *     .. versionadded:: 2.2.0
  *  \endverbatim
  */
-
-template <typename T>
-class device_reference;
 
 /*! \brief \c device_ptr is a pointer-like object which points to an object that
  *  resides in memory associated with the \ref device system.
