@@ -2,15 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compile generated device code for the kernel's own target and options.
+"""Compile Scan providers and callbacks for the kernel's target and options.
 
-A kernel can target an architecture other than the current device with
-``chip=`` or ``cc=``, and can request line information. Group-method helpers,
-providers, and Python callbacks are compiled separately and linked into the
-kernel. Helpers and providers use its full target and options; Python callbacks
-use its base compute capability. Device
-discovery is fixed to a different compute capability, and every NVRTC and
-callback compilation request is recorded while the real compile and link run.
+The kernel combines a group query, explicit Scan scratch, and a custom Scan
+operator. Record real compilation and link inputs to check explicit targets,
+architecture suffixes, lineinfo propagation, and debug-link compatibility.
+Helpers and providers use the full target; callbacks use its base compute
+capability.
 """
 
 from types import SimpleNamespace
