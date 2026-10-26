@@ -27,6 +27,8 @@
 #include <cuda/__device/all_devices.h>
 #include <cuda/__device/arch_id.h>
 #include <cuda/__device/arch_traits.h>
+#include <cuda/__device/attributes.h>
+#include <cuda/__driver/driver_api.h>
 #include <cuda/__launch/configuration.h>
 #include <cuda/__launch/launch.h>
 #include <cuda/__mdspan/__copy/tensor_copy_utils.h>
