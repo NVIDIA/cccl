@@ -1234,6 +1234,11 @@ CUB_TEST("DeviceHistogram::HistogramRange byte samples with wide bins",
 
 #if TEST_LAUNCH == 0
   // Cover the separate environment API dispatch used by the benchmarks.
+  // Clear the results of the previous call so the checks below validate the environment API output.
+  for (int channel = 0; channel < num_active_channels; ++channel)
+  {
+    REQUIRE(cudaSuccess == cudaMemset(outputs[channel], 0, num_bins * sizeof(int)));
+  }
   if constexpr (num_channels == 1)
   {
     REQUIRE(cudaSuccess

@@ -12,9 +12,6 @@
 
 #include <cub/config.cuh>
 
-#include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/__type_traits/is_void.h>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -44,6 +41,7 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/array>
@@ -813,14 +811,11 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
     using search_transform    = typename TransformsT::template SearchTransform<const LevelT*>;
 
     // Store signed byte samples in unsigned byte bins, then recover signed values before searching levels.
-    using PrivatizedDecodeOpT = ::cuda::std::conditional_t<
-      ::cuda::std::is_signed_v<SampleT>,
-      typename TransformsT::template sample_cast_transform<pass_thru_transform, unsigned char>,
-      pass_thru_transform>;
+    constexpr bool is_signed  = ::cuda::std::is_signed_v<SampleT>;
+    using PrivatizedDecodeOpT = ::cuda::std::
+      conditional_t<is_signed, sample_cast_transform<pass_thru_transform, unsigned char>, pass_thru_transform>;
     using OutputDecodeOpT =
-      ::cuda::std::conditional_t<::cuda::std::is_signed_v<SampleT>,
-                                 typename TransformsT::template sample_cast_transform<search_transform, SampleT>,
-                                 search_transform>;
+      ::cuda::std::conditional_t<is_signed, sample_cast_transform<search_transform, SampleT>, search_transform>;
 
     ::cuda::std::array<int, NumActiveChannels> num_privatized_levels{};
     const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op{};
