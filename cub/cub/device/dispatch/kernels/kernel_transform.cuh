@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/block/block_load.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/type_size.cuh>
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
@@ -284,34 +285,20 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   auto provide_array = [&](auto... inputs) {
     // load inputs
     [[maybe_unused]] auto load_tile = [](auto in, auto& input) {
-      using it_t    = decltype(in);
-      using value_t = it_value_t<it_t>;
+      using value_t = it_value_t<decltype(in)>;
       if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(in)>)
       {
         // TODO(bgruber): we could add a max_load_store_size to the policy to avoid huge load types and huge alignment
         // requirements
-        using load_t   = decltype(load_store_type<sizeof(value_t) * VecSize>());
-        auto in_vec    = reinterpret_cast<const load_t*>(in) + threadIdx.x;
-        auto input_vec = reinterpret_cast<load_t*>(input.data());
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int i = 0; i < load_store_count; ++i)
-        {
-          input_vec[i] = in_vec[i * ThreadsPerBlock];
-        }
+        using load_t    = decltype(load_store_type<sizeof(value_t) * VecSize>());
+        auto& vec_items = *reinterpret_cast<load_t(*)[load_store_count]>(input.data());
+        InternalLoadDirectStripedVectorized<ThreadsPerBlock, 1, LOAD_DEFAULT>(
+          static_cast<int>(threadIdx.x), reinterpret_cast<const load_t*>(::cuda::std::to_address(in)), vec_items);
       }
       else
       {
-        in += threadIdx.x * VecSize; // NOLINT(bugprone-misplaced-widening-cast)
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int i = 0; i < load_store_count; ++i)
-        {
-          _CCCL_PRAGMA_UNROLL_FULL()
-          for (int j = 0; j < VecSize; ++j)
-          {
-            // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
-            input[i * VecSize + j] = in[i * VecSize * ThreadsPerBlock + j];
-          }
-        }
+        auto& items = *reinterpret_cast<value_t(*)[ItemsPerThread]>(input.data());
+        LoadDirectStripedVectorized<ThreadsPerBlock, VecSize>(static_cast<int>(threadIdx.x), in, items);
       }
     };
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
