@@ -158,9 +158,7 @@ _CCCL_API constexpr _Tp bit_trunc(const _Tp __v, const int __n) noexcept
   _CCCL_ASSERT(__n >= 0, "__n must be nonnegative");
 
   // When __n is a constant, use the fallback path.
-#if defined(_CCCL_BUILTIN_CONSTANT_P)
-  if (!_CCCL_BUILTIN_CONSTANT_P(__n))
-#endif // _CCCL_BUILTIN_CONSTANT_P
+  if (!_CCCL_IS_CONSTANT_P(__n))
   {
 #if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT

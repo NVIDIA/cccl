@@ -10,6 +10,7 @@ FP Component
    fp/fpmp
    fp/fpemu
    fp/fptool
+   fp/fp_optimization_guide
 
 The FP component provides floating-point types that give arithmetic the hardware does not offer
 directly: more precision than a ``double``, ``double`` precision without FP64 units, configurable
@@ -58,6 +59,9 @@ observe it.
 The first two are also available by including their header and nothing else, where ``fptool`` has
 to be asked for: it is a diagnostic instrument whose types keep state at namespace scope, so
 ``<cuda/fptool>`` does not compile until ``CCCL_ENABLE_FPTOOL`` is defined.
+
+How to choose between them, how they combine inside one kernel, and how to get the most out of each
+is the subject of the :ref:`FP optimization guide <libcudacxx-extended-api-fp-optimization-guide>`.
 
 Why the component exists
 ------------------------
@@ -134,6 +138,11 @@ is the mantissa or the dynamic range that matters.
 :ref:`fp32mp2_stat and fp64mp2_stat <libcudacxx-extended-api-fp-fptool-stat>` compute identical
 results to ``fp32mp2`` and ``fp64mp2`` and record what the operations did, including whether the
 second limb is carrying anything at all.
+
+Those are the short answers. The full decision — the hardware question that settles most of it, the
+three-way trade around ``double`` on a part that rations FP64, and the mixed cases where two types
+share a kernel — is in the optimization guide's
+:ref:`Choosing the type <libcudacxx-extended-api-fp-optimization-guide-choosing>`.
 
 Accuracy levels
 ---------------
