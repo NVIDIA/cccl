@@ -454,6 +454,8 @@ void run(stackable_ctx& ctx, size_t N, size_t NB)
   ctx.finalize();
 
   float milliseconds;
+  // finalize() does not wait for work recorded in a stream returned by fence().
+  cuda_safe_call(cudaEventSynchronize(stopEvent));
   cuda_safe_call(cudaEventElapsedTime(&milliseconds, startEvent, stopEvent));
 
   const double gflops_pdgemm =

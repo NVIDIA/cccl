@@ -471,3 +471,12 @@ semantics above in action: the value reads back intact, and only becomes infinit
 
 The example sweeps the mantissa axis at run time. The exponent axis has the same setters and would
 sweep the same way; it is left out to keep the output readable.
+
+Optimization guide
+------------------
+
+The sizing question ``fp64_custom`` answers is the second step of choosing a type. The
+:ref:`FP optimization guide <libcudacxx-extended-api-fp-optimization-guide-fptool>` says how to run
+the sweep so that it measures the loop rather than the summation, and how to read the result against
+the component types in
+:ref:`Choosing the type <libcudacxx-extended-api-fp-optimization-guide-choosing>`.
