@@ -625,6 +625,41 @@ TEST_CASE("TestVectorEquality", "[vector]")
   REQUIRE_FALSE(h_c == s_b);
 }
 
+struct overloaded_address_of
+{
+  int value;
+
+  _CCCL_HOST_DEVICE overloaded_address_of* operator&()
+  {
+    return this;
+  }
+
+  _CCCL_HOST_DEVICE const overloaded_address_of* operator&() const
+  {
+    return this + 1;
+  }
+
+  _CCCL_HOST_DEVICE friend bool operator==(const overloaded_address_of& lhs, const overloaded_address_of& rhs)
+  {
+    return lhs.value == rhs.value;
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const overloaded_address_of& self)
+  {
+    return os << self.value;
+  }
+};
+
+TEST_CASE("TestVectorEqualityOverloadedAddressOf", "[vector]")
+{
+  // The const operator& of the elements must not be used to compare them
+  const thrust::host_vector<overloaded_address_of> h{{0}, {1}, {2}};
+  const thrust::device_vector<overloaded_address_of> d = h;
+
+  REQUIRE(h == d);
+  REQUIRE(d == h);
+}
+
 TEST_CASE("TestVectorInequality", "[vector]")
 {
   const thrust::host_vector<int> h_a{0, 1, 2};

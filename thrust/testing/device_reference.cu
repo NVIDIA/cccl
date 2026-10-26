@@ -1,5 +1,8 @@
 #include <thrust/device_reference.h>
 #include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
+#include <thrust/for_each.h>
+#include <thrust/iterator/counting_iterator.h>
 
 #include <unittest/unittest.h>
 
@@ -97,6 +100,49 @@ TEST_CASE("TestDeviceReferenceAssignmentFromDeviceReference", "[device_reference
   // ref2 equals 11.0f
   REQUIRE(11.0f == ref2);
   REQUIRE(ref0 == ref2);
+}
+
+struct overloaded_address_of
+{
+  int value;
+
+  _CCCL_HOST_DEVICE overloaded_address_of* operator&()
+  {
+    return this;
+  }
+
+  _CCCL_HOST_DEVICE const overloaded_address_of* operator&() const
+  {
+    return this + 1;
+  }
+};
+
+struct assign_values
+{
+  thrust::device_vector<overloaded_address_of>::iterator result;
+  const overloaded_address_of* values;
+
+  _CCCL_HOST_DEVICE void operator()(int i) const
+  {
+    result[i] = values[i];
+  }
+};
+
+TEST_CASE("TestDeviceReferenceAssignmentFromValueOverloadedAddressOf", "[device_reference]")
+{
+  // The const operator& of the assigned value must not be used to find it
+  const overloaded_address_of values[2]{{1}, {2}};
+  thrust::device_vector<overloaded_address_of> v(2);
+
+  v[0] = values[0];
+  REQUIRE(static_cast<overloaded_address_of>(v[0]).value == 1);
+
+  const thrust::device_vector<overloaded_address_of> d_values(values, values + 2);
+  thrust::for_each_n(thrust::device,
+                     thrust::counting_iterator<int>{0},
+                     1,
+                     assign_values{v.begin() + 1, thrust::raw_pointer_cast(d_values.data())});
+  REQUIRE(static_cast<overloaded_address_of>(v[1]).value == 1);
 }
 
 TEST_CASE("TestDeviceReferenceManipulation", "[device_reference]")
