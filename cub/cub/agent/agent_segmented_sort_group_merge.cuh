@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
+// Expand GroupMerge settings into capacity bins and implement the cooperative device sorting worker.
+
 #pragma once
 
 #include <cub/config.cuh>
@@ -27,7 +29,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort_capacity
 {
-// Expansion belongs to the sorter. Configuration order must already be capacity order.
+// Enumerate the supported thread/IPT pairs and their capacities in strictly increasing capacity order.
 template <typename PolicyGetter>
 struct group_merge_expansion
 {
@@ -37,6 +39,7 @@ struct group_merge_expansion
                 && policy.max_threads <= policy.block_threads);
   static_assert(policy.min_ipt > 0 && policy.max_ipt >= policy.min_ipt);
   static constexpr int ipt_choices = policy.max_ipt - policy.min_ipt + 1;
+  // Count the power-of-two thread choices within the policy range.
   _CCCL_HOST_DEVICE_API static constexpr int thread_choices()
   {
     int count = 0;
@@ -50,6 +53,7 @@ struct group_merge_expansion
                 "GroupMerge policy: with multiple thread counts, max_ipt must be < 2 * min_ipt so that threads * ipt "
                 "strictly increases across bins (bin order must equal capacity order)");
   static constexpr int size = thread_choices() * ipt_choices;
+  // Map a local bin to its thread/IPT pair during compile-time expansion.
   _CCCL_HOST_DEVICE_API static constexpr bin_config expanded_config(int bin)
   {
     // Enumerate supported pairs at compile time, without encoding bin positions.
@@ -65,10 +69,12 @@ struct group_merge_expansion
     }
     _CCCL_UNREACHABLE();
   }
+  // Build the capacity-list type from threads * IPT for every supported bin.
   template <::cuda::std::size_t... I>
   static auto expand(::cuda::std::index_sequence<I...>)
     -> capacity_list<(expanded_config(I).threads * expanded_config(I).items_per_thread)...>;
   using capacities = decltype(expand(::cuda::std::make_index_sequence<size>{}));
+  // Expose a selected pair as the configuration type expected by the generic bin lookup.
   template <int Bin>
   struct bin_selection
   {
@@ -95,11 +101,13 @@ struct group_merge_implementation
   static_assert(policy.block_threads % policy.max_threads == 0);
   static_assert(policy.min_ipt >= 5 && policy.max_ipt <= 15, "GroupMerge workers support IPT 5..15");
 
+  // Dynamic shared memory for key exchange/merging, including one prefetch slot per work unit.
   template <typename Key>
   _CCCL_HOST_DEVICE_API static constexpr size_t scratch_bytes()
   {
     return sizeof(Key) * (policy.block_threads * policy.max_ipt + (is_warp ? policy.block_threads / 32 : 1));
   }
+  // Synchronize only this worker's warp or block so warp units can progress independently.
   _CCCL_DEVICE_API static void sync()
   {
     if constexpr (is_warp)
@@ -112,6 +120,8 @@ struct group_merge_implementation
     }
   }
 
+  // Sort each cooperating group's segment: load, sort thread-local runs, merge, and store.
+  // A slot of ~0u masks an unused group while keeping its threads in synchronization.
   // NaN ordering is unspecified; -0 and +0 compare equal and their relative order
   // is not guaranteed. This does not match radix-sort ordering used for large
   // segments in DeviceSegmentedSort. Decide the contract before public dispatch.
@@ -215,6 +225,7 @@ struct group_merge_implementation
     sync();
   }
 
+  // Translate runtime IPT into a specialization with a fixed-size per-thread key array.
   template <typename Key, typename BeginIterator, typename EndIterator>
   _CCCL_DEVICE_API static void invoke(
     unsigned slot,
