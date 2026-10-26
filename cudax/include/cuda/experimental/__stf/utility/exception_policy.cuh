@@ -1623,7 +1623,9 @@ struct __catch_only_t : __forwards_success<_P>
   using __pure_claim_tag     = void;
 
   // The claim is decided by the funnel pointer alone when every listed type is a class and the
-  // active exception is std-derived; otherwise unknown, and the hook re-observes.
+  // active exception is std-derived; otherwise unknown, and the hook re-observes. A guard over a
+  // hookless policy has no hook to claim for, so it has no claim either.
+  template <class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
   __claim __claims([[maybe_unused]] const ::std::exception* __exception) const noexcept
   {
     if constexpr ((::cuda::std::is_class_v<_Es> && ...))
@@ -1730,7 +1732,8 @@ struct __catch_exactly_t : __forwards_success<_P>
   using __pure_claim_tag     = void;
 
   // Exact matching reads typeid through the funnel, so the claim is always decided: a null
-  // funnel is a non-std exception, which this guard declines.
+  // funnel is a non-std exception, which this guard declines. Hookless guards have no claim.
+  template <class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
   __claim __claims(const ::std::exception* __exception) const noexcept
   {
     return (__exception != nullptr && ((typeid(*__exception) == typeid(_Es)) || ...)) ? __claim::__yes : __claim::__no;
@@ -4884,6 +4887,11 @@ UNITTEST("selecting arms decline by return")
   static_assert(!__has_claim<decltype(notify & subst(1))>);
   static_assert(!__has_claim<decltype(subst(1))>);
   static_assert(__has_pure_claim<decltype(catch_only<key>(subst(1)) * 2)>);
+  // A guard over a hookless policy claims nothing, and the composite takes the general path.
+  static_assert(!__has_claim<decltype(catch_only<key>(noop))>);
+  static_assert(!__has_claim<decltype(catch_exactly<key>(noop))>);
+  EXPECT((errsink(catch_only<key>(noop) & subst(1) | subst(2))->*throw_key) == 1);
+  EXPECT((errsink(catch_exactly<key>(noop) & subst(1) | subst(2))->*throw_boom) == 1);
 
   // Behaviour on every path of a ladder, the non-std exception included.
   const auto ladder =
