@@ -137,4 +137,7 @@ class ReverseIterator(IteratorBase):
         return ("ReverseIterator", self._underlying.kind)
 
     def __add__(self, offset: int):
-        return ReverseIterator(self._underlying + offset)
+        # Moving forward in the reversed sequence moves backward in the
+        # underlying one, matching the device-side advance op above.
+        # int() keeps a NumPy unsigned offset from wrapping on negation.
+        return ReverseIterator(self._underlying + (-int(offset)))
