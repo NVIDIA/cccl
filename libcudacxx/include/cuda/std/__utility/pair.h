@@ -58,6 +58,8 @@
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_swappable.h>
+#include <cuda/std/__type_traits/is_trivially_constructible.h>
+#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
 #include <cuda/std/__type_traits/nat.h>
 #include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
@@ -224,6 +226,13 @@ private:
     // NOLINTEND(bugprone-branch-clone)
   }
 
+  // pair(pair<U1, U2>&) and pair(const pair<U1, U2>&&) beat the copy constructor for a non-const lvalue or a const
+  // rvalue of the same type. Unlike the copy constructor they are never trivial, so skip them when it is equivalent.
+  template <class _UPair, class _Arg1, class _Arg2>
+  static constexpr bool __prefers_trivial_copy_constructor_v =
+    !__different_from<pair, _UPair> && is_trivially_copy_constructible_v<_T1> && is_trivially_copy_constructible_v<_T2>
+    && is_trivially_constructible_v<_T1, _Arg1> && is_trivially_constructible_v<_T2, _Arg2>;
+
   // CUDA 12.0/MSVC rejects a static constexpr variable template member during dependent pair
   // instantiations. An alias to bool_constant is not a static data member.
   template <class _UPair>
@@ -379,6 +388,7 @@ public:
   // converting constructors
   template <class _U1,
             class _U2,
+            enable_if_t<!__prefers_trivial_copy_constructor_v<pair<_U1, _U2>, _U1&, _U2&>, int> = 0,
             __select_constructor _Constraints = pair::__select_variadic_constructible<_U1&, _U2&>(),
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr pair(pair<_U1, _U2>& __p) noexcept(
@@ -388,7 +398,7 @@ public:
 
   // pair(pair<U>&) beats the copy constructor for a non-const lvalue. NVCC rejects copy-list-initialization when that
   // better match is explicit, instead of using the implicit copy constructor. Exclude only this explicit overload.
-  // The implicit overload stays unconstrained: a same-type reference element, such as NonCopyable&&, is converted.
+  // The implicit overload is only excluded for a trivial copy: a same-type NonCopyable&& element is still converted.
   template <class _U1,
             class _U2,
             enable_if_t<__different_from<pair, pair<_U1, _U2>>, int> = 0,
@@ -467,6 +477,7 @@ public:
 
   template <class _U1,
             class _U2,
+            enable_if_t<!__prefers_trivial_copy_constructor_v<pair<_U1, _U2>, const _U1&&, const _U2&&>, int> = 0,
             __select_constructor _Constraints = pair::__select_variadic_constructible<const _U1&&, const _U2&&>(),
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr pair(const pair<_U1, _U2>&& __p) noexcept(
@@ -477,7 +488,7 @@ public:
 
   // pair(const pair<U>&&) beats the copy constructor for a const rvalue. NVCC rejects copy-list-initialization when
   // that better match is explicit, instead of using the implicit copy constructor. Exclude only this explicit overload.
-  // The implicit overload stays unconstrained: a same-type reference element, such as NonCopyable&&, is converted.
+  // The implicit overload is only excluded for a trivial copy: a same-type NonCopyable&& element is still converted.
   template <class _U1,
             class _U2,
             enable_if_t<__different_from<pair, pair<_U1, _U2>>, int> = 0,
