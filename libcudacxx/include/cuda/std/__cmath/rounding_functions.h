@@ -149,7 +149,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  if defined(_CCCL_BUILTIN_CEILF128)
   return _CCCL_BUILTIN_CEILF128(__x);
 #  else // ^^^ _CCCL_BUILTIN_CEILF128 ^^^ / vvv !_CCCL_BUILTIN_CEILF128 vvv
-  NV_IF_TARGET(NV_IS_DEVICE, (return ::__nv_fp128_ceil(__x);))
+  NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_ceil(__x);))
   const __float128 __t = ::cuda::std::__trunc_fp128_impl(__x);
   return (__t < __x) ? __t + 1 : __t;
 #  endif // ^^^ !_CCCL_BUILTIN_CEILF128 ^^^
@@ -249,7 +249,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #  if defined(_CCCL_BUILTIN_FLOORF128)
   return _CCCL_BUILTIN_FLOORF128(__x);
 #  else // ^^^ _CCCL_BUILTIN_FLOORF128 ^^^ / vvv !_CCCL_BUILTIN_FLOORF128 vvv
-  NV_IF_TARGET(NV_IS_DEVICE, (return ::__nv_fp128_floor(__x);))
+  NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_floor(__x);))
   const __float128 __t = ::cuda::std::__trunc_fp128_impl(__x);
   return (__t > __x) ? __t - 1 : __t;
 #  endif // ^^^ !_CCCL_BUILTIN_FLOORF128 ^^^
@@ -986,7 +986,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #  if defined(_CCCL_BUILTIN_ROUNDF128)
   return _CCCL_BUILTIN_ROUNDF128(__x);
 #  else // ^^^ _CCCL_BUILTIN_ROUNDF128 ^^^ / vvv !_CCCL_BUILTIN_ROUNDF128 vvv
-  NV_IF_TARGET(NV_IS_DEVICE, (return ::__nv_fp128_round(__x);))
+  NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_round(__x);))
   // x - trunc(x) is exact, so this avoids the double rounding of trunc(x + 0.5)
   const __float128 __t    = ::cuda::std::__trunc_fp128_impl(__x);
   const __float128 __diff = (__x < 0) ? __t - __x : __x - __t;
@@ -1092,7 +1092,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #  if defined(_CCCL_BUILTIN_TRUNCF128)
   return _CCCL_BUILTIN_TRUNCF128(__x);
 #  else // ^^^ _CCCL_BUILTIN_TRUNCF128 ^^^ / vvv !_CCCL_BUILTIN_TRUNCF128 vvv
-  NV_IF_TARGET(NV_IS_DEVICE, (return ::__nv_fp128_trunc(__x);))
+  NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_trunc(__x);))
   return ::cuda::std::__trunc_fp128_impl(__x);
 #  endif // ^^^ !_CCCL_BUILTIN_TRUNCF128 ^^^
 }
