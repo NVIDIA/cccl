@@ -13,8 +13,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/config.h>
-
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/type_size.cuh>

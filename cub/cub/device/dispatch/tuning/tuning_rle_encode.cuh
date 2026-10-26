@@ -13,8 +13,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/config.h>
-
 #include <cub/agent/agent_reduce_by_key.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_load.cuh>

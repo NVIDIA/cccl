@@ -22,6 +22,7 @@
 #include <cub/util_math.cuh>
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h> // IWYU pragma: keep
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
