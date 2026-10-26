@@ -1,6 +1,8 @@
 #include <thrust/execution_policy.h>
 #include <thrust/fill.h>
 
+#include <cuda/std/array>
+
 #include <algorithm>
 
 #include <unittest/unittest.h>
@@ -203,4 +205,29 @@ TEST_CASE("TestFillCudaStreams", "[fill]")
   REQUIRE(v == ref);
 
   cudaStreamDestroy(s);
+}
+
+TEST_CASE("TestFillLargeValueCudaStreams", "[fill]")
+{
+  // Exceeds the kernel parameter limit, see https://github.com/NVIDIA/cccl/issues/2777
+  using T = cuda::std::array<int, 10000>;
+
+  T value;
+  for (int i = 0; i < static_cast<int>(value.size()); ++i)
+  {
+    value[i] = i;
+  }
+
+  thrust::device_vector<T> v(3, thrust::no_init);
+
+  cudaStream_t s;
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
+
+  thrust::fill(thrust::cuda::par_nosync.on(s), v.begin(), v.end(), value);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
+
+  const thrust::host_vector<T> ref(v.size(), value);
+  REQUIRE((v == ref));
+
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
