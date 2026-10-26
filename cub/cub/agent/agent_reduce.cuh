@@ -29,6 +29,7 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_device.cuh>
 
+#include <cuda/__iterator/contiguous_iterator_adaptor.h>
 #include <cuda/__memory/as_bytes_vectorized.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/min.h>
@@ -36,6 +37,7 @@
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 
@@ -203,6 +205,10 @@ struct AgentReduceImpl
   /// The input value type
   using InputT = it_value_t<InputIteratorT>;
 
+  /// The value type of the storage behind the input iterator. Differs from InputT for an iterator adaptor over
+  /// contiguous storage, like cuda::transform_iterator over a pointer
+  using StorageT = ::cuda::__unwrapped_iter_value_t<InputIteratorT>;
+
   /// Input iterator wrapper type (for applying cache modifier)
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
@@ -216,21 +222,23 @@ struct AgentReduceImpl
   static constexpr int TILE_ITEMS       = NumThreads * ITEMS_PER_THREAD;
   static constexpr int vec_size         = ::cuda::std::min(ITEMS_PER_THREAD, AgentReducePolicy::VECTOR_LOAD_LENGTH);
 
-  /// Vector type of InputT for data movement. Cache modified loads are at most 16 bytes wide, so they gain nothing from
-  /// a stricter alignment
-  using VectorT = ::cuda::__as_bytes_vectorized_t<InputT, vec_size>;
+  /// Vector type of StorageT for data movement. Cache modified loads are at most 16 bytes wide, so they gain nothing
+  /// from a stricter alignment
+  using VectorT = ::cuda::__as_bytes_vectorized_t<StorageT, vec_size>;
 
-  // Can vectorize according to the policy if the input iterator is a native
-  // pointer to a primitive type
+  // Can vectorize according to the policy if the input iterator is a native pointer to a primitive type, or an iterator
+  // adaptor over one
   // TODO(bgruber): we should not check for `is_pointer_v` but `contiguous_iterator` and unwrap it
   static constexpr bool ATTEMPT_VECTORIZATION =
-    (vec_size > 1) && (ITEMS_PER_THREAD % vec_size == 0) && !::cuda::std::is_volatile_v<InputT>
-    && (::cuda::std::is_pointer_v<InputIteratorT>)
-         // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
-         &&(is_primitive<InputT>::value || ::cuda::is_trivially_copyable_v<InputT>)
+    (vec_size > 1) && (ITEMS_PER_THREAD % vec_size == 0) && !::cuda::std::is_volatile_v<StorageT>
+    && (::cuda::std::is_pointer_v<InputIteratorT> || ::cuda::__iterator_can_rebase<InputIteratorT>)
+    // The loaded items are stored in a local array of InputT
+    &&::cuda::std::is_default_constructible_v<InputT>
+    // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
+    && (is_primitive<StorageT>::value || ::cuda::is_trivially_copyable_v<StorageT>)
          // vectorizing large types leads to regressions again, see https://github.com/NVIDIA/cccl/issues/9761
          // TODO(bgruber): this should be decided by tuning
-         &&sizeof(InputT)
+         &&sizeof(StorageT)
          <= 8;
 
   static constexpr CacheLoadModifier LOAD_MODIFIER = AgentReducePolicy::LOAD_MODIFIER;
@@ -265,7 +273,7 @@ struct AgentReduceImpl
   {
     if constexpr (AttemptVectorization)
     {
-      return ::cuda::std::is_sufficiently_aligned<alignof(VectorT)>(d_in);
+      return ::cuda::std::is_sufficiently_aligned<alignof(VectorT)>(::cuda::__unwrap_iterator_adaptor(d_in));
     }
     else
     {

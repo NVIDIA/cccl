@@ -5,6 +5,8 @@
 
 #include <cub/device/device_reduce.cuh>
 
+#include <thrust/sequence.h>
+
 #include <cuda/iterator>
 
 #include <cstdint>
@@ -118,4 +120,63 @@ CUB_TEST("Device reduce compiles with discard output iterator", "[reduce][device
 
   // Run test
   device_reduce(in_it, cuda::discard_iterator(), num_items, reduction_op, init_value_t{});
+}
+
+struct plus_one_t
+{
+  __host__ __device__ int operator()(int value) const
+  {
+    return value + 1;
+  }
+};
+
+struct widen_t
+{
+  __host__ __device__ int operator()(std::uint8_t value) const
+  {
+    return static_cast<int>(value) + 1;
+  }
+};
+
+template <typename Iterator>
+void check_sum(Iterator in, int num_items, std::int64_t expected)
+{
+  c2h::device_vector<std::int64_t> out(1, thrust::no_init);
+  device_sum(in, thrust::raw_pointer_cast(out.data()), num_items);
+  REQUIRE(out[0] == expected);
+}
+
+// Full tiles exercise the vectorized load. The extra elements exercise the scalar tail. An offset of one int is
+// aligned for the element type and misaligned for a 16-byte vector load.
+CUB_TEST("Device sum of a transform iterator over contiguous storage", "[reduce][device]", CUB_SMALL)
+{
+  const int num_items = GENERATE(4096, 1000003, 1 << 20);
+  c2h::device_vector<int> in(num_items);
+  thrust::sequence(c2h::device_policy, in.begin(), in.end());
+  auto* d_in = thrust::raw_pointer_cast(in.data());
+
+  const auto expected = static_cast<std::int64_t>(num_items) * (num_items + 1) / 2;
+  check_sum(cuda::transform_iterator(d_in, plus_one_t{}), num_items, expected);
+
+  if (num_items > 1)
+  {
+    const int tail           = num_items - 1;
+    const auto tail_expected = expected - 1;
+    check_sum(cuda::transform_iterator(d_in + 1, plus_one_t{}), tail, tail_expected);
+  }
+}
+
+CUB_TEST("Device sum of a widening transform iterator over contiguous storage", "[reduce][device]", CUB_SMALL)
+{
+  constexpr int num_items = 1 << 20;
+  c2h::device_vector<std::uint8_t> in(num_items, 1);
+  auto* d_in = thrust::raw_pointer_cast(in.data());
+  check_sum(cuda::transform_iterator(d_in, widen_t{}), num_items, static_cast<std::int64_t>(num_items) * 2);
+}
+
+CUB_TEST("Device sum of a counting iterator stays scalar", "[reduce][device]", CUB_SMALL)
+{
+  constexpr int num_items = 1 << 20;
+  const auto expected     = static_cast<std::int64_t>(num_items) * (num_items - 1) / 2;
+  check_sum(cuda::counting_iterator{0}, num_items, expected);
 }

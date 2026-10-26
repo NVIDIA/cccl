@@ -230,10 +230,3 @@ make_transform_input_output_iterator(Iterator io, InputFunction input_function, 
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
-
-_CCCL_BEGIN_NAMESPACE_CUDA
-template <class _InputFn, class _OutputFn, class _Iter>
-inline constexpr bool __is_contiguous_iterator_or_adaptor_impl<
-  THRUST_NS_QUALIFIER::transform_input_output_iterator<_InputFn, _OutputFn, _Iter>> =
-  __is_contiguous_iterator_or_adaptor_v<::cuda::std::remove_cvref_t<_Iter>>;
-_CCCL_END_NAMESPACE_CUDA

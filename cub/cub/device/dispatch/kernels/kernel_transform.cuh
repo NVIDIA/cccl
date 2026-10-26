@@ -50,6 +50,7 @@
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_trivial.h>
 #include <cuda/std/__utility/move.h>
@@ -286,20 +287,13 @@ _CCCL_DEVICE void transform_kernel_vectorized(
     // load inputs
     [[maybe_unused]] auto load_tile = [](auto in, auto& input) {
       using value_t = it_value_t<decltype(in)>;
-      if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(in)>)
-      {
-        // TODO(bgruber): we could add a max_load_store_size to the policy to avoid huge load types and huge alignment
-        // requirements
-        using load_t    = decltype(load_store_type<sizeof(value_t) * VecSize>());
-        auto& vec_items = *reinterpret_cast<load_t(*)[load_store_count]>(input.data());
-        InternalLoadDirectStripedVectorized<ThreadsPerBlock, 1, LOAD_DEFAULT>(
-          static_cast<int>(threadIdx.x), reinterpret_cast<const load_t*>(::cuda::std::to_address(in)), vec_items);
+      if constexpr (::cuda::__is_contiguous_iterator_or_adaptor_v<decltype(in)>)
+      { // CanVectorize only selects this path if contiguous inputs are aligned to their vectors
+        const auto* base_ptr = ::cuda::__unwrap_iterator_adaptor(in);
+        _CCCL_ASSUME(reinterpret_cast<::cuda::std::uintptr_t>(base_ptr) % (sizeof(value_t) * VecSize) == 0);
       }
-      else
-      {
-        auto& items = *reinterpret_cast<value_t(*)[ItemsPerThread]>(input.data());
-        LoadDirectStripedVectorized<ThreadsPerBlock, VecSize>(static_cast<int>(threadIdx.x), in, items);
-      }
+      auto& items = *reinterpret_cast<value_t(*)[ItemsPerThread]>(input.data());
+      LoadDirectStripedVectorized<ThreadsPerBlock, VecSize>(static_cast<int>(threadIdx.x), in, items);
     };
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
     (load_tile(ins, inputs), ...);

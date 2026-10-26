@@ -8,10 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// Contiguous iterator adaptors satisfy __is_contiguous_iterator_or_adaptor_v when their stored iterator does.
-// __unwrap_iterator_adaptor peels those adaptors down to the contiguous iterator, and __rebase aims the adaptor
-// at a different contiguous region. Adaptors that read through a functor can only be rebased when the functor proclaims
-// copyable arguments.
+// Transform iterators satisfy __is_contiguous_iterator_or_adaptor_v when their stored iterator does, transform output
+// and input output iterators never do. __unwrap_iterator_adaptor peels all of these adaptors down to the contiguous
+// iterator, and __rebase aims the adaptor at a different contiguous region.
 
 #include <cuda/iterator>
 #include <cuda/std/cassert>
@@ -234,7 +233,7 @@ TEST_FUNC constexpr bool test()
 
   {
     using Iter = cuda::transform_output_iterator<Narrow, char*>;
-    test_trait<Iter, true>();
+    test_trait<Iter, false>();
 
     char output[2]        = {};
     char staged_output[2] = {};
@@ -255,7 +254,7 @@ TEST_FUNC constexpr bool test()
 
   {
     using Iter = cuda::transform_input_output_iterator<PlusOne, PlusOne, int*>;
-    test_trait<Iter, true>();
+    test_trait<Iter, false>();
 
     Iter iter{buffer, PlusOne{}, PlusOne{}};
     auto unwrapped = cuda::__unwrap_iterator_adaptor(iter);
@@ -277,9 +276,7 @@ TEST_FUNC constexpr bool test()
   {
     using Inner = cuda::transform_input_output_iterator<PlusOne, PlusOne, int*>;
     using Outer = cuda::transform_input_output_iterator<TimesTwo, PlusOne, Inner>;
-    test_trait<Outer, true>();
-    static_assert(
-      cuda::__is_contiguous_iterator_or_adaptor_v<Outer> == cuda::__is_contiguous_iterator_or_adaptor_v<Inner>);
+    test_trait<Outer, false>();
 
     staged[0] = 10;
     Outer iter{Inner{buffer, PlusOne{}, PlusOne{}}, TimesTwo{}, PlusOne{}};
@@ -300,13 +297,13 @@ TEST_FUNC constexpr bool test()
 
   {
     using Iter = cuda::transform_input_output_iterator<PlusOne, PlusOne, addressable_iterator>;
-    test_trait<Iter, true>();
+    test_trait<Iter, false>();
     static_assert(!cuda::__iterator_can_rebase<Iter, int>);
   }
 
   {
     using Iter = cuda::transform_input_output_iterator<Narrow, PlusOne, int*>;
-    test_trait<Iter, true>();
+    test_trait<Iter, false>();
     static_assert(cuda::__iterator_can_rebase<Iter>);
   }
 
