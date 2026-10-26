@@ -70,9 +70,9 @@ struct group_merge_expansion
     _CCCL_UNREACHABLE();
   }
   // Build the capacity-list type from threads * IPT for every supported bin.
-  template <::cuda::std::size_t... I>
-  static auto expand(::cuda::std::index_sequence<I...>)
-    -> capacity_list<(expanded_config(I).threads * expanded_config(I).items_per_thread)...>;
+  template <::cuda::std::size_t... BinIndices>
+  static auto expand(::cuda::std::index_sequence<BinIndices...>)
+    -> capacity_list<(expanded_config(BinIndices).threads * expanded_config(BinIndices).items_per_thread)...>;
   using capacities = decltype(expand(::cuda::std::make_index_sequence<size>{}));
   // Expose a selected pair as the configuration type expected by the generic bin lookup.
   template <int Bin>
