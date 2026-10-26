@@ -53,16 +53,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API constexpr bool __isnormal_storage(double __x) noexcept
 {
-  auto __storage = ::cuda::std::__fp_get_storage(__x);
-#if !_CCCL_TILE_COMPILATION() // asm statement is unsupported in tile code
-  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
-  {
-    // See __isinf_storage
-    NV_IF_TARGET(NV_PROVIDES_SM_100, ([&] {
-                   asm("mov.b64 %0, %0;" : "+l"(__storage));
-                 }();))
-  }
-#endif // !_CCCL_TILE_COMPILATION()
+  const auto __storage = ::cuda::std::__fp_get_storage(__x);
   constexpr auto __exp_max =
     static_cast<uint32_t>(__fp_exp_mask_v<__fp_format::__binary64> >> __fp_mant_nbits_v<__fp_format::__binary64>);
   const auto __exp = static_cast<uint32_t>(::cuda::std::__fp_get_exp_biased<__fp_format::__binary64>(__storage));

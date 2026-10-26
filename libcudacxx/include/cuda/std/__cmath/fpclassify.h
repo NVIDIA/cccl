@@ -130,16 +130,7 @@ template <class _Tp>
 
 [[nodiscard]] _CCCL_API constexpr int __fpclassify_storage(double __x) noexcept
 {
-  auto __storage = ::cuda::std::__fp_get_storage(__x);
-#if !_CCCL_TILE_COMPILATION() // asm statement is unsupported in tile code
-  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
-  {
-    // See __isinf_storage
-    NV_IF_TARGET(NV_PROVIDES_SM_100, ([&] {
-                   asm("mov.b64 %0, %0;" : "+l"(__storage));
-                 }();))
-  }
-#endif // !_CCCL_TILE_COMPILATION()
+  const auto __storage = ::cuda::std::__fp_get_storage(__x);
   // The exponent is in the upper 32 bits, so check it there
   constexpr auto __exp_mask_hi = static_cast<uint32_t>(__fp_exp_mask_of_v<double> >> 32);
   const auto __exp             = static_cast<uint32_t>(__storage >> 32) & __exp_mask_hi;
