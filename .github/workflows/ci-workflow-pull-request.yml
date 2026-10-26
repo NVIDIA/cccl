@@ -320,7 +320,7 @@ jobs:
       actions: read
       contents: read
       pull-requests: write # Posts a comment back to the PR.
-    runs-on: ubuntu-latest
+    runs-on: linux-amd64-cpu4
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
