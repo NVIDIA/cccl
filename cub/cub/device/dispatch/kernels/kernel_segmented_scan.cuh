@@ -213,9 +213,10 @@ public:
     for (OffsetT chunk_id = 0; chunk_id < n_chunks;)
     {
       const OffsetT chunk_begin = input_begin_idx + chunk_id * tile_items;
-      // Subtract first to avoid overflow for segments ending close to the maximum of OffsetT
+      // Subtract first in the fixed-size path to avoid overflow for segments ending close to the maximum of OffsetT
       const OffsetT chunk_end =
-        chunk_begin + (::cuda::std::min) (static_cast<OffsetT>(tile_items), input_end_idx - chunk_begin);
+        FixedSize ? chunk_begin + (::cuda::std::min) (static_cast<OffsetT>(tile_items), input_end_idx - chunk_begin)
+                  : (::cuda::std::min) (chunk_begin + tile_items, input_end_idx);
 
       // chunk_size <= TILE_ITEMS, casting to int is safe
       const int chunk_size = static_cast<int>(chunk_end - chunk_begin);
