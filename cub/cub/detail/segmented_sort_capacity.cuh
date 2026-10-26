@@ -119,7 +119,7 @@ struct sort_entry
   using capacities                    = typename expansion::capacities;
   inline static constexpr auto tuning = implementation::policy;
   // Threads per independently scheduled work unit (warp or block), which may pack several segments.
-  static constexpr int unit_threads   = implementation::unit_threads;
+  static constexpr int unit_threads = implementation::unit_threads;
   static_assert(tuning.block_threads > 0 && tuning.block_threads <= 1024);
   static_assert(unit_threads > 0 && tuning.block_threads % unit_threads == 0);
   static_assert(tuning.blocks_per_sm > 0 && tuning.min_blocks_per_sm > 0);
