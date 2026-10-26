@@ -22,6 +22,9 @@ The components
 
 Three of these change the arithmetic; the fourth observes it.
 
+How to choose between them, how they combine inside one kernel, and how to get the most out of
+each is the subject of the [FP optimization guide](README_fp_optimization_guide.md).
+
 Which one do I want?
 --------------------
 
@@ -45,6 +48,11 @@ that matters.
 **To know what the arithmetic is currently doing.** `fp32mp2_stat` / `fp64mp2_stat` compute
 identical results and record operation counts, cancellation and overflow events, and what
 the operands looked like — including whether the second limb is carrying anything at all.
+
+Those are the short answers. The full decision — the hardware question that settles most of it,
+the three-way trade around `double` on a part that rations FP64, and the mixed cases where two
+types share a kernel — is in the optimization guide's [Choosing the
+type](README_fp_optimization_guide.md#choosing-the-type).
 
 The examples
 ------------
