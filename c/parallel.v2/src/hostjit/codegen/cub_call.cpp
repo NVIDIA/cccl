@@ -116,10 +116,47 @@ bool needs_env_include(const std::vector<Arg>& args)
   return false;
 }
 
+// Returns true if any type carried by `args` is an emulated floating-point type,
+// in which case the shared-includes block needs <cuda/fpemu>.
+bool needs_fpemu_include(const std::vector<Arg>& args)
+{
+  for (const auto& arg : args)
+  {
+    const bool found = std::visit(
+      [](const auto& a) -> bool {
+        using T = std::decay_t<decltype(a)>;
+        if constexpr (std::is_same_v<T, input_t> || std::is_same_v<T, output_t>)
+        {
+          return is_fpemu_type(a.it.value_type.type);
+        }
+        else if constexpr (std::is_same_v<T, cccl_value_t> || std::is_same_v<T, future_val_t>
+                           || std::is_same_v<T, no_init_t> || std::is_same_v<T, force_accum_type_t>
+                           || std::is_same_v<T, typed_scalar_t>)
+        {
+          return is_fpemu_type(a.type.type);
+        }
+        else if constexpr (std::is_same_v<T, unary_op_t>)
+        {
+          return is_fpemu_type(a.in_type.type) || is_fpemu_type(a.out_type.type);
+        }
+        else
+        {
+          return false;
+        }
+      },
+      arg);
+    if (found)
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Emits the system #includes + the CUB header. Hoisted from source() so
 // multi-function compiles can emit this once and wrap N function bodies in N
 // namespaces below.
-std::string shared_includes(const std::string& cub_include, bool needs_tuple, bool needs_env)
+std::string shared_includes(const std::string& cub_include, bool needs_tuple, bool needs_env, bool needs_fpemu)
 {
   std::string src = R"(#include <cuda_runtime.h>
 #include <cuda_fp16.h>
@@ -140,6 +177,10 @@ std::string shared_includes(const std::string& cub_include, bool needs_tuple, bo
     src += "#include <cuda/std/__execution/env.h>\n";
     src += "#include <cuda/stream_ref>\n";
   }
+  if (needs_fpemu)
+  {
+    src += "#include <cuda/fpemu>\n";
+  }
   src += std::format("#include <{}>\n\n", cub_include);
   return src;
 }
@@ -148,7 +189,7 @@ std::string shared_includes(const std::string& cub_include, bool needs_tuple, bo
 std::string CubCall::source() const
 {
   // Single-function source = shared includes + this CubCall's body.
-  return shared_includes(include_, tuple_inputs_, needs_env_include(args_)) + body();
+  return shared_includes(include_, tuple_inputs_, needs_env_include(args_), needs_fpemu_include(args_)) + body();
 }
 
 std::string CubCall::body() const
@@ -215,6 +256,9 @@ std::string CubCall::body() const
       case CCCL_INT64:
       case CCCL_UINT64:
       case CCCL_FLOAT64:
+      case CCCL_FP64EMU_HIGH:
+      case CCCL_FP64EMU_MID:
+      case CCCL_FP64EMU_LOW:
         return 8;
       default:
         return 0;
@@ -748,10 +792,12 @@ MultiCubCallResult CubCall::compile(
   // Detect whether any CubCall needs the env / tuple system includes.
   bool any_tuple = false;
   bool any_env   = false;
+  bool any_fpemu = false;
   for (const auto& cb : calls)
   {
     any_tuple = any_tuple || cb.tuple_inputs_;
     any_env   = any_env || needs_env_include(cb.args_);
+    any_fpemu = any_fpemu || needs_fpemu_include(cb.args_);
   }
 
   // entry_point_name is used to mark a single function as preserved during
@@ -778,7 +824,7 @@ MultiCubCallResult CubCall::compile(
   // The extern "C" _CCCL_VISIBILITY_EXPORT symbols defined inside each
   // namespace export under the global C-linkage name (no mangling),
   // so dlsym(handle, cb.fn_name_) finds them.
-  std::string cuda_source = shared_includes(shared_include, any_tuple, any_env);
+  std::string cuda_source = shared_includes(shared_include, any_tuple, any_env, any_fpemu);
   int i                   = 0;
   for (const auto& cb : calls)
   {
