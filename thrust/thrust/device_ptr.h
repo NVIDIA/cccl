@@ -225,3 +225,8 @@ THRUST_NAMESPACE_END
 
 #include <thrust/detail/device_ptr.inl>
 #include <thrust/detail/raw_pointer_cast.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+template <class _Element>
+inline constexpr bool __has_contiguous_traversal<THRUST_NS_QUALIFIER::device_ptr<_Element>> = true;
+_CCCL_END_NAMESPACE_CUDA_STD
