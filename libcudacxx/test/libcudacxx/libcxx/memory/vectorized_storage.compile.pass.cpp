@@ -9,12 +9,20 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/__memory/__vectorized_storage.h>
+#include <cuda/std/algorithm>
 #include <cuda/std/complex>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
+
+#if _CCCL_HAS_NVFP16()
+#  include <cuda_fp16.h>
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+#  include <cuda_bf16.h>
+#endif // _CCCL_HAS_NVBF16()
 
 struct three_chars_t
 {
@@ -37,10 +45,14 @@ struct alignas(64) aligned_64_t
   char data[64];
 };
 
+enum class short_enum_t : short
+{
+};
+
 template <class Word, cuda::std::size_t Count>
 TEST_FUNC constexpr void test_vector_word()
 {
-  using storage_t = cuda::__vectorized_storage_t<Word, 1, Count, 1, cuda::__max_vector_access>;
+  using storage_t = cuda::__vectorized_storage_t<Word, 1, Count, 1, cuda::__max_memory_access_width>;
   static_assert(cuda::std::is_same_v<typename storage_t::value_type, Word[Count]>);
   static_assert(sizeof(storage_t) == sizeof(Word) * Count);
   static_assert(alignof(storage_t) == sizeof(Word) * Count);
@@ -50,41 +62,54 @@ TEST_FUNC constexpr void test_vector_word()
 template <class Storage>
 TEST_FUNC constexpr bool test_flat_iteration()
 {
+  using word_t             = cuda::std::remove_extent_t<typename Storage::value_type>;
+  constexpr auto num_words = sizeof(Storage) / sizeof(word_t);
+
   Storage storage{};
-  const auto* const words  = storage.data();
-  constexpr auto num_words = sizeof(Storage) / sizeof(*words);
-  return words[num_words - 1] == words[0];
+  for (cuda::std::size_t i = 0; i < num_words; ++i)
+  {
+    storage.data()[i] = static_cast<word_t>(i);
+  }
+
+  const Storage& const_storage = storage;
+  for (cuda::std::size_t i = 0; i < num_words; ++i)
+  {
+    if (const_storage.data()[i] != static_cast<word_t>(i))
+    {
+      return false;
+    }
+  }
+  return true;
 }
 
 template <class T,
-          cuda::std::size_t VecSize,
-          class Word,
-          cuda::std::size_t WordsPerVector,
-          cuda::std::size_t NumVectors,
-          cuda::std::size_t MaxVectorAccess = cuda::__max_vector_access>
+          cuda::std::size_t Count,
+          class ExpectedWord,
+          cuda::std::size_t ExpectedNumWords,
+          cuda::std::size_t ExpectedNumVectors,
+          cuda::std::size_t MaxMemoryAccessWidth = cuda::__max_memory_access_width>
 TEST_FUNC constexpr void test_vec_size()
 {
-  using storage_t = cuda::__as_vectorized_storage_t<T, VecSize, MaxVectorAccess>;
+  using storage_t = cuda::__as_vectorized_storage_t<T, Count, MaxMemoryAccessWidth>;
   static_assert(
-    cuda::std::is_same_v<storage_t,
-                         cuda::__vectorized_storage_t<Word, NumVectors, WordsPerVector, alignof(T), MaxVectorAccess>>);
+    cuda::std::is_same_v<
+      storage_t,
+      cuda::__vectorized_storage_t<ExpectedWord, ExpectedNumVectors, ExpectedNumWords, alignof(T), MaxMemoryAccessWidth>>);
+  // The layout of T[Count], aligned for a single access per vector but at least to T
+  static_assert(sizeof(storage_t) == sizeof(T) * Count);
+  static_assert(alignof(storage_t) == cuda::std::max(alignof(T), sizeof(ExpectedWord) * ExpectedNumWords));
   static_assert(test_flat_iteration<storage_t>());
 }
 
 template <class T,
-          class Word,
-          cuda::std::size_t WordsPerItem,
-          cuda::std::size_t MaxVectorAccess = cuda::__max_vector_access>
+          class ExpectedWord,
+          cuda::std::size_t ExpectedWordsPerItem,
+          cuda::std::size_t MaxMemoryAccessWidth = cuda::__max_memory_access_width>
 TEST_FUNC constexpr void test_scalar_words()
 {
-  static_assert(cuda::std::is_same_v<cuda::__as_vectorized_storage_t<T, 1, MaxVectorAccess>,
-                                     cuda::__vectorized_storage_t<Word, WordsPerItem, 1, alignof(T), MaxVectorAccess>>);
-  static_assert(
-    cuda::std::is_same_v<cuda::__as_vectorized_storage_t<T, 3, MaxVectorAccess>,
-                         cuda::__vectorized_storage_t<Word, 3 * WordsPerItem, 1, alignof(T), MaxVectorAccess>>);
-  static_assert(
-    cuda::std::is_same_v<cuda::__as_vectorized_storage_t<T, 16, MaxVectorAccess>,
-                         cuda::__vectorized_storage_t<Word, 16 * WordsPerItem, 1, alignof(T), MaxVectorAccess>>);
+  test_vec_size<T, 1, ExpectedWord, 1, ExpectedWordsPerItem, MaxMemoryAccessWidth>();
+  test_vec_size<T, 3, ExpectedWord, 1, 3 * ExpectedWordsPerItem, MaxMemoryAccessWidth>();
+  test_vec_size<T, 16, ExpectedWord, 1, 16 * ExpectedWordsPerItem, MaxMemoryAccessWidth>();
 }
 
 template <class T, class Word>
@@ -171,6 +196,22 @@ TEST_FUNC constexpr void test_16_byte_word()
 #endif // ^^^ __cccl_ptx_isa < 900 ^^^
 }
 
+#if _CCCL_HAS_LONG_DOUBLE()
+// long double has 16 bytes on most hosts, but only 8 bytes with MSVC
+template <class T>
+TEST_FUNC constexpr void test_long_double()
+{
+  if constexpr (sizeof(T) == 16)
+  {
+    test_16_byte_word<T>();
+  }
+  else
+  {
+    test_8_byte_word<T, T>();
+  }
+}
+#endif // _CCCL_HAS_LONG_DOUBLE()
+
 TEST_FUNC void test()
 {
   test_vector_word<cuda::std::uint8_t, 1>();
@@ -196,6 +237,13 @@ TEST_FUNC void test()
 
   test_2_byte_word<short, short>();
   test_2_byte_word<unsigned short, unsigned short>();
+  test_2_byte_word<short_enum_t, cuda::std::uint16_t>();
+#if _CCCL_HAS_NVFP16()
+  test_2_byte_word<__half, cuda::std::uint16_t>();
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+  test_2_byte_word<__nv_bfloat16, cuda::std::uint16_t>();
+#endif // _CCCL_HAS_NVBF16()
   test_vec_size<short_and_char_t, 1, cuda::std::uint16_t, 2, 1>();
   test_vec_size<short_and_char_t, 2, cuda::std::uint16_t, 4, 1>();
   test_vec_size<short_and_char_t, 3, cuda::std::uint16_t, 2, 3>();
@@ -210,6 +258,8 @@ TEST_FUNC void test()
 
   test_4_byte_word<int, int>();
   test_4_byte_word<unsigned int, unsigned int>();
+  test_4_byte_word<const int, int>();
+  test_4_byte_word<volatile int, int>();
   test_vec_size<float, 1, float, 1, 1>();
   test_vec_size<float, 2, float, 2, 1>();
   test_vec_size<float, 3, float, 1, 3>();
@@ -222,6 +272,10 @@ TEST_FUNC void test()
   test_vec_size<float, 16, float, 4, 4>();
 #endif // ^^^ __cccl_ptx_isa < 900 ^^^
   test_4_byte_word<uchar4, cuda::std::uint32_t>();
+  test_4_byte_word<const volatile uchar4, cuda::std::uint32_t>();
+#if _CCCL_HAS_NVFP16()
+  test_4_byte_word<__half2, cuda::std::uint32_t>();
+#endif // _CCCL_HAS_NVFP16()
   test_vec_size<float3, 1, cuda::std::uint32_t, 1, 3>();
   test_vec_size<float3, 2, cuda::std::uint32_t, 2, 3>();
   test_vec_size<float3, 3, cuda::std::uint32_t, 1, 9>();
@@ -251,6 +305,7 @@ TEST_FUNC void test()
   test_8_byte_word<short4, cuda::std::uint64_t>();
   test_8_byte_word<float2, cuda::std::uint64_t>();
   test_8_byte_word<cuda::std::complex<float>, cuda::std::uint64_t>();
+  test_8_byte_word<int*, cuda::std::uint64_t>();
   test_vec_size<double3, 1, cuda::std::uint64_t, 1, 3>();
   test_vec_size<double3, 2, cuda::std::uint64_t, 2, 3>();
   test_vec_size<double3, 3, cuda::std::uint64_t, 1, 9>();
@@ -268,6 +323,9 @@ TEST_FUNC void test()
   test_16_byte_word<__int128_t>();
   test_16_byte_word<__uint128_t>();
 #endif // _CCCL_HAS_INT128()
+#if _CCCL_HAS_LONG_DOUBLE()
+  test_long_double<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
   test_16_byte_word<float4>();
   test_16_byte_word<double2>();
   test_16_byte_word<cuda::std::complex<double>>();
@@ -295,10 +353,19 @@ TEST_FUNC void test()
   test_vec_size<double, 4, double, 2, 2, 16>();
   test_vec_size<float3, 8, cuda::std::uint32_t, 4, 6, 16>();
   test_vec_size<double2, 2, cuda::std::uint64_t, 2, 2, 16>();
+  test_vec_size<char, 16, char, 8, 2, 8>();
+  test_vec_size<int, 4, int, 2, 2, 8>();
+  test_vec_size<double, 2, double, 1, 2, 8>();
+  test_vec_size<char, 8, char, 4, 2, 4>();
+  test_vec_size<short, 4, short, 2, 2, 4>();
+  test_vec_size<int, 4, int, 1, 4, 4>();
   static_assert(alignof(cuda::__as_vectorized_storage_t<int, 8, 16>) == 16);
 
   // Types aligned to more than the vector access limit keep their alignment and are stored in scalar words
   test_scalar_words<aligned_32_t, cuda::std::uint32_t, 8, 16>();
+  test_scalar_words<double2, cuda::std::uint32_t, 4, 8>();
+  test_scalar_words<double, cuda::std::uint32_t, 2, 4>();
+  test_scalar_words<double2, cuda::std::uint32_t, 4, 4>();
   static_assert(alignof(cuda::__as_vectorized_storage_t<aligned_32_t, 1, 16>) == 32);
 }
 

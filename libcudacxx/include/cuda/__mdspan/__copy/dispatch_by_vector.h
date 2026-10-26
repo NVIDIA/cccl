@@ -25,6 +25,7 @@
 
 #  include <cuda/__mdspan/__copy/tensor_copy_utils.h>
 #  include <cuda/__mdspan/__copy/types.h>
+#  include <cuda/__mdspan/__copy/vector_access.h>
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
