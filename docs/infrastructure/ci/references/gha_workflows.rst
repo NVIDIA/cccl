@@ -60,12 +60,13 @@ Six dispatcher workflows unfold the generated job list into GitHub matrix strate
 Choosing matrix files
 ^^^^^^^^^^^^^^^^^^^^^
 
-Nightly and weekly workflows accept two optional ``workflow_dispatch`` inputs.
+Nightly and weekly workflows accept optional ``matrix_ref``, ``matrix_path``,
+and ``ci_profile`` inputs for ``workflow_dispatch``.
 Matrix files must be in the same repository as the workflow run and follow the
 :ref:`matrix.yaml format <infra-ci-matrix-yaml>`.
 
-Setting either input selects a single matrix file and overrides ``CI_MATRICES``.
-An omitted ref or path uses the corresponding default below.
+Setting either matrix input selects a single matrix file and overrides
+``CI_MATRICES``. An omitted ref or path uses the corresponding default below.
 
 .. list-table::
    :header-rows: 1
@@ -82,8 +83,12 @@ An omitted ref or path uses the corresponding default below.
      - ``ci/matrix.yaml``.
 
 PR runs select the ``pull_request`` profile in the ``CI_MATRICES`` repository
-variable. When both inputs are blank, nightly and weekly runs default to the
-``nightly`` and ``weekly`` profiles, respectively.
+variable. When both matrix inputs are blank, nightly and weekly runs default to
+the ``nightly`` and ``weekly`` profiles, respectively.
+
+Nightly and weekly manual dispatches also accept an optional ``ci_profile``
+input to select a different profile. A blank value uses ``nightly`` or
+``weekly``, respectively.
 
 The variable maps profile names to named matrix definitions in ``path@ref``
 form. Matrix names may contain only ASCII letters, digits, hyphens, and
