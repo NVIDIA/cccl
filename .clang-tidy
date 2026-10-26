@@ -208,6 +208,8 @@ Checks:
   - '-cert-dcl59-cpp'
   # Same as readability-uppercase-literal-suffix
   - '-cert-dcl16-c'
+  # Same as misc-static-assert
+  - 'cert-dcl03-c'
 
   - 'portability-*'
   - '-portability-template-virtual-member-function'

@@ -155,7 +155,7 @@ int main(int, char**)
 {
   static_assert(test());
   // Also exercise the reductions at runtime.
-  assert(test()); // NOLINT(cert-dcl03-c,misc-static-assert)
+  assert(test()); // NOLINT(misc-static-assert)
   assert(test_runtime());
   return 0;
 }
