@@ -32,6 +32,7 @@
 #  include <cuda/std/__chrono/time_point.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/terminate.h>
+#  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__utility/exchange.h>
 #  include <cuda/std/cstdint>
@@ -493,6 +494,41 @@ private:
     __unsupported_storage();
   }
 
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr ::cuda::std::uint32_t
+  __suspend_time_hint(::cuda::std::chrono::nanoseconds __hint) noexcept
+  {
+    constexpr auto __max_hint = (::cuda::std::numeric_limits<::cuda::std::uint32_t>::max)();
+    return __hint.count() > __max_hint ? __max_hint : static_cast<::cuda::std::uint32_t>(__hint.count());
+  }
+
+  template <class _WaitArg>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
+  __try_wait_with_hint_status(_WaitArg __wait_arg, ::cuda::std::chrono::nanoseconds __hint) const
+  {
+    if (__hint.count() <= 0)
+    {
+      return test_wait(__wait_arg, return_status);
+    }
+
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return __poll_try_wait_status(__wait_arg, __suspend_time_hint(__hint));))
+
+    __unsupported_storage();
+  }
+
+  template <class _WaitArg>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool
+  __try_wait_with_hint_ignoring_status(_WaitArg __wait_arg, ::cuda::std::chrono::nanoseconds __hint) const
+  {
+    if (__hint.count() <= 0)
+    {
+      return __test_wait_ignoring_status(__wait_arg);
+    }
+
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return __poll_try_wait_ignoring_status(__wait_arg, __suspend_time_hint(__hint));))
+
+    __unsupported_storage();
+  }
+
   template <class _WaitArg, class _Rep, class _Period>
   [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
   __try_wait_for_status(_WaitArg __wait_arg, const ::cuda::std::chrono::duration<_Rep, _Period>& __dur) const
@@ -743,6 +779,36 @@ public:
     __unsupported_storage();
   }
 
+  //! @brief Makes one wait attempt for an arrival token's phase with a suspension-time hint and returns the status.
+  //!
+  //! A positive hint is passed to a single PTX `mbarrier.try_wait` instruction, clamped to the maximum 32-bit
+  //! unsigned nanosecond value. It is a hint, not a deadline guarantee; no software retry loop is performed.
+  //! A nonpositive hint performs a single `test_wait` check instead.
+  //!
+  //! @param __token Arrival token to wait on.
+  //! @param __hint Suggested suspension time in nanoseconds.
+  //! @return Completion and report status for the wait attempt.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
+  try_wait(arrival_token __token, ::cuda::std::chrono::nanoseconds __hint, return_status_t) const
+  {
+    return __try_wait_with_hint_status(__token, __hint);
+  }
+
+  //! @brief Makes one wait attempt for an arrival token's phase with a suspension-time hint and ignores status.
+  //!
+  //! A positive hint is passed to a single PTX `mbarrier.try_wait` instruction, clamped to the maximum 32-bit
+  //! unsigned nanosecond value. It is a hint, not a deadline guarantee; no software retry loop is performed.
+  //! A nonpositive hint performs a single `test_wait` check instead.
+  //!
+  //! @param __token Arrival token to wait on.
+  //! @param __hint Suggested suspension time in nanoseconds.
+  //! @return `true` if the phase completed, otherwise `false`.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool
+  try_wait(arrival_token __token, ::cuda::std::chrono::nanoseconds __hint, ignore_status_t) const
+  {
+    return __try_wait_with_hint_ignoring_status(__token, __hint);
+  }
+
   //! @brief Waits until an arrival token's phase completes and returns the status.
   //!
   //! @param __token Arrival token to wait on.
@@ -838,6 +904,36 @@ public:
     __unsupported_storage();
   }
 
+  //! @brief Makes one wait attempt for a primary phase with a suspension-time hint and returns the status.
+  //!
+  //! A positive hint is passed to a single PTX `mbarrier.try_wait.parity` instruction, clamped to the maximum 32-bit
+  //! unsigned nanosecond value. It is a hint, not a deadline guarantee; no software retry loop is performed.
+  //! A nonpositive hint performs a single `test_wait` check instead.
+  //!
+  //! @param __phase Primary phase value to wait on.
+  //! @param __hint Suggested suspension time in nanoseconds.
+  //! @return Completion and report status for the wait attempt.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
+  try_wait(::cuda::std::uint32_t __phase, ::cuda::std::chrono::nanoseconds __hint, return_status_t) const
+  {
+    return __try_wait_with_hint_status(__phase, __hint);
+  }
+
+  //! @brief Makes one wait attempt for a primary phase with a suspension-time hint and ignores status.
+  //!
+  //! A positive hint is passed to a single PTX `mbarrier.try_wait.parity` instruction, clamped to the maximum 32-bit
+  //! unsigned nanosecond value. It is a hint, not a deadline guarantee; no software retry loop is performed.
+  //! A nonpositive hint performs a single `test_wait` check instead.
+  //!
+  //! @param __phase Primary phase value to wait on.
+  //! @param __hint Suggested suspension time in nanoseconds.
+  //! @return `true` if the phase completed, otherwise `false`.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool
+  try_wait(::cuda::std::uint32_t __phase, ::cuda::std::chrono::nanoseconds __hint, ignore_status_t) const
+  {
+    return __try_wait_with_hint_ignoring_status(__phase, __hint);
+  }
+
   //! @brief Waits until a primary phase completes and returns the status.
   //!
   //! @param __phase Primary phase value to wait on.
@@ -881,6 +977,22 @@ public:
     NV_IF_TARGET(NV_PROVIDES_SM_90, (return this->__try_wait_conditional_phase(__phase);))
 
     __unsupported_storage();
+  }
+
+  //! @brief Makes one wait attempt for a conditional phase with a suspension-time hint.
+  //!
+  //! The conditional phase advances only when the primary phase completes without a report.
+  //! A positive hint is passed to a single PTX `mbarrier.try_wait.parity` instruction, clamped to the maximum 32-bit
+  //! unsigned nanosecond value. It is a hint, not a deadline guarantee; no software retry loop is performed.
+  //! A nonpositive hint performs a single `test_wait_conditional_phase` check instead.
+  //!
+  //! @param __phase Conditional phase value to wait on.
+  //! @param __hint Suggested suspension time in nanoseconds.
+  //! @return `true` if the conditional phase completed, otherwise `false`.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool
+  try_wait_conditional_phase(::cuda::std::uint32_t __phase, ::cuda::std::chrono::nanoseconds __hint) const
+  {
+    return __try_wait_with_hint_ignoring_status(__conditional_phase{__phase}, __hint);
   }
 
   //! @brief Waits until a conditional phase completes.

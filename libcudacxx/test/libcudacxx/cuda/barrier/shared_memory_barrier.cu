@@ -435,6 +435,57 @@ TEST_DEVICE_FUNC void test_test_waits(cuda::shared_memory_barrier<Scope>* bar)
 }
 
 template <cuda::thread_scope Scope>
+TEST_DEVICE_FUNC void test_wait_hints(cuda::shared_memory_barrier<Scope>* bar)
+{
+  using cuda::std::chrono::nanoseconds;
+  typename cuda::shared_memory_barrier<Scope>::arrival_token token;
+  execute_on_thread_zero([&] {
+    token = bar->arrive();
+    // Keep positive hints short while the other thread is waiting to arrive.
+    for (auto hint : {nanoseconds::min(), nanoseconds{0}, nanoseconds{1}})
+    {
+      auto status = bar->try_wait(token, hint, cuda::return_status);
+      REQUIRE(!status.complete());
+      REQUIRE(!status.has_report());
+      REQUIRE(!bar->try_wait(token, hint, cuda::ignore_status));
+
+      status = bar->try_wait(0, hint, cuda::return_status);
+      REQUIRE(!status.complete());
+      REQUIRE(!status.has_report());
+      REQUIRE(!bar->try_wait(0, hint, cuda::ignore_status));
+      REQUIRE(!bar->try_wait_conditional_phase(0, hint));
+    }
+  });
+
+  if (threadIdx.x != 0)
+  {
+    (void) bar->arrive();
+  }
+  __syncthreads();
+
+  execute_on_thread_zero([&] {
+    // Completed waits must succeed even at the hint limits, without waiting for the hint to expire.
+    for (auto hint :
+         {nanoseconds::min(),
+          nanoseconds{0},
+          nanoseconds{1},
+          nanoseconds{4294967295LL},
+          nanoseconds{4294967296LL},
+          nanoseconds::max()})
+    {
+      auto status = bar->try_wait(token, hint, cuda::return_status);
+      check_success_status<Scope>(status);
+      REQUIRE(bar->try_wait(token, hint, cuda::ignore_status));
+
+      status = bar->try_wait(0, hint, cuda::return_status);
+      check_success_status<Scope>(status);
+      REQUIRE(bar->try_wait(0, hint, cuda::ignore_status));
+      REQUIRE(bar->try_wait_conditional_phase(0, hint));
+    }
+  });
+}
+
+template <cuda::thread_scope Scope>
 TEST_DEVICE_FUNC void test_ignore_status_waits(cuda::shared_memory_barrier<Scope>* bar)
 {
   auto token = bar->arrive();
@@ -520,6 +571,7 @@ TEST_DEVICE_FUNC void test_shared_memory_barrier_common_extensions()
   cuda::shared_memory_barrier<Scope>* bar = construct_barrier<8, Scope>(blockDim.x);
 
   test_test_waits<Scope>(bar);
+  test_wait_hints<Scope>(construct_barrier<14, Scope>(blockDim.x));
   test_ignore_status_waits<Scope>(bar);
   test_status_waits<Scope>(bar);
   test_phase_waits<Scope>(construct_barrier<10, Scope>(blockDim.x));
