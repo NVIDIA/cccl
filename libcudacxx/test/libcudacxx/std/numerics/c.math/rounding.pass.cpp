@@ -443,7 +443,9 @@ TEST_FUNC void test_float128_edge_cases()
   // the largest exponent that still has a fractional bit
   const T huge = T(1ull << 63) * T(1ull << 48) + T(0.5); // 2^111 + 0.5
   assert(eq(cuda::std::trunc(huge), huge - T(0.5)));
+  assert(eq(cuda::std::floor(huge), huge - T(0.5)));
   assert(eq(cuda::std::ceil(huge), huge + T(0.5)));
+  assert(eq(cuda::std::round(huge), huge + T(0.5)));
 
   // halfway cases round away from zero
   assert(eq(cuda::std::round(T(0.5)), T(1)));
