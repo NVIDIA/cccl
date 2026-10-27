@@ -174,6 +174,14 @@ CUB_TEST("Device ArgMin and ArgMax handle empty input", "[reduce][device]", CUB_
     REQUIRE(index[0] == 1);
   }
 
+  SECTION("ArgMax")
+  {
+    device_arg_max(input.data(), output.data(), index.data(), 0);
+
+    REQUIRE(output[0] == limits_t::lowest());
+    REQUIRE(index[0] == 1);
+  }
+
   SECTION("ArgMax with custom comparison operator")
   {
     device_arg_max(thrust::raw_pointer_cast(input.data()),
@@ -183,14 +191,6 @@ CUB_TEST("Device ArgMin and ArgMax handle empty input", "[reduce][device]", CUB_
                    abs_less_t{});
 
     REQUIRE(output[0] == input_t{});
-    REQUIRE(index[0] == 1);
-  }
-
-  SECTION("ArgMax")
-  {
-    device_arg_max(input.data(), output.data(), index.data(), 0);
-
-    REQUIRE(output[0] == limits_t::lowest());
     REQUIRE(index[0] == 1);
   }
 }
