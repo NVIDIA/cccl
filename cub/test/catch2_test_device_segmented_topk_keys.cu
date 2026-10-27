@@ -1018,6 +1018,209 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys stream a tiny oversize segment throug
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
+// The tests below stress the multi-CTA synchronization: startup barrier, per-pass fold and state exchange, and the
+// final-filter prefix scan. The combos cover the striped partition (leader at rank 0) and both blocked partitions
+// (leader at the last logical rank for prefer-smaller, at rank 0 for prefer-larger), so the leader sits at either end
+// of the prefix-scan order.
+using cluster_sync_det_tie_combos =
+  c2h::type_list<det_tie<cuda::execution::determinism::__determinism_t::__not_guaranteed,
+                         cuda::execution::tie_break::__tie_break_t::__unspecified>,
+                 det_tie<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
+                         cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index>,
+                 det_tie<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
+                         cuda::execution::tie_break::__tie_break_t::__prefer_larger_index>>;
+
+// `k` copies of a large key spread evenly over each segment; every other key is a distinct value in [0, 1). The large
+// keys alone fill the pass-0 splitter bucket, which then holds exactly the remaining `k`, so all ranks must stop after
+// pass 0 together.
+struct planted_top_keys_op
+{
+  cuda::std::int64_t segment_size;
+  cuda::std::int64_t k;
+
+  __host__ __device__ float operator()(cuda::std::int64_t i) const
+  {
+    const auto j      = i % segment_size;
+    const auto stride = segment_size / k;
+    if (j % stride == 0 && j / stride < k)
+    {
+      return 1000.0f;
+    }
+    return static_cast<float>(j) / static_cast<float>(segment_size);
+  }
+};
+
+// The first `run` keys of each segment are distinct values in [100, 100.5) (one pass-0 bucket), the rest distinct
+// values in [0, 1). With `k < run` later passes refine within the run. A one-chunk run (chunk 0, on rank 0 under both
+// partitions) leaves every other working rank with all-zero histograms after pass 0.
+struct concentrated_top_keys_op
+{
+  cuda::std::int64_t segment_size;
+  cuda::std::int64_t run;
+
+  __host__ __device__ float operator()(cuda::std::int64_t i) const
+  {
+    const auto j = i % segment_size;
+    if (j < run)
+    {
+      return 100.0f + static_cast<float>(j) / static_cast<float>(2 * run);
+    }
+    return static_cast<float>(j) / static_cast<float>(segment_size);
+  }
+};
+
+// 64-bit keys sharing their top 48 bits: with 11-bit digits, passes 0-3 each find a single bucket holding every key
+// (never just the remaining `k`, so no early stop) and only passes 4-5 refine, so all six passes -- three full wraps of
+// the per-pass handshake parity -- run through the cluster synchronization.
+struct low_bits_u64_keys_op
+{
+  __host__ __device__ cuda::std::uint64_t operator()(cuda::std::int64_t i) const
+  {
+    const auto h = static_cast<cuda::std::uint32_t>(static_cast<cuda::std::uint64_t>(i) * 2654435761u);
+    return 0xABCD'0123'4567'0000ull | ((h >> 7) & 0xFFFFu);
+  }
+};
+
+// Fills fixed-size segments with `make_key(i)`, runs the cluster top-k under `Selector` and checks a sorted reference.
+template <typename KeyT,
+          cuda::execution::determinism::__determinism_t Determinism,
+          cuda::execution::tie_break::__tie_break_t TieBreak,
+          typename Selector,
+          cuda::std::int64_t StaticMaxSegmentSize,
+          cuda::std::int64_t StaticMaxK,
+          typename KeyOp>
+void check_cluster_sync_topk_keys(cuda::std::int64_t num_segments, cuda::std::int64_t k, KeyOp make_key)
+{
+  constexpr auto direction                  = cub::detail::topk::select::max;
+  constexpr cuda::std::int64_t segment_size = StaticMaxSegmentSize;
+
+  c2h::device_vector<KeyT> keys_in_buffer(num_segments * segment_size, thrust::no_init);
+  c2h::device_vector<KeyT> keys_out_buffer(num_segments * k, thrust::no_init);
+  thrust::tabulate(keys_in_buffer.begin(), keys_in_buffer.end(), make_key);
+
+  auto d_keys_in_ptr  = thrust::raw_pointer_cast(keys_in_buffer.data());
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+
+  c2h::device_vector<KeyT> expected_keys(keys_in_buffer);
+
+  auto env = make_cluster_tune_env<Determinism, TieBreak>(Selector{});
+  run_cluster_topk_keys<direction>(
+    d_keys_in,
+    d_keys_out,
+    cuda::args::immediate{segment_size, cuda::args::bounds<cuda::std::int64_t{1}, StaticMaxSegmentSize>()},
+    cuda::args::immediate{k, cuda::args::bounds<cuda::std::int64_t{1}, StaticMaxK>()},
+    cuda::args::immediate{num_segments},
+    env);
+
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
+  fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+
+// The key generators above assume 11-bit radix digits.
+inline constexpr int cluster_sync_bits_per_pass = 11;
+
+// 4096 floats = 32 chunks over a forced 4-CTA cluster (8 resident chunks per CTA, single-CTA fast path disabled).
+using cluster_sync_4cta_selector =
+  cluster_tuning_selector<4, 0, 0, cluster_test_chunk_bytes, 0, 0, cluster_sync_bits_per_pass>;
+
+// Early stop after pass 0 (see `planted_top_keys_op`): all ranks must break after the same pass to keep the handshakes
+// in lockstep, and the final filter must use the sizes published in that pass. `k == 1` puts the only large key on
+// rank 0.
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys stop early in lockstep across a multi-CTA cluster",
+         "[keys][segmented][topk][device][cluster]",
+         CUB_SMALL,
+         cluster_sync_det_tie_combos)
+{
+  using combo                       = c2h::get<0, TestType>;
+  static constexpr auto determinism = combo::determinism;
+  static constexpr auto tie_break   = combo::tie_break;
+
+  constexpr cuda::std::int64_t segment_size = 4096;
+  constexpr cuda::std::int64_t num_segments = 2;
+  const cuda::std::int64_t k =
+    GENERATE(values({cuda::std::int64_t{1}, cuda::std::int64_t{64}, cuda::std::int64_t{512}}));
+
+  CAPTURE(segment_size, k, num_segments);
+
+  check_cluster_sync_topk_keys<float, determinism, tie_break, cluster_sync_4cta_selector, segment_size, 512>(
+    num_segments, k, planted_top_keys_op{segment_size, k});
+}
+
+// One-chunk candidate run (see `concentrated_top_keys_op`): every other working rank folds all-zero histograms, which
+// must still settle the leader's expected bytes. `k < run` keeps pass 0 from stopping early.
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys fold all-zero histograms across a multi-CTA cluster",
+         "[keys][segmented][topk][device][cluster]",
+         CUB_SMALL,
+         cluster_sync_det_tie_combos)
+{
+  using combo                       = c2h::get<0, TestType>;
+  static constexpr auto determinism = combo::determinism;
+  static constexpr auto tie_break   = combo::tie_break;
+
+  constexpr cuda::std::int64_t segment_size = 4096;
+  constexpr cuda::std::int64_t num_segments = 2;
+  constexpr cuda::std::int64_t run          = 128; // one 512-byte chunk of floats
+  const cuda::std::int64_t k = GENERATE_COPY(values({cuda::std::int64_t{1}, cuda::std::int64_t{37}, run - 1}));
+
+  CAPTURE(segment_size, run, k, num_segments);
+
+  check_cluster_sync_topk_keys<float, determinism, tie_break, cluster_sync_4cta_selector, segment_size, 512>(
+    num_segments, k, concentrated_top_keys_op{segment_size, run});
+}
+
+// Maximum fan-in: a 16-CTA cluster (2 chunks per CTA) gives the leader 15 fold senders and 15 prefix-scan
+// predecessors; devices without 16-CTA clusters get a narrower one. The candidate run covers half of each segment
+// (ranks 0-7 under the blocked partition, every rank under the striped one), mixing populated and all-zero folds.
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys synchronize a 16-CTA cluster",
+         "[keys][segmented][topk][device][cluster]",
+         CUB_SMALL,
+         cluster_sync_det_tie_combos)
+{
+  using combo                       = c2h::get<0, TestType>;
+  static constexpr auto determinism = combo::determinism;
+  static constexpr auto tie_break   = combo::tie_break;
+
+  constexpr cuda::std::int64_t segment_size = 4096;
+  constexpr cuda::std::int64_t num_segments = 2;
+  const cuda::std::int64_t k                = GENERATE(values({cuda::std::int64_t{1}, cuda::std::int64_t{512}}));
+
+  CAPTURE(segment_size, k, num_segments);
+
+  check_cluster_sync_topk_keys<
+    float,
+    determinism,
+    tie_break,
+    cluster_tuning_selector<16, 0, 0, cluster_test_chunk_bytes, 0, 0, cluster_sync_bits_per_pass>,
+    segment_size,
+    512>(num_segments, k, concentrated_top_keys_op{segment_size, segment_size / 2});
+}
+
+// Six radix passes (see `low_bits_u64_keys_op`) through a forced 4-CTA cluster: 4096 64-bit keys = 64 chunks of 64
+// keys.
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys run all radix passes of 64-bit keys across a multi-CTA cluster",
+         "[keys][segmented][topk][device][cluster]",
+         CUB_SMALL,
+         cluster_sync_det_tie_combos)
+{
+  using combo                       = c2h::get<0, TestType>;
+  static constexpr auto determinism = combo::determinism;
+  static constexpr auto tie_break   = combo::tie_break;
+
+  constexpr cuda::std::int64_t segment_size = 4096;
+  constexpr cuda::std::int64_t num_segments = 2;
+  const cuda::std::int64_t k                = GENERATE(values({cuda::std::int64_t{1}, cuda::std::int64_t{512}}));
+
+  CAPTURE(segment_size, k, num_segments);
+
+  check_cluster_sync_topk_keys<cuda::std::uint64_t, determinism, tie_break, cluster_sync_4cta_selector, segment_size, 512>(
+    num_segments, k, low_bits_u64_keys_op{});
+}
+
 #endif // TEST_TYPES == 1 && TEST_LAUNCH == 0
 
 // Big-segment general coverage (launch wrapper -> all launch modes, no tune override). The tiny tune-override tests

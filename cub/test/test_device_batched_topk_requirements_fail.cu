@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// %PARAM% TEST_ERR err 0:1:2:3:4:5:6:7:8:9:10:11:12:13:14:15:16:17:18:19:20:21:22:23:24
+// %PARAM% TEST_ERR err 0:1:2:3:4:5:6:7:8:9:10:11:12:13:14:15:16:17:18:19:20:21:22:23:24:25
 
 // Defer the unsupported-architecture diagnosis to the dispatch's runtime check (not a compile-time static_assert)
 // so only the requirement static_asserts under test fire, regardless of which architectures this test is compiled for.
@@ -9,11 +9,13 @@
 #define CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT
 
 #include <cub/device/device_batched_topk.cuh>
+#include <cub/device/dispatch/dispatch_batched_topk.cuh> // topk_policy / make_{baseline,cluster}_policy (variant 25)
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/require.h>
 #include <cuda/__execution/tie_break.h>
+#include <cuda/__execution/tune.h>
 #include <cuda/argument>
 #include <cuda/std/cstdint>
 #include <cuda/std/execution>
@@ -43,11 +45,29 @@
 //   * num_segments (variants 18-20): must be a single, host-known integral value -- a pointer-valued single wrapper
 //     (not integral), a per-segment sequence (not a single value), and a single deferred device-resident value (a
 //     single value, but not host-known, so caught by a separate check) are each rejected
+//   * tuning (variant 25): a `tune` override whose explicit `max_blocks_per_cluster` is wider than the leader's
+//     per-pass histogram fold can track (`cluster_topk_policy::max_cluster_blocks()`: 33 CTAs at 13 bits per pass,
+//     where only 32 fit) fails `is_valid_cluster_policy` instead of being narrowed silently
 //
 // Rejecting range/container arguments (span, variants 11/12/15/16) is a deliberate narrowing of CUB's API surface,
 // not a framework limitation -- the argument-annotation framework accepts ranges by design. No CUB device API takes a
 // range today, and annotating one would be unclear to users (does a bound constrain the element values or the range's
 // size?). Kept as fail variants so this stays a revisitable decision.
+
+#if TEST_ERR == 25
+struct too_wide_cluster_selector
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
+    -> cub::detail::batched_topk::topk_policy
+  {
+    auto cluster                   = cub::detail::batched_topk::make_cluster_policy();
+    cluster.bits_per_pass          = 13;
+    cluster.max_blocks_per_cluster = 33;
+    return cub::detail::batched_topk::topk_policy{
+      cub::detail::batched_topk::topk_algorithm::cluster, cub::detail::batched_topk::make_baseline_policy(), cluster};
+  }
+};
+#endif // TEST_ERR == 25
 
 int main()
 {
@@ -171,6 +191,9 @@ int main()
 
 #if TEST_ERR == 24
   auto env = cuda::std::execution::env{};
+#elif TEST_ERR == 25
+  auto env = cuda::std::execution::env{requirements, ex::tune(too_wide_cluster_selector{})};
+  // expected-error-25 {{"the cluster policy violates is_valid_cluster_policy"}}
 #else
   auto env = cuda::std::execution::env{requirements};
 #endif

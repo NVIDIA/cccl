@@ -636,6 +636,9 @@ namespace detail
 // This should stay an implementation detail even when below functions become public.
 inline constexpr int bulk_copy_min_align = 16;
 
+// Maximum pending transaction count (bytes) of an mbarrier phase; the same for `.layout::v0` and `.layout::v1`.
+inline constexpr int mbarrier_max_tx_count = (1 << 20) - 1;
+
 //! @brief Returns the alignment needed for the shared memory destination buffer of BlockLoadToShared.
 //! @tparam T
 //!   Value type to be loaded.
