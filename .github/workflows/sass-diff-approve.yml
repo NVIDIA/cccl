@@ -187,6 +187,12 @@ jobs:
               return;
             }
 
+            if (run.status === "completed" && run.conclusion === "success") {
+              core.info(`CI run ${run.id} already succeeds.`);
+              core.setOutput("ci_passed", true);
+              return;
+            }
+
             core.info(`List jobs for workflow run ${run.id}: status=${run.status}, conclusion=${run.conclusion}.`);
 
             const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
@@ -339,7 +345,7 @@ jobs:
             core.info(`Requested SASS approval and CI reruns for comment ${comment.id}.`);
 
       - name: Acknowledge successful command
-        if: success()
+        if: success() && (steps.approval.outputs.accepted == 'true' || steps.job.outputs.ci_passed == 'true')
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
