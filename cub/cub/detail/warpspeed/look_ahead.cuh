@@ -18,8 +18,9 @@
 #include <cub/detail/strong_store.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/detail/warpspeed/special_registers.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
-#include <cub/warp/specializations/warp_redux.cuh>
+#include <cub/warp/specializations/warp_redux.cuh> // IWYU pragma: keep
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/pow2.h>
@@ -28,9 +29,13 @@
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__atomic/order.h>
+#include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__bit/popcount.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/underlying_type.h>
+#include <cuda/std/cstdint>
 
 #if !_CCCL_HAS_NV_ATOMIC_BUILTINS()
 #  include <cuda/atomic>
