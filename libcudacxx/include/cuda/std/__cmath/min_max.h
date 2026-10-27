@@ -48,11 +48,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // fmax (_IsMax) / fmin for fp64 with integer instructions only
 // -0 < +0 is preserved
-// single NaN is ignored; two NaNs return __x quieted
+// single NaN is ignored; two NaNs return a fixed quiet NaN
 template <bool _IsMax>
 [[nodiscard]] _CCCL_API constexpr double __fp64_fmax_fmin_int(double __x, double __y) noexcept
 {
-  constexpr auto __quiet_bit = uint64_t{0x0008'0000'0000'0000}; // top mantissa bit (for quiet NaNs)
+  constexpr auto __quiet_nan = uint64_t{0x7FF8'0000'0000'0000}; // fixed quiet NaN
   const auto __x_bits        = ::cuda::std::__fp_get_storage(__x);
   const auto __y_bits        = ::cuda::std::__fp_get_storage(__y);
   const bool __x_nan         = ::cuda::std::isnan(__x);
@@ -60,7 +60,7 @@ template <bool _IsMax>
   const bool __x_lt_y = ::cuda::std::__fp64_to_total_order_int(__x) < ::cuda::std::__fp64_to_total_order_int(__y);
   const bool __pick_y = __x_nan ? !__y_nan : (!__y_nan && __x_lt_y == _IsMax);
   const auto __result = __pick_y ? __y_bits : __x_bits;
-  return ::cuda::std::__fp_from_storage<double>((__x_nan && __y_nan) ? (__result | __quiet_bit) : __result);
+  return ::cuda::std::__fp_from_storage<double>((__x_nan && __y_nan) ? __quiet_nan : __result);
 }
 
 /***********************************************************************************************************************
