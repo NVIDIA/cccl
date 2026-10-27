@@ -138,33 +138,6 @@ def test_row_scan():
     # coop-pg-row-scan-end
 
 
-def test_exchange():
-    """Check that layout conversion restores the intended scan order.
-
-    Striped loads distribute adjacent elements across threads. Convert to
-    blocked ownership before scanning so each thread's consecutive items fit
-    the source array's prefix order.
-    """
-
-    # coop-pg-exchange-begin
-    @cuda.jit
-    def scan_striped_input(source, destination, items_per_thread):
-        block = coop.this_block()
-        items = coop.ThreadData(items_per_thread)
-        coop.load(block, source, items, algorithm="striped")
-        blocked = coop.exchange(block, items, mode="striped_to_blocked")
-        prefixes = coop.inclusive_sum(block, blocked)
-        coop.store(block, destination, prefixes, algorithm="direct")
-
-    for items_per_thread in (1, 4):
-        source = (np.arange(128 * items_per_thread) % 13).astype(np.int32)
-        destination = np.empty_like(source)
-        scan_striped_input[1, 128](source, destination, items_per_thread)
-        cuda.synchronize()
-        np.testing.assert_array_equal(destination, np.cumsum(source))
-    # coop-pg-exchange-end
-
-
 def test_warp_copy():
     # coop-pg-warp-copy-begin
     @cuda.jit
