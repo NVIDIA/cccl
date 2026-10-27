@@ -8,7 +8,8 @@ on:
     types: [created]
 
 permissions:
-  pull-requests: read
+  # Write perms needed to post reactions and comments
+  pull-requests: write
   issues: write
   actions: write
   checks: write
@@ -247,8 +248,13 @@ jobs:
               check_run_id,
             });
             core.info(`Check ${check_run_id}: status=${check.status}, conclusion=${check.conclusion}.`);
-            if (check.status !== "completed" || check.conclusion !== "failure") {
-              core.info("Ignore approval: the check must be completed with a failure conclusion.");
+            // Allow another command to retry CI recovery after the check update succeeds.
+            const alreadyApproved = check.conclusion === "success";
+            if (
+              check.status !== "completed" ||
+              (check.conclusion !== "failure" && !alreadyApproved)
+            ) {
+              core.info("Ignore approval: the check must be completed with a failure or success conclusion.");
               return;
             }
 
