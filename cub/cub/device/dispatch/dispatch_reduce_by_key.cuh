@@ -122,9 +122,6 @@ struct streaming_context
   }
 };
 
-// Converts the tuning policy into an agent policy and selects the vsmem fallback agent if needed. The kernel's launch
-// bounds and the host's launch configuration must both use the resulting agent policy, since it may differ from the
-// tuning policy.
 template <typename PolicyGetter, typename... AgentArgs>
 struct make_vsmem_helper
 {
