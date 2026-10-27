@@ -8,6 +8,7 @@ fpmp: Arithmetic on Pairs of Floats
    :maxdepth: 1
 
    Examples <fpmp_example>
+   Error bounds <fpmp_error_bounds>
    Full specification <fpmp_spec>
 
 An ``fpmp2`` value represents a number as the unevaluated sum of two IEEE-754 floats,
@@ -151,7 +152,9 @@ the trailing limb correct. The level is part of the type:
      - ``fpmp2_accuracy::def``
      - The default selector, equal to ``mid``
 
-with the same four names for ``fp64mp2``. Three points are easy to miss. The default is ``mid``, so
+with the same four names for ``fp64mp2``. What each level guarantees, operation by operation and
+in units of the limb's rounding error, is on the :ref:`error bounds
+<libcudacxx-extended-api-fp-fpmp-error-bounds>` page. Three points are easy to miss. The default is ``mid``, so
 asking for ``high`` is a deliberate step up rather than the level you already have. The levels
 differ only in the trailing limb, so a result rounded to one ``double`` will often look identical
 across levels — comparing them means printing ``hi`` and ``lo`` separately.
