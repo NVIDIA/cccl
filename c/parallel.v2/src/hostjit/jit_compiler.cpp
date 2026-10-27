@@ -6,6 +6,7 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <iterator>
 #include <random>
 #include <string>
 #include <string_view>
@@ -661,6 +662,12 @@ bool JITCompiler::loadFromBytes(
       return false;
     }
     auto get_version = reinterpret_cast<get_version_fn>(GetProcAddress(cudart_handle, "cudaRuntimeGetVersion"));
+    std::string loaded_path;
+    {
+      wchar_t buf[32768];
+      DWORD n     = GetModuleFileNameW(cudart_handle, buf, static_cast<DWORD>(std::size(buf)));
+      loaded_path = std::filesystem::path(std::wstring(buf, n)).string();
+    }
 #else
     dlerror();
     void* cudart_handle = dlopen(cudart_path.c_str(), RTLD_NOW | RTLD_GLOBAL);
@@ -672,6 +679,11 @@ bool JITCompiler::loadFromBytes(
       return false;
     }
     auto get_version = reinterpret_cast<get_version_fn>(dlsym(cudart_handle, "cudaRuntimeGetVersion"));
+    std::string loaded_path;
+    if (Dl_info info{}; get_version && dladdr(reinterpret_cast<void*>(get_version), &info) && info.dli_fname)
+    {
+      loaded_path = info.dli_fname;
+    }
 #endif
     // Fail early, with the cause, instead of with a raw loader error or an
     // undefined-symbol error from loading the artifact.
@@ -686,7 +698,12 @@ bool JITCompiler::loadFromBytes(
     }
     if (auto error = checkCudartCompatible(built_cudart_version, local_version); !error.empty())
     {
-      last_error_ = "Incompatible CUDA runtime " + cudart_path + ": " + error;
+      // The module that answered can differ from cudart_path if a runtime of
+      // the same name was already loaded in the process.
+      std::error_code ec;
+      const bool same_file = loaded_path.empty() || std::filesystem::equivalent(loaded_path, cudart_path, ec);
+      last_error_          = "Incompatible CUDA runtime " + cudart_path
+                           + (same_file ? std::string{} : " (resolved to " + loaded_path + ")") + ": " + error;
       removeTempDirectory();
       return false;
     }
