@@ -270,6 +270,12 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
     }
   }
 
+  // The loops above leave up to `endurance() - 1` deposits un-renormalized. Adding two binned accumulators requires
+  // both to be renormalized: a renormalized bin lies in [1.5, 1.75) * 2^e and the sum of two such bins stays below
+  // 2^(e+1), but a bin with pending deposits may reach [1.75, 2) * 2^e, and the sum then crosses into the next
+  // exponent, which changes the accumulator's bin index and corrupts the result.
+  thread_aggregate.renorm();
+
   AccumT block_aggregate = block_reduce_t(temp_storage).Reduce(thread_aggregate, [](AccumT lhs, AccumT rhs) -> AccumT {
     AccumT rtn = lhs;
     rtn += rhs;
