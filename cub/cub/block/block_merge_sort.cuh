@@ -23,7 +23,6 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
@@ -82,7 +81,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
   KeyT key1 = keys1_count != 0 ? keys_shared[keys1_beg] : oob_default;
   KeyT key2 = keys2_count != 0 ? keys_shared[keys2_beg] : oob_default;
 
-  _CCCL_PRAGMA_UNROLL(Unroll ? ::cuda::std::numeric_limits<int>::max() : 1) // full unroll if requested
+  _CCCL_PRAGMA_UNROLL(detail::sort_unroll_count<Unroll>)
   for (int item = 0; item < ItemsPerThread; ++item)
   {
     const bool p  = (keys2_beg < keys2_end) && ((keys1_beg >= keys1_end) || compare_op(key2, key1));
@@ -895,7 +894,7 @@ private:
         max_key = compare_op(max_key, oob_default) ? oob_default : max_key;
       }
 
-      _CCCL_PRAGMA_UNROLL(Unroll ? ::cuda::std::numeric_limits<int>::max() : 1) // full unroll if requested
+      _CCCL_PRAGMA_UNROLL(detail::sort_unroll_count<Unroll>)
       for (int item = 1; item < ItemsPerThread; ++item)
       {
         if (ItemsPerThread * linear_tid + item < valid_items)
