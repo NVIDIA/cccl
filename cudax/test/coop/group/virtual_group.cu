@@ -39,7 +39,9 @@ __device__ void test_virtual_group(Config config, Level level)
     static_assert(vg.is_always_contiguous());
 
     vg.sync();
+    vg.wait(vg.arrive());
     vg.sync_aligned();
+    vg.wait_aligned(vg.arrive_aligned());
   }
 
   // Test virtual group with group_by mapping.
@@ -58,7 +60,9 @@ __device__ void test_virtual_group(Config config, Level level)
     static_assert(vg.is_always_contiguous());
 
     vg.sync();
+    vg.wait(vg.arrive());
     vg.sync_aligned();
+    vg.wait_aligned(vg.arrive_aligned());
   }
 }
 

@@ -26,6 +26,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/coop/__group/fwd.cuh>
@@ -116,6 +117,7 @@ public:
   using level_type            = _Level;
   using __mapping_result_type = __this_mapping_result<_Level>;
   using hierarchy_type        = _Hierarchy;
+  using arrival_token         = typename _SynchronizerInstance::arrival_token;
 
 private:
   _Hierarchy __hier_;
@@ -164,6 +166,26 @@ public:
   _CCCL_DEVICE_API void sync_aligned() const noexcept
   {
     __synchronizer_instance_.do_sync_aligned(__mapping_result_, __hier_);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API arrival_token arrive() const noexcept
+  {
+    return __synchronizer_instance_.do_arrive(__mapping_result_, __hier_);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API arrival_token arrive_aligned() const noexcept
+  {
+    return __synchronizer_instance_.do_arrive_aligned(__mapping_result_, __hier_);
+  }
+
+  _CCCL_DEVICE_API void wait(arrival_token&& __tok) const noexcept
+  {
+    __synchronizer_instance_.do_wait(__mapping_result_, __hier_, ::cuda::std::move(__tok));
+  }
+
+  _CCCL_DEVICE_API void wait_aligned(arrival_token&& __tok) const noexcept
+  {
+    __synchronizer_instance_.do_wait_aligned(__mapping_result_, __hier_, ::cuda::std::move(__tok));
   }
 
   _CCCL_TEMPLATE(class _InLevel)
