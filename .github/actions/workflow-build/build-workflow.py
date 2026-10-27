@@ -609,7 +609,8 @@ def generate_dispatch_job_command(matrix_job, job_type):
     job_args = job_info["invoke"]["args"]
 
     project = get_project(matrix_job["project"])
-    script_name = f"{script_path}/{job_prefix}_{project['id']}{script_ext}"
+    script_project = project.get("script_project", project["id"])
+    script_name = f"{script_path}/{job_prefix}_{script_project}{script_ext}"
 
     std_str = str(matrix_job["std"]) if "std" in matrix_job else ""
 
