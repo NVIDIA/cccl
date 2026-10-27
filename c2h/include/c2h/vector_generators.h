@@ -67,15 +67,16 @@ void gen(modulo_t mod, device_vector<T>& data)
 /**
  * @brief Generates an array of offsets with uniformly distributed segment sizes in the range
  * between [min_segment_size, max_segment_size]. The last offset in the array corresponds to
- * `total_element`. At most `total_element+2` offsets (or `total_elements+1` segments) and, because
- * the very last offset must corresponds to `total_element`, the last segment may comprise more than
+ * `total_elements`. At most `total_elements+2` offsets (or `total_elements+1` segments) and, because
+ * the very last offset must correspond to `total_elements`, the last segment may comprise more than
  * `max_segment_size` items.
  */
 template <typename T>
 device_vector<T> gen_uniform_offsets(seed_t seed, T total_elements, T min_segment_size, T max_segment_size)
 {
-  device_vector<T> segment_offsets(total_elements + 2);
-  const auto new_size = detail::gen_uniform_offsets(
+  const auto offsets_size = ::c2h::detail::checked_uniform_offsets_size(total_elements);
+  device_vector<T> segment_offsets(offsets_size);
+  const auto new_size = ::c2h::detail::gen_uniform_offsets(
     seed,
     {THRUST_NS_QUALIFIER::raw_pointer_cast(segment_offsets.data()), segment_offsets.size()},
     total_elements,

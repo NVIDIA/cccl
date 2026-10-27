@@ -6,20 +6,28 @@
 #include <cub/device/device_scan.cuh>
 #include <cub/device/device_segmented_scan.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-
+#include <cuda/__algorithm/copy.h> // cuda::copy_bytes
+#include <cuda/buffer>
 #include <cuda/cmath>
+#include <cuda/devices>
 #include <cuda/iterator>
+#include <cuda/std/array>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
+#include <cuda/std/span>
+#include <cuda/stream>
 
+#include <cstddef>
 #include <iostream> // std::cerr
 #include <string>
-#include <vector>
 
-#include "catch2_test_device_scan.cuh"
+#include "catch2_test_device_segmented_scan_utils.cuh"
 #include "cub_test_macros.h"
+#include <c2h/buffer_utils.cuh>
+#include <c2h/checked_memory_resource.cuh>
+#include <c2h/device_and_stream.h>
+
+using c2h::Equals;
 
 void check_execution_status(cudaError_t status, const std::string& algo_name)
 {
@@ -35,10 +43,13 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with two offsets w
 {
   const std::string& algo_name = "cub::DeviceSegmentedScan::ExclusiveSegmentedSum[2 offsets]";
 
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
+
   // example-begin exclusive-segmented-sum-two-offsets
-  auto input        = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
-  auto offsets      = thrust::device_vector<size_t>{0, 3, 5, 8};
-  auto output       = thrust::device_vector<int>(input.size(), thrust::no_init);
+  auto input        = c2h::make_device_buffer<int>(stream, device, {1, 2, 3, 4, 5, 6, 7, 8});
+  auto offsets      = c2h::make_device_buffer<size_t>(stream, device, {0, 3, 5, 8});
+  auto output       = cuda::make_device_buffer<int>(stream, device, input.size(), cuda::no_init);
   auto num_segments = offsets.size() - 1;
 
   cuda::std::uint8_t* d_temp_storage = nullptr;
@@ -57,11 +68,12 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with two offsets w
     d_out,
     begin_offsets,
     end_offsets,
-    static_cast<::cuda::std::int64_t>(num_segments));
+    static_cast<::cuda::std::int64_t>(num_segments),
+    stream.get());
   check_execution_status(status, algo_name);
 
-  thrust::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+  auto temp_storage = cuda::make_device_buffer<cuda::std::uint8_t>(stream, device, temp_storage_bytes, cuda::no_init);
+  d_temp_storage    = temp_storage.data();
 
   // run the algorithm
   status = cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
@@ -71,14 +83,15 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with two offsets w
     d_out,
     begin_offsets,
     end_offsets,
-    static_cast<::cuda::std::int64_t>(num_segments));
+    static_cast<::cuda::std::int64_t>(num_segments),
+    stream.get());
   check_execution_status(status, algo_name);
 
-  const thrust::device_vector<int> expected{0, 1, 3, 0, 4, 0, 6, 13};
+  const cuda::std::array<int, 8> expected{0, 1, 3, 0, 4, 0, 6, 13};
   // example-end exclusive-segmented-sum-two-offsets
 
   REQUIRE(status == cudaSuccess);
-  REQUIRE(output == expected);
+  REQUIRE_THAT(output, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with three offsets works",
@@ -87,31 +100,34 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with three offsets
 {
   const std::string& algo_name = "cub::DeviceSegmentedScan::ExclusiveSegmentedSum[3 offsets]";
 
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
+
   // example-begin exclusive-segmented-sum-three-offsets
   // Sequence of 16 values, representing 4x4 matrix in row-major layout
-  auto input = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+  auto input = c2h::make_device_buffer<int>(stream, device, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
 
   // offsets to starts of each of 4 rows
-  const size_t row_size = 4;
-  auto in_begin_offsets = thrust::device_vector<size_t>{0, row_size, 2 * row_size};
-  auto num_segments     = in_begin_offsets.size();
+  constexpr size_t row_size   = 4;
+  const auto in_begin_offsets = c2h::make_device_buffer<size_t>(stream, device, {0, row_size, 2 * row_size});
+  const auto num_segments     = in_begin_offsets.size();
   // Perform row-wise sum for 3-by-3 principal sub-matrix
-  const size_t segment_size = 3;
+  constexpr size_t segment_size = 3;
 
-  auto in_end_offsets = thrust::device_vector<size_t>{
-    0 * row_size + segment_size, 1 * row_size + segment_size, 2 * row_size + segment_size};
+  const auto in_end_offsets = c2h::make_device_buffer<size_t>(
+    stream, device, {0 * row_size + segment_size, 1 * row_size + segment_size, 2 * row_size + segment_size});
 
-  auto output            = thrust::device_vector<int>(num_segments * segment_size, thrust::no_init);
-  auto out_begin_offsets = thrust::device_vector<size_t>{0, segment_size, 2 * segment_size};
+  auto output = cuda::make_device_buffer<int>(stream, device, num_segments * segment_size, cuda::no_init);
+  const auto out_begin_offsets = c2h::make_device_buffer<size_t>(stream, device, {0, segment_size, 2 * segment_size});
 
   cuda::std::uint8_t* d_temp_storage = nullptr;
   size_t temp_storage_bytes          = 0;
 
-  auto d_in_beg_offsets  = in_begin_offsets.begin();
-  auto d_in_end_offsets  = in_end_offsets.begin();
-  auto d_out_beg_offsets = out_begin_offsets.begin();
+  auto d_in_beg_offsets  = in_begin_offsets.cbegin();
+  auto d_in_end_offsets  = in_end_offsets.cbegin();
+  auto d_out_beg_offsets = out_begin_offsets.cbegin();
 
-  auto d_in  = input.begin();
+  auto d_in  = input.cbegin();
   auto d_out = output.begin();
 
   // get size of required storage and allocate
@@ -123,11 +139,12 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with three offsets
     d_in_beg_offsets,
     d_in_end_offsets,
     d_out_beg_offsets,
-    static_cast<::cuda::std::int64_t>(num_segments));
+    static_cast<::cuda::std::int64_t>(num_segments),
+    stream.get());
   check_execution_status(status, algo_name);
 
-  thrust::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+  auto temp_storage = cuda::make_device_buffer<cuda::std::uint8_t>(stream, device, temp_storage_bytes, cuda::no_init);
+  d_temp_storage    = temp_storage.data();
 
   // run the algorithm
   status = cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
@@ -138,14 +155,15 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with three offsets
     d_in_beg_offsets,
     d_in_end_offsets,
     d_out_beg_offsets,
-    static_cast<::cuda::std::int64_t>(num_segments));
+    static_cast<::cuda::std::int64_t>(num_segments),
+    stream.get());
   check_execution_status(status, algo_name);
 
-  const thrust::device_vector<int> expected{0, 1, 3, 0, 5, 11, 0, 9, 19};
+  const cuda::std::array<int, 9> expected{0, 1, 3, 0, 5, 11, 0, 9, 19};
   // example-end exclusive-segmented-sum-three-offsets
 
   REQUIRE(status == cudaSuccess);
-  REQUIRE(output == expected);
+  REQUIRE_THAT(output, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with two offsets works inplace",
@@ -153,9 +171,13 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with two offsets w
          CUB_SMALL)
 {
   const std::string& algo_name = "cub::DeviceSegmentedScan::InclusiveSegmentedSum[2 offsets]";
+
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
+
   // example-begin inclusive-segmented-sum-two-offsets
-  auto input   = thrust::device_vector<int>{2, 1, 1, 2, 1, 2, 1, 1};
-  auto offsets = thrust::device_vector<size_t>{0, 3, 5, 8};
+  auto input   = c2h::make_device_buffer<int>(stream, device, {2, 1, 1, 2, 1, 2, 1, 1});
+  auto offsets = c2h::make_device_buffer<size_t>(stream, device, {0, 3, 5, 8});
 
   cuda::std::uint8_t* d_temp_storage = nullptr;
   size_t temp_storage_bytes          = 0;
@@ -174,11 +196,12 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with two offsets w
     d_in,
     begin_offsets,
     end_offsets,
-    static_cast<::cuda::std::int64_t>(num_segments));
+    static_cast<::cuda::std::int64_t>(num_segments),
+    stream.get());
   check_execution_status(status, algo_name);
 
-  thrust::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+  auto temp_storage = cuda::make_device_buffer<cuda::std::uint8_t>(stream, device, temp_storage_bytes, cuda::no_init);
+  d_temp_storage    = temp_storage.data();
 
   // execute the algorithm
   status = cub::DeviceSegmentedScan::InclusiveSegmentedSum(
@@ -188,15 +211,16 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with two offsets w
     d_in,
     begin_offsets,
     end_offsets,
-    static_cast<::cuda::std::int64_t>(num_segments));
+    static_cast<::cuda::std::int64_t>(num_segments),
+    stream.get());
   check_execution_status(status, algo_name);
 
-  const thrust::device_vector<int> expected{2, 3, 4, 2, 3, 2, 3, 4};
+  const cuda::std::array<int, 8> expected{2, 3, 4, 2, 3, 2, 3, 4};
   // example-end inclusive-segmented-sum-two-offsets
 
   REQUIRE(status == cudaSuccess);
   // input was modified inplace
-  REQUIRE(input == expected);
+  REQUIRE_THAT(input, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with three offsets works",
@@ -204,20 +228,23 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with three offsets
          CUB_SMALL)
 {
   const std::string& algo_name = "cub::DeviceSegmentedScan::InclusiveSegmentedSum[3 offsets]";
+  const auto device            = c2h::current_device();
+  const cuda::stream stream{device};
+
   // example-begin inclusive-segmented-sum-three-offsets
   // Sequence of 16 values, representing 4x4 matrix in row-major layout
-  auto input = thrust::device_vector<int>{1, 1, 1, 1, -1, -1, -1, -1, 2, 2, 2, 2, -2, -2, -2, -2};
+  auto input = c2h::make_device_buffer<int>(stream, device, {1, 1, 1, 1, -1, -1, -1, -1, 2, 2, 2, 2, -2, -2, -2, -2});
 
   // begin offsets for each of 4 rows
-  const size_t m    = 4;
-  auto row_offsets  = thrust::device_vector<size_t>{0, m, 2 * m, 3 * m, 4 * m};
-  auto num_segments = row_offsets.size() - 1;
+  constexpr size_t m = 4;
+  auto row_offsets   = c2h::make_device_buffer<size_t>(stream, device, {0, m, 2 * m, 3 * m, 4 * m});
+  auto num_segments  = row_offsets.size() - 1;
 
   // Allocate m rows of m + 1 filled with zero-initialized values
-  auto output = thrust::device_vector<int>((m + 1) * m, 0);
+  auto output = cuda::make_device_buffer<int>(stream, device, (m + 1) * m, 0);
   // begin offsets to second element of each row
-  const size_t lda       = m + 1;
-  auto out_begin_offsets = thrust::device_vector<size_t>{1, lda + 1, 2 * lda + 1, 3 * lda + 1};
+  constexpr size_t lda   = m + 1;
+  auto out_begin_offsets = c2h::make_device_buffer<size_t>(stream, device, {1, lda + 1, 2 * lda + 1, 3 * lda + 1});
 
   cuda::std::uint8_t* d_temp_storage = nullptr;
   size_t temp_storage_bytes          = 0;
@@ -238,11 +265,12 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with three offsets
     d_in_beg_offsets,
     d_in_end_offsets,
     d_out_beg_offsets,
-    static_cast<::cuda::std::int64_t>(num_segments));
+    static_cast<::cuda::std::int64_t>(num_segments),
+    stream.get());
   check_execution_status(status, algo_name);
 
-  thrust::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+  auto temp_storage = cuda::make_device_buffer<cuda::std::uint8_t>(stream, device, temp_storage_bytes, cuda::no_init);
+  d_temp_storage    = temp_storage.data();
 
   // Compute inclusive sum for each row prepended with 0
   status = cub::DeviceSegmentedScan::InclusiveSegmentedSum(
@@ -253,23 +281,15 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with three offsets
     d_in_beg_offsets,
     d_in_end_offsets,
     d_out_beg_offsets,
-    static_cast<::cuda::std::int64_t>(num_segments));
+    static_cast<::cuda::std::int64_t>(num_segments),
+    stream.get());
   check_execution_status(status, algo_name);
 
-  std::vector<int> h_expected{};
-  h_expected.reserve(output.size());
-  const std::vector<std::vector<int>> expected_rows{
-    {0, 1, 2, 3, 4}, {0, -1, -2, -3, -4}, {0, 2, 4, 6, 8}, {0, -2, -4, -6, -8}};
-  for (const auto& row : expected_rows)
-  {
-    h_expected.insert(h_expected.end(), row.begin(), row.end());
-  }
-
-  auto expected = thrust::device_vector<int>{h_expected};
+  const cuda::std::array<int, 20> expected{0, 1, 2, 3, 4, 0, -1, -2, -3, -4, 0, 2, 4, 6, 8, 0, -2, -4, -6, -8};
   // example-end inclusive-segmented-sum-three-offsets
 
   REQUIRE(status == cudaSuccess);
-  REQUIRE(output == expected);
+  REQUIRE_THAT(output, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offsets works",
@@ -277,17 +297,22 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offs
          CUB_SMALL)
 {
   const std::string& algo_name = "cub::DeviceSegmentedScan::InclusiveSegmentedScanInit[2 offsets]";
+  const auto device            = c2h::current_device();
+  const cuda::stream stream{device};
+
   // example-begin inclusive-segmented-scan-init-two-offsets
   constexpr unsigned prime = 7;
-  const auto input         = thrust::device_vector<unsigned>{
-    2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6};
+  const auto input         = c2h::make_device_buffer<unsigned>(
+    stream,
+    device,
+    {2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6});
 
-  constexpr auto row_size = size_t{prime};
-  const auto row_offsets =
-    thrust::device_vector<size_t>{0, row_size, 2 * row_size, 3 * row_size, 4 * row_size, 5 * row_size};
+  constexpr size_t row_size = static_cast<size_t>(prime);
+  const auto row_offsets    = c2h::make_device_buffer<size_t>(
+    stream, device, {0, row_size, 2 * row_size, 3 * row_size, 4 * row_size, 5 * row_size});
   const size_t num_segments = row_offsets.size() - 1;
 
-  thrust::device_vector<unsigned> output(input.size(), thrust::no_init);
+  auto output = cuda::make_device_buffer<unsigned>(stream, device, input.size(), cuda::no_init);
 
   auto m_p = cuda::fast_mod_div(prime);
   // Binary operator to multiply arguments using modular arithmetic
@@ -317,11 +342,12 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offs
     d_in_end_offsets,
     num_segments,
     scan_op,
-    init_value);
+    init_value,
+    stream.get());
   check_execution_status(status, algo_name);
 
-  thrust::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+  auto temp_storage = cuda::make_device_buffer<cuda::std::uint8_t>(stream, device, temp_storage_bytes, cuda::no_init);
+  d_temp_storage    = temp_storage.data();
 
   // run the algorithm
   status = cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
@@ -333,23 +359,16 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offs
     d_in_end_offsets,
     num_segments,
     scan_op,
-    init_value);
+    init_value,
+    stream.get());
   check_execution_status(status, algo_name);
 
-  std::vector<unsigned> h_expected{};
-  h_expected.reserve(output.size());
-  const std::vector<std::vector<unsigned>> expected_rows{
-    {2, 4, 1, 2, 4, 1, 2}, {3, 2, 6, 4, 5, 1, 3}, {4, 2, 1, 4, 2, 1, 4}, {5, 4, 6, 2, 3, 1, 5}, {6, 1, 6, 1, 6, 1, 6}};
-  for (const auto& row : expected_rows)
-  {
-    h_expected.insert(h_expected.end(), row.begin(), row.end());
-  }
-
-  const auto expected = thrust::device_vector<unsigned>{h_expected};
+  const cuda::std::array<unsigned, 35> expected{
+    2, 4, 1, 2, 4, 1, 2, 3, 2, 6, 4, 5, 1, 3, 4, 2, 1, 4, 2, 1, 4, 5, 4, 6, 2, 3, 1, 5, 6, 1, 6, 1, 6, 1, 6};
   // example-end inclusive-segmented-scan-init-two-offsets
 
   REQUIRE(status == cudaSuccess);
-  REQUIRE(expected == output);
+  REQUIRE_THAT(output, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets works",
@@ -357,7 +376,11 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
          CUB_SMALL)
 {
   const std::string& algo_name = "cub::DeviceSegmentedScan::ExclusiveSegmentedScan[2 offsets]";
-  auto input                   = thrust::device_vector<unsigned>{
+
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
+
+  static constexpr cuda::std::array<unsigned, 128> input_values{
     0x64b40b1b, 0x7bf23c0c, 0xaa982e07, 0x652cae12, 0xb5411ce2, 0x6b1b7da4, 0xa04a0320, 0xd81dd7c0, 0x88a92288,
     0xd26bc5ab, 0x006645f6, 0xfdf477a4, 0x9afbfc45, 0x563d312d, 0x732653a5, 0x424fa289, 0x572b509a, 0xb2b1eb5e,
     0x03cb95ee, 0xdfd59321, 0x5defeea3, 0x0bdf0744, 0xc9895d47, 0x57c652d6, 0xc4a9f967, 0x665eb273, 0xcbd5aa63,
@@ -373,6 +396,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
     0x6cc02e30, 0xd4a0e86f, 0x9db5bd3d, 0x17497b1f, 0x29e479ef, 0xdcd198aa, 0xb9bad1b6, 0x7e8a3128, 0xc808df66,
     0x83e8eb06, 0xa82782b5, 0x779045ae, 0x1ff3d860, 0x7492bc8c, 0xa8f95df2, 0x340b73ed, 0x14481ee0, 0xa673ddc3,
     0x292a814a, 0x39de627e};
+  auto input = cuda::make_device_buffer<unsigned>(stream, device, input_values);
 
   // example-begin exclusive-segmented-scan-two-offsets
 
@@ -386,11 +410,11 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
   const unsigned init_value = 0u;
 
   // 128 input elements
-  // auto input = thrust::device_vector<unsigned>{0x64b40b1b, 0x7bf23c0c, 0xaa982e07, ... };
+  // auto input = cuda::make_device_buffer<unsigned>(stream, device, input_values);
 
   // 4 segments
-  auto offsets = thrust::device_vector<unsigned>{0, 40, 77, 101, 128};
-  auto output  = thrust::device_vector<unsigned>(input.size(), thrust::no_init);
+  auto offsets = c2h::make_device_buffer<unsigned>(stream, device, {0, 40, 77, 101, 128});
+  auto output  = cuda::make_device_buffer<unsigned>(stream, device, input.size(), cuda::no_init);
 
   cuda::std::uint8_t* d_temp_storage = nullptr;
   size_t temp_storage_bytes          = 0;
@@ -403,22 +427,43 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
 
   // inquire size of needed temporary storage and allocate
   auto status = cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
-    d_temp_storage, temp_storage_bytes, d_in, d_out, begin_offsets, end_offsets, num_segments, scan_op, init_value);
+    d_temp_storage,
+    temp_storage_bytes,
+    d_in,
+    d_out,
+    begin_offsets,
+    end_offsets,
+    num_segments,
+    scan_op,
+    init_value,
+    stream.get());
   check_execution_status(status, algo_name);
 
-  thrust::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+  auto temp_storage = cuda::make_device_buffer<cuda::std::uint8_t>(stream, device, temp_storage_bytes, cuda::no_init);
+  d_temp_storage    = temp_storage.data();
 
   // run the algorithm
   status = cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
-    d_temp_storage, temp_storage_bytes, d_in, d_out, begin_offsets, end_offsets, num_segments, scan_op, init_value);
+    d_temp_storage,
+    temp_storage_bytes,
+    d_in,
+    d_out,
+    begin_offsets,
+    end_offsets,
+    num_segments,
+    scan_op,
+    init_value,
+    stream.get());
   check_execution_status(status, algo_name);
   // example-end exclusive-segmented-scan-two-offsets
 
   // verify correctness
-  thrust::host_vector<unsigned> h_input(input);
+  auto h_input   = c2h::make_host_buffer<unsigned>(stream, device, input.size(), cuda::no_init);
+  auto h_offsets = c2h::make_host_buffer<unsigned>(stream, device, offsets.size(), cuda::no_init);
+  cuda::copy_bytes(stream, input, cuda::std::span<unsigned>{h_input.data(), h_input.size()});
+  cuda::copy_bytes(stream, offsets, cuda::std::span<unsigned>{h_offsets.data(), h_offsets.size()});
+  stream.sync();
 
-  thrust::host_vector<unsigned> h_offsets(offsets);
   for (size_t id = 0; id < num_segments; ++id)
   {
     auto inp_b = h_input.begin() + h_offsets[id];
@@ -427,7 +472,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
     compute_exclusive_scan_reference(inp_b, inp_e, out_b, init_value, scan_op);
   }
   REQUIRE(status == cudaSuccess);
-  REQUIRE(output == h_input);
+  REQUIRE_THAT(output, Equals(stream, h_input));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with three offsets works",
@@ -440,12 +485,16 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with three offset
   and writes the result to upper diagonal portion of n-by-n matrix.
   */
   const std::string& algo_name = "cub::DeviceSegmentedScan::InclusiveSegmentedScan[3-offsets]";
+
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
+
   // example-begin inclusive-segmented-scan-three-offsets
-  const size_t n = 8;
-  thrust::device_vector<float> input{0.21f, 0.33f, 0.17f, 0.56f, 0.31f, 0.25f, 1.0f, 0.72f};
+  constexpr size_t n = 8;
+  auto input = c2h::make_device_buffer<float>(stream, device, {0.21f, 0.33f, 0.17f, 0.56f, 0.31f, 0.25f, 1.0f, 0.72f});
 
   constexpr unsigned _zero{0};
-  auto _n               = static_cast<unsigned>(n);
+  constexpr auto _n     = static_cast<unsigned>(n);
   auto counting_it      = cuda::counting_iterator(_zero);
   auto in_begin_offsets = counting_it;
   auto in_end_offsets   = cuda::constant_iterator(_n);
@@ -454,7 +503,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with three offset
   auto out_begin_offsets = cuda::strided_iterator(counting_it, _n + 1);
 
   // allocate and zero-initialize output matrix in C-contiguous layout
-  auto output = thrust::device_vector<float>(n * n, 0.0f);
+  auto output = cuda::make_device_buffer<float>(stream, device, n * n, 0.0f);
 
   auto d_in  = input.begin();
   auto d_out = output.begin();
@@ -468,18 +517,36 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with three offset
 
   // determine size of required temporary storage and allocate
   auto status = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
-    d_temp_storage, temp_storage_bytes, d_in, d_out, in_begin_offsets, in_end_offsets, out_begin_offsets, n, scan_op);
+    d_temp_storage,
+    temp_storage_bytes,
+    d_in,
+    d_out,
+    in_begin_offsets,
+    in_end_offsets,
+    out_begin_offsets,
+    n,
+    scan_op,
+    stream.get());
   check_execution_status(status, algo_name);
 
-  thrust::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+  auto temp_storage = cuda::make_device_buffer<cuda::std::uint8_t>(stream, device, temp_storage_bytes, cuda::no_init);
+  d_temp_storage    = temp_storage.data();
 
   // run the algorithm
   status = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
-    d_temp_storage, temp_storage_bytes, d_in, d_out, in_begin_offsets, in_end_offsets, out_begin_offsets, n, scan_op);
+    d_temp_storage,
+    temp_storage_bytes,
+    d_in,
+    d_out,
+    in_begin_offsets,
+    in_end_offsets,
+    out_begin_offsets,
+    n,
+    scan_op,
+    stream.get());
   check_execution_status(status, algo_name);
 
-  const thrust::device_vector<float> expected{
+  const cuda::std::array<float, 64> expected{
     0.21f, 0.33f, 0.33f, 0.56f, 0.56f, 0.56f, 1.00f, 1.00f, // row 0
     0.00f, 0.33f, 0.33f, 0.56f, 0.56f, 0.56f, 1.00f, 1.00f, // row 1
     0.00f, 0.00f, 0.17f, 0.56f, 0.56f, 0.56f, 1.00f, 1.00f, // row 2
@@ -491,17 +558,23 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with three offset
   };
 
   // example-end inclusive-segmented-scan-three-offsets
-  REQUIRE(output == expected);
+
   REQUIRE(status == cudaSuccess);
+  REQUIRE_THAT(output, Equals(stream, expected));
 }
 
+// Omit the stream argument in these storage queries to test overload resolution with the default stream.
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum non-env overload is not ambiguous (2 offsets)",
          "[segmented_scan][device]",
          CUB_SMALL)
 {
-  thrust::device_vector<int> in(1);
-  thrust::device_vector<int> out(1);
-  thrust::device_vector<int> offsets{0, 1};
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
+
+  auto in      = cuda::make_device_buffer<int>(stream, device, 1, 0);
+  auto out     = cuda::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto offsets = c2h::make_device_buffer<int>(stream, device, {0, 1});
+
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
     nullptr, temp_storage_bytes, in.begin(), out.begin(), offsets.begin(), offsets.begin() + 1, 1);
@@ -511,10 +584,14 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum non-env overload is no
          "[segmented_scan][device]",
          CUB_SMALL)
 {
-  thrust::device_vector<int> in(1);
-  thrust::device_vector<int> out(1);
-  thrust::device_vector<int> in_offsets{0, 1};
-  thrust::device_vector<int> out_offsets{0};
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
+
+  auto in          = cuda::make_device_buffer<int>(stream, device, 1, 0);
+  auto out         = cuda::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto in_offsets  = c2h::make_device_buffer<int>(stream, device, {0, 1});
+  auto out_offsets = c2h::make_device_buffer<int>(stream, device, {0});
+
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
     nullptr,
@@ -531,9 +608,13 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan non-env overload is n
          "[segmented_scan][device]",
          CUB_SMALL)
 {
-  thrust::device_vector<int> in(1);
-  thrust::device_vector<int> out(1);
-  thrust::device_vector<int> offsets{0, 1};
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
+
+  auto in      = cuda::make_device_buffer<int>(stream, device, 1, 0);
+  auto out     = cuda::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto offsets = c2h::make_device_buffer<int>(stream, device, {0, 1});
+
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
     nullptr,
@@ -551,10 +632,14 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan non-env overload is n
          "[segmented_scan][device]",
          CUB_SMALL)
 {
-  thrust::device_vector<int> in(1);
-  thrust::device_vector<int> out(1);
-  thrust::device_vector<int> in_offsets{0, 1};
-  thrust::device_vector<int> out_offsets{0};
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
+
+  auto in          = cuda::make_device_buffer<int>(stream, device, 1, 0);
+  auto out         = cuda::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto in_offsets  = c2h::make_device_buffer<int>(stream, device, {0, 1});
+  auto out_offsets = c2h::make_device_buffer<int>(stream, device, {0});
+
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
     nullptr,
@@ -573,9 +658,13 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum non-env overload is no
          "[segmented_scan][device]",
          CUB_SMALL)
 {
-  thrust::device_vector<int> in(1);
-  thrust::device_vector<int> out(1);
-  thrust::device_vector<int> offsets{0, 1};
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
+
+  auto in      = cuda::make_device_buffer<int>(stream, device, 1, 0);
+  auto out     = cuda::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto offsets = c2h::make_device_buffer<int>(stream, device, {0, 1});
+
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::InclusiveSegmentedSum(
     nullptr, temp_storage_bytes, in.begin(), out.begin(), offsets.begin(), offsets.begin() + 1, 1);
@@ -585,10 +674,14 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum non-env overload is no
          "[segmented_scan][device]",
          CUB_SMALL)
 {
-  thrust::device_vector<int> in(1);
-  thrust::device_vector<int> out(1);
-  thrust::device_vector<int> in_offsets{0, 1};
-  thrust::device_vector<int> out_offsets{0};
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
+
+  auto in          = cuda::make_device_buffer<int>(stream, device, 1, 0);
+  auto out         = cuda::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto in_offsets  = c2h::make_device_buffer<int>(stream, device, {0, 1});
+  auto out_offsets = c2h::make_device_buffer<int>(stream, device, {0});
+
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::InclusiveSegmentedSum(
     nullptr,
@@ -605,9 +698,13 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan non-env overload is n
          "[segmented_scan][device]",
          CUB_SMALL)
 {
-  thrust::device_vector<int> in(1);
-  thrust::device_vector<int> out(1);
-  thrust::device_vector<int> offsets{0, 1};
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
+
+  auto in      = cuda::make_device_buffer<int>(stream, device, 1, 0);
+  auto out     = cuda::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto offsets = c2h::make_device_buffer<int>(stream, device, {0, 1});
+
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::InclusiveSegmentedScan(
     nullptr, temp_storage_bytes, in.begin(), out.begin(), offsets.begin(), offsets.begin() + 1, 1, cuda::std::plus<>{});
@@ -617,10 +714,14 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan non-env overload is n
          "[segmented_scan][device]",
          CUB_SMALL)
 {
-  thrust::device_vector<int> in(1);
-  thrust::device_vector<int> out(1);
-  thrust::device_vector<int> in_offsets{0, 1};
-  thrust::device_vector<int> out_offsets{0};
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
+
+  auto in          = cuda::make_device_buffer<int>(stream, device, 1, 0);
+  auto out         = cuda::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto in_offsets  = c2h::make_device_buffer<int>(stream, device, {0, 1});
+  auto out_offsets = c2h::make_device_buffer<int>(stream, device, {0});
+
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::InclusiveSegmentedScan(
     nullptr,
@@ -638,9 +739,13 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit non-env overload 
          "[segmented_scan][device]",
          CUB_SMALL)
 {
-  thrust::device_vector<int> in(1);
-  thrust::device_vector<int> out(1);
-  thrust::device_vector<int> offsets{0, 1};
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
+
+  auto in      = cuda::make_device_buffer<int>(stream, device, 1, 0);
+  auto out     = cuda::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto offsets = c2h::make_device_buffer<int>(stream, device, {0, 1});
+
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
     nullptr,
@@ -658,10 +763,14 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit non-env overload 
          "[segmented_scan][device]",
          CUB_SMALL)
 {
-  thrust::device_vector<int> in(1);
-  thrust::device_vector<int> out(1);
-  thrust::device_vector<int> in_offsets{0, 1};
-  thrust::device_vector<int> out_offsets{0};
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
+
+  auto in          = cuda::make_device_buffer<int>(stream, device, 1, 0);
+  auto out         = cuda::make_device_buffer<int>(stream, device, 1, cuda::no_init);
+  auto in_offsets  = c2h::make_device_buffer<int>(stream, device, {0, 1});
+  auto out_offsets = c2h::make_device_buffer<int>(stream, device, {0});
+
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
     nullptr,

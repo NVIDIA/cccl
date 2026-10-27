@@ -15,13 +15,6 @@
 
 namespace c2h::detail
 {
-template <typename Policy, typename T>
-void gen_values_between_impl(const Policy& policy, seed_t seed, ::cuda::std::span<T> data, T min, T max)
-{
-  auto op = index_to_transformed_random_uniform<random_to_item_t<T>>{seed.get(), random_to_item_t<T>(min, max)};
-  gen_values_op(policy, data, op);
-}
-
 template <typename T>
 void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)
 {

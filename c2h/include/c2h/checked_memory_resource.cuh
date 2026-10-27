@@ -23,9 +23,9 @@
 
 namespace c2h
 {
-//! @brief Device memory resource that rejects allocations when insufficient device memory is available.
-//!
-//! @pre The resource's device must be the current C2H test device when memory is allocated or deallocated.
+// Device memory resource that rejects allocations when insufficient device memory is available.
+//
+// Requires: The resource's device must be the current C2H test device when memory is allocated or deallocated.
 class checked_device_memory_resource : public ::cuda::mr::memory_resource_base<checked_device_memory_resource>
 {
 public:
@@ -77,12 +77,12 @@ private:
 
 static_assert(::cuda::mr::synchronous_resource_with<checked_device_memory_resource, ::cuda::mr::device_accessible>);
 
-//! @brief Creates a device buffer backed by the checked C2H memory resource.
-//!
-//! @note For streams whose device cannot be queried, including the legacy default stream, this overload supports
-//! allocation with @c cuda::no_init. Use the initializer-list overload below to create an initialized buffer.
-//! @pre @p device must refer to the current C2H test device.
-//! @pre @p stream must be valid for @p device.
+// Creates a device buffer backed by the checked C2H memory resource.
+//
+// Note: For streams whose device cannot be queried, including the legacy default stream, this overload supports
+// allocation with cuda::no_init. Use the initializer-list overload below to create an initialized buffer.
+// Requires: device must refer to the current C2H test device.
+// Requires: stream must be valid for device.
 template <typename T, typename... Args>
 [[nodiscard]] _CCCL_HOST_API ::cuda::device_buffer<T>
 make_device_buffer(::cuda::stream_ref stream, ::cuda::device_ref device, Args&&... args)
@@ -91,11 +91,11 @@ make_device_buffer(::cuda::stream_ref stream, ::cuda::device_ref device, Args&&.
   return ::cuda::make_buffer<T>(stream, checked_device_memory_resource{device}, ::cuda::std::forward<Args>(args)...);
 }
 
-//! @brief Creates an initialized device buffer backed by the checked C2H memory resource.
-//!
-//! @note This overload supports streams whose device cannot be queried, including the legacy default stream.
-//! @pre @p device must refer to the current C2H test device.
-//! @pre @p stream must be valid for @p device. The legacy default stream is supported.
+// Creates an initialized device buffer backed by the checked C2H memory resource.
+//
+// Note: This overload supports streams whose device cannot be queried, including the legacy default stream.
+// Requires: device must refer to the current C2H test device.
+// Requires: stream must be valid for device. The legacy default stream is supported.
 template <typename T>
 [[nodiscard]] _CCCL_HOST_API ::cuda::device_buffer<T>
 make_device_buffer(::cuda::stream_ref stream, ::cuda::device_ref device, ::cuda::std::initializer_list<T> values)
@@ -129,18 +129,18 @@ make_device_buffer(::cuda::stream_ref stream, ::cuda::device_ref device, ::cuda:
   return result;
 }
 
-//! @brief Creates a device buffer backed by the checked C2H memory resource associated with @p stream.
-//!
-//! @pre Querying the device of @p stream must succeed and return the current C2H test device.
+// Creates a device buffer backed by the checked C2H memory resource associated with stream.
+//
+// Requires: Querying the device of stream must succeed and return the current C2H test device.
 template <typename T, typename... Args>
 [[nodiscard]] _CCCL_HOST_API ::cuda::device_buffer<T> make_device_buffer(::cuda::stream_ref stream, Args&&... args)
 {
   return ::c2h::make_device_buffer<T>(stream, stream.device(), ::cuda::std::forward<Args>(args)...);
 }
 
-//! @brief Creates an initialized device buffer backed by the checked C2H memory resource associated with @p stream.
-//!
-//! @pre Querying the device of @p stream must succeed and return the current C2H test device.
+// Creates an initialized device buffer backed by the checked C2H memory resource associated with stream.
+//
+// Requires: Querying the device of stream must succeed and return the current C2H test device.
 template <typename T>
 [[nodiscard]] _CCCL_HOST_API ::cuda::device_buffer<T>
 make_device_buffer(::cuda::stream_ref stream, ::cuda::std::initializer_list<T> values)
@@ -148,9 +148,9 @@ make_device_buffer(::cuda::stream_ref stream, ::cuda::std::initializer_list<T> v
   return ::c2h::make_device_buffer<T>(stream, stream.device(), values);
 }
 
-//! @brief Host memory resource that rejects allocations when insufficient integrated-device memory is available.
-//!
-//! @pre The resource's device must be the current C2H test device when memory is allocated.
+// Host memory resource that rejects allocations when insufficient integrated-device memory is available.
+//
+// Requires: The resource's device must be the current C2H test device when memory is allocated.
 class checked_host_buffer_memory_resource : public ::cuda::mr::memory_resource_base<checked_host_buffer_memory_resource>
 {
 public:
@@ -199,12 +199,12 @@ private:
 
 static_assert(::cuda::mr::synchronous_resource_with<checked_host_buffer_memory_resource, ::cuda::mr::host_accessible>);
 
-//! @brief Creates a host buffer backed by the checked C2H memory resource.
-//!
-//! @note For streams whose device cannot be queried, including the legacy default stream, this overload supports
-//! allocation with @c cuda::no_init. Use the initializer-list overload below to create an initialized buffer.
-//! @pre @p device must refer to the current C2H test device.
-//! @pre @p stream must be valid for @p device.
+// Creates a host buffer backed by the checked C2H memory resource.
+//
+// Note: For streams whose device cannot be queried, including the legacy default stream, this overload supports
+// allocation with cuda::no_init. Use the initializer-list overload below to create an initialized buffer.
+// Requires: device must refer to the current C2H test device.
+// Requires: stream must be valid for device.
 template <typename T, typename... Args>
 [[nodiscard]] _CCCL_HOST_API ::cuda::host_buffer<T>
 make_host_buffer(::cuda::stream_ref stream, ::cuda::device_ref device, Args&&... args)
@@ -214,11 +214,11 @@ make_host_buffer(::cuda::stream_ref stream, ::cuda::device_ref device, Args&&...
     stream, checked_host_buffer_memory_resource{device}, ::cuda::std::forward<Args>(args)...);
 }
 
-//! @brief Creates an initialized host buffer backed by the checked C2H memory resource.
-//!
-//! @note This overload supports streams whose device cannot be queried, including the legacy default stream.
-//! @pre @p device must refer to the current C2H test device.
-//! @pre @p stream must be valid for @p device. The legacy default stream is supported.
+// Creates an initialized host buffer backed by the checked C2H memory resource.
+//
+// Note: This overload supports streams whose device cannot be queried, including the legacy default stream.
+// Requires: device must refer to the current C2H test device.
+// Requires: stream must be valid for device. The legacy default stream is supported.
 template <typename T>
 [[nodiscard]] _CCCL_HOST_API ::cuda::host_buffer<T>
 make_host_buffer(::cuda::stream_ref stream, ::cuda::device_ref device, ::cuda::std::initializer_list<T> values)
@@ -231,18 +231,33 @@ make_host_buffer(::cuda::stream_ref stream, ::cuda::device_ref device, ::cuda::s
   return result;
 }
 
-//! @brief Creates a host buffer backed by the checked C2H memory resource associated with @p stream.
-//!
-//! @pre Querying the device of @p stream must succeed and return the current C2H test device.
+// Creates an initialized host buffer backed by the checked C2H memory resource.
+//
+// Note: This overload supports streams whose device cannot be queried, including the legacy default stream.
+// Requires: device must refer to the current C2H test device.
+// Requires: stream must be valid for device. The legacy default stream is supported.
+template <typename T>
+[[nodiscard]] auto
+make_host_buffer(cuda::stream_ref stream, cuda::device_ref device, std::size_t num_items, const T& value)
+{
+  auto result = ::c2h::make_host_buffer<T>(stream, device, num_items, cuda::no_init);
+  ::cuda::std::uninitialized_fill_n(result.begin(), num_items, value);
+
+  return result;
+}
+
+// Creates a host buffer backed by the checked C2H memory resource associated with stream.
+//
+// Requires: Querying the device of stream must succeed and return the current C2H test device.
 template <typename T, typename... Args>
 [[nodiscard]] _CCCL_HOST_API ::cuda::host_buffer<T> make_host_buffer(::cuda::stream_ref stream, Args&&... args)
 {
   return ::c2h::make_host_buffer<T>(stream, stream.device(), ::cuda::std::forward<Args>(args)...);
 }
 
-//! @brief Creates an initialized host buffer backed by the checked C2H memory resource associated with @p stream.
-//!
-//! @pre Querying the device of @p stream must succeed and return the current C2H test device.
+// Creates an initialized host buffer backed by the checked C2H memory resource associated with stream.
+//
+// Requires: Querying the device of stream must succeed and return the current C2H test device.
 template <typename T>
 [[nodiscard]] _CCCL_HOST_API ::cuda::host_buffer<T>
 make_host_buffer(::cuda::stream_ref stream, ::cuda::std::initializer_list<T> values)
