@@ -164,6 +164,13 @@ void launch_impl(cuda::stream_ref stream, ActionT action, Args... args)
 
 #elif TEST_LAUNCH == 1
 
+inline void check_device_launch_completion(cuda::stream_ref stream, const cuda::device_buffer<cudaError_t>& d_error)
+{
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE(cudaSuccess == c2h::read_single(stream, d_error));
+}
+
 template <class ActionT, class... Args>
 __global__ void device_side_api_launch_kernel(
   cuda::std::uint8_t* d_temp_storage,
@@ -212,9 +219,7 @@ void launch_impl(cuda::stream_ref stream, ActionT action, Args... args)
       device_side_api_launch_kernel<<<1, 1>>>(
         temp_storage, d_temp_storage_bytes.data(), d_error.data(), action, args...);
     }
-    REQUIRE(cudaSuccess == cudaPeekAtLastError());
-    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-    REQUIRE(cudaSuccess == c2h::read_single(stream, d_error));
+    check_device_launch_completion(stream, d_error);
   };
 
   invoke(nullptr);
@@ -496,9 +501,7 @@ void launch_env(ActionT action, Args... args)
         cuda::get_stream(env).sync();
       }
       device_side_api_launch_kernel_env<<<1, 1>>>(d_error_ptr, action, args...);
-      REQUIRE(cudaSuccess == cudaPeekAtLastError());
-      REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-      REQUIRE(cudaSuccess == c2h::read_single(stream, d_error));
+      launch_helper_detail::check_device_launch_completion(stream, d_error);
     },
     fixed_args);
 
