@@ -200,7 +200,7 @@ jobs:
             const job = jobs.find((job) => job.name === "Require SASS approval");
 
             core.info(`Found ${jobs.length} jobs. SASS approval job: ${job?.id ?? "none"}.`);
-            if (job) core.info(`Gate ${job.id}: status=${job.status}, conclusion=${job.conclusion}.`);
+            if (job) core.info(`Job ${job.id}: status=${job.status}, conclusion=${job.conclusion}.`);
 
             if (!job || job.status !== "completed") {
               core.info("The SASS approval job is not ready. Ask the reviewer to comment again.");
@@ -249,7 +249,12 @@ jobs:
                 repository(owner: $owner, name: $repo) {
                   pullRequest(number: $number) {
                     comments(last: 100, before: $before) {
-                      nodes { fullDatabaseId body isMinimized }
+                      nodes {
+                        fullDatabaseId
+                        body
+                        isMinimized
+                        author { login __typename }
+                      }
                       pageInfo { hasPreviousPage startCursor }
                     }
                   }
@@ -271,6 +276,8 @@ jobs:
               core.info(`Read ${comments.nodes.length} comments; earlier comments=${comments.pageInfo.hasPreviousPage}.`);
 
               report = comments.nodes.reverse().find((entry) =>
+                entry.author?.__typename === "Bot" &&
+                ["github-actions", "github-actions[bot]"].includes(entry.author.login) &&
                 BigInt(entry.fullDatabaseId) < BigInt(comment.id) &&
                 entry.body.split(/\r?\n/).includes(marker)
               );
@@ -309,6 +316,7 @@ jobs:
           path: ${{ runner.temp }}/sass-approval
           if-no-files-found: error
           retention-days: 5
+          overwrite: true
 
       - name: Rerun the SASS approval job
         if: steps.approval.outputs.accepted == 'true'
