@@ -23,7 +23,7 @@ struct TestPairManipulation
     REQUIRE(T(2) == p1.second);
 
     // test copy constructor
-    P p2(p1);
+    P p2(p1); // NOLINT(misc-const-correctness)
     REQUIRE(p1.first == p2.first);
     REQUIRE(p1.second == p2.second);
 
@@ -322,7 +322,7 @@ TEST_CASE("TestPairStructuredBindings", "[pair]")
 {
   const int a = 42;
   const int b = 1337;
-  thrust::pair<int, int> p(a, b);
+  thrust::pair<int, int> p(a, b); // NOLINT(misc-const-correctness)
 
   auto [a2, b2] = p;
   REQUIRE(a == a2);
@@ -333,7 +333,7 @@ TEST_CASE("TestPairCTAD", "[pair]")
 {
   const int a = 42;
   const int b = 1337;
-  thrust::pair p(a, b);
+  thrust::pair p(a, b); // NOLINT(misc-const-correctness)
 
   auto [a2, b2] = p;
   REQUIRE(a == a2);

@@ -502,7 +502,7 @@ TEST_CASE("TestTupleStructuredBindings", "[tuple]")
   const int a = 0;
   const int b = 42;
   const int c = 1337;
-  thrust::tuple<int, int, int> t(a, b, c);
+  thrust::tuple<int, int, int> t(a, b, c); // NOLINT(misc-const-correctness)
 
   auto [a2, b2, c2] = t;
   REQUIRE(a == a2);
@@ -515,7 +515,7 @@ TEST_CASE("TestTupleCTAD", "[tuple]")
   const int a   = 0;
   const char b  = 42;
   const short c = 1337;
-  thrust::tuple t(a, b, c);
+  thrust::tuple t(a, b, c); // NOLINT(misc-const-correctness)
 
   auto [a2, b2, c2] = t;
   REQUIRE(a == a2);

@@ -84,11 +84,9 @@ find_if(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Inpu
   using IteratorTuple = ::cuda::std::tuple<XfrmIterator, thrust::counting_iterator<difference_type>>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-  IteratorTuple iter_tuple =
-    ::cuda::std::make_tuple(XfrmIterator(first, pred), thrust::counting_iterator<difference_type>(0));
-
-  const ZipIterator begin = thrust::make_zip_iterator(iter_tuple);
-  const ZipIterator end   = begin + n;
+  const ZipIterator begin =
+    thrust::make_zip_iterator(XfrmIterator(first, pred), thrust::counting_iterator<difference_type>(0));
+  const ZipIterator end = begin + n;
 
   for (ZipIterator interval_begin = begin; interval_begin < end; interval_begin += interval_size)
   {

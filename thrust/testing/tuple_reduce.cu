@@ -40,7 +40,7 @@ struct TestTupleReduce
     // copy to device
     thrust::device_vector<cuda::std::tuple<T, T>> d_tuples = h_tuples;
 
-    cuda::std::tuple<T, T> zero(0, 0);
+    cuda::std::tuple<T, T> zero(0, 0); // NOLINT(misc-const-correctness)
 
     // sum on host
     const cuda::std::tuple<T, T> h_result = thrust::reduce(h_tuples.begin(), h_tuples.end(), zero, SumTupleFunctor());

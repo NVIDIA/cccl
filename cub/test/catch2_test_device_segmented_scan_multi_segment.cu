@@ -268,7 +268,7 @@ CUB_TEST("segmented inclusive scan works correctly for pairs with noncommutative
   c2h::host_vector<offset_t> h_offsets(offsets);
 
   const op_t op{};
-  pair_t h_init{0, 0};
+  pair_t h_init{0, 0}; // NOLINT(misc-const-correctness)
 
   for (offset_t segment_id = 0; segment_id < num_segments; ++segment_id)
   {

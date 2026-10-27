@@ -229,9 +229,9 @@ private:
   // pair(pair<U1, U2>&) and pair(const pair<U1, U2>&&) beat the copy constructor for a non-const lvalue or a const
   // rvalue of the same type. Unlike the copy constructor they are never trivial, so skip them when it is equivalent.
   template <class _UPair, class _Arg1, class _Arg2>
-  static constexpr bool __prefers_trivial_copy_constructor_v =
+  using __prefers_trivial_copy_constructor = bool_constant<
     !__different_from<pair, _UPair> && is_trivially_copy_constructible_v<_T1> && is_trivially_copy_constructible_v<_T2>
-    && is_trivially_constructible_v<_T1, _Arg1> && is_trivially_constructible_v<_T2, _Arg2>;
+    && is_trivially_constructible_v<_T1, _Arg1> && is_trivially_constructible_v<_T2, _Arg2>>;
 
   // CUDA 12.0/MSVC rejects a static constexpr variable template member during dependent pair
   // instantiations. An alias to bool_constant is not a static data member.
@@ -388,7 +388,7 @@ public:
   // converting constructors
   template <class _U1,
             class _U2,
-            enable_if_t<!__prefers_trivial_copy_constructor_v<pair<_U1, _U2>, _U1&, _U2&>, int> = 0,
+            enable_if_t<!__prefers_trivial_copy_constructor<pair<_U1, _U2>, _U1&, _U2&>::value, int> = 0,
             __select_constructor _Constraints = pair::__select_variadic_constructible<_U1&, _U2&>(),
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr pair(pair<_U1, _U2>& __p) noexcept(
@@ -477,7 +477,7 @@ public:
 
   template <class _U1,
             class _U2,
-            enable_if_t<!__prefers_trivial_copy_constructor_v<pair<_U1, _U2>, const _U1&&, const _U2&&>, int> = 0,
+            enable_if_t<!__prefers_trivial_copy_constructor<pair<_U1, _U2>, const _U1&&, const _U2&&>::value, int> = 0,
             __select_constructor _Constraints = pair::__select_variadic_constructible<const _U1&&, const _U2&&>(),
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr pair(const pair<_U1, _U2>&& __p) noexcept(

@@ -44,7 +44,7 @@ struct TestPairReduce
     const thrust::device_vector<T> d_p2 = h_p2;
     thrust::device_vector<P> d_pairs    = h_pairs;
 
-    P init = cuda::std::make_pair(T{13}, T{13});
+    P init = cuda::std::make_pair(T{13}, T{13}); // NOLINT(misc-const-correctness)
 
     // reduce on the host
     const P h_result = thrust::reduce(h_pairs.begin(), h_pairs.end(), init, add_pairs());

@@ -48,7 +48,7 @@ struct TestTupleScan
     REQUIRE((h_output == d_output));
 
     // exclusive_scan
-    cuda::std::tuple<T, T> init(13, 17);
+    cuda::std::tuple<T, T> init(13, 17); // NOLINT(misc-const-correctness)
     thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), init, SumTupleFunctor());
     thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), init, SumTupleFunctor());
 

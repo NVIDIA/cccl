@@ -47,7 +47,7 @@ struct TestPairScanByKey
     thrust::host_vector<T> h_keys   = unittest::random_integers<bool>(n);
     thrust::device_vector<T> d_keys = h_keys;
 
-    P init = cuda::std::make_pair(T{13}, T{13});
+    P init = cuda::std::make_pair(T{13}, T{13}); // NOLINT(misc-const-correctness)
 
     // scan on the host
     thrust::exclusive_scan_by_key(

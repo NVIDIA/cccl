@@ -169,7 +169,7 @@ struct TestZipIteratorManipulation
     thrust::sequence(v2.begin(), v2.end());
 
     using IteratorTuple = cuda::std::tuple<typename Vector::iterator, typename Vector::iterator>;
-    IteratorTuple t     = cuda::std::make_tuple(v0.begin(), v1.begin());
+    IteratorTuple t     = cuda::std::make_tuple(v0.begin(), v1.begin()); // NOLINT(misc-const-correctness)
     using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
     // test construction from tuple

@@ -101,6 +101,7 @@ int main()
   // compute min & max over valid region of the 2d grid
   using result_type = cuda::std::tuple<bool, float, float>;
 
+  // NOLINTNEXTLINE(misc-const-correctness)
   result_type init(true, FLT_MAX, -FLT_MAX); // initial value
   const transform_tuple<int, float> unary_op(n, n_padded); // transformation operator
   const reduce_tuple<int, float> binary_op; // reduction operator

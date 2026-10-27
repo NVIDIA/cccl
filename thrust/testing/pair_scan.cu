@@ -43,7 +43,7 @@ struct TestPairScan
     thrust::device_vector<P> d_pairs    = h_pairs;
     thrust::device_vector<P> d_output(n);
 
-    P init = cuda::std::make_pair(13, 13);
+    P init = cuda::std::make_pair(13, 13); // NOLINT(misc-const-correctness)
 
     // scan with plus
     thrust::inclusive_scan(h_pairs.begin(), h_pairs.end(), h_output.begin(), add_pairs());
