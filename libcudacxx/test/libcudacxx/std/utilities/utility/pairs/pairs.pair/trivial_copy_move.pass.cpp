@@ -28,7 +28,9 @@ struct Dummy
 struct NonTrivialMutableCopy
 {
   NonTrivialMutableCopy(const NonTrivialMutableCopy&) = default;
+#if TEST_STD_VER >= 2020 || !TEST_COMPILER(MSVC) // MSVC rejects multiple versions of a defaulted copy constructor
   TEST_FUNC NonTrivialMutableCopy(NonTrivialMutableCopy&) {}
+#endif // TEST_STD_VER >= 2020 || !TEST_COMPILER(MSVC)
 };
 
 struct NonTrivialConstMove
@@ -59,11 +61,13 @@ int main(int, char**)
     static_assert(cuda::std::is_trivially_constructible_v<P1, P1&>);
     static_assert(cuda::std::is_trivially_constructible_v<P1, const P1&&>);
   }
+#if TEST_STD_VER >= 2020 || !TEST_COMPILER(MSVC)
   {
     using P1 = cuda::std::pair<int, NonTrivialMutableCopy>;
     static_assert(cuda::std::is_constructible_v<P1, P1&>);
     static_assert(!cuda::std::is_trivially_constructible_v<P1, P1&>);
   }
+#endif // TEST_STD_VER >= 2020 || !TEST_COMPILER(MSVC)
   {
     using P1 = cuda::std::pair<int, NonTrivialConstMove>;
     static_assert(cuda::std::is_constructible_v<P1, const P1&&>);

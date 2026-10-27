@@ -212,8 +212,10 @@ CUB_TEST("Device three-way partition is stable", "[partition][device]", CUB_SMAL
 
   thrust::tabulate(c2h::device_policy, in.begin(), in.end(), count_to_pair_t<type>{});
 
+  // NOLINTNEXTLINE(misc-const-correctness)
   pair_type first_unselected_val = cuda::std::make_pair(static_cast<type>(num_items / 3), std::uint32_t{});
 
+  // NOLINTNEXTLINE(misc-const-correctness)
   pair_type first_val_of_second_part = cuda::std::make_pair(static_cast<type>(2 * num_items / 3), std::uint32_t{});
 
   const less_than_t<pair_type> le(first_unselected_val);
