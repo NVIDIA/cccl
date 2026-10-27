@@ -14,8 +14,10 @@
 #include <disable_nvfp_conversions_and_operators.h>
 // clang-format on
 
+#include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 #include <cuda/type_traits>
@@ -210,10 +212,46 @@ TEST_FUNC constexpr bool test(float val)
   return true;
 }
 
+TEST_FUNC void test_fp64_nan_bits(const cuda::std::uint64_t nan_bits)
+{
+  const auto tested = cuda::std::bit_cast<cuda::std::uint64_t>(cuda::std::fabs(cuda::std::bit_cast<double>(nan_bits)));
+  // all bits except the sign bit
+  constexpr auto mag_mask = static_cast<cuda::std::uint64_t>(cuda::std::numeric_limits<cuda::std::int64_t>::max());
+  assert(tested == (nan_bits & mag_mask));
+}
+
+// double has an integer implementation on slow fp64 targets
+// fabs clears the sign bit of NaNs, keeps the payload and does not quiet signaling NaNs
+TEST_FUNC void test_fp64_nan(float val)
+{
+  // the NaNs are given as bit patterns because numeric_limits cannot express them:
+  // - nvcc quiets signaling NaN constants in device code
+  // - negative NaNs and NaN payloads have no numeric_limits counterpart
+  const auto runtime               = static_cast<cuda::std::uint64_t>(val);
+  const cuda::std::uint64_t nans[] = {
+    0x7ff8'0000'0000'0000 * runtime, // +qNaN
+    0xfff8'0000'0000'0000 * runtime, // -qNaN
+    0x7ff4'0000'0000'0000 * runtime, // +sNaN
+    0xfff4'0000'0000'0000 * runtime, // -sNaN
+    0xfff0'0000'0000'0001 * runtime, // -sNaN, smallest payload
+    0xfff8'1234'5678'0001 * runtime, // -qNaN with payload
+  };
+
+  for (const auto nan_bits : nans)
+  {
+    assert(cuda::std::isnan(cuda::std::fabs(cuda::std::bit_cast<double>(nan_bits))));
+
+    // fast fp64 targets are excluded because they use DADD which quiets sNaNs
+    NV_IF_TARGET(NV_IS_HOST, (test_fp64_nan_bits(nan_bits);))
+    _CCCL_DISPATCH_SLOW_FP64_TARGET(test_fp64_nan_bits(nan_bits);)
+  }
+}
+
 int main(int, char**)
 {
   volatile float val = 1.0f;
   test(val);
+  test_fp64_nan(val);
 #if _CCCL_HAS_CONSTEXPR_BIT_CAST()
   static_assert(test(1.0f));
 #endif // _CCCL_HAS_CONSTEXPR_BIT_CAST()
