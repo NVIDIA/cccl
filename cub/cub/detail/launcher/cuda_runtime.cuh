@@ -13,11 +13,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__cstddef/types.h>
+
+#include <nv/target>
 
 // By default, CUB uses `cub::detail::TripleChevronFactory` to access the CUDA runtime.
 // The `CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY` indirection is used to override the default kernel launcher factory
