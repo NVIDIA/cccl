@@ -32,12 +32,6 @@ inline constexpr bool sort_unroll_default = false;
 inline constexpr bool sort_unroll_default = true;
 #endif // !CCCL_AVOID_SORT_UNROLL
 
-// Unroll count for the sorting loops. nvcc does not always fully unroll a loop with `#pragma unroll N`, even if N
-// covers the trip count (e.g. N == ItemsPerThread), which leads to local memory spills for larger ItemsPerThread. An
-// unroll count the loop cannot reach behaves like a full unroll.
-template <bool Unroll>
-inline constexpr int sort_unroll_count = Unroll ? ::cuda::std::numeric_limits<int>::max() : 1;
-
 template <typename KeyT, typename ValueT, typename CompareOp>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 compare_swap(KeyT& key_lhs, KeyT& key_rhs, ValueT& item_lhs, ValueT& item_rhs, CompareOp compare_op)
@@ -57,7 +51,10 @@ template <bool Unroll = sort_unroll_default, typename KeyT, typename ValueT, typ
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 stable_odd_even_sort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThread], CompareOp compare_op)
 {
-  constexpr int unroll = sort_unroll_count<Unroll>;
+  // nvcc does not always fully unroll a loop with `#pragma unroll N`, even if N covers the trip count (e.g. N ==
+  // ItemsPerThread), which leads to local memory spills for larger ItemsPerThread. An unroll count the loop cannot
+  // reach behaves like a full unroll.
+  constexpr int unroll = Unroll ? ::cuda::std::numeric_limits<int>::max() : 1;
   _CCCL_PRAGMA_UNROLL(unroll)
   for (int i = 0; i < ItemsPerThread; ++i)
   {
