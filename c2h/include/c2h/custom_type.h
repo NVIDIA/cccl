@@ -70,7 +70,7 @@ struct huge_data
                   "huge_data expects to be the only size-contributing policy in the pack, and TotalSize to be "
                   "larger than custom_type_state_t plus one word for the remaining policies");
 
-    // Whatever the other bases leave over becomes the filler
+    // Whatever the other bases leave over becomes the filler. Use large words to minimize register allocation.
     std::uint64_t data[(TotalSize - bytes_before_filler) / sizeof(std::uint64_t)]{};
   };
 };
