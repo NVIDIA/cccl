@@ -30,8 +30,9 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _Size, class _Function>
 _CCCL_API constexpr _InputIterator for_each_n(_InputIterator __first, _Size __orig_n, _Function __f)
 {
-  using _IntegralSize = decltype(::cuda::std::__convert_to_integral(__orig_n));
-  _IntegralSize __n   = __orig_n;
+  static_assert(__is_convertible_to_integral_v<_Size>, "_Size must be convertible to an integral");
+
+  auto __n = ::cuda::std::__convert_to_integral(__orig_n);
   while (__n > 0)
   {
     __f(*__first);
