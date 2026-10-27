@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Check Load source inference and the qualified typed-output fallback."""
+"""Check Load source inference and per-thread destination restrictions."""
 
 import os
 from types import SimpleNamespace
@@ -16,9 +16,6 @@ from numba_cuda_mlir import cuda, types
 
 import cuda.coop.numba_mlir as numba_coop
 from cuda import coop
-from cuda.coop.numba_mlir._compiler._group_errors import (
-    UnknownLoadStoreDtypeError,
-)
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
 
@@ -69,14 +66,15 @@ def test_load_infers_contiguous_source_slice_dtype(api, returning):
     _compile(kernel)
 
 
-@pytest.mark.parametrize("sliced", [False, True], ids=["array", "slice"])
+@pytest.mark.parametrize("api", [coop, numba_coop], ids=["common", "qualified"])
+@pytest.mark.parametrize("sliced", [False, True], ids=["alias", "slice"])
 @pytest.mark.parametrize(
     "returning", [False, True], ids=["output", "returning"]
 )
-def test_qualified_shared_source_requires_typed_output(sliced, returning):
+def test_load_infers_shared_source_dtype(api, sliced, returning):
     @cuda.jit
     def kernel(source, destination):
-        group = numba_coop.this_block()
+        group = api.this_block()
         shared = cuda.shared.array(33, types.int32)
         thread = cuda.threadIdx.x
         shared[thread + 1] = source[thread]
@@ -88,18 +86,45 @@ def test_qualified_shared_source_requires_typed_output(sliced, returning):
         else:
             memory = shared
         if returning:
-            values = numba_coop.load(group, memory, items_per_thread=1)
+            values = api.load(group, memory, items_per_thread=1)
         else:
-            values = numba_coop.ThreadData(
-                items_per_thread=1, dtype=types.int32
-            )
-            numba_coop.load(group, memory, values)
+            values = api.ThreadData(items_per_thread=1)
+            api.load(group, memory, values)
+        api.store(group, destination, values)
+
+    _compile(kernel)
+
+
+@pytest.mark.parametrize("api", [coop, numba_coop], ids=["common", "qualified"])
+def test_load_rejects_shared_array_as_output_payload(api):
+    @cuda.jit
+    def kernel(source, destination):
+        shared = cuda.shared.array(32, dtype=types.int32)
+        api.load(api.this_block(), source, shared)
+
+    with pytest.raises(TypeError, match="output"):
+        _compile(kernel)
+
+
+@pytest.mark.parametrize("api", [coop, numba_coop], ids=["common", "qualified"])
+def test_load_rejects_shared_source_output_dtype_mismatch(api):
+    @cuda.jit
+    def kernel(source, destination):
+        shared = cuda.shared.array(32, dtype=types.float32)
+        values = api.ThreadData(items_per_thread=1, dtype=types.int32)
+        api.load(api.this_block(), shared, values)
+
+    with pytest.raises(TypeError, match="memory dtype.*does not match"):
+        _compile(kernel)
+
+
+def test_qualified_load_shared_source_into_native_local_array():
+    @cuda.jit
+    def kernel(source, destination):
+        group = numba_coop.this_block()
+        shared = cuda.shared.array(32, dtype=types.int32)
+        values = cuda.local.array(1, dtype=types.int32)
+        numba_coop.load(group, shared, values)
         numba_coop.store(group, destination, values)
 
-    if returning:
-        with pytest.raises(
-            UnknownLoadStoreDtypeError, match="could not infer a dtype"
-        ):
-            _compile(kernel)
-    else:
-        _compile(kernel)
+    _compile(kernel)

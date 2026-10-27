@@ -75,9 +75,14 @@ The kernel supplies the tile's ``offset`` and a compile-time
 the block processes 512 values. All threads in the group must reach the
 cooperative calls, including when only part of the tile is valid.
 
-Load returns a ``ThreadData`` payload whose element type comes from ``source``.
+Prefer returning Load for a fresh ``ThreadData`` payload whose element type
+comes from ``source``.
 You can also construct ``ThreadData`` directly and pass it as Load's output
 when you need to populate an existing payload.
+Load reads a global or shared array into per-thread values; Store writes
+per-thread values into a global or shared array. A shared array is a memory
+operand, distinct from Load's per-thread output. See the executable
+:ref:`shared-memory staging example <coop-shared-load-store>`.
 
 The :doc:`programming concepts <coop/concepts>` explain participation,
 data layouts, operation results, and temporary storage.

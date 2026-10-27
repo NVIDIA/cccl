@@ -60,6 +60,44 @@ Keep the alias on a dotted import. Bare ``import cuda.coop.numba_mlir``
 assigns the top-level package to ``cuda`` in that scope, replacing the name
 previously imported from ``numba_cuda_mlir``.
 
+.. _coop-faq-load-forms:
+
+When should I use returning Load or its output parameter?
+---------------------------------------------------------
+
+Prefer ``values = coop.load(group, source, items_per_thread=N)`` for fresh
+values. It returns a ``ThreadData`` with the source's dtype. Use
+``coop.load(group, source, output)`` when an existing per-thread object must
+be filled, for example to preserve its lifetime or update a caller's payload.
+The output form returns ``None``; omit ``items_per_thread`` and leave
+``alignment=None``. Configure the existing payload's alignment at construction.
+The Numba-qualified API additionally accepts supported fixed one-dimensional
+local arrays, as shown in the :ref:`qualified example
+<coop-programming-api-choice>`.
+
+The two forms have the same memory direction: a global or shared source feeds
+per-thread values. A shared source does not require the output form.
+Direct ``ThreadData`` construction and its dtype inference remain supported.
+
+Can Load fill a shared array directly?
+--------------------------------------
+
+Currently, Load's ``output`` must be a supported per-thread payload. A
+block-shared array is a memory operand, not such a payload. Use returning
+Load followed by Store to populate it:
+
+.. code-block:: python
+
+   values = coop.load(block, source, items_per_thread=items_per_thread)
+   coop.store(block, shared, values)
+   cuda.syncthreads()
+   reloaded = coop.load(block, shared, items_per_thread=items_per_thread)
+
+The common API supports shared Load sources and shared Store destinations;
+qualified imports are unnecessary for that behavior. See the complete
+:ref:`shared-memory example <coop-shared-load-store>` for allocation,
+launching, and synchronization.
+
 .. _coop-faq-thread-data-dtype:
 
 When does ``ThreadData`` need an explicit element type?
@@ -90,10 +128,10 @@ Inference follows the backend's supported operations and assignments.
 
 Returning Load needs the source's element type during cooperative planning.
 Kernel-array arguments and their contiguous slices provide that information.
-For a ``cuda.shared.array`` source, the qualified Numba-CUDA-MLIR API supports
-an explicitly typed ``ThreadData`` destination and output-form Load. Keep that
-form for this case; returning Load and common-API validation cannot yet infer
-the shared-memory source type.
+Numba-CUDA-MLIR also recognizes the declared dtype of ``cuda.shared.array``
+sources, including supported aliases and contiguous slices. Both common and
+qualified Load can return a payload from these sources without an explicitly
+typed output.
 
 Numba's current planner cannot infer a payload type solely from the results of
 a non-inlined device helper when no other supported operation supplies type

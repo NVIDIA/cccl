@@ -58,10 +58,17 @@ def load(
     """Load a block or warp tile with the Numba-CUDA-MLIR backend.
 
     Parameters, algorithm choices, tile addressing, and result ownership
-    follow :func:`cuda.coop.load`. Supply ``items_per_thread`` to return a
-    fresh payload with the source dtype. In this backend, ``output`` may also
-    be a supported fixed-size Numba local array. It must be writable; an untyped
-    local array can infer its dtype from the source.
+    follow :func:`cuda.coop.load`. Prefer ``items_per_thread`` to return a
+    fresh payload with the source dtype. Sources may be contiguous global
+    arrays or shared arrays. The common API supports these memory sources too.
+
+    To fill existing per-thread storage, pass ``output`` and omit
+    ``items_per_thread`` and ``alignment``. This form returns ``None``.
+    In this backend, ``output`` may also be a supported fixed-size,
+    one-dimensional Numba local array. A directly constructed ``ThreadData``
+    can infer its dtype from the source. A shared array is a group memory
+    operand, not an accepted per-thread output; use :func:`cuda.coop.store`
+    to stage loaded values into shared memory.
 
     See :ref:`per-thread payloads <coop-thread-data>` and
     :ref:`temporary storage <coop-temp-storage>` for allocation rules.
@@ -75,7 +82,9 @@ def load(
 
     Examples
     --------
-    Copy a partial final tile using a Numba local array.
+    Fill an existing Numba local array while copying a partial final tile.
+    For ordinary fresh payloads, prefer the returning example in
+    :func:`cuda.coop.load`.
 
     .. literalinclude::
         ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_load_store_examples.py
@@ -123,6 +132,8 @@ def store(
     follow :func:`cuda.coop.store`. ``value`` may be a numeric scalar or a
     supported fixed-size Numba local array. Transpose algorithms may rearrange
     that input in place; copy values before Store if they are needed later.
+    ``destination`` may be a contiguous global or shared array. Synchronize
+    before another thread reads a shared-memory value written by this call.
 
     See :ref:`per-thread payloads <coop-thread-data>` and
     :ref:`temporary storage <coop-temp-storage>` for allocation rules, and

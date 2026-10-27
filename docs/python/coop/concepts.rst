@@ -151,7 +151,7 @@ divergent participation safe.
 Per-thread payloads
 -------------------
 
-``coop.load(group, source, items_per_thread=items_per_thread)`` returns each
+Prefer ``coop.load(group, source, items_per_thread=items_per_thread)`` for each
 participating thread's fixed-size ``ThreadData`` payload. Its element type
 comes from ``source``. Pass ``items_per_thread`` as a kernel argument;
 Numba-CUDA-MLIR specializes the kernel for its value.

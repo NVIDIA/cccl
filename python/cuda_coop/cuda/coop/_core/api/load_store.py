@@ -54,8 +54,8 @@ def load(
     """Load a group tile and return its per-thread values.
 
     Prefer ``values = load(group, source, items_per_thread=N)`` for a fresh
-    payload. To populate an existing destination, pass ``output`` instead;
-    that form returns ``None``. Specify exactly one of these two forms.
+    payload. To populate an existing per-thread payload, pass ``output``
+    instead; that form returns ``None``. Specify exactly one of these forms.
 
     Parameters
     ----------
@@ -64,7 +64,9 @@ def load(
         Supports blocks and physical or logical warps. Warp loads require
         an enclosing block size divisible by 32.
     source : array
-        One-dimensional contiguous source array in device-accessible memory.
+        One-dimensional contiguous source array in global or shared memory.
+        For shared memory, finish the producer's writes and synchronize the
+        participating threads before loading values written by other threads.
         Its element dtype determines the returned payload's dtype, or must
         match an existing ``output``. An untyped output infers its dtype from
         this array. The array must contain all elements
@@ -76,6 +78,8 @@ def load(
         Omit ``items_per_thread`` and leave ``alignment=None`` when supplying
         this destination. Use this form when aliases must observe the update
         or the destination needs a lifetime established before this call.
+        This is each thread's payload, not a shared-memory tile. To write
+        returned values into a shared array, use :func:`store`.
     items_per_thread : int, optional
         Positive compile-time number of values returned for each thread.
         Required when ``output`` is omitted. Even a count of one returns a
@@ -150,6 +154,9 @@ def load(
     The qualified import activates the Numba-CUDA-MLIR backend even if another
     module imported ``cuda.coop`` first. Use the qualified
     ``cuda.coop.<backend>`` API for backend-specific behavior.
+
+    See :ref:`shared-memory Load and Store <coop-shared-load-store>` for
+    staging returned payloads into a shared array and loading them again.
     """
 
     raise CoopCompilerContextRequiredError(
@@ -181,9 +188,11 @@ def store(
         Supports blocks and physical or logical warps. Warp stores require
         an enclosing block size divisible by 32.
     destination : array
-        Writable one-dimensional contiguous array in device-accessible
+        Writable one-dimensional contiguous array in global or shared
         memory, with the same element dtype as ``value``. It must contain
         every element selected by ``offset`` and ``valid_items``.
+        Synchronize the participating threads before other threads read
+        the shared-memory values written by this call.
     value : numeric scalar or cuda.coop.ThreadDataLike
         This thread's value or readable :ref:`payload <coop-thread-data>`.
         Initialize every item that will be stored. The tile contains
@@ -241,6 +250,8 @@ def store(
 
     See :ref:`participation and synchronization <coop-participation>` for
     control-flow requirements at primitive calls.
+    See :ref:`shared-memory Load and Store <coop-shared-load-store>` for
+    staging returned payloads into a shared array.
     """
 
     raise CoopCompilerContextRequiredError(

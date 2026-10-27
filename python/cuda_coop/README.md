@@ -196,16 +196,34 @@ coop.store(
 )
 ```
 
-`load(..., items_per_thread=N)` returns a `ThreadData` payload with `N`
+Prefer `load(..., items_per_thread=N)` for a fresh `ThreadData` payload with `N`
 items per thread and the source's element type, including when `N` is one.
 Supply a positive compile-time count. To fill an existing payload, use
 `load(group, source, items, ...)`; that form returns `None` and obtains the
 count from `items`. Supply exactly one of an output payload or
 `items_per_thread`.
 
+Load reads memory into each thread's values. Both global and shared arrays
+can supply the source; Store writes per-thread values into either memory
+space. For example, inside a kernel with an allocated shared array:
+
+```python
+items = coop.load(block, source, items_per_thread=items_per_thread)
+coop.store(block, shared, items)
+cuda.syncthreads()
+reloaded = coop.load(block, shared, items_per_thread=items_per_thread)
+```
+
+The output form fills existing per-thread `ThreadData`, or a supported fixed
+one-dimensional `cuda.local.array` in the Numba-qualified API. It does not
+accept a whole shared array as its output. Synchronize producer/consumer
+phases before threads read one another's writes. See the executable
+[shared-memory staging example](tests/backends/numba_mlir/runtime/test_shared_load_store_example.py).
+
 Direct `ThreadData(items_per_thread)` construction remains available for
-computed values, explicit alignment, and caller-owned outputs. Its element
-type can still be inferred from later Load, Store, or supported assignments.
+computed values and caller-owned outputs. Both direct construction and returning
+Load accept `alignment`. The constructor's element type can still be inferred
+from later Load, Store, or supported assignments.
 
 `valid_items` counts items across the selected group tile, while `offset`
 is a nonnegative element offset. Runtime offsets are caller-validated.
