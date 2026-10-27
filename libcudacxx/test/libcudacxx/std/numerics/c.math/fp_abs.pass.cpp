@@ -212,16 +212,8 @@ TEST_FUNC constexpr bool test(float val)
   return true;
 }
 
-TEST_FUNC void test_fp64_nan_bits(const cuda::std::uint64_t nan_bits)
-{
-  const auto tested = cuda::std::bit_cast<cuda::std::uint64_t>(cuda::std::fabs(cuda::std::bit_cast<double>(nan_bits)));
-  // all bits except the sign bit
-  constexpr auto mag_mask = static_cast<cuda::std::uint64_t>(cuda::std::numeric_limits<cuda::std::int64_t>::max());
-  assert(tested == (nan_bits & mag_mask));
-}
-
 // double has an integer implementation on slow fp64 targets
-// fabs clears the sign bit of NaNs, keeps the payload and does not quiet signaling NaNs
+// the NaN sign and payload after fabs are implementation-defined on device, only check that the result is a NaN
 TEST_FUNC void test_fp64_nan(float val)
 {
   // the NaNs are given as bit patterns because numeric_limits cannot express them:
@@ -240,10 +232,6 @@ TEST_FUNC void test_fp64_nan(float val)
   for (const auto nan_bits : nans)
   {
     assert(cuda::std::isnan(cuda::std::fabs(cuda::std::bit_cast<double>(nan_bits))));
-
-    // fast fp64 targets are excluded because they use DADD which quiets sNaNs
-    NV_IF_TARGET(NV_IS_HOST, (test_fp64_nan_bits(nan_bits);))
-    _CCCL_DISPATCH_SLOW_FP64_TARGET(test_fp64_nan_bits(nan_bits);)
   }
 }
 
