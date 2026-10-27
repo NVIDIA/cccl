@@ -163,7 +163,12 @@ CUB_TEST("Device ArgMin and ArgMax handle empty input", "[reduce][device]", CUB_
 
   SECTION("ArgMin with custom comparison operator")
   {
-    device_arg_min(input.data(), output.data(), index.data(), 0, abs_less_t{});
+    // abs_less_t only accepts integers, not thrust::device_reference, so pass raw pointers
+    device_arg_min(thrust::raw_pointer_cast(input.data()),
+                   thrust::raw_pointer_cast(output.data()),
+                   thrust::raw_pointer_cast(index.data()),
+                   0,
+                   abs_less_t{});
 
     REQUIRE(output[0] == input_t{});
     REQUIRE(index[0] == 1);
