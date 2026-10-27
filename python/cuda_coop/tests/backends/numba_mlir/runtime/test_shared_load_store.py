@@ -11,8 +11,6 @@ cuda = pytest.importorskip("numba_cuda_mlir.cuda")
 if not cuda.is_available():
     pytest.skip("requires a CUDA-capable runtime", allow_module_level=True)
 
-from numba_cuda_mlir import types
-
 import cuda.coop.numba_mlir as numba_coop
 from cuda import coop
 
@@ -37,7 +35,7 @@ def test_load_store_shared_array_roundtrip(api, items_per_thread, returning):
     @cuda.jit
     def kernel(source, destination, items_per_thread):
         group = api.this_block()
-        shared = cuda.shared.array(tile_items, dtype=types.int32)
+        shared = cuda.shared.array(tile_items, dtype=source.dtype)
         values = api.load(group, source, items_per_thread=items_per_thread)
         api.store(group, shared, values)
         cuda.syncthreads()

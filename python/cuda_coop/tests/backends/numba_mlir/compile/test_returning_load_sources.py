@@ -75,7 +75,7 @@ def test_load_infers_shared_source_dtype(api, sliced, returning):
     @cuda.jit
     def kernel(source, destination):
         group = api.this_block()
-        shared = cuda.shared.array(33, types.int32)
+        shared = cuda.shared.array(33, dtype=source.dtype)
         thread = cuda.threadIdx.x
         shared[thread + 1] = source[thread]
         if thread == 0:

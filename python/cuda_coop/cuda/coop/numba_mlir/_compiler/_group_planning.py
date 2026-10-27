@@ -910,15 +910,21 @@ class GroupPlanningContext:
                 return normalize_dtype_param(dtype)
             return self.__thread_data_dtypes.get(id(definition))
         if function in {_cuda_local_array, _cuda_shared_array}:
-            if len(definition.args) >= 2:
-                resolved, dtype = self.try_constant(definition.args[1])
-                if resolved:
-                    return normalize_dtype_param(dtype)
-            dtype_ref = dict(definition.kws).get("dtype")
-            if dtype_ref is not None:
-                resolved, dtype = self.try_constant(dtype_ref)
-                if resolved:
-                    return normalize_dtype_param(dtype)
+            dtype_ref = (
+                definition.args[1]
+                if len(definition.args) >= 2
+                else dict(definition.kws).get("dtype")
+            )
+            resolved, dtype = self.try_constant(dtype_ref)
+            if resolved and dtype is not None:
+                return normalize_dtype_param(dtype)
+            dtype_definition = self._definition(dtype_ref)
+            if (
+                isinstance(dtype_definition, ir.Expr)
+                and dtype_definition.op == "getattr"
+                and dtype_definition.attr == "dtype"
+            ):
+                return self.dtype(dtype_definition.value, seen=seen)
             return None
         return scalar_call_dtype(
             function,

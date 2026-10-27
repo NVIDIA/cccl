@@ -98,6 +98,16 @@ qualified imports are unnecessary for that behavior. See the complete
 :ref:`shared-memory example <coop-shared-load-store>` for allocation,
 launching, and synchronization.
 
+Is Load an asynchronous global-to-shared copy?
+----------------------------------------------
+
+Neither Load form exposes an asynchronous transfer or a completion token.
+Transpose algorithms may use shared scratch to rearrange values, but their
+result is still per-thread values. This differs from copying a whole buffer
+into shared memory and waiting for that transfer to complete. See CCCL's
+:doc:`Tensor Memory Accelerator guide <../../cccl/tma>` for the C++
+asynchronous-copy facilities and their synchronization contracts.
+
 .. _coop-faq-thread-data-dtype:
 
 When does ``ThreadData`` need an explicit element type?
