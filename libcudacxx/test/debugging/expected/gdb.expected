@@ -52,7 +52,9 @@ cuda::std::array<cuda::std::expected<int, int>, 2> = {
 }
 =============== expected.nested end ===============
 =============== expected_void.value begin ===============
-const cuda::std::expected<void, int> & has value
+const cuda::std::expected<void, int> & = {
+  value = void
+}
 =============== expected_void.value end ===============
 =============== expected_void.error begin ===============
 const cuda::std::expected<void, int> & = {

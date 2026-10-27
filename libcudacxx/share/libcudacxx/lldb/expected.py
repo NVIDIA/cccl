@@ -13,6 +13,10 @@ import cccl_common
 import lldb
 
 _EXPECTED_PATTERN = re.compile(r"^cuda::std::expected<.+>$")
+# The empty union member that expected<void, E> keeps in place of a value.
+_VOID_PLACEHOLDER_PATTERN = re.compile(
+    r"^cuda::std::__expected_destruct<void, .+>::__expected_union_t::__empty$"
+)
 InternalDict = dict[str, object]
 
 
@@ -32,17 +36,22 @@ def _expected_child(value: lldb.SBValue) -> tuple[str, lldb.SBValue] | None:
     if has_value.GetValueAsUnsigned(0) == 0:
         error = storage.GetChildMemberWithName("__unex_")
         return ("error", error) if error.IsValid() else None
-    # expected<void, E> holds no value member.
     val = storage.GetChildMemberWithName("__val_")
+    if not val.IsValid():
+        # expected<void, E> holds no value member, only an empty placeholder that
+        # is_void_placeholder() gives a "void" summary.
+        val = storage.GetChildMemberWithName("__empty_")
     return ("value", val) if val.IsValid() else None
 
 
-def expected_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str:
-    if _expected_child(value) is None:
-        # expected<void, E> holding a value has nothing else to show.
-        non_syn = cccl_common.strip_reference_value(value).GetNonSyntheticValue()
-        if non_syn.GetChildMemberWithName("__has_val_").GetValueAsUnsigned(0) != 0:
-            return "has value"
+def is_void_placeholder(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool:
+    type_name = cccl_common.public_type_name(value_type)
+    return _VOID_PLACEHOLDER_PATTERN.fullmatch(type_name) is not None
+
+
+def expected_summary(_value: lldb.SBValue, _internal_dict: InternalDict) -> str:
+    # The held value or error is the synthetic child; the empty --expand summary
+    # only keeps it laid out as a block.
     return ""
 
 
@@ -90,6 +99,10 @@ def register(debugger: lldb.SBDebugger, category: str, module: str) -> None:
     debugger.HandleCommand(
         f"type summary add --category {category} --expand --python-function {module}.expected_summary "
         f"--recognizer-function {module}.is_cuda_expected"
+    )
+    debugger.HandleCommand(
+        f'type summary add --category {category} --summary-string "void" '
+        f"--recognizer-function {module}.is_void_placeholder"
     )
     debugger.HandleCommand(
         f"type synthetic add --category {category} --python-class {module}.ExpectedSyntheticProvider "

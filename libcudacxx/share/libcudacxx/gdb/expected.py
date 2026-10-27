@@ -49,24 +49,22 @@ class ExpectedPrinter:
         self.type_name = _display_type_name(value.type)
         value = cccl_common.strip_reference_value(value)
         # __has_val_ and __union_ are members of the __expected_destruct base class.
-        self.has_value = bool(value["__has_val_"])
         storage = value["__union_"]
-        self.child: tuple[str, gdb.Value] | None = None
-        if not self.has_value:
+        self.child: tuple[str, gdb.Value | str]
+        if not bool(value["__has_val_"]):
             self.child = ("error", storage["__unex_"])
-        elif cccl_common.canonical_type(value.type).template_argument(0).code != (
+        elif cccl_common.canonical_type(value.type).template_argument(0).code == (
             gdb.TYPE_CODE_VOID
         ):
+            # expected<void, E> holds no value member; GDB prints a string child as is.
+            self.child = ("value", "void")
+        else:
             self.child = ("value", storage["__val_"])
 
-    def children(self) -> Iterator[tuple[str, gdb.Value]]:
-        if self.child is not None:
-            yield self.child
+    def children(self) -> Iterator[tuple[str, gdb.Value | str]]:
+        yield self.child
 
     def to_string(self) -> str:
-        if self.has_value and self.child is None:
-            # expected<void, E> holding a value has nothing else to show.
-            return f"{self.type_name} has value"
         return self.type_name
 
 

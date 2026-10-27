@@ -49,7 +49,9 @@
 }
 =============== expected.nested end ===============
 =============== expected_void.value begin ===============
-(const cuda::std::expected<void, int> &) <address> has value
+(const cuda::std::expected<void, int> &) <address>: {
+  value = void
+}
 =============== expected_void.value end ===============
 =============== expected_void.error begin ===============
 (const cuda::std::expected<void, int> &) <address>: {
