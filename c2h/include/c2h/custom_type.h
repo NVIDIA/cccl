@@ -47,18 +47,15 @@ public:
 };
 
 //! Inflates a custom type to exactly \p TotalSize bytes, so that algorithms have to fall back to
-//! temporary storage backed by global memory (vsmem). The filler consists of 64-bit words instead of bytes, because
-//! device code generated for a byte array keeps every byte in its own register, which makes compile times explode.
-//! custom_type_state_t is 8-byte aligned, so a custom type is always a multiple of 8 bytes, and so is \p TotalSize.
+//! temporary storage backed by global memory (vsmem).
 template <std::size_t TotalSize>
 struct huge_data
 {
   template <class CustomType>
   class type
   {
-    static_assert(TotalSize % sizeof(std::uint64_t) == 0,
-                  "huge_data<TotalSize>: TotalSize must be a multiple of 8, because custom types are 8-byte aligned "
-                  "and would silently be rounded up otherwise");
+    // because custom types are 8-byte aligned we can only increase size in multiples of 8 bytes
+    static_assert(TotalSize % sizeof(std::uint64_t) == 0, "huge_data<TotalSize>: TotalSize must be a multiple of 8");
 
     // Every other policy contributes exactly one byte (their MSVC workaround member), so counting
     // them is enough, and their order does not matter as they are all byte-aligned. The filler is 8-byte aligned, so
@@ -69,9 +66,9 @@ struct huge_data
 
     // A second huge_data policy, or any policy contributing more than its one-byte MSVC workaround
     // member, breaks the one-byte-per-policy assumption above and underflows the filler size below.
-    static_assert(bytes_before_filler <= TotalSize,
-                  "huge_data expects to be the only size-contributing policy in the pack, and TotalSize to be at "
-                  "least as large as custom_type_state_t plus one word for the remaining policies");
+    static_assert(bytes_before_filler < TotalSize,
+                  "huge_data expects to be the only size-contributing policy in the pack, and TotalSize to be "
+                  "larger than custom_type_state_t plus one word for the remaining policies");
 
     // Whatever the other bases leave over becomes the filler
     std::uint64_t data[(TotalSize - bytes_before_filler) / sizeof(std::uint64_t)]{};

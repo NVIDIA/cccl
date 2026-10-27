@@ -282,7 +282,7 @@ using pair_types =
                  type_pair<std::int64_t, std::int32_t>, // wide key
                  type_pair<std::int16_t, std::int64_t>, // wide value
                  type_pair<std::int32_t, // custom value type -> vsmem
-                           c2h::custom_type_t<c2h::equal_comparable_t, c2h::huge_data<24>::type>>>;
+                           c2h::custom_type_t<c2h::equal_comparable_t, c2h::huge_data<32>::type>>>;
 
 // Run every key/value combination across a range of input-size regimes: both empty, one side empty, single element,
 // very asymmetric, small, medium (a few tiles), and large (many tiles). The sizes are a runtime GENERATE sweep, so they
