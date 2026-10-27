@@ -619,6 +619,8 @@ jobs:
       actions: read
       pull-requests: write
     runs-on: ubuntu-slim
+    outputs:
+      outcome: ${{ steps.compose.outputs.outcome }}
     steps:
       - name: Checkout the SASS scripts
         uses: actions/checkout@v6
@@ -681,12 +683,7 @@ jobs:
 
           python3 ci/sass/render_report.py "${inputs[@]}" --output "${comment_path}"
 
-          cat >> "${comment_path}" <<EOF
-          <!-- sass-diff-GITHUB_SHA:${GITHUB_SHA} -->
-          <!-- sass-diff-GITHUB_RUN_ID:${GITHUB_RUN_ID} -->
-          <!-- sass-diff-GITHUB_RUN_ATTEMPT:${GITHUB_RUN_ATTEMPT} -->
-          <!-- sass-diff-CHECK_RUN_ID:${CHECK_RUN_ID} -->
-          EOF
+          echo "<!-- sass-diff-CHECK_RUN_ID:${CHECK_RUN_ID} -->" >> "${comment_path}"
 
           cat "${comment_path}" >> "${GITHUB_STEP_SUMMARY}"
           echo "SASS outcome: ${outcome}."
@@ -716,18 +713,48 @@ jobs:
           hide: true
           hide_classify: "OUTDATED"
 
+  # Keep the report intact when a comment triggers an approval retry.
+  sass-approval:
+    # sass-diff-approve.yml locates this job by name.
+    name: Require SASS approval
+    if: needs.build-workflow.outputs.sass_enabled == 'true'
+    needs: [build-workflow, sass-results]
+    permissions:
+      actions: read
+    runs-on: ubuntu-slim
+    env:
+      PR_NUMBER: ${{ needs.build-workflow.outputs.pr_number }}
+    steps:
       - name: Require SASS approval
-        if: steps.compose.outputs.outcome == 'CHANGE'
-        run: |
-          echo "::error::SASS changes require approval with /sass diff ok ${GITHUB_SHA}"
-          exit 1
+        if: needs.sass-results.outputs.outcome == 'CHANGE'
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const name = `sass-approval-pr-${process.env.PR_NUMBER}-${context.sha}`;
+            core.info(`Find approval artifact ${name}.`);
+
+            const { data: { artifacts } } = await github.rest.actions.listArtifactsForRepo({
+              ...context.repo,
+              name,
+              per_page: 1,
+            });
+
+            // The mere existence of the artifact is taken as proof that the approval comment was accepted.
+            // We could do further verification here (like checking that the artifact was in fact uploaded
+            // by our workflow) but this seems overly defensive.
+            //
+            // We also don't care whether the artifact has expired or not. An approval given 10 days
+            // ago--so long as the branch didn't change--should still count as an approval today.
+
+            if (artifacts.length === 0) {
+              core.setFailed(`SASS changes require approval with /sass diff ok ${context.sha}`);
+              return;
+            }
+
+            core.info(`Found approval artifact ${artifacts[0].id}.`);
 
   # Check all other job statuses. This job gates branch protection checks.
   ci:
-    # !! Important: do NOT change the name of the
-    # !! job. .github/workflows/sass-diff-approve.yml searches for a job called exactly
-    # !! "CI" to find this one so that it can be rerun after a /sass diff ok comment. You
-    # !! must update the name there if this ever changes.
     name: CI
     # !! Important: This job is used for branch protection checks.
     # !! Need to use always() instead of !cancelled() because skipped jobs count as success
@@ -743,6 +770,7 @@ jobs:
       - dispatch-bench
       - dispatch-sass-diff
       - sass-results
+      - sass-approval
     runs-on: ubuntu-slim
     steps:
       - name: Check results
@@ -776,10 +804,12 @@ jobs:
 
           if [[ "${{ needs.build-workflow.outputs.sass_enabled }}" == "true" ]]; then
             # sass-results can only succeed after dispatch-sass-diff succeeds.
-            check_result "sass-results" "success" "${{needs.sass-results.result}}"
+            check_result "sass-results"  "success" "${{needs.sass-results.result}}"
+            check_result "sass-approval" "success" "${{needs.sass-approval.result}}"
           else
             check_result "dispatch-sass-diff" "skipped" "${{needs.dispatch-sass-diff.result}}"
             check_result "sass-results"       "skipped" "${{needs.sass-results.result}}"
+            check_result "sass-approval"      "skipped" "${{needs.sass-approval.result}}"
           fi
 
           bench_enabled="${{ needs.build-workflow.outputs.bench_enabled }}"

@@ -12,7 +12,6 @@ permissions:
   pull-requests: write
   issues: write
   actions: write
-  checks: write
 
 jobs:
   approve:
@@ -66,6 +65,7 @@ jobs:
                     `Error: @${comment.user.login}, the commit label or link destination is invalid. ` +
                     "Use `/sass diff ok <SHA>` with the full 40-character SHA of the current PR head.",
                 });
+                core.setFailed("The commit label or link destination is invalid.");
                 return;
               }
             } else {
@@ -80,6 +80,7 @@ jobs:
                     "Replace `<SHA>` with the full 40-character SHA of the current PR head.",
                 });
               }
+              core.setFailed("The approval command format is invalid.");
               return;
             }
 
@@ -111,6 +112,7 @@ jobs:
                 issue_number: issue.number,
                 body,
               });
+              core.setFailed("The PR author cannot approve their own SASS changes.");
               return;
             }
 
@@ -152,9 +154,11 @@ jobs:
                 issue_number: context.payload.issue.number,
                 body,
               });
+              core.setFailed("SASS approval requires repository write access.");
             }
 
-      - name: Find the matching SASS comment and approve
+      - name: Find the SASS approval Job
+        id: job
         if: steps.authorization.outputs.authorized == 'true'
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
@@ -162,164 +166,181 @@ jobs:
         with:
           script: |
             const { comment, issue } = context.payload;
-            const number = issue.number;
-            const sha = process.env.SHA;
-            const marker = `<!-- sass-diff-GITHUB_SHA:${sha} -->`;
-            // GraphQL exposes whether a comment is hidden; the REST endpoint does not.
+
+            core.info(`Find CI for PR #${issue.number}, SHA ${process.env.SHA}, command ${comment.id}.`);
+
+            const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
+              ...context.repo,
+              workflow_id: "ci-workflow-pull-request.yml",
+              branch: `pull-request/${issue.number}`,
+              head_sha: process.env.SHA,
+              event: "push",
+              per_page: 100,
+            });
+
+            core.info(`Found ${runs.length} matching CI runs.`);
+
+            const run = runs.sort((a, b) => b.id - a.id)[0];
+
+            if (!run) {
+              core.setFailed("No matching CI run exists.");
+              return;
+            }
+
+            core.info(`List jobs for workflow run ${run.id}: status=${run.status}, conclusion=${run.conclusion}.`);
+
+            const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+              ...context.repo,
+              run_id: run.id,
+              filter: "latest",
+              per_page: 100,
+            });
+
+            // This name must match the approval job in ci-workflow-pull-request.yml.
+            const job = jobs.find((job) => job.name === "Require SASS approval");
+
+            core.info(`Found ${jobs.length} jobs. SASS approval job: ${job?.id ?? "none"}.`);
+            if (job) core.info(`Gate ${job.id}: status=${job.status}, conclusion=${job.conclusion}.`);
+
+            if (!job || job.status !== "completed") {
+              core.info("The SASS approval job is not ready. Ask the reviewer to comment again.");
+
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: issue.number,
+                body:
+                  `Error: @${comment.user.login}, the SASS approval job is not ready. ` +
+                  "Wait for the \"Require SASS approval\" job to finish, then post " +
+                  `\`/sass diff ok ${process.env.SHA}\` again if it fails.`,
+              });
+
+              core.setFailed("The SASS approval job is not ready.");
+              return;
+            }
+
+            if (job.conclusion !== "failure") {
+              core.info("The SASS approval job does not need a rerun.");
+              return;
+            }
+
+            const reportJob = jobs.find((job) => job.name === "Post SASS comparison results");
+            const checkRunId = reportJob.check_run_url.split("/").pop();
+
+            core.setOutput("job_id", job.id);
+            core.setOutput("check_run_id", checkRunId);
+
+      - name: Find the report and record approval
+        id: approval
+        if: steps.job.outputs.job_id != ''
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        env:
+          CHECK_RUN_ID: ${{ steps.job.outputs.check_run_id }}
+          SHA: ${{ steps.request.outputs.sha }}
+        with:
+          script: |
+            const { comment, issue } = context.payload;
+            const checkRunId = process.env.CHECK_RUN_ID;
+            const marker = `<!-- sass-diff-CHECK_RUN_ID:${checkRunId} -->`;
+
+            core.info(`Find report check ${checkRunId} before command ${comment.id}.`);
+
             const query = `
               query($owner: String!, $repo: String!, $number: Int!, $before: String) {
                 repository(owner: $owner, name: $repo) {
                   pullRequest(number: $number) {
-                    comments(last: 1, before: $before) {
-                      nodes {
-                        fullDatabaseId
-                        body
-                        isMinimized
-                      }
-                      pageInfo {
-                        hasPreviousPage
-                        startCursor
-                      }
+                    comments(last: 100, before: $before) {
+                      nodes { fullDatabaseId body isMinimized }
+                      pageInfo { hasPreviousPage startCursor }
                     }
                   }
                 }
               }
             `;
+
             let before = null;
             let report;
 
-            core.info(`Search PR #${number} for a SASS report for SHA ${sha} before command ${comment.id}.`);
-
-            while (true) {
+            while (!report) {
               const { repository } = await github.graphql(query, {
                 ...context.repo,
-                number,
+                number: issue.number,
                 before,
               });
 
               const comments = repository.pullRequest.comments;
-              report = comments.nodes[0];
-              core.debug(`Inspect comment ${report?.fullDatabaseId ?? "none"}; hidden=${report?.isMinimized ?? "unknown"}.`);
-              // An earlier command cannot approve a later report.
-              if (
-                report &&
-                BigInt(report.fullDatabaseId) < BigInt(comment.id) &&
-                report.body.split(/\r?\n/).includes(marker)
-              ) {
-                core.info(`Matching SASS report: comment ${report.fullDatabaseId}.`);
-                // We have found a report, but it has been minimized (marked hidden).
-                // The only scenario in which this could happen is if the user has manually
-                // hidden the previous report, and then launched a new pipeline and tried to
-                // /sass diff ok before the new pipeline finished. We should not honor this.
-                if (report.isMinimized) {
-                  core.info("Ignore approval: the matching SASS report is hidden.");
-                  return;
-                }
-                break;
-              }
-              if (!comments.pageInfo.hasPreviousPage) {
-                // Didn't find a comment, so nothing to do. Likely the user has tried
-                // to /sass diff ok before a SASS diff has been posted.
-                core.info("Ignore approval: no matching SASS report precedes the command.");
-                return;
-              }
+              core.info(`Read ${comments.nodes.length} comments; earlier comments=${comments.pageInfo.hasPreviousPage}.`);
+
+              report = comments.nodes.reverse().find((entry) =>
+                BigInt(entry.fullDatabaseId) < BigInt(comment.id) &&
+                entry.body.split(/\r?\n/).includes(marker)
+              );
+
+              if (report || !comments.pageInfo.hasPreviousPage) break;
               before = comments.pageInfo.startCursor;
             }
 
-            core.info(`Read workflow and check identifiers from report ${report.fullDatabaseId}.`);
-            const run_id = Number(report.body.match(/^<!-- sass-diff-GITHUB_RUN_ID:(\d+) -->$/m)[1]);
-            const attempt = Number(report.body.match(/^<!-- sass-diff-GITHUB_RUN_ATTEMPT:(\d+) -->$/m)[1]);
-            const check_run_id = Number(report.body.match(/^<!-- sass-diff-CHECK_RUN_ID:(\d+) -->$/m)[1]);
-            core.info(`Report identifies workflow run ${run_id}, attempt ${attempt}, check ${check_run_id}.`);
-
-            // Read the check itself because an earlier approval can already have changed its conclusion.
-            //
-            // This can happen if a user posts 2 /sass diff ok comments in a row
-            const { data: check } = await github.rest.checks.get({
-              ...context.repo,
-              check_run_id,
-            });
-            core.info(`Check ${check_run_id}: status=${check.status}, conclusion=${check.conclusion}.`);
-            // Allow another command to retry CI recovery after the check update succeeds.
-            const alreadyApproved = check.conclusion === "success";
-            if (
-              check.status !== "completed" ||
-              (check.conclusion !== "failure" && !alreadyApproved)
-            ) {
-              core.info("Ignore approval: the check must be completed with a failure or success conclusion.");
-              return;
-            }
-
-            core.info(`List jobs for workflow run ${run_id}, attempt ${attempt}.`);
-            const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {
-              ...context.repo,
-              run_id,
-              attempt_number: attempt,
-              per_page: 100,
-            });
-            const aggregate = jobs.find((job) => job.check_run_url === check.url);
-            core.info(`Found ${jobs.length} jobs. Matching SASS job: ${aggregate?.id ?? "none"}.`);
-
-            // Only the approval gate is overridable. Build, reporting, and cleanup failures must remain failures.
-            const failures = aggregate.steps.filter(
-              (step) => step.conclusion !== "success" && step.conclusion !== "skipped"
-            );
-            core.info(`Steps without success or skipped conclusions: ${JSON.stringify(failures.map(({ name, conclusion }) => ({ name, conclusion })))}.`);
-            if (
-              failures.length !== 1 ||
-              failures[0].name !== "Require SASS approval" ||
-              failures[0].conclusion !== "failure"
-            ) {
-              core.info("Ignore approval: the approval gate must be the only failed step, with all other steps successful or skipped.");
-              return;
-            }
-
-            await github.rest.checks.update({
-              ...context.repo,
-              check_run_id,
-              conclusion: "success",
-              output: {
-                title: "SASS changes approved",
-                summary: `Approved by @${comment.user.login}: ${comment.html_url}`,
-              },
-            });
-            core.info(`Check ${check_run_id} now has a success conclusion.`);
-
-            // We now need to rerun the "CI" job so that the updated status result ends up in a
-            // successful CI.
-            core.info(`Refresh jobs for workflow run ${run_id}, attempt ${attempt}, to locate CI.`);
-            const updatedJobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {
-              ...context.repo,
-              run_id,
-              attempt_number: attempt,
-              per_page: 100,
-            });
-
-            // Unfortunately github provides no stable way of mapping the yaml key to
-            // the job ID, so we need to do a named search.
-            const ci = updatedJobs.find((job) => job.name === "CI");
-            if (!ci) {
-              core.error(`No CI job exists among ${updatedJobs.length} jobs for run ${run_id}, attempt ${attempt}.`);
-              throw new Error(
-                `Failed to find "CI" job in workflow run ${run_id}, attempt ${attempt}. ` +
-                "This is a bug in CI itself"
-              );
-            }
-
-            core.info(`CI job ${ci.id}: status=${ci.status}, conclusion=${ci.conclusion}.`);
-            if (ci.status === "completed" && ci.conclusion === "failure") {
-              await github.rest.actions.reRunJobForWorkflowRun({
+            if (!report || report.isMinimized) {
+              await github.rest.issues.createComment({
                 ...context.repo,
-                job_id: ci.id,
+                issue_number: issue.number,
+                body:
+                  `Error: @${comment.user.login}, no visible matching SASS report precedes your approval command. ` +
+                  "Review the current SASS report, make sure it is visible, then post " +
+                  `\`/sass diff ok ${process.env.SHA}\` again.`,
               });
-              core.info(`GitHub accepts the rerun request for CI job ${ci.id}.`);
-            } else {
-              core.info("Skip CI rerun: the job is not completed with a failure conclusion.");
+
+              core.setFailed("No visible matching report precedes the approval command.");
+              return;
             }
+
+            core.info(`Matching SASS report: comment ${report.fullDatabaseId}, check ${checkRunId}.`);
+
+            const fs = require("fs");
+            fs.writeFileSync(`${process.env.RUNNER_TEMP}/sass-approval`, "");
+            core.setOutput("accepted", true);
+            core.info(`Recorded approval by @${comment.user.login} for report ${report.fullDatabaseId}.`);
+
+      # Upload before the rerun so the job can read the validated approval immediately.
+      - name: Upload approval
+        if: steps.approval.outputs.accepted == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sass-approval-pr-${{ github.event.issue.number }}-${{ steps.request.outputs.sha }}
+          path: ${{ runner.temp }}/sass-approval
+          if-no-files-found: error
+          retention-days: 5
+
+      - name: Rerun the SASS approval job
+        if: steps.approval.outputs.accepted == 'true'
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        env:
+          JOB_ID: ${{ steps.job.outputs.job_id }}
+        with:
+          script: |
+            const { comment } = context.payload;
+            const job_id = Number(process.env.JOB_ID);
+
+            // GitHub also reruns dependent jobs, including the CI branch protection job.
+            core.info(`Request a rerun of SASS approval job ${job_id} and its dependent jobs.`);
+
+            await github.rest.actions.reRunJobForWorkflowRun({
+              ...context.repo,
+              job_id,
+            });
+
+            core.info(`Requested SASS approval and CI reruns for comment ${comment.id}.`);
+
+      - name: Acknowledge successful command
+        if: success()
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const { comment } = context.payload;
 
             await github.rest.reactions.createForIssueComment({
               ...context.repo,
               comment_id: comment.id,
               content: "+1",
             });
-            core.info(`Approval processing is complete for PR #${number}, SHA ${sha}, check ${check_run_id}.`);
+
+            core.info(`Acknowledged command ${comment.id}.`);
