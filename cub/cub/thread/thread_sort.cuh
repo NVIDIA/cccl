@@ -35,8 +35,14 @@ inline constexpr bool sort_unroll_default = true;
 // Unroll count for the sorting loops. nvcc does not always fully unroll a loop with `#pragma unroll N`, even if N
 // covers the trip count (e.g. N == ItemsPerThread), which leads to local memory spills for larger ItemsPerThread. An
 // unroll count the loop cannot reach behaves like a full unroll.
+#if !_CCCL_DEVICE_COMPILATION() && _CCCL_COMPILER(GCC, >=, 8)
+// #pragma GCC unroll supports values up to 65534
+template <bool Unroll>
+inline constexpr int sort_unroll_count = Unroll ? 65534 : 1;
+#else // ^^^ host GCC ^^^ / vvv other compilers vvv
 template <bool Unroll>
 inline constexpr int sort_unroll_count = Unroll ? ::cuda::std::numeric_limits<int>::max() : 1;
+#endif // ^^^ other compilers ^^^
 
 template <typename KeyT, typename ValueT, typename CompareOp>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
