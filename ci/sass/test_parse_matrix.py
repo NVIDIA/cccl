@@ -158,5 +158,12 @@ def test_projects_without_an_entry_are_ignored() -> None:
     assert [row["id"] for row in rows] == ["thrust-benchmarks"]
 
 
+@pytest.mark.parametrize("matrix", [{}, {"sass": {}}])
+def test_missing_sass_configuration_contributes_no_jobs(tmp_path, matrix) -> None:
+    path = tmp_path / "matrix.yaml"
+    path.write_text(yaml.safe_dump(matrix))
+    assert parse_matrix(path, Workflow.PULL_REQUEST, ["cub"]) == {"include": []}
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

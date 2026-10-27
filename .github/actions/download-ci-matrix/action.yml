@@ -1,0 +1,107 @@
+name: "Download CI Matrix Files"
+description: >
+  Download CI matrix files from a repository profile, an explicit ref and path,
+  or the default configuration.
+
+inputs:
+  matrix_ref:
+    description: >
+      Commit SHA or ref in this repo containing the CI matrix.
+      Setting matrix_ref overrides ci_profile.
+    default: ""
+  matrix_path:
+    description: >
+      Path to the CI matrix file, relative to the repository root.
+      Setting matrix_path overrides ci_profile.
+    default: ""
+  ci_profile:
+    description: >
+      Profile to select from the CI_MATRICES repository variable.
+      If set, the CI_MATRICES repository variable is checked.
+      CI_MATRICES contains a JSON object of the form:
+        {
+          "profile1": {
+            "name1": "path1@ref1",
+            ...
+          },
+          ...
+          "profileN": {
+            ...
+          }
+        }
+    default: ""
+
+  ci_matrices:
+    description: "JSON matrix definitions from the CI_MATRICES repository variable."
+    default: ""
+
+outputs:
+  matrix_files:
+    description: "Space separated list of paths to the downloaded CI matrix files."
+    value: ${{ steps.download.outputs.matrix_files }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Download CI matrices
+      id: download
+      shell: bash --noprofile --norc -euo pipefail {0}
+      env:
+        GH_TOKEN: ${{ github.token }}
+        INPUT_MATRIX_REF: ${{ inputs.matrix_ref }}
+        INPUT_MATRIX_PATH: ${{ inputs.matrix_path }}
+        INPUT_CI_PROFILE: ${{ inputs.ci_profile }}
+        CI_MATRICES: ${{ inputs.ci_matrices }}
+      run: |
+        default_matrix_ref="${GITHUB_SHA}"
+        default_matrix_path="ci/matrix.yaml"
+
+        echo "::group::Matrix selection"
+        # Each entry is "name ref path"; the path is last so it may contain spaces.
+        matrices=()
+
+        # Explicit matrix inputs take precedence over repository profile selection.
+        if [[ -n "${INPUT_MATRIX_REF}${INPUT_MATRIX_PATH}" ]]; then
+          echo "Using explicit matrix inputs"
+          ref="${INPUT_MATRIX_REF:-${default_matrix_ref}}"
+          path="${INPUT_MATRIX_PATH:-${default_matrix_path}}"
+          matrices=("manual ${ref} ${path}")
+        elif [[ -n "${INPUT_CI_PROFILE}" && -n "${CI_MATRICES}" ]]; then
+          echo "Extracting CI_MATRICES['${INPUT_CI_PROFILE}'] entries"
+          mapfile -t matrices < <(
+            "${GITHUB_ACTION_PATH}/resolve-matrices.py" \
+              --profile="${INPUT_CI_PROFILE}" \
+              --default-ref="${default_matrix_ref}" \
+              --default-path="${default_matrix_path}" \
+              --ci-matrices="${CI_MATRICES}"
+          )
+          # set -e ignores process substitution failures, so check the parser's exit status.
+          wait "$!"
+        fi
+        # Use a single default matrix when the selection is empty.
+        if [[ ${#matrices[@]} -eq 0 ]]; then
+          echo "Falling back to default matrix file"
+          matrices=("default ${default_matrix_ref} ${default_matrix_path}")
+        fi
+        echo "::endgroup::"
+
+        matrix_files=()
+
+        # Download each resolved matrix directly into the output directory.
+        echo "::group::Downloading matrix files"
+        for matrix in "${matrices[@]}"; do
+          read -r name ref path <<< "${matrix}"
+          matrix_file="workflow/${name}/matrix.yaml"
+          echo "${path} @ ${ref} -> ${matrix_file}"
+
+          mkdir -p "$(dirname "${matrix_file}")"
+          gh api --method GET \
+            --header "Accept: application/vnd.github.raw+json" \
+            --raw-field "ref=${ref}" \
+            "repos/${GITHUB_REPOSITORY}/contents/${path}" > "${matrix_file}"
+          matrix_files+=("${matrix_file}")
+        done
+        echo "::endgroup::"
+
+        # Publish the complete list only after all downloads succeed.
+        echo "matrix_files=${matrix_files[*]}" >> "${GITHUB_OUTPUT}"

@@ -65,11 +65,18 @@ The same key may be used for both.
 Building the job matrix
 -----------------------
 
-``ci/matrix.yaml`` is the authoritative matrix definition, described in detail at
+``ci/matrix.yaml`` is the default matrix definition, described in detail at
 :ref:`infra-ci-matrix-yaml`. The ``build-workflow`` action
-(``.github/actions/workflow-build/``) reads it and produces the concrete job list for
-the run. The action selects a workflow key by trigger: ``pull_request`` for PRs,
-``nightly`` and ``weekly`` for scheduled runs.
+(``.github/actions/workflow-build/``) reads each selected matrix independently and
+combines the resulting jobs for the run. The workflow key is ``pull_request`` for PRs and
+``nightly`` or ``weekly`` for scheduled runs. Custom runs select one or more
+workflow keys with the ``workflows`` input, which defaults to ``nightly``.
+
+PR, nightly, and weekly runs can select multiple matrix files through the
+``CI_MATRICES`` repository variable. Manual runs can select a different matrix ref
+and path within the same repository. See :ref:`infra-ci-matrix-selection` for the
+configuration and examples. These settings select the matrix configuration; the
+workflow ref selects the code under test.
 
 Before expansion, ``ci/inspect_changes.py`` compares the PR against its merge base and
 reports which projects changed, the mechanism covered at
@@ -78,7 +85,7 @@ changed projects and pulls reduced ``pull_request_lite`` entries for projects on
 affected through a dependency. A change anywhere in CCCL infrastructure marks every
 project dirty and runs the full matrix. The expansion mechanics — dependency
 propagation, tag defaults, list explosion, ``job_map`` — are in
-``ci/matrix.yaml``'s ``tags``, ``jobs``, and ``projects`` sections and the
+each matrix file's ``tags``, ``jobs``, and ``projects`` sections and the
 ``build-workflow.py`` action.
 
 Expansion produces ``workflow.json``: named groups (for example, "CUB GCC"), each
@@ -130,11 +137,12 @@ and will block merging until the tree is restored to a mergeable state.
 Override and skip enforcement
 -----------------------------
 
-A non-empty ``workflows.override`` in ``ci/matrix.yaml`` replaces the ``pull_request``
-matrix entirely, detailed at :ref:`infra-ci-override-matrix`. Use it to run a subset of jobs
-when a full run would be unnecessary / wasteful during iteration.
-The override deliberately blocks merge: the full suite must run before any PR lands,
-so the override must be emptied and re-pushed before acceptance testing.
+A non-empty ``workflows.override`` replaces the ``pull_request`` entries in that
+matrix file, detailed at :ref:`infra-ci-override-matrix`. Each selected file applies
+its own override independently. Use overrides to run a subset of jobs during iteration.
+An active override in any selected file blocks merging: the full suite must run
+before any PR lands, so all active overrides must be emptied and re-pushed before
+acceptance testing.
 
 Skip tags in the last commit message on the branch, documented at :ref:`infra-ci-skip-tags`, drop job
 groups for the next run. They also block merge while present, forcing a clean final run:
