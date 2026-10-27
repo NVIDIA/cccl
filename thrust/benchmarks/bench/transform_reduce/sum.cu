@@ -12,7 +12,7 @@ struct square_t
 {
   __host__ __device__ T operator()(const T& x) const
   {
-    return x * x;
+    return x * x * x;
   }
 };
 
