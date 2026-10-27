@@ -41,19 +41,27 @@ compile_time:
           top: 15
           threshold: 0.2
 
-# Compares the SASS of the CUB benchmarks before and after the change in a PR, and tells
-# the author to run the benchmarks when the generated code changed.
+# Compares the SASS of the benchmarks before and after the change in a PR, and tells the
+# author to run the benchmarks when the generated code changed.
 #
-# We should almost always run this on latest CTK and compiler since that compiles the most
+# We should almost always run these on latest CTK and compiler since that compiles the most
 # amount of arches.
 sass:
   pull_request:
     - id: cub-benchmarks
+      project: cub
       ctk: '13.X'
       cxx: 'gcc13'
       preset: cub-benchmark
       archs: all-major-cccl
       target_filters: ["^cub\\.bench\\."]
+    - id: thrust-benchmarks
+      project: thrust
+      ctk: '13.X'
+      cxx: 'gcc13'
+      preset: thrust-benchmark
+      archs: all-major-cccl
+      target_filters: ["^thrust\\.bench\\."]
 
 workflows:
   # If any jobs appear here, they will be executed instead of `pull_request' for PRs.
@@ -80,6 +88,11 @@ workflows:
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
     - {jobs: ['compute_sanitizer'], project: 'cub', std: 'max', gpu: 'rtxpro6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
+
+  pull_request_fork:
+    - {jobs: ['build'],                     project: ['libcudacxx', 'thrust', 'cudax'], std: 'max',  cxx: ['gcc', 'clang', 'msvc']}
+    - {jobs: ['build_nolid', 'build_lid0'], project: 'cub',                             std: 'max',  cxx: ['gcc', 'clang', 'msvc']}
+    - {jobs: ['test_headers'],              project: 'python', py_version: '3.14',      ctk: '13.X', cxx: ['gcc13', 'msvc2022']}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:

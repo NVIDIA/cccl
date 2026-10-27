@@ -43,6 +43,7 @@ function(_cccl_create_catalog_generator)
       "${generate_target}"
       PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../
         ${CLANG_INCLUDE_DIRS}
         ${LLVM_INCLUDE_DIRS}
     )

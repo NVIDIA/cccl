@@ -68,6 +68,8 @@ void run(int NTASKS, int ms)
   ctx.finalize();
 
   [[maybe_unused]] float elapsed;
+  // finalize() does not wait for work recorded in a stream returned by fence().
+  cuda_safe_call(cudaEventSynchronize(stop));
   cuda_safe_call(cudaEventElapsedTime(&elapsed, start, stop));
 
   [[maybe_unused]] const float expected = 1.0f * static_cast<float>(NTASKS) * static_cast<float>(ms);
