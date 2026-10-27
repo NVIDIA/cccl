@@ -110,13 +110,14 @@ jobs:
 
           echo "::add-mask::$SCCACHE_DIST_AUTH_TOKEN"
 
+          # Trace actual NVCC compilations, with bounded local parallelism instead of sccache.
           .devcontainer/launch.sh \
             --docker \
             --cuda 13.4 \
             --host gcc14 \
             --cuda-ext \
             --env "AWS_ROLE_ARN=" \
-            --env "PARALLEL_LEVEL=$(ulimit -Hn)" \
+            --env "PARALLEL_LEVEL=$(nproc)" \
             --env "CCCL_TAG=${CCCL_TAG}" \
             --env "CCCL_VERSION=${CCCL_VERSION}" \
             --env "GITHUB_SHA=$GITHUB_SHA" \
@@ -125,8 +126,21 @@ jobs:
             --env "SCCACHE_DIST_URL=$SCCACHE_DIST_URL" \
             --env "SCCACHE_DIST_AUTH_TYPE=token" \
             --env "SCCACHE_DIST_AUTH_TOKEN=$SCCACHE_DIST_AUTH_TOKEN" \
+            --env "DISABLE_SCCACHE=1" \
+            --env "CMAKE_CUDA_COMPILER_LAUNCHER=" \
+            --env "NVCC_APPEND_FLAGS=${NVCC_APPEND_FLAGS:+${NVCC_APPEND_FLAGS} }--fdevice-time-trace=-" \
+            --env "USE_CCACHE=OFF" \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
             -- /ci.sh
+
+      - name: Upload compile-time traces
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytorch-compile-time-traces
+          path: build/**/*.o.json
+          if-no-files-found: error
+          retention-days: 90
 
   notify-failure:
     name: Notify Slack of PyTorch failure

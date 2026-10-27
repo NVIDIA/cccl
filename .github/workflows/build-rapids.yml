@@ -137,7 +137,7 @@ jobs:
             _apply_manifest_modifications;
             for lib in ${RAPIDS_LIBS}; do
               sccache -z
-              if ! configure-${lib}-cpp || ! build-${lib}-cpp -j0; then
+              if ! configure-${lib}-cpp || ! build-${lib}-cpp -j"${PARALLEL_LEVEL:-0}"; then
                 failures+=("${lib}")
                 # Exit with error if any failures occurred
                 exit 1
@@ -168,6 +168,8 @@ jobs:
           chmod 0600 .aws/credentials
           chmod 0664 .aws/config
 
+          # Trace actual NVCC compilations, with bounded local parallelism instead of sccache.
+          # Serialize device images to avoid CUDA 13.3 time-trace temporary-file races.
           .devcontainer/launch.sh \
             --docker \
             --cuda ${{matrix.cuda}} \
@@ -191,8 +193,22 @@ jobs:
               | jq -r '.value'
               )" https://token.rapids.nvidia.com/gh/token/exchange \
             | jq -r '.token')" \
+            --env "DISABLE_SCCACHE=1" \
+            --env "CMAKE_CUDA_COMPILER_LAUNCHER=" \
+            --env "NVCC_APPEND_FLAGS=${NVCC_APPEND_FLAGS:+${NVCC_APPEND_FLAGS} }--fdevice-time-trace=- --threads=1" \
+            --env "PARALLEL_LEVEL=$(nproc)" \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
             -- ./ci/rapids/rapids-entrypoint.sh /ci.sh
+
+      - name: Upload compile-time traces
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapids-cuda${{ matrix.cuda }}-${{ strategy.job-index }}-compile-time-traces
+          path: ci/rapids/.repos/**/*.o.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
 
   notify-failure:
     name: Notify Slack of RAPIDS failure
