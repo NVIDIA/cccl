@@ -52,15 +52,15 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <bool _IsMax>
 [[nodiscard]] _CCCL_API constexpr double __fp64_fmax_fmin_int(double __x, double __y) noexcept
 {
-  constexpr auto __quiet_nan = uint64_t{0x7FF8'0000'0000'0000}; // fixed quiet NaN
-  const auto __x_bits        = ::cuda::std::__fp_get_storage(__x);
-  const auto __y_bits        = ::cuda::std::__fp_get_storage(__y);
-  const bool __x_nan         = ::cuda::std::isnan(__x);
-  const bool __y_nan         = ::cuda::std::isnan(__y);
+  const auto __x_bits = ::cuda::std::__fp_get_storage(__x);
+  const auto __y_bits = ::cuda::std::__fp_get_storage(__y);
+  const bool __x_nan  = ::cuda::std::isnan(__x);
+  const bool __y_nan  = ::cuda::std::isnan(__y);
   const bool __x_lt_y = ::cuda::std::__fp64_to_total_order_int(__x) < ::cuda::std::__fp64_to_total_order_int(__y);
   const bool __pick_y = __x_nan ? !__y_nan : (!__y_nan && __x_lt_y == _IsMax);
   const auto __result = __pick_y ? __y_bits : __x_bits;
-  return ::cuda::std::__fp_from_storage<double>((__x_nan && __y_nan) ? __quiet_nan : __result);
+  return ::cuda::std::__fp_from_storage<double>(
+    (__x_nan && __y_nan) ? ::cuda::std::__fp_get_storage(::cuda::std::numeric_limits<double>::quiet_NaN()) : __result);
 }
 
 /***********************************************************************************************************************
