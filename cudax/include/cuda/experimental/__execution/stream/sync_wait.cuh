@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/type_list_operations.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/experimental/__execution/cpos.cuh>

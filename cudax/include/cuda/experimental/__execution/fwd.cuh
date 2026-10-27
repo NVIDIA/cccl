@@ -28,7 +28,6 @@
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/remove_reference.h>
-#include <cuda/std/__type_traits/type_list.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/exception.cuh>
