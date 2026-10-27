@@ -8,7 +8,8 @@ on:
     types: [created]
 
 permissions:
-  pull-requests: read
+  # Write perms needed to post reactions and comments
+  pull-requests: write
   issues: write
   actions: write
   checks: write
