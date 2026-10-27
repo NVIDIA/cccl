@@ -320,10 +320,8 @@ private:
 
   template <class _FromElem>
   struct _CheckArrayPointerConversion<_FromElem*>
-      : integral_constant<
-          bool,
-          is_same_v<_FromElem*, pointer>
-            || (is_same_v<pointer, element_type*> && is_convertible_v<_FromElem (*)[], element_type (*)[]>)>
+      : bool_constant<is_same_v<_FromElem*, pointer>
+                      || (is_same_v<pointer, element_type*> && is_convertible_v<_FromElem (*)[], element_type (*)[]>)>
   {};
 
   using _DeleterSFINAE = __unique_ptr_deleter_sfinae<_Dp>;

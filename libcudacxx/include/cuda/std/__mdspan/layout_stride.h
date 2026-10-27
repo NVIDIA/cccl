@@ -450,7 +450,7 @@ public:
     }
     else
     {
-      return __op_index(__strides(), ::cuda::std::make_index_sequence<sizeof...(_Indices)>(), __idx...);
+      return __op_index(__strides(), ::cuda::std::index_sequence_for<_Indices...>(), __idx...);
     }
   }
 
