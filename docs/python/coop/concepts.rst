@@ -176,7 +176,7 @@ option does not assert alignment of source or destination arrays passed to
 Load or Store.
 
 Directly constructed payload slots start uninitialized. A full Load fills
-every slot. In either Load form, a partial Load leaves invalid slots
+every slot. In every Load form, a partial Load leaves invalid slots
 unspecified unless you pass ``oob_default``. Initialize those slots after
 the Load or supply a default
 before reading them. :class:`cuda.coop.ThreadDataLike` names the shared
@@ -219,15 +219,19 @@ The signatures are:
        temp_storage=None,
    ) -> None
 
-Supply exactly one of ``output`` or ``items_per_thread``. With a positive
-compile-time ``items_per_thread``, Load creates and returns a payload, even
-for a count of one. With ``output``, it populates that payload and returns
-``None``. ``items_per_thread`` and ``alignment`` are keyword-only. The third
-positional argument is always an output payload, so
-``coop.load(group, source, 4)`` is invalid. A non-``None`` ``alignment`` is
-valid only with ``items_per_thread``; set an existing output's alignment
-when constructing it instead. The count and source-derived dtype do not imply
-that a partial Load initialized its invalid slots.
+With no ``output``, a positive compile-time ``items_per_thread`` creates
+and returns a payload, even for a count of one. For an existing per-thread
+payload, pass ``output`` and omit the count. For a shared array, pass both
+``output`` and ``items_per_thread=N``; physical block thread ``r`` writes
+``output[r*N:(r+1)*N]``. Both output forms return ``None``. See the
+:ref:`shared-memory rules and examples <coop-shared-load-store>` for capacity,
+layout, and synchronization requirements.
+
+``items_per_thread`` and ``alignment`` are keyword-only. The third positional
+argument is always a destination, so ``coop.load(group, source, 4)`` is invalid.
+A non-``None`` ``alignment`` requires returning Load; configure an existing
+destination's alignment when allocating it. The count and source-derived
+dtype do not imply that a partial Load initialized its invalid slots.
 
 ``valid_items`` counts the valid prefix of the selected group tile, not the
 number of valid items per thread. A Warp-group tile contains

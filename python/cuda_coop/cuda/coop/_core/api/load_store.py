@@ -19,6 +19,7 @@ from cuda.coop._typing import (
     IntegerValue,
     ValidItems,
     WarpLoadStoreAlgorithm,
+    WritableArrayLike,
     _CommonNumericT,
 )
 
@@ -40,7 +41,7 @@ from .thread_group import BlockGroup, WarpGroup
 def load(
     group: BlockGroup | WarpGroup,
     source: object,
-    output: ThreadDataLike[_CommonNumericT] | None = None,
+    output: ThreadDataLike[_CommonNumericT] | WritableArrayLike | None = None,
     /,
     *,
     items_per_thread: int | None = None,
@@ -51,11 +52,13 @@ def load(
     offset: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadDataLike[Any] | None:
-    """Load a group tile and return its per-thread values.
+    """Load a group tile into per-thread values or a shared array.
 
     Prefer ``values = load(group, source, items_per_thread=N)`` for a fresh
-    payload. To populate an existing per-thread payload, pass ``output``
-    instead; that form returns ``None``. Specify exactly one of these forms.
+    payload. ``load(group, source, output)`` fills an existing per-thread
+    payload. ``load(group, source, shared_output, items_per_thread=N)`` fills
+    disjoint per-thread rows of a shared array. Both output forms return
+    ``None``. Synchronize before other threads consume shared output.
 
     Parameters
     ----------
@@ -71,25 +74,31 @@ def load(
         match an existing ``output``. An untyped output infers its dtype from
         this array. The array must contain all elements
         selected by ``offset`` and ``valid_items``.
-    output : cuda.coop.ThreadDataLike, optional
-        Writable :ref:`per-thread payload <coop-thread-data>`.
-        Load populates this payload in place. The group's tile contains
-        ``group_size * items_per_thread`` elements.
-        Omit ``items_per_thread`` and leave ``alignment=None`` when supplying
-        this destination. Use this form to fill a per-thread payload
-        established before this call.
-        This is each thread's payload, not a shared-memory tile. To write
-        returned values into a shared array, use :func:`store`.
+    output : cuda.coop.ThreadDataLike or shared array, optional
+        Existing writable destination. For a per-thread payload, omit
+        ``items_per_thread``; Load obtains the extent from that payload.
+        For a one-dimensional contiguous shared array, supply a positive
+        compile-time ``items_per_thread=N``. The destination must have the
+        source's dtype and capacity for ``block_threads * N`` elements,
+        including for physical or logical warp groups. Physical linear block
+        thread ``r`` writes ``output[r*N:(r+1)*N]``. ``offset`` changes only
+        the source; pass a shared slice or view to select a destination origin.
+        All participating threads must use the same destination view.
+        The shared extent must be known during compilation. Keep live source,
+        output and primitive scratch regions disjoint. Synchronize before
+        threads read one another's output. Leave ``alignment=None`` for
+        either kind of existing destination.
     items_per_thread : int, optional
-        Positive compile-time number of values returned for each thread.
-        Required when ``output`` is omitted. Even a count of one returns a
-        payload with indexed reads and writes, rather than a scalar.
+        Positive compile-time number of values loaded by each thread.
+        Required when ``output`` is omitted or is a shared array; omit it
+        for an existing per-thread payload. With no output, even a count of
+        one returns an indexed payload rather than a scalar.
     alignment : int, optional
         Compile-time minimum alignment in bytes for the returned payload,
         with the same positive power-of-two rules as :func:`ThreadData`.
         ``None`` lets the compiler choose; it may strengthen an explicit
-        request. Requires the ``items_per_thread`` form. For an existing
-        ``output``, specify alignment when constructing that payload instead.
+        request. Requires ``output`` to be omitted. For an existing
+        ``output``, choose alignment when allocating the destination instead.
         This does not assert alignment of ``source`` or change scratch
         alignment, which is configured through ``temp_storage``.
     algorithm : str, optional
@@ -101,6 +110,9 @@ def load(
         blocked order. Both return blocked order. Blocks also support
         ``"warp_transpose"`` and ``"warp_transpose_timesliced"``, which return
         blocked order and require a block size divisible by 32.
+        These ownership rules also apply to shared outputs: blocked rows
+        preserve source order when flattened, whereas ``"striped"`` rows
+        produce a permutation of the source tile.
     valid_items : int or integer scalar, optional
         Number of valid elements in the group's tile, shared by all threads
         in that group. Supply a value between zero and the tile size,
@@ -127,7 +139,7 @@ def load(
     Returns
     -------
     cuda.coop.ThreadDataLike or None
-        A fresh payload when ``items_per_thread`` is supplied. Its dtype and
+        A fresh payload when ``output`` is omitted. Its dtype and
         extent are fixed, but invalid slots are unspecified unless
         ``oob_default`` is given. Reassignment does not update aliases of an
         earlier payload. Returns ``None`` when populating ``output`` in place.
@@ -156,7 +168,8 @@ def load(
     ``cuda.coop.<backend>`` API for backend-specific behavior.
 
     See :ref:`shared-memory Load and Store <coop-shared-load-store>` for
-    staging returned payloads into a shared array and loading them again.
+    a complete direct shared-destination example, ownership rules, and the
+    barrier needed before other threads consume shared values.
     """
 
     raise CoopCompilerContextRequiredError(

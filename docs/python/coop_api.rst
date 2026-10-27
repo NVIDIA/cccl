@@ -80,8 +80,10 @@ Memory operations
 
 Prefer ``values = load(group, source, items_per_thread=N)`` for fresh
 per-thread values. ``load(group, source, output)`` fills an existing
-per-thread payload and returns ``None``. Global and shared arrays can be
-Load sources or Store destinations; a shared tile is not Load's ``output``.
+per-thread payload and returns ``None``. To fill a shared array directly,
+use ``load(group, source, shared, items_per_thread=N)``. This also returns
+``None``; physical block thread ``r`` writes ``shared[r*N:(r+1)*N]``.
+Global and shared arrays can be Load sources or Store destinations.
 See :ref:`memory directions and staging <coop-shared-load-store>`.
 
 .. autofunction:: load

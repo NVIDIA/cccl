@@ -94,9 +94,13 @@ This keeps the primitive call compact while making algorithm and partial-tile
 choices visible. New optional controls can be added without changing the
 operand order.
 
-Load also accepts an existing output as its third positional operand. That
-form returns ``None`` and obtains its extent from the payload. Supply exactly
-one of the output operand or the keyword-only ``items_per_thread`` count.
+Load also accepts an existing output as its third positional operand. For
+an existing per-thread payload, omit ``items_per_thread``; the payload gives
+the extent. For a shared array, supply the keyword-only count to partition
+the destination into disjoint rows: physical block thread ``r`` writes
+``output[r*N:(r+1)*N]``. Both output forms return ``None``. The compiler passes
+each row directly to CUB's output array reference; no intermediate
+``ThreadData`` or separate Store call is required.
 
 ``cuda.compute`` uses keyword-only arguments for device-wide algorithms,
 as described in its :doc:`API conventions <../compute/index>`. Those calls
@@ -921,7 +925,7 @@ choose Load and Store algorithms that agree on that arrangement.
 The output form of Load and all Store calls return ``None``. Load with
 ``items_per_thread`` returns a payload instead. Store follows CUB: transpose
 algorithms may rearrange the input payload in place. Invalid Load slots are
-unspecified unless a default is supplied, for either Load form.
+unspecified unless a default is supplied, for every Load form.
 
 The qualified namespace accepts additional compiler-specific values, such
 as local-array payloads where supported. Type support is still checked by

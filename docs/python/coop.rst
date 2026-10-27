@@ -79,10 +79,11 @@ Prefer returning Load for a fresh ``ThreadData`` payload whose element type
 comes from ``source``.
 You can also construct ``ThreadData`` directly and pass it as Load's output
 when you need to populate an existing payload.
-Load reads a global or shared array into per-thread values; Store writes
-per-thread values into a global or shared array. A shared array is a memory
-operand, distinct from Load's per-thread output. See the executable
-:ref:`shared-memory staging example <coop-shared-load-store>`.
+Load reads global or shared memory. To write directly into shared memory,
+use ``coop.load(group, source, shared, items_per_thread=N)`` and synchronize
+before other threads consume it. Each physical block thread writes its own
+row of ``N`` values. Store writes per-thread values into a global or shared
+array. See the executable :ref:`shared-memory examples <coop-shared-load-store>`.
 
 The :doc:`programming concepts <coop/concepts>` explain participation,
 data layouts, operation results, and temporary storage.

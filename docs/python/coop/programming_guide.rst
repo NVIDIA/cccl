@@ -326,15 +326,16 @@ Inference follows the backend's supported producers and assignments.
 Conflicting type requirements are errors. See :ref:`element-type inference
 <coop-faq-thread-data-dtype>` for cases that need additional information.
 
-Prefer returning Load for fresh values. Load accepts either a positive
+Prefer returning Load for fresh per-thread values. Supply either a positive
 compile-time ``items_per_thread`` count or an existing per-thread output
 payload. The count form returns a new payload, including for
 one item. Pass the count by keyword: ``coop.load(group, source, 4)`` is invalid
-because the third positional argument denotes a writable output payload.
+because the third positional argument denotes a writable destination.
 ``coop.load(group, source, items)`` writes into the supplied payload
 and returns ``None``; omit ``items_per_thread`` and leave ``alignment=None``
 in that form. Its dtype-free constructor and backward inference remain
-supported.
+supported. To fill a shared array, supply both the destination and count,
+as described in :ref:`shared-memory staging <coop-shared-load-store>`.
 
 Transpose Store algorithms may rearrange their input payload in place, as in
 CUB. Copy values before Store if they are needed later. Store returns ``None``.
@@ -373,8 +374,8 @@ Global memory, shared memory, and per-thread values
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Load's source and Store's destination may be in global or shared memory.
-These memory operands describe a group tile. Load's result or existing
-``output`` describes only the values owned by one thread:
+Returning Load produces per-thread values. An existing destination can be a
+per-thread payload or a shared array partitioned into per-thread rows:
 
 .. list-table::
    :header-rows: 1
@@ -388,6 +389,9 @@ These memory operands describe a group tile. Load's result or existing
    * - ``coop.load(group, source, output)``
      - Global or shared memory to existing per-thread storage
      - Updates ``output`` and returns ``None``
+   * - ``coop.load(group, source, shared, items_per_thread=N)``
+     - Global or shared memory to disjoint rows of shared memory
+     - Updates ``shared`` and returns ``None``; synchronize before consumption
    * - ``coop.store(group, destination, values)``
      - Per-thread values to global or shared memory
      - Writes ``destination`` and returns ``None``
@@ -396,11 +400,39 @@ The common API accepts ``ThreadData`` outputs. Numba-qualified Load also
 accepts supported fixed-size, one-dimensional ``cuda.local.array`` outputs;
 see :ref:`the local-array example <coop-programming-api-choice>`. A local
 array belongs to one thread and may be promoted to registers by the compiler.
-A ``cuda.shared.array`` belongs to the block and is not an accepted Load
-output. To populate a shared array, load a payload and Store it into that
-array. The allocation API does not change this distinction.
+For a ``cuda.shared.array`` destination, supply ``items_per_thread=N`` as
+well. The explicit count partitions the block-wide array into disjoint rows;
+physical linear block thread ``r`` writes ``shared[r*N:(r+1)*N]``. This also
+applies to warp and logical-warp groups: pass a destination covering all
+threads in the enclosing block, so sibling groups write disjoint rows.
 
-This common-API example stages a tile into shared memory and reloads it with
+The destination must be one-dimensional and contiguous, have the source's
+dtype, and have a compile-time extent of at least ``block_threads * N``.
+Use the same destination view across participating threads. A supported
+contiguous slice can select its origin. Load's
+``offset`` changes only source addressing. A non-``None`` ``alignment`` is
+reserved for returning Load; an existing array keeps its allocation's
+alignment. Keep live source, output and primitive scratch regions disjoint.
+
+With blocked algorithms, the rows flatten in source order. With ``striped``,
+each thread retains its striped source elements; for a group of ``G`` threads,
+row ``t`` contains elements ``t, t+G, ..., t+(N-1)*G`` from that group's tile.
+Flattening these rows therefore permutes the source. ``valid_items`` still
+counts the source tile's valid prefix, and invalid output slots are
+unspecified unless ``oob_default`` is given.
+
+This example loads directly into shared memory and synchronizes before a
+consumer reads values written by other threads:
+
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_shared_load_output.py
+   :language: python
+   :start-after: # shared-load-example-begin
+   :end-before: # shared-load-example-end
+   :dedent: 4
+
+Returning Load followed by Store remains useful when computation on the
+per-thread values belongs between the memory operations. This example stages
+a tile into shared memory and reloads it with
 striped ownership, so threads read values written by other threads. The block
 barrier makes those writes visible before the reload. ``tile_items`` is a
 host-computed constant captured by the kernel, giving ``cuda.shared.array``

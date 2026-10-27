@@ -200,25 +200,32 @@ Prefer `load(..., items_per_thread=N)` for a fresh `ThreadData` payload with `N`
 items per thread and the source's element type, including when `N` is one.
 Supply a positive compile-time count. To fill an existing payload, use
 `load(group, source, items, ...)`; that form returns `None` and obtains the
-count from `items`. Supply exactly one of an output payload or
-`items_per_thread`.
+count from `items`; omit `items_per_thread` in that form.
 
-Load reads memory into each thread's values. Both global and shared arrays
-can supply the source; Store writes per-thread values into either memory
-space. For example, inside a kernel with an allocated shared array:
+To fill a shared array directly, supply the destination and an explicit count:
 
 ```python
-items = coop.load(block, source, items_per_thread=items_per_thread)
-coop.store(block, shared, items)
+# Inside a kernel; shared has block_threads * N contiguous elements.
+coop.load(block, source, shared, items_per_thread=N)
 cuda.syncthreads()
-reloaded = coop.load(block, shared, items_per_thread=items_per_thread)
+reloaded = coop.load(block, shared, items_per_thread=N)
 ```
 
-The output form fills existing per-thread `ThreadData`, or a supported fixed
-one-dimensional `cuda.local.array` in the Numba-qualified API. It does not
-accept a whole shared array as its output. Synchronize producer/consumer
-phases before threads read one another's writes. See the executable
-[shared-memory staging example](tests/backends/numba_mlir/runtime/test_shared_load_store_example.py).
+Each physical block thread `r` writes `shared[r*N:(r+1)*N]`, including for
+warp groups. The shared array must have the source dtype and a compile-time
+extent large enough for all block threads. `offset` selects the source only;
+a shared slice selects the destination origin. Blocked algorithms preserve
+source order in the flattened output; `striped` preserves each thread's
+striped ownership, so its flattened rows are permuted. Synchronize before
+threads consume one another's writes. This synchronous form returns `None`.
+`alignment=` applies only to returning Load; existing destinations keep
+their allocation's alignment.
+
+Without a count, the output form fills existing per-thread `ThreadData`, or a
+supported fixed one-dimensional `cuda.local.array` in the Numba-qualified API.
+Global and shared arrays can supply Load's source and receive Store's output.
+See the executable
+[shared-memory examples](tests/backends/numba_mlir/runtime/test_shared_load_store_example.py).
 
 Direct `ThreadData(items_per_thread)` construction remains available for
 computed values and caller-owned outputs. Both direct construction and returning

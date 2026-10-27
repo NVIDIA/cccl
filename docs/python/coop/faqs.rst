@@ -69,7 +69,7 @@ Prefer ``values = coop.load(group, source, items_per_thread=N)`` for fresh
 values. It returns a ``ThreadData`` with the source's dtype. Use
 ``coop.load(group, source, output)`` when an existing per-thread object must
 be filled, for example to preserve its lifetime or update a caller's payload.
-The output form returns ``None``; omit ``items_per_thread`` and leave
+This per-thread output form returns ``None``; omit ``items_per_thread`` and leave
 ``alignment=None``. Configure the existing payload's alignment at construction.
 The Numba-qualified API additionally accepts supported fixed one-dimensional
 local arrays, as shown in the :ref:`qualified example
@@ -82,31 +82,40 @@ Direct ``ThreadData`` construction and its dtype inference remain supported.
 Can Load fill a shared array directly?
 --------------------------------------
 
-Currently, Load's ``output`` must be a supported per-thread payload. A
-block-shared array is a memory operand, not such a payload. Use returning
-Load followed by Store to populate it:
+Yes. Pass the shared destination and a positive compile-time item count:
 
 .. code-block:: python
 
-   values = coop.load(block, source, items_per_thread=items_per_thread)
-   coop.store(block, shared, values)
+   # Inside a kernel; shared has block_threads * N contiguous elements.
+   coop.load(block, source, shared, items_per_thread=N)
    cuda.syncthreads()
-   reloaded = coop.load(block, shared, items_per_thread=items_per_thread)
+   reloaded = coop.load(block, shared, items_per_thread=N)
 
-The common API supports shared Load sources and shared Store destinations;
-qualified imports are unnecessary for that behavior. See the complete
-:ref:`shared-memory example <coop-shared-load-store>` for allocation,
-launching, and synchronization.
+The common API supports this form. It returns ``None`` and assigns physical
+block thread ``r`` the destination row ``shared[r*N:(r+1)*N]``. The array must
+be one-dimensional, contiguous, have the source dtype, and have a compile-time
+extent large enough for ``block_threads * N`` elements. Warp and logical-warp
+calls use the same block-wide destination partition, so sibling groups write
+disjoint rows. ``offset`` applies only to the source; use a shared view to
+select a destination origin. Leave ``alignment=None``; the existing
+allocation determines destination alignment.
+
+Blocked algorithms such as ``direct`` and ``transpose`` preserve source order
+in the flattened destination. ``striped`` retains striped per-thread ownership
+and therefore produces a permutation when the rows are flattened. Partial
+loads leave invalid slots unspecified unless ``oob_default`` is supplied.
+See :ref:`the complete examples and ownership rules <coop-shared-load-store>`.
 
 Is Load an asynchronous global-to-shared copy?
 ----------------------------------------------
 
-Neither Load form exposes an asynchronous transfer or a completion token.
-Transpose algorithms may use shared scratch to rearrange values, but their
-result is still per-thread values. This differs from copying a whole buffer
-into shared memory and waiting for that transfer to complete. See CCCL's
-:doc:`Tensor Memory Accelerator guide <../../cccl/tma>` for the C++
-asynchronous-copy facilities and their synchronization contracts.
+No. All Load forms are synchronous calls using ordinary CUB BlockLoad or
+WarpLoad. A shared output does not introduce TMA, a completion token, or a
+16-byte copy-size requirement. Each thread finishes writing its own row;
+callers still synchronize before reading another thread's row. Transpose
+algorithms' internal scratch barriers do not replace that producer/consumer
+barrier. See CCCL's :doc:`Tensor Memory Accelerator guide <../../cccl/tma>`
+for separate C++ asynchronous-copy facilities and their synchronization rules.
 
 .. _coop-faq-thread-data-dtype:
 

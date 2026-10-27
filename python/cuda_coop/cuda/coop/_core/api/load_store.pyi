@@ -15,6 +15,7 @@ from cuda.coop._typing import (
     ThreadDataLike,
     ValidItems,
     WarpLoadStoreAlgorithm,
+    WritableArrayLike,
 )
 
 from .thread_group import BlockGroup, WarpGroup
@@ -88,6 +89,74 @@ def load(
     temp_storage: None = None,
 ) -> ThreadDataLike[Any]:
     """Return a fresh per-thread payload with the source dtype."""
+
+@overload
+def load(
+    group: BlockGroup,
+    source: object,
+    output: WritableArrayLike,
+    /,
+    *,
+    items_per_thread: int,
+    alignment: None = None,
+    algorithm: BlockLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems | None = None,
+    oob_default: None = None,
+    offset: IntegerValue | None = None,
+    temp_storage: TempStorageLike | None = None,
+) -> None:
+    """Fill disjoint per-thread rows of a native shared-memory array."""
+
+@overload
+def load(
+    group: BlockGroup,
+    source: object,
+    output: WritableArrayLike,
+    /,
+    *,
+    items_per_thread: int,
+    alignment: None = None,
+    algorithm: BlockLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems,
+    oob_default: CommonNumericScalar | float,
+    offset: IntegerValue | None = None,
+    temp_storage: TempStorageLike | None = None,
+) -> None:
+    """Fill disjoint per-thread rows of a native shared-memory array."""
+
+@overload
+def load(
+    group: WarpGroup,
+    source: object,
+    output: WritableArrayLike,
+    /,
+    *,
+    items_per_thread: int,
+    alignment: None = None,
+    algorithm: WarpLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems | None = None,
+    oob_default: None = None,
+    offset: IntegerValue | None = None,
+    temp_storage: None = None,
+) -> None:
+    """Fill disjoint per-thread rows of a native shared-memory array."""
+
+@overload
+def load(
+    group: WarpGroup,
+    source: object,
+    output: WritableArrayLike,
+    /,
+    *,
+    items_per_thread: int,
+    alignment: None = None,
+    algorithm: WarpLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems,
+    oob_default: CommonNumericScalar | float,
+    offset: IntegerValue | None = None,
+    temp_storage: None = None,
+) -> None:
+    """Fill disjoint per-thread rows of a native shared-memory array."""
 
 @overload
 def load(

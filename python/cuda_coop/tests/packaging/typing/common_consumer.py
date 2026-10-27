@@ -93,3 +93,23 @@ def check_returning_load(source: object, destination: object) -> None:
     )
     coop.store(block, destination, returned)
     assert_type(coop.load(block, source, returned, alignment=None), None)
+
+
+def check_shared_destination_load(
+    source: object, shared: np.ndarray[Any, np.dtype[np.int32]]
+) -> None:
+    # Address space and capacity are checked by the kernel compiler.
+    block = coop.this_block()
+    warp = coop.this_warp()
+    assert_type(coop.load(block, source, shared, items_per_thread=4), None)
+    assert_type(
+        coop.load(
+            warp,
+            source,
+            shared,
+            items_per_thread=1,
+            valid_items=17,
+            oob_default=np.int32(0),
+        ),
+        None,
+    )
