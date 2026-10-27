@@ -35,6 +35,7 @@ inline constexpr bool sort_unroll_default = true;
 // Unroll count for the sorting loops. nvcc does not always fully unroll a loop with `#pragma unroll N`, even if N
 // covers the trip count (e.g. N == ItemsPerThread), which leads to local memory spills for larger ItemsPerThread. An
 // unroll count the loop cannot reach behaves like a full unroll.
+// See: https://github.com/NVIDIA-dev/cccl_qa_agent_findings/issues/491
 #if !_CCCL_DEVICE_COMPILATION() && _CCCL_COMPILER(GCC, >=, 8)
 // #pragma GCC unroll supports values up to 65534
 template <bool Unroll>
