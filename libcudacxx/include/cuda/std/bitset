@@ -71,12 +71,6 @@ struct __avoid_promotions
     return static_cast<bool>(__data);
   }
 
-  // helper for fill_n
-  _CCCL_API constexpr friend _Int __convert_to_integral(__avoid_promotions __self)
-  {
-    return __self.__data;
-  }
-
 #define _DEFINE_UNARY(__op)                                                                   \
   _CCCL_API constexpr friend __avoid_promotions operator __op(__avoid_promotions __operand)   \
   {                                                                                           \
