@@ -78,7 +78,7 @@ _CCCL_TEMPLATE(class _Fp)
 _CCCL_REQUIRES(is_floating_point_v<_Fp>)
 [[nodiscard]] _CCCL_API constexpr long long __convert_to_integral(_Fp __val) noexcept
 {
-  return __val;
+  return static_cast<long long>(__val);
 }
 
 _CCCL_TEMPLATE(class _Tp)
