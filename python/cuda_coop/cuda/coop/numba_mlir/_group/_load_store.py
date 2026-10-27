@@ -66,9 +66,17 @@ def load(
     ``items_per_thread`` and ``alignment``. This form returns ``None``.
     In this backend, ``output`` may also be a supported fixed-size,
     one-dimensional Numba local array. A directly constructed ``ThreadData``
-    can infer its dtype from the source. A shared array is a group memory
-    operand, not an accepted per-thread output; use :func:`cuda.coop.store`
-    to stage loaded values into shared memory.
+    can infer its dtype from the source.
+
+    To load directly into shared memory, pass a native contiguous shared
+    array as ``output`` together with ``items_per_thread``. Each physical
+    thread writes its own consecutive row of that many elements. The array
+    must have a statically known capacity of at least the enclosing block's
+    thread count times ``items_per_thread``; a contiguous slice selects the
+    destination origin. ``offset`` still selects the source origin. This
+    form returns ``None`` and does not accept ``alignment``. Synchronize
+    before another thread reads the shared result. Guarded loads preserve
+    CUB's unspecified invalid slots when ``oob_default`` is omitted.
 
     See :ref:`per-thread payloads <coop-thread-data>` and
     :ref:`temporary storage <coop-temp-storage>` for allocation rules.

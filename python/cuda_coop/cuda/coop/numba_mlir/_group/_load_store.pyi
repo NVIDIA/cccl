@@ -15,6 +15,7 @@ from ..._typing import (
     ThreadDataLike,
     ValidItems,
     WarpLoadStoreAlgorithm,
+    WritableArrayLike,
 )
 from .._thread_group import BlockGroup, WarpGroup
 
@@ -137,6 +138,66 @@ def load(
     algorithm: WarpLoadStoreAlgorithm = "direct",
     valid_items: ValidItems,
     oob_default: _CommonNumericT | float,
+    offset: IntegerValue | None = None,
+    temp_storage: None = None,
+) -> None: ...
+@overload
+def load(
+    group: BlockGroup,
+    source: object,
+    output: WritableArrayLike,
+    /,
+    *,
+    items_per_thread: int,
+    alignment: None = None,
+    algorithm: BlockLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems | None = None,
+    oob_default: None = None,
+    offset: IntegerValue | None = None,
+    temp_storage: TempStorageLike | None = None,
+) -> None: ...
+@overload
+def load(
+    group: BlockGroup,
+    source: object,
+    output: WritableArrayLike,
+    /,
+    *,
+    items_per_thread: int,
+    alignment: None = None,
+    algorithm: BlockLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems,
+    oob_default: CommonNumericScalar | float,
+    offset: IntegerValue | None = None,
+    temp_storage: TempStorageLike | None = None,
+) -> None: ...
+@overload
+def load(
+    group: WarpGroup,
+    source: object,
+    output: WritableArrayLike,
+    /,
+    *,
+    items_per_thread: int,
+    alignment: None = None,
+    algorithm: WarpLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems | None = None,
+    oob_default: None = None,
+    offset: IntegerValue | None = None,
+    temp_storage: None = None,
+) -> None: ...
+@overload
+def load(
+    group: WarpGroup,
+    source: object,
+    output: WritableArrayLike,
+    /,
+    *,
+    items_per_thread: int,
+    alignment: None = None,
+    algorithm: WarpLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems,
+    oob_default: CommonNumericScalar | float,
     offset: IntegerValue | None = None,
     temp_storage: None = None,
 ) -> None: ...

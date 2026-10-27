@@ -1814,11 +1814,6 @@ class _GroupCallPlanner:
                 count = bound.arguments["items_per_thread"]
                 alignment = bound.arguments["alignment"]
                 if not self._is_none(output):
-                    if not self._is_none(count):
-                        raise TypeError(
-                            "cuda.coop.load accepts either output or "
-                            "items_per_thread, not both"
-                        )
                     if not self._is_none(alignment):
                         raise TypeError(
                             "cuda.coop.load alignment requires "

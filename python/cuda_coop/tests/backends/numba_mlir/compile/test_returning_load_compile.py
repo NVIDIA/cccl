@@ -81,7 +81,7 @@ def test_load_requires_exactly_one_sizing_route(api, with_output):
             api.load(block, source)
 
     message = (
-        "either output or items_per_thread"
+        "output with items_per_thread must be"
         if with_output
         else "requires output"
     )

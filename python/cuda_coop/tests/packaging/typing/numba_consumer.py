@@ -136,3 +136,25 @@ def check_returning_load(source: object, destination: object) -> None:
     )
     coop.store(block, destination, returned)
     assert_type(coop.load(block, source, returned, alignment=None), None)
+
+
+def check_shared_load_destination(
+    source: object, shared: np.ndarray[Any, np.dtype[np.int32]]
+) -> None:
+    """Native shared destinations select the explicit per-thread row size."""
+
+    assert_type(
+        coop.load(coop.this_block(), source, shared, items_per_thread=4),
+        None,
+    )
+    assert_type(
+        coop.load(
+            coop.this_warp(),
+            source,
+            shared,
+            items_per_thread=4,
+            valid_items=125,
+            oob_default=0,
+        ),
+        None,
+    )

@@ -440,12 +440,12 @@ class _LoadStoreRewrite:
             inference.infer_kwarg(
                 "items_per_thread", semantics.items_per_thread
             )
-            inference.infer_kwarg(
-                "items_per_thread",
-                payload_specification.items_per_thread
-                if payload_specification is not None
-                else 1,
-            )
+            if payload_specification is not None:
+                inference.infer_kwarg(
+                    "items_per_thread", payload_specification.items_per_thread
+                )
+            elif inference.op_name == "store":
+                inference.infer_kwarg("items_per_thread", 1)
             inference.infer_kwarg("dtype", dtype)
             if payload_specification is not None and payload_var is not None:
                 # Allocation still needs constructor and alias state. The plan
