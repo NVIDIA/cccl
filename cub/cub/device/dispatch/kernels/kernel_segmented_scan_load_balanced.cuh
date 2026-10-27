@@ -268,6 +268,12 @@ inline constexpr int work_index_tile_items       = work_index_threads * work_ind
 //! @tparam ScanTileStateT
 //!   Tile status interface type
 //!
+//! @param[out] tile_state
+//!   Tile status interface
+//!
+//! @param[in] num_tiles
+//!   The number of tiles
+//!
 template <typename ScanTileStateT>
 _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(work_index_threads) void device_segmented_scan_load_balanced_init_kernel(
   ScanTileStateT tile_state, int num_tiles)
@@ -367,6 +373,33 @@ _CCCL_DEVICE _CCCL_FORCEINLINE bool reaches_maximum(PositionT begin, WorkT size)
 //!
 //! @tparam MainTileStateT
 //!   Tile status interface type of the main kernel
+//!
+//! @param[in] begin_offsets
+//!   Beginning offsets of the input segments
+//!
+//! @param[in] end_offsets
+//!   Ending offsets of the input segments
+//!
+//! @param[in] output_begin_offsets
+//!   Beginning offsets of the output segments, or reuse_input_begin
+//!
+//! @param[in] num_segments
+//!   The number of segments
+//!
+//! @param[out] work_index
+//!   Work index, of num_segments + 2 entries
+//!
+//! @param[in,out] scan_state
+//!   Tile status interface of the work-index scan
+//!
+//! @param[in] scan_tiles
+//!   The number of tiles of the work-index scan
+//!
+//! @param[out] main_state
+//!   Tile status interface of the main kernel
+//!
+//! @param[in] main_tiles
+//!   The number of tiles of the main kernel
 //!
 template <typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
@@ -1482,6 +1515,36 @@ inline constexpr ::cuda::std::size_t load_balanced_kernel_smem_bytes =
 //!
 //! @tparam AddressingT
 //!   Specialization of segment_addressing
+//!
+//! @param[in] d_in
+//!   Input data
+//!
+//! @param[out] d_out
+//!   Output data
+//!
+//! @param[in] work_index
+//!   Work index written by device_segmented_scan_work_index_kernel
+//!
+//! @param[in] num_segments
+//!   The number of segments
+//!
+//! @param[in] scan_op
+//!   Binary scan functor
+//!
+//! @param[in] init_value
+//!   Initial value to seed each segment's exclusive scan
+//!
+//! @param[in] resident_blocks
+//!   The number of blocks of this kernel resident on the device at once
+//!
+//! @param[in] capacity
+//!   The number of blocks launched and of tiles in tile_state; the most blocks that receive work
+//!
+//! @param[in,out] tile_state
+//!   Tile status interface
+//!
+//! @param[in] addressing
+//!   Beginning offsets of the input and output segments
 //!
 template <typename LoadBalancedPolicySelector,
           typename InputIteratorT,

@@ -674,7 +674,7 @@ CUB_TEST("Device segmented scan with schedule properties scans out-of-order segm
     scan_segments(expected, h_out_begins, true, 0);
     c2h::device_vector<int> d_out(num_output);
 
-    // gcc 7 ICEs when a generic lambda captures num_segments implicitly
+    // Explicit capture: gcc 7 can ICE when a generic lambda captures num_segments implicitly
     const auto run = [&, num_segments](const auto& schedule_env) {
       const size_t bytes = schedule_allocation_size<cub::ForceInclusive::No, false>(
         schedule_env,
@@ -709,7 +709,7 @@ CUB_TEST("Device segmented scan with schedule properties scans out-of-order segm
     scan_segments(expected, h_begins, false, init);
     c2h::device_vector<int> d_data(num_input);
 
-    // gcc 7 ICEs when a generic lambda captures num_segments implicitly
+    // Explicit capture: gcc 7 can ICE when a generic lambda captures num_segments implicitly
     const auto run = [&, num_segments](const auto& schedule_env) {
       const size_t bytes = schedule_allocation_size<cub::ForceInclusive::No, true>(
         schedule_env,
@@ -865,7 +865,8 @@ CUB_TEST("Device segmented scan with schedule properties skips runs of empty seg
     }
     c2h::device_vector<int> d_out(num_items);
 
-    const auto run = [&](const auto& schedule_env) {
+    // Explicit capture: gcc 7 can ICE when a generic lambda captures num_segments implicitly
+    const auto run = [&, num_segments](const auto& schedule_env) {
       const size_t bytes = schedule_allocation_size<cub::ForceInclusive::No, true>(
         schedule_env,
         d_in.begin(),
@@ -912,7 +913,8 @@ CUB_TEST("Device segmented scan with schedule properties skips runs of empty seg
     const offset_t* d_out_offsets_it                 = thrust::raw_pointer_cast(d_out_offsets.data());
     c2h::device_vector<int> d_out(num_output);
 
-    const auto run = [&](const auto& schedule_env) {
+    // Explicit capture: gcc 7 can ICE when a generic lambda captures num_segments implicitly
+    const auto run = [&, num_segments](const auto& schedule_env) {
       const size_t bytes = schedule_allocation_size<cub::ForceInclusive::No, false>(
         schedule_env,
         d_in.begin(),
@@ -965,7 +967,8 @@ CUB_TEST("Device segmented scan with schedule properties skips runs of empty seg
     const offset_t* d_in_ends_it                   = thrust::raw_pointer_cast(d_in_ends.data());
     c2h::device_vector<int> d_out(num_items);
 
-    const auto run = [&](const auto& schedule_env) {
+    // Explicit capture: gcc 7 can ICE when a generic lambda captures num_segments implicitly
+    const auto run = [&, num_segments](const auto& schedule_env) {
       const size_t bytes = schedule_allocation_size<cub::ForceInclusive::No, false>(
         schedule_env,
         d_gapped_in.begin(),
@@ -1025,7 +1028,7 @@ CUB_TEST("Device segmented scan with load balancing treats output begins equal t
   const c2h::device_vector<int> d_in = h_in;
   c2h::device_vector<int> d_out(num_items);
 
-  // gcc 7 ICEs when a generic lambda captures num_segments implicitly
+  // Explicit capture: gcc 7 can ICE when a generic lambda captures num_segments implicitly
   const auto run = [&, num_segments](const auto& schedule_env) {
     const size_t bytes_two = schedule_allocation_size<cub::ForceInclusive::No, true>(
       schedule_env,
@@ -1171,7 +1174,7 @@ CUB_TEST("Device segmented scan with schedule properties handles segments that a
   c2h::device_vector<int> d_out(num_output, canary);
   const c2h::host_vector<int> expected(num_output, canary);
 
-  // gcc 7 ICEs when a generic lambda captures num_segments implicitly
+  // Explicit capture: gcc 7 can ICE when a generic lambda captures num_segments implicitly
   const auto run = [&, num_segments](const auto& schedule_env) {
     const size_t sum_bytes = schedule_allocation_size<cub::ForceInclusive::No, false>(
       schedule_env,
@@ -1258,7 +1261,7 @@ CUB_TEST("Device segmented scan with schedule properties writes to a discard ite
   c2h::gen(C2H_SEED(1), d_in, -100, 100);
   const auto d_out = thrust::make_discard_iterator();
 
-  // gcc 7 ICEs when a generic lambda captures num_segments implicitly
+  // Explicit capture: gcc 7 can ICE when a generic lambda captures num_segments implicitly
   const auto run = [&, num_segments](const auto& schedule_env) {
     const size_t sum_bytes = schedule_allocation_size<cub::ForceInclusive::No, true>(
       schedule_env,

@@ -242,7 +242,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_from_env(
 //!
 //! .. versionadded:: 3.6.0
 //! @endrst
-[[nodiscard]] CUB_RUNTIME_FUNCTION inline auto segmented_scan_num_items(::cuda::std::int64_t num_items)
+//!
+//! @param[in] num_items
+//!   Total number of items in all segments
+//!
+//! @return An environment property holding @c num_items
+[[nodiscard]] CUB_RUNTIME_FUNCTION constexpr auto segmented_scan_num_items(::cuda::std::int64_t num_items)
 {
   return ::cuda::std::execution::prop{detail::segmented_scan::get_segmented_scan_num_items_t{}, num_items};
 }
