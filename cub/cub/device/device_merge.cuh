@@ -121,14 +121,8 @@ struct DeviceMerge
     const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMerge::MergeKeys");
-    // offset type is just int64_t
-    using default_policy_selector =
-      detail::merge::policy_selector_from_types<KeyIteratorIn1, NullType*, KeyIteratorIn2, NullType*, int64_t>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage,
-      temp_storage_bytes,
-      env,
-      [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
         return detail::merge::dispatch(
           storage,
           bytes,
@@ -142,7 +136,7 @@ struct DeviceMerge
           static_cast<NullType*>(nullptr),
           compare_op,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
@@ -330,14 +324,8 @@ struct DeviceMerge
     const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMerge::MergePairs");
-    // offset type is just int64_t
-    using default_policy_selector = detail::merge::
-      policy_selector_from_types<KeyIteratorIn1, ValueIteratorIn1, KeyIteratorIn2, ValueIteratorIn2, int64_t>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage,
-      temp_storage_bytes,
-      env,
-      [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
         return detail::merge::dispatch(
           storage,
           bytes,
@@ -351,7 +339,7 @@ struct DeviceMerge
           values_out,
           compare_op,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
