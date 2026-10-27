@@ -216,9 +216,7 @@ TEST_FUNC constexpr bool test(float val)
 // the NaN sign and payload after fabs are implementation-defined on device, only check that the result is a NaN
 TEST_FUNC void test_fp64_nan(float val)
 {
-  // the NaNs are given as bit patterns because numeric_limits cannot express them:
-  // - nvcc quiets signaling NaN constants in device code
-  // - negative NaNs and NaN payloads have no numeric_limits counterpart
+  // the inputs are built at runtime: fabs of a constant sNaN is evaluated at compile time, which quiets it
   const auto runtime               = static_cast<cuda::std::uint64_t>(val);
   const cuda::std::uint64_t nans[] = {
     0x7ff8'0000'0000'0000 * runtime, // +qNaN
@@ -235,11 +233,18 @@ TEST_FUNC void test_fp64_nan(float val)
   }
 }
 
+// -0.0 == 0.0, so the sign bit of fabs(-0.0) has to be checked explicitly
+TEST_FUNC void test_fp64_neg_zero(float val)
+{
+  assert(!cuda::std::signbit(cuda::std::fabs(-0.0 * val)));
+}
+
 int main(int, char**)
 {
   volatile float val = 1.0f;
   test(val);
   test_fp64_nan(val);
+  test_fp64_neg_zero(val);
 #if _CCCL_HAS_CONSTEXPR_BIT_CAST()
   static_assert(test(1.0f));
 #endif // _CCCL_HAS_CONSTEXPR_BIT_CAST()
