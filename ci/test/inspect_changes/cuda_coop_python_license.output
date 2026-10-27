@@ -1,2 +1,2 @@
-FULL_BUILD=cuda_coop_python
+FULL_BUILD=cuda_coop_python cuda_coop_numba cuda_coop_cutlass cuda_coop_coexistence
 LITE_BUILD=

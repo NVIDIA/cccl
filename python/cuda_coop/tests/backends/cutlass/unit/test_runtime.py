@@ -12,12 +12,13 @@ environment object is current; merely loading it does not select a backend.
 
 import importlib.util
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
+from cuda import coop
 from cuda.coop._core.api import _dispatch
-from tests.support.paths import PACKAGE_ROOT
 
 pytestmark = pytest.mark.unit
 
@@ -33,7 +34,7 @@ def compiler_modules(monkeypatch):
     modules = []
     for name in ("_runtime", "_activation"):
         module_name = f"{__package__}.{name}"
-        path = PACKAGE_ROOT / "cuda/coop/cutlass/_compiler" / f"{name}.py"
+        path = Path(coop.__file__).parent / "cutlass/_compiler" / f"{name}.py"
         spec = importlib.util.spec_from_file_location(module_name, path)
         module = importlib.util.module_from_spec(spec)
         monkeypatch.setitem(sys.modules, module_name, module)
