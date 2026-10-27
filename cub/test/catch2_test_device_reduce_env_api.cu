@@ -14,6 +14,7 @@
 #include <cuda/execution>
 #include <cuda/memory_resource>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/type_traits>
 #include <cuda/stream>
 
 #include "catch2_test_memory_resources.h"
@@ -28,6 +29,110 @@ struct custom_stream_env
     return stream;
   }
 };
+
+struct other_query_t
+{};
+
+struct custom_resource_env
+{
+  device_memory_resource resource;
+
+  device_memory_resource query(cuda::mr::get_memory_resource_t) const noexcept
+  {
+    return resource;
+  }
+};
+
+using gpu_to_gpu_requirements = cuda::std::execution::env<cuda::execution::determinism::gpu_to_gpu_t>;
+
+struct custom_requirements_env : custom_stream_env
+{
+  using custom_stream_env::query;
+
+  gpu_to_gpu_requirements query(cuda::execution::__get_requirements_t) const noexcept
+  {
+    return {};
+  }
+};
+
+CUB_TEST("DeviceReduce dispatch preserves unadvertised streams", "[reduce][env]", CUB_SMALL)
+{
+  const cuda::stream_ref expected{cudaStreamPerThread};
+  const auto check = [&](const auto& env) {
+    cudaStream_t observed{};
+    size_t bytes{};
+    const auto algorithm = [&](auto, void*, size_t&, cudaStream_t stream) {
+      observed = stream;
+      return cudaSuccess;
+    };
+    REQUIRE(cub::detail::dispatch_with_env_validation(nullptr, bytes, env, algorithm) == cudaSuccess);
+    REQUIRE(observed == expected.get());
+  };
+
+  const custom_stream_env raw{expected};
+  const cuda::std::execution::env composed{raw};
+  const cuda::std::execution::env mixed{cuda::std::execution::prop{other_query_t{}, 42}, raw};
+  const cuda::std::execution::env nested{mixed};
+  check(raw);
+  check(composed);
+  check(mixed);
+  check(nested);
+  check(cuda::checked_env<other_query_t>(mixed));
+  check(cuda::checked_env<>(raw));
+
+  const auto fallback =
+    cub::detail::query_or<true>(cuda::get_stream, cuda::stream_ref{cudaStream_t{}}, cuda::std::execution::env<>{});
+  REQUIRE(fallback.get() == cudaStream_t{});
+}
+
+CUB_TEST("DeviceReduce dispatch preserves unadvertised resources", "[reduce][env]", CUB_SMALL)
+{
+  size_t bytes_allocated{};
+  size_t bytes_deallocated{};
+  const device_memory_resource expected{cudaStreamPerThread, &bytes_allocated, &bytes_deallocated};
+  const auto check = [&](const auto& env) {
+    const auto resource =
+      cub::detail::query_or<true>(cuda::mr::get_memory_resource, cub::detail::device_memory_resource{}, env);
+    static_assert(cuda::std::is_same_v<cuda::std::remove_cvref_t<decltype(resource)>, device_memory_resource>);
+    REQUIRE(resource == expected);
+  };
+
+  const custom_resource_env raw{expected};
+  const cuda::std::execution::env composed{raw};
+  const cuda::std::execution::env mixed{cuda::stream_ref{cudaStreamPerThread}, raw};
+  const cuda::std::execution::env nested{mixed};
+  check(raw);
+  check(composed);
+  check(mixed);
+  check(nested);
+  check(cuda::checked_env<cuda::get_stream_t>(mixed));
+  check(cuda::checked_env<>(raw));
+}
+
+CUB_TEST("DeviceReduce preserves unadvertised determinism requirements", "[reduce][env]", CUB_SMALL)
+{
+  const auto check = [](const auto& env) {
+    using env_type     = cuda::std::remove_cvref_t<decltype(env)>;
+    using requirements = cuda::std::execution::__detail::
+      __advertised_query_result_or_t<env_type, cuda::execution::__get_requirements_t, cuda::std::execution::env<>>;
+    using determinism =
+      cuda::std::execution::__query_result_or_t<requirements,
+                                                cuda::execution::determinism::__get_determinism_t,
+                                                cuda::execution::determinism::run_to_run_t>;
+    static_assert(cuda::std::is_same_v<determinism, cuda::execution::determinism::gpu_to_gpu_t>);
+  };
+
+  const custom_requirements_env raw{{cuda::stream_ref{cudaStreamPerThread}}};
+  const cuda::std::execution::env composed{raw};
+  const cuda::std::execution::env mixed{cuda::stream_ref{cudaStreamPerThread}, raw};
+  const cuda::std::execution::env nested{mixed};
+  check(raw);
+  check(composed);
+  check(mixed);
+  check(nested);
+  check(cuda::checked_env<cuda::get_stream_t>(mixed));
+  check(cuda::checked_env<>(raw));
+}
 
 CUB_TEST("cub::DeviceReduce::Reduce accepts run_to_run determinism requirements", "[reduce][env]", CUB_SMALL)
 {

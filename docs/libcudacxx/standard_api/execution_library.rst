@@ -49,3 +49,5 @@ Use ``cuda::checked_env<Queries...>(env)`` to explicitly check that ``env`` acce
 expressions. The returned adaptor records that validated set as its advertised query list and
 forwards queries to ``env``. Supplying the metadata through the adaptor also allows it to describe
 types that cannot be modified or to replace an existing advertised query list.
+The adaptor also forwards supported queries that are not in the supplied list; only the advertised
+list is replaced, not the query interface.

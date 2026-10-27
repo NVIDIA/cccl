@@ -30,11 +30,11 @@ namespace detail
 
 //! @brief Invokes a property query or returns a fallback value.
 //!
-//! When @c UseAdvertisedQueries is @c true and @p env exposes discoverable property-key metadata, the
-//! advertised list is authoritative: @p query is invoked only when @p env advertises it with no
-//! additional arguments. Otherwise, selection is based on whether @p query is callable with @p env.
+//! When @c UseAdvertisedQueries is @c true, a query advertised without additional arguments is
+//! invoked directly. Otherwise, the query is invoked if it is callable with @p env, whether or not
+//! it is advertised. The fallback is used only when the query is unavailable.
 //!
-//! @tparam UseAdvertisedQueries Whether to honor an environment's advertised query list.
+//! @tparam UseAdvertisedQueries Whether to require advertised queries to be callable.
 //! @tparam QueryT The query callable type.
 //! @tparam FallbackT The fallback value type.
 //! @tparam EnvT The queried environment or object type.
@@ -45,16 +45,9 @@ namespace detail
 template <bool UseAdvertisedQueries, typename QueryT, typename FallbackT, typename EnvT>
 [[nodiscard]] CUB_RUNTIME_FUNCTION auto query_or([[maybe_unused]] QueryT query, FallbackT&& fallback, const EnvT& env)
 {
-  if constexpr (UseAdvertisedQueries && ::cuda::std::execution::__detail::__has_property_keys<EnvT>)
+  if constexpr (UseAdvertisedQueries && ::cuda::std::execution::__detail::__advertises_query_v<EnvT, QueryT>)
   {
-    if constexpr (::cuda::std::execution::__detail::__advertises_query_v<EnvT, QueryT>)
-    {
-      return query(env);
-    }
-    else
-    {
-      return static_cast<FallbackT&&>(fallback);
-    }
+    return query(env);
   }
   else
   {
@@ -88,12 +81,11 @@ CUB_RUNTIME_FUNCTION void validate_env_or_object()
 //!
 //! This function resolves the stream, memory resource, and tuning environment; queries the
 //! required temporary-storage size; allocates the storage; invokes the algorithm; and then
-//! releases the storage. When @c UseAdvertisedQueries is @c true and @p env exposes discoverable
-//! property-key metadata, the advertised list is authoritative. Otherwise, properties are selected
-//! by testing whether their customization point objects are callable with @p env. Missing or
-//! unselected properties use their defaults. This function does not validate @p env.
+//! releases the storage. When @c UseAdvertisedQueries is @c true, advertised queries are invoked
+//! directly. Unadvertised queries are used when callable with @p env, and unavailable queries use
+//! their defaults. This function does not validate @p env.
 //!
-//! @tparam UseAdvertisedQueries Whether property lookup honors advertised query metadata. Defaults to @c false.
+//! @tparam UseAdvertisedQueries Whether to require advertised queries to be callable. Defaults to @c false.
 //! @tparam EnvT The execution environment or query-providing object type.
 //! @tparam AlgorithmCallable The algorithm implementation callable type.
 //! @param[in] env The execution environment or query-providing object.
@@ -142,10 +134,9 @@ template <bool UseAdvertisedQueries = false, typename EnvT, typename AlgorithmCa
 
 //! @brief Validates an environment or object and dispatches with automatically managed temporary storage.
 //!
-//! Advertised query expressions are validated before dispatch. For environments with discoverable
-//! metadata, the advertised list controls whether stream, memory-resource, and tuning queries are
-//! used. Objects without metadata must provide at least a stream or memory resource and retain
-//! callability-based property lookup.
+//! Advertised query expressions are validated before dispatch. Stream, memory-resource, and tuning
+//! queries are also used when callable without being advertised. Objects without metadata must
+//! provide at least a stream or memory resource.
 //!
 //! @tparam EnvT The execution environment or query-providing object type.
 //! @tparam AlgorithmCallable The algorithm implementation callable type.
@@ -219,12 +210,11 @@ dispatch_with_env_validation_and_tuning(const EnvT& env, AlgorithmCallable&& alg
 //! @brief Dispatches an algorithm with user-provided temporary storage.
 //!
 //! This function resolves the stream and tuning environment and invokes the algorithm once with
-//! the supplied temporary storage. When @c UseAdvertisedQueries is @c true and @p env exposes
-//! discoverable property-key metadata, the advertised list is authoritative. Otherwise, properties
-//! are selected by testing whether their customization point objects are callable with @p env.
-//! Missing or unselected properties use their defaults. This function does not validate @p env.
+//! the supplied temporary storage. When @c UseAdvertisedQueries is @c true, advertised queries are
+//! invoked directly. Unadvertised queries are used when callable with @p env, and unavailable queries
+//! use their defaults. This function does not validate @p env.
 //!
-//! @tparam UseAdvertisedQueries Whether property lookup honors advertised query metadata. Defaults to @c false.
+//! @tparam UseAdvertisedQueries Whether to require advertised queries to be callable. Defaults to @c false.
 //! @tparam EnvT The execution environment or query-providing object type.
 //! @tparam AlgorithmCallable The algorithm implementation callable type.
 //! @param[in] d_temp_storage @devicestorage
@@ -248,10 +238,9 @@ template <bool UseAdvertisedQueries = false, typename EnvT, typename AlgorithmCa
 
 //! @brief Validates an environment or object and dispatches with user-provided temporary storage.
 //!
-//! Advertised query expressions are validated before dispatch. For environments with discoverable
-//! metadata, the advertised list controls whether stream and tuning queries are used. Objects without
-//! metadata must provide at least a stream or memory resource and retain callability-based property
-//! lookup.
+//! Advertised query expressions are validated before dispatch. Stream and tuning queries are also
+//! used when callable without being advertised. Objects without metadata must provide at least a
+//! stream or memory resource.
 //!
 //! @tparam EnvT The execution environment or query-providing object type.
 //! @tparam AlgorithmCallable The algorithm implementation callable type.

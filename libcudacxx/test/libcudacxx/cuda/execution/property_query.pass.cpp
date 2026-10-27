@@ -25,6 +25,38 @@ struct query3_t
 struct custom_env
 {};
 
+struct legacy_env
+{
+  TEST_HOST_DEVICE_FUNC constexpr int query(query1_t) const noexcept
+  {
+    return 42;
+  }
+
+  TEST_HOST_DEVICE_FUNC constexpr int& query(query3_t, int& value) const noexcept
+  {
+    return value;
+  }
+};
+
+struct empty_metadata_env : legacy_env
+{
+  using property_keys = cuda::execution::property_key_list<>;
+};
+
+struct partial_metadata_env : legacy_env
+{
+  using property_keys = cuda::execution::property_key_list<query2_t>;
+  using legacy_env::query;
+
+  TEST_HOST_DEVICE_FUNC constexpr double query(query2_t) const noexcept
+  {
+    return 84.0;
+  }
+};
+
+template <class Env, class Query, class... Args>
+using query_result_or = cuda::std::execution::__detail::__advertised_query_result_or_t<Env, Query, char, Args...>;
+
 template <class... Queries>
 struct advertised_env
 {
@@ -88,6 +120,23 @@ TEST_HOST_DEVICE_FUNC constexpr bool test()
   using contextual_list  = cuda::execution::property_key_list<contextual_query>;
   using query1           = cuda::execution::property_query<query1_t>;
   using query2           = cuda::execution::property_query<query2_t>;
+
+  using legacy_composed = cuda::std::execution::env<legacy_env>;
+  using mixed_composed  = cuda::std::execution::env<partial_metadata_env, legacy_env>;
+  using nested_composed = cuda::std::execution::env<mixed_composed>;
+  static_assert(cuda::std::is_same_v<query_result_or<legacy_env, query1_t>, int>);
+  static_assert(cuda::std::is_same_v<query_result_or<const legacy_env&, query1_t>, int>);
+  static_assert(cuda::std::is_same_v<query_result_or<empty_metadata_env, query1_t>, int>);
+  static_assert(cuda::std::is_same_v<query_result_or<partial_metadata_env, query1_t>, int>);
+  static_assert(cuda::std::is_same_v<query_result_or<partial_metadata_env, query2_t>, double>);
+  static_assert(cuda::std::is_same_v<query_result_or<legacy_composed, query1_t>, int>);
+  static_assert(cuda::std::is_same_v<query_result_or<mixed_composed, query1_t>, int>);
+  static_assert(cuda::std::is_same_v<query_result_or<nested_composed, query1_t>, int>);
+  static_assert(cuda::std::is_same_v<query_result_or<legacy_env, query2_t>, char>);
+  static_assert(cuda::std::is_same_v<query_result_or<legacy_composed, query2_t>, char>);
+  static_assert(cuda::std::is_same_v<query_result_or<legacy_env, query3_t, int&>, int&>);
+  static_assert(cuda::std::is_same_v<query_result_or<legacy_env, query3_t, int>, char>);
+  static_assert(cuda::std::is_same_v<query_result_or<mixed_composed, query3_t, int&>, int&>);
 
   static_assert(cuda::execution::is_property_key_list_v<empty_list>);
   static_assert(cuda::execution::is_property_key_list_v<query12_list>);

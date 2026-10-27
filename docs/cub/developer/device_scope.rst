@@ -93,9 +93,9 @@ from the environment argument, or provide default values in case the environment
 They typically use helper functions like ``dispatch_with_env`` and ``dispatch_with_env_and_tuning``.
 The corresponding ``dispatch_with_env_validation`` and
 ``dispatch_with_env_validation_and_tuning`` helpers additionally validate advertised query
-metadata and make that metadata authoritative for property lookup. ``DeviceReduce`` is the
+metadata without excluding callable queries that are not advertised. ``DeviceReduce`` is the
 initial consumer of the validating helpers; other device-wide algorithms continue to use the
-callability-based helpers.
+helpers without advertised-query validation.
 
 Some CUB APIs require no temporary storage and may omit the ``void *d_temp_storage, size_t &temp_storage_bytes`` parameters.
 Their environment overloads will also ignore any passed memory resource.

@@ -253,7 +253,8 @@ using __advertised_query_result_or_t _CCCL_NODEBUG =
   typename __advertised_query_result_or<_Env,
                                         ::cuda::execution::property_query<_Query, _Args...>,
                                         _Default,
-                                        __advertises_query_v<_Env, _Query, _Args...>>::type;
+                                        (__advertises_query_v<_Env, _Query, _Args...>
+                                         || __queryable_with<const remove_cvref_t<_Env>&, _Query, _Args...>)>::type;
 } // namespace __detail
 
 #if _CCCL_HAS_EXCEPTIONS()

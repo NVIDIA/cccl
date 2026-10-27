@@ -74,6 +74,8 @@ public:
 //! explicitly named in @c _Queries is checked against a const view of the wrapped environment. The
 //! returned adaptor records those expressions as its advertised query list and forwards queries to the
 //! wrapped environment.
+//! The advertised list does not restrict forwarding: the adaptor also accepts other query expressions
+//! supported by the wrapped environment's const view.
 //!
 //! Because the adaptor supplies its own advertised query list, it can also add metadata to a type that
 //! cannot be modified or replace the query list advertised by the wrapped environment.

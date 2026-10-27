@@ -125,8 +125,9 @@ Each query expression in the list must be accepted by a const environment.
 
 Use ``cuda::checked_env`` to explicitly check that an environment accepts a chosen set of query
 expressions. The returned adaptor records that validated set as public ``property_keys`` metadata
-and forwards queries to the original object. Because the adaptor supplies its own metadata, it can
-also describe a type that cannot be modified or replace an existing advertised query list:
+and forwards queries to the original object, including supported queries outside the advertised
+list. Because the adaptor supplies its own metadata, it can also describe a type that cannot be
+modified or replace an existing advertised query list:
 
 .. code-block:: c++
 
@@ -141,10 +142,10 @@ The wrapper stores its argument by value. Pass ``cuda::std::ref(original)`` to s
 reference instead.
 
 ``cub::DeviceReduce`` is currently the pilot consumer of advertised query metadata. It
-validates every advertised expression and uses the advertised list to decide which supported
-properties to consume. An unmarked object passed to ``DeviceReduce`` must provide at least a
-stream or a memory resource. Other CUB device-wide algorithms retain their existing
-callability-based property lookup until the diagnostic protocol is adopted by them.
+validates every advertised expression and also consumes supported queries that are not advertised.
+An unmarked object passed to ``DeviceReduce`` must provide at least a stream or a memory resource.
+Other CUB device-wide algorithms retain their existing callability-based property lookup without
+the advertised-query validation.
 
 
 How to use environments
