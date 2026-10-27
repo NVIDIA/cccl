@@ -25,7 +25,10 @@
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/is_extended_arithmetic.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -56,6 +59,21 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // fabs
 
+// fabs for fp64 with integer instructions only
+// clears the sign bit as IEEE 754 abs, NaNs keep their payload and are not quieted
+[[nodiscard]] _CCCL_DEVICE_API inline double __fp64_fabs_int(double __x) noexcept
+{
+  // On SM100+, the compiler recognized clearing the sign bit of a 64-bit integer as fabs,
+  // which reintroduced fp64 instructions
+  // Clearing it in the high 32-bit half avoids that
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_100,
+    (return ::__hiloint2double(::__double2hiint(__x) & ::cuda::std::numeric_limits<int32_t>::max(),
+                               ::__double2loint(__x));),
+    (return ::cuda::std::__fp_from_storage<double>(
+              ::cuda::std::__fp_get_storage(__x) & ::cuda::std::__fp_exp_mant_mask_of_v<double>);))
+}
+
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr auto fabs(_Tp __x) noexcept
@@ -77,6 +95,14 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
   }
   else
   {
+    if constexpr (is_same_v<_Tp, double>)
+    {
+      // fabs for fp64 with integer instructions on slow FP64 targets
+      _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+      {
+        _CCCL_DISPATCH_SLOW_FP64_TARGET(return ::cuda::std::__fp64_fabs_int(__x);)
+      }
+    }
 #ifdef _CCCL_BUILTIN_FABSF
     if constexpr (is_same_v<_Tp, float>)
     {
