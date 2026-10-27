@@ -12,6 +12,7 @@
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/__memory/as_bytes_vectorized.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__atomic/order.h>
@@ -39,15 +40,15 @@ struct agent_t
   // The input value type
   using InputT = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
 
-  // Vector type of InputT for data movement
-  using VectorT = typename CubVector<InputT, VecSize>::Type;
+  // Cache modified loads are at most 16 bytes wide, so they gain nothing from a stricter alignment
+  using VectorT = ::cuda::__as_bytes_vectorized_t<InputT, VecSize>;
 
   static constexpr int tile_size = ThreadsPerBlock * ItemsPerThread;
 
   // Can vectorize according to the policy if the input iterator is a native pointer to a primitive type
   static constexpr bool attempt_vectorization =
     (VecSize > 1) && (ItemsPerThread % VecSize == 0) && (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>)
-    && ::cuda::is_trivially_copyable_v<InputT>;
+    && ::cuda::is_trivially_copyable_v<InputT> && !::cuda::std::is_volatile_v<InputT>;
 
   static constexpr CacheLoadModifier load_modifier = LoadModifier;
 
@@ -74,10 +75,6 @@ struct agent_t
     {
       static_assert(::cuda::std::is_pointer_v<Iterator>);
 
-      // Retrieve the value type from the iterator to determine the vector type
-      using InputT  = typename ::cuda::std::iterator_traits<Iterator>::value_type;
-      using VectorT = typename CubVector<InputT, VecSize>::Type;
-
       const bool full_tile = (tile_offset + tile_size) <= num_items;
 
       // Check alignment at the actual load position (d_in + tile_offset)
@@ -91,8 +88,7 @@ struct agent_t
 
   _CCCL_DEVICE _CCCL_FORCEINLINE bool ConsumeTile(OffsetT tile_offset, ::cuda::std::true_type /*CAN_VECTORIZE*/)
   {
-    using InputT  = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
-    using VectorT = typename CubVector<InputT, VecSize>::Type;
+    using InputT = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
 
     // vectorized loads begin
     auto load_ptr = reinterpret_cast<const VectorT*>(d_in + tile_offset + (threadIdx.x * VecSize));
