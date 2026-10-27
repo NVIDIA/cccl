@@ -18,9 +18,8 @@
 #include <cub/block/block_store.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_namespace.cuh>
-
-#include <thrust/system/cuda/detail/core/util.h>
 
 CUB_NAMESPACE_BEGIN
 

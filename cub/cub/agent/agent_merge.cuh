@@ -21,14 +21,17 @@
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/span>
 
 CUB_NAMESPACE_BEGIN
