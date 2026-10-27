@@ -176,28 +176,49 @@ projects:
     - "pyproject.toml"
     exclude_regexes: []
 
-  cuda_coop_python:
-    name: "cuda.coop Python"
-    matrix_project: "cuda_coop_python"
-    # The wheel carries these three public header trees at one CCCL revision.
-    # Header changes therefore exercise the focused installed-wheel lane.
-    lite_dependencies:
-      - libcudacxx_public
-      - cub_public
-      - thrust_public
-    full_dependencies: []
+  # Package inputs are shared by the independently tested cooperative backends.
+  # Keep them separate from the SIMT common API so other consumers can depend on
+  # header resolution and wheel construction without depending on SIMT kernels.
+  cuda_coop_package:
+    name: "cuda.coop Package"
     include_regexes:
-    - "python/cuda_coop/"
-    - "ci/build_cuda_coop_python\\.sh"
-    - "ci/test_cuda_coop_python\\.sh"
-    - "ci/validate_cuda_coop_wheel\\.py"
-    - "ci/windows/build_cuda_coop_python\\.ps1"
-    - "^LICENSE$"
-    - "^cub/LICENSE\\.TXT$"
-    - "^libcudacxx/LICENSE\\.TXT$"
-    - "^thrust/LICENSE$"
-    - "^pyproject\\.toml$"
-    exclude_regexes: []
+      - 'python/cuda_coop/(CMakeLists\.txt|pyproject\.toml)$'
+      - 'python/cuda_coop/cuda/coop/(__init__\.pyi?|py\.typed)$'
+      - 'python/cuda_coop/cuda/coop/_headers/'
+      - 'ci/(build|test)_cuda_coop_python\.sh$'
+      - 'ci/validate_cuda_coop_wheel\.py$'
+      - 'ci/windows/build_cuda_coop_python\.ps1$'
+      - '^LICENSE$'
+      - '^cub/LICENSE\.TXT$'
+      - '^libcudacxx/LICENSE\.TXT$'
+      - '^thrust/LICENSE$'
+      - '^pyproject\.toml$'
+
+  cuda_coop_common:
+    name: "cuda.coop Common SIMT API"
+    include_regexes: ['python/cuda_coop/']
+    exclude_project_files: [cuda_coop_package, cuda_coop_numba]
+
+  # Host contracts stay selected for backend-local edits. Backends depend on
+  # common API/package inputs, not on this broad host-test selection.
+  cuda_coop_python:
+    name: "cuda.coop Host Tests"
+    matrix_project: "cuda_coop_python"
+    lite_dependencies: [libcudacxx_public, cub_public, thrust_public]
+    full_dependencies: [cuda_coop_package]
+    include_regexes: ['python/cuda_coop/']
+
+  cuda_coop_numba:
+    name: "cuda.coop Numba-CUDA-MLIR"
+    matrix_project: "cuda_coop_numba"
+    lite_dependencies: [libcudacxx_public, cub_public, thrust_public]
+    full_dependencies: [cuda_coop_package, cuda_coop_common]
+    include_regexes:
+      - 'python/cuda_coop/cuda/coop/numba_mlir/'
+      - 'python/cuda_coop/tests/backends/numba_mlir/'
+      - 'python/cuda_coop/examples/numba_mlir/'
+      - 'python/cuda_coop/benchmarks/numba_mlir/'
+      - 'python/cuda_coop/tests/packaging/typing/numba_consumer\.py$'
 
   packaging:
     name: "CCCL Packaging"

@@ -1,0 +1,2 @@
+FULL_BUILD=cuda_coop_python cuda_coop_numba
+LITE_BUILD=
