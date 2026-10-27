@@ -59,10 +59,27 @@ jobs:
                 ![`${repoUrl}/pull/${issue.number}/commits/${sha}`, `${repoUrl}/commit/${sha}`].includes(linkMatch[2])
               ) {
                 core.info("Ignore command: the commit label or link destination does not match the expected commit.");
+                await github.rest.issues.createComment({
+                  ...context.repo,
+                  issue_number: issue.number,
+                  body:
+                    `Error: @${comment.user.login}, the commit label or link destination is invalid. ` +
+                    "Use `/sass diff ok <SHA>` with the full 40-character SHA of the current PR head.",
+                });
                 return;
               }
             } else {
               core.info("Ignore comment: the command format is invalid.");
+              // Give command syntax feedback before checking approval eligibility.
+              if (body === "/sass diff ok") {
+                await github.rest.issues.createComment({
+                  ...context.repo,
+                  issue_number: issue.number,
+                  body:
+                    `Error: @${comment.user.login}, use \`/sass diff ok <SHA>\`. ` +
+                    "Replace `<SHA>` with the full 40-character SHA of the current PR head.",
+                });
+              }
               return;
             }
 
@@ -100,67 +117,35 @@ jobs:
             core.info(`Command is valid for SHA ${sha}.`);
             core.setOutput("sha", sha);
 
-      # GITHUB_TOKEN cannot read organization membership. Limit the app token to that lookup.
-      - name: Create membership token
-        if: steps.request.outputs.sha != ''
-        id: membership
-        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
-        with:
-          app-id: ${{ secrets.CCCL_AUTH_APP_ID }}
-          private-key: ${{ secrets.CCCL_AUTH_APP_PEM }}
-          owner: NVIDIA
-          repositories: cccl
-          permission-members: read
-
-      - name: Verify team membership
+      # Repository permissions let GITHUB_TOKEN authorize approval without organization membership access.
+      - name: Verify repository access
         if: steps.request.outputs.sha != ''
         id: authorization
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
-          github-token: ${{ steps.membership.outputs.token }}
           script: |
-            core.info(`Check NVIDIA/cccl-codeowners membership for @${context.payload.comment.user.login}.`);
-            // This endpoint includes child-team members and avoids membership lookup errors for nonmembers.
-            const pages = github.paginate.iterator(github.rest.teams.listMembersInOrg, {
-              org: "NVIDIA",
-              team_slug: "cccl-codeowners",
-              per_page: 100,
-            });
-
-            let found = false;
-            let pageCount = 0;
-
-            for await (const { data: members } of pages) {
-              pageCount += 1;
-              core.info(`Search membership page ${pageCount} with ${members.length} entries.`);
-              if (members.some((member) => member.id === context.payload.comment.user.id)) {
-                found = true;
-                break;
-              }
-            }
-
-            core.info(`Team authorization for @${context.payload.comment.user.login}: ${found}.`);
-            core.setOutput("authorized", found);
-
-        # Needs a separate step to the one above because the above uses the temporary
-        # github token which only has members: read permissions and cannot post
-        # comments. This one uses the default job-wide GITHUB_TOKEN which can post
-        # comments.
-      - name: Report unauthorized approval
-        if: steps.authorization.outputs.authorized == 'false'
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
-        with:
-          script: |
-            const body =
-              `Error: @${context.payload.comment.user.login}, ` +
-              "only CCCL developers may approve SASS changes. " +
-              "Please ask a member of `cccl-codeowners` to review the SASS diffs.";
-
-            await github.rest.issues.createComment({
+            const username = context.payload.comment.user.login;
+            core.info(`Check repository access for @${username}.`);
+            const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
               ...context.repo,
-              issue_number: context.payload.issue.number,
-              body,
+              username,
             });
+            const authorized = ["write", "maintain", "admin"].includes(data.permission);
+            core.info(`Repository permission for @${username}: ${data.permission}; authorized=${authorized}.`);
+            core.setOutput("authorized", authorized);
+
+            if (!authorized) {
+              const body =
+                `Error: @${username}, ` +
+                "you need repository write access or greater to approve SASS changes. " +
+                "Please ask someone with that access to review the SASS diffs.";
+
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: context.payload.issue.number,
+                body,
+              });
+            }
 
       - name: Find the matching SASS comment and approve
         if: steps.authorization.outputs.authorized == 'true'
