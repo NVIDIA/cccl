@@ -1,4 +1,4 @@
-# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
@@ -6,12 +6,13 @@ from typing import List
 
 import numpy as np
 import pytest
-from _utils.device_array import DeviceArray
+from _utils.device_array import DeviceArray, get_compute_capability
 
 import cuda.compute
 from cuda.compute import (
     CacheModifiedInputIterator,
     OpKind,
+    ProxyArray,
     deserialize,
     gpu_struct,
     make_merge_sort,
@@ -447,8 +448,51 @@ def _run(sorter, *, d_in_keys, d_in_values, d_out_keys, d_out_values, num_items,
     )
 
 
+@pytest.mark.parametrize(
+    "with_values,proxy_args",
+    [
+        pytest.param(False, ("d_in_keys", "d_out_keys"), id="keys"),
+        pytest.param(False, ("d_in_keys",), id="input-keys"),
+        pytest.param(False, ("d_out_keys",), id="output-keys"),
+        pytest.param(
+            True,
+            ("d_in_keys", "d_in_values", "d_out_keys", "d_out_values"),
+            id="pairs",
+        ),
+        pytest.param(True, ("d_in_values", "d_out_values"), id="values"),
+    ],
+)
+def test_merge_sort_proxy_arrays(with_values, proxy_args):
+    num_items = 16385
+    h_keys = np.random.default_rng(42).integers(0, 128, num_items, dtype=np.int32)
+    # Omitted arguments also use uint8 metadata, so presence must not depend on dtype.
+    h_values = np.arange(num_items).astype(np.uint8)
+    arrays = {
+        "d_in_keys": DeviceArray.from_numpy(h_keys),
+        "d_out_keys": DeviceArray.empty(num_items, h_keys.dtype),
+        "d_in_values": DeviceArray.from_numpy(h_values) if with_values else None,
+        "d_out_values": DeviceArray.empty(num_items, h_values.dtype)
+        if with_values
+        else None,
+    }
+    build_args = {
+        name: ProxyArray(array.dtype) if name in proxy_args else array
+        for name, array in arrays.items()
+    }
+    sorter = make_merge_sort(**build_args, op=OpKind.LESS)
+    _run(sorter, **arrays, num_items=num_items, op=OpKind.LESS)
+
+    order = np.argsort(h_keys, kind="stable")
+    np.testing.assert_array_equal(arrays["d_out_keys"].copy_to_host(), h_keys[order])
+    if with_values:
+        np.testing.assert_array_equal(
+            arrays["d_out_values"].copy_to_host(), h_values[order]
+        )
+
+
 @pytest.mark.serialization
-def test_serialize_deserialize_merge_sort_keys_values():
+@pytest.mark.parametrize("use_proxy", [False, True])
+def test_serialize_deserialize_merge_sort_keys_values(use_proxy):
     h_in_keys = np.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     h_in_values = np.array(
         [-3.2, 2.2, 1.9, 4.0, -3.9, 2.7, 0, 8.3 - 1, 2.9, 5.4], dtype="float32"
@@ -459,11 +503,12 @@ def test_serialize_deserialize_merge_sort_keys_values():
     d_out_values = DeviceArray.empty(h_in_values.shape, h_in_values.dtype)
 
     builder = make_merge_sort(
-        d_in_keys=d_in_keys,
-        d_in_values=d_in_values,
-        d_out_keys=d_out_keys,
-        d_out_values=d_out_values,
+        d_in_keys=ProxyArray(h_in_keys.dtype) if use_proxy else d_in_keys,
+        d_in_values=ProxyArray(h_in_values.dtype) if use_proxy else d_in_values,
+        d_out_keys=ProxyArray(h_in_keys.dtype) if use_proxy else d_out_keys,
+        d_out_values=ProxyArray(h_in_values.dtype) if use_proxy else d_out_values,
         op=OpKind.LESS,
+        compute_capability=get_compute_capability() if use_proxy else None,
     )
     blob = serialize(builder)
     assert len(blob) > 0
@@ -487,7 +532,8 @@ def test_serialize_deserialize_merge_sort_keys_values():
 
 
 @pytest.mark.serialization
-def test_serialize_deserialize_merge_sort_keys_only():
+@pytest.mark.parametrize("use_proxy", [False, True])
+def test_serialize_deserialize_merge_sort_keys_only(use_proxy):
     # Keys-only: d_in_values / d_out_values are None, which become "none"
     # iterators — the plain ITER schema members round-trip them fine.
     h_in_keys = np.array([5, 2, 8, 1, 9, 3, 7, 0, 6, 4], dtype="int32")
@@ -495,11 +541,12 @@ def test_serialize_deserialize_merge_sort_keys_only():
     d_out_keys = DeviceArray.empty(h_in_keys.shape, h_in_keys.dtype)
 
     builder = make_merge_sort(
-        d_in_keys=d_in_keys,
+        d_in_keys=ProxyArray(h_in_keys.dtype) if use_proxy else d_in_keys,
         d_in_values=None,
-        d_out_keys=d_out_keys,
+        d_out_keys=ProxyArray(h_in_keys.dtype) if use_proxy else d_out_keys,
         d_out_values=None,
         op=OpKind.LESS,
+        compute_capability=get_compute_capability() if use_proxy else None,
     )
     blob = serialize(builder)
     assert len(blob) > 0
