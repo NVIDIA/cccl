@@ -8,10 +8,9 @@ from datetime import datetime
 # Add extension directory to path
 sys.path.insert(0, os.path.abspath("_ext"))
 
-# Add Python CCCL packages to path for autodoc. cuda-cccl, cuda-coop, and
-# cuda-stf are separate distributions that contribute to the shared ``cuda``
-# namespace.
-for _pkg in ("../python/cuda_cccl", "../python/cuda_coop", "../python/cuda_stf"):
+# Add Python CCCL packages to path for autodoc. cuda-cccl and cuda-stf are
+# separate distributions that both contribute to the shared ``cuda`` namespace.
+for _pkg in ("../python/cuda_cccl", "../python/cuda_stf"):
     python_package_path = os.path.abspath(_pkg)
     if os.path.exists(python_package_path):
         sys.path.insert(0, python_package_path)
@@ -54,7 +53,6 @@ extensions = [
     # "exhale",  # Disabled - causing build timeouts, API docs handled by breathe
     "sphinx_design",  # For dropdown, card, and other directives
     "sphinx_copybutton",
-    "coop_visualization",  # Interactive cooperative primitives with RST fallbacks
     "nbsphinx",
     # "rst_processor",  # Disabled - breathe handles embed:rst natively
     "auto_api_generator",  # Automatically generate API reference pages from Doxygen XML
@@ -213,33 +211,6 @@ autodoc_default_options = {
 autodoc_type_hints = "description"
 autodoc_type_aliases = {
     "Operator": "Operator",
-    **{
-        name: name
-        for name in (
-            "BlockExchangeMode",
-            "BlockGroup",
-            "BlockLoadStoreAlgorithm",
-            "CommonNumericScalar",
-            "CommonShuffleMode",
-            "CommonThreadDataLike",
-            "IntegerValue",
-            "IntegralScalar",
-            "MemoryGroup",
-            "PortableNumericScalar",
-            "PortableThreadDataLike",
-            "ReduceAlgorithm",
-            "ReduceOperator",
-            "ReductionGroup",
-            "ScalarShuffleMode",
-            "ScanAlgorithm",
-            "ScanOperator",
-            "SignedIntegerScalar",
-            "ThreadDataLike",
-            "ValidItems",
-            "WarpGroup",
-            "WarpLoadStoreAlgorithm",
-        )
-    },
 }
 
 # Set Python domain primary for intersphinx
@@ -247,9 +218,6 @@ primary_domain = "py"
 
 # Mock imports for Python documentation - these modules may not be installed
 autodoc_mock_imports = [
-    # Render real cooperative markers without initializing an optional compiler.
-    "numba_cuda_mlir",
-    "cuda.coop.numba_mlir._compiler._activation",
     "numba",
     "numba.core",
     "numba.core.cgutils",
