@@ -28,16 +28,17 @@ template <typename Capacities, bool Scatter, typename BeginIterator, typename En
 __launch_bounds__(256) _CCCL_KERNEL_ATTRIBUTES void partition_kernel(
   BeginIterator begins, EndIterator ends, unsigned num_segments, unsigned* counts_or_cursors, unsigned* ids)
 {
+  constexpr unsigned bin_count = Capacities::size + 1;
   __shared__ unsigned counts[Capacities::size + 1];
   [[maybe_unused]] __shared__ unsigned starts[Capacities::size + 1]; // Read only in the scatter pass.
-  for (int bin = threadIdx.x; bin <= Capacities::size; bin += blockDim.x)
+  for (unsigned bin = threadIdx.x; bin < bin_count; bin += blockDim.x)
   {
     counts[bin] = 0;
   }
   __syncthreads();
-  const unsigned segment = blockIdx.x * blockDim.x + threadIdx.x;
-  int bin                = -1;
-  unsigned rank          = 0;
+  const unsigned segment         = blockIdx.x * blockDim.x + threadIdx.x;
+  int bin                        = -1;
+  [[maybe_unused]] unsigned rank = 0;
   if (segment < num_segments)
   {
     const auto begin = begins[segment];
@@ -49,7 +50,7 @@ __launch_bounds__(256) _CCCL_KERNEL_ATTRIBUTES void partition_kernel(
     }
   }
   __syncthreads();
-  for (int i = threadIdx.x; i <= Capacities::size; i += blockDim.x)
+  for (unsigned i = threadIdx.x; i < bin_count; i += blockDim.x)
   {
     if (counts[i])
     {
