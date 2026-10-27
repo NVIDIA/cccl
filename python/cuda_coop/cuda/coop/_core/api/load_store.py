@@ -76,8 +76,8 @@ def load(
         Load populates this payload in place. The group's tile contains
         ``group_size * items_per_thread`` elements.
         Omit ``items_per_thread`` and leave ``alignment=None`` when supplying
-        this destination. Use this form when aliases must observe the update
-        or the destination needs a lifetime established before this call.
+        this destination. Use this form to fill a per-thread payload
+        established before this call.
         This is each thread's payload, not a shared-memory tile. To write
         returned values into a shared array, use :func:`store`.
     items_per_thread : int, optional
