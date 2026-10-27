@@ -1721,7 +1721,7 @@ void stf_cuda_kernel_add_desc_cufunc(
 //!
 //! \see stf_cuda_kernel_add_desc_cufunc(), stf_cuda_kernel_get_arg()
 
-static inline cudaError_t stf_cuda_kernel_add_desc(
+inline cudaError_t stf_cuda_kernel_add_desc(
   stf_cuda_kernel_handle k,
   const void* func,
   dim3 grid_dim_,

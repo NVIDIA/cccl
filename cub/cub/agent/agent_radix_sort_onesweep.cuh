@@ -20,19 +20,25 @@
 #endif // no system header
 
 #include <cub/block/block_radix_rank.cuh>
+#include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/uninitialized.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/thread/thread_store.cuh>
 #include <cub/util_ptx.cuh>
 
 #include <cuda/__ptx/instructions/get_sreg.h>
-#include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstdint>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
 
 CUB_NAMESPACE_BEGIN
 

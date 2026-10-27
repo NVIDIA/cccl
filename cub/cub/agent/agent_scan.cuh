@@ -28,9 +28,8 @@
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/uninitialized.cuh>
-#include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_device.cuh>
+#include <cub/thread/thread_load.cuh>
 
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>

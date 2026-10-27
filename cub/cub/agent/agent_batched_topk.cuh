@@ -25,8 +25,12 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 
+#include <cuda/__argument/argument.h>
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/argument>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 

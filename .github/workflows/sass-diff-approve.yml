@@ -1,0 +1,360 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+name: Approve SASS Diff
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  # Write perms needed to post reactions and comments
+  pull-requests: write
+  issues: write
+  actions: write
+
+jobs:
+  approve:
+    # Expressions cannot match regexes; the first step validates the complete command.
+    if: >-
+      github.repository == 'NVIDIA/cccl' &&
+      github.event.issue.pull_request &&
+      github.event.issue.state == 'open' &&
+      github.event.comment.user.type == 'User' &&
+      contains(github.event.comment.body, '/sass diff ok')
+    runs-on: ubuntu-slim
+
+    steps:
+      - name: Validate approval command
+        id: request
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const { comment, issue } = context.payload;
+            core.info(`Validate comment ${comment.id} from @${comment.user.login} on PR #${issue.number}.`);
+            // Match both:
+            //
+            // /sass diff ok <full SHA>
+            //
+            // and
+            //
+            // /sass diff ok [<short SHA>](<link to full commit SHA>)
+            const body = comment.body.trim();
+            const plainMatch = /^\/sass diff ok\s+([0-9a-f]{40})$/.exec(body);
+            const linkMatch  = /^\/sass diff ok\s+\[([0-9a-f]{7,40})\]\((https:\/\/github\.com\/[^\s)]+\/([0-9a-f]{40}))\)$/.exec(body);
+
+            let sha;
+
+            if (plainMatch) {
+              sha = plainMatch[1];
+              core.info(`Command contains a plain commit SHA: ${sha}.`);
+            } else if (linkMatch) {
+              sha = linkMatch[3];
+              core.info(`Command contains a commit link for SHA ${sha}.`);
+              // Check both the visible label and destination before accepting a commit link.
+              const repoUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}`;
+              if (
+                !sha.startsWith(linkMatch[1]) ||
+                ![`${repoUrl}/pull/${issue.number}/commits/${sha}`, `${repoUrl}/commit/${sha}`].includes(linkMatch[2])
+              ) {
+                core.info("Ignore command: the commit label or link destination does not match the expected commit.");
+                await github.rest.issues.createComment({
+                  ...context.repo,
+                  issue_number: issue.number,
+                  body:
+                    `Error: @${comment.user.login}, the commit label or link destination is invalid. ` +
+                    "Use `/sass diff ok <SHA>` with the full 40-character SHA of the current PR head.",
+                });
+                core.setFailed("The commit label or link destination is invalid.");
+                return;
+              }
+            } else {
+              core.info("Ignore comment: the command format is invalid.");
+              // Give command syntax feedback before checking approval eligibility.
+              if (body === "/sass diff ok") {
+                await github.rest.issues.createComment({
+                  ...context.repo,
+                  issue_number: issue.number,
+                  body:
+                    `Error: @${comment.user.login}, use \`/sass diff ok <SHA>\`. ` +
+                    "Replace `<SHA>` with the full 40-character SHA of the current PR head.",
+                });
+              }
+              core.setFailed("The approval command format is invalid.");
+              return;
+            }
+
+            core.info(`Read the current head of PR #${issue.number}.`);
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: issue.number,
+            });
+
+            if (pr.head.sha !== sha) {
+              core.info(`Ignore command: requested SHA ${sha} does not match PR head ${pr.head.sha}.`);
+              return;
+            }
+
+            // Acknowledge that we have received the comment
+            await github.rest.reactions.createForIssueComment({
+              ...context.repo,
+              comment_id: context.payload.comment.id,
+              content: "eyes",
+            });
+
+            if (comment.user.id === pr.user.id) {
+              const body =
+                `Error: @${comment.user.login}, you cannot approve SASS changes ` +
+                "on your own pull request :raised_eyebrow:. " +
+                "Please ask another CCCL developer to approve the SASS diff.";
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: issue.number,
+                body,
+              });
+              core.setFailed("The PR author cannot approve their own SASS changes.");
+              return;
+            }
+
+            core.info(`Command is valid for SHA ${sha}.`);
+            core.setOutput("sha", sha);
+
+      # Repository permissions let GITHUB_TOKEN authorize approval without organization membership access.
+      - name: Verify repository access
+        if: steps.request.outputs.sha != ''
+        id: authorization
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const username = context.payload.comment.user.login;
+            core.info(`Check repository access for @${username}.`);
+            let permission = "none";
+            try {
+              const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
+                ...context.repo,
+                username,
+              });
+              permission = data.permission;
+            } catch (error) {
+              // Non-collaborators must receive the same denial as users with read-only access.
+              if (error.status !== 404) throw error;
+            }
+            const authorized = ["write", "maintain", "admin"].includes(permission);
+            core.info(`Repository permission for @${username}: ${permission}; authorized=${authorized}.`);
+            core.setOutput("authorized", authorized);
+
+            if (!authorized) {
+              const body =
+                `Error: @${username}, ` +
+                "you need repository write access or greater to approve SASS changes. " +
+                "Please ask someone with that access to review the SASS diffs.";
+
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: context.payload.issue.number,
+                body,
+              });
+              core.setFailed("SASS approval requires repository write access.");
+            }
+
+      - name: Find the SASS approval Job
+        id: job
+        if: steps.authorization.outputs.authorized == 'true'
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        env:
+          SHA: ${{ steps.request.outputs.sha }}
+        with:
+          script: |
+            const { comment, issue } = context.payload;
+
+            core.info(`Find CI for PR #${issue.number}, SHA ${process.env.SHA}, command ${comment.id}.`);
+
+            const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
+              ...context.repo,
+              workflow_id: "ci-workflow-pull-request.yml",
+              branch: `pull-request/${issue.number}`,
+              head_sha: process.env.SHA,
+              event: "push",
+              per_page: 100,
+            });
+
+            core.info(`Found ${runs.length} matching CI runs.`);
+
+            const run = runs.sort((a, b) => b.id - a.id)[0];
+
+            if (!run) {
+              core.setFailed("No matching CI run exists.");
+              return;
+            }
+
+            if (run.status === "completed" && run.conclusion === "success") {
+              core.info(`CI run ${run.id} already succeeds.`);
+              core.setOutput("ci_passed", true);
+              return;
+            }
+
+            core.info(`List jobs for workflow run ${run.id}: status=${run.status}, conclusion=${run.conclusion}.`);
+
+            const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+              ...context.repo,
+              run_id: run.id,
+              filter: "latest",
+              per_page: 100,
+            });
+
+            // This name must match the approval job in ci-workflow-pull-request.yml.
+            const job = jobs.find((job) => job.name === "Require SASS approval");
+
+            core.info(`Found ${jobs.length} jobs. SASS approval job: ${job?.id ?? "none"}.`);
+            if (job) core.info(`Job ${job.id}: status=${job.status}, conclusion=${job.conclusion}.`);
+
+            if (!job || job.status !== "completed") {
+              core.info("The SASS approval job is not ready. Ask the reviewer to comment again.");
+
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: issue.number,
+                body:
+                  `Error: @${comment.user.login}, the SASS approval job is not ready. ` +
+                  "Wait for the \"Require SASS approval\" job to finish, then post " +
+                  `\`/sass diff ok ${process.env.SHA}\` again if it fails.`,
+              });
+
+              core.setFailed("The SASS approval job is not ready.");
+              return;
+            }
+
+            if (job.conclusion !== "failure") {
+              core.info("The SASS approval job does not need a rerun.");
+              return;
+            }
+
+            const reportJob = jobs.find((job) => job.name === "Post SASS comparison results");
+            const checkRunId = reportJob.check_run_url.split("/").pop();
+
+            core.setOutput("job_id", job.id);
+            core.setOutput("check_run_id", checkRunId);
+
+      - name: Find the report and record approval
+        id: approval
+        if: steps.job.outputs.job_id != ''
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        env:
+          CHECK_RUN_ID: ${{ steps.job.outputs.check_run_id }}
+          SHA: ${{ steps.request.outputs.sha }}
+        with:
+          script: |
+            const { comment, issue } = context.payload;
+            const checkRunId = process.env.CHECK_RUN_ID;
+            const marker = `<!-- sass-diff-CHECK_RUN_ID:${checkRunId} -->`;
+
+            core.info(`Find report check ${checkRunId} before command ${comment.id}.`);
+
+            const query = `
+              query($owner: String!, $repo: String!, $number: Int!, $before: String) {
+                repository(owner: $owner, name: $repo) {
+                  pullRequest(number: $number) {
+                    comments(last: 100, before: $before) {
+                      nodes {
+                        fullDatabaseId
+                        body
+                        isMinimized
+                        author { login __typename }
+                      }
+                      pageInfo { hasPreviousPage startCursor }
+                    }
+                  }
+                }
+              }
+            `;
+
+            let before = null;
+            let report;
+
+            while (!report) {
+              const { repository } = await github.graphql(query, {
+                ...context.repo,
+                number: issue.number,
+                before,
+              });
+
+              const comments = repository.pullRequest.comments;
+              core.info(`Read ${comments.nodes.length} comments; earlier comments=${comments.pageInfo.hasPreviousPage}.`);
+
+              report = comments.nodes.reverse().find((entry) =>
+                entry.author?.__typename === "Bot" &&
+                ["github-actions", "github-actions[bot]"].includes(entry.author.login) &&
+                BigInt(entry.fullDatabaseId) < BigInt(comment.id) &&
+                entry.body.split(/\r?\n/).includes(marker)
+              );
+
+              if (report || !comments.pageInfo.hasPreviousPage) break;
+              before = comments.pageInfo.startCursor;
+            }
+
+            if (!report || report.isMinimized) {
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: issue.number,
+                body:
+                  `Error: @${comment.user.login}, no visible matching SASS report precedes your approval command. ` +
+                  "Review the current SASS report, make sure it is visible, then post " +
+                  `\`/sass diff ok ${process.env.SHA}\` again.`,
+              });
+
+              core.setFailed("No visible matching report precedes the approval command.");
+              return;
+            }
+
+            core.info(`Matching SASS report: comment ${report.fullDatabaseId}, check ${checkRunId}.`);
+
+            const fs = require("fs");
+            fs.writeFileSync(`${process.env.RUNNER_TEMP}/sass-approval`, "");
+            core.setOutput("accepted", true);
+            core.info(`Recorded approval by @${comment.user.login} for report ${report.fullDatabaseId}.`);
+
+      # Upload before the rerun so the job can read the validated approval immediately.
+      - name: Upload approval
+        if: steps.approval.outputs.accepted == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sass-approval-pr-${{ github.event.issue.number }}-${{ steps.request.outputs.sha }}
+          path: ${{ runner.temp }}/sass-approval
+          if-no-files-found: error
+          retention-days: 5
+          overwrite: true
+
+      - name: Rerun the SASS approval job
+        if: steps.approval.outputs.accepted == 'true'
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        env:
+          JOB_ID: ${{ steps.job.outputs.job_id }}
+        with:
+          script: |
+            const { comment } = context.payload;
+            const job_id = Number(process.env.JOB_ID);
+
+            // GitHub also reruns dependent jobs, including the CI branch protection job.
+            core.info(`Request a rerun of SASS approval job ${job_id} and its dependent jobs.`);
+
+            await github.rest.actions.reRunJobForWorkflowRun({
+              ...context.repo,
+              job_id,
+            });
+
+            core.info(`Requested SASS approval and CI reruns for comment ${comment.id}.`);
+
+      - name: Acknowledge successful command
+        if: success() && (steps.approval.outputs.accepted == 'true' || steps.job.outputs.ci_passed == 'true')
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const { comment } = context.payload;
+
+            await github.rest.reactions.createForIssueComment({
+              ...context.repo,
+              comment_id: comment.id,
+              content: "+1",
+            });
+
+            core.info(`Acknowledged command ${comment.id}.`);

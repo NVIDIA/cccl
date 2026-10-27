@@ -52,6 +52,16 @@ TEST_CASE("TestReverseIteratorCopyConstructor", "[reverse_iterator]")
   REQUIRE(d_iter2 == d_iter3);
   REQUIRE(*d_iter2 == *d_iter3);
 }
+
+TEST_CASE("TestReverseIteratorDevicePtrOperatorArrow", "[reverse_iterator]")
+{
+  int storage[2]{};
+  int* raw = storage;
+  const thrust::device_ptr<int> base(raw + 1);
+  const auto reverse = thrust::make_reverse_iterator(base);
+
+  REQUIRE(reverse.operator->() == raw);
+}
 static_assert(cuda::std::is_trivially_copy_constructible_v<thrust::reverse_iterator<int*>>);
 static_assert(cuda::std::is_trivially_copyable_v<thrust::reverse_iterator<int*>>);
 

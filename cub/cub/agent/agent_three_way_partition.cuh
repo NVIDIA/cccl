@@ -14,20 +14,18 @@
 #endif // no system header
 
 #include <cub/agent/single_pass_scan_operators.cuh>
-#include <cub/block/block_discontinuity.cuh>
-#include <cub/block/block_exchange.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
-#include <cub/block/block_store.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_device.cuh>
+#include <cub/thread/thread_load.cuh>
 
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 

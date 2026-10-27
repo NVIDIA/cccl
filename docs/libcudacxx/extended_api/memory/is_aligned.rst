@@ -35,7 +35,6 @@ The function determines if a pointer is aligned to a specific alignment.
 
   - ``cuda::is_aligned()`` doesn't have a template parameter and might be less expensive to compile.
   - ``cuda::is_aligned()`` supports run-time values of ``alignment``.
-  - ``cuda::std::is_sufficiently_aligned()`` additionally checks the compatibility between the alignment of the pointer type and the specified alignment.
 
 Example
 -------
