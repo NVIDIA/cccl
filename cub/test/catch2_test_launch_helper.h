@@ -122,6 +122,17 @@ namespace launch_helper_detail
 {
 #if TEST_LAUNCH == 2
 
+// Executes the captured graph on stream, waits for completion, and destroys both graph handles.
+inline void execute_and_destroy_graph(cudaGraph_t graph, cuda::stream_ref stream)
+{
+  cudaGraphExec_t exec{};
+  REQUIRE(cudaSuccess == cudaGraphInstantiate(&exec, graph, nullptr, nullptr, 0));
+  REQUIRE(cudaSuccess == cudaGraphLaunch(exec, stream.get()));
+  stream.sync();
+  REQUIRE(cudaSuccess == cudaGraphExecDestroy(exec));
+  REQUIRE(cudaSuccess == cudaGraphDestroy(graph));
+}
+
 template <bool HasStream, class ActionT, class... Args>
 void launch_impl(cuda::stream_ref stream, ActionT action, Args... args)
 {
@@ -147,15 +158,8 @@ void launch_impl(cuda::stream_ref stream, ActionT action, Args... args)
   REQUIRE(cudaSuccess == cudaStreamEndCapture(capture_stream.get(), &graph));
   REQUIRE(cudaSuccess == error);
 
-  cudaGraphExec_t exec{};
-  REQUIRE(cudaSuccess == cudaGraphInstantiate(&exec, graph, nullptr, nullptr, 0));
-
   // Launch on the requested stream, preserving ordering with the caller's preparation.
-  REQUIRE(cudaSuccess == cudaGraphLaunch(exec, stream.get()));
-  stream.sync();
-
-  REQUIRE(cudaSuccess == cudaGraphExecDestroy(exec));
-  REQUIRE(cudaSuccess == cudaGraphDestroy(graph));
+  execute_and_destroy_graph(graph, stream);
 }
 
 #elif TEST_LAUNCH == 1
@@ -403,19 +407,12 @@ void launch_env(ActionT action, Args... args)
 
   REQUIRE(cudaSuccess == cudaStreamEndCapture(stream.get(), &graph));
 
-  cudaGraphExec_t exec{};
-  REQUIRE(cudaSuccess == cudaGraphInstantiate(&exec, graph, nullptr, nullptr, 0));
-
-  REQUIRE(cudaSuccess == cudaGraphLaunch(exec, stream.get()));
-  stream.sync();
+  launch_helper_detail::execute_and_destroy_graph(graph, stream);
 
   // Make sure there are no memory leaks
   REQUIRE(bytes_deallocated == bytes_allocated);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-
-  REQUIRE(cudaSuccess == cudaGraphExecDestroy(exec));
-  REQUIRE(cudaSuccess == cudaGraphDestroy(graph));
 
   if constexpr (cuda::std::execution::__queryable_with<env_t, get_expected_allocation_size_t>)
   {
