@@ -126,12 +126,19 @@ jobs:
           script: |
             const username = context.payload.comment.user.login;
             core.info(`Check repository access for @${username}.`);
-            const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
-              ...context.repo,
-              username,
-            });
-            const authorized = ["write", "maintain", "admin"].includes(data.permission);
-            core.info(`Repository permission for @${username}: ${data.permission}; authorized=${authorized}.`);
+            let permission = "none";
+            try {
+              const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
+                ...context.repo,
+                username,
+              });
+              permission = data.permission;
+            } catch (error) {
+              // Non-collaborators must receive the same denial as users with read-only access.
+              if (error.status !== 404) throw error;
+            }
+            const authorized = ["write", "maintain", "admin"].includes(permission);
+            core.info(`Repository permission for @${username}: ${permission}; authorized=${authorized}.`);
             core.setOutput("authorized", authorized);
 
             if (!authorized) {
