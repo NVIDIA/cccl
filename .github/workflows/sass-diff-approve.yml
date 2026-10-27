@@ -346,6 +346,14 @@ jobs:
               if (error.status === 403) {
                 // The artifact records approval even when GitHub rejects the rerun.
                 core.info("CI is currently in progress, so rerun request returned 403. User will manually have to rerun CI once it finishes.");
+                await github.rest.issues.createComment({
+                  ...context.repo,
+                  issue_number: context.payload.issue.number,
+                  body:
+                    `@${comment.user.login}, your SASS approval is recorded, but GitHub rejects CI rerun requests while it is running. ` +
+                    "After the current CI run finishes, rerun its failed jobs to apply the approval.",
+                });
+
                 return;
               }
 
