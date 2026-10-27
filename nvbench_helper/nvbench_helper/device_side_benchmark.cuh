@@ -11,7 +11,7 @@
 #include <cuda/utility>
 
 template <typename T>
-__device__ __forceinline__ static T generate_random_data()
+__device__ __forceinline__ T generate_random_data()
 {
   constexpr auto size = static_cast<int>(cuda::ceil_div(sizeof(T), sizeof(uint32_t)));
   uint32_t data[size];
@@ -27,7 +27,7 @@ __device__ __forceinline__ static T generate_random_data()
 // When benchmarking algorithms sensitive to data distribution, each thread should use a different seed to get different
 // data.
 template <typename T>
-__device__ __forceinline__ static T generate_random_data(uint32_t& seed)
+__device__ __forceinline__ T generate_random_data(uint32_t& seed)
 {
   constexpr auto size = static_cast<int>(cuda::ceil_div(sizeof(T), sizeof(uint32_t)));
   uint32_t data[size];
@@ -45,7 +45,7 @@ __device__ __forceinline__ static T generate_random_data(uint32_t& seed)
 __device__ static int device_var[16];
 
 template <typename T>
-__device__ __forceinline__ static void sink(T value)
+__device__ __forceinline__ void sink(T value)
 {
   if (cuda::ptx::get_sreg_smid() == static_cast<uint32_t>(-1))
   {
@@ -54,7 +54,7 @@ __device__ __forceinline__ static void sink(T value)
 }
 
 template <typename T, int Size>
-__device__ __forceinline__ static void sink(T (&values)[Size])
+__device__ __forceinline__ void sink(T (&values)[Size])
 {
   if (cuda::ptx::get_sreg_smid() == static_cast<uint32_t>(-1))
   {
