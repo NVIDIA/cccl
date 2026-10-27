@@ -147,8 +147,8 @@ blocks merge until removed, which guarantees the full suite runs before the chan
         override:
           - {jobs: ['test'], project: 'thrust', ctk: '<ctk-name>', std: 'max', cxx: ['<cxx-name-1>', '<cxx-name-2>'], gpu: '<gpu-name>'}
 
-#. **Trim unrelated jobs.** Add ``[skip-tpt][skip-docs]`` to the **last commit message** to drop
-   third-party tests (eg RAPIDS, MatX) and doc builds while iterating.
+#. **Trim unrelated jobs.** Add ``[skip-docs]`` to the **last commit message** to drop
+   doc builds while iterating.
 
 #. **Push and inspect.** The PR runs only the override entries. Confirm the jobs appear with the
    expected compiler, CTK, and GPU, and that they pass.
