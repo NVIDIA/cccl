@@ -18,20 +18,19 @@ from pathlib import Path
 
 import pytest
 
+from cuda import coop
 from cuda.coop.numba_mlir._compiler import _activation
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
-PACKAGE_ROOT = Path(__file__).parents[4]
+PACKAGE_ROOT = Path(coop.__file__).resolve().parents[2]
 
 
 def _run_import_probe(script: str) -> None:
     """Run a fresh import against this package with default registration."""
     env = os.environ.copy()
     env.pop("CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION", None)
-    env["PYTHONPATH"] = os.pathsep.join(
-        filter(None, (str(PACKAGE_ROOT), env.get("PYTHONPATH")))
-    )
+    env["PYTHONPATH"] = str(PACKAGE_ROOT)
     result = subprocess.run(
         [sys.executable, "-B", "-c", textwrap.dedent(script)],
         check=False,
@@ -548,9 +547,7 @@ def test_backend_registration_reports_a_missing_public_runtime(activate):
         """.replace("ACTIVATE_BACKEND", activate)
     )
     env = os.environ.copy()
-    env["PYTHONPATH"] = os.pathsep.join(
-        filter(None, (str(PACKAGE_ROOT), env.get("PYTHONPATH")))
-    )
+    env["PYTHONPATH"] = str(PACKAGE_ROOT)
     result = subprocess.run(
         [sys.executable, "-S", "-B", "-c", script],
         check=False,

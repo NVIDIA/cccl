@@ -20,8 +20,6 @@ import textwrap
 
 import pytest
 
-from tests.support.paths import PACKAGE_ROOT
-
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
 _CUTLASS_AVAILABLE = importlib.util.find_spec("cutlass") is not None
 _NUMBA_AVAILABLE = importlib.util.find_spec("numba_cuda_mlir") is not None
@@ -30,7 +28,7 @@ _NUMBA_AVAILABLE = importlib.util.find_spec("numba_cuda_mlir") is not None
 def _run_import_probe(script: str) -> None:
     """Run an import scenario without this process's module cache.
 
-    Put the checkout's package first on PYTHONPATH and clear the inherited
+    Preserve the parent's selected package and clear the inherited
     auto-registration override. Individual probes can then choose registration
     behavior explicitly. Include child output in failures so import and
     capability diagnostics retain their original context.
@@ -38,11 +36,11 @@ def _run_import_probe(script: str) -> None:
 
     environment = os.environ.copy()
     environment.pop("CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION", None)
-    environment["PYTHONPATH"] = os.pathsep.join(
-        filter(None, (str(PACKAGE_ROOT), environment.get("PYTHONPATH")))
+    script = f"import sys; sys.path[:] = {sys.path!r}\n" + textwrap.dedent(
+        script
     )
     result = subprocess.run(
-        [sys.executable, "-B", "-c", textwrap.dedent(script)],
+        [sys.executable, "-I", "-B", "-c", script],
         env=environment,
         capture_output=True,
         text=True,

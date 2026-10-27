@@ -197,7 +197,7 @@ projects:
   cuda_coop_common:
     name: "cuda.coop Common SIMT API"
     include_regexes: ['python/cuda_coop/']
-    exclude_project_files: [cuda_coop_package, cuda_coop_numba]
+    exclude_project_files: [cuda_coop_package, cuda_coop_numba, cuda_coop_cutlass]
 
   # Host contracts stay selected for backend-local edits. Backends depend on
   # common API/package inputs, not on this broad host-test selection.
@@ -206,7 +206,9 @@ projects:
     matrix_project: "cuda_coop_python"
     lite_dependencies: [libcudacxx_public, cub_public, thrust_public]
     full_dependencies: [cuda_coop_package]
-    include_regexes: ['python/cuda_coop/']
+    include_regexes:
+      - 'python/cuda_coop/'
+      - 'ci/cuda_coop_cutlass_requirements\.txt$'
 
   cuda_coop_numba:
     name: "cuda.coop Numba-CUDA-MLIR"
@@ -219,6 +221,31 @@ projects:
       - 'python/cuda_coop/examples/numba_mlir/'
       - 'python/cuda_coop/benchmarks/numba_mlir/'
       - 'python/cuda_coop/tests/packaging/typing/numba_consumer\.py$'
+
+  cuda_coop_cutlass:
+    name: "cuda.coop CUTLASS"
+    matrix_project: "cuda_coop_cutlass"
+    lite_dependencies: [libcudacxx_public, cub_public, thrust_public]
+    full_dependencies: [cuda_coop_package, cuda_coop_common]
+    include_regexes:
+      - 'python/cuda_coop/cuda/coop/cutlass/'
+      - 'python/cuda_coop/tests/backends/cutlass/'
+      - 'python/cuda_coop/examples/cutlass/'
+      - 'python/cuda_coop/benchmarks/cutlass/'
+      - 'python/cuda_coop/tests/packaging/typing/cutlass_consumer\.py$'
+      - 'ci/cuda_coop_cutlass_requirements\.txt$'
+
+  cuda_coop_coexistence:
+    name: "cuda.coop Compiler Coexistence"
+    matrix_project: "cuda_coop_coexistence"
+    full_dependencies: [cuda_coop_package]
+    include_regexes:
+      - 'python/cuda_coop/cuda/coop/_registration\.py$'
+      - 'python/cuda_coop/cuda/coop/_core/(__init__|_auto_registration)\.py$'
+      - 'python/cuda_coop/cuda/coop/_core/api/(__init__|_dispatch)\.py$'
+      - 'python/cuda_coop/cuda/coop/(numba_mlir|cutlass)/(__init__|_compiler/(__init__|_activation|_runtime))\.py$'
+      - 'python/cuda_coop/tests/backends/(cutlass/unit/test_registration|numba_mlir/unit/test_runtime_activation)\.py$'
+      - 'ci/cuda_coop_cutlass_requirements\.txt$'
 
   packaging:
     name: "CCCL Packaging"

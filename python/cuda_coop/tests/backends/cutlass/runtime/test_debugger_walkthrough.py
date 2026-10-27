@@ -16,7 +16,7 @@ import sys
 
 import pytest
 
-from tests.support.paths import PACKAGE_ROOT, REPO_ROOT
+from tests.support.paths import REPO_ROOT
 
 pytest.importorskip("cutlass")
 
@@ -27,16 +27,19 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 def test_debugger_walkthrough(algorithm, tmp_path):
     env = os.environ.copy()
     env.update(
-        PYTHONPATH=os.pathsep.join(
-            filter(None, (str(PACKAGE_ROOT), env.get("PYTHONPATH")))
-        ),
-        CUDA_COOP_CCCL_ROOT=str(REPO_ROOT),
         CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION="0",
         CUDA_COOP_SOURCE_DUMP_DIR=str(tmp_path),
     )
     result = subprocess.run(
         [
             sys.executable,
+            "-I",
+            "-c",
+            (
+                f"import sys; sys.path[:] = {sys.path!r}; "
+                "import runpy; "
+                "runpy.run_path(sys.argv.pop(1), run_name='__main__')"
+            ),
             str(REPO_ROOT / "docs/python/coop/cutlass_debugger_walkthrough.py"),
             "--algorithm",
             algorithm,

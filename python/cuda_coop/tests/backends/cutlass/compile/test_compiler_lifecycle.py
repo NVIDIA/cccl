@@ -28,7 +28,7 @@ from cuda.coop import cutlass as cutlass_coop
 from cuda.coop._core.api._dispatch import _backend_module_name
 from cuda.coop.cutlass._compiler import _bundle, _cache
 from tests.backends.cutlass.support import device_array, values_for
-from tests.support.paths import PACKAGE_ROOT
+from tests.support.paths import TESTS_ROOT
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile, pytest.mark.gpu]
 
@@ -115,7 +115,8 @@ def _exercise_copy(api_name, *, nested=False, repeats=1):
 def test_fresh_process_traces_with_either_import_order(tmp_path, api, order):
     """Test automatic and explicit activation without prior import state.
 
-    The child imports this test package from the same checkout. Clear the
+    The child imports test helpers from this checkout and preserves the
+    selected cuda.coop package (source or installed wheel). Clear the
     parent's auto-registration override, then let each case select automatic
     activation or an explicit register call.
     """
@@ -147,7 +148,11 @@ def test_fresh_process_traces_with_either_import_order(tmp_path, api, order):
         """
     script = tmp_path / "fresh_trace.py"
     script.write_text(
-        "import sys\n"
+        "import sys, types\n"
+        + f"sys.path[:] = {sys.path!r}\n"
+        + "tests = types.ModuleType('tests')\n"
+        + f"tests.__path__ = {[str(TESTS_ROOT)]!r}\n"
+        + "sys.modules['tests'] = tests\n"
         + textwrap.dedent(imports)
         + (
             "from tests.backends.cutlass.compile.test_compiler_lifecycle "
@@ -157,11 +162,8 @@ def test_fresh_process_traces_with_either_import_order(tmp_path, api, order):
     )
     env = os.environ.copy()
     env.pop("CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION", None)
-    env["PYTHONPATH"] = os.pathsep.join(
-        filter(None, (str(PACKAGE_ROOT), env.get("PYTHONPATH")))
-    )
     result = subprocess.run(
-        [sys.executable, "-B", str(script)],
+        [sys.executable, "-I", "-B", str(script)],
         capture_output=True,
         text=True,
         env=env,

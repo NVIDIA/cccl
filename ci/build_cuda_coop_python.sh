@@ -48,6 +48,6 @@ python "$ci_dir/validate_cuda_coop_wheel.py" "${wheels[0]}"
 echo "Built cuda-coop wheel: ${wheels[0]}"
 
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-  wheel_artifact_name="$(CCCL_WHEEL_KIND=coop "$ci_dir/util/workflow/get_wheel_artifact_name.sh")"
+  wheel_artifact_name="$(CCCL_WHEEL_KIND="${CCCL_WHEEL_KIND:-coop}" "$ci_dir/util/workflow/get_wheel_artifact_name.sh")"
   "$ci_dir/util/artifacts/upload.sh" "$wheel_artifact_name" 'wheelhouse/cuda_coop-.*\.whl'
 fi

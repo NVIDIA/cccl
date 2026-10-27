@@ -12,7 +12,7 @@ set -euo pipefail
 ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$ci_dir/.." && pwd)"
 
-usage="Usage: $0 -py-version <python_version> [-stage contracts|numba-mlir-compile|numba-mlir-runtime] [-compute-sanitizer-racecheck]"
+usage="Usage: $0 -py-version <python_version> [-stage contracts|numba-mlir-compile|numba-mlir-runtime|cutlass-compile|cutlass-runtime|coexistence] [-compute-sanitizer-racecheck]"
 
 # shellcheck source=ci/util/python/common_arg_parser.sh
 source "$ci_dir/util/python/common_arg_parser.sh"
@@ -65,10 +65,7 @@ needs_cuda_toolkit=false
 case "$stage" in
   contracts)
     ;;
-  numba-mlir-compile)
-    needs_cuda_toolkit=true
-    ;;
-  numba-mlir-runtime)
+  numba-mlir-compile | numba-mlir-runtime | cutlass-compile | cutlass-runtime | coexistence)
     needs_cuda_toolkit=true
     ;;
   *)
@@ -92,7 +89,7 @@ if [[ "$racecheck" == true ]]; then
   export CUDA_COOP_RUN_RACECHECK=1
 fi
 
-if [[ "$stage" == "numba-mlir-compile" ]]; then
+if [[ "$stage" == "numba-mlir-compile" || "$stage" == "cutlass-compile" || "$stage" == "coexistence" ]]; then
   # Hide every device for the complete compiler-contract stage, including
   # import and installed-wheel isolation probes.
   export CUDA_VISIBLE_DEVICES=""
@@ -111,11 +108,17 @@ fi
 
 setup_python_env "${py_version}" ".cccl-coop-test-venv"
 
-if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-  wheel_artifact_name="$(CCCL_WHEEL_KIND=coop "$ci_dir/util/workflow/get_wheel_artifact_name.sh")"
+wheel_kind="coop"
+if [[ "$stage" == "cutlass-compile" || "$stage" == "cutlass-runtime" ]]; then
+  # The CPU compiler producer qualifies its own wheel before any GPU job.
+  wheel_kind="coop-cutlass"
+fi
+
+if [[ -n "${GITHUB_ACTIONS:-}" && "$stage" != "cutlass-compile" ]]; then
+  wheel_artifact_name="$(CCCL_WHEEL_KIND="$wheel_kind" "$ci_dir/util/workflow/get_wheel_artifact_name.sh")"
   "$ci_dir/util/artifacts/download.sh" "$wheel_artifact_name" "$repo_root/"
 else
-  CCCL_CUDA_COOP_PYENV_READY=1 \
+  CCCL_CUDA_COOP_PYENV_READY=1 CCCL_WHEEL_KIND="$wheel_kind" \
     "$ci_dir/build_cuda_coop_python.sh" -py-version "${py_version}"
 fi
 
@@ -130,13 +133,33 @@ case "$stage" in
   contracts)
     python -m pip install "${wheels[0]}[test]"
     ;;
-  numba-mlir-compile | numba-mlir-runtime)
+  numba-mlir-compile | numba-mlir-runtime | coexistence)
     python -m pip install \
       "${wheels[0]}[test,numba-cuda-mlir-cu${cuda_major_version}]"
+    ;;
+  cutlass-compile | cutlass-runtime)
+    python -m pip install "${wheels[0]}[test]"
     ;;
   *)
     echo "Error: unhandled cuda.coop test stage '$stage'" >&2
     exit 1
+    ;;
+esac
+
+case "$stage" in
+  cutlass-compile | cutlass-runtime | coexistence)
+    # A runtime lacking external LTO-IR
+    # support must fail compilation; import-only success is not qualification.
+    python -m pip install -r "$ci_dir/cuda_coop_cutlass_requirements.txt"
+    python -I - <<'PY'
+import importlib.metadata
+
+import cuda.coop.cutlass
+
+print(f"nvidia-cutlass-dsl={importlib.metadata.version('nvidia-cutlass-dsl')}")
+PY
+    ;;
+  *)
     ;;
 esac
 
@@ -200,6 +223,32 @@ PY
     python -m pytest -v \
       backends/numba_mlir/unit/ \
       backends/numba_mlir/compile/
+    ;;
+  cutlass-compile)
+    # Some lifecycle tests live in compile/ but launch kernels. Markers keep
+    # those on the runtime runner while explicit-target compilation stays CPU-only.
+    cd "$tests_root"
+    python -m pytest -v -m 'not gpu' \
+      backends/cutlass/unit/ backends/cutlass/compile/
+    ;;
+  coexistence)
+    # Both optional compilers are installed for import-order and registration
+    # checks. These probes do not allocate a GPU or compile a kernel.
+    cd "$tests_root"
+    python -m pytest -v \
+      backends/cutlass/unit/test_registration.py \
+      backends/numba_mlir/unit/test_runtime_activation.py
+    ;;
+  cutlass-runtime)
+    python -I - <<'PY'
+import cutlass
+
+cutlass.cuda.initialize_cuda_context()
+PY
+    nvidia-smi --query-gpu=name,compute_cap,driver_version --format=csv,noheader
+    cd "$tests_root"
+    python -m pytest -v -m gpu \
+      backends/cutlass/compile/ backends/cutlass/runtime/
     ;;
   numba-mlir-runtime)
     python -I - <<'PY'
