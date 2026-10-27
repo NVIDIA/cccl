@@ -43,13 +43,16 @@ def _shared_extent(context, value, seen=None):
                     )
                 else:
                     selected = None
-            if not isinstance(selected, slice) or selected.step not in (
-                None,
-                1,
-            ):
+            if not isinstance(selected, slice):
                 raise TypeError(
                     "cuda.coop.load shared output must be a contiguous "
                     "one-dimensional array"
+                )
+            if selected.step is not None:
+                raise TypeError(
+                    "cuda.coop.load shared output requires a contiguous "
+                    "slice without an explicit step; omit the slice step "
+                    "(including 1)"
                 )
             return len(range(extent)[selected])
         if (

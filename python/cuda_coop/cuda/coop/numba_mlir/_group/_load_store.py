@@ -73,10 +73,12 @@ def load(
     thread writes its own consecutive row of that many elements. The array
     must have a statically known capacity of at least the enclosing block's
     thread count times ``items_per_thread``; a contiguous slice selects the
-    destination origin. ``offset`` still selects the source origin. This
-    form returns ``None`` and does not accept ``alignment``. Synchronize
-    before another thread reads the shared result. Guarded loads preserve
-    CUB's unspecified invalid slots when ``oob_default`` is omitted.
+    destination origin. Use ``shared[start:stop]``; explicit slice steps,
+    including one, are unsupported by this backend. ``offset`` still selects
+    the source origin. This form returns ``None`` and does not accept
+    ``alignment``. Synchronize before another thread reads the shared result.
+    Guarded loads preserve CUB's unspecified invalid slots when
+    ``oob_default`` is omitted.
 
     See :ref:`per-thread payloads <coop-thread-data>` and
     :ref:`temporary storage <coop-temp-storage>` for allocation rules.

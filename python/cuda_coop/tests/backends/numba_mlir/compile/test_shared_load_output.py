@@ -74,6 +74,7 @@ def test_shared_output_compiles(api, count):
         ("slice_capacity", "at least 128"),
         ("rank", "one-dimensional"),
         ("stride", "contiguous"),
+        ("unit_step", "omit the slice step"),
         ("dtype", "dtype"),
         ("alignment", "alignment requires"),
         ("count", "positive compile-time integer"),
@@ -98,6 +99,8 @@ def test_invalid_shared_output(kind, message):
             buffer = cuda.shared.array(128, types.int32)
         if kind == "stride":
             output = buffer[::2]
+        elif kind == "unit_step":
+            output = buffer[::1]
         elif kind == "slice_capacity":
             output = buffer[1:]
         else:

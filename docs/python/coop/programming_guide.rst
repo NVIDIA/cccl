@@ -409,7 +409,8 @@ threads in the enclosing block, so sibling groups write disjoint rows.
 The destination must be one-dimensional and contiguous, have the source's
 dtype, and have a compile-time extent of at least ``block_threads * N``.
 Use the same destination view across participating threads. A supported
-contiguous slice can select its origin. Load's
+contiguous slice can select its origin. In Numba-CUDA-MLIR, use
+``shared[start:stop]`` and omit an explicit slice step, including one. Load's
 ``offset`` changes only source addressing. A non-``None`` ``alignment`` is
 reserved for returning Load; an existing array keeps its allocation's
 alignment. Keep live source, output and primitive scratch regions disjoint.
