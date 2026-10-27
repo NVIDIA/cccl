@@ -19,6 +19,7 @@
 #  define WIN32_LEAN_AND_MEAN
 #  include <process.h>
 #  include <windows.h>
+#  pragma comment(lib, "version.lib")
 #else
 #  include <dlfcn.h>
 #  include <unistd.h>
@@ -569,6 +570,32 @@ bool JITCompiler::compileOnly(const std::string& source_code)
 
 namespace
 {
+#ifdef _WIN32
+// CUDART_VERSION of a Windows cudart DLL, from its file version
+// (6.14.11.<CUDART_VERSION>); 0 if unavailable. Used instead of the DLL's
+// cudaRuntimeGetVersion, which reports the driver's version when that is
+// older (a v13.4 cudart64_13.dll reports 13000 under a 13.0 driver).
+int cudartDllVersion(const std::string& path)
+{
+  const std::wstring wpath = std::filesystem::path(path).wstring();
+  DWORD handle             = 0;
+  const DWORD size         = GetFileVersionInfoSizeW(wpath.c_str(), &handle);
+  if (size == 0)
+  {
+    return 0;
+  }
+  std::vector<char> info(size);
+  VS_FIXEDFILEINFO* fixed = nullptr;
+  UINT len                = 0;
+  if (!GetFileVersionInfoW(wpath.c_str(), 0, size, info.data())
+      || !VerQueryValueW(info.data(), L"\\", reinterpret_cast<void**>(&fixed), &len) || fixed == nullptr)
+  {
+    return 0;
+  }
+  return LOWORD(fixed->dwFileVersionLS);
+}
+#endif
+
 // CUDART_VERSION encodes a release as major * 1000 + minor * 10.
 std::string cudartVersionString(int version)
 {
@@ -688,7 +715,10 @@ bool JITCompiler::loadFromBytes(
     // Fail early, with the cause, instead of with a raw loader error or an
     // undefined-symbol error from loading the artifact.
     int local_version = 0;
-    if (get_version)
+#ifdef _WIN32
+    local_version = cudartDllVersion(loaded_path.empty() ? cudart_path : loaded_path);
+#endif
+    if (local_version < 1000 && get_version)
     {
       int version = 0;
       if (get_version(&version) == 0)
