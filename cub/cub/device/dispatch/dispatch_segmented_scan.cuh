@@ -15,6 +15,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
@@ -27,6 +28,7 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
@@ -35,6 +37,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__optional/nullopt.h>
 #include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_empty.h>
@@ -43,7 +46,6 @@
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/optional>
 
 CUB_NAMESPACE_BEGIN
 
