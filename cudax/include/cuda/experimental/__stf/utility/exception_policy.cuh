@@ -3894,8 +3894,10 @@ auto always(_A&& __a, _B&& __b, _Cs&&... __cs)
  * or never returns to the left of `&`.
  *
  * Custom runtime policies derive from the public @ref sink_base and implement
- * `hook` (and `clone`); `on_success` defaults to identity. Hand-written models
- * default to `own_result` and are unchecked. Erased |-composites are
+ * `hook` (and `clone`); `on_success` defaults to identity. Erasure records the static
+ * properties the checks use (`produces_value`, `diverges`, `may_passthrough`, the selector
+ * flags), so an erased policy is checked exactly as its static form. Hand-written models
+ * default to `own_result` with permissive flags, which pass every check. Erased |-composites are
  * `own_result` (a loud, value-checked unbox on first throw is their
  * backstop); a pure-& composite keeps its final policy's precise kind and
  * is checked at first use. A wrapped
@@ -3935,6 +3937,15 @@ public:
     //! Whether the policy always diverges (unwind, abort, terminate): alternatives and
     //! repetitions after it are unreachable even though it passes an exception through.
     const bool diverges;
+    //! Whether the policy's answer is a value standing in for the expression's (subst, as_expected,
+    //! defer, retry, a converter): a sequence after it would discard or override that value.
+    const bool produces_value;
+    //! Whether the policy re-runs the action, which a status operand does not have.
+    const bool needs_future;
+    //! Whether the policy contains a selector that matches exceptions by type (if_isa, thrown).
+    const bool selects_thrown;
+    //! Whether the policy contains a selector that matches failing statuses (if_equal, returned).
+    const bool selects_returned;
     //! Inclusive range of a stored integral answer; unused for other kinds.
     const long long min_value;
     const unsigned long long max_value;
@@ -3942,17 +3953,26 @@ public:
     const ::std::type_info* answer_type;
     const ::std::string_view answer_name;
 
-    sink_base(answer_kind __kind                    = answer_kind::own_result,
-              bool __may_passthrough                = true,
-              long long __min_value                 = 0,
-              unsigned long long __max_value        = 0,
-              const ::std::type_info* __answer_type = nullptr,
-              ::std::string_view __answer_name      = {},
-              bool __diverges                       = false)
+    sink_base(
+      answer_kind __kind                    = answer_kind::own_result,
+      bool __may_passthrough                = true,
+      long long __min_value                 = 0,
+      unsigned long long __max_value        = 0,
+      const ::std::type_info* __answer_type = nullptr,
+      ::std::string_view __answer_name      = {},
+      bool __diverges                       = false,
+      bool __produces_value                 = false,
+      bool __needs_future                   = false,
+      bool __selects_thrown                 = false,
+      bool __selects_returned               = false)
         : kind(__kind)
         , may_passthrough(__may_passthrough)
         , may_throw(__may_passthrough)
         , diverges(__diverges)
+        , produces_value(__produces_value)
+        , needs_future(__needs_future)
+        , selects_thrown(__selects_thrown)
+        , selects_returned(__selects_returned)
         , min_value(__min_value)
         , max_value(__max_value)
         , answer_type(__answer_type)
@@ -4091,7 +4111,11 @@ private:
               ? nullptr
               : &typeid(::cuda::std::remove_cvref_t<__ans_t>),
             type_name<::cuda::std::remove_cvref_t<__ans_t>>,
-            detail::__diverges_v<_P>)
+            detail::__diverges_v<_P>,
+            detail::__produces_value_v<_P>,
+            detail::__needs_future_v<_P>,
+            detail::__selects_thrown_v<_P>,
+            detail::__selects_returned_v<_P>)
         , __p_(::cuda::std::move(__p))
     {}
 
@@ -4430,6 +4454,26 @@ public:
   {
     return __p_->diverges;
   }
+  //! @brief Whether the erased policy's answer is a value standing in for the expression's.
+  [[nodiscard]] bool produces_value() const noexcept
+  {
+    return __p_->produces_value;
+  }
+  //! @brief Whether the erased policy re-runs the action.
+  [[nodiscard]] bool needs_future() const noexcept
+  {
+    return __p_->needs_future;
+  }
+  //! @brief Whether the erased policy selects exceptions by type.
+  [[nodiscard]] bool selects_thrown() const noexcept
+  {
+    return __p_->selects_thrown;
+  }
+  //! @brief Whether the erased policy selects failing statuses.
+  [[nodiscard]] bool selects_returned() const noexcept
+  {
+    return __p_->selects_returned;
+  }
   //! @brief Former name of @ref may_passthrough (deprecated).
   CCCL_DEPRECATED_BECAUSE("use may_passthrough()") bool may_rethrow() const noexcept
   {
@@ -4528,12 +4572,12 @@ inline void __check_dynamic_left_of_or(const dynamic& __p)
 
 inline void __check_dynamic_left_of_and(const dynamic& __p)
 {
-  const auto __kind = __p.kind();
-  if (__kind == dynamic::answer_kind::dies)
+  // The static checks of `&`, against the metadata recorded from the same traits at erasure.
+  if (__p.kind() == dynamic::answer_kind::dies && !__p.selects_returned())
   {
     _CCCL_THROW(::std::logic_error, "policies after a never-returning policy are unreachable");
   }
-  if (__kind != dynamic::answer_kind::effects && __kind != dynamic::answer_kind::resumes)
+  if (__p.produces_value())
   {
     _CCCL_THROW(::std::logic_error,
                 "the left side of & chooses a value (subst, as_expected, defer, retry, a converter) that & would "
@@ -6695,6 +6739,11 @@ UNITTEST("type erasure")
   EXPECT(!dynamic(noop).may_passthrough());
   EXPECT(dynamic(unwind).diverges());
   EXPECT(!dynamic(retry * 3).diverges());
+  EXPECT(dynamic(retry * 3).produces_value());
+  EXPECT(dynamic(retry * 3).needs_future());
+  EXPECT(dynamic(if_isa<::std::logic_error>(notify) | notify).selects_thrown());
+  EXPECT(!dynamic(if_isa<::std::logic_error>(notify) | notify).selects_returned());
+  EXPECT(dynamic(returned(notify)).selects_returned());
   // The checks `|`, `&`, and `*` perform statically run against this metadata when an operand
   // is erased, and reject a dead arm with std::logic_error when the composite is built.
   {
@@ -6738,6 +6787,27 @@ UNITTEST("type erasure")
       static_cast<void>(dynamic(retry) * 2);
     });
     EXPECT(!__r10);
+    // An erased `|` of effects answers `std::any` yet chooses no value, and a code-channel
+    // selector reaches the right of `&` on the code channel: both pass, as statically.
+    const bool __r11 = __erasure_rejects([] {
+      static_cast<void>(dynamic(if_isa<::std::logic_error>(notify) | notify) & subst(2));
+    });
+    EXPECT(!__r11);
+    const bool __r12 = __erasure_rejects([] {
+      static_cast<void>(dynamic(returned(notify)) & subst(2));
+    });
+    EXPECT(!__r12);
+    const bool __r13 = __erasure_rejects([] {
+      static_cast<void>(dynamic(retry * 3 | subst(1)) & noop); // an erased | that chooses a value
+    });
+    EXPECT(__r13);
+  }
+  {
+    ::std::ostringstream log;
+    const int x = errsink(dynamic(if_isa<::std::logic_error>(notify(log)) | notify(log)) & subst(1))->*[]() -> int {
+      throw ::std::logic_error("x");
+    };
+    EXPECT(x == 1);
   }
   {
     const int x = errsink(dynamic(noop) & subst(2))->*[]() -> int {
@@ -6795,6 +6865,11 @@ UNITTEST("type erasure")
     EXPECT(x == 21);
     EXPECT(!custom.may_passthrough());
     EXPECT(custom.kind() == dynamic::answer_kind::own_result);
+    EXPECT(!custom.produces_value()); // permissive: unchecked on the left of &
+    const bool __custom_rejected = __erasure_rejects([&] {
+      static_cast<void>(custom & noop);
+    });
+    EXPECT(!__custom_rejected);
   }
 
   // The fwd backstop applies the conversion law per VALUE at first throw. Only
