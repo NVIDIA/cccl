@@ -61,7 +61,7 @@ struct to_offsets_functor
 };
 
 template <size_t Wobble = 0, typename T, typename OffsetT>
-static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
 #if !TUNE_BASE
   using policy_t = policy_selector_t<TUNE_THREADS, TUNE_ITEMS, TUNE_MAX_SEGMENTS_PER_BLOCK>;
@@ -115,13 +115,13 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 }
 
 template <typename T, typename OffsetT>
-static void fixed_segment_size_bench(nvbench::state& state, nvbench::type_list<T, OffsetT> tl)
+void fixed_segment_size_bench(nvbench::state& state, nvbench::type_list<T, OffsetT> tl)
 {
   return bench_impl<0, T, OffsetT>(state, tl);
 }
 
 template <typename T, typename OffsetT>
-static void varying_segment_size_bench(nvbench::state& state, nvbench::type_list<T, OffsetT> tl)
+void varying_segment_size_bench(nvbench::state& state, nvbench::type_list<T, OffsetT> tl)
 {
   return bench_impl<1, T, OffsetT>(state, tl);
 }
