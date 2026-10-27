@@ -32,7 +32,7 @@
 #include "test_macros.h"
 
 template <class T>
-_CCCL_CONCEPT HasMinR = _CCCL_REQUIRES_EXPR((T), T t)((unused(cuda::std::ranges::min(t))));
+_CCCL_CONCEPT HasMinR = _CCCL_REQUIRES_EXPR((T), T t)((cuda::std::ranges::min(t)));
 
 struct NoLessThanOp
 {};

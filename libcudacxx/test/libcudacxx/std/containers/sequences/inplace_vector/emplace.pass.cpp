@@ -213,8 +213,7 @@ void test_exceptions()
     empty_vec empty{};
     try
     {
-      auto emplace = empty.emplace_back(5);
-      unused(emplace);
+      [[maybe_unused]] auto emplace = empty.emplace_back(5);
       assert(false);
     }
     catch (const std::bad_alloc&)
@@ -226,9 +225,8 @@ void test_exceptions()
 
     try
     {
-      const int input       = 5;
-      auto push_back_lvalue = empty.push_back(input);
-      unused(push_back_lvalue);
+      const int input                        = 5;
+      [[maybe_unused]] auto push_back_lvalue = empty.push_back(input);
       assert(false);
     }
     catch (const std::bad_alloc&)
@@ -240,8 +238,7 @@ void test_exceptions()
 
     try
     {
-      auto push_back_rvalue = empty.push_back(5);
-      unused(push_back_rvalue);
+      [[maybe_unused]] auto push_back_rvalue = empty.push_back(5);
       assert(false);
     }
     catch (const std::bad_alloc&)
@@ -257,8 +254,7 @@ void test_exceptions()
     small_vec full{0, 1, 2, 3, 4};
     try
     {
-      auto emplace = full.emplace_back(5);
-      unused(emplace);
+      [[maybe_unused]] auto emplace = full.emplace_back(5);
       assert(false);
     }
     catch (const std::bad_alloc&)
@@ -270,9 +266,8 @@ void test_exceptions()
 
     try
     {
-      const int input       = 5;
-      auto push_back_lvalue = full.push_back(input);
-      unused(push_back_lvalue);
+      const int input                        = 5;
+      [[maybe_unused]] auto push_back_lvalue = full.push_back(input);
       assert(false);
     }
     catch (const std::bad_alloc&)
@@ -284,8 +279,7 @@ void test_exceptions()
 
     try
     {
-      auto push_back_rvalue = full.push_back(5);
-      unused(push_back_rvalue);
+      [[maybe_unused]] auto push_back_rvalue = full.push_back(5);
       assert(false);
     }
     catch (const std::bad_alloc&)

@@ -47,7 +47,9 @@ template <class MDS, class... Indices>
   requires requires(MDS mds, Indices... indices) { mds[indices...]; }
 TEST_FUNC constexpr bool check_operator_constraints(MDS m, Indices... idxs)
 {
-  unused(m[idxs...]);
+  {
+    [[maybe_unused]] auto&& discarded = m[idxs...];
+  }
   return true;
 }
 #else // ^^^ _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^ / vvv !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() vvv
@@ -58,7 +60,9 @@ template <class MDS,
                                  int> = 0>
 TEST_FUNC constexpr bool check_operator_constraints(MDS m, Index idx)
 {
-  unused(m[idx]);
+  {
+    [[maybe_unused]] auto&& discarded = m[idx];
+  }
   return true;
 }
 #endif // ^^^ !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^
@@ -102,14 +106,13 @@ TEST_FUNC constexpr void assert_access(MDS mds, Arg arg)
 }
 
 template <class MDS, class... Args, cuda::std::enable_if_t<(MDS::extents_type::rank() == sizeof...(Args)), int> = 0>
-TEST_FUNC constexpr void assert_access(MDS mds, Args... args)
+TEST_FUNC constexpr void assert_access([[maybe_unused]] MDS mds, [[maybe_unused]] Args... args)
 {
 #if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
   int* ptr1 = &(mds.accessor().access(mds.data_handle(), mds.mapping()(args...)));
   int* ptr2 = &access(mds, args...);
   assert(ptr1 == ptr2);
 #else // ^^^ _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^ / vvv !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() vvv
-  unused(mds, args...);
 #endif // ^^^ !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^
 }
 

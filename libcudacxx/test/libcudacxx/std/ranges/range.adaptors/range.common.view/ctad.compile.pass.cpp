@@ -45,9 +45,9 @@ using result_common_view_owning_borrowed =
 
 TEST_FUNC constexpr bool test()
 {
-  View v{};
-  Range r{};
-  BorrowedRange br{};
+  [[maybe_unused]] View v{};
+  [[maybe_unused]] Range r{};
+  [[maybe_unused]] BorrowedRange br{};
 
   static_assert(cuda::std::same_as<decltype(cuda::std::ranges::common_view(v)), result_common_view>);
   static_assert(cuda::std::same_as<decltype(cuda::std::ranges::common_view(cuda::std::move(v))), result_common_view>);
@@ -58,9 +58,6 @@ TEST_FUNC constexpr bool test()
   static_assert(cuda::std::same_as<decltype(cuda::std::ranges::common_view(cuda::std::move(br))),
                                    result_common_view_owning_borrowed>);
 
-  unused(v);
-  unused(r);
-  unused(br);
   return true;
 }
 

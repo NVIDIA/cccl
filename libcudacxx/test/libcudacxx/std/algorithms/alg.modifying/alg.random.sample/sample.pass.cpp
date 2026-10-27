@@ -29,40 +29,36 @@
 
 constexpr size_t sample_size = 4;
 
-TEST_GLOBAL_VARIABLE constexpr int host_reservoir_sample1[sample_size]   = {10, 5, 9, 4};
-TEST_GLOBAL_VARIABLE constexpr int device_reservoir_sample1[sample_size] = {10, 5, 9, 4};
-TEST_GLOBAL_VARIABLE constexpr int host_reservoir_sample2[sample_size]   = {5, 2, 10, 4};
-TEST_GLOBAL_VARIABLE constexpr int device_reservoir_sample2[sample_size] = {5, 2, 10, 4};
+[[maybe_unused]] TEST_GLOBAL_VARIABLE constexpr int host_reservoir_sample1[sample_size]   = {10, 5, 9, 4};
+[[maybe_unused]] TEST_GLOBAL_VARIABLE constexpr int device_reservoir_sample1[sample_size] = {10, 5, 9, 4};
+[[maybe_unused]] TEST_GLOBAL_VARIABLE constexpr int host_reservoir_sample2[sample_size]   = {5, 2, 10, 4};
+[[maybe_unused]] TEST_GLOBAL_VARIABLE constexpr int device_reservoir_sample2[sample_size] = {5, 2, 10, 4};
 
 struct ReservoirSampleExpectations
 {
   TEST_HOST_DEVICE_FUNC static constexpr const int* get_sample1() noexcept
   {
-    unused(host_reservoir_sample1, device_reservoir_sample1);
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return device_reservoir_sample1;), (return host_reservoir_sample1;))
   }
   TEST_HOST_DEVICE_FUNC static constexpr const int* get_sample2() noexcept
   {
-    unused(host_reservoir_sample2, device_reservoir_sample2);
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return device_reservoir_sample2;), (return host_reservoir_sample2;))
   }
 };
 
-TEST_GLOBAL_VARIABLE constexpr int host_selection_sample1[sample_size]   = {1, 4, 6, 7};
-TEST_GLOBAL_VARIABLE constexpr int device_selection_sample1[sample_size] = {1, 4, 6, 7};
-TEST_GLOBAL_VARIABLE constexpr int host_selection_sample2[sample_size]   = {1, 2, 6, 8};
-TEST_GLOBAL_VARIABLE constexpr int device_selection_sample2[sample_size] = {1, 2, 6, 8};
+[[maybe_unused]] TEST_GLOBAL_VARIABLE constexpr int host_selection_sample1[sample_size]   = {1, 4, 6, 7};
+[[maybe_unused]] TEST_GLOBAL_VARIABLE constexpr int device_selection_sample1[sample_size] = {1, 4, 6, 7};
+[[maybe_unused]] TEST_GLOBAL_VARIABLE constexpr int host_selection_sample2[sample_size]   = {1, 2, 6, 8};
+[[maybe_unused]] TEST_GLOBAL_VARIABLE constexpr int device_selection_sample2[sample_size] = {1, 2, 6, 8};
 
 struct SelectionSampleExpectations
 {
   TEST_HOST_DEVICE_FUNC static constexpr const int* get_sample1() noexcept
   {
-    unused(device_selection_sample1, host_selection_sample1);
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return device_selection_sample1;), (return host_selection_sample1;))
   }
   TEST_HOST_DEVICE_FUNC static constexpr const int* get_sample2() noexcept
   {
-    unused(device_selection_sample2, host_selection_sample2);
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return device_selection_sample2;), (return host_selection_sample2;))
   }
 };

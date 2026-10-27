@@ -80,7 +80,7 @@ struct non_range_has_size
   TEST_FUNC int size() const;
 };
 #if TEST_STD_VER > 2017
-static_assert(requires(non_range_has_size const x) { unused(cuda::std::ranges::size(x)); });
+static_assert(requires(non_range_has_size const x) { cuda::std::ranges::size(x); });
 #else
 static_assert(cuda::std::invocable<decltype(cuda::std::ranges::size), non_range_has_size const>);
 #endif

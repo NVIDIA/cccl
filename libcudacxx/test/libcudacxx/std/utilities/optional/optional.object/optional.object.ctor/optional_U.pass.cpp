@@ -121,8 +121,7 @@ void test_exception(optional<U>&& rhs)
 {
   try
   {
-    optional<T> lhs = cuda::std::move(rhs);
-    unused(lhs);
+    [[maybe_unused]] optional<T> lhs = cuda::std::move(rhs);
     assert(false);
   }
   catch (int i)

@@ -48,8 +48,7 @@ TEST_FUNC constexpr void check_noexcept(T& c)
   static_assert(noexcept(c.crbegin()));
   static_assert(noexcept(c.crend()));
 
-  const T& cc = c;
-  unused(cc);
+  [[maybe_unused]] const T& cc = c;
   static_assert(noexcept(cc.begin()));
   static_assert(noexcept(cc.end()));
   static_assert(noexcept(cc.rbegin()));

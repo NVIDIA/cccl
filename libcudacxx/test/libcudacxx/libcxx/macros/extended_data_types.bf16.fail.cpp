@@ -18,8 +18,7 @@
 int main(int, char**)
 {
 #if !_CCCL_HAS_NVBF16()
-  auto x3 = __nv_bfloat16(1.0f);
-  unused(x3);
+  [[maybe_unused]] auto x3 = __nv_bfloat16(1.0f);
 #else
   static_assert(false);
 #endif

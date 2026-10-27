@@ -13,10 +13,9 @@
 
 int main(int, char**)
 {
-  int memory[8];
+  [[maybe_unused]] int memory[8];
   _CCCL_BUILTIN_PREFETCH(memory);
   _CCCL_BUILTIN_PREFETCH(memory, /*read-only=*/0);
   _CCCL_BUILTIN_PREFETCH(memory, /*read-only=*/0, /*medium cache utilization=*/1);
-  unused(memory);
   return 0;
 }
