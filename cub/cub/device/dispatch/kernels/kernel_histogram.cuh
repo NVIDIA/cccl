@@ -16,6 +16,7 @@
 #include <cub/agent/agent_histogram.cuh>
 #include <cub/device/dispatch/tuning/tuning_histogram.cuh>
 #include <cub/grid/grid_queue.cuh>
+#include <cub/thread/thread_search.cuh>
 #include <cub/util_arch.cuh>
 
 #include <cuda/__numeric/sub_overflow.h>

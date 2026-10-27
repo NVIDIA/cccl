@@ -121,11 +121,11 @@ inline constexpr bool __nothrow_swappable_with<_Tp, _Up, false> = false;
 } // namespace __detail
 
 template <class _Tp>
-struct __is_swappable : public integral_constant<bool, __detail::__swappable_with<_Tp&>>
+struct __is_swappable : public bool_constant<__detail::__swappable_with<_Tp&>>
 {};
 
 template <class _Tp>
-struct __is_nothrow_swappable : public integral_constant<bool, __detail::__nothrow_swappable_with<_Tp&>>
+struct __is_nothrow_swappable : public bool_constant<__detail::__nothrow_swappable_with<_Tp&>>
 {};
 
 template <class _Tp, class _Up>

@@ -29,7 +29,7 @@
 #  if __cpp_lib_expected >= 202202L
 #    include <expected>
 #  else // ^^^ __cpp_lib_expected >= 202202L ^^^ / vvv __cpp_lib_expected < 202202L vvv
-#    include <exception>
+#    include <cuda/std/__host_stdlib/exception>
 #  endif // ^^^ __cpp_lib_expected < 202202L ^^^
 #endif // !_CCCL_HAS_EXCEPTIONS()
 

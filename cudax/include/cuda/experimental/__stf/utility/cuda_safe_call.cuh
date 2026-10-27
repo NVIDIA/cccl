@@ -34,18 +34,24 @@
 
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/source_location>
+#include <cuda/std/variant>
 
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/source_location.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <cstdlib>
+#include <cstring>
 #include <exception>
+#include <string>
 
 #include <cuda.h>
 #include <cuda_occupancy.h>
 #include <cuda_runtime.h>
 
+#if __has_include(<cublas_v2.h>)
+#  include <cublas_v2.h>
+#endif
 #if __has_include(<cusolverDn.h>)
 #  include <cusolverDn.h>
 #endif
@@ -94,6 +100,162 @@ inline const char* cusolverGetErrorString(const cusolverStatus_t status)
 }
 #endif
 
+class cuda_exception;
+
+// Every CUDA success status is zero, which is what lets cuda_status_traits_base::success() be T{}.
+static_assert(cudaSuccess == 0 && CUDA_SUCCESS == 0 && CUDA_OCC_SUCCESS == 0
+#if __has_include(<cublas_v2.h>)
+                && CUBLAS_STATUS_SUCCESS == 0
+#endif
+#if __has_include(<cusolverDn.h>)
+                && CUSOLVER_STATUS_SUCCESS == 0
+#endif
+              ,
+              "a CUDA success status is no longer zero; revise cuda_status_traits_base::success()");
+
+/**
+ * @brief The part of @ref status_traits common to the CUDA status types: success is the zero
+ * enumerator, and the exception is a @ref cuda_exception. A specialization inherits it and
+ * defines only `name`.
+ *
+ * @tparam T the CUDA status type
+ */
+template <class T>
+struct cuda_status_traits_base
+{
+  //! @brief The success value, the zero enumerator.
+  //! @return `T{}`
+  static constexpr T success() noexcept
+  {
+    return T{};
+  }
+
+  //! @brief The exception `unwind` throws and exception-only policies receive.
+  //! @param[in] status the status
+  //! @param[in] loc the location reported in the message
+  //! @return `cuda_exception(status, loc)`
+  static cuda_exception to_exception(T status, ::cuda::std::source_location loc);
+};
+
+/**
+ * @brief Makes the CUDA runtime's `cudaError_t` a status for `errsink(policy) << status`; see
+ * @ref status_traits.
+ */
+template <>
+struct status_traits<cudaError_t> : cuda_status_traits_base<cudaError_t>
+{
+  //! @brief The status's name and description, from `cudaGetErrorName` and `cudaGetErrorString`.
+  //! Builds no exception, so it does not query the current device.
+  //! @param[in] status the status
+  //! @return a string such as "cudaErrorInvalidValue: invalid argument"
+  static ::std::string name(const cudaError_t status)
+  {
+    const char* const error_name   = ::cudaGetErrorName(status);
+    const char* const error_string = ::cudaGetErrorString(status);
+    ::std::string result;
+    result.reserve(::std::strlen(error_name) + 2 + ::std::strlen(error_string));
+    result.append(error_name).append(": ").append(error_string);
+    return result;
+  }
+};
+
+/**
+ * @brief Makes the CUDA driver's `CUresult` a status for `errsink(policy) << status`; see
+ * @ref status_traits.
+ */
+template <>
+struct status_traits<CUresult> : cuda_status_traits_base<CUresult>
+{
+  //! @brief The status's name and description, from `cuGetErrorName` and `cuGetErrorString`,
+  //! with fixed text for a status the driver does not recognize.
+  //! @param[in] status the status
+  //! @return a string such as "CUDA_ERROR_INVALID_VALUE: invalid argument"
+  static ::std::string name(const CUresult status)
+  {
+    const char* error_name = nullptr;
+    if (::cuGetErrorName(status, &error_name) != CUDA_SUCCESS || error_name == nullptr)
+    {
+      error_name = "unrecognized CUresult";
+    }
+    const char* error_string = nullptr;
+    if (::cuGetErrorString(status, &error_string) != CUDA_SUCCESS || error_string == nullptr)
+    {
+      error_string = "no description available";
+    }
+    ::std::string result;
+    result.reserve(::std::strlen(error_name) + 2 + ::std::strlen(error_string));
+    result.append(error_name).append(": ").append(error_string);
+    return result;
+  }
+};
+
+/**
+ * @brief Makes the occupancy calculator's `cudaOccError` a status for `errsink(policy) << status`;
+ * see @ref status_traits.
+ */
+template <>
+struct status_traits<cudaOccError> : cuda_status_traits_base<cudaOccError>
+{
+  //! @brief The status's enumerator name.
+  //! @param[in] status the status
+  //! @return a string such as "CUDA_OCC_ERROR_INVALID_INPUT"
+  static ::std::string name(const cudaOccError status)
+  {
+    switch (status)
+    {
+      case CUDA_OCC_SUCCESS:
+        return "CUDA_OCC_SUCCESS";
+      case CUDA_OCC_ERROR_INVALID_INPUT:
+        return "CUDA_OCC_ERROR_INVALID_INPUT";
+      case CUDA_OCC_ERROR_UNKNOWN_DEVICE:
+        return "CUDA_OCC_ERROR_UNKNOWN_DEVICE";
+    }
+    return "unrecognized cudaOccError";
+  }
+};
+
+#if __has_include(<cublas_v2.h>)
+/**
+ * @brief Makes cuBLAS's `cublasStatus_t` a status for `errsink(policy) << status`; see
+ * @ref status_traits.
+ */
+template <>
+struct status_traits<cublasStatus_t> : cuda_status_traits_base<cublasStatus_t>
+{
+  //! @brief The status's name and description, from `cublasGetStatusName` and
+  //! `cublasGetStatusString`.
+  //! @param[in] status the status
+  //! @return a string such as "CUBLAS_STATUS_NOT_INITIALIZED: the library was not initialized"
+  static ::std::string name(const cublasStatus_t status)
+  {
+    const char* const status_name   = ::cublasGetStatusName(status);
+    const char* const status_string = ::cublasGetStatusString(status);
+    ::std::string result;
+    result.reserve(::std::strlen(status_name) + 2 + ::std::strlen(status_string));
+    result.append(status_name).append(": ").append(status_string);
+    return result;
+  }
+};
+#endif // __has_include(<cublas_v2.h>)
+
+#if __has_include(<cusolverDn.h>)
+/**
+ * @brief Makes cuSOLVER's `cusolverStatus_t` a status for `errsink(policy) << status`; see
+ * @ref status_traits.
+ */
+template <>
+struct status_traits<cusolverStatus_t> : cuda_status_traits_base<cusolverStatus_t>
+{
+  //! @brief The status's enumerator name, from @ref cusolverGetErrorString.
+  //! @param[in] status the status
+  //! @return the name
+  static ::std::string name(const cusolverStatus_t status)
+  {
+    return ::std::string{cusolverGetErrorString(status)};
+  }
+};
+#endif // __has_include(<cusolverDn.h>)
+
 /**
  * @brief Exception type across CUDA, CUBLAS, and CUSOLVER.
  *
@@ -110,28 +272,19 @@ public:
    * @brief Constructs an exception object from a status value.
    *
    * If `status` is `0`, the exception is still created with an empty error message. Otherwise, the constructor
-   * initializes the error message (later accessible with `what()`) appropriately.
+   * initializes the error message (later accessible with `what()`): the location and device, then
+   * `status_traits<T>::name(status)`.
    *
-   * @tparam T status type, can be `cudaError_t`, `cublasStatus_t`, or `cusolverStatus_t`
+   * @tparam T status type, can be `cudaError_t`, `CUresult`, `cudaOccError`, `cublasStatus_t`, or `cusolverStatus_t`
    * @param status status value, usually the result of a CUDA API call
    * @param loc location of the call, defaulted
    */
   template <typename T>
   cuda_exception(const T status, const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+      : stored_status(status)
   {
-    // All "success" statuses are zero
-    static_assert(cudaSuccess == 0 && CUDA_SUCCESS == 0
-#if __has_include(<cublas_v2.h>)
-                    && CUBLAS_STATUS_SUCCESS == 0
-#endif
-#if __has_include(<cusolverDn.h>)
-                    && CUSOLVER_STATUS_SUCCESS == 0
-#endif
-                  ,
-                  "Please revise this function.");
-
     // Common early exit test for all cases
-    if (status == 0)
+    if (status == status_traits<T>::success())
     {
       return;
     }
@@ -139,64 +292,11 @@ public:
     int dev = -1;
     cudaGetDevice(&dev);
 
-#if __has_include(<cusolverDn.h>)
-    if constexpr (::cuda::std::is_same_v<T, cusolverStatus_t>)
-    {
-      format("%s(%u) [device %d] CUSOLVER error in call %s: %s.",
-             loc.file_name(),
-             loc.line(),
-             dev,
-             loc.function_name(),
-             cusolverGetErrorString(status));
-    }
-    else
-#endif // __has_include(<cusolverDn.h>)
-#if __has_include(<cublas_v2.h>)
-      if constexpr (::cuda::std::is_same_v<T, cublasStatus_t>)
-    {
-      format("%s(%u) [device %d] CUBLAS error in %s: %s.",
-             loc.file_name(),
-             loc.line(),
-             dev,
-             loc.function_name(),
-             cublasGetStatusString(status));
-    }
-    else
-#endif // __has_include(<cublas_v2.h>)
-      if constexpr (::cuda::std::is_same_v<T, cudaOccError>)
-      {
-        format("%s(%u) [device %d] CUDA OCC error in %s: %s.",
-               loc.file_name(),
-               loc.line(),
-               dev,
-               loc.function_name(),
-               cudaGetErrorString(cudaErrorInvalidConfiguration));
-      }
-      else if constexpr (::cuda::std::is_same_v<T, CUresult>)
-      {
-        const char* error_string = nullptr;
-        cuGetErrorString(status, &error_string);
-        const char* error_name = nullptr;
-        cuGetErrorName(status, &error_name);
-        format("%s(%u) [device %d] CUDA DRIVER error in %s: %s (%s).",
-               loc.file_name(),
-               loc.line(),
-               dev,
-               loc.function_name(),
-               error_string,
-               error_name);
-      }
-      else
-      {
-        static_assert(::cuda::std::is_same_v<T, cudaError_t>, "Error: not a CUDA status.");
-        format("%s(%u) [device %d] CUDA error in %s: %s (%s).",
-               loc.file_name(),
-               loc.line(),
-               dev,
-               loc.function_name(),
-               cudaGetErrorString(status),
-               cudaGetErrorName(status));
-      }
+    format("%s(%u) [device %d] CUDA error in %s: ", loc.file_name(), loc.line(), dev, loc.function_name());
+    // The name for T only, not a visit over every alternative: that would instantiate every
+    // family's name and make each user of this header link against cuBLAS.
+    msg.append(status_traits<T>::name(status));
+    msg.append(".");
   }
 
   /**
@@ -207,6 +307,24 @@ public:
   const char* what() const noexcept override
   {
     return msg.c_str();
+  }
+
+  /**
+   * @brief Returns the status the exception was built from, so a handler can recover it.
+   *
+   * `S` must be the type of that status; asking for another of the accepted status types is a
+   * programming error, checked with `_CCCL_VERIFY`.
+   *
+   * @tparam S the status type the exception was built from
+   * @return the status
+   */
+  template <typename S>
+  S status() const noexcept
+  {
+    const S* const result = ::cuda::std::get_if<S>(&stored_status);
+    _CCCL_VERIFY(result != nullptr,
+                 "cuda_exception::status<S>(): S is not the type of the status the exception was built from");
+    return *result;
   }
 
 private:
@@ -223,8 +341,27 @@ private:
     msg.resize(needed);
   }
 
+  ::cuda::std::variant<cudaError_t,
+                       CUresult,
+                       cudaOccError
+#if __has_include(<cublas_v2.h>)
+                       ,
+                       cublasStatus_t
+#endif
+#if __has_include(<cusolverDn.h>)
+                       ,
+                       cusolverStatus_t
+#endif
+                       >
+    stored_status;
   ::std::string msg;
 };
+
+template <class T>
+cuda_exception cuda_status_traits_base<T>::to_exception(const T status, const ::cuda::std::source_location loc)
+{
+  return cuda_exception(status, loc);
+}
 
 #ifdef UNITTESTED_FILE
 //! [cuda_exception]
@@ -238,6 +375,13 @@ UNITTEST("cuda_exception")
 #  endif
 };
 //! [cuda_exception]
+#endif // UNITTESTED_FILE
+
+#ifdef UNITTESTED_FILE
+// The error-sink tests in exception_policy.cuh need the specializations above. When that header
+// is reached through the include at the top of this one, its tests run before this point and
+// skip themselves; they run in exception_policy.cuh's own test, which includes this header.
+#  define _CUDAX_STF_CUDA_STATUS_TRAITS_AVAILABLE
 #endif // UNITTESTED_FILE
 
 namespace reserved
@@ -426,6 +570,9 @@ UNITTEST("cuda_safe_call")
  * The typical usage is to place a CUDA function call inside `cuda_try`, i.e. `cuda_try(cudaFunc(args))` (the
  * same way `cuda_safe_call` would be called). For example, `cuda_try(cudaCreateStream(&stream))` is equivalent to
  * `cudaCreateStream(&stream)`, with the note that the former call throws an exception in case of error.
+ *
+ * For the status types that specialize @ref status_traits, `cuda_try(status)` is equivalent to
+ * `errsink(eh::unwind) << status`.
  *
  * @snippet this cuda_try1
  */
