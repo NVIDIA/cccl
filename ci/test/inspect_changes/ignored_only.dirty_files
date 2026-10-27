@@ -1,1 +1,7 @@
 docs/index.rst
+LICENSE
+cub/LICENSE.TXT
+cudax/LICENSE.TXT
+libcudacxx/LICENSE.TXT
+libcudacxx/test/LICENSE.TXT
+thrust/LICENSE
