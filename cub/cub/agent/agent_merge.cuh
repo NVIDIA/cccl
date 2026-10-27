@@ -60,6 +60,20 @@ struct agent_t
   using key_type  = it_value_t<KeysIt1>;
   using item_type = it_value_t<ItemsIt1>;
 
+  // Bulk copy loads both input ranges as raw memory into one shared memory buffer of the value type of the first range
+  static_assert(!UseBl2ShForKeys
+                  || (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<KeysIt1>
+                      && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<KeysIt2>
+                      && ::cuda::std::is_same_v<key_type, it_value_t<KeysIt2>>),
+                "MergePolicy: use_bulk_copy_for_keys requires both key ranges to be contiguous and have the same value "
+                "type");
+  static_assert(!UseBl2ShForItems
+                  || (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<ItemsIt1>
+                      && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<ItemsIt2>
+                      && ::cuda::std::is_same_v<item_type, it_value_t<ItemsIt2>>),
+                "MergePolicy: use_bulk_copy_for_values requires both value ranges to be contiguous and have the same "
+                "value type");
+
   using block_load_to_shared = BlockLoadToShared<ThreadsPerBlock>;
   using block_store_keys     = BlockStore<key_type, ThreadsPerBlock, ItemsPerThread, StoreAlgorithm>;
   using block_store_items    = BlockStore<item_type, ThreadsPerBlock, ItemsPerThread, StoreAlgorithm>;
