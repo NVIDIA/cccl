@@ -231,6 +231,8 @@ CUB_TEST("c2h uniform offset generators validate sizes before allocation", "[c2h
 
 namespace
 {
+// Use a named callable instead of a local generic lambda to work around
+// an internal compiler error in GCC 7.
 template <typename T, std::size_t N>
 struct check_device_offsets
 {
@@ -250,26 +252,27 @@ struct check_device_offsets
     REQUIRE(std::equal(host.begin(), host.end(), expected.begin(), expected.begin() + expected_size));
   }
 };
-template <typename T, std::size_t N>
-check_device_offsets(std::size_t, std::size_t, const std::array<T, N>&) -> check_device_offsets<T, N>;
 } // namespace
 
 CUB_TEST("c2h offset buffers retain capacity after shrinking their logical size",
          "[c2h][buffers][generators]",
          CUB_SMALL)
 {
+  using offset_t          = cuda::std::int32_t;
+  constexpr std::size_t N = 5;
+
   const auto stream         = c2h::make_current_device_stream();
-  const auto total_elements = GENERATE(cuda::std::int32_t{0}, 8);
-  const std::array<cuda::std::int32_t, 5> expected{0, 2, 4, 6, 8};
+  const auto total_elements = GENERATE(offset_t{0}, 8);
+  const std::array<offset_t, N> expected{0, 2, 4, 6, 8};
   const auto num_elements      = static_cast<std::size_t>(total_elements);
   const auto expected_size     = num_elements / 2 + 1;
   const auto expected_capacity = num_elements + 2;
 
   REQUIRE(1 <= expected_size);
-  REQUIRE(expected_size <= expected.size());
+  REQUIRE(expected_size <= N);
   REQUIRE(total_elements == expected[expected_size - 1]);
 
-  const check_device_offsets verify_device_offsets{expected_size, expected_capacity, expected};
+  const check_device_offsets<offset_t, N> verify_device_offsets{expected_size, expected_capacity, expected};
 
   SECTION("device buffer")
   {
@@ -291,32 +294,23 @@ CUB_TEST("c2h detail uniform offset generators validate counts and destination s
          "[c2h][buffers][generators]",
          CUB_SMALL)
 {
+  using offset_t = cuda::std::int32_t;
+
   const auto stream         = c2h::make_current_device_stream();
-  const auto total_elements = GENERATE(cuda::std::int32_t{-1}, 0, 1, (std::numeric_limits<cuda::std::int32_t>::max)());
+  const auto total_elements = GENERATE(offset_t{-1}, 0, 1, (std::numeric_limits<offset_t>::max)());
 
   SECTION("default policy")
   {
-    REQUIRE_THROWS_AS(
-      c2h::detail::gen_uniform_offsets(
-        c2h::seed_t{0},
-        cuda::std::span<cuda::std::int32_t>{},
-        total_elements,
-        cuda::std::int32_t{0},
-        cuda::std::int32_t{1}),
-      std::invalid_argument);
+    REQUIRE_THROWS_AS(c2h::detail::gen_uniform_offsets(
+                        c2h::seed_t{0}, cuda::std::span<offset_t>{}, total_elements, offset_t{0}, offset_t{1}),
+                      std::invalid_argument);
   }
 
   SECTION("explicit stream")
   {
-    REQUIRE_THROWS_AS(
-      c2h::detail::gen_uniform_offsets(
-        stream,
-        c2h::seed_t{0},
-        cuda::std::span<cuda::std::int32_t>{},
-        total_elements,
-        cuda::std::int32_t{0},
-        cuda::std::int32_t{1}),
-      std::invalid_argument);
+    REQUIRE_THROWS_AS(c2h::detail::gen_uniform_offsets(
+                        stream, c2h::seed_t{0}, cuda::std::span<offset_t>{}, total_elements, offset_t{0}, offset_t{1}),
+                      std::invalid_argument);
   }
 }
 
