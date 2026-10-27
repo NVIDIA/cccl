@@ -52,9 +52,9 @@ CUB_TEST("Capacity partition accepts arbitrary bounds without sort tuning", "[se
     return capacity::dispatch_partition<capacities>(
       storage, bytes, thrust::raw_pointer_cast(d_begins.data()), thrust::raw_pointer_cast(d_ends.data()), count, result);
   };
-  REQUIRE(run(nullptr, begins.size()) == cudaSuccess);
+  REQUIRE(run(nullptr, static_cast<unsigned>(begins.size())) == cudaSuccess);
   c2h::device_vector<unsigned char> storage(bytes);
-  REQUIRE(run(thrust::raw_pointer_cast(storage.data()), begins.size()) == cudaSuccess);
+  REQUIRE(run(thrust::raw_pointer_cast(storage.data()), static_cast<unsigned>(begins.size())) == cudaSuccess);
   c2h::host_vector<unsigned> offsets(capacities::size + 2);
   REQUIRE(cudaMemcpy(offsets.data(), result.bin_offsets, offsets.size() * sizeof(unsigned), cudaMemcpyDeviceToHost)
           == cudaSuccess);
@@ -93,9 +93,9 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   REQUIRE(config.threads == 4);
   REQUIRE(config.items_per_thread == 10);
   std::vector<int> lengths{0, 1};
-  for (int bound : capacities::bounds)
+  for (const int bound : capacities::bounds)
   {
-    for (int delta : {-1, 0, 1})
+    for (const int delta : {-1, 0, 1})
     {
       lengths.push_back(bound + delta);
     }
@@ -176,7 +176,7 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
     constexpr int i           = decltype(index)::value;
     using entry               = typename plan::template entry<i>;
     constexpr int first_bin   = plan::bin_begin(i);
-    constexpr int lower_bound = first_bin ? capacities::bounds[first_bin - 1] : 0;
+    constexpr int lower_bound = first_bin ? capacities::bounds[static_cast<size_t>(first_bin - 1)] : 0;
     auto retry                = expected;
     for (size_t segment = 0; segment < lengths.size(); ++segment)
     {
