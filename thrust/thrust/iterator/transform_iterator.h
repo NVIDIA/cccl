@@ -34,6 +34,7 @@
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/__iterator/contiguous_iterator_adaptor.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__memory/construct_at.h>
@@ -284,6 +285,16 @@ public:
     return m_f;
   }
 
+  //! @brief Retargets the stored iterator at @p __ptr. The stored functor is left unchanged. It is then invoked on the
+  //! elements at @p __ptr.
+  //! @param[in] __ptr The address that replaces the contiguous storage this adaptor reads from.
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(::cuda::__iterator_can_rebase<Iterator, _Tp> || ::cuda::std::is_pointer_v<Iterator>)
+  _CCCL_HOST_DEVICE void __rebase(_Tp* __ptr) &
+  {
+    ::cuda::__rebase_contiguous_iterator_adaptor(this->base_reference(), __ptr);
+  }
+
   //! \cond
 
 private:
@@ -342,3 +353,10 @@ make_transform_iterator(Iterator it, AdaptableUnaryFunction fun)
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
+
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <class _Fn, class _Iter, class _Reference, class _Value>
+inline constexpr bool
+  __is_contiguous_iterator_or_adaptor_impl<THRUST_NS_QUALIFIER::transform_iterator<_Fn, _Iter, _Reference, _Value>> =
+    __is_contiguous_iterator_or_adaptor_impl<::cuda::std::remove_cvref_t<_Iter>>;
+_CCCL_END_NAMESPACE_CUDA

@@ -20,6 +20,8 @@
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/transform_output_iterator.h>
 
+#include <cuda/__iterator/contiguous_iterator_adaptor.h>
+
 THRUST_NAMESPACE_BEGIN
 
 template <typename UnaryFunction, typename OutputIterator>
@@ -149,6 +151,15 @@ public:
       , fun(fun)
   {}
 
+  //! @brief Retargets the stored iterator at @p __ptr. The stored functor is left unchanged.
+  //! @param[in] __ptr The address that replaces the contiguous storage this adaptor writes to.
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(::cuda::__iterator_can_rebase<OutputIterator, _Tp> || ::cuda::std::is_pointer_v<OutputIterator>)
+  _CCCL_HOST_DEVICE void __rebase(_Tp* __ptr) &
+  {
+    ::cuda::__rebase_contiguous_iterator_adaptor(this->base_reference(), __ptr);
+  }
+
   //! \cond
 
 private:
@@ -179,3 +190,10 @@ make_transform_output_iterator(OutputIterator out, UnaryFunction fun)
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
+
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <class _Fn, class _Iter>
+inline constexpr bool
+  __is_contiguous_iterator_or_adaptor_impl<THRUST_NS_QUALIFIER::transform_output_iterator<_Fn, _Iter>> =
+    __is_contiguous_iterator_or_adaptor_v<::cuda::std::remove_cvref_t<_Iter>>;
+_CCCL_END_NAMESPACE_CUDA
