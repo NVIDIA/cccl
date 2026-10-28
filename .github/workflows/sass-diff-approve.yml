@@ -29,6 +29,7 @@ jobs:
         id: request
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
+          retries: 5
           script: |
             const { comment, issue } = context.payload;
             core.info(`Validate comment ${comment.id} from @${comment.user.login} on PR #${issue.number}.`);
@@ -125,6 +126,7 @@ jobs:
         id: authorization
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
+          retries: 5
           script: |
             const username = context.payload.comment.user.login;
             core.info(`Check repository access for @${username}.`);
@@ -164,6 +166,7 @@ jobs:
         env:
           SHA: ${{ steps.request.outputs.sha }}
         with:
+          retries: 5
           script: |
             const { comment, issue } = context.payload;
 
@@ -243,6 +246,7 @@ jobs:
           CHECK_RUN_ID: ${{ steps.job.outputs.check_run_id }}
           SHA: ${{ steps.request.outputs.sha }}
         with:
+          retries: 5
           script: |
             const { comment, issue } = context.payload;
             const checkRunId = process.env.CHECK_RUN_ID;
@@ -330,6 +334,7 @@ jobs:
         env:
           JOB_ID: ${{ steps.job.outputs.job_id }}
         with:
+          retries: 5
           script: |
             const { comment } = context.payload;
             const job_id = Number(process.env.JOB_ID);
@@ -366,6 +371,7 @@ jobs:
         if: success() && (steps.approval.outputs.accepted == 'true' || steps.job.outputs.ci_passed == 'true')
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
+          retries: 5
           script: |
             const { comment } = context.payload;
 
