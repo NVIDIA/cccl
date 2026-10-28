@@ -270,7 +270,8 @@ def _radix_bounds(operation, key_width, begin_bit, end_bit, radix_bits=None):
             isinstance(value, bool) or not isinstance(value, Integral)
         ):
             raise TypeError(
-                f"cuda.coop.{operation} {name} must be a compile-time integer"
+                f"cuda.coop.cutlass.{operation} {name} "
+                "must be a compile-time integer"
             )
     if radix_bits is not None and radix_bits <= 0:
         raise ValueError("radix_bits must be positive")
