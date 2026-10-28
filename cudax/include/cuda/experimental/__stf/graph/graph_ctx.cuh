@@ -575,7 +575,7 @@ public:
   }
 
   // flags = cudaGraphDebugDotFlagsVerbose to display all available debug information
-  void print_to_dot(const ::std::string& filename, enum cudaGraphDebugDotFlags flags = cudaGraphDebugDotFlags(0))
+  void print_to_dot(const ::std::string& filename, enum cudaGraphDebugDotFlags flags = cudaGraphDebugDotFlags(0)) const
   {
     cudaGraphDebugDotPrint(get_graph(), filename.c_str(), flags);
   }

@@ -37,7 +37,7 @@ struct voronoi_site_selector
   {}
 
   // To decide I have to change my current Voronoi site
-  __host__ __device__ int min_voro(int x_i, int y_i, int p, int q)
+  __host__ __device__ int min_voro(int x_i, int y_i, int p, int q) const
   {
     if (q == m * n)
     {

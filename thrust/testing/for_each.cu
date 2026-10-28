@@ -314,7 +314,7 @@ struct only_set_when_expected
   unsigned long long expected;
   bool* flag;
 
-  _CCCL_DEVICE void operator()(unsigned long long x)
+  _CCCL_DEVICE void operator()(unsigned long long x) const
   {
     if (x == expected)
     {

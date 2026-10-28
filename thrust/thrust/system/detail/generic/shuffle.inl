@@ -42,7 +42,7 @@ struct construct_key_flag_op
       : m(m)
       , bijection(bijection)
   {}
-  _CCCL_HOST_DEVICE key_flag_tuple operator()(std::uint64_t idx)
+  _CCCL_HOST_DEVICE key_flag_tuple operator()(std::uint64_t idx) const
   {
     auto gather_key = bijection(idx);
     return key_flag_tuple{gather_key, (gather_key < m) ? 1ull : 0ull};

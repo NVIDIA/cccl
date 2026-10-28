@@ -45,7 +45,7 @@ struct square_idx_op
 {
   int* d_ptr;
 
-  __device__ void operator()(int i)
+  __device__ void operator()(int i) const
   {
     d_ptr[i] *= d_ptr[i];
   }
@@ -55,7 +55,7 @@ struct odd_count_op
 {
   int* d_count;
 
-  __device__ void operator()(int i)
+  __device__ void operator()(int i) const
   {
     if (i % 2 == 1)
     {

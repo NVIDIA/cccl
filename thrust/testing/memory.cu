@@ -41,7 +41,7 @@ public:
     correctly_dispatched = (num_copies == 0);
   }
 
-  bool is_valid()
+  bool is_valid() const
   {
     return correctly_dispatched;
   }

@@ -41,12 +41,12 @@ struct timer
     static_cast<void>(cudaEventDestroy(end));
   }
 
-  void restart()
+  void restart() // NOLINT(readability-make-member-function-const)
   {
     cuda_safe_call(cudaEventRecord(start, nullptr));
   }
 
-  double elapsed()
+  double elapsed() // NOLINT(readability-make-member-function-const)
   {
     cuda_safe_call(cudaEventRecord(end, nullptr));
     cuda_safe_call(cudaEventSynchronize(end));

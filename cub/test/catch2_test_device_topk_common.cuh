@@ -334,7 +334,7 @@ class check_unordered_output_helper
   std::size_t num_elements;
 
   // Checks whether all results have been written correctly
-  void check_bit_flags(const c2h::device_vector<std::uint32_t>& flag_vector)
+  void check_bit_flags(const c2h::device_vector<std::uint32_t>& flag_vector) const
   {
     auto correctness_flags_end = flag_vector.cbegin() + static_cast<std::ptrdiff_t>(num_elements / bits_per_element);
     const bool all_correct =

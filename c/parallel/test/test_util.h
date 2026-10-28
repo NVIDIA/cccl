@@ -805,7 +805,7 @@ struct operation_t
       , code_type(op_code_type)
   {}
 
-  operator cccl_op_t()
+  operator cccl_op_t() const
   {
     cccl_op_t op;
     op.type              = cccl_op_kind_t::CCCL_STATELESS;
