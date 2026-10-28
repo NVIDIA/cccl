@@ -82,7 +82,7 @@ public:
   }
 
   [[nodiscard]]
-  _CCCL_API inline typename offset_policy::data_handle_type constexpr offset(data_handle_type __p, size_t __i) const
+  _CCCL_API typename offset_policy::data_handle_type constexpr offset(data_handle_type __p, size_t __i) const
   {
     return __nested_accessor_.offset(__p, __i);
   }
