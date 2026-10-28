@@ -242,7 +242,7 @@ public:
     [[nodiscard]] _CCCL_API constexpr reference operator()(const _Iterators&... __iters) const
       noexcept(::cuda::std::is_nothrow_invocable_v<_Fn&, ::cuda::std::iter_reference_t<const _Iterators>...>)
     {
-      return ::cuda::std::invoke(const_cast<_Fn&>(__func_), *__iters...);
+      return ::cuda::std::invoke(__func_, *__iters...);
     }
   };
 
@@ -259,11 +259,10 @@ public:
     _Fn& __func_;
 
     _CCCL_EXEC_CHECK_DISABLE
-    [[nodiscard]] _CCCL_API constexpr reference operator()(const _Iterators&... __iters) const noexcept(noexcept(
-      ::cuda::std::invoke(const_cast<_Fn&>(__func_), __iters[::cuda::std::iter_difference_t<_Iterators>(__n_)]...)))
+    [[nodiscard]] _CCCL_API constexpr reference operator()(const _Iterators&... __iters) const
+      noexcept(noexcept(::cuda::std::invoke(__func_, __iters[::cuda::std::iter_difference_t<_Iterators>(__n_)]...)))
     {
-      return ::cuda::std::invoke(
-        const_cast<_Fn&>(__func_), __iters[::cuda::std::iter_difference_t<_Iterators>(__n_)]...);
+      return ::cuda::std::invoke(__func_, __iters[::cuda::std::iter_difference_t<_Iterators>(__n_)]...);
     }
   };
 

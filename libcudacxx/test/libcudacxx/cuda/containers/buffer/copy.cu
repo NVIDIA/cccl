@@ -155,9 +155,7 @@ C2H_CCCLRT_TEST("make_buffer variants", "[container][buffer]")
 {
   const cuda::stream stream{cuda::device_ref{0}};
   const cuda::buffer<int, cuda::mr::device_accessible, other_property> input{
-    stream,
-    cuda::device_default_memory_pool(cuda::device_ref{0}),
-    {int(1), int(42), int(1337), int(0), int(12), int(-1)}};
+    stream, cuda::device_default_memory_pool(cuda::device_ref{0}), {1, 42, 1337, 0, 12, -1}};
 
   // straight from a resource
   auto buf = cuda::make_buffer(input.stream(), cuda::device_default_memory_pool(cuda::device_ref{0}), input);
@@ -316,8 +314,7 @@ C2H_CCCLRT_TEST("make_buffer with legacy resource", "[container][buffer]")
 {
   const cuda::stream stream{cuda::device_ref{0}};
   auto resource = cuda::mr::legacy_pinned_memory_resource{};
-  const cuda::buffer<int, cuda::mr::host_accessible> input{
-    stream, resource, {int(1), int(42), int(1337), int(0), int(12), int(-1)}};
+  const cuda::buffer<int, cuda::mr::host_accessible> input{stream, resource, {1, 42, 1337, 0, 12, -1}};
   auto buf = cuda::make_buffer(input.stream(), resource, input);
   CHECK(equal_range(buf));
 }

@@ -179,7 +179,7 @@ private:
     params.poolProps.location.id = device_ordinal(memory_node);
     params.accessDescs           = desc.data();
     params.accessDescCount       = size_t(ndevices);
-    params.bytesize              = size_t(s);
+    params.bytesize              = s;
 
     out = cuda_try<cudaGraphAddMemAllocNode>(graph, input_nodes.data(), input_nodes.size(), &params);
 
