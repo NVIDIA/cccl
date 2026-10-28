@@ -558,7 +558,7 @@ public:
       // small cases would forfeit exact plans for no measurable saving.
       max_runs = ::cuda::std::max<size_t>(16 * nblocks, size_t(1) << 16);
     }
-    if (misplaced_bytes)
+    if (misplaced_bytes != nullptr)
     {
       *misplaced_bytes = 0;
     }

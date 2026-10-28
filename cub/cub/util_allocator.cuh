@@ -208,7 +208,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
     unsigned int retval = 1;
     while (exp > 0)
     {
-      if (exp & 1)
+      if ((exp & 1) != 0)
       {
         retval = retval * base; // multiply the result by the current base
       }
@@ -576,7 +576,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
         mutex.unlock();
 
         // Return under error
-        if (error)
+        if (error != cudaSuccess)
         {
           return error;
         }

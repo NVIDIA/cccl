@@ -183,7 +183,7 @@ C2H_TEST("shaped allocation on composite data places", "[places][placement][allo
   REQUIRE(cuDeviceGet(&dev0, 0) == CUDA_SUCCESS);
   REQUIRE(cuDeviceGetAttribute(&supports_vmm, CU_DEVICE_ATTRIBUTE_VIRTUAL_ADDRESS_MANAGEMENT_SUPPORTED, dev0)
           == CUDA_SUCCESS);
-  if (!supports_vmm)
+  if (supports_vmm == 0)
   {
     SKIP("device 0 does not support CUDA VMM (virtual address management)");
   }

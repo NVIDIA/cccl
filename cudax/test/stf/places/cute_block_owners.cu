@@ -118,8 +118,8 @@ void check_case(dim4 data_dims, const ::std::vector<dim_spec>& spec, dim4 grid_d
       for (size_t byte = lo; byte < hi; byte++)
       {
         const pos4 o = part.owner(data_dims.index_to_pos(byte / elemsize));
-        analytic_bytes += (o == (*plan)[b]);
-        brute_bytes += (o == brute[b]);
+        analytic_bytes += static_cast<size_t>(o == (*plan)[b]);
+        brute_bytes += static_cast<size_t>(o == brute[b]);
       }
       EXPECT(analytic_bytes == brute_bytes); // a genuine tie
     }

@@ -150,7 +150,7 @@ struct BurgerJacobianCallback
 void initialize_solution_file(const char* filename, size_t N, double h)
 {
   FILE* fp = fopen(filename, "w");
-  if (fp)
+  if (fp != nullptr)
   {
     fprintf(fp, "# Burger equation solution - block format\n");
     fprintf(fp, "# Each timestep is a separate block, separated by blank lines\n");

@@ -52,7 +52,7 @@ struct device_memory_resource
   {
     REQUIRE(target_stream == stream.get());
 
-    if (bytes_allocated)
+    if (bytes_allocated != nullptr)
     {
       *bytes_allocated += bytes;
     }
@@ -68,7 +68,7 @@ struct device_memory_resource
   {
     REQUIRE(target_stream == stream.get());
 
-    if (bytes_deallocated)
+    if (bytes_deallocated != nullptr)
     {
       *bytes_deallocated += bytes;
     }
@@ -154,7 +154,7 @@ struct device_side_memory_resource
 
   __host__ __device__ void* allocate(cuda::stream_ref /* stream */, size_t bytes)
   {
-    if (bytes_allocated)
+    if (bytes_allocated != nullptr)
     {
       const auto offset = *bytes_allocated;
       *bytes_allocated  = offset + bytes;
@@ -166,7 +166,7 @@ struct device_side_memory_resource
 
   __host__ __device__ void deallocate(const cuda::stream_ref /* stream */, void* /* ptr */, size_t bytes)
   {
-    if (bytes_deallocated)
+    if (bytes_deallocated != nullptr)
     {
       *bytes_deallocated += bytes;
     }
@@ -175,7 +175,7 @@ struct device_side_memory_resource
   __host__ __device__ void
   deallocate(const cuda::stream_ref /* stream */, void* /* ptr */, size_t bytes, size_t /* alignment */)
   {
-    if (bytes_deallocated)
+    if (bytes_deallocated != nullptr)
     {
       *bytes_deallocated += bytes;
     }

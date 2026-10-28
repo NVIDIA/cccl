@@ -60,7 +60,6 @@ Checks:
   # then remove this exclusion to restore the check.
   # ============================================================================
   - '-readability-function-cognitive-complexity'
-  - '-readability-implicit-bool-conversion'
   - '-readability-braces-around-statements'
   - '-readability-qualified-auto'
   - '-readability-named-parameter'

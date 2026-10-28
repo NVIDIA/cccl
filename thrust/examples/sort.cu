@@ -106,7 +106,7 @@ struct evens_before_odds
 {
   __host__ __device__ bool operator()(int x, int y)
   {
-    if (x % 2 == y % 2)
+    if ((x % 2) == (y % 2))
     {
       return x < y;
     }
