@@ -112,7 +112,7 @@ CUB_TEST("c2h comparison retains bounded mismatch details in order", "[c2h][comp
   REQUIRE(result.expected_size == num_items);
   REQUIRE(result.total_mismatches == mismatch_count);
 
-  const auto first_count = (std::min) (mismatch_count, std::size_t{5});
+  const auto first_count = (std::min) (mismatch_count, std::size_t{5}); // NOLINT(readability-redundant-parentheses)
   REQUIRE(result.first_mismatches.size() == first_count);
   for (std::size_t i = 0; i < first_count; ++i)
   {
@@ -126,7 +126,8 @@ CUB_TEST("c2h comparison retains bounded mismatch details in order", "[c2h][comp
   REQUIRE(result.last_mismatches.has_value() == (mismatch_count > 5));
   if (result.last_mismatches)
   {
-    const auto last_count = (std::min) (mismatch_count - first_count, std::size_t{5});
+    const auto last_count =
+      (std::min) (mismatch_count - first_count, std::size_t{5}); // NOLINT(readability-redundant-parentheses)
     REQUIRE(result.last_mismatches->size() == last_count);
     for (std::size_t i = 0; i < last_count; ++i)
     {
@@ -138,7 +139,10 @@ CUB_TEST("c2h comparison retains bounded mismatch details in order", "[c2h][comp
     }
   }
 
-  const auto good_count = mismatch_count == 0 ? std::size_t{0} : (std::min) (first_mismatch, std::size_t{3});
+  const auto good_count =
+    mismatch_count == 0
+      ? std::size_t{0}
+      : (std::min) (first_mismatch, std::size_t{3}); // NOLINT(readability-redundant-parentheses)
   REQUIRE(result.good_values.size() == good_count);
   for (std::size_t i = 0; i < good_count; ++i)
   {

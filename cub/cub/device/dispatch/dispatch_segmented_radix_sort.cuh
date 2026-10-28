@@ -447,7 +447,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
         (is_overwrite_okay) ? 0 : num_items * kernel_source.KeySize(),
 
         // bytes needed for 3rd values buffer
-        (is_overwrite_okay || (KEYS_ONLY)) ? 0 : num_items * sizeof(ValueT),
+        (is_overwrite_okay || KEYS_ONLY) ? 0 : num_items * sizeof(ValueT),
       };
 
       // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
@@ -479,15 +479,15 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
 
       DoubleBuffer<KeyT> d_keys_remaining_passes(
         (is_overwrite_okay || is_num_passes_odd) ? d_keys.Alternate() : static_cast<KeyT*>(allocations[0]),
-        (is_overwrite_okay)   ? d_keys.Current()
-        : (is_num_passes_odd) ? static_cast<KeyT*>(allocations[0])
-                              : d_keys.Alternate());
+        (is_overwrite_okay) ? d_keys.Current()
+        : is_num_passes_odd ? static_cast<KeyT*>(allocations[0])
+                            : d_keys.Alternate());
 
       DoubleBuffer<ValueT> d_values_remaining_passes(
         (is_overwrite_okay || is_num_passes_odd) ? d_values.Alternate() : static_cast<ValueT*>(allocations[1]),
-        (is_overwrite_okay)   ? d_values.Current()
-        : (is_num_passes_odd) ? static_cast<ValueT*>(allocations[1])
-                              : d_values.Alternate());
+        (is_overwrite_okay) ? d_values.Current()
+        : is_num_passes_odd ? static_cast<ValueT*>(allocations[1])
+                            : d_values.Alternate());
 
       // Run first pass, consuming from the input's current buffers
       int current_bit = begin_bit;
@@ -720,7 +720,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
 
   void* allocations[2]             = {};
   const size_t allocation_sizes[2] = {
-    (is_overwrite_okay) ? 0 : num_items * kernel_source.KeySize(),
+    is_overwrite_okay ? 0 : num_items * kernel_source.KeySize(),
     (is_overwrite_okay || keys_only) ? 0 : num_items * sizeof(ValueT),
   };
 
@@ -749,15 +749,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
 
   DoubleBuffer<KeyT> d_keys_remaining_passes(
     (is_overwrite_okay || is_num_passes_odd) ? d_keys.Alternate() : static_cast<KeyT*>(allocations[0]),
-    (is_overwrite_okay)   ? d_keys.Current()
-    : (is_num_passes_odd) ? static_cast<KeyT*>(allocations[0])
-                          : d_keys.Alternate());
+    is_overwrite_okay   ? d_keys.Current()
+    : is_num_passes_odd ? static_cast<KeyT*>(allocations[0])
+                        : d_keys.Alternate());
 
   DoubleBuffer<ValueT> d_values_remaining_passes(
     (is_overwrite_okay || is_num_passes_odd) ? d_values.Alternate() : static_cast<ValueT*>(allocations[1]),
-    (is_overwrite_okay)   ? d_values.Current()
-    : (is_num_passes_odd) ? static_cast<ValueT*>(allocations[1])
-                          : d_values.Alternate());
+    is_overwrite_okay   ? d_values.Current()
+    : is_num_passes_odd ? static_cast<ValueT*>(allocations[1])
+                        : d_values.Alternate());
 
   // The offset type (used to specialize the kernel template), large enough to index any segment within a single
   // invocation

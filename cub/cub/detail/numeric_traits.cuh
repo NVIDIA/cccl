@@ -216,7 +216,7 @@ template <typename T, typename = T> struct NumericTraits :            BaseTraits
 
 template <> struct NumericTraits<NullType> :            BaseTraits<NOT_A_NUMBER, false, NullType, NullType> {};
 
-template <> struct NumericTraits<char> :                BaseTraits<(::cuda::std::numeric_limits<char>::is_signed) ? SIGNED_INTEGER : UNSIGNED_INTEGER, true, unsigned char, char> {};
+template <> struct NumericTraits<char> :                BaseTraits<::cuda::std::numeric_limits<char>::is_signed ? SIGNED_INTEGER : UNSIGNED_INTEGER, true, unsigned char, char> {};
 template <> struct NumericTraits<signed char> :         BaseTraits<SIGNED_INTEGER, true, unsigned char, signed char> {};
 template <> struct NumericTraits<short> :               BaseTraits<SIGNED_INTEGER, true, unsigned short, short> {};
 template <> struct NumericTraits<int> :                 BaseTraits<SIGNED_INTEGER, true, unsigned int, int> {};

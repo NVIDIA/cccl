@@ -70,5 +70,5 @@ int main(int argc, char** argv)
   ctx.finalize();
 
   const std::chrono::duration<double> duration = stop - start;
-  fprintf(stderr, "Elapsed: %.2lf us per task\n", duration.count() * 1000000.0 / static_cast<double>((iter_cnt)));
+  fprintf(stderr, "Elapsed: %.2lf us per task\n", duration.count() * 1000000.0 / static_cast<double>(iter_cnt));
 }

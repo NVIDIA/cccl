@@ -122,7 +122,7 @@ struct BlockScanRaking
   _CCCL_DEVICE _CCCL_FORCEINLINE T
   GuardedReduce(T* raking_ptr, ScanOp scan_op, T raking_partial, constant_t<ITERATION> /*iteration*/)
   {
-    if ((BlockRakingLayout::UNGUARDED) || (((linear_tid * SEGMENT_LENGTH) + ITERATION) < BLOCK_THREADS))
+    if (BlockRakingLayout::UNGUARDED || (((linear_tid * SEGMENT_LENGTH) + ITERATION) < BLOCK_THREADS))
     {
       T addend       = raking_ptr[ITERATION];
       raking_partial = scan_op(raking_partial, addend);

@@ -75,7 +75,7 @@ void hash_eval(nvbench::state& state, nvbench::type_list<HasherTag, Key>)
 
   using result_t = decltype(cuda::std::declval<hash_t>()(cuda::std::declval<cuda::std::int32_t>()));
 
-  thrust::device_vector<result_t> hash_values((materialize_result) ? num_keys : 1);
+  thrust::device_vector<result_t> hash_values(materialize_result ? num_keys : 1);
 
   state.add_element_count(num_keys);
 

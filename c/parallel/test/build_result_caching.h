@@ -119,7 +119,7 @@ struct KeyBuilder
 {
   static std::string bool_as_key(bool v)
   {
-    return (v) ? std::string("T") : std::string("F");
+    return v ? std::string("T") : std::string("F");
   }
 
   template <typename T>

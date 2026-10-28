@@ -241,7 +241,7 @@ struct agent_batched_topk_worker_per_segment
         const key_t padding_key =
           (direction == detail::topk::select::max)
             ? ::cuda::std::numeric_limits<key_t>::lowest()
-            : (::cuda::std::numeric_limits<key_t>::max)();
+            : (::cuda::std::numeric_limits<key_t>::max)(); // NOLINT(readability-redundant-parentheses)
 
         // Dereference iterator-of-iterators to get the segment specific iterator
         auto block_keys_in = d_key_segments_it[segment_id];

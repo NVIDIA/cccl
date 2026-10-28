@@ -193,7 +193,7 @@ struct BlockReduceRaking
         partial = RakingReduction<IsFullTile>(reduction_op, raking_segment, partial, num_valid, constant_v<1>);
 
         const int valid_raking_threads =
-          (IsFullTile) ? RAKING_THREADS : (num_valid + SEGMENT_LENGTH - 1) / SEGMENT_LENGTH;
+          IsFullTile ? RAKING_THREADS : (num_valid + SEGMENT_LENGTH - 1) / SEGMENT_LENGTH;
 
         // sync before re-using shmem (warp_storage/raking_grid are aliased)
         static_assert(RAKING_THREADS <= warp_threads, "RAKING_THREADS must be <= warp size.");

@@ -407,7 +407,7 @@ private:
   /// have the compiler replace costly integer multiplication with bit-shifting.
   static constexpr uint32_t BITS_PER_ITEM =
     (PreferPowerOfTwoBits == prefer_power_of_two_bits_option::yes)
-      ? (0x01ULL << (cub::Log2<static_cast<int32_t>(MIN_BITS_PER_ITEM)>::VALUE))
+      ? (0x01ULL << cub::Log2<static_cast<int32_t>(MIN_BITS_PER_ITEM)>::VALUE)
       : MIN_BITS_PER_ITEM;
 
   /// The number of bits that each backing data type can store
@@ -514,7 +514,7 @@ private:
   static constexpr uint32_t BUFFERS_PER_THREAD    = AgentMemcpySmallBuffersPolicyT::BUFFERS_PER_THREAD;
   static constexpr uint32_t TLEV_BYTES_PER_THREAD = AgentMemcpySmallBuffersPolicyT::TLEV_BYTES_PER_THREAD;
   static constexpr prefer_power_of_two_bits_option PREFER_POW2_BITS =
-    (AgentMemcpySmallBuffersPolicyT::PREFER_POW2_BITS)
+    AgentMemcpySmallBuffersPolicyT::PREFER_POW2_BITS
       ? prefer_power_of_two_bits_option::yes
       : prefer_power_of_two_bits_option::no;
   static constexpr uint32_t BLOCK_LEVEL_TILE_SIZE = AgentMemcpySmallBuffersPolicyT::BLOCK_LEVEL_TILE_SIZE;

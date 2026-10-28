@@ -140,7 +140,7 @@ void Test()
   auto block_reduce_temp_bytes = sizeof(typename cub::BlockReduce<int, BlockThreads>::TempStorage);
   // finally, we need to make sure that we can hold at least one integer
   // needed in the kernel to exchange data after reduction
-  auto smem_size = (std::max) (1 * sizeof(int), block_reduce_temp_bytes);
+  auto smem_size = (std::max) (1 * sizeof(int), block_reduce_temp_bytes); // NOLINT(readability-redundant-parentheses)
 
   // use default stream
   cudaStream_t stream = nullptr;

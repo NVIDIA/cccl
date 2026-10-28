@@ -311,7 +311,7 @@ private:
     // integral types are always gpu-to-gpu deterministic if reduction operator is a simple cuda binary
     // operator, so fallback to run-to-run determinism
     constexpr auto integral_fallback =
-      gpu_gpu_determinism && ::cuda::std::is_integral_v<AccumT> && (detail::is_cuda_binary_operator<ReductionOpT>);
+      gpu_gpu_determinism && ::cuda::std::is_integral_v<AccumT> && detail::is_cuda_binary_operator<ReductionOpT>;
 
     // use gpu-to-gpu determinism only for float and double types with ::cuda::std::plus operator
     constexpr auto float_double_plus = gpu_gpu_determinism && ::cuda::std::__is_one_of_v<AccumT, float, double>

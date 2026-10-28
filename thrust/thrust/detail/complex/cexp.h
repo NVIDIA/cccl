@@ -72,7 +72,7 @@ _CCCL_HOST_DEVICE inline double frexp_exp(double x, int* expt)
   get_high_word(hx, exp_x);
   *expt = static_cast<int>((hx >> 20) - (0x3ff + 1023) + k);
   set_high_word(exp_x, (hx & 0xfffff) | ((0x3ff + 1023) << 20));
-  return (exp_x);
+  return exp_x;
 }
 
 _CCCL_HOST_DEVICE inline complex<double> ldexp_cexp(complex<double> z, int expt)

@@ -91,6 +91,7 @@ __device__ void test_interwarp_synchronizer(Config config)
 
     // Test constructor from range of barrier ids.
     {
+      // NOLINTNEXTLINE(readability-redundant-parentheses)
       static_assert(cuda::std::is_constructible_v<Synchronizer, decltype((barrier_ids))>);
       [[maybe_unused]] const cudax::coop::interwarp_synchronizer synchronizer{barrier_ids};
     }

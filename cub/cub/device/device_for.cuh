@@ -150,9 +150,8 @@ struct DeviceFor
   __for_each_n(RandomAccessIteratorT first, NumItemsT num_items, OpT op, const EnvT& env)
   {
     // We tried to detect if we can still use vectorization from the non-Copy CUB APIs, but it's disabled for now:
-    constexpr bool allow_vectorization =
-      (AllowCopy
-       /*|| detail::for_each::can_regain_copy_freedom<detail::it_value_t<RandomAccessIteratorT>, OpT>::value*/);
+    constexpr bool allow_vectorization = AllowCopy
+      /*|| detail::for_each::can_regain_copy_freedom<detail::it_value_t<RandomAccessIteratorT>, OpT>::value*/;
 
     if constexpr (allow_vectorization && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorT>)
     {

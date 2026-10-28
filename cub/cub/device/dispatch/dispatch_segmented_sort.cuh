@@ -643,15 +643,15 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedSort") Dis
      */
     detail::device_double_buffer<KeyT> d_keys_double_buffer(
       (is_overwrite_okay || is_num_passes_odd) ? d_keys.Alternate() : keys_allocation.get(),
-      (is_overwrite_okay)   ? d_keys.Current()
-      : (is_num_passes_odd) ? keys_allocation.get()
-                            : d_keys.Alternate());
+      (is_overwrite_okay) ? d_keys.Current()
+      : is_num_passes_odd ? keys_allocation.get()
+                          : d_keys.Alternate());
 
     detail::device_double_buffer<ValueT> d_values_double_buffer(
       (is_overwrite_okay || is_num_passes_odd) ? d_values.Alternate() : values_allocation.get(),
-      (is_overwrite_okay)   ? d_values.Current()
-      : (is_num_passes_odd) ? values_allocation.get()
-                            : d_values.Alternate());
+      (is_overwrite_okay) ? d_values.Current()
+      : is_num_passes_odd ? values_allocation.get()
+                          : d_values.Alternate());
 
     cudaError_t error;
     if (partition_segments)
@@ -1482,14 +1482,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
     device_double_buffer<KeyT> d_keys_double_buffer(
       (is_overwrite_okay || is_num_passes_odd) ? d_keys.Alternate() : keys_allocation.get(),
-      (is_overwrite_okay)   ? d_keys.Current()
-      : (is_num_passes_odd) ? keys_allocation.get()
-                            : d_keys.Alternate());
+      is_overwrite_okay   ? d_keys.Current()
+      : is_num_passes_odd ? keys_allocation.get()
+                          : d_keys.Alternate());
     device_double_buffer<ValueT> d_values_double_buffer(
       (is_overwrite_okay || is_num_passes_odd) ? d_values.Alternate() : values_allocation.get(),
-      (is_overwrite_okay)   ? d_values.Current()
-      : (is_num_passes_odd) ? values_allocation.get()
-                            : d_values.Alternate());
+      is_overwrite_okay   ? d_values.Current()
+      : is_num_passes_odd ? values_allocation.get()
+                          : d_values.Alternate());
 
     const auto segmented_sort_fallback_kernel = kernel_source.SegmentedSortFallbackKernel();
     const auto segmented_sort_kernel_small    = kernel_source.SegmentedSortKernelSmall();

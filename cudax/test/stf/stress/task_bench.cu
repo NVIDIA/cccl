@@ -80,7 +80,7 @@ bool skip_task(test_id id, int t, int i, int /*W*/)
       {
         return false;
       }
-      const int stride = 1 << (t);
+      const int stride = 1 << t;
       return (i % stride != 0);
     }
     default:
@@ -253,7 +253,7 @@ void bench(context& ctx, test_id id, size_t width, size_t nsteps, size_t repeat_
     stop = std::chrono::steady_clock::now();
 
     const std::chrono::duration<double> duration = stop - start;
-    tv.push_back(duration.count() * 1000000.0 / static_cast<double>((task_cnt)));
+    tv.push_back(duration.count() * 1000000.0 / static_cast<double>(task_cnt));
   }
 
   // Compute the mean (average)

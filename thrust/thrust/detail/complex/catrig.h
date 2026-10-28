@@ -365,7 +365,7 @@ _CCCL_HOST_DEVICE inline complex<double> casinh(complex<double> z)
   /* Avoid spuriously raising inexact for z = 0. */
   if (x == 0 && y == 0)
   {
-    return (z);
+    return z;
   }
 
   /* All remaining cases are inexact. */
@@ -374,7 +374,7 @@ _CCCL_HOST_DEVICE inline complex<double> casinh(complex<double> z)
   const double SQRT_6_EPSILON = 3.6500241499888571e-8; /*  0x13988e1409212e.0p-77 */
   if (ax < SQRT_6_EPSILON / 4 && ay < SQRT_6_EPSILON / 4)
   {
-    return (z);
+    return z;
   }
 
   do_hard_work(ax, ay, &rx, &B_is_usable, &B, &sqrt_A2my2, &new_y);
@@ -749,7 +749,7 @@ _CCCL_HOST_DEVICE inline complex<double> catanh(complex<double> z)
      * explicitly.
      */
     raise_inexact();
-    return (z);
+    return z;
   }
 
   if (ax == 1 && ay < DBL_EPSILON)

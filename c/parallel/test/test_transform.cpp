@@ -55,7 +55,7 @@ struct unary_transform_run
   CUresult operator()(BuildResultT build, void* scratch, size_t* scratch_size, Ts... args) const noexcept
   {
     *scratch_size = 1;
-    return (scratch) ? cccl_device_unary_transform(build, args...) : CUDA_SUCCESS;
+    return scratch ? cccl_device_unary_transform(build, args...) : CUDA_SUCCESS;
   }
 };
 
@@ -65,7 +65,7 @@ struct binary_transform_run
   CUresult operator()(BuildResultT build, void* scratch, size_t* scratch_size, Ts... args) const noexcept
   {
     *scratch_size = 1;
-    return (scratch) ? cccl_device_binary_transform(build, args...) : CUDA_SUCCESS;
+    return scratch ? cccl_device_binary_transform(build, args...) : CUDA_SUCCESS;
   }
 };
 

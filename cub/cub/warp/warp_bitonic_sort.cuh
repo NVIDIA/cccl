@@ -345,7 +345,7 @@ private:
       const int other_i      = i + first_half_len;
       KeyT& key              = keys[i];
       KeyT& other_key        = keys[other_i];
-      const bool should_swap = (Reverse) ? compare_op(key, other_key) : compare_op(other_key, key);
+      const bool should_swap = Reverse ? compare_op(key, other_key) : compare_op(other_key, key);
 
       if (should_swap)
       {
@@ -403,7 +403,7 @@ private:
       const int other_i      = i + first_half_len;
       KeyT& key              = keys[i];
       KeyT& other_key        = keys[other_i];
-      const bool should_swap = (Reverse) ? compare_op(key, other_key) : compare_op(other_key, key);
+      const bool should_swap = Reverse ? compare_op(key, other_key) : compare_op(other_key, key);
 
       if (should_swap && other_i * LogicalWarpThreads + lane < valid_items)
       {

@@ -667,7 +667,7 @@ struct AgentReduceByKey
     Scatter(scatter_items, head_flags, segment_indices, num_tile_segments, num_segments_prefix);
 
     // Last thread in last tile will output final count (and last pair, if necessary)
-    if ((IsLastTile) && (threadIdx.x == BLOCK_THREADS - 1))
+    if (IsLastTile && (threadIdx.x == BLOCK_THREADS - 1))
     {
       OffsetT num_segments = num_segments_prefix + num_tile_segments;
 
