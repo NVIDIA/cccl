@@ -35,7 +35,7 @@ __global__ void init_kernel(int* ptr, int n, int value)
   }
 }
 
-__global__ void check_kernel(int* ptr, int n, int value, int* result)
+__global__ void check_kernel(const int* ptr, int n, int value, int* result)
 {
   const int tid = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   if (tid < n)

@@ -36,7 +36,7 @@ void Initialize(int* h_in, int num_items)
   }
 }
 
-void Solve(int* h_in, int& h_reference, int num_items)
+void Solve(const int* h_in, int& h_reference, int num_items)
 {
   for (int i = 0; i < num_items; ++i)
   {

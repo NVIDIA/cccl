@@ -77,7 +77,7 @@ inline void init_genrand(unsigned int s)
 /* init_key is the array for initializing keys */
 /* key_length is its length */
 /* slight change for C++, 2004/2/26 */
-inline void init_by_array(unsigned int init_key[], int key_length)
+inline void init_by_array(const unsigned int init_key[], int key_length)
 {
   int i;
   int j;

@@ -1111,7 +1111,8 @@ int CompareResults(T* computed, S* reference, OffsetT len, bool verbose = true)
  * Compares the equivalence of two arrays
  */
 template <typename OffsetT>
-int CompareResults(float* computed, float* reference, OffsetT len, bool verbose = true)
+int CompareResults(
+  float* computed, float* reference, OffsetT len, bool verbose = true) // NOLINT(readability-non-const-parameter)
 {
   for (OffsetT i = 0; i < len; i++)
   {
@@ -1150,7 +1151,8 @@ int CompareResults(
  * Compares the equivalence of two arrays
  */
 template <typename OffsetT>
-int CompareResults(double* computed, double* reference, OffsetT len, bool verbose = true)
+int CompareResults(
+  double* computed, double* reference, OffsetT len, bool verbose = true) // NOLINT(readability-non-const-parameter)
 {
   for (OffsetT i = 0; i < len; i++)
   {

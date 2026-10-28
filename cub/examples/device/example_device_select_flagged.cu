@@ -85,7 +85,7 @@ void Initialize(int* h_in, unsigned char* h_flags, int num_items, int max_segmen
 /**
  * Solve unique problem
  */
-int Solve(int* h_in, unsigned char* h_flags, int* h_reference, int num_items)
+int Solve(const int* h_in, const unsigned char* h_flags, int* h_reference, int num_items)
 {
   int num_selected = 0;
   for (int i = 0; i < num_items; ++i)

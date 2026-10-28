@@ -77,7 +77,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t device_segmented_sort_c
   device_double_buffer<ValueT> d_values_double_buffer,
   BeginOffsetIteratorT d_begin_offsets,
   EndOffsetIteratorT d_end_offsets,
-  local_segment_index_t* group_sizes,
+  const local_segment_index_t* group_sizes,
   local_segment_index_t* large_and_medium_segments_indices,
   local_segment_index_t* small_segments_indices,
   cudaStream_t stream,

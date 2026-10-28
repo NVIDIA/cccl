@@ -42,7 +42,7 @@ int g_grid_size = 1;
  * Simple kernel for performing a block-wide reduction.
  */
 template <int BlockThreads>
-__global__ void BlockReduceKernel(int* d_in, // Tile of input
+__global__ void BlockReduceKernel(const int* d_in, // Tile of input
                                   int* d_out // Tile aggregate
 )
 {

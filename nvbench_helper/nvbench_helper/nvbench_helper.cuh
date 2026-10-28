@@ -710,7 +710,7 @@ private:
     return result;
   }
 
-  void do_deallocate(value_type* ptr)
+  void do_deallocate(value_type* ptr) // NOLINT(readability-non-const-parameter)
   {
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
     cudaFree(ptr);
