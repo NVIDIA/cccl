@@ -77,11 +77,11 @@ struct BlockRakingLayout
   static constexpr bool USE_SEGMENT_PADDING = ((SEGMENT_LENGTH & 1) == 0) && (SEGMENT_LENGTH > 2);
 
   /// Total number of elements in the raking grid
-  static constexpr int GRID_ELEMENTS = RAKING_THREADS * (SEGMENT_LENGTH + USE_SEGMENT_PADDING);
+  static constexpr int GRID_ELEMENTS = RAKING_THREADS * (SEGMENT_LENGTH + static_cast<int>(USE_SEGMENT_PADDING));
 
   /// Whether or not we need bounds checking during raking (the number of reduction elements is not a multiple of the
   /// number of raking threads)
-  static constexpr int UNGUARDED = (SHARED_ELEMENTS % RAKING_THREADS == 0);
+  static constexpr int UNGUARDED = static_cast<int>(SHARED_ELEMENTS % RAKING_THREADS == 0);
 
   /**
    * @brief Shared memory storage type
@@ -103,7 +103,7 @@ struct BlockRakingLayout
     unsigned int offset = linear_tid;
 
     // Add in one padding element for every segment
-    if (USE_SEGMENT_PADDING > 0)
+    if (USE_SEGMENT_PADDING)
     {
       offset += offset / SEGMENT_LENGTH;
     }
@@ -117,7 +117,7 @@ struct BlockRakingLayout
    */
   static _CCCL_DEVICE _CCCL_FORCEINLINE T* RakingPtr(TempStorage& temp_storage, unsigned int linear_tid)
   {
-    return temp_storage.Alias().buff + (linear_tid * (SEGMENT_LENGTH + USE_SEGMENT_PADDING));
+    return temp_storage.Alias().buff + (linear_tid * (SEGMENT_LENGTH + static_cast<int>(USE_SEGMENT_PADDING)));
   }
 };
 

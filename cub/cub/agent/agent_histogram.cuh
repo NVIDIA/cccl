@@ -654,7 +654,7 @@ struct AgentHistogram
       , prefer_smem((mem_preference == SMEM) ? true : // prefer smem privatized histograms
                       (mem_preference == GMEM) ? false
                                                : // prefer gmem privatized histograms
-                      blockIdx.x & 1) // prefer blended privatized histograms
+                      (blockIdx.x & 1) != 0) // prefer blended privatized histograms
   {
     const int blockId = static_cast<int>((blockIdx.y * gridDim.x) + blockIdx.x);
 

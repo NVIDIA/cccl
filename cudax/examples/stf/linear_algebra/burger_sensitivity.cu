@@ -188,7 +188,7 @@ std::vector<double> generate_nu_samples(double nu_target, double nu_std, size_t 
 void initialize_sensitivity_file(const char* filename, double nu_target, double nu_std, size_t num_samples)
 {
   FILE* fp = fopen(filename, "w");
-  if (fp)
+  if (fp != nullptr)
   {
     fprintf(fp, "# Burger equation sensitivity analysis\n");
     fprintf(fp, "# Target nu: %.6e, std: %.6e, samples: %zu\n", nu_target, nu_std, num_samples);
@@ -205,7 +205,7 @@ void initialize_sensitivity_file(const char* filename, double nu_target, double 
 void initialize_shock_file(const char* filename, double shock_threshold)
 {
   FILE* fp = fopen(filename, "w");
-  if (fp)
+  if (fp != nullptr)
   {
     fprintf(fp, "# Burger equation shock solutions\n");
     fprintf(fp, "# Solutions dumped when gradient exceeds threshold: %.1f\n", shock_threshold);

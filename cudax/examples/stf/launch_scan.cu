@@ -54,7 +54,7 @@ int main(int argc, char** argv)
   auto lX = ctx.logical_data(&X[0], N);
 
   // No need to move this back to the host if we do not check the result
-  if (!check)
+  if (check == 0)
   {
     lX.set_write_back(false);
   }
@@ -149,7 +149,7 @@ int main(int argc, char** argv)
          ms,
          double(N * sizeof(double)) / 1024 / 1024 / ms);
 
-  if (check)
+  if (check != 0)
   {
     fprintf(stderr, "Checking result...\n");
     EXPECT(fabs(X[0] - X0(0)) < 0.00001);

@@ -145,7 +145,7 @@ __apply_launch_option(const cooperative_launch&, CUlaunchConfig& config, CUfunct
 {
   CUlaunchAttribute attr;
   attr.id                = CU_LAUNCH_ATTRIBUTE_COOPERATIVE;
-  attr.value.cooperative = true;
+  attr.value.cooperative = 1;
 
   config.attrs[config.numAttrs++] = attr;
 

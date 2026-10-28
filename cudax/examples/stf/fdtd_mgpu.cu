@@ -152,12 +152,12 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   if (argc > 4)
   {
     const int use_graph = ::std::stoi(argv[4]);
-    if (use_graph)
+    if (use_graph != 0)
     {
       ctx = graph_ctx();
     }
 
-    fprintf(stderr, "Use %s backend.\n", use_graph ? "graph" : "stream");
+    fprintf(stderr, "Use %s backend.\n", (use_graph != 0) ? "graph" : "stream");
   }
 
   // Domain dimensions

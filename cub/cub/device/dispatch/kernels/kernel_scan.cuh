@@ -446,7 +446,7 @@ struct batch_completion_op
     }
 
     // The block completing the final look-back resets the tile state and publishes the next batch.
-    if (__syncthreads_or(reset_batch))
+    if (__syncthreads_or(static_cast<int>(reset_batch)) != 0)
     {
       const auto batch_idx = tile_idx / tiles_per_batch;
       for (::cuda::std::uint32_t tile = threadIdx.x; tile < tiles_per_batch; tile += blockDim.x)

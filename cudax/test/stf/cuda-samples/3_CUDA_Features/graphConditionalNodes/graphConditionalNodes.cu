@@ -156,7 +156,7 @@ void stf_dowhile()
 __global__ void capturedWhileKernel(char* dPtr, cudaGraphConditionalHandle handle)
 {
   printf("GPU: counter = %d\n", *dPtr);
-  if (*dPtr)
+  if (*dPtr != 0)
   {
     (*dPtr)--;
   }

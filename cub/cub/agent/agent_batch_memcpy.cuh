@@ -56,7 +56,7 @@ struct agent_batch_memcpy_policy
   static constexpr uint32_t BLOCK_THREADS         = ThreadsPerBlock;
   static constexpr uint32_t BUFFERS_PER_THREAD    = BuffersPerThread;
   static constexpr uint32_t TLEV_BYTES_PER_THREAD = TlevBytesPerThread;
-  static constexpr uint32_t PREFER_POW2_BITS      = PreferPow2Bits;
+  static constexpr uint32_t PREFER_POW2_BITS      = static_cast<uint32_t>(PreferPow2Bits);
   static constexpr uint32_t BLOCK_LEVEL_TILE_SIZE = BlockLevelTileSize;
   static constexpr uint32_t WARP_LEVEL_THRESHOLD  = WarpLevelThreshold;
   static constexpr uint32_t BLOCK_LEVEL_THRESHOLD = BlockLevelThreshold;
@@ -528,7 +528,7 @@ private:
 
   static constexpr uint32_t BLOCK_LEVEL_THRESHOLD = AgentMemcpySmallBuffersPolicyT::BLOCK_LEVEL_THRESHOLD;
 
-  static constexpr uint32_t BUFFER_STABLE_PARTITION = false;
+  static constexpr uint32_t BUFFER_STABLE_PARTITION = 0;
 
   // Constants
   enum class size_class : uint32_t
@@ -591,7 +591,7 @@ private:
     BlockLoad<BufferSizeT,
               static_cast<int32_t>(BLOCK_THREADS),
               static_cast<int32_t>(BUFFERS_PER_THREAD),
-              BUFFER_STABLE_PARTITION ? BLOCK_LOAD_WARP_TRANSPOSE : BLOCK_LOAD_STRIPED>;
+              BUFFER_STABLE_PARTITION != 0 ? BLOCK_LOAD_WARP_TRANSPOSE : BLOCK_LOAD_STRIPED>;
 
   // A vectorized counter that will count the number of buffers that fall into each of the
   // size-classes. Where the size class represents the collaboration level that is required to
@@ -750,9 +750,11 @@ private:
   {
     // If we intend to perform a stable partitioning, the thread's buffer are in a blocked
     // arrangement, otherwise they are in a striped arrangement
-    BlockBufferOffsetT buffer_id = BUFFER_STABLE_PARTITION ? (BUFFERS_PER_THREAD * threadIdx.x) : (threadIdx.x);
+    BlockBufferOffsetT buffer_id = BUFFER_STABLE_PARTITION != 0 ? (BUFFERS_PER_THREAD * threadIdx.x) : (threadIdx.x);
     constexpr BlockBufferOffsetT BUFFER_STRIDE =
-      BUFFER_STABLE_PARTITION ? static_cast<BlockBufferOffsetT>(1) : static_cast<BlockBufferOffsetT>(BLOCK_THREADS);
+      BUFFER_STABLE_PARTITION != 0
+        ? static_cast<BlockBufferOffsetT>(1)
+        : static_cast<BlockBufferOffsetT>(BLOCK_THREADS);
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (uint32_t i = 0; i < BUFFERS_PER_THREAD; i++)

@@ -67,7 +67,7 @@ int X0(int i)
 __global__ void setHandle(cudaGraphConditionalHandle handle)
 {
   static int count = 5;
-  cudaGraphSetConditional(handle, --count ? 1 : 0);
+  cudaGraphSetConditional(handle, (--count != 0) ? 1 : 0);
 }
 
 #endif // _CCCL_CTK_AT_LEAST(12, 4)

@@ -154,7 +154,7 @@ int main()
   for (int use_graph = 0; use_graph < 2; use_graph++)
   {
     context ctx;
-    if (use_graph)
+    if (use_graph != 0)
     {
       ctx = graph_ctx();
     }
@@ -223,7 +223,7 @@ int main()
     EXPECT(thrown_merged);
 
     ctx.finalize();
-    printf("replicated data place: %s backend OK\n", use_graph ? "graph" : "stream");
+    printf("replicated data place: %s backend OK\n", (use_graph != 0) ? "graph" : "stream");
   }
 
   // ---- green-context grid: member places are DISTINCT, so a replicated
@@ -254,7 +254,7 @@ int main()
       context ctx;
       for (int use_graph_g = 0; use_graph_g < 2; use_graph_g++)
       {
-        if (use_graph_g)
+        if (use_graph_g != 0)
         {
           ctx = graph_ctx();
         }
@@ -300,9 +300,9 @@ int main()
 
         ctx.finalize();
         printf("replicated data place: green-context grid (distinct member instances) %s OK\n",
-               use_graph_g ? "[graph]" : "[stream]");
+               (use_graph_g != 0) ? "[graph]" : "[stream]");
         printf("replicated data place: deferred form (grid-bound at acquire + scalar degenerate) %s OK\n",
-               use_graph_g ? "[graph]" : "[stream]");
+               (use_graph_g != 0) ? "[graph]" : "[stream]");
       }
 
       // ---- axis-grouped replication on a (2, 2) grid: axis 0 = the two
@@ -330,7 +330,7 @@ int main()
         // stream and graph backends
         for (int use_graph22 = 0; use_graph22 < 2; use_graph22++)
         {
-          if (use_graph22)
+          if (use_graph22 != 0)
           {
             gctx = graph_ctx();
           }

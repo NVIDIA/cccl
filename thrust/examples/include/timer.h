@@ -17,7 +17,7 @@
 
 inline void cuda_safe_call(cudaError_t error, const std::string& message = "")
 {
-  if (error)
+  if (error != cudaSuccess)
   {
     throw thrust::system_error(error, thrust::cuda_category(), message);
   }

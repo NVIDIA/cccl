@@ -103,7 +103,7 @@ struct only_set_when_both_expected
       *flag = true;
     }
 
-    return x == y;
+    return static_cast<long long>(x == y);
   }
 };
 

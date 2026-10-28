@@ -54,7 +54,7 @@ struct to_offsets_functor
   __host__ __device__ __forceinline__ OffsetT operator()(size_t i) const
   {
     const auto fixed_size_value = static_cast<OffsetT>(i) * segment_size;
-    const auto correction       = ((i & 1) ? wobble : OffsetT{0});
+    const auto correction       = ((i & 1) != 0 ? wobble : OffsetT{0});
 
     return cuda::std::min(elements, fixed_size_value + correction);
   }

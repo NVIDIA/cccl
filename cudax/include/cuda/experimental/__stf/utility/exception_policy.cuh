@@ -408,7 +408,7 @@ struct notify_t
 private:
   void __report(const char* __what, const ::cuda::std::source_location __loc) const noexcept
   {
-    if (__os_)
+    if (__os_ != nullptr)
     {
       _CCCL_TRY
       {
@@ -1076,7 +1076,7 @@ struct translate_t
   // re-observed by the hook.
   __claim __claims(const ::std::exception* __e) const noexcept
   {
-    if (__e)
+    if (__e != nullptr)
     {
       return dynamic_cast<const _From*>(__e) != nullptr ? __claim::__yes : __claim::__no;
     }

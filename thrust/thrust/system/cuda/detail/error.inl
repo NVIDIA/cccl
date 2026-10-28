@@ -47,7 +47,7 @@ public:
     char const* const unknown_name = "cudaErrorUnknown";
     char const* c_str              = ::cudaGetErrorString(static_cast<cudaError_t>(ev));
     char const* c_name             = ::cudaGetErrorName(static_cast<cudaError_t>(ev));
-    return std::string(c_name ? c_name : unknown_name) + ": " + (c_str ? c_str : unknown_str);
+    return std::string(c_name != nullptr ? c_name : unknown_name) + ": " + (c_str != nullptr ? c_str : unknown_str);
   }
 
   inline error_condition default_error_condition(int ev) const override

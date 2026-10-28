@@ -418,7 +418,7 @@ int main()
     // actually enqueued on ``capture_stream`` after the failed construction.
     cudaGraph_t unused = nullptr;
     cuda_safe_call(cudaStreamEndCapture(capture_stream, &unused));
-    if (unused)
+    if (unused != nullptr)
     {
       cuda_safe_call(cudaGraphDestroy(unused));
     }

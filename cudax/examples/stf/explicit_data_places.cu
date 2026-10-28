@@ -51,7 +51,7 @@ int main()
   assert(dev >= 0);
   cudaDeviceProp prop{};
   cuda_safe_call(cudaGetDeviceProperties(&prop, dev));
-  if (!prop.concurrentManagedAccess)
+  if (prop.concurrentManagedAccess == 0)
   {
     fprintf(stderr, "Concurrent CPU/GPU access not supported, skipping test.\n");
     return 0;

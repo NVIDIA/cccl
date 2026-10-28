@@ -218,7 +218,7 @@ _CCCL_HOST_DEVICE inline complex<float> casinhf(complex<float> z)
 
   if (ax > RECIP_EPSILON || ay > RECIP_EPSILON)
   {
-    if (::cuda::std::signbit(x) == 0)
+    if (!::cuda::std::signbit(x))
     {
       w = clog_for_large_values(z) + ::cuda::std::__numbers<float>::__ln2();
     }
@@ -243,7 +243,7 @@ _CCCL_HOST_DEVICE inline complex<float> casinhf(complex<float> z)
   }
 
   do_hard_work(ax, ay, &rx, &B_is_usable, &B, &sqrt_A2my2, &new_y);
-  if (B_is_usable)
+  if (B_is_usable != 0)
   {
     ry = ::cuda::std::asinf(B);
   }
@@ -281,8 +281,8 @@ _CCCL_HOST_DEVICE inline complex<float> cacosf(complex<float> z)
 
   x  = z.real();
   y  = z.imag();
-  sx = ::cuda::std::signbit(x);
-  sy = ::cuda::std::signbit(y);
+  sx = static_cast<int>(::cuda::std::signbit(x));
+  sy = static_cast<int>(::cuda::std::signbit(y));
   ax = ::cuda::std::fabsf(x);
   ay = ::cuda::std::fabsf(y);
 
@@ -330,7 +330,7 @@ _CCCL_HOST_DEVICE inline complex<float> cacosf(complex<float> z)
   }
 
   do_hard_work(ay, ax, &ry, &B_is_usable, &B, &sqrt_A2mx2, &new_x);
-  if (B_is_usable)
+  if (B_is_usable != 0)
   {
     if (sx == 0)
     {

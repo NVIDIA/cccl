@@ -284,7 +284,7 @@ struct agent_batched_topk_cluster
   // (non-deterministic keeps the forward default).
   static constexpr int num_passes = detail::topk::calc_num_passes<key_t>(policy.bits_per_pass);
   static constexpr bool first_wave_is_forward =
-    !needs_set_determinism || ((!is_tie_reversed) ^ ((num_passes & 1) != 0));
+    !needs_set_determinism || ((!is_tie_reversed) != ((num_passes & 1) != 0));
 
   // Static upper bound on segment size: exact for constant/immediate sizes, the type maximum for runtime sizes. The
   // public entry caps this at 2^21, so it fits `int`.

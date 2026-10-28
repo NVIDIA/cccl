@@ -926,7 +926,7 @@ struct BlockRadixRankMatchEarlyCounts
   static constexpr int RADIX_DIGITS            = 1 << RadixBits;
   static constexpr int BINS_PER_THREAD         = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS;
   static constexpr int BINS_TRACKED_PER_THREAD = BINS_PER_THREAD;
-  static constexpr int FULL_BINS               = BINS_PER_THREAD * BLOCK_THREADS == RADIX_DIGITS;
+  static constexpr int FULL_BINS               = static_cast<int>(BINS_PER_THREAD * BLOCK_THREADS == RADIX_DIGITS);
   static constexpr int WARP_THREADS            = detail::warp_threads;
   static constexpr int PARTIAL_WARP_THREADS    = BLOCK_THREADS % WARP_THREADS;
   static constexpr int BLOCK_WARPS             = BLOCK_THREADS / WARP_THREADS;
@@ -1049,7 +1049,7 @@ struct BlockRadixRankMatchEarlyCounts
       {
         bins[u]       = 0;
         const int bin = ThreadBin(u);
-        if (FULL_BINS || (bin >= 0 && bin < RADIX_DIGITS))
+        if (FULL_BINS != 0 || (bin >= 0 && bin < RADIX_DIGITS))
         {
           _CCCL_PRAGMA_UNROLL_FULL()
           for (int j_warp = 0; j_warp < BLOCK_WARPS; ++j_warp)
@@ -1068,7 +1068,7 @@ struct BlockRadixRankMatchEarlyCounts
       for (int u = 0; u < BINS_PER_THREAD; ++u)
       {
         const int bin = ThreadBin(u);
-        if (FULL_BINS || (bin >= 0 && bin < RADIX_DIGITS))
+        if (FULL_BINS != 0 || (bin >= 0 && bin < RADIX_DIGITS))
         {
           const int digit_offset = offsets[u];
           _CCCL_PRAGMA_UNROLL_FULL()

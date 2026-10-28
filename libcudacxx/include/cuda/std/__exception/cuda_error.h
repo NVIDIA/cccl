@@ -74,8 +74,8 @@ namespace __detail
     "%s:%d %s%s%s(%d): %s",
     __loc.file_name(),
     __loc.line(),
-    __api ? __api : "",
-    __api ? " " : "",
+    __api != nullptr ? __api : "",
+    __api != nullptr ? " " : "",
     (__error_str != nullptr) ? __error_str : "cudaError",
     __status,
     __msg);

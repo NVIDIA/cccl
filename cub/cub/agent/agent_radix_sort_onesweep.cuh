@@ -404,7 +404,7 @@ struct AgentRadixSortOnesweep
         short_circuit = short_circuit || bins[u] == TILE_ITEMS;
       }
     }
-    short_circuit = __syncthreads_or(short_circuit);
+    short_circuit = __syncthreads_or(static_cast<int>(short_circuit)) != 0;
     if (!short_circuit)
     {
       return;

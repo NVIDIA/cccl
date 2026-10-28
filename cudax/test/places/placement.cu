@@ -330,7 +330,7 @@ void test_multi_gpu_residency(int ndevs)
   // device 1, which exercises the cuMemSetAccess mappings
   const int peer_01 = cuda_try<cudaDeviceCanAccessPeer>(0, 1);
   const int peer_10 = cuda_try<cudaDeviceCanAccessPeer>(1, 0);
-  if (peer_01 && peer_10)
+  if (peer_01 != 0 && peer_10 != 0)
   {
     cuda_try(cudaSetDevice(1));
     write_and_check(static_cast<int*>(ptr), n, 73);

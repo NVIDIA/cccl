@@ -113,7 +113,7 @@ int main(int argc, char** argv)
   stream.sync();
   const int compare =
     CompareDeviceResults(&h_reference, thrust::raw_pointer_cast(d_out.data()), 1, g_verbose, g_verbose, stream);
-  printf("\t%s", compare ? "FAIL" : "PASS");
+  printf("\t%s", compare != 0 ? "FAIL" : "PASS");
   printf("\n\n");
 
   return compare;

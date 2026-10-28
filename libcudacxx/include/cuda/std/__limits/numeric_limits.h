@@ -169,7 +169,7 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed   = type(-1) < type(0);
-  static constexpr int digits       = static_cast<int>(sizeof(type) * CHAR_BIT - is_signed);
+  static constexpr int digits       = static_cast<int>(sizeof(type) * CHAR_BIT - static_cast<int>(is_signed));
   static constexpr int digits10     = digits * 3 / 10;
   static constexpr int max_digits10 = 0;
   _CCCL_API static constexpr type min() noexcept

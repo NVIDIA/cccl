@@ -351,7 +351,7 @@ _CCCL_HOST_DEVICE inline complex<double> casinh(complex<double> z)
   if (ax > RECIP_EPSILON || ay > RECIP_EPSILON)
   {
     /* clog...() will raise inexact unless x or y is infinite. */
-    if (::cuda::std::signbit(x) == 0)
+    if (!::cuda::std::signbit(x))
     {
       w = clog_for_large_values(z) + ::cuda::std::__numbers<double>::__ln2();
     }
@@ -378,7 +378,7 @@ _CCCL_HOST_DEVICE inline complex<double> casinh(complex<double> z)
   }
 
   do_hard_work(ax, ay, &rx, &B_is_usable, &B, &sqrt_A2my2, &new_y);
-  if (B_is_usable)
+  if (B_is_usable != 0)
   {
     ry = ::cuda::std::asin(B);
   }
@@ -432,8 +432,8 @@ _CCCL_HOST_DEVICE inline complex<double> cacos(complex<double> z)
 
   x  = z.real();
   y  = z.imag();
-  sx = ::cuda::std::signbit(x);
-  sy = ::cuda::std::signbit(y);
+  sx = static_cast<int>(::cuda::std::signbit(x));
+  sy = static_cast<int>(::cuda::std::signbit(y));
   ax = ::cuda::std::fabs(x);
   ay = ::cuda::std::fabs(y);
 
@@ -492,7 +492,7 @@ _CCCL_HOST_DEVICE inline complex<double> cacos(complex<double> z)
   }
 
   do_hard_work(ay, ax, &ry, &B_is_usable, &B, &sqrt_A2mx2, &new_x);
-  if (B_is_usable)
+  if (B_is_usable != 0)
   {
     if (sx == 0)
     {

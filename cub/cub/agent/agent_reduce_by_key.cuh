@@ -185,7 +185,7 @@ struct AgentReduceByKey
   static constexpr int BLOCK_THREADS     = AgentReduceByKeyPolicyT::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD  = AgentReduceByKeyPolicyT::ITEMS_PER_THREAD;
   static constexpr int TILE_ITEMS        = BLOCK_THREADS * ITEMS_PER_THREAD;
-  static constexpr int TWO_PHASE_SCATTER = (ITEMS_PER_THREAD > 1);
+  static constexpr int TWO_PHASE_SCATTER = static_cast<int>(ITEMS_PER_THREAD > 1);
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
   // for keys Wrap the native input pointer with

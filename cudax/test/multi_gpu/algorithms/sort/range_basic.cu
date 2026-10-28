@@ -268,7 +268,7 @@ MULTI_GPU_TEST("sort, inputs with many equal keys", sort_test_util::sort_types)
 
     for (cuda::std::size_t item = 0; item < local.size(); ++item)
     {
-      const auto key = item % 2 ? key_a : key_b;
+      const auto key = (item % 2 != 0) ? key_a : key_b;
       local[item]    = sort_test_util::make_value<T>(key, key);
     }
   }

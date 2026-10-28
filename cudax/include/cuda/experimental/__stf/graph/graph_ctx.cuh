@@ -85,7 +85,7 @@ public:
     }
     else
     {
-      if (getenv("USE_CUDA_MALLOC"))
+      if (getenv("USE_CUDA_MALLOC") != nullptr)
       {
         // Same order as the host branch: allocate first, then add the node, so a failure in
         // either step leaves neither an orphan node in the graph nor an unreachable buffer.
@@ -404,16 +404,16 @@ public:
   {
     _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::submitted, "");
     auto& state = this->state();
-    if (!state.submitted_stream)
+    if (state.submitted_stream == nullptr)
     {
-      if (stream)
+      if (stream != nullptr)
       {
         // We could submit just the last iteration in that specific stream, and synchronize the user-provided
         // stream with this one
         EXPECT(state.graph_stage == 0, "Cannot call submit with an explicit stream and change stage.");
         state.submitted_stream = stream;
       }
-      else if (!state.submitted_stream)
+      else if (state.submitted_stream == nullptr)
       {
         state.submitted_stream = pick_stream();
         assert(state.submitted_stream != nullptr);
@@ -482,7 +482,7 @@ public:
 
     auto& state = this->state();
 
-    if (getenv("CUDASTF_DISPLAY_GRAPH_INFO"))
+    if (getenv("CUDASTF_DISPLAY_GRAPH_INFO") != nullptr)
     {
       display_graph_info(get_graph());
     }
@@ -507,7 +507,7 @@ public:
 
     auto& state = this->state();
 
-    if (getenv("CUDASTF_DUMP_GRAPHS"))
+    if (getenv("CUDASTF_DUMP_GRAPHS") != nullptr)
     {
       static int instantiated_graph = 0;
       print_to_dot("instantiated_graph" + ::std::to_string(instantiated_graph++) + ".dot");
@@ -705,7 +705,7 @@ private:
   {
     auto& state = this->state();
     // TODO rework to make sure we don't push a specific stream later ?
-    if (!state.submitted_stream)
+    if (state.submitted_stream == nullptr)
     {
       // fprintf(stderr, "Initializing stream support for ctx ...\n");
       state.submitted_stream = pick_stream();

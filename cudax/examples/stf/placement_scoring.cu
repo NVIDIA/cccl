@@ -65,7 +65,7 @@ localized_stats report(const char* name, const exec_place& grid, const localized
   {
     const auto it   = s.bytes_per_grid_index.find(i);
     const size_t mb = (it == s.bytes_per_grid_index.end()) ? 0 : it->second / MiB;
-    printf("%s%zu", i ? ", " : "", mb);
+    printf("%s%zu", (i != 0) ? ", " : "", mb);
   }
   printf("]\n");
   return s;

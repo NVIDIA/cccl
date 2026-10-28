@@ -34,7 +34,7 @@ using namespace cub;
 // Once launched, this kernel will block the stream until `flag` updates to non-zero.
 __global__ void block_stream(const volatile cuda::std::int32_t* flag)
 {
-  while (!(*flag))
+  while (*flag == 0)
   {
   }
 }

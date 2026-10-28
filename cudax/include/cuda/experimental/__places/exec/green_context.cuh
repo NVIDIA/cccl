@@ -96,7 +96,7 @@ public:
     }
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- typeid checked just above
     const auto& o = static_cast<const green_ctx_data_place_impl&>(other);
-    return (o.view_ < view_) - (view_ < o.view_);
+    return static_cast<int>(o.view_ < view_) - static_cast<int>(view_ < o.view_);
   }
 
   const green_ctx_view& get_view() const

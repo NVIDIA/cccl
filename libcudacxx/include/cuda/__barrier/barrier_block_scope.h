@@ -302,7 +302,8 @@ private:
   {
     if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
     {
-      return ::cuda::ptx::mbarrier_try_wait_parity(__native_handle(), __phase_parity);
+      return ::cuda::ptx::mbarrier_try_wait_parity(
+        __native_handle(), static_cast<::cuda::std::uint32_t>(__phase_parity));
     }
 
     _CCCL_ASSERT(!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared),
@@ -317,7 +318,7 @@ private:
     {
       return ::cuda::std::__call_try_wait_parity(__barrier, __phase_parity);
     }
-    return ::cuda::ptx::mbarrier_test_wait_parity(__native_handle(), __phase_parity);
+    return ::cuda::ptx::mbarrier_test_wait_parity(__native_handle(), static_cast<::cuda::std::uint32_t>(__phase_parity));
   }
 #endif // _CCCL_CUDA_COMPILATION()
 
@@ -338,14 +339,15 @@ private:
   {
     if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
     {
-      int32_t __ready = 0;
+      bool __ready = false;
       ::cuda::std::chrono::high_resolution_clock::time_point const __start =
         ::cuda::std::chrono::high_resolution_clock::now();
       ::cuda::std::chrono::nanoseconds __elapsed(0);
       do
       {
         const ::cuda::std::uint32_t __wait_nsec = static_cast<::cuda::std::uint32_t>((__nanosec - __elapsed).count());
-        __ready   = ::cuda::ptx::mbarrier_try_wait_parity(__native_handle(), __phase_parity, __wait_nsec);
+        __ready                                 = ::cuda::ptx::mbarrier_try_wait_parity(
+          __native_handle(), static_cast<::cuda::std::uint32_t>(__phase_parity), __wait_nsec);
         __elapsed = ::cuda::std::chrono::high_resolution_clock::now() - __start;
       } while (!__ready && (__nanosec > __elapsed));
 
@@ -373,7 +375,8 @@ private:
       ::cuda::std::chrono::high_resolution_clock::now();
     do
     {
-      __ready = ::cuda::ptx::mbarrier_test_wait_parity(__native_handle(), __phase_parity);
+      __ready =
+        ::cuda::ptx::mbarrier_test_wait_parity(__native_handle(), static_cast<::cuda::std::uint32_t>(__phase_parity));
     } while (!__ready && __nanosec > (::cuda::std::chrono::high_resolution_clock::now() - __start));
 
     return __ready;

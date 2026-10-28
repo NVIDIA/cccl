@@ -69,8 +69,8 @@ struct __lce_ta<_Ap, _Cp, _Mp, ~uint64_t{0}, true>
     constexpr result_type __r = _Mp % _Ap;
     const result_type __t0    = _Ap * (__x % __q);
     const result_type __t1    = __r * (__x / __q);
-    __x                       = __t0 + (__t0 < __t1) * _Mp - __t1;
-    __x += _Cp - (__x >= _Mp - _Cp) * _Mp;
+    __x                       = __t0 + static_cast<result_type>(__t0 < __t1) * _Mp - __t1;
+    __x += _Cp - static_cast<result_type>(__x >= _Mp - _Cp) * _Mp;
     return __x;
   }
 };
@@ -86,7 +86,7 @@ struct __lce_ta<_Ap, 0, _Mp, ~uint64_t{0}, true>
     constexpr result_type __r = _Mp % _Ap;
     const result_type __t0    = _Ap * (__x % __q);
     const result_type __t1    = __r * (__x / __q);
-    __x                       = __t0 + (__t0 < __t1) * _Mp - __t1;
+    __x                       = __t0 + static_cast<result_type>(__t0 < __t1) * _Mp - __t1;
     return __x;
   }
 };
@@ -127,8 +127,8 @@ struct __lce_ta<_Ap, _Cp, _Mp, ~uint32_t{0}, true>
     constexpr result_type __r = __m % __a;
     const result_type __t0    = __a * (__x % __q);
     const result_type __t1    = __r * (__x / __q);
-    __x                       = __t0 + (__t0 < __t1) * __m - __t1;
-    __x += __c - (__x >= __m - __c) * __m;
+    __x                       = __t0 + static_cast<result_type>(__t0 < __t1) * __m - __t1;
+    __x += __c - static_cast<result_type>(__x >= __m - __c) * __m;
     return __x;
   }
 };
@@ -146,7 +146,7 @@ struct __lce_ta<_Ap, 0, _Mp, ~uint32_t{0}, true>
     constexpr result_type __r = __m % __a;
     const result_type __t0    = __a * (__x % __q);
     const result_type __t1    = __r * (__x / __q);
-    __x                       = __t0 + (__t0 < __t1) * __m - __t1;
+    __x                       = __t0 + static_cast<result_type>(__t0 < __t1) * __m - __t1;
     return __x;
   }
 };
@@ -277,7 +277,7 @@ public:
     // Fallback implementation
     if constexpr (__can_overflow)
     {
-      for (; __z; --__z)
+      for (; __z != 0; --__z)
       {
         (void) operator()();
       }
@@ -290,7 +290,7 @@ public:
       [[maybe_unused]] uint64_t __cur_plus = increment;
       while (__z > 0)
       {
-        if (__z & 1)
+        if ((__z & 1) != 0)
         {
           __acc_mult = (__acc_mult * __cur_mult) % modulus;
           if constexpr (increment != 0)

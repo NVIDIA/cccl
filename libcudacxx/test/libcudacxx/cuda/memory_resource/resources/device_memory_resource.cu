@@ -239,8 +239,9 @@ C2H_CCCLRT_TEST("device_memory_pool construction", "[memory_resource]")
 
   // Allocation handles are only supported after 11.2 and not on Windows
 #if !_CCCL_OS(WINDOWS)
-  if (cuda::devices[0].attribute(::cuda::device_attributes::memory_pool_supported_handle_types)
-      & ::cudaMemHandleTypePosixFileDescriptor)
+  if ((cuda::devices[0].attribute(::cuda::device_attributes::memory_pool_supported_handle_types)
+       & ::cudaMemHandleTypePosixFileDescriptor)
+      != 0)
   {
     SECTION("Construct with allocation handle")
     {

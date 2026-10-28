@@ -146,7 +146,7 @@ int main(int argc, char** argv)
 
   // fprintf(stdout, "%zu %f ms\n", N / 1024 / 1024, ms);
 
-  if (check)
+  if (check != 0)
   {
     // fprintf(stderr, "Checking result...\n");
     size_t refhist[num_levels - 1];
