@@ -24,14 +24,6 @@
 #include __THRUST_HOST_SYSTEM_ALGORITH_HEADER_INCLUDE(execution_policy.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_HEADER_INCLUDE(execution_policy.h)
 
-// Some build systems need a hint to know which files we could include
-#if 0
-#  include <thrust/system/cpp/execution_policy.h>
-#  include <thrust/system/cuda/execution_policy.h>
-#  include <thrust/system/omp/execution_policy.h>
-#  include <thrust/system/tbb/execution_policy.h>
-#endif
-
 //! \endcond
 
 THRUST_NAMESPACE_BEGIN

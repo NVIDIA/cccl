@@ -27,18 +27,6 @@
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(unique_by_key.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(unique_by_key.h)
 
-// Some build systems need a hint to know which files we could include
-#if 0
-#  include <thrust/system/cpp/detail/unique.h>
-#  include <thrust/system/cpp/detail/unique_by_key.h>
-#  include <thrust/system/cuda/detail/unique.h>
-#  include <thrust/system/cuda/detail/unique_by_key.h>
-#  include <thrust/system/omp/detail/unique.h>
-#  include <thrust/system/omp/detail/unique_by_key.h>
-#  include <thrust/system/tbb/detail/unique.h>
-#  include <thrust/system/tbb/detail/unique_by_key.h>
-#endif
-
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE

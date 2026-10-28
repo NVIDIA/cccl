@@ -162,7 +162,8 @@ using max_segment_size_list = nvbench::enum_type_list< //
   2048,
   4096,
   8192
-#if 0 // need these, waiting for implementation to catch up
+// need these, waiting for implementation to catch up
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
   ,
   16384,
   32768,
