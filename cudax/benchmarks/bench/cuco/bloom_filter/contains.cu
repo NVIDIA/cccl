@@ -14,6 +14,7 @@
 
 #include <cuda/buffer>
 #include <cuda/cmath>
+#include <cuda/devices>
 #include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/memory_resource>
@@ -94,7 +95,8 @@ void bloom_filter_contains(
       return;
     }
 
-    const auto device = cuda::device_ref{0};
+    const auto device =
+      cuda::device_ref{state.get_device().value().get_id()}; // NOLINT(bugprone-unchecked-optional-access)
     const cuda::stream stream{device};
     const cuda::device_memory_pool_ref mr = cuda::device_default_memory_pool(device);
     const auto exec_policy                = thrust::cuda::par_nosync.on(stream.get());
