@@ -5,7 +5,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, List, Optional, Tuple
+import weakref
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
@@ -25,6 +27,36 @@ def is_device_array(obj: object) -> bool:
 # Perf: This cache holds the pointer accessor functions for all types we have seen.
 # This avoids try..except chains or repeated attribute lookups for the same type.
 _DATA_POINTER_ACCESSOR_CACHE: dict[type, Callable[[DeviceArrayLike], int]] = {}
+
+# Stream handles are immutable for the lifetime of an object implementing the
+# __cuda_stream__ protocol. Keep only the most recently used stream by weak
+# identity: the common path repeatedly passes the same stream, and a one-entry
+# cache avoids the dict/id/weakref-callback overhead of a general cache.
+_LAST_STREAM_HANDLE_CACHE: tuple[weakref.ReferenceType[object], int, bool] | None = None
+
+
+def _cache_stream_handle(stream: object, handle: int) -> None:
+    global _LAST_STREAM_HANDLE_CACHE
+
+    try:
+        stream_ref = weakref.ref(stream)
+    except TypeError:
+        # Some third-party protocol implementations cannot be weak-referenced.
+        # Keep supporting them without caching rather than retaining them.
+        return
+
+    try:
+        _ = cast(Any, stream).is_closed
+    except AttributeError:
+        needs_closed_check = False
+    except Exception:  # noqa: BLE001
+        # A third-party descriptor may raise while being probed. Do not let the
+        # optimization change successful __cuda_stream__ validation semantics.
+        return
+    else:
+        needs_closed_check = True
+
+    _LAST_STREAM_HANDLE_CACHE = (stream_ref, handle, needs_closed_check)
 
 
 def get_data_pointer(arr: DeviceArrayLike) -> int:
@@ -102,7 +134,7 @@ def get_dtype(arr: DeviceArrayLike | GpuStruct | np.ndarray) -> np.dtype:
         return np.dtype(typestr)
 
 
-def get_shape(arr: DeviceArrayLike) -> Tuple[int]:
+def get_shape(arr: DeviceArrayLike) -> tuple[int]:
     try:
         # TODO: this is a fast path for CuPy until
         # we have a more general solution.
@@ -201,11 +233,11 @@ def is_c_contiguous(arr: DeviceArrayLike) -> bool:
 
 
 def compute_c_contiguous_strides_in_bytes(
-    shape: Tuple[int], itemsize: int
-) -> Tuple[int, ...]:
+    shape: tuple[int], itemsize: int
+) -> tuple[int, ...]:
     """Return C-contiguous strides in bytes for a given shape and itemsize (compatible with NumPy .strides)."""
 
-    strides: List[int] = []
+    strides: list[int] = []
     acc = itemsize
 
     for dim in reversed(shape):
@@ -215,10 +247,30 @@ def compute_c_contiguous_strides_in_bytes(
     return tuple(strides)
 
 
-def validate_and_get_stream(stream) -> Optional[int]:
+def validate_and_get_stream(stream) -> int | None:
+    global _LAST_STREAM_HANDLE_CACHE
+
     # null stream is allowed
     if stream is None:
         return None
+
+    # Hot path: repeated calls overwhelmingly reuse the same stream object.
+    # If closed-state probing fails, drop the cache entry and preserve the
+    # original behavior by re-entering __cuda_stream__ validation.
+    entry = _LAST_STREAM_HANDLE_CACHE
+    if entry is not None and entry[0]() is stream:
+        if entry[2]:
+            try:
+                is_closed = cast(Any, stream).is_closed
+            except Exception:  # noqa: BLE001
+                _LAST_STREAM_HANDLE_CACHE = None
+            else:
+                if is_closed:
+                    _LAST_STREAM_HANDLE_CACHE = None
+                else:
+                    return entry[1]
+        else:
+            return entry[1]
 
     try:
         stream_property = stream.__cuda_stream__()
@@ -237,6 +289,7 @@ def validate_and_get_stream(stream) -> Optional[int]:
     if version == 0:
         if not isinstance(handle, int):
             raise TypeError(f"invalid stream handle {handle}")
+        _cache_stream_handle(stream, handle)
         return handle
 
     raise TypeError(f"unsupported __cuda_stream__ version {version}")
