@@ -42,7 +42,10 @@ void cuda_sleep(double ms, cudaStream_t stream)
 int main()
 {
   stream_ctx ctx;
-  double vA, vB, vC, vD;
+  double vA;
+  double vB;
+  double vC;
+  double vD;
   auto A = ctx.logical_data(make_slice(&vA, 1));
   auto B = ctx.logical_data(make_slice(&vB, 1));
   auto C = ctx.logical_data(make_slice(&vC, 1));

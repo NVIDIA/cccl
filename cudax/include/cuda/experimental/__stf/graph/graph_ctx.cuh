@@ -810,7 +810,8 @@ UNITTEST("set_symbol on graph_task and graph_task<>")
   // task lives in its own block, since a task holds its data locked until it ends.
   graph_ctx ctx;
 
-  double X[1024], Y[1024];
+  double X[1024];
+  double Y[1024];
   auto lX = ctx.logical_data(X);
   auto lY = ctx.logical_data(Y);
 

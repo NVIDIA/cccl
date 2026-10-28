@@ -58,7 +58,6 @@ Checks:
   - '-readability-implicit-bool-conversion'
   - '-readability-braces-around-statements'
   - '-readability-qualified-auto'
-  - '-readability-isolate-declaration'
   - '-readability-named-parameter'
   - '-readability-identifier-length'
   # Generally speaking if something is static then it has an express reason to be. 99% of

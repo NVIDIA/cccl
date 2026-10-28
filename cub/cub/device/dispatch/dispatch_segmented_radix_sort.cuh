@@ -423,7 +423,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
     do
     {
       // Init regular and alternate kernel configurations
-      PassConfig<SegmentedKernelT> pass_config, alt_pass_config;
+      PassConfig<SegmentedKernelT> pass_config;
+      PassConfig<SegmentedKernelT> alt_pass_config;
 
       error = pass_config.InitPassConfig(
         segmented_kernel, policy.RadixBits(policy.Segmented()), policy.Segmented(), launcher_factory);
@@ -705,7 +706,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
   auto segmented_kernel     = kernel_source.SegmentedRadixSortKernel();
   auto alt_segmented_kernel = kernel_source.AltSegmentedRadixSortKernel();
 
-  KernelConfig seg_config, alt_seg_config;
+  KernelConfig seg_config;
+  KernelConfig alt_seg_config;
   if (const auto error = CubDebug(seg_config.__init(segmented_kernel, active_policy.regular_pass, launcher_factory)))
   {
     return error;
