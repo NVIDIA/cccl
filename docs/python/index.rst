@@ -15,6 +15,9 @@ abstractions for CUDA Python developers.
   logical data and tasks with read/write annotations; STF orchestrates execution
   and data movement.
 
+* :doc:`cuda.coop.cutlass <coop_cutlass/index>` — Cooperative CUB primitives
+  inside CuTe kernels.
+
 These libraries expose the generic, highly-optimized algorithms from the
 :doc:`CCCL C++ libraries </cccl/index>`,
 which have been tuned to provide optimal performance across GPU architectures.
@@ -34,6 +37,7 @@ Who is this for?
 
    setup
    compute/index
+   coop_cutlass/index
    stf
    resources
    api_reference

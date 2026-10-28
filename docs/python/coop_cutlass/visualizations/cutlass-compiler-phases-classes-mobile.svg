@@ -1,0 +1,135 @@
+<!-- Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+
+SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+-->
+
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cutlass-phases-classes-title cutlass-phases-classes-desc" viewBox="0 0 270 2640">
+  <title id="cutlass-phases-classes-title">Compiler phases: classes</title>
+  <desc id="cutlass-phases-classes-desc">Read from top to bottom. CuTe traces symbolic calls. cuda.coop.cutlass finalizes the provider bundle inside the CuTe hook. CuTe then compiles and links the kernel.</desc>
+  <defs>
+    <marker id="cutlass-phases-classes-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0L10 5L0 10Z" fill="#44556b"/>
+    </marker>
+  </defs>
+  <rect width="270" height="2640" fill="#ffffff"/>
+  <text x="8" y="22" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">1. Trace the kernel</text>
+  <g data-node="CuTeDSL" role="group" aria-label="CuTe compiler. Compiler class. CuTeDSL. Trace staged Python with symbolic values.. Build the kernel's typed MLIR.">
+    <rect x="8" y="36.400000000000006" width="254" height="131.90000000000003" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="20" y="64.7" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Compiler class</text>
+    <text x="20" y="87.10000000000001" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">CuTeDSL</text>
+    <text x="20" y="109.50000000000001" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Trace staged Python with symbolic</text>
+    <text x="20" y="131.9" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">values.</text>
+    <text x="20" y="154.3" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Build the kernel's typed MLIR.</text>
+  </g>
+  <path d="M135 171.30000000000004V196.30000000000004" marker-end="url(#cutlass-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <text x="8" y="224.30000000000004" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">2. Plan each call</text>
+  <g data-node="plan_group_primitive() → GroupLoweringPlan" role="group" aria-label="cuda.coop.cutlass. Planning function and records. plan_group_primitive() → GroupLoweringPlan">
+    <rect x="8" y="238.70000000000005" width="254" height="282.3" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
+    <text x="20" y="267.00000000000006" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Planning function and records</text>
+    <text x="20" y="289.40000000000003" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">plan_group_primitive() →</text>
+    <text x="20" y="311.8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">GroupLoweringPlan</text>
+    <text x="20" y="342.2" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">LaunchFacts</text>
+    <text x="20" y="364.59999999999997" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Carry exact block, grid, cluster, and</text>
+    <text x="20" y="386.99999999999994" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">launch-mode facts.</text>
+    <text x="20" y="417.3999999999999" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">_CubLoadStoreRequest /</text>
+    <text x="20" y="439.7999999999999" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">_CubScanRequest</text>
+    <text x="20" y="462.1999999999999" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Bind the plan to CuTe value types.</text>
+    <text x="20" y="484.59999999999985" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Derive a stable symbol and its</text>
+    <text x="20" y="506.99999999999983" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">argument types.</text>
+  </g>
+  <path d="M135 524V549" marker-end="url(#cutlass-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <text x="8" y="577" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">3. Emit calls and collect requests</text>
+  <g data-node="BundleSession + FFI" role="group" aria-label="cuda.coop.cutlass. Session and CuTe callable classes. BundleSession + FFI">
+    <rect x="8" y="591.4" width="254" height="379.8999999999999" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
+    <text x="20" y="619.6999999999999" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Session and CuTe callable classes</text>
+    <text x="20" y="642.0999999999999" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">BundleSession + FFI</text>
+    <text x="20" y="672.4999999999999" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">BundleSession.add()</text>
+    <text x="20" y="694.8999999999999" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Keep one request per equivalent</text>
+    <text x="20" y="717.2999999999998" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">provider.</text>
+    <text x="20" y="747.6999999999998" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">BundleSession.add_deferred_</text>
+    <text x="20" y="770.0999999999998" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">temp_storage_event()</text>
+    <text x="20" y="792.4999999999998" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Keep every traced scratch use in</text>
+    <text x="20" y="814.8999999999997" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">order.</text>
+    <text x="20" y="837.2999999999997" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">DeferredTempStorageEvent retains</text>
+    <text x="20" y="859.6999999999997" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">address and size placeholders.</text>
+    <text x="20" y="890.0999999999997" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">FFI.__call__()</text>
+    <text x="20" y="912.4999999999997" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">cute.ffi() creates the FFI object.</text>
+    <text x="20" y="934.8999999999996" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Emit an external declaration and</text>
+    <text x="20" y="957.2999999999996" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">func.call by name.</text>
+  </g>
+  <path d="M135 974.3V999.3" marker-end="url(#cutlass-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <text x="8" y="1027.3" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Tracing complete · finalize providers before</text>
+  <text x="8" y="1048.3" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">kernel compilation</text>
+  <text x="8" y="1079.3" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">4. Finalize the provider bundle</text>
+  <g data-node="_trace_finalize_hook()" role="group" aria-label="cuda.coop.cutlass. Trace-finalization function. _trace_finalize_hook()">
+    <rect x="8" y="1093.7" width="254" height="418.3999999999999" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
+    <text x="20" y="1122" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Trace-finalization function</text>
+    <text x="20" y="1144.4" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">_trace_finalize_hook()</text>
+    <text x="20" y="1172.7" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Rendering function</text>
+    <text x="20" y="1195.1000000000001" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">render_bundle_source()</text>
+    <text x="20" y="1217.5000000000002" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Use BundleRenderer callbacks to</text>
+    <text x="20" y="1239.9000000000003" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">emit named C++ wrappers.</text>
+    <text x="20" y="1268.2000000000003" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Probe collection function</text>
+    <text x="20" y="1290.6000000000004" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">bundle_scratch_layout_</text>
+    <text x="20" y="1313.0000000000005" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">probes()</text>
+    <text x="20" y="1335.4000000000005" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Collect ScratchLayoutProbe records</text>
+    <text x="20" y="1357.8000000000006" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">for deferred scratch.</text>
+    <text x="20" y="1386.1000000000006" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Provider compilation result record</text>
+    <text x="20" y="1408.5000000000007" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">BundleCompilation</text>
+    <text x="20" y="1430.9000000000008" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Bundle compilation or cache reuse</text>
+    <text x="20" y="1453.3000000000009" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">returns this record.</text>
+    <text x="20" y="1475.700000000001" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">It holds the LTO-IR path and</text>
+    <text x="20" y="1498.100000000001" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">ScratchLayout map.</text>
+  </g>
+  <path d="M135 1515.1V1540.1" marker-end="url(#cutlass-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <text x="8" y="1568.1" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">5. Resolve deferred scratch</text>
+  <g data-node="DeferredTempStoragePlan + DeferredTempStorageBinding" role="group" aria-label="cuda.coop.cutlass. Optional storage records; finalizer function. DeferredTempStoragePlan + DeferredTempStorageBinding">
+    <rect x="8" y="1582.5" width="254" height="302.6" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
+    <text x="20" y="1610.8" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Optional storage records; finalizer function</text>
+    <text x="20" y="1633.2" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">DeferredTempStoragePlan +</text>
+    <text x="20" y="1655.6000000000001" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">DeferredTempStorageBinding</text>
+    <text x="20" y="1683.9" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Allocator class, for deferred uses</text>
+    <text x="20" y="1706.3000000000002" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">SmemAllocator</text>
+    <text x="20" y="1728.7000000000003" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Allocate at kernel entry using</text>
+    <text x="20" y="1751.1000000000004" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">resolved C++ layouts.</text>
+    <text x="20" y="1773.5000000000005" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Replace each call's address and</text>
+    <text x="20" y="1795.9000000000005" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">capacity placeholders.</text>
+    <text x="20" y="1826.3000000000006" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">append_link_library_attr()</text>
+    <text x="20" y="1848.7000000000007" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Attach the provider path to</text>
+    <text x="20" y="1871.1000000000008" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">gpu.module link-libraries.</text>
+  </g>
+  <path d="M135 1888.1V1913.1" marker-end="url(#cutlass-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <text x="8" y="1941.1" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">6. Compile and link the kernel</text>
+  <g data-node="CuTeDSL" role="group" aria-label="CuTe compiler. Compiler class with inherited methods. CuTeDSL">
+    <rect x="8" y="1955.5" width="254" height="408.19999999999993" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="20" y="1983.8" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Compiler class with inherited methods</text>
+    <text x="20" y="2006.2" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">CuTeDSL</text>
+    <text x="20" y="2036.6000000000001" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">generate_original_ir()</text>
+    <text x="20" y="2059" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">After the hook returns, hash and</text>
+    <text x="20" y="2081.4" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">build the module.</text>
+    <text x="20" y="2111.8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">_merge_gpu_link_libraries()</text>
+    <text x="20" y="2134.2000000000003" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Copy gpu.module link-libraries into</text>
+    <text x="20" y="2156.6000000000004" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">the LinkLibraries option.</text>
+    <text x="20" y="2187.0000000000005" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">compile_and_cache()</text>
+    <text x="20" y="2209.4000000000005" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Compile the completed kernel IR.</text>
+    <text x="20" y="2237.7000000000007" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">External linker</text>
+    <text x="20" y="2260.100000000001" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">nvJitLink</text>
+    <text x="20" y="2282.500000000001" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Link kernel and provider LTO-IR into</text>
+    <text x="20" y="2304.900000000001" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">a cubin.</text>
+    <text x="20" y="2327.300000000001" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Resolve or inline each provider</text>
+    <text x="20" y="2349.700000000001" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">symbol.</text>
+  </g>
+  <path d="M135 2366.7V2391.7" marker-end="url(#cutlass-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <text x="8" y="2419.7" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">7. Load and launch</text>
+  <g data-node="JitCompiledFunction → CudaModuleAndKernel" role="group" aria-label="CuTe compiler. Compiled-function class and runtime record. JitCompiledFunction → CudaModuleAndKernel. Load the device binary. Resolve the kernel entry.. Launch and reuse the compiled kernel.">
+    <rect x="8" y="2434.1" width="254" height="197.00000000000003" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="20" y="2462.4" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Compiled-function class and runtime</text>
+    <text x="20" y="2482.7000000000003" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">record</text>
+    <text x="20" y="2505.1000000000004" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">JitCompiledFunction →</text>
+    <text x="20" y="2527.5000000000005" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">CudaModuleAndKernel</text>
+    <text x="20" y="2549.9000000000005" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Load the device binary. Resolve the</text>
+    <text x="20" y="2572.3000000000006" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">kernel entry.</text>
+    <text x="20" y="2594.7000000000007" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Launch and reuse the compiled</text>
+    <text x="20" y="2617.100000000001" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">kernel.</text>
+  </g>
+</svg>

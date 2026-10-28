@@ -1,0 +1,225 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""Check the installed CUTLASS DSL for the required compiler APIs."""
+
+from __future__ import annotations
+
+import functools
+import importlib
+import importlib.metadata
+from dataclasses import dataclass
+from types import ModuleType
+from typing import Any
+
+_RUNTIME_DISTRIBUTIONS = ("nvidia-cutlass-dsl",)
+_RUNTIME_MODULES = (
+    "cutlass.cutlass_dsl",
+    "cutlass.cute",
+    "cutlass.base_dsl.compiler",
+    "cutlass.base_dsl.common",
+)
+
+
+class CutlassRuntimeDependencyError(ImportError):
+    """Structured failure to load a qualified CUTLASS backend."""
+
+    def __init__(
+        self,
+        reason_code: str,
+        message: str,
+        *,
+        cause: BaseException | None = None,
+        **details: Any,
+    ) -> None:
+        super().__init__(message)
+        self.backend = "cutlass"
+        self.reason_code = reason_code
+        self.details = details
+        if cause is not None:
+            self.__cause__ = cause
+
+
+@dataclass(frozen=True)
+class CutlassRuntime:
+    """Validated CUTLASS modules and compiler type used by ``cuda.coop``."""
+
+    cutlass_dsl: ModuleType
+    cute: ModuleType
+    compiler: ModuleType
+    common: ModuleType
+    dsl_type: type
+
+
+def _runtime_requirement() -> str:
+    """Describe the installed runtime and required capabilities.
+
+    Distribution metadata improves diagnostics; compatibility is established
+    by the API checks rather than by a version threshold.
+    """
+
+    version = None
+    distribution = None
+    for candidate in _RUNTIME_DISTRIBUTIONS:
+        try:
+            version = importlib.metadata.version(candidate)
+        except importlib.metadata.PackageNotFoundError:
+            continue
+        distribution = candidate
+        break
+
+    detected = "no CUTLASS DSL distribution was detected"
+    if isinstance(version, str) and version:
+        detected = f"detected {distribution}=={version}"
+    return (
+        f"{detected}. Use a CUTLASS DSL runtime with scoped trace "
+        "finalization, active compiler-environment ownership, exact launch "
+        "facts, and external LTO-IR linking support."
+    )
+
+
+def _runtime_import_error(error: ImportError) -> CutlassRuntimeDependencyError:
+    """Classify missing, conflicting, or failing runtime imports."""
+
+    missing = getattr(error, "name", None)
+    if missing == "cutlass":
+        return CutlassRuntimeDependencyError(
+            "backend-runtime-missing",
+            "cuda.coop.cutlass requires a compatible CUTLASS DSL runtime. "
+            f"{_runtime_requirement()}",
+            cause=error,
+            missing=missing,
+        )
+    if isinstance(missing, str) and any(
+        missing == module_name or missing.startswith(f"{module_name}.")
+        for module_name in _RUNTIME_MODULES
+    ):
+        return CutlassRuntimeDependencyError(
+            "conflicting-backend-runtime",
+            "cuda.coop.cutlass found a package named 'cutlass', but it "
+            "does not provide the complete CUTLASS DSL compiler runtime; "
+            f"missing {missing!r}. Remove the conflicting package. "
+            f"{_runtime_requirement()}",
+            cause=error,
+            missing=missing,
+        )
+    return CutlassRuntimeDependencyError(
+        "transitive-runtime-import-failed",
+        "cuda.coop.cutlass found the CUTLASS DSL runtime, but importing it "
+        f"failed at dependency {missing!r}. {_runtime_requirement()}",
+        cause=error,
+        missing=missing,
+    )
+
+
+def _missing_capabilities(
+    cutlass_dsl: ModuleType,
+    cute: ModuleType,
+    compiler: ModuleType,
+    common: ModuleType,
+) -> tuple[str, ...]:
+    """List missing compiler APIs without creating a DSL or trace.
+
+    Check environment ownership, exact launch facts, finalization hooks,
+    target selection, and the link-library option that the provider uses.
+    """
+
+    dsl_type = getattr(cutlass_dsl, "CuTeDSL", None)
+    missing: list[str] = []
+    if not isinstance(dsl_type, type):
+        missing.append("cutlass.cutlass_dsl.CuTeDSL")
+    else:
+        for name in (
+            "_get_dsl",
+            "trace_finalize_hooks",
+            "register_trace_finalize_hook",
+        ):
+            if not callable(getattr(dsl_type, name, None)):
+                missing.append(f"cutlass.cutlass_dsl.CuTeDSL.{name}")
+
+    if not callable(getattr(common, "get_current_env_manager", None)):
+        missing.append("cutlass.base_dsl.common.get_current_env_manager")
+
+    if not callable(getattr(cute, "_get_launch_facts", None)):
+        missing.append("cutlass.cute._get_launch_facts")
+
+    link_libraries = getattr(compiler, "LinkLibraries", None)
+    if not callable(link_libraries):
+        missing.append("cutlass.base_dsl.compiler.LinkLibraries")
+    elif getattr(link_libraries, "_option_name", None) != "link-libraries":
+        missing.append(
+            "cutlass.base_dsl.compiler.LinkLibraries."
+            "_option_name=link-libraries"
+        )
+
+    if not callable(getattr(compiler, "GPUArch", None)):
+        missing.append("cutlass.base_dsl.compiler.GPUArch")
+    return tuple(missing)
+
+
+@functools.lru_cache(maxsize=1)
+def validate_cutlass_runtime() -> CutlassRuntime:
+    """Import and validate the CUTLASS compiler APIs used by this backend.
+
+    Cache a successful result for later callers. Failures retain a
+    reason code and missing capability details; this check does not
+    compile or launch a kernel.
+    """
+
+    try:
+        cutlass_dsl = importlib.import_module("cutlass.cutlass_dsl")
+        cute = importlib.import_module("cutlass.cute")
+        compiler = importlib.import_module("cutlass.base_dsl.compiler")
+        common = importlib.import_module("cutlass.base_dsl.common")
+    except ImportError as error:
+        raise _runtime_import_error(error) from error
+    except Exception as error:
+        raise CutlassRuntimeDependencyError(
+            "transitive-runtime-import-failed",
+            "cuda.coop.cutlass found the CUTLASS DSL runtime, but importing it "
+            f"failed with {type(error).__name__}. {_runtime_requirement()}",
+            cause=error,
+            exception_type=type(error).__name__,
+        ) from error
+
+    missing_capabilities = _missing_capabilities(
+        cutlass_dsl, cute, compiler, common
+    )
+    if missing_capabilities:
+        raise CutlassRuntimeDependencyError(
+            "backend-runtime-incompatible",
+            "cuda.coop.cutlass requires active compiler-environment ownership, "
+            "scoped trace finalization, exact launch facts, architecture "
+            "selection, and link-library merging; missing: "
+            + ", ".join(missing_capabilities)
+            + f". {_runtime_requirement()}",
+            missing_capabilities=missing_capabilities,
+        )
+
+    return CutlassRuntime(
+        cutlass_dsl=cutlass_dsl,
+        cute=cute,
+        compiler=compiler,
+        common=common,
+        dsl_type=cutlass_dsl.CuTeDSL,
+    )
+
+
+def raise_for_missing_cutlass_runtime(error: ImportError) -> None:
+    """Translate CUTLASS import errors while retaining unrelated errors."""
+
+    missing = getattr(error, "name", None)
+    if not isinstance(missing, str):
+        return
+    if missing == "cutlass" or missing.startswith("cutlass."):
+        translated = _runtime_import_error(error)
+        raise translated from error
+
+
+__all__ = [
+    "CutlassRuntime",
+    "CutlassRuntimeDependencyError",
+    "raise_for_missing_cutlass_runtime",
+    "validate_cutlass_runtime",
+]

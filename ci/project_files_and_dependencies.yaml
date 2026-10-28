@@ -55,6 +55,7 @@ projects:
     full_dependencies: [libcudacxx_public]
     include_regexes: ["libcudacxx/"]
     exclude_project_files: [libcudacxx_public]
+    exclude_regexes: ['^libcudacxx/LICENSE\.TXT$']
 
   cub_public:
     name: "CUB Public API"
@@ -69,6 +70,7 @@ projects:
     full_dependencies: [cub_public]
     include_regexes: ["cub/"]
     exclude_project_files: [cub_public]
+    exclude_regexes: ['^cub/LICENSE\.TXT$']
 
   thrust_public:
     name: "Thrust Public API"
@@ -83,6 +85,7 @@ projects:
     full_dependencies: [thrust_public]
     include_regexes: ["thrust/"]
     exclude_project_files: [thrust_public]
+    exclude_regexes: ['^thrust/LICENSE$']
 
   cudax_public:
     name: "CUDA Experimental Public API"
@@ -171,6 +174,23 @@ projects:
     - "python/cuda_stf/"
     - "pyproject.toml"
     exclude_regexes: []
+
+  cuda_coop_cutlass:
+    name: "cuda.coop.cutlass"
+    matrix_project: "cuda_coop_cutlass"
+    lite_dependencies: [libcudacxx_public, cub_public, thrust_public]
+    full_dependencies: []
+    include_regexes:
+      - 'python/cuda_coop_cutlass/'
+      - 'ci/(build|test)_cuda_coop_cutlass\.sh$'
+      - 'ci/windows/build_cuda_coop_cutlass\.ps1$'
+      - 'ci/cuda_coop_cutlass_requirements\.txt$'
+      - 'ci/validate_cuda_coop_cutlass_artifacts\.py$'
+      - 'ci/test/test_cuda_coop_cutlass_ci\.py$'
+      - '^LICENSE$'
+      - '^cub/LICENSE\.TXT$'
+      - '^libcudacxx/LICENSE\.TXT$'
+      - '^thrust/LICENSE$'
 
   packaging:
     name: "CCCL Packaging"
@@ -305,9 +325,5 @@ ignore_regexes:
   - 'ci/rapids/'
   - '^ci/util/pre-commit/'
   - 'docs/'
-  - '^LICENSE$'
-  - '^cub/LICENSE\.TXT$'
   - '^cudax/LICENSE\.TXT$'
-  - '^libcudacxx/LICENSE\.TXT$'
   - '^libcudacxx/test/LICENSE\.TXT$'
-  - '^thrust/LICENSE$'

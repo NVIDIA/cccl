@@ -1,0 +1,103 @@
+.. SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+.. SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+.. _coop-visualization-exchange:
+
+Exchange
+========
+
+:func:`cuda.coop.cutlass.exchange` rearranges register values across a group. It
+returns a new payload with the requested ownership and preserves the input
+payload. Exchange itself performs no global-memory load or store.
+
+The API supports blocked/striped, warp-striped, and scatter modes. Use the
+mode and payload form supported by the selected block or warp group; see
+:func:`cuda.coop.cutlass.exchange`.
+
+.. coop-visualization:: exchange
+
+   .. only:: html
+
+      .. figure:: exchange-striped.svg
+         :alt: Striped-to-blocked exchange turns thread-zero values zero and eight into zero and one, with corresponding consecutive pairs for the other threads.
+         :width: 100%
+
+         Striped-to-blocked exchange with eight illustrative threads and two items per thread.
+
+   Values retain their logical sequence while their owning threads change.
+
+   .. code-block:: text
+
+      Thread          0     1     2     3     4     5     6     7
+      Striped input  0,8   1,9  2,10  3,11  4,12  5,13  6,14  7,15
+      Blocked result 0,1   2,3   4,5   6,7   8,9  10,11 12,13 14,15
+
+Reading the stages
+------------------
+
+See :ref:`blocked versus striped <coop-glossary-layouts>` for a compact
+ownership table and the index formulas used here.
+
+The first row groups inputs by thread. The middle row shows shared scratch
+at logical positions; the final row groups the returned values by their
+new owners. Select a value to inspect its input and result slots.
+
+For ``K`` items per thread and ``T`` threads, blocked ownership places
+logical value ``p`` in thread ``p // K``, slot ``p % K``. Striped ownership
+places it in thread ``p % T``, slot ``p // T``. The two blocked/striped modes convert
+between these arrangements without changing the logical order.
+
+``blocked_to_warp_striped`` and ``warp_striped_to_blocked`` apply that
+conversion separately within each physical warp's tile. The explorer uses
+four lanes per teaching warp to fit two warp tiles on screen. **Physical
+CUDA warps have 32 lanes.** Warp-striped ownership differs from stripes
+across a block containing multiple warps.
+
+The scatter modes take a signed-integer ``ranks`` payload with the same
+item count as the input. Each rank selects a logical result position;
+``scatter_to_blocked`` and ``scatter_to_striped`` expose those destinations
+in their named layouts. The explorer uses ``rank[p] = (5 * p) % N``, a
+permutation for the illustrated power-of-two tile sizes. Active ranks must
+be in range and unique.
+
+``scatter_to_striped_guarded`` suppresses inputs with negative ranks; it
+does not guard against ranks beyond the tile extent. The example assigns
+rank ``-1`` to every fifth input. ``scatter_to_striped_flagged`` instead
+uses a non-boolean integer ``valid_flags`` payload and suppresses every
+fourth input in the example. Suppressed writes leave holes: **a question
+mark means an unspecified output that must not be consumed**, not a zero
+or a preserved input value.
+
+The illustrations use the default non-timesliced exchange. The
+block API also provides ``warp_time_slicing`` for the layout conversions
+and unguarded scatters. Guarded and flagged scatter do not support it.
+
+Using Exchange in a kernel
+--------------------------
+
+This CuTe fragment uses the :ref:`kernel-fragment
+setup <coop-visualization-kernels>`. Launch with 128 threads and provide at
+least ``128 * items_per_thread`` source and destination elements for each
+block.
+
+.. code-block:: python
+
+   block = coop.this_block()
+   offset = block_index * 128 * items_per_thread
+   items = coop.load(
+       block, source, items_per_thread=items_per_thread,
+       algorithm="striped", offset=offset,
+   )
+   blocked = coop.exchange(block, items, mode="striped_to_blocked")
+   coop.store(block, destination, blocked, algorithm="direct", offset=offset)
+   # blocked owns consecutive items; items retains striped ownership.
+
+.. literalinclude:: ../../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_collective_examples.py
+   :language: python
+   :start-after: # qualified-scatter-example-begin
+   :end-before: # qualified-scatter-example-end
+   :dedent: 4
+
+See :func:`cuda.coop.cutlass.exchange` and
+:ref:`the Programming Guide <coop-cutlass-exchange>` for group participation,
+scatter controls, and register payload forms.
