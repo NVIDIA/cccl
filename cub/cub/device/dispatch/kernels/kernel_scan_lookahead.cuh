@@ -697,7 +697,7 @@ struct lookahead_scan_closure
     _CCCL_IKET_RANGE_PUSH(ThreadScan);
     // Perform inclusive scan of register array in current thread.
     // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use aggrExclusive
-    const bool use_prefix = hasInit ? true : !(is_first_tile && squad.threadRank() == 0);
+    const bool use_prefix = hasInit || !is_first_tile || squad.threadRank() != 0;
     threadScanPartial<isInclusive, IsLastTile>(
       regAggrInclusive, scan_op, aggrExclusive, use_prefix, valid_items_this_thread);
 
