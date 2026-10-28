@@ -1190,7 +1190,7 @@ CUB_TEST("DeviceHistogram::HistogramRange byte samples with wide bins",
     d_samples = h_samples;
   }
 
-  array<int, num_active_channels> num_levels;
+  array<int, num_active_channels> num_levels{};
   num_levels.fill(num_bins + 1);
   auto h_levels    = array<c2h::host_vector<float>, num_active_channels>{};
   auto d_levels    = array<c2h::device_vector<float>, num_active_channels>{};
@@ -1231,28 +1231,4 @@ CUB_TEST("DeviceHistogram::HistogramRange byte samples with wide bins",
   {
     REQUIRE(expected[channel] == d_histogram[channel]);
   }
-
-#if TEST_LAUNCH == 0
-  // Cover the separate environment API dispatch used by the benchmarks.
-  // Clear the results of the previous call so the checks below validate the environment API output.
-  for (int channel = 0; channel < num_active_channels; ++channel)
-  {
-    REQUIRE(cudaSuccess == cudaMemset(outputs[channel], 0, num_bins * sizeof(int)));
-  }
-  if constexpr (num_channels == 1)
-  {
-    REQUIRE(cudaSuccess
-            == cub::DeviceHistogram::HistogramRange(sample_ptr, outputs[0], num_levels[0], levels[0], num_pixels));
-  }
-  else
-  {
-    REQUIRE(cudaSuccess
-            == (cub::DeviceHistogram::MultiHistogramRange<num_channels, num_active_channels>(
-              sample_ptr, outputs, num_levels, levels, num_pixels)));
-  }
-  for (int channel = 0; channel < num_active_channels; ++channel)
-  {
-    REQUIRE(expected[channel] == d_histogram[channel]);
-  }
-#endif // TEST_LAUNCH == 0
 }

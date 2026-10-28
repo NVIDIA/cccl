@@ -371,7 +371,7 @@ template <typename TransformT, typename CastT>
 struct sample_cast_transform : TransformT
 {
   template <CacheLoadModifier LoadModifier, typename Sample>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
   {
     if (valid)
     {
