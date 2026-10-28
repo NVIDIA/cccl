@@ -52,7 +52,7 @@ std::string test_name(test_id id)
 int log2Int(int n)
 {
   int result = 0;
-  while (n >>= 1)
+  while ((n >>= 1) != 0)
   { // Divide n by 2 until n becomes 0
     ++result;
   }

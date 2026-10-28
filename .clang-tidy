@@ -55,7 +55,6 @@ Checks:
 
   - 'readability-*'
   - '-readability-function-cognitive-complexity'
-  - '-readability-implicit-bool-conversion'
   - '-readability-braces-around-statements'
   - '-readability-qualified-auto'
   - '-readability-isolate-declaration'

@@ -110,7 +110,7 @@ int main(int argc, char** argv)
     lX[b]              = ctx.logical_data(&X[start], end - start).set_symbol("X_" + std::to_string(b));
 
     // No need to move this back to the host if we do not check the result
-    if (!check)
+    if (check == 0)
     {
       lX[b].set_write_back(false);
     }
@@ -188,7 +188,7 @@ int main(int argc, char** argv)
 
   fprintf(stdout, "%zu %f ms\n", N / 1024 / 1024, ms);
 
-  if (check)
+  if (check != 0)
   {
 #if 0
     for (size_t i = 0; i < N; i++) {

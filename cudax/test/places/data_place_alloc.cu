@@ -125,7 +125,7 @@ void test_managed_allocation()
   cuda_try(cudaGetDevice(&dev));
   cudaDeviceProp prop{};
   cuda_try(cudaGetDeviceProperties(&prop, dev));
-  if (!prop.concurrentManagedAccess)
+  if (prop.concurrentManagedAccess == 0)
   {
     printf("  Concurrent CPU/GPU access not supported, skipping managed test.\n");
     return;

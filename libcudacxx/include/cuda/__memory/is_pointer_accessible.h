@@ -186,7 +186,7 @@ _CCCL_HOST_API inline bool __is_device_or_managed_memory(const void* __p) noexce
     return false;
   }
   // (2) check if the pointer is managed memory
-  if (__is_managed)
+  if (__is_managed != 0)
   {
     return true;
   }

@@ -1167,7 +1167,7 @@ struct dummy_released_resource : ctx_resource
   }
   void release_in_callback() noexcept override
   {
-    if (released_)
+    if (released_ != nullptr)
     {
       *released_ = true;
     }
