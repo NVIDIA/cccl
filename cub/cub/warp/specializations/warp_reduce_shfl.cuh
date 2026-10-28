@@ -189,7 +189,7 @@ struct WarpReduceShfl
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void ShuffleReduce(T& input, ReductionOp reduction_op, const int last_lane)
   {
     // capture clause prevents regressions
-    ::cuda::static_for<steps>([&, value = input, reduction_op](const auto step) mutable {
+    ::cuda::static_for<steps>([&, value = input, reduction_op](const int step) mutable {
       value = ReduceStep(value, reduction_op, last_lane, 1u << step);
       input = value;
     });
@@ -199,7 +199,7 @@ struct WarpReduceShfl
   template <typename ReductionOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void FullShuffleReduce(T& input, ReductionOp reduction_op)
   {
-    ::cuda::static_for<steps>([&](const auto step) {
+    ::cuda::static_for<steps>([&](const int step) {
       const T tmp = ::cuda::device::warp_shuffle_down<LogicalWarpThreads>(input, 1u << step, member_mask).data;
       input       = reduction_op(input, tmp);
     });
