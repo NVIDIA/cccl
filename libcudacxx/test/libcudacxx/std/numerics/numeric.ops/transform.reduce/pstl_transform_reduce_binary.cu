@@ -48,7 +48,7 @@ void test_transform_reduce(const Policy policy, const thrust::device_vector<int>
   // N * (N + 1) / 2 for the first N integrals
   // 0 for multiplying by 1
   // 42 for init
-  constexpr int expected = size * (size + 1) / 2 + 42;
+  constexpr int expected = (size * (size + 1) / 2) + 42;
 
   { // Defaulted operations
     auto res = cuda::std::transform_reduce(policy, Input1.begin(), Input1.end(), input2, 42);

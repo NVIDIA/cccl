@@ -447,7 +447,7 @@ public:
       // C++'s bit-shift has undefined behaviour if the bits being shifted exceed the operand width,
       // we use the PTX instruction `shr` to make sure behaviour is well-defined.
       // Negative bit-shift amounts wrap around in unsigned integer math and are ultimately clamped.
-      const uint32_t bit_shift = target_offset - i * USED_BITS_PER_UNIT;
+      const uint32_t bit_shift = target_offset - (i * USED_BITS_PER_UNIT);
       val |= _CUB::detail::LogicShiftRight(data[i], bit_shift) & ITEM_MASK;
     }
     return val;
@@ -465,7 +465,7 @@ public:
       // C++'s bit-shift has undefined behaviour if the bits being shifted exceed the operand width,
       // we use the PTX instruction `shl` to make sure behaviour is well-defined.
       // Negative bit-shift amounts wrap around in unsigned integer math and are ultimately clamped.
-      const uint32_t bit_shift = target_offset - i * USED_BITS_PER_UNIT;
+      const uint32_t bit_shift = target_offset - (i * USED_BITS_PER_UNIT);
       data[i] += _CUB::detail::LogicShiftLeft(value, bit_shift) & UNIT_MASK;
     }
   }

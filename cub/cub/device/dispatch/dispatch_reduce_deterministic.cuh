@@ -225,7 +225,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     last_chunk_grid_size = ::cuda::std::min(max_blocks, last_chunk_tile_grid_size);
   }
 
-  const int reduce_grid_size = chunk_grid_size * (num_chunks - 1) + last_chunk_grid_size;
+  const int reduce_grid_size = (chunk_grid_size * (num_chunks - 1)) + last_chunk_grid_size;
 
   // Temporary storage allocation requirements
   void* allocations[1]             = {};

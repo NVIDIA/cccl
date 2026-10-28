@@ -167,7 +167,7 @@ _CCCL_DEVICE_API void warpLoadLookahead(
   _CCCL_IKET_RANGE_PUSH(LoadTileStates);
   for (int i = 0; i < NumTileStatesPerThread; ++i)
   {
-    const int idxTileLookahead = idxTileCur + 32 * i + laneIdx;
+    const int idxTileLookahead = idxTileCur + (32 * i) + laneIdx;
     if (idxTileLookahead < idxTileNext)
     {
       outTileStates[i] = _CUB::detail::warpspeed::loadTileAggregate(ptrTileStates, idxTileLookahead, num_tiles);

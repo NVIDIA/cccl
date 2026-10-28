@@ -162,12 +162,12 @@ int main()
   for (size_t i = 0; i < 1024; i++)
   {
     int expected = static_cast<int>(i);
-    expected     = expected * 2 + 1;
+    expected     = (expected * 2) + 1;
     expected     = expected * 3;
-    expected     = expected / 2 + 10;
+    expected     = (expected / 2) + 10;
     for (int iter = 0; iter < 3; iter++)
     {
-      expected = 3 * expected + 1;
+      expected = (3 * expected) + 1;
     }
     expected = (expected + 5) * 2;
     EXPECT(input[i] == expected);
