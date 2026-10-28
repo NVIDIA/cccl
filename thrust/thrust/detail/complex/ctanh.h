@@ -135,7 +135,7 @@ _CCCL_HOST_DEVICE inline complex<double> ctanh(const complex<double>& z)
    */
   if (ix >= 0x7ff00000)
   {
-    if ((ix & 0xfffff) | lx) /* x is NaN */
+    if (((ix & 0xfffff) | lx) != 0) /* x is NaN */
     {
       return (complex<double>(x, (y == 0 ? y : x * y)));
     }

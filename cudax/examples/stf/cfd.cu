@@ -346,7 +346,7 @@ int main(int argc, char** argv)
     psi(i, j) = 0.0;
   };
 
-  if (!irrotational)
+  if (irrotational == 0)
   {
     lzet    = ctx.logical_data(lpsi.shape()).set_symbol("zet");
     lzettmp = ctx.logical_data(lpsi.shape()).set_symbol("zet_tmp");
@@ -371,7 +371,7 @@ int main(int argc, char** argv)
             bnorm += psi(i, j) * psi(i, j);
           };
 
-  if (!irrotational)
+  if (irrotational == 0)
   {
     // update zeta BCs that depend on psi
     boundaryzet(ctx, lzet, lpsi, m, n);
@@ -399,7 +399,7 @@ int main(int argc, char** argv)
   for (; iter <= numiter; iter++)
   {
     // calculate psi for next iteration
-    if (irrotational)
+    if (irrotational != 0)
     {
       jacobistep(ctx, lpsitmp, lpsi, m, n);
     }
@@ -409,12 +409,12 @@ int main(int argc, char** argv)
     }
 
     // calculate current error if required
-    const bool compute_error = (iter == numiter) || (checkerr && (iter % printfreq == 0));
+    const bool compute_error = (iter == numiter) || (checkerr != 0 && (iter % printfreq == 0));
     if (compute_error)
     {
       error = deltasq(ctx, lpsitmp, lpsi);
 
-      if (!irrotational)
+      if (irrotational == 0)
       {
         error += deltasq(ctx, lzettmp, lzet);
       }
@@ -422,7 +422,7 @@ int main(int argc, char** argv)
       error = sqrt(error);
       error = error / bnorm;
 
-      if (checkerr && (error < tolerance))
+      if (checkerr != 0 && (error < tolerance))
       {
         // printf("Converged on iteration %d\n", iter);
         break;
@@ -435,7 +435,7 @@ int main(int argc, char** argv)
               psi(i, j) = psitmp(i, j);
             };
 
-    if (!irrotational)
+    if (irrotational == 0)
     {
       ctx.parallel_for(box<2>({1, m + 1}, {1, n + 1}), lzet.rw(), lzettmp.read()).set_symbol("SwitchZet")
           ->*[] __device__(size_t i, size_t j, auto zet, auto zettmp) {
@@ -443,7 +443,7 @@ int main(int argc, char** argv)
               };
     }
 
-    if (!irrotational)
+    if (irrotational == 0)
     {
       // update zeta BCs that depend on psi
       boundaryzet(ctx, lzet, lpsi, m, n);

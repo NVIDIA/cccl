@@ -622,7 +622,7 @@ public:
       {
         return typeid(*this).before(typeid(rhs)) ? -1 : 1;
       }
-      return (rhs.affine < affine) - (affine < rhs.affine);
+      return static_cast<int>(rhs.affine < affine) - static_cast<int>(affine < rhs.affine);
     }
 
     virtual size_t hash() const
@@ -1245,7 +1245,7 @@ inline augmented_stream stream_pool::next(const exec_place& place)
     }
   }
 
-  if (!result.stream)
+  if (result.stream == nullptr)
   {
     auto active   = place.activate();
     result.stream = cuda_try<cudaStreamCreateWithFlags>(cudaStreamNonBlocking);
@@ -1659,12 +1659,12 @@ public:
     // Compare dims first
     auto this_dims  = ::std::tie(dims_.x, dims_.y, dims_.z, dims_.t);
     auto other_dims = ::std::tie(other.dims_.x, other.dims_.y, other.dims_.z, other.dims_.t);
-    if (const int c = (other_dims < this_dims) - (this_dims < other_dims); c != 0)
+    if (const int c = static_cast<int>(other_dims < this_dims) - static_cast<int>(this_dims < other_dims); c != 0)
     {
       return c;
     }
     // Then compare places
-    return (other.places_ < places_) - (places_ < other.places_);
+    return static_cast<int>(other.places_ < places_) - static_cast<int>(places_ < other.places_);
   }
 
   size_t hash() const override
@@ -2120,7 +2120,7 @@ public:
     size_t n        = 1;
     for (size_t a = 0; a < 4; a++)
     {
-      if (axes_mask_ & (1u << a))
+      if ((axes_mask_ & (1u << a)) != 0u)
       {
         n *= dims.get(a);
       }
@@ -2142,7 +2142,7 @@ public:
     size_t mult     = 1;
     for (size_t a = 0; a < 4; a++)
     {
-      if (axes_mask_ & (1u << a))
+      if ((axes_mask_ & (1u << a)) != 0u)
       {
         idx += static_cast<size_t>(pos.get(a)) * mult;
         mult *= dims.get(a);
@@ -2162,7 +2162,7 @@ public:
     ssize_t c[4]    = {0, 0, 0, 0};
     for (size_t a = 0; a < 4; a++)
     {
-      if (axes_mask_ & (1u << a))
+      if ((axes_mask_ & (1u << a)) != 0u)
       {
         c[a] = static_cast<ssize_t>(instance_index % dims.get(a));
         instance_index /= dims.get(a);
@@ -2230,7 +2230,7 @@ public:
     {
       return (axes_mask_ < o.axes_mask_) ? -1 : 1;
     }
-    return (grid_ < o.grid_) ? -1 : (grid_ != o.grid_);
+    return (grid_ < o.grid_) ? -1 : static_cast<int>(grid_ != o.grid_);
   }
 
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override

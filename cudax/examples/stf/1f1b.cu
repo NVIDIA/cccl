@@ -43,7 +43,7 @@ int main(int argc, char** argv)
 {
   context ctx;
   // Use a graph context if the second argument is set and not null
-  if (argc > 2 && ::std::stoi(argv[2]))
+  if (argc > 2 && ::std::stoi(argv[2]) != 0)
   {
     ctx = graph_ctx();
   }

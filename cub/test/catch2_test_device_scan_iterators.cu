@@ -221,8 +221,8 @@ public:
   custom_accumulator_t() = default;
 
   __host__ __device__ custom_accumulator_t(const custom_accumulator_t& in)
-      : m_val(in.is_valid() * in.get())
-      , m_magic_value(in.is_valid() * 42)
+      : m_val(static_cast<int>(in.is_valid()) * in.get())
+      , m_magic_value(static_cast<int>(in.is_valid()) * 42)
   {}
 
   __host__ __device__ custom_accumulator_t(const custom_input_t& in)
@@ -247,13 +247,13 @@ public:
 
   __host__ __device__ custom_accumulator_t operator+(const custom_input_t& in) const
   {
-    const int multiplier = this->is_valid();
+    const int multiplier = static_cast<int>(this->is_valid());
     return {(m_val + in.get()) * multiplier};
   }
 
   __host__ __device__ custom_accumulator_t operator+(const custom_accumulator_t& in) const
   {
-    const int multiplier = this->is_valid() && in.is_valid();
+    const int multiplier = static_cast<int>(this->is_valid() && in.is_valid());
     return {(m_val + in.get()) * multiplier};
   }
 
@@ -281,7 +281,7 @@ public:
 
   __device__ void operator=(const custom_accumulator_t& accum) const
   {
-    const int ok = accum.is_valid() && (accum.get() == m_expected);
+    const int ok = static_cast<int>(accum.is_valid() && (accum.get() == m_expected));
     atomicAdd(m_d_ok_count, ok);
   }
 };

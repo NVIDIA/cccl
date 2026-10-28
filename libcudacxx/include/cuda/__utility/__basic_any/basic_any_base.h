@@ -59,7 +59,9 @@ _CCCL_CONCEPT __is_basic_any =
 // clang-format on
 
 // We need a base class to correctly implement movability and copyability.
-template <class _Interface, int = __extension_of<_Interface, __imovable<>> + __extension_of<_Interface, __icopyable<>>>
+template <class _Interface,
+          int = static_cast<int>(__extension_of<_Interface, __imovable<>>)
+              + static_cast<int>(__extension_of<_Interface, __icopyable<>>)>
 struct __basic_any_base;
 
 template <class _Interface>

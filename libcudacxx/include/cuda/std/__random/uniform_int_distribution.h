@@ -65,7 +65,7 @@ public:
   _CCCL_HOST_DEVICE_API constexpr __independent_bits_engine(_Engine& __e, size_t __w) noexcept
       : __e_(__e)
       , __w_(__w)
-      , __n_(__w_ / __m + (__w_ % __m != 0))
+      , __n_(__w_ / __m + static_cast<size_t>(__w_ % __m != 0))
   {
     // TODO(jfaibussowit):
     //

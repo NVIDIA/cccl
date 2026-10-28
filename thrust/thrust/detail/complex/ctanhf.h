@@ -82,7 +82,7 @@ _CCCL_HOST_DEVICE inline complex<float> ctanhf(const complex<float>& z)
 
   if (ix >= 0x7f800000)
   {
-    if (ix & 0x7fffff)
+    if ((ix & 0x7fffff) != 0)
     {
       return (complex<float>(x, (y == 0.0f ? y : x * y)));
     }

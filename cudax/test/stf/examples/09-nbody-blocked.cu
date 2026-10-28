@@ -268,7 +268,7 @@ int main(int argc, char** argv)
 
     // Write the VTK file for this time step
     const char* dump_freq_str = getenv("DUMP_FREQ");
-    if (dump_freq_str && iter % ::std::stoi(dump_freq_str) == 0)
+    if (dump_freq_str != nullptr && iter % ::std::stoi(dump_freq_str) == 0)
     {
       const std::string filename = "time_step_" + std::to_string(iter) + ".vtk";
       writeVTKFile(ctx, filename, BLOCK_SIZE, BODY_CNT, parts);

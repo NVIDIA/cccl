@@ -53,7 +53,7 @@ namespace detail
 template <typename IteratorTuple>
 struct make_zip_iterator_base
 {
-  static_assert(!sizeof(IteratorTuple), "thrust::zip_iterator only supports cuda::std::tuple");
+  static_assert(sizeof(IteratorTuple) == 0, "thrust::zip_iterator only supports cuda::std::tuple");
 };
 
 template <typename... Its>

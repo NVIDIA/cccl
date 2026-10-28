@@ -186,7 +186,7 @@ _CCCL_HOST_DEVICE inline complex<double> clog(const complex<double>& z)
         val[i + 1] = t;
       }
     }
-  } while (!sorted);
+  } while (sorted == 0);
 
   hm1 = -1;
   for (i = 0; i < 12; i++)

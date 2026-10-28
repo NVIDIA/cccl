@@ -58,7 +58,7 @@ private:
     // nvcc doesn't allow ODR using constexpr globals. Therefore,
     // make a temporary initialized from the global
     auto constexpr __Feb = February;
-    const int __yr       = static_cast<int>(__year_) - (__month_ <= __Feb);
+    const int __yr       = static_cast<int>(__year_) - static_cast<int>(__month_ <= __Feb);
     const unsigned __mth = static_cast<unsigned>(__month_);
     const unsigned __day = static_cast<unsigned>(__day_);
 
@@ -85,7 +85,7 @@ private:
     const unsigned __mp  = (5 * __doy + 2) / 153; // [0, 11]
     const unsigned __day = __doy - (153 * __mp + 2) / 5 + 1; // [1, 31]
     const unsigned __mth = __mp + static_cast<unsigned>(__mp < 10 ? 3 : -9); // [1, 12]
-    return year_month_day{chrono::year{__yr + (__mth <= 2)}, chrono::month{__mth}, chrono::day{__day}};
+    return year_month_day{chrono::year{__yr + static_cast<int>(__mth <= 2)}, chrono::month{__mth}, chrono::day{__day}};
   }
 
 public:

@@ -481,7 +481,7 @@ public:
   {
     _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::finalized, "");
     auto& state = this->state();
-    if (!state.submitted_stream)
+    if (state.submitted_stream == nullptr)
     {
       // Wasn't submitted yet
       submit();

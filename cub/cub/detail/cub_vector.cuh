@@ -27,7 +27,7 @@ CUB_NAMESPACE_BEGIN
 template <typename T, int VecElements>
 struct CubVector
 {
-  static_assert(!sizeof(T), "CubVector can only have 1-4 elements");
+  static_assert(sizeof(T) == 0, "CubVector can only have 1-4 elements");
 };
 
 /// The maximum number of elements in CUDA vector types

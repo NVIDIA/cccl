@@ -291,15 +291,15 @@ int main(int argc, char** argv)
 
       printf("\nRUN OFFSETS: \n");
       int compare = CompareDeviceResults(h_offsets_reference, d_offsets_out.data(), num_runs, true, g_verbose, stream);
-      printf("\t\t %s ", compare ? "FAIL" : "PASS");
+      printf("\t\t %s ", compare != 0 ? "FAIL" : "PASS");
 
       printf("\nRUN LENGTHS: \n");
       compare |= CompareDeviceResults(h_lengths_reference, d_lengths_out.data(), num_runs, true, g_verbose, stream);
-      printf("\t\t %s ", compare ? "FAIL" : "PASS");
+      printf("\t\t %s ", compare != 0 ? "FAIL" : "PASS");
 
       printf("\nNUM RUNS: \n");
       compare |= CompareDeviceResults(&num_runs, d_num_runs.data(), 1, true, g_verbose, stream);
-      printf("\t\t %s ", compare ? "FAIL" : "PASS");
+      printf("\t\t %s ", compare != 0 ? "FAIL" : "PASS");
 
       AssertEquals(0, compare);
     }

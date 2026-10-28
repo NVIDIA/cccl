@@ -125,7 +125,7 @@ _CCCL_HOST_DEVICE inline complex<float> cexpf(const complex<float>& z)
       /* cexp(finite|NaN +- I Inf|NaN) = NaN + I NaN */
       return (complex<float>(y - y, y - y));
     }
-    else if (hx & 0x80000000)
+    if ((hx & 0x80000000) != 0)
     {
       /* cexp(-Inf +- I Inf|NaN) = 0 + I 0 */
       return (complex<float>(0.0, 0.0));
