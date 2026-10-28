@@ -5,6 +5,7 @@
 """Cooperative CUDA primitives for the CUTLASS CuTe DSL."""
 
 from ._compiler._runtime import validate_cutlass_runtime
+from ._group_load_store import load, store
 from ._temp_storage import TempStorage
 from ._thread_data import ThreadData
 from ._thread_group import (
@@ -20,6 +21,8 @@ from ._thread_group import (
 from ._typing import TempStorageLike, ThreadDataLike
 
 __all__ = [
+    "load",
+    "store",
     "Hierarchy",
     "ThreadGroup",
     "ThreadHierarchy",

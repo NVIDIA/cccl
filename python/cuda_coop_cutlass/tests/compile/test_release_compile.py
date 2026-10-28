@@ -136,7 +136,9 @@ def test_release_native_views_serialize_with_control_flow(
     assert serialized_modules and all(serialized_modules)
 
 
-@pytest.mark.parametrize("operation", ("reserve", "release", "sync"))
+@pytest.mark.parametrize(
+    "operation", ("reserve", "release", "sync", "direct", "transpose")
+)
 def test_release_rejects_later_use(operation):
     @cute.kernel
     def kernel(memory: cute.Pointer, flag: cutlass.Int32):
