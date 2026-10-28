@@ -311,7 +311,6 @@ template <typename Derived,
           typename Difference = ::cuda::std::ptrdiff_t>
 class iterator_facade
 {
-private:
   /*! \cond
    */
 

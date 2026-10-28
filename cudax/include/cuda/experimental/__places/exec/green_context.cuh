@@ -246,7 +246,6 @@ public:
   green_context_helper()  = default;
   ~green_context_helper() = default;
 
-public:
   size_t get_device_id() const
   {
     return devid;

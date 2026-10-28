@@ -109,7 +109,6 @@ class mdspan
                             typename _LayoutPolicy::template mapping<_Extents>,
                             _AccessorPolicy>
 {
-private:
   static_assert(__is_cuda_std_extents_v<_Extents>,
                 "mdspan: Extents template parameter must be a specialization of extents.");
   static_assert(!is_array_v<_ElementType>, "mdspan: ElementType template parameter may not be an array type");

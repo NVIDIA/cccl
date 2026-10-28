@@ -54,7 +54,6 @@ struct is_wrapped_reference;
 template <typename Element, typename Pointer, typename Derived>
 class reference
 {
-private:
   using derived_type = std::conditional_t<std::is_same_v<Derived, use_default>, reference, Derived>;
 
 public:
@@ -499,7 +498,6 @@ class tagged_reference
     : public thrust::
         reference<Element, thrust::pointer<Element, Tag, tagged_reference<Element, Tag>>, tagged_reference<Element, Tag>>
 {
-private:
   using base_type = thrust::
     reference<Element, thrust::pointer<Element, Tag, tagged_reference<Element, Tag>>, tagged_reference<Element, Tag>>;
 

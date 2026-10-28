@@ -82,7 +82,6 @@ _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 template <class _Iter>
 class _CCCL_TYPE_VISIBILITY_DEFAULT reverse_iterator
 {
-private:
 #if _CCCL_STD_VER > 2017
   static_assert(__has_bidirectional_traversal<_Iter> || bidirectional_iterator<_Iter>,
                 "reverse_iterator<It> requires It to be a bidirectional iterator.");

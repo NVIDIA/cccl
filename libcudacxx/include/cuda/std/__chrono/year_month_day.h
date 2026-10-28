@@ -44,7 +44,6 @@ class year_month_day_last;
 
 class year_month_day
 {
-private:
   chrono::year __year_;
   chrono::month __month_;
   chrono::day __day_;
@@ -301,7 +300,6 @@ public:
 
 class year_month_day_last
 {
-private:
   chrono::year __year_;
   chrono::month_day_last __month_day_last_;
 
