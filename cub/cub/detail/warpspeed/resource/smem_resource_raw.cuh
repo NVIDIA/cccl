@@ -129,7 +129,7 @@ struct SmemResourceRaw
     }
   }
 
-  _CCCL_DEVICE_API void* data()
+  _CCCL_DEVICE_API void* data() const
   {
     return (void*) (mPtrBase + mStageCurrent * mStride);
   }
