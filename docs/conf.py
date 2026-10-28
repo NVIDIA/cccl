@@ -8,9 +8,12 @@ from datetime import datetime
 # Add extension directory to path
 sys.path.insert(0, os.path.abspath("_ext"))
 
-# Add Python CCCL packages to path for autodoc. cuda-cccl and cuda-stf are
-# separate distributions that both contribute to the shared ``cuda`` namespace.
-for _pkg in ("../python/cuda_cccl", "../python/cuda_stf"):
+# Add Python CCCL distributions to the shared ``cuda`` namespace for autodoc.
+for _pkg in (
+    "../python/cuda_cccl",
+    "../python/cuda_coop_cutlass",
+    "../python/cuda_stf",
+):
     python_package_path = os.path.abspath(_pkg)
     if os.path.exists(python_package_path):
         sys.path.insert(0, python_package_path)
@@ -55,6 +58,7 @@ extensions = [
     "sphinx_copybutton",
     "nbsphinx",
     # "rst_processor",  # Disabled - breathe handles embed:rst natively
+    "coop_visualization",  # Interactive cooperative primitives with RST fallbacks
     "auto_api_generator",  # Automatically generate API reference pages from Doxygen XML
 ]
 
@@ -218,6 +222,8 @@ primary_domain = "py"
 
 # Mock imports for Python documentation - these modules may not be installed
 autodoc_mock_imports = [
+    "cutlass",
+    "cuda.coop.cutlass._compiler._runtime",
     "numba",
     "numba.core",
     "numba.core.cgutils",
