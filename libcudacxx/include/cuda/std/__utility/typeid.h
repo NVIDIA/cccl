@@ -249,7 +249,7 @@ template <auto _Vp>
   // it so the result is just the function's name.
   if constexpr (is_function_v<remove_pointer_t<decltype(_Vp)>> || is_member_function_pointer_v<decltype(_Vp)>)
   {
-    if (__sv.size() != 0 && __sv[0] == '&')
+    if (!__sv.empty() && __sv[0] == '&')
     {
       // substr() technically may throw an exception, but clang-tidy does not realize this is safe
       __sv = __sv.substr(1, static_cast<ptrdiff_t>(__sv.size()));
