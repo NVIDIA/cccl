@@ -1,4 +1,15 @@
-set(places_example_sources thrust_device_data_place_allocator.cu)
+set(
+  places_example_sources
+  thrust_device_data_place_allocator.cu
+  hash_table_on_data_place.cu
+  sharded_reduce.cu
+  sharded_stream.cu
+  sharded_relational.cu
+  sharded_hash_per_domain.cu
+  sharded_morsel_join.cu
+)
+
+cccl_get_cudatoolkit()
 
 ## cudax_add_places_example
 #
@@ -28,3 +39,22 @@ endfunction()
 foreach (source IN LISTS places_example_sources)
   cudax_add_places_example(example_target "${source}")
 endforeach()
+
+# Vendor tier: the cuRAND examples additionally link the toolkit's cuRAND
+# (random.cuh is opt-in and not part of the umbrella).
+foreach (source IN ITEMS sharded_pi.cu sharded_rejection_sampling.cu)
+  cudax_add_places_example(curand_example_target "${source}")
+  target_link_libraries(${curand_example_target} PRIVATE CUDA::curand)
+endforeach()
+
+# Math-library tier: the cuSPARSE example (sparse.cuh is opt-in and not part
+# of the umbrella) is behind the same switch as STF's cuBLAS/cuSOLVER examples.
+if (cudax_ENABLE_CUDASTF_MATHLIBS)
+  foreach (source IN ITEMS sharded_cg.cu)
+    cudax_add_places_example(cusparse_example_target "${source}")
+    target_link_libraries(
+      ${cusparse_example_target}
+      PRIVATE CUDA::cusparse CUDA::cuda_driver
+    )
+  endforeach()
+endif()

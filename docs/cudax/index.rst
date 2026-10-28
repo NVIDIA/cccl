@@ -11,6 +11,7 @@ CUDA Experimental
    container
    graph
    places
+   sharded
    stf
    coop/index
    API reference <api/index>
@@ -25,6 +26,7 @@ Specifically, ``cudax`` provides:
    - :ref:`graph functionality <cudax-graph>`
    - dimensions description functionality
    - :ref:`places <cudax-places>` for managing execution and data affinity across devices
+   - :ref:`sharded containers and algorithms <cudax-sharded>` over the places layer
    - :ref:`an implementation of the STF (Sequential Task Flow) programming model <stf>`
    - :ref:`CCCL Cooperative <cudax-coop>`
 

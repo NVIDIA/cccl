@@ -27,7 +27,7 @@ option(
 )
 option(
   cudax_ENABLE_CUDASTF_MATHLIBS
-  "Enable STF tests/examples that use cublas/cusolver."
+  "Enable tests/examples that use the CUDA math libraries (STF: cublas/cusolver; sharded: cusparse)."
   OFF
 )
 option(cudax_ENABLE_CUFILE "Enable cuFile in CUDA Experimental" ON)
