@@ -83,6 +83,7 @@ struct __constraints
 {
   template <class _StridedLayoutMapping, class _Extents>
   static constexpr bool __converts_implicit =
+    // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
     is_convertible_v<typename _StridedLayoutMapping::extents_type, _Extents>
     && (__mdspan_detail::__is_mapping_of<layout_left, _StridedLayoutMapping>
         || __mdspan_detail::__is_mapping_of<layout_right, _StridedLayoutMapping>

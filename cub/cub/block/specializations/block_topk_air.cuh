@@ -297,7 +297,7 @@ private:
     return num_candidates == k;
   }
 
-  template <typename detail::topk::select SelectDirection, bool IsFullTile, typename DecomposerT>
+  template <detail::topk::select SelectDirection, bool IsFullTile, typename DecomposerT>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void get_kth_key_prefix(
     bit_ordered_type (&unsigned_keys)[items_per_thread],
     int k,

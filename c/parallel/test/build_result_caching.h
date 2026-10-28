@@ -93,7 +93,7 @@ template <typename T, typename Tag>
 class fixture
 {
 public:
-  using OptionalT = typename std::optional<T>;
+  using OptionalT = std::optional<T>;
 
 private:
   OptionalT v;
