@@ -208,7 +208,7 @@ private:
  */
 class graph_ctx : public backend_ctx<graph_ctx>
 {
-  using backend_impl = typename backend_ctx<graph_ctx>::impl;
+  using backend_impl = backend_ctx<graph_ctx>::impl;
 
   class impl : public backend_impl
   {

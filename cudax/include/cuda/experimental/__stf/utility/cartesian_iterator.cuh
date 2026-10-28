@@ -426,7 +426,7 @@ class StridedRange
 public:
   using value_type      = size_t;
   using iterator        = StridedRangeIterator;
-  using difference_type = typename iterator::difference_type;
+  using difference_type = iterator::difference_type;
 
   _CCCL_HOST_DEVICE explicit StridedRange(value_type start, value_type end, difference_type stride)
       : start_(start)

@@ -230,7 +230,7 @@ CUB_TEST("segmented inclusive scan works correctly for pairs with noncommutative
          CUB_SMALL)
 {
   using op_t     = impl::bicyclic_monoid_op<unsigned int>;
-  using pair_t   = typename op_t::pair_t;
+  using pair_t   = op_t::pair_t;
   using offset_t = unsigned int;
 
   // WAR for MSVC which incorrectly deduces that these variables are declared, but unused

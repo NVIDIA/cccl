@@ -34,7 +34,7 @@ struct segmented_scan_functor
 {
   AssociativeOperator binary_op;
 
-  using result_type = typename ::cuda::std::tuple<OutputType, HeadFlagType>;
+  using result_type = ::cuda::std::tuple<OutputType, HeadFlagType>;
 
   _CCCL_HOST_DEVICE segmented_scan_functor(AssociativeOperator _binary_op)
       : binary_op(_binary_op)

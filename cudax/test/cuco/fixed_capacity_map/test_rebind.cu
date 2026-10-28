@@ -266,8 +266,7 @@ C2H_TEST("fixed_capacity_map_ref rebind APIs preserve static capacity", "[ref][r
   const auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
   map_type map{stream, mr, cudax::cuco::empty_key{-1}, cudax::cuco::empty_value{-1}};
 
-  const auto pairs =
-    ::cuda::transform_iterator(::cuda::counting_iterator<int>{0}, iota_pair<typename map_type::value_type>{});
+  const auto pairs = ::cuda::transform_iterator(::cuda::counting_iterator<int>{0}, iota_pair<map_type::value_type>{});
   map.insert(stream, pairs, pairs + num_keys);
 
   const auto ref         = map.ref();

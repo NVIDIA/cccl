@@ -71,7 +71,7 @@ struct lowest_supported_sm_arch_impl<SM, typelist<>>
   using type = SM;
 };
 
-using lowest_supported_sm_arch = typename lowest_supported_sm_arch_impl<void, sm_list>::type;
+using lowest_supported_sm_arch = lowest_supported_sm_arch_impl<void, sm_list>::type;
 
 // metafunction to match next viable PtxPlan specialization
 // --------------------------------------------------------------------------

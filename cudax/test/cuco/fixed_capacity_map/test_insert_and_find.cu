@@ -283,7 +283,7 @@ C2H_TEST("fixed_capacity_map insert_and_find reports launch failures", "[contain
     ::cuda::thread_scope_device,
     ::cuda::std::equal_to<key_type>,
     probing_type>;
-  using value_type = typename map_type::value_type;
+  using value_type = map_type::value_type;
   using index_type = ::cuda::std::int64_t;
 
   const ::cuda::stream stream{::cuda::device_ref{0}};

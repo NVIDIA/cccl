@@ -21,7 +21,7 @@ __global__ __launch_bounds__(64) void WarpReduceBatchedOverviewKernel(int* out)
 
   // Assume 64 threads per block, so 64 / 32 = 2 logical warps
   // Each logical warp has its own TempStorage
-  __shared__ typename WarpReduceBatched::TempStorage temp_storage[2];
+  __shared__ WarpReduceBatched::TempStorage temp_storage[2];
 
   const int warp_id = static_cast<int>(threadIdx.x) / 32;
 
@@ -65,7 +65,7 @@ __global__ void WarpReduceBatchedReduceApiKernel(int* out)
   using WarpReduceBatched            = cub::WarpReduceBatched<int, num_batches, logical_warp_threads>;
 
   // Only the first logical warp participates, so only a single TempStorage is needed
-  __shared__ typename WarpReduceBatched::TempStorage temp_storage;
+  __shared__ WarpReduceBatched::TempStorage temp_storage;
 
   const int tid = static_cast<int>(threadIdx.x);
   int result{};
@@ -109,7 +109,7 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedReduceToStripedApiKernel(i
 
   // Assume 8 threads per block, so 8 / 2 = 4 logical warps
   // Only every other logical warp participates, so only 2 TempStorage are needed
-  __shared__ typename WarpReduceBatched::TempStorage temp_storage[2];
+  __shared__ WarpReduceBatched::TempStorage temp_storage[2];
 
   const int tid               = static_cast<int>(threadIdx.x);
   const int logical_warp_id   = tid / logical_warp_threads;
@@ -169,7 +169,7 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedReduceToBlockedApiKernel(i
 
   // Assume 8 threads per block, so 8 / 2 = 4 logical warps
   // Only every other logical warp participates, so only 2 TempStorage are needed
-  __shared__ typename WarpReduceBatched::TempStorage temp_storage[2];
+  __shared__ WarpReduceBatched::TempStorage temp_storage[2];
 
   const int tid               = static_cast<int>(threadIdx.x);
   const int logical_warp_id   = tid / logical_warp_threads;
@@ -228,7 +228,7 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedSumApiKernel(int* out)
   using WarpReduceBatched = cub::WarpReduceBatched<int, num_batches, logical_warp_threads, sync_physical_warp>;
 
   // Assume 8 threads per block, so 8 / 4 = 2 logical warps
-  __shared__ typename WarpReduceBatched::TempStorage temp_storage[2];
+  __shared__ WarpReduceBatched::TempStorage temp_storage[2];
 
   const int tid             = static_cast<int>(threadIdx.x);
   const int logical_warp_id = tid / logical_warp_threads;
@@ -267,7 +267,7 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedSumToStripedApiKernel(int*
   using WarpReduceBatched = cub::WarpReduceBatched<int, num_batches, logical_warp_threads, sync_physical_warp>;
 
   // Assume 8 threads per block, so 8 / 2 = 4 logical warps
-  __shared__ typename WarpReduceBatched::TempStorage temp_storage[4];
+  __shared__ WarpReduceBatched::TempStorage temp_storage[4];
 
   const int tid             = static_cast<int>(threadIdx.x);
   const int logical_warp_id = tid / logical_warp_threads;
@@ -315,7 +315,7 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedSumToBlockedApiKernel(int*
   using WarpReduceBatched = cub::WarpReduceBatched<int, num_batches, logical_warp_threads, sync_physical_warp>;
 
   // Assume 8 threads per block, so 8 / 2 = 4 logical warps
-  __shared__ typename WarpReduceBatched::TempStorage temp_storage[4];
+  __shared__ WarpReduceBatched::TempStorage temp_storage[4];
 
   const int tid             = static_cast<int>(threadIdx.x);
   const int logical_warp_id = tid / logical_warp_threads;

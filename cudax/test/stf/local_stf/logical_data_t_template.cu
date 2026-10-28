@@ -260,7 +260,7 @@ void run_stackable_tests()
       scale_data(ctx, data, 2);
 
       // Create local data in nested context
-      typename stackable_ctx::logical_data_t<slice<int>> local_data = ctx.logical_data(shape_of<slice<int>>(64));
+      stackable_ctx::logical_data_t<slice<int>> local_data = ctx.logical_data(shape_of<slice<int>>(64));
       local_data.set_symbol("nested_local");
 
       ctx.parallel_for(local_data.shape(), local_data.write())->*[] __device__(size_t i, auto d) {

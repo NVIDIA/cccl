@@ -153,7 +153,7 @@ public:
     using ios_base                            = typename istream_type::ios_base;
     const typename ios_base::fmtflags __flags = __is.flags();
     using _Eng                                = bernoulli_distribution;
-    using param_type                          = typename _Eng::param_type;
+    using param_type                          = _Eng::param_type;
     __is.flags(ios_base::dec | ios_base::skipws);
     double __p;
     __is >> __p;
