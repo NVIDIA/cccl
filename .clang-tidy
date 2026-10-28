@@ -107,7 +107,6 @@ Checks:
   - '-readability-redundant-casting'
   - '-readability-simplify-boolean-expr'
   - '-readability-make-member-function-const'
-  - '-readability-enum-initial-value'
   - '-readability-avoid-return-with-void-value'
   - '-readability-redundant-string-cstr'
   - '-readability-suspicious-call-argument'
@@ -234,7 +233,6 @@ Checks:
   - '-cert-env33-c'
   # Same as bugprone-throwing-static-initialization
   - '-cert-err58-cpp'
-  # Same as readability-enum-initial-value
   - '-cert-int09-c'
   # Same as bugprone-float-loop-counter
   - '-cert-flp30-c'
@@ -363,8 +361,6 @@ CheckOptions:
   # readability-*
   readability-simplify-boolean-expr.ChainedConditionalReturn: 'true'
   readability-simplify-boolean-expr.ChainedConditionalAssignment: 'true'
-  readability-enum-initial-value.AllowExplicitZeroFirstInitialValue: 'false'
-  readability-enum-initial-value.AllowExplicitSequentialInitialValues: 'false'
   readability-redundant-access-specifiers.CheckFirstDeclaration: 'true'
   # readability-identifier-naming.ClassCase: 'lower_case'
   # readability-identifier-naming.UnionCase: 'lower_case'
