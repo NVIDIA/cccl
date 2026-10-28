@@ -24,6 +24,7 @@ jobs:
       contains(github.event.comment.body, '/sass diff ok')
     runs-on: ubuntu-slim
 
+    # Mutations disable retries because a server error can follow a successful write.
     steps:
       - name: Validate approval command
         id: request
@@ -60,6 +61,7 @@ jobs:
               ) {
                 core.info("Ignore command: the commit label or link destination does not match the expected commit.");
                 await github.rest.issues.createComment({
+                  request: { retries: 0 },
                   ...context.repo,
                   issue_number: issue.number,
                   body:
@@ -74,6 +76,7 @@ jobs:
               // Give command syntax feedback before checking approval eligibility.
               if (body === "/sass diff ok") {
                 await github.rest.issues.createComment({
+                  request: { retries: 0 },
                   ...context.repo,
                   issue_number: issue.number,
                   body:
@@ -98,6 +101,7 @@ jobs:
 
             // Acknowledge that we have received the comment
             await github.rest.reactions.createForIssueComment({
+              request: { retries: 0 },
               ...context.repo,
               comment_id: context.payload.comment.id,
               content: "eyes",
@@ -109,6 +113,7 @@ jobs:
                 "on your own pull request :raised_eyebrow:. " +
                 "Please ask another CCCL developer to approve the SASS diff.";
               await github.rest.issues.createComment({
+                request: { retries: 0 },
                 ...context.repo,
                 issue_number: issue.number,
                 body,
@@ -152,6 +157,7 @@ jobs:
                 "Please ask someone with that access to review the SASS diffs.";
 
               await github.rest.issues.createComment({
+                request: { retries: 0 },
                 ...context.repo,
                 issue_number: context.payload.issue.number,
                 body,
@@ -216,6 +222,7 @@ jobs:
               core.info("The SASS approval job is not ready. Ask the reviewer to comment again.");
 
               await github.rest.issues.createComment({
+                request: { retries: 0 },
                 ...context.repo,
                 issue_number: issue.number,
                 body:
@@ -299,6 +306,7 @@ jobs:
 
             if (!report || report.isMinimized) {
               await github.rest.issues.createComment({
+                request: { retries: 0 },
                 ...context.repo,
                 issue_number: issue.number,
                 body:
@@ -345,6 +353,7 @@ jobs:
 
             try {
               await github.rest.actions.reRunJobForWorkflowRun({
+                request: { retries: 0 },
                 ...context.repo,
                 job_id,
               });
@@ -353,6 +362,7 @@ jobs:
                 // The artifact records approval even when GitHub rejects the rerun.
                 core.info("CI is currently in progress, so rerun request returned 403. User will manually have to rerun CI once it finishes.");
                 await github.rest.issues.createComment({
+                  request: { retries: 0 },
                   ...context.repo,
                   issue_number: context.payload.issue.number,
                   body:
@@ -377,6 +387,7 @@ jobs:
             const { comment } = context.payload;
 
             await github.rest.reactions.createForIssueComment({
+              request: { retries: 0 },
               ...context.repo,
               comment_id: comment.id,
               content: "+1",
