@@ -90,7 +90,7 @@ struct AgentLauncher : Agent
       , name(name_)
       , grid(static_cast<unsigned int>((count + plan.items_per_tile - 1) / plan.items_per_tile))
       , vshmem(nullptr)
-      , has_shmem((size_t) get_max_shared_memory_per_block() >= (size_t) plan.shared_memory_size)
+      , has_shmem(get_max_shared_memory_per_block() >= (size_t) plan.shared_memory_size)
       , shmem_size(has_shmem ? plan.shared_memory_size : 0)
   {
     assert(count > 0);
@@ -105,7 +105,7 @@ struct AgentLauncher : Agent
       , name(name_)
       , grid(static_cast<unsigned int>((count + plan.items_per_tile - 1) / plan.items_per_tile))
       , vshmem(vshmem)
-      , has_shmem((size_t) get_max_shared_memory_per_block() >= (size_t) plan.shared_memory_size)
+      , has_shmem(get_max_shared_memory_per_block() >= (size_t) plan.shared_memory_size)
       , shmem_size(has_shmem ? plan.shared_memory_size : 0)
   {
     assert(count > 0);
@@ -118,7 +118,7 @@ struct AgentLauncher : Agent
       , name(name_)
       , grid(plan.grid_size)
       , vshmem(nullptr)
-      , has_shmem((size_t) get_max_shared_memory_per_block() >= (size_t) plan.shared_memory_size)
+      , has_shmem(get_max_shared_memory_per_block() >= (size_t) plan.shared_memory_size)
       , shmem_size(has_shmem ? plan.shared_memory_size : 0)
   {
     assert(plan.grid_size > 0);
@@ -131,7 +131,7 @@ struct AgentLauncher : Agent
       , name(name_)
       , grid(plan.grid_size)
       , vshmem(vshmem)
-      , has_shmem((size_t) get_max_shared_memory_per_block() >= (size_t) plan.shared_memory_size)
+      , has_shmem(get_max_shared_memory_per_block() >= (size_t) plan.shared_memory_size)
       , shmem_size(has_shmem ? plan.shared_memory_size : 0)
   {
     assert(plan.grid_size > 0);
