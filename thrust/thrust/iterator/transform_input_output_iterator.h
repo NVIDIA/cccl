@@ -230,12 +230,3 @@ make_transform_input_output_iterator(Iterator io, InputFunction input_function, 
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-_CCCL_BEGIN_NAMESPACE_CUDA
-template <class InputFunction, class OutputFunction, class Iterator>
-inline constexpr bool __is_contiguous_iterator_or_adaptor_impl<
-  THRUST_NS_QUALIFIER::transform_input_output_iterator<InputFunction, OutputFunction, Iterator>> =
-  __is_contiguous_iterator_or_adaptor_v<::cuda::std::remove_cvref_t<Iterator>>;
-_CCCL_END_NAMESPACE_CUDA
-#endif // _CCCL_DOXYGEN_INVOKED
