@@ -416,7 +416,7 @@ inline const notify_t notify{};
  *
  * @code
  * int level = 0;
- * auto evict = effect([&](ptrdiff_t s) { reclaim(place, -s, prereqs); ++level; });
+ * auto evict = effect([&] { reclaim(place, -size, prereqs); ++level; });
  * ((evict & retry) * 5 | unwind) ->* [&] { return allocator.allocate(place, size, prereqs); };
  * @endcode
  */
@@ -605,8 +605,8 @@ inline constexpr defer_t defer{};
  * On the exception channel it re-throws the in-flight exception from inside the catch. Its
  * answer type is `nullval`, so it never has to produce a value; being non-`noexcept` is how it
  * forwards, handing the exception to the next `|` arm or letting it propagate. On the code
- * channel no exception is active, so it answers itself, a `fwd_t` value: `->*` yields the status
- * unchanged for the caller to propagate with `return`, and a `<<` chain records it as forwarded.
+ * channel no exception is active, so it answers itself, a `fwd_t` value: the `<<` chain yields the
+ * status unchanged for the caller to propagate, and records it as forwarded.
  */
 struct fwd_t
 {
@@ -3110,13 +3110,15 @@ _CCCL_FORCEINLINE _Expr __on_exception(
 
 // The status side of a `<<` chain, kept type-erased: `<<` hands back the carrier, so a named sink
 // works across statements and the carrier's type is fixed before any status arrives. The first
-// feed fixes the chain's status type and every later feed verifies it; the first status the
-// policy forwarded is kept.
+// feed fixes the chain's status type and every later feed verifies it. The chain keeps the first
+// failing status it yielded, whether an arm forwarded it or left it unchanged (Nothing), and
+// whether any status was forwarded at all.
 class __chain_state
 {
   alignas(long long) unsigned char __bytes_[16] = {};
   ::cuda::std::__type_info_ptr __type_          = nullptr;
-  bool __passed_                                = false;
+  bool __recorded_                              = false;
+  bool __forwarded_                             = false;
 
 public:
   template <class _Status>
@@ -3136,12 +3138,13 @@ public:
   }
 
   template <class _Status>
-  void __record(const _Status __status) noexcept
+  void __record(const __status_answer<_Status> __answer) noexcept
   {
-    if (!__passed_)
+    __forwarded_ |= __answer.__passed_;
+    if (!__recorded_ && __answer.__value_ != status_traits<_Status>::success())
     {
-      ::std::memcpy(__bytes_, &__status, sizeof(_Status));
-      __passed_ = true;
+      ::std::memcpy(__bytes_, &__answer.__value_, sizeof(_Status));
+      __recorded_ = true;
     }
   }
 
@@ -3151,7 +3154,7 @@ public:
     _CCCL_VERIFY(__type_ == nullptr || *__type_ == _CCCL_TYPEID(_Status),
                  "status<S>(): S is not the chain's status type");
     _Status __status = status_traits<_Status>::success();
-    if (__passed_)
+    if (__recorded_)
     {
       ::std::memcpy(&__status, __bytes_, sizeof(_Status));
     }
@@ -3160,7 +3163,7 @@ public:
 
   [[nodiscard]] bool __passed() const noexcept
   {
-    return __passed_;
+    return __forwarded_;
   }
 };
 
@@ -3178,9 +3181,13 @@ struct __on_throw_policy
       , __loc_(__loc)
   {}
 
-  //! @brief The first status a `<<` chain forwarded, or the success value if none did.
+  //! @brief The first failing status a `<<` chain yielded, or the success value if none did.
+  //!
+  //! A status is yielded when an arm forwards it or leaves it unchanged (an effect-only arm, or
+  //! `noop`); a value an arm substitutes stands in for it. At the top level Nothing and Forward
+  //! have the same outcome, as in the paper; `forwarded()` tells them apart.
   //! @tparam _Status The chain's status type, verified with `_CCCL_VERIFY`.
-  //! @return The first forwarded status, or `status_traits<_Status>::success()`.
+  //! @return The first yielded failing status, or `status_traits<_Status>::success()`.
   template <class _Status>
   [[nodiscard]] _Status status() const noexcept
   {
@@ -3544,11 +3551,7 @@ void __feed(__on_throw_policy<_Reaction>& __sink, _X&& __x) noexcept(__feed_noth
   {
     using _Status = ::cuda::std::remove_cvref_t<_X>;
     __sink.__chain_.template __fix_type<_Status>();
-    const __status_answer<_Status> __answer = __offer_past(__sink, static_cast<_Status>(__x));
-    if (__answer.__passed_)
-    {
-      __sink.__chain_.__record(__answer.__value_);
-    }
+    __sink.__chain_.__record(__offer_past(__sink, static_cast<_Status>(__x)));
   }
   else
   {
@@ -3562,11 +3565,7 @@ void __feed(__on_throw_policy<_Reaction>& __sink, _X&& __x) noexcept(__feed_noth
     {
       // The runner offers a failing status to the policy's code channel, its re-runs included.
       __sink.__chain_.template __fix_type<_Returned>();
-      const __status_answer<_Returned> __answer = __run_under<true>(__sink, ::cuda::std::forward<_X>(__x));
-      if (__answer.__passed_)
-      {
-        __sink.__chain_.__record(__answer.__value_);
-      }
+      __sink.__chain_.__record(__run_under<true>(__sink, ::cuda::std::forward<_X>(__x)));
     }
     else
     {
@@ -5032,8 +5031,8 @@ namespace sump
  * and a carrier that outlives a statement. Two operators apply a sink:
  * - `policy ->* x` evaluates and yields, for when you want the value. An action runs
  *   under the policy, so its throws are handled, and its return comes back verbatim, whatever its
- *   type: it is never checked and no trait is consulted, even for a registered status type. For
- *   a status value (see below) it yields the status the policy made of it. `->*` never chains.
+ *   type: it is never checked and no trait is consulted, even for a registered status type. The
+ *   right operand must be a callable; a status value goes to the right of `<<`. `->*` never chains.
  * - `policy << x` feeds, possibly several operands: `store(&err) << a() << b()`.
  *   A status value is offered to the policy as with `->*`. An action runs under the policy, and
  *   what it returns is an error code: a status is fed in turn (a successful one only fixes the
@@ -5111,11 +5110,11 @@ namespace sump
  *
  * The right operand may also be a status, a value for which @ref status_traits is
  * specialized (`cudaError_t`, `CUresult`, ... once `cuda_safe_call.cuh` is included):
- * `policy << cudaFree(p)`. A status is a past result handled on the code channel. A
- * statement that handles a status is spelled `<<`; `->*` is for when the handled status is needed
- * as a value. On success `->*` yields the status after one test; a failing status the policy
- * handles yields `status_traits<S>::success()`, one it forwards yields the status itself, and
- * `unwind` turns it into an exception. Policies that only handle exceptions see the status's
+ * `policy << cudaFree(p)`. A status is a past result handled on the code channel, and `<<` is
+ * the only way to feed one. The carrier then yields it: `status<S>()` is the first failing status
+ * the chain yielded, one an arm forwarded or left unchanged, and `forwarded()` says whether any
+ * arm forwarded. A value an arm substitutes stands in for the status, and `unwind` turns the
+ * status into an exception. Policies that only handle exceptions see the status's
  * exception, `status_traits<S>::to_exception(status, loc)`. With exceptions disabled, such a
  * policy that may forward (`if_isa`, a typed `store`, `translate`, a user policy without
  * a code-channel hook) reports and aborts on the first failing status, since reaching its hook
@@ -8051,8 +8050,12 @@ UNITTEST("error sinks: << chains, each operand after the previous was handled")
   // the first failure was logged before the second operand ran: the log has "InvalidValue" before "NotReady"
   const auto text = log.str();
   EXPECT(text.find("cudaErrorInvalidValue") < text.find("cudaErrorNotReady"));
-  // a fully handled chain reads as success
-  EXPECT((notify(log) << cudaErrorInvalidValue << cudaErrorNotReady).status<cudaError_t>() == cudaSuccess);
+  // an effect-only sink answers Nothing, so the chain yields the status it left unchanged
+  EXPECT((notify(log) << cudaErrorInvalidValue << cudaErrorNotReady).status<cudaError_t>() == cudaErrorInvalidValue);
+  // the paper's polling idiom: not-ready is the answer, and it can be read back
+  EXPECT(((if_equal(cudaErrorNotReady)(noop) | unwind) << cudaErrorNotReady).status<cudaError_t>()
+         == cudaErrorNotReady);
+  EXPECT(!((if_equal(cudaErrorNotReady)(noop) | unwind) << cudaErrorNotReady).forwarded());
   // a named carrier works across statements
   auto cleanup = sump::sink(fwd);
   cleanup << cudaSuccess;
