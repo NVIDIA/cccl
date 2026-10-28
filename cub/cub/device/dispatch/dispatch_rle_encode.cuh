@@ -92,7 +92,19 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires rle_encode_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_block))
+__launch_bounds__(int(
+  reduce_by_key::make_vsmem_helper<
+    device_policy_getter<policy_selector_adapter<PolicySelector>, current_tuning_cc().get()>,
+    KeysInputIteratorT,
+    UniqueOutputIteratorT,
+    ValuesInputIteratorT,
+    AggregatesOutputIteratorT,
+    NumRunsOutputIteratorT,
+    EqualityOpT,
+    ReductionOpT,
+    OffsetT,
+    AccumT,
+    StreamingContextT>::type::agent_policy_t::BLOCK_THREADS))
   _CCCL_KERNEL_ATTRIBUTES void DeviceRleEncodeStreamingKernel(
     const KeysInputIteratorT d_keys_in,
     const UniqueOutputIteratorT d_unique_out,
@@ -116,19 +128,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
   }
   else
   {
-    using AgentReduceByKeyPolicyT = agent_reduce_by_key_policy<
-      policy.lookback.threads_per_block,
-      policy.lookback.items_per_thread,
-      policy.lookback.load_algorithm,
-      policy.lookback.load_modifier,
-      policy.lookback.scan_algorithm,
-      delay_constructor_t<policy.lookback.lookback_delay.kind,
-                          policy.lookback.lookback_delay.delay,
-                          policy.lookback.lookback_delay.l2_write_latency>>;
-
-    using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<
-      AgentReduceByKeyPolicyT,
-      reduce_by_key::AgentReduceByKey,
+    using vsmem_helper_t = typename reduce_by_key::make_vsmem_helper<
+      device_policy_getter<policy_selector_adapter<PolicySelector>, current_tuning_cc().get()>,
       KeysInputIteratorT,
       UniqueOutputIteratorT,
       ValuesInputIteratorT,
@@ -138,7 +139,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
       ReductionOpT,
       OffsetT,
       AccumT,
-      StreamingContextT>;
+      StreamingContextT>::type;
 
     using agent_reduce_by_key_t = typename vsmem_helper_t::agent_t;
 
