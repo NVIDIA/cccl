@@ -148,12 +148,7 @@ struct pool_options
       return false;
     }
 
-    if (alignment > smallest_block_size)
-    {
-      return false;
-    }
-
-    return true;
+    return alignment <= smallest_block_size;
   }
 };
 

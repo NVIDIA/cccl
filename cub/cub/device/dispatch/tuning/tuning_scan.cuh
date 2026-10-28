@@ -1109,19 +1109,15 @@ struct policy_selector
       return false;
     }
 
-    if (smem_for_stages(
-          lookahead_policy,
-          /* num_stages */ 1,
-          input_value_size,
-          input_value_alignment,
-          output_value_alignment,
-          accum_size,
-          accum_alignment)
-        > static_cast<int>(max_smem_per_block))
-    {
-      return false;
-    }
-    return true;
+    return smem_for_stages(
+             lookahead_policy,
+             /* num_stages */ 1,
+             input_value_size,
+             input_value_alignment,
+             output_value_alignment,
+             accum_size,
+             accum_alignment)
+        <= static_cast<int>(max_smem_per_block);
 #endif
   }
 

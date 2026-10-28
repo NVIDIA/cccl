@@ -105,7 +105,6 @@ Checks:
   - '-readability-non-const-parameter'
   - '-readability-redundant-typename'
   - '-readability-redundant-casting'
-  - '-readability-simplify-boolean-expr'
   - '-readability-make-member-function-const'
   - '-readability-enum-initial-value'
   - '-readability-avoid-return-with-void-value'
@@ -361,8 +360,6 @@ CheckOptions:
   llvm-qualified-auto.AddConstToQualified: 'false'
   llvm-else-after-return.WarnOnConditionVariables: 'false'
   # readability-*
-  readability-simplify-boolean-expr.ChainedConditionalReturn: 'true'
-  readability-simplify-boolean-expr.ChainedConditionalAssignment: 'true'
   readability-enum-initial-value.AllowExplicitZeroFirstInitialValue: 'false'
   readability-enum-initial-value.AllowExplicitSequentialInitialValues: 'false'
   readability-redundant-access-specifiers.CheckFirstDeclaration: 'true'

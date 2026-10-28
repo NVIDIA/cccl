@@ -21,14 +21,7 @@ struct is_outside_circle
     const T x = cuda::std::get<0>(tuple);
     const T y = cuda::std::get<1>(tuple);
 
-    if (x * x + y * y > 1)
-    {
-      return true;
-    }
-    else
-    {
-      return false;
-    }
+    return static_cast<bool>(x * x + y * y > 1);
   }
 };
 
