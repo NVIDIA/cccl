@@ -99,8 +99,8 @@ class WarpTopKBroadcast
   {
     // Small sorting networks from Bert Dobbelaere's public network list:
     // https://bertdobbelaere.github.io/sorting_networks.html
-    // These match the local networks used by QuACK for its top-k selection.
-    if constexpr (Count == 4)
+    // These match QuACK's float32 networks. Integral keys retain bitonic sorting.
+    if constexpr (::cuda::std::is_same_v<KeyT, float> && Count == 4)
     {
       compare_exchange(keys[0], keys[2]);
       compare_exchange(keys[1], keys[3]);
@@ -110,7 +110,7 @@ class WarpTopKBroadcast
 
       compare_exchange(keys[1], keys[2]);
     }
-    else if constexpr (Count == 8)
+    else if constexpr (::cuda::std::is_same_v<KeyT, float> && Count == 8)
     {
       compare_exchange(keys[0], keys[2]);
       compare_exchange(keys[1], keys[3]);
@@ -137,7 +137,7 @@ class WarpTopKBroadcast
       compare_exchange(keys[3], keys[4]);
       compare_exchange(keys[5], keys[6]);
     }
-    else if constexpr (Count == 16)
+    else if constexpr (::cuda::std::is_same_v<KeyT, float> && Count == 16)
     {
       compare_exchange(keys[0], keys[13]);
       compare_exchange(keys[1], keys[12]);
