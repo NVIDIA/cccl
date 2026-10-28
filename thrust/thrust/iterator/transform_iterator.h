@@ -34,6 +34,8 @@
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/__iterator/contiguous_iterator_adaptor.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__memory/construct_at.h>
@@ -284,6 +286,17 @@ public:
     return m_f;
   }
 
+  //! @brief Rebuilds the stored iterator in place over the storage at @p ptr. The stored functor is then invoked on the
+  //! elements at @p ptr.
+  //! @param[in] ptr The address of the storage that replaces the storage this iterator reads from.
+  _CCCL_TEMPLATE(class T)
+  _CCCL_REQUIRES(::cuda::__iter_can_rebind<Iterator, T>)
+  // NOLINTNEXTLINE(readability-identifier-naming): libcu++ calls this by name
+  _CCCL_HOST_DEVICE void __rebind(T* ptr)
+  {
+    ::cuda::__rebind_iterator_adaptor(this->base_reference(), ptr);
+  }
+
   //! \cond
 
 private:
@@ -342,3 +355,12 @@ make_transform_iterator(Iterator it, AdaptableUnaryFunction fun)
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
+
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <class AdaptableUnaryFunction, class Iterator, class Reference, class Value>
+inline constexpr bool __is_contiguous_iterator_or_adaptor_impl<
+  THRUST_NS_QUALIFIER::transform_iterator<AdaptableUnaryFunction, Iterator, Reference, Value>> =
+  __is_contiguous_iterator_or_adaptor_impl<::cuda::std::remove_cvref_t<Iterator>>;
+_CCCL_END_NAMESPACE_CUDA
+#endif // _CCCL_DOXYGEN_INVOKED

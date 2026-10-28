@@ -430,4 +430,9 @@ struct pointer_traits<Pointer, void_t<typename Pointer::raw_pointer>>
   }
 };
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+template <class Element, class Tag, class Reference, class Derived>
+inline constexpr bool __has_contiguous_traversal<THRUST_NS_QUALIFIER::pointer<Element, Tag, Reference, Derived>> = true;
+#endif // _CCCL_DOXYGEN_INVOKED
+
 _CCCL_END_NAMESPACE_CUDA_STD
