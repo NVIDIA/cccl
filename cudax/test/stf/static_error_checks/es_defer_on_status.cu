@@ -19,10 +19,10 @@
 #include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
-using namespace cuda::experimental::stf::eh;
+using namespace cuda::experimental::stf::sump;
 
 int main()
 {
-  errsink(defer)->*cudaErrorInvalidValue;
+  errsink(defer) << cudaErrorInvalidValue;
   return EXIT_FAILURE;
 }
