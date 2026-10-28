@@ -1,0 +1,201 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""Deduplicate C++ requests and render their combined source."""
+
+from __future__ import annotations
+
+import re
+from collections.abc import Iterable
+from typing import Any
+
+from ._types import BundleRenderer, ScratchLayoutProbe
+
+_FEATURE_DEFINE_RE = re.compile(
+    r"^#define\s+([A-Za-z_][A-Za-z0-9_]*)(?:\s|\(|$)"
+)
+_BUNDLE_RENDERERS: dict[str, BundleRenderer] = {}
+
+
+def register_bundle_renderer(
+    kind,
+    *,
+    render,
+    include_lines=(),
+    cccl_headers=(),
+    scratch_layout_probe=None,
+):
+    """Register how one provider kind emits wrappers and describes scratch.
+
+    ``render`` emits a request's C++ lines. ``include_lines`` and
+    ``cccl_headers`` supply its preamble and header lookup requirements. The
+    optional ``scratch_layout_probe`` callback returns a layout query or
+    ``None`` for each request. A kind can have only one registered renderer.
+    """
+
+    if kind in _BUNDLE_RENDERERS:
+        raise ValueError(f"bundle renderer {kind!r} is already registered")
+    _BUNDLE_RENDERERS[kind] = BundleRenderer(
+        tuple(include_lines), tuple(cccl_headers), render, scratch_layout_probe
+    )
+
+
+def bundle_renderer_for(request: Any) -> BundleRenderer | None:
+    return _BUNDLE_RENDERERS.get(getattr(request, "kind", ""))
+
+
+def canonical_bundle_requests(requests: Iterable[Any]) -> tuple[Any, ...]:
+    """Return one request per symbol in deterministic symbol order.
+
+    Repeated equivalent requests share a definition. Reject two different
+    requests for the same symbol rather than emitting an ambiguous C++ bundle.
+    """
+
+    requests_by_symbol: dict[str, Any] = {}
+    for request in requests:
+        symbol = getattr(request, "symbol_name", None)
+        if not isinstance(symbol, str) or not symbol:
+            raise ValueError(
+                "provider bundle requests require a non-empty symbol_name"
+            )
+        existing = requests_by_symbol.get(symbol)
+        if existing is not None and existing != request:
+            raise ValueError(
+                f"provider symbol {symbol!r} maps to conflicting "
+                "bundle requests"
+            )
+        requests_by_symbol[symbol] = request
+    return tuple(
+        requests_by_symbol[symbol] for symbol in sorted(requests_by_symbol)
+    )
+
+
+def canonical_bundle_preamble_lines(lines: Iterable[str]) -> tuple[str, ...]:
+    """Deduplicate the preamble and put feature macros before includes.
+
+    A feature macro can affect a header on first inclusion, so it must precede
+    all other lines. Reject conflicting definitions of the same macro.
+    """
+
+    feature_definitions: dict[str, str] = {}
+    other_lines: set[str] = set()
+    for line in lines:
+        if not line:
+            continue
+        if line.startswith("#define "):
+            match = _FEATURE_DEFINE_RE.match(line)
+            if match is None:
+                raise ValueError(
+                    f"invalid provider feature definition: {line!r}"
+                )
+            name = match.group(1)
+            existing = feature_definitions.get(name)
+            if existing is not None and existing != line:
+                raise ValueError(
+                    f"provider feature {name!r} has conflicting definitions"
+                )
+            feature_definitions[name] = line
+        else:
+            other_lines.add(line)
+    return (
+        *(feature_definitions[name] for name in sorted(feature_definitions)),
+        *sorted(other_lines),
+    )
+
+
+def bundle_include_lines(requests: Iterable[Any]) -> list[str]:
+    """Collect the preamble required by the registered request kinds."""
+
+    include_lines: list[str] = []
+    for request in canonical_bundle_requests(requests):
+        renderer = bundle_renderer_for(request)
+        if renderer is not None:
+            include_lines.extend(renderer.include_lines)
+    return list(canonical_bundle_preamble_lines(include_lines))
+
+
+def registered_bundle_headers() -> dict[str, str]:
+    """Merge header mappings and reject conflicting paths.
+
+    The compiler resolves these headers before computing the bundle cache key.
+    """
+
+    headers: dict[str, str] = {}
+    for kind in sorted(_BUNDLE_RENDERERS):
+        renderer = _BUNDLE_RENDERERS[kind]
+        for include, relative_path in sorted(renderer.cccl_headers):
+            existing = headers.get(include)
+            if existing is not None and existing != relative_path:
+                raise ValueError(
+                    f"provider include {include!r} maps to conflicting "
+                    "CCCL headers"
+                )
+            headers[include] = relative_path
+    return {include: headers[include] for include in sorted(headers)}
+
+
+def make_scratch_layout_probe(requirement_key, cpp_type):
+    return ScratchLayoutProbe(
+        requirement_key, f"sizeof({cpp_type})", f"alignof({cpp_type})"
+    )
+
+
+def bundle_scratch_layout_probes(requests):
+    """Collect one compatible layout probe per requirement key.
+
+    Storage-free requests can omit a probe. Repeated keys must describe the
+    same C++ expressions so finalization binds each call to the right layout.
+    """
+
+    probes = {}
+    for request in canonical_bundle_requests(requests):
+        renderer = bundle_renderer_for(request)
+        if renderer is None or renderer.scratch_layout_probe is None:
+            continue
+        probe = renderer.scratch_layout_probe(request)
+        if probe is None:
+            continue
+        existing = probes.get(probe.requirement_key)
+        if existing is not None and existing != probe:
+            raise ValueError("scratch requirement has conflicting C++ layouts")
+        probes[probe.requirement_key] = probe
+    return probes
+
+
+def render_bundle_source(requests):
+    """Render the complete C++ bundle: preamble, shared types, wrappers.
+
+    Visit requests in canonical symbol order, then retain the first occurrence
+    of each named definition. Keep each specialization's definition order: the
+    checked Merge Sort base must precede its block and warp aliases. Reject
+    conflicting definitions with the same name before rendering calls.
+    Canonical request order keeps the source deterministic. ``extern "C"``
+    prevents C++ name mangling, so each wrapper symbol matches the name used
+    by its CuTe ffi call.
+    """
+
+    requests = canonical_bundle_requests(requests)
+    definitions = {}
+    for request in requests:
+        implementation = getattr(request, "implementation", None)
+        for definition in getattr(implementation, "type_definitions", ()):
+            existing = definitions.get(definition.name)
+            if existing is not None and existing != definition.code:
+                raise ValueError(
+                    f"conflicting provider type definition {definition.name!r}"
+                )
+            definitions[definition.name] = definition.code
+    lines = [
+        *bundle_include_lines(requests),
+        *definitions.values(),
+        'extern "C" {',
+    ]
+    for request in requests:
+        renderer = bundle_renderer_for(request)
+        if renderer is None:
+            raise ValueError(
+                f"No CUTLASS provider renderer for {request.kind!r}"
+            )
+        lines.extend(renderer.render(request))
+    return "\n".join([*lines, "}", ""])
