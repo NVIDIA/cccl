@@ -107,7 +107,7 @@ inline constexpr bool prefer_conflict_over_padding = CUB_PTX_PREFER_CONFLICT_OVE
 // The maximum amount of shared memory available per thread block for eternity. Every current and future CUDA
 // architecture has and will have at least this amount of shared memory. This is also the maximum size of total static
 // shared memory in a kernel. Note that dynamic shared memory may be larger than this amount.
-static constexpr ::cuda::std::size_t max_smem_per_block = 48 * 1024;
+inline constexpr ::cuda::std::size_t max_smem_per_block = 48 * 1024;
 
 // The size in bytes of the largest machine word that can be atomically read/written in a single instruction, so we can
 // use it to pass messages from one thread to another using strong loads (acquire) and stores (release).

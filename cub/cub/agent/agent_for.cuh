@@ -13,8 +13,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_ptx.cuh>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::for_each
