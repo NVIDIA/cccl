@@ -27,7 +27,7 @@ __global__ void reduce(slice<const T> values, slice<T> partials, size_t nelems)
   using namespace cub;
   using BlockReduceT = BlockReduce<T, BLOCK_THREADS>;
 
-  auto thread_id = BLOCK_THREADS * blockIdx.x + threadIdx.x;
+  auto thread_id = (BLOCK_THREADS * blockIdx.x) + threadIdx.x;
 
   // Local reduction
   T local_sum = 0;

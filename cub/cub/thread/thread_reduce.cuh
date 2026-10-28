@@ -317,7 +317,7 @@ template <typename AccumT, typename Input, typename ReductionOp>
     for (int j = 0; j + i < length; j += i * 3)
     {
       auto value = reduction_op(array[j], array[j + i]);
-      array[j]   = (j + i * 2 < length) ? reduction_op(value, array[j + i * 2]) : value;
+      array[j]   = (j + (i * 2) < length) ? reduction_op(value, array[j + (i * 2)]) : value;
     }
   }
   return array[0];

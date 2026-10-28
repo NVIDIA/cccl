@@ -344,7 +344,7 @@ gmem_to_reg(T (&output)[ItemsPerThread], It1 input1, It2 input2, int count1, int
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      const int idx = BlockThreads * item + threadIdx.x;
+      const int idx = (BlockThreads * item) + threadIdx.x;
       // It1 and It2 could have different value types. Convert after load.
       output[item] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
     }
@@ -354,7 +354,7 @@ gmem_to_reg(T (&output)[ItemsPerThread], It1 input1, It2 input2, int count1, int
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      const int idx = BlockThreads * item + threadIdx.x;
+      const int idx = (BlockThreads * item) + threadIdx.x;
       if (idx < count1 + count2)
       {
         output[item] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
@@ -370,7 +370,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[ItemsPer
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int item = 0; item < ItemsPerThread; ++item)
   {
-    const int idx = BlockThreads * item + threadIdx.x;
+    const int idx = (BlockThreads * item) + threadIdx.x;
     output[idx]   = input[item];
   }
 }
@@ -483,7 +483,7 @@ struct AgentMerge
     const OffsetT start = ITEMS_PER_TILE * list;
     const OffsetT size  = ITEMS_PER_TILE * merged_tiles_number;
 
-    const OffsetT diag = ITEMS_PER_TILE * tile_idx - start;
+    const OffsetT diag = (ITEMS_PER_TILE * tile_idx) - start;
 
     const OffsetT keys1_beg = partition_beg - start;
     OffsetT keys1_end       = partition_end - start;

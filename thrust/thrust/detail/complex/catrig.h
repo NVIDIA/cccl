@@ -222,7 +222,7 @@ do_hard_work(double x, double y, double* rx, int* B_is_usable, double* B, double
   }
   else
   {
-    *rx = ::cuda::std::log(A + ::cuda::std::sqrt(A * A - 1));
+    *rx = ::cuda::std::log(A + ::cuda::std::sqrt((A * A) - 1));
   }
 
   *new_y = y;
@@ -573,7 +573,7 @@ _CCCL_HOST_DEVICE inline complex<double> clog_for_large_values(complex<double> z
     return (complex<double>(::cuda::std::log(::cuda::std::hypot(x, y)), ::cuda::std::atan2(y, x)));
   }
 
-  return (complex<double>(::cuda::std::log(ax * ax + ay * ay) / 2, ::cuda::std::atan2(y, x)));
+  return (complex<double>(::cuda::std::log((ax * ax) + (ay * ay)) / 2, ::cuda::std::atan2(y, x)));
 }
 
 /*
@@ -598,7 +598,7 @@ _CCCL_HOST_DEVICE inline double sum_squares(double x, double y)
     return (x * x);
   }
 
-  return (x * x + y * y);
+  return ((x * x) + (y * y));
 }
 
 /*
@@ -639,13 +639,13 @@ _CCCL_HOST_DEVICE inline double real_part_reciprocal(double x, double y)
   }
   if (ix <= (BIAS + DBL_MAX_EXP / 2 - CUTOFF) << 20)
   {
-    return (x / (x * x + y * y));
+    return (x / ((x * x) + (y * y)));
   }
   scale = 1;
   set_high_word(scale, 0x7ff00000 - ix); /* 2**(1-ilogb(x)) */
   x *= scale;
   y *= scale;
-  return (x / (x * x + y * y) * scale);
+  return (x / ((x * x) + (y * y)) * scale);
 }
 
 /*
@@ -740,7 +740,7 @@ _CCCL_HOST_DEVICE inline complex<double> catanh(complex<double> z)
   }
   else
   {
-    ry = ::cuda::std::atan2(2 * ay, (1 - ax) * (1 + ax) - ay * ay) / 2;
+    ry = ::cuda::std::atan2(2 * ay, ((1 - ax) * (1 + ax)) - (ay * ay)) / 2;
   }
 
   return (complex<double>(::cuda::std::copysign(rx, x), ::cuda::std::copysign(ry, y)));

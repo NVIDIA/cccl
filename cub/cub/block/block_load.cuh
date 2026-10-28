@@ -87,7 +87,7 @@ LoadDirectBlocked(int linear_tid, RandomAccessIterator block_src_it, T (&dst_ite
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    dst_items[i] = block_src_it[linear_tid * ItemsPerThread + i]; // NOLINT(bugprone-misplaced-widening-cast)
+    dst_items[i] = block_src_it[(linear_tid * ItemsPerThread) + i]; // NOLINT(bugprone-misplaced-widening-cast)
   }
 }
 
@@ -129,7 +129,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectBlocked(
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    const auto src_pos = linear_tid * ItemsPerThread + i;
+    const auto src_pos = (linear_tid * ItemsPerThread) + i;
     if (src_pos < block_items_end)
     {
       dst_items[i] = block_src_it[src_pos];
@@ -226,7 +226,7 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
   {
     vector_t vec_items[vectors_per_thread];
     // Load into an array of vectors in thread-blocked order
-    const vector_t* vec_ptr = reinterpret_cast<const vector_t*>(block_src_ptr) + linear_tid * vectors_per_thread;
+    const vector_t* vec_ptr = reinterpret_cast<const vector_t*>(block_src_ptr) + (linear_tid * vectors_per_thread);
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < vectors_per_thread; i++)
@@ -349,7 +349,7 @@ LoadDirectStriped(int linear_tid, RandomAccessIterator block_src_it, T (&dst_ite
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    dst_items[i] = block_src_it[linear_tid + i * ThreadsPerBlock]; // NOLINT(bugprone-misplaced-widening-cast)
+    dst_items[i] = block_src_it[linear_tid + (i * ThreadsPerBlock)]; // NOLINT(bugprone-misplaced-widening-cast)
   }
 }
 
@@ -493,7 +493,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void load_transform_direct_striped(
   for (int i = 0; i < ItemsPerThread; i++)
   {
     dst_items[i] =
-      transform_op(block_src_it[linear_tid + i * ThreadsPerBlock]); // NOLINT(bugprone-misplaced-widening-cast)
+      transform_op(block_src_it[linear_tid + (i * ThreadsPerBlock)]); // NOLINT(bugprone-misplaced-widening-cast)
   }
 }
 } // namespace detail
@@ -539,7 +539,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    const auto src_pos = linear_tid + i * ThreadsPerBlock;
+    const auto src_pos = linear_tid + (i * ThreadsPerBlock);
     if (src_pos < block_items_end)
     {
       dst_items[i] = block_src_it[src_pos];

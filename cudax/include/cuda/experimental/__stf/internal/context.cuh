@@ -1644,7 +1644,7 @@ inline void unit_test_recursive_apply()
   ctx.host_launch(lA.read())->*[](auto A) {
     for (size_t i = 0; i < 1280; i++)
     {
-      EXPECT(A(i) == 2 * i + 7);
+      EXPECT(A(i) == (2 * i) + 7);
     }
   };
 
@@ -1662,7 +1662,7 @@ inline void unit_test_recursive_apply()
   ctx.host_launch(lB.read())->*[](auto B) {
     for (size_t i = 0; i < 1280; i++)
     {
-      EXPECT(B(i) == 2 * i + 7);
+      EXPECT(B(i) == (2 * i) + 7);
     }
   };
 }
@@ -1712,7 +1712,7 @@ inline void unit_test_partitioner_product()
   ctx.host_launch(lA.read())->*[](auto A) {
     for (size_t i = 0; i < 1280; i++)
     {
-      EXPECT(A(i) == 2 * i + 7);
+      EXPECT(A(i) == (2 * i) + 7);
     }
   };
 }

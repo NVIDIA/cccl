@@ -978,7 +978,7 @@ struct BlockRadixRankMatchEarlyCounts
 
     _CCCL_DEVICE _CCCL_FORCEINLINE int ThreadBin(int u)
     {
-      const int bin = threadIdx.x * BINS_PER_THREAD + u;
+      const int bin = (threadIdx.x * BINS_PER_THREAD) + u;
       return IsDescending ? RADIX_DIGITS - 1 - bin : bin;
     }
 
@@ -1029,7 +1029,7 @@ struct BlockRadixRankMatchEarlyCounts
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int u = 0; u < WARP_BINS_PER_THREAD; ++u)
         {
-          const int bin = lane + u * WARP_THREADS;
+          const int bin = lane + (u * WARP_THREADS);
           bins[u]       = cub::ThreadReduce(warp_histograms[bin], ::cuda::std::plus<>{});
         }
         __syncthreads();
@@ -1040,7 +1040,7 @@ struct BlockRadixRankMatchEarlyCounts
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int u = 0; u < WARP_BINS_PER_THREAD; ++u)
         {
-          const int bin     = lane + u * WARP_THREADS;
+          const int bin     = lane + (u * WARP_THREADS);
           warp_offsets[bin] = bins[u];
         }
       }

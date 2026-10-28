@@ -33,7 +33,7 @@ using namespace cuda::experimental::stf;
 
 __global__ void add_one(slice<double> x)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   const size_t n = x.extent(0);

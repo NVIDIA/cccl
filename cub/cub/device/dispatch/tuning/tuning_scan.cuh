@@ -866,7 +866,7 @@ _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(
   warpspeed::SmemAllocator smemAllocator{};
 
   const int align_inout = ::cuda::std::max({16, input_align, output_align});
-  const int inout_bytes = policy.tile_size() * input_size + 16;
+  const int inout_bytes = (policy.tile_size() * input_size) + 16;
   // Match sizeof(InOutT): round up to the alignment so each stage matches SmemResource<InOutT>.
   const int inout_stride    = (inout_bytes + align_inout - 1) & ~(align_inout - 1);
   const auto reduce_squad   = squad_reduce(policy);
@@ -938,7 +938,7 @@ struct policy_selector
     // manual tuning based on cub.bench.scan.exclusive.sum.base
     // 256 / sizeof(InputValueT) - 1 should minimize bank conflicts (and fits into 48KiB SMEM)
     // 2-byte types and double needed special handling
-    lookahead_policy.items_per_thread = ::cuda::std::max(256 / (input_value_size == 2 ? 2 : accum_size) - 1, 1);
+    lookahead_policy.items_per_thread = ::cuda::std::max((256 / (input_value_size == 2 ? 2 : accum_size)) - 1, 1);
     // TODO(bgruber): the special handling of double below is a LOT faster on B200, but exceeds 48KiB SMEM
     // clang-format off
       // |   F64   |      I64      |     72576      |  12.301 us |       8.18% |  12.987 us |       5.75% |     0.686 us |   5.58% |   SAME   |

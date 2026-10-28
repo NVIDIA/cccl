@@ -157,7 +157,7 @@ public:
   [[nodiscard]] _CCCL_API friend ::cuda::std::common_type_t<_Tp, _Lhs>
   operator%(_Lhs __dividend, fast_mod_div __divisor1) noexcept
   {
-    return __dividend - (__dividend / __divisor1) * __divisor1.__divisor;
+    return __dividend - ((__dividend / __divisor1) * __divisor1.__divisor);
   }
 
   //! @brief Converts to the underlying divisor value
@@ -226,7 +226,7 @@ template <typename _Tp, typename _Lhs, bool _DivisorIsNeverOne>
 div(_Tp __dividend, fast_mod_div<_Lhs, _DivisorIsNeverOne> __divisor) noexcept
 {
   const auto __quotient  = __dividend / __divisor;
-  const auto __remainder = __dividend - __quotient * __divisor;
+  const auto __remainder = __dividend - (__quotient * __divisor);
   return {__quotient, __remainder};
 }
 
