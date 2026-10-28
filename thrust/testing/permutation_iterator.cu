@@ -245,7 +245,8 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_permutation_iterator_with_countin
   using T      = typename Vector::value_type;
   using diff_t = typename thrust::counting_iterator<T>::difference_type;
 
-  const thrust::counting_iterator<T> input(0), index(0);
+  const thrust::counting_iterator<T> input(0);
+  const thrust::counting_iterator<T> index(0);
 
   // test copy()
   {

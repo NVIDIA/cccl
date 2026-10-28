@@ -10,7 +10,8 @@ void test_set_symmetric_difference_descending_simple()
   using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
 
-  Vector a{6, 4, 2, 0}, b{7, 4, 3, 3, 0};
+  Vector a{6, 4, 2, 0};
+  Vector b{7, 4, 3, 3, 0};
 
   Vector ref{7, 6, 3, 3, 2};
   Vector result(5);

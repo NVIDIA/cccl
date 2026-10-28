@@ -160,8 +160,11 @@ _CCCL_HOST_DEVICE inline double f(double a, double b, double hypot_a_b)
 _CCCL_HOST_DEVICE inline void
 do_hard_work(double x, double y, double* rx, int* B_is_usable, double* B, double* sqrt_A2my2, double* new_y)
 {
-  double R, S, A; /* A, B, R, and S are as in Hull et al. */
-  double Am1, Amy; /* A-1, A-y. */
+  double R;
+  double S;
+  double A; /* A, B, R, and S are as in Hull et al. */
+  double Am1;
+  double Amy; /* A-1, A-y. */
   const double A_crossover   = 10; /* Hull et al suggest 1.5, but 10 works better */
   const double FOUR_SQRT_MIN = 5.966672584960165394632772e-154; /* =0x1p-509; >= 4 * sqrt(DBL_MIN) */
   const double B_crossover   = 0.6417; /* suggested by Hull et al */
@@ -303,7 +306,15 @@ do_hard_work(double x, double y, double* rx, int* B_is_usable, double* B, double
  */
 _CCCL_HOST_DEVICE inline complex<double> casinh(complex<double> z)
 {
-  double x, y, ax, ay, rx, ry, B, sqrt_A2my2, new_y;
+  double x;
+  double y;
+  double ax;
+  double ay;
+  double rx;
+  double ry;
+  double B;
+  double sqrt_A2my2;
+  double new_y;
   int B_is_usable;
   complex<double> w{};
   const double RECIP_EPSILON = 1.0 / DBL_EPSILON;
@@ -403,8 +414,17 @@ _CCCL_HOST_DEVICE inline complex<double> casin(complex<double> z)
  */
 _CCCL_HOST_DEVICE inline complex<double> cacos(complex<double> z)
 {
-  double x, y, ax, ay, rx, ry, B, sqrt_A2mx2, new_x;
-  int sx, sy;
+  double x;
+  double y;
+  double ax;
+  double ay;
+  double rx;
+  double ry;
+  double B;
+  double sqrt_A2mx2;
+  double new_x;
+  int sx;
+  int sy;
   int B_is_usable;
   complex<double> w{};
   const double pio2_hi          = 1.5707963267948966e0; /*  0x1921fb54442d18.0p-52 */
@@ -508,7 +528,8 @@ _CCCL_HOST_DEVICE inline complex<double> cacos(complex<double> z)
 _CCCL_HOST_DEVICE inline complex<double> cacosh(complex<double> z)
 {
   const complex<double> w = cacos(z);
-  double rx, ry;
+  double rx;
+  double ry;
   rx = w.real();
   ry = w.imag();
   /* cacosh(NaN + I*NaN) = NaN + I*NaN */
@@ -535,8 +556,11 @@ _CCCL_HOST_DEVICE inline complex<double> cacosh(complex<double> z)
  */
 _CCCL_HOST_DEVICE inline complex<double> clog_for_large_values(complex<double> z)
 {
-  double x, y;
-  double ax, ay, t;
+  double x;
+  double y;
+  double ax;
+  double ay;
+  double t;
   constexpr auto m_e = ::cuda::std::__numbers<double>::__e();
 
   x  = z.real();
@@ -613,8 +637,10 @@ _CCCL_HOST_DEVICE inline double sum_squares(double x, double y)
 _CCCL_HOST_DEVICE inline double real_part_reciprocal(double x, double y)
 {
   double scale;
-  uint32_t hx, hy;
-  int32_t ix, iy;
+  uint32_t hx;
+  uint32_t hy;
+  int32_t ix;
+  int32_t iy;
 
   /*
    * This code is inspired by the C99 document n1124.pdf, Section G.5.1,
@@ -662,7 +688,12 @@ _CCCL_HOST_DEVICE inline double real_part_reciprocal(double x, double y)
  */
 _CCCL_HOST_DEVICE inline complex<double> catanh(complex<double> z)
 {
-  double x, y, ax, ay, rx, ry;
+  double x;
+  double y;
+  double ax;
+  double ay;
+  double rx;
+  double ry;
   const volatile double pio2_lo = 6.1232339957367659e-17; /*  0x11a62633145c07.0p-106 */
   const double pio2_hi          = 1.5707963267948966e0; /*  0x1921fb54442d18.0p-52 */
 

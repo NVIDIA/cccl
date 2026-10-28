@@ -408,7 +408,8 @@ THRUST_RUNTIME_FUNCTION int get_ptx_version()
 
     // Any subsequent failure means the provided device binary does not match
     // the generated function code
-    int major = 0, minor = 0;
+    int major = 0;
+    int minor = 0;
     cudaError_t attr_status;
 
     attr_status = cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, current_device);

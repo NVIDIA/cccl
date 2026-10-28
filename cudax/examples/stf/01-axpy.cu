@@ -44,7 +44,8 @@ int main()
 {
   context ctx;
   const size_t N = 16;
-  double X[N], Y[N];
+  double X[N];
+  double Y[N];
 
   for (size_t i = 0; i < N; i++)
   {

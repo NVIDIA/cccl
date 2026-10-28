@@ -80,7 +80,13 @@ void load_input_file(std::string filename, std::vector<body>& particles)
     return;
   }
 
-  double mass, posX, posY, posZ, velX, velY, velZ;
+  double mass;
+  double posX;
+  double posY;
+  double posZ;
+  double velX;
+  double velY;
+  double velZ;
   size_t ind = 0;
 
   // Loop until we reach the end of the file

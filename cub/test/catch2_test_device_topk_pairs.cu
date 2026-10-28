@@ -75,8 +75,9 @@ bool check_results(
   c2h::host_vector<ValueT> h_values_out(values_out);
 
   // i for results from gpu (MinPairs() and MaxPairs()); j for reference results
-  NumItemsT i = 0, j = 0;
-  bool res = true;
+  NumItemsT i = 0;
+  NumItemsT j = 0;
+  bool res    = true;
   while (i < k && j < num_items)
   {
     if (h_keys_out[i] == h_keys_in[j])

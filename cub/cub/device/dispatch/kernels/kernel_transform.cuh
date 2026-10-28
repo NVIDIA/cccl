@@ -488,7 +488,8 @@ _CCCL_DEVICE void memcpy_async_maybe_unaligned(void* dst, const void* src, unsig
 
   // TODO(bgruber): ahendriksen suggested to copy elements instead of bytes, but it generates about 20 instructions more
   // ahendriksen: we perform both loads first and then both writes. this reduces the total latency
-  char head_byte, tail_byte;
+  char head_byte;
+  char tail_byte;
   if (threadIdx.x < head_bytes)
   {
     head_byte = src_ptr[threadIdx.x];
@@ -697,7 +698,8 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
   }
 
   // ahendriksen: we perform both loads first and then both writes. this reduces the total latency
-  char head_byte, tail_byte;
+  char head_byte;
+  char tail_byte;
   if (threadIdx.x < head_bytes)
   {
     head_byte = src_ptr[threadIdx.x];

@@ -58,8 +58,15 @@ using thrust::complex;
 // NOLINTBEGIN(misc-redundant-expression)
 _CCCL_HOST_DEVICE inline complex<double> csinh(const complex<double>& z)
 {
-  double x, y, h;
-  uint32_t hx, hy, ix, iy, lx, ly;
+  double x;
+  double y;
+  double h;
+  uint32_t hx;
+  uint32_t hy;
+  uint32_t ix;
+  uint32_t iy;
+  uint32_t lx;
+  uint32_t ly;
   const double huge = 8.98846567431157953864652595395e+307; // 0x1p1023;
 
   x = z.real();

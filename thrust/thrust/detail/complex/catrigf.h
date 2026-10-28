@@ -100,8 +100,11 @@ _CCCL_HOST_DEVICE inline float f(float a, float b, float hypot_a_b)
 _CCCL_HOST_DEVICE inline void
 do_hard_work(float x, float y, float* rx, int* B_is_usable, float* B, float* sqrt_A2my2, float* new_y)
 {
-  float R, S, A; /* A, B, R, and S are as in Hull et al. */
-  float Am1, Amy; /* A-1, A-y. */
+  float R;
+  float S;
+  float A; /* A, B, R, and S are as in Hull et al. */
+  float Am1;
+  float Amy; /* A-1, A-y. */
   const float A_crossover   = 10; /* Hull et al suggest 1.5, but 10 works better */
   const float FOUR_SQRT_MIN = 4.336808689942017736029811e-19f;
   ; /* =0x1p-61; >= 4 * sqrt(FLT_MIN) */
@@ -179,7 +182,15 @@ do_hard_work(float x, float y, float* rx, int* B_is_usable, float* B, float* sqr
 
 _CCCL_HOST_DEVICE inline complex<float> casinhf(complex<float> z)
 {
-  float x, y, ax, ay, rx, ry, B, sqrt_A2my2, new_y;
+  float x;
+  float y;
+  float ax;
+  float ay;
+  float rx;
+  float ry;
+  float B;
+  float sqrt_A2my2;
+  float new_y;
   int B_is_usable;
   complex<float> w{};
   const float RECIP_EPSILON = 1.0f / FLT_EPSILON;
@@ -252,8 +263,17 @@ _CCCL_HOST_DEVICE inline complex<float> casinf(complex<float> z)
 
 _CCCL_HOST_DEVICE inline complex<float> cacosf(complex<float> z)
 {
-  float x, y, ax, ay, rx, ry, B, sqrt_A2mx2, new_x;
-  int sx, sy;
+  float x;
+  float y;
+  float ax;
+  float ay;
+  float rx;
+  float ry;
+  float B;
+  float sqrt_A2mx2;
+  float new_x;
+  int sx;
+  int sy;
   int B_is_usable;
   complex<float> w{};
   const float pio2_hi          = 1.5707963267948966e0f; /*  0x1921fb54442d18.0p-52 */
@@ -342,7 +362,8 @@ _CCCL_HOST_DEVICE inline complex<float> cacosf(complex<float> z)
 _CCCL_HOST_DEVICE inline complex<float> cacoshf(complex<float> z)
 {
   const complex<float> w = cacosf(z);
-  float rx, ry;
+  float rx;
+  float ry;
   rx = w.real();
   ry = w.imag();
   /* cacosh(NaN + I*NaN) = NaN + I*NaN */
@@ -369,8 +390,11 @@ _CCCL_HOST_DEVICE inline complex<float> cacoshf(complex<float> z)
  */
 _CCCL_HOST_DEVICE inline complex<float> clog_for_large_values(complex<float> z)
 {
-  float x, y;
-  float ax, ay, t;
+  float x;
+  float y;
+  float ax;
+  float ay;
+  float t;
   constexpr auto m_e = ::cuda::std::__numbers<float>::__e();
 
   x  = z.real();
@@ -427,8 +451,10 @@ _CCCL_HOST_DEVICE inline float sum_squares(float x, float y)
 _CCCL_HOST_DEVICE inline float real_part_reciprocal(float x, float y)
 {
   float scale;
-  uint32_t hx, hy;
-  int32_t ix, iy;
+  uint32_t hx;
+  uint32_t hy;
+  int32_t ix;
+  int32_t iy;
 
   get_float_word(hx, x);
   ix = static_cast<int32_t>(hx & 0x7f800000);
@@ -458,7 +484,12 @@ _CCCL_HOST_DEVICE inline float real_part_reciprocal(float x, float y)
 
 _CCCL_HOST_DEVICE inline complex<float> catanhf(complex<float> z)
 {
-  float x, y, ax, ay, rx, ry;
+  float x;
+  float y;
+  float ax;
+  float ay;
+  float rx;
+  float ry;
   const volatile float pio2_lo = 6.1232339957367659e-17f; /*  0x11a62633145c07.0p-106 */
   const float pio2_hi          = 1.5707963267948966e0f; /*  0x1921fb54442d18.0p-52 */
 

@@ -105,7 +105,8 @@ void test_static_codegen_parity(stream_ctx& ctx, const exec_place& grid)
 // same partition
 void test_make_partition_from_shape(const exec_place& grid)
 {
-  const size_t nx = 48, ny = 20;
+  const size_t nx       = 48;
+  const size_t ny       = 20;
   const auto shape      = shape_of<slice<size_t, 2>>(nx, ny);
   const auto from_dims  = make_partition(shape.get_data_dims(), partition_spec{whole, blocked<0>}, grid.get_dims());
   const auto from_shape = make_partition(shape, partition_spec{whole, blocked<0>}, grid.get_dims());
@@ -181,8 +182,10 @@ int main()
   // 3-D: dimension 1 blocked over the grid (the per-dimension expressiveness
   // the classic blocked_partition cannot provide)
   {
-    const size_t nx = 32, ny = 64, nz = 16;
-    auto lB = ctx.logical_data(shape_of<slice<size_t, 3>>(nx, ny, nz));
+    const size_t nx = 32;
+    const size_t ny = 64;
+    const size_t nz = 16;
+    auto lB         = ctx.logical_data(shape_of<slice<size_t, 3>>(nx, ny, nz));
 
     auto part = make_partition(dim4(nx, ny, nz), partition_spec{whole, blocked<0>, whole}, grid.get_dims());
 
@@ -245,8 +248,9 @@ int main()
   // built for; each place computes its owned coordinates restricted to the
   // box, and the boundary stays untouched
   {
-    const size_t nx = 64, ny = 32;
-    auto lE = ctx.logical_data(shape_of<slice<size_t, 2>>(nx, ny));
+    const size_t nx = 64;
+    const size_t ny = 32;
+    auto lE         = ctx.logical_data(shape_of<slice<size_t, 2>>(nx, ny));
 
     auto part = make_partition(dim4(nx, ny), partition_spec{whole, blocked<0>}, grid.get_dims());
 
@@ -277,8 +281,9 @@ int main()
   // constructed equal partitions producing the same composite identity -
   // guarded here.
   {
-    const size_t nx = 64, ny = 32;
-    auto lF = ctx.logical_data(shape_of<slice<size_t, 2>>(nx, ny));
+    const size_t nx = 64;
+    const size_t ny = 32;
+    auto lF         = ctx.logical_data(shape_of<slice<size_t, 2>>(nx, ny));
 
     auto part                  = make_partition(dim4(nx, ny), partition_spec{whole, blocked<0>}, grid.get_dims());
     auto dist                  = cuda::experimental::places::make_composite_data_place(grid, part);

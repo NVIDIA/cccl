@@ -734,7 +734,8 @@ private:
 
     // Maps from a logical data to its last writer. The int is the mapping_id
     ::std::unordered_map<::std::string, ::std::deque<int>> current_readers;
-    ::std::unordered_map<::std::string, int> current_writer, previous_writer;
+    ::std::unordered_map<::std::string, int> current_writer;
+    ::std::unordered_map<::std::string, int> previous_writer;
 
     for (const int id : state.deferred_tasks)
     {
@@ -909,7 +910,8 @@ UNITTEST("stream context basics")
 {
   stream_ctx ctx;
 
-  double X[1024], Y[1024];
+  double X[1024];
+  double Y[1024];
   auto handle_X = ctx.logical_data(X);
   auto handle_Y = ctx.logical_data(Y);
 
@@ -930,9 +932,11 @@ UNITTEST("stream context basics")
 UNITTEST("stream context after logical data")
 {
   stream_ctx ctx;
-  logical_data<slice<double>> handle_X, handle_Y;
+  logical_data<slice<double>> handle_X;
+  logical_data<slice<double>> handle_Y;
 
-  double X[1024], Y[1024];
+  double X[1024];
+  double Y[1024];
   handle_X = ctx.logical_data(X);
   handle_Y = ctx.logical_data(Y);
 
@@ -954,7 +958,8 @@ UNITTEST("set_symbol on stream_task and stream_task<>")
 {
   stream_ctx ctx;
 
-  double X[1024], Y[1024];
+  double X[1024];
+  double Y[1024];
   auto lX = ctx.logical_data(X);
   auto lY = ctx.logical_data(Y);
 

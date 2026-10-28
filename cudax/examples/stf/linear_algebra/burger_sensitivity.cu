@@ -444,7 +444,9 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     for (size_t i = 0; i < nu_values.size(); ++i)
     {
       const double nu = nu_values[i];
-      double shock_time, max_gradient, final_time;
+      double shock_time;
+      double max_gradient;
+      double final_time;
 
       printf("Sample %zu/%zu: nu=%.6e... ", i + 1, nu_values.size(), nu);
       fflush(stdout);

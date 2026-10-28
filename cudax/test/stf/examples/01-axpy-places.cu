@@ -52,7 +52,8 @@ void run()
 
   const int N = 1024 * 1024 * 32;
 
-  ::std::vector<double> X(N), Y(N);
+  ::std::vector<double> X(N);
+  ::std::vector<double> Y(N);
 
   for (size_t ind = 0; ind < N; ind++)
   {

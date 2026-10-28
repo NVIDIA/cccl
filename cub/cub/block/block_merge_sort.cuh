@@ -957,7 +957,10 @@ private:
 
       const int thread_idx_in_thread_group_being_merged = mask & linear_tid;
 
-      int keys1_beg, keys1_end, keys2_end, diag;
+      int keys1_beg;
+      int keys1_end;
+      int keys2_end;
+      int diag;
       if constexpr (Clamped)
       {
         keys1_beg = (::cuda::std::min) (valid_items, start);

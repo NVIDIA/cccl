@@ -40,7 +40,8 @@ int main()
   stream_ctx ctx;
 
   const int N = 1024 * 1024 * 32;
-  double *X, *Y;
+  double* X;
+  double* Y;
 
   X = new double[N];
   Y = new double[N];

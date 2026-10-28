@@ -76,7 +76,9 @@ struct GroupsKernel
     // Get the scratch in shared memory required for reduction.
     const auto scratch = cuda::dynamic_shared_memory(config);
 
-    cuda::std::uint32_t input, output, expected_output;
+    cuda::std::uint32_t input;
+    cuda::std::uint32_t output;
+    cuda::std::uint32_t expected_output;
 
     // Input to the reduction, for each thread, is its rank in the group.
     input = cuda::gpu_thread.rank(block_group);

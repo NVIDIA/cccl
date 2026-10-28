@@ -6883,8 +6883,9 @@ UNITTEST("guard translate delay backoff remember")
     EXPECT(notes == 1);
   }
   {
-    int first = 0, second = 0;
-    auto f = [&](const ::std::exception*, const ::cuda::std::source_location, auto&) {
+    int first  = 0;
+    int second = 0;
+    auto f     = [&](const ::std::exception*, const ::cuda::std::source_location, auto&) {
       ++first;
     };
     auto g = [&](const ::std::exception*, const ::cuda::std::source_location, auto&) {
@@ -8306,7 +8307,8 @@ UNITTEST("error sinks: unwind inside a chain stops it")
 {
   using namespace cuda::experimental::stf;
   using namespace cuda::experimental::stf::sump;
-  int a = 0, b = 0;
+  int a      = 0;
+  int b      = 0;
   bool threw = false;
   try
   {

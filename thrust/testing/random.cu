@@ -80,7 +80,8 @@ struct ValidateEngineEqual
     bool result = true;
 
     // test from default constructor
-    Engine e0, e1;
+    Engine e0;
+    Engine e1;
     result &= (e0 == e1);
 
     // advance engines
@@ -89,11 +90,13 @@ struct ValidateEngineEqual
     result &= (e0 == e1);
 
     // test from identical seeds
-    Engine e2(13), e3(13);
+    Engine e2(13);
+    Engine e3(13);
     result &= (e2 == e3);
 
     // test different seeds aren't equal
-    Engine e4(7), e5(13);
+    Engine e4(7);
+    Engine e5(13);
     result &= !(e4 == e5);
 
     // test reseeding engine to the same seed causes equality
@@ -112,7 +115,8 @@ struct ValidateEngineUnequal
     bool result = true;
 
     // test from default constructor
-    Engine e0, e1;
+    Engine e0;
+    Engine e1;
     result &= !(e0 != e1);
 
     // advance engines
@@ -121,11 +125,13 @@ struct ValidateEngineUnequal
     result &= !(e0 != e1);
 
     // test from identical seeds
-    Engine e2(13), e3(13);
+    Engine e2(13);
+    Engine e3(13);
     result &= !(e2 != e3);
 
     // test different seeds aren't equal
-    Engine e4(7), e5(13);
+    Engine e4(7);
+    Engine e5(13);
     result &= (e4 != e5);
 
     // test reseeding engine to the same seed causes equality
@@ -133,7 +139,8 @@ struct ValidateEngineUnequal
     result &= !(e4 != e5);
 
     // test different discards causes inequality
-    Engine e6(13), e7(13);
+    Engine e6(13);
+    Engine e7(13);
     e6.discard(500);
     e7.discard(1000);
     result &= (e6 != e7);

@@ -205,7 +205,8 @@ C2H_TEST("DeviceRadixSort::SortKeys works", "[radix_sort]", test_params_tuple)
   pointer_t<KeyT> input_keys_it(input_keys);
   pointer_t<KeyT> output_keys_it(num_items);
 
-  pointer_t<ItemT> input_items_it, output_items_it;
+  pointer_t<ItemT> input_items_it;
+  pointer_t<ItemT> output_items_it;
 
   auto& build_cache = get_cache<DeviceRadixSort_SortKeys_Fixture_Tag>();
 

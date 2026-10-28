@@ -444,8 +444,9 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersionUncached(int& sm_version, int d
   cudaError_t error = cudaSuccess;
   do
   {
-    int major = 0, minor = 0;
-    error = CubDebug(cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, device));
+    int major = 0;
+    int minor = 0;
+    error     = CubDebug(cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, device));
     if (cudaSuccess != error)
     {
       break;

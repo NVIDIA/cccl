@@ -70,7 +70,8 @@ int main(int argc, char** argv)
 
   const char* const method = argc >= 2 ? argv[1] : "launch-partition";
 
-  cudaEvent_t start, stop;
+  cudaEvent_t start;
+  cudaEvent_t stop;
   cuda_safe_call(cudaEventCreate(&start));
   cuda_safe_call(cudaEventCreate(&stop));
   cuda_safe_call(cudaEventRecord(start, ctx.fence()));

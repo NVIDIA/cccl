@@ -58,8 +58,13 @@ using thrust::complex;
 // NOLINTBEGIN(misc-redundant-expression)
 _CCCL_HOST_DEVICE inline complex<float> ccoshf(const complex<float>& z)
 {
-  float x, y, h;
-  uint32_t hx, hy, ix, iy;
+  float x;
+  float y;
+  float h;
+  uint32_t hx;
+  uint32_t hy;
+  uint32_t ix;
+  uint32_t iy;
   const float huge = 1.70141183460469231731687303716e+38; // 0x1p127;
 
   x = z.real();

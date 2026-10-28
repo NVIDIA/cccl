@@ -30,7 +30,8 @@ struct TestFunctionalPlaceholdersValue
 
     Vector x = unittest::random_integers<T>(n);
     Vector y = unittest::random_integers<T>(n);
-    Vector result(n), reference(n);
+    Vector result(n);
+    Vector reference(n);
 
     thrust::transform(x.begin(), x.end(), y.begin(), reference.begin(), saxpy_reference<T>(a));
 
@@ -65,7 +66,8 @@ struct TestFunctionalPlaceholdersTransformIterator
 
     Vector x = unittest::random_integers<T>(n);
     Vector y = unittest::random_integers<T>(n);
-    Vector result(n), reference(n);
+    Vector result(n);
+    Vector reference(n);
 
     thrust::transform(x.begin(), x.end(), y.begin(), reference.begin(), saxpy_reference<T>(a));
 

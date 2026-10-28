@@ -128,7 +128,8 @@ int main(int argc, char** argv)
 
   double c = a * dt;
 
-  cudaEvent_t start, stop;
+  cudaEvent_t start;
+  cudaEvent_t stop;
 
   cuda_safe_call(cudaEventCreate(&start));
   cuda_safe_call(cudaEventCreate(&stop));

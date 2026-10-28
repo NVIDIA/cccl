@@ -143,7 +143,8 @@ int main()
       CUcontext green_driver_ctx;
       cuda_safe_call(cuCtxFromGreenCtx(&green_driver_ctx, view.g_ctx));
 
-      unsigned long long current_ctx_id, green_ctx_id;
+      unsigned long long current_ctx_id;
+      unsigned long long green_ctx_id;
       cuda_safe_call(cuCtxGetId(current_ctx, &current_ctx_id));
       cuda_safe_call(cuCtxGetId(green_driver_ctx, &green_ctx_id));
       EXPECT(current_ctx_id == green_ctx_id);
@@ -166,10 +167,12 @@ int main()
     exec_place gc_place0 = exec_place::green_ctx(view0);
     exec_place gc_place1 = exec_place::green_ctx(view1);
 
-    CUcontext green0_ctx, green1_ctx;
+    CUcontext green0_ctx;
+    CUcontext green1_ctx;
     cuda_safe_call(cuCtxFromGreenCtx(&green0_ctx, view0.g_ctx));
     cuda_safe_call(cuCtxFromGreenCtx(&green1_ctx, view1.g_ctx));
-    unsigned long long green0_id, green1_id;
+    unsigned long long green0_id;
+    unsigned long long green1_id;
     cuda_safe_call(cuCtxGetId(green0_ctx, &green0_id));
     cuda_safe_call(cuCtxGetId(green1_ctx, &green1_id));
 

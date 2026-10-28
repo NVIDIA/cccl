@@ -56,7 +56,8 @@ void run()
   const size_t BLOCK_SIZE = 128;
   const size_t num_blocks = 32;
 
-  int *X, ref_tot;
+  int* X;
+  int ref_tot;
 
   X       = new int[N];
   ref_tot = 0;

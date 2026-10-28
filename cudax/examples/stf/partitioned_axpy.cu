@@ -84,7 +84,8 @@ int main()
   // 2. Run STF tasks over logical data placed by the same policy
   stream_ctx ctx;
 
-  ::std::vector<double> X(N), Y(N);
+  ::std::vector<double> X(N);
+  ::std::vector<double> Y(N);
   for (size_t i = 0; i < N; i++)
   {
     X[i] = X0(i);

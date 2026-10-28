@@ -29,7 +29,8 @@ int main()
   stream_ctx ctx;
 
   const int N = 128;
-  double X[N], Y[N];
+  double X[N];
+  double Y[N];
 
   for (int ind = 0; ind < N; ind++)
   {

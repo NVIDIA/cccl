@@ -399,8 +399,10 @@ public:
   template <typename F>
   bool for_each_owner_byte_run(size_t elemsize, size_t max_runs, F&& emit) const
   {
-    const size_t t0 = true_dims_.get(0), t1 = true_dims_.get(1);
-    const size_t t2 = true_dims_.get(2), t3 = true_dims_.get(3);
+    const size_t t0 = true_dims_.get(0);
+    const size_t t1 = true_dims_.get(1);
+    const size_t t2 = true_dims_.get(2);
+    const size_t t3 = true_dims_.get(3);
 
     const size_t s = min_owner_run_elems();
     if (s == 0)
@@ -419,7 +421,8 @@ public:
     const size_t ps3 = ps2 * padded_dims_.get(2);
 
     // pending merged run
-    size_t run_start = 0, run_len = 0;
+    size_t run_start = 0;
+    size_t run_len   = 0;
     pos4 run_owner;
     bool keep_going = true;
     auto push       = [&](size_t start, size_t len, pos4 o) {
@@ -569,7 +572,8 @@ public:
 
     auto close_block = [&]() {
       pos4 best;
-      size_t best_bytes = 0, sum = 0;
+      size_t best_bytes = 0;
+      size_t sum        = 0;
       for (const auto& e : hist)
       {
         sum += e.second;

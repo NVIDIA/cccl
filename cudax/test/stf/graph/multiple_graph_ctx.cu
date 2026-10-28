@@ -26,7 +26,8 @@ int main(int argc, char** argv)
   graph_ctx ctx;
   graph_ctx ctx_2;
 
-  double X[1024], Y[1024];
+  double X[1024];
+  double Y[1024];
   auto handle_X = ctx.logical_data(make_slice(X, 1024));
   auto handle_Y = ctx.logical_data(make_slice(Y, 1024));
 

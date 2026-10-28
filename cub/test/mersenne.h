@@ -79,7 +79,9 @@ inline void init_genrand(unsigned int s)
 /* slight change for C++, 2004/2/26 */
 inline void init_by_array(unsigned int init_key[], int key_length)
 {
-  int i, j, k;
+  int i;
+  int j;
+  int k;
   init_genrand(19650218);
   i = 1;
   j = 0;

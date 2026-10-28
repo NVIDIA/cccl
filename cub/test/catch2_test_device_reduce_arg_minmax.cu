@@ -268,8 +268,10 @@ CUB_TEST(
                                      - static_cast<cuda::std::int64_t>(expected_last_max_it - host_items.crbegin());
 
   using unwrapped_t = unwrap_value_t<output_t>;
-  c2h::device_vector<unwrapped_t> d_min_out(num_segments), d_max_out(num_segments);
-  c2h::device_vector<cuda::std::int64_t> d_min_index(num_segments), d_max_index(num_segments);
+  c2h::device_vector<unwrapped_t> d_min_out(num_segments);
+  c2h::device_vector<unwrapped_t> d_max_out(num_segments);
+  c2h::device_vector<cuda::std::int64_t> d_min_index(num_segments);
+  c2h::device_vector<cuda::std::int64_t> d_max_index(num_segments);
 
   SECTION("default")
   {

@@ -31,7 +31,8 @@ __global__ void axpy(double alpha, const double* d_ptrA, double* d_ptrB, size_t 
 
 int main()
 {
-  double *d_ptrA, *d_ptrB;
+  double* d_ptrA;
+  double* d_ptrB;
   const size_t N     = 128 * 1024;
   const size_t NITER = 128;
 

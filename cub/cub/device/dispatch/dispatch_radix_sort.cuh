@@ -893,7 +893,8 @@ private:
     }
 
     // Init regular and alternate-digit kernel configurations
-    PassConfig<UpsweepKernelT, ScanKernelT, DownsweepKernelT> pass_config, alt_pass_config;
+    PassConfig<UpsweepKernelT, ScanKernelT, DownsweepKernelT> pass_config;
+    PassConfig<UpsweepKernelT, ScanKernelT, DownsweepKernelT> alt_pass_config;
     if (const auto error = pass_config.__init_pass_config(
           upsweep_kernel,
           scan_kernel,
@@ -1584,7 +1585,8 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     const RadixSortPolicy& policy)
   {
     // Init regular and alternate-digit kernel configurations
-    pass_config<UpsweepKernelT, ScanKernelT, DownsweepKernelT, OffsetT> pc, alt_pc;
+    pass_config<UpsweepKernelT, ScanKernelT, DownsweepKernelT, OffsetT> pc;
+    pass_config<UpsweepKernelT, ScanKernelT, DownsweepKernelT, OffsetT> alt_pc;
     if (const auto error = pc.init(
           upsweep_kernel,
           scan_kernel,

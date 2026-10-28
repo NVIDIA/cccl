@@ -11,7 +11,8 @@
 template <typename Vector>
 void test_merge_simple()
 {
-  const Vector a{0, 2, 4}, b{0, 3, 3, 4};
+  const Vector a{0, 2, 4};
+  const Vector b{0, 3, 3, 4};
   const Vector ref{0, 0, 2, 3, 3, 4, 4};
 
   Vector result(7);

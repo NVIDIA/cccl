@@ -251,7 +251,8 @@ int main(int argc, char** argv)
   double tolerance    = 0.0001; //-1.0;  // 0.0001; //tolerance for convergence. <=0 means do not check
 
   // command line arguments
-  int scalefactor = 1, numiter = 10;
+  int scalefactor = 1;
+  int numiter     = 10;
 
   double re = -1.0; // Reynold's number - must be less than 3.7
 
@@ -262,7 +263,8 @@ int main(int argc, char** argv)
   const int mbase = 32;
   const int nbase = 32;
 
-  int irrotational = 1, checkerr = 0;
+  int irrotational = 1;
+  int checkerr     = 0;
 
   // do we stop because of tolerance?
   if (tolerance > 0)
@@ -330,7 +332,10 @@ int main(int argc, char** argv)
   // printf("Running CFD on %d x %d grid in serial\n", m, n);
 
   // main arrays and their temporary versions
-  logical_data<slice<double, 2>> lzet, lzettmp, lpsi, lpsitmp;
+  logical_data<slice<double, 2>> lzet;
+  logical_data<slice<double, 2>> lzettmp;
+  logical_data<slice<double, 2>> lpsi;
+  logical_data<slice<double, 2>> lpsitmp;
 
   // allocate arrays
   lpsi    = ctx.logical_data(shape_of<slice<double, 2>>(m + 2, n + 2)).set_symbol("psi");

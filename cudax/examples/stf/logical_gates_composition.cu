@@ -54,7 +54,9 @@ int main()
 {
   const size_t n = 12;
 
-  int X[n], Y[n], Z[n];
+  int X[n];
+  int Y[n];
+  int Z[n];
 
   context ctx;
 

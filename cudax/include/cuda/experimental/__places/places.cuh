@@ -2138,7 +2138,8 @@ public:
     }
     const dim4 dims = grid_.get_dims();
     const pos4 pos  = dims.index_to_pos(place_index);
-    size_t idx = 0, mult = 1;
+    size_t idx      = 0;
+    size_t mult     = 1;
     for (size_t a = 0; a < 4; a++)
     {
       if (axes_mask_ & (1u << a))
