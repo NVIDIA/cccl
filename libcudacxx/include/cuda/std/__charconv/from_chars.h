@@ -97,7 +97,7 @@ __from_chars_int_generic(const char* __first, const char* __last, _Tp& __value, 
       }
     }
   }
-  return {__it, (__overflow) ? errc::result_out_of_range : ((__it == __first) ? errc::invalid_argument : errc{})};
+  return {__it, __overflow ? errc::result_out_of_range : ((__it == __first) ? errc::invalid_argument : errc{})};
 }
 
 _CCCL_TEMPLATE(class _Tp)
@@ -117,7 +117,7 @@ from_chars(const char* __first, const char* __last, _Tp& __value, int __base = 1
     __ret            = ::cuda::std::__from_chars_int_generic(__first + __neg, __last, __result, __base);
     if (__ret.ec == errc{})
     {
-      const auto __max = ::cuda::uabs((__neg) ? numeric_limits<_Tp>::min() : numeric_limits<_Tp>::max());
+      const auto __max = ::cuda::uabs(__neg ? numeric_limits<_Tp>::min() : numeric_limits<_Tp>::max());
       if (__result > __max)
       {
         __ret.ec = errc::result_out_of_range;

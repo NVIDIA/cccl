@@ -152,7 +152,7 @@ _CCCL_HOST_DEVICE inline complex<float> csqrtf(const complex<float>& z)
   }
   else
   {
-    return (result);
+    return result;
   }
 }
 // NOLINTEND(misc-redundant-expression)
