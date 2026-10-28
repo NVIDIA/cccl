@@ -16,6 +16,7 @@ from ._group_radix_sort import (
     radix_sort_pairs,
 )
 from ._group_reduce import reduce, sum
+from ._group_reduce_batched import reduce_batched
 from ._group_run_length import run_length_decode, run_length_decode_into
 from ._group_scan import (
     exclusive_scan,
@@ -46,6 +47,7 @@ from ._thread_group import (
 from ._typing import TempStorageLike, ThreadDataLike
 
 __all__ = [
+    "reduce_batched",
     "run_length_decode",
     "run_length_decode_into",
     "histogram",
