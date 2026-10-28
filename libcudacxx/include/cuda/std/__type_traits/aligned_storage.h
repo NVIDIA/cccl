@@ -90,15 +90,17 @@ _CCCL_API constexpr size_t __select_align_fn_(size_t __len, size_t __a1, size_t 
   return __select_align_fn_2_(__len, __a2 < __a1 ? __a2 : __a1, __a1 < __a2 ? __a2 : __a1);
 }
 
-template <size_t _Len>
-struct __select_align_fn
+template <class... _Tys>
+_CCCL_API constexpr size_t __find_max_align_fn(size_t __len, __type_list<_Tys...>*) noexcept
 {
-  template <class _State, class _Ty>
-  using __call = integral_constant<size_t, __select_align_fn_(_Len, _State::value, _Ty::value)>;
-};
+  size_t __result = 0;
+  ((__result = ::cuda::std::__select_align_fn_(__len, __result, _Tys::value)), ...);
+  return __result;
+}
 
 template <class _TL, size_t _Len>
-struct __find_max_align : public __type_fold_left<_TL, integral_constant<size_t, 0>, __select_align_fn<_Len>>
+struct __find_max_align
+    : public integral_constant<size_t, ::cuda::std::__find_max_align_fn(_Len, static_cast<_TL*>(nullptr))>
 {};
 
 template <size_t _Len, size_t _Align = __find_max_align<__all_types, _Len>::value>

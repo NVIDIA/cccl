@@ -26,7 +26,7 @@
 #include <cuda/__utility/__basic_any/rtti.h>
 #include <cuda/__utility/__basic_any/tagged_ptr.h>
 #include <cuda/__utility/__basic_any/virtual_tables.h>
-#include <cuda/std/__type_traits/type_list.h>
+#include <cuda/std/__type_traits/type_list_operations.h>
 #include <cuda/std/__type_traits/type_set.h>
 
 #include <cuda/std/__cccl/prologue.h>

@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/type_list.h>
+#include <cuda/std/__type_traits/type_list_operations.h>
 
 #include <cuda/experimental/__detail/type_traits.cuh> // IWYU pragma: export
 

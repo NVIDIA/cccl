@@ -29,6 +29,7 @@
 #  include <cuda/__utility/basic_any.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__optional/optional.h>
+#  include <cuda/std/__type_traits/type_list_operations.h>
 #  include <cuda/std/__utility/delegate_constructors.h>
 #  include <cuda/std/__utility/forward.h>
 
