@@ -36,7 +36,7 @@ void test_find_if(const Policy& policy)
 
   { // same type
     const auto res = cuda::std::find_if(
-      policy, cuda::counting_iterator{int{0}}, cuda::counting_iterator{int{size}}, cuda::equal_to_value{expected});
+      policy, cuda::counting_iterator{0}, cuda::counting_iterator{int{size}}, cuda::equal_to_value{expected});
     CHECK(res == cuda::counting_iterator{expected});
   }
 
