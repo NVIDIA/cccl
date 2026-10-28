@@ -50,8 +50,9 @@ struct __stream_callback_data
   _Callable __callable_;
   ::cuda::std::tuple<_Args...> __args_;
 
+  // NVCC ignores the host annotation on an explicitly defaulted destructor.
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_API ~__stream_callback_data() {}
+  _CCCL_HOST_API ~__stream_callback_data() {} // NOLINT(modernize-use-equals-default)
 };
 
 template <class _CallbackData>
