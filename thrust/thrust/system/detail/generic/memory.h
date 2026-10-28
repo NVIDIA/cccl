@@ -29,7 +29,7 @@ template <typename DerivedPolicy, typename Size>
 _CCCL_HOST_DEVICE void malloc(thrust::execution_policy<DerivedPolicy>&, Size);
 
 template <typename T, typename DerivedPolicy>
-_CCCL_HOST_DEVICE thrust::pointer<T, DerivedPolicy> malloc(thrust::execution_policy<DerivedPolicy>& s, std::size_t n);
+_CCCL_HOST_DEVICE thrust::pointer<T, DerivedPolicy> malloc(thrust::execution_policy<DerivedPolicy>& exec, std::size_t n);
 
 template <typename DerivedPolicy, typename Pointer>
 _CCCL_HOST_DEVICE void free(thrust::execution_policy<DerivedPolicy>&, Pointer);
