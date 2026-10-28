@@ -296,7 +296,8 @@ private:
     for (segment_id_t step = start; step > 0; step >>= 1)
     {
       const segment_id_t new_segment_id = segment_id + (step - 1);
-      const segment_id_t cond           = is_it_past_this_segment(pos, new_segment_id, offset_size);
+      // NOLINTNEXTLINE(readability-suspicious-call-argument)
+      const segment_id_t cond = is_it_past_this_segment(pos, new_segment_id, offset_size);
 
       segment_id += cond * step;
     }

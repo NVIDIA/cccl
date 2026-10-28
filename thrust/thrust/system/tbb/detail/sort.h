@@ -107,10 +107,12 @@ void merge_sort(execution_policy<DerivedPolicy>& exec,
 
   if (inplace)
   {
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     thrust::merge(exec, first2, mid2, mid2, last2, first1, comp);
   }
   else
   {
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     thrust::merge(exec, first1, mid1, mid1, last1, first2, comp);
   }
 }
@@ -232,6 +234,7 @@ void merge_sort_by_key(
   }
   else
   {
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     thrust::merge_by_key(exec, first1, mid1, mid1, last1, first2, mid2, first3, first4, comp);
   }
 }
