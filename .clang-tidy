@@ -112,7 +112,6 @@ Checks:
   - '-readability-redundant-string-cstr'
   - '-readability-suspicious-call-argument'
   - '-readability-container-size-empty'
-  - '-readability-redundant-control-flow'
   - '-readability-avoid-const-params-in-decls'
   - '-readability-string-compare'
   - '-readability-inconsistent-declaration-parameter-name'
