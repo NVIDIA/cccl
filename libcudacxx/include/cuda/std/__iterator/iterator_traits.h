@@ -532,6 +532,11 @@ inline constexpr bool __has_random_access_traversal =
   __has_iterator_category_convertible_to<_Iter, random_access_iterator_tag>
   || __has_iterator_concept_convertible_to<_Iter, random_access_iterator_tag>;
 
+// in C++17 the standard does not yet know about the contiguous iterator concept, so we need to check for it explicitly
+template <class _Iter>
+_CCCL_CONCEPT __is_cpp17_contiguous_iterator = _CCCL_REQUIRES_EXPR((_Iter)) //
+  (typename(_ITER_CONCEPT<_Iter>), requires(is_convertible_v<_ITER_CONCEPT<_Iter>, contiguous_iterator_tag>));
+
 // __has_contiguous_traversal determines if an iterator is known by
 // libc++ to be contiguous, either because it advertises itself as such
 // (in C++20) or because it is a pointer type or a known trivial wrapper
@@ -542,7 +547,7 @@ inline constexpr bool __has_random_access_traversal =
 template <class _Iter>
 inline constexpr bool __has_contiguous_traversal =
   __has_iterator_category_convertible_to<_Iter, contiguous_iterator_tag>
-  || __has_iterator_concept_convertible_to<_Iter, contiguous_iterator_tag>;
+  || __has_iterator_concept_convertible_to<_Iter, contiguous_iterator_tag> || __is_cpp17_contiguous_iterator<_Iter>;
 
 // Any native pointer which is an iterator is also a contiguous iterator.
 template <class _Tp>
