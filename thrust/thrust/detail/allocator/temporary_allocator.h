@@ -51,12 +51,12 @@ public:
   using pointer   = typename super_t::pointer;
   using size_type = typename super_t::size_type;
 
-  inline _CCCL_HOST_DEVICE temporary_allocator(const temporary_allocator& other)
+  _CCCL_HOST_DEVICE temporary_allocator(const temporary_allocator& other)
       : super_t()
       , m_system(other.m_system)
   {}
 
-  inline _CCCL_HOST_DEVICE explicit temporary_allocator(thrust::execution_policy<System>& system)
+  _CCCL_HOST_DEVICE explicit temporary_allocator(thrust::execution_policy<System>& system)
       : super_t()
       , m_system(thrust::detail::derived_cast(system))
   {}
@@ -117,7 +117,7 @@ public:
     }
   }
 
-  _CCCL_HOST_DEVICE inline System& system()
+  _CCCL_HOST_DEVICE System& system()
   {
     return m_system;
   } // end system()

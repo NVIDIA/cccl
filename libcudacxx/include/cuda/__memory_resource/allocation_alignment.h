@@ -83,7 +83,7 @@ struct allocation_alignment_t
 _CCCL_GLOBAL_CONSTANT auto allocation_alignment = allocation_alignment_t{};
 
 //! @brief Returns true if \p __alignment is a power of two and not less than \p __min_alignment.
-_CCCL_HOST_DEVICE inline constexpr bool
+_CCCL_HOST_DEVICE constexpr bool
 __is_valid_allocation_alignment(::cuda::std::size_t __alignment, ::cuda::std::size_t __min_alignment) noexcept
 {
   return __alignment >= __min_alignment && __alignment != 0 && (__alignment & (__alignment - 1)) == 0;

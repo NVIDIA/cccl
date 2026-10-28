@@ -103,17 +103,17 @@ public:
   }; // end rebind
 
   /*! No-argument constructor has no effect. */
-  inline device_malloc_allocator() = default;
+  device_malloc_allocator() = default;
 
   /*! No-argument destructor has no effect. */
-  inline ~device_malloc_allocator() = default;
+  ~device_malloc_allocator() = default;
 
   /*! Copy constructor has no effect. */
-  inline device_malloc_allocator(device_malloc_allocator const&) = default;
+  device_malloc_allocator(device_malloc_allocator const&) = default;
 
   /*! Constructor from other \p device_malloc_allocator has no effect. */
   template <typename U>
-  _CCCL_HOST_DEVICE inline device_malloc_allocator(device_malloc_allocator<U> const&)
+  _CCCL_HOST_DEVICE device_malloc_allocator(device_malloc_allocator<U> const&)
   {}
 
   device_malloc_allocator& operator=(const device_malloc_allocator&) = default;
@@ -125,7 +125,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE inline pointer address(reference r)
+  _CCCL_HOST_DEVICE pointer address(reference r)
   {
     return &r;
   }
@@ -137,7 +137,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE inline const_pointer address(const_reference r)
+  _CCCL_HOST_DEVICE const_pointer address(const_reference r)
   {
     return &r;
   }
@@ -151,7 +151,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST inline pointer allocate(size_type cnt, const_pointer = const_pointer(static_cast<T*>(nullptr)))
+  _CCCL_HOST pointer allocate(size_type cnt, const_pointer = const_pointer(static_cast<T*>(nullptr)))
   {
     if (cnt > this->max_size())
     {
@@ -171,7 +171,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST inline void deallocate(pointer p, [[maybe_unused]] size_type cnt) noexcept
+  _CCCL_HOST void deallocate(pointer p, [[maybe_unused]] size_type cnt) noexcept
   {
     device_free(p);
   } // end deallocate()
@@ -179,7 +179,7 @@ public:
   /*! Returns the largest value \c n for which <tt>allocate(n)</tt> might succeed.
    *  \return The largest value \c n for which <tt>allocate(n)</tt> might succeed.
    */
-  inline size_type max_size() const
+  size_type max_size() const
   {
     return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T); // NOLINT(readability-redundant-parentheses)
   } // end max_size()
@@ -191,7 +191,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE inline bool operator==(device_malloc_allocator const&) const
+  _CCCL_HOST_DEVICE bool operator==(device_malloc_allocator const&) const
   {
     return true;
   }
@@ -203,7 +203,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE inline bool operator!=(device_malloc_allocator const& a) const
+  _CCCL_HOST_DEVICE bool operator!=(device_malloc_allocator const& a) const
   {
     return !operator==(a);
   }

@@ -772,12 +772,12 @@ private:
   }
 
 public:
-  friend inline cudaGraph_t ctx_to_graph(backend_ctx_untyped& ctx)
+  friend cudaGraph_t ctx_to_graph(backend_ctx_untyped& ctx)
   {
     return ctx.graph();
   }
 
-  friend inline size_t ctx_to_graph_stage(backend_ctx_untyped& ctx)
+  friend size_t ctx_to_graph_stage(backend_ctx_untyped& ctx)
   {
     return ctx.stage();
   }

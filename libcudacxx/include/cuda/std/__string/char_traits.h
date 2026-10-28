@@ -78,7 +78,7 @@ struct __cccl_char_traits_impl
     return ::cuda::std::__cccl_memcmp(__lhs, __rhs, __count);
   }
 
-  [[nodiscard]] _CCCL_API inline static size_t constexpr length(const char_type* __s) noexcept
+  [[nodiscard]] _CCCL_API static size_t constexpr length(const char_type* __s) noexcept
   {
     _CCCL_ASSERT(__s != nullptr, "char_traits::length: nullptr passed as an argument");
     return ::cuda::std::__cccl_strlen(__s);

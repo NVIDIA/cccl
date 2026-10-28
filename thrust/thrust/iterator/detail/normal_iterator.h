@@ -72,8 +72,7 @@ struct pointer_traits<THRUST_NS_QUALIFIER::detail::normal_iterator<Pointer>>
   template <typename U>
   using rebind = typename THRUST_NS_QUALIFIER::detail::rebind_pointer<pointer, U>::type;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline static pointer
-  pointer_to(Pointer& r) noexcept(noexcept(::cuda::std::addressof(r)))
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static pointer pointer_to(Pointer& r) noexcept(noexcept(::cuda::std::addressof(r)))
   {
     return static_cast<element_type*>(::cuda::std::addressof(r));
   }

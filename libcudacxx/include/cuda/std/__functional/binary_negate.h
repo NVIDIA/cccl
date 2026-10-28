@@ -41,8 +41,8 @@ public:
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
-  constexpr _CCCL_API inline bool operator()(const typename _Predicate::first_argument_type& __x,
-                                             const typename _Predicate::second_argument_type& __y) const
+  constexpr _CCCL_API bool operator()(const typename _Predicate::first_argument_type& __x,
+                                      const typename _Predicate::second_argument_type& __y) const
   {
     return !__pred_(__x, __y);
   }

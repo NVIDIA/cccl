@@ -31,12 +31,12 @@ struct cross_system : execution_policy<cross_system<Sys1, Sys2>>
   policy1& sys1;
   policy2& sys2;
 
-  inline _CCCL_HOST_DEVICE cross_system(policy1& sys1, policy2& sys2)
+  _CCCL_HOST_DEVICE cross_system(policy1& sys1, policy2& sys2)
       : sys1(sys1)
       , sys2(sys2)
   {}
 
-  inline _CCCL_HOST_DEVICE cross_system<Sys2, Sys1> rotate() const
+  _CCCL_HOST_DEVICE cross_system<Sys2, Sys1> rotate() const
   {
     return cross_system<Sys2, Sys1>(sys2, sys1);
   }

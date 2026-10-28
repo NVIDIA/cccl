@@ -167,7 +167,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT negate : __unary_function<_Tp, _Tp>
 {
   using __result_type = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  constexpr _CCCL_API inline _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x)
+  constexpr _CCCL_API _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x)
   {
     return -__x;
   }
@@ -179,8 +179,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT negate<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
-  constexpr _CCCL_API inline auto
-  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __x) noexcept(noexcept(-::cuda::std::forward<_Tp>(__x)))
+  constexpr _CCCL_API auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __x) noexcept(noexcept(-::cuda::std::forward<_Tp>(__x)))
     -> decltype(-::cuda::std::forward<_Tp>(__x))
   {
     return -::cuda::std::forward<_Tp>(__x);
@@ -220,7 +219,7 @@ template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_not : __unary_function<_Tp, _Tp>
 {
   _CCCL_EXEC_CHECK_DISABLE
-  constexpr _CCCL_API inline _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x)
+  constexpr _CCCL_API _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x)
   {
     return ~__x;
   }
@@ -232,8 +231,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_not<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
-  constexpr _CCCL_API inline auto
-  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __x) noexcept(noexcept(~::cuda::std::forward<_Tp>(__x)))
+  constexpr _CCCL_API auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __x) noexcept(noexcept(~::cuda::std::forward<_Tp>(__x)))
     -> decltype(~::cuda::std::forward<_Tp>(__x))
   {
     return ~::cuda::std::forward<_Tp>(__x);
@@ -246,7 +244,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_or : __binary_function<_Tp, _Tp, _Tp>
 {
   using __result_type = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  constexpr _CCCL_API inline _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
+  constexpr _CCCL_API _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
     return __x | __y;
   }
@@ -496,8 +494,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_not<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
-  constexpr _CCCL_API inline auto
-  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __x) noexcept(noexcept(!::cuda::std::forward<_Tp>(__x)))
+  constexpr _CCCL_API auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __x) noexcept(noexcept(!::cuda::std::forward<_Tp>(__x)))
     -> decltype(!::cuda::std::forward<_Tp>(__x))
   {
     return !::cuda::std::forward<_Tp>(__x);

@@ -55,7 +55,7 @@ struct gozer
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T>
-  inline _CCCL_HOST_DEVICE void operator()(T& x) noexcept
+  _CCCL_HOST_DEVICE void operator()(T& x) noexcept
   {
     x.~T();
   }

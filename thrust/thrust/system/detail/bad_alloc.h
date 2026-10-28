@@ -24,7 +24,7 @@ namespace system::detail
 class bad_alloc : public std::bad_alloc
 {
 public:
-  inline bad_alloc(const std::string& w)
+  bad_alloc(const std::string& w)
       : std::bad_alloc()
       , m_what(std::bad_alloc::what())
   {
@@ -32,9 +32,9 @@ public:
     m_what += w;
   } // end bad_alloc()
 
-  inline ~bad_alloc() noexcept override = default;
+  ~bad_alloc() noexcept override = default;
 
-  inline const char* what() const noexcept override
+  const char* what() const noexcept override
   {
     return m_what.c_str();
   } // end what()

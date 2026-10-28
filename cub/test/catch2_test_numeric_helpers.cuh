@@ -98,13 +98,13 @@ std::integral_constant<bool, !std::is_same_v<WrappedItT, ItT>> //
   return {};
 }
 
-inline constexpr ExtendedFloatSum unwrap_op(std::true_type /* extended float */, ::cuda::std::plus<>) //
+constexpr ExtendedFloatSum unwrap_op(std::true_type /* extended float */, ::cuda::std::plus<>) //
 {
   return {};
 }
 
 template <bool V, class OpT>
-inline constexpr OpT unwrap_op(std::integral_constant<bool, V> /* base case */, OpT op)
+constexpr OpT unwrap_op(std::integral_constant<bool, V> /* base case */, OpT op)
 {
   return op;
 }
