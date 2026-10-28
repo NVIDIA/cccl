@@ -162,6 +162,13 @@ spelling (e.g. snake_case in CUB, or prefixed with `__` in libcu++/cudax) or usa
 as utility for other functions, not documented, etc.). The entity should be marked internal as
 appropriate.
 
+## api.no-new-cub-runtime-function (important, new or changed code in CUB, Thrust, tests, benchmarks, and examples)
+
+When a diff adds a new entry point (a function that did not exist before) annotated with
+`CUB_RUNTIME_FUNCTION`, flag it and use `_CCCL_API` instead. Existing functions keeping the
+annotation are fine, including when they are moved, renamed, copied, or split without changing their
+role. Candidate for a pre-commit grep.
+
 ## abi.missing-hide-from-abi (critical, inline functions in public headers whose behavior depends on the build configuration)
 
 <!-- provenance:
