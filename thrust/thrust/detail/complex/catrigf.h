@@ -220,7 +220,7 @@ _CCCL_HOST_DEVICE inline complex<float> casinhf(complex<float> z)
 
   if (x == 0 && y == 0)
   {
-    return (z);
+    return z;
   }
 
   raise_inexact();
@@ -228,7 +228,7 @@ _CCCL_HOST_DEVICE inline complex<float> casinhf(complex<float> z)
   const float SQRT_6_EPSILON = 8.4572793338e-4f; /*  0xddb3d7.0p-34 */
   if (ax < SQRT_6_EPSILON / 4 && ay < SQRT_6_EPSILON / 4)
   {
-    return (z);
+    return z;
   }
 
   do_hard_work(ax, ay, &rx, &B_is_usable, &B, &sqrt_A2my2, &new_y);
@@ -500,7 +500,7 @@ _CCCL_HOST_DEVICE inline complex<float> catanhf(complex<float> z)
   if (ax < SQRT_3_EPSILON / 2 && ay < SQRT_3_EPSILON / 2)
   {
     raise_inexact();
-    return (z);
+    return z;
   }
 
   if (ax == 1 && ay < FLT_EPSILON)
