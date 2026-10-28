@@ -206,7 +206,7 @@ struct test_resource
   static void operator delete(void* pv) noexcept
   {
     ++test_fixture_::counts_->delete_count;
-    return ::operator delete(pv);
+    ::operator delete(pv);
   }
 
   friend constexpr void get_property(const test_resource&, ::cuda::mr::host_accessible) noexcept {}
