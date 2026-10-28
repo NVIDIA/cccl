@@ -31,7 +31,7 @@ namespace
 template <typename Key>
 c2h::device_vector<uint32_t> get_arrow_filter_reference_bitset()
 {
-  static std::vector<c2h::device_vector<uint32_t>> const reference_bitsets{
+  static std::vector<std::vector<uint32_t>> const reference_bitsets{
     {
       3017764846,
       4219371383,
@@ -70,15 +70,15 @@ c2h::device_vector<uint32_t> get_arrow_filter_reference_bitset()
 
   if constexpr (cuda::std::is_same_v<Key, int32_t>)
   {
-    return reference_bitsets[0];
+    return c2h::device_vector<uint32_t>(reference_bitsets[0].begin(), reference_bitsets[0].end());
   }
   else if constexpr (cuda::std::is_same_v<Key, int64_t>)
   {
-    return reference_bitsets[1];
+    return c2h::device_vector<uint32_t>(reference_bitsets[1].begin(), reference_bitsets[1].end());
   }
   else if constexpr (cuda::std::is_same_v<Key, float>)
   {
-    return reference_bitsets[2];
+    return c2h::device_vector<uint32_t>(reference_bitsets[2].begin(), reference_bitsets[2].end());
   }
   else
   {
