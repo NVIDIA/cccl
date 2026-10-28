@@ -198,10 +198,8 @@ struct AgentRle
       {
         return !equality_op(first, second);
       }
-      else
-      {
-        return true;
-      }
+
+      return true;
     }
   };
 
@@ -884,7 +882,7 @@ struct AgentRle
       // Return running total (inclusive of this tile)
       return tile_aggregate;
     }
-    else
+
     {
       // Not first tile
 

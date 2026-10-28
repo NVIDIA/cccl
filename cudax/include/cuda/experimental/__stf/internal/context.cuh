@@ -1043,10 +1043,7 @@ public:
     {
       return *ctx;
     }
-    else
-    {
-      _CCCL_THROW(::std::runtime_error, "Payload does not hold graph_ctx");
-    }
+    _CCCL_THROW(::std::runtime_error, "Payload does not hold graph_ctx");
   }
 
   /**
