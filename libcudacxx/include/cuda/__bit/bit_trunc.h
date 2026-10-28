@@ -96,7 +96,7 @@ template <class _Tp>
 #if _CCCL_DEVICE_COMPILATION()
 template <class = void>
 [[nodiscard]]
-_CCCL_DEVICE_API ::cuda::std::uint32_t
+_CCCL_CONST _CCCL_DEVICE_API ::cuda::std::uint32_t
 __szext_clamp_sm70(const ::cuda::std::uint32_t __v, const ::cuda::std::uint32_t __n) noexcept
 {
   ::cuda::std::uint32_t __ret;

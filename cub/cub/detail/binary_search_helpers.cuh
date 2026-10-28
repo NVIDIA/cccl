@@ -23,7 +23,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::find
 {
-constexpr ::cuda::std::ptrdiff_t linear_lower_bound_threshold = 8;
+inline constexpr ::cuda::std::ptrdiff_t linear_lower_bound_threshold = 8;
 
 template <typename RangeIteratorT, typename RangeNumItemsT, typename CompareOpT, typename Mode>
 struct comp_wrapper_t

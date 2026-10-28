@@ -17,6 +17,7 @@
 #include <cub/block/block_merge_sort.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/__memory/uninitialized_array.h>
@@ -24,6 +25,7 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/pair.h>
 
 CUB_NAMESPACE_BEGIN

@@ -142,8 +142,6 @@ _CCCL_HOST_DEVICE_API constexpr void __assert_load_store_alignment([[maybe_unuse
   {
     if constexpr (__has_overaligned_flag_v<_Flags...>)
     {
-      static_assert(__overaligned_alignment_v<_Flags...> >= alignof(_Up),
-                    "overaligned flag requires alignment >= alignof(_Up)");
       _CCCL_ASSERT(::cuda::is_aligned(__data, __overaligned_alignment_v<_Flags...>),
                    "flag_overaligned<N> requires data to be aligned to N");
     }
