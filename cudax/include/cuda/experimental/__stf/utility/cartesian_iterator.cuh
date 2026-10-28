@@ -27,6 +27,7 @@
 
 namespace cuda::experimental::stf::reserved
 {
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0
 /**
  * @brief Implementation of a cartesian product of multiple iterators
@@ -95,6 +96,7 @@ UNITTEST("cartesian product") {
 
 #endif
 
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0
 class RangeIterator {
 public:

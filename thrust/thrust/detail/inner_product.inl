@@ -22,14 +22,6 @@
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(inner_product.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(inner_product.h)
 
-// Some build systems need a hint to know which files we could include
-#if 0
-#  include <thrust/system/cpp/detail/inner_product.h>
-#  include <thrust/system/cuda/detail/inner_product.h>
-#  include <thrust/system/omp/detail/inner_product.h>
-#  include <thrust/system/tbb/detail/inner_product.h>
-#endif
-
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE

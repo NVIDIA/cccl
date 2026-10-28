@@ -726,6 +726,7 @@ private:
     // fprintf(stderr, "Instantiate stage %ld\n", stage);
     display_graph_info(g);
 
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0
         ::std::string name = "stage" + ::std::to_string(stage) + ".dot";
         cudaGraphDebugDotPrint(g, name.c_str(), cudaGraphDebugDotFlagsVerbose);

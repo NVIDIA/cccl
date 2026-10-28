@@ -40,22 +40,6 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(get_value.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(iter_swap.h)
 
-// Some build systems need a hint to know which files we could include
-#if 0
-#  include <thrust/system/cpp/detail/assign_value.h>
-#  include <thrust/system/cpp/detail/get_value.h>
-#  include <thrust/system/cpp/detail/iter_swap.h>
-#  include <thrust/system/cuda/detail/assign_value.h>
-#  include <thrust/system/cuda/detail/get_value.h>
-#  include <thrust/system/cuda/detail/iter_swap.h>
-#  include <thrust/system/omp/detail/assign_value.h>
-#  include <thrust/system/omp/detail/get_value.h>
-#  include <thrust/system/omp/detail/iter_swap.h>
-#  include <thrust/system/tbb/detail/assign_value.h>
-#  include <thrust/system/tbb/detail/get_value.h>
-#  include <thrust/system/tbb/detail/iter_swap.h>
-#endif
-
 THRUST_NAMESPACE_BEGIN
 
 namespace detail

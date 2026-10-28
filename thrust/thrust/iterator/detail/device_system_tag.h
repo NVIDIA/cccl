@@ -15,14 +15,6 @@
 
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(execution_policy.h)
 
-// Some build systems need a hint to know which files we could include
-#if 0
-#  include <thrust/system/cpp/detail/execution_policy.h>
-#  include <thrust/system/cuda/detail/execution_policy.h>
-#  include <thrust/system/omp/detail/execution_policy.h>
-#  include <thrust/system/tbb/detail/execution_policy.h>
-#endif
-
 THRUST_NAMESPACE_BEGIN
 
 using device_system_tag = thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::tag;

@@ -23,14 +23,6 @@
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(for_each.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(for_each.h)
 
-// Some build systems need a hint to know which files we could include
-#if 0
-#  include <thrust/system/cpp/detail/for_each.h>
-#  include <thrust/system/cuda/detail/for_each.h>
-#  include <thrust/system/omp/detail/for_each.h>
-#  include <thrust/system/tbb/detail/for_each.h>
-#endif
-
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
