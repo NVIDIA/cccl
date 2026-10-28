@@ -1,0 +1,12 @@
+/* Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+ *
+ * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+ */
+
+#cuda-coop-cutlass-api-reference .sig-name,
+#cuda-coop-cutlass-api-reference .sig-prename,
+#cuda-coop-cutlass-api-reference .sig-param,
+#cuda-coop-cutlass-api-reference code.xref .pre {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
