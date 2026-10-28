@@ -23,7 +23,6 @@
 
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_base_of.h>
-#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__type_traits/type_set.h>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
