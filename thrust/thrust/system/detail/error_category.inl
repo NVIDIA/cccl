@@ -64,14 +64,14 @@ namespace detail
 class generic_error_category : public error_category
 {
 public:
-  inline generic_error_category() = default;
+  generic_error_category() = default;
 
-  inline const char* name() const override
+  const char* name() const override
   {
     return "generic";
   }
 
-  inline std::string message(int ev) const override
+  std::string message(int ev) const override
   {
     static const std::string unknown_err("Unknown error");
 
@@ -88,19 +88,19 @@ public:
 class system_error_category : public error_category
 {
 public:
-  inline system_error_category() = default;
+  system_error_category() = default;
 
-  inline const char* name() const override
+  const char* name() const override
   {
     return "system";
   }
 
-  inline std::string message(int ev) const override
+  std::string message(int ev) const override
   {
     return generic_category().message(ev);
   }
 
-  inline error_condition default_error_condition(int ev) const override
+  error_condition default_error_condition(int ev) const override
   {
     using namespace errc;
 

@@ -789,7 +789,7 @@ template <typename... _Args>
 namespace __detail
 {
 template <typename _Dimensions, typename... _Options>
-inline unsigned int constexpr kernel_config_count_attr_space(const kernel_config<_Dimensions, _Options...>&) noexcept
+unsigned int constexpr kernel_config_count_attr_space(const kernel_config<_Dimensions, _Options...>&) noexcept
 {
   return (0 + ... + _Options::needs_attribute_space);
 }

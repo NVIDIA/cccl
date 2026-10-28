@@ -223,7 +223,7 @@ public:
   /**
    * \brief Construct the cache.
    */
-  _CCCL_HOST inline PerDeviceAttributeCache()
+  _CCCL_HOST PerDeviceAttributeCache()
       : entries_()
   {
     _CCCL_ASSERT(detail::device_count() <= detail::max_devices, "");

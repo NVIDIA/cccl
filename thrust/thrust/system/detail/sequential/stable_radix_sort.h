@@ -144,7 +144,7 @@ struct bucket_functor
       , histogram(histogram)
   {}
 
-  inline _CCCL_HOST_DEVICE size_t operator()(KeyType key)
+  _CCCL_HOST_DEVICE size_t operator()(KeyType key)
   {
     const EncodedType x = encode(key);
 
