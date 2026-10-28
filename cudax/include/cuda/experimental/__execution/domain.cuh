@@ -30,6 +30,7 @@
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/type_list_operations.h>
 #include <cuda/std/__utility/undefined.h>
 
 #include <cuda/experimental/__detail/type_traits.cuh>

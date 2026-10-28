@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/type_list.h>
+#include <cuda/std/__type_traits/type_list_operations.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>

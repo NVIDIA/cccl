@@ -24,7 +24,7 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
-#include <cuda/std/__type_traits/type_list.h>
+#include <cuda/std/__type_traits/type_list_operations.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/diagnostics.cuh>

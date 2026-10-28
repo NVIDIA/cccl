@@ -25,9 +25,6 @@
 #include <cuda/std/__type_traits/is_enum.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_integral.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/remove_cv.h> // IWYU pragma: keep
-#include <cuda/std/__type_traits/type_list.h> // IWYU pragma: keep
-
-#include <cuda/std/__cccl/prologue.h>
 
 #if _CCCL_CHECK_BUILTIN(make_signed)
 #  define _CCCL_BUILTIN_MAKE_SIGNED(...) __make_signed(__VA_ARGS__)
@@ -42,6 +39,12 @@
 #if _CCCL_COMPILER(NVRTC, <, 13, 3)
 #  undef _CCCL_BUILTIN_MAKE_SIGNED
 #endif // _CCCL_COMPILER(NVRTC, <, 13, 3)
+
+#if !defined(_CCCL_BUILTIN_MAKE_SIGNED)
+#  include <cuda/std/__type_traits/type_list.h>
+#endif // !_CCCL_BUILTIN_MAKE_SIGNED
+
+#include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 

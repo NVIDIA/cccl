@@ -761,8 +761,8 @@ public:
 
 namespace __tuple_common_ref
 {
-// Equivalent to __type_pair in type_list.h, but reimplemented here because we don't want to
-// pull in 1k lines of templates just for this.
+// Equivalent to __type_pair in type_list_operations.h, but reimplemented here because we don't want to
+// pull in that header just for this.
 template <class _Tp, class _Up>
 struct __type_pair
 {
