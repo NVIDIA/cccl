@@ -59,13 +59,12 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // fabs
 
-// fabs for fp64 with integer instructions only
-// clears the sign bit as IEEE 754 abs, NaNs keep their payload and are not quieted
+// fabs for fp64 with integer instructions only: clears the sign bit as IEEE 754 abs, NaNs keep their payload and are
+// not quieted
 [[nodiscard]] _CCCL_DEVICE_API inline double __fp64_fabs_int(double __x) noexcept
 {
-  // On SM100+, the compiler recognizes clearing the sign bit of a 64-bit integer as fabs,
-  // which reintroduces fp64 instructions
-  // Clearing it in the high 32-bit half avoids that
+  // On SM100+, the compiler recognizes clearing the sign bit of a 64-bit integer as fabs, which reintroduces fp64
+  // instructions. Clearing it in the high 32-bit half avoids that
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_100,
     (return ::__hiloint2double(::__double2hiint(__x) & ::cuda::std::numeric_limits<int32_t>::max(),
