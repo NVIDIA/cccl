@@ -51,7 +51,6 @@ namespace detail
 template <typename T, typename Alloc>
 class vector_base
 {
-private:
   using storage_type = thrust::detail::contiguous_storage<T, Alloc>;
 
 public:

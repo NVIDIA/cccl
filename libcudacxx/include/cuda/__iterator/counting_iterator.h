@@ -121,7 +121,6 @@ template <class _Start,
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 class counting_iterator : public __counting_iterator_category<_Start>
 {
-private:
   _Start __value_ = _Start();
 
 public:

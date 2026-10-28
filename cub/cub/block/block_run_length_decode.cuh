@@ -136,7 +136,6 @@ class BlockRunLengthDecode
   // CONFIGS & TYPE ALIASES
   //---------------------------------------------------------------------
 
-private:
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 

@@ -140,7 +140,6 @@ CUB_NAMESPACE_BEGIN
 template <typename T, int LogicalWarpThreads = detail::warp_threads>
 class WarpScan
 {
-private:
   /******************************************************************************
    * Constants and type definitions
    ******************************************************************************/

@@ -106,7 +106,6 @@ class WarpMergeSort
                                     ItemsPerThread,
                                     WarpMergeSort<KeyT, ItemsPerThread, LogicalWarpThreads, ValueT>>
 {
-private:
   static constexpr bool IS_ARCH_WARP = LogicalWarpThreads == detail::warp_threads;
   static constexpr bool KEYS_ONLY    = ::cuda::std::is_same_v<ValueT, NullType>;
   static constexpr int TILE_SIZE     = ItemsPerThread * LogicalWarpThreads;

@@ -35,7 +35,6 @@ namespace chrono
 template <class _Duration>
 class hh_mm_ss
 {
-private:
   static_assert(__is_cuda_std_duration_v<_Duration>, "template parameter of hh_mm_ss must be a std::chrono::duration");
   using __common_type = common_type_t<_Duration, chrono::seconds>;
 

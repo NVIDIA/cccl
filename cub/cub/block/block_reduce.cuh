@@ -306,7 +306,6 @@ template <typename T,
           int WarpAggregateThreshold     = -1>
 class BlockReduce
 {
-private:
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 

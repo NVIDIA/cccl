@@ -41,7 +41,6 @@ struct allocator_mismatch_on_swap : std::runtime_error
 template <typename T, typename Alloc>
 class contiguous_storage
 {
-private:
   using alloc_traits = ::cuda::std::allocator_traits<Alloc>;
 
 public:

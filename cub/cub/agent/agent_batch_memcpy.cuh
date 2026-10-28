@@ -398,7 +398,6 @@ template <uint32_t NumItems,
           typename BackingUnitT = uint32_t>
 class bit_packed_counter
 {
-private:
   /// The minimum number of bits required to represent all values from [0, MaxItemValue]
   static constexpr uint32_t MIN_BITS_PER_ITEM =
     (MaxItemValue == 0U) ? 1U : cub::Log2<static_cast<int32_t>(MaxItemValue + 1U)>::VALUE;
@@ -505,7 +504,6 @@ template <typename AgentMemcpySmallBuffersPolicyT,
           bool IsMemcpy>
 class AgentBatchMemcpy
 {
-private:
   //---------------------------------------------------------------------
   // CONFIGS / CONSTANTS
   //---------------------------------------------------------------------

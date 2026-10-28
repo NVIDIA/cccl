@@ -45,7 +45,6 @@ namespace reserved
  */
 class buddy_allocator_metadata
 {
-private:
   /**
    * @brief Describes an available piece of memory
    */

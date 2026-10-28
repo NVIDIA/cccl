@@ -88,7 +88,6 @@ _CCCL_CONCEPT __is_bijection = _CCCL_REQUIRES_EXPR((_Bijection), const _Bijectio
 template <class _IndexType, class _Bijection>
 class shuffle_iterator
 {
-private:
   _Bijection __bijection_;
   _IndexType __current_;
 

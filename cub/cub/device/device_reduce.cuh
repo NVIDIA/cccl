@@ -1218,7 +1218,6 @@ public:
     return ArgMin(d_temp_storage, temp_storage_bytes, d_in, d_min_out, d_index_out, num_items, ::cuda::std::less{}, env);
   }
 
-public:
   //! @rst
   //! Finds the first device-wide minimum using the less-than (``<``) operator and also returns the index of that item.
   //!

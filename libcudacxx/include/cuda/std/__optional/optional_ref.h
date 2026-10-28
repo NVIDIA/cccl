@@ -50,7 +50,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 class optional<_Tp&>
 {
-private:
   using __raw_type     = remove_reference_t<_Tp>;
   __raw_type* __value_ = nullptr;
 

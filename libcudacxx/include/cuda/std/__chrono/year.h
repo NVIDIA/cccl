@@ -35,7 +35,6 @@ namespace chrono
 {
 class year
 {
-private:
   short __year_;
 
 public:

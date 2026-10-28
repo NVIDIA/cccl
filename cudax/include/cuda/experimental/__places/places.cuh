@@ -1027,7 +1027,6 @@ public:
   template <typename Fun>
   auto operator->*(Fun&& fun) const;
 
-public:
   exec_place(::std::shared_ptr<impl> pimpl)
       : pimpl(mv(pimpl))
   {}

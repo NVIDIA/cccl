@@ -77,7 +77,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _Tp, class... _Properties>
 class __uninitialized_async_buffer
 {
-private:
   static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
                 "The properties of cuda::__uninitialized_async_buffer must contain at least one execution space "
                 "property!");

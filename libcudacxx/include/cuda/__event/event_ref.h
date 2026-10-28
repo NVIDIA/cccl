@@ -40,7 +40,6 @@ class stream_ref;
 //! @brief An non-owning wrapper for an untimed `cudaEvent_t`.
 class event_ref
 {
-private:
   friend class event;
   friend class timed_event;
 

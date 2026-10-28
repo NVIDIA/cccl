@@ -40,7 +40,6 @@ struct synchronized_pool_resource : public memory_resource<typename Upstream::po
 
   using void_ptr = typename Upstream::pointer;
 
-public:
   /*! Get the default options for a pool. These are meant to be a sensible set of values for many use cases,
    *      and as such, may be tuned in the future. This function is exposed so that creating a set of options that are
    *      just a slight departure from the defaults is easy.

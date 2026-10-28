@@ -112,7 +112,6 @@ inline constexpr bool treat_as_floating_point_v = is_floating_point_v<_Rep>;
 template <class _Rep>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT duration_values
 {
-public:
   [[nodiscard]] _CCCL_API static constexpr _Rep zero() noexcept
   {
     return _Rep{0};

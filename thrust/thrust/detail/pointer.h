@@ -135,7 +135,6 @@ struct pointer_base
 template <typename Element, typename Tag, typename Reference, typename Derived>
 class pointer : public detail::pointer_base<Element, Tag, Reference, Derived>::type
 {
-private:
   using super_t      = typename detail::pointer_base<Element, Tag, Reference, Derived>::type;
   using derived_type = typename detail::pointer_base<Element, Tag, Reference, Derived>::derived_type;
 

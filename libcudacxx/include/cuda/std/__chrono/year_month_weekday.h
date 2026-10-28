@@ -241,7 +241,6 @@ operator-(const year_month_weekday& __lhs, const years& __rhs) noexcept
 
 class year_month_weekday_last
 {
-private:
   chrono::year __year_;
   chrono::month __month_;
   chrono::weekday_last __weekday_last_;

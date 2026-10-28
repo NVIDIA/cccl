@@ -37,7 +37,6 @@ class weekday_last;
 
 class weekday
 {
-private:
   unsigned char __weekday_;
 
   // https://howardhinnant.github.io/date_algorithms.html#weekday_from_days
@@ -183,7 +182,6 @@ public:
 
 class weekday_indexed
 {
-private:
   chrono::weekday __weekday_;
   unsigned char __idx_;
 
@@ -226,7 +224,6 @@ public:
 
 class weekday_last
 {
-private:
   chrono::weekday __weekday_;
 
 public:

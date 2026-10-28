@@ -42,7 +42,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _Tp>
 class __simple_vector
 {
-private:
   _Tp* __begin_      = nullptr;
   _Tp* __end_        = nullptr;
   size_t __capacity_ = 0;

@@ -148,7 +148,6 @@ template <class _Fn, class... _Iterators>
 template <class _Fn, class... _Iterators>
 class zip_transform_iterator
 {
-private:
   // Not a base because then the friend operators would be ambiguous
   ::cuda::std::__compressed_movable_box<::cuda::std::tuple<_Iterators...>, _Fn> __store_;
 

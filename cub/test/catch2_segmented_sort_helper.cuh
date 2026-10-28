@@ -96,7 +96,6 @@ struct short_key_verification_helper
   // Holding the histogram of the keys being sorted for verification
   c2h::host_vector<std::size_t> keys_histogram{};
 
-public:
   void prepare_verification_data(const c2h::device_vector<key_t>& in_keys)
   {
     const c2h::host_vector<key_t> h_in{in_keys};
@@ -138,7 +137,6 @@ public:
 template <typename KeyT>
 class segmented_verification_helper
 {
-private:
   using key_t = KeyT;
   const std::size_t sequence_length{};
 

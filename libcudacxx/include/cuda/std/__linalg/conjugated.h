@@ -45,7 +45,6 @@ namespace linalg
 template <class _NestedAccessor>
 class conjugated_accessor
 {
-private:
   using __nested_element_type = typename _NestedAccessor::element_type;
   using __nc_result_type      = decltype(conj_if_needed(::cuda::std::declval<__nested_element_type>()));
 

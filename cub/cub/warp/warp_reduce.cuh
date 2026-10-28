@@ -753,7 +753,6 @@ public:
 template <typename T>
 class WarpReduce<T, 1>
 {
-private:
   using _TempStorage = cub::NullType;
 
 public:

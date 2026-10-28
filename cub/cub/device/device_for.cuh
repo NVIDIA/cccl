@@ -186,7 +186,6 @@ struct DeviceFor
     return __for_each_n(first, num_items, op, env);
   }
 
-public:
   //! @rst
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++

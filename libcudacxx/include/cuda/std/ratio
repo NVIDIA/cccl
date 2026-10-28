@@ -232,7 +232,6 @@ struct __ratio_multiply
   static const intmax_t __gcd_n1_d2 = __static_gcd<_R1::num, _R2::den>::value;
   static const intmax_t __gcd_d1_n2 = __static_gcd<_R1::den, _R2::num>::value;
 
-public:
   using type = typename ratio<__ll_mul<_R1::num / __gcd_n1_d2, _R2::num / __gcd_d1_n2>::value,
                               __ll_mul<_R2::den / __gcd_n1_d2, _R1::den / __gcd_d1_n2>::value>::type;
 };
@@ -247,7 +246,6 @@ struct __ratio_divide
   static const intmax_t __gcd_n1_n2 = __static_gcd<_R1::num, _R2::num>::value;
   static const intmax_t __gcd_d1_d2 = __static_gcd<_R1::den, _R2::den>::value;
 
-public:
   using type = typename ratio<__ll_mul<_R1::num / __gcd_n1_n2, _R2::den / __gcd_d1_d2>::value,
                               __ll_mul<_R2::num / __gcd_n1_n2, _R1::den / __gcd_d1_d2>::value>::type;
 };
@@ -262,7 +260,6 @@ struct __ratio_add
   static const intmax_t __gcd_n1_n2 = __static_gcd<_R1::num, _R2::num>::value;
   static const intmax_t __gcd_d1_d2 = __static_gcd<_R1::den, _R2::den>::value;
 
-public:
   using type =
     typename ratio_multiply<ratio<__gcd_n1_n2, _R1::den / __gcd_d1_d2>,
                             ratio<__ll_add<__ll_mul<_R1::num / __gcd_n1_n2, _R2::den / __gcd_d1_d2>::value,
@@ -280,7 +277,6 @@ struct __ratio_subtract
   static const intmax_t __gcd_n1_n2 = __static_gcd<_R1::num, _R2::num>::value;
   static const intmax_t __gcd_d1_d2 = __static_gcd<_R1::den, _R2::den>::value;
 
-public:
   using type =
     typename ratio_multiply<ratio<__gcd_n1_n2, _R1::den / __gcd_d1_d2>,
                             ratio<__ll_sub<__ll_mul<_R1::num / __gcd_n1_n2, _R2::den / __gcd_d1_d2>::value,

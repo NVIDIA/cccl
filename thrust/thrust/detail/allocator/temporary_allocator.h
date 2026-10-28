@@ -42,7 +42,6 @@ namespace detail
 template <typename T, typename System>
 class temporary_allocator : public thrust::detail::tagged_allocator<T, System, thrust::pointer<T, System>>
 {
-private:
   using super_t = thrust::detail::tagged_allocator<T, System, thrust::pointer<T, System>>;
 
   System& m_system;

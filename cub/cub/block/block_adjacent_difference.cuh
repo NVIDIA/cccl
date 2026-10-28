@@ -101,7 +101,6 @@ CUB_NAMESPACE_BEGIN
 template <typename T, int BlockDimX, int BlockDimY = 1, int BlockDimZ = 1>
 class BlockAdjacentDifference
 {
-private:
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 

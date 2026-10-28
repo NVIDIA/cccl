@@ -45,7 +45,6 @@ public:
     return array.get();
   }
 
-public:
   size_t ghost_size;
   size_t block_size;
   std::unique_ptr<T[]> array;

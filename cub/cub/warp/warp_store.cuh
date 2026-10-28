@@ -259,7 +259,6 @@ class WarpStore
 
   static constexpr bool IS_ARCH_WARP = LogicalWarpThreads == detail::warp_threads;
 
-private:
   /// Store helper
   template <WarpStoreAlgorithm Algorithm, int DUMMY>
   struct StoreInternal;
