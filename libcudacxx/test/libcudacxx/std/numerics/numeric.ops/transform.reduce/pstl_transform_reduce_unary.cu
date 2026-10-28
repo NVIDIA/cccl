@@ -54,14 +54,14 @@ void test_transform_reduce(const Policy policy, Iter input1)
 
   { // With matching operators
     auto res = cuda::std::transform_reduce(
-      policy, input1, ::cuda::std::next(input1, size), int{42}, cuda::std::plus<>{}, plus_one<int>{});
+      policy, input1, ::cuda::std::next(input1, size), 42, cuda::std::plus<>{}, plus_one<int>{});
     static_assert(cuda::std::is_same_v<decltype(res), int>);
     CHECK(res == expected);
   }
 
   { // With converting operators
     auto res = cuda::std::transform_reduce(
-      policy, input1, ::cuda::std::next(input1, size), int{42}, cuda::std::plus<int64_t>{}, plus_one<int64_t>{});
+      policy, input1, ::cuda::std::next(input1, size), 42, cuda::std::plus<int64_t>{}, plus_one<int64_t>{});
     static_assert(cuda::std::is_same_v<decltype(res), int>);
     CHECK(res == expected);
   }

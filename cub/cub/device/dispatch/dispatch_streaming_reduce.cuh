@@ -230,8 +230,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
     max_offset_size - (max_offset_size % PerPartitionOffsetT{4096});
 
   // Whether the given number of items fits into a single partition
-  const bool is_single_partition =
-    static_cast<GlobalOffsetT>(max_partition_size) >= static_cast<GlobalOffsetT>(num_items);
+  const bool is_single_partition = static_cast<GlobalOffsetT>(max_partition_size) >= num_items;
 
   // The largest partition size ever encountered
   const auto largest_partition_size =
@@ -312,7 +311,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
       (remaining_items - current_num_items) <= static_cast<GlobalOffsetT>(max_partition_size);
     accumulating_out_op.advance(current_num_items, next_partition_is_last);
     current_partition_offset += static_cast<GlobalOffsetT>(max_partition_size);
-  } while (current_partition_offset < static_cast<GlobalOffsetT>(num_items));
+  } while (current_partition_offset < num_items);
 
   return cudaSuccess;
 }

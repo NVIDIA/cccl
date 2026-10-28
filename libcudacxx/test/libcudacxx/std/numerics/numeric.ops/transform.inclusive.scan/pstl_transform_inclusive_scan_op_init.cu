@@ -70,7 +70,7 @@ void test_inclusive_scan(
   cuda::std::fill(policy, output.begin(), output.end(), -1);
   { // same output type
     auto res = cuda::std::transform_inclusive_scan(
-      policy, input.begin(), input.end(), output.begin(), cuda::std::plus<int>{}, plus_two<int>{}, int{42});
+      policy, input.begin(), input.end(), output.begin(), cuda::std::plus<int>{}, plus_two<int>{}, 42);
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }
@@ -78,7 +78,7 @@ void test_inclusive_scan(
   cuda::std::fill(policy, output.begin(), output.end(), -1);
   { // same output type, conversion with binary op
     auto res = cuda::std::transform_inclusive_scan(
-      policy, input.begin(), input.end(), output.begin(), cuda::std::plus<long>{}, plus_two<int>{}, int{42});
+      policy, input.begin(), input.end(), output.begin(), cuda::std::plus<long>{}, plus_two<int>{}, 42);
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }
@@ -86,7 +86,7 @@ void test_inclusive_scan(
   cuda::std::fill(policy, output.begin(), output.end(), -1);
   { // same output type, conversion with unary op
     auto res = cuda::std::transform_inclusive_scan(
-      policy, input.begin(), input.end(), output.begin(), cuda::std::plus<int>{}, plus_two<long>{}, int{42});
+      policy, input.begin(), input.end(), output.begin(), cuda::std::plus<int>{}, plus_two<long>{}, 42);
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }
@@ -124,7 +124,7 @@ void test_inclusive_scan(
       output.begin(),
       cuda::std::plus<int>{},
       plus_two<int>{},
-      int{42});
+      42);
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }
@@ -150,7 +150,7 @@ void test_inclusive_scan(
       output.begin(),
       cuda::std::plus<long>{},
       plus_two<int>{},
-      int{42});
+      42);
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }
@@ -163,7 +163,7 @@ void test_inclusive_scan(
       output.begin(),
       cuda::std::plus<int>{},
       plus_two<long>{},
-      int{42});
+      42);
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }

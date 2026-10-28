@@ -189,7 +189,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
   if (::cuda::std::is_sufficiently_aligned<alignof(Vector)>(block_ptr))
   {
     // Alias global pointer
-    Vector* block_ptr_vectors = reinterpret_cast<Vector*>(const_cast<T*>(block_ptr));
+    Vector* block_ptr_vectors = reinterpret_cast<Vector*>(block_ptr);
 
     // Alias pointers (use "raw" array here which should get optimized away to prevent conservative PTXAS lmem spilling)
     Vector raw_vector[VECTORS_PER_THREAD];

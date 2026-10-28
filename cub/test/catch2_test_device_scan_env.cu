@@ -180,7 +180,7 @@ CUB_TEST("Device scan exclusive-scan can be tuned", "[scan][device]", CUB_SMALL,
   auto num_items = 3;
   auto d_in      = cuda::constant_iterator(1);
   auto d_out     = c2h::device_vector<int>(num_items);
-  auto init      = int{42};
+  auto init      = 42;
 
   // We are expecting that `unrelated_tuning` is ignored
   auto env = cuda::execution::tune(scan_tuning<target_block_size>{}, unrelated_tuning{});

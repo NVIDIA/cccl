@@ -71,7 +71,7 @@ void test_exclusive_scan(
 
   { // same init type
     auto res = cuda::std::transform_exclusive_scan(
-      policy, input.begin(), input.end(), output.begin(), int{42}, cuda::std::plus<int>{}, plus_two<int>{});
+      policy, input.begin(), input.end(), output.begin(), 42, cuda::std::plus<int>{}, plus_two<int>{});
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }
@@ -79,7 +79,7 @@ void test_exclusive_scan(
   cuda::std::fill(policy, output.begin(), output.end(), -1);
   { // same init type, convertible binary op
     auto res = cuda::std::transform_exclusive_scan(
-      policy, input.begin(), input.end(), output.begin(), int{42}, cuda::std::plus<long>{}, plus_two<int>{});
+      policy, input.begin(), input.end(), output.begin(), 42, cuda::std::plus<long>{}, plus_two<int>{});
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }
@@ -87,7 +87,7 @@ void test_exclusive_scan(
   cuda::std::fill(policy, output.begin(), output.end(), -1);
   { // same init type, convertible binary op
     auto res = cuda::std::transform_exclusive_scan(
-      policy, input.begin(), input.end(), output.begin(), int{42}, cuda::std::plus<int>{}, plus_two<long>{});
+      policy, input.begin(), input.end(), output.begin(), 42, cuda::std::plus<int>{}, plus_two<long>{});
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }
@@ -123,7 +123,7 @@ void test_exclusive_scan(
       cuda::counting_iterator{short{1}},
       cuda::counting_iterator{short{size + 1}},
       output.begin(),
-      int{42},
+      42,
       cuda::std::plus<int>{},
       plus_two<int>{});
     CHECK(res == output.end());

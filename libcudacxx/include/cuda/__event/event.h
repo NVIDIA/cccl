@@ -156,7 +156,7 @@ private:
       : event_ref(::cudaEvent_t{})
   {
     [[maybe_unused]] const __ensure_current_context __ctx_setter(__device);
-    __event_ = ::cuda::__driver::__eventCreate(static_cast<unsigned>(__flags));
+    __event_ = ::cuda::__driver::__eventCreate(__flags);
   }
 };
 

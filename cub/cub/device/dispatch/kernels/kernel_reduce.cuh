@@ -437,7 +437,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   }
 
   // Consume input tiles
-  AccumT block_aggregate = AgentReduceT(temp_storage, d_in, reduction_op, transform_op).ConsumeRange(int(0), num_items);
+  AccumT block_aggregate = AgentReduceT(temp_storage, d_in, reduction_op, transform_op).ConsumeRange(0, num_items);
 
   // Output result
   if (threadIdx.x == 0)

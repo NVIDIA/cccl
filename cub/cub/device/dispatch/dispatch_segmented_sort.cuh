@@ -518,8 +518,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedSort") Dis
     {
       constexpr auto num_segments_per_invocation_limit =
         static_cast<global_segment_offset_t>(::cuda::std::numeric_limits<int>::max());
-      auto const max_num_segments_per_invocation = static_cast<global_segment_offset_t>(
-        (::cuda::std::min) (static_cast<global_segment_offset_t>(num_segments), num_segments_per_invocation_limit));
+      auto const max_num_segments_per_invocation =
+        static_cast<global_segment_offset_t>((::cuda::std::min) (num_segments, num_segments_per_invocation_limit));
 
       large_and_medium_segments_indices.grow(max_num_segments_per_invocation);
       small_segments_indices.grow(max_num_segments_per_invocation);
@@ -780,8 +780,7 @@ private:
       static_cast<global_segment_offset_t>(::cuda::std::numeric_limits<int>::max());
 
     // We repeatedly invoke the partitioning and sorting kernels until all segments are processed.
-    const global_segment_offset_t num_invocations =
-      ::cuda::ceil_div(static_cast<global_segment_offset_t>(num_segments), num_segments_per_invocation_limit);
+    const global_segment_offset_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation_limit);
     for (global_segment_offset_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
     {
       const global_segment_offset_t current_seg_offset = invocation_index * num_segments_per_invocation_limit;
@@ -1035,8 +1034,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_
   constexpr auto num_segments_per_invocation_limit =
     static_cast<global_segment_offset_t>(::cuda::std::numeric_limits<int>::max());
 
-  const global_segment_offset_t num_invocations =
-    ::cuda::ceil_div(static_cast<global_segment_offset_t>(num_segments), num_segments_per_invocation_limit);
+  const global_segment_offset_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation_limit);
   for (global_segment_offset_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
   {
     const global_segment_offset_t current_seg_offset = invocation_index * num_segments_per_invocation_limit;
@@ -1382,8 +1380,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     {
       constexpr auto num_segments_per_invocation_limit =
         static_cast<global_segment_offset_t>(::cuda::std::numeric_limits<int>::max());
-      auto const max_num_segments_per_invocation = static_cast<global_segment_offset_t>(
-        (::cuda::std::min) (static_cast<global_segment_offset_t>(num_segments), num_segments_per_invocation_limit));
+      auto const max_num_segments_per_invocation =
+        static_cast<global_segment_offset_t>((::cuda::std::min) (num_segments, num_segments_per_invocation_limit));
 
       large_and_medium_segments_indices.grow(max_num_segments_per_invocation);
       small_segments_indices.grow(max_num_segments_per_invocation);
