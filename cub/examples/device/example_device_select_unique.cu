@@ -81,7 +81,7 @@ void Initialize(int* h_in, int num_items, int max_segment)
 /**
  * Solve unique problem
  */
-int Solve(int* h_in, int* h_reference, int num_items)
+int Solve(const int* h_in, int* h_reference, int num_items)
 {
   int num_selected = 0;
   if (num_items > 0)

@@ -86,7 +86,11 @@ void launch(ActionT action, Args... args)
 
 template <class ActionT, class... Args>
 __global__ void device_side_api_launch_kernel(
-  std::uint8_t* d_temp_storage, std::size_t* temp_storage_bytes, cudaError_t* d_error, ActionT action, Args... args)
+  std::uint8_t* d_temp_storage,
+  std::size_t* temp_storage_bytes, // NOLINT(readability-non-const-parameter)
+  cudaError_t* d_error,
+  ActionT action,
+  Args... args)
 {
   // The clang-tidy job uses clang-20 but clang does not support CUDA dynamic parallelism until
   // clang-22. Since we are inside clang-tidy we don't actually care whether the kernel is

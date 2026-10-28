@@ -303,7 +303,7 @@ struct set_bit_flag_for_write_op
   static constexpr auto bits_per_element = 8 * sizeof(std::uint32_t);
 
   template <typename OffsetT>
-  __host__ __device__ void set_bit_flag(std::uint32_t* d_flags, OffsetT index)
+  __host__ __device__ void set_bit_flag(std::uint32_t* d_flags, OffsetT index) // NOLINT(readability-non-const-parameter)
   {
     // Set the n-th bit from a given flags array
     OffsetT uint_index     = index / static_cast<OffsetT>(bits_per_element);

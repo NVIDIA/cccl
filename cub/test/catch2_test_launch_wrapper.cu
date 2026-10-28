@@ -38,7 +38,7 @@ struct cub_api_example_t
 
   template <class T, class KernelT>
   CUB_RUNTIME_FUNCTION static cudaError_t invoke(
-    std::uint8_t* d_temp_storage,
+    const std::uint8_t* d_temp_storage,
     std::size_t& temp_storage_bytes,
     KernelT kernel,
     const T* d_in,
