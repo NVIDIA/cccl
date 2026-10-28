@@ -7,6 +7,13 @@
 from ._compiler._runtime import validate_cutlass_runtime
 from ._group_load_store import load, store
 from ._group_reduce import reduce, sum
+from ._group_scan import (
+    exclusive_scan,
+    exclusive_sum,
+    inclusive_scan,
+    inclusive_sum,
+    scan,
+)
 from ._temp_storage import TempStorage
 from ._thread_data import ThreadData
 from ._thread_group import (
@@ -22,6 +29,11 @@ from ._thread_group import (
 from ._typing import TempStorageLike, ThreadDataLike
 
 __all__ = [
+    "scan",
+    "exclusive_scan",
+    "inclusive_scan",
+    "exclusive_sum",
+    "inclusive_sum",
     "reduce",
     "sum",
     "load",
