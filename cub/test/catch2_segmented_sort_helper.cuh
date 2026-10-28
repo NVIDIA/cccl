@@ -352,12 +352,7 @@ struct segment_checker
       return true;
     }
 
-    if (!this->check_results(segment_begin, segment_size, ValueT{}))
-    {
-      return false;
-    }
-
-    return true;
+    return this->check_results(segment_begin, segment_size, ValueT{});
   }
 
 private:

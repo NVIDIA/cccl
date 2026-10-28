@@ -46,7 +46,7 @@ struct _ConstructorConstraint
 template <bool _Trait>
 struct _AssignmentConstraint
 {
-  static constexpr bool __can_assign = _Trait == true;
+  static constexpr bool __can_assign = _Trait;
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD

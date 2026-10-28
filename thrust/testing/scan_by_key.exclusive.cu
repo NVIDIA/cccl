@@ -92,7 +92,7 @@ struct head_flag_predicate
   template <typename T>
   _CCCL_HOST_DEVICE bool operator()(const T&, const T& b)
   {
-    return b ? false : true;
+    return !static_cast<bool>(b);
   }
 };
 

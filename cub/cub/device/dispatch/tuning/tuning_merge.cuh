@@ -116,7 +116,7 @@ struct policy_selector
     {
       const bool should_bl2sh_keys = key_size != 8;
       const bool should_bl2sh_pairs =
-        !(key_size == 8 && value_size == 8)
+        (key_size != 8 || value_size != 8)
         && (key_size != 16 || (key_size == 16 && value_size == 1 && offset_size == 4)
             || (key_size == 16 && value_size == 8));
       // TODO(bgruber): consider not using a combined should_bl2sh flag. Kept to avoid SASS diffs
