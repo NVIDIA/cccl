@@ -24,11 +24,13 @@ jobs:
       contains(github.event.comment.body, '/sass diff ok')
     runs-on: ubuntu-slim
 
+    # Mutations disable retries because a server error can follow a successful write.
     steps:
       - name: Validate approval command
         id: request
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
+          retries: 5
           script: |
             const { comment, issue } = context.payload;
             core.info(`Validate comment ${comment.id} from @${comment.user.login} on PR #${issue.number}.`);
@@ -59,6 +61,7 @@ jobs:
               ) {
                 core.info("Ignore command: the commit label or link destination does not match the expected commit.");
                 await github.rest.issues.createComment({
+                  request: { retries: 0 },
                   ...context.repo,
                   issue_number: issue.number,
                   body:
@@ -73,6 +76,7 @@ jobs:
               // Give command syntax feedback before checking approval eligibility.
               if (body === "/sass diff ok") {
                 await github.rest.issues.createComment({
+                  request: { retries: 0 },
                   ...context.repo,
                   issue_number: issue.number,
                   body:
@@ -97,6 +101,7 @@ jobs:
 
             // Acknowledge that we have received the comment
             await github.rest.reactions.createForIssueComment({
+              request: { retries: 0 },
               ...context.repo,
               comment_id: context.payload.comment.id,
               content: "eyes",
@@ -108,6 +113,7 @@ jobs:
                 "on your own pull request :raised_eyebrow:. " +
                 "Please ask another CCCL developer to approve the SASS diff.";
               await github.rest.issues.createComment({
+                request: { retries: 0 },
                 ...context.repo,
                 issue_number: issue.number,
                 body,
@@ -125,6 +131,7 @@ jobs:
         id: authorization
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
+          retries: 5
           script: |
             const username = context.payload.comment.user.login;
             core.info(`Check repository access for @${username}.`);
@@ -150,6 +157,7 @@ jobs:
                 "Please ask someone with that access to review the SASS diffs.";
 
               await github.rest.issues.createComment({
+                request: { retries: 0 },
                 ...context.repo,
                 issue_number: context.payload.issue.number,
                 body,
@@ -164,6 +172,7 @@ jobs:
         env:
           SHA: ${{ steps.request.outputs.sha }}
         with:
+          retries: 5
           script: |
             const { comment, issue } = context.payload;
 
@@ -199,7 +208,8 @@ jobs:
               ...context.repo,
               run_id: run.id,
               filter: "latest",
-              per_page: 100,
+              // Pages of 100 jobs can cause GitHub to return HTTP 502.
+              per_page: 50,
             });
 
             // This name must match the approval job in ci-workflow-pull-request.yml.
@@ -212,6 +222,7 @@ jobs:
               core.info("The SASS approval job is not ready. Ask the reviewer to comment again.");
 
               await github.rest.issues.createComment({
+                request: { retries: 0 },
                 ...context.repo,
                 issue_number: issue.number,
                 body:
@@ -243,6 +254,7 @@ jobs:
           CHECK_RUN_ID: ${{ steps.job.outputs.check_run_id }}
           SHA: ${{ steps.request.outputs.sha }}
         with:
+          retries: 5
           script: |
             const { comment, issue } = context.payload;
             const checkRunId = process.env.CHECK_RUN_ID;
@@ -294,6 +306,7 @@ jobs:
 
             if (!report || report.isMinimized) {
               await github.rest.issues.createComment({
+                request: { retries: 0 },
                 ...context.repo,
                 issue_number: issue.number,
                 body:
@@ -330,6 +343,7 @@ jobs:
         env:
           JOB_ID: ${{ steps.job.outputs.job_id }}
         with:
+          retries: 5
           script: |
             const { comment } = context.payload;
             const job_id = Number(process.env.JOB_ID);
@@ -339,6 +353,7 @@ jobs:
 
             try {
               await github.rest.actions.reRunJobForWorkflowRun({
+                request: { retries: 0 },
                 ...context.repo,
                 job_id,
               });
@@ -347,6 +362,7 @@ jobs:
                 // The artifact records approval even when GitHub rejects the rerun.
                 core.info("CI is currently in progress, so rerun request returned 403. User will manually have to rerun CI once it finishes.");
                 await github.rest.issues.createComment({
+                  request: { retries: 0 },
                   ...context.repo,
                   issue_number: context.payload.issue.number,
                   body:
@@ -366,10 +382,12 @@ jobs:
         if: success() && (steps.approval.outputs.accepted == 'true' || steps.job.outputs.ci_passed == 'true')
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
+          retries: 5
           script: |
             const { comment } = context.payload;
 
             await github.rest.reactions.createForIssueComment({
+              request: { retries: 0 },
               ...context.repo,
               comment_id: comment.id,
               content: "+1",

@@ -26,6 +26,7 @@
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/type_list_operations.h>
 #include <cuda/std/optional>
 #include <cuda/std/tuple>
 

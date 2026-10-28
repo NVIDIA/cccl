@@ -21,6 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/type_list.h>
+
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
