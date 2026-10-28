@@ -3,7 +3,7 @@
 
 // Focused checks for capacity mapping, ID partitioning, and the internal bounded GroupMerge sorting path.
 
-#include <cub/device/dispatch/dispatch_segmented_sort_lrb.cuh>
+#include <cub/device/dispatch/dispatch_binned_segmented_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
 
 #include <algorithm>
