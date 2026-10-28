@@ -54,6 +54,7 @@ Checks:
   - '-modernize-type-traits'
 
   - 'readability-*'
+  - '-readability-uppercase-literal-suffix'
   - '-readability-avoid-nested-conditional-operator'
   # handled by clang-format
   - '-readability-braces-around-statements'
