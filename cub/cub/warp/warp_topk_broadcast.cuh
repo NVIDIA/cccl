@@ -86,26 +86,149 @@ class WarpTopKBroadcast
     }
   }
 
+  _CCCL_DEVICE_API static void compare_exchange(KeyT& a, KeyT& b) noexcept
+  {
+    const KeyT high = maximum(a, b);
+    const KeyT low  = minimum(a, b);
+    a               = high;
+    b               = low;
+  }
+
   template <int Count>
   _CCCL_DEVICE_API static void sort(KeyT (&keys)[Count]) noexcept
   {
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int size = 2; size <= Count; size *= 2)
+    // Small sorting networks from Bert Dobbelaere's public network list:
+    // https://bertdobbelaere.github.io/sorting_networks.html
+    // These match the local networks used by QuACK for its top-k selection.
+    if constexpr (Count == 4)
+    {
+      compare_exchange(keys[0], keys[2]);
+      compare_exchange(keys[1], keys[3]);
+
+      compare_exchange(keys[0], keys[1]);
+      compare_exchange(keys[2], keys[3]);
+
+      compare_exchange(keys[1], keys[2]);
+    }
+    else if constexpr (Count == 8)
+    {
+      compare_exchange(keys[0], keys[2]);
+      compare_exchange(keys[1], keys[3]);
+      compare_exchange(keys[4], keys[6]);
+      compare_exchange(keys[5], keys[7]);
+
+      compare_exchange(keys[0], keys[4]);
+      compare_exchange(keys[1], keys[5]);
+      compare_exchange(keys[2], keys[6]);
+      compare_exchange(keys[3], keys[7]);
+
+      compare_exchange(keys[0], keys[1]);
+      compare_exchange(keys[2], keys[3]);
+      compare_exchange(keys[4], keys[5]);
+      compare_exchange(keys[6], keys[7]);
+
+      compare_exchange(keys[2], keys[4]);
+      compare_exchange(keys[3], keys[5]);
+
+      compare_exchange(keys[1], keys[4]);
+      compare_exchange(keys[3], keys[6]);
+
+      compare_exchange(keys[1], keys[2]);
+      compare_exchange(keys[3], keys[4]);
+      compare_exchange(keys[5], keys[6]);
+    }
+    else if constexpr (Count == 16)
+    {
+      compare_exchange(keys[0], keys[13]);
+      compare_exchange(keys[1], keys[12]);
+      compare_exchange(keys[2], keys[15]);
+      compare_exchange(keys[3], keys[14]);
+      compare_exchange(keys[4], keys[8]);
+      compare_exchange(keys[5], keys[6]);
+      compare_exchange(keys[7], keys[11]);
+      compare_exchange(keys[9], keys[10]);
+
+      compare_exchange(keys[0], keys[5]);
+      compare_exchange(keys[1], keys[7]);
+      compare_exchange(keys[2], keys[9]);
+      compare_exchange(keys[3], keys[4]);
+      compare_exchange(keys[6], keys[13]);
+      compare_exchange(keys[8], keys[14]);
+      compare_exchange(keys[10], keys[15]);
+      compare_exchange(keys[11], keys[12]);
+
+      compare_exchange(keys[0], keys[1]);
+      compare_exchange(keys[2], keys[3]);
+      compare_exchange(keys[4], keys[5]);
+      compare_exchange(keys[6], keys[8]);
+      compare_exchange(keys[7], keys[9]);
+      compare_exchange(keys[10], keys[11]);
+      compare_exchange(keys[12], keys[13]);
+      compare_exchange(keys[14], keys[15]);
+
+      compare_exchange(keys[0], keys[2]);
+      compare_exchange(keys[1], keys[3]);
+      compare_exchange(keys[4], keys[10]);
+      compare_exchange(keys[5], keys[11]);
+      compare_exchange(keys[6], keys[7]);
+      compare_exchange(keys[8], keys[9]);
+      compare_exchange(keys[12], keys[14]);
+      compare_exchange(keys[13], keys[15]);
+
+      compare_exchange(keys[1], keys[2]);
+      compare_exchange(keys[3], keys[12]);
+      compare_exchange(keys[4], keys[6]);
+      compare_exchange(keys[5], keys[7]);
+      compare_exchange(keys[8], keys[10]);
+      compare_exchange(keys[9], keys[11]);
+      compare_exchange(keys[13], keys[14]);
+
+      compare_exchange(keys[1], keys[4]);
+      compare_exchange(keys[2], keys[6]);
+      compare_exchange(keys[5], keys[8]);
+      compare_exchange(keys[7], keys[10]);
+      compare_exchange(keys[9], keys[13]);
+      compare_exchange(keys[11], keys[14]);
+
+      compare_exchange(keys[2], keys[4]);
+      compare_exchange(keys[3], keys[6]);
+      compare_exchange(keys[9], keys[12]);
+      compare_exchange(keys[11], keys[13]);
+
+      compare_exchange(keys[3], keys[5]);
+      compare_exchange(keys[6], keys[8]);
+      compare_exchange(keys[7], keys[9]);
+      compare_exchange(keys[10], keys[12]);
+
+      compare_exchange(keys[3], keys[4]);
+      compare_exchange(keys[5], keys[6]);
+      compare_exchange(keys[7], keys[8]);
+      compare_exchange(keys[9], keys[10]);
+      compare_exchange(keys[11], keys[12]);
+
+      compare_exchange(keys[6], keys[7]);
+      compare_exchange(keys[8], keys[9]);
+    }
+    else
     {
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int step = size / 2; step > 0; step /= 2)
+      for (int size = 2; size <= Count; size *= 2)
       {
         _CCCL_PRAGMA_UNROLL_FULL()
-        for (int i = 0; i < Count; ++i)
+        for (int step = size / 2; step > 0; step /= 2)
         {
-          if ((i & step) == 0)
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int i = 0; i < Count; ++i)
           {
-            const KeyT a    = keys[i];
-            const KeyT b    = keys[i + step];
-            const KeyT high = maximum(a, b);
-            const KeyT low  = minimum(a, b);
-            keys[i]         = (i & size) == 0 ? high : low;
-            keys[i + step]  = (i & size) == 0 ? low : high;
+            if ((i & step) == 0)
+            {
+              const KeyT a    = keys[i];
+              const KeyT b    = keys[i + step];
+              const KeyT high = maximum(a, b);
+              const KeyT low  = minimum(a, b);
+              keys[i]         = (i & size) == 0 ? high : low;
+              keys[i + step]  = (i & size) == 0 ? low : high;
+            }
           }
         }
       }
