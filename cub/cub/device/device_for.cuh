@@ -22,6 +22,7 @@
 
 #include <cub/detail/cub_vector.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_for.cuh>
 #include <cub/util_namespace.cuh>
 
@@ -40,7 +41,6 @@
 #include <cuda/std/__mdspan/layout_left.h>
 #include <cuda/std/__mdspan/layout_right.h>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
-#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
 CUB_NAMESPACE_BEGIN
@@ -135,7 +135,7 @@ struct DeviceFor
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __bulk(NumItemsT num_items, OpT op, const EnvT& env = {})
   {
     // Tiles can be larger than the range of narrow integer types, so we compute offsets in at least 32 bits
-    using offset_t = ::cuda::std::conditional_t<(sizeof(NumItemsT) < sizeof(int)), int, NumItemsT>;
+    using offset_t = detail::implicit_prom_t<NumItemsT>;
     auto stream    = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
     [[maybe_unused]] const auto tuning_env =
       ::cuda::__call_or(::cuda::execution::__get_tuning, ::cuda::std::execution::env<>{}, env);

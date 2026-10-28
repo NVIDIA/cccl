@@ -76,12 +76,12 @@ struct bounds_checking_incrementer_t
   }
 };
 
-// Tile size of 512 exceeds the range of 8-bit types
+// Tile size of 65536 exceeds the range of all narrow integer types
 struct large_tile_policy_selector
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::ForPolicy
   {
-    return {128, 4};
+    return {1024, 64};
   }
 };
 
