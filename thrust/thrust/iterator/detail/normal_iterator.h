@@ -87,4 +87,8 @@ struct pointer_traits<THRUST_NS_QUALIFIER::detail::normal_iterator<Pointer>>
   }
 };
 
+template <class Pointer>
+inline constexpr bool __has_contiguous_traversal<THRUST_NS_QUALIFIER::detail::normal_iterator<Pointer>> =
+  __has_contiguous_traversal<Pointer>;
+
 _CCCL_END_NAMESPACE_CUDA_STD
