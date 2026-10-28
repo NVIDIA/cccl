@@ -17,7 +17,7 @@
 
 #include <cub/block/block_merge_sort.cuh>
 #include <cub/detail/null_type.cuh>
-#include <cub/detail/segmented_sort_capacity.cuh>
+#include <cub/detail/segmented_sort_entries.cuh>
 #include <cub/thread/thread_sort.cuh>
 
 #include <cuda/std/__algorithm/min.h>

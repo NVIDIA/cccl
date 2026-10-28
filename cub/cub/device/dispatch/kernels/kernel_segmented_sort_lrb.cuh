@@ -15,7 +15,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/segmented_sort_capacity.cuh>
+#include <cub/detail/segmented_sort_entries.cuh>
 #include <cub/util_arch.cuh>
 
 CUB_NAMESPACE_BEGIN
