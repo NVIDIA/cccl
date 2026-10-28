@@ -59,7 +59,6 @@ public:
 
   using counting_iterator = thrust::counting_iterator<IndexType>;
 
-public:
   using iterator = thrust::transform_iterator<tail_flag_functor, counting_iterator>;
 
   _CCCL_EXEC_CHECK_DISABLE
