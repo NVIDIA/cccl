@@ -266,6 +266,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr auto size()
   {
     const auto __n = ::cuda::std::ranges::size(__base_);
+    // NOLINTNEXTLINE(readability-redundant-parentheses)
     return (::cuda::std::ranges::min) (__n, static_cast<decltype(__n)>(__count_));
   }
 
@@ -274,6 +275,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr auto size() const
   {
     auto __n = ::cuda::std::ranges::size(__base_);
+    // NOLINTNEXTLINE(readability-redundant-parentheses)
     return (::cuda::std::ranges::min) (__n, static_cast<decltype(__n)>(__count_));
   }
 };

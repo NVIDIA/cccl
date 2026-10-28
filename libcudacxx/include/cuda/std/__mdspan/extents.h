@@ -322,8 +322,10 @@ _CCCL_DIAG_POP // MSVC(4702) Unreachable code
 
   template <class _To, class _From>
   inline constexpr bool __potentially_narrowing =
-    static_cast<make_unsigned_t<_To>>((numeric_limits<_To>::max)())
-    < static_cast<make_unsigned_t<_From>>((numeric_limits<_From>::max)());
+    // NOLINTNEXTLINE(readability-redundant-parentheses)
+  static_cast<make_unsigned_t<_To>>((numeric_limits<_To>::max)())
+  // NOLINTNEXTLINE(readability-redundant-parentheses)
+  < static_cast<make_unsigned_t<_From>>((numeric_limits<_From>::max)());
 
 // Function to check whether a value is representable as another type
 // value must be a positive integer otherwise returns false

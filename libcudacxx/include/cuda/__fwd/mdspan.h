@@ -41,6 +41,7 @@ template <class _OffsetType, ::cuda::std::ptrdiff_t... _Strides>
 class strides;
 
 //! @brief Tag value indicating a dynamic stride (similar to dynamic_extent for extents)
+// NOLINTNEXTLINE(readability-redundant-parentheses): Prevent min macro expansion.
 inline constexpr ::cuda::std::ptrdiff_t dynamic_stride = (::cuda::std::numeric_limits<::cuda::std::ptrdiff_t>::min)();
 
 namespace __strides_detail
