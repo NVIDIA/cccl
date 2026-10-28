@@ -10,7 +10,7 @@ or compiler support; runtime tracing checks those requirements.
 """
 
 from collections.abc import Callable, Iterator
-from typing import Any, Generic, Protocol, overload
+from typing import Any, Generic, Protocol, TypeAlias, overload
 
 from typing_extensions import TypeVar
 
@@ -18,6 +18,8 @@ from ._typing import ThreadDataLike
 
 _ItemT = TypeVar("_ItemT", default=Any)
 _ValueT = TypeVar("_ValueT")
+_SourceT_co = TypeVar("_SourceT_co", covariant=True)
+_ProducerT = TypeVar("_ProducerT")
 
 class CutlassTensorSample(Protocol):
     """Describe the attributes read from a mutable CuTe tensor.
@@ -43,6 +45,73 @@ class CutlassTensorSSASample(Protocol):
     def shape(self) -> object: ...
     def __getitem__(self, index: int, /) -> Any: ...
     def ir_value(self) -> object: ...
+
+class _ThreadDataVectorSource(Protocol[_SourceT_co]):
+    """Integer-indexable register payload accepted by ``ThreadData``."""
+
+    def __getitem__(self, index: int, /) -> _SourceT_co:
+        """Return one register value."""
+
+class _ThreadDataSizedVectorSource(
+    _ThreadDataVectorSource[_SourceT_co],
+    Protocol[_SourceT_co],
+):
+    """Indexable register payload with a statically inferable shape."""
+
+    @property
+    def shape(self) -> object:
+        """Return static payload-shape metadata."""
+
+class _ThreadDataNumelVectorSource(
+    _ThreadDataVectorSource[_SourceT_co],
+    Protocol[_SourceT_co],
+):
+    """Indexable register payload with a statically inferable element count."""
+
+    def numel(self) -> object:
+        """Return the trace-static payload item count."""
+
+_ThreadDataStaticallySizedVectorSource: TypeAlias = (
+    _ThreadDataSizedVectorSource[_SourceT_co]
+    | _ThreadDataNumelVectorSource[_SourceT_co]
+)
+
+class ThreadDataLoadSource(Protocol[_ProducerT]):
+    """Producer of a payload whose static extent can be inferred."""
+
+    def __cuda_coop_thread_data_load__(
+        self,
+    ) -> (
+        ThreadData[_ProducerT]
+        | _ThreadDataStaticallySizedVectorSource[_ProducerT]
+    ):
+        """Return one producer-owned register payload exactly once."""
+
+class _ThreadDataIndexableLoadSource(Protocol[_SourceT_co]):
+    """Producer of an indexable payload requiring an explicit item count."""
+
+    def __cuda_coop_thread_data_load__(
+        self,
+    ) -> ThreadData[_SourceT_co] | _ThreadDataVectorSource[_SourceT_co]:
+        """Return one producer-owned register payload exactly once."""
+
+class ThreadDataTensorMetadata(Protocol):
+    """Static shape and dtype used to reconstruct a CUTLASS register tensor."""
+
+    @property
+    def shape(self) -> object:
+        """Return the static register-payload shape."""
+
+    @property
+    def dtype(self) -> object:
+        """Return the CUTLASS element-type token."""
+
+class ThreadDataSource(
+    ThreadDataLoadSource[_ProducerT],
+    ThreadDataTensorMetadata,
+    Protocol[_ProducerT],
+):
+    """Producer supporting both register loading and tensor reconstruction."""
 
 class ThreadData(ThreadDataLike[_ItemT], Generic[_ItemT]):
     """Fixed-size per-thread payload with qualified CuTe conversions."""
@@ -147,11 +216,77 @@ class ThreadData(ThreadDataLike[_ItemT], Generic[_ItemT]):
         items_per_thread: int | None = None,
         dtype: None = None,
     ) -> ThreadData[Any]: ...
+    @overload
+    @classmethod
+    def load(
+        cls,
+        source: ThreadDataLoadSource[Any],
+        *,
+        items_per_thread: int | None = None,
+        dtype: type[_ValueT],
+    ) -> ThreadData[_ValueT]:
+        """Load and cast a statically sized producer payload to ``dtype``."""
+
+    @overload
+    @classmethod
+    def load(
+        cls,
+        source: _ThreadDataIndexableLoadSource[Any],
+        *,
+        items_per_thread: int,
+        dtype: type[_ValueT],
+    ) -> ThreadData[_ValueT]:
+        """Load and cast an explicitly sized producer payload to ``dtype``."""
+
+    @overload
+    @classmethod
+    def load(
+        cls,
+        source: ThreadDataLoadSource[_ValueT],
+        *,
+        items_per_thread: int | None = None,
+        dtype: None = None,
+    ) -> ThreadData[_ValueT]:
+        """Load registers and preserve the producer's declared item type."""
+
+    @overload
+    @classmethod
+    def load(
+        cls,
+        source: _ThreadDataIndexableLoadSource[_ValueT],
+        *,
+        items_per_thread: int,
+        dtype: None = None,
+    ) -> ThreadData[_ValueT]:
+        """Load an indexable producer payload using an explicit item count."""
+
+    @overload
+    @classmethod
+    def load(
+        cls,
+        source: ThreadDataLoadSource[Any],
+        *,
+        items_per_thread: int | None = None,
+        dtype: object,
+    ) -> ThreadData[Any]:
+        """Load a statically sized producer using opaque dtype metadata."""
+
+    @overload
+    @classmethod
+    def load(
+        cls,
+        source: _ThreadDataIndexableLoadSource[Any],
+        *,
+        items_per_thread: int,
+        dtype: object,
+    ) -> ThreadData[Any]:
+        """Load an explicitly sized producer using opaque dtype metadata."""
     def to_tensor_ssa(
         self,
         *,
         dtype: object | None = None,
         shape: object | None = None,
+        like: ThreadDataTensorMetadata | None = None,
     ) -> CutlassTensorSSASample: ...
     def to_register_tensor(
         self,
