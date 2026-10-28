@@ -190,10 +190,3 @@ make_transform_output_iterator(OutputIterator out, UnaryFunction fun)
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
-
-_CCCL_BEGIN_NAMESPACE_CUDA
-template <class _Fn, class _Iter>
-inline constexpr bool
-  __is_contiguous_iterator_or_adaptor_impl<THRUST_NS_QUALIFIER::transform_output_iterator<_Fn, _Iter>> =
-    __is_contiguous_iterator_or_adaptor_v<::cuda::std::remove_cvref_t<_Iter>>;
-_CCCL_END_NAMESPACE_CUDA

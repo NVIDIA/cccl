@@ -62,12 +62,13 @@ TEST_CASE("contiguous iterator adaptor thrust storage", "[iterators]")
   using NestedOutput = thrust::transform_output_iterator<ContiguousAdaptorPlusOne, Transformed>;
   using NestedInOut =
     thrust::transform_input_output_iterator<ContiguousAdaptorPlusOne, ContiguousAdaptorPlusOne, Normal>;
-  static_assert(cuda::__is_contiguous_iterator_or_adaptor_v<TransformedOutput>);
-  static_assert(cuda::__is_contiguous_iterator_or_adaptor_v<const TransformedOutput>);
-  static_assert(cuda::__is_contiguous_iterator_or_adaptor_v<TransformedInOut>);
-  static_assert(cuda::__is_contiguous_iterator_or_adaptor_v<const TransformedInOut>);
-  static_assert(cuda::__is_contiguous_iterator_or_adaptor_v<NestedOutput>);
-  static_assert(cuda::__is_contiguous_iterator_or_adaptor_v<NestedInOut>);
+  // Output adaptors are not contiguous adaptors, even over contiguous storage
+  static_assert(!cuda::__is_contiguous_iterator_or_adaptor_v<TransformedOutput>);
+  static_assert(!cuda::__is_contiguous_iterator_or_adaptor_v<const TransformedOutput>);
+  static_assert(!cuda::__is_contiguous_iterator_or_adaptor_v<TransformedInOut>);
+  static_assert(!cuda::__is_contiguous_iterator_or_adaptor_v<const TransformedInOut>);
+  static_assert(!cuda::__is_contiguous_iterator_or_adaptor_v<NestedOutput>);
+  static_assert(!cuda::__is_contiguous_iterator_or_adaptor_v<NestedInOut>);
   static_assert(!cuda::__is_contiguous_iterator_or_adaptor_v<
                 thrust::transform_output_iterator<ContiguousAdaptorPlusOne, thrust::counting_iterator<int>>>);
   static_assert(!cuda::__is_contiguous_iterator_or_adaptor_v<
