@@ -80,7 +80,8 @@ struct TestPairComparison
   {
     using P = thrust::pair<T, T>;
 
-    P x, y;
+    P x;
+    P y;
 
     // test operator ==
     x.first = x.second = y.first = y.second = T(0);
@@ -304,8 +305,10 @@ TEST_CASE("TestPairSwap", "[pair]")
 
   using swappable_pair = thrust::pair<user_swappable, user_swappable>;
 
-  thrust::host_vector<swappable_pair> h_v1(1), h_v2(1);
-  thrust::device_vector<swappable_pair> d_v1(1), d_v2(1);
+  thrust::host_vector<swappable_pair> h_v1(1);
+  thrust::host_vector<swappable_pair> h_v2(1);
+  thrust::device_vector<swappable_pair> d_v1(1);
+  thrust::device_vector<swappable_pair> d_v2(1);
 
   thrust::swap_ranges(h_v1.begin(), h_v1.end(), h_v2.begin());
   thrust::swap_ranges(d_v1.begin(), d_v1.end(), d_v2.begin());
