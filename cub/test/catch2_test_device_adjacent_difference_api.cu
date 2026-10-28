@@ -3,7 +3,25 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+// example-begin adjacent-difference-includes
 #include <cub/device/device_adjacent_difference.cuh>
+
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
+
+#include <cstddef>
+// example-end adjacent-difference-includes
+
+// example-begin custom-difference
+struct custom_difference
+{
+  template <typename DataType>
+  __device__ DataType operator()(const DataType& lhs, const DataType& rhs)
+  {
+    return lhs - rhs;
+  }
+};
+// example-end custom-difference
 
 #include "cub_test_macros.h"
 
@@ -58,4 +76,101 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRight legacy size-query is unambiguo
   REQUIRE(cudaSuccess == cub::DeviceAdjacentDifference::SubtractRight(nullptr, bytes, d_in, n));
 }
 
-// todo(giannis): extract examples from the docs to literalinclude extracts here
+CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy API example", "[adjacent_difference][device]", CUB_SMALL)
+{
+  // example-begin subtract-left-copy
+  auto input  = thrust::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
+  auto output = thrust::device_vector<int>(input.size());
+
+  // Determine temporary device storage requirements.
+  std::size_t temp_storage_bytes = 0;
+  auto error                     = cub::DeviceAdjacentDifference::SubtractLeftCopy(
+    nullptr, temp_storage_bytes, input.begin(), output.begin(), input.size(), custom_difference{});
+  // example-end subtract-left-copy-query
+  REQUIRE(error == cudaSuccess);
+  // example-begin subtract-left-copy-run
+
+  // Allocate temporary storage and run the operation.
+  thrust::device_vector<char> temp_storage(temp_storage_bytes);
+  error = cub::DeviceAdjacentDifference::SubtractLeftCopy(
+    temp_storage.data().get(), temp_storage_bytes, input.begin(), output.begin(), input.size(), custom_difference{});
+
+  const thrust::host_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
+  // example-end subtract-left-copy
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output == expected);
+  REQUIRE(input == thrust::host_vector<int>{1, 2, 1, 2, 1, 2, 1, 2});
+}
+
+CUB_TEST("DeviceAdjacentDifference::SubtractLeft API example", "[adjacent_difference][device]", CUB_SMALL)
+{
+  // example-begin subtract-left-in-place
+  auto data = thrust::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
+
+  // Determine temporary device storage requirements.
+  std::size_t temp_storage_bytes = 0;
+  auto error                     = cub::DeviceAdjacentDifference::SubtractLeft(
+    nullptr, temp_storage_bytes, data.begin(), data.size(), custom_difference{});
+  // example-end subtract-left-in-place-query
+  REQUIRE(error == cudaSuccess);
+  // example-begin subtract-left-in-place-run
+
+  // Allocate temporary storage and run the operation.
+  thrust::device_vector<char> temp_storage(temp_storage_bytes);
+  error = cub::DeviceAdjacentDifference::SubtractLeft(
+    temp_storage.data().get(), temp_storage_bytes, data.begin(), data.size(), custom_difference{});
+
+  const thrust::host_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
+  // example-end subtract-left-in-place
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(data == expected);
+}
+
+CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy API example", "[adjacent_difference][device]", CUB_SMALL)
+{
+  // example-begin subtract-right-copy
+  auto input  = thrust::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
+  auto output = thrust::device_vector<int>(input.size());
+
+  // Determine temporary device storage requirements.
+  std::size_t temp_storage_bytes = 0;
+  auto error                     = cub::DeviceAdjacentDifference::SubtractRightCopy(
+    nullptr, temp_storage_bytes, input.begin(), output.begin(), input.size(), custom_difference{});
+  // example-end subtract-right-copy-query
+  REQUIRE(error == cudaSuccess);
+  // example-begin subtract-right-copy-run
+
+  // Allocate temporary storage and run the operation.
+  thrust::device_vector<char> temp_storage(temp_storage_bytes);
+  error = cub::DeviceAdjacentDifference::SubtractRightCopy(
+    temp_storage.data().get(), temp_storage_bytes, input.begin(), output.begin(), input.size(), custom_difference{});
+
+  const thrust::host_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
+  // example-end subtract-right-copy
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output == expected);
+  REQUIRE(input == thrust::host_vector<int>{1, 2, 1, 2, 1, 2, 1, 2});
+}
+
+CUB_TEST("DeviceAdjacentDifference::SubtractRight API example", "[adjacent_difference][device]", CUB_SMALL)
+{
+  // example-begin subtract-right-in-place
+  auto data = thrust::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
+
+  // Determine temporary device storage requirements.
+  std::size_t temp_storage_bytes = 0;
+  auto error = cub::DeviceAdjacentDifference::SubtractRight(nullptr, temp_storage_bytes, data.begin(), data.size());
+  // example-end subtract-right-in-place-query
+  REQUIRE(error == cudaSuccess);
+  // example-begin subtract-right-in-place-run
+
+  // Allocate temporary storage and run the operation.
+  thrust::device_vector<char> temp_storage(temp_storage_bytes);
+  error = cub::DeviceAdjacentDifference::SubtractRight(
+    temp_storage.data().get(), temp_storage_bytes, data.begin(), data.size());
+
+  const thrust::host_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
+  // example-end subtract-right-in-place
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(data == expected);
+}
