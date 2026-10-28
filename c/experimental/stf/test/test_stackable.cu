@@ -297,6 +297,7 @@ C2H_TEST("stackable: launchable graph() embed into outer graph", "[stackable][la
   REQUIRE(cudaGraphCreate(&outer, 0) == cudaSuccess);
 
   cudaGraphNode_t child_node = nullptr;
+  // NOLINTNEXTLINE(readability-suspicious-call-argument)
   REQUIRE(cudaGraphAddChildGraphNode(&child_node, outer, nullptr, 0, child_graph) == cudaSuccess);
 
   cudaGraphExec_t outer_exec = nullptr;

@@ -182,7 +182,7 @@ _CCCL_DEVICE_API void __bit_compress_impl_device_process_word(_Tp& __ret, uint32
     __ret = ::cuda::std::__bit_compress_impl_device_prepend(__ret, __v, __n);
 
     // Remove written bits from __v and __mask_rev.
-    __mask = ::cuda::std::shl(__mask, __n);
+    __mask = ::cuda::std::shl(__mask, __n); // NOLINT(readability-suspicious-call-argument)
     __v    = ::cuda::std::shl(__v, __n);
   }
 }

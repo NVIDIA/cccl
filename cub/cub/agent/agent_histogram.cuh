@@ -304,6 +304,7 @@ struct AgentHistogram
         int output_bin       = -1;
         const CounterT count = privatized_histograms[ch][bin];
         const bool is_valid  = count > 0;
+        // NOLINTNEXTLINE(readability-suspicious-call-argument)
         output_decode_op[ch].template BinSelect<load_modifier>(bin, output_bin, is_valid);
 
         if (output_bin >= 0)

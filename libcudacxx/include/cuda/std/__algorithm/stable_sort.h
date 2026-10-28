@@ -224,6 +224,7 @@ _CCCL_API void __stable_sort_move(
   _RandomAccessIterator __m                                             = __first1 + __l2;
   ::cuda::std::__stable_sort<_AlgPolicy, _Compare>(__first1, __m, __comp, __l2, __first2, __l2);
   ::cuda::std::__stable_sort<_AlgPolicy, _Compare>(__m, __last1, __comp, __len - __l2, __first2 + __l2, __len - __l2);
+  // NOLINTNEXTLINE(readability-suspicious-call-argument)
   ::cuda::std::__merge_move_construct<_AlgPolicy, _Compare>(__first1, __m, __m, __last1, __first2, __comp);
 }
 
@@ -252,6 +253,7 @@ _CCCL_API void __stable_sort(
     case 2:
       if (__comp(*--__last, *__first))
       {
+        // NOLINTNEXTLINE(readability-suspicious-call-argument)
         _IterOps<_AlgPolicy>::iter_swap(__first, __last);
       }
       return;
@@ -274,6 +276,7 @@ _CCCL_API void __stable_sort(
     __d.__set(__l2, (value_type*) nullptr);
     ::cuda::std::__stable_sort_move<_AlgPolicy, _Compare>(__m, __last, __comp, __len - __l2, __buff + __l2);
     __d.__set(__len, (value_type*) nullptr);
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     ::cuda::std::__merge_move_assign<_AlgPolicy, _Compare>(
       __buff, __buff + __l2, __buff + __l2, __buff + __len, __first, __comp);
     return;
