@@ -103,10 +103,10 @@ struct BlockScanRunningPrefixOp
  */
 enum ScanTileStatus // NOLINT(cppcoreguidelines-use-enum-class)
 {
-  SCAN_TILE_OOB, // Out-of-bounds (e.g., padding)
-  SCAN_TILE_INVALID = 99, // Not yet processed
-  SCAN_TILE_PARTIAL, // Tile aggregate is available
-  SCAN_TILE_INCLUSIVE, // Inclusive tile prefix is available
+  SCAN_TILE_OOB       = 0, // Out-of-bounds (e.g., padding)
+  SCAN_TILE_INVALID   = 99, // Not yet processed
+  SCAN_TILE_PARTIAL   = 100, // Tile aggregate is available
+  SCAN_TILE_INCLUSIVE = 101, // Inclusive tile prefix is available
 };
 
 /**

@@ -533,7 +533,7 @@ private:
   // Constants
   enum class size_class : uint32_t
   {
-    TLEV = 0,
+    TLEV,
     WLEV,
     BLEV,
     NUM_SIZE_CLASSES,

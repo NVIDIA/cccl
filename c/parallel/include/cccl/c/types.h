@@ -28,6 +28,7 @@
 
 CCCL_C_EXTERN_C_BEGIN
 
+// NOLINTNEXTLINE(readability-enum-initial-value)
 typedef enum cccl_type_enum // NOLINT(cppcoreguidelines-use-enum-class)
 {
   CCCL_INT8    = 0,
@@ -55,6 +56,7 @@ typedef struct cccl_type_info
   cccl_type_enum type;
 } cccl_type_info;
 
+// NOLINTNEXTLINE(readability-enum-initial-value)
 typedef enum cccl_op_kind_t // NOLINT(cppcoreguidelines-use-enum-class)
 {
   // Arbitrary semantics, without state.

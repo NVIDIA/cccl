@@ -26,7 +26,7 @@ using segment_size_t = cuda::std::int32_t;
 
 enum class pattern_kind : int
 {
-  random = 0,
+  random,
   quantized_random,
   relu_quantized,
   tie_heavy,

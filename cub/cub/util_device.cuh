@@ -205,7 +205,7 @@ struct PerDeviceAttributeCache
   // i.e. a linear sequence of transitions.
   enum DeviceEntryStatus // NOLINT(cppcoreguidelines-use-enum-class)
   {
-    DeviceEntryEmpty = 0,
+    DeviceEntryEmpty,
     DeviceEntryInitializing,
     DeviceEntryReady
   };
