@@ -30,6 +30,9 @@ from ._group_topk import topk_min_keys as topk_min_keys
 from ._group_topk import topk_min_pairs as topk_min_pairs
 from ._temp_storage import TempStorage as TempStorage
 from ._thread_data import ThreadData as ThreadData
+from ._thread_data import ThreadDataLoadSource as ThreadDataLoadSource
+from ._thread_data import ThreadDataSource as ThreadDataSource
+from ._thread_data import ThreadDataTensorMetadata as ThreadDataTensorMetadata
 from ._thread_group import (
     Hierarchy as Hierarchy,
 )
