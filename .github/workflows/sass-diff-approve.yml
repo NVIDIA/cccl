@@ -202,7 +202,8 @@ jobs:
               ...context.repo,
               run_id: run.id,
               filter: "latest",
-              per_page: 100,
+              // Pages of 100 jobs can cause GitHub to return HTTP 502.
+              per_page: 50,
             });
 
             // This name must match the approval job in ci-workflow-pull-request.yml.
