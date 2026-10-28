@@ -6,6 +6,7 @@
 
 from ._compiler._runtime import validate_cutlass_runtime
 from ._group_exchange import exchange
+from ._group_histogram import histogram
 from ._group_load_store import load, store
 from ._group_merge_sort import merge_sort_keys, merge_sort_pairs
 from ._group_neighbors import adjacent_difference, discontinuity
@@ -44,6 +45,7 @@ from ._thread_group import (
 from ._typing import TempStorageLike, ThreadDataLike
 
 __all__ = [
+    "histogram",
     "adjacent_difference",
     "discontinuity",
     "topk_min_keys",
