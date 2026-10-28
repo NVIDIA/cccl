@@ -16,11 +16,12 @@
 #include <cub/detail/type_traits.cuh> // implicit_prom_t
 
 #include <cuda/__cmath/fast_modulo_division.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
-#include <cuda/std/cstddef>
 
 CUB_NAMESPACE_BEGIN
 namespace detail

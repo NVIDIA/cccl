@@ -29,7 +29,7 @@
 #include <cub/util_debug.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <cuda/std/__host_stdlib/math.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/mutex>
 
 #include <map>
