@@ -293,61 +293,69 @@ CUB_TEST(
   size_t temp_storage_bytes = 0;
   if constexpr (direction == cub::detail::topk::select::max)
   {
-    cub::DeviceTopK::MaxPairs(
-      nullptr,
-      temp_storage_bytes,
-      keys_in.begin(),
-      keys_out.begin(),
-      values_in.begin(),
-      values_out.begin(),
-      num_items,
-      k,
-      topk_custom_key_decomposer_t{},
-      env);
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceTopK::MaxPairs(
+        nullptr,
+        temp_storage_bytes,
+        keys_in.begin(),
+        keys_out.begin(),
+        values_in.begin(),
+        values_out.begin(),
+        num_items,
+        k,
+        topk_custom_key_decomposer_t{},
+        env));
   }
   else
   {
-    cub::DeviceTopK::MinPairs(
-      nullptr,
-      temp_storage_bytes,
-      keys_in.begin(),
-      keys_out.begin(),
-      values_in.begin(),
-      values_out.begin(),
-      num_items,
-      k,
-      topk_custom_key_decomposer_t{},
-      env);
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceTopK::MinPairs(
+        nullptr,
+        temp_storage_bytes,
+        keys_in.begin(),
+        keys_out.begin(),
+        values_in.begin(),
+        values_out.begin(),
+        num_items,
+        k,
+        topk_custom_key_decomposer_t{},
+        env));
   }
 
   c2h::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
   if constexpr (direction == cub::detail::topk::select::max)
   {
-    cub::DeviceTopK::MaxPairs(
-      thrust::raw_pointer_cast(temp_storage.data()),
-      temp_storage_bytes,
-      keys_in.begin(),
-      keys_out.begin(),
-      values_in.begin(),
-      values_out.begin(),
-      num_items,
-      k,
-      topk_custom_key_decomposer_t{},
-      env);
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceTopK::MaxPairs(
+        thrust::raw_pointer_cast(temp_storage.data()),
+        temp_storage_bytes,
+        keys_in.begin(),
+        keys_out.begin(),
+        values_in.begin(),
+        values_out.begin(),
+        num_items,
+        k,
+        topk_custom_key_decomposer_t{},
+        env));
   }
   else
   {
-    cub::DeviceTopK::MinPairs(
-      thrust::raw_pointer_cast(temp_storage.data()),
-      temp_storage_bytes,
-      keys_in.begin(),
-      keys_out.begin(),
-      values_in.begin(),
-      values_out.begin(),
-      num_items,
-      k,
-      topk_custom_key_decomposer_t{},
-      env);
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceTopK::MinPairs(
+        thrust::raw_pointer_cast(temp_storage.data()),
+        temp_storage_bytes,
+        keys_in.begin(),
+        keys_out.begin(),
+        values_in.begin(),
+        values_out.begin(),
+        num_items,
+        k,
+        topk_custom_key_decomposer_t{},
+        env));
   }
 
   sort_keys_and_values(keys_in, values_in, num_items, comparator_t{});

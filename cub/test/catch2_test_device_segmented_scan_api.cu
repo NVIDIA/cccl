@@ -503,8 +503,9 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum non-env overload is no
   thrust::device_vector<int> out(1);
   thrust::device_vector<int> offsets{0, 1};
   size_t temp_storage_bytes = 0;
-  cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
-    nullptr, temp_storage_bytes, in.begin(), out.begin(), offsets.begin(), offsets.begin() + 1, 1);
+  REQUIRE(cudaSuccess
+          == cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
+            nullptr, temp_storage_bytes, in.begin(), out.begin(), offsets.begin(), offsets.begin() + 1, 1));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum non-env overload is not ambiguous (3 offsets)",
@@ -516,15 +517,17 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum non-env overload is no
   thrust::device_vector<int> in_offsets{0, 1};
   thrust::device_vector<int> out_offsets{0};
   size_t temp_storage_bytes = 0;
-  cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
-    nullptr,
-    temp_storage_bytes,
-    in.begin(),
-    out.begin(),
-    in_offsets.begin(),
-    in_offsets.begin() + 1,
-    out_offsets.begin(),
-    1);
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
+      nullptr,
+      temp_storage_bytes,
+      in.begin(),
+      out.begin(),
+      in_offsets.begin(),
+      in_offsets.begin() + 1,
+      out_offsets.begin(),
+      1));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan non-env overload is not ambiguous (2 offsets)",
@@ -535,16 +538,18 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan non-env overload is n
   thrust::device_vector<int> out(1);
   thrust::device_vector<int> offsets{0, 1};
   size_t temp_storage_bytes = 0;
-  cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
-    nullptr,
-    temp_storage_bytes,
-    in.begin(),
-    out.begin(),
-    offsets.begin(),
-    offsets.begin() + 1,
-    1,
-    cuda::std::plus<>{},
-    5);
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
+      nullptr,
+      temp_storage_bytes,
+      in.begin(),
+      out.begin(),
+      offsets.begin(),
+      offsets.begin() + 1,
+      1,
+      cuda::std::plus<>{},
+      5));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan non-env overload is not ambiguous (3 offsets)",
@@ -556,17 +561,19 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan non-env overload is n
   thrust::device_vector<int> in_offsets{0, 1};
   thrust::device_vector<int> out_offsets{0};
   size_t temp_storage_bytes = 0;
-  cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
-    nullptr,
-    temp_storage_bytes,
-    in.begin(),
-    out.begin(),
-    in_offsets.begin(),
-    in_offsets.begin() + 1,
-    out_offsets.begin(),
-    1,
-    cuda::std::plus<>{},
-    5);
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
+      nullptr,
+      temp_storage_bytes,
+      in.begin(),
+      out.begin(),
+      in_offsets.begin(),
+      in_offsets.begin() + 1,
+      out_offsets.begin(),
+      1,
+      cuda::std::plus<>{},
+      5));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum non-env overload is not ambiguous (2 offsets)",
@@ -577,8 +584,9 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum non-env overload is no
   thrust::device_vector<int> out(1);
   thrust::device_vector<int> offsets{0, 1};
   size_t temp_storage_bytes = 0;
-  cub::DeviceSegmentedScan::InclusiveSegmentedSum(
-    nullptr, temp_storage_bytes, in.begin(), out.begin(), offsets.begin(), offsets.begin() + 1, 1);
+  REQUIRE(cudaSuccess
+          == cub::DeviceSegmentedScan::InclusiveSegmentedSum(
+            nullptr, temp_storage_bytes, in.begin(), out.begin(), offsets.begin(), offsets.begin() + 1, 1));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum non-env overload is not ambiguous (3 offsets)",
@@ -590,15 +598,17 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum non-env overload is no
   thrust::device_vector<int> in_offsets{0, 1};
   thrust::device_vector<int> out_offsets{0};
   size_t temp_storage_bytes = 0;
-  cub::DeviceSegmentedScan::InclusiveSegmentedSum(
-    nullptr,
-    temp_storage_bytes,
-    in.begin(),
-    out.begin(),
-    in_offsets.begin(),
-    in_offsets.begin() + 1,
-    out_offsets.begin(),
-    1);
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedScan::InclusiveSegmentedSum(
+      nullptr,
+      temp_storage_bytes,
+      in.begin(),
+      out.begin(),
+      in_offsets.begin(),
+      in_offsets.begin() + 1,
+      out_offsets.begin(),
+      1));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan non-env overload is not ambiguous (2 offsets)",
@@ -609,8 +619,17 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan non-env overload is n
   thrust::device_vector<int> out(1);
   thrust::device_vector<int> offsets{0, 1};
   size_t temp_storage_bytes = 0;
-  cub::DeviceSegmentedScan::InclusiveSegmentedScan(
-    nullptr, temp_storage_bytes, in.begin(), out.begin(), offsets.begin(), offsets.begin() + 1, 1, cuda::std::plus<>{});
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedScan::InclusiveSegmentedScan(
+      nullptr,
+      temp_storage_bytes,
+      in.begin(),
+      out.begin(),
+      offsets.begin(),
+      offsets.begin() + 1,
+      1,
+      cuda::std::plus<>{}));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan non-env overload is not ambiguous (3 offsets)",
@@ -622,16 +641,18 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan non-env overload is n
   thrust::device_vector<int> in_offsets{0, 1};
   thrust::device_vector<int> out_offsets{0};
   size_t temp_storage_bytes = 0;
-  cub::DeviceSegmentedScan::InclusiveSegmentedScan(
-    nullptr,
-    temp_storage_bytes,
-    in.begin(),
-    out.begin(),
-    in_offsets.begin(),
-    in_offsets.begin() + 1,
-    out_offsets.begin(),
-    1,
-    cuda::std::plus<>{});
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedScan::InclusiveSegmentedScan(
+      nullptr,
+      temp_storage_bytes,
+      in.begin(),
+      out.begin(),
+      in_offsets.begin(),
+      in_offsets.begin() + 1,
+      out_offsets.begin(),
+      1,
+      cuda::std::plus<>{}));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit non-env overload is not ambiguous (2 offsets)",
@@ -642,16 +663,18 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit non-env overload 
   thrust::device_vector<int> out(1);
   thrust::device_vector<int> offsets{0, 1};
   size_t temp_storage_bytes = 0;
-  cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
-    nullptr,
-    temp_storage_bytes,
-    in.begin(),
-    out.begin(),
-    offsets.begin(),
-    offsets.begin() + 1,
-    1,
-    cuda::std::plus<>{},
-    5);
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
+      nullptr,
+      temp_storage_bytes,
+      in.begin(),
+      out.begin(),
+      offsets.begin(),
+      offsets.begin() + 1,
+      1,
+      cuda::std::plus<>{},
+      5));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit non-env overload is not ambiguous (3 offsets)",
@@ -663,15 +686,17 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit non-env overload 
   thrust::device_vector<int> in_offsets{0, 1};
   thrust::device_vector<int> out_offsets{0};
   size_t temp_storage_bytes = 0;
-  cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
-    nullptr,
-    temp_storage_bytes,
-    in.begin(),
-    out.begin(),
-    in_offsets.begin(),
-    in_offsets.begin() + 1,
-    out_offsets.begin(),
-    1,
-    cuda::std::plus<>{},
-    5);
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
+      nullptr,
+      temp_storage_bytes,
+      in.begin(),
+      out.begin(),
+      in_offsets.begin(),
+      in_offsets.begin() + 1,
+      out_offsets.begin(),
+      1,
+      cuda::std::plus<>{},
+      5));
 }

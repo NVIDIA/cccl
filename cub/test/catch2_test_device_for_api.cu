@@ -14,6 +14,8 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/tuple>
 
+#include <iostream>
+
 #include "cub_test_macros.h"
 
 // example-begin bulk-square-t
@@ -82,7 +84,11 @@ CUB_TEST("Device bulk works with temporary storage", "[bulk][device]", CUB_SMALL
   // 1) Get temp storage size
   std::uint8_t* d_temp_storage{};
   std::size_t temp_storage_bytes{};
-  cub::DeviceFor::Bulk(d_temp_storage, temp_storage_bytes, vec.size(), op);
+  const auto query_error = cub::DeviceFor::Bulk(d_temp_storage, temp_storage_bytes, vec.size(), op);
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceFor::Bulk failed with status: " << query_error << '\n';
+  }
 
   // 2) Allocate temp storage
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
@@ -97,6 +103,7 @@ CUB_TEST("Device bulk works with temporary storage", "[bulk][device]", CUB_SMALL
 
   const c2h::device_vector<int> expected = {1, 4, 9, 16};
   // example-end bulk-temp-storage
+  REQUIRE(query_error == cudaSuccess);
 
   REQUIRE(vec == expected);
 }

@@ -62,7 +62,7 @@ static void unique(nvbench::state& state, nvbench::type_list<T, InPlace>)
     d_num_unique,
     static_cast<offset_t>(elements),
     ::cuda::std::equal_to<>{});
-  cudaDeviceSynchronize();
+  _CCCL_TRY_RUNTIME_API(cudaDeviceSynchronize, "Sync failed");
   const offset_t num_unique = num_unique_out[0];
 
   state.add_element_count(elements);

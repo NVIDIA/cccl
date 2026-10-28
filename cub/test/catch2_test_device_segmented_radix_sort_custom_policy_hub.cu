@@ -127,33 +127,37 @@ CUB_TEST("DispatchSegmentedRadixSort::Dispatch: custom policy hub", "[keys][segm
     policy_hub_t>;
 
   size_t temp_size = 0;
-  dispatch_t::Dispatch(
-    nullptr,
-    temp_size,
-    d_keys,
-    d_values,
-    num_items,
-    num_segments,
-    thrust::raw_pointer_cast(offsets.data()),
-    thrust::raw_pointer_cast(offsets.data()) + 1,
-    begin_bit<key_t>(),
-    end_bit<key_t>(),
-    /* is_overwrite_okay */ false,
-    /* stream */ nullptr);
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::Dispatch(
+      nullptr,
+      temp_size,
+      d_keys,
+      d_values,
+      num_items,
+      num_segments,
+      thrust::raw_pointer_cast(offsets.data()),
+      thrust::raw_pointer_cast(offsets.data()) + 1,
+      begin_bit<key_t>(),
+      end_bit<key_t>(),
+      /* is_overwrite_okay */ false,
+      /* stream */ nullptr));
   c2h::device_vector<unsigned char> temp_storage(temp_size, thrust::no_init);
-  dispatch_t::Dispatch(
-    thrust::raw_pointer_cast(temp_storage.data()),
-    temp_size,
-    d_keys,
-    d_values,
-    num_items,
-    num_segments,
-    thrust::raw_pointer_cast(offsets.data()),
-    thrust::raw_pointer_cast(offsets.data()) + 1,
-    begin_bit<key_t>(),
-    end_bit<key_t>(),
-    /* is_overwrite_okay */ false,
-    /* stream */ nullptr);
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::Dispatch(
+      thrust::raw_pointer_cast(temp_storage.data()),
+      temp_size,
+      d_keys,
+      d_values,
+      num_items,
+      num_segments,
+      thrust::raw_pointer_cast(offsets.data()),
+      thrust::raw_pointer_cast(offsets.data()) + 1,
+      begin_bit<key_t>(),
+      end_bit<key_t>(),
+      /* is_overwrite_okay */ false,
+      /* stream */ nullptr));
 
   const auto ref_keys  = segmented_radix_sort_reference(in_keys, /* is_descending */ false, offsets);
   const auto& d_sorted = (d_keys.selector == 0) ? in_keys : out_keys;

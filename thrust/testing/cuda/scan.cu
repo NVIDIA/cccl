@@ -144,12 +144,12 @@ TEST_CASE("TestScanCudaStreams", "[scan]")
   const Vector input_copy(input);
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
   // inclusive scan
 
   iter = thrust::inclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin());
 
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(std::size_t(iter - output.begin()) == input.size());
   REQUIRE(input == input_copy);
@@ -157,7 +157,7 @@ TEST_CASE("TestScanCudaStreams", "[scan]")
 
   // exclusive scan
   iter = thrust::exclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), 0);
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   result = {0, 1, 4, 2, 6};
   REQUIRE(std::size_t(iter - output.begin()) == input.size());
@@ -166,7 +166,7 @@ TEST_CASE("TestScanCudaStreams", "[scan]")
 
   // exclusive scan with init
   iter = thrust::exclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), 3);
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   result = {3, 4, 7, 5, 9};
   REQUIRE(std::size_t(iter - output.begin()) == input.size());
@@ -176,7 +176,7 @@ TEST_CASE("TestScanCudaStreams", "[scan]")
   // inclusive scan with op
   iter =
     thrust::inclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), ::cuda::std::plus<T>());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   result = {1, 4, 2, 6, 1};
   REQUIRE(std::size_t(iter - output.begin()) == input.size());
@@ -186,7 +186,7 @@ TEST_CASE("TestScanCudaStreams", "[scan]")
   // inclusive scan with init and op
   iter = thrust::inclusive_scan(
     thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), 3, ::cuda::std::plus<T>());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   result = {4, 7, 5, 9, 4};
   REQUIRE(std::size_t(iter - output.begin()) == input.size());
@@ -196,7 +196,7 @@ TEST_CASE("TestScanCudaStreams", "[scan]")
   // exclusive scan with init and op
   iter = thrust::exclusive_scan(
     thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), 3, ::cuda::std::plus<T>());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   result = {3, 4, 7, 5, 9};
   REQUIRE(std::size_t(iter - output.begin()) == input.size());
@@ -206,7 +206,7 @@ TEST_CASE("TestScanCudaStreams", "[scan]")
   // inplace inclusive scan
   input = input_copy;
   iter  = thrust::inclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), input.begin());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   result = {1, 4, 2, 6, 1};
   REQUIRE(std::size_t(iter - input.begin()) == input.size());
@@ -215,7 +215,7 @@ TEST_CASE("TestScanCudaStreams", "[scan]")
   // inplace exclusive scan with init
   input = input_copy;
   iter  = thrust::exclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), input.begin(), 3);
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   result = {3, 4, 7, 5, 9};
   REQUIRE(std::size_t(iter - input.begin()) == input.size());
@@ -224,13 +224,13 @@ TEST_CASE("TestScanCudaStreams", "[scan]")
   // inplace exclusive scan with implicit init=0
   input = input_copy;
   iter  = thrust::exclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), input.begin());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   result = {0, 1, 4, 2, 6};
   REQUIRE(std::size_t(iter - input.begin()) == input.size());
   REQUIRE(input == result);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 template <typename T>

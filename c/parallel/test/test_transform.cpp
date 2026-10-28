@@ -839,7 +839,9 @@ C2H_TEST("Transform works with C++ source operations using custom headers", "[tr
 
   // Verify results
   std::vector<T> output(num_items);
-  cudaMemcpy(output.data(), static_cast<void*>(output_ptr.ptr), sizeof(T) * num_items, cudaMemcpyDeviceToHost);
+  REQUIRE(
+    cudaSuccess
+    == cudaMemcpy(output.data(), static_cast<void*>(output_ptr.ptr), sizeof(T) * num_items, cudaMemcpyDeviceToHost));
   std::vector<T> expected = input;
   std::transform(expected.begin(), expected.end(), expected.begin(), [](T x) {
     return x * 2;

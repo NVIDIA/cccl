@@ -60,7 +60,7 @@ bool conditional_body_memcpy_supported()
       cuda_safe_call(cudaGraphExecDestroy(e));
     }
   }
-  cudaGetLastError(); // clear any probe failure
+  static_cast<void>(cudaGetLastError()); // clear any probe failure
   cuda_safe_call(cudaFree(a));
   cuda_safe_call(cudaFree(b));
   cuda_safe_call(cudaGraphDestroy(g));
@@ -122,7 +122,7 @@ bool conditional_body_multi_context_supported(green_context_helper& gc)
   {
     cuda_safe_call(cudaGraphExecDestroy(e));
   }
-  cudaGetLastError(); // clear any probe failure
+  static_cast<void>(cudaGetLastError()); // clear any probe failure
   cuda_safe_call(cudaGraphDestroy(g));
   return ok;
 }

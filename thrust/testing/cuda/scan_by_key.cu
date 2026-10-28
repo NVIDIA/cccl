@@ -139,11 +139,11 @@ TEST_CASE("TestInclusiveScanByKeyCudaStreams", "[scan_by_key]")
   Vector output(7, 0);
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   const Iterator iter =
     thrust::inclusive_scan_by_key(thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin(), output.begin());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(iter == output.end());
 
@@ -158,19 +158,19 @@ TEST_CASE("TestInclusiveScanByKeyCudaStreams", "[scan_by_key]")
     output.begin(),
     ::cuda::std::equal_to<T>(),
     ::cuda::std::multiplies<T>());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   ref = {1, 2, 6, 24, 5, 6, 42};
   REQUIRE(output == ref);
 
   thrust::inclusive_scan_by_key(
     thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin(), output.begin(), ::cuda::std::equal_to<T>());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   ref = {1, 2, 5, 9, 5, 6, 13};
   REQUIRE(output == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestExclusiveScanByKeyCudaStreams", "[scan_by_key]")
@@ -185,11 +185,11 @@ TEST_CASE("TestExclusiveScanByKeyCudaStreams", "[scan_by_key]")
   Vector output(7, 0);
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   const Iterator iter =
     thrust::exclusive_scan_by_key(thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin(), output.begin());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(iter == output.end());
 
@@ -197,7 +197,7 @@ TEST_CASE("TestExclusiveScanByKeyCudaStreams", "[scan_by_key]")
   REQUIRE(output == ref);
 
   thrust::exclusive_scan_by_key(thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin(), output.begin(), T(10));
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   ref = {10, 10, 12, 15, 10, 10, 16};
   REQUIRE(output == ref);
@@ -211,14 +211,14 @@ TEST_CASE("TestExclusiveScanByKeyCudaStreams", "[scan_by_key]")
     T(10),
     ::cuda::std::equal_to<T>(),
     ::cuda::std::multiplies<T>());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   ref = {10, 10, 20, 60, 10, 10, 60};
   REQUIRE(output == ref);
 
   thrust::exclusive_scan_by_key(
     thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin(), output.begin(), T(10), ::cuda::std::equal_to<T>());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   ref = {10, 10, 12, 15, 10, 10, 16};
   REQUIRE(output == ref);

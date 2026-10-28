@@ -670,7 +670,7 @@ void test_partition_cuda_streams(ExecutionPolicy policy)
   data[4] = 2;
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   auto streampolicy = policy.on(s);
 
@@ -686,7 +686,7 @@ void test_partition_cuda_streams(ExecutionPolicy policy)
   REQUIRE(iter - data.begin() == 2);
   REQUIRE(data == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestPartitionCudaStreamsSync", "[partition]")

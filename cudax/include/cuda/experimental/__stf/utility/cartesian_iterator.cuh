@@ -21,6 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+#ifdef UNITTESTED_FILE
+#  include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#endif
+
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <iostream>
@@ -310,7 +314,7 @@ UNITTEST("range")
   }
 
   reserved::unit_test_range_func<<<1, 1>>>(n);
-  cudaDeviceSynchronize();
+  cuda_safe_call(cudaDeviceSynchronize());
 };
 #endif // UNITTESTED_FILE
 
@@ -516,7 +520,7 @@ UNITTEST("StridedRange CUDA")
 {
   const size_t n = 100;
   unit_test_strided_range_func<<<4, 2>>>(n);
-  cudaDeviceSynchronize();
+  cuda_safe_call(cudaDeviceSynchronize());
 };
 #endif // UNITTESTED_FILE
 } // end namespace cuda::experimental::stf::reserved

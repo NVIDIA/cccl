@@ -460,7 +460,8 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
           const cudaError_t event_status = cudaEventQuery(block_itr->ready_event);
           if (event_status != cudaErrorNotReady)
           {
-            CubDebug(event_status);
+            // This should probably be handled probably, but the class is deprecated so oh well.
+            static_cast<void>(CubDebug(event_status));
             is_reusable = true;
           }
         }
@@ -530,7 +531,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
 #endif
 
         error = cudaSuccess; // Reset the error we will return
-        cudaGetLastError(); // Reset CUDART's error
+        static_cast<void>(cudaGetLastError()); // Reset CUDART's error
 
         // Lock
         mutex.lock();
@@ -906,7 +907,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
   {
     if (!skip_cleanup)
     {
-      FreeAllCached();
+      static_cast<void>(FreeAllCached());
     }
   }
 };

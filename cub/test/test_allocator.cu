@@ -14,6 +14,7 @@
 #define CUB_STDERR
 
 #include <cub/util_allocator.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 
 #include <cuda/std/cstdint>
@@ -162,7 +163,7 @@ int main(int argc, char** argv)
   // Allocate 999 bytes on the current gpu in other_stream
   char* d_999B_stream_other_a;
   char* d_999B_stream_other_b;
-  allocator.DeviceAllocate(reinterpret_cast<void**>(&d_999B_stream_other_a), 999, other_stream);
+  CubDebugExit(allocator.DeviceAllocate(reinterpret_cast<void**>(&d_999B_stream_other_a), 999, other_stream));
 
   // Check that that we have 1 live blocks on the initial GPU (that we allocated a new one because d_999B_stream0_b is
   // only available for stream 0 until it becomes idle)

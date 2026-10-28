@@ -577,7 +577,7 @@ public:
   // flags = cudaGraphDebugDotFlagsVerbose to display all available debug information
   void print_to_dot(const ::std::string& filename, enum cudaGraphDebugDotFlags flags = cudaGraphDebugDotFlags(0))
   {
-    cudaGraphDebugDotPrint(get_graph(), filename.c_str(), flags);
+    cuda_try(cudaGraphDebugDotPrint(get_graph(), filename.c_str(), flags));
   }
 
   template <typename T>
@@ -814,12 +814,12 @@ UNITTEST("set_symbol on graph_task and graph_task<>")
   auto lX = ctx.logical_data(X);
   auto lY = ctx.logical_data(Y);
 
-  pin_memory(X);
+  cuda_safe_call(pin_memory(X));
   SCOPE(exit)
   {
     unpin_memory(X);
   };
-  pin_memory(Y);
+  cuda_safe_call(pin_memory(Y));
   SCOPE(exit)
   {
     unpin_memory(Y);
@@ -871,7 +871,7 @@ inline void unit_test_graph_stage()
     A[i] = 1.0 * static_cast<double>(i);
   }
 
-  pin_memory(A);
+  cuda_safe_call(pin_memory(A));
 
   auto lA = ctx.logical_data(make_slice(A.data(), N));
 
@@ -919,7 +919,7 @@ inline void unit_test_graph_empty_stage()
     A[i] = 1.0 * static_cast<double>(i);
   }
 
-  pin_memory(A);
+  cuda_safe_call(pin_memory(A));
 
   auto lA = ctx.logical_data(A);
 
@@ -969,7 +969,7 @@ inline void unit_test_graph_stage_2()
     A[i] = 1.0 * static_cast<double>(i);
   }
 
-  pin_memory(A);
+  cuda_safe_call(pin_memory(A));
 
   auto lA = ctx.logical_data(A);
 
@@ -1029,8 +1029,8 @@ inline void unit_test_graph_stage_3()
     B[i] = -1.0 * static_cast<double>(i);
   }
 
-  pin_memory(A);
-  pin_memory(B);
+  cuda_safe_call(pin_memory(A));
+  cuda_safe_call(pin_memory(B));
 
   auto lA = ctx.logical_data(A);
   auto lB = ctx.logical_data(B);

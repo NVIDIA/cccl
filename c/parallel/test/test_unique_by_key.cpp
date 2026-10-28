@@ -897,8 +897,11 @@ C2H_TEST("UniqueByKey works with C++ source operations", "[unique_by_key]")
 
   std::vector<key_t> output_keys(num_selected);
   std::vector<value_t> output_values(num_selected);
-  cudaMemcpy(output_keys.data(), output_keys_ptr.ptr, num_selected * sizeof(key_t), cudaMemcpyDeviceToHost);
-  cudaMemcpy(output_values.data(), output_values_ptr.ptr, num_selected * sizeof(value_t), cudaMemcpyDeviceToHost);
+  REQUIRE(cudaSuccess
+          == cudaMemcpy(output_keys.data(), output_keys_ptr.ptr, num_selected * sizeof(key_t), cudaMemcpyDeviceToHost));
+  REQUIRE(
+    cudaSuccess
+    == cudaMemcpy(output_values.data(), output_values_ptr.ptr, num_selected * sizeof(value_t), cudaMemcpyDeviceToHost));
 
   REQUIRE(output_keys == expected_keys);
   REQUIRE(output_values == expected_values);
@@ -1003,7 +1006,9 @@ C2H_TEST("UniqueByKey works with C++ source operations using custom headers", "[
 
   // Verify results
   size_t num_selected;
-  cudaMemcpy(&num_selected, static_cast<void*>(output_num_selected_ptr.ptr), sizeof(size_t), cudaMemcpyDeviceToHost);
+  REQUIRE(cudaSuccess
+          == cudaMemcpy(
+            &num_selected, static_cast<void*>(output_num_selected_ptr.ptr), sizeof(size_t), cudaMemcpyDeviceToHost));
 
   std::vector<key_t> expected_keys;
   std::vector<value_t> expected_values;

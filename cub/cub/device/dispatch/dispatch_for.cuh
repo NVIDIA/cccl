@@ -66,9 +66,8 @@ invoke_dynamic_block_size(OffsetT num_items, OpT op, cudaStream_t stream, ForPol
     return error;
   }
 
-  if (auto error = CubDebug(detail::DebugSyncStream(stream)))
+  if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
   {
-    CubDebug(error = SyncStream(stream)); // TODO(bgruber): this does not make sense to me
     return error;
   }
 
@@ -102,9 +101,8 @@ invoke_static_block_size(OffsetT num_items, OpT op, cudaStream_t stream, ForPoli
     return error;
   }
 
-  if (auto error = CubDebug(detail::DebugSyncStream(stream)))
+  if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
   {
-    CubDebug(error = SyncStream(stream)); // TODO(bgruber): this does not make sense to me
     return error;
   }
 

@@ -42,11 +42,11 @@ __global__ void kernel(slice<int> b, long long int clock_cnt)
 int main()
 {
   int device;
-  cudaGetDevice(&device);
+  cuda_safe_call(cudaGetDevice(&device));
 
   // cudaDevAttrClockRate: Peak clock frequency in kilohertz;
   int clock_rate;
-  cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device);
+  cuda_safe_call(cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device));
 
   const double ms         = 500;
   long long int clock_cnt = (long long int) (ms * clock_rate);
