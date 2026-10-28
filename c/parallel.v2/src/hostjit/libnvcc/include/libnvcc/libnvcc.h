@@ -134,6 +134,34 @@ libnvccResult libnvccCompileProgramToObject(
   const char* const* options);
 
 /**
+ * \brief Compile a program to host LLVM IR (and optionally a cubin) instead of
+ * a host object file.
+ *
+ * \param prog Program handle created by libnvccCreateProgram.
+ * \param outputPath Destination path for the host IR: LLVM bitcode, or textual
+ * LLVM IR when the path ends with ".ll".
+ * \param outputCubinPath Optional destination path for the linked device cubin.
+ * Pass NULL or an empty string when the cubin is not needed.
+ * \param numOptions Number of entries in `options`.
+ * \param options Same options as libnvccCompileProgramToObject.
+ *
+ * The pipeline is the one of libnvccCompileProgramToObject up to and including
+ * the fatbin; only the last step differs, so the IR describes exactly the host
+ * code that the object would have contained: the host dispatch of the
+ * program's CUDA calls (for a CUB algorithm, its single-tile / multi-pass
+ * decision, grid computation and temporary-storage arithmetic as functions of
+ * the arguments), one host stub per kernel that calls `cudaLaunchKernel` after
+ * `__cudaPushCallConfiguration`, and the module constructor that registers the
+ * embedded fatbin. A compiler that links this IR into its own host program can
+ * fold the dispatch for static arguments, evaluate it at launch for dynamic
+ * ones, and rewrite the launch calls into its own launch mechanism (for
+ * example CUDA graph kernel nodes against the kernels of `outputCubinPath`),
+ * without re-implementing the library's dispatch logic.
+ */
+libnvccResult libnvccCompileProgramToHostIR(
+  libnvccProgram prog, const char* outputPath, const char* outputCubinPath, int numOptions, const char* const* options);
+
+/**
  * \brief Link object files into a shared library.
  *
  * \param prog Program handle used to store diagnostics from the link step.
