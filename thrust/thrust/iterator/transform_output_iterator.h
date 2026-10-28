@@ -190,12 +190,3 @@ make_transform_output_iterator(OutputIterator out, UnaryFunction fun)
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-_CCCL_BEGIN_NAMESPACE_CUDA
-template <class UnaryFunction, class OutputIterator>
-inline constexpr bool __is_contiguous_iterator_or_adaptor_impl<
-  THRUST_NS_QUALIFIER::transform_output_iterator<UnaryFunction, OutputIterator>> =
-  __is_contiguous_iterator_or_adaptor_v<::cuda::std::remove_cvref_t<OutputIterator>>;
-_CCCL_END_NAMESPACE_CUDA
-#endif // _CCCL_DOXYGEN_INVOKED

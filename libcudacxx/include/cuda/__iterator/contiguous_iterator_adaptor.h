@@ -109,15 +109,6 @@ template <class _Fn, class _Iter>
 inline constexpr bool __is_contiguous_iterator_or_adaptor_impl<::cuda::transform_iterator<_Fn, _Iter>> =
   __is_contiguous_iterator_or_adaptor_impl<::cuda::std::remove_cvref_t<_Iter>>;
 
-template <class _Fn, class _Iter>
-inline constexpr bool __is_contiguous_iterator_or_adaptor_impl<::cuda::transform_output_iterator<_Fn, _Iter>> =
-  ::cuda::std::is_pointer_v<__unwrapped_iterator_t<::cuda::std::remove_cvref_t<_Iter>>>;
-
-template <class _InputFn, class _OutputFn, class _Iter>
-inline constexpr bool
-  __is_contiguous_iterator_or_adaptor_impl<::cuda::transform_input_output_iterator<_InputFn, _OutputFn, _Iter>> =
-    ::cuda::std::is_pointer_v<__unwrapped_iterator_t<::cuda::std::remove_cvref_t<_Iter>>>;
-
 //! @brief True when `_Iter` is contiguous storage, or an adaptor whose stored iterator is.
 //! @tparam _Iter The iterator type to query. cv-qualifiers and references are ignored.
 template <class _Iter>

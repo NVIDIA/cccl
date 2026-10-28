@@ -220,6 +220,16 @@ public:
     return os;
   }
 #endif // _CCCL_HOSTED()
+
+  [[nodiscard]] _CCCL_API ValueType* base() noexcept
+  {
+    return ptr;
+  }
+
+  [[nodiscard]] _CCCL_API const ValueType* base() const noexcept
+  {
+    return ptr;
+  }
 };
 
 namespace detail
