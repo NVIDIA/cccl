@@ -157,11 +157,12 @@ class pointer : public detail::pointer_base<Element, Tag, Reference, Derived>::t
     }
   }
 
-  // don't provide access to this part of super_t's interface
-  using super_t::base;
+  // base_type stays private. Callers use raw_pointer.
   using typename super_t::base_type;
 
 public:
+  //! @brief The stored raw pointer. Public so contiguous unwrapping can reach it.
+  using super_t::base;
   /*! The type of the raw pointer
    */
   using raw_pointer = typename super_t::base_type;
