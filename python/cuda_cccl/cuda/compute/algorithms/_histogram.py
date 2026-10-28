@@ -19,6 +19,14 @@ from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..typing import DeviceArrayLike, IteratorT
 
+try:
+    from .._build_info import USING_V2  # type: ignore[import-not-found]
+except ImportError:
+    USING_V2 = False
+
+# CUB's detail::histogram::max_privatized_smem_bins.
+_MAX_PRIVATIZED_SMEM_BINS = 256
+
 
 class _Histogram(Serializable):
     __slots__ = [
@@ -144,7 +152,6 @@ class _Histogram(Serializable):
 def _make_histogram_even_impl(
     d_samples: DeviceArrayLike | IteratorT,
     d_histogram: DeviceArrayLike,
-    num_output_levels_val: int,
     level_dtype,
     uses_64bit_offset: bool,
     uses_privatized_smem: bool,
@@ -154,8 +161,16 @@ def _make_histogram_even_impl(
 
     The uses_64bit_offset and uses_privatized_smem parameters ensure
     kernels compiled for different offset and bin count regimes aren't reused.
+    The exact level and sample counts are runtime values and stay out of the
+    key.
     """
-    # Reconstruct the numpy arrays expected by _Histogram
+    # v1 only needs num_output_levels to select privatized_smem_bins, so use a
+    # representative value for the requested bin count regime. The actual
+    # level count is passed at launch.
+    if uses_privatized_smem:
+        num_output_levels_val = 2
+    else:
+        num_output_levels_val = _MAX_PRIVATIZED_SMEM_BINS + 2
     h_num_output_levels = np.array([num_output_levels_val], dtype=np.int32)
 
     # Bounds are runtime values. These placeholders only provide storage for
@@ -241,29 +256,33 @@ def make_histogram_even(
             "see https://github.com/NVIDIA/cccl/issues/10940"
         )
 
-    # Mirrors v1 c/parallel/src/histogram.cu offset_cpp selection:
-    # (num_rows * row_stride_samples * sample_size) < INT_MAX selects int,
-    # otherwise long long. cuda.compute currently builds one-row histograms,
-    # so row_stride_samples is num_samples.
-    sample_size = sample_value_type.size
-    int_max = np.iinfo(np.int32).max
-    uses_64bit_offset = num_samples * sample_size >= int_max
+    if USING_V2:
+        # v2 (c/parallel.v2/src/histogram.cu) always compiles 64-bit offsets
+        # and takes the level count and row sizing at launch, so one build
+        # serves every level count and sample count. The flags are fixed
+        # placeholders.
+        uses_64bit_offset = False
+        uses_privatized_smem = True
+    else:
+        # Mirrors v1 c/parallel/src/histogram.cu offset_cpp selection:
+        # (num_rows * row_stride_samples * sample_size) < INT_MAX selects int,
+        # otherwise long long. cuda.compute currently builds one-row
+        # histograms, so row_stride_samples is num_samples.
+        sample_size = sample_value_type.size
+        int_max = np.iinfo(np.int32).max
+        uses_64bit_offset = num_samples * sample_size >= int_max
 
-    # Mirrors CUB's even-histogram dispatch:
-    # detail::histogram::max_privatized_smem_bins is 256, and
-    # dispatch_histogram.cuh uses PRIVATIZED_SMEM_BINS=256 for <=256 bins
-    # and 0 for >256 bins.
-    num_bins = num_output_levels_val - 1
-    uses_privatized_smem = num_bins <= 256
-
-    # TODO: Once v2 is the default, remove uses_64bit_offset,
-    # num_output_levels_val, and uses_privatized_smem from this cache key;
-    # v2 passes row sizing and num_output_levels at runtime.
+        # Mirrors CUB's even-histogram dispatch:
+        # detail::histogram::max_privatized_smem_bins is 256, and
+        # dispatch_histogram.cuh uses PRIVATIZED_SMEM_BINS=256 for <=256 bins
+        # and 0 for >256 bins. This is the only build-time use v1 makes of
+        # the level count.
+        num_bins = num_output_levels_val - 1
+        uses_privatized_smem = num_bins <= _MAX_PRIVATIZED_SMEM_BINS
 
     return _make_histogram_even_impl(
         d_samples,
         d_histogram,
-        num_output_levels_val,
         level_dtype,
         uses_64bit_offset,
         uses_privatized_smem,
