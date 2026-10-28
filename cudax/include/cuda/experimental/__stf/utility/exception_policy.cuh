@@ -2455,8 +2455,8 @@ inline constexpr bool __has_pure_claim<__policy_and<_L, _R>> = __has_pure_claim<
 
 // Forward declaration: `|` and `*` reuse this for arm answer interpretation (defined below).
 template <class _Expr, class _P, class _Fn>
-_CCCL_FORCEINLINE _Expr __interpret_answer(
-  _P& __policy, const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn);
+_CCCL_FORCEINLINE _Expr
+__interpret_answer(_P& __policy, const ::std::exception* __exception, ::cuda::std::source_location __loc, _Fn& __fn);
 
 // The answer type of `|` and `*` is fixed by the callable alone: the callable's result, or the
 // resume tag for a void callable. The composites below spell it as their declared return type

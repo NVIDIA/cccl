@@ -582,7 +582,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_ElementType*, const _MappingType&)
 
 template <class _MappingType, class _AccessorType>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES
-mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
+mdspan(typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
   -> mdspan<typename _AccessorType::element_type,
             typename _MappingType::extents_type,
             typename _MappingType::layout_type,

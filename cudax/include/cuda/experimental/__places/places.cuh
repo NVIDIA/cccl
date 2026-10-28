@@ -786,7 +786,7 @@ public:
    * @param[in] last_axis Last axis to collapse (inclusive)
    * @return A grid over the same places with the selected axes collapsed
    */
-  [[nodiscard]] _CCCL_HOST_API exec_place collapse_axes(const size_t first_axis, const size_t last_axis) const;
+  [[nodiscard]] _CCCL_HOST_API exec_place collapse_axes(size_t first_axis, size_t last_axis) const;
 
   // ===== Activation =====
 
