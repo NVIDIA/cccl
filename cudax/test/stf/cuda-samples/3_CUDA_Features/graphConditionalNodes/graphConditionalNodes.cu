@@ -50,7 +50,6 @@ using namespace cuda::experimental::stf;
 __global__ void doWhileEmptyKernel()
 {
   printf("GPU: doWhileEmptyKernel()\n");
-  return;
 }
 
 __global__ void doWhileLoopKernel(char* dPtr, cudaGraphConditionalHandle handle)
@@ -167,7 +166,6 @@ __global__ void capturedWhileKernel(char* dPtr, cudaGraphConditionalHandle handl
 __global__ void capturedWhileEmptyKernel()
 {
   printf("GPU: capturedWhileEmptyKernel()\n");
-  return;
 }
 
 void capturedWhileGraph()
