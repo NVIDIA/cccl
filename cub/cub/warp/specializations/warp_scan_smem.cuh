@@ -76,9 +76,8 @@ struct WarpScanSmem
    ******************************************************************************/
 
   _TempStorage& temp_storage;
-  unsigned int lane_id = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
-  unsigned int member_mask =
-    CUB_NS_QUALIFIER::WarpMask<LogicalWarpThreads>(CUB_NS_QUALIFIER::detail::logical_warp_id<LogicalWarpThreads>());
+  unsigned int lane_id     = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
+  unsigned int member_mask = CUB_NS_QUALIFIER::detail::warp_mask<LogicalWarpThreads>();
 
   /******************************************************************************
    * Construction

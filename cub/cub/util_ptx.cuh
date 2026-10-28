@@ -160,7 +160,7 @@ template <int LogicalWarpThreads>
 
   if constexpr (is_pow_of_two && !is_arch_warp)
   {
-    return member_mask << warp_id * LogicalWarpThreads;
+    return member_mask << (warp_id * LogicalWarpThreads);
   }
   else
   {

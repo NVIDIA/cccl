@@ -520,9 +520,8 @@ private:
   // A logical warp of 2^n lanes is sorted by a network of n stages.
   static constexpr int num_stages = ::cuda::std::countr_zero(static_cast<unsigned>(LogicalWarpThreads));
 
-  int lane = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
-  unsigned int member_mask =
-    CUB_NS_QUALIFIER::WarpMask<LogicalWarpThreads>(CUB_NS_QUALIFIER::detail::logical_warp_id<LogicalWarpThreads>());
+  int lane                 = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
+  unsigned int member_mask = CUB_NS_QUALIFIER::detail::warp_mask<LogicalWarpThreads>();
 
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op) const

@@ -113,8 +113,7 @@ private:
   using BlockMergeSortStrategyT =
     BlockMergeSortStrategy<KeyT, ValueT, LogicalWarpThreads, ItemsPerThread, WarpMergeSort>;
 
-  const unsigned int warp_id     = CUB_NS_QUALIFIER::detail::logical_warp_id<LogicalWarpThreads>();
-  const unsigned int member_mask = CUB_NS_QUALIFIER::WarpMask<LogicalWarpThreads>(warp_id);
+  const unsigned int member_mask = CUB_NS_QUALIFIER::detail::warp_mask<LogicalWarpThreads>();
 
 public:
   WarpMergeSort() = delete;
