@@ -7,6 +7,9 @@ CCCL runs its build and test matrix on NVIDIA's self-hosted GitHub Actions runne
 The pipeline turns one push into hundreds of jobs across CUDA Toolkit versions,
 host compilers, GPU architectures, C++ standards, and operating systems.
 
+Third-party canary builds for RAPIDS, MatX, and PyTorch run in the nightly workflow only.
+These builds check downstream compatibility with CCCL after changes merge.
+
 Triggering and the copy-pr-bot security model
 ---------------------------------------------
 
@@ -141,7 +144,7 @@ groups for the next run. They also block merge while present, forcing a clean fi
 
 .. code-block:: bash
 
-    git commit -m "README tidy-up [skip-matrix][skip-vdc][skip-docs][skip-tpt]"
+    git commit -m "README tidy-up [skip-matrix][skip-vdc][skip-docs]"
     git commit -m "Run PR benchmarks [bench-only]"
 
 The recognized tags and their semantics are catalogued in :ref:`infra-ci-skip-tags`.
