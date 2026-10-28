@@ -133,7 +133,7 @@ template <::cuda::std::size_t _Align, typename _Group>
           && ::cuda::device::is_address_from(__dest_char, ::cuda::device::address_space::shared)) {
         return ::cuda::__dispatch_memcpy_async_global_to_shared<_Align>(
           __group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
-      } else {
+      } else { // NOLINT(readability-else-after-return)
         return ::cuda::__dispatch_memcpy_async_any_to_any<_Align>(
           __group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
       }),

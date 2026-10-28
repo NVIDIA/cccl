@@ -53,7 +53,7 @@ private:
     {
       return nullptr;
     }
-    else if (__count > static_cast<size_t>(-1) / sizeof(_Tp))
+    if (__count > static_cast<size_t>(-1) / sizeof(_Tp))
     {
       _CCCL_THROW(::std::bad_alloc);
     }

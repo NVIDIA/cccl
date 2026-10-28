@@ -130,28 +130,24 @@ struct BlockReduceRakingCommutativeOnly
     {
       return FallBack(temp_storage.fallback_storage).template Sum<FullTile>(partial, num_valid);
     }
-    else
+    // Place partial into shared memory grid
+    if (linear_tid >= RAKING_THREADS)
     {
-      // Place partial into shared memory grid
-      if (linear_tid >= RAKING_THREADS)
-      {
-        *BlockRakingLayout::PlacementPtr(temp_storage.default_storage.raking_grid, linear_tid - RAKING_THREADS) =
-          partial;
-      }
+      *BlockRakingLayout::PlacementPtr(temp_storage.default_storage.raking_grid, linear_tid - RAKING_THREADS) = partial;
+    }
 
-      __syncthreads();
+    __syncthreads();
 
-      // Reduce parallelism to one warp
-      if (linear_tid < RAKING_THREADS)
-      {
-        // Raking reduction in grid
-        T* raking_segment = BlockRakingLayout::RakingPtr(temp_storage.default_storage.raking_grid, linear_tid);
-        auto span         = ::cuda::std::span<T, SEGMENT_LENGTH>(raking_segment, SEGMENT_LENGTH);
-        partial           = cub::ThreadReduce(span, ::cuda::std::plus<>{}, partial);
+    // Reduce parallelism to one warp
+    if (linear_tid < RAKING_THREADS)
+    {
+      // Raking reduction in grid
+      T* raking_segment = BlockRakingLayout::RakingPtr(temp_storage.default_storage.raking_grid, linear_tid);
+      auto span         = ::cuda::std::span<T, SEGMENT_LENGTH>(raking_segment, SEGMENT_LENGTH);
+      partial           = cub::ThreadReduce(span, ::cuda::std::plus<>{}, partial);
 
-        // Warp reduction
-        partial = WarpReduce(temp_storage.default_storage.warp_storage).Sum(partial);
-      }
+      // Warp reduction
+      partial = WarpReduce(temp_storage.default_storage.warp_storage).Sum(partial);
     }
 
     return partial;
@@ -178,28 +174,24 @@ struct BlockReduceRakingCommutativeOnly
     {
       return FallBack(temp_storage.fallback_storage).template Reduce<FullTile>(partial, num_valid, reduction_op);
     }
-    else
+    // Place partial into shared memory grid
+    if (linear_tid >= RAKING_THREADS)
     {
-      // Place partial into shared memory grid
-      if (linear_tid >= RAKING_THREADS)
-      {
-        *BlockRakingLayout::PlacementPtr(temp_storage.default_storage.raking_grid, linear_tid - RAKING_THREADS) =
-          partial;
-      }
+      *BlockRakingLayout::PlacementPtr(temp_storage.default_storage.raking_grid, linear_tid - RAKING_THREADS) = partial;
+    }
 
-      __syncthreads();
+    __syncthreads();
 
-      // Reduce parallelism to one warp
-      if (linear_tid < RAKING_THREADS)
-      {
-        // Raking reduction in grid
-        T* raking_segment = BlockRakingLayout::RakingPtr(temp_storage.default_storage.raking_grid, linear_tid);
-        auto span         = ::cuda::std::span<T, SEGMENT_LENGTH>(raking_segment, SEGMENT_LENGTH);
-        partial           = cub::ThreadReduce(span, reduction_op, partial);
+    // Reduce parallelism to one warp
+    if (linear_tid < RAKING_THREADS)
+    {
+      // Raking reduction in grid
+      T* raking_segment = BlockRakingLayout::RakingPtr(temp_storage.default_storage.raking_grid, linear_tid);
+      auto span         = ::cuda::std::span<T, SEGMENT_LENGTH>(raking_segment, SEGMENT_LENGTH);
+      partial           = cub::ThreadReduce(span, reduction_op, partial);
 
-        // Warp reduction
-        partial = WarpReduce(temp_storage.default_storage.warp_storage).Reduce(partial, reduction_op);
-      }
+      // Warp reduction
+      partial = WarpReduce(temp_storage.default_storage.warp_storage).Reduce(partial, reduction_op);
     }
 
     return partial;
