@@ -26,7 +26,7 @@ import inspect as _inspect
 import operator as _operator
 from collections.abc import Callable, Iterator
 from copy import deepcopy as _deepcopy
-from typing import Any, Protocol
+from typing import Any, Protocol, TypeVar
 
 from cuda.coop.cutlass._validation import _normalize_alignment
 
@@ -58,8 +58,46 @@ class CutlassTensorSSASample(Protocol):
     def ir_value(self) -> object: ...
 
 
+_ProducerT = TypeVar("_ProducerT")
+
+
+class ThreadDataLoadSource(Protocol[_ProducerT]):
+    """Producer capability that loads one payload into per-thread registers.
+
+    Implementations own the storage-specific copy policy and expose it through
+    this trace-time hook.
+    """
+
+    def __cuda_coop_thread_data_load__(self) -> Any:
+        """Return a register payload that :meth:`ThreadData.load` can adapt."""
+        ...
+
+
+class ThreadDataTensorMetadata(Protocol):
+    """Static shape and dtype used to reconstruct a CuTe ``TensorSSA``."""
+
+    @property
+    def shape(self) -> Any:
+        """Static shape of the target register payload."""
+        ...
+
+    @property
+    def dtype(self) -> Any:
+        """Element type of the target register payload."""
+        ...
+
+
+class ThreadDataSource(
+    ThreadDataLoadSource[_ProducerT],
+    ThreadDataTensorMetadata,
+    Protocol[_ProducerT],
+):
+    """Producer source that supports loading and TensorSSA reconstruction."""
+
+
 _ROOT_SCOPE = "cuda.coop.cutlass"
 _UNSET = object()
+_THREAD_DATA_LOAD_ATTR = "__cuda_coop_thread_data_load__"
 _MEMORY_PROTOCOL_ATTRS = (
     "__array_interface__",
     "__cuda_array_interface__",
@@ -112,6 +150,22 @@ def _first_optional_metadata_attr(
         if candidate is not None:
             return candidate
     return None
+
+
+def _require_like_metadata_attr(
+    value: Any, attr_name: str, *, source: str
+) -> Any:
+    try:
+        metadata = getattr(value, attr_name)
+    except Exception as exc:
+        raise TypeError(
+            f"{source} like= source must expose accessible {attr_name} metadata"
+        ) from exc
+    if metadata is None:
+        raise TypeError(
+            f"{source} like= source must expose non-None {attr_name} metadata"
+        )
+    return metadata
 
 
 def _infer_1d_static_extent(shape: Any) -> int | None:
@@ -809,11 +863,100 @@ class ThreadData:
             dtype=dtype,
         )
 
+    @classmethod
+    def load(
+        cls,
+        source: ThreadDataLoadSource,
+        *,
+        items_per_thread: int | None = None,
+        dtype: Any = None,
+    ) -> ThreadData:
+        """Load a producer-owned source into per-thread registers.
+
+        The source must explicitly implement the private
+        ``__cuda_coop_thread_data_load__`` tracing hook. The producer owns any
+        required tensor-memory-to-register copy, including its copy atom,
+        thread partition, readiness, and lifetime. The hook must return either
+        ``ThreadData`` or a statically sized per-thread register payload
+        accepted by :meth:`from_payload`. The hook is invoked exactly once by
+        each call during DSL tracing; a single-use producer source is
+        responsible for rejecting a second call.
+
+        Bare memory-backed tensors are intentionally not interpreted here:
+        their address space and shape do not provide enough information to
+        safely select or schedule a register load.
+
+        ``items_per_thread`` and ``dtype`` are optional static constraints on
+        the returned register payload, matching :meth:`from_payload`.
+        """
+
+        if items_per_thread is not None:
+            items_per_thread = _validate_items_per_thread(items_per_thread)
+        source_type = type(source).__name__
+        try:
+            _inspect.getattr_static(source, _THREAD_DATA_LOAD_ATTR)
+        except AttributeError:
+            if _is_memory_backed_payload(source):
+                raise TypeError(
+                    f"ThreadData.load source {source_type} requires a "
+                    "producer-provided "
+                    f"{_THREAD_DATA_LOAD_ATTR} hook; bare memory-backed "
+                    "tensors "
+                    "including TMEM do not carry the copy atom, "
+                    "thread partition, "
+                    "readiness, and lifetime needed for a safe register load"
+                ) from None
+            raise TypeError(
+                "ThreadData.load requires source to define the "
+                "producer-provided "
+                f"{_THREAD_DATA_LOAD_ATTR} hook; got {source_type}"
+            ) from None
+
+        try:
+            load_payload = getattr(source, _THREAD_DATA_LOAD_ATTR)
+        except Exception as exc:
+            raise TypeError(
+                f"ThreadData.load could not access {source_type}'s "
+                "producer-provided "
+                f"{_THREAD_DATA_LOAD_ATTR} hook"
+            ) from exc
+        if not callable(load_payload):
+            raise TypeError(
+                f"ThreadData.load source {source_type} requires the "
+                "producer-provided "
+                f"{_THREAD_DATA_LOAD_ATTR} hook to be callable"
+            )
+
+        payload = load_payload()
+        payload_type = type(payload).__name__
+
+        try:
+            return cls.from_payload(
+                payload,
+                items_per_thread=items_per_thread,
+                dtype=dtype,
+            )
+        except TypeError as exc:
+            raise TypeError(
+                f"ThreadData.load hook on {source_type} returned "
+                f"{payload_type}; "
+                "expected ThreadData or a statically sized per-thread register "
+                f"payload: {exc}"
+            ) from exc
+        except ValueError as exc:
+            raise ValueError(
+                f"ThreadData.load hook on {source_type} returned "
+                f"{payload_type}; "
+                "expected ThreadData or a statically sized per-thread register "
+                f"payload: {exc}"
+            ) from exc
+
     def to_tensor_ssa(
         self,
         *,
         dtype: Any = None,
         shape: Any = None,
+        like: ThreadDataTensorMetadata | None = None,
     ) -> Any:
         """Export initialized items as an immutable CuTe register value.
 
@@ -827,6 +970,11 @@ class ThreadData:
             extent must be a positive compile-time integer and the total
             number of elements must equal ``items_per_thread``.
 
+        like : ThreadDataTensorMetadata, optional
+            Supplies missing shape and dtype metadata. Explicit arguments take
+            precedence. Flat item order is preserved; producer-specific lane
+            ownership is not reconstructed by this metadata.
+
         Returns
         -------
         cute.TensorSSA
@@ -836,6 +984,15 @@ class ThreadData:
         """
 
         source = "ThreadData.to_tensor_ssa"
+        if like is not None:
+            if dtype is None:
+                dtype = _require_like_metadata_attr(
+                    like, "dtype", source=source
+                )
+            if shape is None:
+                shape = _require_like_metadata_attr(
+                    like, "shape", source=source
+                )
         dtype = _resolve_export_dtype(dtype, fallback=self.dtype, source=source)
         shape = _resolve_export_shape(
             shape,
@@ -1174,6 +1331,9 @@ def _make_rmem_tensor(
 
 __all__ = [
     "ThreadData",
+    "ThreadDataLoadSource",
+    "ThreadDataTensorMetadata",
+    "ThreadDataSource",
     "_coerce_thread_payload",
     "_make_rmem_tensor",
     "_snapshot_readable_payload",
