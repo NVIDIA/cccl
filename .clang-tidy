@@ -53,13 +53,16 @@ Checks:
   - '-modernize-avoid-variadic-functions'
   - '-modernize-type-traits'
 
-  # - 'readability-*'
-  - 'readability-identifier-naming'
-  - '-readability-function-cognitive-complexity'
-  - '-readability-implicit-bool-conversion'
+  - 'readability-*'
+  # handled by clang-format
   - '-readability-braces-around-statements'
+  # handled by clang-format
+  - '-readability-duplicate-include'
+  # handled by clang-format
+  - '-readability-inconsistent-ifelse-braces'
+  # handled by clang-format
+  - '-readability-misleading-indentation'
   - '-readability-qualified-auto'
-  - '-readability-isolate-declaration'
   - '-readability-named-parameter'
   - '-readability-identifier-length'
   # Generally speaking if something is static then it has an express reason to be. 99% of
@@ -364,6 +367,10 @@ CheckOptions:
   # readability-identifier-naming.ScopedEnumCase: 'lower_case'
   # readability-identifier-naming.ScopedEnumConstantCase: 'UPPER_CASE'
   readability-magic-numbers.IgnoredIntegerValues: '0;1;2;3;4;5;6;7;8;9'
+  readability-redundant-parentheses.AllowedDecls: '::cuda::std::max;::cuda::std::min'
+  readability-redundant-string-init.StringNames: '::std::basic_string;::std::basic_string_view;::cuda::std::basic_string;::llvm::StringRef;::cuda::std::basic_string_view'
+  readability-simplify-subscript-expr.Types: '::std::basic_string;::std::basic_string_view;::std::vector;::std::inplace_vector;::std::array;::std::span;::cuda::std::basic_string;::cuda::std::basic_string_view;::cuda::std::inplace_vector;::cuda::std::array;::cuda::std::span;::cuda::buffer;::thrust::host_vector;::thrust::device_vector;::thrust::detail::vector_base;::llvm::StringRef'
+  readability-string-compare.StringLikeClasses: '::std::basic_string;::std::basic_string_view;::cuda::std::basic_string;::cuda::std::basic_string_view;::llvm::StringRef'
   # performance-*
   performance-move-const-arg.CheckTriviallyCopyableMove: 'false'
   performance-inefficient-string-concatenation.StrictMode: 'true'
