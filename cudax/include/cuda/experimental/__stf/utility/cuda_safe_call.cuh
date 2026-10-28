@@ -552,6 +552,7 @@ UNITTEST("cuda_safe_call")
   cuda_safe_call(CUDA_SUCCESS); // no effect
   int dev;
   cuda_safe_call(cudaGetDevice(&dev)); // continue execution if the call is successful
+  // NOLINTNEXTLINE(readability-simplify-boolean-expr)
   if (false)
   {
     cuda_safe_call(CUDA_ERROR_INVALID_VALUE); // would abort application if called
