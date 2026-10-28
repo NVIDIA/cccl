@@ -76,6 +76,7 @@ public:
       return ::cudaSuccess;
     }
 
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     return launcher_factory.MaxSmOccupancy(blocks_per_sm, kernel, threads_per_block, dynamic_smem_bytes);
   }
 

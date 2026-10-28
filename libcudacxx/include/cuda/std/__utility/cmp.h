@@ -77,7 +77,7 @@ _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
 _CCCL_API constexpr bool cmp_greater(_Tp __t, _Up __u) noexcept
 {
-  return ::cuda::std::cmp_less(__u, __t);
+  return ::cuda::std::cmp_less(__u, __t); // NOLINT(readability-suspicious-call-argument)
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)

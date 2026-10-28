@@ -158,6 +158,7 @@ struct select_then_scan_t
 
     const auto deferred_num_items = cuda::args::deferred{d_num_selected_out};
     size_t scan_temp_storage_bytes{};
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     if (const cudaError_t error = cub::DeviceScan::ExclusiveSum(
           nullptr, scan_temp_storage_bytes, d_selected_out, d_scan_out, deferred_num_items, stream);
         error != cudaSuccess)
@@ -185,6 +186,7 @@ struct select_then_scan_t
       return error;
     }
 
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     return cub::DeviceScan::ExclusiveSum(
       d_temp_storage, scan_temp_storage_bytes, d_selected_out, d_scan_out, deferred_num_items, stream);
   }

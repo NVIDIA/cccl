@@ -183,6 +183,7 @@ _CCCL_HOST_DEVICE_API __cuda_atomic_rmw_result<__unv<_Pointee>> __cuda_atomic_rm
     }
 
     const __rmw_type __attempt = ::cuda::std::__cuda_atomic_rmw_replace(__old, __update.__value, __offset);
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     if (__cuda_atomic_compare_exchange(
           __backend, __aligned, __old, __old, __attempt, __cuda_atomic_cas_weak{}, __order, _RmwOperand{}, __scope))
     {
