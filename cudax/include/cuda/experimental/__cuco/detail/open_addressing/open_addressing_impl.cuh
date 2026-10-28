@@ -27,6 +27,7 @@
 #include <cub/device/device_transform.cuh>
 
 #include <cuda/__algorithm/copy.h>
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__container/buffer.h>
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__hierarchy/level_dimensions.h>
@@ -44,6 +45,7 @@
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/span>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
@@ -109,10 +111,15 @@ public:
                 "ProbingScheme must inherit from cuda::experimental::cuco::detail::__probing_scheme_base");
 
 private:
-  // Key-only slots use packed CAS; subword CAS accesses complete 32-bit words. Buffer alignment
-  // also pads the allocation, while payload-bearing slots retain their natural alignment.
+  static constexpr auto __has_packable_representation =
+    sizeof(__value_type) <= 8 && ::cuda::is_power_of_two(sizeof(__value_type))
+    && ::cuda::std::is_trivially_copyable_v<__value_type>;
+
+  // Align packable slots for whole-slot CAS. Non-packable payload slots retain their natural
+  // alignment; key-only subword slots also need allocation padding for complete 32-bit accesses.
   static constexpr __size_type __storage_alignment =
-    __has_payload ? alignof(__value_type) : (sizeof(__value_type) < 4 ? 4 : sizeof(__value_type));
+    __has_payload ? (__has_packable_representation ? sizeof(__value_type) : alignof(__value_type))
+                  : (sizeof(__value_type) < 4 ? 4 : sizeof(__value_type));
 
   __value_type __empty_slot_sentinel;
   __key_type __erased_key_sentinel;
