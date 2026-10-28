@@ -659,21 +659,30 @@ void validate_distribution_characteristic()
     // test Distribution with same range as engine
 
     // test host
-    thrust::generate(h.begin(), h.end(), Validator(Distribution((engine_traits::min) (), (engine_traits::max) ())));
+    thrust::generate(
+      h.begin(),
+      h.end(),
+      Validator(
+        Distribution((engine_traits::min) (), (engine_traits::max) ()))); // NOLINT(readability-redundant-parentheses)
 
     REQUIRE(h[0]);
 
     // test device
-    thrust::generate(d.begin(), d.end(), Validator(Distribution((engine_traits::min) (), (engine_traits::max) ())));
+    thrust::generate(
+      d.begin(),
+      d.end(),
+      Validator(
+        Distribution((engine_traits::min) (), (engine_traits::max) ()))); // NOLINT(readability-redundant-parentheses)
 
     REQUIRE(d[0]);
 
     // test Distribution with smaller range than engine
 
     // test host
-    const typename Distribution::result_type engine_range = (engine_traits::max) () - (engine_traits::min) ();
-    const typename Distribution::result_type smaller_min  = engine_range / 3;
-    const typename Distribution::result_type smaller_max  = engine_range - smaller_min;
+    const typename Distribution::result_type engine_range =
+      (engine_traits::max) () - (engine_traits::min) (); // NOLINT(readability-redundant-parentheses)
+    const typename Distribution::result_type smaller_min = engine_range / 3;
+    const typename Distribution::result_type smaller_max = engine_range - smaller_min;
 
     thrust::generate(h.begin(), h.end(), Validator(Distribution(smaller_min, smaller_max)));
 

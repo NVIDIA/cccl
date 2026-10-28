@@ -351,7 +351,7 @@ private:
   {
     PackedCounter* smem_raking_ptr = temp_storage.aliasable.raking_grid[linear_tid];
 
-    PackedCounter* raking_ptr = (MemoizeOuterScan) ? cached_segment : smem_raking_ptr;
+    PackedCounter* raking_ptr = MemoizeOuterScan ? cached_segment : smem_raking_ptr;
 
     // Exclusive raking downsweep scan
     detail::ThreadScanExclusive<RAKING_SEGMENT>(raking_ptr, raking_ptr, ::cuda::std::plus<>{}, raking_partial);
@@ -565,7 +565,7 @@ public:
         // Obtain ex/inclusive digit counts.  (Unfortunately these all reside in the
         // first counter column, resulting in unavoidable bank conflicts.)
         const unsigned int counter_lane = (bin_idx & (COUNTER_LANES - 1));
-        const unsigned int sub_counter  = bin_idx >> (LOG_COUNTER_LANES);
+        const unsigned int sub_counter  = bin_idx >> LOG_COUNTER_LANES;
 
         exclusive_digit_prefix[track] = temp_storage.aliasable.digit_counters[counter_lane][0][sub_counter];
       }

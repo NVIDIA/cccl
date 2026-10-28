@@ -43,7 +43,7 @@ protected:
   {
     using uint_type                = typename UniformRandomNumberGenerator::result_type;
     using traits                   = thrust::random::detail::urng_traits<UniformRandomNumberGenerator>;
-    constexpr uint_type urng_range = (traits::max) () - (traits::min) ();
+    constexpr uint_type urng_range = (traits::max) () - (traits::min) (); // NOLINT(readability-redundant-parentheses)
 
     // Constants for conversion
     constexpr RealType S1 = static_cast<RealType>(1. / static_cast<double>(urng_range));
@@ -52,7 +52,7 @@ protected:
     auto S3 = -::cuda::std::__numbers<RealType>::__sqrt2();
 
     // Get the integer value
-    uint_type u = urng() - (traits::min) ();
+    uint_type u = urng() - (traits::min) (); // NOLINT(readability-redundant-parentheses)
 
     // Ensure the conversion to float will give a value in the range [0,0.5)
     if (u > (urng_range / 2))

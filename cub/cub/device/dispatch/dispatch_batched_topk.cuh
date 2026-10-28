@@ -415,7 +415,8 @@ _CCCL_HOST_API ::cuda::std::expected<cluster_launch_shape, cudaError_t> select_c
       const auto min_candidate_blocks = (::cuda::std::max) (2, static_cast<int>(min_blocks_per_segment));
       const auto max_candidate_blocks =
         ::cuda::std::clamp(min_candidate_blocks, desired_cluster_blocks, eff_max_blocks_per_cluster);
-      auto best_waves = (::cuda::std::numeric_limits<::cuda::std::uint64_t>::max)();
+      auto best_waves =
+        (::cuda::std::numeric_limits<::cuda::std::uint64_t>::max)(); // NOLINT(readability-redundant-parentheses)
       for (int candidate_blocks = min_candidate_blocks; candidate_blocks <= max_candidate_blocks; ++candidate_blocks)
       {
         const auto num_block_items    = ::cuda::ceil_div(max_segment_size, candidate_blocks);

@@ -108,7 +108,7 @@ template <class _Tp>
   static_assert(::cuda::std::numeric_limits<_Tp>::is_specialized,
                 "cuda::args bounds require a specialized cuda::std::numeric_limits for the element type. Provide "
                 "explicit bounds for element types without a numeric_limits specialization.");
-  return (::cuda::std::numeric_limits<_Tp>::max)();
+  return (::cuda::std::numeric_limits<_Tp>::max)(); // NOLINT(readability-redundant-parentheses)
 }
 
 // =====================================================================

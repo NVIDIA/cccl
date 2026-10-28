@@ -788,7 +788,7 @@ public:
   template <typename... Deps>
   auto launch(exec_place e_place, task_dep<Deps>... deps)
   {
-    return launch(par(par()), mv(e_place), (deps)...);
+    return launch(par(par()), mv(e_place), deps...);
   }
 
   // /* Default execution policy, on automatically selected device */
