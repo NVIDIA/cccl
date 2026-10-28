@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 440" role="img" aria-labelledby="title desc">
+<title id="title">Three batches reduced independently across four lanes</title>
+<desc id="desc">Each lane has three slots, one per batch. Inputs in lanes zero through three are 1 2 3, 3 4 5, 5 6 7, and 7 8 9. Summing across lanes gives batch sums 16, 20, and 24. Lanes zero, one, and two own those results; lane three has an unspecified slot.</desc>
+<rect width="960" height="440" rx="12" fill="#f7f9fc"/>
+<g font-family="sans-serif" fill="#203341">
+<text x="24" y="34" font-size="22" font-weight="600">Batched warp reduction: sum each feature across lanes</text>
+<text x="24" y="60" font-size="15">One logical warp of four lanes. Color identifies the batch, not the lane.</text>
+<text x="24" y="99" font-size="16" font-weight="600">Input payloads (preserved)</text>
+<text x="131" y="125" text-anchor="middle" font-size="14">Lane 0</text>
+<rect x="40" y="137" width="56" height="45" rx="5" fill="#dceac1" stroke="#9facba"/>
+<text x="68" y="166" text-anchor="middle" font-size="18">1</text>
+<text x="68" y="202" text-anchor="middle" font-size="12">B0</text>
+<rect x="102" y="137" width="56" height="45" rx="5" fill="#c9eaf0" stroke="#9facba"/>
+<text x="130" y="166" text-anchor="middle" font-size="18">2</text>
+<text x="130" y="202" text-anchor="middle" font-size="12">B1</text>
+<rect x="164" y="137" width="56" height="45" rx="5" fill="#fff0bd" stroke="#9facba"/>
+<text x="192" y="166" text-anchor="middle" font-size="18">3</text>
+<text x="192" y="202" text-anchor="middle" font-size="12">B2</text>
+<text x="361" y="125" text-anchor="middle" font-size="14">Lane 1</text>
+<rect x="270" y="137" width="56" height="45" rx="5" fill="#dceac1" stroke="#9facba"/>
+<text x="298" y="166" text-anchor="middle" font-size="18">3</text>
+<text x="298" y="202" text-anchor="middle" font-size="12">B0</text>
+<rect x="332" y="137" width="56" height="45" rx="5" fill="#c9eaf0" stroke="#9facba"/>
+<text x="360" y="166" text-anchor="middle" font-size="18">4</text>
+<text x="360" y="202" text-anchor="middle" font-size="12">B1</text>
+<rect x="394" y="137" width="56" height="45" rx="5" fill="#fff0bd" stroke="#9facba"/>
+<text x="422" y="166" text-anchor="middle" font-size="18">5</text>
+<text x="422" y="202" text-anchor="middle" font-size="12">B2</text>
+<text x="591" y="125" text-anchor="middle" font-size="14">Lane 2</text>
+<rect x="500" y="137" width="56" height="45" rx="5" fill="#dceac1" stroke="#9facba"/>
+<text x="528" y="166" text-anchor="middle" font-size="18">5</text>
+<text x="528" y="202" text-anchor="middle" font-size="12">B0</text>
+<rect x="562" y="137" width="56" height="45" rx="5" fill="#c9eaf0" stroke="#9facba"/>
+<text x="590" y="166" text-anchor="middle" font-size="18">6</text>
+<text x="590" y="202" text-anchor="middle" font-size="12">B1</text>
+<rect x="624" y="137" width="56" height="45" rx="5" fill="#fff0bd" stroke="#9facba"/>
+<text x="652" y="166" text-anchor="middle" font-size="18">7</text>
+<text x="652" y="202" text-anchor="middle" font-size="12">B2</text>
+<text x="821" y="125" text-anchor="middle" font-size="14">Lane 3</text>
+<rect x="730" y="137" width="56" height="45" rx="5" fill="#dceac1" stroke="#9facba"/>
+<text x="758" y="166" text-anchor="middle" font-size="18">7</text>
+<text x="758" y="202" text-anchor="middle" font-size="12">B0</text>
+<rect x="792" y="137" width="56" height="45" rx="5" fill="#c9eaf0" stroke="#9facba"/>
+<text x="820" y="166" text-anchor="middle" font-size="18">8</text>
+<text x="820" y="202" text-anchor="middle" font-size="12">B1</text>
+<rect x="854" y="137" width="56" height="45" rx="5" fill="#fff0bd" stroke="#9facba"/>
+<text x="882" y="166" text-anchor="middle" font-size="18">9</text>
+<text x="882" y="202" text-anchor="middle" font-size="12">B2</text>
+<text x="24" y="245" font-size="15">Reduce each batch across all four lanes: B0 = 16, B1 = 20, B2 = 24.</text>
+<text x="24" y="284" font-size="16" font-weight="600">Fresh results: ceil(3 batches / 4 lanes) = 1 slot per lane</text>
+<rect x="102" y="310" width="56" height="45" rx="5" fill="#dceac1" stroke="#9facba"/>
+<text x="130" y="339" text-anchor="middle" font-size="18">16</text>
+<text x="130" y="379" text-anchor="middle" font-size="14">Lane 0: batch 0</text>
+<rect x="332" y="310" width="56" height="45" rx="5" fill="#c9eaf0" stroke="#9facba"/>
+<text x="360" y="339" text-anchor="middle" font-size="18">20</text>
+<text x="360" y="379" text-anchor="middle" font-size="14">Lane 1: batch 1</text>
+<rect x="562" y="310" width="56" height="45" rx="5" fill="#fff0bd" stroke="#9facba"/>
+<text x="590" y="339" text-anchor="middle" font-size="18">24</text>
+<text x="590" y="379" text-anchor="middle" font-size="14">Lane 2: batch 2</text>
+<rect x="792" y="310" width="56" height="45" rx="5" fill="#e8edf0" stroke="#9facba"/>
+<text x="820" y="339" text-anchor="middle" font-size="18">?</text>
+<text x="820" y="379" text-anchor="middle" font-size="14">Lane 3: no batch</text>
+<text x="24" y="418" font-size="15">The padded slot is unspecified. Every lane participates; only lanes with a batch store a result.</text>
+</g></svg>
