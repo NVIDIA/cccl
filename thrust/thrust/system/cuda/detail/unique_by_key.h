@@ -39,7 +39,8 @@
 THRUST_NAMESPACE_BEGIN
 
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator1, ForwardIterator2>
+unique_by_key( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator1 keys_first,
   ForwardIterator1 keys_last,
@@ -49,7 +50,8 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2>
+unique_by_key_copy( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,

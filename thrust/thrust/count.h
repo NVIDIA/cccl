@@ -81,7 +81,7 @@ THRUST_NAMESPACE_BEGIN
  */
 template <typename DerivedPolicy, typename InputIterator, typename EqualityComparable>
 _CCCL_HOST_DEVICE thrust::detail::it_difference_t<InputIterator>
-count(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+count(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, // NOLINT(readability-redundant-declaration)
       InputIterator first,
       InputIterator last,
       const EqualityComparable& value);
@@ -127,7 +127,9 @@ count(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  */
 template <typename InputIterator, typename EqualityComparable>
 thrust::detail::it_difference_t<InputIterator>
-count(InputIterator first, InputIterator last, const EqualityComparable& value);
+count(InputIterator first, // NOLINT(readability-redundant-declaration)
+      InputIterator last,
+      const EqualityComparable& value);
 
 /*! \p count_if finds the number of elements in <tt>[first,last)</tt> for which
  *  a predicate is \c true. More precisely, \p count_if returns the number of iterators
@@ -184,7 +186,7 @@ count(InputIterator first, InputIterator last, const EqualityComparable& value);
  */
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE thrust::detail::it_difference_t<InputIterator>
-count_if(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+count_if(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, // NOLINT(readability-redundant-declaration)
          InputIterator first,
          InputIterator last,
          Predicate pred);
@@ -237,7 +239,8 @@ count_if(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endverbatim
  */
 template <typename InputIterator, typename Predicate>
-thrust::detail::it_difference_t<InputIterator> count_if(InputIterator first, InputIterator last, Predicate pred);
+thrust::detail::it_difference_t<InputIterator>
+count_if(InputIterator first, InputIterator last, Predicate pred); // NOLINT(readability-redundant-declaration)
 
 /*! \} // end counting
  *  \} // end reductions

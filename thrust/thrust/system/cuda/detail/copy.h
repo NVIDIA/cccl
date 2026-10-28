@@ -38,12 +38,19 @@ namespace cuda_cub
 // Forward declare since we need it in the implementation non_trivial_cross_system_copy_n
 template <class System, class InputIterator, class Size, class OutputIterator>
 OutputIterator _CCCL_HOST_DEVICE
-copy_n(execution_policy<System>& system, InputIterator first, Size n, OutputIterator result);
+copy_n(execution_policy<System>& system, // NOLINT(readability-redundant-declaration)
+       InputIterator first,
+       Size n,
+       OutputIterator result);
 
 // Forward declare to work around a cyclic include, since "cuda/detail/transform.h" includes this header
 template <class Derived, class InputIt, class OutputIt, class TransformOp>
-OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE
-transform(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, TransformOp transform_op);
+OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE transform( // NOLINT(readability-redundant-declaration)
+  execution_policy<Derived>& policy,
+  InputIt first,
+  InputIt last,
+  OutputIt result,
+  TransformOp transform_op);
 
 // Forward declare to work around a cyclic include, since "cuda/detail/transform.h" includes this header
 // We want this to unwrap zip_transform_iterator
@@ -51,7 +58,7 @@ namespace __transform
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class Offset, class... InputIts, class OutputIt, class TransformOp, class Predicate>
-OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cub_transform_many(
+OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cub_transform_many( // NOLINT(readability-redundant-declaration)
   execution_policy<Derived>& policy,
   ::cuda::std::tuple<InputIts...> firsts,
   OutputIt result,

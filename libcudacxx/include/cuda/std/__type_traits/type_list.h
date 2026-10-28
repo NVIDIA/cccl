@@ -103,11 +103,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_list
   using __call _CCCL_NODEBUG = __type_call<_Fn, _Ts..., _Us...>;
 };
 
-// Before the addition of inline variables, it was necessary to
-// provide a definition for constexpr class static data members.
-template <class... _Ts>
-constexpr size_t const __type_list<_Ts...>::__size;
-
 //! \brief Given a type list and a list of types, append the types to the list.
 template <class _List, class... _Ts>
 using __type_push_back = __type_call<_List, __type_quote<__type_list>, _Ts...>;

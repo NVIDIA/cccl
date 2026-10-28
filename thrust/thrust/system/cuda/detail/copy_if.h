@@ -34,7 +34,7 @@ THRUST_NAMESPACE_BEGIN
 // XXX declare generic copy_if interface
 // to avoid circulular dependency from thrust/copy.h
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if(
+_CCCL_HOST_DEVICE OutputIterator copy_if( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -46,7 +46,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if(
+_CCCL_HOST_DEVICE OutputIterator copy_if( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
