@@ -120,6 +120,10 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
       using warp_scan_t = cub::WarpScan<int>;
       using warp_scan_storage_t = warp_scan_t::TempStorage;
 
+      // Logical warp size that is not a power of two (WarpScanSmem)
+      using warp_scan_7_t = cub::WarpScan<int, 7>;
+      using warp_scan_7_storage_t = warp_scan_7_t::TempStorage;
+
       using warp_store_t = cub::WarpStore<int, items_per_thread>;
       using warp_store_storage_t = warp_store_t::TempStorage;
 
@@ -128,6 +132,7 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
       __shared__ warp_reduce_storage_t warp_reduce_storage;
       __shared__ warp_merge_sort_storage_t warp_merge_sort_storage;
       __shared__ warp_scan_storage_t warp_scan_storage;
+      __shared__ warp_scan_7_storage_t warp_scan_7_storage;
       __shared__ warp_store_storage_t warp_store_storage;
 
       int items[items_per_thread];
@@ -171,6 +176,19 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
         if (prefix_sum != (threadIdx.x * (threadIdx.x + 1) / 2))
         {
           atomicAdd(errors, 1);
+        }
+
+        // Test partial warp scan with 7 threads per logical warp
+        if (threadIdx.x < 7)
+        {
+          constexpr int partial_valid_items = 5;
+          int partial_prefix_sum{};
+          warp_scan_7_t(warp_scan_7_storage)
+            .InclusiveScanPartial(items[0], partial_prefix_sum, ::cuda::std::plus<>{}, partial_valid_items);
+          if (threadIdx.x < partial_valid_items && partial_prefix_sum != (threadIdx.x * (threadIdx.x + 1) / 2))
+          {
+            atomicAdd(errors, 1);
+          }
         }
 
         // Test warp merge sort
