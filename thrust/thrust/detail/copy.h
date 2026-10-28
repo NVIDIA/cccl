@@ -28,10 +28,11 @@ _CCCL_HOST_DEVICE OutputIterator
 copy_n(const thrust::detail::execution_policy_base<System>& exec, InputIterator first, Size n, OutputIterator result);
 
 template <typename InputIterator, typename OutputIterator>
-OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result);
+OutputIterator
+copy(InputIterator first, InputIterator last, OutputIterator result); // NOLINT(readability-redundant-declaration)
 
 template <typename InputIterator, typename Size, typename OutputIterator>
-OutputIterator copy_n(InputIterator first, Size n, OutputIterator result);
+OutputIterator copy_n(InputIterator first, Size n, OutputIterator result); // NOLINT(readability-redundant-declaration)
 
 namespace detail
 {
