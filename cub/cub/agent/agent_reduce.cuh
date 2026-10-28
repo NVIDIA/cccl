@@ -22,6 +22,7 @@
 #include <cub/detail/cub_vector.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/numeric_traits.cuh>
+#include <cub/detail/type_traits.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/grid/grid_mapping.cuh>
@@ -29,7 +30,7 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
-#include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/__memory/__vectorized_storage.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
@@ -201,8 +202,9 @@ struct AgentReduceImpl
   /// The input value type
   using InputT = it_value_t<InputIteratorT>;
 
-  /// Vector type of InputT for data movement
-  using VectorT = typename CubVector<InputT, AgentReducePolicy::VECTOR_LOAD_LENGTH>::Type;
+  /// Vector type of InputT for data movement. Cache modified loads are at most 16 bytes wide, so they gain nothing from
+  /// a stricter alignment
+  using VectorT = ::cuda::__as_vectorized_storage_t<InputT, AgentReducePolicy::VECTOR_LOAD_LENGTH, 16ull>;
 
   /// Input iterator wrapper type (for applying cache modifier)
   // Wrap the native input pointer with CacheModifiedInputIterator
@@ -221,14 +223,11 @@ struct AgentReduceImpl
   // pointer to a primitive type
   // TODO(bgruber): we should not check for `is_pointer_v` but `contiguous_iterator` and unwrap it
   static constexpr bool ATTEMPT_VECTORIZATION =
-    (vec_size > 1) && (ITEMS_PER_THREAD % vec_size == 0)
-    && (::cuda::std::is_pointer_v<InputIteratorT>)
-         // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
-         &&(is_primitive<InputT>::value || ::cuda::is_trivially_copyable_v<InputT>)
-         // vectorizing large types leads to regressions again, see https://github.com/NVIDIA/cccl/issues/9761
-         // TODO(bgruber): this should be decided by tuning
-         &&sizeof(InputT)
-         <= 8;
+    (vec_size > 1) && (ITEMS_PER_THREAD % vec_size == 0) && ::cuda::std::is_pointer_v<InputIteratorT>
+    && block_load_can_vectorize_v<InputIteratorT, InputT>
+    // vectorizing large types leads to regressions again, see https://github.com/NVIDIA/cccl/issues/9761
+    // TODO(bgruber): this should be decided by tuning
+    && sizeof(InputT) <= 8;
 
   static constexpr CacheLoadModifier LOAD_MODIFIER = AgentReducePolicy::LOAD_MODIFIER;
 
