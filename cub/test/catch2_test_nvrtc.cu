@@ -184,8 +184,8 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
           constexpr int partial_valid_items = 5;
           int partial_prefix_sum{};
           warp_scan_7_t(warp_scan_7_storage)
-            .InclusiveScanPartial(items[0], partial_prefix_sum, ::cuda::std::plus<>{}, partial_valid_items);
-          if (threadIdx.x < partial_valid_items && partial_prefix_sum != (threadIdx.x * (threadIdx.x + 1) / 2))
+            .InclusiveScanPartial(items[0] + 1, partial_prefix_sum, ::cuda::std::plus<>{}, partial_valid_items);
+          if (threadIdx.x < partial_valid_items && partial_prefix_sum != ((threadIdx.x + 1) * (threadIdx.x + 2) / 2))
           {
             atomicAdd(errors, 1);
           }
