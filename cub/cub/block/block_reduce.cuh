@@ -551,10 +551,7 @@ public:
     {
       return InternalBlockReduce(temp_storage).template Reduce<true>(input, BLOCK_THREADS, reduction_op);
     }
-    else
-    {
-      return InternalBlockReduce(temp_storage).template Reduce<false>(input, num_valid, reduction_op);
-    }
+    return InternalBlockReduce(temp_storage).template Reduce<false>(input, num_valid, reduction_op);
   }
 
   //! @}
@@ -712,10 +709,7 @@ public:
     {
       return InternalBlockReduce(temp_storage).template Sum<true>(input, BLOCK_THREADS);
     }
-    else
-    {
-      return InternalBlockReduce(temp_storage).template Sum<false>(input, num_valid);
-    }
+    return InternalBlockReduce(temp_storage).template Sum<false>(input, num_valid);
   }
 
   //! @}

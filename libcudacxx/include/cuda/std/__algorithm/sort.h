@@ -954,13 +954,10 @@ _CCCL_API void __introsort(
         __last = __i;
         continue;
       }
-      else
+      if (__fs)
       {
-        if (__fs)
-        {
-          __first = ++__i;
-          continue;
-        }
+        __first = ++__i;
+        continue;
       }
     }
     // Sort the left partition recursively and the right partition with tail recursion elimination.
