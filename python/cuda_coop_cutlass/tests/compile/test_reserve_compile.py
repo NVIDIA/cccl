@@ -101,7 +101,9 @@ def test_capacity_accounts_for_every_reservation(sharing, capacity):
         _compile(launch)
 
 
-@pytest.mark.parametrize("order", ("reserve_only",))
+@pytest.mark.parametrize(
+    "order", ("reserve_only", "primitive_first", "reserve_first")
+)
 def test_auto_sync_rejected_through_aliases_and_policy_changes(order):
     """Audit prior and later primitive uses, including a mutated descriptor."""
 

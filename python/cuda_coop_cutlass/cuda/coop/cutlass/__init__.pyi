@@ -4,6 +4,8 @@
 
 from ._group_load_store import load as load
 from ._group_load_store import store as store
+from ._group_reduce import reduce as reduce
+from ._group_reduce import sum as sum
 from ._temp_storage import TempStorage as TempStorage
 from ._thread_data import ThreadData as ThreadData
 from ._thread_group import (
