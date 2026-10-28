@@ -861,11 +861,8 @@ public:
       assert(size() == new_size);
       return big().data() + (result - big().begin());
     }
-    else
-    {
-      auto result = big().insert(big().begin() + (pos - big().data()), first, last);
-      return big().data() + (result - big().begin());
-    }
+    auto result = big().insert(big().begin() + (pos - big().data()), first, last);
+    return big().data() + (result - big().begin());
   }
 
   iterator insert(const_iterator pos, ::std::initializer_list<T> ilist);
@@ -884,13 +881,10 @@ public:
       small_length -= static_cast<decltype(small_length)>(last - first);
       return result;
     }
-    else
-    {
-      auto f_     = big().begin() + (first - big().data());
-      auto l_     = big().begin() + (last - big().data());
-      auto result = big().erase(f_, l_);
-      return big().data() + (result - big().begin());
-    }
+    auto f_     = big().begin() + (first - big().data());
+    auto l_     = big().begin() + (last - big().data());
+    auto result = big().erase(f_, l_);
+    return big().data() + (result - big().begin());
   }
 
   void push_back(const T& value)

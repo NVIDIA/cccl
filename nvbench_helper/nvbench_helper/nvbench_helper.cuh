@@ -189,23 +189,23 @@ NVBENCH_DECLARE_TYPE_STRINGS(bit_entropy, "BE", "bit entropy");
   {
     return bit_entropy::_1_000;
   }
-  else if (str == "0.811")
+  if (str == "0.811")
   {
     return bit_entropy::_0_811;
   }
-  else if (str == "0.544")
+  if (str == "0.544")
   {
     return bit_entropy::_0_544;
   }
-  else if (str == "0.337")
+  if (str == "0.337")
   {
     return bit_entropy::_0_337;
   }
-  else if (str == "0.201")
+  if (str == "0.201")
   {
     return bit_entropy::_0_201;
   }
-  else if (str == "0.000")
+  if (str == "0.000")
   {
     return bit_entropy::_0_000;
   }
@@ -477,7 +477,7 @@ struct less_t
       // NaN's are always equal.
       return false;
     }
-    else if (cuda::std::isinf(magnitude_0) || cuda::std::isinf(magnitude_1))
+    if (cuda::std::isinf(magnitude_0) || cuda::std::isinf(magnitude_1))
     {
       // If the real or imaginary part of the complex number has a very large value
       // (close to the maximum representable value for a double), it is possible that
@@ -505,10 +505,8 @@ struct less_t
 
       return phase_angle_0 < phase_angle_1;
     }
-    else
-    {
-      return magnitude_0 < magnitude_1;
-    }
+
+    return magnitude_0 < magnitude_1;
   }
 };
 

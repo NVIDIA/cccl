@@ -97,7 +97,6 @@ Checks:
   - '-readability-use-concise-preprocessor-directives'
   - '-readability-uppercase-literal-suffix'
   - '-readability-math-missing-parentheses'
-  - '-readability-else-after-return'
   - '-readability-avoid-nested-conditional-operator'
   - '-readability-redundant-access-specifiers'
   - '-readability-redundant-declaration'
