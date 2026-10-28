@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from ._group_exchange import exchange as exchange
+from ._group_histogram import histogram as histogram
 from ._group_load_store import load as load
 from ._group_load_store import store as store
 from ._group_merge_sort import merge_sort_keys as merge_sort_keys
