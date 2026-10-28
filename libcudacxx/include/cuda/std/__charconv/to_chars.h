@@ -70,17 +70,17 @@ template <class _Tp>
       __r += 1;
       break;
     }
-    else if (__uv < __ubase_2)
+    if (__uv < __ubase_2)
     {
       __r += 2;
       break;
     }
-    else if (__uv < __ubase_3)
+    if (__uv < __ubase_3)
     {
       __r += 3;
       break;
     }
-    else if (__uv < __ubase_4)
+    if (__uv < __ubase_4)
     {
       __r += 4;
       break;

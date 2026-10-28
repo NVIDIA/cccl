@@ -270,10 +270,7 @@ struct get_agent_plan_impl<Agent, typelist<SM, Tail...>>
     {
       return Plan(specialize_plan<Agent::template PtxPlan, SM>());
     }
-    else
-    {
-      return get_agent_plan_impl<Agent, typelist<Tail...>>::get(ptx_version);
-    }
+    return get_agent_plan_impl<Agent, typelist<Tail...>>::get(ptx_version);
   }
 };
 
@@ -336,10 +333,7 @@ THRUST_RUNTIME_FUNCTION inline size_t vshmem_size(size_t shmem_per_block, size_t
   {
     return shmem_per_block * num_blocks;
   }
-  else
-  {
-    return 0;
-  }
+  return 0;
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 

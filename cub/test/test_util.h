@@ -864,7 +864,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.x < x)
+    if (b.x < x)
     {
       return false;
     }
@@ -872,7 +872,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.y < y)
+    if (b.y < y)
     {
       return false;
     }
@@ -880,7 +880,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.z < z)
+    if (b.z < z)
     {
       return false;
     }
@@ -894,7 +894,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.x > x)
+    if (b.x > x)
     {
       return false;
     }
@@ -902,7 +902,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.y > y)
+    if (b.y > y)
     {
       return false;
     }
@@ -910,7 +910,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.z > z)
+    if (b.z > z)
     {
       return false;
     }
@@ -1026,7 +1026,7 @@ struct TestBar
     {
       return true;
     }
-    else if (b.x < x)
+    if (b.x < x)
     {
       return false;
     }
@@ -1040,7 +1040,7 @@ struct TestBar
     {
       return true;
     }
-    else if (b.x > x)
+    if (b.x > x)
     {
       return false;
     }

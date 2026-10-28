@@ -47,11 +47,9 @@ midpoint(_Tp __a, _Tp __b) noexcept
     const _Up __diff = _Up(__a) - _Up(__b);
     return static_cast<_Tp>(__a - static_cast<_Tp>(__diff / 2));
   }
-  else
-  {
-    const _Up __diff = _Up(__b) - _Up(__a);
-    return static_cast<_Tp>(__a + static_cast<_Tp>(__diff / 2));
-  }
+
+  const _Up __diff = _Up(__b) - _Up(__a);
+  return static_cast<_Tp>(__a + static_cast<_Tp>(__diff / 2));
 }
 
 _CCCL_EXEC_CHECK_DISABLE

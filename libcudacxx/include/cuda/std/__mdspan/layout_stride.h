@@ -409,10 +409,7 @@ public:
     {
       return index_type{0};
     }
-    else
-    {
-      return (index_type{1} + ... + ((extents().extent(_Pos) - index_type{1}) * __strides()[_Pos]));
-    }
+    return (index_type{1} + ... + ((extents().extent(_Pos) - index_type{1}) * __strides()[_Pos]));
   }
 
   [[nodiscard]] _CCCL_API constexpr index_type required_span_size() const noexcept

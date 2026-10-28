@@ -72,14 +72,11 @@ double colfunc(double x)
   {
     return 0.0;
   }
-  else if (absx < x1)
+  if (absx < x1)
   {
     return 1.0;
   }
-  else
-  {
-    return 1.0 - pow((absx - x1) / (x2 - x1), 2);
-  }
+  return 1.0 - pow((absx - x1) / (x2 - x1), 2);
 }
 
 void hue2rgb(double hue, int& r, int& g, int& b)

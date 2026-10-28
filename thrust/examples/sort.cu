@@ -110,10 +110,7 @@ struct evens_before_odds
     {
       return x < y;
     }
-    else
-    {
-      return x % 2 == 0;
-    }
+    return x % 2 == 0;
   }
 };
 

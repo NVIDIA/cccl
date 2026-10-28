@@ -108,7 +108,7 @@ inline int CoutCast(signed char val)
     {                                                                            \
       if (a.x > b.x)                                                             \
         return true;                                                             \
-      else if (b.x > a.x)                                                        \
+      if (b.x > a.x)                                                             \
         return false;                                                            \
       return a.y > b.y;                                                          \
     }                                                                            \
@@ -117,7 +117,7 @@ inline int CoutCast(signed char val)
     {                                                                            \
       if (a.x < b.x)                                                             \
         return true;                                                             \
-      else if (b.x < a.x)                                                        \
+      if (b.x < a.x)                                                             \
         return false;                                                            \
       return a.y < b.y;                                                          \
     }                                                                            \
@@ -153,11 +153,11 @@ inline int CoutCast(signed char val)
     {                                                                                            \
       if (a.x > b.x)                                                                             \
         return true;                                                                             \
-      else if (b.x > a.x)                                                                        \
+      if (b.x > a.x)                                                                             \
         return false;                                                                            \
       if (a.y > b.y)                                                                             \
         return true;                                                                             \
-      else if (b.y > a.y)                                                                        \
+      if (b.y > a.y)                                                                             \
         return false;                                                                            \
       return a.z > b.z;                                                                          \
     }                                                                                            \
@@ -166,11 +166,11 @@ inline int CoutCast(signed char val)
     {                                                                                            \
       if (a.x < b.x)                                                                             \
         return true;                                                                             \
-      else if (b.x < a.x)                                                                        \
+      if (b.x < a.x)                                                                             \
         return false;                                                                            \
       if (a.y < b.y)                                                                             \
         return true;                                                                             \
-      else if (b.y < a.y)                                                                        \
+      if (b.y < a.y)                                                                             \
         return false;                                                                            \
       return a.z < b.z;                                                                          \
     }                                                                                            \
@@ -207,15 +207,15 @@ inline int CoutCast(signed char val)
     {                                                                                                                \
       if (a.x > b.x)                                                                                                 \
         return true;                                                                                                 \
-      else if (b.x > a.x)                                                                                            \
+      if (b.x > a.x)                                                                                                 \
         return false;                                                                                                \
       if (a.y > b.y)                                                                                                 \
         return true;                                                                                                 \
-      else if (b.y > a.y)                                                                                            \
+      if (b.y > a.y)                                                                                                 \
         return false;                                                                                                \
       if (a.z > b.z)                                                                                                 \
         return true;                                                                                                 \
-      else if (b.z > a.z)                                                                                            \
+      if (b.z > a.z)                                                                                                 \
         return false;                                                                                                \
       return a.w > b.w;                                                                                              \
     }                                                                                                                \
@@ -224,15 +224,15 @@ inline int CoutCast(signed char val)
     {                                                                                                                \
       if (a.x < b.x)                                                                                                 \
         return true;                                                                                                 \
-      else if (b.x < a.x)                                                                                            \
+      if (b.x < a.x)                                                                                                 \
         return false;                                                                                                \
       if (a.y < b.y)                                                                                                 \
         return true;                                                                                                 \
-      else if (b.y < a.y)                                                                                            \
+      if (b.y < a.y)                                                                                                 \
         return false;                                                                                                \
       if (a.z < b.z)                                                                                                 \
         return true;                                                                                                 \
-      else if (b.z < a.z)                                                                                            \
+      if (b.z < a.z)                                                                                                 \
         return false;                                                                                                \
       return a.w < b.w;                                                                                              \
     }                                                                                                                \

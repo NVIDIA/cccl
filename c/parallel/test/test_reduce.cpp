@@ -180,10 +180,7 @@ struct reduce_run
     {
       return cccl_device_reduce_nondeterministic(build, d_temp_storage, temp_storage_bytes, args...);
     }
-    else
-    {
-      return cccl_device_reduce(build, d_temp_storage, temp_storage_bytes, args...);
-    }
+    return cccl_device_reduce(build, d_temp_storage, temp_storage_bytes, args...);
   }
 };
 

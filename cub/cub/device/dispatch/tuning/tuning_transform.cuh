@@ -480,7 +480,7 @@ struct policy_selector
         async,
       };
     }
-    else if (cc >= ::cuda::compute_capability{8, 0})
+    if (cc >= ::cuda::compute_capability{8, 0})
     {
       const int threads_per_block = 256;
       const auto prefetch         = TransformPrefetchPolicy{threads_per_block};

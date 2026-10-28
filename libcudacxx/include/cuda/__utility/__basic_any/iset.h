@@ -147,10 +147,7 @@ struct __iset_vptr : __base_vptr
     {
       return static_cast<__iset_vtable const*>(__vptr_)->__query_interface(_Interface{});
     }
-    else
-    {
-      return static_cast<__rtti const*>(__vptr_)->__query_interface(_Interface{});
-    }
+    return static_cast<__rtti const*>(__vptr_)->__query_interface(_Interface{});
   }
 };
 

@@ -86,10 +86,7 @@ public:
     {
       return ::cuda::std::ldexp(0.75, max_exp + mant_dig - bin_width + 1 - index * bin_width);
     }
-    else
-    {
-      return ::cuda::std::ldexp(0.75, max_exp + mant_dig - bin_width + 1 - max_index * bin_width);
-    }
+    return ::cuda::std::ldexp(0.75, max_exp + mant_dig - bin_width + 1 - max_index * bin_width);
   }
 
 private:
@@ -260,11 +257,8 @@ private:
     {
       return max_index;
     }
-    else
-    {
-      (void) ::cuda::std::frexpf(x, &exp);
-      return (::cuda::std::min) ((max_exp - exp) / bin_width, +max_index);
-    }
+    (void) ::cuda::std::frexpf(x, &exp);
+    return (::cuda::std::min) ((max_exp - exp) / bin_width, +max_index);
   }
 
   /// Get index of manually specified binned double precision
@@ -645,10 +639,7 @@ public:
     {
       return conv_binned_to_float();
     }
-    else
-    {
-      return conv_binned_to_double();
-    }
+    return conv_binned_to_double();
   }
 
   /// Add @p x to the binned fp

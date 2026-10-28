@@ -190,28 +190,24 @@ c2h::host_vector<KeyT> gen_keys_from_boundary_key(int num_items, int k, int over
         {
           return boundary_succ;
         }
-        else if (i == 1)
+        if (i == 1)
         {
           return inf;
         }
-        else
-        {
-          return above_dist ? (*above_dist)(rng) : inf;
-        }
+
+        return above_dist ? (*above_dist)(rng) : inf;
       },
       [&](int i) -> KeyT {
         if (i == 0)
         {
           return boundary_pred;
         }
-        else if (i == 1)
+        if (i == 1)
         {
           return -inf;
         }
-        else
-        {
-          return below_dist ? (*below_dist)(rng) : -inf;
-        }
+
+        return below_dist ? (*below_dist)(rng) : -inf;
       },
       // For `boundary_key == +/-0.0`, alternate signs to mix `+0.0` and
       // `-0.0` ties; otherwise every tied slot is identical.

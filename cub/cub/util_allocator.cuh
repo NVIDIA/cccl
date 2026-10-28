@@ -157,10 +157,8 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
       {
         return (a.d_ptr < b.d_ptr);
       }
-      else
-      {
-        return (a.device < b.device);
-      }
+
+      return (a.device < b.device);
     }
 
     // Comparison functor for comparing allocation sizes
@@ -170,10 +168,8 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
       {
         return (a.bytes < b.bytes);
       }
-      else
-      {
-        return (a.device < b.device);
-      }
+
+      return (a.device < b.device);
     }
   };
 

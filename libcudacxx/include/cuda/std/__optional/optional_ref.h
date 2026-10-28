@@ -272,10 +272,7 @@ public:
     {
       return *__value_;
     }
-    else
-    {
-      __throw_bad_optional_access();
-    }
+    __throw_bad_optional_access();
   }
 
   template <class _Up>

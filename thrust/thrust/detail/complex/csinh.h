@@ -97,18 +97,16 @@ _CCCL_HOST_DEVICE inline complex<double> csinh(const complex<double>& z)
       h = ::cuda::std::exp(::cuda::std::fabs(x)) * 0.5;
       return (complex<double>(::cuda::std::copysign(h, x) * ::cuda::std::cos(y), h * ::cuda::std::sin(y)));
     }
-    else if (ix < 0x4096bbaa)
+    if (ix < 0x4096bbaa)
     {
       /* x < 1455: scale to avoid overflow */
       const complex<double> z_ = ldexp_cexp(complex<double>(::cuda::std::fabs(x), y), -1);
       return (complex<double>(z_.real() * ::cuda::std::copysign(1.0, x), z_.imag()));
     }
-    else
-    {
-      /* x >= 1455: the result always overflows */
-      h = huge * x;
-      return (complex<double>(h * ::cuda::std::cos(y), h * h * ::cuda::std::sin(y)));
-    }
+
+    /* x >= 1455: the result always overflows */
+    h = huge * x;
+    return (complex<double>(h * ::cuda::std::cos(y), h * h * ::cuda::std::sin(y)));
   }
 
   /*

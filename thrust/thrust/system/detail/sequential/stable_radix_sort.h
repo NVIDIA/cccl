@@ -50,10 +50,7 @@ struct RadixEncoder<char>
     {
       return static_cast<unsigned char>(x) ^ static_cast<unsigned char>(1) << (8 * sizeof(unsigned char) - 1);
     }
-    else
-    {
-      return x;
-    }
+    return x;
   }
 };
 

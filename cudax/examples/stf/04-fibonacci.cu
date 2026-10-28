@@ -27,10 +27,7 @@ int fibo_ref(int n)
   {
     return n;
   }
-  else
-  {
-    return fibo_ref(n - 1) + fibo_ref(n - 2);
-  }
+  return fibo_ref(n - 1) + fibo_ref(n - 2);
 }
 
 __global__ void add(slice<int> out, const slice<const int> in1, const slice<const int> in2)

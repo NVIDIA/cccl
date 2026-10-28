@@ -89,7 +89,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::std::__cc
   {
     return _Tp{1};
   }
-  else if (::cuda::std::cmp_less(__e, _Ep{0}) || __b == _Tp{0})
+  if (::cuda::std::cmp_less(__e, _Ep{0}) || __b == _Tp{0})
   {
     return _Tp{0};
   }

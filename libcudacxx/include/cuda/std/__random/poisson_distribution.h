@@ -138,7 +138,7 @@ private:
     {
       return _Limits::max();
     }
-    else if (__r <= _Limits::lowest())
+    if (__r <= _Limits::lowest())
     {
       return _Limits::min();
     }

@@ -237,7 +237,7 @@ template <class _SrcInterface, class _DstInterface>
   {
     return nullptr;
   }
-  else if constexpr (::cuda::std::is_same_v<_SrcInterface const, _DstInterface const>)
+  if constexpr (::cuda::std::is_same_v<_SrcInterface const, _DstInterface const>)
   {
     return __src_vptr;
   }

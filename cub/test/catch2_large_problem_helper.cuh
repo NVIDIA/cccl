@@ -30,10 +30,8 @@ struct concat_iterators_op
     {
       return first_it[i];
     }
-    else
-    {
-      return second_it[i - num_first_items];
-    }
+
+    return second_it[i - num_first_items];
   }
 };
 

@@ -58,10 +58,8 @@ struct voronoi_site_selector
     {
       return q; // q is closer
     }
-    else
-    {
-      return p;
-    }
+
+    return p;
   }
 
   // For each point p+{-k,0,k}, we keep the Site with minimum distance

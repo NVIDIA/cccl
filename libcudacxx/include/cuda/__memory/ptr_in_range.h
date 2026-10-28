@@ -77,7 +77,7 @@ template <typename _Tp>
     _CCCL_ASSERT(__end >= __start, "ptr_in_range: __end must be greater than __start");
     return __ptr >= __start && __ptr < __end; // UB is not possible in a constant expression
   }
-  else
+  else // NOLINT(readability-else-after-return): Preserve the if constexpr fallback.
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       (return ::cuda::__ptr_in_range_host(__ptr, __start, __end);),

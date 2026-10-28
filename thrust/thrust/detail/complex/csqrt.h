@@ -99,10 +99,8 @@ _CCCL_HOST_DEVICE inline complex<double> csqrt(const complex<double>& z)
     {
       return (complex<double>(::cuda::std::fabs(b - b), ::cuda::std::copysign(a, b)));
     }
-    else
-    {
-      return (complex<double>(a, ::cuda::std::copysign(b - b, b)));
-    }
+
+    return (complex<double>(a, ::cuda::std::copysign(b - b, b)));
   }
   /*
    * The remaining special case (b is NaN) is handled just fine by
@@ -145,14 +143,12 @@ _CCCL_HOST_DEVICE inline complex<double> csqrt(const complex<double>& z)
   {
     return (result * 2.0);
   }
-  else if (scale == 2)
+  if (scale == 2)
   {
     return (result * 0.5);
   }
-  else
-  {
-    return result;
-  }
+
+  return result;
 }
 // NOLINTEND(misc-redundant-expression)
 } // namespace detail::complex

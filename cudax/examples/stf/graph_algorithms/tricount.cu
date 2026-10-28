@@ -31,7 +31,7 @@ __device__ int binary_search(slice<const int> arr, int start, int end, int looku
     {
       return mid;
     }
-    else if (arr[mid] < lookup)
+    if (arr[mid] < lookup)
     {
       start = mid + 1;
     }
