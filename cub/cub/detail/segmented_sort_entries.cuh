@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-// Contract between partitioning and sorting: capacity bounds, bin configurations, and partition results.
+// Sorting-entry contract: compose capacity bounds and configurations for partitioning and sorting.
 
 #pragma once
 

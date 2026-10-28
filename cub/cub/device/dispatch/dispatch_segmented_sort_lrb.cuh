@@ -18,8 +18,8 @@
 #include <cub/agent/agent_segmented_sort_group_merge.cuh>
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
-#include <cub/detail/segmented_sort_capacity.cuh>
-#include <cub/device/dispatch/kernels/kernel_segmented_sort_capacity.cuh>
+#include <cub/detail/segmented_sort_entries.cuh>
+#include <cub/device/dispatch/kernels/kernel_segmented_sort_lrb.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_temporary_storage.cuh>
