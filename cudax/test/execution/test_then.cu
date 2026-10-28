@@ -72,7 +72,7 @@ C2H_TEST("then returning void can be waited on", "[adaptors][then]")
 C2H_TEST("then can be used to transform the value", "[adaptors][then]")
 {
   auto snd = ex::just(13) | ex::then([](int x) -> int {
-               return 2 * x + 1;
+               return (2 * x) + 1;
              });
   wait_for_value(std::move(snd), 27);
 }

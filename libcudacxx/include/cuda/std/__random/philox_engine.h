@@ -185,7 +185,7 @@ public:
     __y_                                            = {};
     __k_                                            = {};
     __j_                                            = word_count - 1;
-    constexpr auto __p                              = (word_size - 1) / 32 + 1;
+    constexpr auto __p                              = ((word_size - 1) / 32) + 1;
     array<uint_least32_t, word_count / 2 * __p> __a = {};
     __seq.generate(__a.begin(), __a.end());
     for (size_t __k = 0; __k < word_count / 2; ++__k)
@@ -359,7 +359,7 @@ public:
     for (size_t __i = 0; __i < word_count / 2; ++__i)
     {
       __os << __e.__k_[__i];
-      if (__i < word_count / 2 - 1)
+      if (__i < (word_count / 2) - 1)
       {
         __os << __os.widen(' ');
       }

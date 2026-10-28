@@ -203,7 +203,7 @@ MULTI_GPU_TEST("nccl_communicator_ref all_gather", )
   for (int i = 0; i < static_cast<int>(cuda::devices.size()); ++i)
   {
     auto pool         = cuda::device_default_memory_pool(cuda::devices[i]);
-    const auto values = {10 * i, 10 * i + 1};
+    const auto values = {10 * i, (10 * i) + 1};
     auto& s           = send.emplace_back(streams[i], pool, values);
     recv.emplace_back(cuda::make_buffer(streams[i], pool, s.size() * cuda::devices.size(), cuda::std::int32_t{-1}));
   }
@@ -389,7 +389,7 @@ MULTI_GPU_TEST("nccl_communicator_ref gather to root", )
   for (int i = 0; i < static_cast<int>(cuda::devices.size()); ++i)
   {
     auto pool         = cuda::device_default_memory_pool(cuda::devices[i]);
-    const auto values = {10 * i, 10 * i + 1};
+    const auto values = {10 * i, (10 * i) + 1};
     auto& s           = send.emplace_back(streams[i], pool, values);
     recv.emplace_back(cuda::make_buffer(streams[i], pool, s.size() * cuda::devices.size(), cuda::std::int32_t{-1}));
   }
@@ -413,8 +413,8 @@ MULTI_GPU_TEST("nccl_communicator_ref gather to root", )
 
   for (cuda::std::size_t r = 0; r < cuda::devices.size(); ++r)
   {
-    expected_values[r * per_rank]     = static_cast<cuda::std::int32_t>(10 * r);
-    expected_values[r * per_rank + 1] = static_cast<cuda::std::int32_t>(10 * r + 1);
+    expected_values[r * per_rank]       = static_cast<cuda::std::int32_t>(10 * r);
+    expected_values[(r * per_rank) + 1] = static_cast<cuda::std::int32_t>((10 * r) + 1);
   }
 
   auto pool           = cuda::mr::legacy_pinned_memory_resource{};
@@ -443,8 +443,8 @@ MULTI_GPU_TEST("nccl_communicator_ref all_to_all", )
 
     for (cuda::std::size_t j = 0; j < cuda::devices.size(); ++j)
     {
-      h[block * j]     = static_cast<cuda::std::int32_t>(100 * i + 10 * j);
-      h[block * j + 1] = static_cast<cuda::std::int32_t>(100 * i + 10 * j + 1);
+      h[block * j]       = static_cast<cuda::std::int32_t>((100 * i) + (10 * j));
+      h[(block * j) + 1] = static_cast<cuda::std::int32_t>((100 * i) + (10 * j) + 1);
     }
 
     auto& s = send.emplace_back(streams[i], pool, h);
@@ -472,8 +472,8 @@ MULTI_GPU_TEST("nccl_communicator_ref all_to_all", )
 
     for (cuda::std::size_t i = 0; i < cuda::devices.size(); ++i)
     {
-      expected_values[block * i]     = static_cast<cuda::std::int32_t>(100 * i + 10 * r);
-      expected_values[block * i + 1] = static_cast<cuda::std::int32_t>(100 * i + 10 * r + 1);
+      expected_values[block * i]       = static_cast<cuda::std::int32_t>((100 * i) + (10 * r));
+      expected_values[(block * i) + 1] = static_cast<cuda::std::int32_t>((100 * i) + (10 * r) + 1);
     }
 
     auto pool           = cuda::mr::legacy_pinned_memory_resource{};

@@ -73,7 +73,7 @@ void test_shift_left(const Policy& policy, c2h::device_vector<T>& input)
     CHECK(res == random_access_iterator{raw_pointer + size - num_shifted_small});
   }
 
-  const int num_shifted_large = size / 2 + 10;
+  const int num_shifted_large = (size / 2) + 10;
   const auto expected_large   = cuda::transform_iterator{cuda::counting_iterator{num_shifted_large}, cast_to<T>{}};
   thrust::sequence(input.begin(), input.end(), 0);
   { // Large shift

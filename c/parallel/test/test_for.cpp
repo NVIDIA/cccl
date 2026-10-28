@@ -325,7 +325,7 @@ C2H_TEST("For build result has serialization metadata populated", "[for][seriali
       build_info.get_libcudacxx_path(),
       build_info.get_ctk_path()));
 
-  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK(build.cc == (build_info.get_cc_major() * 10) + build_info.get_cc_minor());
   CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
   CHECK(build.payload_size > 0);
   REQUIRE(build.static_kernel_lowered_name != nullptr);

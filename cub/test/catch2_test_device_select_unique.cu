@@ -484,7 +484,7 @@ try
 
   const offset_t num_items = GENERATE_COPY(
     values({
-      offset_t{2} * max_partition_size + offset_t{20000000}, // 3 partitions
+      (offset_t{2} * max_partition_size) + offset_t{20000000}, // 3 partitions
       offset_t{2} * max_partition_size, // 2 partitions
       max_partition_size + offset_t{1}, // 2 partitions
       max_partition_size, // 1 partitions

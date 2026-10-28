@@ -156,7 +156,7 @@ _CCCL_DEVICE void transform_kernel_prefetch(
 
   auto process_tile = [&](auto full_tile, auto... ins2 /* nvcc fails to compile when just using the captured ins */) {
     unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
-      const int idx = j * ThreadsPerBlock + threadIdx.x;
+      const int idx = (j * ThreadsPerBlock) + threadIdx.x;
       if (full_tile || idx < valid_items)
       {
         if (pred(THRUST_NS_QUALIFIER::raw_reference_cast(ins2[idx])...))
@@ -314,7 +314,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
           for (int j = 0; j < VecSize; ++j)
           {
             // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
-            input[i * VecSize + j] = in[i * VecSize * ThreadsPerBlock + j];
+            input[(i * VecSize) + j] = in[(i * VecSize * ThreadsPerBlock) + j];
           }
         }
       }
@@ -360,7 +360,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
       for (int j = 0; j < VecSize; ++j)
       {
         // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
-        out[i * VecSize * ThreadsPerBlock + j] = output[i * VecSize + j];
+        out[(i * VecSize * ThreadsPerBlock) + j] = output[(i * VecSize) + j];
       }
     }
   }
@@ -522,7 +522,7 @@ copy_and_return_smem_dst(AlignedPtr aligned_ptr, int& smem_offset, Offset offset
   {
     smem_offset = ::cuda::round_up(smem_offset, int{alignof(T)});
   }
-  const char* const src = aligned_ptr.ptr + offset * sizeof(T);
+  const char* const src = aligned_ptr.ptr + (offset * sizeof(T));
   char* const dst       = smem + smem_offset;
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(src), "");
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(dst), "");
@@ -530,7 +530,7 @@ copy_and_return_smem_dst(AlignedPtr aligned_ptr, int& smem_offset, Offset offset
   int bytes_to_copy;
   if constexpr (alignof(T) < ldgsts_size_and_align)
   {
-    bytes_to_copy = ::cuda::round_up(aligned_ptr.head_padding + int{sizeof(T)} * valid_items, ldgsts_size_and_align);
+    bytes_to_copy = ::cuda::round_up(aligned_ptr.head_padding + (int{sizeof(T)} * valid_items), ldgsts_size_and_align);
   }
   else
   {
@@ -563,7 +563,7 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
   _CCCL_ASSERT(alignof(T) < ldgsts_size_and_align || aligned_ptr.head_padding == 0, "");
   const int head_padding = alignof(T) < ldgsts_size_and_align ? aligned_ptr.head_padding : 0;
 
-  const char* src = aligned_ptr.ptr + offset * sizeof(T) + head_padding;
+  const char* src = aligned_ptr.ptr + (offset * sizeof(T)) + head_padding;
   char* dst       = smem + smem_offset + head_padding;
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(src), "");
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(dst), "");
@@ -571,7 +571,7 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
   memcpy_async_maybe_unaligned<ThreadsPerBlock>(dst, src, bytes_to_copy, head_padding);
 
   // add ldgsts_size_and_align to account for this tile's head padding
-  smem_offset += ldgsts_size_and_align + int{sizeof(T)} * tile_size;
+  smem_offset += ldgsts_size_and_align + (int{sizeof(T)} * tile_size);
 
   return reinterpret_cast<T*>(dst);
 }
@@ -623,7 +623,7 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
 
   auto process_tile = [&](auto full_tile) {
     unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
-      const int idx = j * ThreadsPerBlock + threadIdx.x;
+      const int idx = (j * ThreadsPerBlock) + threadIdx.x;
       if (full_tile || idx < valid_items)
       {
         ::cuda::std::apply(
@@ -887,7 +887,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
         // turning this lambda into a function does not change SASS
         auto bulk_copy_tile = [&](auto aligned_ptr) {
           using T         = typename decltype(aligned_ptr)::value_type;
-          const char* src = aligned_ptr.ptr + offset * sizeof(T);
+          const char* src = aligned_ptr.ptr + (offset * sizeof(T));
           char* dst       = smem;
           _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<bulk_copy_alignment>(src), "");
           _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<bulk_copy_alignment>(dst), "");
@@ -897,7 +897,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
           if constexpr (alignof(T) < bulk_copy_size_multiple)
           {
             bytes_to_copy =
-              ::cuda::round_up(aligned_ptr.head_padding + int{sizeof(T)} * tile_size, bulk_copy_size_multiple);
+              ::cuda::round_up(aligned_ptr.head_padding + (int{sizeof(T)} * tile_size), bulk_copy_size_multiple);
           }
           else
           {
@@ -915,8 +915,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
             &bar);
           total_copied += bytes_to_copy;
 
-          smem += tile_padding + int{sizeof(T)} * tile_size;
-          _CCCL_ASSERT(bytes_to_copy <= int{sizeof(T)} * tile_size + bulk_copy_alignment, "");
+          smem += tile_padding + (int{sizeof(T)} * tile_size);
+          _CCCL_ASSERT(bytes_to_copy <= (int{sizeof(T)} * tile_size) + bulk_copy_alignment, "");
         };
 
         // only elected thread waits, but other threads wait on the barrier fulfilled by the bulk copy later
@@ -965,7 +965,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
         _CCCL_ASSERT(alignof(T) < bulk_copy_alignment || aligned_ptr.head_padding == 0, "");
         const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
 
-        const char* src = aligned_ptr.ptr + offset * sizeof(T) + head_padding;
+        const char* src = aligned_ptr.ptr + (offset * sizeof(T)) + head_padding;
         char* dst       = smem + head_padding;
         _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(src), "");
         _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(dst), "");
@@ -974,7 +974,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
           dst, src, bytes_to_copy, aligned_ptr.head_padding, bar, total_copied, elected);
 
         // add padding to account for this tile's head padding
-        smem += tile_padding + int{sizeof(T)} * tile_size;
+        smem += tile_padding + (int{sizeof(T)} * tile_size);
       };
 
       _CCCL_PDL_GRID_DEPENDENCY_SYNC();
@@ -1070,7 +1070,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
           _CCCL_ASSERT(alignof(T) < bulk_copy_alignment || aligned_ptr.head_padding == 0, "");
           const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
           const T* base          = reinterpret_cast<const T*>(smem + head_padding);
-          smem += tile_padding + int{sizeof(T)} * tile_size;
+          smem += tile_padding + (int{sizeof(T)} * tile_size);
           // Gather this input's store_vec_size elements for output-vector v into a register array.
           // we take the maximal alignment out of alignof(T) and 16 bytes. This is because compiler assume
           // natural alignment on bigger types (e.g. 32 bytes). If input is narrower, we will waste a few (0-16)
@@ -1083,7 +1083,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
           if constexpr (in_vec_bytes % int{sizeof(int4)} == 0)
           {
             constexpr int n = in_vec_bytes / int{sizeof(int4)};
-            const int4* s   = reinterpret_cast<const int4*>(base) + v * n;
+            const int4* s   = reinterpret_cast<const int4*>(base) + (v * n);
             _CCCL_PRAGMA_UNROLL_FULL()
             for (int i = 0; i < n; ++i)
             {
@@ -1117,14 +1117,14 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
       // use scalar stores for the tail when element count is not a multiple of store_vec_size
       // implies an always_true predicate, so we store unconditionally.
-      for (int idx = num_vecs * store_vec_size + threadIdx.x; idx < valid_items; idx += ThreadsPerBlock)
+      for (int idx = (num_vecs * store_vec_size) + threadIdx.x; idx < valid_items; idx += ThreadsPerBlock)
       {
         const char* smem   = smem_base;
         auto fetch_operand = [&](auto aligned_ptr) {
           using T                = typename decltype(aligned_ptr)::value_type;
           const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
           const char* src        = smem + head_padding;
-          smem += tile_padding + int{sizeof(T)} * tile_size;
+          smem += tile_padding + (int{sizeof(T)} * tile_size);
           return reinterpret_cast<const T*>(src)[idx];
         };
         out[idx] = ::cuda::std::apply(
@@ -1143,7 +1143,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   auto process_tile = [&](auto full_tile) {
     unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
       // TODO(bgruber): fbusato suggests to hoist threadIdx.x out of the loop below
-      const int idx = j * ThreadsPerBlock + threadIdx.x;
+      const int idx = (j * ThreadsPerBlock) + threadIdx.x;
       if (full_tile || idx < valid_items)
       {
         const char* smem   = smem_base;
@@ -1151,7 +1151,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
           using T                = typename decltype(aligned_ptr)::value_type;
           const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
           const char* src        = smem + head_padding;
-          smem += tile_padding + int{sizeof(T)} * tile_size;
+          smem += tile_padding + (int{sizeof(T)} * tile_size);
           return reinterpret_cast<const T*>(src)[idx];
         };
 

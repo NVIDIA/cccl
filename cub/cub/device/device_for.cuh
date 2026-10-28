@@ -120,7 +120,7 @@ struct DeviceFor
       }
       else
       { // Case of fully filled vector
-        const vector_t vec = *reinterpret_cast<const vector_t*>(input + vec_size * i);
+        const vector_t vec = *reinterpret_cast<const vector_t*>(input + (vec_size * i));
 
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int j = 0; j < vec_size; j++)

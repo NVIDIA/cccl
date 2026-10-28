@@ -22,7 +22,7 @@ using namespace cuda::experimental::stf;
 
 int X0(int i)
 {
-  return 17 * i + 45;
+  return (17 * i) + 45;
 }
 
 __global__ void dummy() {}

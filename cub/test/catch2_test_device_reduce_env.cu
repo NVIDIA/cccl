@@ -363,7 +363,7 @@ CUB_TEST_CASE("Device ReduceByKey can be tuned with a small block size that need
   auto expected_keys = c2h::device_vector<long long>(num_runs, thrust::no_init);
   thrust::sequence(expected_keys.begin(), expected_keys.end());
   auto expected_aggregates   = c2h::device_vector<double>(num_runs, run_size);
-  expected_aggregates.back() = num_items - (num_runs - 1) * run_size; // the last run is shorter
+  expected_aggregates.back() = num_items - ((num_runs - 1) * run_size); // the last run is shorter
   REQUIRE(d_unique_out == expected_keys);
   REQUIRE(d_aggregates_out == expected_aggregates);
 }

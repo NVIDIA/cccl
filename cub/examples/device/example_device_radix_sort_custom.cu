@@ -54,7 +54,7 @@ int main()
   std::cout << "The `custom_t{65535, -4.2f}` has the following binary representation:\n\n";
 
   auto print_segment = [](std::string msg, std::size_t segment_size, char filler = '-') {
-    const std::string spaces((segment_size - msg.size()) / 2 - 1, filler);
+    const std::string spaces(((segment_size - msg.size()) / 2) - 1, filler);
     std::cout << '<' << spaces << msg << spaces << '>';
   };
 

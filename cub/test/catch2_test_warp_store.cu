@@ -29,7 +29,7 @@ __global__ void warp_store_kernel(OutputIteratorT output_iterator, ActionT actio
 
   for (int item = 0; item < ItemsPerThread; item++)
   {
-    reg[item] = static_cast<T>(tid * ItemsPerThread + item); // NOLINT(bugprone-misplaced-widening-cast)
+    reg[item] = static_cast<T>((tid * ItemsPerThread) + item); // NOLINT(bugprone-misplaced-widening-cast)
   }
 
   const int warp_id = tid / LogicalWarpThreads;

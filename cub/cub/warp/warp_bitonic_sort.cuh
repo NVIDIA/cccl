@@ -171,7 +171,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
     {
-      if (i * LogicalWarpThreads + lane >= valid_items)
+      if ((i * LogicalWarpThreads) + lane >= valid_items)
       {
         keys[i] = oob_default;
       }
@@ -201,7 +201,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
     {
-      if (i * LogicalWarpThreads + lane >= valid_items)
+      if ((i * LogicalWarpThreads) + lane >= valid_items)
       {
         keys[i] = KeyT{};
       }
@@ -260,7 +260,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
     {
-      if (i * LogicalWarpThreads + lane >= valid_items)
+      if ((i * LogicalWarpThreads) + lane >= valid_items)
       {
         keys[i]   = oob_default;
         values[i] = ValueT{};
@@ -291,7 +291,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
     {
-      if (i * LogicalWarpThreads + lane >= valid_items)
+      if ((i * LogicalWarpThreads) + lane >= valid_items)
       {
         keys[i]   = KeyT{};
         values[i] = ValueT{};
@@ -373,7 +373,7 @@ private:
         keys + first_half_len,
         (keys_only ? nullptr : values + first_half_len),
         compare_op,
-        valid_items - first_half_len * LogicalWarpThreads);
+        valid_items - (first_half_len * LogicalWarpThreads));
       merge<CompareOp, Reverse>(keys, values, compare_op, valid_items);
     }
     else
@@ -405,7 +405,7 @@ private:
       KeyT& other_key        = keys[other_i];
       const bool should_swap = Reverse ? compare_op(key, other_key) : compare_op(other_key, key);
 
-      if (should_swap && other_i * LogicalWarpThreads + lane < valid_items)
+      if (should_swap && (other_i * LogicalWarpThreads) + lane < valid_items)
       {
         using ::cuda::std::swap;
         swap(key, other_key);
@@ -423,7 +423,7 @@ private:
         keys + first_half_len,
         (keys_only ? nullptr : values + first_half_len),
         compare_op,
-        valid_items - first_half_len * LogicalWarpThreads);
+        valid_items - (first_half_len * LogicalWarpThreads));
     }
     else
     {

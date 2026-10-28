@@ -320,7 +320,7 @@ CUB_TEST_CASE("DeviceRunLengthEncode::Encode can be tuned with a small block siz
   auto expected_keys = c2h::device_vector<int>(num_runs, thrust::no_init);
   thrust::sequence(expected_keys.begin(), expected_keys.end());
   auto expected_counts   = c2h::device_vector<int>(num_runs, run_size);
-  expected_counts.back() = num_items - (num_runs - 1) * run_size; // the last run is shorter
+  expected_counts.back() = num_items - ((num_runs - 1) * run_size); // the last run is shorter
   REQUIRE(d_unique_out == expected_keys);
   REQUIRE(d_counts_out == expected_counts);
 }

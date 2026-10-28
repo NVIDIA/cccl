@@ -99,7 +99,7 @@ _CCCL_DEVICE double Source(double t, double x, double y, double z)
   constexpr double omega      = (2 * pi * freq);
   constexpr double wavelength = 3e8 / freq;
   constexpr double k          = 2 * pi / wavelength;
-  return sin(k * x - omega * t);
+  return sin((k * x) - (omega * t));
 }
 #endif // !_CCCL_COMPILER(MSVC)
 
@@ -234,58 +234,61 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
     // Update Ex
     ctx.parallel_for(part, where, Es, lEx.rw(), lHy.read(), lHz.read(), lepsilon.read())
-        ->*[=]
-      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ex, auto Hy, auto Hz, auto epsilon) {
-        Ex(i, j, k) = Ex(i, j, k)
-                    + (DT / (epsilon(i, j, k) * DX)) * (Hz(i, j, k) - Hz(i, j - 1, k) - Hy(i, j, k) + Hy(i, j, k - 1));
-      };
+        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ex, auto Hy, auto Hz, auto epsilon) {
+              Ex(i, j, k) =
+                Ex(i, j, k)
+                + ((DT / (epsilon(i, j, k) * DX)) * (Hz(i, j, k) - Hz(i, j - 1, k) - Hy(i, j, k) + Hy(i, j, k - 1)));
+            };
 
     // Update Ey
     ctx.parallel_for(part, where, Es, lEy.rw(), lHx.read(), lHz.read(), lepsilon.read())
-        ->*[=]
-      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ey, auto Hx, auto Hz, auto epsilon) {
-        Ey(i, j, k) = Ey(i, j, k)
-                    + (DT / (epsilon(i, j, k) * DY)) * (Hx(i, j, k) - Hx(i, j, k - 1) - Hz(i, j, k) + Hz(i - 1, j, k));
-      };
+        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ey, auto Hx, auto Hz, auto epsilon) {
+              Ey(i, j, k) =
+                Ey(i, j, k)
+                + ((DT / (epsilon(i, j, k) * DY)) * (Hx(i, j, k) - Hx(i, j, k - 1) - Hz(i, j, k) + Hz(i - 1, j, k)));
+            };
 
     // Update Ez and inject the point source in the same volumetric pass
     ctx.parallel_for(part, where, Es, lEz.rw(), lHx.read(), lHy.read(), lepsilon.read())
-        ->*[=]
-      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez, auto Hx, auto Hy, auto epsilon) {
-        Ez(i, j, k) = Ez(i, j, k)
-                    + (DT / (epsilon(i, j, k) * DZ)) * (Hy(i, j, k) - Hy(i - 1, j, k) - Hx(i, j, k) + Hx(i, j - 1, k));
-        if (i == center_x && j == center_y && k == center_z)
-        {
-          Ez(i, j, k) += Source(
-            static_cast<double>(n) * DT,
-            static_cast<double>(i) * DX,
-            static_cast<double>(j) * DY,
-            static_cast<double>(k) * DZ);
-        }
-      };
+        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez, auto Hx, auto Hy, auto epsilon) {
+              Ez(i, j, k) =
+                Ez(i, j, k)
+                + ((DT / (epsilon(i, j, k) * DZ)) * (Hy(i, j, k) - Hy(i - 1, j, k) - Hx(i, j, k) + Hx(i, j - 1, k)));
+              if (i == center_x && j == center_y && k == center_z)
+              {
+                Ez(i, j, k) += Source(
+                  static_cast<double>(n) * DT,
+                  static_cast<double>(i) * DX,
+                  static_cast<double>(j) * DY,
+                  static_cast<double>(k) * DZ);
+              }
+            };
 
     // Update the magnetic fields
 
     // Update Hx
     ctx.parallel_for(part, where, Hs, lHx.rw(), lEy.read(), lEz.read(), lmu.read())
-        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hx, auto Ey, auto Ez, auto mu) {
-              Hx(i, j, k) = Hx(i, j, k)
-                          - (DT / (mu(i, j, k) * DY)) * (Ez(i, j + 1, k) - Ez(i, j, k) - Ey(i, j, k + 1) + Ey(i, j, k));
-            };
+        ->*[=]
+      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hx, auto Ey, auto Ez, auto mu) {
+        Hx(i, j, k) =
+          Hx(i, j, k) - ((DT / (mu(i, j, k) * DY)) * (Ez(i, j + 1, k) - Ez(i, j, k) - Ey(i, j, k + 1) + Ey(i, j, k)));
+      };
 
     // Update Hy
     ctx.parallel_for(part, where, Hs, lHy.rw(), lEx.read(), lEz.read(), lmu.read())
-        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hy, auto Ex, auto Ez, auto mu) {
-              Hy(i, j, k) = Hy(i, j, k)
-                          - (DT / (mu(i, j, k) * DZ)) * (Ex(i, j, k + 1) - Ex(i, j, k) - Ez(i + 1, j, k) + Ez(i, j, k));
-            };
+        ->*[=]
+      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hy, auto Ex, auto Ez, auto mu) {
+        Hy(i, j, k) =
+          Hy(i, j, k) - ((DT / (mu(i, j, k) * DZ)) * (Ex(i, j, k + 1) - Ex(i, j, k) - Ez(i + 1, j, k) + Ez(i, j, k)));
+      };
 
     // Update Hz
     ctx.parallel_for(part, where, Hs, lHz.rw(), lEx.read(), lEy.read(), lmu.read())
-        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hz, auto Ex, auto Ey, auto mu) {
-              Hz(i, j, k) = Hz(i, j, k)
-                          - (DT / (mu(i, j, k) * DX)) * (Ey(i + 1, j, k) - Ey(i, j, k) - Ex(i, j + 1, k) + Ex(i, j, k));
-            };
+        ->*[=]
+      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hz, auto Ex, auto Ey, auto mu) {
+        Hz(i, j, k) =
+          Hz(i, j, k) - ((DT / (mu(i, j, k) * DX)) * (Ey(i + 1, j, k) - Ey(i, j, k) - Ex(i, j + 1, k) + Ex(i, j, k)));
+      };
 
     if (output_freq > 0 && n % output_freq == 0)
     {

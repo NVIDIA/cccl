@@ -375,12 +375,12 @@ public:
 
   _CCCL_HOST_DEVICE StridedRangeIterator operator+(difference_type n) const
   {
-    return StridedRangeIterator(currentValue + stride * n, stride);
+    return StridedRangeIterator(currentValue + (stride * n), stride);
   }
 
   _CCCL_HOST_DEVICE StridedRangeIterator operator-(difference_type n) const
   {
-    return StridedRangeIterator(currentValue - stride * n, stride);
+    return StridedRangeIterator(currentValue - (stride * n), stride);
   }
 
   _CCCL_HOST_DEVICE difference_type operator-(const StridedRangeIterator& other) const
@@ -442,7 +442,7 @@ public:
     }
     else if ((end_ - start_) % stride_ != 0)
     {
-      end_ = start_ + stride_ * ((end_ - start_) / stride_ + 1);
+      end_ = start_ + (stride_ * (((end_ - start_) / stride_) + 1));
     }
   }
 
@@ -505,7 +505,7 @@ UNITTEST("StridedRange loop")
 template <typename T>
 __global__ void unit_test_strided_range_func(T n)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
   const StridedRange r(tid, n, nthreads);
   for (auto i : r)

@@ -157,7 +157,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
 
   using ftype              = typename AccumT::ftype;
   constexpr int bin_length = AccumT::max_index + AccumT::max_fold;
-  const int tid            = threads_per_block * blockIdx.x + threadIdx.x;
+  const int tid            = (threads_per_block * blockIdx.x) + threadIdx.x;
 
   ftype* shared_bins = detail::rfa::get_shared_bin_array<ftype, bin_length>();
 
@@ -195,7 +195,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int j = 0; j < items_per_thread; j++)
         {
-          const unsigned idx = i + j * n_threads;
+          const unsigned idx = i + (j * n_threads);
           if (idx < static_cast<unsigned>(chunk_num_items))
           {
             items[j] = transform_op(d_in[idx]);
@@ -239,7 +239,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
       ftype items[items_per_thread] = {};
       for (int j = 0; j < items_per_thread; j++)
       {
-        const unsigned idx = i + j * n_threads;
+        const unsigned idx = i + (j * n_threads);
         if (idx < static_cast<unsigned>(num_items))
         {
           items[j] = transform_op(d_in[idx]);

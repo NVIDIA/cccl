@@ -140,7 +140,7 @@ int main()
   ::std::vector<double> ref(n);
   for (size_t i = 0; i < n; i++)
   {
-    ref[i] = 0.25 * static_cast<double>(i % 1024) + 1.0;
+    ref[i] = (0.25 * static_cast<double>(i % 1024)) + 1.0;
   }
 
   const bool stackable_ok = conditional_body_memcpy_supported();

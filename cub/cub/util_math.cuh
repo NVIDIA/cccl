@@ -93,7 +93,7 @@ constexpr _CCCL_HOST_DEVICE int Nominal8BItemsToItems(int nominal_items_per_thre
 template <typename T>
 constexpr _CCCL_HOST_DEVICE T MidPoint(T begin, T end)
 {
-  return begin + (end - begin) / 2;
+  return begin + ((end - begin) / 2);
 }
 
 CUB_NAMESPACE_END

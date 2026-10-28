@@ -194,7 +194,7 @@ void test_sorted_uint32_limit(Variant variant, HostVariant host_variant)
   CAPTURE(range_num_items, values_num_items, tile_size);
 
   const auto range  = cuda::counting_iterator<value_type>{0};
-  const auto values = cuda::counting_iterator<value_type>{range_num_items - values_num_items / 2};
+  const auto values = cuda::counting_iterator<value_type>{range_num_items - (values_num_items / 2)};
 
   c2h::device_vector<value_type> offsets_d(values_num_items, max_count);
   variant(range,

@@ -411,7 +411,7 @@ public:
       return emit(size_t(0), t0 * t1 * t2 * t3 * elemsize, owner(pos4(0, 0, 0, 0)));
     }
     const size_t nrows = t1 * t2 * t3;
-    if (nrows * (t0 / s + 2) > max_runs)
+    if (nrows * ((t0 / s) + 2) > max_runs)
     {
       return false;
     }
@@ -447,7 +447,7 @@ public:
       {
         for (size_t x1 = 0; keep_going && x1 < t1; x1++)
         {
-          const size_t row_pad_base = x1 * ps1 + x2 * ps2 + x3 * ps3;
+          const size_t row_pad_base = (x1 * ps1) + (x2 * ps2) + (x3 * ps3);
           size_t x0                 = 0;
           while (keep_going && x0 < t0)
           {
@@ -1773,7 +1773,8 @@ inline auto make_partition_placement_provider(
     if (auto owners = partition.try_block_owners(block_size_bytes, elemsize, &misplaced, budget))
     {
       const size_t total_bytes = total_size * elemsize;
-      stats.accuracy = total_bytes == 0 ? 1.0 : 1.0 - static_cast<double>(misplaced) / static_cast<double>(total_bytes);
+      stats.accuracy =
+        total_bytes == 0 ? 1.0 : 1.0 - (static_cast<double>(misplaced) / static_cast<double>(total_bytes));
       return owners_to_block_runs(mv(*owners));
     }
     // Sampled tier: opaque-density fallback (element-pitch interleavings).

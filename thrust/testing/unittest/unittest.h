@@ -136,7 +136,7 @@ std::vector<T> to_approx(std::vector<Complex<T>> const& v)
       /* Legacy tolerance test: not-equal only if the difference exceeds absolute + relative tolerance. Written as */ \
       /* !(diff > tol) rather than (diff <= tol) so that NaN compares equal to NaN, matching the old framework and */ \
       /* letting degenerate complex results (e.g. complex_plane(0) == NaN) pass. */                                   \
-      REQUIRE_FALSE(::cuda::std::abs(a_ - b_) > 1e-4 * (::cuda::std::abs(a_) + ::cuda::std::abs(b_)) + 1e-4);         \
+      REQUIRE_FALSE(::cuda::std::abs(a_ - b_) > (1e-4 * (::cuda::std::abs(a_) + ::cuda::std::abs(b_))) + 1e-4);       \
     }                                                                                                                 \
   }
 

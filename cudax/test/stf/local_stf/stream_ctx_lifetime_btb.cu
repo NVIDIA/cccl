@@ -42,7 +42,7 @@ constexpr long long BUSY_CYCLES = 5'000'000;
 
 __global__ void slow_set_kernel(int* slice, int n, int value, long long cycles)
 {
-  const int tid = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   if (tid >= n)
   {
     return;
@@ -70,7 +70,7 @@ void submit_token_chains(stream_ctx& ctx, int* d_arr, int value)
   {
     for (int k = 0; k < CHAIN_COUNT; ++k)
     {
-      int* slice = d_arr + k * per_chain;
+      int* slice = d_arr + (k * per_chain);
       ctx.task(toks[k].rw())->*[=](cudaStream_t ts) {
         const int threads = 128;
         const int blocks  = (per_chain + threads - 1) / threads;

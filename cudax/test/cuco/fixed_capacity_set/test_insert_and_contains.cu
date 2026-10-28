@@ -155,7 +155,7 @@ struct make_heterogeneous_key
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API Key operator()(int i) const noexcept
   {
-    return Key{2 * i + offset};
+    return Key{(2 * i) + offset};
   }
 };
 

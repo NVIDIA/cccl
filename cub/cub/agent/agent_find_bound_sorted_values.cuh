@@ -129,7 +129,7 @@ struct agent_t
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < ItemsPerThread; ++item)
       {
-        const int idx = ThreadsPerBlock * item + threadIdx.x;
+        const int idx = (ThreadsPerBlock * item) + threadIdx.x;
         if (idx < haystack_count)
         {
           storage.haystack[idx] = d_range_cm[idx];
@@ -142,7 +142,7 @@ struct agent_t
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < ItemsPerThread; ++item)
       {
-        const int idx = ThreadsPerBlock * item + threadIdx.x;
+        const int idx = (ThreadsPerBlock * item) + threadIdx.x;
         if (idx < needles_count)
         {
           storage.needles[idx] = d_values_cm[idx];
@@ -156,7 +156,7 @@ struct agent_t
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      const int idx = ThreadsPerBlock * item + threadIdx.x;
+      const int idx = (ThreadsPerBlock * item) + threadIdx.x;
       if (idx < needles_count && (values_beg + idx) > 0)
       {
         const needles_type prev = (idx == 0) ? d_values[values_beg - 1] : storage.needles[idx - 1];

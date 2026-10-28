@@ -17,7 +17,7 @@
 
 __global__ void axpy(int cnt, double a, const double* x, double* y)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int i = tid; i < cnt; i += nthreads)
@@ -83,7 +83,7 @@ C2H_TEST("axpy with stf cuda_kernel", "[cuda_kernel]")
 
   for (size_t i = 0; i < N; i++)
   {
-    assert(fabs(Y[i] - (Y0(i) + alpha * X0(i))) < 0.0001);
+    assert(fabs(Y[i] - (Y0(i) + (alpha * X0(i)))) < 0.0001);
     assert(fabs(X[i] - X0(i)) < 0.0001);
   }
 }

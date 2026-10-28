@@ -37,7 +37,7 @@ __device__ unsigned g_busy_sink;
 // commits its value.
 __global__ void slow_set_kernel(int* arr, int n, int value, int iters)
 {
-  const int tid = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   if (tid >= n)
   {
     return;
@@ -47,7 +47,7 @@ __global__ void slow_set_kernel(int* arr, int n, int value, int iters)
   unsigned acc = 0;
   for (int i = 0; i < iters; ++i)
   {
-    acc += (static_cast<unsigned>(i) * 1103515245u + 12345u) & 0x7fffffffu;
+    acc += ((static_cast<unsigned>(i) * 1103515245u) + 12345u) & 0x7fffffffu;
   }
   // Publish `acc` via an atomic: an observable, race-free side effect that
   // keeps the loop alive while the stored result stays exactly `value`.

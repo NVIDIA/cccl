@@ -1011,7 +1011,7 @@ C2H_TEST("Transform build result has serialization metadata populated", "[transf
       build_info.get_libcudacxx_path(),
       build_info.get_ctk_path()));
 
-  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK(build.cc == (build_info.get_cc_major() * 10) + build_info.get_cc_minor());
   CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
   CHECK(build.payload_size > 0);
   CHECK(build.runtime_policy != nullptr);

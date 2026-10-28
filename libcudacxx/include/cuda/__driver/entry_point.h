@@ -202,7 +202,7 @@ __getProcAddressFn(decltype(::cuGetProcAddress)* __ptr = nullptr, bool __set = f
 {
   _CCCL_ASSERT(__major >= 2, "invalid major CUDA Driver version");
   _CCCL_ASSERT(__minor >= 0 && __minor < 100, "invalid minor CUDA Driver version");
-  return __major * 1000 + __minor * 10;
+  return (__major * 1000) + (__minor * 10);
 }
 
 //! @brief Get a driver function pointer for a given API name and optionally specific CUDA version without initializing

@@ -277,7 +277,7 @@ _CCCL_HOST_DEVICE constexpr auto memcpy_async_dyn_smem_for_tile_size(
       static_cast<int>(::cuda::round_up(smem_size, ::cuda::std::max(input.value_type_alignment, copy_alignment)));
     // max head/tail padding is copy_alignment - sizeof(T) each
     const int max_bytes_to_copy =
-      input.value_type_size * tile_size + ::cuda::std::max(copy_alignment - input.value_type_size, 0) * 2;
+      (input.value_type_size * tile_size) + (::cuda::std::max(copy_alignment - input.value_type_size, 0) * 2);
     smem_size += max_bytes_to_copy;
   };
   return smem_size;
@@ -307,7 +307,7 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_dyn_smem_for_tile_size(
   int smem_size = tile_padding; // for the barrier and padding
   for (const auto& input : inputs)
   {
-    smem_size += tile_padding + input.value_type_size * tile_size;
+    smem_size += tile_padding + (input.value_type_size * tile_size);
   }
   return smem_size;
 }

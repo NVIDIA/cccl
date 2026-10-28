@@ -313,7 +313,7 @@ struct exponential_backoff_jitter_constructor_t
 
     _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
     {
-      return (seed = (a * seed + c) % m) % (max + 1 - min) + min;
+      return ((seed = ((a * seed) + c) % m) % (max + 1 - min)) + min;
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
@@ -351,7 +351,7 @@ struct exponential_backoff_jitter_window_constructor_t
 
     _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
     {
-      return (seed = (a * seed + c) % m) % (max + 1 - min) + min;
+      return ((seed = ((a * seed) + c) % m) % (max + 1 - min)) + min;
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
@@ -389,7 +389,7 @@ struct exponential_backon_jitter_window_constructor_t
 
     _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
     {
-      return (seed = (a * seed + c) % m) % (max + 1 - min) + min;
+      return ((seed = ((a * seed) + c) % m) % (max + 1 - min)) + min;
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
@@ -430,7 +430,7 @@ struct exponential_backon_jitter_constructor_t
 
     _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
     {
-      return (seed = (a * seed + c) % m) % (max + 1 - min) + min;
+      return ((seed = ((a * seed) + c) % m) % (max + 1 - min)) + min;
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()

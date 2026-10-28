@@ -139,8 +139,8 @@ CUB_TEST("Warp array-based inclusive scan aggregate works with initial value", "
 
     cuda::std::inclusive_scan(start, end, start, sum_op{}, init_val);
 
-    expected_aggr.push_back(expected[i * 32 + 31] - init_val); // NOLINT(bugprone-misplaced-widening-cast) warp
-                                                               // aggregate does not take initial value into account
+    expected_aggr.push_back(expected[(i * 32) + 31] - init_val); // NOLINT(bugprone-misplaced-widening-cast) warp
+                                                                 // aggregate does not take initial value into account
   }
 
   REQUIRE(expected == d_out);
@@ -174,7 +174,7 @@ __global__ void InclusiveWarpScanPartialKernel(int* output)
   {
     thread_data = -thread_data;
   }
-  const int valid_items = 40 - warp_id * 16;
+  const int valid_items = 40 - (warp_id * 16);
 
   // warp #0 input: {0, -1, 2, -3, ..., 28, -29, 30, -31}, valid_items: 40 (effectively 32)
   // warp #1 input: {1, -2, 3, -4, ..., 29, -30, 31, -32}, valid_items: 24
@@ -208,7 +208,7 @@ CUB_TEST("Warp array-based partial inclusive scan works with initial value", "[s
   {
     auto start            = expected.begin() + i * 32; // NOLINT(bugprone-misplaced-widening-cast)
     auto end              = start + 32;
-    const int valid_items = cuda::std::clamp(40 - i * 16, 0, 32);
+    const int valid_items = cuda::std::clamp(40 - (i * 16), 0, 32);
 
     cuda::std::iota(start, end, i); // initialize host input for every warp
     cuda::std::transform(start, end, start, [i](int val) {
@@ -248,7 +248,7 @@ __global__ void InclusiveWarpScanPartialKernelAggr(int* output, int* d_warp_aggr
   const int lane_id       = static_cast<int>(threadIdx.x % 32);
   const int initial_value = 3; // for each warp
   int thread_data         = (lane_id < num_warps - 1 - warp_id) ? 0 : 1;
-  const int valid_items   = 40 - warp_id * 16;
+  const int valid_items   = 40 - (warp_id * 16);
   int warp_aggregate;
 
   // warp #0 input: {0, 0, 0, 1, ..., 1}, valid_items: 40 (effectively 32)
@@ -287,15 +287,15 @@ CUB_TEST("Warp array-based partial inclusive scan aggregate works with initial v
   {
     auto start            = expected.begin() + i * 32; // NOLINT(bugprone-misplaced-widening-cast)
     auto end              = start + 32;
-    const int valid_items = cuda::std::clamp(40 - i * 16, 0, 32);
+    const int valid_items = cuda::std::clamp(40 - (i * 16), 0, 32);
     const int init_val    = 3;
 
     cuda::std::fill(start + num_warps - 1 - i, end, 1); // initialize host input for every warp
 
     cuda::std::inclusive_scan(start, start + valid_items, start, sum_op{}, init_val);
 
-    expected_aggr.push_back(expected[i * 32 + valid_items - 1] - init_val); // warp aggregate does not take
-                                                                            // initial value into account
+    expected_aggr.push_back(expected[(i * 32) + valid_items - 1] - init_val); // warp aggregate does not take
+                                                                              // initial value into account
   }
 
   // Last aggregate is undefined.

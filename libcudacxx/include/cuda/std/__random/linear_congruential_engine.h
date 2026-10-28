@@ -69,8 +69,8 @@ struct __lce_ta<_Ap, _Cp, _Mp, ~uint64_t{0}, true>
     constexpr result_type __r = _Mp % _Ap;
     const result_type __t0    = _Ap * (__x % __q);
     const result_type __t1    = __r * (__x / __q);
-    __x                       = __t0 + static_cast<result_type>(__t0 < __t1) * _Mp - __t1;
-    __x += _Cp - static_cast<result_type>(__x >= _Mp - _Cp) * _Mp;
+    __x                       = __t0 + (static_cast<result_type>(__t0 < __t1) * _Mp) - __t1;
+    __x += _Cp - (static_cast<result_type>(__x >= _Mp - _Cp) * _Mp);
     return __x;
   }
 };
@@ -86,7 +86,7 @@ struct __lce_ta<_Ap, 0, _Mp, ~uint64_t{0}, true>
     constexpr result_type __r = _Mp % _Ap;
     const result_type __t0    = _Ap * (__x % __q);
     const result_type __t1    = __r * (__x / __q);
-    __x                       = __t0 + static_cast<result_type>(__t0 < __t1) * _Mp - __t1;
+    __x                       = __t0 + (static_cast<result_type>(__t0 < __t1) * _Mp) - __t1;
     return __x;
   }
 };
@@ -97,7 +97,7 @@ struct __lce_ta<_Ap, _Cp, _Mp, ~uint64_t{0}, false>
   using result_type = uint64_t;
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type next(result_type __x) noexcept
   {
-    return (_Ap * __x + _Cp) % _Mp;
+    return ((_Ap * __x) + _Cp) % _Mp;
   }
 };
 
@@ -107,7 +107,7 @@ struct __lce_ta<_Ap, _Cp, 0, ~uint64_t{0}, false>
   using result_type = uint64_t;
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type next(result_type __x) noexcept
   {
-    return _Ap * __x + _Cp;
+    return (_Ap * __x) + _Cp;
   }
 };
 
@@ -127,8 +127,8 @@ struct __lce_ta<_Ap, _Cp, _Mp, ~uint32_t{0}, true>
     constexpr result_type __r = __m % __a;
     const result_type __t0    = __a * (__x % __q);
     const result_type __t1    = __r * (__x / __q);
-    __x                       = __t0 + static_cast<result_type>(__t0 < __t1) * __m - __t1;
-    __x += __c - static_cast<result_type>(__x >= __m - __c) * __m;
+    __x                       = __t0 + (static_cast<result_type>(__t0 < __t1) * __m) - __t1;
+    __x += __c - (static_cast<result_type>(__x >= __m - __c) * __m);
     return __x;
   }
 };
@@ -146,7 +146,7 @@ struct __lce_ta<_Ap, 0, _Mp, ~uint32_t{0}, true>
     constexpr result_type __r = __m % __a;
     const result_type __t0    = __a * (__x % __q);
     const result_type __t1    = __r * (__x / __q);
-    __x                       = __t0 + static_cast<result_type>(__t0 < __t1) * __m - __t1;
+    __x                       = __t0 + (static_cast<result_type>(__t0 < __t1) * __m) - __t1;
     return __x;
   }
 };
@@ -160,7 +160,7 @@ struct __lce_ta<_Ap, _Cp, _Mp, ~uint32_t{0}, false>
     constexpr result_type __a = static_cast<result_type>(_Ap);
     constexpr result_type __c = static_cast<result_type>(_Cp);
     constexpr result_type __m = static_cast<result_type>(_Mp);
-    return (__a * __x + __c) % __m;
+    return ((__a * __x) + __c) % __m;
   }
 };
 
@@ -172,7 +172,7 @@ struct __lce_ta<_Ap, _Cp, 0, ~uint32_t{0}, false>
   {
     constexpr result_type __a = static_cast<result_type>(_Ap);
     constexpr result_type __c = static_cast<result_type>(_Cp);
-    return __a * __x + __c;
+    return (__a * __x) + __c;
   }
 };
 
@@ -262,7 +262,7 @@ public:
   {
     __seed(__q,
            integral_constant<uint32_t,
-                             1 + (_Mv == 0 ? (sizeof(result_type) * CHAR_BIT - 1) / 32 : (_Mv > 0x100000000ull))>());
+                             1 + (_Mv == 0 ? ((sizeof(result_type) * CHAR_BIT) - 1) / 32 : (_Mv > 0x100000000ull))>());
   }
 
   // generating functions
@@ -295,7 +295,7 @@ public:
           __acc_mult = (__acc_mult * __cur_mult) % modulus;
           if constexpr (increment != 0)
           {
-            __acc_plus = (__acc_plus * __cur_mult + __cur_plus) % modulus;
+            __acc_plus = ((__acc_plus * __cur_mult) + __cur_plus) % modulus;
           }
         }
         if constexpr (increment != 0)

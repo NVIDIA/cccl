@@ -422,7 +422,7 @@ struct batch_completion_op
   {
     static_assert(tiles_per_batch <= ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max());
     // The final batch never reuses the tile state, so it needs no retirement tracking.
-    if ((tile_idx / tiles_per_batch + 1) * tiles_per_batch >= num_tiles)
+    if (((tile_idx / tiles_per_batch) + 1) * tiles_per_batch >= num_tiles)
     {
       return;
     }

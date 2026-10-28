@@ -81,14 +81,14 @@ void check_layout(cuda::std::uint32_t hash)
     const auto first = policy12{}.array_pattern<0, Horizontal, Vertical>(hash, lane);
     for (int word = 0; word < Vertical; ++word)
     {
-      REQUIRE(first[word] == expected[lane * Vertical + word]);
+      REQUIRE(first[word] == expected[(lane * Vertical) + word]);
     }
     if constexpr (loops == 2)
     {
       const auto second = policy12{}.array_pattern<1, Horizontal, Vertical>(hash, lane);
       for (int word = 0; word < Vertical; ++word)
       {
-        REQUIRE(second[word] == expected[(Horizontal + lane) * Vertical + word]);
+        REQUIRE(second[word] == expected[((Horizontal + lane) * Vertical) + word]);
       }
     }
   }

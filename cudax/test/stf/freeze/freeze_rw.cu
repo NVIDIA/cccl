@@ -22,12 +22,12 @@ using namespace cuda::experimental::stf;
 
 int X0(int i)
 {
-  return 17 * i + 45;
+  return (17 * i) + 45;
 }
 
 __global__ void mult(slice<int> s, int val)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int i = tid; i < s.size(); i += nthreads)

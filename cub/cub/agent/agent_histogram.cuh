@@ -460,11 +460,11 @@ struct AgentHistogram
     {
       if constexpr (IsStriped)
       {
-        is_valid[item] = IsFullTile || (((threadIdx.x + threads_per_block * item) * NumChannels) < valid_samples);
+        is_valid[item] = IsFullTile || (((threadIdx.x + (threads_per_block * item)) * NumChannels) < valid_samples);
       }
       else
       {
-        is_valid[item] = IsFullTile || (((threadIdx.x * items_per_thread + item) * NumChannels) < valid_samples);
+        is_valid[item] = IsFullTile || ((((threadIdx.x * items_per_thread) + item) * NumChannels) < valid_samples);
       }
     }
   }

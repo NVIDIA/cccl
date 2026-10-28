@@ -94,7 +94,7 @@ _CCCL_KERNEL_ATTRIBUTES void mark_erased_slots_kernel(
   typename Pair::first_type erased_key_sentinel)
 {
   using key_type = typename Pair::first_type;
-  const auto idx = static_cast<::cuda::std::size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+  const auto idx = (static_cast<::cuda::std::size_t>(blockIdx.x) * blockDim.x) + threadIdx.x;
 
   if (idx < capacity && slots[idx].first != empty_key_sentinel && slots[idx].first != erased_key_sentinel
       && slots[idx].first % key_type{erase_modulus} == key_type{0})

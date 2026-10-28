@@ -75,7 +75,7 @@ template <bool _UseOptimizedSmemLayout, typename _Tp, ::cuda::std::size_t _MaxRa
     // Align each row to the next 32-bit bank word. The resulting 36-char and 34-short pitches distribute transposed
     // accesses across all 32 shared-memory banks.
     constexpr __tile_extent_t __smem_padding = sizeof(unsigned) / sizeof(_Tp);
-    return __offset + (__offset / __max_tile_size_32) * __smem_padding;
+    return __offset + ((__offset / __max_tile_size_32) * __smem_padding);
   }
   else if constexpr (_UseOptimizedSmemLayout)
   {

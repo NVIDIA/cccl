@@ -36,12 +36,12 @@ public:
 
   __host__ __device__ T& operator()(size_t i, size_t j)
   {
-    return base[i + j * m];
+    return base[i + (j * m)];
   }
 
   __host__ __device__ const T& operator()(size_t i, size_t j) const
   {
-    return base[i + j * m];
+    return base[i + (j * m)];
   }
 
   size_t m, n;
@@ -269,17 +269,17 @@ struct cuda::experimental::stf::hash<matrix<T>>
 template <typename T>
 __global__ void kernel(matrix<T> M)
 {
-  const int tid_x      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid_x      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads_x = static_cast<int>(gridDim.x * blockDim.x);
 
-  const int tid_y      = static_cast<int>(blockIdx.y * blockDim.y + threadIdx.y);
+  const int tid_y      = static_cast<int>((blockIdx.y * blockDim.y) + threadIdx.y);
   const int nthreads_y = static_cast<int>(gridDim.y * blockDim.y);
 
   for (int x = tid_x; x < M.m; x += nthreads_x)
   {
     for (int y = tid_y; y < M.n; y += nthreads_y)
     {
-      M(x, y) += -x + 7 * y;
+      M(x, y) += -x + (7 * y);
     }
   }
 }
@@ -299,7 +299,7 @@ int main()
   {
     for (size_t i = 0; i < m; i++)
     {
-      M(i, j) = static_cast<int>(17 * i + 23 * j);
+      M(i, j) = static_cast<int>((17 * i) + (23 * j));
     }
   }
 
@@ -312,7 +312,7 @@ int main()
 
   // M(i,j) +=  2*i + 6*j
   ctx.parallel_for(lM.shape(), lM.rw())->*[] _CCCL_DEVICE(size_t i, size_t j, auto dM) {
-    dM(i, j) += 2 * i + 6 * j;
+    dM(i, j) += (2 * i) + (6 * j);
   };
 
   ctx.finalize();
@@ -321,7 +321,7 @@ int main()
   {
     for (size_t i = 0; i < m; i++)
     {
-      assert(M(i, j) == (17 * i + 23 * j) + (-i + 7 * j) + (2 * i + 6 * j));
+      assert(M(i, j) == ((17 * i) + (23 * j)) + (-i + (7 * j)) + ((2 * i) + (6 * j)));
     }
   }
 }

@@ -68,7 +68,7 @@ void assemble_jacobian_full(
             {
               // Right boundary: u[N-1] = 0 (homogeneous Dirichlet)
               // Jacobian row: [0, ..., 0, 1]
-              const size_t val_idx = 1 + 3 * (N - 2); // Last entry in CSR values array
+              const size_t val_idx = 1 + (3 * (N - 2)); // Last entry in CSR values array
               dvalues[val_idx]     = 1.0;
             }
             else
@@ -79,12 +79,12 @@ void assemble_jacobian_full(
               const double u_im1 = dU[row - 1];
 
               // Jacobian entries: ∂F_i/∂u_{i-1}, ∂F_i/∂u_i, ∂F_i/∂u_{i+1}
-              const double left   = -u_i / (2 * h) - nu / (h * h);
-              const double center = 1.0 / dt + (u_ip1 - u_im1) / (2 * h) + 2.0 * nu / (h * h);
-              const double right  = u_i / (2 * h) - nu / (h * h);
+              const double left   = (-u_i / (2 * h)) - (nu / (h * h));
+              const double center = (1.0 / dt) + ((u_ip1 - u_im1) / (2 * h)) + (2.0 * nu / (h * h));
+              const double right  = (u_i / (2 * h)) - (nu / (h * h));
 
               // CSR indexing for interior row i: starts at 1 + 3*(i-1)
-              const size_t val_idx = 1 + 3 * (row - 1);
+              const size_t val_idx = 1 + (3 * (row - 1));
               dvalues[val_idx]     = left; // ∂F_i/∂u_{i-1}
               dvalues[val_idx + 1] = center; // ∂F_i/∂u_i
               dvalues[val_idx + 2] = right; // ∂F_i/∂u_{i+1}
@@ -113,7 +113,7 @@ void compute_residual_full(
 
               const double term_time = (u_i - dU_prev(i)) / dt; // ∂u/∂t
               const double term_conv = u_i * (u_ip1 - u_im1) / (2 * h); // u * ∂u/∂x (nonlinear convection)
-              const double term_diff = -nu * (u_im1 - 2 * u_i + u_ip1) / (h * h); // -nu * ∂²u/∂x²
+              const double term_diff = -nu * (u_im1 - (2 * u_i) + u_ip1) / (h * h); // -nu * ∂²u/∂x²
 
               dresidual(i) = term_time + term_conv + term_diff;
             }
@@ -270,7 +270,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
   // Full N×N system: boundary rows have 1 entry each, interior rows have 3 entries each
   // Total: 2*1 + (N-2)*3 = 3*N - 4 non-zeros
-  const size_t nz = 3 * N - 4;
+  const size_t nz = (3 * N) - 4;
 
   size_t* row_offsets;
   size_t* col_indices;

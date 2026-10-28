@@ -650,7 +650,7 @@ C2H_TEST("SegmentedReduce works with input iterators", "[segmented_reduce]")
     ValueT col_sum = 0;
     for (size_t row_id = 0; row_id < n_rows; ++row_id)
     {
-      col_sum += host_input[row_id * n_cols + col_id];
+      col_sum += host_input[(row_id * n_cols) + col_id];
     }
     host_output[col_id] = col_sum;
   }
@@ -1221,7 +1221,7 @@ C2H_TEST("SegmentedReduce build result has serialization metadata populated", "[
       build_info.get_libcudacxx_path(),
       build_info.get_ctk_path()));
 
-  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK(build.cc == (build_info.get_cc_major() * 10) + build_info.get_cc_minor());
   CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
   CHECK(build.payload_size > 0);
   CHECK(build.runtime_policy != nullptr);

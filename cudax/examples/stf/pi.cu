@@ -36,7 +36,7 @@ int main(int, char**)
     const double x = curand_uniform_double(&local_state); // Random x in [0, 1)
     const double y = curand_uniform_double(&local_state); // Random y in [0, 1)
     // Count (x,y) coordinates which are within the unit circle
-    if (x * x + y * y <= 1.0)
+    if ((x * x) + (y * y) <= 1.0)
     {
       sum++;
     }

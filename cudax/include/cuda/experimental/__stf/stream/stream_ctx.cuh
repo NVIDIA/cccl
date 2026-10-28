@@ -1010,7 +1010,7 @@ UNITTEST("non contiguous slice")
   {
     for (size_t i = 0; i < 32; i++)
     {
-      const size_t ind   = i + 32 * j;
+      const size_t ind   = i + (32 * j);
       const int expected = ((i < 24) ? 2 : 1);
       EXPECT(X[ind] == expected);
     }
@@ -1235,7 +1235,7 @@ inline void unit_test_pfor_mix_host_dev()
   auto lx = ctx.logical_data(X);
 
   ctx.parallel_for(lx.shape(), lx.write())->*[=] _CCCL_DEVICE(size_t pos, auto sx) {
-    sx(pos) = 17 * pos + 4;
+    sx(pos) = (17 * pos) + 4;
   };
 
   ctx.parallel_for(exec_place::host(), lx.shape(), lx.rw())->*[=](size_t pos, auto sx) {
@@ -1250,7 +1250,7 @@ inline void unit_test_pfor_mix_host_dev()
 
   for (size_t i = 0; i < N; i++)
   {
-    EXPECT(X[i] == (17 * i + 4) * (17 * i + 4) - 7);
+    EXPECT(X[i] == (((17 * i) + 4) * ((17 * i) + 4)) - 7);
   }
 }
 

@@ -38,7 +38,7 @@ template <class _RealType, size_t _Bits, class _URng>
   const size_t __b      = __dt < _Bits ? __dt : _Bits;
   // NOLINTNEXTLINE(readability-redundant-parentheses)
   const size_t __log_r = ::cuda::std::__bit_log2<uint64_t>((_URng::max) () - (_URng::min) () + uint64_t(1));
-  const size_t __k     = __b / __log_r + (__b % __log_r != 0) + (__b == 0);
+  const size_t __k     = (__b / __log_r) + (__b % __log_r != 0) + (__b == 0);
   // NOLINTNEXTLINE(readability-redundant-parentheses)
   const _RealType __rp = static_cast<_RealType>((_URng::max) () - (_URng::min) ()) + _RealType(1);
   _RealType __base     = __rp;

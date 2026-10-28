@@ -846,7 +846,7 @@ C2H_TEST("UniqueByKey works with C++ source operations", "[unique_by_key]")
   std::vector<value_t> input_values(num_items);
   for (std::size_t i = 0; i < num_items; ++i)
   {
-    input_keys[i]   = static_cast<key_t>(i % (num_items / 10 + 1)); // Create duplicates
+    input_keys[i]   = static_cast<key_t>(i % ((num_items / 10) + 1)); // Create duplicates
     input_values[i] = static_cast<value_t>(i);
   }
 
@@ -931,7 +931,7 @@ C2H_TEST("UniqueByKey works with C++ source operations using custom headers", "[
   std::vector<value_t> input_values(num_items);
   for (std::size_t i = 0; i < num_items; ++i)
   {
-    input_keys[i]   = static_cast<key_t>(i % (num_items / 10 + 1)); // Create duplicates
+    input_keys[i]   = static_cast<key_t>(i % ((num_items / 10) + 1)); // Create duplicates
     input_values[i] = static_cast<value_t>(i);
   }
 
@@ -1065,7 +1065,7 @@ C2H_TEST("UniqueByKey build result has serialization metadata populated", "[uniq
       build_info.get_libcudacxx_path(),
       build_info.get_ctk_path()));
 
-  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK(build.cc == (build_info.get_cc_major() * 10) + build_info.get_cc_minor());
   CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
   CHECK(build.payload_size > 0);
   CHECK(build.runtime_policy != nullptr);

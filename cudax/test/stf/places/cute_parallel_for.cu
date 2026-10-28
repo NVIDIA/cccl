@@ -82,7 +82,7 @@ void test_static_codegen_parity(stream_ctx& ctx, const exec_place& grid)
   auto classic_data = ctx.logical_data(shape_of<slice<size_t, 2>>(nx, ny));
   const auto part   = make_partition(dim4(nx, ny), partition_spec{whole, blocked<0>}, grid.get_dims());
   auto write        = [] _CCCL_DEVICE(size_t x, size_t y, auto values) {
-    values(x, y) = x + 100 * y;
+    values(x, y) = x + (100 * y);
   };
 
   ctx.parallel_for(part, grid, typed_data.shape(), typed_data.write())->*decltype(write)(write);
@@ -93,7 +93,7 @@ void test_static_codegen_parity(stream_ctx& ctx, const exec_place& grid)
     {
       for (size_t x = 0; x < nx; x++)
       {
-        EXPECT(typed(x, y) == x + 100 * y);
+        EXPECT(typed(x, y) == x + (100 * y));
         EXPECT(classic(x, y) == typed(x, y));
       }
     }
@@ -131,12 +131,12 @@ void test_cute_graph_backend(const exec_place& grid)
   const auto part = make_partition(dim4(n), partition_spec{blocked<0>}, grid.get_dims());
 
   ctx.parallel_for(part, grid, data.shape(), data.write())->*[] _CCCL_DEVICE(size_t i, auto values) {
-    values(i) = 5 * i + 3;
+    values(i) = (5 * i) + 3;
   };
   ctx.host_launch(data.read())->*[=](auto values) {
     for (size_t i = 0; i < n; i++)
     {
-      EXPECT(values(i) == 5 * i + 3);
+      EXPECT(values(i) == (5 * i) + 3);
     }
   };
   ctx.finalize();
@@ -168,13 +168,13 @@ int main()
     auto part = make_partition(dim4(n), partition_spec{blocked<0>}, grid.get_dims());
 
     ctx.parallel_for(part, grid, lA.shape(), lA.write())->*[] _CCCL_DEVICE(size_t i, auto a) {
-      a(i) = 3 * i + 7;
+      a(i) = (3 * i) + 7;
     };
 
     ctx.host_launch(lA.read())->*[&](auto a) {
       for (size_t i = 0; i < n; i++)
       {
-        EXPECT(a(i) == 3 * i + 7);
+        EXPECT(a(i) == (3 * i) + 7);
       }
     };
   }
@@ -190,7 +190,7 @@ int main()
     auto part = make_partition(dim4(nx, ny, nz), partition_spec{whole, blocked<0>, whole}, grid.get_dims());
 
     ctx.parallel_for(part, grid, lB.shape(), lB.write())->*[] _CCCL_DEVICE(size_t x, size_t y, size_t z, auto b) {
-      b(x, y, z) = x + 100 * y + 10000 * z;
+      b(x, y, z) = x + (100 * y) + (10000 * z);
     };
 
     ctx.host_launch(lB.read())->*[&](auto b) {
@@ -200,7 +200,7 @@ int main()
         {
           for (size_t z = 0; z < nz; z++)
           {
-            EXPECT(b(x, y, z) == x + 100 * y + 10000 * z);
+            EXPECT(b(x, y, z) == x + (100 * y) + (10000 * z));
           }
         }
       }
@@ -233,13 +233,13 @@ int main()
     auto part = make_partition(dim4(n), partition_spec{blocked<0>}, grid.get_dims());
 
     ctx.parallel_for(part, grid, lD.shape(), lD.write())->*[] _CCCL_DEVICE(size_t i, auto d) {
-      d(i) = 2 * i + 1;
+      d(i) = (2 * i) + 1;
     };
 
     ctx.host_launch(lD.read())->*[&](auto d) {
       for (size_t i = 0; i < n; i++)
       {
-        EXPECT(d(i) == 2 * i + 1);
+        EXPECT(d(i) == (2 * i) + 1);
       }
     };
   }

@@ -21,7 +21,7 @@ using namespace cuda::experimental::stf;
 #if _CCCL_CTK_AT_LEAST(12, 4)
 int X0(int i)
 {
-  return 17 * i + 45;
+  return (17 * i) + 45;
 }
 
 __global__ void setHandle(cudaGraphConditionalHandle handle)
@@ -118,7 +118,7 @@ int main()
   ctx.host_launch(lX.read())->*[](auto x) {
     for (int i = 0; i < static_cast<int>(x.size()); i++)
     {
-      EXPECT(x(i) == 3 * X0(i) + 2 * 5);
+      EXPECT(x(i) == (3 * X0(i)) + (2 * 5));
     }
   };
 

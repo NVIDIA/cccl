@@ -24,7 +24,7 @@ void __global__ lambda_launcher(const Dims dims, const Lambda lambda)
 template <typename Comparator, unsigned int FilterArch>
 bool arch_filter(const cudaDeviceProp& props)
 {
-  const int act_arch = props.major * 10 + props.minor;
+  const int act_arch = (props.major * 10) + props.minor;
   return static_cast<bool>(Comparator()(act_arch, FilterArch));
 }
 

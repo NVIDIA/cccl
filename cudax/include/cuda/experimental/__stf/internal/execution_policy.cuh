@@ -250,7 +250,7 @@ public:
   /// @return The depth.
   static constexpr size_t depth()
   {
-    return 1 + sizeof...(lower_levels) / 2;
+    return 1 + (sizeof...(lower_levels) / 2);
   }
 
   /// @brief Check if synchronization is possible.

@@ -34,7 +34,7 @@ __device__ __forceinline__ T generate_random_data(uint32_t& seed)
   for (int i = 0; i < size; i++)
   {
     // https://en.wikipedia.org/wiki/Linear_congruential_generator
-    seed    = 1664525 * seed + 1013904223;
+    seed    = (1664525 * seed) + 1013904223;
     data[i] = seed;
   }
   T ret;
@@ -102,7 +102,7 @@ __global__ static void benchmark_kernel(int num_iterations, const ActionT action
   [[maybe_unused]] cuda::std::conditional_t<has_values, ValueT, char> values[ItemsPerThread];
   const auto tid = threadIdx.x;
   // Shift tid by 7 to reduce the likelihood of threads within a warp getting monotonically increasing data
-  uint32_t seed = cuda::ptx::get_sreg_clock() + (tid + 7) % warp_threads;
+  uint32_t seed = cuda::ptx::get_sreg_clock() + ((tid + 7) % warp_threads);
 
 #pragma unroll 1
   for (int iter = 0; iter < num_iterations; ++iter)

@@ -2573,7 +2573,7 @@ UNITTEST("pos4 dim4 handle large values beyond 32bit")
 
   const size_t index = dims.get_index(pos);
   // Should be: 50000 + 100000 * 50000 = 5,000,050,000 (> 2^32)
-  const size_t expected_index = 50000ULL + 100000ULL * 50000ULL;
+  const size_t expected_index = 50000ULL + (100000ULL * 50000ULL);
   EXPECT(index == expected_index);
   EXPECT(expected_index > (1ULL << 32)); // Verify it exceeds 2^32
 };

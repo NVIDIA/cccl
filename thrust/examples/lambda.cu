@@ -29,7 +29,7 @@ struct saxpy_functor
 
   __host__ __device__ float operator()(float x, float y) const
   {
-    return a * x + y;
+    return (a * x) + y;
   }
 };
 

@@ -79,7 +79,7 @@ public:
       return range_type(begin, end);
     }
 
-    const index_type begin = m_large_interval * m_threshold + m_small_interval * (i - m_threshold);
+    const index_type begin = (m_large_interval * m_threshold) + (m_small_interval * (i - m_threshold));
     const index_type end   = (begin + m_small_interval < m_n) ? begin + m_small_interval : m_n;
     return range_type(begin, end);
   }

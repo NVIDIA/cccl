@@ -80,11 +80,11 @@ struct guarded_load_t
     for (int item = 0; item < ItemsPerThread; item++)
     {
       const auto expected_value =
-        static_cast<T>(linear_tid * ItemsPerThread + item); // NOLINT(bugprone-misplaced-widening-cast)
+        static_cast<T>((linear_tid * ItemsPerThread) + item); // NOLINT(bugprone-misplaced-widening-cast)
 
       const bool is_oob = LoadAlgorithm == cub::WarpLoadAlgorithm::WARP_LOAD_STRIPED
-                          ? item * LogicalWarpThreads + lane_id >= valid_items
-                          : lane_id * ItemsPerThread + item >= valid_items;
+                          ? (item * LogicalWarpThreads) + lane_id >= valid_items
+                          : (lane_id * ItemsPerThread) + item >= valid_items;
 
       if (is_oob)
       {
@@ -124,7 +124,7 @@ struct unguarded_load_t
     for (int item = 0; item < ItemsPerThread; item++)
     {
       const auto expected_value =
-        static_cast<T>(threadIdx.x * ItemsPerThread + item); // NOLINT(bugprone-misplaced-widening-cast)
+        static_cast<T>((threadIdx.x * ItemsPerThread) + item); // NOLINT(bugprone-misplaced-widening-cast)
 
       if (reg[item] != expected_value)
       {

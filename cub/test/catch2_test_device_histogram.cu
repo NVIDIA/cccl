@@ -1131,7 +1131,7 @@ CUB_TEST("DeviceHistogram::Histogram* bin indices survive the output decode", "[
     constexpr int fp16_num_levels = fp16_num_bins + 1;
     const auto exact_fp16         = [](int i) {
       // In [2048, 4096), the spacing between adjacent half values becomes 2.
-      const int k = i < 2048 ? i : 2048 + (i - 2048) * 2;
+      const int k = i < 2048 ? i : 2048 + ((i - 2048) * 2);
       return half_t{static_cast<float>(k) / 1024.0f};
     };
 

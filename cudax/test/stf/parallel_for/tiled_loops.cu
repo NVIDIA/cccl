@@ -36,7 +36,7 @@ int main()
   const size_t tile_size = 8;
 
   // Be sure to pick a number that is not a divisor to stress the tiling operator
-  const size_t N = nparts * 3 * tile_size + 7;
+  const size_t N = (nparts * 3 * tile_size) + 7;
 
   double Y[N];
 

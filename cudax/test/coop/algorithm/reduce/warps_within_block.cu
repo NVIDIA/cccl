@@ -30,7 +30,7 @@
 inline constexpr int nwarps_in_group     = 3;
 inline constexpr int warp_size           = 32;
 inline constexpr int multi_group_count   = 2;
-inline constexpr int multi_group_nwarps  = multi_group_count * nwarps_in_group + 1;
+inline constexpr int multi_group_nwarps  = (multi_group_count * nwarps_in_group) + 1;
 inline constexpr int multi_group_size    = multi_group_nwarps * warp_size;
 inline constexpr int multi_group_repeats = 16;
 inline constexpr int threads_in_group    = nwarps_in_group * warp_size;
@@ -109,7 +109,7 @@ __device__ void run_multi_group_reductions(const Group& group, const Block& bloc
     if constexpr (Broadcasted)
     {
       const auto result = cudax::coop::reduce(cudax::broadcasted, group, thread_data, cuda::std::plus<>{});
-      d_out[repeat * stride + thread_rank] = result;
+      d_out[(repeat * stride) + thread_rank] = result;
     }
     else
     {
@@ -117,7 +117,7 @@ __device__ void run_multi_group_reductions(const Group& group, const Block& bloc
       REQUIRE(result.has_value() == cuda::gpu_thread.is_root_rank(group));
       if (result.has_value())
       {
-        d_out[repeat * stride + group_rank] = *result;
+        d_out[(repeat * stride) + group_rank] = *result;
       }
     }
   }
@@ -271,12 +271,12 @@ void run_multi_group_reduce_kernel(cuda::stream_ref stream)
       {
         for (int rank = 0; rank < threads_in_group; ++rank)
         {
-          REQUIRE(h_out[repeat * stride + group_rank * threads_in_group + rank] == expected);
+          REQUIRE(h_out[(repeat * stride) + (group_rank * threads_in_group) + rank] == expected);
         }
       }
       else
       {
-        REQUIRE(h_out[repeat * stride + group_rank] == expected);
+        REQUIRE(h_out[(repeat * stride) + group_rank] == expected);
       }
     }
 
@@ -284,7 +284,7 @@ void run_multi_group_reduce_kernel(cuda::stream_ref stream)
     {
       for (int rank = multi_group_count * threads_in_group; rank < multi_group_size; ++rank)
       {
-        REQUIRE(h_out[repeat * stride + rank] == -1);
+        REQUIRE(h_out[(repeat * stride) + rank] == -1);
       }
     }
   }

@@ -50,7 +50,7 @@ void test_transform_reduce(const Policy policy, Iter input1)
   // N * (N + 1) / 2 for the first N integrals
   // N for plus_one
   // 42 for init
-  constexpr int expected = size * (size + 1) / 2 + size + 42;
+  constexpr int expected = (size * (size + 1) / 2) + size + 42;
 
   { // With matching operators
     auto res = cuda::std::transform_reduce(

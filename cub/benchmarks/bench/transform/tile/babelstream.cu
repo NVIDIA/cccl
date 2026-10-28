@@ -103,7 +103,7 @@ inline constexpr auto startA      = 11;
 inline constexpr auto startB      = 2;
 inline constexpr auto startC      = 1;
 inline constexpr auto startScalar = -2;
-static_assert(startA == (startA + startB + startScalar * startC), "nstream must have a consistent workload");
+static_assert(startA == (startA + startB + (startScalar * startC)), "nstream must have a consistent workload");
 
 template <typename T>
 static void mul(nvbench::state& state, nvbench::type_list<T>)

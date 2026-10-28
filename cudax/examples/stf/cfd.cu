@@ -109,7 +109,7 @@ void writedatafiles(context& ctx, logical_data<slice<double, 2>> lpsi, int m, in
                 const double v1 = vel(i, j, 0);
                 const double v2 = vel(i, j, 1);
 
-                const double modvsq = v1 * v1 + v2 * v2;
+                const double modvsq = (v1 * v1) + (v2 * v2);
 
                 const double hue = pow(modvsq, 0.4);
 
