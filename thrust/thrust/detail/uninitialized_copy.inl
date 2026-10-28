@@ -23,14 +23,6 @@
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(uninitialized_copy.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(uninitialized_copy.h)
 
-// Some build systems need a hint to know which files we could include
-#if 0
-#  include <thrust/system/cpp/detail/uninitialized_copy.h>
-#  include <thrust/system/cuda/detail/uninitialized_copy.h>
-#  include <thrust/system/omp/detail/uninitialized_copy.h>
-#  include <thrust/system/tbb/detail/uninitialized_copy.h>
-#endif
-
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE

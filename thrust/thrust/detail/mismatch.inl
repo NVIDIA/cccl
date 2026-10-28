@@ -22,14 +22,6 @@
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(mismatch.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(mismatch.h)
 
-// Some build systems need a hint to know which files we could include
-#if 0
-#  include <thrust/system/cpp/detail/mismatch.h>
-#  include <thrust/system/cuda/detail/mismatch.h>
-#  include <thrust/system/omp/detail/mismatch.h>
-#  include <thrust/system/tbb/detail/mismatch.h>
-#endif
-
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
