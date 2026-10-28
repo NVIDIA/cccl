@@ -90,7 +90,6 @@ Checks:
   - '-readability-container-data-pointer'
   - '-readability-use-anyofallof'
   - '-readability-use-std-min-max'
-  - '-readability-magic-numbers'
   - '-readability-use-concise-preprocessor-directives'
   - '-readability-uppercase-literal-suffix'
   - '-readability-math-missing-parentheses'
@@ -300,7 +299,6 @@ Checks:
   - '-cppcoreguidelines-owning-memory'
   # Covered by modernize-use-override already
   - '-cppcoreguidelines-explicit-virtual-functions'
-  # Covered by readability-magic-numbers
   - '-cppcoreguidelines-avoid-magic-numbers'
   # This check does more harm than good, as it appears to be very rudimentary. For
   # example, it emits warnings saying that:
@@ -395,7 +393,6 @@ CheckOptions:
   # readability-identifier-naming.PublicMethodCase: 'lower_case'
   # readability-identifier-naming.ScopedEnumCase: 'lower_case'
   # readability-identifier-naming.ScopedEnumConstantCase: 'UPPER_CASE'
-  readability-magic-numbers.IgnoredIntegerValues: '0;1;2;3;4;5;6;7;8;9'
   # performance-*
   performance-move-const-arg.CheckTriviallyCopyableMove: 'false'
   performance-inefficient-string-concatenation.StrictMode: 'true'
