@@ -131,7 +131,7 @@ struct SmemResourceRaw
 
   _CCCL_DEVICE_API void* data() const
   {
-    return (void*) (mPtrBase + mStageCurrent * mStride);
+    return (void*) (mPtrBase + (mStageCurrent * mStride));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint64_t* ptrCurBarrierRelease(int phase)

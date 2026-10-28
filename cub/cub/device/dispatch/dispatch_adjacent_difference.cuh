@@ -41,7 +41,7 @@ template <typename AgentDifferenceInitT, typename InputIteratorT, typename Input
 _CCCL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceInitKernel(
   const InputIteratorT first, InputT* const result, const OffsetT num_tiles, const int items_per_tile)
 {
-  const int tile_idx = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tile_idx = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   AgentDifferenceInitT::Process(tile_idx, first, result, num_tiles, items_per_tile);
 }
 

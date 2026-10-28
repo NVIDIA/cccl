@@ -906,7 +906,7 @@ public:
         ++small_length;
         return;
       }
-      reserve(small_cap * 2 + 1);
+      reserve((small_cap * 2) + 1);
       assert(!is_small());
       // fall through to big case
     }

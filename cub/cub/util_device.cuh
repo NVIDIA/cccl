@@ -457,7 +457,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersionUncached(int& sm_version, int d
     {
       break;
     }
-    sm_version = major * 100 + minor * 10;
+    sm_version = (major * 100) + (minor * 10);
   } while (false);
 
   return error;

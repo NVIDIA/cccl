@@ -104,10 +104,10 @@ _CCCL_HOST_DEVICE inline complex<float> ctanhf(const complex<float>& z)
   }
 
   t     = ::cuda::std::tanf(y);
-  beta  = 1.0f + t * t;
+  beta  = 1.0f + (t * t);
   s     = ::cuda::std::sinhf(x);
-  rho   = ::cuda::std::sqrtf(1.0f + s * s);
-  denom = 1.0f + beta * s * s;
+  rho   = ::cuda::std::sqrtf(1.0f + (s * s));
+  denom = 1.0f + (beta * s * s);
   return (complex<float>((beta * rho * s) / denom, t / denom));
 }
 // NOLINTEND(misc-redundant-expression)

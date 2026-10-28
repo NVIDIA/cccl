@@ -182,7 +182,7 @@ class block_topk_air
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < items_per_thread; ++i)
     {
-      const auto item_index      = linear_tid * items_per_thread + i;
+      const auto item_index      = (linear_tid * items_per_thread) + i;
       const bit_ordered_type key = unsigned_keys[i];
       if ((IsFullTile || item_index < valid_items) && filter_op(key))
       {
@@ -330,7 +330,7 @@ class block_topk_air
 
     constexpr int num_passes = ::cuda::ceil_div(max_bit, RadixBits);
     const auto run_pass      = [&](int pass) -> bool {
-      const int pass_end_bit   = max_bit - pass * RadixBits;
+      const int pass_end_bit   = max_bit - (pass * RadixBits);
       const int pass_begin_bit = (::cuda::std::max) (pass_end_bit - RadixBits, 0);
       return run_radix_pass<SelectDirection, IsFullTile>(
         unsigned_keys,
@@ -435,7 +435,7 @@ class block_topk_air
     if constexpr (::cuda::is_floating_point_v<KeyT>)
     {
       const bit_ordered_type twiddled_minus_zero =
-        Traits<KeyT>::TwiddleIn(bit_ordered_type(1) << (8 * sizeof(bit_ordered_type) - 1));
+        Traits<KeyT>::TwiddleIn(bit_ordered_type(1) << ((8 * sizeof(bit_ordered_type)) - 1));
       const bit_ordered_type twiddled_zero = Traits<KeyT>::TwiddleIn(0);
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < items_per_thread; ++i)
@@ -495,7 +495,7 @@ class block_topk_air
     {
       const bit_ordered_type key_prefix = unsigned_keys[i] & prefix_mask;
 
-      const bool is_valid = (IsFullTile || linear_tid * items_per_thread + i < valid_items);
+      const bool is_valid = (IsFullTile || (linear_tid * items_per_thread) + i < valid_items);
       using comparison_t  = ::cuda::std::
         conditional_t<SelectDirection == detail::topk::select::min, ::cuda::std::less<>, ::cuda::std::greater<>>;
       const bool is_selected  = comparison_t{}(key_prefix, kth_prefix);
@@ -547,7 +547,7 @@ class block_topk_air
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < items_per_thread; ++i)
     {
-      const int buffer_idx = linear_tid * items_per_thread + i;
+      const int buffer_idx = (linear_tid * items_per_thread) + i;
       if (buffer_idx < k)
       {
         keys[i] = storage.stage.exchange.u.keys[buffer_idx];
@@ -574,7 +574,7 @@ class block_topk_air
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < items_per_thread; ++i)
       {
-        const int buffer_idx = linear_tid * items_per_thread + i;
+        const int buffer_idx = (linear_tid * items_per_thread) + i;
         if (buffer_idx < k)
         {
           values[i] = storage.stage.exchange.u.values[buffer_idx];

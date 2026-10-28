@@ -397,7 +397,7 @@ public:
       const std::size_t descriptor_size =
         (std::max) (sizeof(block_descriptor), m_options.alignment); // NOLINT(readability-redundant-parentheses)
       std::size_t block_size = bytes + descriptor_size;
-      block_size += m_options.alignment - block_size % m_options.alignment;
+      block_size += m_options.alignment - (block_size % m_options.alignment);
       const std::size_t chunk_size = block_size * n;
 
       const void_ptr allocated = m_upstream->do_allocate(chunk_size + sizeof(chunk_descriptor), m_options.alignment);

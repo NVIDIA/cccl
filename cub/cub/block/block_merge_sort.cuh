@@ -835,7 +835,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      const int idx                 = ItemsPerThread * linear_tid + item;
+      const int idx                 = (ItemsPerThread * linear_tid) + item;
       temp_storage.keys_shared[idx] = keys[item];
     }
     if (linear_tid == 0)
@@ -852,7 +852,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      const int idx                  = ItemsPerThread * linear_tid + item;
+      const int idx                  = (ItemsPerThread * linear_tid) + item;
       temp_storage.items_shared[idx] = items[item];
     }
 
@@ -898,7 +898,7 @@ private:
       _CCCL_PRAGMA_UNROLL(unroll)
       for (int item = 1; item < ItemsPerThread; ++item)
       {
-        if (ItemsPerThread * linear_tid + item < valid_items)
+        if ((ItemsPerThread * linear_tid) + item < valid_items)
         {
           max_key = compare_op(max_key, keys[item]) ? keys[item] : max_key;
         }

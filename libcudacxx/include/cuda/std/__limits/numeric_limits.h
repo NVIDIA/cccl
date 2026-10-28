@@ -169,7 +169,7 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed   = type(-1) < type(0);
-  static constexpr int digits       = static_cast<int>(sizeof(type) * CHAR_BIT - static_cast<int>(is_signed));
+  static constexpr int digits       = static_cast<int>((sizeof(type) * CHAR_BIT) - static_cast<int>(is_signed));
   static constexpr int digits10     = digits * 3 / 10;
   static constexpr int max_digits10 = 0;
   _CCCL_API static constexpr type min() noexcept
@@ -323,7 +323,7 @@ public:
   static constexpr bool is_signed   = true;
   static constexpr int digits       = FLT_MANT_DIG;
   static constexpr int digits10     = FLT_DIG;
-  static constexpr int max_digits10 = 2 + (digits * 30103l) / 100000l;
+  static constexpr int max_digits10 = 2 + ((digits * 30103l) / 100000l);
   _CCCL_API static constexpr type min() noexcept
   {
     return FLT_MIN;
@@ -408,7 +408,7 @@ public:
   static constexpr bool is_signed   = true;
   static constexpr int digits       = DBL_MANT_DIG;
   static constexpr int digits10     = DBL_DIG;
-  static constexpr int max_digits10 = 2 + (digits * 30103l) / 100000l;
+  static constexpr int max_digits10 = 2 + ((digits * 30103l) / 100000l);
   _CCCL_API static constexpr type min() noexcept
   {
     return DBL_MIN;
@@ -495,7 +495,7 @@ public:
   static constexpr bool is_signed   = true;
   static constexpr int digits       = LDBL_MANT_DIG;
   static constexpr int digits10     = LDBL_DIG;
-  static constexpr int max_digits10 = 2 + (digits * 30103l) / 100000l;
+  static constexpr int max_digits10 = 2 + ((digits * 30103l) / 100000l);
   _CCCL_API static constexpr type min() noexcept
   {
     return LDBL_MIN;

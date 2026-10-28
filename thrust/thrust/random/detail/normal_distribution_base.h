@@ -62,10 +62,10 @@ protected:
     }
 
     // Convert to floating point in [0,0.5)
-    RealType p = u * S1 + S2;
+    RealType p = (u * S1) + S2;
 
     // Apply inverse error function
-    return mean + stddev * S3 * erfcinv(2 * p);
+    return mean + (stddev * S3 * erfcinv(2 * p));
   }
 
   // no-op
@@ -112,7 +112,7 @@ protected:
 
     RealType result = m_cached_rho * (m_valid ? cos(RealType(2) * pi * m_r1) : sin(RealType(2) * pi * m_r1));
 
-    return mean + stddev * result;
+    return mean + (stddev * result);
   }
 
 private:

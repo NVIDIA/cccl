@@ -21,9 +21,9 @@ struct DotProduct
 {
   __host__ __device__ float operator()(const Float3& a, const Float3& b) const
   {
-    return cuda::std::get<0>(a) * cuda::std::get<0>(b) + // x components
-           cuda::std::get<1>(a) * cuda::std::get<1>(b) + // y components
-           cuda::std::get<2>(a) * cuda::std::get<2>(b); // z components
+    return (cuda::std::get<0>(a) * cuda::std::get<0>(b)) + // x components
+           (cuda::std::get<1>(a) * cuda::std::get<1>(b)) + // y components
+           (cuda::std::get<2>(a) * cuda::std::get<2>(b)); // z components
   }
 };
 

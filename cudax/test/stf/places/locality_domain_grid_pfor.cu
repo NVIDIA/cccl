@@ -65,11 +65,11 @@ int main()
   }
 
   ctx.host_launch(handle_X.read(), handle_Y.read())->*[&](auto hX, auto hY) {
-    for (size_t ind = 0; ind < n; ind += 1 + ind / 16)
+    for (size_t ind = 0; ind < n; ind += 1 + (ind / 16))
     {
       const double x0       = sin(1.0 * static_cast<double>(ind));
       const double y0       = cos(1.0 * static_cast<double>(ind));
-      const double expected = x0 + NITER * y0;
+      const double expected = x0 + (NITER * y0);
       EXPECT(fabs(hX(ind) - expected) < 0.00001);
       EXPECT(fabs(hY(ind) - y0) < 0.00001);
     }

@@ -317,7 +317,7 @@ struct CommandLineArgs
           dev,
           deviceProp.name,
           ptx_version,
-          deviceProp.major * 100 + deviceProp.minor * 10,
+          (deviceProp.major * 100) + (deviceProp.minor * 10),
           deviceProp.multiProcessorCount,
           (unsigned long long) device_free_physmem / 1024 / 1024,
           (unsigned long long) device_total_physmem / 1024 / 1024,

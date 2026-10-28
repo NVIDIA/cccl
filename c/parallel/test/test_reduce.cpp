@@ -734,7 +734,7 @@ C2H_TEST("Reduce build result has serialization metadata populated", "[reduce][s
       build_info.get_ctk_path()));
 
   // cc field is packed as cc_major * 10 + cc_minor
-  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK(build.cc == (build_info.get_cc_major() * 10) + build_info.get_cc_minor());
 
   CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
   CHECK(build.payload_size > 0);

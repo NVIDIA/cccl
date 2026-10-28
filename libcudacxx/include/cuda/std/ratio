@@ -72,7 +72,7 @@ class __ll_add;
 template <intmax_t _Xp, intmax_t _Yp>
 class __ll_add<_Xp, _Yp, 1>
 {
-  static const intmax_t min = (1LL << (sizeof(intmax_t) * CHAR_BIT - 1)) + 1;
+  static const intmax_t min = (1LL << ((sizeof(intmax_t) * CHAR_BIT) - 1)) + 1;
   static const intmax_t max = -min;
 
   static_assert(_Xp <= max - _Yp, "overflow in __ll_add");
@@ -91,7 +91,7 @@ public:
 template <intmax_t _Xp, intmax_t _Yp>
 class __ll_add<_Xp, _Yp, -1>
 {
-  static const intmax_t min = (1LL << (sizeof(intmax_t) * CHAR_BIT - 1)) + 1;
+  static const intmax_t min = (1LL << ((sizeof(intmax_t) * CHAR_BIT) - 1)) + 1;
   static const intmax_t max = -min;
 
   static_assert(min - _Yp <= _Xp, "overflow in __ll_add");
@@ -106,7 +106,7 @@ class __ll_sub;
 template <intmax_t _Xp, intmax_t _Yp>
 class __ll_sub<_Xp, _Yp, 1>
 {
-  static const intmax_t min = (1LL << (sizeof(intmax_t) * CHAR_BIT - 1)) + 1;
+  static const intmax_t min = (1LL << ((sizeof(intmax_t) * CHAR_BIT) - 1)) + 1;
   static const intmax_t max = -min;
 
   static_assert(min + _Yp <= _Xp, "overflow in __ll_sub");
@@ -125,7 +125,7 @@ public:
 template <intmax_t _Xp, intmax_t _Yp>
 class __ll_sub<_Xp, _Yp, -1>
 {
-  static const intmax_t min = (1LL << (sizeof(intmax_t) * CHAR_BIT - 1)) + 1;
+  static const intmax_t min = (1LL << ((sizeof(intmax_t) * CHAR_BIT) - 1)) + 1;
   static const intmax_t max = -min;
 
   static_assert(_Xp <= max + _Yp, "overflow in __ll_sub");
@@ -137,7 +137,7 @@ public:
 template <intmax_t _Xp, intmax_t _Yp>
 class __ll_mul
 {
-  static const intmax_t nan   = (1LL << (sizeof(intmax_t) * CHAR_BIT - 1));
+  static const intmax_t nan   = (1LL << ((sizeof(intmax_t) * CHAR_BIT) - 1));
   static const intmax_t min   = nan + 1;
   static const intmax_t max   = -min;
   static const intmax_t __a_x = __static_abs<_Xp>::value;
@@ -174,7 +174,7 @@ public:
 template <intmax_t _Xp, intmax_t _Yp>
 class __ll_div
 {
-  static const intmax_t nan = (1LL << (sizeof(intmax_t) * CHAR_BIT - 1));
+  static const intmax_t nan = (1LL << ((sizeof(intmax_t) * CHAR_BIT) - 1));
   static const intmax_t min = nan + 1;
   static const intmax_t max = -min;
 

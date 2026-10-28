@@ -183,7 +183,7 @@ void end_to_end_allocation()
   const auto owners = part.try_block_owners(st.block_size, sizeof(int), &mis);
   EXPECT(owners.has_value() == true);
   EXPECT(mis > 0);
-  EXPECT(st.accuracy == 1.0 - static_cast<double>(mis) / static_cast<double>(n * sizeof(int)));
+  EXPECT(st.accuracy == 1.0 - (static_cast<double>(mis) / static_cast<double>(n * sizeof(int))));
   EXPECT(st.nallocs <= 3); // two shards + at most one straddle merge break
 }
 void malformed_providers_throw()

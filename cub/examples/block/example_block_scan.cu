@@ -283,7 +283,7 @@ __global__ void ExclusiveSumArrayKernel(int* d_data)
   int thread_data[4];
   for (int i = 0; i < 4; i++)
   {
-    thread_data[i] = d_data[threadIdx.x * 4 + i];
+    thread_data[i] = d_data[(threadIdx.x * 4) + i];
   }
 
   // Collectively compute the block-wide exclusive prefix sum
@@ -292,7 +292,7 @@ __global__ void ExclusiveSumArrayKernel(int* d_data)
   // Store results
   for (int i = 0; i < 4; i++)
   {
-    d_data[threadIdx.x * 4 + i] = thread_data[i];
+    d_data[(threadIdx.x * 4) + i] = thread_data[i];
   }
 }
 // example-end exclusive-sum-array
@@ -471,7 +471,7 @@ __global__ void InclusiveSumArrayKernel(int* d_data)
   int thread_data[4];
   for (int i = 0; i < 4; i++)
   {
-    thread_data[i] = d_data[threadIdx.x * 4 + i];
+    thread_data[i] = d_data[(threadIdx.x * 4) + i];
   }
 
   // Collectively compute the block-wide inclusive prefix sum
@@ -480,7 +480,7 @@ __global__ void InclusiveSumArrayKernel(int* d_data)
   // Store results
   for (int i = 0; i < 4; i++)
   {
-    d_data[threadIdx.x * 4 + i] = thread_data[i];
+    d_data[(threadIdx.x * 4) + i] = thread_data[i];
   }
 }
 // example-end inclusive-sum-array
@@ -518,7 +518,7 @@ __global__ void ExclusiveScanArrayKernel(int* d_data)
   int thread_data[4];
   for (int i = 0; i < 4; i++)
   {
-    thread_data[i] = d_data[threadIdx.x * 4 + i];
+    thread_data[i] = d_data[(threadIdx.x * 4) + i];
   }
 
   // Collectively compute the block-wide exclusive prefix max scan
@@ -527,7 +527,7 @@ __global__ void ExclusiveScanArrayKernel(int* d_data)
   // Store results
   for (int i = 0; i < 4; i++)
   {
-    d_data[threadIdx.x * 4 + i] = thread_data[i];
+    d_data[(threadIdx.x * 4) + i] = thread_data[i];
   }
 }
 // example-end exclusive-scan-array
@@ -656,7 +656,7 @@ __global__ void ExclusiveSumArrayAggregateKernel(int* d_data)
   int thread_data[4];
   for (int i = 0; i < 4; i++)
   {
-    thread_data[i] = d_data[threadIdx.x * 4 + i];
+    thread_data[i] = d_data[(threadIdx.x * 4) + i];
   }
 
   // Collectively compute the block-wide exclusive prefix sum
@@ -666,7 +666,7 @@ __global__ void ExclusiveSumArrayAggregateKernel(int* d_data)
   // Store results
   for (int i = 0; i < 4; i++)
   {
-    d_data[threadIdx.x * 4 + i] = thread_data[i];
+    d_data[(threadIdx.x * 4) + i] = thread_data[i];
   }
 }
 // example-end exclusive-sum-array-aggregate
@@ -684,7 +684,7 @@ __global__ void InclusiveScanArrayKernel(int* d_data)
   int thread_data[4];
   for (int i = 0; i < 4; i++)
   {
-    thread_data[i] = d_data[threadIdx.x * 4 + i];
+    thread_data[i] = d_data[(threadIdx.x * 4) + i];
   }
 
   // Collectively compute the block-wide inclusive prefix max scan
@@ -693,7 +693,7 @@ __global__ void InclusiveScanArrayKernel(int* d_data)
   // Store results
   for (int i = 0; i < 4; i++)
   {
-    d_data[threadIdx.x * 4 + i] = thread_data[i];
+    d_data[(threadIdx.x * 4) + i] = thread_data[i];
   }
 }
 // example-end inclusive-scan-array
@@ -769,7 +769,7 @@ __global__ void InclusiveSumArrayAggregateKernel(int* d_data)
   int thread_data[4];
   for (int i = 0; i < 4; i++)
   {
-    thread_data[i] = d_data[threadIdx.x * 4 + i];
+    thread_data[i] = d_data[(threadIdx.x * 4) + i];
   }
 
   // Collectively compute the block-wide inclusive prefix sum
@@ -779,7 +779,7 @@ __global__ void InclusiveSumArrayAggregateKernel(int* d_data)
   // Store results
   for (int i = 0; i < 4; i++)
   {
-    d_data[threadIdx.x * 4 + i] = thread_data[i];
+    d_data[(threadIdx.x * 4) + i] = thread_data[i];
   }
 }
 // example-end inclusive-sum-array-aggregate
@@ -836,10 +836,10 @@ void TestDocumentationExamples()
     {
       for (int j = 0; j < 4 && passed; j++)
       {
-        const int expected = i * 4 + j;
-        if (h_data[i * 4 + j] != expected)
+        const int expected = (i * 4) + j;
+        if (h_data[(i * 4) + j] != expected)
         {
-          printf("FAILED at [%d]: expected %d, got %d\n", i * 4 + j, expected, h_data[i * 4 + j]);
+          printf("FAILED at [%d]: expected %d, got %d\n", (i * 4) + j, expected, h_data[(i * 4) + j]);
           passed     = false;
           all_passed = false;
         }
@@ -972,10 +972,10 @@ void TestDocumentationExamples()
     {
       for (int j = 0; j < 4 && passed; j++)
       {
-        const int expected = i * 4 + j + 1;
-        if (h_data[i * 4 + j] != expected)
+        const int expected = (i * 4) + j + 1;
+        if (h_data[(i * 4) + j] != expected)
         {
-          printf("FAILED at [%d]: expected %d, got %d\n", i * 4 + j, expected, h_data[i * 4 + j]);
+          printf("FAILED at [%d]: expected %d, got %d\n", (i * 4) + j, expected, h_data[(i * 4) + j]);
           passed     = false;
           all_passed = false;
         }
@@ -1029,7 +1029,7 @@ void TestDocumentationExamples()
     {
       for (int j = 0; j < 4 && passed; j++)
       {
-        const int idx      = i * 4 + j;
+        const int idx      = (i * 4) + j;
         const int expected = running_max;
         if (h_data[idx] != expected)
         {
@@ -1121,7 +1121,7 @@ void TestDocumentationExamples()
     {
       for (int j = 0; j < 4 && passed; j++)
       {
-        const int idx = i * 4 + j;
+        const int idx = (i * 4) + j;
         running_max   = (idx > running_max) ? idx : running_max;
         if (h_data[idx] != running_max)
         {

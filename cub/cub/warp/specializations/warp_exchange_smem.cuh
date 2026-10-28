@@ -34,7 +34,7 @@ class WarpExchangeSmem
 {
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
 
-  static constexpr int ITEMS_PER_TILE = ItemsPerThread * LogicalWarpThreads + 1;
+  static constexpr int ITEMS_PER_TILE = (ItemsPerThread * LogicalWarpThreads) + 1;
 
   static constexpr int LOG_SMEM_BANKS = log2_smem_banks;
 
@@ -70,14 +70,14 @@ public:
   {
     for (int item = 0; item < ItemsPerThread; item++)
     {
-      const int idx                  = ItemsPerThread * lane_id + item;
+      const int idx                  = (ItemsPerThread * lane_id) + item;
       temp_storage.items_shared[idx] = input_items[item];
     }
     __syncwarp(member_mask);
 
     for (int item = 0; item < ItemsPerThread; item++)
     {
-      const int idx      = LogicalWarpThreads * item + lane_id;
+      const int idx      = (LogicalWarpThreads * item) + lane_id;
       output_items[item] = temp_storage.items_shared[idx];
     }
   }
@@ -88,14 +88,14 @@ public:
   {
     for (int item = 0; item < ItemsPerThread; item++)
     {
-      const int idx                  = LogicalWarpThreads * item + lane_id;
+      const int idx                  = (LogicalWarpThreads * item) + lane_id;
       temp_storage.items_shared[idx] = input_items[item];
     }
     __syncwarp(member_mask);
 
     for (int item = 0; item < ItemsPerThread; item++)
     {
-      const int idx      = ItemsPerThread * lane_id + item;
+      const int idx      = (ItemsPerThread * lane_id) + item;
       output_items[item] = temp_storage.items_shared[idx];
     }
   }

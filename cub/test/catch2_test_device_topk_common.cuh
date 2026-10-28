@@ -357,7 +357,7 @@ class check_unordered_output_helper
           break;
         }
       }
-      const auto wrong_element_index = (mismatch_it - flag_vector.cbegin()) * bits_per_element + bit_index;
+      const auto wrong_element_index = ((mismatch_it - flag_vector.cbegin()) * bits_per_element) + bit_index;
       FAIL("First wrong output index: " << wrong_element_index);
     }
     if (num_elements % bits_per_element != 0)
@@ -365,7 +365,7 @@ class check_unordered_output_helper
       auto const last_element_flags = flag_vector[num_elements / bits_per_element];
       for (std::uint32_t i = 0; i < (num_elements % bits_per_element); ++i)
       {
-        const auto element_index = (num_elements / bits_per_element) * bits_per_element + i;
+        const auto element_index = ((num_elements / bits_per_element) * bits_per_element) + i;
         INFO("First wrong output index: " << element_index);
         REQUIRE(((last_element_flags >> i) & 0x01u) == 0x01u);
       }

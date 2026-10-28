@@ -72,7 +72,7 @@ struct store_coords_op
 
   __device__ void operator()(int index, int x, int y) const
   {
-    output[index] = x * 10 + y;
+    output[index] = (x * 10) + y;
   }
 };
 

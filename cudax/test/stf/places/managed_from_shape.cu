@@ -23,7 +23,7 @@ using namespace cuda::experimental::stf;
 
 __global__ void axpy(double a, slice<const double> x, slice<double> y)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int i = tid; i < x.size(); i += nthreads)
@@ -83,7 +83,7 @@ int main()
   ctx.host_launch(lX.read(data_place::managed()), lY.read())->*[=](auto X, auto Y) {
     for (size_t i = 0; i < N; i++)
     {
-      EXPECT(fabs(Y(i) - (Y0(i) + alpha * X0(i))) < 0.0001);
+      EXPECT(fabs(Y(i) - (Y0(i) + (alpha * X0(i)))) < 0.0001);
       EXPECT(fabs(X(i) - X0(i)) < 0.0001);
     }
   };

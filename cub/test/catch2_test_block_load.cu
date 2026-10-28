@@ -15,9 +15,9 @@ static __device__ int get_output_idx(int item)
 {
   if (LoadAlgorithm == cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED)
   {
-    return static_cast<int>(threadIdx.x) + ThreadsInBlock * item;
+    return static_cast<int>(threadIdx.x) + (ThreadsInBlock * item);
   }
-  return static_cast<int>(threadIdx.x) * ItemsPerThread + item;
+  return (static_cast<int>(threadIdx.x) * ItemsPerThread) + item;
 }
 
 template <int ItemsPerThread,
@@ -239,7 +239,7 @@ __global__ void vectorized_full_tile_load_kernel(InputIteratorT input, T* output
   cub::BlockLoad<T, ThreadsInBlock, ItemsPerThread, cub::BlockLoadAlgorithm::BLOCK_LOAD_VECTORIZE>().Load(input, data);
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    output[threadIdx.x * ItemsPerThread + i] = data[i];
+    output[(threadIdx.x * ItemsPerThread) + i] = data[i];
   }
 }
 

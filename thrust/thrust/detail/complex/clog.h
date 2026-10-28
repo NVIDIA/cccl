@@ -136,12 +136,12 @@ _CCCL_HOST_DEVICE inline complex<double> clog(const complex<double>& z)
 
   if (ax >= 1.0)
   {
-    return (complex<double>(::cuda::std::log1p((ax - 1) * (ax + 1) + ay * ay) * 0.5, ::cuda::std::atan2(y, x)));
+    return (complex<double>(::cuda::std::log1p(((ax - 1) * (ax + 1)) + (ay * ay)) * 0.5, ::cuda::std::atan2(y, x)));
   }
 
-  if (ax * ax + ay * ay <= 0.7)
+  if ((ax * ax) + (ay * ay) <= 0.7)
   {
-    return (complex<double>(::cuda::std::log(ax * ax + ay * ay) * 0.5, ::cuda::std::atan2(y, x)));
+    return (complex<double>(::cuda::std::log((ax * ax) + (ay * ay)) * 0.5, ::cuda::std::atan2(y, x)));
   }
 
   /*
