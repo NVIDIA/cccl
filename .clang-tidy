@@ -109,7 +109,6 @@ Checks:
   - '-readability-redundant-typename'
   - '-readability-redundant-casting'
   - '-readability-simplify-boolean-expr'
-  - '-readability-make-member-function-const'
   - '-readability-enum-initial-value'
   - '-readability-avoid-return-with-void-value'
   - '-readability-suspicious-call-argument'
