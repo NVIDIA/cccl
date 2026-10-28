@@ -22,6 +22,12 @@ from ._group_scan import (
     scan,
 )
 from ._group_shuffle import shuffle
+from ._group_topk import (
+    topk_max_keys,
+    topk_max_pairs,
+    topk_min_keys,
+    topk_min_pairs,
+)
 from ._temp_storage import TempStorage
 from ._thread_data import ThreadData
 from ._thread_group import (
@@ -37,6 +43,10 @@ from ._thread_group import (
 from ._typing import TempStorageLike, ThreadDataLike
 
 __all__ = [
+    "topk_min_keys",
+    "topk_max_keys",
+    "topk_min_pairs",
+    "topk_max_pairs",
     "radix_sort_keys",
     "radix_sort_pairs",
     "radix_rank_keys",
