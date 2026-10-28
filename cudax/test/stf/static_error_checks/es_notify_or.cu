@@ -22,6 +22,6 @@ using namespace cuda::experimental::stf::sump;
 
 int main()
 {
-  errsink(notify | subst(cudaSuccess)) << cudaErrorInvalidValue;
+  (notify | subst(cudaSuccess)) << cudaErrorInvalidValue;
   return EXIT_FAILURE;
 }

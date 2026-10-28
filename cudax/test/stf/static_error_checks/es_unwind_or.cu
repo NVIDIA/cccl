@@ -22,7 +22,7 @@ using namespace cuda::experimental::stf::sump;
 
 int main()
 {
-  errsink(unwind | subst(0))->*[] {
+  (unwind | subst(0))->*[] {
     return 0;
   };
   return EXIT_FAILURE;

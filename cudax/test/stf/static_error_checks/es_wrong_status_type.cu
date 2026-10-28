@@ -22,6 +22,6 @@ using namespace cuda::experimental::stf::sump;
 
 int main()
 {
-  errsink(if_equal(cudaErrorNotReady)(noop)) << CUDA_ERROR_NOT_READY;
+  if_equal(cudaErrorNotReady)(noop) << CUDA_ERROR_NOT_READY;
   return EXIT_FAILURE;
 }

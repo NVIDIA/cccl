@@ -1223,7 +1223,7 @@ public:
       _pop_epilogue(finalize_prereqs, err);
       if (err)
       {
-        errsink(policy)->*[&] {
+        sump::sink(policy)->*[&] {
           ::std::rethrow_exception(err);
         };
       }
@@ -1322,7 +1322,7 @@ public:
       pending_epilogue_node_offset_ = -1;
       if (err)
       {
-        errsink(policy)->*[&] {
+        sump::sink(policy)->*[&] {
           ::std::rethrow_exception(err);
         };
       }

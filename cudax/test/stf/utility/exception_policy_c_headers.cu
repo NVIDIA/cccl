@@ -58,10 +58,10 @@ int main()
   _CCCL_ASSERT(v == 42, "ON_THROW(abort) must compile and pass the value through");
 
   // The function form with qualified policies.
-  const int w = errsink(sump::terminate)->*[] {
+  const int w = sump::terminate->*[] {
     return 5;
   };
-  _CCCL_ASSERT(w == 5, "errsink(sump::terminate) must compile");
+  _CCCL_ASSERT(w == 5, "sump::terminate ->* must compile");
 
   // Qualified names resolve to the policy objects, not the C library functions.
   [[maybe_unused]] const auto& policy_abort     = sump::abort;

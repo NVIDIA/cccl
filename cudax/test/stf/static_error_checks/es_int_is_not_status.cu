@@ -22,6 +22,6 @@ using namespace cuda::experimental::stf::sump;
 
 int main()
 {
-  errsink(notify)->*42;
+  notify->*42;
   return EXIT_FAILURE;
 }

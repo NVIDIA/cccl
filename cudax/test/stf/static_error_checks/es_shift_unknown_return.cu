@@ -22,7 +22,7 @@ using namespace cuda::experimental::stf;
 
 int main()
 {
-  errsink(sump::notify) << [] {
+  sump::notify << [] {
     return 42;
   };
   return EXIT_FAILURE;
