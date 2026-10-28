@@ -55,6 +55,7 @@ Checks:
 
   - 'readability-*'
   - '-readability-uppercase-literal-suffix'
+  - '-readability-magic-numbers'
   - '-readability-use-concise-preprocessor-directives'
   - '-readability-avoid-nested-conditional-operator'
   # handled by clang-format
