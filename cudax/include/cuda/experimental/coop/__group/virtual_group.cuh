@@ -105,10 +105,13 @@ __do_group_mapping(const _Unit& __unit, const _ParentGroup& __parent, _Mapping&&
 
 template <class _Unit, class _ParentGroup, class _Mapping>
 [[nodiscard]] _CCCL_DEVICE_API constexpr auto __do_group_mapping(
-  const non_exhaustive_t&, const _Unit& __unit, const _ParentGroup& __parent, _Mapping&& __mapping) noexcept
+  const non_exhaustive_t& __non_exhaustive,
+  const _Unit& __unit,
+  const _ParentGroup& __parent,
+  _Mapping&& __mapping) noexcept
 {
   const auto __init_mapping_result = ::cuda::experimental::coop::__make_init_group_mapping_result<_Unit>(__parent);
-  const auto __mapping_result      = __mapping.map(__unit, __parent, __init_mapping_result);
+  const auto __mapping_result      = __mapping.map(__non_exhaustive, __unit, __parent, __init_mapping_result);
   if (__mapping_result.is_valid())
   {
     ::cuda::experimental::coop::__check_group_mapping_result<_Unit>(__mapping_result);

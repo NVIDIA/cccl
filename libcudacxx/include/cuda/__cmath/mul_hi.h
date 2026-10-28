@@ -21,12 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/cstdint>
+
+#include <nv/target>
 
 #if _CCCL_COMPILER(MSVC)
 #  include <intrin.h>

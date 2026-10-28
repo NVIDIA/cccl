@@ -216,7 +216,7 @@ public:
     // However, mdspan does check this on its own, so for now we avoid double checking in hardened mode
     _CCCL_ASSERT(__mdspan_detail::__is_multidimensional_index_in(extents(), __idx...),
                  "layout_right::mapping: out of bounds indexing");
-    return __op_index(make_index_sequence<sizeof...(_Indices)>(), __idx...);
+    return __op_index(index_sequence_for<_Indices...>(), __idx...);
   }
 
   [[nodiscard]] _CCCL_API static constexpr bool is_always_unique() noexcept

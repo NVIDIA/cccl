@@ -33,7 +33,6 @@ jobs:
   build-workflow:
     name: Build workflow from matrix
     runs-on: ubuntu-latest
-    if: ${{ github.repository == 'NVIDIA/cccl' }}
     permissions:
       contents: read
       pull-requests: write
@@ -51,24 +50,16 @@ jobs:
       sass_matrix: ${{ steps.build-sass-matrix.outputs.sass_matrix }}
       vdc_enabled: ${{ steps.export-flags.outputs.vdc_enabled }}
       docs_enabled: ${{ steps.export-flags.outputs.docs_enabled }}
-      rapids_enabled: ${{ steps.export-flags.outputs.rapids_enabled }}
-      matx_enabled: ${{ steps.export-flags.outputs.matx_enabled }}
-      pytorch_enabled: ${{ steps.export-flags.outputs.pytorch_enabled }}
       branch_notes_dirt: ${{ steps.branch-notes-dirt.outputs.branch_notes_dirt }}
     steps:
       - name: Export workflow flags
         id: export-flags
-        env:
-          skip_tpt: ${{ contains(github.event.head_commit.message, '[bench-only]') || contains(github.event.head_commit.message, '[skip-tpt]') || contains(github.event.head_commit.message, '[skip-third-party-testing]') }}
         run: |
           output() { echo "$1=$2" | tee -a "${GITHUB_OUTPUT}"; }
 
           output matrix_enabled  "${{ !contains(github.event.head_commit.message, '[bench-only]') && !contains(github.event.head_commit.message, '[skip-matrix]') }}"
           output vdc_enabled     "${{ !contains(github.event.head_commit.message, '[bench-only]') && !contains(github.event.head_commit.message, '[skip-vdc]') }}"
           output docs_enabled    "${{ !contains(github.event.head_commit.message, '[bench-only]') && !contains(github.event.head_commit.message, '[skip-docs]') }}"
-          output rapids_enabled  "${{ !contains(github.event.head_commit.message, '[skip-rapids]')  && !fromJSON(env.skip_tpt) }}"
-          output matx_enabled    "${{ !contains(github.event.head_commit.message, '[skip-matx]')    && !fromJSON(env.skip_tpt) }}"
-          output pytorch_enabled "${{ !contains(github.event.head_commit.message, '[skip-pytorch]') && !fromJSON(env.skip_tpt) }}"
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
@@ -145,12 +136,13 @@ jobs:
             exit 0
           fi
 
-          # Only compare SASS when CUB, or something CUB is built from, changed.
+          # Only compare SASS for the projects that changed, or that are built from
+          # something that changed.
           #
           # Redirect GITHUB_OUTPUT to our file so that the outputs do not land in this
           # step's outputs, where they would collide with the ones `build-workflow` writes
           # later.
-          echo "::group::Inspect changes for CUB"
+          echo "::group::Inspect changes for SASS"
 
           dirty_report="${RUNNER_TEMP}/sass-inspect-changes.txt"
 
@@ -162,16 +154,15 @@ jobs:
           echo "SASS job changes"
           cat "${dirty_report}"
 
-          if ! grep -Eq '^(FULL|LITE)_BUILD=.*\bcub\b' "${dirty_report}"; then
-            echo "CUB is not affected by this change; skipping SASS diff dispatch."
-            {
-              echo "sass_enabled=false"
-              echo 'sass_matrix={"include":[]}'
-            } >> "${GITHUB_OUTPUT}"
-            exit 0
-          fi
+          mapfile -t projects < <(
+            sed -n -E 's/^(FULL|LITE)_BUILD=//p' "${dirty_report}" | grep -oE '[^ ]+'
+          )
 
-          sass_matrix_json="$(./ci/sass/parse_matrix.py "ci/matrix.yaml" --workflow pull_request)"
+          sass_matrix_json="$(
+            ./ci/sass/parse_matrix.py "ci/matrix.yaml" \
+              --workflow pull_request \
+              --projects "${projects[@]}"
+          )"
           sass_enabled="$(
             jq -r 'if (.include // []) == [] then "false" else "true" end' \
               <<< "${sass_matrix_json}"
@@ -220,7 +211,12 @@ jobs:
           allow_override: "true"
           inspect_changes_script: 'ci/inspect_changes.py'
           inspect_changes_base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
-          workflows: ${{ github.repository == 'NVIDIA/cccl' && 'pull_request' || 'pull_request_fork' }}
+          workflows: |-
+            ${{ case(
+              github.event.repository.fork, 'pull_request_fork',
+              contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner), 'pull_request',
+              'pull_request_fork'
+            ) }}
 
   dispatch-groups-linux-two-stage:
     name: ${{ matrix.name }}
@@ -316,7 +312,7 @@ jobs:
       actions: read
       contents: read
       pull-requests: write # Posts a comment back to the PR.
-    runs-on: ubuntu-latest
+    runs-on: linux-amd64-cpu4
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
@@ -333,11 +329,7 @@ jobs:
   verify-devcontainers:
     name: Verify Dev Containers
     needs: build-workflow
-    if: >-
-      ${{
-           needs.build-workflow.outputs.vdc_enabled == 'true' &&
-           github.repository == 'NVIDIA/cccl'
-      }}
+    if: ${{ needs.build-workflow.outputs.vdc_enabled == 'true' }}
     permissions:
       id-token: write
       contents: read
@@ -351,10 +343,11 @@ jobs:
     if: >-
       ${{
         needs.build-workflow.outputs.pr_number &&
-        needs.build-workflow.outputs.docs_enabled == 'true' &&
-        github.repository == 'NVIDIA/cccl'
+        needs.build-workflow.outputs.docs_enabled == 'true'
       }}
-    runs-on: ${{ github.repository == 'NVIDIA/cccl' && 'linux-amd64-cpu32' || 'ubuntu-latest' }}
+    runs-on: |-
+      ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) &&
+          'linux-amd64-cpu32' || 'ubuntu-latest' }}
     permissions:
       contents: read
     steps:
@@ -368,51 +361,6 @@ jobs:
         with:
           upload_workflow_artifact: "false"
 
-  build-rapids:
-    name: Build RAPIDS (optional)
-    needs: build-workflow
-    if: >-
-      ${{
-        needs.build-workflow.outputs.rapids_enabled == 'true' &&
-        github.repository == 'NVIDIA/cccl'
-      }}
-    secrets: inherit
-    permissions:
-      actions: read
-      packages: read
-      id-token: write
-      contents: read
-      pull-requests: read
-    uses: ./.github/workflows/build-rapids.yml
-
-  build-matx:
-    name: Build MatX (optional)
-    needs: build-workflow
-    if: >-
-      ${{
-        needs.build-workflow.outputs.matx_enabled == 'true' &&
-        github.repository == 'NVIDIA/cccl'
-      }}
-    secrets: inherit
-    permissions:
-      id-token: write
-      contents: read
-    uses: ./.github/workflows/build-matx.yml
-
-  build-pytorch:
-    name: Build PyTorch (optional)
-    needs: build-workflow
-    if: >-
-      ${{
-        needs.build-workflow.outputs.pytorch_enabled == 'true' &&
-        github.repository == 'NVIDIA/cccl'
-      }}
-    secrets: inherit
-    permissions:
-      id-token: write
-      contents: read
-    uses: ./.github/workflows/build-pytorch.yml
-
   # Test that cuda.compute can be imported on a CPU-only machine (no CUDA drivers).
   test-cpu-import:
     name: Test CPU-only import
@@ -420,7 +368,7 @@ jobs:
     needs:
       - dispatch-groups-linux-two-stage
       - dispatch-groups-linux-standalone
-    if: ${{ !cancelled() && github.repository == 'NVIDIA/cccl' }}
+    if: ${{ !cancelled() }}
     permissions:
       contents: read
     steps:
@@ -500,7 +448,7 @@ jobs:
       arch: ${{ matrix.arch }}
       base_ref: ${{ matrix.base_ref }}
       test_ref: ${{ matrix.test_ref }}
-      cub_filters: ${{ matrix.cub_filters }}
+      cpp_filters: ${{ matrix.cpp_filters }}
       python_filters: ${{ matrix.python_filters }}
       nvbench_args: ${{ matrix.nvbench_args }}
       nvbench_compare_args: ${{ matrix.nvbench_compare_args }}
@@ -562,6 +510,7 @@ jobs:
     uses: ./.github/workflows/sass-diff.yml
     with:
       id: ${{ matrix.id }}
+      project: ${{ matrix.project }}
       launch_args: ${{ matrix.launch_args }}
       preset: ${{ matrix.preset }}
       archs: ${{ matrix.archs }}
@@ -581,7 +530,7 @@ jobs:
     needs: [build-workflow, dispatch-bench]
     permissions:
       pull-requests: write
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Determine outcome
         id: outcome
@@ -611,40 +560,55 @@ jobs:
 
   sass-results:
     name: Post SASS comparison results
-    if: >-
-      ${{
-        needs.build-workflow.outputs.sass_enabled == 'true' &&
-        needs.build-workflow.outputs.pr_number != ''
-      }}
+    if: needs.build-workflow.outputs.sass_enabled == 'true'
     needs: [build-workflow, dispatch-sass-diff]
     permissions:
       actions: read
       pull-requests: write
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
+    outputs:
+      outcome: ${{ steps.compose.outputs.outcome }}
     steps:
+      - name: Checkout the SASS scripts
+        uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            ci/sass
+            ci/matrix.yaml
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+        # Needed for render_report.py
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
+        with:
+          python-version: '3.14'
+
+        # Needed for render_report.py
+      - name: Install the SASS script dependencies
+        run: pip install pyyaml
+
       - name: Download the SASS comment artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: sass-*-comment
           path: sass-comment
 
-      - name: Determine the outcome
+      - name: Render the comment
         id: compose
+        env:
+          CHECK_RUN_ID: ${{ job.check_run_id }}
         run: |
-          # The sass-diff job is a matrix job (presumably to organize it into a drop-down
-          # in the UI). download-artifact will put each sub-job into a separate directory
-          # under sass-comment, keyed by the job ID:
+          # download-artifact puts the artifact of each matrix job into its own
+          # directory under sass-comment, named after the artifact:
           #
           # sass-comment/
-          #   1/
-          #     summary.md
-          #   2/
-          #     summary.md
-          #   ...
-          #
-          # But there is currently only ever 1 job for it that runs, so we could remove
-          # the matrix handling code for it. Then this just becomes a bunch of
-          # straight-line code without the for-loop or the find call below.
+          #   sass-cub-benchmarks-comment/
+          #     report.json
+          #     meta.json
+          #     analysis.json
+          #   sass-thrust-benchmarks-comment/
+          #     ...
           mapfile -t entries < <(find sass-comment -mindepth 1 -maxdepth 1 -type d | sort)
 
           if [[ "${#entries[@]}" -eq 0 ]]; then
@@ -656,18 +620,17 @@ jobs:
           comment_path="${RUNNER_TEMP}/sass-results-comment.md"
 
           outcome=NO_CHANGE
+          inputs=()
           for entry in "${entries[@]}"; do
-            if [[ ! -s "${entry}/summary.md" ]]; then
-              echo "::error::${entry} has no summary."
-              exit 1
-            fi
-
             if jq -e '[.targets[].changed] | any' "${entry}/report.json" > /dev/null; then
               outcome=CHANGE
             fi
-
-            cat "${entry}/summary.md" >> "${comment_path}"
+            inputs+=(--input "${entry}")
           done
+
+          python3 ci/sass/render_report.py "${inputs[@]}" --output "${comment_path}"
+
+          echo "<!-- sass-diff-CHECK_RUN_ID:${CHECK_RUN_ID} -->" >> "${comment_path}"
 
           cat "${comment_path}" >> "${GITHUB_STEP_SUMMARY}"
           echo "SASS outcome: ${outcome}."
@@ -697,6 +660,46 @@ jobs:
           hide: true
           hide_classify: "OUTDATED"
 
+  # Keep the report intact when a comment triggers an approval retry.
+  sass-approval:
+    # sass-diff-approve.yml locates this job by name.
+    name: Require SASS approval
+    if: needs.build-workflow.outputs.sass_enabled == 'true'
+    needs: [build-workflow, sass-results]
+    permissions:
+      actions: read
+    runs-on: ubuntu-slim
+    env:
+      PR_NUMBER: ${{ needs.build-workflow.outputs.pr_number }}
+    steps:
+      - name: Require SASS approval
+        if: needs.sass-results.outputs.outcome == 'CHANGE'
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const name = `sass-approval-pr-${process.env.PR_NUMBER}-${context.sha}`;
+            core.info(`Find approval artifact ${name}.`);
+
+            const { data: { artifacts } } = await github.rest.actions.listArtifactsForRepo({
+              ...context.repo,
+              name,
+              per_page: 1,
+            });
+
+            // The mere existence of the artifact is taken as proof that the approval comment was accepted.
+            // We could do further verification here (like checking that the artifact was in fact uploaded
+            // by our workflow) but this seems overly defensive.
+            //
+            // We also don't care whether the artifact has expired or not. An approval given 10 days
+            // ago--so long as the branch didn't change--should still count as an approval today.
+
+            if (artifacts.length === 0) {
+              core.setFailed(`SASS changes require approval with /sass diff ok ${context.sha}`);
+              return;
+            }
+
+            core.info(`Found approval artifact ${artifacts[0].id}.`);
+
   # Check all other job statuses. This job gates branch protection checks.
   ci:
     name: CI
@@ -714,7 +717,8 @@ jobs:
       - dispatch-bench
       - dispatch-sass-diff
       - sass-results
-    runs-on: ubuntu-latest
+      - sass-approval
+    runs-on: ubuntu-slim
     steps:
       - name: Check results
         run: |
@@ -745,24 +749,14 @@ jobs:
           fi
           check_result "dispatch-bench" "${expected_bench_result}" "${{needs.dispatch-bench.result}}"
 
-          # Test emptiness in the expression. `toJSON` pretty-prints multi-line output,
-          # and the embedded newlines break the `[[ ]]` conditional.
-          expected_sass_result="skipped"
-          if [[ "${{ needs.build-workflow.outputs.sass_enabled }}" == "true" ]] \
-            && [[ "${{ fromJSON(needs.build-workflow.outputs.sass_matrix).include[0] != null }}" == "true" ]]; then
-            expected_sass_result="success"
-          fi
-          check_result "dispatch-sass-diff" "${expected_sass_result}" "${{needs.dispatch-sass-diff.result}}"
-
-          # sass-results skips when dispatch-sass-diff fails. dispatch-sass-diff reports
-          # that failure, so only check sass-results when the dispatch job succeeded.
-          if [[ "${{ needs.dispatch-sass-diff.result }}" == "${expected_sass_result}" ]]; then
-            expected_sass_results_result="skipped"
-            if [[ "${expected_sass_result}" == "success" ]] \
-              && [[ "${{ needs.build-workflow.outputs.pr_number }}" != "" ]]; then
-              expected_sass_results_result="success"
-            fi
-            check_result "sass-results" "${expected_sass_results_result}" "${{needs.sass-results.result}}"
+          if [[ "${{ needs.build-workflow.outputs.sass_enabled }}" == "true" ]]; then
+            # sass-results can only succeed after dispatch-sass-diff succeeds.
+            check_result "sass-results"  "success" "${{needs.sass-results.result}}"
+            check_result "sass-approval" "success" "${{needs.sass-approval.result}}"
+          else
+            check_result "dispatch-sass-diff" "skipped" "${{needs.dispatch-sass-diff.result}}"
+            check_result "sass-results"       "skipped" "${{needs.sass-results.result}}"
+            check_result "sass-approval"      "skipped" "${{needs.sass-approval.result}}"
           fi
 
           bench_enabled="${{ needs.build-workflow.outputs.bench_enabled }}"
@@ -796,18 +790,12 @@ jobs:
         (
           needs.build-workflow.result == 'failure' ||
           needs.ci.result == 'failure' ||
-          needs.build-rapids.result == 'failure' ||
-          needs.build-matx.result == 'failure' ||
-          needs.build-pytorch.result == 'failure' ||
           needs.bench-results.result == 'failure'
         )
       }}
     needs:
       - build-workflow
       - ci
-      - build-rapids
-      - build-matx
-      - build-pytorch
       - bench-results
     permissions:
       actions: read
@@ -879,7 +867,7 @@ jobs:
     needs: analyze-failures
     permissions:
       pull-requests: write
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Append to CI Workflow Results
         uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5

@@ -12,12 +12,11 @@
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/Decl.h>
 #include <clang/AST/DeclTemplate.h>
-#include <clang/AST/PrettyPrinter.h>
 #include <clang/ASTMatchers/ASTMatchers.h>
 #include <clang/ASTMatchers/ASTMatchFinder.h>
 #include <clang/Tooling/CommonOptionsParser.h>
 #include <clang/Tooling/Tooling.h>
-#include <llvm/ADT/SmallString.h>
+#include <common/type_traits.h>
 #include <llvm/ADT/SmallVector.h>
 #include <llvm/ADT/STLExtras.h>
 #include <llvm/ADT/StringRef.h>
@@ -118,22 +117,6 @@ class TraitCollector final : public clang::ast_matchers::MatchFinder::MatchCallb
 {
   llvm::SmallVector<std::string> target_nses_;
 
-  static constexpr auto SMOL_LEN = 256;
-
-  // ABI namespaces must not make the catalog depend on a particular library build.
-  [[nodiscard]] llvm::SmallString<SMOL_LEN> qualified_name(const clang::NamedDecl& declaration)
-  {
-    auto policy = declaration.getASTContext().getPrintingPolicy();
-
-    policy.SuppressInlineNamespace = llvm::to_underlying(clang::PrintingPolicy::SuppressInlineNamespaceMode::All);
-
-    auto result = llvm::SmallString<SMOL_LEN>{};
-    auto stream = llvm::raw_svector_ostream{result};
-
-    declaration.printQualifiedName(stream, policy);
-    return result;
-  }
-
 public:
   template <class Range>
   explicit TraitCollector(const Range& range)
@@ -168,7 +151,7 @@ public:
       return;
     }
 
-    const auto name     = qualified_name(*declaration);
+    const auto name     = clang::tidy::cccl::util::fully_qualified_name(*declaration);
     const auto name_ref = llvm::StringRef{name};
 
     if (!llvm::any_of(target_nses_, [&](llvm::StringRef ns) {
@@ -265,16 +248,6 @@ update_catalog(const std::unique_ptr<ParsedArgs>& args, const TraitCollector& di
 
   merge(discovered.types, ret.types, "TYPE_TRAITS");
   merge(discovered.values, ret.values, "VALUE_TRAITS");
-
-  for (llvm::StringRef req_type : {"cuda::std::remove_cvref", "cuda::std::remove_cv"})
-  {
-    if (!ret.types.contains(req_type))
-    {
-      return llvm::createStringError(
-        "catalog does not contain " + req_type + ", this is a bug in the catalog generation program");
-    }
-  }
-
   return ret;
 }
 

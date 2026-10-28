@@ -255,6 +255,8 @@ public:
   // [simd.ctor], basic_vec constructors
 
   // [simd.ctor] value broadcast constructor (explicit overload)
+  // The conversion constraints exclude copy and move construction.
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_TEMPLATE(typename _Up)
   _CCCL_REQUIRES((__explicitly_convertible_to<_Up, value_type>) _CCCL_AND(!__is_value_ctor_implicit<_Up, value_type>))
   _CCCL_HOST_DEVICE_API constexpr explicit basic_vec(_Up&& __v) noexcept
@@ -267,6 +269,7 @@ public:
   _CCCL_HOST_DEVICE_API constexpr basic_vec(_Up&& __v) noexcept
       : __s_{_Impl::__broadcast(static_cast<value_type>(__v))}
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <typename _Up>
   static inline constexpr bool __can_implicitly_convert_v =
@@ -307,17 +310,22 @@ public:
   }
 
   // [simd.ctor] generator constructor
+  // The generator constraint excludes copy and move construction.
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_TEMPLATE(typename _Generator)
   _CCCL_REQUIRES(__can_generate_v<value_type, _Generator, __size>)
   _CCCL_HOST_DEVICE_API constexpr explicit basic_vec(_Generator&& __g)
       : __s_{_Impl::__generate(__g)}
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   // [simd.ctor] range constructor
   template <typename _Range>
   static constexpr bool __is_compatible_range = __is_compatible_range_v<value_type, __size, _Range>;
 
   // [simd.ctor] range constructor
+  // The contiguous-range constraint excludes copy and move construction.
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_TEMPLATE(typename _Range, typename... _Flags)
   _CCCL_REQUIRES(__is_compatible_range<_Range>)
   _CCCL_HOST_DEVICE_API constexpr basic_vec(_Range&& __range, flags<_Flags...> = {})
@@ -334,6 +342,8 @@ public:
       __s_.__set(__i, static_cast<value_type>(__data[__i]));
     }
   }
+
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   // [simd.ctor] masked range constructor
   _CCCL_TEMPLATE(typename _Range, typename... _Flags)

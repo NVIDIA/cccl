@@ -211,11 +211,12 @@ struct TransformAsyncCopyPolicy
 struct TransformPolicy
 {
   int min_bytes_in_flight; //!< Minimum number of bytes in flight per SM to reach by scaling the items per thread. Has
-                           //!< no effect if algorithm is @p vectorized.
+                           //!< no effect if algorithm is @p vectorized and the vectorized code path is eligible at
+                           //!< runtime.
   TransformAlgorithm algorithm; //!< The transform algorithm to use by the kernel
   TransformPrefetchPolicy prefetch; //!< Sub-policy for the prefetch algorithm. Only used when @p algorithm is @p
-                                    //!< prefetch or when @p algorithm is @p vectorized and the input pointers are not
-                                    //!< sufficiently aligned.
+                                    //!< prefetch or when @p algorithm is @p vectorized and the vectorized code path is
+                                    //!< not eligible at runtime.
   TransformVectorizedPolicy vectorized; //!< Sub-policy for the vectorized algorithm. Only used when @p algorithm is @p
                                         //!< vectorized.
   TransformAsyncCopyPolicy async_copy; //!< Sub-policy for the async copy algorithms. Only used when @p algorithm is @p
@@ -278,7 +279,7 @@ _CCCL_HOST_DEVICE constexpr auto memcpy_async_dyn_smem_for_tile_size(
   return smem_size;
 }
 
-constexpr int bulk_copy_size_multiple = 16;
+inline constexpr int bulk_copy_size_multiple = 16;
 
 _CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(::cuda::compute_capability cc) -> int
 {

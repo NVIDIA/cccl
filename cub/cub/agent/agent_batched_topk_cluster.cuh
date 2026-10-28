@@ -43,21 +43,22 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_topk.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/segmented_params.cuh>
+#include <cub/detail/topk_helpers.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/detail/warpspeed/optimize_smem_ptr.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
-#include <cub/device/dispatch/dispatch_topk.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
+#include <cuda/__argument/argument.h>
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_down.h>
@@ -65,25 +66,24 @@
 #include <cuda/__execution/tie_break.h>
 #include <cuda/__memcpy_async/elect_one.h>
 #include <cuda/__memory/align_up.h>
+#include <cuda/__memory/is_aligned.h>
 #include <cuda/__memory/ptr_rebind.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>
 #include <cuda/__ptx/instructions/mbarrier_init.h>
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
-#include <cuda/argument>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/countr.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__memory/pointer_traits.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/forward.h>
-#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 #include <cuda/std/span>
 
 #include <nv/target>

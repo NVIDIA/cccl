@@ -63,7 +63,7 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
 
 namespace detail
 {
-template <bool Unroll = true, typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
+template <bool Unroll = detail::sort_unroll_default, typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
 _CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
   KeyIt keys_shared,
   int keys1_beg,
@@ -98,7 +98,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
   }
 }
 
-template <bool Unroll = true, typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
+template <bool Unroll = detail::sort_unroll_default, typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
 _CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
   KeyIt keys_shared,
   int keys1_beg,
@@ -212,7 +212,7 @@ template <typename KeyT,
           int NumThreads,
           int ItemsPerThread,
           typename SynchronizationPolicy,
-          bool Unroll = true>
+          bool Unroll = detail::sort_unroll_default>
 class BlockMergeSortStrategy
 {
   static_assert(::cuda::is_power_of_two(NumThreads), "NumThreads must be a power of two");
@@ -1101,7 +1101,7 @@ template <typename KeyT,
           typename ValueT = NullType,
           int BlockDimY   = 1,
           int BlockDimZ   = 1,
-          bool Unroll     = true>
+          bool Unroll     = detail::sort_unroll_default>
 class BlockMergeSort
     : public BlockMergeSortStrategy<
         KeyT,

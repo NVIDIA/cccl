@@ -223,7 +223,7 @@ public:
                  "layout_left::mapping: out of bounds indexing");
 
     const array<index_type, extents_type::rank()> __idx_a{static_cast<index_type>(__idx)...};
-    return __op_index(__idx_a, make_index_sequence<sizeof...(_Indices)>());
+    return __op_index(__idx_a, index_sequence_for<_Indices...>());
   }
 
   [[nodiscard]] _CCCL_API static constexpr bool is_always_unique() noexcept

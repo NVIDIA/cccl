@@ -57,7 +57,7 @@ CUB_NAMESPACE_BEGIN
 //! Tuning
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! All algorithms in DeviceHistogram that accept an environment can be tuned by passing a custom
+//! All algorithms in DeviceHistogram can be tuned by passing a custom
 //! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::HistogramPolicy`, as shown in the
 //! example below:
 //!
@@ -1309,7 +1309,8 @@ public:
             typename SampleIteratorT,
             typename CounterT,
             typename LevelT,
-            typename OffsetT>
+            typename OffsetT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CCCL_DEPRECATED_BECAUSE("Prefer the new overload taking cuda::std::arrays") CUB_RUNTIME_FUNCTION static cudaError_t
   MultiHistogramRange(
     void* d_temp_storage,
@@ -1319,7 +1320,7 @@ public:
     const int num_levels[NumActiveChannels],
     const LevelT* const d_levels[NumActiveChannels],
     OffsetT num_pixels,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     return MultiHistogramRange<NumChannels, NumActiveChannels>(
       d_temp_storage,
@@ -1329,7 +1330,7 @@ public:
       to_array<NumActiveChannels>(num_levels),
       to_array<NumActiveChannels>(d_levels),
       num_pixels,
-      stream);
+      env);
   }
 
   //! @rst
@@ -1557,7 +1558,8 @@ public:
             typename SampleIteratorT,
             typename CounterT,
             typename LevelT,
-            typename OffsetT>
+            typename OffsetT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CCCL_DEPRECATED_BECAUSE("Prefer the new overload taking cuda::std::arrays") CUB_RUNTIME_FUNCTION static cudaError_t
   MultiHistogramRange(
     void* d_temp_storage,
@@ -1569,7 +1571,7 @@ public:
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     return MultiHistogramRange<NumChannels, NumActiveChannels>(
       d_temp_storage,
@@ -1581,7 +1583,7 @@ public:
       num_row_pixels,
       num_rows,
       row_stride_bytes,
-      stream);
+      env);
   }
 
   //@}

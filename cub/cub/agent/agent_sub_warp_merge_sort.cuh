@@ -17,9 +17,13 @@
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/warp/warp_load.cuh>
 #include <cub/warp/warp_merge_sort.cuh>
 #include <cub/warp/warp_store.cuh>
+
+#include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 #include <nv/target>
 

@@ -13,25 +13,30 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_reduce_by_key.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/non_void_value.cuh>
 #include <cub/detail/null_type.cuh>
-#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_temporary_storage.cuh>
 #include <cub/util_vsmem.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
-
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__tuple_dir/tie.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -174,7 +179,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
     const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
     _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
+          detail::TripleChevronFactory{}(init_grid_size, init_kernel_threads, 0, stream)
             .doit(&detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
                   tile_state,
                   num_current_tiles,
@@ -224,7 +229,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
         &tmp_num_uniques[buffer_selector],
         &tmp_num_uniques[buffer_selector ^ 0x01]};
       if (const auto error = CubDebug(
-            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, threads_per_block, 0, stream)
+            detail::TripleChevronFactory{}(num_current_tiles, threads_per_block, 0, stream)
               .doit(reduce_by_key_kernel,
                     d_keys_in + current_partition_offset,
                     d_unique_out,
@@ -245,7 +250,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
     else
     {
       if (const auto error = CubDebug(
-            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, threads_per_block, 0, stream)
+            detail::TripleChevronFactory{}(num_current_tiles, threads_per_block, 0, stream)
               .doit(reduce_by_key_kernel,
                     d_keys_in + current_partition_offset,
                     d_unique_out,

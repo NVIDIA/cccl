@@ -126,8 +126,8 @@ CUB_NAMESPACE_BEGIN
 //!    :end-before: example-end sort-keys-custom-policy-selector
 //!
 //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
-//!      :language: c++
-//!      :dedent:
+//!    :language: c++
+//!    :dedent:
 //!    :start-after: example-begin sort-keys-custom-policy
 //!    :end-before: example-end sort-keys-custom-policy
 //!
