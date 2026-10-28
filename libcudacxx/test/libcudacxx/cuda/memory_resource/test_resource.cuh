@@ -157,7 +157,6 @@ struct test_resource
     CHECK(bytes == fixture->bytes_);
     CHECK(align == fixture->align_);
     ++fixture->counts.deallocate_count;
-    return;
   }
 
   void* allocate(::cuda::stream_ref, std::size_t bytes, std::size_t align)
@@ -176,7 +175,6 @@ struct test_resource
     CHECK(bytes == fixture->bytes_);
     CHECK(align == fixture->align_);
     ++fixture->counts.deallocate_async_count;
-    return;
   }
 
   friend bool operator==(const test_resource& lhs, const test_resource& rhs)
