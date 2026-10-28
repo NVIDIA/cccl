@@ -276,7 +276,7 @@ public:
   //! @brief Gets the device ref.
   //!
   //! @return Device ref of the current `bloom_filter` object
-  [[nodiscard]] _CCCL_HOST_API constexpr ref_type<> ref() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr ref_type<> ref() const
   {
     return __ref;
   }
@@ -307,8 +307,8 @@ public:
 
   //! @brief Gets the fingerprint generation policy.
   //!
-  //! @return The policy
-  [[nodiscard]] _CCCL_HOST_API constexpr const policy_type& policy() const noexcept
+  //! @return A copy of the policy
+  [[nodiscard]] _CCCL_HOST_API constexpr policy_type policy() const
   {
     return __ref.policy();
   }
@@ -316,7 +316,7 @@ public:
   //! @brief Gets the hash function.
   //!
   //! @return The hash function
-  [[nodiscard]] _CCCL_HOST_API constexpr hasher hash_function() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr hasher hash_function() const
   {
     return __ref.hash_function();
   }

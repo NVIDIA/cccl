@@ -344,8 +344,8 @@ public:
 
   //! @brief Gets the fingerprint generation policy.
   //!
-  //! @return The policy
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const policy_type& policy() const noexcept
+  //! @return A copy of the policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr policy_type policy() const
   {
     return __impl.__policy();
   }
@@ -353,7 +353,7 @@ public:
   //! @brief Gets the hash function.
   //!
   //! @return The hash function
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const
   {
     return __impl.__policy().hash_function();
   }

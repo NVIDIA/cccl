@@ -407,8 +407,7 @@ public:
       const auto __grid_size = detail::__grid_size(__num_keys);
       const auto __config    = ::cuda::make_config(
         ::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<detail::__default_block_size>());
-      const auto& __kernel =
-        __add_n<__add_horizontal_layout, detail::__default_block_size, _InputIt, __bloom_filter_impl>;
+      const auto& __kernel = __add_n<__add_horizontal_layout, decltype(__config), _InputIt, __bloom_filter_impl>;
       ::cuda::launch(__stream, __config, __kernel, __first, __num_keys, *this);
     }
   }
@@ -635,7 +634,7 @@ public:
       const auto __config    = ::cuda::make_config(
         ::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<detail::__default_block_size>());
       const auto& __kernel =
-        __contains_n<__contains_horizontal_layout, detail::__default_block_size, _InputIt, _OutputIt, __bloom_filter_impl>;
+        __contains_n<__contains_horizontal_layout, decltype(__config), _InputIt, _OutputIt, __bloom_filter_impl>;
       ::cuda::launch(__stream, __config, __kernel, __first, __num_keys, __output_begin, *this);
     }
   }

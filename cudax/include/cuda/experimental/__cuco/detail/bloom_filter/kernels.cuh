@@ -23,6 +23,7 @@
 
 #if _CCCL_CUDA_COMPILATION()
 
+#  include <cuda/__hierarchy/queries/count.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 
 #  include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
@@ -75,15 +76,16 @@ __contains_fn(_InputIt, _OutputIt, _Ref) -> __contains_fn<_InputIt, _OutputIt, _
 //! keys one after another so that the words of a single filter block are updated in parallel.
 //!
 //! @tparam _CgSize Cooperative-group size, i.e. the policy's `add_horizontal_layout`
-//! @tparam _BlockSize Number of threads per block
+//! @tparam _Config Launch configuration whose hierarchy determines the block size
 //! @tparam _InputIt Device-accessible random access input key iterator
 //! @tparam _Ref Filter implementation type
 //!
 //! @param __first Beginning of the sequence of keys
 //! @param __n Number of keys
 //! @param __ref Filter implementation object
-template <int _CgSize, int _BlockSize, class _InputIt, class _Ref>
-_CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void
+template <int _CgSize, class _Config, class _InputIt, class _Ref>
+_CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS((
+  ::cuda::__static_count_query<::cuda::thread_level, ::cuda::block_level, typename _Config::hierarchy_type>())) void
 __add_n(_InputIt __first, detail::__index_type __n, _Ref __ref)
 {
   using __key_type = typename ::cuda::std::iterator_traits<_InputIt>::value_type;
@@ -106,7 +108,7 @@ __add_n(_InputIt __first, detail::__index_type __n, _Ref __ref)
 //! @brief Tests all keys in the range `[first, first + n)` for presence in the filter.
 //!
 //! @tparam _CgSize Cooperative-group size, i.e. the policy's `contains_horizontal_layout`
-//! @tparam _BlockSize Number of threads per block
+//! @tparam _Config Launch configuration whose hierarchy determines the block size
 //! @tparam _InputIt Device-accessible random access input key iterator
 //! @tparam _OutputIt Device-accessible output iterator assignable from `bool`
 //! @tparam _Ref Filter implementation type
@@ -115,8 +117,9 @@ __add_n(_InputIt __first, detail::__index_type __n, _Ref __ref)
 //! @param __n Number of keys
 //! @param __output_begin Beginning of the sequence of booleans for the presence of each key
 //! @param __ref Filter implementation object
-template <int _CgSize, int _BlockSize, class _InputIt, class _OutputIt, class _Ref>
-_CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void
+template <int _CgSize, class _Config, class _InputIt, class _OutputIt, class _Ref>
+_CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS((
+  ::cuda::__static_count_query<::cuda::thread_level, ::cuda::block_level, typename _Config::hierarchy_type>())) void
 __contains_n(_InputIt __first, detail::__index_type __n, _OutputIt __output_begin, _Ref __ref)
 {
   using __key_type = typename ::cuda::std::iterator_traits<_InputIt>::value_type;

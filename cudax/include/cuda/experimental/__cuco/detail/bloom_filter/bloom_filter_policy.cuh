@@ -161,14 +161,14 @@ public:
   //! @brief Constructs a Bloom filter policy.
   //!
   //! @param __hash Hash function used to generate fingerprints
-  _CCCL_HOST_DEVICE_API constexpr __bloom_filter_policy(hasher __hash = {}) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __bloom_filter_policy(hasher __hash = {})
       : __hash_{__hash}
   {}
 
   //! @brief Gets the hash function.
   //!
   //! @return The hash function
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const
   {
     return __hash_;
   }
@@ -185,7 +185,7 @@ public:
   //! @return `{upper 32 bits, lower 32 bits}` of the 64-bit hash
   template <class _Key>
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::pair<::cuda::std::uint32_t, ::cuda::std::uint32_t>
-  split_hash(const _Key& __key) const noexcept
+  split_hash(const _Key& __key) const
   {
     // The `split_hash()` design requires a 64-bit hash split into upper 32 bits (block selection
     // via multiply-shift) and lower 32 bits (pattern generation via salt-based multiplicative
