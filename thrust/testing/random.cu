@@ -807,7 +807,7 @@ void validate_distribution_with_engine()
 TEST_CASE("TestDistributionsWithCudaStdPhilox", "[random]")
 {
   using engine      = cuda::std::philox4x32;
-  using uint_dist   = thrust::random::uniform_int_distribution<typename engine::result_type>;
+  using uint_dist   = thrust::random::uniform_int_distribution<engine::result_type>;
   using float_dist  = thrust::random::uniform_real_distribution<float>;
   using double_dist = thrust::random::normal_distribution<double>;
 

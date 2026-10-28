@@ -656,7 +656,7 @@ public:
   }
 
 private:
-  using base_impl = typename base::impl;
+  using base_impl = base::impl;
 
   /* This class contains all the state associated to a stream_ctx, and all states associated to every contexts (in
    * `impl`) */

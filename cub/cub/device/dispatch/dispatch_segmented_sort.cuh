@@ -530,7 +530,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedSort") Dis
       // We call partition through dispatch instead of device because c.parallel needs to be able to call the kernel.
       // This approach propagates the type erasure to partition.
       using ChooseOffsetT                = detail::choose_signed_offset<global_segment_offset_t>;
-      using PartitionOffsetT             = typename ChooseOffsetT::type;
+      using PartitionOffsetT             = ChooseOffsetT::type;
       using DispatchThreeWayPartitionIfT = cub::detail::three_way_partition::dispatch_three_way_partition_if<
         THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>,
         decltype(large_and_medium_segments_indices.get()),
@@ -804,7 +804,7 @@ private:
       // We call partition through dispatch instead of device because c.parallel needs to be able to call the kernel.
       // This approach propagates the type erasure to partition.
       using ChooseOffsetT                = detail::choose_signed_offset<global_segment_offset_t>;
-      using PartitionOffsetT             = typename ChooseOffsetT::type;
+      using PartitionOffsetT             = ChooseOffsetT::type;
       using DispatchThreeWayPartitionIfT = cub::detail::three_way_partition::dispatch_three_way_partition_if<
         THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>,
         decltype(large_and_medium_segments_indices.get()),

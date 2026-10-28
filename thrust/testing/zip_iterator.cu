@@ -44,10 +44,10 @@ TEST_CASE("TestZipIteratorTraits", "[zip_iterator]")
     using value_type = cuda::std::tuple<int, cuda::discard_iterator::__discard_proxy>;
     using reference  = thrust::detail::tuple_of_iterator_references<int&, cuda::discard_iterator::__discard_proxy>;
 
-    static_assert(cuda::std::is_same_v<typename traits::iterator_category, cuda::std::random_access_iterator_tag>);
-    static_assert(cuda::std::is_same_v<typename traits::difference_type, cuda::std::ptrdiff_t>);
-    static_assert(cuda::std::is_same_v<typename traits::value_type, value_type>);
-    static_assert(cuda::std::is_same_v<typename traits::reference, reference>);
+    static_assert(cuda::std::is_same_v<traits::iterator_category, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::is_same_v<traits::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::is_same_v<traits::value_type, value_type>);
+    static_assert(cuda::std::is_same_v<traits::reference, reference>);
 
     static_assert(!cuda::std::output_iterator<it, int>);
     static_assert(cuda::std::input_iterator<it>);
@@ -65,10 +65,10 @@ TEST_CASE("TestZipIteratorTraits", "[zip_iterator]")
     using reference =
       thrust::detail::tuple_of_iterator_references<int&, cuda::__tabulate_proxy<cuda::std::plus<>, short>>;
 
-    static_assert(cuda::std::is_same_v<typename traits::iterator_category, cuda::std::random_access_iterator_tag>);
-    static_assert(cuda::std::is_same_v<typename traits::difference_type, cuda::std::ptrdiff_t>);
-    static_assert(cuda::std::is_same_v<typename traits::value_type, value_type>);
-    static_assert(cuda::std::is_same_v<typename traits::reference, reference>);
+    static_assert(cuda::std::is_same_v<traits::iterator_category, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::is_same_v<traits::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::is_same_v<traits::value_type, value_type>);
+    static_assert(cuda::std::is_same_v<traits::reference, reference>);
 
     static_assert(!cuda::std::output_iterator<it, int>);
     static_assert(cuda::std::input_iterator<it>);
@@ -86,10 +86,10 @@ TEST_CASE("TestZipIteratorTraits", "[zip_iterator]")
     using reference =
       thrust::detail::tuple_of_iterator_references<int&, cuda::__transform_output_proxy<cuda::std::plus<>, short*>>;
 
-    static_assert(cuda::std::is_same_v<typename traits::iterator_category, cuda::std::random_access_iterator_tag>);
-    static_assert(cuda::std::is_same_v<typename traits::difference_type, cuda::std::ptrdiff_t>);
-    static_assert(cuda::std::is_same_v<typename traits::value_type, value_type>);
-    static_assert(cuda::std::is_same_v<typename traits::reference, reference>);
+    static_assert(cuda::std::is_same_v<traits::iterator_category, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::is_same_v<traits::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::is_same_v<traits::value_type, value_type>);
+    static_assert(cuda::std::is_same_v<traits::reference, reference>);
 
     static_assert(!cuda::std::output_iterator<it, int>);
     static_assert(cuda::std::input_iterator<it>);
@@ -108,10 +108,10 @@ TEST_CASE("TestZipIteratorTraits", "[zip_iterator]")
       int&,
       cuda::__transform_input_output_proxy<cuda::std::negate<>, cuda::std::plus<>, short*>>;
 
-    static_assert(cuda::std::is_same_v<typename traits::iterator_category, cuda::std::random_access_iterator_tag>);
-    static_assert(cuda::std::is_same_v<typename traits::difference_type, cuda::std::ptrdiff_t>);
-    static_assert(cuda::std::is_same_v<typename traits::value_type, value_type>);
-    static_assert(cuda::std::is_same_v<typename traits::reference, reference>);
+    static_assert(cuda::std::is_same_v<traits::iterator_category, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::is_same_v<traits::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::is_same_v<traits::value_type, value_type>);
+    static_assert(cuda::std::is_same_v<traits::reference, reference>);
 
     static_assert(!cuda::std::output_iterator<it, int>);
     static_assert(cuda::std::input_iterator<it>);

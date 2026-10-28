@@ -326,7 +326,7 @@ template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POIN
     template <typename T> struct NumericTraits<__nv_fp8_e5m2, T> :   BaseTraits<FLOATING_POINT, true, unsigned char, T> {};
 #endif // _CCCL_HAS_NVFP8()
 
-template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, true, typename UnitWord<bool>::VolatileWord, bool> {};
+template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, true, UnitWord<bool>::VolatileWord, bool> {};
 // clang-format on
 
 namespace detail
