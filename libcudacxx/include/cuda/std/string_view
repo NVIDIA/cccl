@@ -670,7 +670,8 @@ public:
     {
       return false;
     }
-    return __lhs.compare(__rhs) == 0;
+    // Using operator== here causes recursion.
+    return __lhs.compare(__rhs) == 0; // NOLINT(readability-string-compare)
   }
 
   template <int = 1>
