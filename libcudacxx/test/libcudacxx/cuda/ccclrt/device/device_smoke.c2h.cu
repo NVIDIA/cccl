@@ -303,7 +303,7 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
   SECTION("Name")
   {
     const auto name = device_ref(0).name();
-    REQUIRE(name.length() != 0);
+    REQUIRE(!name.empty());
     REQUIRE(name[0] != 0);
   }
 }

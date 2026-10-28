@@ -1012,7 +1012,7 @@ public:
   }
   const exec_place& current_exec_place() const
   {
-    _CCCL_ASSERT(current_affinity().size() > 0, "current_exec_place no affinity set");
+    _CCCL_ASSERT(!current_affinity().empty(), "current_exec_place no affinity set");
     return *(current_affinity()[0]);
   }
 
