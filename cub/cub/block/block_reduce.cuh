@@ -22,6 +22,7 @@
 #include <cub/block/specializations/block_reduce_raking_commutative_only.cuh>
 #include <cub/block/specializations/block_reduce_warp_reductions.cuh>
 #include <cub/detail/uninitialized.cuh>
+#include <cub/thread/thread_reduce.cuh>
 #include <cub/util_ptx.cuh>
 
 #include <cuda/std/__functional/operations.h>
