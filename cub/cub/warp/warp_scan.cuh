@@ -22,13 +22,13 @@
 
 #include <cub/detail/constant.cuh>
 #include <cub/detail/uninitialized.cuh>
-#include <cub/thread/thread_operators.cuh>
 #include <cub/warp/specializations/warp_scan_shfl.cuh>
 #include <cub/warp/specializations/warp_scan_smem.cuh>
 
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_integral.h>
 
 CUB_NAMESPACE_BEGIN
 
