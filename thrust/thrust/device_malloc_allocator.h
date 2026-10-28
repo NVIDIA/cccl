@@ -33,7 +33,7 @@ THRUST_NAMESPACE_BEGIN
 template <typename>
 class device_ptr;
 template <typename T>
-device_ptr<T> device_malloc(std::size_t n);
+device_ptr<T> device_malloc(std::size_t n); // NOLINT(readability-redundant-declaration)
 #endif // _CCCL_DOXYGEN_INVOKED
 
 /*! \addtogroup allocators Allocators
