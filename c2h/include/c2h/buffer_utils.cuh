@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cuda/__algorithm/copy.h>
+#include <cuda/__driver/driver_api.h>
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/std/span>
@@ -18,6 +19,7 @@
 #include <c2h/catch2_test_helper.h>
 #include <c2h/catch2_test_macros.h>
 #include <c2h/checked_memory_resource.cuh>
+#include <c2h/detail/current_device.cuh>
 #include <c2h/device_and_stream.h>
 
 namespace c2h
@@ -34,30 +36,15 @@ namespace detail
 template <typename T>
 [[nodiscard]] cuda::device_ref pointer_device(const T* ptr)
 {
-  cudaPointerAttributes attributes{};
-  REQUIRE(cudaSuccess == cudaPointerGetAttributes(&attributes, ptr));
-  return cuda::device_ref{attributes.device};
-}
-
-inline void synchronize_device(cuda::device_ref device)
-{
-  const int target_device = device.get();
-  int previous_device     = 0;
-  REQUIRE(cudaSuccess == cudaGetDevice(&previous_device));
-  if (previous_device != target_device)
-  {
-    REQUIRE(cudaSuccess == cudaSetDevice(target_device));
-  }
-
-  const cudaError_t sync_status    = cudaDeviceSynchronize();
-  const cudaError_t restore_status = previous_device != target_device ? cudaSetDevice(previous_device) : cudaSuccess;
-
-  REQUIRE(sync_status == cudaSuccess);
-  REQUIRE(restore_status == cudaSuccess);
+  int device{};
+  const auto status = cuda::__driver::__pointerGetAttributeNoThrow<CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL>(device, ptr);
+  REQUIRE(status == cudaSuccess);
+  return cuda::device_ref{device};
 }
 } // namespace detail
 
 // Copies device items to an equally sized host range and waits for completion.
+// Requires: writes to device_items are ordered on stream or have already completed.
 // Note: The legacy default stream is supported.
 template <typename DeviceItems, typename HostItems>
 void copy_to_host(cuda::stream_ref stream, const DeviceItems& device_items, HostItems& host_items)
@@ -75,7 +62,8 @@ void copy_to_host(cuda::stream_ref stream, const DeviceItems& device_items, Host
   if (detail::is_default_stream(stream))
   {
     const auto device = detail::pointer_device(device_items.data());
-    detail::synchronize_device(device);
+    detail::assert_current_device(device.get());
+    stream.sync();
     auto copy_stream = cuda::stream{device};
     cuda::copy_bytes(copy_stream, device_items, cuda::std::span<value_t>{host_items.data(), host_items.size()});
     copy_stream.sync();
@@ -94,10 +82,20 @@ template <typename T>
 {
   REQUIRE(buffer.size() == 1);
 
-  const auto device = detail::pointer_device(buffer.data());
-  auto value        = c2h::make_host_buffer<T>(stream, device, 1, cuda::no_init);
-  c2h::copy_to_host(stream, buffer, value);
-  return value[0];
+  if constexpr (cuda::std::is_default_constructible_v<T>)
+  {
+    T value[1];
+    auto host_items = cuda::std::span<T>{value};
+    c2h::copy_to_host(stream, buffer, host_items);
+    return value[0];
+  }
+  else
+  {
+    const auto device = detail::pointer_device(buffer.data());
+    auto value        = c2h::make_host_buffer<T>(stream, device, 1, cuda::no_init);
+    c2h::copy_to_host(stream, buffer, value);
+    return value[0];
+  }
 }
 
 namespace detail

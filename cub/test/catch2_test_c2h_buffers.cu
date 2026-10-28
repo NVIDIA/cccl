@@ -423,10 +423,10 @@ CUB_TEST("c2h copy to host waits for completion", "[c2h][buffers][copy]", CUB_SM
     if (num_items != 0)
     {
       // Keep the write after setup in both sections; checked host allocation can synchronize the device.
-      cuda::fill_bytes(owning_stream, d_items, canary);
+      cuda::fill_bytes(stream, d_items, canary);
     }
     c2h::copy_to_host(stream, d_items, h_items);
-    REQUIRE(owning_stream.is_done());
+    REQUIRE(stream.is_done());
     REQUIRE(std::all_of(h_items.begin(), h_items.end(), [=](auto value) {
       return value == expected;
     }));
@@ -437,10 +437,10 @@ CUB_TEST("c2h copy to host waits for completion", "[c2h][buffers][copy]", CUB_SM
     if (num_items != 0)
     {
       // Keep the write after setup in both sections; checked host allocation can synchronize the device.
-      cuda::fill_bytes(owning_stream, d_items, canary);
+      cuda::fill_bytes(stream, d_items, canary);
     }
     c2h::copy_to_host(stream, d_items, h_items);
-    REQUIRE(owning_stream.is_done());
+    REQUIRE(stream.is_done());
     REQUIRE(std::all_of(h_items.begin(), h_items.end(), [=](auto value) {
       return value == expected;
     }));
@@ -458,15 +458,15 @@ CUB_TEST("c2h read single waits for completion", "[c2h][buffers][copy]", CUB_SMA
   auto d_item = c2h::make_device_buffer<cuda::std::int32_t>(owning_stream, device, 1, cuda::no_init);
   constexpr cuda::std::uint8_t first_canary = 0x2a;
   constexpr auto first_expected             = repeat_byte(first_canary);
-  cuda::fill_bytes(owning_stream, d_item, first_canary);
+  cuda::fill_bytes(stream, d_item, first_canary);
   REQUIRE(c2h::read_single(stream, d_item) == first_expected);
-  REQUIRE(owning_stream.is_done());
+  REQUIRE(stream.is_done());
 
   constexpr cuda::std::uint8_t second_canary = 0x17;
   constexpr auto second_expected             = repeat_byte(second_canary);
-  cuda::fill_bytes(owning_stream, d_item, second_canary);
+  cuda::fill_bytes(stream, d_item, second_canary);
   REQUIRE(c2h::read_single(stream, d_item) == second_expected);
-  REQUIRE(owning_stream.is_done());
+  REQUIRE(stream.is_done());
 }
 
 CUB_TEST("c2h checked host memory resource creates writable host buffers", "[c2h][buffers][host_resource]", CUB_SMALL)
