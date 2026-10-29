@@ -100,7 +100,7 @@ __launch_bounds__(Entry::tuning.block_threads, Entry::tuning.min_blocks_per_sm)
     work_offsets[0] = 0;
     for (int bin = 0; bin < bin_count; ++bin)
     {
-      const auto config      = Entry::config(bin);
+      const auto config      = lookup_bin_config<typename Entry::expansion>(bin);
       const unsigned packing = Entry::unit_threads / config.threads;
       const unsigned count   = bins.bin_offsets[bin + 1] - bins.bin_offsets[bin];
       prefix += count / packing + (count % packing != 0);
@@ -131,7 +131,7 @@ __launch_bounds__(Entry::tuning.block_threads, Entry::tuning.min_blocks_per_sm)
       }
     }
     const int bin          = first - 1;
-    const auto config      = Entry::config(bin);
+    const auto config      = lookup_bin_config<typename Entry::expansion>(bin);
     const unsigned packing = Entry::unit_threads / config.threads;
     const auto slot        = bins.bin_offsets[bin] + (work - work_offsets[bin]) * packing + lane / config.threads;
     Entry::implementation::invoke(
