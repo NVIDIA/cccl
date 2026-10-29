@@ -55,6 +55,13 @@
 #  define _CCCL_GLOBAL_VARIABLE
 #endif // ^^^ !_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC) ^^^
 
+// Apply constant memory storage only in device passes so host code can access its own copy.
+#if _CCCL_DEVICE_COMPILATION()
+#  define _CCCL_CONSTANT __constant__
+#else // ^^^ _CCCL_DEVICE_COMPILATION() ^^^ / vvv !_CCCL_DEVICE_COMPILATION() vvv
+#  define _CCCL_CONSTANT
+#endif // ^^^ !_CCCL_DEVICE_COMPILATION() ^^^
+
 #if (_CCCL_CUDA_COMPILER(NVCC, >=, 12, 8) || _CCCL_CUDA_COMPILER(NVRTC) || _CCCL_CUDA_COMPILER(CLANG, >=, 20)) \
   && _CCCL_PTX_ARCH() >= 700
 #  define _CCCL_HAS_GRID_CONSTANT() 1
