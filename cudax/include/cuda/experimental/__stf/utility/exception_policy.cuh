@@ -5145,7 +5145,9 @@ namespace sump
  *   chain's status type), `void` feeds nothing, and a type without `status_traits` is a compile
  *   error. The expression is a carrier, which records the chain. A sink applied by name is copied
  *   into each expression; the library's stateful sinks keep their state behind a pointer, so the
- *   copies share it. To keep one chain across statements, name the carrier:
+ *   copies share it. A named non-const `dynamic` is viewed instead of copied, so one model serves
+ *   every expression that names it; a custom model with mutable state synchronizes its own
+ *   concurrent use. To keep one chain across statements, name the carrier:
  *   `auto s = sink(p); s << a; s << b;`.
  *   C++17 sequences the left side of `<<`, its handling included, before the right, so each
  *   operand runs after the previous one was handled. The carrier records the first status that
@@ -7710,6 +7712,23 @@ UNITTEST("a named dynamic is viewed by ->* and <<, not cloned")
 #  endif
 };
 
+// A policy with a boxed success hook for the test below; at namespace scope because a local
+// class cannot declare the templated exception hook.
+struct __ut_counting_success
+{
+  static inline int seen = 0;
+  template <class _Fn>
+  ::std::any on_thrown(const ::std::exception*, ::cuda::std::source_location, _Fn&)
+  {
+    return {};
+  }
+  ::std::any on_success(::std::any __r)
+  {
+    ++seen;
+    return __r;
+  }
+};
+
 UNITTEST("a dynamic over a policy without a success hook passes the value unboxed")
 {
   using namespace cuda::experimental::stf;
@@ -7742,19 +7761,11 @@ UNITTEST("a dynamic over a policy without a success hook passes the value unboxe
   EXPECT(copies == 0);
 
   // A policy with a success hook still sees the value, through the box.
-  static int seen = 0;
-  struct counting
-  {
-    void operator()(const ::std::exception*, ::cuda::std::source_location, ::std::function<::std::any()>&) {}
-    ::std::any on_success(::std::any __r)
-    {
-      ++seen;
-      return __r;
-    }
-  };
-  dynamic hooked = counting{};
+  static_assert(detail::__has_on_success_with<__ut_counting_success, ::std::any>);
+  dynamic hooked              = __ut_counting_success{};
+  __ut_counting_success::seen = 0;
   EXPECT((hooked->*make).v == 3);
-  EXPECT(seen == 1);
+  EXPECT(__ut_counting_success::seen == 1);
 #  endif
 };
 #endif // UNITTESTED_FILE
