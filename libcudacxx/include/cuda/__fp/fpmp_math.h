@@ -343,23 +343,32 @@
       Argument reduction: x = n*(pi/2) + r, |r| <= pi/4.
       Three paths based on |x|:
         Tiny (|x| < pi/4):  no reduction needed.
-        Fast (|x| < 2^20):  Cody-Waite with 4-piece pi/2 (within 8.5e-32),
-          error-tracked via two_mult_fma + two_sum.
-        Large (|x| >= 2^20): Payne-Hanek using integer 2/pi table (160 bits),
-          returning fp32mp2 via extended-precision fixed-point conversion
-          without any fp64 operations.
-      Core: sin(r) via 8-term Taylor (x through x^15),
-            cos(r) via 9-term Taylor (1 through x^16),
-            both evaluated in fp32mp2 Horner form.
-      sincos computes both kernels; sin/cos call sincos internally.
+        Fast (|x| < 2^20):  Cody-Waite with a 4-piece pi/2 (94 bits); every
+          n*c_k is split exactly and the first- and second-order terms are
+          folded with error-free sums, so r keeps 46 bits down to
+          |r| ~ 2^-47 |x| (the previous fp32mp2_high accumulation rounded
+          at the scale of the cancelled partial sums: 37 bits at |x| ~ 1e4).
+        Large (|x| >= 2^20): Payne-Hanek with a 256-bit 2/pi table and a
+          96-bit fixed-point fraction (x_hi and x_lo combined before the
+          pi/2 multiply), no fp64 operations; 46 bits down to |r| ~ 2^-46.
+      Core: one shared kernel, sin(r) via 8-term Taylor (r through r^15)
+            and cos(r) via 9-term Taylor (1 through r^16) with r^2 shared;
+            coefficients down to 1/9! (sin) and 1/10! (cos) are float-float
+            (1/8! as a float was the family's 41-bit floor), the ff Horner
+            steps use Fast2Sum.
+      sincos computes both; sin/cos call sincos internally.
       Quadrant mapping via n mod 4 with sign/swap adjustment.
+      Accuracy: 46 bits (sin, cos), 45 bits (tan, the quotient of the two).
 
     sinpi(x), cospi(x), sincospi(x) for fp32mp2:
       The argument is already in units of pi, so reduction is an integer/fraction
       split rather than a radian Payne-Hanek or Cody-Waite reduction.
       x = n + f with |f| <= 1/2, then f is folded into [-1/4, 1/4] and multiplied
-      by a 3-piece pi. sin(r) and cos(r) reuse the sincos Taylor kernels.
+      by the 4-piece pi with exact products and error-free sums.  |x| < 2^-64 is
+      evaluated as sinpi(x) = pi*x on a scaled argument, so denormal inputs keep
+      their precision.  sin(r) and cos(r) reuse the sincos kernel.
       sinpi and cospi call sincospi. fp64mp2 stays on the double-precision fallback.
+      Accuracy: 46 bits.
 
     Placeholder functions:
     - Delegate to standard double-precision system functions

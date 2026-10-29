@@ -101,7 +101,7 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_exp2_kernel(fp32mp2_low __r) no
   };
 
   /* G(r) = a1 + a2*r + a3*r^2 + ... + a13*r^12 ~= (2^r - 1)/r */
-  __ffloat __p = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 6>(__r, __exp2_c);
+  __ffloat __p = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed_fast, 6>(__r, __exp2_c);
 
   /* Close with the implicit a0 = 1 constant:
    *   2^r = 1 + r * G(r) */
@@ -168,7 +168,7 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_exp10_kernel(fp32mp2_low __r) n
   };
 
   /* G(r) = b1 + b2*r + b3*r^2 + ... + b13*r^12 ~= (10^r - 1)/r */
-  __ffloat __p = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 6>(__r, __exp10_c);
+  __ffloat __p = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed_fast, 6>(__r, __exp10_c);
 
   /* Close with the implicit b0 = 1:  10^r = 1 + r * G(r) */
   __p = __p * __r + 1.0f;
@@ -353,7 +353,7 @@ __internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, fl
   // the c8->c7 boundary. The numerical difference is below 1 ULP
   // at the polynomial value, well inside the Taylor truncation
   // noise floor.
-  __ffloat __p = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 6>(__r, __exp_c);
+  __ffloat __p = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed_fast, 6>(__r, __exp_c);
 
   // Fold in the low-degree float coefficients c1, c2 outside the
   // dispatcher (they live at the wrong end of the polynomial for
@@ -517,22 +517,10 @@ __internal_fpmp2_log_core(const float __x_hi, const float __x_lo, const float __
   const float __g_hi = ::cuda::__fpmp_add_rn(__m_hi, 1.0f);
   const float __g_lo = (__m_hi - (__g_hi - 1.0f)) + (__m_lo + __m_tail);
 
-  /* u = 2 f / g (see the header comment).
-   * Pass 1: quotient of the high words, corrected with the full
-   *         numerator and denominator into q1 ~= RN(f / g).
-   * Pass 2: exact remainder of q1 (fma), the remaining numerator
-   *         terms, scaled by the once-refined reciprocal. */
-  const float __r0 = ::cuda::__fpmp_rcp_rn(__g_hi);
-  const float __q0 = ::cuda::__fpmp_mul_rn(__f_hi, __r0);
-  const float __e0 = ::cuda::__fpmp_fma_rn(-__q0, __g_hi, __f_hi);
-  float __n0       = ::cuda::__fpmp_add_rn(__e0, __f_lo);
-  __n0             = ::cuda::__fpmp_fma_rn(-__q0, __g_lo, __n0);
-  const float __q1 = ::cuda::__fpmp_fma_rn(__n0, __r0, __q0);
-  const float __e1 = ::cuda::__fpmp_fma_rn(-__q1, __g_hi, __f_hi);
-  float __n1       = ::cuda::__fpmp_add_rn(__e1, __f_lo);
-  __n1             = ::cuda::__fpmp_fma_rn(-__q1, __g_lo, __n1);
-  const float __r1 = ::cuda::__fpmp_fma_rn(__r0, ::cuda::__fpmp_fma_rn(-__g_hi, __r0, 1.0f), __r0);
-  const float __lo = ::cuda::__fpmp_mul_rn(__n1, __r1);
+  /* u = 2 f / g with the refined division (see the header comment and
+   * __fpmp_math_div_refined). */
+  float __q1, __lo;
+  ::cuda::__fpmp_math_div_refined(__f_hi, __f_lo, __g_hi, __g_lo, &__q1, &__lo);
 
   /* The doubling is exact; Fast2Sum yields the normalized u that the
    * kernel's float-only Horner phase relies on. */
@@ -544,7 +532,7 @@ __internal_fpmp2_log_core(const float __x_hi, const float __x_lo, const float __
   /* Horner evaluation: q(v) = c1 + c2*v + c3*v^2 + ... + c8*v^7
    * via the mixed-precision dispatcher (5 high-order terms in
    * plain float, remaining 3 in ff). */
-  __ffloat __q = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 5>(__v, __atanh_c);
+  __ffloat __q = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed_fast, 5>(__v, __atanh_c);
 
   /* log(m) = u + u*v*q(v) */
   __q      = __q * __v;
@@ -728,7 +716,7 @@ __internal_fpmp2_log1p(const float __x_hi, const float __x_lo, float* __res_hi, 
 
     __ffloat __x(__x_hi, __x_lo);
     __ffloat __x2     = __x * __x;
-    __ffloat __t      = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 4>(__x, __log1p_poly_c);
+    __ffloat __t      = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed_fast, 4>(__x, __log1p_poly_c);
     __ffloat __result = renormalize(__x + __x2 * __t);
     *__res_hi         = __result.hi();
     *__res_lo         = __result.lo();
@@ -1214,7 +1202,7 @@ __internal_fpmp2_expm1(const float __x_hi, const float __x_lo, float* __res_hi, 
 
     __ffloat __x(__x_hi, __x_lo);
     __ffloat __x2     = __x * __x;
-    __ffloat __pval   = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 4>(__x, __expm1_poly_c);
+    __ffloat __pval   = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed_fast, 4>(__x, __expm1_poly_c);
     __ffloat __result = renormalize(__x + __x2 * __pval);
     *__res_hi         = __result.hi();
     *__res_lo         = __result.lo();

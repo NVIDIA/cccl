@@ -94,6 +94,50 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  */
 
 /*********************************************************************
+ * Refined double-word division  q = a / b
+ * (internal building block -- namespace `fpmp`)
+ *
+ * The generic low-accuracy division derives its correction term from a
+ * quotient of the high words only, so that term is up to 3 * 2^-24 |q|
+ * in size; its single float rounding and the 1-ulp error of the device
+ * reciprocal (rcp.approx) multiply into 10-25 u^2 (44 bits) -- the
+ * floor the log family and atan showed near x = 1.  Here a first pass
+ * corrects the quotient with the FULL numerator and denominator, so it
+ * becomes the rounding of the whole quotient, and only then the exact
+ * remainder is taken: the correction is below one ulp of q, and with
+ * the once-refined reciprocal the result is accurate to < 5 u^2 (host
+ * model against binary128: 4.8 u^2 max, 0.35 u^2 mean, against 26 u^2
+ * / 2.2 u^2 for the generic division).  12 flops plus the reciprocal.
+ *
+ * Preconditions: a and b are normalized pairs, b != 0, and |b_hi| lies
+ * where the approximate reciprocal is a normal number (callers scale a
+ * huge or tiny denominator by a power of two).  The returned pair is
+ * not renormalized: |q_lo| is at most about one ulp of q_hi.
+ *********************************************************************/
+template <typename _FpType>
+_CCCL_HOST_DEVICE_API inline void __fpmp_math_div_refined(
+  const _FpType __a_hi,
+  const _FpType __a_lo,
+  const _FpType __b_hi,
+  const _FpType __b_lo,
+  _FpType* __q_hi,
+  _FpType* __q_lo) noexcept
+{
+  const _FpType __r0 = ::cuda::__fpmp_rcp_rn(__b_hi);
+  const _FpType __q0 = ::cuda::__fpmp_mul_rn(__a_hi, __r0);
+  const _FpType __e0 = ::cuda::__fpmp_fma_rn(-__q0, __b_hi, __a_hi); /* exact */
+  _FpType __n0       = ::cuda::__fpmp_add_rn(__e0, __a_lo);
+  __n0               = ::cuda::__fpmp_fma_rn(-__q0, __b_lo, __n0);
+  const _FpType __q1 = ::cuda::__fpmp_fma_rn(__n0, __r0, __q0);
+  const _FpType __e1 = ::cuda::__fpmp_fma_rn(-__q1, __b_hi, __a_hi); /* exact */
+  _FpType __n1       = ::cuda::__fpmp_add_rn(__e1, __a_lo);
+  __n1               = ::cuda::__fpmp_fma_rn(-__q1, __b_lo, __n1);
+  const _FpType __r1 = ::cuda::__fpmp_fma_rn(__r0, ::cuda::__fpmp_fma_rn(-__b_hi, __r0, _FpType(1)), __r0);
+  *__q_hi            = __q1;
+  *__q_lo            = ::cuda::__fpmp_mul_rn(__n1, __r1);
+} // __fpmp_math_div_refined
+
+/*********************************************************************
  * Mixed-precision (split-M) Horner polynomial evaluation
  * (internal building block -- namespace `fpmp`)
  *
@@ -143,16 +187,45 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  *     __ffloat v = __fpmp_poly_horner_comp    (x, c);  // compensated
  * or dispatch via `__fpmp_poly_eval<strategy, M>(x, c)` below.
  *
+ * Fast variant (`Fast = true`, strategy `horner_mixed_fast`):
+ *   every ff Horner step v*x + c[k] adds its two operands with a
+ *   Fast2Sum instead of the branch-free 2Sum, which saves three
+ *   operations per step. This is exact -- bit-identical to the
+ *   standard variant -- whenever |v*x| <= |c[k]| at every step, i.e.
+ *   for the Taylor-like series the math kernels evaluate (the ratio
+ *   of consecutive terms is |x|/k or smaller). The caller is
+ *   responsible for that precondition; the result is not
+ *   renormalized, as with the standard variant.
+ *
  * Template params:
  *   M      : number of high-degree coefficients to evaluate in
  *            plain FpType arithmetic (0 <= M <= N). Must be
  *            supplied explicitly at the call site.
+ *   Fast   : use the Fast2Sum step in the ff phase (default false).
  *   N      : number of coefficients (= array length, deduced).
  *            Polynomial degree is N - 1.
  *   FpType : float or double (deduced from arguments).
  *   met    : fpmp arithmetic accuracy level (deduced from arguments).
  *********************************************************************/
-template <int _Mp, int _Np, typename _FpType, fpmp2_accuracy _TypeAcc>
+/* ff step helpers of the fast variant: c + t with |t| <= |c| (see above). */
+template <typename _FpType, fpmp2_accuracy _TypeAcc>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
+__fpmp_poly_fast_add(const _FpType __t, const fpmp2<_FpType, _TypeAcc>& __c) noexcept
+{
+  _FpType __lo;
+  const _FpType __hi = ::cuda::__fpmp_fast_two_sum(__c.hi(), __t, &__lo);
+  return fpmp2<_FpType, _TypeAcc>(__hi, __lo + __c.lo());
+}
+template <typename _FpType, fpmp2_accuracy _TypeAcc>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> __fpmp_poly_fast_step(
+  const fpmp2<_FpType, _TypeAcc>& __v, const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc>& __c) noexcept
+{
+  const fpmp2<_FpType, _TypeAcc> __t = __v * __x;
+  _FpType __lo;
+  const _FpType __hi = ::cuda::__fpmp_fast_two_sum(__c.hi(), __t.hi(), &__lo);
+  return fpmp2<_FpType, _TypeAcc>(__hi, __lo + (__c.lo() + __t.lo()));
+}
+template <int _Mp, bool _Fast = false, int _Np, typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 __fpmp_poly_horner_mixed(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc> (&__c)[_Np]) noexcept
 {
@@ -169,7 +242,14 @@ __fpmp_poly_horner_mixed(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpTyp
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __k = _Np - 2; __k >= 0; --__k)
     {
-      __v = __v * __x + __c[__k];
+      if constexpr (_Fast)
+      {
+        __v = ::cuda::__fpmp_poly_fast_step(__v, __x, __c[__k]);
+      }
+      else
+      {
+        __v = __v * __x + __c[__k];
+      }
     }
     return __v;
   }
@@ -194,11 +274,26 @@ __fpmp_poly_horner_mixed(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpTyp
       // Transition step: (float * float) + ff -> ff
       // (the mixed-type operator+ adds the FpType product to
       // c[N-M-1] with the single-limb kernel.)
-      __ff_t __v = ::cuda::__fpmp_mul_rn_nocontract(__v_f, __xh) + __c[_Np - _Mp - 1];
+      __ff_t __v = __c[_Np - _Mp - 1];
+      if constexpr (_Fast)
+      {
+        __v = ::cuda::__fpmp_poly_fast_add(__v_f * __xh, __v);
+      }
+      else
+      {
+        __v = __v_f * __xh + __v;
+      }
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int __k = _Np - _Mp - 2; __k >= 0; --__k)
       {
-        __v = __v * __x + __c[__k];
+        if constexpr (_Fast)
+        {
+          __v = ::cuda::__fpmp_poly_fast_step(__v, __x, __c[__k]);
+        }
+        else
+        {
+          __v = __v * __x + __c[__k];
+        }
       }
       return __v;
     }
@@ -357,8 +452,9 @@ __fpmp_poly_horner_comp(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType
  *********************************************************************/
 enum class __fpmp_poly_method
 {
-  horner_mixed = 0, // mixed-precision Horner (`poly_horner_mixed<M>`)
-  horner_comp  = 1, // compensated  Horner    (`poly_horner_comp`)
+  horner_mixed      = 0, // mixed-precision Horner (`poly_horner_mixed<M>`)
+  horner_comp       = 1, // compensated  Horner    (`poly_horner_comp`)
+  horner_mixed_fast = 2, // mixed-precision Horner with Fast2Sum ff steps (`poly_horner_mixed<M, true>`)
 };
 
 /*********************************************************************
@@ -372,6 +468,10 @@ enum class __fpmp_poly_method
  *
  *     __fpmp_poly_eval<__fpmp_poly_method::horner_comp,  M>(x, c)
  *         -> __fpmp_poly_horner_comp <M>(x, c)
+ *
+ *     __fpmp_poly_eval<__fpmp_poly_method::horner_mixed_fast, M>(x, c)
+ *         -> __fpmp_poly_horner_mixed<M, true>(x, c)   (Fast2Sum ff steps;
+ *            requires |v*x| <= |c[k]| at every ff step, see above)
  *
  * Both backends share the same M-split semantics: the M HIGHEST-degree
  * coefficients are evaluated in plain FpType arithmetic (with the
@@ -398,6 +498,10 @@ __fpmp_poly_eval(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _Type
   if constexpr (_Strategy == __fpmp_poly_method::horner_mixed)
   {
     return ::cuda::__fpmp_poly_horner_mixed<_Mp>(__x, __c);
+  }
+  else if constexpr (_Strategy == __fpmp_poly_method::horner_mixed_fast)
+  {
+    return ::cuda::__fpmp_poly_horner_mixed<_Mp, true>(__x, __c);
   }
   else /* poly_method::horner_comp */
   {
