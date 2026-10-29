@@ -29,7 +29,8 @@ CUB_NAMESPACE_BEGIN
 struct HistogramPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block
-  int pixels_per_thread; //!< Number of pixels processed per thread
+  // TODO(bgruber): rename to items_per_thread in CCCL 4.0.
+  int pixels_per_thread; //!< Number of multi-channel items processed per thread
   int vec_size; //!< Vectorization size for loading samples
   BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading samples from global memory
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading samples from global memory

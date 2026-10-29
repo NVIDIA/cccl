@@ -548,7 +548,7 @@ class DeviceHistogramBuildResult:
         h_num_output_levels: Value,
         h_lower_level: Value,
         h_upper_level: Value,
-        num_row_pixels: int,
+        num_row_items: int,
         num_rows: int,
         row_stride_samples: int,
         stream,
