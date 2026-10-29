@@ -46,8 +46,14 @@ TEST_FUNC constexpr void test_boundaries()
   test_ipow<B, E>(4, (width - 1) / 2 + 1, 0);
 
   constexpr E max_exp = cuda::std::numeric_limits<E>::max();
-  constexpr U result  = cuda::std::cmp_less(max_exp, width) ? static_cast<U>(U{1} << static_cast<int>(max_exp)) : U{0};
-  assert(cuda::ipow(B{2}, max_exp) == static_cast<B>(result));
+  if constexpr (cuda::std::cmp_less(max_exp, width))
+  {
+    assert(cuda::ipow(B{2}, max_exp) == static_cast<B>(U{1} << static_cast<int>(max_exp)));
+  }
+  else
+  {
+    assert(cuda::ipow(B{2}, max_exp) == B{0});
+  }
   assert(cuda::ipow(B{1}, max_exp) == B{1});
   if constexpr (cuda::std::is_signed_v<B>)
   {
