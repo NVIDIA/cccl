@@ -929,11 +929,17 @@ stf_ctx_handle stf_ctx_create_ex(const stf_ctx_options* opts);
 //!     before observing results on the host or releasing the shared handle.
 //!
 //! \param ctx Context handle to finalize
+//! \return \c STF_SUCCESS, or the failure category.
 //!
 //! \pre ctx must be valid context handle
 //! \post All pending operations are either completed (blocking case) or
 //!       enqueued on the caller stream (non-blocking case); resources are
 //!       released; ctx becomes invalid.
+//!
+//! The call consumes \p ctx whether or not it succeeds: after it returns, the
+//! handle must not be passed to any other \c stf_* function. On failure the
+//! context's resources are not released; the error is reported through the
+//! return value and stf_get_last_error_message().
 //!
 //! \par Example (blocking, default-created context):
 //! \code
