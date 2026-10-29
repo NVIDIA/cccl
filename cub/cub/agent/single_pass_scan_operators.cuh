@@ -145,7 +145,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void delay()
 }
 
 template <unsigned int GridThreshold = 500>
-_CCCL_DEVICE _CCCL_FORCEINLINE void delay(int ns)
+_CCCL_DEVICE _CCCL_FORCEINLINE void delay(unsigned int ns)
 {
   _CCCL_IKET_RANGE_PUSH(Delay);
   NV_IF_TARGET(NV_PROVIDES_SM_70, ({
@@ -172,7 +172,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay()
   _CCCL_IKET_RANGE_POP();
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void always_delay([[maybe_unused]] int ns)
+_CCCL_DEVICE _CCCL_FORCEINLINE void always_delay([[maybe_unused]] unsigned int ns)
 {
   _CCCL_IKET_RANGE_PUSH(Delay);
   NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(ns);));
@@ -186,7 +186,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting()
 }
 
 template <unsigned int GridThreshold = 500>
-_CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting([[maybe_unused]] int ns)
+_CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting([[maybe_unused]] unsigned int ns)
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (delay<GridThreshold>(ns);), (__threadfence_block();));
 }
@@ -197,7 +197,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting()
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (always_delay(Delay);), (__threadfence_block();));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting([[maybe_unused]] int ns)
+_CCCL_DEVICE _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting([[maybe_unused]] unsigned int ns)
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (always_delay(ns);), (__threadfence_block();));
 }
@@ -279,7 +279,7 @@ struct exponential_backoff_constructor_t
 {
   struct delay_t
   {
-    int delay;
+    unsigned int delay;
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {

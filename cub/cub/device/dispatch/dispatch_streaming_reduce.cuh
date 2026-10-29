@@ -193,6 +193,7 @@ template <typename PerPartitionAccumT,
           typename GlobalAccumT,
           typename PerPartitionOffsetT,
           typename ArgIndexInputIteratorT,
+          bool NondeterminismFellBackToRunToRun = false,
           typename InputIteratorT,
           typename ResultOutIteratorT,
           typename GlobalOffsetT,
@@ -248,17 +249,18 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   // Query temporary storage requirements for per-partition reduction
   void* allocations[2]       = {nullptr, nullptr};
   size_t allocation_sizes[2] = {0, 2 * sizeof(GlobalAccumT)};
-  if (const auto error = CubDebug(reduce::dispatch<PerPartitionAccumT>(
-        nullptr,
-        allocation_sizes[0],
-        d_indexed_in,
-        ::cuda::make_tabulate_output_iterator(accumulating_out_op),
-        static_cast<PerPartitionOffsetT>(largest_partition_size),
-        reduce_op,
-        init_value,
-        stream,
-        transform_op,
-        policy_selector_t{})))
+  if (const auto error = CubDebug(
+        (reduce::dispatch<PerPartitionAccumT, /* StableReductionOrder */ true, NondeterminismFellBackToRunToRun>(
+          nullptr,
+          allocation_sizes[0],
+          d_indexed_in,
+          ::cuda::make_tabulate_output_iterator(accumulating_out_op),
+          static_cast<PerPartitionOffsetT>(largest_partition_size),
+          reduce_op,
+          init_value,
+          stream,
+          transform_op,
+          policy_selector_t{}))))
   {
     return error;
   }
@@ -290,17 +292,18 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
 
     d_indexed_in = ArgIndexInputIteratorT(d_in + current_partition_offset);
 
-    if (const auto error = CubDebug(reduce::dispatch<PerPartitionAccumT>(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_indexed_in,
-          ::cuda::make_tabulate_output_iterator(accumulating_out_op),
-          static_cast<PerPartitionOffsetT>(current_num_items),
-          reduce_op,
-          init_value,
-          stream,
-          transform_op,
-          policy_selector_t{})))
+    if (const auto error = CubDebug(
+          (reduce::dispatch<PerPartitionAccumT, /* StableReductionOrder */ true, NondeterminismFellBackToRunToRun>(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_indexed_in,
+            ::cuda::make_tabulate_output_iterator(accumulating_out_op),
+            static_cast<PerPartitionOffsetT>(current_num_items),
+            reduce_op,
+            init_value,
+            stream,
+            transform_op,
+            policy_selector_t{}))))
     {
       return error;
     }
@@ -340,6 +343,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
 //   Tuning environment Environment type
 //
 template <typename PerPartitionOffsetT,
+          bool NondeterminismFellBackToRunToRun = false,
           typename InputIteratorT,
           typename ExtremumOutIteratorT,
           typename IndexOutIteratorT,
@@ -390,7 +394,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   return dispatch_streaming_arg_reduce_impl<per_partition_accum_t,
                                             global_accum_t,
                                             PerPartitionOffsetT,
-                                            arg_index_input_iterator_t>(
+                                            arg_index_input_iterator_t,
+                                            NondeterminismFellBackToRunToRun>(
     d_temp_storage,
     temp_storage_bytes,
     d_in,
@@ -432,6 +437,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
 //   Tuning environment type
 //
 template <typename PerPartitionOffsetT,
+          bool NondeterminismFellBackToRunToRun = false,
           typename InputIteratorT,
           typename MinExtremumOutIteratorT,
           typename MinIndexOutIteratorT,
@@ -469,7 +475,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_minmax
   return dispatch_streaming_arg_reduce_impl<per_partition_accum_t,
                                             global_accum_t,
                                             PerPartitionOffsetT,
-                                            arg_index_input_iterator_t>(
+                                            arg_index_input_iterator_t,
+                                            NondeterminismFellBackToRunToRun>(
     d_temp_storage,
     temp_storage_bytes,
     d_in,

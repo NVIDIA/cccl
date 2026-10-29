@@ -400,7 +400,10 @@ private:
     // TODO(NaderAlAwar): Relax this once non-deterministic implementation for min / max is available
     using determinism_t = ::cuda::execution::determinism::run_to_run_t;
 
-    return reduce_impl(d_in, d_out, num_items, reduction_op, ::cuda::std::identity{}, init, determinism_t{}, env);
+    // we forced run_to_run above, so a request for not_guaranteed fell back to it
+    constexpr bool fell_back_to_run_to_run = detail::is_non_deterministic_v<requested_determinism_t>;
+    return reduce_impl<fell_back_to_run_to_run>(
+      d_in, d_out, num_items, reduction_op, ::cuda::std::identity{}, init, determinism_t{}, env);
   }
 
 public:
@@ -1006,6 +1009,20 @@ private:
     return !::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>;
   }
 
+  // The streaming ArgMin/ArgMax/ArgMinMax dispatch is always run-to-run deterministic, so a request for not_guaranteed
+  // falls back to it
+  template <class EnvT>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL bool __streaming_reduce_nondeterminism_fell_back() noexcept
+  {
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using requested_determinism_t =
+      ::cuda::std::execution::__query_result_or_t<requirements_t, //
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
+    return detail::is_non_deterministic_v<requested_determinism_t>;
+  }
+
   template <typename InputIteratorT,
             typename ExtremumOutIteratorT,
             typename IndexOutIteratorT,
@@ -1029,7 +1046,8 @@ private:
 
     return detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+        return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT,
+                                                             __streaming_reduce_nondeterminism_fell_back<EnvT>()>(
           storage,
           bytes,
           d_in,
@@ -1062,7 +1080,8 @@ private:
     using reduce_op_t         = detail::arg_reduce_op<CompareOpT>;
 
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-      return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+      return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT,
+                                                           __streaming_reduce_nondeterminism_fell_back<EnvT>()>(
         storage,
         bytes,
         d_in,
@@ -2045,7 +2064,8 @@ private:
 
     return detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::reduce::dispatch_streaming_arg_minmax<PerPartitionOffsetT>(
+        return detail::reduce::dispatch_streaming_arg_minmax<PerPartitionOffsetT,
+                                                             __streaming_reduce_nondeterminism_fell_back<EnvT>()>(
           storage,
           bytes,
           d_in,
