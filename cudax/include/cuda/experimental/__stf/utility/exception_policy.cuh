@@ -267,6 +267,17 @@ constexpr unsigned __both(const unsigned __a, const unsigned __b) noexcept
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
+// How the left operand of `<<` and `->*` holds its sink: by value, unless the sink type says
+// otherwise. `dynamic` specializes this (after its definition) so that a named erased sink is
+// viewed rather than copied, since copying one clones its model.
+template <class _Self>
+struct __sink_storage
+{
+  using type = _Self;
+};
+template <class _Self>
+using __sink_storage_t = typename __sink_storage<_Self>::type;
+
 // The left operand of a sink's `<<` and `->*`, built by implicit conversion from the sink.
 // Overloaded operators cannot take a defaulted `source_location`, so the converting constructor
 // captures the call site. It accepts exactly `_Self`: a type that converts to `_Self` (any sink
@@ -277,13 +288,24 @@ struct __sink_at
   template <class _U, ::cuda::std::enable_if_t<::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_U>, _Self>, int> = 0>
   // NOLINTNEXTLINE(bugprone-forwarding-reference-overload)
   __sink_at(_U&& __u, const ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept(
-    ::cuda::std::is_nothrow_constructible_v<_Self, _U&&>)
+    ::cuda::std::is_nothrow_constructible_v<__sink_storage_t<_Self>, _U&&>)
       : __sink_(::cuda::std::forward<_U>(__u))
       , __loc_(__loc)
   {}
 
-  _Self __sink_;
+  __sink_storage_t<_Self> __sink_;
   ::cuda::std::source_location __loc_;
+};
+
+// `__sink_at<_Self>` spelled so that it depends on the operator's other template parameter. A
+// friend operator defined inside a sink class would otherwise instantiate `__sink_at<_Self>` at
+// its definition, before the sink's storage type can be complete (`dynamic`'s is defined after
+// `dynamic`). The first parameter is thereby a non-deduced context, which the implicit
+// conversion from the sink needs anyway.
+template <class _Self, class>
+struct __sink_at_for
+{
+  using type = __sink_at<_Self>;
 };
 } // namespace detail
 
@@ -292,20 +314,21 @@ struct __sink_at
 // wrapper. The left operand arrives as `__sink_at<_Self>`, which records the call site. The
 // operators are hidden friends, so ADL finds them only for an operand of type `_Self`. The bodies
 // call helpers declared further down, found by ADL through `__sink_at` at instantiation.
-#  define _CUDAX_STF_SINK(_Self)                                                                              \
-    using __exception_sink_tag = void;                                                                        \
-    template <class _X>                                                                                       \
-    friend auto operator<<(::cuda::experimental::stf::sump::detail::__sink_at<_Self> __s, _X&& __x) noexcept( \
-      noexcept(__sink_shift(::cuda::std::move(__s), ::cuda::std::forward<_X>(__x))))                          \
-    {                                                                                                         \
-      return __sink_shift(::cuda::std::move(__s), ::cuda::std::forward<_X>(__x));                             \
-    }                                                                                                         \
-    template <class _X>                                                                                       \
-    friend decltype(auto) operator->*(                                                                        \
-      ::cuda::experimental::stf::sump::detail::__sink_at<_Self> __s,                                          \
-      _X&& __x) noexcept(noexcept(__sink_yield(::cuda::std::move(__s), ::cuda::std::forward<_X>(__x))))       \
-    {                                                                                                         \
-      return __sink_yield(::cuda::std::move(__s), ::cuda::std::forward<_X>(__x));                             \
+#  define _CUDAX_STF_SINK(_Self)                                                                        \
+    using __exception_sink_tag = void;                                                                  \
+    template <class _X>                                                                                 \
+    friend auto operator<<(                                                                             \
+      typename ::cuda::experimental::stf::sump::detail::__sink_at_for<_Self, _X>::type __s,             \
+      _X&& __x) noexcept(noexcept(__sink_shift(::cuda::std::move(__s), ::cuda::std::forward<_X>(__x)))) \
+    {                                                                                                   \
+      return __sink_shift(::cuda::std::move(__s), ::cuda::std::forward<_X>(__x));                       \
+    }                                                                                                   \
+    template <class _X>                                                                                 \
+    friend decltype(auto) operator->*(                                                                  \
+      typename ::cuda::experimental::stf::sump::detail::__sink_at_for<_Self, _X>::type __s,             \
+      _X&& __x) noexcept(noexcept(__sink_yield(::cuda::std::move(__s), ::cuda::std::forward<_X>(__x)))) \
+    {                                                                                                   \
+      return __sink_yield(::cuda::std::move(__s), ::cuda::std::forward<_X>(__x));                       \
     }
 #endif // _CCCL_DOXYGEN_INVOKED
 
@@ -3834,6 +3857,12 @@ inline constexpr bool __is_dynamic_v = ::cuda::std::is_same_v<::cuda::std::remov
 inline void __check_dynamic_left_of_or(const dynamic& __p);
 inline void __check_dynamic_left_of_and(const dynamic& __p);
 inline void __check_dynamic_repeated(const dynamic& __p);
+struct __dynamic_view; // the left operand of a named `dynamic`'s `<<` and `->*`; defined after it
+template <>
+struct __sink_storage<dynamic>
+{
+  using type = __dynamic_view;
+};
 } // namespace detail
 #endif // !_CCCL_DOXYGEN_INVOKED
 
@@ -4577,6 +4606,13 @@ private:
 
   ::std::unique_ptr<sink_base> __p_;
 
+  // A `dynamic` with no model, for `__dynamic_view` to hold when it views another `dynamic`
+  // rather than owning one. Never reaches a hook.
+  friend struct detail::__dynamic_view;
+  struct __hollow_t
+  {};
+  explicit dynamic(__hollow_t) noexcept {}
+
   [[noreturn]] void __throw_mismatch(::std::string_view __stored, ::std::string_view __wanted) const
   {
     ::std::string __msg{"dynamic cannot convert "};
@@ -4943,6 +4979,59 @@ public:
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
+// The left operand of a `dynamic`'s `<<` and `->*`. A `dynamic` is a heap object: copying it
+// clones the model and allocates. A non-const lvalue is viewed, an rvalue is moved in (a
+// pointer move), and a const lvalue is copied, since its hooks would run on a const object.
+// Sink-tagged, with the same hooks as `dynamic`, so the carrier treats it as one.
+struct __dynamic_view
+{
+  using __exception_sink_tag = void;
+
+  __dynamic_view(dynamic& __d) noexcept
+      : __owned_(dynamic::__hollow_t{})
+      , __ref_(&__d)
+  {}
+  __dynamic_view(dynamic&& __d) noexcept
+      : __owned_(::cuda::std::move(__d))
+      , __ref_(&__owned_)
+  {}
+  __dynamic_view(const dynamic& __d)
+      : __owned_(__d)
+      , __ref_(&__owned_)
+  {}
+  __dynamic_view(__dynamic_view&& __other) noexcept
+      : __owned_(::cuda::std::move(__other.__owned_))
+      , __ref_(__other.__ref_ == &__other.__owned_ ? &__owned_ : __other.__ref_)
+  {}
+  __dynamic_view(const __dynamic_view&)            = delete;
+  __dynamic_view& operator=(const __dynamic_view&) = delete;
+  __dynamic_view& operator=(__dynamic_view&&)      = delete;
+
+  template <class _Fn>
+  _CCCL_FORCEINLINE auto on_thrown(const ::std::exception* __e, const ::cuda::std::source_location __loc, _Fn& __fn)
+    -> decltype(::cuda::std::declval<dynamic&>().on_thrown(__e, __loc, __fn))
+  {
+    return __ref_->on_thrown(__e, __loc, __fn);
+  }
+  _CCCL_FORCEINLINE void on_enter()
+  {
+    __ref_->on_enter();
+  }
+  template <class _R>
+  _CCCL_FORCEINLINE _R on_success(_R&& __r)
+  {
+    return __ref_->on_success(::cuda::std::forward<_R>(__r));
+  }
+  _CCCL_FORCEINLINE void on_success()
+  {
+    __ref_->on_success();
+  }
+
+private:
+  dynamic __owned_;
+  dynamic* __ref_;
+};
+
 inline void __check_dynamic_left_of_or(const dynamic& __p)
 {
   if (__p.diverges())
@@ -5005,17 +5094,19 @@ namespace sump::detail
 template <class _Sink, class _X>
 auto __sink_shift(__sink_at<_Sink>&& __s, _X&& __x) noexcept(
   ::cuda::std::is_nothrow_move_constructible_v<_Sink>
-  && noexcept(::cuda::std::declval<__on_throw_policy<_Sink>>() << ::cuda::std::declval<_X>()))
+  && noexcept(::cuda::std::declval<__on_throw_policy<__sink_storage_t<_Sink>>>() << ::cuda::std::declval<_X>()))
 {
-  return __on_throw_policy<_Sink>{::cuda::std::move(__s.__sink_), __s.__loc_} << ::cuda::std::forward<_X>(__x);
+  return __on_throw_policy<__sink_storage_t<_Sink>>{::cuda::std::move(__s.__sink_), __s.__loc_}
+      << ::cuda::std::forward<_X>(__x);
 }
 
 template <class _Sink, class _X>
 decltype(auto) __sink_yield(__sink_at<_Sink>&& __s, _X&& __x) noexcept(
   ::cuda::std::is_nothrow_move_constructible_v<_Sink>
-  && noexcept(::cuda::std::declval<__on_throw_policy<_Sink>>()->*::cuda::std::declval<_X>()))
+  && noexcept(::cuda::std::declval<__on_throw_policy<__sink_storage_t<_Sink>>>()->*::cuda::std::declval<_X>()))
 {
-  return __on_throw_policy<_Sink>{::cuda::std::move(__s.__sink_), __s.__loc_}->*::cuda::std::forward<_X>(__x);
+  return __on_throw_policy<__sink_storage_t<_Sink>>{::cuda::std::move(__s.__sink_), __s.__loc_}
+           ->*::cuda::std::forward<_X>(__x);
 }
 } // namespace sump::detail
 #endif // _CCCL_DOXYGEN_INVOKED
@@ -7555,6 +7646,53 @@ UNITTEST("type erasure")
   //       -> "the policy's answer does not preserve the callable's value range ...; write the conversion in the
   //       policy -- subst(0xffffffffu), not subst(-1) -- if the narrowing is intended"
 #  endif // _CCCL_HAS_EXCEPTIONS()
+};
+
+UNITTEST("a named dynamic is viewed by ->* and <<, not cloned")
+{
+  using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::sump;
+#  if _CCCL_HAS_EXCEPTIONS()
+  static int clones = 0;
+  struct counting_sink final : dynamic::sink_base
+  {
+    counting_sink()
+        : sink_base(dynamic::answer_kind::own_result, false)
+    {}
+    sink_base* clone() const override
+    {
+      ++clones;
+      return new counting_sink();
+    }
+    ::std::any hook(const ::std::exception*, ::cuda::std::source_location, ::std::function<::std::any()>&) override
+    {
+      return ::std::any(7);
+    }
+  };
+  const auto boom = []() -> int {
+    throw ::std::runtime_error("x");
+  };
+
+  // A non-const lvalue is viewed: no clone per guarded call.
+  dynamic d{::std::unique_ptr<dynamic::sink_base>(new counting_sink())};
+  clones = 0;
+  EXPECT((d->*boom) == 7);
+  EXPECT((d->*boom) == 7);
+  d << [] {}; // the same capture serves `<<`
+  EXPECT(clones == 0);
+  // An rvalue is moved in: no clone either.
+  EXPECT((dynamic{::std::unique_ptr<dynamic::sink_base>(new counting_sink())}->*boom) == 7);
+  EXPECT(clones == 0);
+  // A const lvalue is copied, as before: its hooks must not run on a const object.
+  const dynamic& cd = d;
+  EXPECT((cd->*boom) == 7);
+  EXPECT(clones == 1);
+  // Copying a dynamic still clones.
+  const dynamic copy = d;
+  EXPECT(clones == 2);
+  EXPECT((copy->*boom) == 7);
+  EXPECT(clones == 3);
+#  endif
 };
 #endif // UNITTESTED_FILE
 
