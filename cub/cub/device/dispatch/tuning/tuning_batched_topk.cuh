@@ -21,6 +21,7 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/cstdint>
@@ -210,10 +211,7 @@ baseline_max_covered_segment_size(const baseline_topk_policy& policy)
   for (const auto& worker : policy.worker_per_segment_policies)
   {
     const ::cuda::std::int64_t tile_size = ::cuda::std::int64_t{worker.threads_per_block} * worker.items_per_thread;
-    if (tile_size > max_tile_size)
-    {
-      max_tile_size = tile_size;
-    }
+    max_tile_size                        = ::cuda::std::max(max_tile_size, tile_size);
   }
   return max_tile_size;
 }

@@ -13,6 +13,8 @@
  * @brief Simulation of a fluid over a regular grid with an implicit Jacobi solver
  */
 
+#include <cuda/std/algorithm>
+
 #include <cuda/experimental/stf.cuh>
 
 #include <chrono>
@@ -456,10 +458,7 @@ int main(int argc, char** argv)
   }
   r_iter.end();
 
-  if (iter > numiter)
-  {
-    iter = numiter;
-  }
+  iter = cuda::std::min(iter, numiter);
 
   const double tstop = gettime();
 

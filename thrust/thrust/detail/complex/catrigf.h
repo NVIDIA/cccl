@@ -40,6 +40,7 @@
 #include <thrust/complex.h>
 #include <thrust/detail/complex/math_private.h>
 
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/copysign.h>
 #include <cuda/std/__cmath/hypot.h>
@@ -113,10 +114,7 @@ do_hard_work(float x, float y, float* rx, int* B_is_usable, float* B, float* sqr
   S                       = ::cuda::std::hypotf(x, y - 1);
 
   A = (R + S) / 2;
-  if (A < 1)
-  {
-    A = 1;
-  }
+  A = ::cuda::std::max(A, 1.0f);
 
   if (A < A_crossover)
   {
