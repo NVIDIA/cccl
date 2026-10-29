@@ -17,6 +17,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 
 #include <cuda/__device/compute_capability.h>

@@ -13,12 +13,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_batch_memcpy.cuh>
 #include <cub/detail/delay_constructor.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/ostream>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/util_device.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 
