@@ -192,6 +192,8 @@ CUDA attributes
 ---------------
 
 +------------------------------+----------------------------------------------------------+
+| ``_CCCL_CONSTANT``           | Constant memory storage in device passes                 |
++------------------------------+----------------------------------------------------------+
 | ``_CCCL_GRID_CONSTANT``      | Grid constant kernel parameter                           |
 +------------------------------+----------------------------------------------------------+
 | ``_CCCL_GLOBAL_CONSTANT``    | Host/device global scope constant (``inline constexpr``) |
