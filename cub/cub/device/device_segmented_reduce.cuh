@@ -139,7 +139,7 @@ private:
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     ReductionOpT reduction_op,
-    InitValueT initial_value,
+    const InitValueT& initial_value,
     cudaStream_t stream,
     TuningEnvT)
   {
@@ -295,7 +295,7 @@ private:
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     ReductionOpT reduction_op,
-    InitValueT initial_value,
+    const InitValueT& initial_value,
     const EnvT& env)
   {
     static_assert(is_supported_determinism_v<EnvT>,
