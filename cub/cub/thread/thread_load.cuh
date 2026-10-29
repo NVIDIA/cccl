@@ -23,17 +23,18 @@
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/unit_word.cuh>
-#include <cub/util_ptx.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
-#include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__utility/integer_sequence.h>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
 
 CUB_NAMESPACE_BEGIN
 
