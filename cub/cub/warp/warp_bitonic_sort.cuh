@@ -120,12 +120,18 @@ class WarpBitonicSort
   using _TempStorage = cub::NullType;
 
   // to simplify internal recursive call
-  WarpBitonicSort() = default;
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort()
+  {
+    _CCCL_ASSUME(lane >= 0);
+  }
 
 public:
   using TempStorage = Uninitialized<_TempStorage>;
 
-  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&) {}
+  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&)
+  {
+    _CCCL_ASSUME(lane >= 0);
+  }
 
   //! @brief Sorts keys across a logical warp of threads using bitonic sorting network.
   //!
@@ -447,12 +453,18 @@ class WarpBitonicSort<KeyT, 1, LogicalWarpThreads, ValueT>
   using _TempStorage = cub::NullType;
 
   // to simplify internal recursive call
-  WarpBitonicSort() = default;
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort()
+  {
+    _CCCL_ASSUME(lane >= 0);
+  }
 
 public:
   using TempStorage = Uninitialized<_TempStorage>;
 
-  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&) {}
+  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&)
+  {
+    _CCCL_ASSUME(lane >= 0);
+  }
 
   template <typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void Sort(KeyT (&keys)[1], CompareOp compare_op) const

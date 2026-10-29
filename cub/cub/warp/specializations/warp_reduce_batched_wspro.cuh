@@ -66,9 +66,10 @@ struct warp_reduce_batched_wspro
   //! Shared memory storage layout type
   using TempStorage = NullType;
 
+  // Keep warp-ID division signed to preserve mask and shuffle code generation (affect SM90 only).
   int physical_lane_id = static_cast<int>(::cuda::ptx::get_sreg_laneid());
   int logical_lane_id  = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
-  int logical_warp_id  = CUB_NS_QUALIFIER::detail::logical_warp_id<LogicalWarpThreads>();
+  int logical_warp_id  = is_arch_warp ? 0 : physical_lane_id / LogicalWarpThreads;
 
   ::cuda::std::uint32_t member_mask =
     SyncPhysicalWarp ? 0xFFFFFFFFu : CUB_NS_QUALIFIER::WarpMask<LogicalWarpThreads>(logical_warp_id);
