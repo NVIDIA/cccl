@@ -89,9 +89,8 @@ CUB_NAMESPACE_BEGIN
 //! Tuning
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! All algorithms in DeviceSegmentedReduce that accept an environment can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::SegmentedReducePolicy`, as shown in
-//! the example below:
+//! All algorithms in DeviceSegmentedReduce can be tuned by passing a custom :ref:`policy selector
+//! <cub-policy-selectors>` that returns a :cpp:struct:`cub::SegmentedReducePolicy`, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
 //!      :language: c++
@@ -109,10 +108,27 @@ CUB_NAMESPACE_BEGIN
 struct DeviceSegmentedReduce
 {
 private:
-  template <typename ReductionOpT,
-            typename TuningEnvT = ::cuda::std::execution::env<>,
-            typename InputIteratorT,
-            typename OutputIteratorT>
+  // Rejects determinism requirements of an environment that device segmented reductions do not support
+  template <typename EnvT>
+  static constexpr bool is_supported_determinism_v = !::cuda::std::is_same_v<
+    ::cuda::std::execution::__query_result_or_t<
+      ::cuda::std::execution::
+        __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>,
+      ::cuda::execution::determinism::__get_determinism_t,
+      ::cuda::execution::determinism::run_to_run_t>,
+    ::cuda::execution::determinism::gpu_to_gpu_t>;
+
+  // Runs a two-phase implementation with temporary storage allocated from the memory resource of the environment
+  template <typename EnvT, typename TwoPhaseImplT>
+  CUB_RUNTIME_FUNCTION static cudaError_t single_phase_impl(const EnvT& env, const TwoPhaseImplT& two_phase_impl)
+  {
+    return detail::dispatch_with_env(
+      env, [&](auto /* tuning */, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t /* stream */) {
+        return two_phase_impl(d_temp_storage, temp_storage_bytes);
+      });
+  }
+
+  template <typename ReductionOpT, typename InputIteratorT, typename OutputIteratorT, typename EnvT>
   CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_arg_impl(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -120,8 +136,11 @@ private:
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
     int segment_size,
-    cudaStream_t stream)
+    const EnvT& env)
   {
+    static_assert(is_supported_determinism_v<EnvT>,
+                  "gpu_to_gpu determinism is not supported for device segmented reductions ");
+
     // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
     // integral constant or larger integral types
     using offset_t = int;
@@ -140,7 +159,6 @@ private:
     auto d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
       THRUST_NS_QUALIFIER::counting_iterator<::cuda::std::int64_t>{0},
       detail::segmented_reduce::generate_idx_value<InputIteratorT, output_value_t>(d_in, segment_size));
-    using arg_index_input_iterator_t = decltype(d_indexed_in);
 
     constexpr bool is_min = ::cuda::std::is_same_v<ReductionOpT, cub::detail::arg_min>;
     auto sentinel =
@@ -149,41 +167,30 @@ private:
 
     using default_policy_selector_t =
       detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
-    using policy_selector_t =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, SegmentedReducePolicy, default_policy_selector_t>;
-
-    return detail::segmented_reduce::dispatch_fixed_size<accum_t>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_indexed_in,
-      d_out,
-      num_segments,
-      static_cast<offset_t>(segment_size),
-      ReductionOpT(),
-      initial_value,
-      stream,
-      policy_selector_t{});
+    return detail::dispatch_with_env_and_tuning<default_policy_selector_t>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::segmented_reduce::dispatch_fixed_size<accum_t>(
+          storage,
+          bytes,
+          d_indexed_in,
+          d_out,
+          num_segments,
+          static_cast<offset_t>(segment_size),
+          ReductionOpT(),
+          initial_value,
+          stream,
+          policy_selector);
+      });
   }
 
   template <typename ReductionOpT, typename InputIteratorT, typename OutputIteratorT, typename EnvT>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_arg_impl_env(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_arg_impl(
     InputIteratorT d_in, OutputIteratorT d_out, ::cuda::std::int64_t num_segments, int segment_size, const EnvT& env)
   {
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using requested_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t,
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
-
-    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
-                  "gpu_to_gpu determinism is not supported for device segmented reductions ");
-
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return fixed_size_arg_impl<ReductionOpT, decltype(tuning)>(
-          d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, stream);
-      });
+    return single_phase_impl(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+      return fixed_size_arg_impl<ReductionOpT>(
+        d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, env);
+    });
   }
 
   template <typename AccumT,
@@ -195,7 +202,9 @@ private:
             typename ReductionOpT,
             typename InitValueT,
             typename EnvT>
-  CUB_RUNTIME_FUNCTION static cudaError_t variable_size_env_impl(
+  CUB_RUNTIME_FUNCTION static cudaError_t variable_size_impl(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
@@ -205,29 +214,20 @@ private:
     InitValueT initial_value,
     const EnvT& env)
   {
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using requested_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t,
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
-
-    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
+    static_assert(is_supported_determinism_v<EnvT>,
                   "gpu_to_gpu determinism is not supported for device segmented reductions ");
 
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
     {
-      return detail::dispatch_with_env(
-        env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-          using default_policy_selector_t =
-            detail::segmented_reduce::policy_selector_from_types<AccumT, OffsetT, ReductionOpT>;
-          using policy_selector_t = ::cuda::std::execution::
-            __query_result_or_t<decltype(tuning), SegmentedReducePolicy, default_policy_selector_t>;
+      using default_policy_selector_t =
+        detail::segmented_reduce::policy_selector_from_types<AccumT, OffsetT, ReductionOpT>;
+      return detail::dispatch_with_env_and_tuning<default_policy_selector_t>(
+        d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
           // TODO: in most cases we can just take the default AccumT and OffsetT. Refactor this
           return detail::segmented_reduce::dispatch<AccumT, OffsetT>(
-            d_temp_storage,
-            temp_storage_bytes,
+            storage,
+            bytes,
             d_in,
             d_out,
             num_segments,
@@ -237,38 +237,44 @@ private:
             initial_value,
             0, // max_segment_size
             stream,
-            policy_selector_t{});
+            policy_selector);
         });
     }
     _CCCL_UNREACHABLE();
   }
 
-  template <typename InputIteratorT, typename OutputIteratorT, typename ReductionOpT, typename T>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_impl(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
+  template <typename AccumT,
+            typename OffsetT,
+            typename InputIteratorT,
+            typename OutputIteratorT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename ReductionOpT,
+            typename InitValueT,
+            typename EnvT>
+  CUB_RUNTIME_FUNCTION static cudaError_t variable_size_impl(
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
-    int segment_size,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
     ReductionOpT reduction_op,
-    T initial_value,
-    cudaStream_t stream = nullptr)
+    InitValueT initial_value,
+    const EnvT& env)
   {
-    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
-    // integral constant or larger integral types
-    using offset_t = int;
-
-    return detail::segmented_reduce::dispatch_fixed_size(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_out,
-      num_segments,
-      static_cast<offset_t>(segment_size),
-      reduction_op,
-      initial_value,
-      stream);
+    return single_phase_impl(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+      return variable_size_impl<AccumT, OffsetT>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        num_segments,
+        d_begin_offsets,
+        d_end_offsets,
+        reduction_op,
+        initial_value,
+        env);
+    });
   }
 
   template <typename AccumT,
@@ -278,7 +284,9 @@ private:
             typename ReductionOpT,
             typename InitValueT,
             typename EnvT>
-  CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_env_impl(
+  CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_impl(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
@@ -287,32 +295,38 @@ private:
     InitValueT initial_value,
     const EnvT& env)
   {
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using requested_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t,
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
-
-    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
+    static_assert(is_supported_determinism_v<EnvT>,
                   "gpu_to_gpu determinism is not supported for device segmented reductions ");
 
     using default_policy_selector_t =
       detail::segmented_reduce::policy_selector_from_types<AccumT, OffsetT, ReductionOpT>;
     return detail::dispatch_with_env_and_tuning<default_policy_selector_t>(
-      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
         return detail::segmented_reduce::dispatch_fixed_size<AccumT>(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_in,
-          d_out,
-          num_segments,
-          segment_size,
-          reduction_op,
-          initial_value,
-          stream,
-          policy_selector);
+          storage, bytes, d_in, d_out, num_segments, segment_size, reduction_op, initial_value, stream, policy_selector);
       });
+  }
+
+  template <typename AccumT,
+            typename OffsetT,
+            typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ReductionOpT,
+            typename InitValueT,
+            typename EnvT>
+  CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_impl(
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ::cuda::std::int64_t num_segments,
+    OffsetT segment_size,
+    ReductionOpT reduction_op,
+    InitValueT initial_value,
+    const EnvT& env)
+  {
+    return single_phase_impl(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+      return fixed_size_impl<AccumT>(
+        d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, reduction_op, initial_value, env);
+    });
   }
 
 public:
@@ -377,6 +391,9 @@ public:
   //! @tparam T
   //!   **[inferred]** Data element type that is convertible to the `value` type of `InputIteratorT`
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -413,16 +430,17 @@ public:
   //! @param[in] initial_value
   //!   Initial value of the reduction for each segment
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
             typename ReductionOpT,
-            typename T>
+            typename T,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t Reduce(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -433,28 +451,26 @@ public:
     EndOffsetIteratorT d_end_offsets,
     ReductionOpT reduction_op,
     T initial_value,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Reduce");
 
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
-    static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
-    if constexpr (::cuda::std::is_integral_v<OffsetT>)
-    {
-      return detail::segmented_reduce::dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        reduction_op,
-        initial_value, // zero-initialize
-        0, // max_segment_size
-        stream);
-    }
-    _CCCL_UNREACHABLE();
+    // handles initial_value being detail::reduce::no_init_t
+    using AccumT = decltype(detail::segmented_reduce::select_segmented_accum_t<InputIteratorT, T, ReductionOpT>(
+      static_cast<detail::use_default*>(nullptr)));
+
+    return variable_size_impl<AccumT, OffsetT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      reduction_op,
+      initial_value,
+      env);
   }
 
   //! @rst
@@ -577,7 +593,7 @@ public:
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
     using AccumT  = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::it_value_t<InputIteratorT>, T>;
 
-    return variable_size_env_impl<AccumT, OffsetT>(
+    return variable_size_impl<AccumT, OffsetT>(
       d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, reduction_op, initial_value, env);
   }
 
@@ -622,6 +638,9 @@ public:
   //! @tparam T
   //!   **[inferred]** Data element type that is convertible to the `value` type of `InputIteratorT`
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -646,11 +665,15 @@ public:
   //! @param[in] initial_value
   //!   Initial value of the reduction for each segment
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename ReductionOpT, typename T>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ReductionOpT,
+            typename T,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t Reduce(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -660,11 +683,27 @@ public:
     int segment_size,
     ReductionOpT reduction_op,
     T initial_value,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Reduce");
-    return fixed_size_impl(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, reduction_op, initial_value, stream);
+
+    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
+    // integral constant or larger integral types
+    using offset_t = int;
+    // handles initial_value being detail::reduce::no_init_t
+    using accum_t = decltype(detail::segmented_reduce::select_segmented_accum_t<InputIteratorT, T, ReductionOpT>(
+      static_cast<detail::use_default*>(nullptr)));
+
+    return fixed_size_impl<accum_t>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      static_cast<offset_t>(segment_size),
+      reduction_op,
+      initial_value,
+      env);
   }
 
   //! @rst
@@ -761,7 +800,7 @@ public:
     using offset_t = int;
     using accum_t  = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::it_value_t<InputIteratorT>, T>;
 
-    return fixed_size_env_impl<accum_t>(
+    return fixed_size_impl<accum_t>(
       d_in, d_out, num_segments, static_cast<offset_t>(segment_size), reduction_op, initial_value, env);
   }
 
@@ -809,6 +848,9 @@ public:
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -839,16 +881,17 @@ public:
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the *i*\ :sup:`th` is considered empty.
   //!   @endrst
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename = ::cuda::std::void_t<typename ::cuda::std::iterator_traits<BeginOffsetIteratorT>::value_type,
-                                           typename ::cuda::std::iterator_traits<EndOffsetIteratorT>::value_type>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            typename      = ::cuda::std::void_t<typename ::cuda::std::iterator_traits<BeginOffsetIteratorT>::value_type,
+                                                typename ::cuda::std::iterator_traits<EndOffsetIteratorT>::value_type>>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Sum(void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -857,30 +900,27 @@ public:
       ::cuda::std::int64_t num_segments,
       BeginOffsetIteratorT d_begin_offsets,
       EndOffsetIteratorT d_end_offsets,
-      cudaStream_t stream = nullptr)
+      const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Sum");
 
     using OffsetT      = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
     using OutputT      = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
     using init_value_t = OutputT;
-    static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
-    if constexpr (::cuda::std::is_integral_v<OffsetT>)
-    {
-      return detail::segmented_reduce::dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        ::cuda::std::plus<>{},
-        init_value_t{}, // zero-initialize
-        0, // max_segment_size
-        stream);
-    }
-    _CCCL_UNREACHABLE();
+    using op_t         = ::cuda::std::plus<>;
+    using AccumT       = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_value_t>;
+
+    return variable_size_impl<AccumT, OffsetT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      op_t{},
+      init_value_t{}, // zero-initialize
+      env);
   }
 
   //! @rst
@@ -979,7 +1019,7 @@ public:
     using op_t         = ::cuda::std::plus<>;
     using AccumT       = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_value_t>;
 
-    return variable_size_env_impl<AccumT, OffsetT>(
+    return variable_size_impl<AccumT, OffsetT>(
       d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, op_t{}, init_value_t{}, env);
   }
 
@@ -1011,6 +1051,9 @@ public:
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -1029,11 +1072,11 @@ public:
   //! @param[in] segment_size
   //!   The fixed segment size of each segment
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Sum(void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -1041,22 +1084,30 @@ public:
       OutputIteratorT d_out,
       ::cuda::std::int64_t num_segments,
       int segment_size,
-      cudaStream_t stream = nullptr)
+      const EnvT& env = {})
   {
     static_assert(!::cuda::std::is_same_v<InputIteratorT, void*>,
                   "InputIteratorT must be a real iterator; void* has no iterator_traits::value_type.");
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Sum");
-    using init_value_t = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
-    return fixed_size_impl(
+
+    using output_t = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
+
+    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
+    // integral constant or larger integral types
+    using offset_t = int;
+    using op_t     = ::cuda::std::plus<>;
+    using accum_t  = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, output_t>;
+
+    return fixed_size_impl<accum_t>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       num_segments,
-      segment_size,
-      ::cuda::std::plus{},
-      init_value_t{},
-      stream);
+      static_cast<offset_t>(segment_size),
+      op_t{},
+      output_t{},
+      env);
   }
 
   //! @rst
@@ -1133,7 +1184,7 @@ public:
     using op_t     = ::cuda::std::plus<>;
     using accum_t  = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, output_t>;
 
-    return fixed_size_env_impl<accum_t>(
+    return fixed_size_impl<accum_t>(
       d_in, d_out, num_segments, static_cast<offset_t>(segment_size), op_t{}, output_t{}, env);
   }
 
@@ -1181,6 +1232,9 @@ public:
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -1211,16 +1265,17 @@ public:
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the *i*\ :sup:`th` is considered empty.
   //!   @endrst
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename = ::cuda::std::void_t<typename ::cuda::std::iterator_traits<BeginOffsetIteratorT>::value_type,
-                                           typename ::cuda::std::iterator_traits<EndOffsetIteratorT>::value_type>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            typename      = ::cuda::std::void_t<typename ::cuda::std::iterator_traits<BeginOffsetIteratorT>::value_type,
+                                                typename ::cuda::std::iterator_traits<EndOffsetIteratorT>::value_type>>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Min(void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -1229,32 +1284,30 @@ public:
       ::cuda::std::int64_t num_segments,
       BeginOffsetIteratorT d_begin_offsets,
       EndOffsetIteratorT d_end_offsets,
-      cudaStream_t stream = nullptr)
+      const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Min");
 
     using OffsetT      = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
     using InputT       = detail::it_value_t<InputIteratorT>;
     using init_value_t = InputT;
+    using op_t         = ::cuda::minimum<>;
+    using AccumT       = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_value_t>;
+
     static_assert(::cuda::std::numeric_limits<init_value_t>::is_specialized,
                   "numeric_limits must be specialized for the input value type");
-    static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
-    if constexpr (::cuda::std::is_integral_v<OffsetT>)
-    {
-      return detail::segmented_reduce::dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        ::cuda::minimum<>{},
-        ::cuda::std::numeric_limits<init_value_t>::max(),
-        0, // max_segment_size
-        stream);
-    }
-    _CCCL_UNREACHABLE();
+
+    return variable_size_impl<AccumT, OffsetT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      op_t{},
+      ::cuda::std::numeric_limits<init_value_t>::max(),
+      env);
   }
 
   //! @rst
@@ -1356,7 +1409,7 @@ public:
     static_assert(::cuda::std::numeric_limits<init_value_t>::is_specialized,
                   "numeric_limits must be specialized for the input value type");
 
-    return variable_size_env_impl<AccumT, OffsetT>(
+    return variable_size_impl<AccumT, OffsetT>(
       d_in,
       d_out,
       num_segments,
@@ -1394,6 +1447,9 @@ public:
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -1412,11 +1468,11 @@ public:
   //! @param[in] segment_size
   //!   The fixed segment size of each segment
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Min(void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -1424,22 +1480,29 @@ public:
       OutputIteratorT d_out,
       ::cuda::std::int64_t num_segments,
       int segment_size,
-      cudaStream_t stream = nullptr)
+      const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Min");
     using input_t = detail::it_value_t<InputIteratorT>;
     static_assert(::cuda::std::numeric_limits<input_t>::is_specialized,
                   "numeric_limits must be specialized for the input value type");
-    return fixed_size_impl(
+
+    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
+    // integral constant or larger integral types
+    using offset_t = int;
+    using op_t     = ::cuda::minimum<>;
+    using accum_t  = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, input_t>;
+
+    return fixed_size_impl<accum_t>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       num_segments,
-      segment_size,
-      ::cuda::minimum<>{},
+      static_cast<offset_t>(segment_size),
+      op_t{},
       ::cuda::std::numeric_limits<input_t>::max(),
-      stream);
+      env);
   }
 
   //! @rst
@@ -1519,7 +1582,7 @@ public:
     using op_t     = ::cuda::minimum<>;
     using accum_t  = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, input_t>;
 
-    return fixed_size_env_impl<accum_t>(
+    return fixed_size_impl<accum_t>(
       d_in,
       d_out,
       num_segments,
@@ -1583,6 +1646,9 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -1613,16 +1679,17 @@ public:
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the *i*\ :sup:`th` is considered empty.
   //!   @endrst
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename = ::cuda::std::void_t<typename ::cuda::std::iterator_traits<BeginOffsetIteratorT>::value_type,
-                                           typename ::cuda::std::iterator_traits<EndOffsetIteratorT>::value_type>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            typename      = ::cuda::std::void_t<typename ::cuda::std::iterator_traits<BeginOffsetIteratorT>::value_type,
+                                                typename ::cuda::std::iterator_traits<EndOffsetIteratorT>::value_type>>
   CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1631,7 +1698,7 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::ArgMin");
 
@@ -1656,23 +1723,17 @@ public:
 
     const init_value_t initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
 
-    static_assert(::cuda::std::is_integral_v<OverrideOffsetT>, "Offset iterator value type should be integral.");
-    if constexpr (::cuda::std::is_integral_v<OverrideOffsetT>)
-    {
-      return detail::segmented_reduce::dispatch<OverrideAccumT, OverrideOffsetT>(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_indexed_in,
-        d_out,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        cub::ArgMin{},
-        initial_value,
-        0, // max_segment_size
-        stream);
-    }
-    _CCCL_UNREACHABLE();
+    return variable_size_impl<OverrideAccumT, OverrideOffsetT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_indexed_in,
+      d_out,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      cub::ArgMin{},
+      initial_value,
+      env);
   }
 
   //! @rst
@@ -1794,7 +1855,7 @@ public:
 
     const init_value_t initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
 
-    return variable_size_env_impl<OverrideAccumT, OverrideOffsetT>(
+    return variable_size_impl<OverrideAccumT, OverrideOffsetT>(
       d_indexed_in, d_out, num_segments, d_begin_offsets, d_end_offsets, cub::ArgMin{}, initial_value, env);
   }
 
@@ -1832,6 +1893,9 @@ public:
   //!   **[inferred]** Output iterator type for recording the reduced aggregate
   //!   (having value type `cuda::std::pair<int, T>`) @iterator
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -1850,11 +1914,11 @@ public:
   //! @param[in] segment_size
   //!   The fixed segment size of each segment
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1862,11 +1926,11 @@ public:
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
     int segment_size,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::ArgMin");
     return fixed_size_arg_impl<cub::detail::arg_min>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, stream);
+      d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, env);
   }
 
   //! @rst
@@ -1931,7 +1995,7 @@ public:
          const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::ArgMin");
-    return fixed_size_arg_impl_env<cub::detail::arg_min>(d_in, d_out, num_segments, segment_size, env);
+    return fixed_size_arg_impl<cub::detail::arg_min>(d_in, d_out, num_segments, segment_size, env);
   }
 
   //! @rst
@@ -1978,6 +2042,9 @@ public:
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2008,16 +2075,17 @@ public:
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the *i*\ :sup:`th` is considered empty.
   //!   @endrst
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename = ::cuda::std::void_t<typename ::cuda::std::iterator_traits<BeginOffsetIteratorT>::value_type,
-                                           typename ::cuda::std::iterator_traits<EndOffsetIteratorT>::value_type>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            typename      = ::cuda::std::void_t<typename ::cuda::std::iterator_traits<BeginOffsetIteratorT>::value_type,
+                                                typename ::cuda::std::iterator_traits<EndOffsetIteratorT>::value_type>>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Max(void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -2026,33 +2094,30 @@ public:
       ::cuda::std::int64_t num_segments,
       BeginOffsetIteratorT d_begin_offsets,
       EndOffsetIteratorT d_end_offsets,
-      cudaStream_t stream = nullptr)
+      const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Max");
 
     using OffsetT      = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
     using InputT       = cub::detail::it_value_t<InputIteratorT>;
     using init_value_t = InputT;
+    using op_t         = ::cuda::maximum<>;
+    using AccumT       = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_value_t>;
 
     static_assert(::cuda::std::numeric_limits<init_value_t>::is_specialized,
                   "numeric_limits must be specialized for the input value type");
-    static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
-    if constexpr (::cuda::std::is_integral_v<OffsetT>)
-    {
-      return detail::segmented_reduce::dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        ::cuda::maximum<>{},
-        ::cuda::std::numeric_limits<init_value_t>::lowest(),
-        0, // max_segment_size
-        stream);
-    }
-    _CCCL_UNREACHABLE();
+
+    return variable_size_impl<AccumT, OffsetT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      op_t{},
+      ::cuda::std::numeric_limits<init_value_t>::lowest(),
+      env);
   }
 
   //! @rst
@@ -2154,7 +2219,7 @@ public:
     static_assert(::cuda::std::numeric_limits<init_value_t>::is_specialized,
                   "numeric_limits must be specialized for the input value type");
 
-    return variable_size_env_impl<AccumT, OffsetT>(
+    return variable_size_impl<AccumT, OffsetT>(
       d_in,
       d_out,
       num_segments,
@@ -2192,6 +2257,9 @@ public:
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2210,11 +2278,11 @@ public:
   //! @param[in] segment_size
   //!   The fixed segment size of each segment
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Max(void* d_temp_storage,
       size_t& temp_storage_bytes,
@@ -2222,22 +2290,29 @@ public:
       OutputIteratorT d_out,
       ::cuda::std::int64_t num_segments,
       int segment_size,
-      cudaStream_t stream = nullptr)
+      const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Max");
     using input_t = detail::it_value_t<InputIteratorT>;
     static_assert(::cuda::std::numeric_limits<input_t>::is_specialized,
                   "numeric_limits must be specialized for the input value type");
-    return fixed_size_impl(
+
+    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
+    // integral constant or larger integral types
+    using offset_t = int;
+    using op_t     = ::cuda::maximum<>;
+    using accum_t  = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, input_t>;
+
+    return fixed_size_impl<accum_t>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       num_segments,
-      segment_size,
-      ::cuda::maximum<>{},
+      static_cast<offset_t>(segment_size),
+      op_t{},
       ::cuda::std::numeric_limits<input_t>::lowest(),
-      stream);
+      env);
   }
 
   //! @rst
@@ -2315,7 +2390,7 @@ public:
     using offset_t = int;
     using op_t     = ::cuda::maximum<>;
     using accum_t  = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, input_t>;
-    return fixed_size_env_impl<accum_t>(
+    return fixed_size_impl<accum_t>(
       d_in,
       d_out,
       num_segments,
@@ -2381,6 +2456,9 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2411,16 +2489,17 @@ public:
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the *i*\ :sup:`th` is considered empty.
   //!   @endrst
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename = ::cuda::std::void_t<typename ::cuda::std::iterator_traits<BeginOffsetIteratorT>::value_type,
-                                           typename ::cuda::std::iterator_traits<EndOffsetIteratorT>::value_type>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            typename      = ::cuda::std::void_t<typename ::cuda::std::iterator_traits<BeginOffsetIteratorT>::value_type,
+                                                typename ::cuda::std::iterator_traits<EndOffsetIteratorT>::value_type>>
   CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -2429,7 +2508,7 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::ArgMax");
 
@@ -2454,23 +2533,17 @@ public:
 
     const init_value_t initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
 
-    static_assert(::cuda::std::is_integral_v<OverrideOffsetT>, "Offset iterator value type should be integral.");
-    if constexpr (::cuda::std::is_integral_v<OverrideOffsetT>)
-    {
-      return detail::segmented_reduce::dispatch<OverrideAccumT, OverrideOffsetT>(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_indexed_in,
-        d_out,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        cub::ArgMax{},
-        initial_value,
-        0, // max_segment_size
-        stream);
-    }
-    _CCCL_UNREACHABLE();
+    return variable_size_impl<OverrideAccumT, OverrideOffsetT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_indexed_in,
+      d_out,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      cub::ArgMax{},
+      initial_value,
+      env);
   }
 
   //! @rst
@@ -2592,7 +2665,7 @@ public:
 
     const init_value_t initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
 
-    return variable_size_env_impl<OverrideAccumT, OverrideOffsetT>(
+    return variable_size_impl<OverrideAccumT, OverrideOffsetT>(
       d_indexed_in, d_out, num_segments, d_begin_offsets, d_end_offsets, cub::ArgMax{}, initial_value, env);
   }
 
@@ -2632,6 +2705,9 @@ public:
   //!   **[inferred]** Output iterator type for recording the reduced aggregate
   //!   (having value type `cuda::std::pair<int, T>`) @iterator
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2650,11 +2726,11 @@ public:
   //! @param[in] segment_size
   //!   The fixed segment size of each segment
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -2662,11 +2738,11 @@ public:
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
     int segment_size,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::ArgMax");
     return fixed_size_arg_impl<detail::arg_max>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, stream);
+      d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, env);
   }
 
   //! @rst
@@ -2731,7 +2807,7 @@ public:
          const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::ArgMax");
-    return fixed_size_arg_impl_env<cub::detail::arg_max>(d_in, d_out, num_segments, segment_size, env);
+    return fixed_size_arg_impl<cub::detail::arg_max>(d_in, d_out, num_segments, segment_size, env);
   }
 };
 
