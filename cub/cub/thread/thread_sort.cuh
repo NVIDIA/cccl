@@ -36,12 +36,17 @@ inline constexpr bool sort_unroll_default = true;
 // covers the trip count (e.g. N == ItemsPerThread), which leads to local memory spills for larger ItemsPerThread. An
 // unroll count the loop cannot reach behaves like a full unroll.
 // See: https://github.com/NVIDIA-dev/cccl_qa_agent_findings/issues/491
-#if !_CCCL_DEVICE_COMPILATION() && _CCCL_COMPILER(GCC, >=, 8)
+// Clang, on the other hand, honors the explicit count, but an unreachable count makes it consume excessive memory and
+// time (>100 GB for the sort tests), so we use the trip count there.
+#if _CCCL_COMPILER(CLANG)
+template <bool Unroll, int ItemsPerThread>
+inline constexpr int sort_unroll_count = Unroll ? ItemsPerThread : 1;
+#elif !_CCCL_DEVICE_COMPILATION() && _CCCL_COMPILER(GCC, >=, 8)
 // #pragma GCC unroll supports values up to 65534
-template <bool Unroll>
+template <bool Unroll, int ItemsPerThread>
 inline constexpr int sort_unroll_count = Unroll ? 65534 : 1;
 #else // ^^^ host GCC ^^^ / vvv other compilers vvv
-template <bool Unroll>
+template <bool Unroll, int ItemsPerThread>
 inline constexpr int sort_unroll_count = Unroll ? ::cuda::std::numeric_limits<int>::max() : 1;
 #endif // ^^^ other compilers ^^^
 
@@ -64,7 +69,7 @@ template <bool Unroll = sort_unroll_default, typename KeyT, typename ValueT, typ
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 stable_odd_even_sort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThread], CompareOp compare_op)
 {
-  constexpr int unroll = sort_unroll_count<Unroll>;
+  constexpr int unroll = sort_unroll_count<Unroll, ItemsPerThread>;
   _CCCL_PRAGMA_UNROLL(unroll)
   for (int i = 0; i < ItemsPerThread; ++i)
   {
