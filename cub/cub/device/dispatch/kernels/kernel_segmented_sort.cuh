@@ -51,9 +51,13 @@ struct LargeSegmentsSelectorT
 
   _CCCL_DEVICE _CCCL_FORCEINLINE bool operator()(local_segment_index_t segment_id) const
   {
-    const auto end_offset      = static_cast<it_difference_t<EndOffsetIteratorT>>(base_segment_offset);
-    const auto begin_offset    = static_cast<it_difference_t<BeginOffsetIteratorT>>(base_segment_offset);
+    using end_difference_t _CCCL_NODEBUG   = it_difference_t<EndOffsetIteratorT>;
+    using begin_difference_t _CCCL_NODEBUG = it_difference_t<BeginOffsetIteratorT>;
+
+    const auto end_offset      = static_cast<end_difference_t>(base_segment_offset);
+    const auto begin_offset    = static_cast<begin_difference_t>(base_segment_offset);
     const OffsetT segment_size = d_offset_end[end_offset + segment_id] - d_offset_begin[begin_offset + segment_id];
+
     return segment_size > value;
   }
 };
@@ -77,8 +81,11 @@ struct SmallSegmentsSelectorT
 
   _CCCL_DEVICE _CCCL_FORCEINLINE bool operator()(local_segment_index_t segment_id) const
   {
-    const auto end_offset      = static_cast<it_difference_t<EndOffsetIteratorT>>(base_segment_offset);
-    const auto begin_offset    = static_cast<it_difference_t<BeginOffsetIteratorT>>(base_segment_offset);
+    using end_difference_t _CCCL_NODEBUG   = it_difference_t<EndOffsetIteratorT>;
+    using begin_difference_t _CCCL_NODEBUG = it_difference_t<BeginOffsetIteratorT>;
+
+    const auto end_offset      = static_cast<end_difference_t>(base_segment_offset);
+    const auto begin_offset    = static_cast<begin_difference_t>(base_segment_offset);
     const OffsetT segment_size = d_offset_end[end_offset + segment_id] - d_offset_begin[begin_offset + segment_id];
     return segment_size < value;
   }

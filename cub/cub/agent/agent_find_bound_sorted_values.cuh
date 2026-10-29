@@ -197,9 +197,11 @@ struct agent_t
       else
       {
         // Match LowerBound/UpperBound when the output iterator has a void value_type.
-        using output_value_t    = cub::detail::non_void_value_t<OutputIt, ::cuda::std::ptrdiff_t>;
+        using output_value_t _CCCL_NODEBUG      = cub::detail::non_void_value_t<OutputIt, ::cuda::std::ptrdiff_t>;
+        using output_difference_t _CCCL_NODEBUG = it_difference_t<OutputIt>;
+
         const Offset bound      = range_beg + i;
-        const auto out_begin    = static_cast<it_difference_t<OutputIt>>(values_beg);
+        const auto out_begin    = static_cast<output_difference_t>(values_beg);
         d_output[out_begin + j] = static_cast<output_value_t>(bound);
         ++j;
         --needles_remaining;

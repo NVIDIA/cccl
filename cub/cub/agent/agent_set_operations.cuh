@@ -551,7 +551,9 @@ struct agent_set_op
 
     for (int item = static_cast<int>(threadIdx.x); item < tile_output_count; item += block_threads)
     {
-      const auto out_tile_begin     = static_cast<it_difference_t<OutputIt>>(tile_output_prefix);
+      using output_difference_t _CCCL_NODEBUG = it_difference_t<OutputIt>;
+
+      const auto out_tile_begin     = static_cast<output_difference_t>(tile_output_prefix);
       output[out_tile_begin + item] = shared[item];
     }
   }
