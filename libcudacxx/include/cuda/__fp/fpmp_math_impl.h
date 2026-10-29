@@ -109,12 +109,19 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  * model against binary128: 4.8 u^2 max, 0.35 u^2 mean, against 26 u^2
  * / 2.2 u^2 for the generic division).  12 flops plus the reciprocal.
  *
+ * With `ExactRemainder`, the second pass keeps the remainder exact
+ * (error-free sums for its three terms) and corrects the low product
+ * for the reciprocal's residual error: 3.5 u^2 max in the same model,
+ * for 15 more flops.  atan and atan2 use it, since the fold
+ * atan(a) = pi/4 + atan((a - 1)/(a + 1)) passes the quotient's error
+ * on to the result scaled by up to 0.5.
+ *
  * Preconditions: a and b are normalized pairs, b != 0, and |b_hi| lies
  * where the approximate reciprocal is a normal number (callers scale a
  * huge or tiny denominator by a power of two).  The returned pair is
  * not renormalized: |q_lo| is at most about one ulp of q_hi.
  *********************************************************************/
-template <typename _FpType>
+template <bool _ExactRemainder = false, typename _FpType>
 _CCCL_HOST_DEVICE_API inline void __fpmp_math_div_refined(
   const _FpType __a_hi,
   const _FpType __a_lo,
@@ -130,11 +137,26 @@ _CCCL_HOST_DEVICE_API inline void __fpmp_math_div_refined(
   __n0               = ::cuda::__fpmp_fma_rn(-__q0, __b_lo, __n0);
   const _FpType __q1 = ::cuda::__fpmp_fma_rn(__n0, __r0, __q0);
   const _FpType __e1 = ::cuda::__fpmp_fma_rn(-__q1, __b_hi, __a_hi); /* exact */
-  _FpType __n1       = ::cuda::__fpmp_add_rn(__e1, __a_lo);
-  __n1               = ::cuda::__fpmp_fma_rn(-__q1, __b_lo, __n1);
   const _FpType __r1 = ::cuda::__fpmp_fma_rn(__r0, ::cuda::__fpmp_fma_rn(-__b_hi, __r0, _FpType(1)), __r0);
   *__q_hi            = __q1;
-  *__q_lo            = ::cuda::__fpmp_mul_rn(__n1, __r1);
+  if constexpr (_ExactRemainder)
+  {
+    _FpType __t1, __t2, __pl;
+    const _FpType __s  = ::cuda::__fpmp_two_sum(__e1, __a_lo, &__t1);
+    const _FpType __ph = ::cuda::__fpmp_two_mult_fma(__q1, __b_lo, &__pl);
+    const _FpType __s2 = ::cuda::__fpmp_two_sum(__s, -__ph, &__t2);
+    const _FpType __n1 = __s2 + ((__t1 + __t2) - __pl);
+    const _FpType __lh = ::cuda::__fpmp_mul_rn(__n1, __r1);
+    const _FpType __er = ::cuda::__fpmp_fma_rn(__n1, __r1, -__lh); /* exact product residual */
+    const _FpType __tt = ::cuda::__fpmp_fma_rn(-__b_hi, __r1, _FpType(1)); /* 1 - b r1 */
+    *__q_lo            = __lh + ::cuda::__fpmp_fma_rn(__lh, __tt, __er);
+  }
+  else
+  {
+    _FpType __n1 = ::cuda::__fpmp_add_rn(__e1, __a_lo);
+    __n1         = ::cuda::__fpmp_fma_rn(-__q1, __b_lo, __n1);
+    *__q_lo      = ::cuda::__fpmp_mul_rn(__n1, __r1);
+  }
 } // __fpmp_math_div_refined
 
 /*********************************************************************
