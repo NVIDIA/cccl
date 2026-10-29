@@ -4367,6 +4367,11 @@ public:
     //! Exact stored type for `udt` checks; `nullptr` encodes `own_result`.
     const ::std::type_info* answer_type;
     const ::std::string_view answer_name;
+    //! Whether the wrapped policy has a success hook at all. When it has none, the shell
+    //! returns the callable's value unboxed: the success path of an erased sink then costs
+    //! the virtual-free fast path rather than a `std::any` round trip. Conservative (`true`)
+    //! for hand-written models.
+    const bool has_success_hook;
 
     sink_base(
       answer_kind __kind                    = answer_kind::own_result,
@@ -4379,7 +4384,8 @@ public:
       bool __produces_value                 = false,
       bool __needs_future                   = false,
       bool __selects_thrown                 = false,
-      bool __selects_returned               = false)
+      bool __selects_returned               = false,
+      bool __has_success_hook               = true)
         : kind(__kind)
         , may_passthrough(__may_passthrough)
         , may_throw(__may_passthrough)
@@ -4392,6 +4398,7 @@ public:
         , max_value(__max_value)
         , answer_type(__answer_type)
         , answer_name(__answer_name)
+        , has_success_hook(__has_success_hook)
     {}
     virtual ~sink_base()             = default;
     virtual sink_base* clone() const = 0;
@@ -4530,7 +4537,8 @@ private:
             detail::__produces_value_v<_P>,
             detail::__needs_future_v<_P>,
             detail::__selects_thrown_v<_P>,
-            detail::__selects_returned_v<_P>)
+            detail::__selects_returned_v<_P>,
+            detail::__has_on_success_with<_P, ::std::any> || detail::__has_on_success_void<_P>)
         , __p_(::cuda::std::move(__p))
     {}
 
@@ -4967,12 +4975,19 @@ public:
     else
     {
       __check_compatible<_R>();
+      if (!__p_->has_success_hook)
+      {
+        return ::cuda::std::forward<_R>(__r); // no hook to run: the value passes without a box
+      }
       return __unbox<_R>(__p_->on_success(::std::any(::cuda::std::forward<_R>(__r))));
     }
   }
   void on_success()
   {
-    static_cast<void>(__p_->on_success());
+    if (__p_->has_success_hook)
+    {
+      static_cast<void>(__p_->on_success());
+    }
   }
 };
 
@@ -7692,6 +7707,54 @@ UNITTEST("a named dynamic is viewed by ->* and <<, not cloned")
   EXPECT(clones == 2);
   EXPECT((copy->*boom) == 7);
   EXPECT(clones == 3);
+#  endif
+};
+
+UNITTEST("a dynamic over a policy without a success hook passes the value unboxed")
+{
+  using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::sump;
+#  if _CCCL_HAS_EXCEPTIONS()
+  static int copies = 0;
+  struct tracked
+  {
+    int v;
+    tracked(int __v) noexcept
+        : v(__v)
+    {}
+    tracked(const tracked& __o) noexcept
+        : v(__o.v)
+    {
+      ++copies;
+    }
+    tracked(tracked&& __o) noexcept
+        : v(__o.v)
+    {}
+  };
+  const auto make = [] {
+    return tracked{3};
+  };
+
+  // No success hook (noop, notify, subst, ...): the value is not boxed, so it is not copied.
+  dynamic unhooked = noop;
+  copies           = 0;
+  EXPECT((unhooked->*make).v == 3);
+  EXPECT(copies == 0);
+
+  // A policy with a success hook still sees the value, through the box.
+  static int seen = 0;
+  struct counting
+  {
+    void operator()(const ::std::exception*, ::cuda::std::source_location, ::std::function<::std::any()>&) {}
+    ::std::any on_success(::std::any __r)
+    {
+      ++seen;
+      return __r;
+    }
+  };
+  dynamic hooked = counting{};
+  EXPECT((hooked->*make).v == 3);
+  EXPECT(seen == 1);
 #  endif
 };
 #endif // UNITTESTED_FILE
