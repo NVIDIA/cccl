@@ -22,7 +22,6 @@
 #include <cub/detail/uninitialized.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/warp/warp_exchange.cuh>
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>

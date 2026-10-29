@@ -14,7 +14,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h>
 
 CUB_NAMESPACE_BEGIN
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document

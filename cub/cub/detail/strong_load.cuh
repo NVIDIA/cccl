@@ -18,7 +18,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_ptx.cuh>
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 
