@@ -54,7 +54,7 @@ struct group_merge_expansion
                 "strictly increases across bins (bin order must equal capacity order)");
   static constexpr int size = thread_choices() * ipt_choices;
   // Map a local bin to its thread/IPT pair during compile-time expansion.
-  _CCCL_HOST_DEVICE_API static constexpr bin_config expanded_config(int bin)
+  _CCCL_HOST_DEVICE_API static constexpr bin_config enumerate_shape(int bin)
   {
     // Enumerate supported pairs at compile time, without encoding bin positions.
     for (int threads = policy.min_threads; threads <= policy.max_threads; threads *= 2)
@@ -69,20 +69,21 @@ struct group_merge_expansion
     }
     _CCCL_UNREACHABLE();
   }
-  // Build the capacity-list type from threads * IPT for every supported bin.
-  template <::cuda::std::size_t... BinIndices>
-  static auto expand(::cuda::std::index_sequence<BinIndices...>)
-    -> capacity_list<(expanded_config(BinIndices).threads * expanded_config(BinIndices).items_per_thread)...>;
-  using capacities = decltype(expand(::cuda::std::make_index_sequence<size>{}));
-  // Expose a selected pair as the configuration type expected by the generic bin lookup.
+  // Select each pair once and reuse it for its capacity and configuration type.
   template <int Bin>
   struct bin_selection
   {
-    inline static constexpr bin_config chosen = expanded_config(Bin);
+    inline static constexpr bin_config chosen = enumerate_shape(Bin);
+    static constexpr int capacity             = chosen.threads * chosen.items_per_thread;
     using type                                = bin_shape<chosen.threads, chosen.items_per_thread>;
   };
+  // Build the capacity-list type from the selected configurations.
+  template <::cuda::std::size_t... BinIndices>
+  static auto expand(::cuda::std::index_sequence<BinIndices...>)
+    -> capacity_list<bin_selection<BinIndices>::capacity...>;
+  using capacities = decltype(expand(::cuda::std::make_index_sequence<size>{}));
   template <int Bin>
-  using config_for_bin = typename bin_selection<Bin>::type;
+  using shape_for_bin = typename bin_selection<Bin>::type;
 };
 
 // Adapted from call_group_merge_runtime_impl (sort_block_combined.cuh) and
