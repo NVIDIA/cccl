@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__cmath/sincos.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/copysign.h>
@@ -197,10 +198,7 @@ _CCCL_HOST_DEVICE_API inline complex<float> exp(const complex<float>& __x)
   // __j converted to int32, clamp so nothing bad happens. Will not change any results.
   // 151 = 127 + 24
   // 277 = 23 + 2*127 + 1
-  if (__exp_r_ldexp_factor > 278.0f)
-  {
-    __exp_r_ldexp_factor = 278.0f;
-  }
+  __exp_r_ldexp_factor = ::cuda::std::min(__exp_r_ldexp_factor, 278.0f);
   // Catch NaN's here to avoid UB
   if (!(__exp_r_ldexp_factor >= -151.0f))
   {
@@ -283,10 +281,7 @@ _CCCL_HOST_DEVICE_API inline complex<double> exp<double>(const complex<double>& 
   // Need to add 1 for rounding reasons
   // 1076 = 1023 + 53
   // 2099 = 52 + 2*1023 + 1
-  if (__exp_r_ldexp_factor > 2099.0)
-  {
-    __exp_r_ldexp_factor = 2099.0;
-  }
+  __exp_r_ldexp_factor = ::cuda::std::min(__exp_r_ldexp_factor, 2099.0);
   // Catch NaN's here to avoid UB
   if (!(__exp_r_ldexp_factor >= -1076.0))
   {
