@@ -177,55 +177,65 @@
       like expf: subnormal high limb down to ln(2^-150) ~= -103.97, zero below.
 
     log(x) for fp32mp2:
-      Range reduction: x = m*2^e, m  in  [1, sqrt2).
-      Core: log(m) = 2*atanh((m-1)/(m+1)) via degree-8 minimax polynomial.
-      Reconstruction: log(x) = log(m) + e*ln2 with fp32mp2 ln2 constant.
-      Handles denormals via pre-scaling.
+      Shared core: x = m*2^e, m in [sqrt(1/2), sqrt(2)],
+      log(m) = 2*atanh(u), u = 2(m-1)/(m+1), degree-8 minimax polynomial
+      in u^2.  The division u = f/g corrects a first quotient with the
+      full float-float numerator and denominator before taking its exact
+      remainder, so the correction term stays below one ulp of the
+      quotient (< 5 u^2 against ~25 u^2 for the generic fast division
+      with the device's 1-ulp reciprocal).  Reconstruction:
+      log(x) = log(m) + e*ln2, e*ln2 as an exact product plus one
+      rounding.  Handles denormals via pre-scaling.  Accuracy: 46 bits
+      where |e| >= 1, 45 bits in [sqrt(1/2), sqrt(2)] (no e*ln2 term
+      to dilute the division and polynomial roundings).
 
     log1p(x) for fp32mp2:
-      Forwards to log(1+x) after computing 1+x via fp32mp2 2-sum, which
-      preserves the small-x lo (the lo carries x exactly when |x| <= 1
-      causes float hi cancellation).  log()'s accurate sub for (m-1)
-      then recovers full fp32mp2 precision in the asinh-form Horner
-      core, yielding the a - a^2/2 + a^3/3 - ... expansion implicitly.
-      Special cases (x = -1 -> -inf, x < -1 -> NaN, +-inf) handled
-      explicitly before forwarding.
+      |x| < 1/16: direct Taylor series in (x_hi, x_lo).  Otherwise 1+x
+      is formed as an exact triple s_hi + s_lo + d (two error-free
+      sums) and handed to the log core with d as a third limb: an
+      fp32mp2 pair holds 1+x only to ~2^-48 absolute, and dropping d
+      cost three bits just above the branch point, where
+      log1p(x) ~= x is 16x smaller than 1+x.  Special cases
+      (x = -1 -> -inf, x < -1 -> NaN, +-inf) handled explicitly.
+      Accuracy: 46 bits, 45 bits around |x| = 1/16.
 
     log2(x), log10(x) for fp32mp2:
-      Composition over the dedicated fp32mp2 natural log:
-        log2(x)  = log(x) * (1/ln 2)
-        log10(x) = log(x) * (1/ln 10)
-      with the reciprocal stored as a single fp32mp2 (hi+lo) constant.
-      The one ff-multiply costs ~1 ulp on the lo limb; combined with
-      the ~46-bit precision of __fpmp2_log this still leaves >44
-      bits of accuracy across the whole representable input range,
-      matching the fp32mp2 noise floor.  All domain special cases
-      (x<=0, +-inf, NaN) are handled inside __fpmp2_log.
+      Over the shared log core, with the integer exponent folded in
+      exactly:
+        log2(x)  = log(m) * (1/ln 2)  + e
+        log10(x) = log(m) * (1/ln 10) + e * log10(2)
+      with the reciprocal as an fp32mp2 constant and e*log10(2) as an
+      exact product plus one rounding.  The constant multiplies only
+      |log(m)| <= 0.35, so its rounding is diluted by |e| >= 1
+      everywhere outside [sqrt(1/2), sqrt(2)].  Accuracy: 46-48 bits
+      where |e| >= 1, 44-45 bits in [sqrt(1/2), sqrt(2)].  Special
+      inputs (x <= 0, +-inf, NaN) are not handled, as for log.
 
     exp2(x), exp10(x) for fp32mp2:
       Dedicated implementations following a "single base-2
       split" strategy.  Pseudocode:
-        t      = x * log2(base)        [exp2: t = x; exp10: t = x * log2 10]
-        n      = round(t.hi)           [exact integer = binary exponent]
-        r      = t - n                 [|r.hi| <= 0.5]
-        2^r    via the inlined base-2 Taylor kernel
-               `__internal_fpmp2_exp2_kernel` with coefficients
-               a_k = (ln 2)^k / k!     [no r * ln 2 detour, no
-                                        natural-log reduction inside]
-        result = 2^n * 2^r             [via split-exponent helper]
-      The single integer split happens in *base-2* units, so the 2^n
-      factor drops out exactly and the kernel never touches a value
-      outside [-0.5, 0.5].  Compared to the earlier composition
-      exp(x * ln base) -- which forced __fpmp2_exp to re-derive
-      n_internal from the already-amplified product, stacking two
-      reduction errors -- the dedicated path keeps only one __ffloat
-      multiplication on the input side (and zero for exp2).  Net:
-      `exp2` matches the composed path within 1 bit on the `work`
-      dataset while cutting fp32mp2 call cost; `exp10` matches the
-      composed path's 39-bit `work` accuracy at lower instruction
-      count.  Overflow / underflow shortcuts (|x| at the float
-      exponent boundary) avoid the wasted polynomial / scaling work
-      when the result is already a rounded +-inf / 0.
+        n      = round(x * log2(base)) [plain float; exact for exp2]
+        r      = x - n * log10(base)   [exp2: x - n, exact, renormalized
+                                        with x_lo by a Fast2Sum;
+                                        exp10: Cody-Waite triple for
+                                        log10(2) with a 16-bit head and
+                                        error-free sums, as in exp]
+        base^r via the inlined Taylor kernel for the base
+               (`__internal_fpmp2_exp2_kernel`, a_k = (ln 2)^k / k!, or
+               `__internal_fpmp2_exp10_kernel`, b_k = (ln 10)^k / k!)
+        result = 2^n * base^r          [via split-exponent helper]
+      The integer split happens in *base-2* units, so the 2^n factor
+      drops out exactly and the kernels only see |r| <= 0.5 (exp2) or
+      |r| <= log10(2)/2 (exp10).  The reduced argument must reach the
+      kernels as a normalized pair: their float-only Horner phase reads
+      the high word alone, and an x_lo left in the low word (up to
+      2^-18 at |x| ~ 84) cost exp2 five bits above |x| ~ 32.
+      Accuracy: 46 bits on the working range (both); results below
+      2^-102 (subnormal low limb) are limited by the format itself.
+      Overflow / underflow shortcuts (|x| at the float exponent
+      boundary) avoid the wasted polynomial / scaling work when the
+      result is already a rounded +-inf / 0; both underflow gradually
+      through the two-step scaling.
 
     expm1(x) for fp32mp2:
       Strategy mirrors log1p:
