@@ -59,10 +59,12 @@ The functions perform the following operations in device code:
 
 .. code:: cuda
 
+    #include <cuda/std/limits>
+
     template <class Integer>
-    constexpr unsigned ilog10(Integer n) {
+    __host__ __device__ constexpr unsigned ilog10(Integer n) {
         unsigned result = 0;
-        #pragma unroll cuda::numeric_limits<Integer>::digits10
+        #pragma unroll cuda::std::numeric_limits<Integer>::digits10
         for (; n >= 10u; n /= 10u)
             ++result;
         return result;

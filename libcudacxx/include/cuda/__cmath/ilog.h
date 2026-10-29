@@ -26,7 +26,6 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__iterator/size.h>
 #include <cuda/std/__limits/numeric_limits.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
@@ -183,7 +182,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_cv_integer_v<_Tp>)
   using ::cuda::std::uint32_t;
   using ::cuda::std::uint64_t;
   _CCCL_ASSERT(__t > 0, "cuda::ilog10() argument must be strictly positive");
-  if (::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_CONSTEVAL_DEFAULT
   {
     auto __value = __t;
     int __result = 0;
@@ -194,42 +193,45 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_cv_integer_v<_Tp>)
     }
     return __result;
   }
-  constexpr auto __reciprocal_log2_10 = 0.301029995663f; // 1 / log2(10)
-  const auto __log2                   = ::cuda::ilog2(__t) * __reciprocal_log2_10;
-  auto __log10_approx                 = static_cast<int>(__log2);
-  if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
-  {
-    if constexpr (::cuda::std::is_same_v<_Tp, uint32_t>)
-    {
-      // don't replace +1 with >= because wraparound behavior is needed here
-      __log10_approx += static_cast<uint32_t>(__t) + 1 > ::cuda::__power_of_10_32bit<>(__log10_approx);
-    }
-    else
-    {
-      __log10_approx += static_cast<uint32_t>(__t) >= ::cuda::__power_of_10_32bit<>(__log10_approx);
-    }
-  }
-  else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
-  {
-    // +1 is not needed here
-    __log10_approx += static_cast<uint64_t>(__t) >= ::cuda::__power_of_10_64bit<>(__log10_approx);
-  }
-#if _CCCL_HAS_INT128()
   else
   {
-    if constexpr (::cuda::std::is_same_v<_Tp, __uint128_t>)
+    constexpr auto __reciprocal_log2_10 = 0.301029995663f; // 1 / log2(10)
+    const auto __log2                   = ::cuda::ilog2(__t) * __reciprocal_log2_10;
+    auto __log10_approx                 = static_cast<int>(__log2);
+    if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
     {
-      // don't replace +1 with >= because wraparound behavior is needed here
-      __log10_approx += static_cast<__uint128_t>(__t) + 1 > ::cuda::__power_of_10_128bit<>(__log10_approx);
+      if constexpr (::cuda::std::is_same_v<_Tp, uint32_t>)
+      {
+        // don't replace +1 with >= because wraparound behavior is needed here
+        __log10_approx += static_cast<uint32_t>(__t) + 1 > ::cuda::__power_of_10_32bit<>(__log10_approx);
+      }
+      else
+      {
+        __log10_approx += static_cast<uint32_t>(__t) >= ::cuda::__power_of_10_32bit<>(__log10_approx);
+      }
     }
+    else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
+    {
+      // +1 is not needed here
+      __log10_approx += static_cast<uint64_t>(__t) >= ::cuda::__power_of_10_64bit<>(__log10_approx);
+    }
+#if _CCCL_HAS_INT128()
     else
     {
-      __log10_approx += static_cast<__uint128_t>(__t) >= ::cuda::__power_of_10_128bit<>(__log10_approx);
+      if constexpr (::cuda::std::is_same_v<_Tp, __uint128_t>)
+      {
+        // don't replace +1 with >= because wraparound behavior is needed here
+        __log10_approx += static_cast<__uint128_t>(__t) + 1 > ::cuda::__power_of_10_128bit<>(__log10_approx);
+      }
+      else
+      {
+        __log10_approx += static_cast<__uint128_t>(__t) >= ::cuda::__power_of_10_128bit<>(__log10_approx);
+      }
     }
-  }
 #endif // _CCCL_HAS_INT128()
-  _CCCL_ASSUME(__log10_approx <= ::cuda::std::numeric_limits<_Tp>::digits / 3); // 2^X < 10^(x/3) -> 8^X < 10^x
-  return __log10_approx;
+    _CCCL_ASSUME(__log10_approx <= ::cuda::std::numeric_limits<_Tp>::digits / 3); // 2^X < 10^(x/3) -> 8^X < 10^x
+    return __log10_approx;
+  }
 }
 
 _CCCL_TEMPLATE(typename _Tp)
