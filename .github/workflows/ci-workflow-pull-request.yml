@@ -296,6 +296,8 @@ jobs:
 
   verify-workflow:
     name: Verify and summarize workflow results
+    outputs:
+      pr_comment: ${{ steps.check-workflow.outputs.pr_comment }}
     if: >-
       ${{
         always() &&
@@ -311,7 +313,6 @@ jobs:
     permissions:
       actions: read
       contents: read
-      pull-requests: write # Posts a comment back to the PR.
     runs-on: linux-amd64-cpu4
     steps:
       - name: Checkout repo
@@ -324,7 +325,6 @@ jobs:
         uses: ./.github/actions/workflow-results
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          pr_number: ${{ needs.build-workflow.outputs.pr_number }}
 
   verify-devcontainers:
     name: Verify Dev Containers
@@ -806,7 +806,6 @@ jobs:
     timeout-minutes: 30
     outputs:
       github_comment: ${{ steps.render-github-comment.outputs.content }}
-      pr_number: ${{ steps.pull-request.outputs.pr_number }}
     steps:
       - name: Check out CCCL
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -855,25 +854,35 @@ jobs:
           test -s "${SUMMARY_FILE}"
           cat "${SUMMARY_FILE}" >> "${GITHUB_STEP_SUMMARY}"
 
-  publish-failure-analysis:
-    name: Add failure analysis to CI results
+  publish-ci-results:
+    name: Publish CI results
     if: >-
       ${{
         always() &&
         !cancelled() &&
-        needs.analyze-failures.outputs.github_comment != '' &&
-        needs.analyze-failures.outputs.pr_number != ''
+        github.repository == 'NVIDIA/cccl' &&
+        needs.build-workflow.outputs.pr_number != ''
       }}
-    needs: analyze-failures
+    needs:
+      - build-workflow
+      - verify-workflow
+      - analyze-failures
     permissions:
       pull-requests: write
     runs-on: ubuntu-slim
+    continue-on-error: true # Reporting failures must not fail otherwise successful CI.
     steps:
-      - name: Append to CI Workflow Results
+      # This is the sole owner of the PR comment. Publish even without analysis
+      # so successful partial reruns clear the previous failure report.
+      - name: Update CI Workflow Results
         uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           header: ci-results
-          number: ${{ needs.analyze-failures.outputs.pr_number }}
-          message: ${{ needs.analyze-failures.outputs.github_comment }}
-          append: true
+          number: ${{ needs.build-workflow.outputs.pr_number }}
+          message: |
+            ${{ needs.verify-workflow.outputs.pr_comment || format('## [CI Workflow Results](https://github.com/{0}/actions/runs/{1}/attempts/{2})', github.repository, github.run_id, github.run_attempt) }}
+
+            ${{ needs.analyze-failures.result != 'skipped' && (needs.analyze-failures.outputs.github_comment || '**AI failure analysis unavailable.** See the workflow run for details.') || '' }}
+          hide_and_recreate: true
+          hide_classify: "OUTDATED"
