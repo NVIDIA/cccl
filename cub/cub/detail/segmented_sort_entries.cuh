@@ -76,7 +76,7 @@ struct concatenate_capacities<capacity_list<Left...>, capacity_list<Right...>, R
 {};
 
 // Encode one bin's configuration in a type for compile-time mapping.
-// group_merge_expansion::config_for_bin<Bin> supplies this type to the lookup below.
+// group_merge_expansion::shape_for_bin<Bin> supplies this type to the lookup below.
 template <int Threads, int ItemsPerThread>
 struct bin_shape
 {
@@ -84,7 +84,7 @@ struct bin_shape
   static constexpr int items_per_thread = ItemsPerThread;
 };
 
-// Configuration values returned by config_for_bin to sort_entry_kernel for work packing
+// Configuration values returned by lookup_bin_config to sort_entry_kernel for work packing
 // and passed to the GroupMerge worker. Also used during compile-time capacity expansion.
 struct bin_config
 {
@@ -92,21 +92,21 @@ struct bin_config
   int items_per_thread;
 };
 
-// An expansion enumerates a sorter's bins: capacities and a config_for_bin<Bin> type.
+// An expansion enumerates a sorter's bins: capacities and a shape_for_bin<Bin> type.
 // The runtime local bin selects a leaf whose configuration is known at compile time.
 template <typename Expansion, int Begin = 0, int End = Expansion::capacities::size>
-_CCCL_HOST_DEVICE_API constexpr bin_config config_for_bin(int bin)
+_CCCL_HOST_DEVICE_API constexpr bin_config lookup_bin_config(int bin)
 {
   static_assert(Begin < End);
   if constexpr (End - Begin == 1)
   {
-    using config = typename Expansion::template config_for_bin<Begin>;
-    return {config::threads, config::items_per_thread};
+    using shape = typename Expansion::template shape_for_bin<Begin>;
+    return {shape::threads, shape::items_per_thread};
   }
   else
   {
     constexpr int mid = Begin + (End - Begin) / 2;
-    return bin < mid ? config_for_bin<Expansion, Begin, mid>(bin) : config_for_bin<Expansion, mid, End>(bin);
+    return bin < mid ? lookup_bin_config<Expansion, Begin, mid>(bin) : lookup_bin_config<Expansion, mid, End>(bin);
   }
 }
 
@@ -124,11 +124,6 @@ struct sort_entry
   static_assert(unit_threads > 0 && tuning.block_threads % unit_threads == 0);
   static_assert(tuning.blocks_per_sm > 0 && tuning.min_blocks_per_sm > 0);
   static_assert(capacities::valid());
-  // Let the kernel obtain a local bin's configuration through its entry.
-  _CCCL_HOST_DEVICE_API static constexpr bin_config config(int bin)
-  {
-    return config_for_bin<expansion>(bin);
-  }
 };
 
 // Combine launches into one partition capacity list; each entry owns a consecutive range.

@@ -23,7 +23,7 @@ struct irregular_expansion
 {
   using capacities = capacity::capacity_list<36, 80, 144>;
   template <int Bin>
-  using config_for_bin = cuda::std::tuple_element_t<
+  using shape_for_bin = cuda::std::tuple_element_t<
     Bin,
     cuda::std::tuple<capacity::bin_shape<4, 9>, capacity::bin_shape<8, 10>, capacity::bin_shape<16, 9>>>;
 };
@@ -33,7 +33,7 @@ CUB_TEST("Capacity partition accepts arbitrary bounds without sort tuning", "[se
 {
   for (int bin = 0; bin < 3; ++bin)
   {
-    const auto config = capacity::config_for_bin<irregular_expansion>(bin);
+    const auto config = capacity::lookup_bin_config<irregular_expansion>(bin);
     REQUIRE(config.threads == (4 << bin));
     REQUIRE(config.items_per_thread == (bin == 1 ? 10 : 9));
   }
@@ -89,7 +89,7 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   using capacities     = typename plan::capacities;
   using warp_expansion = typename plan::template entry<0>::expansion;
   const int bin        = warp_expansion::capacities::first_fit(37);
-  const auto config    = capacity::config_for_bin<warp_expansion>(bin);
+  const auto config    = capacity::lookup_bin_config<warp_expansion>(bin);
   REQUIRE(config.threads == 4);
   REQUIRE(config.items_per_thread == 10);
   std::vector<int> lengths{0, 1};
