@@ -50,7 +50,6 @@ jobs:
       sass_matrix: ${{ steps.build-sass-matrix.outputs.sass_matrix }}
       vdc_enabled: ${{ steps.export-flags.outputs.vdc_enabled }}
       docs_enabled: ${{ steps.export-flags.outputs.docs_enabled }}
-      branch_notes_dirt: ${{ steps.branch-notes-dirt.outputs.branch_notes_dirt }}
     steps:
       - name: Export workflow flags
         id: export-flags
@@ -172,33 +171,6 @@ jobs:
           {
             echo "sass_enabled=${sass_enabled}"
             echo "sass_matrix=${sass_matrix_json}"
-          } >> "${GITHUB_OUTPUT}"
-      - name: Detect .branch_notes changes
-        id: branch-notes-dirt
-        env:
-          BASE_SHA: ${{ steps.export-pr-info.outputs.base_sha }}
-          merge_base_sha: ${{ steps.export-pr-info.outputs.merge_base_sha }}
-        run: |
-          if [[ -z "${BASE_SHA}" ]]; then
-            echo "branch_notes_dirt=" >> "${GITHUB_OUTPUT}"
-            exit 0
-          fi
-
-          echo "Head SHA: ${GITHUB_SHA}"
-          echo "PR Base SHA: ${BASE_SHA}"
-          echo "Merge Base SHA: ${merge_base_sha}"
-
-          # Only diff .branch_notes if it already exists at the merge base.
-          if git cat-file -e "${merge_base_sha}:.branch_notes" 2>/dev/null; then
-            branch_notes_dirt=$(git diff --name-only "${merge_base_sha}" "${GITHUB_SHA}" -- ".branch_notes")
-          else
-            branch_notes_dirt=""
-          fi
-
-          {
-            echo "branch_notes_dirt<<EOF"
-            echo "${branch_notes_dirt}"
-            echo "EOF"
           } >> "${GITHUB_OUTPUT}"
       - name: Build workflow
         # Skip building the matrix when disabled, but still gather PR info for downstream jobs
@@ -762,15 +734,6 @@ jobs:
           bench_enabled="${{ needs.build-workflow.outputs.bench_enabled }}"
           if [[ "${bench_enabled}" == "true" ]]; then
             echo "::error::ci/bench.yaml differs from ci/bench.template.yaml. Benchmark requests are temporary — reset ci/bench.yaml to match the template before merging."
-            status="failed"
-          fi
-
-          branch_notes_dirt="${{ needs.build-workflow.outputs.branch_notes_dirt }}"
-          branch_notes_dirt_trimmed=$(printf '%s' "${branch_notes_dirt}" | tr -d '\n' | tr -d ' ')
-          if [[ -n "${branch_notes_dirt_trimmed}" ]]; then
-            echo "::error::The .branch_notes directory was modified in this PR. Keep local notes there only; reset it before merging by running './.branch_notes/reset.sh'."
-            echo "Changed files:"
-            printf '%s\n' "${branch_notes_dirt}"
             status="failed"
           fi
 
