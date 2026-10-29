@@ -225,12 +225,16 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_ldexp2(fp32mp2_low __p, int __n
  * Compute exp(x) for float-float (fp32mp2) precision
  *
  * Algorithm:
- *   1. Argument reduction: x = n*ln(2) + r, where |r| < ln(2)/2
+ *   1. Argument reduction: x = n*ln(2) + r, where |r| < ln(2)/2, with ln(2) as a
+ *      Cody-Waite triple so that the reduction is accurate to ~2^-62 absolute for
+ *      every n (a single float-float ln(2) left an |n| * 2^-48 error that capped the
+ *      result at 41 bits for |x| > 30).
  *   2. Compute exp(r) using 14-term Taylor series with Horner's method
  *   3. Scale result by 2^n using IEEE-754 bit manipulation
  *
  * Range reduction ensures that the Taylor series converges quickly since |r| < ln(2)/2 ~= 0.35.
- * With 14 terms and float-float arithmetic, this achieves approximately 10^-10 to 10^-11 relative accuracy.
+ * With 14 terms and float-float arithmetic this reaches ~1e-14 relative error (46 of 48 bits)
+ * over the whole range where the result's low limb is a normal float, i.e. exp(x) >= 2^-102.
  */
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
@@ -240,7 +244,12 @@ __internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, fl
   // Constants as C99 hex floating-point literals - split via constexpr constructor
   constexpr float __inv_ln2(0x1.715476p+0f); // 1/ln(2)
   constexpr float __shift_bias(12582912.0f + 127.0f * 2.0f); // 127.0f*2.0f is the bias for the exponent
-  constexpr __ffloat __ln2(0x1.62e42fefa39efp-1); // ln(2)
+  // ln(2) as a Cody-Waite triple: the head carries 16 significant bits, so n * ln2_hi is
+  // exact for |n| <= 128 (the whole finite range), and the reduction below is accurate to
+  // about 2^-62 absolute instead of the |n| * 2^-48 a single float-float constant allows.
+  constexpr float __ln2_hi(0x1.62e4000000000p-1f);
+  constexpr float __ln2_mid(0x1.7f7d1c0000000p-20f);
+  constexpr float __ln2_lo(0x1.ef357a0000000p-45f);
 
   /* Taylor series coefficients 1/k! for k = 1..13.
    *
@@ -284,15 +293,16 @@ __internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, fl
     return;
   }
 
-  // Underflow threshold for single precision: ln(FLT_MIN) ~= -87.3365 = -0x1.5d589ep+6
-  if (__x_hi < -0x1.5d589ep+6f)
+  // Below ln(2^-150) ~= -103.97 the result is under half the smallest subnormal and is zero.
+  // Between there and ln(FLT_MIN) ~= -87.34 it underflows gradually through the scaling at the
+  // end, which rounds the high limb onto the subnormal grid in one step while the low limb
+  // vanishes -- the same behaviour as expf and as the fp64mp2 exp.
+  if (__x_hi < -0x1.9fe3680000000p+6f)
   {
     *__res_hi = 0.0f;
     *__res_lo = 0.0f;
     return;
   }
-
-  __ffloat __x(__x_hi, __x_lo);
 
   // Step 1: Argument reduction: x = n*ln(2) + r, where |r| < ln(2)/2
   float __t = __x_hi * __inv_ln2 + __shift_bias;
@@ -310,10 +320,21 @@ __internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, fl
   float __fscale    = ::cuda::std::bit_cast<float>(__scale);
   float __fscale_lo = ::cuda::std::bit_cast<float>(__scale_lo);
 
-  // Compute the reduced argument r = x - n*ln(2)
-  float __tt   = __t - __shift_bias;
-  __ffloat __r = __x - __ln2 * __tt;
-  __r          = renormalize(__r);
+  // Compute the reduced argument r = x - n*ln(2) as a pair: x_hi - n*ln2_hi is exact (the
+  // product is, and Sterbenz covers the difference); n*ln2_mid is split exactly and, like
+  // x_lo, folded in with an error-free sum; the two sum errors and the low product are far
+  // enough below r to be summed in plain float. The pair is not renormalized: its low word
+  // is below half an ulp of the high one except when x lies within ~4e-6 of a multiple of
+  // ln 2, and an overlapping r costs the float-float kernel below nothing.
+  float __tt       = __t - __shift_bias;
+  const float __r1 = ::cuda::__fpmp_fma_rn(-__tt, __ln2_hi, __x_hi);
+  float __pm_lo;
+  const float __pm_hi = ::cuda::__fpmp_two_mult_fma(__tt, __ln2_mid, &__pm_lo);
+  float __e1, __e2;
+  const float __s1   = ::cuda::__fpmp_two_sum(__r1, -__pm_hi, &__e1);
+  const float __s2   = ::cuda::__fpmp_two_sum(__s1, __x_lo, &__e2);
+  const float __tail = (__e1 + __e2) - ::cuda::__fpmp_fma_rn(__tt, __ln2_lo, __pm_lo);
+  __ffloat __r(__s2, __tail);
 
   // Scale the reduced argument by the low part of the scale
   __ffloat __r_scale = __r * __fscale_lo;

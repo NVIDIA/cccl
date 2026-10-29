@@ -167,10 +167,14 @@
     Dedicated Implementation Details:
     -------------------------------------------------------------------------
     exp(x) for fp32mp2:
-      Argument reduction: x = n*ln2 + r, |r| < ln2/2.
+      Argument reduction: x = n*ln2 + r, |r| < ln2/2, with ln2 as a Cody-Waite
+      triple (exact n*ln2_hi, error-free sums for the rest).
       Core: 14-term Taylor series for exp(r) in fp32mp2.
       Reconstruction: result * 2^n via IEEE-754 exponent manipulation.
-      Accuracy: ~10^-10 - 10^-11 relative error.
+      Accuracy: ~1e-14 relative error (46 of 48 bits) wherever the result's
+      low limb is a normal float (exp(x) >= 2^-102, x >= -70.7); below that
+      the pair holds e + 150 bits for a result near 2^e. Underflows gradually
+      like expf: subnormal high limb down to ln(2^-150) ~= -103.97, zero below.
 
     log(x) for fp32mp2:
       Range reduction: x = m*2^e, m  in  [1, sqrt2).
