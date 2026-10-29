@@ -11,4 +11,5 @@
 add_subdirectory(fixed_capacity_map)
 add_subdirectory(fixed_capacity_set)
 add_subdirectory(hyperloglog)
+add_subdirectory(bloom_filter)
 add_subdirectory(utility)
