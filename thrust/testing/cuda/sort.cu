@@ -8,6 +8,7 @@
 
 #include <cuda/std/iterator>
 #include <cuda/std/limits>
+#include <cuda/std/type_traits>
 
 #include <algorithm>
 #include <cstdint>

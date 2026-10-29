@@ -28,13 +28,15 @@
 #include <cub/detail/uninitialized.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/thread/thread_load.cuh>
+#include <cub/thread/thread_operators.cuh>
 #include <cub/thread/thread_store.cuh>
 #include <cub/util_arch.cuh>
-#include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 

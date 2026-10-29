@@ -18,11 +18,12 @@
 #include <cub/detail/non_void_value.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__utility/forward.h>
-#include <cuda/std/cstddef>
 
 CUB_NAMESPACE_BEGIN
 

@@ -319,6 +319,7 @@ ignore_regexes:
   - '\.github/workflows/triage_rotation\.yml'
   - '^\.github/workflows/update-branch-version\.yml$'
   - '\.github/workflows/verify-devcontainers\.yml'
+  - '\.github/workflows/sass-diff-approve\.yml'
   - '\.gitignore'
   - '^\.lldbinit$'
   - '^\.pre-commit-config\.yaml$'

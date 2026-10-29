@@ -1018,7 +1018,7 @@ public:
   // first failure on, so the policy is to report it and end the program.
   ~graph_scope_guard()
   {
-    ctx_.pop(eh::abort);
+    ctx_.pop(sump::abort);
   }
 
   graph_scope_guard(const graph_scope_guard&)            = delete;
@@ -1130,7 +1130,7 @@ public:
     {
       ensure_prepared_();
     };
-    ctx_.pop_epilogue(eh::abort);
+    ctx_.pop_epilogue(sump::abort);
     released_ = true;
   }
 
@@ -1342,7 +1342,7 @@ public:
   // As with graph_scope_guard: a destructor can only report the first failure and end the program.
   ~while_graph_scope_guard()
   {
-    ctx_.pop(eh::abort);
+    ctx_.pop(sump::abort);
   }
 
   cudaGraphConditionalHandle cond_handle() const

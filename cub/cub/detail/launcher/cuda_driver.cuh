@@ -13,9 +13,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_device.cuh>
-
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__cstddef/types.h>
 
 #include <cuda.h>
 

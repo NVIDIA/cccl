@@ -13,7 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/conditional.h>
 
 CUB_NAMESPACE_BEGIN
 

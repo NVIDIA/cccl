@@ -54,7 +54,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail::histogram
 {
 // Maximum number of bins per channel for which we will use a privatized smem strategy
-static constexpr int max_privatized_smem_bins = 256;
+inline constexpr int max_privatized_smem_bins = 256;
 
 template <int NumChannels,
           int NumActiveChannels,
