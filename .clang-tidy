@@ -94,7 +94,6 @@ Checks:
   - '-readability-redundant-string-init'
   - '-readability-delete-null-pointer'
   - '-readability-container-data-pointer'
-  - '-readability-use-std-min-max'
   - '-readability-magic-numbers'
   - '-readability-use-concise-preprocessor-directives'
   - '-readability-uppercase-literal-suffix'
