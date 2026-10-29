@@ -60,20 +60,24 @@ namespace detail
 /**
  * \brief Empty kernel for querying PTX manifest metadata (e.g., version) for the current device
  */
-// Encode __CUDA_ARCH__ / 10 as the maximum block size, so PtxVersionUncached() can read it back via
-// cudaFuncAttributes::maxThreadsPerBlock. Unlike reading cudaFuncAttributes::ptxVersion, this is not clamped by nvlink
-// with -rdc=true. See also https://github.com/NVIDIA/cccl/issues/11403 and NVBug 6795210.
-//
-// Unlike sharedSizeBytes, constSizeBytes, and localSizeBytes, it is a single integer that is neither padded nor
-// influenced by other kernels or global (__constant__ or alignas() extern __shared__) variables in the same translation
-// unit.
+// Encode the architecture the device code is compiled for (_CCCL_PTX_ARCH()) in the size of the kernel's stack frame,
+// so PtxVersionUncached() can read it back via cudaFuncAttributes::localSizeBytes. Unlike
+// cudaFuncAttributes::ptxVersion, which is a property of the module and clamped by nvlink with -rdc=true, the stack
+// frame size is a property of the kernel, and not influenced by other kernels or global variables. Stack frames are
+// padded to multiples of 8 bytes, so we encode 8 bytes per unit of compute capability. Frames up to 1024 bytes are
+// covered by the default stack size limit, so launching this kernel does not grow the local memory reservation. See
+// also https://github.com/NVIDIA/cccl/issues/11403 and NVBug 6795210.
+inline constexpr int empty_kernel_frame_bytes_per_cc = 8;
+
 template <typename T>
-_CCCL_KERNEL_ATTRIBUTES
-#  if _CCCL_PTX_ARCH() != 0
-__launch_bounds__(_CCCL_PTX_ARCH() / 10) // must not use _CCCL_LAUNCH_BOUNDS, which is disabled with RDC
-#  endif // _CCCL_PTX_ARCH() != 0
-  void EmptyKernel()
-{}
+_CCCL_KERNEL_ATTRIBUTES void EmptyKernel()
+{
+  NV_IF_TARGET(NV_IS_DEVICE, ({
+                 char frame[_CCCL_PTX_ARCH() / 10 * empty_kernel_frame_bytes_per_cc];
+                 // let the address escape, so the array is materialized in local memory
+                 asm volatile("" ::"l"(frame) : "memory");
+               }));
+}
 } // namespace detail
 
 #endif // _CCCL_DOXYGEN_INVOKED
@@ -329,13 +333,14 @@ CUB_RUNTIME_FUNCTION cudaError_t PtxVersionUncached(int& ptx_version)
   [[maybe_unused]] const auto empty_kernel = detail::EmptyKernel<T>;
 
   cudaError_t result = cudaSuccess; // NOLINT(misc-const-correctness)
-  NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    ({
-                      cudaFuncAttributes empty_kernel_attrs{};
-                      result      = CubDebug(cudaFuncGetAttributes(&empty_kernel_attrs, (const void*) empty_kernel));
-                      ptx_version = empty_kernel_attrs.maxThreadsPerBlock * 10; // == encoded _CCCL_PTX_ARCH()
-                    }),
-                    ({ ptx_version = ::cuda::device::current_compute_capability().get() * 10; }));
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST,
+    ({
+      cudaFuncAttributes empty_kernel_attrs{};
+      result      = CubDebug(cudaFuncGetAttributes(&empty_kernel_attrs, (const void*) empty_kernel));
+      ptx_version = static_cast<int>(empty_kernel_attrs.localSizeBytes) / detail::empty_kernel_frame_bytes_per_cc * 10;
+    }),
+    ({ ptx_version = ::cuda::device::current_compute_capability().get() * 10; }));
   return result;
 }
 
