@@ -54,7 +54,10 @@ Checks:
   - '-modernize-type-traits'
 
   - 'readability-*'
-  - '-readability-function-cognitive-complexity'
+  # ============================================================================
+  # This exclusion is temporary. Address the outstanding complexity diagnostics,
+  # then remove this exclusion to restore the check.
+  # ============================================================================
   - '-readability-implicit-bool-conversion'
   - '-readability-braces-around-statements'
   - '-readability-qualified-auto'
