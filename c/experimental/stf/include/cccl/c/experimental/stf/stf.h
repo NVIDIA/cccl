@@ -214,7 +214,7 @@ stf_exec_place_handle stf_exec_place_current_device(void);
 //! green contexts converted with cuCtxFromGreenCtx (such as the ones produced by
 //! cuda.core in Python). \p dev_id is the device ordinal of the context, or -1 to
 //! derive it from the context. \p ctx must not be NULL. Returns NULL on failure
-//! (invalid device, allocation failure); see stf_get_last_error_message().
+//! (invalid context or device, allocation failure); see stf_get_last_error_message().
 stf_exec_place_handle stf_exec_place_cuda_context(CUcontext ctx, int dev_id);
 
 //! \brief Create a green-context helper for \p dev_id with \p sm_count SMs per green context.
