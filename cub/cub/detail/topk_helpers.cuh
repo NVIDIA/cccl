@@ -24,6 +24,7 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/climits>
 
 CUB_NAMESPACE_BEGIN

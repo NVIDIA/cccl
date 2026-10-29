@@ -22,6 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__fwd/new.h>
 #include <cuda/std/__new/allocate.h>
 #include <cuda/std/__utility/pair.h>
@@ -37,7 +38,7 @@ template <class _Tp>
 get_temporary_buffer(ptrdiff_t __n) noexcept
 {
   pair<_Tp*, ptrdiff_t> __r(0, 0);
-  const ptrdiff_t __m = (~ptrdiff_t(0) ^ ptrdiff_t(ptrdiff_t(1) << ((sizeof(ptrdiff_t) * CHAR_BIT) - 1))) / sizeof(_Tp);
+  const ptrdiff_t __m = (~ptrdiff_t(0) ^ ptrdiff_t(ptrdiff_t(1) << (sizeof(ptrdiff_t) * CHAR_BIT - 1))) / sizeof(_Tp);
   __n                 = ::cuda::std::min(__n, __m);
   while (__n > 0)
   {
