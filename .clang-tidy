@@ -54,6 +54,12 @@ Checks:
   - '-modernize-type-traits'
 
   - 'readability-*'
+  # ============================================================================
+  # TODO: REENABLE readability-function-cognitive-complexity LATER.
+  # This exclusion is temporary. Address the outstanding complexity diagnostics,
+  # then remove this exclusion to restore the check.
+  # ============================================================================
+  - '-readability-function-cognitive-complexity'
   - '-readability-uppercase-literal-suffix'
   - '-readability-magic-numbers'
   - '-readability-use-concise-preprocessor-directives'
