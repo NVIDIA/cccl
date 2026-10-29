@@ -26,8 +26,6 @@ find_package(Clang REQUIRED CONFIG HINTS "${LLVM_CMAKE_DIR}/..")
 separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
 llvm_map_components_to_libnames(CCCL_LLVM_LIBS core)
 
-define_property(GLOBAL PROPERTY CCCL_TIDY_PLUGINS)
-
 # This is because the clang-tidy job in CI is usually run when CCCL itself is in a debug
 # build (since this allows clang-tidy to see asserts in the code). But we want to build
 # the actual plugins in release mode so they aren't slow.
@@ -37,68 +35,6 @@ option(
   OFF
 )
 mark_as_advanced(CCCL_CLANG_TIDY_PLUGIN_RESPECT_CMAKE_BUILD_TYPE)
-
-#[=======================================================================[.rst:
-cccl_create_clang_tidy_plugin
------------------------------
-
-Define a plugin that extends ``clang-tidy`` with CCCL checks.
-
-Use this function to make custom checks available to the CCCL ``clang-tidy`` targets.
-
-Arguments
-^^^^^^^^^
-
-``TARGET``
-  The name of the plugin target to create.
-
-``SOURCES``
-  List of source files for the plugin.
-
-#]=======================================================================]
-function(cccl_create_clang_tidy_plugin TARGET)
-  list(APPEND CMAKE_MESSAGE_CONTEXT "create_clang_tidy_plugin")
-
-  set(options)
-  set(one_value_args)
-  set(multi_value_keywords SOURCES)
-  cmake_parse_arguments(
-    _CCCL
-    "${options}"
-    "${one_value_args}"
-    "${multi_value_keywords}"
-    ${ARGN}
-  )
-
-  add_library("${TARGET}" MODULE "${_CCCL_SOURCES}")
-
-  target_include_directories(
-    "${TARGET}"
-    PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}
-      ${CMAKE_CURRENT_FUNCTION_LIST_DIR}
-      ${CLANG_INCLUDE_DIRS}
-      ${LLVM_INCLUDE_DIRS}
-  )
-  target_compile_definitions("${TARGET}" PRIVATE ${LLVM_DEFINITIONS_LIST})
-  target_link_libraries(
-    "${TARGET}"
-    PRIVATE cccl::clang-tidy ${CCCL_LLVM_LIBS} clangToolingRefactoring
-  )
-
-  if (NOT CCCL_CLANG_TIDY_PLUGIN_RESPECT_CMAKE_BUILD_TYPE)
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-      message(
-        STATUS
-        "Building clang-tidy plugin with release flags, even for debug builds"
-      )
-    endif()
-    target_compile_options("${TARGET}" PRIVATE -O3 -g)
-  endif()
-  cccl_ensure_metatargets("${TARGET}")
-
-  set_property(GLOBAL APPEND PROPERTY CCCL_TIDY_PLUGINS "${TARGET}")
-endfunction()
 
 find_program(
   CCCL_FILECHECK
@@ -116,6 +52,26 @@ execute_process(
 )
 
 message(STATUS "Found FileCheck: ${CCCL_FILECHECK} (${version})")
+
+#[=======================================================================[.rst:
+cccl_create_clang_tidy_plugin
+-----------------------------
+
+Add a check source to the existing ``cccl.tidy.plugins`` module.
+
+Arguments
+^^^^^^^^^
+
+``SOURCE``
+  One source file, with an absolute path or a path relative to
+  ``CMAKE_CURRENT_SOURCE_DIR``.
+
+#]=======================================================================]
+function(cccl_create_clang_tidy_plugin SOURCE)
+  list(APPEND CMAKE_MESSAGE_CONTEXT "create_clang_tidy_plugin")
+
+  target_sources(cccl.tidy.plugins PRIVATE "${SOURCE}")
+endfunction()
 
 function(_cccl_parse_clang_tidy_config source_file out_var)
   # Since the clang-tidy config is parsed at configure-time we need to rerun cmake if the
@@ -199,25 +155,24 @@ endfunction()
 # specify target dependencies between tests, because tests are not actual real cmake
 # targets. So you need to create a separate "test" which actually builds the thing you
 # want and set that as the required fixture for your other tests.
-function(_cccl_ensure_plugin_is_built_for_test test_target plugin)
-  set(plugin_build_target "${plugin}.build")
-  set(fixture "${plugin}.build_fixture")
-
-  if (NOT TEST ${plugin_build_target})
-    add_test(
-      NAME "${plugin_build_target}"
-      COMMAND
-        "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --config "$<CONFIG>"
-        --target "${plugin}"
-    )
-    set_tests_properties(
-      "${plugin_build_target}"
-      PROPERTIES FIXTURES_SETUP "${fixture}" RESOURCE_LOCK cccl_build
-    )
-  endif()
+function(_cccl_add_build_fixture target)
+  add_test(
+    NAME "${target}.build"
+    COMMAND
+      "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --config "$<CONFIG>"
+      --target "${target}"
+  )
   set_tests_properties(
-    "${test_target}"
-    PROPERTIES FIXTURES_REQUIRED "${fixture}"
+    "${target}.build"
+    PROPERTIES FIXTURES_SETUP "${target}.built" RESOURCE_LOCK cccl_build
+  )
+endfunction()
+
+function(_cccl_test_requires_target test_name target)
+  set_property(
+    TEST "${test_name}"
+    APPEND
+    PROPERTY FIXTURES_REQUIRED "${target}.built"
   )
 endfunction()
 
@@ -225,13 +180,13 @@ endfunction()
 cccl_create_clang_tidy_test
 --------------------------
 
-Register a test for a clang-tidy plugin's diagnostics and suggested fixes.
+Create a test for the particular clang-tidy plugin.
 
 Arguments
 ^^^^^^^^^
 
 ``plugin``
-  The existing plugin target that provides the checks under test.
+  The check group used in the test name, such as ``modernize_type_traits``.
 
 ``source``
   The test source file, with an absolute path or a path relative to the current
@@ -275,13 +230,43 @@ function(cccl_create_clang_tidy_test plugin source)
     COMMAND
       "${CMAKE_COMMAND}" "-DSOURCE=${source}"
       "-DOUTPUT=${CMAKE_CURRENT_BINARY_DIR}/${test_name}.out"
-      "-DPLUGIN=$<TARGET_FILE:${plugin}>" "-DCONFIG=${config}"
+      "-DPLUGIN=$<TARGET_FILE:cccl.tidy.plugins>" "-DCONFIG=${config}"
       "-DBUILD_DIR=${CMAKE_BINARY_DIR}" "-DCLANG_TIDY=${CCCL_CLANG_TIDY}"
       "-DFILECHECK=${CCCL_FILECHECK}" -P
       "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/run_filecheck.cmake"
   )
-  _cccl_ensure_plugin_is_built_for_test("${target}" "${plugin}")
+  _cccl_test_requires_target("${target}" cccl.tidy.plugins)
 endfunction()
+
+block()
+  add_library(cccl.tidy.plugins MODULE)
+
+  target_include_directories(
+    cccl.tidy.plugins
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}
+      ${CLANG_INCLUDE_DIRS}
+      ${LLVM_INCLUDE_DIRS}
+  )
+  target_compile_definitions(cccl.tidy.plugins PRIVATE ${LLVM_DEFINITIONS_LIST})
+  target_link_libraries(
+    cccl.tidy.plugins
+    PRIVATE cccl::clang-tidy ${CCCL_LLVM_LIBS} clangToolingRefactoring
+  )
+
+  if (NOT CCCL_CLANG_TIDY_PLUGIN_RESPECT_CMAKE_BUILD_TYPE)
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+      message(
+        STATUS
+        "Building clang-tidy plugin with release flags, even for debug builds"
+      )
+    endif()
+    target_compile_options(cccl.tidy.plugins PRIVATE -O3 -g)
+  endif()
+  cccl_ensure_metatargets(cccl.tidy.plugins)
+
+  _cccl_add_build_fixture(cccl.tidy.plugins)
+endblock()
 
 add_subdirectory(avoid_internal_linkage_in_headers)
 add_subdirectory(modernize_type_traits)
