@@ -24,6 +24,7 @@
 #include <cub/util_namespace.cuh>
 
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::merge_sort

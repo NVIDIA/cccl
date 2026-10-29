@@ -16,6 +16,7 @@
 #include <cub/detail/warpspeed/squad/squad_desc.cuh>
 
 #include <cuda/__ptx/instructions/elect_sync.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/array>
 
 CUB_NAMESPACE_BEGIN

@@ -66,9 +66,11 @@ TEST_HOST_DEVICE_FUNC constexpr void test_type()
 
     assert(simd::reduce_min(positive_selected, singleton) == infinity);
     assert(simd::reduce_max(negative_selected, singleton) == -infinity);
+#if _CCCL_HAS_CONSTEXPR_BIT_CAST()
     assert(cuda::std::bit_cast<Bits>(simd::reduce(zero_selected, singleton)) == cuda::std::bit_cast<Bits>(T(-0.0)));
     assert(cuda::std::bit_cast<Bits>(simd::reduce_min(zero_selected, singleton)) == cuda::std::bit_cast<Bits>(T(-0.0)));
     assert(cuda::std::bit_cast<Bits>(simd::reduce_max(zero_selected, singleton)) == cuda::std::bit_cast<Bits>(T(-0.0)));
+#endif // _CCCL_HAS_CONSTEXPR_BIT_CAST()
   }
   assert(simd::reduce_min(positive, Mask{true}) == infinity);
   assert(simd::reduce_max(negative, Mask{true}) == -infinity);
@@ -109,11 +111,8 @@ TEST_HOST_DEVICE_FUNC bool test_runtime()
 
 int main(int, char**)
 {
-#if !TEST_COMPILER(GCC, ==, 7)
-  // GCC 7 does not support constexpr bit_cast for the signed-zero checks.
   static_assert(test());
-#endif // !TEST_COMPILER(GCC, ==, 7)
-  assert(test());
+  assert(test()); // NOLINT(misc-static-assert)
   assert(test_runtime());
   return 0;
 }

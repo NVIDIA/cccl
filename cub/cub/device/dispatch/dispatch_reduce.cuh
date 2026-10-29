@@ -21,8 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/block/block_reduce.cuh>
 #include <cub/detail/cc_dispatch.cuh>
-#include <cub/detail/choose_offset.cuh>
 #include <cub/detail/deferred_parameter.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
@@ -36,18 +36,22 @@
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
 
-#include <cuda/argument>
+#include <cuda/__argument/argument.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_integer.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
 // TODO(bgruber): included to not break users when moving DeviceSegmentedReduce to its own file. Remove in CCCL 4.0.
-#include <cub/device/dispatch/dispatch_segmented_reduce.cuh>
+#include <cub/device/dispatch/dispatch_segmented_reduce.cuh> // IWYU pragma: export
 
 CUB_NAMESPACE_BEGIN
 
@@ -309,8 +313,12 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") DispatchRe
       "DeviceReduceSingleTileKernel", 1, 1, 1, policy.SingleTile().ThreadsPerBlock(), 0, stream, "");
 
     // Invoke single_reduce_sweep_kernel
-    launcher_factory(1, policy.SingleTile().ThreadsPerBlock(), 0, stream)
-      .doit(single_tile_kernel, d_in, d_out, num_items, reduction_op, init, transform_op);
+    if (const auto error = CubDebug(
+          launcher_factory(1, policy.SingleTile().ThreadsPerBlock(), 0, stream)
+            .doit(single_tile_kernel, d_in, d_out, num_items, reduction_op, init, transform_op)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -410,8 +418,12 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") DispatchRe
       reduce_config.sm_occupancy);
 
     // Invoke DeviceReduceKernel
-    launcher_factory(reduce_grid_size, active_policy.Reduce().ThreadsPerBlock(), 0, stream)
-      .doit(reduce_kernel, d_in, d_block_reductions, num_items, even_share, reduction_op, init, transform_op);
+    if (const auto error = CubDebug(
+          launcher_factory(reduce_grid_size, active_policy.Reduce().ThreadsPerBlock(), 0, stream)
+            .doit(reduce_kernel, d_in, d_block_reductions, num_items, even_share, reduction_op, init, transform_op)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -430,9 +442,18 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") DispatchRe
       "DeviceReduceSingleTileKernel", 1, 1, 1, active_policy.SingleTile().ThreadsPerBlock(), 0, stream, "");
 
     // Invoke DeviceReduceSingleTileKernel
-    launcher_factory(1, active_policy.SingleTile().ThreadsPerBlock(), 0, stream)
-      .doit(
-        single_tile_kernel, d_block_reductions, d_out, reduce_grid_size, reduction_op, init, ::cuda::std::identity{});
+    if (const auto error = CubDebug(
+          launcher_factory(1, active_policy.SingleTile().ThreadsPerBlock(), 0, stream)
+            .doit(single_tile_kernel,
+                  d_block_reductions,
+                  d_out,
+                  reduce_grid_size,
+                  reduction_op,
+                  init,
+                  ::cuda::std::identity{})))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))

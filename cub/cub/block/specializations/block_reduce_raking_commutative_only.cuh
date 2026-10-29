@@ -20,12 +20,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/block/block_raking_layout.cuh>
 #include <cub/block/specializations/block_reduce_raking.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/span>
 
 CUB_NAMESPACE_BEGIN

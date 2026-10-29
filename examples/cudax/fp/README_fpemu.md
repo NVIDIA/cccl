@@ -16,47 +16,45 @@ For the example set, see the [examples README](README.md).
 Where this pays off
 -------------------
 
-Measured on a midpoint-rule π integration — 2^26 terms, five arithmetic operations per term, no
-memory traffic worth speaking of — on L40S (Ada), RTX PRO 6000 Blackwell and B300, where native
-FP64 runs at roughly 1/35 of FP32. "Correct digits" means correct decimal digits of the computed
-integral, end to end: the partial sums are reduced in the type under test, so each row carries its
-own summation error as well as the error of the loop. That is the honest number for a computation
-written entirely in one type, and it is the reason the unpacked form gains accuracy below — the
-error it absorbs is largely that reduction. Measured the other way, with a reduction more accurate
-than every type being compared, the high-accuracy forms and `double` come out level.
+The figures below come from a midpoint-rule π integration — 2^26 terms, five arithmetic
+operations per term, no memory traffic worth speaking of — on three parts where native FP64
+runs at 1/64 of FP32, so they price arithmetic pipelines rather than bandwidth, and every type
+runs identical code. "Correct digits" means correct decimal digits of the computed integral,
+with every step carried out in the type being measured, the sequential reduction of the 131072
+per-thread partials included: what is reported is therefore what a program written in that
+type costs end to end, not the loop in isolation. Native `double` is measured in the same run,
+as the baseline each row is reported against, and accuracy is a property of the arithmetic
+rather than of the GPU, so it is one column for all three parts:
 
-| Type | Correct digits | Speed vs native `double` |
-|---|---|---|
-| `double`, in hardware | 14.8 | 1.0× |
-| `fp64emu_high` | 14.8, bit-identical | 1.01–1.18× |
-| `fp64emu_unpacked_high` | 16.3 | **1.53–1.77×** |
-| `fp64emu_unpacked_mid` | 16.4 | **1.88–2.13×** |
+| Type | Correct digits | RTX 6000 Ada | RTX PRO 6000 Blackwell | B300 |
+|---|---|---|---|---|
+| `double` | 14.8 | 1.00× | 1.00× | 1.00× |
+| `fp64emu` | 14.8 | 1.02× | 1.12× | 0.98× |
+| `fp64emu_unpacked` | 16.1 | **1.47×** | **1.65×** | **1.46×** |
+| `fp64emu_mid` | 11.3 | 1.43× | 1.61× | 1.46× |
+| `fp64emu_unpacked_mid` | 14.0 | **1.78×** | **1.96×** | **1.81×** |
+| `fp64emu_low` | 3.1 | 1.72× | 1.95× | 1.76× |
+| `fp64emu_unpacked_low` | 3.1 | 2.12× | 2.30× | 2.05× |
 
-Two results to read off it. The packed form at `high` reproduces `double` bit for bit while
-running at parity with it, so exact FP64 semantics are available without using the FP64 pipe at
-all. Parity is the claim to carry away rather than the 1.01× lower bound measured here: the same
-comparison run against a more accurate reduction puts B300 just under, at 0.98×.
-And the unpacked form beats hardware `double` on *both* axes — about 1.5 digits more accuracy at
-roughly twice the throughput — which is the reserve bits and the deferred rounding described
-below. The speed is the part to count on; the accuracy is a genuine gain wherever per-operation
-rounding accumulates, as it does in this reduction, and shrinks to nothing where something else
-dominates the error budget. Cost relative to FP32 varies more across architectures than pair arithmetic does, 15–24%
-against a few percent, because the emulation also does bit manipulation whose relative
-throughput differs per part; sm_120 is the best host of the three for bit-exact software FP64.
+Two results to read off it. The packed form at the default accuracy reproduces `double` bit
+for bit — the two rows are not merely equal to the digit shown, they return the same value —
+while running at parity with it, 0.98× to 1.12× across the three, so exact FP64 semantics are
+available without using the FP64 pipe at all. And the unpacked form runs about 1.5× hardware
+`double` and comes out 1.3 digits *ahead* of it, which is the deferred rounding described below
+showing up twice over: the pack/unpack tax is paid once at the boundary rather than once per
+operation, and the guard bits that survive between operations absorb error that `double` has
+to round away — including the error of the long final summation, which is where most of it is.
 
 **The emulation executes on the integer and FP32 pipes and never touches an FP64 unit**, which
-has an interesting consequence on these devices: the FP64 hardware sits completely idle while
-the emulation runs, and it would still deliver its own `double` rate if asked. Splitting a
-reduction across both — part of the range on native `double` through the FP64 pipe, the rest on
-`fp64emu_unpacked` through the FP32 and integer pipes — sums to **2.9–3.1× `double`** at
-double-precision quality, against 1.9× for the emulation alone. Treat that as an upper bound
-rather than a result: it is the arithmetic sum of the two measured halves, which in reality
-share issue bandwidth, the register file and the scheduler, and no such split kernel has been
-built yet. It is why the unpacked form is the natural one for a partition of this kind, its
-pack/unpack boundary being exactly where the handover belongs anyway.
+has an interesting consequence on parts like these: the FP64 hardware sits idle while the
+emulation runs, and would still deliver its own rate if asked. Splitting a reduction across
+both — part of the range on native `double`, the rest on `fp64emu_unpacked` — is therefore
+possible in principle, and the unpacked form is the natural one for it, its pack boundary being
+where the handover belongs. No such kernel has been built and measured here, so treat that as a
+direction rather than as a result.
 
-None of this applies where FP64 already runs at full rate: on B200 the FP64 pipe is the fast
-path, and emulation only slows the mix down.
+None of this applies where FP64 already runs at full rate: on a part whose FP64 pipe is half of
+FP32, hardware `double` is the fast path and emulating it only slows the mix down.
 
 The two representations
 ----------------------
@@ -232,3 +230,14 @@ the levels for these operands.
 
 Each operation prints its inputs and its result. Nothing is checked against a reference: the
 point is to show what the interface looks like in use.
+
+Optimization guide
+------------------
+
+`fpemu` pays for `double`'s semantics in integer and FP32 instructions, so it wins only where
+FP64 is rationed, and how much it wins depends on keeping the pack and unpack out of the loop
+and on matching the accuracy level to the computation. The [FP optimization
+guide](README_fp_optimization_guide.md#using-fpemu-efficiently) collects that advice, and its
+[Choosing the type](README_fp_optimization_guide.md#choosing-the-type) section places `fpemu`
+against `fpmp` and native `double` — including the three-way choice around `double` on a
+rationed part, where the two representations and `fp32mp2` compete.

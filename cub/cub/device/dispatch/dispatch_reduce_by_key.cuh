@@ -21,22 +21,29 @@
 #endif // no system header
 
 #include <cub/agent/agent_reduce_by_key.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/delay_constructor.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/non_void_value.cuh>
 #include <cub/detail/null_type.cuh>
-#include <cub/device/dispatch/dispatch_common.cuh>
-#include <cub/device/dispatch/dispatch_scan.cuh>
+#include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
-#include <cub/thread/thread_operators.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
+#include <cub/util_temporary_storage.cuh>
 #include <cub/util_vsmem.cuh>
 
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__tuple_dir/tuple.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -113,6 +120,22 @@ struct streaming_context
 
     return total_uniques;
   }
+};
+
+template <typename PolicyGetter, typename... AgentArgs>
+struct make_vsmem_helper
+{
+  static constexpr ReduceByKeyPolicy policy = PolicyGetter{}();
+  using agent_policy_t                      = agent_reduce_by_key_policy<
+    policy.lookback.threads_per_block,
+    policy.lookback.items_per_thread,
+    policy.lookback.load_algorithm,
+    policy.lookback.load_modifier,
+    policy.lookback.scan_algorithm,
+    delay_constructor_t<policy.lookback.lookback_delay.kind,
+                        policy.lookback.lookback_delay.delay,
+                        policy.lookback.lookback_delay.l2_write_latency>>;
+  using type = vsmem_helper_default_fallback_policy_t<agent_policy_t, AgentReduceByKey, AgentArgs...>;
 };
 
 /**
@@ -194,7 +217,18 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_by_key_policy_selector<PolicySelector>
 #endif
-__launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_block))
+__launch_bounds__(int(
+  make_vsmem_helper<device_policy_getter<PolicySelector, current_tuning_cc().get()>,
+                    KeysInputIteratorT,
+                    UniqueOutputIteratorT,
+                    ValuesInputIteratorT,
+                    AggregatesOutputIteratorT,
+                    NumRunsOutputIteratorT,
+                    EqualityOpT,
+                    ReductionOpT,
+                    OffsetT,
+                    AccumT,
+                    StreamingContextT>::type::agent_policy_t::BLOCK_THREADS))
   _CCCL_KERNEL_ATTRIBUTES void DeviceReduceByKeyKernel(
     const KeysInputIteratorT d_keys_in,
     const UniqueOutputIteratorT d_unique_out,
@@ -209,20 +243,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
     const StreamingContextT streaming_context,
     vsmem_t vsmem)
 {
-  static constexpr ReduceByKeyPolicy policy = current_policy<PolicySelector>();
-  using AgentReduceByKeyPolicyT             = agent_reduce_by_key_policy<
-    policy.lookback.threads_per_block,
-    policy.lookback.items_per_thread,
-    policy.lookback.load_algorithm,
-    policy.lookback.load_modifier,
-    policy.lookback.scan_algorithm,
-    delay_constructor_t<policy.lookback.lookback_delay.kind,
-                        policy.lookback.lookback_delay.delay,
-                        policy.lookback.lookback_delay.l2_write_latency>>;
-
-  using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<
-    AgentReduceByKeyPolicyT,
-    AgentReduceByKey,
+  using vsmem_helper_t = typename make_vsmem_helper<
+    device_policy_getter<PolicySelector, current_tuning_cc().get()>,
     KeysInputIteratorT,
     UniqueOutputIteratorT,
     ValuesInputIteratorT,
@@ -232,7 +254,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
     ReductionOpT,
     OffsetT,
     AccumT,
-    StreamingContextT>;
+    StreamingContextT>::type;
 
   // Thread block type for reducing tiles of value segments
   using agent_reduce_by_key_t = typename vsmem_helper_t::agent_t;
@@ -657,20 +679,9 @@ namespace detail::reduce_by_key
 {
 // we move the conversion of the policy to the agent policy and its use out of the lambda below, so MSVC does not ICE
 template <typename PolicyGetter, typename... Args>
-_CCCL_HOST_DEVICE_API auto determine_threads_items_vsmem(PolicyGetter policy_getter)
+_CCCL_HOST_DEVICE_API auto determine_threads_items_vsmem(PolicyGetter)
 {
-  // TODO(bgruber): refactor this in the future
-  constexpr ReduceByKeyPolicy policy = policy_getter();
-  using Policy                       = agent_reduce_by_key_policy<
-    policy.lookback.threads_per_block,
-    policy.lookback.items_per_thread,
-    policy.lookback.load_algorithm,
-    policy.lookback.load_modifier,
-    policy.lookback.scan_algorithm,
-    delay_constructor_t<policy.lookback.lookback_delay.kind,
-                        policy.lookback.lookback_delay.delay,
-                        policy.lookback.lookback_delay.l2_write_latency>>;
-  using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<Policy, AgentReduceByKey, Args...>;
+  using vsmem_helper_t = typename make_vsmem_helper<PolicyGetter, Args...>::type;
   return ::cuda::std::tuple{vsmem_helper_t::agent_policy_t::BLOCK_THREADS,
                             vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD,
                             vsmem_helper_t::vsmem_per_block};
