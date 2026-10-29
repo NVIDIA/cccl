@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
-// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 /******************************************************************************
@@ -689,6 +689,22 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
       device = entrypoint_device;
     }
 
+    // Set the device before recording the ready event or changing allocator state.
+    if (device != entrypoint_device)
+    {
+      error = CubDebug(cudaGetDevice(&entrypoint_device));
+      if (cudaSuccess != error)
+      {
+        return error;
+      }
+
+      error = CubDebug(cudaSetDevice(device));
+      if (cudaSuccess != error)
+      {
+        return error;
+      }
+    }
+
     // Lock
     mutex.lock();
 
@@ -698,16 +714,34 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
     const BusyBlocks::iterator block_itr = live_blocks.find(search_key);
     if (block_itr != live_blocks.end())
     {
-      // Remove from live blocks
       search_key = *block_itr;
+
+      // Record before publishing the block: another thread may query or destroy its event
+      // as soon as the allocator mutex is released.
+      if ((search_key.bin != INVALID_BIN) && (cached_bytes[device].free + search_key.bytes <= max_cached_bytes))
+      {
+        error = CubDebug(cudaEventRecord(search_key.ready_event, search_key.associated_stream));
+        if (cudaSuccess != error)
+        {
+          // Leave the allocation live if recording fails.
+          mutex.unlock();
+          if (entrypoint_device != device)
+          {
+            CubDebug(cudaSetDevice(entrypoint_device));
+          }
+          return error;
+        }
+        recached = true;
+      }
+
+      // Remove from live blocks
       live_blocks.erase(block_itr);
       cached_bytes[device].live -= search_key.bytes;
 
       // Keep the returned allocation if bin is valid and we won't exceed the max cached threshold
-      if ((search_key.bin != INVALID_BIN) && (cached_bytes[device].free + search_key.bytes <= max_cached_bytes))
+      if (recached)
       {
         // Insert returned allocation into free blocks
-        recached = true;
         cached_blocks.insert(search_key);
         cached_bytes[device].free += search_key.bytes;
 
@@ -727,32 +761,6 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
 
     // Unlock
     mutex.unlock();
-
-    // First set to specified device (entrypoint may not be set)
-    if (device != entrypoint_device)
-    {
-      error = CubDebug(cudaGetDevice(&entrypoint_device));
-      if (cudaSuccess != error)
-      {
-        return error;
-      }
-
-      error = CubDebug(cudaSetDevice(device));
-      if (cudaSuccess != error)
-      {
-        return error;
-      }
-    }
-
-    if (recached)
-    {
-      // Insert the ready event in the associated stream (must have current device set properly)
-      error = CubDebug(cudaEventRecord(search_key.ready_event, search_key.associated_stream));
-      if (cudaSuccess != error)
-      {
-        return error;
-      }
-    }
 
     if (!recached)
     {
