@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -26,6 +26,10 @@
     This header defines the primary public types and core operations for multi-component floating-point
     arithmetic using pairs of IEEE-754 floating-point values. It supports both "double-float" (fp32mp2)
     and "double-double" (fp64mp2) representations and can be used from both CPU and GPU (CUDA) code.
+
+    Example:
+    - Code:        https://github.com/NVIDIA/cccl/blob/main/examples/cudax/fp/fpmp.cu
+    - Walkthrough: https://github.com/NVIDIA/cccl/blob/main/examples/cudax/fp/README_fpmp.md
 
     Linkage note:
     - In header mode (default, CCCL_FPMP_INLINE=1), built-in entry points are defined as inline/static.
@@ -202,8 +206,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 // The public fpmp2_accuracy selector is defined in <cuda/__fp/fpmp_common.h>; the
 // internal element-format predicates (__fpmp2_is_fp32_v / __fpmp2_is_fp64_v /
 // __fpmp2_is_supported_fp_v) in <cuda/__fp/fpmp_impl.h>. Both are included above, so
@@ -277,7 +280,7 @@ public:
   // double-double one (fp64mp2); see __fpmp2_is_supported_fp_v for why the set is
   // exactly these two types.
   static_assert(__fpmp2_is_supported_fp_v<_FpType>,
-                "cuda::experimental::fpmp2 supports only _FpType == float (double-float) "
+                "cuda::fpmp2 supports only _FpType == float (double-float) "
                 "or double (double-double)");
 
   /*
@@ -449,7 +452,7 @@ public:
   {
     if constexpr (_TypeAcc2 == fpmp2_accuracy::low)
     {
-      __fpmp2_renormalize(__mp2_hi_, __mp2_lo_, &__mp2_hi_, &__mp2_lo_);
+      ::cuda::__fpmp2_renormalize(__mp2_hi_, __mp2_lo_, &__mp2_hi_, &__mp2_lo_);
     }
   }
 
@@ -488,7 +491,7 @@ public:
     const double __d_hi_in = static_cast<double>(__src.hi());
     const double __d_lo_in = static_cast<double>(__src.lo());
     // Renormalized fp32mp2 has |hi| >= |lo|, so fast_two_sum is safe.
-    __mp2_hi_ = __fpmp_fast_two_sum(__d_hi_in, __d_lo_in, &__mp2_lo_);
+    __mp2_hi_ = ::cuda::__fpmp_fast_two_sum(__d_hi_in, __d_lo_in, &__mp2_lo_);
   }
 
   // Widening across method tags: reinterpret the (hi, lo) pair under the
@@ -505,7 +508,7 @@ public:
   {
     const double __d_hi_in = static_cast<double>(__src.hi());
     const double __d_lo_in = static_cast<double>(__src.lo());
-    __mp2_hi_              = __fpmp_fast_two_sum(__d_hi_in, __d_lo_in, &__mp2_lo_);
+    __mp2_hi_              = ::cuda::__fpmp_fast_two_sum(__d_hi_in, __d_lo_in, &__mp2_lo_);
     return *this;
   }
 
@@ -538,9 +541,9 @@ public:
     float __a_lo;
     float __b_hi;
     float __b_lo;
-    __fpmp2_from_double<float>(__src.hi(), &__a_hi, &__a_lo);
-    __fpmp2_from_double<float>(__src.lo(), &__b_hi, &__b_lo);
-    __fpmp2_add<float>(__a_hi, __a_lo, __b_hi, __b_lo, &__mp2_hi_, &__mp2_lo_);
+    ::cuda::__fpmp2_from_double<float>(__src.hi(), &__a_hi, &__a_lo);
+    ::cuda::__fpmp2_from_double<float>(__src.lo(), &__b_hi, &__b_lo);
+    ::cuda::__fpmp2_add<float>(__a_hi, __a_lo, __b_hi, __b_lo, &__mp2_hi_, &__mp2_lo_);
   }
 
   // Narrowing across method tags: reinterpret the (hi, lo) pair under the
@@ -559,9 +562,9 @@ public:
     float __a_lo;
     float __b_hi;
     float __b_lo;
-    __fpmp2_from_double<float>(__src.hi(), &__a_hi, &__a_lo);
-    __fpmp2_from_double<float>(__src.lo(), &__b_hi, &__b_lo);
-    __fpmp2_add<float>(__a_hi, __a_lo, __b_hi, __b_lo, &__mp2_hi_, &__mp2_lo_);
+    ::cuda::__fpmp2_from_double<float>(__src.hi(), &__a_hi, &__a_lo);
+    ::cuda::__fpmp2_from_double<float>(__src.lo(), &__b_hi, &__b_lo);
+    ::cuda::__fpmp2_add<float>(__a_hi, __a_lo, __b_hi, __b_lo, &__mp2_hi_, &__mp2_lo_);
     return *this;
   }
 
@@ -639,7 +642,7 @@ public:
   _CCCL_REQUIRES(__fpmp2_is_fp64_v<_Up>)
   [[nodiscard]] _CCCL_FPMP_FP128_API explicit operator __fpmp_fp128() const noexcept
   {
-    return __fpmp2_to_quad(__mp2_hi_, __mp2_lo_);
+    return ::cuda::__fpmp2_to_quad(__mp2_hi_, __mp2_lo_);
   }
 
   // fp32mp2 has no fp128 interchange in either direction, deleted rather than
@@ -761,36 +764,36 @@ public:
   _CCCL_REQUIRES(__fpmp2_is_fp32_v<_Up>)
   _CCCL_HOST_DEVICE_API operator double() const noexcept
   {
-    return __fpmp2_to_double(__mp2_hi_, __mp2_lo_);
+    return ::cuda::__fpmp2_to_double(__mp2_hi_, __mp2_lo_);
   }
   _CCCL_TEMPLATE(typename _Up = _FpType)
   _CCCL_REQUIRES(__fpmp2_is_fp32_v<_Up>)
   _CCCL_HOST_DEVICE_API operator double() const volatile noexcept
   {
-    return __fpmp2_to_double(__mp2_hi_, __mp2_lo_);
+    return ::cuda::__fpmp2_to_double(__mp2_hi_, __mp2_lo_);
   }
   _CCCL_TEMPLATE(typename _Up = _FpType)
   _CCCL_REQUIRES(__fpmp2_is_fp64_v<_Up>)
   _CCCL_HOST_DEVICE_API explicit operator double() const noexcept
   {
-    return __fpmp2_to_double(__mp2_hi_, __mp2_lo_);
+    return ::cuda::__fpmp2_to_double(__mp2_hi_, __mp2_lo_);
   }
   _CCCL_TEMPLATE(typename _Up = _FpType)
   _CCCL_REQUIRES(__fpmp2_is_fp64_v<_Up>)
   _CCCL_HOST_DEVICE_API explicit operator double() const volatile noexcept
   {
-    return __fpmp2_to_double(__mp2_hi_, __mp2_lo_);
+    return ::cuda::__fpmp2_to_double(__mp2_hi_, __mp2_lo_);
   }
 
   // Explicit conversions to other types
   // Conversion to float
   _CCCL_HOST_DEVICE_API explicit operator float() const noexcept
   {
-    return __fpmp2_to_float(__mp2_hi_, __mp2_lo_);
+    return ::cuda::__fpmp2_to_float(__mp2_hi_, __mp2_lo_);
   }
   _CCCL_HOST_DEVICE_API explicit operator float() const volatile noexcept
   {
-    return __fpmp2_to_float(__mp2_hi_, __mp2_lo_);
+    return ::cuda::__fpmp2_to_float(__mp2_hi_, __mp2_lo_);
   }
 
   // Conversion to any standard integer type (int / long / long long + unsigned).
@@ -834,15 +837,18 @@ public:
     fpmp2 __res;
     if constexpr (_TypeAcc == fpmp2_accuracy::low)
     {
-      __fpmp2_low_add(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
+      ::cuda::__fpmp2_low_add(
+        __x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
     }
     else if constexpr (_TypeAcc == fpmp2_accuracy::high)
     {
-      __fpmp2_high_add(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
+      ::cuda::__fpmp2_high_add(
+        __x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
     }
     else
     {
-      __fpmp2_add(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
+      ::cuda::__fpmp2_add(
+        __x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
     }
     return __res;
   }
@@ -853,15 +859,18 @@ public:
     fpmp2 __res;
     if constexpr (_TypeAcc == fpmp2_accuracy::low)
     {
-      __fpmp2_low_sub(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
+      ::cuda::__fpmp2_low_sub(
+        __x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
     }
     else if constexpr (_TypeAcc == fpmp2_accuracy::high)
     {
-      __fpmp2_high_sub(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
+      ::cuda::__fpmp2_high_sub(
+        __x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
     }
     else
     {
-      __fpmp2_sub(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
+      ::cuda::__fpmp2_sub(
+        __x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
     }
     return __res;
   }
@@ -872,11 +881,13 @@ public:
     fpmp2 __res;
     if constexpr (_TypeAcc == fpmp2_accuracy::low)
     {
-      __fpmp2_low_mul(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
+      ::cuda::__fpmp2_low_mul(
+        __x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
     }
     else
     {
-      __fpmp2_mul(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
+      ::cuda::__fpmp2_mul(
+        __x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
     }
     return __res;
   }
@@ -887,15 +898,18 @@ public:
     fpmp2 __res;
     if constexpr (_TypeAcc == fpmp2_accuracy::low)
     {
-      __fpmp2_low_div(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
+      ::cuda::__fpmp2_low_div(
+        __x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
     }
     else if constexpr (_TypeAcc == fpmp2_accuracy::high)
     {
-      __fpmp2_high_div(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
+      ::cuda::__fpmp2_high_div(
+        __x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
     }
     else
     {
-      __fpmp2_div(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
+      ::cuda::__fpmp2_div(
+        __x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
     }
     return __res;
   }
@@ -916,15 +930,15 @@ public:
     const _FpType __c = static_cast<_FpType>(__c_in);
     if constexpr (_TypeAcc == fpmp2_accuracy::low)
     {
-      __fpmp2_low_acc(__c, &__mp2_hi_, &__mp2_lo_);
+      ::cuda::__fpmp2_low_acc(__c, &__mp2_hi_, &__mp2_lo_);
     }
     else if constexpr (_TypeAcc == fpmp2_accuracy::high)
     {
-      __fpmp2_high_acc(__c, &__mp2_hi_, &__mp2_lo_);
+      ::cuda::__fpmp2_high_acc(__c, &__mp2_hi_, &__mp2_lo_);
     }
     else
     {
-      __fpmp2_acc(__c, &__mp2_hi_, &__mp2_lo_);
+      ::cuda::__fpmp2_acc(__c, &__mp2_hi_, &__mp2_lo_);
     }
     return *this;
   }
@@ -935,15 +949,15 @@ public:
     const _FpType __c = static_cast<_FpType>(__c_in);
     if constexpr (_TypeAcc == fpmp2_accuracy::low)
     {
-      __fpmp2_low_acc(-__c, &__mp2_hi_, &__mp2_lo_);
+      ::cuda::__fpmp2_low_acc(-__c, &__mp2_hi_, &__mp2_lo_);
     }
     else if constexpr (_TypeAcc == fpmp2_accuracy::high)
     {
-      __fpmp2_high_acc(-__c, &__mp2_hi_, &__mp2_lo_);
+      ::cuda::__fpmp2_high_acc(-__c, &__mp2_hi_, &__mp2_lo_);
     }
     else
     {
-      __fpmp2_acc(-__c, &__mp2_hi_, &__mp2_lo_);
+      ::cuda::__fpmp2_acc(-__c, &__mp2_hi_, &__mp2_lo_);
     }
     return *this;
   }
@@ -952,7 +966,7 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API fpmp2 operator-() const noexcept
   {
     fpmp2 __res;
-    __fpmp2_neg(__mp2_hi_, __mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
+    ::cuda::__fpmp2_neg(__mp2_hi_, __mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
     return __res;
   }
 
@@ -962,32 +976,32 @@ public:
   // equality (==)
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend bool operator==(const fpmp2& __x, const fpmp2& __y) noexcept
   {
-    return __fpmp2_cmp_eq(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_);
+    return ::cuda::__fpmp2_cmp_eq(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_);
   }
   // inequality (!=)
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend bool operator!=(const fpmp2& __x, const fpmp2& __y) noexcept
   {
-    return __fpmp2_cmp_ne(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_);
+    return ::cuda::__fpmp2_cmp_ne(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_);
   }
   // less than (<)
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend bool operator<(const fpmp2& __x, const fpmp2& __y) noexcept
   {
-    return __fpmp2_cmp_lt(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_);
+    return ::cuda::__fpmp2_cmp_lt(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_);
   }
   // greater than (>)
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend bool operator>(const fpmp2& __x, const fpmp2& __y) noexcept
   {
-    return __fpmp2_cmp_gt(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_);
+    return ::cuda::__fpmp2_cmp_gt(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_);
   }
   // less than or equal to (<=)
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend bool operator<=(const fpmp2& __x, const fpmp2& __y) noexcept
   {
-    return __fpmp2_cmp_le(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_);
+    return ::cuda::__fpmp2_cmp_le(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_);
   }
   // greater than or equal to (>=)
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend bool operator>=(const fpmp2& __x, const fpmp2& __y) noexcept
   {
-    return __fpmp2_cmp_ge(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_);
+    return ::cuda::__fpmp2_cmp_ge(__x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_);
   }
 
   // Prefix increment/decrement
@@ -1148,7 +1162,7 @@ private:
     {
       _FpType __hi{};
       _FpType __lo{};
-      __fpmp2_from_double(__d, &__hi, &__lo);
+      ::cuda::__fpmp2_from_double(__d, &__hi, &__lo);
       return fpmp2{__hi, __lo};
     }
   }
@@ -1164,7 +1178,7 @@ private:
     {
       _FpType __hi{};
       _FpType __lo{};
-      __fpmp2_from_quad(__d, &__hi, &__lo);
+      ::cuda::__fpmp2_from_quad(__d, &__hi, &__lo);
       return fpmp2{__hi, __lo};
     }
   }
@@ -1184,19 +1198,19 @@ private:
   // the constructor body needs no signedness branch.
   _CCCL_HOST_DEVICE_API void __set_from_int32(int32_t __i) noexcept
   {
-    __fpmp2_from_int(__i, &__mp2_hi_, &__mp2_lo_);
+    ::cuda::__fpmp2_from_int(__i, &__mp2_hi_, &__mp2_lo_);
   }
   _CCCL_HOST_DEVICE_API void __set_from_int32(uint32_t __i) noexcept
   {
-    __fpmp2_from_uint(__i, &__mp2_hi_, &__mp2_lo_);
+    ::cuda::__fpmp2_from_uint(__i, &__mp2_hi_, &__mp2_lo_);
   }
   _CCCL_HOST_DEVICE_API void __set_from_int64(int64_t __i) noexcept
   {
-    __fpmp2_from_ll(__i, &__mp2_hi_, &__mp2_lo_);
+    ::cuda::__fpmp2_from_ll(__i, &__mp2_hi_, &__mp2_lo_);
   }
   _CCCL_HOST_DEVICE_API void __set_from_int64(uint64_t __i) noexcept
   {
-    __fpmp2_from_ull(__i, &__mp2_hi_, &__mp2_lo_);
+    ::cuda::__fpmp2_from_ull(__i, &__mp2_hi_, &__mp2_lo_);
   }
 
   // Shared body of the two integer constructors, which differ only in explicitness.
@@ -1219,19 +1233,19 @@ private:
   // overload set serves both the const and const volatile conversion operators.
   _CCCL_HOST_DEVICE_API static int32_t __to_integer(int32_t, _FpType __hi, _FpType __lo) noexcept
   {
-    return __fpmp2_to_int(__hi, __lo);
+    return ::cuda::__fpmp2_to_int(__hi, __lo);
   }
   _CCCL_HOST_DEVICE_API static uint32_t __to_integer(uint32_t, _FpType __hi, _FpType __lo) noexcept
   {
-    return __fpmp2_to_uint(__hi, __lo);
+    return ::cuda::__fpmp2_to_uint(__hi, __lo);
   }
   _CCCL_HOST_DEVICE_API static int64_t __to_integer(int64_t, _FpType __hi, _FpType __lo) noexcept
   {
-    return __fpmp2_to_ll(__hi, __lo);
+    return ::cuda::__fpmp2_to_ll(__hi, __lo);
   }
   _CCCL_HOST_DEVICE_API static uint64_t __to_integer(uint64_t, _FpType __hi, _FpType __lo) noexcept
   {
-    return __fpmp2_to_ull(__hi, __lo);
+    return ::cuda::__fpmp2_to_ull(__hi, __lo);
   }
 
   /*
@@ -1294,7 +1308,7 @@ inline constexpr bool __fpmp_is_fpmp2_v<fpmp2<_FpType, _TypeAcc>> = true;
  * They are at namespace scope rather than being hidden friends so that
  * the qualified spelling works too, which is what renormalize needs:
  * having no counterpart on double, it only ever appears in code written
- * against this header, where cuda::experimental::renormalize(x) is the
+ * against this header, where cuda::renormalize(x) is the
  * clearer form. The accuracy-selecting add/sub/mul/div/fma below have no
  * choice in the matter - a call that spells out its template argument,
  * add<fpmp2_accuracy::high>(a, b), needs the name found by ordinary
@@ -1307,7 +1321,7 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 renormalize(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __rhi, __rlo;
-  __fpmp2_renormalize(__x.hi(), __x.lo(), &__rhi, &__rlo);
+  ::cuda::__fpmp2_renormalize(__x.hi(), __x.lo(), &__rhi, &__rlo);
   return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
 }
 
@@ -1315,7 +1329,7 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline fpmp2<_FpType, _TypeAcc> sqrt(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __rhi, __rlo;
-  __fpmp2_sqrt(__x.hi(), __x.lo(), &__rhi, &__rlo);
+  ::cuda::__fpmp2_sqrt(__x.hi(), __x.lo(), &__rhi, &__rlo);
   return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
 }
 
@@ -1323,7 +1337,7 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline fpmp2<_FpType, _TypeAcc> rsqrt(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __rhi, __rlo;
-  __fpmp2_rsqrt(__x.hi(), __x.lo(), &__rhi, &__rlo);
+  ::cuda::__fpmp2_rsqrt(__x.hi(), __x.lo(), &__rhi, &__rlo);
   return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
 }
 
@@ -1336,15 +1350,15 @@ fma(const fpmp2<_FpType, _TypeAcc>& __x,
   _FpType __rhi, __rlo;
   if constexpr (_TypeAcc == fpmp2_accuracy::low)
   {
-    __fpmp2_low_fma(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_low_fma(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
   }
   else if constexpr (_TypeAcc == fpmp2_accuracy::high)
   {
-    __fpmp2_high_fma(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_high_fma(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
   }
   else
   {
-    __fpmp2_fma(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_fma(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
   }
   return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
 }
@@ -1369,15 +1383,15 @@ mad(const fpmp2<_FpType, _TypeAcc>& __x,
   _FpType __rhi, __rlo;
   if constexpr (_TypeAcc == fpmp2_accuracy::low)
   {
-    __fpmp2_low_mad(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_low_mad(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
   }
   else if constexpr (_TypeAcc == fpmp2_accuracy::high)
   {
-    __fpmp2_high_mad(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_high_mad(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
   }
   else
   {
-    __fpmp2_mad(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_mad(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
   }
   return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
 }
@@ -1400,15 +1414,15 @@ add(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc>& __y) no
   _FpType __rhi, __rlo;
   if constexpr (_Acc == fpmp2_accuracy::low)
   {
-    __fpmp2_low_add(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_low_add(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
   }
   else if constexpr (_Acc == fpmp2_accuracy::high)
   {
-    __fpmp2_high_add(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_high_add(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
   }
   else
   {
-    __fpmp2_add(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_add(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
   }
   return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
 }
@@ -1429,15 +1443,15 @@ sub(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc>& __y) no
   _FpType __rhi, __rlo;
   if constexpr (_Acc == fpmp2_accuracy::low)
   {
-    __fpmp2_low_sub(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_low_sub(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
   }
   else if constexpr (_Acc == fpmp2_accuracy::high)
   {
-    __fpmp2_high_sub(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_high_sub(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
   }
   else
   {
-    __fpmp2_sub(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_sub(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
   }
   return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
 }
@@ -1458,11 +1472,11 @@ mul(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc>& __y) no
   _FpType __rhi, __rlo;
   if constexpr (_Acc == fpmp2_accuracy::low)
   {
-    __fpmp2_low_mul(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_low_mul(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
   }
   else
   {
-    __fpmp2_mul(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_mul(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
   }
   return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
 }
@@ -1483,15 +1497,15 @@ div(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc>& __y) no
   _FpType __rhi, __rlo;
   if constexpr (_Acc == fpmp2_accuracy::low)
   {
-    __fpmp2_low_div(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_low_div(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
   }
   else if constexpr (_Acc == fpmp2_accuracy::high)
   {
-    __fpmp2_high_div(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_high_div(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
   }
   else
   {
-    __fpmp2_div(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_div(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
   }
   return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
 }
@@ -1514,15 +1528,15 @@ fma(const fpmp2<_FpType, _TypeAcc>& __x,
   _FpType __rhi, __rlo;
   if constexpr (_Acc == fpmp2_accuracy::low)
   {
-    __fpmp2_low_fma(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_low_fma(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
   }
   else if constexpr (_Acc == fpmp2_accuracy::high)
   {
-    __fpmp2_high_fma(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_high_fma(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
   }
   else
   {
-    __fpmp2_fma(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_fma(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
   }
   return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
 }
@@ -1547,15 +1561,15 @@ mad(const fpmp2<_FpType, _TypeAcc>& __x,
   _FpType __rhi, __rlo;
   if constexpr (_Acc == fpmp2_accuracy::low)
   {
-    __fpmp2_low_mad(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_low_mad(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
   }
   else if constexpr (_Acc == fpmp2_accuracy::high)
   {
-    __fpmp2_high_mad(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_high_mad(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
   }
   else
   {
-    __fpmp2_mad(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
+    ::cuda::__fpmp2_mad(__x.hi(), __x.lo(), __y.hi(), __y.lo(), __z.hi(), __z.lo(), &__rhi, &__rlo);
   }
   return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
 }
@@ -1587,7 +1601,7 @@ _CCCL_REQUIRES(
  *   __shfl_down_sync(mask, var, delta,    width = warpSize)
  *   __shfl_up_sync  (mask, var, delta,    width = warpSize)
  *
- * Declared in cuda::experimental next to fpmp2, so ADL on an fpmp2 argument
+ * Declared in cuda next to fpmp2, so ADL on an fpmp2 argument
  * finds them at an unqualified call site, exactly as it finds CUDA's built-in
  * scalar overloads for float/double.  The recursive calls are spelled
  * `::__shfl_sync(mask, var.hi(), ...)` to reach CUDA's global-namespace
@@ -1663,14 +1677,14 @@ atomicAdd(fpmp2<_FpType, _TypeAcc>* address, const fpmp2<_FpType, _TypeAcc>& val
   // In library mode, call the library function directly
   if constexpr (__fpmp2_is_fp32_v<_FpType>)
   {
-    __fp32mp2_atomicAdd(&address->__mp2_hi_, &address->__mp2_lo_, val.hi(), val.lo(), &__old_hi, &__old_lo);
+    ::cuda::__fp32mp2_atomicAdd(&address->__mp2_hi_, &address->__mp2_lo_, val.hi(), val.lo(), &__old_hi, &__old_lo);
   }
   else if constexpr (__fpmp2_is_fp64_v<_FpType>)
   {
-    __fp64mp2_atomicAdd(&address->__mp2_hi_, &address->__mp2_lo_, val.hi(), val.lo(), &__old_hi, &__old_lo);
+    ::cuda::__fp64mp2_atomicAdd(&address->__mp2_hi_, &address->__mp2_lo_, val.hi(), val.lo(), &__old_hi, &__old_lo);
   }
 #  else
-  __fpmp2_atomicAdd(&address->__mp2_hi_, &address->__mp2_lo_, val.hi(), val.lo(), &__old_hi, &__old_lo);
+  ::cuda::__fpmp2_atomicAdd(&address->__mp2_hi_, &address->__mp2_lo_, val.hi(), val.lo(), &__old_hi, &__old_lo);
 #  endif
   return fpmp2<_FpType, _TypeAcc>{__old_hi, __old_lo};
 }
@@ -1688,14 +1702,14 @@ atomicSub(fpmp2<_FpType, _TypeAcc>* address, const fpmp2<_FpType, _TypeAcc>& val
   // In library mode, call the library function directly
   if constexpr (__fpmp2_is_fp32_v<_FpType>)
   {
-    __fp32mp2_atomicSub(&address->__mp2_hi_, &address->__mp2_lo_, val.hi(), val.lo(), &__old_hi, &__old_lo);
+    ::cuda::__fp32mp2_atomicSub(&address->__mp2_hi_, &address->__mp2_lo_, val.hi(), val.lo(), &__old_hi, &__old_lo);
   }
   else if constexpr (__fpmp2_is_fp64_v<_FpType>)
   {
-    __fp64mp2_atomicSub(&address->__mp2_hi_, &address->__mp2_lo_, val.hi(), val.lo(), &__old_hi, &__old_lo);
+    ::cuda::__fp64mp2_atomicSub(&address->__mp2_hi_, &address->__mp2_lo_, val.hi(), val.lo(), &__old_hi, &__old_lo);
   }
 #  else
-  __fpmp2_atomicSub(&address->__mp2_hi_, &address->__mp2_lo_, val.hi(), val.lo(), &__old_hi, &__old_lo);
+  ::cuda::__fpmp2_atomicSub(&address->__mp2_hi_, &address->__mp2_lo_, val.hi(), val.lo(), &__old_hi, &__old_lo);
 #  endif
   return fpmp2<_FpType, _TypeAcc>{__old_hi, __old_lo};
 }
@@ -1714,44 +1728,43 @@ using fp64mp2      = fpmp2<double, fpmp2_accuracy::def>;
 using fp64mp2_low  = fpmp2<double, fpmp2_accuracy::low>;
 using fp64mp2_mid  = fpmp2<double, fpmp2_accuracy::mid>;
 using fp64mp2_high = fpmp2<double, fpmp2_accuracy::high>;
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 // ============================================================================
 // cuda::std overloads for sqrt / fma on the fpmp2 pair.
 //
 // A qualified cuda::std::sqrt / cuda::std::fma call suppresses ADL, so without
 // these overloads it would silently narrow fpmp2 -> double and compute a
-// native-double result. These forward to the cuda::experimental implementations
+// native-double result. These forward to the cuda:: implementations
 // (which unqualified / ADL calls already resolve to). The exact-type overloads
 // cover pure fpmp2 arguments; the constrained fma overload handles mixed
 // fpmp2 + built-in arithmetic operands. (mad has no cuda::std counterpart.)
 // ============================================================================
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _FpType, ::cuda::experimental::fpmp2_accuracy _TypeAcc>
-[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::experimental::fpmp2<_FpType, _TypeAcc>
-sqrt(const ::cuda::experimental::fpmp2<_FpType, _TypeAcc>& __x) noexcept
+template <class _FpType, ::cuda::fpmp2_accuracy _TypeAcc>
+[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::fpmp2<_FpType, _TypeAcc>
+sqrt(const ::cuda::fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
-  return ::cuda::experimental::sqrt(__x);
+  return ::cuda::sqrt(__x);
 }
 
-template <class _FpType, ::cuda::experimental::fpmp2_accuracy _TypeAcc>
-[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::experimental::fpmp2<_FpType, _TypeAcc>
-fma(const ::cuda::experimental::fpmp2<_FpType, _TypeAcc>& __x,
-    const ::cuda::experimental::fpmp2<_FpType, _TypeAcc>& __y,
-    const ::cuda::experimental::fpmp2<_FpType, _TypeAcc>& __z) noexcept
+template <class _FpType, ::cuda::fpmp2_accuracy _TypeAcc>
+[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::fpmp2<_FpType, _TypeAcc>
+fma(const ::cuda::fpmp2<_FpType, _TypeAcc>& __x,
+    const ::cuda::fpmp2<_FpType, _TypeAcc>& __y,
+    const ::cuda::fpmp2<_FpType, _TypeAcc>& __z) noexcept
 {
-  return ::cuda::experimental::fma(__x, __y, __z);
+  return ::cuda::fma(__x, __y, __z);
 }
 
 _CCCL_TEMPLATE(class _T1, class _T2, class _T3)
 _CCCL_REQUIRES(
-  ((::cuda::experimental::__fpmp_is_fpmp2_v<_T1> || ::cuda::experimental::__fpmp_is_fpmp2_v<_T2>
-    || ::cuda::experimental::__fpmp_is_fpmp2_v<_T3>)
+  ((::cuda::__fpmp_is_fpmp2_v<_T1> || ::cuda::__fpmp_is_fpmp2_v<_T2> || ::cuda::__fpmp_is_fpmp2_v<_T3>)
    && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2> || ::cuda::std::is_arithmetic_v<_T3>) ))
 [[nodiscard]] _CCCL_HOST_DEVICE_API auto fma(const _T1& __x, const _T2& __y, const _T3& __z) noexcept
 {
-  return ::cuda::experimental::fma(__x, __y, __z);
+  return ::cuda::fma(__x, __y, __z);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

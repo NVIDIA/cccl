@@ -25,6 +25,7 @@
 #include <cub/device/device_transform.cuh>
 
 #include <cuda/__algorithm/copy.h>
+#include <cuda/__container/simple_vector.h>
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/__iterator/transform_iterator.h>
 #include <cuda/__launch/launch.h>
@@ -51,8 +52,6 @@
 #include <cuda/experimental/mgmn/__algorithm/sort/hss/ideal_rank_fn.h>
 #include <cuda/experimental/mgmn/__algorithm/sort/hss/merge_k_way.h>
 #include <cuda/experimental/mgmn/__algorithm/sort/hss/sorter.h>
-
-#include <vector>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -174,9 +173,9 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__local_sampling(
   ::cuda::std::int32_t __j,
   double __sampling_probability,
   const _BinaryOp& __cmp,
-  const ::std::vector<__per_comm_histogramming_result_type>& __local_hist_results,
+  const ::cuda::__simple_vector<__per_comm_histogramming_result_type>& __local_hist_results,
   ::cuda::std::span<const ::cuda::std::size_t> __cap_displs,
-  ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch)
+  ::cuda::__simple_vector<__per_comm_sampling_scratch_type>* __local_scratch)
 {
   constexpr auto __launch_config =
     ::cuda::make_config(::cuda::make_hierarchy(::cuda::block_dims<1>(), ::cuda::grid_dims<1>()));
@@ -279,23 +278,18 @@ template <class _Tp, class _Env, class _BinaryOp>
 template <class _EnvRange>
 [[nodiscard]]
 _CCCL_HOST_API ::cuda::std::pair<
-  ::std::vector<typename _HSSSorter<_Tp, _Env, _BinaryOp>::__per_comm_sampling_scratch_type>,
-  ::std::vector<typename _HSSSorter<_Tp, _Env, _BinaryOp>::__per_comm_histogramming_result_type>>
+  ::cuda::__simple_vector<typename _HSSSorter<_Tp, _Env, _BinaryOp>::__per_comm_sampling_scratch_type>,
+  ::cuda::__simple_vector<typename _HSSSorter<_Tp, _Env, _BinaryOp>::__per_comm_histogramming_result_type>>
 _HSSSorter<_Tp, _Env, _BinaryOp>::__allocate_histogramming_buffers(
   const __local_setup_result_type& __setup, _EnvRange&& __envs)
 {
-  const auto __comm_size = __setup.__comm_size;
-  const auto __N         = __setup.__N;
+  const auto __comm_size        = __setup.__comm_size;
+  const auto __N                = __setup.__N;
+  const auto __num_local_inputs = __setup.__all_local_offsets.size();
 
-  ::std::vector<__per_comm_sampling_scratch_type> __local_scratch;
-  ::std::vector<__per_comm_histogramming_result_type> __local_hist_results;
-
-  {
-    const auto __num_local_inputs = __setup.__all_local_sizes.size();
-
-    __local_scratch.reserve(__num_local_inputs);
-    __local_hist_results.reserve(__num_local_inputs);
-  }
+  ::cuda::__simple_vector<__per_comm_sampling_scratch_type> __local_scratch{__num_local_inputs, ::cuda::no_init};
+  ::cuda::__simple_vector<__per_comm_histogramming_result_type> __local_hist_results{
+    __num_local_inputs, ::cuda::no_init};
 
   for (auto&& __env : __envs)
   {
@@ -339,7 +333,7 @@ template <class _CommRange>
 _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__exchange_sample_counts(
   _CommRange&& __comms,
   ::cuda::std::span<::cuda::std::size_t> __h_recvcounts,
-  ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch)
+  ::cuda::__simple_vector<__per_comm_sampling_scratch_type>* __local_scratch)
 {
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
@@ -370,7 +364,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__exchange_sample_counts(
 
   // We need to copy only once here because the all gather above ensures all ranks have the
   // same samples-size entries
-  const auto& __samples_size = __local_scratch->front().__samples_size;
+  const auto& __samples_size = (*__local_scratch)[0].__samples_size;
 
   ::cuda::copy_bytes(
     __samples_size.stream(),
@@ -393,8 +387,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__gather_and_merge_probes(
   const _BinaryOp& __cmp,
   ::cuda::std::span<const ::cuda::std::size_t> __h_recvcounts,
   ::cuda::std::span<const ::cuda::std::size_t> __h_cap_displs,
-  ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch,
-  ::std::vector<__per_comm_histogramming_result_type>* __local_hist_results)
+  ::cuda::__simple_vector<__per_comm_sampling_scratch_type>* __local_scratch,
+  ::cuda::__simple_vector<__per_comm_histogramming_result_type>* __local_hist_results)
 {
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
@@ -453,7 +447,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_histogram(
   _InputIterRange&& __key_iters,
   _SizeTRange&& __num_items_range,
   const _BinaryOp& __cmp,
-  ::std::vector<__per_comm_histogramming_result_type>* __local_hist_results)
+  ::cuda::__simple_vector<__per_comm_histogramming_result_type>* __local_hist_results)
 {
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
@@ -511,7 +505,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__update_intervals(
   _CommRange&& __comms,
   _EnvRange&& __envs,
   ::cuda::std::uint64_t __N,
-  ::std::vector<__per_comm_histogramming_result_type>* __local_hist_results)
+  ::cuda::__simple_vector<__per_comm_histogramming_result_type>* __local_hist_results)
 {
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
@@ -547,7 +541,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__update_intervals(
 template <class _Tp, class _Env, class _BinaryOp>
 template <class _CommRange, class _EnvRange, class _InputIterRange, class _SizeTRange>
 [[nodiscard]]
-_CCCL_HOST_API ::std::vector<typename _HSSSorter<_Tp, _Env, _BinaryOp>::__per_comm_histogramming_result_type>
+_CCCL_HOST_API ::cuda::__simple_vector<typename _HSSSorter<_Tp, _Env, _BinaryOp>::__per_comm_histogramming_result_type>
 _HSSSorter<_Tp, _Env, _BinaryOp>::__histogramming_phase(
   const __local_setup_result_type& __setup,
   _CommRange&& __comms,
@@ -568,7 +562,14 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__histogramming_phase(
   // trailing total so that slot r spans [__cap_displs[r], __cap_displs[r + 1]). It is derived
   // on the host with no communication, from the per-rank input sizes and this round's sampling
   // probability. __recvcounts is how much of each slot the sampling kernels actually filled.
-  ::std::vector<::cuda::std::size_t> __host_scratch((2 * __comm_size) + 1);
+  ::cuda::__simple_vector<::cuda::std::size_t> __host_scratch{
+    static_cast<::cuda::std::size_t>((2 * __comm_size) + 1), ::cuda::no_init};
+
+  for (::cuda::std::size_t __i = 0; __i < __host_scratch.max_size(); ++__i)
+  {
+    __host_scratch.emplace_back(0);
+  }
+
   auto __recvcounts = ::cuda::std::span<::cuda::std::size_t>{__host_scratch.data(), __comm_size};
   auto __cap_displs = ::cuda::std::span<::cuda::std::size_t>{__host_scratch.data() + __comm_size, __comm_size + 1};
 

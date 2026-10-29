@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -22,8 +22,8 @@
 #endif // no system header
 
 /*
-// cuda::std::numeric_limits specializations for cuda::experimental::fpemu and
-// cuda::experimental::fpemu_unpacked
+// cuda::std::numeric_limits specializations for cuda::fpemu and
+// cuda::fpemu_unpacked
 //
 // fpemu is bit-identical to the base type it emulates, so its limits are the base type's,
 // reported through the emulated type. Two properties depend on the accuracy level rather
@@ -64,8 +64,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 //! @brief Position of the implicit significand bit in the unpacked mantissa field.
 //!
 //! @internal Support for the numeric_limits specializations below.
@@ -98,29 +97,29 @@ __fpemu_limits_nan(::cuda::std::uint64_t __bits) noexcept
                              __nan_band,
                              ((__bits & __mant_mask) | __implicit) << _CCCL_FPEMU_EXTRA_BITS};
 }
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 //==============================================================================
 // fpemu: the base type's limits, reported through the emulated type
 //==============================================================================
-template <class _FpType, ::cuda::experimental::fpemu_accuracy _Met>
-class numeric_limits<::cuda::experimental::fpemu<_FpType, _Met>>
+template <class _FpType, ::cuda::fpemu_accuracy _Met>
+class numeric_limits<::cuda::fpemu<_FpType, _Met>>
 {
 private:
   using __base = numeric_limits<_FpType>;
 
   // Only the full-range level covers subnormals; mid and low work in the normal range.
-  static constexpr bool __is_full_range = (_Met == ::cuda::experimental::fpemu_accuracy::high);
+  static constexpr bool __is_full_range = (_Met == ::cuda::fpemu_accuracy::high);
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEXPR_BIT_CAST auto __from(_FpType __v) noexcept
   {
-    return ::cuda::std::bit_cast<::cuda::experimental::fpemu<_FpType, _Met>>(__v);
+    return ::cuda::std::bit_cast<::cuda::fpemu<_FpType, _Met>>(__v);
   }
 
 public:
-  using type = ::cuda::experimental::fpemu<_FpType, _Met>;
+  using type = ::cuda::fpemu<_FpType, _Met>;
 
   static constexpr bool is_specialized = true;
   static constexpr bool is_signed      = true;
@@ -207,29 +206,29 @@ public:
 //==============================================================================
 // fpemu_unpacked: the base type's exponent range at the guard-bit precision
 //==============================================================================
-template <class _FpType, ::cuda::experimental::fpemu_accuracy _Met>
-class numeric_limits<::cuda::experimental::fpemu_unpacked<_FpType, _Met>>
+template <class _FpType, ::cuda::fpemu_accuracy _Met>
+class numeric_limits<::cuda::fpemu_unpacked<_FpType, _Met>>
 {
 private:
   using __base = numeric_limits<_FpType>;
 
-  static constexpr bool __is_full_range = (_Met == ::cuda::experimental::fpemu_accuracy::high);
+  static constexpr bool __is_full_range = (_Met == ::cuda::fpemu_accuracy::high);
 
-  static constexpr int __implicit_bit = ::cuda::experimental::__fpemu_limits_implicit_bit;
+  static constexpr int __implicit_bit = ::cuda::__fpemu_limits_implicit_bit;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEXPR_BIT_CAST auto
-  __from(::cuda::experimental::__fpbits64_unpacked __v) noexcept
+  __from(::cuda::__fpbits64_unpacked __v) noexcept
   {
-    return ::cuda::std::bit_cast<::cuda::experimental::fpemu_unpacked<_FpType, _Met>>(__v);
+    return ::cuda::std::bit_cast<::cuda::fpemu_unpacked<_FpType, _Met>>(__v);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEXPR_BIT_CAST auto __pow2(int __e) noexcept
   {
-    return __from(::cuda::experimental::__fpemu_limits_pow2(__e));
+    return __from(::cuda::__fpemu_limits_pow2(__e));
   }
 
 public:
-  using type = ::cuda::experimental::fpemu_unpacked<_FpType, _Met>;
+  using type = ::cuda::fpemu_unpacked<_FpType, _Met>;
 
   static constexpr bool is_specialized = true;
   static constexpr bool is_signed      = true;
@@ -249,7 +248,7 @@ public:
   // above the base type's max and packs to infinity.
   [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEXPR_BIT_CAST type max() noexcept
   {
-    return __from(::cuda::experimental::__fpbits64_unpacked{
+    return __from(::cuda::__fpbits64_unpacked{
       0u,
       static_cast<::cuda::std::uint32_t>(__base::max_exponent - 1 + 1023),
       (::cuda::std::uint64_t{1} << (__implicit_bit + 1)) - 1});
@@ -257,7 +256,7 @@ public:
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEXPR_BIT_CAST type lowest() noexcept
   {
-    return __from(::cuda::experimental::__fpbits64_unpacked{
+    return __from(::cuda::__fpbits64_unpacked{
       1u << 31,
       static_cast<::cuda::std::uint32_t>(__base::max_exponent - 1 + 1023),
       (::cuda::std::uint64_t{1} << (__implicit_bit + 1)) - 1});
@@ -296,21 +295,18 @@ public:
   // pack recovers; these are the patterns it produces.
   [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEXPR_BIT_CAST type infinity() noexcept
   {
-    return __from(
-      ::cuda::experimental::__fpbits64_unpacked{0u, 0x00007ff0u, ::cuda::std::uint64_t{1} << __implicit_bit});
+    return __from(::cuda::__fpbits64_unpacked{0u, 0x00007ff0u, ::cuda::std::uint64_t{1} << __implicit_bit});
   }
 
   // The payloads come from the base type, whose choice of them is implementation-defined.
   [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEXPR_BIT_CAST type quiet_NaN() noexcept
   {
-    return __from(
-      ::cuda::experimental::__fpemu_limits_nan(::cuda::std::bit_cast<::cuda::std::uint64_t>(__base::quiet_NaN())));
+    return __from(::cuda::__fpemu_limits_nan(::cuda::std::bit_cast<::cuda::std::uint64_t>(__base::quiet_NaN())));
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEXPR_BIT_CAST type signaling_NaN() noexcept
   {
-    return __from(
-      ::cuda::experimental::__fpemu_limits_nan(::cuda::std::bit_cast<::cuda::std::uint64_t>(__base::signaling_NaN())));
+    return __from(::cuda::__fpemu_limits_nan(::cuda::std::bit_cast<::cuda::std::uint64_t>(__base::signaling_NaN())));
   }
 
   // A subnormal is normalized on the way in, so the smallest positive value is the base

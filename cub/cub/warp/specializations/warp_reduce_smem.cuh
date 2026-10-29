@@ -20,12 +20,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/thread/thread_operators.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/log2.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 

@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -35,8 +35,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 #if !(defined _CCCL_FPMP_USE_LIB)
 /*
  * --------------------------------------------------------------------
@@ -50,7 +49,7 @@ template <typename _FpType>
 _CCCL_FPMP_CORE_API void
 __fpmp2_renormalize(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
-  *__res_hi = __fpmp_fast_two_sum(__x_hi, __x_lo, __res_lo);
+  *__res_hi = ::cuda::__fpmp_fast_two_sum(__x_hi, __x_lo, __res_lo);
 }
 
 /*
@@ -74,9 +73,9 @@ _CCCL_FPMP_CORE_API void __fpmp2_low_add(
   _FpType __r_hi, __r_lo;
 
   // Add high parts using general 2-Sum (no magnitude assumption)
-  __r_hi = __fpmp_two_sum(__x_hi, __y_hi, &__r_lo);
+  __r_hi = ::cuda::__fpmp_two_sum(__x_hi, __y_hi, &__r_lo);
   // Add low parts
-  __r_lo = __fpmp_add_rn(__fpmp_add_rn(__x_lo, __y_lo), __r_lo);
+  __r_lo = ::cuda::__fpmp_add_rn(::cuda::__fpmp_add_rn(__x_lo, __y_lo), __r_lo);
 
   *__res_hi = __r_hi;
   *__res_lo = __r_lo;
@@ -99,11 +98,11 @@ _CCCL_FPMP_CORE_API void __fpmp2_add(
   _FpType __r_hi, __r_lo;
 
   // Add high parts using general 2-Sum (no magnitude assumption)
-  __r_hi = __fpmp_two_sum(__x_hi, __y_hi, &__r_lo);
+  __r_hi = ::cuda::__fpmp_two_sum(__x_hi, __y_hi, &__r_lo);
   // Add low parts
-  __r_lo_refine = __fpmp_add_rn(__fpmp_add_rn(__x_lo, __y_lo), __r_lo);
+  __r_lo_refine = ::cuda::__fpmp_add_rn(::cuda::__fpmp_add_rn(__x_lo, __y_lo), __r_lo);
   // Normalize:
-  *__res_hi = __fpmp_fast_two_sum(__r_hi, __r_lo_refine, __res_lo);
+  *__res_hi = ::cuda::__fpmp_fast_two_sum(__r_hi, __r_lo_refine, __res_lo);
 } // __fpmp2_add
 
 /*
@@ -130,39 +129,39 @@ _CCCL_FPMP_CORE_API void __internal_nv_fpmp2_add_fpan(
 {
   // Level 1: Two independent 2Sums - can execute in parallel
   // Inline two_sum for a_hi + b_hi to help compiler see independence
-  _FpType __s_h = __fpmp_add_rn(__a_hi, __b_hi);
-  _FpType __s_a = __fpmp_sub_rn(__s_h, __b_hi);
-  _FpType __s_b = __fpmp_sub_rn(__s_h, __s_a);
+  _FpType __s_h = ::cuda::__fpmp_add_rn(__a_hi, __b_hi);
+  _FpType __s_a = ::cuda::__fpmp_sub_rn(__s_h, __b_hi);
+  _FpType __s_b = ::cuda::__fpmp_sub_rn(__s_h, __s_a);
 
   // Inline two_sum for a_lo + b_lo (parallel with above)
-  _FpType __t_h = __fpmp_add_rn(__a_lo, __b_lo);
-  _FpType __t_a = __fpmp_sub_rn(__t_h, __b_lo);
-  _FpType __t_b = __fpmp_sub_rn(__t_h, __t_a);
+  _FpType __t_h = ::cuda::__fpmp_add_rn(__a_lo, __b_lo);
+  _FpType __t_a = ::cuda::__fpmp_sub_rn(__t_h, __b_lo);
+  _FpType __t_b = ::cuda::__fpmp_sub_rn(__t_h, __t_a);
 
   // Complete the error calculations (can interleave)
-  _FpType __s_da = __fpmp_sub_rn(__a_hi, __s_a);
-  _FpType __s_db = __fpmp_sub_rn(__b_hi, __s_b);
-  _FpType __s_l  = __fpmp_add_rn(__s_da, __s_db);
+  _FpType __s_da = ::cuda::__fpmp_sub_rn(__a_hi, __s_a);
+  _FpType __s_db = ::cuda::__fpmp_sub_rn(__b_hi, __s_b);
+  _FpType __s_l  = ::cuda::__fpmp_add_rn(__s_da, __s_db);
 
-  _FpType __t_da = __fpmp_sub_rn(__a_lo, __t_a);
-  _FpType __t_db = __fpmp_sub_rn(__b_lo, __t_b);
-  _FpType __t_l  = __fpmp_add_rn(__t_da, __t_db);
+  _FpType __t_da = ::cuda::__fpmp_sub_rn(__a_lo, __t_a);
+  _FpType __t_db = ::cuda::__fpmp_sub_rn(__b_lo, __t_b);
+  _FpType __t_l  = ::cuda::__fpmp_add_rn(__t_da, __t_db);
 
   // Level 2: Merge middle terms
-  _FpType __c = __fpmp_add_rn(__s_l, __t_h);
+  _FpType __c = ::cuda::__fpmp_add_rn(__s_l, __t_h);
 
   // Level 3: First normalization (Fast2Sum since |s_h| >= |c| typically)
-  _FpType __v_h   = __fpmp_add_rn(__s_h, __c);
-  _FpType __v_tmp = __fpmp_sub_rn(__v_h, __s_h);
-  _FpType __v_l   = __fpmp_sub_rn(__c, __v_tmp);
+  _FpType __v_h   = ::cuda::__fpmp_add_rn(__s_h, __c);
+  _FpType __v_tmp = ::cuda::__fpmp_sub_rn(__v_h, __s_h);
+  _FpType __v_l   = ::cuda::__fpmp_sub_rn(__c, __v_tmp);
 
   // Level 4: Absorb remaining error
-  _FpType __w = __fpmp_add_rn(__t_l, __v_l);
+  _FpType __w = ::cuda::__fpmp_add_rn(__t_l, __v_l);
 
   // Level 5: Final normalization
-  *__res_hi       = __fpmp_add_rn(__v_h, __w);
-  _FpType __r_tmp = __fpmp_sub_rn(*__res_hi, __v_h);
-  *__res_lo       = __fpmp_sub_rn(__w, __r_tmp);
+  *__res_hi       = ::cuda::__fpmp_add_rn(__v_h, __w);
+  _FpType __r_tmp = ::cuda::__fpmp_sub_rn(*__res_hi, __v_h);
+  *__res_lo       = ::cuda::__fpmp_sub_rn(__w, __r_tmp);
 } // __fpmp2_add_fpan
 
 template <typename _FpType>
@@ -174,7 +173,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_high_add(
   _FpType* __res_hi,
   _FpType* __res_lo) noexcept
 {
-  __internal_nv_fpmp2_add_fpan(__a_hi, __a_lo, __b_hi, __b_lo, __res_hi, __res_lo);
+  ::cuda::__internal_nv_fpmp2_add_fpan(__a_hi, __a_lo, __b_hi, __b_lo, __res_hi, __res_lo);
 }
 
 /*
@@ -195,7 +194,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_low_sub(
   _FpType* __res_hi,
   _FpType* __res_lo) noexcept
 {
-  __fpmp2_low_add(__x_hi, __x_lo, -__y_hi, -__y_lo, __res_hi, __res_lo);
+  ::cuda::__fpmp2_low_add(__x_hi, __x_lo, -__y_hi, -__y_lo, __res_hi, __res_lo);
 }
 /*
  * Classic split and error accumulation subtraction operation
@@ -210,7 +209,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_sub(
   _FpType* __res_hi,
   _FpType* __res_lo) noexcept
 {
-  __fpmp2_add(__x_hi, __x_lo, -__y_hi, -__y_lo, __res_hi, __res_lo);
+  ::cuda::__fpmp2_add(__x_hi, __x_lo, -__y_hi, -__y_lo, __res_hi, __res_lo);
 }
 /*
  * Thall accurate subtraction operation
@@ -227,7 +226,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_high_sub(
   _FpType* __res_hi,
   _FpType* __res_lo) noexcept
 {
-  __fpmp2_high_add(__x_hi, __x_lo, -__y_hi, -__y_lo, __res_hi, __res_lo);
+  ::cuda::__fpmp2_high_add(__x_hi, __x_lo, -__y_hi, -__y_lo, __res_hi, __res_lo);
 }
 
 /*
@@ -255,10 +254,10 @@ _CCCL_FPMP_CORE_API void __fpmp2_low_acc(const _FpType __c, _FpType* __acc_hi, _
 {
   _FpType __err;
   // Add c to high part with error capture
-  _FpType __new_hi = __fpmp_two_sum(*__acc_hi, __c, &__err);
+  _FpType __new_hi = ::cuda::__fpmp_two_sum(*__acc_hi, __c, &__err);
   // Accumulate error into low part (no normalization)
   *__acc_hi = __new_hi;
-  *__acc_lo = __fpmp_add_rn(*__acc_lo, __err);
+  *__acc_lo = ::cuda::__fpmp_add_rn(*__acc_lo, __err);
 }
 
 /*
@@ -270,11 +269,11 @@ _CCCL_FPMP_CORE_API void __fpmp2_acc(const _FpType __c, _FpType* __acc_hi, _FpTy
 {
   _FpType __err;
   // Add c to high part with error capture
-  _FpType __new_hi = __fpmp_two_sum(*__acc_hi, __c, &__err);
+  _FpType __new_hi = ::cuda::__fpmp_two_sum(*__acc_hi, __c, &__err);
   // Combine error with existing low part
-  _FpType __new_lo = __fpmp_add_rn(*__acc_lo, __err);
+  _FpType __new_lo = ::cuda::__fpmp_add_rn(*__acc_lo, __err);
   // Normalize result
-  *__acc_hi = __fpmp_fast_two_sum(__new_hi, __new_lo, __acc_lo);
+  *__acc_hi = ::cuda::__fpmp_fast_two_sum(__new_hi, __new_lo, __acc_lo);
 }
 
 /*
@@ -286,17 +285,17 @@ _CCCL_FPMP_CORE_API void __fpmp2_high_acc(const _FpType __c, _FpType* __acc_hi, 
 {
   _FpType __err;
   // Add c to high part with error capture
-  _FpType __s_hi = __fpmp_two_sum(*__acc_hi, __c, &__err);
+  _FpType __s_hi = ::cuda::__fpmp_two_sum(*__acc_hi, __c, &__err);
   // Add error to low part
-  _FpType __t = __fpmp_add_rn(*__acc_lo, __err);
+  _FpType __t = ::cuda::__fpmp_add_rn(*__acc_lo, __err);
   // First normalization
-  _FpType __v_hi  = __fpmp_add_rn(__s_hi, __t);
-  _FpType __v_tmp = __fpmp_sub_rn(__v_hi, __s_hi);
-  _FpType __v_lo  = __fpmp_sub_rn(__t, __v_tmp);
+  _FpType __v_hi  = ::cuda::__fpmp_add_rn(__s_hi, __t);
+  _FpType __v_tmp = ::cuda::__fpmp_sub_rn(__v_hi, __s_hi);
+  _FpType __v_lo  = ::cuda::__fpmp_sub_rn(__t, __v_tmp);
   // Final normalization
-  *__acc_hi       = __fpmp_add_rn(__v_hi, __v_lo);
-  _FpType __r_tmp = __fpmp_sub_rn(*__acc_hi, __v_hi);
-  *__acc_lo       = __fpmp_sub_rn(__v_lo, __r_tmp);
+  *__acc_hi       = ::cuda::__fpmp_add_rn(__v_hi, __v_lo);
+  _FpType __r_tmp = ::cuda::__fpmp_sub_rn(*__acc_hi, __v_hi);
+  *__acc_lo       = ::cuda::__fpmp_sub_rn(__v_lo, __r_tmp);
 }
 
 /*
@@ -317,11 +316,11 @@ _CCCL_FPMP_CORE_API void __fpmp2_low_mul(
   _FpType* __res_hi,
   _FpType* __res_lo) noexcept
 {
-  _FpType __t_hi = __fpmp_mul_rn(__x_hi, __y_hi);
-  _FpType __t_lo = __fpmp_fma_rn(__x_hi, __y_hi, -__t_hi);
-  __t_lo         = __fpmp_fma_rn(__x_lo, __y_lo, __t_lo);
-  __t_lo         = __fpmp_fma_rn(__x_hi, __y_lo, __t_lo);
-  __t_lo         = __fpmp_fma_rn(__x_lo, __y_hi, __t_lo);
+  _FpType __t_hi = ::cuda::__fpmp_mul_rn(__x_hi, __y_hi);
+  _FpType __t_lo = ::cuda::__fpmp_fma_rn(__x_hi, __y_hi, -__t_hi);
+  __t_lo         = ::cuda::__fpmp_fma_rn(__x_lo, __y_lo, __t_lo);
+  __t_lo         = ::cuda::__fpmp_fma_rn(__x_hi, __y_lo, __t_lo);
+  __t_lo         = ::cuda::__fpmp_fma_rn(__x_lo, __y_hi, __t_lo);
 
   *__res_hi = __t_hi;
   *__res_lo = __t_lo;
@@ -341,12 +340,12 @@ _CCCL_FPMP_CORE_API void __fpmp2_mul(
   _FpType* __res_lo) noexcept
 {
   _FpType __p1, __p2, __c_hi, __c_lo, __res_hi_tmp, __res_lo_tmp;
-  __c_hi = __fpmp_two_mult_fma(__x_hi, __y_hi, &__c_lo);
-  __p1   = __fpmp_mul_rn(__x_hi, __y_lo);
-  __p2   = __fpmp_mul_rn(__x_lo, __y_hi);
-  __c_lo = __fpmp_add_rn(__c_lo, __fpmp_add_rn(__p1, __p2));
+  __c_hi = ::cuda::__fpmp_two_mult_fma(__x_hi, __y_hi, &__c_lo);
+  __p1   = ::cuda::__fpmp_mul_rn(__x_hi, __y_lo);
+  __p2   = ::cuda::__fpmp_mul_rn(__x_lo, __y_hi);
+  __c_lo = ::cuda::__fpmp_add_rn(__c_lo, ::cuda::__fpmp_add_rn(__p1, __p2));
   // Normalize:
-  __res_hi_tmp = __fpmp_fast_two_sum(__c_hi, __c_lo, &__res_lo_tmp);
+  __res_hi_tmp = ::cuda::__fpmp_fast_two_sum(__c_hi, __c_lo, &__res_lo_tmp);
 
   *__res_hi = __res_hi_tmp;
   *__res_lo = __res_lo_tmp;
@@ -371,18 +370,18 @@ _CCCL_FPMP_CORE_API void __fpmp2_low_fma(
   _FpType* __res_hi,
   _FpType* __res_lo) noexcept
 {
-  _FpType __r_hi = __fpmp_fma_rn(__x_hi, __y_hi, __z_hi);
+  _FpType __r_hi = ::cuda::__fpmp_fma_rn(__x_hi, __y_hi, __z_hi);
 
   _FpType __q;
-  _FpType __p = __fpmp_two_mult_fma(__x_hi, __y_hi, &__q);
+  _FpType __p = ::cuda::__fpmp_two_mult_fma(__x_hi, __y_hi, &__q);
   _FpType __t;
-  _FpType __s    = __fpmp_two_sum(__p, __z_hi, &__t);
-  _FpType __r_lo = __fpmp_add_rn(__fpmp_sub_rn(__s, __r_hi), __fpmp_add_rn(__t, __q));
+  _FpType __s    = ::cuda::__fpmp_two_sum(__p, __z_hi, &__t);
+  _FpType __r_lo = ::cuda::__fpmp_add_rn(::cuda::__fpmp_sub_rn(__s, __r_hi), ::cuda::__fpmp_add_rn(__t, __q));
 
-  __r_lo = __fpmp_fma_rn(__x_hi, __y_lo, __r_lo);
-  __r_lo = __fpmp_fma_rn(__x_lo, __y_hi, __r_lo);
-  __r_lo = __fpmp_fma_rn(__x_lo, __y_lo, __r_lo);
-  __r_lo = __fpmp_add_rn(__r_lo, __z_lo);
+  __r_lo = ::cuda::__fpmp_fma_rn(__x_hi, __y_lo, __r_lo);
+  __r_lo = ::cuda::__fpmp_fma_rn(__x_lo, __y_hi, __r_lo);
+  __r_lo = ::cuda::__fpmp_fma_rn(__x_lo, __y_lo, __r_lo);
+  __r_lo = ::cuda::__fpmp_add_rn(__r_lo, __z_lo);
 
   *__res_hi = __r_hi;
   *__res_lo = __r_lo;
@@ -408,23 +407,23 @@ _CCCL_FPMP_CORE_API void __fpmp2_fma(
   _FpType* __res_lo) noexcept
 {
   // Hardware FMA: x_hi*y_hi + z_hi with single rounding (optimal)
-  _FpType __r_hi = __fpmp_fma_rn(__x_hi, __y_hi, __z_hi);
+  _FpType __r_hi = ::cuda::__fpmp_fma_rn(__x_hi, __y_hi, __z_hi);
 
   // Exact error recovery for the main FMA
   _FpType __q;
-  _FpType __p = __fpmp_two_mult_fma(__x_hi, __y_hi, &__q);
+  _FpType __p = ::cuda::__fpmp_two_mult_fma(__x_hi, __y_hi, &__q);
   _FpType __t;
-  _FpType __s    = __fpmp_two_sum(__p, __z_hi, &__t);
-  _FpType __r_lo = __fpmp_add_rn(__fpmp_sub_rn(__s, __r_hi), __fpmp_add_rn(__t, __q));
+  _FpType __s    = ::cuda::__fpmp_two_sum(__p, __z_hi, &__t);
+  _FpType __r_lo = ::cuda::__fpmp_add_rn(::cuda::__fpmp_sub_rn(__s, __r_hi), ::cuda::__fpmp_add_rn(__t, __q));
 
   // Cross terms and remaining contributions
-  __r_lo = __fpmp_fma_rn(__x_hi, __y_lo, __r_lo);
-  __r_lo = __fpmp_fma_rn(__x_lo, __y_hi, __r_lo);
-  __r_lo = __fpmp_fma_rn(__x_lo, __y_lo, __r_lo);
-  __r_lo = __fpmp_add_rn(__r_lo, __z_lo);
+  __r_lo = ::cuda::__fpmp_fma_rn(__x_hi, __y_lo, __r_lo);
+  __r_lo = ::cuda::__fpmp_fma_rn(__x_lo, __y_hi, __r_lo);
+  __r_lo = ::cuda::__fpmp_fma_rn(__x_lo, __y_lo, __r_lo);
+  __r_lo = ::cuda::__fpmp_add_rn(__r_lo, __z_lo);
 
   // Normalize
-  *__res_hi = __fpmp_fast_two_sum(__r_hi, __r_lo, __res_lo);
+  *__res_hi = ::cuda::__fpmp_fast_two_sum(__r_hi, __r_lo, __res_lo);
 } // __fpmp2_fma
 
 /* Compute accurate fused multiply-add: x*y+z
@@ -445,33 +444,34 @@ _CCCL_FPMP_CORE_API void __fpmp2_high_fma(
   _FpType* __res_hi,
   _FpType* __res_lo) noexcept
 {
-  _FpType __r_hi = __fpmp_fma_rn(__x_hi, __y_hi, __z_hi);
+  _FpType __r_hi = ::cuda::__fpmp_fma_rn(__x_hi, __y_hi, __z_hi);
 
   _FpType __q;
-  _FpType __p = __fpmp_two_mult_fma(__x_hi, __y_hi, &__q);
+  _FpType __p = ::cuda::__fpmp_two_mult_fma(__x_hi, __y_hi, &__q);
   _FpType __t;
-  _FpType __s    = __fpmp_two_sum(__p, __z_hi, &__t);
-  _FpType __r_lo = __fpmp_add_rn(__fpmp_sub_rn(__s, __r_hi), __fpmp_add_rn(__t, __q));
+  _FpType __s    = ::cuda::__fpmp_two_sum(__p, __z_hi, &__t);
+  _FpType __r_lo = ::cuda::__fpmp_add_rn(::cuda::__fpmp_sub_rn(__s, __r_hi), ::cuda::__fpmp_add_rn(__t, __q));
 
   _FpType __c1_lo;
-  _FpType __c1_hi = __fpmp_two_mult_fma(__x_hi, __y_lo, &__c1_lo);
+  _FpType __c1_hi = ::cuda::__fpmp_two_mult_fma(__x_hi, __y_lo, &__c1_lo);
 
   _FpType __c2_lo;
-  _FpType __c2_hi = __fpmp_two_mult_fma(__x_lo, __y_hi, &__c2_lo);
+  _FpType __c2_hi = ::cuda::__fpmp_two_mult_fma(__x_lo, __y_hi, &__c2_lo);
 
   _FpType __cross_err;
-  _FpType __cross = __fpmp_two_sum(__c1_hi, __c2_hi, &__cross_err);
+  _FpType __cross = ::cuda::__fpmp_two_sum(__c1_hi, __c2_hi, &__cross_err);
 
   _FpType __acc_err;
-  __r_lo = __fpmp_two_sum(__r_lo, __cross, &__acc_err);
+  __r_lo = ::cuda::__fpmp_two_sum(__r_lo, __cross, &__acc_err);
 
-  _FpType __residual = __fpmp_add_rn(__acc_err, __fpmp_add_rn(__cross_err, __fpmp_add_rn(__c1_lo, __c2_lo)));
-  __residual         = __fpmp_fma_rn(__x_lo, __y_lo, __residual);
-  __residual         = __fpmp_add_rn(__residual, __z_lo);
+  _FpType __residual =
+    ::cuda::__fpmp_add_rn(__acc_err, ::cuda::__fpmp_add_rn(__cross_err, ::cuda::__fpmp_add_rn(__c1_lo, __c2_lo)));
+  __residual = ::cuda::__fpmp_fma_rn(__x_lo, __y_lo, __residual);
+  __residual = ::cuda::__fpmp_add_rn(__residual, __z_lo);
 
-  __r_lo = __fpmp_add_rn(__r_lo, __residual);
+  __r_lo = ::cuda::__fpmp_add_rn(__r_lo, __residual);
 
-  *__res_hi = __fpmp_fast_two_sum(__r_hi, __r_lo, __res_lo);
+  *__res_hi = ::cuda::__fpmp_fast_two_sum(__r_hi, __r_lo, __res_lo);
 } // __fpmp2_high_fma
 
 /*
@@ -492,8 +492,8 @@ _CCCL_FPMP_CORE_API void __fpmp2_mad(
   _FpType* __res_lo) noexcept
 {
   _FpType __t_hi, __t_lo;
-  __fpmp2_low_mul(__x_hi, __x_lo, __y_hi, __y_lo, &__t_hi, &__t_lo);
-  __fpmp2_add(__t_hi, __t_lo, __z_hi, __z_lo, __res_hi, __res_lo);
+  ::cuda::__fpmp2_low_mul(__x_hi, __x_lo, __y_hi, __y_lo, &__t_hi, &__t_lo);
+  ::cuda::__fpmp2_add(__t_hi, __t_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 
 // multiply-add fast (fast mul + fast add)
@@ -509,8 +509,8 @@ _CCCL_FPMP_CORE_API void __fpmp2_low_mad(
   _FpType* __res_lo) noexcept
 {
   _FpType __t_hi, __t_lo;
-  __fpmp2_low_mul(__x_hi, __x_lo, __y_hi, __y_lo, &__t_hi, &__t_lo);
-  __fpmp2_low_add(__t_hi, __t_lo, __z_hi, __z_lo, __res_hi, __res_lo);
+  ::cuda::__fpmp2_low_mul(__x_hi, __x_lo, __y_hi, __y_lo, &__t_hi, &__t_lo);
+  ::cuda::__fpmp2_low_add(__t_hi, __t_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 
 // multiply-add accurate (default mul + accurate add)
@@ -526,8 +526,8 @@ _CCCL_FPMP_CORE_API void __fpmp2_high_mad(
   _FpType* __res_lo) noexcept
 {
   _FpType __t_hi, __t_lo;
-  __fpmp2_mul(__x_hi, __x_lo, __y_hi, __y_lo, &__t_hi, &__t_lo);
-  __fpmp2_high_add(__t_hi, __t_lo, __z_hi, __z_lo, __res_hi, __res_lo);
+  ::cuda::__fpmp2_mul(__x_hi, __x_lo, __y_hi, __y_lo, &__t_hi, &__t_lo);
+  ::cuda::__fpmp2_high_add(__t_hi, __t_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 
 /*
@@ -1012,7 +1012,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_add<float>(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  __fp32mp2_add(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_add(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_add<float>(
@@ -1023,7 +1023,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_add<float>(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  __fp32mp2_mid_add(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_mid_add(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_low_add<float>(
@@ -1034,7 +1034,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_low_add<float>(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  __fp32mp2_low_add(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_low_add(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_high_add<float>(
@@ -1045,7 +1045,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_high_add<float>(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  __fp32mp2_high_add(__a_hi, __a_lo, __b_hi, __b_lo, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_high_add(__a_hi, __a_lo, __b_hi, __b_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_sub<float>(
@@ -1056,7 +1056,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_sub<float>(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  __fp32mp2_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_sub<float>(
@@ -1067,7 +1067,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_sub<float>(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  __fp32mp2_mid_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_mid_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_low_sub<float>(
@@ -1078,7 +1078,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_low_sub<float>(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  __fp32mp2_low_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_low_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_high_sub<float>(
@@ -1089,27 +1089,27 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_high_sub<float>(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  __fp32mp2_high_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_high_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_acc<float>(const float __c, float* __acc_hi, float* __acc_lo) noexcept
 {
-  __fp32mp2_acc(__c, __acc_hi, __acc_lo);
+  ::cuda::__fp32mp2_acc(__c, __acc_hi, __acc_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_acc<float>(const float __c, float* __acc_hi, float* __acc_lo) noexcept
 {
-  __fp32mp2_mid_acc(__c, __acc_hi, __acc_lo);
+  ::cuda::__fp32mp2_mid_acc(__c, __acc_hi, __acc_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_low_acc<float>(const float __c, float* __acc_hi, float* __acc_lo) noexcept
 {
-  __fp32mp2_low_acc(__c, __acc_hi, __acc_lo);
+  ::cuda::__fp32mp2_low_acc(__c, __acc_hi, __acc_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_high_acc<float>(const float __c, float* __acc_hi, float* __acc_lo) noexcept
 {
-  __fp32mp2_high_acc(__c, __acc_hi, __acc_lo);
+  ::cuda::__fp32mp2_high_acc(__c, __acc_hi, __acc_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_mul<float>(
@@ -1120,7 +1120,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_mul<float>(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  __fp32mp2_mul(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_mul(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_mul<float>(
@@ -1131,7 +1131,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_mul<float>(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  __fp32mp2_mid_mul(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_mid_mul(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_low_mul<float>(
@@ -1142,13 +1142,13 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_low_mul<float>(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  __fp32mp2_low_mul(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_low_mul(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void
 __fpmp2_renormalize<float>(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  __fp32mp2_renormalize(__x_hi, __x_lo, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_renormalize(__x_hi, __x_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_mad<float>(
@@ -1161,7 +1161,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_mad<float>(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  __fp32mp2_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_mad<float>(
@@ -1174,7 +1174,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_mad<float>(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  __fp32mp2_mid_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_mid_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_low_mad<float>(
@@ -1187,7 +1187,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_low_mad<float>(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  __fp32mp2_low_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_low_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_high_mad<float>(
@@ -1200,7 +1200,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_high_mad<float>(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  __fp32mp2_high_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_high_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_fma<float>(
@@ -1213,7 +1213,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_fma<float>(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  __fp32mp2_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_fma<float>(
@@ -1226,7 +1226,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_fma<float>(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  __fp32mp2_mid_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_mid_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_low_fma<float>(
@@ -1239,7 +1239,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_low_fma<float>(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  __fp32mp2_low_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_low_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_high_fma<float>(
@@ -1252,13 +1252,13 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_high_fma<float>(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  __fp32mp2_high_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_high_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void
 __fpmp2_neg<float>(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  __fp32mp2_neg(__x_hi, __x_lo, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_neg(__x_hi, __x_lo, __res_hi, __res_lo);
 }
 
 // -- fp64 template specializations --
@@ -1271,7 +1271,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_add<double>(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  __fp64mp2_add(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_add(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_add<double>(
@@ -1282,7 +1282,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_add<double>(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  __fp64mp2_mid_add(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_mid_add(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_low_add<double>(
@@ -1293,7 +1293,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_low_add<double>(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  __fp64mp2_low_add(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_low_add(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_high_add<double>(
@@ -1304,7 +1304,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_high_add<double>(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  __fp64mp2_high_add(__a_hi, __a_lo, __b_hi, __b_lo, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_high_add(__a_hi, __a_lo, __b_hi, __b_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_sub<double>(
@@ -1315,7 +1315,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_sub<double>(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  __fp64mp2_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_sub<double>(
@@ -1326,7 +1326,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_sub<double>(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  __fp64mp2_mid_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_mid_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_low_sub<double>(
@@ -1337,7 +1337,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_low_sub<double>(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  __fp64mp2_low_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_low_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_high_sub<double>(
@@ -1348,27 +1348,27 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_high_sub<double>(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  __fp64mp2_high_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_high_sub(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_acc<double>(const double __c, double* __acc_hi, double* __acc_lo) noexcept
 {
-  __fp64mp2_acc(__c, __acc_hi, __acc_lo);
+  ::cuda::__fp64mp2_acc(__c, __acc_hi, __acc_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_acc<double>(const double __c, double* __acc_hi, double* __acc_lo) noexcept
 {
-  __fp64mp2_mid_acc(__c, __acc_hi, __acc_lo);
+  ::cuda::__fp64mp2_mid_acc(__c, __acc_hi, __acc_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_low_acc<double>(const double __c, double* __acc_hi, double* __acc_lo) noexcept
 {
-  __fp64mp2_low_acc(__c, __acc_hi, __acc_lo);
+  ::cuda::__fp64mp2_low_acc(__c, __acc_hi, __acc_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_high_acc<double>(const double __c, double* __acc_hi, double* __acc_lo) noexcept
 {
-  __fp64mp2_high_acc(__c, __acc_hi, __acc_lo);
+  ::cuda::__fp64mp2_high_acc(__c, __acc_hi, __acc_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_mul<double>(
@@ -1379,7 +1379,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_mul<double>(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  __fp64mp2_mul(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_mul(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_mul<double>(
@@ -1390,7 +1390,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_mul<double>(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  __fp64mp2_mid_mul(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_mid_mul(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_low_mul<double>(
@@ -1401,13 +1401,13 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_low_mul<double>(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  __fp64mp2_low_mul(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_low_mul(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void
 __fpmp2_renormalize<double>(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
-  __fp64mp2_renormalize(__x_hi, __x_lo, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_renormalize(__x_hi, __x_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_mad<double>(
@@ -1420,7 +1420,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_mad<double>(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  __fp64mp2_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_mad<double>(
@@ -1433,7 +1433,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_mad<double>(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  __fp64mp2_mid_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_mid_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_low_mad<double>(
@@ -1446,7 +1446,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_low_mad<double>(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  __fp64mp2_low_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_low_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_high_mad<double>(
@@ -1459,7 +1459,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_high_mad<double>(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  __fp64mp2_high_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_high_mad(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_fma<double>(
@@ -1472,7 +1472,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_fma<double>(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  __fp64mp2_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_fma<double>(
@@ -1485,7 +1485,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_fma<double>(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  __fp64mp2_mid_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_mid_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_low_fma<double>(
@@ -1498,7 +1498,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_low_fma<double>(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  __fp64mp2_low_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_low_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_high_fma<double>(
@@ -1511,17 +1511,17 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_high_fma<double>(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  __fp64mp2_high_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_high_fma(__x_hi, __x_lo, __y_hi, __y_lo, __z_hi, __z_lo, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void
 __fpmp2_neg<double>(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
-  __fp64mp2_neg(__x_hi, __x_lo, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_neg(__x_hi, __x_lo, __res_hi, __res_lo);
 }
 
 #endif // _CCCL_FPMP_USE_LIB
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

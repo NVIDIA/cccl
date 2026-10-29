@@ -25,7 +25,6 @@
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__memory/allocator.h>
 #include <cuda/std/__memory/allocator_traits.h>
-#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/typeid.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/optional>

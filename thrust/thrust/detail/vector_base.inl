@@ -31,6 +31,7 @@
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/next.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -1121,14 +1122,14 @@ void vector_base<T, Alloc>::allocate_and_copy(
 
 // iterator tags match
 template <typename InputIterator1, typename InputIterator2>
-bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, thrust::detail::true_type)
+bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, ::cuda::std::true_type)
 {
   return thrust::equal(first1, last1, first2);
 }
 
 // iterator tags differ
 template <typename InputIterator1, typename InputIterator2>
-bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, thrust::detail::false_type)
+bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, ::cuda::std::false_type)
 {
   const it_difference_t<InputIterator1> n = ::cuda::std::distance(first1, last1);
 

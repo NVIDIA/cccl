@@ -21,19 +21,23 @@
 
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_discontinuity.cuh>
-#include <cub/block/block_exchange.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
-#include <cub/block/block_store.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/prefetch.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_type.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/thread/thread_operators.cuh>
 
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -138,15 +142,6 @@ struct partition_distinct_output_t
   selected_iterator_t selected_it;
   rejected_iterator_t rejected_it;
 };
-
-template <typename OutputIterator>
-struct is_partition_distinct_output_t : ::cuda::std::false_type
-{};
-
-template <typename SelectedOutputItT, typename RejectedOutputItT>
-struct is_partition_distinct_output_t<partition_distinct_output_t<SelectedOutputItT, RejectedOutputItT>>
-    : ::cuda::std::true_type
-{};
 
 /**
  * @brief AgentSelectIf implements a stateful abstraction of CUDA thread blocks for participating in

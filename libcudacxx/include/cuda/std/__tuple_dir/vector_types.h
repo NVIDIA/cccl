@@ -25,13 +25,10 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 
-#  include <cuda/std/__fwd/get.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__tuple_dir/tuple_element.h>
 #  include <cuda/std/__tuple_dir/tuple_size.h>
-#  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
-#  include <cuda/std/__utility/forward.h>
-#  include <cuda/std/__utility/move.h>
 
 #  define _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__name, __type, __size, ...)                       \
     template <>                                                                                     \

@@ -63,8 +63,8 @@ under suspicion and leave the rest as plain `fpmp2`, and the counters describe t
 variable's arithmetic instead of the whole kernel's:
 
 ```c++
-cudax::fp32mp2      sum{0.0f}, term{1.0f};
-cudax::fp32mp2_stat compensation{0.0f};   // the only instrumented variable
+cuda::fp32mp2      sum{0.0f}, term{1.0f};
+cuda::fp32mp2_stat compensation{0.0f};   // the only instrumented variable
 
 auto y = term - compensation;   // counted: compensation is instrumented, y becomes so
 auto t = sum + y;               // counted: y is instrumented, t becomes so
@@ -121,11 +121,10 @@ across translation units.
 ```
 
 ```c++
-namespace cudax = cuda::experimental;
 
-cudax::fpmp2_stat_reset_device_data(stream);
+cuda::fpmp2_stat_reset_device_data(stream);
 cuda::launch(stream, config, my_kernel, ...);
-const auto record = cudax::fpmp2_stat_read_device_data(stream);
+const auto record = cuda::fpmp2_stat_read_device_data(stream);
 ```
 
 Both functions take a stream and are host-only. The reset enqueues a cleared record, so
@@ -343,3 +342,13 @@ A measurement workflow
 6. Compare the same workload across `_low`, `_mid` and `_high`.
 7. Keep a plain-type run alongside. Results are bit-identical by construction, so a mismatch
    means a race or an uninitialized value rather than a rounding difference.
+
+Optimization guide
+------------------
+
+Several of the recommendations for the `fpmp` types — whether `low` is safe and where to
+renormalize, where `high` pays, whether the pair is earning its cost — are decided from this
+record. The [FP optimization guide](README_fp_optimization_guide.md#using-fptool) gives the
+order to read it in for that purpose, and its [Using fpmp
+efficiently](README_fp_optimization_guide.md#using-fpmp-efficiently) section the recommendations
+themselves.

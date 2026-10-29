@@ -90,7 +90,6 @@ test_queries(const cudax::coop::generic_group<cuda::thread_level, ParentGroup, M
   REQUIRE(cuda::gpu_thread.count(group) == count_ref);
   REQUIRE(cuda::gpu_thread.rank(group) == rank_ref);
   REQUIRE(cuda::gpu_thread.is_root_rank(group) == (rank_ref == 0));
-  REQUIRE(cuda::gpu_thread.is_part_of(group));
 
   const auto static_group_count_ref = group.__mapping_result().static_group_count();
   const auto group_count_ref        = group.__mapping_result().group_count();

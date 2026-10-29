@@ -15,7 +15,7 @@ Compare CUB benchmarks between two refs:
 
 ```bash
 "./ci/bench/bench.sh" "origin/main" "HEAD" \
-  --cub-filter "^cub\\.bench\\.copy\\.memcpy\\.base$"
+  --cpp-filter "^cub\\.bench\\.copy\\.memcpy\\.base$"
 ```
 
 Compare Python benchmarks between two refs:
@@ -33,7 +33,7 @@ Run both CUB and Python benchmarks:
   "HEAD" \
   --arch "native" \
   --nvbench-args "..." \
-  --cub-filter "^cub\\.bench\\.reduce\\..*$" \
+  --cpp-filter "^cub\\.bench\\.reduce\\..*$" \
   --python-filter "compute/reduce/sum\\.py"
 ```
 
@@ -44,7 +44,7 @@ Compare already checked-out trees:
   "/path/to/base/cccl" \
   "/path/to/test/cccl" \
   --arch "native" \
-  --cub-filter "^cub\\.bench\\.copy\\.memcpy\\.base$" \
+  --cpp-filter "^cub\\.bench\\.copy\\.memcpy\\.base$" \
   --python-filter "compute/transform/.*\\.py"
 ```
 
@@ -53,9 +53,9 @@ Compare already checked-out trees:
 In `.github/workflows/bench.yml`:
 
 - If `raw_args` is non-empty, it is parsed and passed directly to `ci/bench/bench.sh`.
-- Otherwise, args are assembled from `base_ref`, `test_ref`, `arch`, `cub_filters`, `python_filters`, `nvbench_args`, `nvbench_compare_args`, and `nvbench_compare_legacy_args`.
+- Otherwise, args are assembled from `base_ref`, `test_ref`, `arch`, `cpp_filters`, `python_filters`, `nvbench_args`, `nvbench_compare_args`, and `nvbench_compare_legacy_args`.
 - `nvbench_compare_args` are passed to `nvbench-compare-robust`; `nvbench_compare_legacy_args` are passed to diagnostic `nvbench-compare-legacy` runs.
-- CUB filters are passed as `--cub-filter` flags. Python filters are passed as `--python-filter` flags.
+- C++ filters are passed as `--cpp-filter` flags. Python filters are passed as `--python-filter` flags.
 - The workflow resolves NVBench `main` once and passes the resulting SHA to generated CUB build trees.
 - Malformed quoted input (for example unmatched quotes) fails the workflow step.
 

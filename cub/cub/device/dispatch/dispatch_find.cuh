@@ -20,22 +20,24 @@
 #include <thrust/detail/config.h>
 
 #include <cub/agent/agent_find.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/type_size.cuh>
 #include <cub/device/dispatch/tuning/tuning_find.cuh>
-#include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
-#include <cub/util_type.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
-#include <cuda/__iterator/transform_iterator.h>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__type_traits/is_integral.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -178,9 +180,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   // use d_temp_storage as the intermediate device result to read and write from. Then store the final result in the
   // output iterator.
-  if (const auto error = CubDebug(THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-                                    1, 1, 0, stream, /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
-                                    .doit(init_found_pos_pointer<OffsetT, OffsetT>, found_pos_ptr, num_items)))
+  if (const auto error = CubDebug(
+        detail::TripleChevronFactory{}(1, 1, 0, stream, /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
+          .doit(init_found_pos_pointer<OffsetT, OffsetT>, found_pos_ptr, num_items)))
   {
     return error;
   }
@@ -191,7 +193,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     // instead of device_reference<T>, which is necessary for predicates that don't accept proxy types.
     auto d_in_unwrapped = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in);
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+          detail::TripleChevronFactory{}(
             findif_grid_size,
             active_policy.threads_per_block,
             0,
@@ -206,8 +208,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   if constexpr (!can_write_to_output_directly)
   {
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-            1, 1, 0, stream, /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
+          detail::TripleChevronFactory{}(1, 1, 0, stream, /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
             .doit(copy_final_result_to_output_iterator<OffsetT, OutputIteratorT>, found_pos_ptr, d_out)))
     {
       return error;

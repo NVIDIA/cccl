@@ -21,18 +21,20 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/movable.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
-#include <cuda/std/__tuple_dir/sfinae_helpers.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__utility/delegate_constructors.h>
+#include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/optional>
 

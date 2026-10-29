@@ -23,6 +23,7 @@
 #endif // no system header
 
 #include <cuda/__container/resizable_buffer.h>
+#include <cuda/__container/simple_vector.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__optional/optional.h>
 #include <cuda/std/__utility/pair.h>
@@ -31,8 +32,6 @@
 
 #include <cuda/experimental/__utility/result_policy.cuh>
 #include <cuda/experimental/mgmn/__algorithm/common.h>
-
-#include <vector>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -85,8 +84,8 @@ struct _PerCommSamplingScratch
 template <template <class> class _Buffer>
 struct _LocalSetupResult
 {
-  ::std::vector<_Buffer<::cuda::std::uint64_t>> __all_local_offsets{};
-  ::std::vector<::cuda::std::uint64_t> __all_local_sizes{};
+  ::cuda::__simple_vector<_Buffer<::cuda::std::uint64_t>> __all_local_offsets{};
+  ::cuda::__simple_vector<::cuda::std::uint64_t> __all_local_sizes{};
   ::cuda::std::uint64_t __N{};
   ::cuda::std::int32_t __comm_size{};
 };
@@ -101,8 +100,8 @@ struct _PerCommHistogrammingResult
 template <class _Tp, template <class> class _Buffer>
 struct _DataExchangeResult
 {
-  ::std::vector<_Buffer<_Tp>> __local_merged{};
-  ::std::vector<_Buffer<::cuda::std::uint64_t>> __local_current_offsets{};
+  ::cuda::__simple_vector<_Buffer<_Tp>> __local_merged{};
+  ::cuda::__simple_vector<_Buffer<::cuda::std::uint64_t>> __local_current_offsets{};
 };
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
@@ -133,7 +132,8 @@ private:
   // ------------------------------------------------------------------------------------------
 
   template <class _CommRange, class _EnvRange, class _InputIterRange, class _SizeTRange>
-  [[nodiscard]] _CCCL_HOST_API static ::std::vector<__per_comm_histogramming_result_type> __histogramming_phase(
+  [[nodiscard]] _CCCL_HOST_API static ::cuda::__simple_vector<__per_comm_histogramming_result_type>
+  __histogramming_phase(
     const __local_setup_result_type& __setup,
     _CommRange&& __comms,
     _EnvRange&& __envs,
@@ -149,21 +149,21 @@ private:
     ::cuda::std::int32_t __j,
     double __sampling_probability,
     const _BinaryOp& __cmp,
-    const ::std::vector<__per_comm_histogramming_result_type>& __local_hist_results,
+    const ::cuda::__simple_vector<__per_comm_histogramming_result_type>& __local_hist_results,
     ::cuda::std::span<const ::cuda::std::size_t> __cap_displs,
-    ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch);
+    ::cuda::__simple_vector<__per_comm_sampling_scratch_type>* __local_scratch);
 
   template <class _EnvRange>
   [[nodiscard]]
-  _CCCL_HOST_API static ::cuda::std::pair<::std::vector<__per_comm_sampling_scratch_type>,
-                                          ::std::vector<__per_comm_histogramming_result_type>>
+  _CCCL_HOST_API static ::cuda::std::pair<::cuda::__simple_vector<__per_comm_sampling_scratch_type>,
+                                          ::cuda::__simple_vector<__per_comm_histogramming_result_type>>
   __allocate_histogramming_buffers(const __local_setup_result_type& __setup, _EnvRange&& __envs);
 
   template <class _CommRange>
   _CCCL_HOST_API static void __exchange_sample_counts(
     _CommRange&& __comms,
     ::cuda::std::span<::cuda::std::size_t> __h_recvcounts,
-    ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch);
+    ::cuda::__simple_vector<__per_comm_sampling_scratch_type>* __local_scratch);
 
   template <class _CommRange, class _EnvRange>
   _CCCL_HOST_API static void __gather_and_merge_probes(
@@ -172,8 +172,8 @@ private:
     const _BinaryOp& __cmp,
     ::cuda::std::span<const ::cuda::std::size_t> __h_recvcounts,
     ::cuda::std::span<const ::cuda::std::size_t> __h_cap_displs,
-    ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch,
-    ::std::vector<__per_comm_histogramming_result_type>* __local_hist_results);
+    ::cuda::__simple_vector<__per_comm_sampling_scratch_type>* __local_scratch,
+    ::cuda::__simple_vector<__per_comm_histogramming_result_type>* __local_hist_results);
 
   template <class _CommRange, class _EnvRange, class _InputIterRange, class _SizeTRange>
   _CCCL_HOST_API static void __compute_histogram(
@@ -182,19 +182,19 @@ private:
     _InputIterRange&& __key_iters,
     _SizeTRange&& __num_items_range,
     const _BinaryOp& __cmp,
-    ::std::vector<__per_comm_histogramming_result_type>* __local_hist_results);
+    ::cuda::__simple_vector<__per_comm_histogramming_result_type>* __local_hist_results);
 
   template <class _CommRange, class _EnvRange>
   _CCCL_HOST_API static void __update_intervals(
     _CommRange&& __comms,
     _EnvRange&& __envs,
     ::cuda::std::uint64_t __N,
-    ::std::vector<__per_comm_histogramming_result_type>* __local_hist_results);
+    ::cuda::__simple_vector<__per_comm_histogramming_result_type>* __local_hist_results);
 
   // ------------------------------------------------------------------------------------------
 
   template <class _CommRange, class _EnvRange, class _InputIterRange, class _SizeTRange>
-  [[nodiscard]] _CCCL_HOST_API static ::std::vector<__resizable_buffer_type<::cuda::std::size_t>>
+  [[nodiscard]] _CCCL_HOST_API static ::cuda::__simple_vector<__resizable_buffer_type<::cuda::std::size_t>>
   __compute_send_counts_and_offsets(
     const __local_setup_result_type& __setup,
     _CommRange&& __comms,
@@ -202,16 +202,16 @@ private:
     _InputIterRange&& __input_iters,
     _SizeTRange&& __num_items_range,
     const _BinaryOp& __cmp,
-    const ::std::vector<__per_comm_histogramming_result_type>& __hist_results,
-    ::std::vector<__resizable_buffer_type<::cuda::std::uint64_t>>* __local_current_offsets);
+    const ::cuda::__simple_vector<__per_comm_histogramming_result_type>& __hist_results,
+    ::cuda::__simple_vector<__resizable_buffer_type<::cuda::std::uint64_t>>* __local_current_offsets);
 
   template <class _CommRange, class _EnvRange>
-  [[nodiscard]] _CCCL_HOST_API static ::std::vector<__resizable_buffer_type<_Tp>> __make_recv_buffers(
+  [[nodiscard]] _CCCL_HOST_API static ::cuda::__simple_vector<__resizable_buffer_type<_Tp>> __make_recv_buffers(
     _CommRange&& __comms,
     _EnvRange&& __envs,
     ::cuda::std::size_t __comm_size,
-    const ::std::vector<__resizable_buffer_type<::cuda::std::size_t>>& __local_counts,
-    ::std::vector<::cuda::std::size_t>* __h_counts);
+    const ::cuda::__simple_vector<__resizable_buffer_type<::cuda::std::size_t>>& __local_counts,
+    ::cuda::__simple_vector<::cuda::std::size_t>* __h_counts);
 
   template <class _CommRange, class _EnvRange, class _InputIterRange, class _SizeTRange>
   [[nodiscard]] _CCCL_HOST_API static __data_exchange_result_type __data_exchange(
@@ -221,7 +221,7 @@ private:
     _InputIterRange&& __input_iters,
     _SizeTRange&& __num_items_range,
     const _BinaryOp& __cmp,
-    const ::std::vector<__per_comm_histogramming_result_type>& __hist_results);
+    const ::cuda::__simple_vector<__per_comm_histogramming_result_type>& __hist_results);
 
   // ------------------------------------------------------------------------------------------
 

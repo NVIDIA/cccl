@@ -29,8 +29,6 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
 enum
 {
   M_RN = 0,
@@ -113,17 +111,17 @@ TEST_HOST_DEVICE_FUNC uint64_t ref_one(double a, int mode){NV_IF_ELSE_TARGET(
 // target.
 TEST_HOST_DEVICE_FUNC void check_value(double x)
 {
-  cudax::__fpbits64 a = cudax::__fp64emu_from_double(x);
+  cuda::__fpbits64 a = cuda::__fp64emu_from_double(x);
 
-  assert(match((uint64_t) cudax::__fp64emu_dsqrt_rn(a), ref_one(x, M_RN)));
-  assert(match((uint64_t) cudax::__fp64emu_dsqrt_rz(a), ref_one(x, M_RZ)));
-  assert(match((uint64_t) cudax::__fp64emu_dsqrt_ru(a), ref_one(x, M_RU)));
-  assert(match((uint64_t) cudax::__fp64emu_dsqrt_rd(a), ref_one(x, M_RD)));
+  assert(match((uint64_t) cuda::__fp64emu_dsqrt_rn(a), ref_one(x, M_RN)));
+  assert(match((uint64_t) cuda::__fp64emu_dsqrt_rz(a), ref_one(x, M_RZ)));
+  assert(match((uint64_t) cuda::__fp64emu_dsqrt_ru(a), ref_one(x, M_RU)));
+  assert(match((uint64_t) cuda::__fp64emu_dsqrt_rd(a), ref_one(x, M_RD)));
 
-  cudax::fp64emu p = x;
+  cuda::fp64emu p = x;
   assert(match(d_bits((double) sqrt(p)), ref_one(x, M_RN)));
 
-  cudax::fp64emu_unpacked u = (cudax::fp64emu_unpacked) x;
+  cuda::fp64emu_unpacked u = (cuda::fp64emu_unpacked) x;
   assert(match(d_bits((double) sqrt(u)), ref_one(x, M_RN)));
 }
 

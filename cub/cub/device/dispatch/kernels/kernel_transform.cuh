@@ -13,9 +13,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/iket_support.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/type_size.cuh>
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/util_arch.cuh>
-#include <cub/util_type.cuh>
 #include <cub/util_vsmem.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
@@ -64,6 +66,13 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::transform
 {
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(Load);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(BarrierSetup);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(BulkCopy);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(ExpectTx);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(SyncAndBarrierWait);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(ProcessAndStore);
+
 // Prefetches (at least on Hopper) a 128 byte cache line. Prefetching out-of-bounds addresses has no side effects
 // TODO(bgruber): there is also the cp.async.bulk.prefetch instruction available on Hopper. May improve perf a tiny bit
 // as we need to create less instructions to prefetch the same amount of data.
@@ -730,6 +739,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   RandomAccessIteratorOut out,
   aligned_base_ptr<InTs>... aligned_ptrs)
 {
+  _CCCL_IKET_RANGE_PUSH(Load);
+
   // constexpr int ThreadsPerBlock       = Policy.async_copy.ThreadsPerBlock;
   constexpr int bulk_copy_alignment = transform::bulk_copy_alignment(current_tuning_cc());
 
@@ -793,7 +804,9 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     // every block, regardless of position in the grid, share the same single code path.
     if (cuda::device::__block_elect_one())
     {
+      _CCCL_IKET_RANGE_PUSH(BarrierSetup);
       ptx::mbarrier_init(&bar, 1);
+      _CCCL_IKET_RANGE_POP();
 
       char* smem                         = smem_base;
       ::cuda::std::uint32_t total_copied = 0;
@@ -840,10 +853,14 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
       // only elected thread waits, but other threads wait on the barrier fulfilled by the bulk copy later
       _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+      _CCCL_IKET_RANGE_PUSH(BulkCopy);
       // Order of evaluation is left-to-right
       (..., bulk_copy_tile(aligned_ptrs));
+      _CCCL_IKET_RANGE_POP();
 
+      _CCCL_IKET_RANGE_PUSH(ExpectTx);
       ptx::mbarrier_arrive_expect_tx(ptx::sem_relaxed, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
+      _CCCL_IKET_RANGE_POP();
 
       // Triggering the next kernel launch here led to slowdowns in the non .ignore_oob path (see comments there), but
       // we can revisit this.
@@ -859,7 +876,9 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       // use one thread to set up the entire bulk copy
       if (cuda::device::__block_elect_one())
       {
+        _CCCL_IKET_RANGE_PUSH(BarrierSetup);
         ptx::mbarrier_init(&bar, 1);
+        _CCCL_IKET_RANGE_POP();
         // an update to the CUDA memory model blesses skipping the following fence
         // ptx::fence_proxy_async(ptx::space_shared);
 
@@ -903,15 +922,19 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
         // only elected thread waits, but other threads wait on the barrier fulfilled by the bulk copy later
         _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+        _CCCL_IKET_RANGE_PUSH(BulkCopy);
         // Order of evaluation is left-to-right
         (..., bulk_copy_tile(aligned_ptrs));
+        _CCCL_IKET_RANGE_POP();
 
+        _CCCL_IKET_RANGE_PUSH(ExpectTx);
         ptx::mbarrier_arrive_expect_tx(
           ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ptx::sem_relaxed_t, ptx::sem_release_t>{},
           ptx::scope_cta,
           ptx::space_shared,
           &bar,
           total_copied);
+        _CCCL_IKET_RANGE_POP();
 
         // Triggering the next kernel launch here lets the SM ramp up the next kernel while we wait for the bulk copy.
         // Also, the uniform code path should reduce traffic to the CWD (only one thread in a block needs to trigger).
@@ -925,7 +948,9 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       const bool elected = cuda::device::__block_elect_one();
       if (elected)
       {
+        _CCCL_IKET_RANGE_PUSH(BarrierSetup);
         ptx::mbarrier_init(&bar, 1);
+        _CCCL_IKET_RANGE_POP();
         // an update to the CUDA memory model blesses skipping the following fence
         // ptx::fence_proxy_async(ptx::space_shared);
       }
@@ -954,17 +979,21 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       };
 
       _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+      _CCCL_IKET_RANGE_PUSH(BulkCopy);
       // Order of evaluation is left-to-right
       (..., bulk_copy_tile_fallback(aligned_ptrs));
+      _CCCL_IKET_RANGE_POP();
 
       if (elected)
       {
+        _CCCL_IKET_RANGE_PUSH(ExpectTx);
         ptx::mbarrier_arrive_expect_tx(
           ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ptx::sem_relaxed_t, ptx::sem_release_t>{},
           ptx::scope_cta,
           ptx::space_shared,
           &bar,
           total_copied);
+        _CCCL_IKET_RANGE_POP();
       }
 
       // _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // disabled, see comment on previous _CCCL_PDL_TRIGGER_NEXT_LAUNCH
@@ -1001,10 +1030,15 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   }
 
   // all threads wait for bulk copy
+  _CCCL_IKET_RANGE_PUSH(SyncAndBarrierWait);
   __syncthreads();
   while (!ptx::mbarrier_try_wait_parity(&bar, 0))
   {
   }
+  _CCCL_IKET_RANGE_POP(); // SyncAndBarrierWait
+  _CCCL_IKET_RANGE_POP(); // Load
+
+  _CCCL_IKET_RANGE_PUSH(ProcessAndStore);
 
   if constexpr (vectorize_eligible)
   {
@@ -1100,6 +1134,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
           },
           ::cuda::std::tuple<InTs...>{fetch_operand(aligned_ptrs)...});
       }
+      _CCCL_IKET_RANGE_POP(); // ProcessAndStore
       return;
     }
   }
@@ -1142,6 +1177,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   {
     process_tile(::cuda::std::false_type{});
   }
+  _CCCL_IKET_RANGE_POP(); // ProcessAndStore
 }
 
 template <typename It>

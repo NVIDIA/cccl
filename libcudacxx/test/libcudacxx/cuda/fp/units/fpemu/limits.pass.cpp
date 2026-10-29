@@ -28,18 +28,16 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
 namespace cs = cuda::std;
 
 template <class T>
 using nl = cs::numeric_limits<T>;
 
-using emu     = cudax::fp64emu; // fpemu_accuracy::def == high, so this is fp64emu_high
-using emu_mid = cudax::fp64emu_mid;
-using emu_low = cudax::fp64emu_low;
-using unp     = cudax::fp64emu_unpacked;
-using unp_mid = cudax::fp64emu_unpacked_mid;
+using emu     = cuda::fp64emu; // fpemu_accuracy::def == high, so this is fp64emu_high
+using emu_mid = cuda::fp64emu_mid;
+using emu_low = cuda::fp64emu_low;
+using unp     = cuda::fp64emu_unpacked;
+using unp_mid = cuda::fp64emu_unpacked_mid;
 
 // numeric_limits::has_denorm and numeric_limits::has_denorm_loss have been deprecated since C++23
 #if _CCCL_STD_VER >= 2023
@@ -105,21 +103,21 @@ static_assert(nl<unp_mid>::has_denorm == cs::denorm_absent, "mid works in the no
 //==========================================================================================
 // Runtime checks
 //==========================================================================================
-TEST_HOST_DEVICE_FUNC bool same(cudax::__fpbits64_unpacked a, cudax::__fpbits64_unpacked b)
+TEST_HOST_DEVICE_FUNC bool same(cuda::__fpbits64_unpacked a, cuda::__fpbits64_unpacked b)
 {
   return a.sign == b.sign && a.exponent == b.exponent && a.mantissa == b.mantissa;
 }
 
 // What the library itself makes of the given double when it unpacks it.
-TEST_HOST_DEVICE_FUNC cudax::__fpbits64_unpacked unpacked_of(double v)
+TEST_HOST_DEVICE_FUNC cuda::__fpbits64_unpacked unpacked_of(double v)
 {
-  return cudax::__internal_fp64emu_unpack(cs::bit_cast<cs::uint64_t>(v));
+  return cuda::__internal_fp64emu_unpack(cs::bit_cast<cs::uint64_t>(v));
 }
 
 template <class T>
-TEST_HOST_DEVICE_FUNC cudax::__fpbits64_unpacked fields(T v)
+TEST_HOST_DEVICE_FUNC cuda::__fpbits64_unpacked fields(T v)
 {
-  return cs::bit_cast<cudax::__fpbits64_unpacked>(v);
+  return cs::bit_cast<cuda::__fpbits64_unpacked>(v);
 }
 
 // The packed limits are double's, stored as double stores them.
@@ -158,7 +156,7 @@ TEST_HOST_DEVICE_FUNC void test_unpacked_encoding()
   // from quieting it in transit between a constant and a register, so comparing it
   // against a round trip through a double is not portable. What the type does promise is
   // the band and the NaN-ness, so those are what is checked.
-  const cudax::__fpbits64_unpacked snan_fields = fields(nl<unp>::signaling_NaN());
+  const cuda::__fpbits64_unpacked snan_fields = fields(nl<unp>::signaling_NaN());
   assert(snan_fields.sign == 0u);
   assert(snan_fields.exponent == fields(nl<unp>::quiet_NaN()).exponent);
   assert(snan_fields.mantissa != 0u);
@@ -171,15 +169,15 @@ TEST_HOST_DEVICE_FUNC void test_unpacked_encoding()
 // which places it above double's max: packing it overflows, as it must.
 TEST_HOST_DEVICE_FUNC void test_unpacked_max()
 {
-  const cudax::__fpbits64_unpacked max_fields = fields(nl<unp>::max());
-  const cudax::__fpbits64_unpacked dbl_max    = unpacked_of(nl<double>::max());
+  const cuda::__fpbits64_unpacked max_fields = fields(nl<unp>::max());
+  const cuda::__fpbits64_unpacked dbl_max    = unpacked_of(nl<double>::max());
 
   assert(max_fields.sign == 0u);
   assert(max_fields.exponent == dbl_max.exponent);
   assert(max_fields.mantissa > dbl_max.mantissa);
   assert(max_fields.mantissa == 0x3fffffffffffffffull);
 
-  const cudax::__fpbits64_unpacked lowest_fields = fields(nl<unp>::lowest());
+  const cuda::__fpbits64_unpacked lowest_fields = fields(nl<unp>::lowest());
   assert(lowest_fields.sign == (1u << 31));
   assert(lowest_fields.exponent == max_fields.exponent);
   assert(lowest_fields.mantissa == max_fields.mantissa);

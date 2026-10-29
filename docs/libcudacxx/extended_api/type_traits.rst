@@ -7,7 +7,6 @@ Type traits
    :hidden:
    :maxdepth: 1
 
-   type_traits/is_arithmetic
    type_traits/is_floating_point
    type_traits/is_trivially_copyable
    type_traits/is_bitwise_comparable
@@ -21,11 +20,6 @@ Type traits
      - **Content**
      - **CCCL Availability**
      - **CUDA Toolkit Availability**
-
-   * - :ref:`cuda::is_arithmetic <libcudacxx-extended-api-type_traits-is_arithmetic>`
-     - Tells whether a type is an arithmetic type
-     - CCCL 3.6.0
-     - CUDA 13.6
 
    * - :ref:`cuda::is_floating_point <libcudacxx-extended-api-type_traits-is_floating_point>`
      - Tells whether a type is a floating point type

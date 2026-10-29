@@ -96,11 +96,6 @@ public:
     return true;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
-  {
-    return true;
-  }
-
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
   {
     return false;
@@ -148,11 +143,6 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API const _SynchronizerInstance& __synchronizer_instance() const noexcept
   {
     return __synchronizer_instance_;
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
-  {
-    return _MappingResult::is_always_exhaustive();
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept

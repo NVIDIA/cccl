@@ -29,7 +29,6 @@
 #include <cuda/std/__optional/bad_optional_access.h>
 #include <cuda/std/__optional/nullopt.h>
 #include <cuda/std/__optional/optional_base.h>
-#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
@@ -37,13 +36,11 @@
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
-#include <cuda/std/__type_traits/reference_converts_from_temporary.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
-#include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 
 #include <cuda/std/__cccl/prologue.h>

@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -39,8 +39,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 // ------------------------------------------------------------------------
 // Bit-level helpers (IEEE-754 binary64 layout). No SoftFloat dependency;
 // the comparison logic mirrors SoftFloat's f64_eq / f64_lt / f64_le.
@@ -58,7 +57,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API bool __internal_fp64emu_is_nan_bits(__fpbits64 __u
 //! @brief IEEE-754 equality. Unordered (NaN) compares false; +0 equals -0.
 _CCCL_TRIVIAL_HOST_DEVICE_API bool __internal_fp64emu_cmp_eq(__fpbits64 __x, __fpbits64 __y) noexcept
 {
-  if (__internal_fp64emu_is_nan_bits(__x) || __internal_fp64emu_is_nan_bits(__y))
+  if (::cuda::__internal_fp64emu_is_nan_bits(__x) || ::cuda::__internal_fp64emu_is_nan_bits(__y))
   {
     return false;
   }
@@ -69,7 +68,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API bool __internal_fp64emu_cmp_eq(__fpbits64 __x, __f
 //! @brief IEEE-754 less-than. Unordered (NaN) compares false.
 _CCCL_TRIVIAL_HOST_DEVICE_API bool __internal_fp64emu_cmp_lt(__fpbits64 __x, __fpbits64 __y) noexcept
 {
-  if (__internal_fp64emu_is_nan_bits(__x) || __internal_fp64emu_is_nan_bits(__y))
+  if (::cuda::__internal_fp64emu_is_nan_bits(__x) || ::cuda::__internal_fp64emu_is_nan_bits(__y))
   {
     return false;
   }
@@ -85,7 +84,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API bool __internal_fp64emu_cmp_lt(__fpbits64 __x, __f
 //! @brief IEEE-754 less-or-equal. Unordered (NaN) compares false.
 _CCCL_TRIVIAL_HOST_DEVICE_API bool __internal_fp64emu_cmp_le(__fpbits64 __x, __fpbits64 __y) noexcept
 {
-  if (__internal_fp64emu_is_nan_bits(__x) || __internal_fp64emu_is_nan_bits(__y))
+  if (::cuda::__internal_fp64emu_is_nan_bits(__x) || ::cuda::__internal_fp64emu_is_nan_bits(__y))
   {
     return false;
   }
@@ -99,16 +98,16 @@ _CCCL_TRIVIAL_HOST_DEVICE_API bool __internal_fp64emu_cmp_le(__fpbits64 __x, __f
 // ne is the logical negation of eq, so unordered (NaN) compares true.
 _CCCL_TRIVIAL_HOST_DEVICE_API bool __internal_fp64emu_cmp_ne(__fpbits64 __x, __fpbits64 __y) noexcept
 {
-  return !__internal_fp64emu_cmp_eq(__x, __y);
+  return !::cuda::__internal_fp64emu_cmp_eq(__x, __y);
 }
 // gt / ge are lt / le with swapped operands, preserving IEEE unordered=false.
 _CCCL_TRIVIAL_HOST_DEVICE_API bool __internal_fp64emu_cmp_gt(__fpbits64 __x, __fpbits64 __y) noexcept
 {
-  return __internal_fp64emu_cmp_lt(__y, __x);
+  return ::cuda::__internal_fp64emu_cmp_lt(__y, __x);
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API bool __internal_fp64emu_cmp_ge(__fpbits64 __x, __fpbits64 __y) noexcept
 {
-  return __internal_fp64emu_cmp_le(__y, __x);
+  return ::cuda::__internal_fp64emu_cmp_le(__y, __x);
 }
 
 // ---- True unpacked comparisons -------------------------------------
@@ -137,12 +136,12 @@ _CCCL_TRIVIAL_HOST_DEVICE_API bool __internal_fp64emu_unp_is_zero(__fpbits64_unp
 _CCCL_TRIVIAL_HOST_DEVICE_API bool
 __internal_fp64emu_cmp_eq_unpacked(__fpbits64_unpacked __x, __fpbits64_unpacked __y) noexcept
 {
-  if (__internal_fp64emu_unp_is_nan(__x) || __internal_fp64emu_unp_is_nan(__y))
+  if (::cuda::__internal_fp64emu_unp_is_nan(__x) || ::cuda::__internal_fp64emu_unp_is_nan(__y))
   {
     return false;
   }
-  const bool __zx = __internal_fp64emu_unp_is_zero(__x);
-  const bool __zy = __internal_fp64emu_unp_is_zero(__y);
+  const bool __zx = ::cuda::__internal_fp64emu_unp_is_zero(__x);
+  const bool __zy = ::cuda::__internal_fp64emu_unp_is_zero(__y);
   if (__zx || __zy)
   {
     return __zx && __zy; // +0 == -0; zero != nonzero
@@ -154,12 +153,12 @@ __internal_fp64emu_cmp_eq_unpacked(__fpbits64_unpacked __x, __fpbits64_unpacked 
 _CCCL_TRIVIAL_HOST_DEVICE_API bool
 __internal_fp64emu_cmp_lt_unpacked(__fpbits64_unpacked __x, __fpbits64_unpacked __y) noexcept
 {
-  if (__internal_fp64emu_unp_is_nan(__x) || __internal_fp64emu_unp_is_nan(__y))
+  if (::cuda::__internal_fp64emu_unp_is_nan(__x) || ::cuda::__internal_fp64emu_unp_is_nan(__y))
   {
     return false;
   }
-  const bool __zx = __internal_fp64emu_unp_is_zero(__x);
-  const bool __zy = __internal_fp64emu_unp_is_zero(__y);
+  const bool __zx = ::cuda::__internal_fp64emu_unp_is_zero(__x);
+  const bool __zy = ::cuda::__internal_fp64emu_unp_is_zero(__y);
   if (__zx && __zy)
   {
     return false; // +/-0 are equal
@@ -188,31 +187,31 @@ __internal_fp64emu_cmp_lt_unpacked(__fpbits64_unpacked __x, __fpbits64_unpacked 
                 || ((__x.exponent == __y.exponent) && (__x.mantissa < __y.mantissa));
   }
   // Both negative reverses the magnitude order; both positive keeps it.
-  return __sx ? (!__mag_x_lt_y && !__internal_fp64emu_cmp_eq_unpacked(__x, __y)) : __mag_x_lt_y;
+  return __sx ? (!__mag_x_lt_y && !::cuda::__internal_fp64emu_cmp_eq_unpacked(__x, __y)) : __mag_x_lt_y;
 }
 
 _CCCL_TRIVIAL_HOST_DEVICE_API bool
 __internal_fp64emu_cmp_le_unpacked(__fpbits64_unpacked __x, __fpbits64_unpacked __y) noexcept
 {
-  return __internal_fp64emu_cmp_lt_unpacked(__x, __y) || __internal_fp64emu_cmp_eq_unpacked(__x, __y);
+  return ::cuda::__internal_fp64emu_cmp_lt_unpacked(__x, __y) || ::cuda::__internal_fp64emu_cmp_eq_unpacked(__x, __y);
 }
 
 _CCCL_TRIVIAL_HOST_DEVICE_API bool
 __internal_fp64emu_cmp_gt_unpacked(__fpbits64_unpacked __x, __fpbits64_unpacked __y) noexcept
 {
-  return __internal_fp64emu_cmp_lt_unpacked(__y, __x);
+  return ::cuda::__internal_fp64emu_cmp_lt_unpacked(__y, __x);
 }
 
 _CCCL_TRIVIAL_HOST_DEVICE_API bool
 __internal_fp64emu_cmp_ge_unpacked(__fpbits64_unpacked __x, __fpbits64_unpacked __y) noexcept
 {
-  return __internal_fp64emu_cmp_le_unpacked(__y, __x);
+  return ::cuda::__internal_fp64emu_cmp_le_unpacked(__y, __x);
 }
 
 _CCCL_TRIVIAL_HOST_DEVICE_API bool
 __internal_fp64emu_cmp_ne_unpacked(__fpbits64_unpacked __x, __fpbits64_unpacked __y) noexcept
 {
-  return !__internal_fp64emu_cmp_eq_unpacked(__x, __y);
+  return !::cuda::__internal_fp64emu_cmp_eq_unpacked(__x, __y);
 }
 
 // ============================================================================
@@ -225,77 +224,83 @@ __internal_fp64emu_cmp_ne_unpacked(__fpbits64_unpacked __x, __fpbits64_unpacked 
 // unpacked comparators expect; comparison is rounding-independent, so no pack step.
 _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_cmp_eq(__fpbits64 __x, __fpbits64 __y) noexcept
 {
-  return __internal_fp64emu_cmp_eq_unpacked(__internal_fp64emu_unpack(__x), __internal_fp64emu_unpack(__y));
+  return ::cuda::__internal_fp64emu_cmp_eq_unpacked(
+    ::cuda::__internal_fp64emu_unpack(__x), ::cuda::__internal_fp64emu_unpack(__y));
 }
 _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_cmp_ne(__fpbits64 __x, __fpbits64 __y) noexcept
 {
-  return __internal_fp64emu_cmp_ne_unpacked(__internal_fp64emu_unpack(__x), __internal_fp64emu_unpack(__y));
+  return ::cuda::__internal_fp64emu_cmp_ne_unpacked(
+    ::cuda::__internal_fp64emu_unpack(__x), ::cuda::__internal_fp64emu_unpack(__y));
 }
 _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_cmp_le(__fpbits64 __x, __fpbits64 __y) noexcept
 {
-  return __internal_fp64emu_cmp_le_unpacked(__internal_fp64emu_unpack(__x), __internal_fp64emu_unpack(__y));
+  return ::cuda::__internal_fp64emu_cmp_le_unpacked(
+    ::cuda::__internal_fp64emu_unpack(__x), ::cuda::__internal_fp64emu_unpack(__y));
 }
 _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_cmp_lt(__fpbits64 __x, __fpbits64 __y) noexcept
 {
-  return __internal_fp64emu_cmp_lt_unpacked(__internal_fp64emu_unpack(__x), __internal_fp64emu_unpack(__y));
+  return ::cuda::__internal_fp64emu_cmp_lt_unpacked(
+    ::cuda::__internal_fp64emu_unpack(__x), ::cuda::__internal_fp64emu_unpack(__y));
 }
 _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_cmp_ge(__fpbits64 __x, __fpbits64 __y) noexcept
 {
-  return __internal_fp64emu_cmp_ge_unpacked(__internal_fp64emu_unpack(__x), __internal_fp64emu_unpack(__y));
+  return ::cuda::__internal_fp64emu_cmp_ge_unpacked(
+    ::cuda::__internal_fp64emu_unpack(__x), ::cuda::__internal_fp64emu_unpack(__y));
 }
 _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_cmp_gt(__fpbits64 __x, __fpbits64 __y) noexcept
 {
-  return __internal_fp64emu_cmp_gt_unpacked(__internal_fp64emu_unpack(__x), __internal_fp64emu_unpack(__y));
+  return ::cuda::__internal_fp64emu_cmp_gt_unpacked(
+    ::cuda::__internal_fp64emu_unpack(__x), ::cuda::__internal_fp64emu_unpack(__y));
 }
 #  else
 _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_cmp_eq(__fpbits64 __x, __fpbits64 __y) noexcept
 {
-  return __internal_fp64emu_cmp_eq(__x, __y);
+  return ::cuda::__internal_fp64emu_cmp_eq(__x, __y);
 }
 _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_cmp_ne(__fpbits64 __x, __fpbits64 __y) noexcept
 {
-  return __internal_fp64emu_cmp_ne(__x, __y);
+  return ::cuda::__internal_fp64emu_cmp_ne(__x, __y);
 }
 _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_cmp_le(__fpbits64 __x, __fpbits64 __y) noexcept
 {
-  return __internal_fp64emu_cmp_le(__x, __y);
+  return ::cuda::__internal_fp64emu_cmp_le(__x, __y);
 }
 _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_cmp_lt(__fpbits64 __x, __fpbits64 __y) noexcept
 {
-  return __internal_fp64emu_cmp_lt(__x, __y);
+  return ::cuda::__internal_fp64emu_cmp_lt(__x, __y);
 }
 _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_cmp_ge(__fpbits64 __x, __fpbits64 __y) noexcept
 {
-  return __internal_fp64emu_cmp_ge(__x, __y);
+  return ::cuda::__internal_fp64emu_cmp_ge(__x, __y);
 }
 _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_cmp_gt(__fpbits64 __x, __fpbits64 __y) noexcept
 {
-  return __internal_fp64emu_cmp_gt(__x, __y);
+  return ::cuda::__internal_fp64emu_cmp_gt(__x, __y);
 }
 #  endif // _CCCL_FPEMU_PACKED_VIA_UNPACKED
 _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_unpacked_cmp_eq(__fpbits64_unpacked __x, __fpbits64_unpacked __y) noexcept
 {
-  return __internal_fp64emu_cmp_eq_unpacked(__x, __y);
+  return ::cuda::__internal_fp64emu_cmp_eq_unpacked(__x, __y);
 }
 _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_unpacked_cmp_ne(__fpbits64_unpacked __x, __fpbits64_unpacked __y) noexcept
 {
-  return __internal_fp64emu_cmp_ne_unpacked(__x, __y);
+  return ::cuda::__internal_fp64emu_cmp_ne_unpacked(__x, __y);
 }
 _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_unpacked_cmp_le(__fpbits64_unpacked __x, __fpbits64_unpacked __y) noexcept
 {
-  return __internal_fp64emu_cmp_le_unpacked(__x, __y);
+  return ::cuda::__internal_fp64emu_cmp_le_unpacked(__x, __y);
 }
 _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_unpacked_cmp_lt(__fpbits64_unpacked __x, __fpbits64_unpacked __y) noexcept
 {
-  return __internal_fp64emu_cmp_lt_unpacked(__x, __y);
+  return ::cuda::__internal_fp64emu_cmp_lt_unpacked(__x, __y);
 }
 _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_unpacked_cmp_ge(__fpbits64_unpacked __x, __fpbits64_unpacked __y) noexcept
 {
-  return __internal_fp64emu_cmp_ge_unpacked(__x, __y);
+  return ::cuda::__internal_fp64emu_cmp_ge_unpacked(__x, __y);
 }
 _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_unpacked_cmp_gt(__fpbits64_unpacked __x, __fpbits64_unpacked __y) noexcept
 {
-  return __internal_fp64emu_cmp_gt_unpacked(__x, __y);
+  return ::cuda::__internal_fp64emu_cmp_gt_unpacked(__x, __y);
 }
 #else
 _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_cmp_eq(__fpbits64 x, __fpbits64 y) noexcept;
@@ -311,7 +316,7 @@ _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_unpacked_cmp_lt(__fpbits64_unpacked x, _
 _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_unpacked_cmp_ge(__fpbits64_unpacked x, __fpbits64_unpacked y) noexcept;
 _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_unpacked_cmp_gt(__fpbits64_unpacked x, __fpbits64_unpacked y) noexcept;
 #endif // _CCCL_FPEMU_INLINE
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
@@ -322,8 +327,7 @@ _CCCL_FPEMU_BUILTIN_DECL bool __fp64emu_unpacked_cmp_gt(__fpbits64_unpacked x, _
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 // ============================================================================
 // API (merged from fp64emu_cmp_api.hpp)
 // ============================================================================
@@ -332,32 +336,32 @@ namespace cuda::experimental
 template <fpemu_accuracy _Acc>
 _CCCL_HOST_DEVICE_API inline bool operator==(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
 {
-  return __fp64emu_cmp_eq(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y));
+  return ::cuda::__fp64emu_cmp_eq(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y));
 }
 template <fpemu_accuracy _Acc>
 _CCCL_HOST_DEVICE_API inline bool operator!=(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
 {
-  return __fp64emu_cmp_ne(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y));
+  return ::cuda::__fp64emu_cmp_ne(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y));
 }
 template <fpemu_accuracy _Acc>
 _CCCL_HOST_DEVICE_API inline bool operator<(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
 {
-  return __fp64emu_cmp_lt(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y));
+  return ::cuda::__fp64emu_cmp_lt(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y));
 }
 template <fpemu_accuracy _Acc>
 _CCCL_HOST_DEVICE_API inline bool operator>(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
 {
-  return __fp64emu_cmp_gt(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y));
+  return ::cuda::__fp64emu_cmp_gt(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y));
 }
 template <fpemu_accuracy _Acc>
 _CCCL_HOST_DEVICE_API inline bool operator<=(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
 {
-  return __fp64emu_cmp_le(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y));
+  return ::cuda::__fp64emu_cmp_le(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y));
 }
 template <fpemu_accuracy _Acc>
 _CCCL_HOST_DEVICE_API inline bool operator>=(const fpemu<double, _Acc>& __x, const fpemu<double, _Acc>& __y) noexcept
 {
-  return __fp64emu_cmp_ge(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y));
+  return ::cuda::__fp64emu_cmp_ge(::cuda::std::bit_cast<__fpbits64>(__x), ::cuda::std::bit_cast<__fpbits64>(__y));
 }
 
 // Unpacked comparison operators
@@ -365,45 +369,45 @@ template <fpemu_accuracy _Acc>
 _CCCL_HOST_DEVICE_API inline bool
 operator==(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, _Acc>& __y) noexcept
 {
-  return __fp64emu_unpacked_cmp_eq(
+  return ::cuda::__fp64emu_unpacked_cmp_eq(
     ::cuda::std::bit_cast<__fpbits64_unpacked>(__x), ::cuda::std::bit_cast<__fpbits64_unpacked>(__y));
 }
 template <fpemu_accuracy _Acc>
 _CCCL_HOST_DEVICE_API inline bool
 operator!=(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, _Acc>& __y) noexcept
 {
-  return __fp64emu_unpacked_cmp_ne(
+  return ::cuda::__fp64emu_unpacked_cmp_ne(
     ::cuda::std::bit_cast<__fpbits64_unpacked>(__x), ::cuda::std::bit_cast<__fpbits64_unpacked>(__y));
 }
 template <fpemu_accuracy _Acc>
 _CCCL_HOST_DEVICE_API inline bool
 operator<(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, _Acc>& __y) noexcept
 {
-  return __fp64emu_unpacked_cmp_lt(
+  return ::cuda::__fp64emu_unpacked_cmp_lt(
     ::cuda::std::bit_cast<__fpbits64_unpacked>(__x), ::cuda::std::bit_cast<__fpbits64_unpacked>(__y));
 }
 template <fpemu_accuracy _Acc>
 _CCCL_HOST_DEVICE_API inline bool
 operator>(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, _Acc>& __y) noexcept
 {
-  return __fp64emu_unpacked_cmp_gt(
+  return ::cuda::__fp64emu_unpacked_cmp_gt(
     ::cuda::std::bit_cast<__fpbits64_unpacked>(__x), ::cuda::std::bit_cast<__fpbits64_unpacked>(__y));
 }
 template <fpemu_accuracy _Acc>
 _CCCL_HOST_DEVICE_API inline bool
 operator<=(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, _Acc>& __y) noexcept
 {
-  return __fp64emu_unpacked_cmp_le(
+  return ::cuda::__fp64emu_unpacked_cmp_le(
     ::cuda::std::bit_cast<__fpbits64_unpacked>(__x), ::cuda::std::bit_cast<__fpbits64_unpacked>(__y));
 }
 template <fpemu_accuracy _Acc>
 _CCCL_HOST_DEVICE_API inline bool
 operator>=(const fpemu_unpacked<double, _Acc>& __x, const fpemu_unpacked<double, _Acc>& __y) noexcept
 {
-  return __fp64emu_unpacked_cmp_ge(
+  return ::cuda::__fp64emu_unpacked_cmp_ge(
     ::cuda::std::bit_cast<__fpbits64_unpacked>(__x), ::cuda::std::bit_cast<__fpbits64_unpacked>(__y));
 }
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

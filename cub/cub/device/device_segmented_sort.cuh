@@ -25,7 +25,9 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/double_buffer.cuh>
 #include <cub/detail/env_dispatch.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_segmented_sort.cuh>
 #include <cub/util_namespace.cuh>
 
@@ -124,8 +126,8 @@ CUB_NAMESPACE_BEGIN
 //!    :end-before: example-end sort-keys-custom-policy-selector
 //!
 //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
-//!      :language: c++
-//!      :dedent:
+//!    :language: c++
+//!    :dedent:
 //!    :start-after: example-begin sort-keys-custom-policy
 //!    :end-before: example-end sort-keys-custom-policy
 //!

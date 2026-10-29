@@ -22,8 +22,7 @@
 
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_function.h>
-#include <cuda/std/__type_traits/remove_cv.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/__type_traits/remove_cv.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -48,7 +47,7 @@ struct __cccl_is_member_pointer<_Tp _Up::*>
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_member_function_pointer : public integral_constant<bool, _CCCL_BUILTIN_IS_MEMBER_FUNCTION_POINTER(_Tp)>
+is_member_function_pointer : public bool_constant<_CCCL_BUILTIN_IS_MEMBER_FUNCTION_POINTER(_Tp)>
 {};
 
 template <class _Tp>

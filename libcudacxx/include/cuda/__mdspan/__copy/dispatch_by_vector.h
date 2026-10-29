@@ -57,7 +57,7 @@ __vector_size_bytes(const __raw_tensor<_SrcExtentT, _SrcStrideT, _TpSrc, _MaxRan
 }
 
 template <int _VectorSize>
-constexpr auto __const_vector_size = ::cuda::std::integral_constant<int, _VectorSize>{};
+inline constexpr auto __const_vector_size = ::cuda::std::integral_constant<int, _VectorSize>{};
 
 //! @brief Dispatch a copy operation with the optimal vectorized element type.
 //!

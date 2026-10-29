@@ -128,11 +128,6 @@ __device__ cuda::std::optional<T> sum(const Group& group, T (&array)[N])
 
   __shared__ T group_sums[ngroups];
 
-  if (!Unit{}.is_part_of(group))
-  {
-    return cuda::std::nullopt;
-  }
-
   // todo(dabayer): Replace by group.rank(level) once this query is available.
   const auto group_rank = group.__mapping_result().group_rank();
 

@@ -20,9 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/constant.cuh>
+#include <cub/detail/key_value_pair.cuh>
+#include <cub/detail/log2.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__functional/operator_properties.h>
@@ -476,7 +479,7 @@ struct WarpScanShfl
    */
   template <typename Tp, typename ScanOpT>
   _CCCL_DEVICE _CCCL_FORCEINLINE Tp InclusiveScanStep(
-    Tp input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
+    const Tp& input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
   {
     return InclusiveScanStep(input, scan_op, first_lane, offset);
   }

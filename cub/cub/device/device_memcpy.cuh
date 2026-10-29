@@ -24,6 +24,7 @@
 #endif // no system header
 
 #include <cub/detail/env_dispatch.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/device/dispatch/dispatch_batch_memcpy.cuh>
 
 #include <cuda/std/__execution/env.h>

@@ -65,9 +65,7 @@ using counting_iterator_difference_type =
 template <typename Incrementable, typename System, typename Traversal, typename Difference, typename StrideHolder>
 struct make_counting_iterator_base
 {
-  using system = typename eval_if<::cuda::std::is_same_v<System, use_default>,
-                                  ::cuda::std::type_identity<any_system_tag>,
-                                  ::cuda::std::type_identity<System>>::type;
+  using system = ::cuda::std::conditional_t<::cuda::std::is_same_v<System, use_default>, any_system_tag, System>;
 
   using traversal = replace_if_use_default<Traversal, ::cuda::std::type_identity<random_access_traversal_tag>>;
   using difference =

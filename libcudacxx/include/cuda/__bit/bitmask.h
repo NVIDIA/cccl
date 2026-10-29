@@ -46,7 +46,11 @@ template <typename _Tp = uint32_t>
   {
     if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_70, (return ::cuda::ptx::bmsk_clamp(__start, __width);))
+      // inline ptx prevents constant folding
+      if (!_CCCL_IS_CONSTANT_P(__start) || !_CCCL_IS_CONSTANT_P(__width))
+      {
+        NV_IF_TARGET(NV_PROVIDES_SM_70, (return ::cuda::ptx::bmsk_clamp(__start, __width);))
+      }
     }
   }
 #endif // !_CCCL_TILE_COMPILATION()

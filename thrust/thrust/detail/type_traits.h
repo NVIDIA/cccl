@@ -18,14 +18,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_convertible.h>
-#include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/type_identity.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -36,91 +31,22 @@ class device_reference;
 namespace detail
 {
 /// helper classes [4.3].
-template <typename T, T V>
-using integral_constant = ::cuda::std::integral_constant<T, V>;
-using true_type         = ::cuda::std::true_type;
-using false_type        = ::cuda::std::false_type;
-
-template <typename T>
-struct is_non_bool_integral : public ::cuda::std::is_integral<T>
-{};
-template <>
-struct is_non_bool_integral<bool> : public false_type
-{};
-
-template <typename T>
-struct is_non_bool_arithmetic : public ::cuda::std::is_arithmetic<T>
-{};
-template <>
-struct is_non_bool_arithmetic<bool> : public false_type
-{};
 
 template <typename T>
 inline constexpr bool is_proxy_reference_v = false;
 
-template <typename Boolean>
-struct not_ : public ::cuda::std::integral_constant<bool, !Boolean::value>
-{}; // end not_
-
-template <bool, typename Then, typename Else>
-struct eval_if
-{}; // end eval_if
-
-template <typename Then, typename Else>
-struct eval_if<true, Then, Else>
-{
-  using type = typename Then::type;
-}; // end eval_if
-
-template <typename Then, typename Else>
-struct eval_if<false, Then, Else>
-{
-  using type = typename Else::type;
-}; // end eval_if
-
-template <bool, typename T>
-struct lazy_enable_if
-{};
-template <typename T>
-struct lazy_enable_if<true, T>
-{
-  using type = typename T::type;
-};
-
 template <bool Condition, typename T = void>
-struct disable_if : ::cuda::std::enable_if<!Condition, T>
-{};
-template <bool Condition, typename T>
-struct lazy_disable_if : lazy_enable_if<!Condition, T>
-{};
+using disable_if = ::cuda::std::enable_if<!Condition, T>;
 
 template <typename T1, typename T2, typename T = void>
-using enable_if_convertible_t = ::cuda::std::enable_if_t<::cuda::std::is_convertible<T1, T2>::value, T>;
+using enable_if_convertible_t = ::cuda::std::enable_if_t<::cuda::std::is_convertible_v<T1, T2>, T>;
 
 template <typename T1, typename T2, typename T = void>
-struct disable_if_convertible : disable_if<::cuda::std::is_convertible<T1, T2>::value, T>
-{};
-
-struct largest_available_float
-{
-  using type = double;
-};
-
-// T1 wins if they are both the same size
-template <typename T1, typename T2>
-struct larger_type
-    : thrust::detail::eval_if<(sizeof(T2) > sizeof(T1)), ::cuda::std::type_identity<T2>, ::cuda::std::type_identity<T1>>
-{};
-
-template <class F, class... Us>
-using invoke_result = ::cuda::std::invoke_result<F, Us...>;
-
-template <class F, class... Us>
-using invoke_result_t = typename invoke_result<F, Us...>::type;
+using disable_if_convertible = disable_if<::cuda::std::is_convertible_v<T1, T2>, T>;
 } // namespace detail
 
-using detail::false_type;
-using detail::integral_constant;
-using detail::true_type;
+using ::cuda::std::false_type;
+using ::cuda::std::integral_constant;
+using ::cuda::std::true_type;
 
 THRUST_NAMESPACE_END

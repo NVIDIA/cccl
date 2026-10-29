@@ -5,6 +5,7 @@
 
 #include <cub/device/device_set_operations.cuh>
 
+#include <thrust/sequence.h>
 #include <thrust/sort.h>
 
 #include <cuda/std/type_traits>
@@ -190,6 +191,86 @@ void test_all_pairs(int size1 = 3623, int size2 = 6346)
     /* values_from_first_input_only */ false,
     size1,
     size2);
+}
+
+// Regression test for an out-of-bounds read of the second value range.
+//
+// For set difference and intersection, every emitted value comes from the first input, so the second input's values are
+// never used. Thrust's `set_difference_by_key`/`set_intersection_by_key` exploit this: they do not have a second value
+// range at all and pass the *first* input's values (length num_keys1) as the dummy `d_values_in2`. The agent must
+// therefore never read more than num_keys1 elements from `d_values_in2` for these two operations. A previous version
+// unconditionally loaded num_keys2 values from `d_values_in2`, reading past the end of the dummy buffer whenever
+// num_keys2 > num_keys1. The over-read is silent in normal runs (the loaded values are discarded) but is flagged by
+// compute-sanitizer memcheck, under which this test is run in CI.
+template <typename LaunchT, typename StdOp>
+void test_short_values2_dummy(LaunchT launch, StdOp std_op)
+{
+  using KeyT   = std::int32_t;
+  using ValueT = std::int32_t;
+
+  // num_keys2 deliberately much larger than num_keys1, so an unconditional load of num_keys2 values from a
+  // num_keys1-length buffer reads well past its end, and across several tiles.
+  const int size1 = 1000;
+  const int size2 = 50000;
+
+  c2h::device_vector<KeyT> keys1_d(size1, thrust::default_init);
+  c2h::device_vector<KeyT> keys2_d(size2, thrust::default_init);
+  c2h::gen(C2H_SEED(1), keys1_d, KeyT{0}, KeyT{2000});
+  c2h::gen(C2H_SEED(1), keys2_d, KeyT{0}, KeyT{2000});
+  thrust::sort(c2h::device_policy, keys1_d.begin(), keys1_d.end());
+  thrust::sort(c2h::device_policy, keys2_d.begin(), keys2_d.end());
+
+  // The first input's values, reused as the dummy second value range exactly as Thrust's by-key ops do.
+  c2h::device_vector<ValueT> values1_d(size1, thrust::default_init);
+  thrust::sequence(c2h::device_policy, values1_d.begin(), values1_d.end());
+
+  c2h::device_vector<KeyT> keys_out_d(size1 + size2, thrust::default_init);
+  c2h::device_vector<ValueT> values_out_d(size1 + size2, thrust::default_init);
+  c2h::device_vector<int> num_selected_d(1, thrust::default_init);
+
+  launch(thrust::raw_pointer_cast(keys1_d.data()),
+         thrust::raw_pointer_cast(values1_d.data()),
+         size1,
+         thrust::raw_pointer_cast(keys2_d.data()),
+         thrust::raw_pointer_cast(values1_d.data()), // dummy: only size1 long, but num_keys2 == size2 is passed below
+         size2,
+         thrust::raw_pointer_cast(keys_out_d.data()),
+         thrust::raw_pointer_cast(values_out_d.data()),
+         thrust::raw_pointer_cast(num_selected_d.data()),
+         cuda::std::less<>{});
+
+  // The keys result must still be correct; the point of the test is that producing it must not read the dummy
+  // second value range out of bounds.
+  c2h::host_vector<KeyT> keys1_h = keys1_d;
+  c2h::host_vector<KeyT> keys2_h = keys2_d;
+  c2h::host_vector<KeyT> reference_keys;
+  std_op(keys1_h.begin(), keys1_h.end(), keys2_h.begin(), keys2_h.end(), std::back_inserter(reference_keys));
+
+  const int num_selected = num_selected_d[0];
+  REQUIRE(num_selected == static_cast<int>(reference_keys.size()));
+  c2h::host_vector<KeyT> keys_out_h(keys_out_d);
+  keys_out_h.resize(num_selected);
+  CHECK(reference_keys == keys_out_h);
+}
+
+CUB_TEST_CASE("DeviceSetOps difference/intersection pairs do not read the second value range out of bounds",
+              "[set_ops][device]",
+              CUB_SMALL)
+{
+  test_short_values2_dummy(
+    [](auto&&... a) {
+      set_difference_pairs(static_cast<decltype(a)>(a)...);
+    },
+    [](auto... a) {
+      std::set_difference(a...);
+    });
+  test_short_values2_dummy(
+    [](auto&&... a) {
+      set_intersection_pairs(static_cast<decltype(a)>(a)...);
+    },
+    [](auto... a) {
+      std::set_intersection(a...);
+    });
 }
 
 // A spread of key/value width combinations, including a non-trivial custom value type. The agent stages a whole tile of

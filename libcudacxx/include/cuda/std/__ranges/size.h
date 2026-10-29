@@ -20,13 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/arithmetic.h>
 #include <cuda/std/__concepts/class_or_enum.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__ranges/access.h>
-#include <cuda/std/__type_traits/is_unbounded_array.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_unbounded_array.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/make_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/remove_cvref.h>

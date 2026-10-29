@@ -22,7 +22,6 @@
 
 #include <cuda/std/__algorithm/comp.h>
 #include <cuda/std/__algorithm/comp_ref_type.h>
-#include <cuda/std/__algorithm/iter_swap.h>
 #include <cuda/std/__algorithm/iterator_operations.h>
 #include <cuda/std/__algorithm/min_element.h>
 #include <cuda/std/__algorithm/partial_sort.h>
@@ -31,15 +30,13 @@
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/integral.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__functional/ranges_operations.h>
 #include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/disjunction.h>
-#include <cuda/std/__type_traits/fold.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/climits>

@@ -15,6 +15,7 @@
 
 #include <cub/agent/agent_reduce.cuh>
 #include <cub/detail/deferred_parameter.cuh>
+#include <cub/detail/uninitialized_copy.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/util_arch.cuh>

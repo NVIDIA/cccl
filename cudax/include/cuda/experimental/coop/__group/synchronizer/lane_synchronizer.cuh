@@ -49,11 +49,6 @@ class lane_synchronizer
 public:
   struct __synchronizer_instance
   {
-    [[nodiscard]] _CCCL_DEVICE_API static __synchronizer_instance invalid() noexcept
-    {
-      return {};
-    }
-
     template <class _MappingResult, class _Hierarchy>
     _CCCL_DEVICE_API void do_sync(const _MappingResult& __mapping_result, const _Hierarchy&) const noexcept
     {

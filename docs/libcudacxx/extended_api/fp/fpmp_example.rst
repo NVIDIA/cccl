@@ -73,22 +73,22 @@ number:
     // The one thing to change. The rest of the program is generic, and native double is
     // always the baseline it is compared against.
     //
-    //   <cuda/fpmp>    cudax::fp32mp2         the default float pair, 46 significand bits
-    //                  cudax::fp32mp2_low     same width, cheapest arithmetic
-    //                  cudax::fp32mp2_high    same width, most accurate arithmetic
-    //                  cudax::fp64mp2         double pair, 104 significand bits
-    //   <cuda/fpemu>   cudax::fp64emu         double emulated on integer and FP32 units
-    //                  cudax::fp64emu_unpacked   the same, kept unpacked through the chain
-    //   <cuda/fptool>  cudax::fp64_custom<8, 10>   a narrower format, here BF16's widths
+    //   <cuda/fpmp>    cuda::fp32mp2         the default float pair, 46 significand bits
+    //                  cuda::fp32mp2_low     same width, cheapest arithmetic
+    //                  cuda::fp32mp2_high    same width, most accurate arithmetic
+    //                  cuda::fp64mp2         double pair, 104 significand bits
+    //   <cuda/fpemu>   cuda::fp64emu         double emulated on integer and FP32 units
+    //                  cuda::fp64emu_unpacked   the same, kept unpacked through the chain
+    //   <cuda/fptool>  cuda::fp64_custom<8, 10>   a narrower format, here BF16's widths
     //
     // float and double work here too, as yardsticks rather than as subjects: they show what
     // the hardware does without the component.
     //
     // The type and the header that declares it travel together, so both come from the build
     // line, which is how one type is swapped for another without editing the file:
-    // -DPI_FP_T=cudax::fp64emu_unpacked -DPI_FP_HEADER='<cuda/fpemu>'
+    // -DPI_FP_T=cuda::fp64emu_unpacked -DPI_FP_HEADER='<cuda/fpemu>'
     #ifndef PI_FP_T
-    #  define PI_FP_T cudax::fp32mp2
+    #  define PI_FP_T cuda::fp32mp2
     #endif
 
     #ifndef PI_FP_HEADER
@@ -96,8 +96,6 @@ number:
     #endif
 
     #include PI_FP_HEADER
-
-    namespace cudax = cuda::experimental;
 
     // The label printed for the type is the type's own spelling, so there is nothing to keep
     // in step with it. Variadic because a type like fp64_custom<8, 10> reaches the inner
@@ -157,17 +155,17 @@ number:
     // takes the leading double, and subtracting it back off recovers whatever the type held
     // below that, exactly. For double the remainder is zero and this costs two operations.
     template <class T>
-    [[nodiscard]] static cudax::fp64mp2 to_dd(const T& value)
+    [[nodiscard]] static cuda::fp64mp2 to_dd(const T& value)
     {
       const double head = static_cast<double>(value);
       const double tail = static_cast<double>(value - T(head));
-      return cudax::fp64mp2(head) + cudax::fp64mp2(tail);
+      return cuda::fp64mp2(head) + cuda::fp64mp2(tail);
     }
 
     template <class T>
     [[nodiscard]] static double correct_digits(const T& value)
     {
-      const cudax::fp64mp2 error = to_dd(value) - cudax::fp64mp2(kPiHi, kPiLo);
+      const cuda::fp64mp2 error = to_dd(value) - cuda::fp64mp2(kPiHi, kPiLo);
       const double magnitude     = std::fabs(static_cast<double>(error));
       return magnitude > 0.0 ? -std::log10(magnitude / kPiHi) : 99.0;
     }
@@ -222,7 +220,7 @@ number:
       {
         sum = sum + host[i];
       }
-      const cudax::fp64mp2 value = to_dd(sum) * cudax::fp64mp2(1.0 / static_cast<double>(kTerms));
+      const cuda::fp64mp2 value = to_dd(sum) * cuda::fp64mp2(1.0 / static_cast<double>(kTerms));
 
       const auto elapsed = stop - start;
       return {static_cast<double>(value), correct_digits(value), elapsed.count() / 1.0e6};
@@ -294,15 +292,15 @@ On an RTX 6000 Ada, where FP64 runs at a fraction of FP32, the default type give
 
     type                           value                    digits   time (ms)
     double                         3.1415926535897984        14.78       1.297
-    cudax::fp32mp2                 3.1415926535931646        11.97       0.132
+    cuda::fp32mp2                  3.1415926535931646        11.97       0.132
 
-    cudax::fp32mp2 is 9.82x the speed of native double, for -2.8 digits
+    cuda::fp32mp2 is 9.82x the speed of native double, for -2.8 digits
 
 Ten times the throughput of ``double`` for around three of its digits, on a computation that is
-nothing but arithmetic. Rebuilding with ``-DPI_FP_T=cudax::fp32mp2_low`` or
-``...=cudax::fp32mp2_high`` walks the accuracy levels — 9.5 and 12.7 digits respectively, at 16×
+nothing but arithmetic. Rebuilding with ``-DPI_FP_T=cuda::fp32mp2_low`` or
+``...=cuda::fp32mp2_high`` walks the accuracy levels — 9.5 and 12.7 digits respectively, at 16×
 and 6× — ``-DPI_FP_T=float`` shows what the hardware does unaided, and
-``-DPI_FP_T=cudax::fp64mp2`` costs roughly five times ``double`` for 2.4 digits more than it. The
+``-DPI_FP_T=cuda::fp64mp2`` costs roughly five times ``double`` for 2.4 digits more than it. The
 :ref:`fpmp page <libcudacxx-extended-api-fp-fpmp>` collects those figures across three
 architectures.
 

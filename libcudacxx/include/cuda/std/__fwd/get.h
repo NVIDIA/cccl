@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/complex.h>
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__fwd/array.h>
 #include <cuda/std/__fwd/complex.h>
@@ -28,6 +29,7 @@
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_like.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstddef>

@@ -66,8 +66,8 @@ class __per_device_locality_pools
 
 #  if _CCCL_CTK_AT_LEAST(13, 4)
       __location.type                       = ::CU_MEM_LOCATION_TYPE_DEVICE_LOCALITY_DOMAIN;
-      __location.localized.deviceId         = __device.get();
-      __location.localized.localityDomainId = static_cast<unsigned int>(__domain_id);
+      __location.localized.deviceId         = static_cast<unsigned char>(__device.get());
+      __location.localized.localityDomainId = static_cast<unsigned char>(__domain_id);
 #  else // ^^^ 13.4+ ^^^ / vvv 13.3- vvv
       _CCCL_VERIFY(false, "We should have taken the full-device memory pool path earlier.");
 #  endif // ^^^ 13.3- ^^^

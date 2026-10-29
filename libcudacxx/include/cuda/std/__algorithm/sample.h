@@ -20,14 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm/iterator_operations.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__random/uniform_int_distribution.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -93,7 +91,7 @@ _CCCL_HOST_DEVICE_API _SampleIterator __sample(
   using _Difference  = typename iterator_traits<_PopulationIterator>::difference_type;
   static_assert(__has_forward_traversal<_PopulationIterator> || __has_random_access_traversal<_SampleIterator>,
                 "SampleIterator must meet the requirements of RandomAccessIterator");
-  using _CommonType = typename common_type<_Distance, _Difference>::type;
+  using _CommonType = common_type_t<_Distance, _Difference>;
   _CCCL_ASSERT(!is_signed_v<_Distance> || __n >= 0, "N must be a positive number.");
   return ::cuda::std::__sample(__first, __last, __output_iter, _CommonType(__n), __g, _PopCategory());
 }

@@ -363,7 +363,7 @@ cudaError_t pin_memory(T* p, size_t n)
   }
   // We cast to (void *) because T may be a const type : we are not going
   // to modify the content, so this is legit ...
-  using NonConstT = typename std::remove_const<T>::type;
+  using NonConstT = std::remove_const_t<T>;
   // Report the result of THIS call only. cudaGetLastError() would return the
   // sticky error of any earlier failed CUDA call on this thread (e.g. an
   // expected probe failure or a caught allocation error), misattributing it
@@ -390,7 +390,7 @@ void unpin_memory(T* p)
 
   // We cast to non const T * because T may be a const type : we are not going
   // to modify the content, so this is legit ...
-  using NonConstT = typename std::remove_const<T>::type;
+  using NonConstT = std::remove_const_t<T>;
   if (cudaHostUnregister(const_cast<NonConstT*>(p)) != cudaSuccess)
   {
     // Tolerate unregister failures (e.g. the matching registration was

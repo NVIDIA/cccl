@@ -20,8 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/remove_const.h>
-#include <cuda/std/__type_traits/remove_volatile.h>
+#include <cuda/std/__type_traits/remove_const.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/remove_volatile.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

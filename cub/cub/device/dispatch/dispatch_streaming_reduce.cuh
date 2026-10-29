@@ -13,13 +13,21 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/key_value_pair.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
+#include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
+#include <cub/thread/thread_operators.cuh>
+#include <cub/util_debug.cuh>
+#include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__iterator/tabulate_output_iterator.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/identity.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/limits>
 

@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include <cuda/__cccl_config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -29,9 +29,9 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 
 // Legacy include; this functionality used to be defined in here.
-#include <cub/detail/detect_cuda_runtime.cuh>
 
 CUB_NAMESPACE_BEGIN
 
@@ -41,13 +41,7 @@ CUB_NAMESPACE_BEGIN
 /// compiling. In host code, CUB_PTX_ARCH's value is implementation defined.
 #  ifndef CUB_PTX_ARCH
 // deprecated in 3.1
-#    if _CCCL_CUDA_COMPILER(NVHPC)
-// NV_TARGET_MINIMUM_SM_INTEGER is the oldest target PTX version, and is defined when compiling both host code and
-// device code.
-#      define CUB_PTX_ARCH (NV_TARGET_MINIMUM_SM_INTEGER * 10)
-#    else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
-#      define CUB_PTX_ARCH _CCCL_PTX_ARCH()
-#    endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
+#    define CUB_PTX_ARCH _CCCL_PTX_ARCH()
 #  endif
 
 /// Maximum number of devices supported.
@@ -113,7 +107,7 @@ inline constexpr bool prefer_conflict_over_padding = CUB_PTX_PREFER_CONFLICT_OVE
 // The maximum amount of shared memory available per thread block for eternity. Every current and future CUDA
 // architecture has and will have at least this amount of shared memory. This is also the maximum size of total static
 // shared memory in a kernel. Note that dynamic shared memory may be larger than this amount.
-static constexpr ::cuda::std::size_t max_smem_per_block = 48 * 1024;
+inline constexpr ::cuda::std::size_t max_smem_per_block = 48 * 1024;
 
 // The size in bytes of the largest machine word that can be atomically read/written in a single instruction, so we can
 // use it to pass messages from one thread to another using strong loads (acquire) and stores (release).

@@ -80,12 +80,11 @@
 #include <cuda/std/span>
 #include <cuda/stream>
 
-// The CCCL FP component lives in cuda::experimental (later cuda::), abbreviated here
+// The CCCL FP component lives in namespace cuda, and its names are qualified here
 // rather than pulled in with a using-directive. Everything this example names is specific
 // to the component and so carries the prefix; note in particular that the size setters
 // and getters take only an int and a stream, so argument-dependent lookup could not find
 // them unqualified even if one wanted it to.
-namespace cudax = cuda::experimental;
 
 // The compile-time formats, in the order they are printed. The kernel evaluates the same
 // expression in each, so the rows can be read against one another.
@@ -123,41 +122,41 @@ __host__ __device__ void compile_time_formats(fp_custom_results* out)
   // Construction. The native format is a double in every respect and takes one implicitly.
   // A reduced format is narrower than the source, so the value is marked as entering it -
   // the braces are the only edit a body of double code needs.
-  const cudax::fp64_custom<> a = da;
-  const cudax::fp64_custom<> b = db;
+  const cuda::fp64_custom<> a = da;
+  const cuda::fp64_custom<> b = db;
 
-  const cudax::fp64_custom<8, 23> a_fp32{da};
-  const cudax::fp64_custom<8, 23> b_fp32{db};
-  const cudax::fp64_custom<8, 10> a_tf32{da};
-  const cudax::fp64_custom<8, 10> b_tf32{db};
-  const cudax::fp64_custom<5, 10> a_fp16{da};
-  const cudax::fp64_custom<5, 10> b_fp16{db};
-  const cudax::fp64_custom<8, 7> a_bf16{da};
-  const cudax::fp64_custom<8, 7> b_bf16{db};
-  const cudax::fp64_custom<11, 0> a_po2{da};
-  const cudax::fp64_custom<11, 0> b_po2{db};
+  const cuda::fp64_custom<8, 23> a_fp32{da};
+  const cuda::fp64_custom<8, 23> b_fp32{db};
+  const cuda::fp64_custom<8, 10> a_tf32{da};
+  const cuda::fp64_custom<8, 10> b_tf32{db};
+  const cuda::fp64_custom<5, 10> a_fp16{da};
+  const cuda::fp64_custom<5, 10> b_fp16{db};
+  const cuda::fp64_custom<8, 7> a_bf16{da};
+  const cuda::fp64_custom<8, 7> b_bf16{db};
+  const cuda::fp64_custom<11, 0> a_po2{da};
+  const cuda::fp64_custom<11, 0> b_po2{db};
 
   // The same addition in every format. Each result is rounded to the format it was
   // computed in, which is the whole of what the emulation does: the operands are reduced,
   // the native FP64 operation runs, and the result is reduced again.
-  const cudax::fp64_custom<> sum_native    = a + b;
-  const cudax::fp64_custom<8, 23> sum_fp32 = a_fp32 + b_fp32;
-  const cudax::fp64_custom<8, 10> sum_tf32 = a_tf32 + b_tf32;
-  const cudax::fp64_custom<5, 10> sum_fp16 = a_fp16 + b_fp16;
-  const cudax::fp64_custom<8, 7> sum_bf16  = a_bf16 + b_bf16;
-  const cudax::fp64_custom<11, 0> sum_po2  = a_po2 + b_po2;
+  const cuda::fp64_custom<> sum_native    = a + b;
+  const cuda::fp64_custom<8, 23> sum_fp32 = a_fp32 + b_fp32;
+  const cuda::fp64_custom<8, 10> sum_tf32 = a_tf32 + b_tf32;
+  const cuda::fp64_custom<5, 10> sum_fp16 = a_fp16 + b_fp16;
+  const cuda::fp64_custom<8, 7> sum_bf16  = a_bf16 + b_bf16;
+  const cuda::fp64_custom<11, 0> sum_po2  = a_po2 + b_po2;
 
   // Mixed arithmetic. A scalar operand needs no cast whatever the sizes are, and the
   // result stays in the reduced format rather than widening to double.
-  const cudax::fp64_custom<8, 7> mixed = a_bf16 * 2.0;
+  const cuda::fp64_custom<8, 7> mixed = a_bf16 * 2.0;
 
   // The exponent decides the range rather than the precision. 1e300 is an ordinary double
   // and stays one in the native format, but no 5-bit exponent reaches it, so the value
   // becomes infinity. Note where that happens: the constructor stores the number
   // unreduced, and the first arithmetic operation is what clamps it.
-  const cudax::fp64_custom<> huge_native = 1e300;
-  const cudax::fp64_custom<5, 10> huge_reduced{1e300};
-  const cudax::fp64_custom<5, 10> huge_used = huge_reduced * 1.0;
+  const cuda::fp64_custom<> huge_native = 1e300;
+  const cuda::fp64_custom<5, 10> huge_reduced{1e300};
+  const cuda::fp64_custom<5, 10> huge_used = huge_reduced * 1.0;
 
   // The single conversion point. Coming out is always exact: the value was held in a
   // double the whole time, already rounded to its format.
@@ -179,7 +178,7 @@ __host__ __device__ void compile_time_formats(fp_custom_results* out)
 
 // The run-time counterpart. Both sizes come from globals instead of from the template
 // arguments, so this one type covers every format and the kernel below is compiled once.
-using fp_dynamic = cudax::fp64_custom<cudax::fp_custom_dynamic_size, cudax::fp_custom_dynamic_size>;
+using fp_dynamic = cuda::fp64_custom<cuda::fp_custom_dynamic_size, cuda::fp_custom_dynamic_size>;
 
 // Called once per size in the sweep, with the size already set by the caller. Nothing here
 // mentions a format: the same instructions produce a different result each time.
@@ -327,11 +326,11 @@ try
   // order the write against.
   for (int i = 0; i < sweep_count; ++i)
   {
-    cudax::fp_custom_set_host_mantissa_size(sweep_mantissa[i]);
+    cuda::fp_custom_set_host_mantissa_size(sweep_mantissa[i]);
 
     run_time_formats(&host_results, i);
 
-    host_sizes[i] = cudax::fp_custom_get_host_mantissa_size();
+    host_sizes[i] = cuda::fp_custom_get_host_mantissa_size();
   }
 
   print_compile_time("host", host_results);
@@ -374,11 +373,11 @@ try
 
   for (int i = 0; i < sweep_count; ++i)
   {
-    cudax::fp_custom_set_device_mantissa_size(sweep_mantissa[i], stream);
+    cuda::fp_custom_set_device_mantissa_size(sweep_mantissa[i], stream);
 
     cuda::launch(stream, config, run_time_kernel, r.data(), i);
 
-    sizes_in_effect[i] = cudax::fp_custom_get_device_mantissa_size(stream);
+    sizes_in_effect[i] = cuda::fp_custom_get_device_mantissa_size(stream);
   }
 
   // Once the stream has drained, the device numbers print the same way the host

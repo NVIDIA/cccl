@@ -26,7 +26,7 @@
 #include "helper.h"
 
 using buffer_t = cuda::__resizable_buffer<int, cuda::mr::device_accessible>;
-using base_t   = cuda::buffer<int, cuda::mr::device_accessible>;
+using base_t   = cuda::device_buffer<int>;
 
 template <cuda::std::size_t Size>
 void check_prefix(const buffer_t& buf, const cuda::std::array<int, Size>& expected)

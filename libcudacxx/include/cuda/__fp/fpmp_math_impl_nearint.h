@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -32,8 +32,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 #if !(defined _CCCL_FPMP_USE_LIB)
 
 /*
@@ -105,12 +104,12 @@ __internal_fpmp2_modf_decompose(float __hi, float __lo, unsigned long long* __m,
   }
 
   const int __s     = 52 - __eh;
-  const float __shi = __internal_fpmp2_scale2_scalar(__hi, __s); /* integer in [2^52, 2^53) */
-  const float __slo = __internal_fpmp2_scale2_scalar(__lo, __s); /* |slo| <= 2^28           */
+  const float __shi = ::cuda::__internal_fpmp2_scale2_scalar(__hi, __s); /* integer in [2^52, 2^53) */
+  const float __slo = ::cuda::__internal_fpmp2_scale2_scalar(__lo, __s); /* |slo| <= 2^28           */
 
-  long long __mant =
-    static_cast<long long>(static_cast<unsigned long long>(__shi)) + static_cast<long long>(__fpmp_fp2int_rn(__slo));
-  int __exp = __eh - 52;
+  long long __mant = static_cast<long long>(static_cast<unsigned long long>(__shi))
+                   + static_cast<long long>(::cuda::__fpmp_fp2int_rn(__slo));
+  int __exp        = __eh - 52;
 
   /* lo > 0 may push m just past 2^53; bring it back. */
   if ((static_cast<unsigned long long>(__mant) >> 53) != 0ULL)
@@ -171,8 +170,8 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_modf_reconstruct(
 
   const unsigned __hipart = static_cast<unsigned>(__mag >> 24); /* < 2^24 */
   const unsigned __lopart = static_cast<unsigned>(__mag & 0xFFFFFFULL); /* < 2^24 */
-  float __rhi             = __internal_fpmp2_scale2_scalar(static_cast<float>(__hipart), __e + 24);
-  float __rlo             = __internal_fpmp2_scale2_scalar(static_cast<float>(__lopart), __e);
+  float __rhi             = ::cuda::__internal_fpmp2_scale2_scalar(static_cast<float>(__hipart), __e + 24);
+  float __rlo             = ::cuda::__internal_fpmp2_scale2_scalar(static_cast<float>(__lopart), __e);
   if (__neg)
   {
     __rhi = -__rhi;
@@ -180,7 +179,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_modf_reconstruct(
   }
 
   float __lo;
-  const float __hi = __fpmp_two_sum(__rhi, __rlo, &__lo); /* exact, no magnitude assumption */
+  const float __hi = ::cuda::__fpmp_two_sum(__rhi, __rlo, &__lo); /* exact, no magnitude assumption */
   *__res_hi        = __hi;
   *__res_lo        = __lo;
 }
@@ -204,8 +203,8 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_fmod_kernel(
   unsigned long long __my;
   int __Ex;
   int __ey;
-  __internal_fpmp2_modf_decompose(__ax_hi, __ax_lo, &__Mx, &__Ex);
-  __internal_fpmp2_modf_decompose(__ay_hi, __ay_lo, &__my, &__ey);
+  ::cuda::__internal_fpmp2_modf_decompose(__ax_hi, __ax_lo, &__Mx, &__Ex);
+  ::cuda::__internal_fpmp2_modf_decompose(__ay_hi, __ay_lo, &__my, &__ey);
 
   int __d = __Ex - __ey; /* >= 0 since ax > ay and both M in [2^52,2^53) */
   if (__d < 0)
@@ -308,8 +307,8 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_fmod(
   unsigned long long __my;
   unsigned long long __quo;
   int __ey;
-  __internal_fpmp2_fmod_kernel(__axh, __axl, __ayh, __ayl, &__ia, &__my, &__ey, &__quo);
-  __internal_fpmp2_modf_reconstruct(__ia, __ey, (__x_hi < 0.0f), __res_hi, __res_lo);
+  ::cuda::__internal_fpmp2_fmod_kernel(__axh, __axl, __ayh, __ayl, &__ia, &__my, &__ey, &__quo);
+  ::cuda::__internal_fpmp2_modf_reconstruct(__ia, __ey, (__x_hi < 0.0f), __res_hi, __res_lo);
 }
 
 /*
@@ -446,7 +445,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_remainder(
   unsigned long long __my;
   unsigned long long __quo;
   int __ey;
-  __internal_fpmp2_fmod_kernel(__axh, __axl, __ayh, __ayl, &__ia, &__my, &__ey, &__quo);
+  ::cuda::__internal_fpmp2_fmod_kernel(__axh, __axl, __ayh, __ayl, &__ia, &__my, &__ey, &__quo);
 
   const unsigned long long __two_ia = __ia << 1;
   const bool __round_up             = (__two_ia > __my) || ((__two_ia == __my) && ((__quo & 1ULL) != 0ULL));
@@ -464,7 +463,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_remainder(
     __neg_xframe = false;
   }
 
-  __internal_fpmp2_modf_reconstruct(__mag, __ey, static_cast<bool>(__neg_xframe ^ __xneg), __res_hi, __res_lo);
+  ::cuda::__internal_fpmp2_modf_reconstruct(__mag, __ey, static_cast<bool>(__neg_xframe ^ __xneg), __res_hi, __res_lo);
 }
 
 /*
@@ -532,20 +531,20 @@ __fpmp2_floor(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _Fp
     return;
   }
 
-  const _FpType __abs_hi    = __fpmp_internal_fabs(__x_hi);
+  const _FpType __abs_hi    = ::cuda::__fpmp_internal_fabs(__x_hi);
   const _FpType __int_scale = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p23f) : _FpType(0x1.0p52);
   if (__abs_hi >= __int_scale)
   {
     // x_hi is already an integer at this scale; floor(x_hi + x_lo) = x_hi + floor(x_lo).
-    const _FpType __lo_floor = __fpmp_internal_floor<_FpType>(__x_lo);
+    const _FpType __lo_floor = ::cuda::__fpmp_internal_floor<_FpType>(__x_lo);
     _FpType __t_hi = __x_hi, __t_lo = _FpType(0);
-    __fpmp2_acc<_FpType>(__lo_floor, &__t_hi, &__t_lo);
+    ::cuda::__fpmp2_acc<_FpType>(__lo_floor, &__t_hi, &__t_lo);
     *__res_hi = __t_hi;
     *__res_lo = __t_lo;
     return;
   }
 
-  const _FpType __n = __fpmp_internal_floor<_FpType>(__x_hi);
+  const _FpType __n = ::cuda::__fpmp_internal_floor<_FpType>(__x_hi);
   if (__x_hi != __n || __x_lo >= _FpType(0))
   {
     *__res_hi = __n;
@@ -554,7 +553,7 @@ __fpmp2_floor(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _Fp
   }
 
   _FpType __t_hi = __n, __t_lo = _FpType(0);
-  __fpmp2_acc<_FpType>(_FpType(-1), &__t_hi, &__t_lo);
+  ::cuda::__fpmp2_acc<_FpType>(_FpType(-1), &__t_hi, &__t_lo);
   *__res_hi = __t_hi;
   *__res_lo = __t_lo;
 }
@@ -583,20 +582,20 @@ __fpmp2_ceil(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _FpT
     return;
   }
 
-  const _FpType __abs_hi    = __fpmp_internal_fabs(__x_hi);
+  const _FpType __abs_hi    = ::cuda::__fpmp_internal_fabs(__x_hi);
   const _FpType __int_scale = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p23f) : _FpType(0x1.0p52);
   if (__abs_hi >= __int_scale)
   {
     // x_hi is already an integer at this scale; ceil(x_hi + x_lo) = x_hi + ceil(x_lo).
-    const _FpType __lo_ceil = __fpmp_internal_ceil<_FpType>(__x_lo);
+    const _FpType __lo_ceil = ::cuda::__fpmp_internal_ceil<_FpType>(__x_lo);
     _FpType __t_hi = __x_hi, __t_lo = _FpType(0);
-    __fpmp2_acc<_FpType>(__lo_ceil, &__t_hi, &__t_lo);
+    ::cuda::__fpmp2_acc<_FpType>(__lo_ceil, &__t_hi, &__t_lo);
     *__res_hi = __t_hi;
     *__res_lo = __t_lo;
     return;
   }
 
-  const _FpType __n = __fpmp_internal_ceil<_FpType>(__x_hi);
+  const _FpType __n = ::cuda::__fpmp_internal_ceil<_FpType>(__x_hi);
   if (__x_hi != __n || __x_lo <= _FpType(0))
   {
     *__res_hi = __n;
@@ -605,7 +604,7 @@ __fpmp2_ceil(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _FpT
   }
 
   _FpType __t_hi = __n, __t_lo = _FpType(0);
-  __fpmp2_acc<_FpType>(_FpType(1), &__t_hi, &__t_lo);
+  ::cuda::__fpmp2_acc<_FpType>(_FpType(1), &__t_hi, &__t_lo);
   *__res_hi = __t_hi;
   *__res_lo = __t_lo;
 }
@@ -637,15 +636,15 @@ __fpmp2_round(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _Fp
   const bool __x_neg = (__x_hi < _FpType(0)) || (__x_hi == _FpType(0) && __x_lo < _FpType(0));
 
   _FpType __t_hi = __x_hi, __t_lo = __x_lo;
-  __fpmp2_acc<_FpType>(__x_neg ? _FpType(-0.5) : _FpType(0.5), &__t_hi, &__t_lo);
+  ::cuda::__fpmp2_acc<_FpType>(__x_neg ? _FpType(-0.5) : _FpType(0.5), &__t_hi, &__t_lo);
 
   if (__x_neg)
   {
-    __fpmp2_ceil(__t_hi, __t_lo, __res_hi, __res_lo);
+    ::cuda::__fpmp2_ceil(__t_hi, __t_lo, __res_hi, __res_lo);
   }
   else
   {
-    __fpmp2_floor(__t_hi, __t_lo, __res_hi, __res_lo);
+    ::cuda::__fpmp2_floor(__t_hi, __t_lo, __res_hi, __res_lo);
   }
 }
 
@@ -673,17 +672,17 @@ __fpmp2_trunc(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _Fp
     return;
   }
 
-  const _FpType __abs_hi    = __fpmp_internal_fabs(__x_hi);
+  const _FpType __abs_hi    = ::cuda::__fpmp_internal_fabs(__x_hi);
   const _FpType __int_scale = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p23f) : _FpType(0x1.0p52);
   if (__abs_hi >= __int_scale)
   {
     // x_hi is integral at this scale and dominates sign, so trunc is:
     //   x_hi > 0 : floor(x_hi + x_lo) = x_hi + floor(x_lo)
     //   x_hi < 0 : ceil (x_hi + x_lo) = x_hi + ceil (x_lo)
-    const _FpType __lo_trunc =
-      (__x_hi < _FpType(0)) ? __fpmp_internal_ceil<_FpType>(__x_lo) : __fpmp_internal_floor<_FpType>(__x_lo);
+    const _FpType __lo_trunc = (__x_hi < _FpType(0)) ? ::cuda::__fpmp_internal_ceil<_FpType>(__x_lo)
+                                                     : ::cuda::__fpmp_internal_floor<_FpType>(__x_lo);
     _FpType __t_hi = __x_hi, __t_lo = _FpType(0);
-    __fpmp2_acc<_FpType>(__lo_trunc, &__t_hi, &__t_lo);
+    ::cuda::__fpmp2_acc<_FpType>(__lo_trunc, &__t_hi, &__t_lo);
     *__res_hi = __t_hi;
     *__res_lo = __t_lo;
     return;
@@ -692,7 +691,7 @@ __fpmp2_trunc(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _Fp
   // Fast small-magnitude path:
   // Start from trunc(x_hi), then apply at most a +/-1 correction only when
   // x_hi is already integral and x_lo nudges the exact value across that integer.
-  const _FpType __n = __fpmp_internal_trunc<_FpType>(__x_hi);
+  const _FpType __n = ::cuda::__fpmp_internal_trunc<_FpType>(__x_hi);
   if (__x_hi != __n)
   {
     *__res_hi = __n;
@@ -705,7 +704,7 @@ __fpmp2_trunc(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _Fp
   if (__delta != 0)
   {
     _FpType __t_hi = __n, __t_lo = _FpType(0);
-    __fpmp2_acc<_FpType>(static_cast<_FpType>(__delta), &__t_hi, &__t_lo);
+    ::cuda::__fpmp2_acc<_FpType>(static_cast<_FpType>(__delta), &__t_hi, &__t_lo);
     *__res_hi = __t_hi;
     *__res_lo = __t_lo;
     return;
@@ -735,7 +734,7 @@ _CCCL_FPMP_MATH_FALLBACK_1A_RETLL(llrint)
  */
 _CCCL_FPMP_CORE_API long long int __internal_fpmp2_llrint(const double __x_hi, const double __x_lo) noexcept
 {
-  return ::cuda::std::llrint(__fpmp2_to_double(__x_hi, __x_lo));
+  return ::cuda::std::llrint(::cuda::__fpmp2_to_double(__x_hi, __x_lo));
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A_RETLL(llrint)
@@ -760,7 +759,7 @@ _CCCL_FPMP_MATH_FALLBACK_1A_RETLL(llround)
  */
 _CCCL_FPMP_CORE_API long long int __internal_fpmp2_llround(const double __x_hi, const double __x_lo) noexcept
 {
-  return ::cuda::std::llround(__fpmp2_to_double(__x_hi, __x_lo));
+  return ::cuda::std::llround(::cuda::__fpmp2_to_double(__x_hi, __x_lo));
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A_RETLL(llround)
@@ -785,7 +784,7 @@ _CCCL_FPMP_MATH_FALLBACK_1A_RETL(lrint)
  */
 _CCCL_FPMP_CORE_API long int __internal_fpmp2_lrint(const double __x_hi, const double __x_lo) noexcept
 {
-  return ::cuda::std::lrint(__fpmp2_to_double(__x_hi, __x_lo));
+  return ::cuda::std::lrint(::cuda::__fpmp2_to_double(__x_hi, __x_lo));
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A_RETL(lrint)
@@ -810,7 +809,7 @@ _CCCL_FPMP_MATH_FALLBACK_1A_RETL(lround)
  */
 _CCCL_FPMP_CORE_API long int __internal_fpmp2_lround(const double __x_hi, const double __x_lo) noexcept
 {
-  return ::cuda::std::lround(__fpmp2_to_double(__x_hi, __x_lo));
+  return ::cuda::std::lround(::cuda::__fpmp2_to_double(__x_hi, __x_lo));
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A_RETL(lround)
@@ -822,7 +821,7 @@ _CCCL_FPMP_CORE_API bool __internal_fpmp2_nearint_is_odd(const _FpType __n) noex
   // n is an integer. n/2 and 2*floor(n/2) are both exact, so this is a parity
   // test that also works past 2^53, where every value is even anyway.
   const _FpType __half_n = __n * _FpType(0.5);
-  return __n != _FpType(2) * __fpmp_internal_floor<_FpType>(__half_n);
+  return __n != _FpType(2) * ::cuda::__fpmp_internal_floor<_FpType>(__half_n);
 }
 
 /*
@@ -868,7 +867,7 @@ __fpmp2_rint(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _FpT
   }
 
   const _FpType __half      = _FpType(0.5);
-  const _FpType __abs_hi    = __fpmp_internal_fabs(__x_hi);
+  const _FpType __abs_hi    = ::cuda::__fpmp_internal_fabs(__x_hi);
   const _FpType __int_scale = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p23f) : _FpType(0x1.0p52);
 
   if (__abs_hi >= __int_scale)
@@ -877,7 +876,7 @@ __fpmp2_rint(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _FpT
     // always exact (for x = -(0.5 - 2^-54) the true fraction 0.5 + 2^-54 rounds to
     // 0.5 and fabricates a tie), while floor(x) + 1/2 is representable below
     // int_scale and the comparison is exact.
-    const _FpType __lo_floor = __fpmp_internal_floor<_FpType>(__x_lo);
+    const _FpType __lo_floor = ::cuda::__fpmp_internal_floor<_FpType>(__x_lo);
     const _FpType __lo_mid   = __lo_floor + __half;
     _FpType __lo_r           = __lo_floor;
     if (__x_lo > __lo_mid)
@@ -887,8 +886,8 @@ __fpmp2_rint(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _FpT
     else if (__x_lo == __lo_mid)
     {
       // Tie: step to whichever of hi + lo_floor and hi + lo_floor + 1 is even.
-      const bool __sum_odd =
-        __internal_fpmp2_nearint_is_odd<_FpType>(__x_hi) != __internal_fpmp2_nearint_is_odd<_FpType>(__lo_floor);
+      const bool __sum_odd = ::cuda::__internal_fpmp2_nearint_is_odd<_FpType>(__x_hi)
+                          != ::cuda::__internal_fpmp2_nearint_is_odd<_FpType>(__lo_floor);
       if (__sum_odd)
       {
         __lo_r = __lo_floor + _FpType(1);
@@ -896,7 +895,7 @@ __fpmp2_rint(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _FpT
     }
 
     _FpType __t_hi = __x_hi, __t_lo = _FpType(0);
-    __fpmp2_acc<_FpType>(__lo_r, &__t_hi, &__t_lo);
+    ::cuda::__fpmp2_acc<_FpType>(__lo_r, &__t_hi, &__t_lo);
     *__res_hi = __t_hi;
     *__res_lo = __t_lo;
     return;
@@ -905,7 +904,7 @@ __fpmp2_rint(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _FpT
   // Same midpoint comparison as above. hi strictly on one side of mid puts x on
   // that side too, since hi and mid are both multiples of ulp(hi) here and
   // |lo| <= ulp(hi)/2, so lo cannot cross the midpoint - it can only break a tie.
-  const _FpType __n   = __fpmp_internal_floor<_FpType>(__x_hi);
+  const _FpType __n   = ::cuda::__fpmp_internal_floor<_FpType>(__x_hi);
   const _FpType __mid = __n + __half;
   _FpType __r         = __n;
   if (__x_hi > __mid)
@@ -918,7 +917,7 @@ __fpmp2_rint(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _FpT
     {
       __r = __n + _FpType(1);
     }
-    else if (__x_lo == _FpType(0) && __internal_fpmp2_nearint_is_odd<_FpType>(__n))
+    else if (__x_lo == _FpType(0) && ::cuda::__internal_fpmp2_nearint_is_odd<_FpType>(__n))
     {
       __r = __n + _FpType(1); // exact tie, and n is the odd neighbour
     }
@@ -948,7 +947,7 @@ template <typename _FpType>
 _CCCL_FPMP_CORE_API void
 __fpmp2_nearbyint(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
-  __fpmp2_rint<_FpType>(__x_hi, __x_lo, __res_hi, __res_lo);
+  ::cuda::__fpmp2_rint<_FpType>(__x_hi, __x_lo, __res_hi, __res_lo);
 }
 
 /*
@@ -994,15 +993,16 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_remquo(
   double* __res_lo,
   int* __quo) noexcept
 {
-  __fpmp2_from_double(::cuda::std::remquo(__fpmp2_to_double(__x_hi, __x_lo), __fpmp2_to_double(__y_hi, __y_lo), __quo),
-                      __res_hi,
-                      __res_lo);
+  ::cuda::__fpmp2_from_double(
+    ::cuda::std::remquo(::cuda::__fpmp2_to_double(__x_hi, __x_lo), ::cuda::__fpmp2_to_double(__y_hi, __y_lo), __quo),
+    __res_hi,
+    __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_2A_QUO(remquo)
 
 #endif // _CCCL_FPMP_USE_LIB
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

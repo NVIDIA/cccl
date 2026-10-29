@@ -23,10 +23,10 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/derived_from.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/reference_wrapper.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
 #include <cuda/std/__utility/declval.h>

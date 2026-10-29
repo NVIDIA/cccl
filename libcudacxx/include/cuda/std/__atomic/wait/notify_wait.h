@@ -22,11 +22,13 @@
 #endif // no system header
 
 #include <cuda/std/__atomic/order.h>
-#include <cuda/std/__atomic/scopes.h>
+#include <cuda/std/__atomic/types/common.h>
 #include <cuda/std/__atomic/wait/polling.h>
 #include <cuda/std/__thread/poll.h>
 #include <cuda/std/__thread/yield.h>
-#include <cuda/std/cstring>
+#include <cuda/std/cstring> // IWYU pragma: keep
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 

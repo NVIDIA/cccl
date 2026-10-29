@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
 
 #include <cuda/__device/compute_capability.h>

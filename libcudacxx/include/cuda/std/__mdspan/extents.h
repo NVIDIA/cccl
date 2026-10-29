@@ -29,8 +29,8 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__mdspan/concepts.h>
-#include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
@@ -42,7 +42,6 @@
 #include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/integer_sequence.h>
-#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/array>
 #include <cuda/std/concepts>
 #include <cuda/std/cstddef>

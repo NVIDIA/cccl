@@ -55,7 +55,6 @@ std::pair<size_t, size_t> get_tile_state_bytes_per_tile(
 
   constexpr std::string_view ptx_src_template = R"XXX(
         #include <cub/agent/single_pass_scan_operators.cuh>
-        #include <cub/util_type.cuh>
         struct __align__({1}) storage_t {{
            char data[{0}];
         }};
