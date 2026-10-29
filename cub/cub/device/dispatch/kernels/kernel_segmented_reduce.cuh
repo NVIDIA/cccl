@@ -386,8 +386,8 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
 
   if (segment_size <= small_items_per_tile)
   {
-    const int sid_within_block  = tid / small_threads_per_warp;
-    const int lane_id           = tid % small_threads_per_warp;
+    const int sid_within_block = tid / small_threads_per_warp;
+    const int lane_id          = tid % small_threads_per_warp;
     // The number of blocks may be rounded up such that the segment id of the last block exceeds the largest int, so
     // the segment id must be computed in 64-bit to avoid overflow
     const ::cuda::std::int64_t global_segment_id =
@@ -419,8 +419,8 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
   }
   else if (segment_size <= medium_items_per_tile)
   {
-    const int sid_within_block  = tid / medium_threads_per_warp;
-    const int lane_id           = tid % medium_threads_per_warp;
+    const int sid_within_block = tid / medium_threads_per_warp;
+    const int lane_id          = tid % medium_threads_per_warp;
     // The number of blocks may be rounded up such that the segment id of the last block exceeds the largest int, so
     // the segment id must be computed in 64-bit to avoid overflow
     const ::cuda::std::int64_t global_segment_id =
