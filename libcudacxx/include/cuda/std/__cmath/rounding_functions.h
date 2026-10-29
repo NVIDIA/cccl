@@ -41,8 +41,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 [[nodiscard]] _CCCL_API inline __float128 __trunc_fp128_impl(__float128 __x) noexcept
 {
   using __storage_t          = __fp_storage_of_t<__float128>;
-  constexpr auto __fmt       = __fp_format_of_v<__float128>;
-  constexpr int __mant_nbits = __fp_mant_nbits_v<__fmt>;
+  constexpr int __mant_nbits = __fp_mant_nbits_v<__fp_format_of_v<__float128>>;
   const auto __bits          = ::cuda::std::__fp_get_storage(__x);
   const int __exp            = ::cuda::std::__fp_get_exp(__x);
 
