@@ -27,6 +27,8 @@
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/pair.h>
 
 CUB_NAMESPACE_BEGIN
@@ -686,12 +688,17 @@ struct agent_set_op
 
     if (IsLastTile && threadIdx.x == 0)
     {
+      const auto ret = tile_output_prefix + tile_output_count;
+
+      using count_value_type _CCCL_NODEBUG = it_value_t<::cuda::std::remove_cvref_t<decltype(output_count)>>;
+      _CCCL_ASSERT(::cuda::std::in_range<count_value_type>(ret), "Over- or underflow detected when assigning result");
       // This is a case where *output_count is something like int32_t while
       // `tile_output_prefix + tile_output_count` is OffsetT, i.e. uint32_t. There is pretty
-      // much no safe way to cast here without potential loss of precision.
+      // much no safe way to cast here without potential loss of precision, so we must do the
+      // check at runtime.
       //
       // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
-      *output_count = tile_output_prefix + tile_output_count;
+      *output_count = static_cast<count_value_type>(ret);
     }
   }
 
