@@ -13,6 +13,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__algorithm/copy_backward.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
@@ -21,14 +23,7 @@ template <typename BidirectionalIterator1, typename BidirectionalIterator2>
 _CCCL_HOST_DEVICE BidirectionalIterator2
 copy_backward(BidirectionalIterator1 first, BidirectionalIterator1 last, BidirectionalIterator2 result)
 {
-  while (first != last)
-  {
-    --last;
-    --result;
-    *result = *last;
-  }
-
-  return result;
+  return ::cuda::std::copy_backward(first, last, result);
 }
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END
