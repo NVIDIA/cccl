@@ -37,8 +37,6 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
 // Pi rounded to binary64, and the residual Pi - (double) Pi. The pair carries Pi
 // to 1e-33, i.e. 0.01 eps of the double-double types, so the reference itself
 // contributes nothing measurable to the comparison.
@@ -187,15 +185,15 @@ TEST_HOST_DEVICE_FUNC void test()
   check_pi<double>(one, iters, tol_eps); // control
 
   // fpmp2_accuracy::def aliases mid, so the def and mid rows are the same type.
-  check_pi<cudax::fp32mp2>(one, iters, tol_eps);
-  check_pi<cudax::fp32mp2_high>(one, iters, tol_eps);
-  check_pi<cudax::fp32mp2_mid>(one, iters, tol_eps);
-  check_pi<cudax::fp32mp2_low>(one, iters, tol_eps);
+  check_pi<cuda::fp32mp2>(one, iters, tol_eps);
+  check_pi<cuda::fp32mp2_high>(one, iters, tol_eps);
+  check_pi<cuda::fp32mp2_mid>(one, iters, tol_eps);
+  check_pi<cuda::fp32mp2_low>(one, iters, tol_eps);
 
-  check_pi<cudax::fp64mp2>(one, iters, tol_eps);
-  check_pi<cudax::fp64mp2_high>(one, iters, tol_eps);
-  check_pi<cudax::fp64mp2_mid>(one, iters, tol_eps);
-  check_pi<cudax::fp64mp2_low>(one, iters, tol_eps);
+  check_pi<cuda::fp64mp2>(one, iters, tol_eps);
+  check_pi<cuda::fp64mp2_high>(one, iters, tol_eps);
+  check_pi<cuda::fp64mp2_mid>(one, iters, tol_eps);
+  check_pi<cuda::fp64mp2_low>(one, iters, tol_eps);
 }
 
 int main(int, char**)

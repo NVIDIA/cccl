@@ -29,13 +29,15 @@
 #include <cub/detail/deferred_parameter.cuh>
 #include <cub/detail/device_memory_resource.cuh>
 #include <cub/detail/env_dispatch.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/key_value_pair.cuh>
+#include <cub/detail/non_void_value.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/dispatch_reduce_deterministic.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce.cuh>
 #include <cub/thread/thread_operators.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
@@ -43,6 +45,7 @@
 #include <cuda/__functional/call_or.h>
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/__stream/stream_ref.h>
@@ -54,6 +57,7 @@
 #include <cuda/std/__iterator/indirectly_comparable.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_one_of.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstdint>
@@ -310,12 +314,12 @@ private:
       gpu_gpu_determinism && ::cuda::std::is_integral_v<AccumT> && (detail::is_cuda_binary_operator<ReductionOpT>);
 
     // use gpu-to-gpu determinism only for float and double types with ::cuda::std::plus operator
-    constexpr auto float_double_plus =
-      gpu_gpu_determinism && detail::is_one_of_v<AccumT, float, double> && detail::is_cuda_std_plus_v<ReductionOpT>;
+    constexpr auto float_double_plus = gpu_gpu_determinism && ::cuda::std::__is_one_of_v<AccumT, float, double>
+                                    && ::cuda::__is_cuda_std_plus_v<ReductionOpT>;
 
     constexpr auto float_double_min_max_fallback =
       gpu_gpu_determinism
-      && detail::is_one_of_v<AccumT, float, double> && detail::is_cuda_minimum_maximum_v<ReductionOpT>;
+      && ::cuda::std::__is_one_of_v<AccumT, float, double> && detail::is_cuda_minimum_maximum_v<ReductionOpT>;
 
     constexpr auto supported =
       integral_fallback || float_double_plus || float_double_min_max_fallback || !gpu_gpu_determinism;
@@ -344,7 +348,7 @@ private:
 
       constexpr auto is_contiguous_fallback =
         !no_determinism || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
-      constexpr auto is_plus_fallback = !no_determinism || detail::is_cuda_std_plus_v<ReductionOpT>;
+      constexpr auto is_plus_fallback = !no_determinism || ::cuda::__is_cuda_std_plus_v<ReductionOpT>;
       constexpr auto is_4b_or_greater = !no_determinism || sizeof(AccumT) >= 4;
       constexpr auto is_output_accum  = !no_determinism || ::cuda::std::is_same_v<OutputT, AccumT>;
 
@@ -801,6 +805,8 @@ public:
   //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Uses ``cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction.
+  //! - For floating-point types, the minimum follows ``cuda::std::fmin``: NaN inputs are ignored. If all inputs are
+  //!   NaN, the result is the initial value.
   //! - Does not support ``<`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -913,6 +919,8 @@ public:
   //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Uses ``cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction.
+  //! - For floating-point types, the minimum follows ``cuda::std::fmin``: NaN inputs are ignored. If all inputs are
+  //!   NaN, the result is the initial value.
   //! - Provides determinism based on the environment's determinism requirements.
   //!   To request "run-to-run" determinism, pass ``cuda::execution::require(cuda::execution::determinism::run_to_run)``
   //!   as the `env` parameter.
@@ -1166,8 +1174,6 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-  // ExtremumOutIteratorT, which is wrong IMO
   _CCCL_TEMPLATE(typename InputIteratorT,
                  typename ExtremumOutIteratorT,
                  typename IndexOutIteratorT,
@@ -1276,8 +1282,6 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-  // ExtremumOutIteratorT, which is wrong IMO
   _CCCL_TEMPLATE(typename InputIteratorT,
                  typename ExtremumOutIteratorT,
                  typename IndexOutIteratorT,
@@ -1298,8 +1302,6 @@ public:
 
   //! @overload
   //! @note Uses ``cuda::std::less`` as comparison operator
-  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-  // ExtremumOutIteratorT, which is wrong IMO
   _CCCL_TEMPLATE(typename InputIteratorT,
                  typename ExtremumOutIteratorT,
                  typename IndexOutIteratorT,
@@ -1451,6 +1453,8 @@ public:
   //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Uses ``cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
+  //! - For floating-point types, the maximum follows ``cuda::std::fmax``: NaN inputs are ignored. If all inputs are
+  //!   NaN, the result is the initial value.
   //! - Does not support ``>`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -1560,6 +1564,8 @@ public:
   //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Uses ``cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
+  //! - For floating-point types, the maximum follows ``cuda::std::fmax``: NaN inputs are ignored. If all inputs are
+  //!   NaN, the result is the initial value.
   //! - Provides determinism based on the environment's determinism requirements.
   //!   To request "run-to-run" determinism, pass ``cuda::execution::require(cuda::execution::determinism::run_to_run)``
   //!   as the `env` parameter.
@@ -1727,8 +1733,6 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-  // ExtremumOutIteratorT, which is wrong IMO
   _CCCL_TEMPLATE(typename InputIteratorT,
                  typename ExtremumOutIteratorT,
                  typename IndexOutIteratorT,
@@ -1971,8 +1975,6 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-  // ExtremumOutIteratorT, which is wrong IMO
   _CCCL_TEMPLATE(typename InputIteratorT,
                  typename ExtremumOutIteratorT,
                  typename IndexOutIteratorT,
@@ -1997,8 +1999,6 @@ public:
             typename ExtremumOutIteratorT,
             typename IndexOutIteratorT,
             typename EnvT = ::cuda::std::execution::env<>,
-            // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-            // ExtremumOutIteratorT, which is wrong IMO
             ::cuda::std::enable_if_t<!::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ArgMax(InputIteratorT d_in,

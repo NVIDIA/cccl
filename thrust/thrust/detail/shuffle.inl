@@ -17,6 +17,8 @@
 #include <thrust/system/detail/generic/select_system.h>
 #include <thrust/system/detail/generic/shuffle.h>
 
+#include <cuda/std/__utility/forward.h>
+
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -26,7 +28,8 @@ _CCCL_HOST_DEVICE void shuffle(
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::shuffle");
   using thrust::system::detail::generic::shuffle;
-  return shuffle(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, g);
+  return shuffle(
+    thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, ::cuda::std::forward<URBG>(g));
 }
 
 template <typename RandomIterator, typename URBG>
@@ -38,7 +41,7 @@ _CCCL_HOST_DEVICE void shuffle(RandomIterator first, RandomIterator last, URBG&&
   using System = typename thrust::iterator_system<RandomIterator>::type;
   System system;
 
-  return thrust::shuffle(select_system(system), first, last, g);
+  return thrust::shuffle(select_system(system), first, last, ::cuda::std::forward<URBG>(g));
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -52,7 +55,8 @@ _CCCL_HOST_DEVICE void shuffle_copy(
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::shuffle_copy");
   using thrust::system::detail::generic::shuffle_copy;
-  return shuffle_copy(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, g);
+  return shuffle_copy(
+    thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, ::cuda::std::forward<URBG>(g));
 }
 
 template <typename RandomIterator, typename OutputIterator, typename URBG>
@@ -67,7 +71,7 @@ _CCCL_HOST_DEVICE void shuffle_copy(RandomIterator first, RandomIterator last, O
   System1 system1;
   System2 system2;
 
-  return thrust::shuffle_copy(select_system(system1, system2), first, last, result, g);
+  return thrust::shuffle_copy(select_system(system1, system2), first, last, result, ::cuda::std::forward<URBG>(g));
 }
 
 THRUST_NAMESPACE_END

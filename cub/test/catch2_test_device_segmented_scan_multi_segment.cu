@@ -191,7 +191,7 @@ struct init_op
   template <typename Tp>
   __host__ __device__ value_t operator()(Tp a) const
   {
-    using Up = typename cuda::std::make_unsigned<Tp>::type;
+    using Up = cuda::std::make_unsigned_t<Tp>;
     const Up m{63};
     return static_cast<value_t>(static_cast<Up>(a) % m);
   }
@@ -203,7 +203,7 @@ struct numeric_op
   using value_t = ValueT;
   __host__ __device__ value_t operator()(value_t a, value_t b) const
   {
-    using Up = typename cuda::std::make_unsigned<value_t>::type;
+    using Up = cuda::std::make_unsigned_t<value_t>;
     const Up m{63};
     const Up r_a = static_cast<Up>(a) % m;
     const Up r_b = static_cast<Up>(b) % m;

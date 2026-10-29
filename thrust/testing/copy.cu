@@ -9,6 +9,7 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/sequence.h>
 
+#include <cuda/functional>
 #include <cuda/iterator>
 
 #include <algorithm>
@@ -203,15 +204,6 @@ void test_copy_list_to()
 DECLARE_VECTOR_UNITTEST(test_copy_list_to);
 
 template <typename T>
-struct is_even
-{
-  _CCCL_HOST_DEVICE bool operator()(T x)
-  {
-    return (x & 1) == 0;
-  }
-};
-
-template <typename T>
 struct is_true
 {
   _CCCL_HOST_DEVICE bool operator()(T x)
@@ -284,8 +276,8 @@ void test_copy_if_integral(const size_t n)
     thrust::host_vector<T> h_result(n);
     thrust::device_vector<T> d_result(n);
 
-    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), is_even<T>());
-    d_new_end = thrust::copy_if(d_data.begin(), d_data.end(), d_result.begin(), is_even<T>());
+    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), cuda::__is_even{});
+    d_new_end = thrust::copy_if(d_data.begin(), d_data.end(), d_result.begin(), cuda::__is_even{});
 
     h_result.resize(h_new_end - h_result.begin());
     d_result.resize(d_new_end - d_result.begin());
@@ -325,8 +317,8 @@ void test_copy_if_sequence(const size_t n)
     thrust::host_vector<T> h_result(n);
     thrust::device_vector<T> d_result(n);
 
-    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), is_even<T>());
-    d_new_end = thrust::copy_if(d_data.begin(), d_data.end(), d_result.begin(), is_even<T>());
+    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), cuda::__is_even{});
+    d_new_end = thrust::copy_if(d_data.begin(), d_data.end(), d_result.begin(), cuda::__is_even{});
 
     h_result.resize(h_new_end - h_result.begin());
     d_result.resize(d_new_end - d_result.begin());
@@ -386,8 +378,8 @@ void test_copy_if_stencil(const size_t n)
     thrust::host_vector<T> h_result(n);
     thrust::device_vector<T> d_result(n);
 
-    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_stencil.begin(), h_result.begin(), is_even<T>());
-    d_new_end = thrust::copy_if(d_data.begin(), d_data.end(), d_stencil.begin(), d_result.begin(), is_even<T>());
+    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_stencil.begin(), h_result.begin(), cuda::__is_even{});
+    d_new_end = thrust::copy_if(d_data.begin(), d_data.end(), d_stencil.begin(), d_result.begin(), cuda::__is_even{});
 
     h_result.resize(h_new_end - h_result.begin());
     d_result.resize(d_new_end - d_result.begin());
@@ -409,15 +401,13 @@ struct object_with_non_trivial_ctor
   int magic;
 
   _CCCL_HOST_DEVICE object_with_non_trivial_ctor()
-  {
-    magic = expected_magic;
-    field = 0;
-  }
+      : field(0)
+      , magic(expected_magic)
+  {}
   _CCCL_HOST_DEVICE object_with_non_trivial_ctor(int f)
-  {
-    magic = expected_magic;
-    field = f;
-  }
+      : field(f)
+      , magic(expected_magic)
+  {}
 
   object_with_non_trivial_ctor(const object_with_non_trivial_ctor& x) = default;
 
@@ -451,11 +441,9 @@ TEST_CASE("TestCopyIfNonTrivial", "[copy]")
   {
     static constexpr size_t BufferAlign = alignof(object_with_non_trivial_ctor);
     static constexpr size_t BufferSize  = sizeof(object_with_non_trivial_ctor);
-    alignas(BufferAlign) std::array<unsigned char, BufferSize> buffer;
-
     // Fill buffer with 0s to prevent warnings about uninitialized reads while
     // ensure that the 'magic number' mechanism works as intended:
-    std::fill(buffer.begin(), buffer.end(), static_cast<unsigned char>(0));
+    alignas(BufferAlign) std::array<unsigned char, BufferSize> buffer{};
 
     object_with_non_trivial_ctor initialized;
     object_with_non_trivial_ctor* uninitialized = reinterpret_cast<object_with_non_trivial_ctor*>(buffer.data());

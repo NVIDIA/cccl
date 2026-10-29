@@ -165,7 +165,8 @@ void TestDriver(GenMode gen_mode)
   CubDebugExit(cudaDeviceSynchronize());
 
   // Check keys results
-  const bool compare = CompareDeviceResults(h_reference_ranks.get(), d_ranks.data(), tile_size, g_verbose, g_verbose);
+  const bool compare =
+    CompareDeviceResults(h_reference_ranks.get(), d_ranks.data(), tile_size, g_verbose, g_verbose, stream);
   AssertEquals(0, compare);
 }
 
@@ -178,9 +179,11 @@ template <cub::RadixRankAlgorithm RankAlgorithm,
           typename Key>
 void TestValid(cuda::std::true_type /*fits_smem_capacity*/)
 {
-  TestDriver<RankAlgorithm, ThreadsPerBlock, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(UNIFORM);
+  TestDriver<RankAlgorithm, ThreadsPerBlock, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(
+    GenMode::UNIFORM);
 
-  TestDriver<RankAlgorithm, ThreadsPerBlock, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(INTEGER_SEED);
+  TestDriver<RankAlgorithm, ThreadsPerBlock, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(
+    GenMode::INTEGER_SEED);
 }
 
 template <cub::RadixRankAlgorithm RankAlgorithm,

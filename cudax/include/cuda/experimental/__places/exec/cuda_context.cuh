@@ -205,11 +205,12 @@ inline exec_place exec_place::cuda_context(CUcontext ctx, int devid, size_t pool
 struct primary_ctx_guard
 {
   primary_ctx_guard()
-  {
-    cuda_try<cuInit>(0);
-    dev = cuda_try<cuDeviceGet>(0);
-    ctx = cuda_try<cuDevicePrimaryCtxRetain>(dev);
-  }
+      : dev([] {
+        cuda_try<cuInit>(0);
+        return cuda_try<cuDeviceGet>(0);
+      }())
+      , ctx(cuda_try<cuDevicePrimaryCtxRetain>(dev))
+  {}
 
   ~primary_ctx_guard()
   {

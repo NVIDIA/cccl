@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Enable constant_wrapper for msvc.
-// UNSUPPORTED: msvc
-
 // todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
 //   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
 //   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
@@ -65,21 +62,20 @@ template <class T, class R>
 inline constexpr bool
   HasAssign<T, R, cuda::std::void_t<decltype(cuda::std::declval<const T&>() = cuda::std::declval<R&>())>> = true;
 
-template <class T, class R, class = void>
+template <class T, class R, bool = HasAssign<T, R>>
 inline constexpr bool HasNoexceptAssign = false;
 template <class T, class R>
-inline constexpr bool
-  HasNoexceptAssign<T, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<const T&>() = cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptAssign<T, R, true> =
+  noexcept(cuda::std::declval<const T&>() = cuda::std::declval<R&>());
 
-static_assert(!HasAssign<cuda::std::__constant_wrapper<5>, cuda::std::__constant_wrapper<3>>);
-static_assert(!HasNoexceptAssign<cuda::std::__constant_wrapper<5>, cuda::std::__constant_wrapper<3>>);
+static_assert(!HasAssign<cuda::std::constant_wrapper<5>, cuda::std::constant_wrapper<3>>);
+static_assert(!HasNoexceptAssign<cuda::std::constant_wrapper<5>, cuda::std::constant_wrapper<3>>);
 
 #if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
-static_assert(HasAssign<cuda::std::__constant_wrapper<WithOps{5}>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasNoexceptAssign<cuda::std::__constant_wrapper<WithOps{5}>, cuda::std::__constant_wrapper<3>>);
+static_assert(HasAssign<cuda::std::constant_wrapper<WithOps{5}>, cuda::std::constant_wrapper<3>>);
+static_assert(HasNoexceptAssign<cuda::std::constant_wrapper<WithOps{5}>, cuda::std::constant_wrapper<3>>);
 
-static_assert(!HasAssign<cuda::std::__constant_wrapper<OpsReturnNonStructural{5}>, cuda::std::__constant_wrapper<5>>);
+static_assert(!HasAssign<cuda::std::constant_wrapper<OpsReturnNonStructural{5}>, cuda::std::constant_wrapper<5>>);
 #endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 TEST_FUNC constexpr bool test()
@@ -90,19 +86,19 @@ TEST_FUNC constexpr bool test()
 #  if !(_CCCL_CUDA_COMPILER(NVCC, ==, 13, 0) && _CCCL_HOST_COMPILATION())
   {
     // WithOps assignment
-    const cuda::std::__constant_wrapper<WithOps{5}> cwOps5;
-    cuda::std::__constant_wrapper<3> cw3;
+    const cuda::std::constant_wrapper<WithOps{5}> cwOps5;
+    cuda::std::constant_wrapper<3> cw3;
 
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{8}>> decltype(auto) result = cwOps5 = cw3;
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<WithOps{8}>> decltype(auto) result = cwOps5 = cw3;
     static_assert(result.__get().value == 8);
   }
 
   {
     // with integral_constant
-    const cuda::std::__constant_wrapper<WithOps{5}> cwOps5;
+    const cuda::std::constant_wrapper<WithOps{5}> cwOps5;
     cuda::std::integral_constant<int, 3> ic3;
 
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{8}>> decltype(auto) result = cwOps5 = ic3;
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<WithOps{8}>> decltype(auto) result = cwOps5 = ic3;
     static_assert(result.__get().value == 8);
   }
 #  endif // !(_CCCL_CUDA_COMPILER(NVCC, ==, 13, 0) && _CCCL_HOST_COMPILATION())

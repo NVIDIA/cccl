@@ -20,14 +20,18 @@
 
 #include <cub/block/specializations/block_scan_raking.cuh>
 #include <cub/block/specializations/block_scan_warp_scans.cuh>
+#include <cub/detail/uninitialized.cuh>
+#include <cub/thread/thread_reduce.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
-#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
 
 CUB_NAMESPACE_BEGIN
 
@@ -37,7 +41,7 @@ CUB_NAMESPACE_BEGIN
 
 //! @brief BlockScanAlgorithm enumerates alternative algorithms for cub::BlockScan to compute a
 //!        parallel prefix scan across a CUDA thread block.
-enum BlockScanAlgorithm
+enum BlockScanAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
 
   //! @rst

@@ -24,7 +24,7 @@
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__simd/basic_vec.h>
-#include <cuda/std/__simd/type_traits.h> // rebind_t
+#include <cuda/std/__simd/type_traits.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>

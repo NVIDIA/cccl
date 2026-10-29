@@ -13,5 +13,5 @@
 #  pragma system_header
 #endif // no system header
 
-// this system inherits transform_reduce
+// omp system inherits transform_reduce
 #include <thrust/system/cpp/detail/transform_reduce.h>

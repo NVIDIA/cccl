@@ -45,9 +45,9 @@ public:
       : it_(u.it_)
   {}
 
-  template <class U, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
+  template <class U, class = cuda::std::enable_if_t<cuda::std::is_default_constructible_v<U>>>
   TEST_FUNC constexpr cpp17_output_iterator(cpp17_output_iterator<U>&& u)
-      : it_(u.it_)
+      : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
@@ -104,9 +104,9 @@ public:
       : it_(u.it_)
   {}
 
-  template <class U, class T, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
+  template <class U, class T, class = cuda::std::enable_if_t<cuda::std::is_default_constructible_v<U>>>
   TEST_FUNC constexpr cpp17_input_iterator(cpp17_input_iterator<U, T>&& u)
-      : it_(u.it_)
+      : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
@@ -174,9 +174,9 @@ public:
       : it_(u.it_)
   {}
 
-  template <class U, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
+  template <class U, class = cuda::std::enable_if_t<cuda::std::is_default_constructible_v<U>>>
   TEST_FUNC constexpr forward_iterator(forward_iterator<U>&& other)
-      : it_(other.it_)
+      : it_(cuda::std::move(other.it_))
   {
     other.it_ = U();
   }
@@ -247,9 +247,9 @@ public:
       : it_(u.it_)
   {}
 
-  template <class U, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
+  template <class U, class = cuda::std::enable_if_t<cuda::std::is_default_constructible_v<U>>>
   TEST_FUNC constexpr bidirectional_iterator(bidirectional_iterator<U>&& u)
-      : it_(u.it_)
+      : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
@@ -324,9 +324,9 @@ public:
       : it_(u.it_)
   {}
 
-  template <class U, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
+  template <class U, class = cuda::std::enable_if_t<cuda::std::is_default_constructible_v<U>>>
   TEST_FUNC constexpr random_access_iterator(random_access_iterator<U>&& u)
-      : it_(u.it_)
+      : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
@@ -497,7 +497,7 @@ public:
 
   template <class U>
   TEST_FUNC constexpr cpp20_random_access_iterator(cpp20_random_access_iterator<U>&& u)
-      : it_(u.it_)
+      : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
@@ -616,7 +616,7 @@ public:
   using difference_type   = typename cuda::std::iterator_traits<It>::difference_type;
   using pointer           = It;
   using reference         = typename cuda::std::iterator_traits<It>::reference;
-  using element_type      = typename cuda::std::remove_pointer<It>::type;
+  using element_type      = cuda::std::remove_pointer_t<It>;
 
   TEST_FUNC constexpr It base() const
   {
@@ -630,16 +630,16 @@ public:
       : it_(it)
   {}
 
-  template <class U, class = cuda::std::enable_if_t<cuda::std::is_constructible<It, const U&>::value>>
+  template <class U, class = cuda::std::enable_if_t<cuda::std::is_constructible_v<It, const U&>>>
   TEST_FUNC constexpr contiguous_iterator(const contiguous_iterator<U>& u)
       : it_(u.it_)
   {}
 
-  template <class U,
-            class = cuda::std::enable_if_t<cuda::std::is_constructible<It, U>::value
-                                           && cuda::std::is_default_constructible<U>::value>>
+  template <
+    class U,
+    class = cuda::std::enable_if_t<cuda::std::is_constructible_v<It, U> && cuda::std::is_default_constructible_v<U>>>
   TEST_FUNC constexpr contiguous_iterator(contiguous_iterator<U>&& u)
-      : it_(u.it_)
+      : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
@@ -781,7 +781,7 @@ public:
 
   template <class U, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
   TEST_FUNC constexpr three_way_contiguous_iterator(three_way_contiguous_iterator<U>&& u)
-      : it_(u.it_)
+      : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
@@ -879,7 +879,7 @@ struct ThrowingIterator
   using pointer           = const T*;
   using reference         = const T&;
 
-  enum ThrowingAction
+  enum class ThrowingAction
   {
     TAIncrement,
     TADecrement,
@@ -892,11 +892,11 @@ struct ThrowingIterator
       : begin_(nullptr)
       , end_(nullptr)
       , current_(nullptr)
-      , action_(TADereference)
+      , action_(ThrowingAction::TADereference)
       , index_(0)
   {}
   TEST_FUNC constexpr explicit ThrowingIterator(
-    const T* first, const T* last, int index = 0, ThrowingAction action = TADereference)
+    const T* first, const T* last, int index = 0, ThrowingAction action = ThrowingAction::TADereference)
       : begin_(first)
       , end_(last)
       , current_(first)
@@ -915,7 +915,7 @@ struct ThrowingIterator
   // NOLINTNEXTLINE(bugprone-unhandled-self-assignment)
   TEST_FUNC constexpr ThrowingIterator& operator=(const ThrowingIterator& rhs)
   {
-    if (action_ == TAAssignment && --index_ < 0)
+    if (action_ == ThrowingAction::TAAssignment && --index_ < 0)
     {
       assert(false);
     }
@@ -929,7 +929,7 @@ struct ThrowingIterator
 
   TEST_FUNC constexpr reference operator*() const
   {
-    if (action_ == TADereference && --index_ < 0)
+    if (action_ == ThrowingAction::TADereference && --index_ < 0)
     {
       assert(false);
     }
@@ -938,7 +938,7 @@ struct ThrowingIterator
 
   TEST_FUNC constexpr ThrowingIterator& operator++()
   {
-    if (action_ == TAIncrement && --index_ < 0)
+    if (action_ == ThrowingAction::TAIncrement && --index_ < 0)
     {
       assert(false);
     }
@@ -955,7 +955,7 @@ struct ThrowingIterator
 
   TEST_FUNC constexpr ThrowingIterator& operator--()
   {
-    if (action_ == TADecrement && --index_ < 0)
+    if (action_ == ThrowingAction::TADecrement && --index_ < 0)
     {
       assert(false);
     }
@@ -972,7 +972,7 @@ struct ThrowingIterator
 
   TEST_FUNC constexpr friend bool operator==(const ThrowingIterator& a, const ThrowingIterator& b)
   {
-    if (a.action_ == TAComparison && --a.index_ < 0)
+    if (a.action_ == ThrowingAction::TAComparison && --a.index_ < 0)
     {
       assert(false);
     }
@@ -1090,6 +1090,70 @@ private:
   const T* begin_;
   const T* end_;
   const T* current_;
+};
+
+// Bidirectional iterator whose copy constructor is potentially throwing when `NoThrowCopy` is false.
+template <bool NoThrowCopy>
+struct CopyMayThrowIterator
+{
+  using iterator_category = cuda::std::bidirectional_iterator_tag;
+  using value_type        = int;
+  using difference_type   = cuda::std::ptrdiff_t;
+  using pointer           = int*;
+  using reference         = int&;
+
+  int* ptr_ = nullptr;
+
+  constexpr CopyMayThrowIterator() noexcept = default;
+  TEST_FUNC constexpr explicit CopyMayThrowIterator(int* ptr) noexcept
+      : ptr_(ptr)
+  {}
+  // The exception specification depends on NoThrowCopy, so this copy cannot be defaulted.
+  // NOLINTBEGIN(modernize-use-equals-default)
+  TEST_FUNC constexpr CopyMayThrowIterator(const CopyMayThrowIterator& other) noexcept(NoThrowCopy)
+      : ptr_(other.ptr_)
+  {}
+  // NOLINTEND(modernize-use-equals-default)
+  constexpr CopyMayThrowIterator& operator=(const CopyMayThrowIterator&) noexcept = default;
+
+  TEST_FUNC constexpr reference operator*() const noexcept
+  {
+    return *ptr_;
+  }
+  TEST_FUNC constexpr CopyMayThrowIterator& operator++() noexcept
+  {
+    ++ptr_;
+    return *this;
+  }
+  TEST_FUNC constexpr CopyMayThrowIterator operator++(int) noexcept(NoThrowCopy)
+  {
+    CopyMayThrowIterator tmp(*this);
+    ++ptr_;
+    return tmp;
+  }
+  TEST_FUNC constexpr CopyMayThrowIterator& operator--() noexcept
+  {
+    --ptr_;
+    return *this;
+  }
+  TEST_FUNC constexpr CopyMayThrowIterator operator--(int) noexcept(NoThrowCopy)
+  {
+    CopyMayThrowIterator tmp(*this);
+    --ptr_;
+    return tmp;
+  }
+
+  TEST_FUNC friend constexpr bool operator==(const CopyMayThrowIterator& x, const CopyMayThrowIterator& y) noexcept
+  {
+    return x.ptr_ == y.ptr_;
+  }
+  TEST_FUNC friend constexpr bool operator!=(const CopyMayThrowIterator& x, const CopyMayThrowIterator& y) noexcept
+  {
+    return x.ptr_ != y.ptr_;
+  }
+
+  template <class T2>
+  void operator,(T2 const&) = delete;
 };
 
 template <class It>
@@ -2233,9 +2297,9 @@ public:
       : it_(u.it_)
   {}
 
-  template <class U, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
+  template <class U, class = cuda::std::enable_if_t<cuda::std::is_default_constructible_v<U>>>
   constexpr host_only_iterator(host_only_iterator<U>&& u)
-      : it_(u.it_)
+      : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
@@ -2362,9 +2426,9 @@ public:
       : it_(u.it_)
   {}
 
-  template <class U, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
+  template <class U, class = cuda::std::enable_if_t<cuda::std::is_default_constructible_v<U>>>
   TEST_DEVICE_FUNC constexpr device_only_iterator(device_only_iterator<U>&& u)
-      : it_(u.it_)
+      : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }

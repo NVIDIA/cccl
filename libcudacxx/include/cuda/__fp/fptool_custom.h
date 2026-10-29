@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -33,20 +33,23 @@
 //!   - **CUDA/CPU compatibility**: Works identically on both host and device code
 //!   - **Drop-in replacement**: Use `fp64_custom<>` where you would use `double`
 //!
+//! ## Example
+//!
+//! - Code:        https://github.com/NVIDIA/cccl/blob/main/examples/cudax/fp/fptool_custom.cu
+//! - Walkthrough: https://github.com/NVIDIA/cccl/blob/main/examples/cudax/fp/README_fptool_custom.md
+//!
 //! ## Quick Start
 //!
 //! ```cpp
 //! #include <cuda/fptool>
 //!
-//! using namespace cuda::experimental;
-//!
 //! // Step 1: swap `double` for `fp64_custom<>`; behavior is unchanged.
-//! fp64_custom<> a = 1.5, b = 2.5;
+//! cuda::fp64_custom<> a = 1.5, b = 2.5;
 //! double native = a + b;
 //!
 //! // Step 2: ask for a reduced format, here float-like (8 exponent, 23 mantissa bits).
 //! // A format narrower than the source takes a value explicitly, see Conversions below.
-//! fp64_custom<8, 23> c{1.5}, d{2.5};
+//! cuda::fp64_custom<8, 23> c{1.5}, d{2.5};
 //! ```
 //!
 //! ## Template Parameters
@@ -194,21 +197,24 @@
 //! @note Thread Safety: All operations are thread-safe (no shared mutable state) unless a
 //! setter runs concurrently with arithmetic.
 
+#include <cuda/__fp/fptool_common.h>
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__cmath/fma.h> // IWYU pragma: keep
+#include <cuda/std/__cmath/roots.h> // IWYU pragma: keep
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/cmath>
 #include <cuda/std/cstdint>
 
 #if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 // The host half of the runtime size control: a stream-ordered copy to the device globals
+#  include <cuda/__algorithm/copy.h>
 #  include <cuda/__memory/get_device_address.h>
-#  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/span>
 #endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
 #include <nv/target>
@@ -252,8 +258,7 @@
 #include <cuda/std/__cccl/prologue.h>
 
 // === supported base types and field sizes ===
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 //! @brief Size value selecting runtime control of a field
 //!
 //! Passed as `_ExpSize` or `_MantSize`, it takes that field's size from a global
@@ -467,14 +472,12 @@ _CCCL_HOST_API void fp_custom_set_device_mantissa_size(int __new_size, ::cuda::s
   _CCCL_ASSERT(__new_size >= 0 && __new_size <= __fp_custom_native_sizes<_FpType>::__mant_size,
                "fp_custom mantissa size out of range");
   int* __size_ptr = ::cuda::get_device_address(__fp_custom_device_mantissa_size<_FpType>, __stream.device());
-  _CCCL_TRY_RUNTIME_API(
-    ::cudaMemcpyAsync,
-    "failed to set the fp_custom device mantissa size",
-    __size_ptr,
-    &__new_size,
-    sizeof(int),
-    ::cudaMemcpyHostToDevice,
-    __stream.get());
+  // The source is a parameter, which the copy has to consume before returning rather than
+  // at a later point of its own choosing.
+  ::cuda::copy_configuration __config;
+  __config.src_access_order = ::cuda::source_access_order::during_api_call;
+  ::cuda::copy_bytes(
+    __stream, ::cuda::std::span<const int, 1>{&__new_size, 1}, ::cuda::std::span<int, 1>{__size_ptr, 1}, __config);
 }
 
 //! @brief Set the exponent size used by device code (2-11) on the stream's device
@@ -485,14 +488,12 @@ _CCCL_HOST_API void fp_custom_set_device_exponent_size(int __new_size, ::cuda::s
   _CCCL_ASSERT(__new_size >= 2 && __new_size <= __fp_custom_native_sizes<_FpType>::__exp_size,
                "fp_custom exponent size out of range");
   int* __size_ptr = ::cuda::get_device_address(__fp_custom_device_exponent_size<_FpType>, __stream.device());
-  _CCCL_TRY_RUNTIME_API(
-    ::cudaMemcpyAsync,
-    "failed to set the fp_custom device exponent size",
-    __size_ptr,
-    &__new_size,
-    sizeof(int),
-    ::cudaMemcpyHostToDevice,
-    __stream.get());
+  // The source is a parameter, which the copy has to consume before returning rather than
+  // at a later point of its own choosing.
+  ::cuda::copy_configuration __config;
+  __config.src_access_order = ::cuda::source_access_order::during_api_call;
+  ::cuda::copy_bytes(
+    __stream, ::cuda::std::span<const int, 1>{&__new_size, 1}, ::cuda::std::span<int, 1>{__size_ptr, 1}, __config);
 }
 
 //! @brief Read the mantissa size used by device code on the stream's device
@@ -508,14 +509,7 @@ template <typename _FpType = double>
 {
   int __size            = 0;
   const int* __size_ptr = ::cuda::get_device_address(__fp_custom_device_mantissa_size<_FpType>, __stream.device());
-  _CCCL_TRY_RUNTIME_API(
-    ::cudaMemcpyAsync,
-    "failed to read the fp_custom device mantissa size",
-    &__size,
-    __size_ptr,
-    sizeof(int),
-    ::cudaMemcpyDeviceToHost,
-    __stream.get());
+  ::cuda::copy_bytes(__stream, ::cuda::std::span<const int, 1>{__size_ptr, 1}, ::cuda::std::span<int, 1>{&__size, 1});
   __stream.sync();
   return __size;
 }
@@ -527,14 +521,7 @@ template <typename _FpType = double>
 {
   int __size            = 0;
   const int* __size_ptr = ::cuda::get_device_address(__fp_custom_device_exponent_size<_FpType>, __stream.device());
-  _CCCL_TRY_RUNTIME_API(
-    ::cudaMemcpyAsync,
-    "failed to read the fp_custom device exponent size",
-    &__size,
-    __size_ptr,
-    sizeof(int),
-    ::cudaMemcpyDeviceToHost,
-    __stream.get());
+  ::cuda::copy_bytes(__stream, ::cuda::std::span<const int, 1>{__size_ptr, 1}, ::cuda::std::span<int, 1>{&__size, 1});
   __stream.sync();
   return __size;
 }
@@ -608,7 +595,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API void __fp_custom_reduce(uint64_t& __v) noexcept
   // === phase 1: exponent range reduction ===
   if constexpr (_ExpSize == fp_custom_dynamic_size || _ExpSize < __native_exp_size)
   {
-    const int __exp_size = __fp_custom_exponent_size<_FpType, _ExpSize>();
+    const int __exp_size = ::cuda::__fp_custom_exponent_size<_FpType, _ExpSize>();
 
     /* IEEE 754 double-precision bit layout:
      * [63]    - Sign bit
@@ -657,7 +644,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API void __fp_custom_reduce(uint64_t& __v) noexcept
   // === phase 2: mantissa precision reduction ===
   if constexpr (_MantSize == fp_custom_dynamic_size || _MantSize < __native_mant_size)
   {
-    const int __mant_size = __fp_custom_mantissa_size<_FpType, _MantSize>();
+    const int __mant_size = ::cuda::__fp_custom_mantissa_size<_FpType, _MantSize>();
 
     /* Number of low bits to discard. A runtime size can ask for full precision,
      * and rounding must then be skipped entirely: the masks below would shift
@@ -717,7 +704,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API void __fp_custom_reduce(uint64_t& __v) noexcept
 //!
 //! ## Usage
 //! ```cpp
-//! using Real = cuda::experimental::fp64_custom<>; // or double for production
+//! using Real = cuda::fp64_custom<>; // or double for production
 //! Real x = 1.5, y = 2.5;
 //! Real result = x + y;
 //! ```
@@ -733,19 +720,19 @@ template <typename _FpType, uint16_t _ExpSize, uint16_t _MantSize>
 class fp_custom
 {
   static_assert(__fp_custom_is_supported_fp_v<_FpType>,
-                "cuda::experimental::fp_custom currently supports only _FpType == double (or the bit-identical "
+                "cuda::fp_custom currently supports only _FpType == double (or the bit-identical "
                 "_Float64), possible future extension to other base types");
   // An n-bit exponent field reserves the all-ones pattern for infinity and NaN, so it
   // covers 2^n - 2 binades: at least two bits are needed for a single usable one.
   static_assert(!__fp_custom_is_supported_fp_v<_FpType> || _ExpSize == fp_custom_dynamic_size
                   || (_ExpSize >= 2 && _ExpSize <= __fp_custom_native_sizes<_FpType>::__exp_size),
-                "cuda::experimental::fp_custom exponent size must be between 2 and the exponent size of the base "
+                "cuda::fp_custom exponent size must be between 2 and the exponent size of the base "
                 "type, or fp_custom_dynamic_size");
   // Zero mantissa bits leave only the implicit leading 1, which is a valid request: it
   // rounds every value to the nearest power of two.
   static_assert(!__fp_custom_is_supported_fp_v<_FpType> || _MantSize == fp_custom_dynamic_size
                   || _MantSize <= __fp_custom_native_sizes<_FpType>::__mant_size,
-                "cuda::experimental::fp_custom mantissa size must not exceed the mantissa size of the base type, "
+                "cuda::fp_custom mantissa size must not exceed the mantissa size of the base type, "
                 "unless it is fp_custom_dynamic_size");
 
 public:
@@ -1001,7 +988,7 @@ public:
   // === arithmetic, with precision reduction ===
   //
   // The CUDA intrinsics are called as ::__dadd_rn etc. because this class lives in
-  // cuda::experimental, where <cuda/fpemu> declares same-named overloads for its own
+  // cuda, where <cuda/fpemu> declares same-named overloads for its own
   // types: unqualified lookup would stop there and never reach the global scope.
 
   //! @brief Addition with precision reduction
@@ -1013,8 +1000,8 @@ public:
   _CCCL_HOST_DEVICE_API fp_custom operator+(const fp_custom& __y) const noexcept
   {
     uint64_t __a = __bits_, __b = __y.__bits_;
-    __fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__a);
-    __fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__b);
+    ::cuda::__fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__a);
+    ::cuda::__fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__b);
     uint64_t __r{};
     NV_IF_ELSE_TARGET(
       NV_IS_DEVICE,
@@ -1029,8 +1016,8 @@ public:
   _CCCL_HOST_DEVICE_API fp_custom operator-(const fp_custom& __y) const noexcept
   {
     uint64_t __a = __bits_, __b = __y.__bits_;
-    __fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__a);
-    __fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__b);
+    ::cuda::__fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__a);
+    ::cuda::__fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__b);
     uint64_t __r{};
     NV_IF_ELSE_TARGET(
       NV_IS_DEVICE,
@@ -1045,8 +1032,8 @@ public:
   _CCCL_HOST_DEVICE_API fp_custom operator*(const fp_custom& __y) const noexcept
   {
     uint64_t __a = __bits_, __b = __y.__bits_;
-    __fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__a);
-    __fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__b);
+    ::cuda::__fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__a);
+    ::cuda::__fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__b);
     uint64_t __r{};
     NV_IF_ELSE_TARGET(
       NV_IS_DEVICE,
@@ -1061,8 +1048,8 @@ public:
   _CCCL_HOST_DEVICE_API fp_custom operator/(const fp_custom& __y) const noexcept
   {
     uint64_t __a = __bits_, __b = __y.__bits_;
-    __fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__a);
-    __fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__b);
+    ::cuda::__fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__a);
+    ::cuda::__fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__b);
     uint64_t __r{};
     NV_IF_ELSE_TARGET(
       NV_IS_DEVICE,
@@ -1309,7 +1296,7 @@ template <typename _FpType, uint16_t _ExpSize, uint16_t _MantSize>
 sqrt(const fp_custom<_FpType, _ExpSize, _MantSize>& __x) noexcept
 {
   uint64_t __a = ::cuda::std::bit_cast<uint64_t>(static_cast<double>(__x));
-  __fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__a);
+  ::cuda::__fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__a);
   uint64_t __r{};
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                     (__r = ::cuda::std::bit_cast<uint64_t>(::__dsqrt_rn(::cuda::std::bit_cast<double>(__a)));),
@@ -1337,9 +1324,9 @@ fma(const fp_custom<_FpType, _ExpSize, _MantSize>& __x,
   uint64_t __a = ::cuda::std::bit_cast<uint64_t>(static_cast<double>(__x));
   uint64_t __b = ::cuda::std::bit_cast<uint64_t>(static_cast<double>(__y));
   uint64_t __c = ::cuda::std::bit_cast<uint64_t>(static_cast<double>(__z));
-  __fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__a);
-  __fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__b);
-  __fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__c);
+  ::cuda::__fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__a);
+  ::cuda::__fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__b);
+  ::cuda::__fp_custom_reduce<_FpType, _ExpSize, _MantSize>(__c);
   uint64_t __r{};
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
@@ -1414,7 +1401,7 @@ fma(const _T1& __x, const _T2& __y, const _T3& __z) noexcept
 //! @note Being an alias template, it always needs the angle brackets: `fp64_custom<> x;`
 template <uint16_t _ExpSize = 11, uint16_t _MantSize = 52>
 using fp64_custom = fp_custom<double, _ExpSize, _MantSize>;
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -1422,31 +1409,31 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // cuda::std::fma selects the reducing implementation. A qualified call suppresses ADL,
 // so without these it would silently narrow fp_custom -> double through the implicit
 // conversion and compute at full FP64 precision, which is exactly what a precision
-// study must not do. These forward to cuda::experimental::sqrt / fma, which unqualified
+// study must not do. These forward to cuda::sqrt / fma, which unqualified
 // and ADL calls already resolve to. The exact-type fma overload wins for pure fp_custom
 // calls by partial ordering, while the constrained one handles the mixed case.
 template <class _FpType, uint16_t _ExpSize, uint16_t _MantSize>
-[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::experimental::fp_custom<_FpType, _ExpSize, _MantSize>
-sqrt(const ::cuda::experimental::fp_custom<_FpType, _ExpSize, _MantSize>& __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::fp_custom<_FpType, _ExpSize, _MantSize>
+sqrt(const ::cuda::fp_custom<_FpType, _ExpSize, _MantSize>& __x) noexcept
 {
-  return ::cuda::experimental::sqrt(__x);
+  return ::cuda::sqrt(__x);
 }
 
 template <class _FpType, uint16_t _ExpSize, uint16_t _MantSize>
-[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::experimental::fp_custom<_FpType, _ExpSize, _MantSize>
-fma(const ::cuda::experimental::fp_custom<_FpType, _ExpSize, _MantSize>& __x,
-    const ::cuda::experimental::fp_custom<_FpType, _ExpSize, _MantSize>& __y,
-    const ::cuda::experimental::fp_custom<_FpType, _ExpSize, _MantSize>& __z) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::fp_custom<_FpType, _ExpSize, _MantSize>
+fma(const ::cuda::fp_custom<_FpType, _ExpSize, _MantSize>& __x,
+    const ::cuda::fp_custom<_FpType, _ExpSize, _MantSize>& __y,
+    const ::cuda::fp_custom<_FpType, _ExpSize, _MantSize>& __z) noexcept
 {
-  return ::cuda::experimental::fma(__x, __y, __z);
+  return ::cuda::fma(__x, __y, __z);
 }
 
 _CCCL_TEMPLATE(class _T1, class _T2, class _T3)
-_CCCL_REQUIRES(::cuda::experimental::__has_fp_custom_v<_T1, _T2, _T3>)
-[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::experimental::__fp_custom_pick_t<_T1, _T2, _T3>
+_CCCL_REQUIRES(::cuda::__has_fp_custom_v<_T1, _T2, _T3>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::__fp_custom_pick_t<_T1, _T2, _T3>
 fma(const _T1& __x, const _T2& __y, const _T3& __z) noexcept
 {
-  return ::cuda::experimental::fma(__x, __y, __z);
+  return ::cuda::fma(__x, __y, __z);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

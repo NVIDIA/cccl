@@ -22,8 +22,8 @@
 #endif // no system header
 
 #include <cub/block/block_reduce.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/thread/thread_reduce.cuh>
-#include <cub/util_type.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
@@ -437,8 +437,6 @@ template <class _Group, class _Tp, ::cuda::std::size_t _Np, class _RedFn>
 [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::optional<_Tp>
 reduce(const _Group& __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
 {
-  _CCCL_ASSERT(gpu_thread.is_part_of(__group),
-               "Only threads that are part of the group can call cooperative algorithms");
   return ::cuda::experimental::coop::__reduce_impl(::cuda::std::false_type{}, __group, __thread_data, __red_fn);
 }
 
@@ -446,8 +444,6 @@ template <class _Group, class _Tp, ::cuda::std::size_t _Np, class _RedFn>
 [[nodiscard]] _CCCL_DEVICE_API _Tp
 reduce(broadcasted_t, const _Group& __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
 {
-  _CCCL_ASSERT(gpu_thread.is_part_of(__group),
-               "Only threads that are part of the group can call cooperative algorithms");
   return ::cuda::experimental::coop::__reduce_impl(::cuda::std::true_type{}, __group, __thread_data, __red_fn);
 }
 } // namespace cuda::experimental::coop

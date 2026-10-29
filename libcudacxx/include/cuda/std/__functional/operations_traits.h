@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/__functional/operator_properties.h>
-#include <cuda/std/__type_traits/is_same.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

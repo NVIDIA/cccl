@@ -34,6 +34,7 @@
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 
@@ -50,9 +51,9 @@
 
 namespace cuda::experimental::coop
 {
-template <class _Unit, class _ParentGroup, class _Mapping>
+template <class _Unit, class _ParentGroup>
 [[nodiscard]] _CCCL_DEVICE_API constexpr auto
-__do_group_mapping(const _Unit& __unit, const _ParentGroup& __parent, _Mapping&& __mapping) noexcept
+__make_init_group_mapping_result(const _ParentGroup& __parent_group) noexcept
 {
   using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
   using _InitMappingResult =
@@ -60,44 +61,67 @@ __do_group_mapping(const _Unit& __unit, const _ParentGroup& __parent, _Mapping&&
                      ::cuda::experimental::coop::__static_count_query_group<_Unit, _ParentGroup>(),
                      /*initial is always exhaustive*/ true,
                      _ParentMappingResult::is_always_contiguous()>;
-  const auto& __parent_mapping_result = __parent.__mapping_result();
-  _CCCL_ASSERT(__parent_mapping_result.is_valid(),
-               "A new group can be created only by units that are part of the parent group");
 
-  const _InitMappingResult __init_mapping_result{
+  return _InitMappingResult{
     /*initial group count*/ 1,
     /*initial group rank*/ 0,
-    ::cuda::experimental::coop::__count_query_group<::cuda::std::uint32_t, _Unit>(__parent),
-    ::cuda::experimental::coop::__rank_query_group<::cuda::std::uint32_t, _Unit>(__parent),
-    __parent.__mapping_result().lane_mask()};
+    ::cuda::experimental::coop::__count_query_group<::cuda::std::uint32_t, _Unit>(__parent_group),
+    ::cuda::experimental::coop::__rank_query_group<::cuda::std::uint32_t, _Unit>(__parent_group),
+    __parent_group.__mapping_result().lane_mask()};
+}
 
-  const auto __mapping_result = __mapping.map(__unit, __parent, __init_mapping_result);
-  if (__mapping_result.is_valid())
+template <class _Unit, class _MappingResult>
+_CCCL_DEVICE_API void __check_group_mapping_result(const _MappingResult& __mapping_result) noexcept
+{
+  _CCCL_ASSERT(__mapping_result.group_rank() < __mapping_result.group_count(), "invalid group rank");
+  _CCCL_ASSERT(__mapping_result.unit_rank() < __mapping_result.unit_count(), "invalid unit rank");
+
+  if constexpr (::cuda::std::is_same_v<_Unit, thread_level>)
   {
-    _CCCL_ASSERT(__mapping_result.group_rank() < __mapping_result.group_count(), "invalid group rank");
-    _CCCL_ASSERT(__mapping_result.unit_rank() < __mapping_result.unit_count(), "invalid unit rank");
-
-    if constexpr (::cuda::std::is_same_v<_Unit, thread_level>)
-    {
-      _CCCL_ASSERT(
-        (__mapping_result.lane_mask() & ::cuda::device::lane_mask::this_lane()) != ::cuda::device::lane_mask::none(),
-        "invalid lane mask - this lane must be contained in the lane mask");
-      _CCCL_ASSERT(::cuda::std::popcount(__mapping_result.lane_mask().value()) <= __mapping_result.unit_count(),
-                   "invalid lane mask - too many lanes are set in the lane mask");
-    }
-    else
-    {
-      _CCCL_ASSERT(__mapping_result.lane_mask() == ::cuda::device::lane_mask::all(),
-                   "invalid lane mask - must be equal to cuda::device::lane_mask::all() when _Unit is not "
-                   "cuda::thread_level");
-    }
+    _CCCL_ASSERT(
+      (__mapping_result.lane_mask() & ::cuda::device::lane_mask::this_lane()) != ::cuda::device::lane_mask::none(),
+      "invalid lane mask - this lane must be contained in the lane mask");
+    _CCCL_ASSERT(::cuda::std::popcount(__mapping_result.lane_mask().value()) <= __mapping_result.unit_count(),
+                 "invalid lane mask - too many lanes are set in the lane mask");
   }
+  else
+  {
+    _CCCL_ASSERT(__mapping_result.lane_mask() == ::cuda::device::lane_mask::all(),
+                 "invalid lane mask - must be equal to cuda::device::lane_mask::all() when _Unit is not "
+                 "cuda::thread_level");
+  }
+}
+
+template <class _Unit, class _ParentGroup, class _Mapping>
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto
+__do_group_mapping(const _Unit& __unit, const _ParentGroup& __parent, _Mapping&& __mapping) noexcept
+{
+  const auto __init_mapping_result = ::cuda::experimental::coop::__make_init_group_mapping_result<_Unit>(__parent);
+  const auto __mapping_result      = __mapping.map(__unit, __parent, __init_mapping_result);
+  _CCCL_ASSERT(__mapping_result.is_valid(), "every unit must have an assigned group");
+  ::cuda::experimental::coop::__check_group_mapping_result<_Unit>(__mapping_result);
   return __mapping_result;
 }
 
 template <class _Unit, class _ParentGroup, class _Mapping>
-using __group_mapping_result_t = decltype(::cuda::experimental::coop::__do_group_mapping(
-  ::cuda::std::declval<const _Unit&>(), ::cuda::std::declval<const _ParentGroup&>(), ::cuda::std::declval<_Mapping>()));
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto __do_group_mapping(
+  const non_exhaustive_t& __non_exhaustive,
+  const _Unit& __unit,
+  const _ParentGroup& __parent,
+  _Mapping&& __mapping) noexcept
+{
+  const auto __init_mapping_result = ::cuda::experimental::coop::__make_init_group_mapping_result<_Unit>(__parent);
+  const auto __mapping_result      = __mapping.map(__non_exhaustive, __unit, __parent, __init_mapping_result);
+  if (__mapping_result.is_valid())
+  {
+    ::cuda::experimental::coop::__check_group_mapping_result<_Unit>(__mapping_result);
+  }
+  return __mapping_result;
+}
+
+template <class... _Args>
+using __group_mapping_result_t =
+  decltype(::cuda::experimental::coop::__do_group_mapping(::cuda::std::declval<_Args>()...));
 
 template <class _Unit, class _ParentGroup, class _MappingResult>
 class virtual_group
@@ -153,11 +177,6 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API const _SynchronizerInstance& __synchronizer_instance() const noexcept
   {
     return __synchronizer_instance_;
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
-  {
-    return _MappingResult::is_always_exhaustive();
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept

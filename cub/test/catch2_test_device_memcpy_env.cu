@@ -15,11 +15,13 @@ struct stream_registry_factory_t;
 
 #include <cuda/__execution/tune.h>
 #include <cuda/iterator>
+#include <cuda/std/cstdint>
 #include <cuda/stream>
 
 #include <sstream>
 
 #include "block_size_extracting_helpers.h"
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/device_and_stream.h>
 
@@ -59,7 +61,7 @@ CUB_TEST_CASE("DeviceMemcpy::Batched works with default environment", "[memcpy][
 {
   // 3 buffers: [10, 20], [30, 40, 50], [60]
   auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};
-  auto d_dst     = c2h::device_vector<int>(6);
+  auto d_dst     = c2h::device_vector<int>(6, thrust::no_init);
   auto d_offsets = c2h::device_vector<int>{0, 2, 5, 6};
 
   const int num_buffers = 3;
@@ -82,7 +84,7 @@ CUB_TEST("DeviceMemcpy::Batched uses environment", "[memcpy][device]", CUB_SMALL
 {
   // 3 buffers: [10, 20], [30, 40, 50], [60]
   auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};
-  auto d_dst     = c2h::device_vector<int>(6, 0);
+  auto d_dst     = c2h::device_vector<int>(6, thrust::no_init);
   auto d_offsets = c2h::device_vector<int>{0, 2, 5, 6};
 
   const int num_buffers = 3;
@@ -109,7 +111,7 @@ CUB_TEST_CASE("DeviceMemcpy::Batched uses custom stream", "[memcpy][device]", CU
 {
   // 3 buffers: [10, 20], [30, 40, 50], [60]
   auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};
-  auto d_dst     = c2h::device_vector<int>(6, 0);
+  auto d_dst     = c2h::device_vector<int>(6, thrust::no_init);
   auto d_offsets = c2h::device_vector<int>{0, 2, 5, 6};
 
   const int num_buffers = 3;
@@ -162,7 +164,7 @@ CUB_TEST("DeviceMemcpy::Batched can be tuned", "[memcpy][device]", CUB_SMALL, bl
 
   // 3 buffers of 2 ints each (8 bytes)
   auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};
-  auto d_dst     = c2h::device_vector<int>(6, 0);
+  auto d_dst     = c2h::device_vector<int>(6, thrust::no_init);
   auto d_offsets = c2h::device_vector<int>{0, 2, 4, 6};
 
   const int num_buffers          = 3;
@@ -186,6 +188,145 @@ CUB_TEST("DeviceMemcpy::Batched can be tuned", "[memcpy][device]", CUB_SMALL, bl
 }
 
 #endif // TEST_LAUNCH != 1
+
+#if TEST_LAUNCH == 0
+
+// The two-phase overload takes the same environment as the single-phase one but never allocates, so it does not go
+// through the launch wrappers and would run identically in every TEST_LAUNCH variant. Test it with host launch only.
+
+CUB_TEST_CASE("DeviceMemcpy::Batched works with user provided memory and environment", "[memcpy][device]", CUB_SMALL)
+{
+  // 3 buffers: [10, 20], [30, 40, 50], [60]
+  auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};
+  auto d_dst     = c2h::device_vector<int>(6, thrust::no_init);
+  auto d_offsets = c2h::device_vector<int>{0, 2, 5, 6};
+
+  const int num_buffers = 3;
+
+  const cuda::counting_iterator<int> iota(0);
+  auto input_it = cuda::transform_iterator(
+    iota, index_to_ptr<const int>{thrust::raw_pointer_cast(d_src.data()), thrust::raw_pointer_cast(d_offsets.data())});
+  auto output_it = cuda::transform_iterator(
+    iota, index_to_ptr<int>{thrust::raw_pointer_cast(d_dst.data()), thrust::raw_pointer_cast(d_offsets.data())});
+  auto sizes = cuda::transform_iterator(iota, get_size{thrust::raw_pointer_cast(d_offsets.data())});
+
+  size_t expected_bytes{};
+  REQUIRE(cudaSuccess == cub::DeviceMemcpy::Batched(nullptr, expected_bytes, input_it, output_it, sizes, num_buffers));
+  auto temp          = c2h::device_vector<cuda::std::uint8_t>(expected_bytes, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(temp.data());
+
+  auto test_memcpy_batched = [&](const auto& env) {
+    size_t num_bytes = 0;
+    REQUIRE(
+      cudaSuccess == cub::DeviceMemcpy::Batched(nullptr, num_bytes, input_it, output_it, sizes, num_buffers, env));
+    REQUIRE(num_bytes == expected_bytes);
+
+    REQUIRE(
+      cudaSuccess == cub::DeviceMemcpy::Batched(temp_storage, num_bytes, input_it, output_it, sizes, num_buffers, env));
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    REQUIRE(d_dst == d_src);
+  };
+
+  test_with_custom_streams(test_memcpy_batched);
+}
+
+// Before the environment parameter, the two-phase overload took `cudaStream_t stream = nullptr`, so callers passing
+// nullptr or a literal 0 for the stream exist. Both must keep compiling and keep running on the default stream.
+CUB_TEST_CASE("DeviceMemcpy::Batched two-phase overload accepts legacy null stream arguments",
+              "[memcpy][device]",
+              CUB_SMALL)
+{
+  // 3 buffers: [10, 20], [30, 40, 50], [60]
+  auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};
+  auto d_dst     = c2h::device_vector<int>(6, thrust::no_init);
+  auto d_offsets = c2h::device_vector<int>{0, 2, 5, 6};
+
+  const int num_buffers = 3;
+
+  const cuda::counting_iterator<int> iota(0);
+  auto input_it = cuda::transform_iterator(
+    iota, index_to_ptr<const int>{thrust::raw_pointer_cast(d_src.data()), thrust::raw_pointer_cast(d_offsets.data())});
+  auto output_it = cuda::transform_iterator(
+    iota, index_to_ptr<int>{thrust::raw_pointer_cast(d_dst.data()), thrust::raw_pointer_cast(d_offsets.data())});
+  auto sizes = cuda::transform_iterator(iota, get_size{thrust::raw_pointer_cast(d_offsets.data())});
+
+  auto memcpy_batched_on = [&](const auto& stream) {
+    size_t temp_storage_bytes = 0;
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceMemcpy::Batched(nullptr, temp_storage_bytes, input_it, output_it, sizes, num_buffers, stream));
+
+    c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+    const stream_scope scope{cudaStream_t{}};
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceMemcpy::Batched(
+        thrust::raw_pointer_cast(temp_storage.data()),
+        temp_storage_bytes,
+        input_it,
+        output_it,
+        sizes,
+        num_buffers,
+        stream));
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  };
+
+  SECTION("nullptr")
+  {
+    memcpy_batched_on(nullptr);
+  }
+
+  SECTION("literal 0")
+  {
+    memcpy_batched_on(0);
+  }
+
+  REQUIRE(d_dst == d_src);
+}
+
+CUB_TEST("DeviceMemcpy::Batched can be tuned with user provided memory", "[memcpy][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+
+  // 3 buffers of 2 ints each (8 bytes)
+  auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};
+  auto d_dst     = c2h::device_vector<int>(6, thrust::no_init);
+  auto d_offsets = c2h::device_vector<int>{0, 2, 4, 6};
+
+  const int num_buffers          = 3;
+  constexpr int bytes_per_buffer = 2 * static_cast<int>(sizeof(int));
+
+  const cuda::counting_iterator<int> iota(0);
+  auto input_it = cuda::transform_iterator(
+    iota, index_to_ptr<const int>{thrust::raw_pointer_cast(d_src.data()), thrust::raw_pointer_cast(d_offsets.data())});
+  auto output_it = cuda::transform_iterator(
+    iota, index_to_ptr<int>{thrust::raw_pointer_cast(d_dst.data()), thrust::raw_pointer_cast(d_offsets.data())});
+
+  c2h::device_vector<unsigned int> d_block_size(1);
+  const block_size_extracting_constant_iterator sizes(bytes_per_buffer, thrust::raw_pointer_cast(d_block_size.data()));
+
+  const auto env = cuda::execution::tune(batch_memcpy_tuning<target_block_size>{});
+
+  size_t temp_storage_bytes = 0;
+  REQUIRE(cudaSuccess
+          == cub::DeviceMemcpy::Batched(nullptr, temp_storage_bytes, input_it, output_it, sizes, num_buffers, env));
+
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceMemcpy::Batched(
+      thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, input_it, output_it, sizes, num_buffers, env));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  REQUIRE(d_dst == d_src);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+#endif // TEST_LAUNCH == 0
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
 CUB_TEST("Test BatchedCopyPolicy properties", "[memcpy][device]", CUB_SMALL)

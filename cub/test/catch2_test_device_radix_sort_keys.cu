@@ -17,12 +17,13 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
-#include <new> // bad_alloc
+#include <string>
 
 #include "catch2_large_array_sort_helper.cuh"
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 #include <c2h/extended_types.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -453,6 +454,10 @@ void do_large_offset_test(std::size_t num_items)
 
   CAPTURE(num_items, is_descending);
 
+  const std::string allocation_failure_message =
+    std::string{"Skipping radix sort test with "} + std::to_string(num_items) + " elements ("
+    + std::to_string(num_items * sizeof(KeyT)) + " bytes): insufficient device memory";
+
   try
   {
     large_array_sort_helper<KeyT> arrays;
@@ -474,14 +479,9 @@ void do_large_offset_test(std::size_t num_items)
 
     arrays.verify_unstable_key_sort(num_items, is_descending, sorted_keys);
   }
-  catch ([[maybe_unused]] std::bad_alloc& e)
+  catch (...)
   {
-#ifdef DEBUG_CHECKED_ALLOC_FAILURE
-    const std::size_t num_bytes = num_items * sizeof(KeyT);
-    std::cerr
-      << "Skipping radix sort test with " << num_items << " elements (" << num_bytes << " bytes): " << e.what() << "\n";
-#endif // DEBUG_CHECKED_ALLOC_FAILURE
-    SUCCEED("allocation failure is not a test failure");
+    c2h::skip_if_allocation_failure(allocation_failure_message);
   }
 }
 

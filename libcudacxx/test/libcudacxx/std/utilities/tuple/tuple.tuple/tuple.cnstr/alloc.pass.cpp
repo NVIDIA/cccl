@@ -17,11 +17,12 @@
 // allocator_arg_t because libc++ has to deduce the parameter as a template
 // argument. See PR27684 (https://bugs.llvm.org/show_bug.cgi?id=27684)
 
+#include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
+#include <cuda/std/type_traits>
 
-#include "../alloc_first.h"
-#include "../alloc_last.h"
+#include "../alloc_constexpr_types.h"
 #include "allocators.h"
 #include "DefaultOnly.h"
 #include "test_macros.h"
@@ -37,78 +38,97 @@ struct NonDefaultConstructible
   TEST_FUNC explicit constexpr NonDefaultConstructible(int) {}
 };
 
-struct DerivedFromAllocArgT : cuda::std::allocator_arg_t
-{};
-
-int main(int, char**)
+TEST_FUNC constexpr bool test()
 {
-  DefaultOnly::count()                 = 0;
-  alloc_first::allocator_constructed() = false;
-  alloc_last::allocator_constructed()  = false;
+  A1<int> alloc{5};
+
   {
-    cuda::std::tuple<> t(cuda::std::allocator_arg, A1<int>());
-    unused(t);
+    [[maybe_unused]] cuda::std::tuple<> empty(cuda::std::allocator_arg, alloc);
   }
   {
-    cuda::std::tuple<int> t(cuda::std::allocator_arg, A1<int>());
+    cuda::std::array<int, 0> empty_array{};
+    [[maybe_unused]] cuda::std::tuple<> from_empty_array(cuda::std::allocator_arg, alloc, empty_array);
+  }
+  {
+    cuda::std::tuple<constexpr_alloc_arg> def(cuda::std::allocator_arg, alloc);
+    assert(cuda::std::get<0>(def).value == 1);
+  }
+  {
+    cuda::std::tuple<constexpr_alloc_last> last_def(cuda::std::allocator_arg, alloc);
+    assert(cuda::std::get<0>(last_def).value == 2);
+  }
+  {
+    cuda::std::tuple<int> t(cuda::std::allocator_arg, alloc);
     assert(cuda::std::get<0>(t) == 0);
   }
   {
-    cuda::std::tuple<DefaultOnly> t(cuda::std::allocator_arg, A1<int>());
-    assert(cuda::std::get<0>(t) == DefaultOnly());
+    cuda::std::tuple<int, constexpr_alloc_arg, constexpr_alloc_last> t(cuda::std::allocator_arg, alloc);
+    assert(cuda::std::get<0>(t) == 0);
+    assert(cuda::std::get<1>(t).value == 1);
+    assert(cuda::std::get<2>(t).value == 2);
   }
   {
-    assert(!alloc_first::allocator_constructed());
-    cuda::std::tuple<alloc_first> t(cuda::std::allocator_arg, A1<int>(5));
-    assert(alloc_first::allocator_constructed());
-    assert(cuda::std::get<0>(t) == alloc_first());
+    // A2 is not convertible to the element allocator type, so the uses-allocator constructors are not selected.
+    cuda::std::tuple<int, constexpr_alloc_arg, constexpr_alloc_last> t(cuda::std::allocator_arg, A2<int>{5});
+    assert(cuda::std::get<0>(t) == 0);
+    assert(cuda::std::get<1>(t).value == 0);
+    assert(cuda::std::get<2>(t).value == 0);
   }
   {
-    assert(!alloc_last::allocator_constructed());
-    cuda::std::tuple<alloc_last> t(cuda::std::allocator_arg, A1<int>(5));
-    assert(alloc_last::allocator_constructed());
-    assert(cuda::std::get<0>(t) == alloc_last());
+    // The uses-allocator default constructor must not be instantiated when it is not selected.
+    using T = NonDefaultConstructible<>;
+    T v(42);
+    [[maybe_unused]] cuda::std::tuple<T, T> ignored(v, v);
+    [[maybe_unused]] cuda::std::tuple<T, T> from_ints(42, 42);
   }
+  return true;
+}
+
+using Nothrow = cuda::std::tuple<nothrow_alloc_arg>;
+static_assert(cuda::std::is_nothrow_constructible_v<Nothrow, cuda::std::allocator_arg_t, A1<int>>);
+
+TEST_FUNC void test_runtime()
+{
+  // DefaultOnly has a user-provided destructor and updates a static counter.
+  DefaultOnly::count() = 0;
+  cuda::std::tuple<DefaultOnly> t(cuda::std::allocator_arg, A1<int>());
+  assert(cuda::std::get<0>(t) == DefaultOnly());
+}
+
+#if TEST_HAS_EXCEPTIONS() && _CCCL_HOST_COMPILATION()
+void test_exceptions()
+{
+  using ThrowArg        = cuda::std::tuple<throw_on_alloc_arg>;
+  using ThrowLast       = cuda::std::tuple<throw_on_alloc_last>;
+  using FromComplexLast = cuda::std::tuple<throw_on_alloc_last, throw_on_alloc_last>;
+  static_assert(!cuda::std::is_nothrow_constructible_v<ThrowArg, cuda::std::allocator_arg_t, A1<int>>);
+  static_assert(!cuda::std::is_nothrow_constructible_v<ThrowLast, cuda::std::allocator_arg_t, A1<int>>);
+
+  try
   {
-    alloc_first::allocator_constructed() = false;
-    cuda::std::tuple<DefaultOnly, alloc_first> t(cuda::std::allocator_arg, A1<int>(5));
-    assert(cuda::std::get<0>(t) == DefaultOnly());
-    assert(alloc_first::allocator_constructed());
-    assert(cuda::std::get<1>(t) == alloc_first());
+    [[maybe_unused]] ThrowArg t(cuda::std::allocator_arg, A1<int>{});
+    assert(false);
   }
+  catch (int)
+  {}
+
+  try
   {
-    alloc_first::allocator_constructed() = false;
-    alloc_last::allocator_constructed()  = false;
-    cuda::std::tuple<DefaultOnly, alloc_first, alloc_last> t(cuda::std::allocator_arg, A1<int>(5));
-    assert(cuda::std::get<0>(t) == DefaultOnly());
-    assert(alloc_first::allocator_constructed());
-    assert(cuda::std::get<1>(t) == alloc_first());
-    assert(alloc_last::allocator_constructed());
-    assert(cuda::std::get<2>(t) == alloc_last());
+    [[maybe_unused]] FromComplexLast t(cuda::std::allocator_arg, A1<int>{});
+    assert(false);
   }
-  {
-    alloc_first::allocator_constructed() = false;
-    alloc_last::allocator_constructed()  = false;
-    cuda::std::tuple<DefaultOnly, alloc_first, alloc_last> t(cuda::std::allocator_arg, A2<int>(5));
-    assert(cuda::std::get<0>(t) == DefaultOnly());
-    assert(!alloc_first::allocator_constructed());
-    assert(cuda::std::get<1>(t) == alloc_first());
-    assert(!alloc_last::allocator_constructed());
-    assert(cuda::std::get<2>(t) == alloc_last());
-  }
-  /*
-  {
-      // Test that the uses-allocator default constructor does not evaluate
-      // its SFINAE when it otherwise shouldn't be selected. Do this by
-      // using 'NonDefaultConstructible' which will cause a compile error
-      // if cuda::std::is_default_constructible is evaluated on it.
-      using T = NonDefaultConstructible<>;
-      T v(42);
-      cuda::std::tuple<T, T> t(v, v);
-      unused(t);
-      cuda::std::tuple<T, T> t2(42, 42);
-      unused(t2);
-  }
-  */
+  catch (int)
+  {}
+}
+#endif // TEST_HAS_EXCEPTIONS()
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
+  test_runtime();
+#if TEST_HAS_EXCEPTIONS()
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // TEST_HAS_EXCEPTIONS()
   return 0;
 }

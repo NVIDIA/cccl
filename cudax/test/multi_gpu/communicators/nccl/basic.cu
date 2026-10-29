@@ -12,8 +12,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#include <cuda/experimental/__multi_gpu/nccl_communicator.h>
-#include <cuda/experimental/__multi_gpu/nccl_communicator_ref.h>
+#include <cuda/experimental/mgmn/nccl_communicators>
 
 #include <nccl.h>
 #include <nccl_test_common.h>

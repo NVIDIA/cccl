@@ -93,7 +93,7 @@ private:
   size_t end;
   size_t block_size;
   size_t ghost_size;
-  int preferred_device;
+  int preferred_device = 0;
 
   std::vector<T> array;
   std::vector<T> left_interface;

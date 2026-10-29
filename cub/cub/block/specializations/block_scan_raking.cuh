@@ -21,8 +21,9 @@
 #endif // no system header
 
 #include <cub/block/block_raking_layout.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
-#include <cub/thread/thread_reduce.cuh>
 #include <cub/thread/thread_scan.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_scan.cuh>
@@ -330,6 +331,8 @@ struct BlockScanRaking
         T upsweep_partial = Upsweep(scan_op);
 
         // Exclusive Warp-synchronous scan
+        // WarpScan fills the partial before it is read.
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
         T exclusive_partial;
         WarpScan(temp_storage.warp_scan).ExclusiveScan(upsweep_partial, exclusive_partial, initial_value, scan_op);
 

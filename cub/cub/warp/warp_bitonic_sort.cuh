@@ -13,9 +13,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 #include <cub/warp/warp_utils.cuh>
 
 #include <cuda/__cmath/pow2.h>
@@ -26,7 +27,6 @@
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/swap.h>
 
 CUB_NAMESPACE_BEGIN

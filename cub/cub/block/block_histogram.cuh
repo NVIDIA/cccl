@@ -22,6 +22,7 @@
 
 #include <cub/block/specializations/block_histogram_atomic.cuh>
 #include <cub/block/specializations/block_histogram_sort.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
 
 #include <cuda/std/__type_traits/conditional.h>
@@ -30,7 +31,7 @@ CUB_NAMESPACE_BEGIN
 
 //! @brief BlockHistogramAlgorithm enumerates alternative algorithms for the parallel construction of
 //!        block-wide histograms.
-enum BlockHistogramAlgorithm
+enum BlockHistogramAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
 
   //! @rst

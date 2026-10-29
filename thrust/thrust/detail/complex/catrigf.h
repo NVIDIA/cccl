@@ -181,7 +181,7 @@ _CCCL_HOST_DEVICE inline complex<float> casinhf(complex<float> z)
 {
   float x, y, ax, ay, rx, ry, B, sqrt_A2my2, new_y;
   int B_is_usable;
-  complex<float> w;
+  complex<float> w{};
   const float RECIP_EPSILON = 1.0f / FLT_EPSILON;
   x                         = z.real();
   y                         = z.imag();
@@ -255,7 +255,7 @@ _CCCL_HOST_DEVICE inline complex<float> cacosf(complex<float> z)
   float x, y, ax, ay, rx, ry, B, sqrt_A2mx2, new_x;
   int sx, sy;
   int B_is_usable;
-  complex<float> w;
+  complex<float> w{};
   const float pio2_hi          = 1.5707963267948966e0f; /*  0x1921fb54442d18.0p-52 */
   const volatile float pio2_lo = 6.1232339957367659e-17f; /*  0x11a62633145c07.0p-106 */
 
@@ -341,10 +341,8 @@ _CCCL_HOST_DEVICE inline complex<float> cacosf(complex<float> z)
 
 _CCCL_HOST_DEVICE inline complex<float> cacoshf(complex<float> z)
 {
-  complex<float> w;
+  const complex<float> w = cacosf(z);
   float rx, ry;
-
-  w  = cacosf(z);
   rx = w.real();
   ry = w.imag();
   /* cacosh(NaN + I*NaN) = NaN + I*NaN */

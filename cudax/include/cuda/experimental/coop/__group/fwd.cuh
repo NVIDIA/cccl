@@ -21,38 +21,25 @@
 #  pragma system_header
 #endif // no system header
 
-// Q: Do we want to enable this by default, or do we want the user to define some macro to get the interoperability with
-//    cooperative groups?
-#if __has_include(<cooperative_groups.h>)
+#if __has_include(<cooperative_groups.h>) && !defined(_CUDAX_DISABLE_CG_INTEROP)
 #  define _CCCL_HAS_COOPERATIVE_GROUPS() 1
 #else // ^^^ has cooperative groups ^^^ / vvv no cooperative groups vvv
 #  define _CCCL_HAS_COOPERATIVE_GROUPS() 0
 #endif // ^^^ no cooperative groups ^^^
 
-#include <cuda/__fwd/hierarchy.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__fwd/extents.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/cstdint>
+
+#if _CCCL_HAS_COOPERATIVE_GROUPS()
+// We don't need to include the whole <cooperative_groups.h> header, we can just forward declare the CG group classes in
+// the CG namespace. However, the CG namespace is versioned, so we still need to include the minimal header.
+#  include <cooperative_groups/details/info.h>
+#endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
 #include <cuda/std/__cccl/prologue.h>
 
 #if !defined(_CCCL_DOXYGEN_INVOKED)
-
-namespace cuda::experimental
-{
-using __implicit_hierarchy_t =
-  hierarchy<thread_level,
-            hierarchy_level_desc<grid_level, ::cuda::std::dims<3, unsigned>>,
-            hierarchy_level_desc<cluster_level, ::cuda::std::dims<3, unsigned>>,
-            hierarchy_level_desc<block_level, ::cuda::std::dims<3, unsigned>>>;
-
-using __implicit_hierarchy_1d_t =
-  hierarchy<thread_level,
-            hierarchy_level_desc<grid_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>,
-            hierarchy_level_desc<cluster_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>,
-            hierarchy_level_desc<block_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>>;
-} // namespace cuda::experimental
 
 namespace cuda::experimental::coop
 {
@@ -93,15 +80,15 @@ class group_view;
 template <class _Fn>
 class binary_partition;
 
-template <::cuda::std::size_t _UnitCount = ::cuda::std::dynamic_extent, bool _IsAlwaysExhaustive = true>
+template <::cuda::std::size_t _StaticUnitCount>
 class group_by;
 
-template <class _Data, bool _IsExahustive>
+template <class _RangeView>
 class group_as;
 
 class identity_mapping;
 
-template <::cuda::std::size_t _UnitCount = ::cuda::std::dynamic_extent>
+template <::cuda::std::size_t _StaticUnitCount = ::cuda::std::dynamic_extent>
 class take;
 
 // synchronizers
@@ -109,7 +96,7 @@ class take;
 template <class _Barrier, ::cuda::std::size_t _Np>
 class barrier_synchronizer;
 
-template <class _Range>
+template <class _RangeView>
 class interwarp_synchronizer;
 
 class lane_synchronizer;
@@ -133,10 +120,16 @@ inline constexpr bool __is_this_group_v<this_grid<_Hierarchy>> = true;
 
 template <class _Tp>
 inline constexpr bool __is_group_mapping_v = false;
-template <::cuda::std::size_t _UnitCount, bool _IsAlwaysExhaustive>
-inline constexpr bool __is_group_mapping_v<group_by<_UnitCount, _IsAlwaysExhaustive>> = true;
-template <class _Data, bool _IsAlwaysExhaustive>
-inline constexpr bool __is_group_mapping_v<group_as<_Data, _IsAlwaysExhaustive>> = true;
+template <class _Fn>
+inline constexpr bool __is_group_mapping_v<binary_partition<_Fn>> = true;
+template <::cuda::std::size_t _StaticUnitCount>
+inline constexpr bool __is_group_mapping_v<group_by<_StaticUnitCount>> = true;
+template <class _RangeView>
+inline constexpr bool __is_group_mapping_v<group_as<_RangeView>> = true;
+template <>
+inline constexpr bool __is_group_mapping_v<identity_mapping> = true;
+template <::cuda::std::size_t _StaticUnitCount>
+inline constexpr bool __is_group_mapping_v<take<_StaticUnitCount>> = true;
 
 // tags
 
@@ -144,6 +137,22 @@ struct non_exhaustive_t;
 
 inline constexpr ::cuda::std::uint32_t __invalid_count_or_rank = 0xffff'ffff;
 } // namespace cuda::experimental::coop
+
+#  if _CCCL_HAS_COOPERATIVE_GROUPS()
+_CG_BEGIN_NAMESPACE
+
+class thread_group;
+class grid_group;
+#    if defined(_CG_HAS_CLUSTER_GROUP)
+class cluster_group;
+#    endif // _CG_HAS_CLUSTER_GROUP
+class thread_block;
+class coalesced_group;
+template <unsigned _Size, typename _ParentT>
+class thread_block_tile;
+
+_CG_END_NAMESPACE
+#  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
 #endif // !_CCCL_DOXYGEN_INVOKED
 

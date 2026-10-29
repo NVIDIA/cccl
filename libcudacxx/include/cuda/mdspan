@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/__mdspan/__copy/mdspan_d2d.h>
 #include <cuda/__mdspan/dlpack_to_mdspan.h>
 #include <cuda/__mdspan/host_device_mdspan.h>
@@ -31,5 +32,6 @@
 #include <cuda/__mdspan/strides.h>
 #include <cuda/std/__pstl/cuda/mdspan/copy.h>
 #include <cuda/std/mdspan>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_MDSPAN

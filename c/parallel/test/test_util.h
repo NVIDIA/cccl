@@ -723,16 +723,16 @@ struct pointer_t
   size_t size{};
 
   pointer_t(std::size_t num_items)
+      : size(num_items)
   {
     REQUIRE(cudaSuccess == cudaMalloc(&ptr, num_items * sizeof(T)));
-    size = num_items;
   }
 
   pointer_t(const std::vector<T>& vec)
+      : size(vec.size())
   {
     REQUIRE(cudaSuccess == cudaMalloc(&ptr, vec.size() * sizeof(T)));
     REQUIRE(cudaSuccess == cudaMemcpy(ptr, vec.data(), vec.size() * sizeof(T), cudaMemcpyHostToDevice));
-    size = vec.size();
   }
 
   pointer_t() = default;
@@ -873,7 +873,7 @@ stateful_operation_t<OpT> make_operation(std::string_view name, const std::strin
 // Designated initializers so this header builds against both v1's and v2's
 // cccl_op_t — v2 adds an extra_code_types field that v1 doesn't define, and
 // any unlisted field zero-inits (== nullptr for the pointer fields).
-static cccl_op_t make_well_known_unary_operation()
+inline cccl_op_t make_well_known_unary_operation()
 {
   return cccl_op_t{
     .type              = cccl_op_kind_t::CCCL_NEGATE,
@@ -891,7 +891,7 @@ static cccl_op_t make_well_known_unary_operation()
   };
 }
 
-static cccl_op_t make_well_known_binary_operation()
+inline cccl_op_t make_well_known_binary_operation()
 {
   return cccl_op_t{
     .type              = cccl_op_kind_t::CCCL_PLUS,
@@ -909,7 +909,7 @@ static cccl_op_t make_well_known_binary_operation()
   };
 }
 
-static cccl_op_t make_well_known_less_binary_predicate()
+inline cccl_op_t make_well_known_less_binary_predicate()
 {
   return cccl_op_t{
     .type              = cccl_op_kind_t::CCCL_LESS,
@@ -927,7 +927,7 @@ static cccl_op_t make_well_known_less_binary_predicate()
   };
 }
 
-static cccl_op_t make_well_known_unique_binary_predicate()
+inline cccl_op_t make_well_known_unique_binary_predicate()
 {
   return cccl_op_t{
     .type              = cccl_op_kind_t::CCCL_EQUAL_TO,
@@ -945,7 +945,7 @@ static cccl_op_t make_well_known_unique_binary_predicate()
   };
 }
 
-static cccl_op_t make_well_known_greater_equal_binary_predicate()
+inline cccl_op_t make_well_known_greater_equal_binary_predicate()
 {
   return cccl_op_t{
     .type              = cccl_op_kind_t::CCCL_GREATER_EQUAL,
@@ -966,7 +966,7 @@ static cccl_op_t make_well_known_greater_equal_binary_predicate()
 template <class ValueT, class StateT>
 struct iterator_t
 {
-  StateT state;
+  StateT state{};
   std::string state_name;
   operation_t advance;
   operation_t dereference;

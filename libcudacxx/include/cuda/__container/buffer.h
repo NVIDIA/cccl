@@ -33,7 +33,6 @@
 #  include <cuda/__launch/host_launch.h>
 #  include <cuda/__memory_resource/allocation_alignment.h>
 #  include <cuda/__memory_resource/any_resource.h>
-#  include <cuda/__memory_resource/get_memory_resource.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/synchronous_resource_adapter.h>
 #  include <cuda/__runtime/ensure_current_context.h>

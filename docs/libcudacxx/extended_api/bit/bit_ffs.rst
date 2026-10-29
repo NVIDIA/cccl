@@ -27,7 +27,7 @@ The function returns one plus the index of the least significant set bit of ``va
 
 **Constraints**
 
-- ``T`` is an unsigned integral type.
+- ``T`` is an unsigned integer type.
 
 .. note::
 

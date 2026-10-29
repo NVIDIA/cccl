@@ -21,15 +21,18 @@
 #include <cub/block/specializations/block_reduce_raking.cuh>
 #include <cub/block/specializations/block_reduce_raking_commutative_only.cuh>
 #include <cub/block/specializations/block_reduce_warp_reductions.cuh>
-#include <cub/thread/thread_operators.cuh>
+#include <cub/detail/uninitialized.cuh>
+#include <cub/thread/thread_reduce.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
-#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
 
 CUB_NAMESPACE_BEGIN
 
@@ -39,7 +42,7 @@ CUB_NAMESPACE_BEGIN
 
 //! BlockReduceAlgorithm enumerates alternative algorithms for parallel reduction across a CUDA thread
 //! block.
-enum BlockReduceAlgorithm
+enum BlockReduceAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
 
   //! @rst
@@ -139,6 +142,9 @@ enum BlockReduceAlgorithm
   //!      operations to accumulate their warp aggregates into a shared location, making the final
   //!      order non-deterministic.
   //!   #. The final block-wide result is available to all threads.
+  //!
+  //! Atomic accumulation is only used with ``cuda::std::plus``. Other reduction operators combine the
+  //! warp aggregates in order, as with ``BLOCK_REDUCE_WARP_REDUCTIONS``.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -286,21 +292,30 @@ CUB_NAMESPACE_BEGIN
 //! @tparam BlockDimZ
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
+// WarpAggregateThreshold: minimum number of warps required to use the parallel
+// warp-0 reduction path. Only applies when Algorithm is BLOCK_REDUCE_WARP_REDUCTIONS
+// or BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC.
+//   -1 (default): only use parallel path when HW redux is available.
+//    0: always use sequential path.
+//   >0: use parallel path when warps >= threshold.
 template <typename T,
           int BlockDimX,
           BlockReduceAlgorithm Algorithm = BLOCK_REDUCE_WARP_REDUCTIONS,
           int BlockDimY                  = 1,
-          int BlockDimZ                  = 1>
+          int BlockDimZ                  = 1,
+          int WarpAggregateThreshold     = -1>
 class BlockReduce
 {
 private:
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
-  using WarpReductions                 = detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ>;
-  using WarpReductionsNondeterministic = detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ, false>;
-  using RakingCommutativeOnly          = detail::BlockReduceRakingCommutativeOnly<T, BlockDimX, BlockDimY, BlockDimZ>;
-  using Raking                         = detail::BlockReduceRaking<T, BlockDimX, BlockDimY, BlockDimZ>;
+  using WarpReductions =
+    detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ, true, WarpAggregateThreshold>;
+  using WarpReductionsNondeterministic =
+    detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ, false, WarpAggregateThreshold>;
+  using RakingCommutativeOnly = detail::BlockReduceRakingCommutativeOnly<T, BlockDimX, BlockDimY, BlockDimZ>;
+  using Raking                = detail::BlockReduceRaking<T, BlockDimX, BlockDimY, BlockDimZ>;
 
   /// Internal specialization type
   using InternalBlockReduce =
@@ -535,7 +550,7 @@ public:
     // Determine if we skip bounds checking
     if (num_valid >= BLOCK_THREADS)
     {
-      return InternalBlockReduce(temp_storage).template Reduce<true>(input, num_valid, reduction_op);
+      return InternalBlockReduce(temp_storage).template Reduce<true>(input, BLOCK_THREADS, reduction_op);
     }
     else
     {
@@ -696,7 +711,7 @@ public:
     // Determine if we skip bounds checking
     if (num_valid >= BLOCK_THREADS)
     {
-      return InternalBlockReduce(temp_storage).template Sum<true>(input, num_valid);
+      return InternalBlockReduce(temp_storage).template Sum<true>(input, BLOCK_THREADS);
     }
     else
     {

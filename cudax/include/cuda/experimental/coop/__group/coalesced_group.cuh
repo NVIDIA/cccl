@@ -96,11 +96,6 @@ public:
     return true;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
-  {
-    return true;
-  }
-
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
   {
     return false;
@@ -150,11 +145,6 @@ public:
     return __synchronizer_instance_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
-  {
-    return _MappingResult::is_always_exhaustive();
-  }
-
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
   {
     return _MappingResult::is_always_contiguous();
@@ -182,7 +172,7 @@ public:
     }
     else
     {
-      return level_type::static_count(__in_level, _Hierarchy{});
+      return ::cuda::__static_count_query<level_type, _InLevel, _Hierarchy>();
     }
   }
 
@@ -196,7 +186,7 @@ public:
     }
     else
     {
-      return level_type::template count_as<_Tp>(__in_level, __hier);
+      return __count_query<level_type, _InLevel>::template __call<_Tp>(__hier);
     }
   }
 
@@ -224,7 +214,7 @@ public:
     }
     else
     {
-      return level_type::template rank_as<_Tp>(__in_level, __hier);
+      return __rank_query<level_type, _InLevel>::template __call<_Tp>(__hier);
     }
   }
 

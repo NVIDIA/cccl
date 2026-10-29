@@ -657,12 +657,11 @@
 #ifndef NVTX3_CPP_DEFINITIONS_V1_0
 #  define NVTX3_CPP_DEFINITIONS_V1_0
 
-#  include <cuda/std/__host_stdlib/memory>
+#  include <cuda/std/__host_stdlib/memory> // IWYU pragma: keep
 
 #  include <cstddef>
 #  include <string>
 #  include <type_traits>
-#  include <utility>
 
 #  include <nvtx3/nvToolsExt.h>
 

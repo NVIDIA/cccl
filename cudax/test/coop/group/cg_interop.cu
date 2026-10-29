@@ -33,8 +33,8 @@ __device__ void test_cg_interop(Config config)
   {
     auto cg_group = cg::this_grid();
 
-    static_assert(noexcept(cudax::coop::make_cg_equivalent_group(cg_group, config)));
-    auto cccl_group = cudax::coop::make_cg_equivalent_group(cg_group, config);
+    static_assert(noexcept(cudax::coop::make_group(cg_group, config)));
+    auto cccl_group = cudax::coop::make_group(cg_group, config);
 
     static_assert(cuda::std::is_same_v<cudax::coop::this_grid<Hierarchy>, decltype(cccl_group)>);
     REQUIRE(cuda::gpu_thread.count(cccl_group) == cg_group.size());
@@ -47,8 +47,8 @@ __device__ void test_cg_interop(Config config)
   {
     auto cg_group = cg::this_cluster();
 
-    static_assert(noexcept(cudax::coop::make_cg_equivalent_group(cg_group, config)));
-    auto cccl_group = cudax::coop::make_cg_equivalent_group(cg_group, config);
+    static_assert(noexcept(cudax::coop::make_group(cg_group, config)));
+    auto cccl_group = cudax::coop::make_group(cg_group, config);
 
     static_assert(cuda::std::is_same_v<cudax::coop::this_cluster<Hierarchy>, decltype(cccl_group)>);
     REQUIRE(cuda::gpu_thread.count(cccl_group) == cg_group.size());
@@ -61,8 +61,8 @@ __device__ void test_cg_interop(Config config)
   {
     auto cg_group = cg::this_thread_block();
 
-    static_assert(noexcept(cudax::coop::make_cg_equivalent_group(cg_group, config)));
-    auto cccl_group = cudax::coop::make_cg_equivalent_group(cg_group, config);
+    static_assert(noexcept(cudax::coop::make_group(cg_group, config)));
+    auto cccl_group = cudax::coop::make_group(cg_group, config);
 
     static_assert(cuda::std::is_same_v<cudax::coop::this_block<Hierarchy>, decltype(cccl_group)>);
     REQUIRE(cuda::gpu_thread.count(cccl_group) == cg_group.size());
@@ -74,8 +74,8 @@ __device__ void test_cg_interop(Config config)
   {
     auto cg_group = cg::this_thread();
 
-    static_assert(noexcept(cudax::coop::make_cg_equivalent_group(cg_group, config)));
-    auto cccl_group = cudax::coop::make_cg_equivalent_group(cg_group, config);
+    static_assert(noexcept(cudax::coop::make_group(cg_group, config)));
+    auto cccl_group = cudax::coop::make_group(cg_group, config);
 
     static_assert(cuda::std::is_same_v<cudax::coop::this_thread<Hierarchy>, decltype(cccl_group)>);
     REQUIRE(cuda::gpu_thread.count(cccl_group) == cg_group.size());
@@ -90,13 +90,14 @@ __device__ void test_cg_interop(Config config)
 
     auto cg_group = cg::tiled_partition<n>(cg::this_thread_block());
 
-    static_assert(noexcept(cudax::coop::make_cg_equivalent_group(cg_group, config)));
-    auto cccl_group = cudax::coop::make_cg_equivalent_group(cg_group, config);
+    static_assert(noexcept(cudax::coop::make_group(cg_group, config)));
+    auto cccl_group = cudax::coop::make_group(cg_group, config);
 
     static_assert(
-      cuda::std::is_same_v<decltype(cudax::coop::generic_group{
-                             cuda::gpu_thread, this_warp, cudax::coop::group_by<n>{}, cudax::coop::lane_synchronizer{}}),
-                           decltype(cccl_group)>);
+      cuda::std::is_same_v<
+        decltype(cudax::coop::generic_group{
+          cuda::gpu_thread, this_warp, cudax::coop::group_by{cuda::std::cw<n>}, cudax::coop::lane_synchronizer{}}),
+        decltype(cccl_group)>);
     REQUIRE(cuda::gpu_thread.count(cccl_group) == cg_group.size());
     REQUIRE(cuda::gpu_thread.rank(cccl_group) == cg_group.thread_rank());
     cccl_group.sync();
@@ -106,8 +107,8 @@ __device__ void test_cg_interop(Config config)
   {
     auto cg_group = cg::tiled_partition<32>(cg::this_thread_block());
 
-    static_assert(noexcept(cudax::coop::make_cg_equivalent_group(cg_group, config)));
-    auto cccl_group = cudax::coop::make_cg_equivalent_group(cg_group, config);
+    static_assert(noexcept(cudax::coop::make_group(cg_group, config)));
+    auto cccl_group = cudax::coop::make_group(cg_group, config);
 
     static_assert(cuda::std::is_same_v<cudax::coop::this_warp<Hierarchy>, decltype(cccl_group)>);
     REQUIRE(cuda::gpu_thread.count(cccl_group) == cg_group.size());

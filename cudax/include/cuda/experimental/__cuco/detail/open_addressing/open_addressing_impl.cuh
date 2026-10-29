@@ -27,13 +27,16 @@
 #include <cub/device/device_transform.cuh>
 
 #include <cuda/__algorithm/copy.h>
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__container/buffer.h>
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__hierarchy/level_dimensions.h>
 #include <cuda/__iterator/constant_iterator.h>
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/__iterator/transform_iterator.h>
 #include <cuda/__launch/configuration.h>
 #include <cuda/__launch/launch.h>
+#include <cuda/__memory_resource/allocation_alignment.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/std/__exception/exception_macros.h>
@@ -42,6 +45,7 @@
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/span>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
@@ -107,6 +111,16 @@ public:
                 "ProbingScheme must inherit from cuda::experimental::cuco::detail::__probing_scheme_base");
 
 private:
+  static constexpr auto __has_packable_representation =
+    sizeof(__value_type) <= 8 && ::cuda::is_power_of_two(sizeof(__value_type))
+    && ::cuda::std::is_trivially_copyable_v<__value_type>;
+
+  // Align packable slots for whole-slot CAS. Non-packable payload slots retain their natural
+  // alignment; key-only subword slots also need allocation padding for complete 32-bit accesses.
+  static constexpr __size_type __storage_alignment =
+    __has_payload ? (__has_packable_representation ? sizeof(__value_type) : alignof(__value_type))
+                  : (sizeof(__value_type) < 4 ? 4 : sizeof(__value_type));
+
   __value_type __empty_slot_sentinel;
   __key_type __erased_key_sentinel;
   __key_equal __predicate;
@@ -178,7 +192,11 @@ public:
       , __predicate{__pred}
       , __probing_scheme{__probing_scheme}
       , __memory_resource{__mr}
-      , __slots{__stream, __mr, __compute_num_buckets(__capacity) * _BucketSize, ::cuda::no_init}
+      , __slots{__stream,
+                __mr,
+                __compute_num_buckets(__capacity) * _BucketSize,
+                ::cuda::no_init,
+                ::cuda::std::execution::prop{::cuda::allocation_alignment, __storage_alignment}}
   {
     clear_async(__stream);
   }
@@ -198,7 +216,11 @@ public:
       , __predicate{__pred}
       , __probing_scheme{__probing_scheme}
       , __memory_resource{__mr}
-      , __slots{__stream, __mr, __compute_num_buckets(__n, __desired_load_factor) * _BucketSize, ::cuda::no_init}
+      , __slots{__stream,
+                __mr,
+                __compute_num_buckets(__n, __desired_load_factor) * _BucketSize,
+                ::cuda::no_init,
+                ::cuda::std::execution::prop{::cuda::allocation_alignment, __storage_alignment}}
   {
     clear_async(__stream);
   }
@@ -217,7 +239,11 @@ public:
       , __predicate{__pred}
       , __probing_scheme{__probing_scheme}
       , __memory_resource{__mr}
-      , __slots{__stream, __mr, __compute_num_buckets(__capacity) * _BucketSize, ::cuda::no_init}
+      , __slots{__stream,
+                __mr,
+                __compute_num_buckets(__capacity) * _BucketSize,
+                ::cuda::no_init,
+                ::cuda::std::execution::prop{::cuda::allocation_alignment, __storage_alignment}}
   {
     if (empty_key_sentinel() == erased_key_sentinel())
     {
@@ -296,11 +322,13 @@ public:
     auto __counter = __make_counter(__stream);
 
     const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
-
-    __open_addressing::__insert_if_n<__cg_size, detail::__default_block_size>
-      <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
-        __first, __num_keys, __stencil, __pred, __counter.data(), __container_ref);
-    _CCCL_TRY_RUNTIME_API(::cudaGetLastError, "cuco: failed to insert keys");
+    const auto __config    = ::cuda::make_config(
+      ::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<detail::__default_block_size>());
+    using __kernel_type =
+      void (*)(_InputIt, detail::__index_type, _StencilIt, _Predicate, typename _Ref::size_type*, _Ref);
+    const __kernel_type __kernel = __open_addressing::__insert_if_n<__cg_size, detail::__default_block_size>;
+    ::cuda::launch(
+      __stream, __config, __kernel, __first, __num_keys, __stencil, __pred, __counter.data(), __container_ref);
 
     return __read_counter(__counter, __stream);
   }
@@ -342,12 +370,77 @@ public:
     else
     {
       const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
-
-      __open_addressing::__insert_if_n<__cg_size, detail::__default_block_size>
-        <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
-          __first, __num_keys, __stencil, __pred, __container_ref);
-      _CCCL_TRY_RUNTIME_API(::cudaGetLastError, "cuco: failed to insert keys");
+      const auto __config    = ::cuda::make_config(
+        ::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<detail::__default_block_size>());
+      using __kernel_type          = void (*)(_InputIt, detail::__index_type, _StencilIt, _Predicate, _Ref);
+      const __kernel_type __kernel = __open_addressing::__insert_if_n<__cg_size, detail::__default_block_size>;
+      ::cuda::launch(__stream, __config, __kernel, __first, __num_keys, __stencil, __pred, __container_ref);
     }
+  }
+
+  //! @brief Asynchronously inserts each element and returns its mapped value and insertion status.
+  //!
+  //! @throws cuda_error if the insert operation fails to launch
+  //!
+  //! @tparam _InputIt Device accessible random access input iterator
+  //! @tparam _FoundIt Device accessible output iterator assignable from the mapped type
+  //! @tparam _InsertedIt Device accessible output iterator assignable from bool
+  //! @tparam _Ref Device reference to the map
+  //!
+  //! @param[in] __stream CUDA stream used for insertion
+  //! @param[in] __first Beginning of the input sequence
+  //! @param[in] __last End of the input sequence
+  //! @param[out] __found_begin Beginning of the mapped-value output sequence
+  //! @param[out] __inserted_begin Beginning of the insertion-status output sequence
+  //! @param[in,out] __container_ref Map in which to insert the input pairs
+  template <class _InputIt, class _FoundIt, class _InsertedIt, class _Ref>
+  _CCCL_HOST_API void insert_and_find_async(
+    ::cuda::stream_ref __stream,
+    _InputIt __first,
+    _InputIt __last,
+    _FoundIt __found_begin,
+    _InsertedIt __inserted_begin,
+    _Ref __container_ref)
+  {
+    const auto __num_keys = detail::__distance(__first, __last);
+    if (__num_keys == 0)
+    {
+      return;
+    }
+
+    const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
+    const auto __config    = ::cuda::make_config(
+      ::cuda::block_dims<detail::__default_block_size>(), ::cuda::grid_dims(static_cast<unsigned>(__grid_size)));
+    ::cuda::launch(
+      __stream,
+      __config,
+      __open_addressing::
+        __insert_and_find_n<__cg_size, detail::__default_block_size, _InputIt, _FoundIt, _InsertedIt, _Ref>,
+      __first,
+      __num_keys,
+      __found_begin,
+      __inserted_begin,
+      __container_ref);
+  }
+
+  //! @brief Asynchronously inserts or assigns pairs in `[__first, __last)`.
+  //!
+  //! @throws cuda_error if the operation fails to launch
+  template <class _InputIt, class _Ref>
+  _CCCL_HOST_API void
+  insert_or_assign_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _Ref __container_ref)
+  {
+    const auto __num_keys = detail::__distance(__first, __last);
+    if (__num_keys == 0)
+    {
+      return;
+    }
+    const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
+    const auto __config    = ::cuda::make_config(
+      ::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<detail::__default_block_size>());
+    const auto& __kernel =
+      __open_addressing::__insert_or_assign_n<__cg_size, detail::__default_block_size, _InputIt, _Ref>;
+    ::cuda::launch(__stream, __config, __kernel, __first, __num_keys, __container_ref);
   }
 
   //! @brief Asynchronously checks if keys in `[first, last)` exist in the container.
@@ -397,11 +490,12 @@ public:
     else
     {
       const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
-
-      __open_addressing::__contains_if_n<__cg_size, detail::__default_block_size>
-        <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
-          __first, __num_keys, __stencil, __pred, __output_begin, __container_ref);
-      _CCCL_TRY_RUNTIME_API(::cudaGetLastError, "cuco: failed to query keys");
+      const auto __config    = ::cuda::make_config(
+        ::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<detail::__default_block_size>());
+      const auto& __kernel = __open_addressing::
+        __contains_if_n<__cg_size, detail::__default_block_size, _InputIt, _StencilIt, _Predicate, _OutputIt, _Ref>;
+      ::cuda::launch(
+        __stream, __config, __kernel, __first, __num_keys, __stencil, __pred, __output_begin, __container_ref);
     }
   }
 
@@ -428,11 +522,12 @@ public:
     }
 
     const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
-
-    __open_addressing::__find_if_n<__cg_size, detail::__default_block_size>
-      <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
-        __first, __num_keys, __stencil, __pred, __output_begin, __container_ref);
-    _CCCL_TRY_RUNTIME_API(::cudaGetLastError, "cuco: failed to query keys");
+    const auto __config    = ::cuda::make_config(
+      ::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<detail::__default_block_size>());
+    const auto& __kernel = __open_addressing::
+      __find_if_n<__cg_size, detail::__default_block_size, _InputIt, _StencilIt, _Predicate, _OutputIt, _Ref>;
+    ::cuda::launch(
+      __stream, __config, __kernel, __first, __num_keys, __stencil, __pred, __output_begin, __container_ref);
   }
 
   //! @brief Asynchronously finds the payloads for keys in `[first, last)`.
@@ -511,7 +606,12 @@ public:
   _CCCL_HOST_API void rehash_async(::cuda::stream_ref __stream, __size_type __capacity, const _Container& __container)
   {
     const auto __new_capacity = __compute_num_buckets(__capacity) * _BucketSize;
-    ::cuda::device_buffer<__value_type> __new_slots{__stream, __memory_resource, __new_capacity, ::cuda::no_init};
+    ::cuda::device_buffer<__value_type> __new_slots{
+      __stream,
+      __memory_resource,
+      __new_capacity,
+      ::cuda::no_init,
+      ::cuda::std::execution::prop{::cuda::allocation_alignment, __storage_alignment}};
 
     _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceTransform::Fill,
@@ -631,19 +731,19 @@ public:
   }
 
   //! @brief Returns the key comparison function.
-  [[nodiscard]] _CCCL_HOST_API constexpr __key_equal key_eq() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr __key_equal key_eq() const
   {
     return __predicate;
   }
 
   //! @brief Returns the probing scheme.
-  [[nodiscard]] _CCCL_HOST_API constexpr __probing_scheme_type probing_scheme() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr __probing_scheme_type probing_scheme() const
   {
     return __probing_scheme;
   }
 
   //! @brief Returns the hash function.
-  [[nodiscard]] _CCCL_HOST_API constexpr __hasher hash_function() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr __hasher hash_function() const
   {
     return probing_scheme().hash_function();
   }

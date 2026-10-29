@@ -23,14 +23,14 @@
 
 #include "pool_availability.cuh"
 
-static_assert(!cuda::std::is_trivial<cuda::device_memory_pool_ref>::value);
-static_assert(!cuda::std::is_trivially_default_constructible<cuda::device_memory_pool_ref>::value);
-static_assert(cuda::std::is_copy_constructible<cuda::device_memory_pool_ref>::value);
-static_assert(cuda::std::is_move_constructible<cuda::device_memory_pool_ref>::value);
-static_assert(cuda::std::is_copy_assignable<cuda::device_memory_pool_ref>::value);
-static_assert(cuda::std::is_move_assignable<cuda::device_memory_pool_ref>::value);
-static_assert(cuda::std::is_trivially_destructible<cuda::device_memory_pool_ref>::value);
-static_assert(!cuda::std::is_empty<cuda::device_memory_pool_ref>::value);
+static_assert(!cuda::std::is_trivial_v<cuda::device_memory_pool_ref>);
+static_assert(!cuda::std::is_trivially_default_constructible_v<cuda::device_memory_pool_ref>);
+static_assert(cuda::std::is_copy_constructible_v<cuda::device_memory_pool_ref>);
+static_assert(cuda::std::is_move_constructible_v<cuda::device_memory_pool_ref>);
+static_assert(cuda::std::is_copy_assignable_v<cuda::device_memory_pool_ref>);
+static_assert(cuda::std::is_move_assignable_v<cuda::device_memory_pool_ref>);
+static_assert(cuda::std::is_trivially_destructible_v<cuda::device_memory_pool_ref>);
+static_assert(!cuda::std::is_empty_v<cuda::device_memory_pool_ref>);
 
 static bool ensure_release_threshold(::cudaMemPool_t pool, const size_t expected_threshold)
 {
@@ -270,7 +270,7 @@ C2H_CCCLRT_TEST("device_memory_pool construction", "[memory_resource]")
 static void ensure_device_ptr(void* ptr)
 {
   CHECK(ptr != nullptr);
-  cudaPointerAttributes attributes;
+  cudaPointerAttributes attributes{};
   const cudaError_t status = cudaPointerGetAttributes(&attributes, ptr);
   CHECK(status == cudaSuccess);
   CHECK(attributes.type == cudaMemoryTypeDevice);
@@ -289,7 +289,7 @@ C2H_CCCLRT_TEST("device_memory_pool allocation", "[memory_resource]")
 
   { // allocate_sync / deallocate_sync
     auto* ptr = res.allocate_sync(42);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
+    static_assert(cuda::std::is_same_v<decltype(ptr), void*>);
     ensure_device_ptr(ptr);
 
     res.deallocate_sync(ptr, 42);
@@ -297,7 +297,7 @@ C2H_CCCLRT_TEST("device_memory_pool allocation", "[memory_resource]")
 
   { // allocate_sync / deallocate_sync with alignment
     auto* ptr = res.allocate_sync(42, 4);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
+    static_assert(cuda::std::is_same_v<decltype(ptr), void*>);
     ensure_device_ptr(ptr);
 
     res.deallocate_sync(ptr, 42, 4);
@@ -307,7 +307,7 @@ C2H_CCCLRT_TEST("device_memory_pool allocation", "[memory_resource]")
     const cuda::stream_ref stream{raw_stream};
 
     auto* ptr = res.allocate(stream, 42);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
+    static_assert(cuda::std::is_same_v<decltype(ptr), void*>);
 
     stream.sync();
     ensure_device_ptr(ptr);
@@ -319,7 +319,7 @@ C2H_CCCLRT_TEST("device_memory_pool allocation", "[memory_resource]")
     const cuda::stream_ref stream{raw_stream};
 
     auto* ptr = res.allocate(stream, 42, 4);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
+    static_assert(cuda::std::is_same_v<decltype(ptr), void*>);
 
     stream.sync();
     ensure_device_ptr(ptr);
@@ -464,7 +464,7 @@ C2H_CCCLRT_TEST("Async memory resource access", "")
     {
       cuda::device_memory_pool pool{cuda::devices[0]};
       cuda::stream stream{peers.front()};
-      CCCLRT_CHECK(pool.is_accessible_from(cuda::devices[0]));
+      CHECK(pool.is_accessible_from(cuda::devices[0]));
 
       auto allocate_and_check_access = [&](auto& resource) {
         auto* ptr1  = resource.allocate(stream, sizeof(int));
@@ -479,27 +479,27 @@ C2H_CCCLRT_TEST("Async memory resource access", "")
 
       pool.enable_access_from(peers);
 
-      CCCLRT_CHECK(pool.is_accessible_from(peers.front()));
+      CHECK(pool.is_accessible_from(peers.front()));
       allocate_and_check_access(pool);
 
       cuda::device_memory_pool_ref resource{pool};
-      CCCLRT_CHECK(resource.is_accessible_from(peers.front()));
+      CHECK(resource.is_accessible_from(peers.front()));
       allocate_and_check_access(resource);
 
       pool.disable_access_from(peers.front());
-      CCCLRT_CHECK(!pool.is_accessible_from(peers.front()));
-      CCCLRT_CHECK(!resource.is_accessible_from(peers.front()));
+      CHECK(!pool.is_accessible_from(peers.front()));
+      CHECK(!resource.is_accessible_from(peers.front()));
 
       if (peers.size() > 1)
       {
-        CCCLRT_CHECK(pool.is_accessible_from(peers[1]));
+        CHECK(pool.is_accessible_from(peers[1]));
       }
 
       pool.disable_access_from(peers);
 
       pool.enable_access_from(peers.front());
-      CCCLRT_CHECK(pool.is_accessible_from(peers.front()));
-      CCCLRT_CHECK(resource.is_accessible_from(peers.front()));
+      CHECK(pool.is_accessible_from(peers.front()));
+      CHECK(resource.is_accessible_from(peers.front()));
 
       // Check if enable can include the device on which the pool resides
       {
@@ -516,9 +516,9 @@ C2H_CCCLRT_TEST("Async memory resource access", "")
 
         default_pool_resource.enable_access_from(peers_ext);
 
-        CCCLRT_REQUIRE(default_pool_resource.is_accessible_from(peers_ext.front()));
+        REQUIRE(default_pool_resource.is_accessible_from(peers_ext.front()));
         allocate_and_check_access(default_pool_resource);
-        CCCLRT_REQUIRE(another_default_pool_resource.is_accessible_from(peers_ext.front()));
+        REQUIRE(another_default_pool_resource.is_accessible_from(peers_ext.front()));
         allocate_and_check_access(another_default_pool_resource);
       }
     }

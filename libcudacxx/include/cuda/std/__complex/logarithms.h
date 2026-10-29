@@ -21,13 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__complex/arg.h>
+#include <cuda/std/__cmath/fma.h>
 #include <cuda/std/__complex/complex.h>
-#include <cuda/std/__complex/math.h>
 #include <cuda/std/__complex/nvbf16.h>
 #include <cuda/std/__complex/nvfp16.h>
 #include <cuda/std/__floating_point/fp.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/numbers>
 
 #include <cuda/std/__cccl/prologue.h>

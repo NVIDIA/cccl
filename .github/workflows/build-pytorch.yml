@@ -39,7 +39,9 @@ on:
 jobs:
   build-pytorch:
     name: Build PyTorch
-    runs-on: linux-amd64-cpu16m
+    runs-on: |-
+      ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) &&
+          'linux-amd64-cpu16m' || 'ubuntu-latest' }}
     permissions:
       id-token: write
       contents: read
@@ -52,7 +54,7 @@ jobs:
       - name: Add NVCC problem matcher
         run: echo "::add-matcher::$(pwd)/.github/problem-matchers/problem-matcher.json"
       - uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b  # v6
-        if: ${{ github.repository == 'NVIDIA/cccl' }}
+        if: ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) }}
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
           aws-region: us-east-2
@@ -110,7 +112,7 @@ jobs:
 
           .devcontainer/launch.sh \
             --docker \
-            --cuda 13.3 \
+            --cuda 13.4 \
             --host gcc14 \
             --cuda-ext \
             --env "AWS_ROLE_ARN=" \
@@ -130,7 +132,7 @@ jobs:
     name: Notify Slack of PyTorch failure
     if: ${{ failure() && inputs.enable_slack_alerts }}
     needs: build-pytorch
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Notify
         uses: slackapi/slack-github-action@v1.26.0

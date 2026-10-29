@@ -18,9 +18,12 @@
 
 #include <cuda/__memory/align_up.h>
 #include <cuda/functional>
+#include <cuda/hierarchy>
+#include <cuda/launch>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
+#include <cuda/stream>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
 #include <cuda/experimental/__cuco/fixed_capacity_map.cuh>
@@ -95,11 +98,16 @@ void run_misaligned_external_storage()
   REQUIRE(slots_addr % sizeof(value_type) != 0);
 
   constexpr int block = 128;
+  const cuda::stream stream{cuda::device_ref{0}};
 
   const int fill_grid = static_cast<int>((capacity + block - 1) / block);
-  fill_sentinel_kernel<value_type>
-    <<<fill_grid, block>>>(slots, static_cast<int>(capacity), value_type{empty_k, empty_v});
-  REQUIRE(cudaGetLastError() == cudaSuccess);
+  cuda::launch(
+    stream,
+    cuda::make_config(cuda::grid_dims(fill_grid), cuda::block_dims<block>()),
+    fill_sentinel_kernel<value_type>,
+    slots,
+    static_cast<int>(capacity),
+    value_type{empty_k, empty_v});
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
 
   const ref_type ref{
@@ -109,15 +117,24 @@ void run_misaligned_external_storage()
     probing_type{},
     span_type{slots, capacity}};
 
-  insert_kernel<ref_type, Key><<<(num_keys + block - 1) / block, block>>>(ref, num_keys);
-  REQUIRE(cudaGetLastError() == cudaSuccess);
+  cuda::launch(stream,
+               cuda::make_config(cuda::grid_dims((num_keys + block - 1) / block), cuda::block_dims<block>()),
+               insert_kernel<ref_type, Key>,
+               ref,
+               num_keys);
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
 
   constexpr int num_probes = 2 * num_keys;
   int* d_out               = nullptr;
   REQUIRE(cudaMalloc(&d_out, sizeof(int) * num_probes) == cudaSuccess);
-  contains_kernel<ref_type, Key><<<(num_probes + block - 1) / block, block>>>(ref, num_probes, d_out);
-  REQUIRE(cudaGetLastError() == cudaSuccess);
+  cuda::launch(
+    stream,
+    cuda::make_config(cuda::grid_dims((num_probes + block - 1) / block), cuda::block_dims<block>()),
+    contains_kernel<ref_type, Key>,
+    ref,
+    num_probes,
+    d_out);
+  stream.sync();
 
   int h_out[num_probes];
   REQUIRE(cudaMemcpy(h_out, d_out, sizeof(int) * num_probes, cudaMemcpyDeviceToHost) == cudaSuccess);

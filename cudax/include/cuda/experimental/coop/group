@@ -21,13 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/coop/__group/cg_interop.cuh>
+#if !defined(_CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX)
+#  error "Experimental Cooperative APIs require the _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX macro to be defined before any CCCL header inclusion."
+#endif // !_CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
+
 #include <cuda/experimental/coop/__group/coalesced_group.cuh>
 #include <cuda/experimental/coop/__group/concepts.cuh>
 #include <cuda/experimental/coop/__group/fwd.cuh>
 #include <cuda/experimental/coop/__group/generic_group.cuh>
 #include <cuda/experimental/coop/__group/group_view.cuh>
-#include <cuda/experimental/coop/__group/implicit_hierarchy.cuh>
 #include <cuda/experimental/coop/__group/mapping/binary_partition.cuh>
 #include <cuda/experimental/coop/__group/mapping/composite_mapping.cuh>
 #include <cuda/experimental/coop/__group/mapping/group_as.cuh>
@@ -42,5 +44,6 @@
 #include <cuda/experimental/coop/__group/this_group.cuh>
 #include <cuda/experimental/coop/__group/traits.cuh>
 #include <cuda/experimental/coop/__group/virtual_group.cuh>
+#include <cuda/experimental/coop/__group/make_group.cuh>
 
 #endif // _CUDA_EXPERIMENTAL_COOP_GROUP

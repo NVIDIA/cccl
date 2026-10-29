@@ -21,9 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/hierarchy>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__type_traits/integral_constant_like.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 
@@ -34,65 +35,84 @@
 
 #if !defined(_CCCL_DOXYGEN_INVOKED)
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
+
 namespace cuda::experimental::coop
 {
-template <::cuda::std::size_t _UnitCount>
+template <::cuda::std::size_t _StaticUnitCount>
 class take
 {
-  static_assert(::cuda::std::in_range<::cuda::std::uint32_t>(_UnitCount), "_UnitCount must be within uint32_t range");
+  static_assert(::cuda::std::in_range<::cuda::std::uint32_t>(_StaticUnitCount),
+                "_StaticUnitCount must be within uint32_t range");
 
 public:
-  _CCCL_HIDE_FROM_ABI explicit take() = default;
-
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count() noexcept
+  _CCCL_DEVICE_API constexpr explicit take(::cuda::std::uint32_t __unit_count) noexcept
   {
-    return _UnitCount;
+    _CCCL_ASSERT(__unit_count == _StaticUnitCount, "__unit_count must be same as _StaticUnitCount");
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t unit_count() const noexcept
+  template <bool _Exhaustive, class _Unit, class _PrevMappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API static auto
+  __do_map(const _Unit&, const _PrevMappingResult& __prev_mapping_result) noexcept
   {
-    return ::cuda::std::uint32_t{_UnitCount};
-  }
-
-  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
-  [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const noexcept
-  {
-    constexpr auto __static_prev_nunits = _PrevMappingResult::static_unit_count();
+    constexpr auto __static_prev_nunits        = _PrevMappingResult::static_unit_count();
+    constexpr bool __curr_is_always_exhaustive = (__static_prev_nunits == _StaticUnitCount);
 
     using _MappingResult =
       __mapping_result<_PrevMappingResult::static_group_count(),
-                       _UnitCount,
-                       _PrevMappingResult::is_always_exhaustive() && (__static_prev_nunits == _UnitCount),
+                       _StaticUnitCount,
+                       _Exhaustive || (_PrevMappingResult::is_always_exhaustive() && __curr_is_always_exhaustive),
                        _PrevMappingResult::is_always_contiguous()>;
 
-    if (!__prev_mapping_result.is_valid())
+    if constexpr (!_PrevMappingResult::is_always_exhaustive())
     {
-      return _MappingResult::__invalid();
+      if (!__prev_mapping_result.is_valid())
+      {
+        return _MappingResult::__invalid();
+      }
     }
 
     const auto __prev_units_count = __prev_mapping_result.unit_count();
     const auto __prev_unit_rank   = __prev_mapping_result.unit_rank();
 
-    if constexpr (__static_prev_nunits != ::cuda::std::dynamic_extent)
+    if constexpr (_Exhaustive)
     {
-      static_assert(__static_prev_nunits >= _UnitCount,
-                    "take mapping requires the previous mapping result to have at least _PrevMappingResult units");
+      if constexpr (__static_prev_nunits != ::cuda::std::dynamic_extent)
+      {
+        static_assert(__static_prev_nunits == _StaticUnitCount,
+                      "take mapping would produce units without a group during exhaustive mapping");
+      }
+      else
+      {
+        _CCCL_ASSERT(__prev_units_count == _StaticUnitCount,
+                     "take mapping would produce units without a group during exhaustive mapping");
+      }
     }
     else
     {
-      _CCCL_ASSERT(::cuda::std::cmp_greater_equal(__prev_units_count, _UnitCount),
-                   "take mapping requires the previous mapping result to have at least _PrevMappingResult units");
-    }
+      if constexpr (__static_prev_nunits != ::cuda::std::dynamic_extent)
+      {
+        static_assert(__static_prev_nunits >= _StaticUnitCount,
+                      "take mapping requires the previous mapping result to have at least _PrevMappingResult units");
+      }
+      else
+      {
+        _CCCL_ASSERT(__prev_units_count >= _StaticUnitCount,
+                     "take mapping requires the previous mapping result to have at least _PrevMappingResult units");
+      }
 
-    if (::cuda::std::cmp_greater_equal(__prev_unit_rank, static_cast<::cuda::std::uint32_t>(_UnitCount)))
-    {
-      return _MappingResult::__invalid();
+      if constexpr (!__curr_is_always_exhaustive)
+      {
+        if (__prev_unit_rank >= _StaticUnitCount)
+        {
+          return _MappingResult::__invalid();
+        }
+      }
     }
 
     const auto __group_count = __prev_mapping_result.group_count();
     const auto __group_rank  = __prev_mapping_result.group_rank();
-    const auto __unit_count  = static_cast<::cuda::std::uint32_t>(_UnitCount);
+    const auto __unit_count  = static_cast<::cuda::std::uint32_t>(_StaticUnitCount);
     const auto __unit_rank   = __prev_unit_rank;
     const auto __lane_mask =
       (::cuda::std::is_same_v<_Unit, thread_level>)
@@ -101,54 +121,70 @@ public:
         : __prev_mapping_result.lane_mask();
     return _MappingResult{__group_count, __group_rank, __unit_count, __unit_rank, __lane_mask};
   }
+
+  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API auto
+  map(const _Unit& __unit, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const noexcept
+  {
+    return __do_map<true>(__unit, __prev_mapping_result);
+  }
+
+  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API auto
+  map(const non_exhaustive_t&,
+      const _Unit& __unit,
+      const _ParentGroup&,
+      const _PrevMappingResult& __prev_mapping_result) const noexcept
+  {
+    return __do_map<false>(__unit, __prev_mapping_result);
+  }
 };
 
 template <>
 class take<::cuda::std::dynamic_extent>
 {
-  ::cuda::std::uint32_t __unit_count_{0};
+  ::cuda::std::uint32_t __unit_count_;
 
 public:
-  _CCCL_HIDE_FROM_ABI explicit take() = default;
-
   _CCCL_DEVICE_API constexpr explicit take(::cuda::std::uint32_t __unit_count) noexcept
       : __unit_count_{__unit_count}
   {}
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count() noexcept
-  {
-    return ::cuda::std::dynamic_extent;
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::uint32_t unit_count() const noexcept
-  {
-    return __unit_count_;
-  }
-
-  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
+  template <bool _Exhaustive, class _Unit, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const noexcept
+  __do_map(const _Unit&, const _PrevMappingResult& __prev_mapping_result) const noexcept
   {
     using _MappingResult =
       __mapping_result<_PrevMappingResult::static_group_count(),
                        ::cuda::std::dynamic_extent,
-                       false,
+                       _Exhaustive,
                        _PrevMappingResult::is_always_contiguous()>;
 
-    if (!__prev_mapping_result.is_valid())
+    if constexpr (!_PrevMappingResult::is_always_exhaustive())
     {
-      return _MappingResult::__invalid();
+      if (!__prev_mapping_result.is_valid())
+      {
+        return _MappingResult::__invalid();
+      }
     }
 
     const auto __prev_units_count = __prev_mapping_result.unit_count();
     const auto __prev_unit_rank   = __prev_mapping_result.unit_rank();
 
-    _CCCL_ASSERT(::cuda::std::cmp_greater_equal(__prev_units_count, __unit_count_),
-                 "take mapping requires the previous mapping result to have at least _PrevMappingResult units");
-
-    if (::cuda::std::cmp_greater_equal(__prev_unit_rank, __unit_count_))
+    if constexpr (_Exhaustive)
     {
-      return _MappingResult::__invalid();
+      _CCCL_ASSERT(__prev_units_count == __unit_count_,
+                   "take mapping would produce units without a group during exhaustive mapping");
+    }
+    else
+    {
+      _CCCL_ASSERT(__prev_units_count >= __unit_count_,
+                   "take mapping requires the previous mapping result to have at least _PrevMappingResult units");
+
+      if (__prev_unit_rank >= __unit_count_)
+      {
+        return _MappingResult::__invalid();
+      }
     }
 
     const auto __group_count = __prev_mapping_result.group_count();
@@ -162,10 +198,30 @@ public:
         : __prev_mapping_result.lane_mask();
     return _MappingResult{__group_count, __group_rank, __unit_count, __unit_rank, __lane_mask};
   }
+
+  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API auto
+  map(const _Unit& __unit, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const noexcept
+  {
+    return __do_map<true>(__unit, __prev_mapping_result);
+  }
+
+  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API auto
+  map(const non_exhaustive_t&,
+      const _Unit& __unit,
+      const _ParentGroup&,
+      const _PrevMappingResult& __prev_mapping_result) const noexcept
+  {
+    return __do_map<false>(__unit, __prev_mapping_result);
+  }
 };
 
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES take(::cuda::std::uint32_t) -> take<::cuda::std::dynamic_extent>;
+template <class _Tp>
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES take(_Tp) -> take<::cuda::std::__maybe_static_ext<_Tp>>;
 } // namespace cuda::experimental::coop
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 #endif // !_CCCL_DOXYGEN_INVOKED
 

@@ -24,7 +24,9 @@
 #include <cuda/__mdspan/restrict_accessor.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__fwd/array.h>
+#include <cuda/std/__fwd/extents.h>
 #include <cuda/std/__fwd/span.h>
+#include <cuda/std/__mdspan/mdspan.h>
 #include <cuda/std/__type_traits/extent.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_pointer.h>
@@ -33,7 +35,6 @@
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/delegate_constructors.h>
-#include <cuda/std/mdspan>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -76,11 +77,11 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES restrict_mdspan(_CArray&)
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES restrict_mdspan(_ElementType*, const ::cuda::std::array<_OtherIndexType, _Size>&)
-  -> restrict_mdspan<_ElementType, ::cuda::std::dextents<size_t, _Size>>;
+  -> restrict_mdspan<_ElementType, ::cuda::std::dims<_Size>>;
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES restrict_mdspan(_ElementType*, ::cuda::std::span<_OtherIndexType, _Size>)
-  -> restrict_mdspan<_ElementType, ::cuda::std::dextents<size_t, _Size>>;
+  -> restrict_mdspan<_ElementType, ::cuda::std::dims<_Size>>;
 
 // This one is necessary because all the constructors take `data_handle_type`s, not
 // `_ElementType*`s, and `data_handle_type` is taken from `accessor_type::data_handle_type`, which

@@ -23,7 +23,9 @@
 
 // HostJiT also needs <new>
 #if !_CCCL_COMPILER(NVRTC)
+// IWYU pragma: begin_exports
 #  include <new>
+// IWYU pragma: end_exports
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #endif // _CUDA_STD___HOST_STDLIB_NEW

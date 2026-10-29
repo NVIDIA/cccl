@@ -41,12 +41,12 @@ jobs:
         run: |
           log_vars() {
             for var in "$@"; do
-              printf "%-15s %s\n" "${var}:" "${!var}" | tee -a $GITHUB_STEP_SUMMARY
+              printf "%-15s %s\n" "${var}:" "${!var}" | tee -a "$GITHUB_STEP_SUMMARY"
             done
           }
           export_vars() {
             for var in "$@"; do
-              echo "${var}=${!var}" | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT
+              echo "${var}=${!var}" | tee -a "$GITHUB_ENV" | tee -a "$GITHUB_OUTPUT"
             done
           }
 
@@ -54,6 +54,8 @@ jobs:
           full_version=$(jq -r  .full  cccl-version.json)
           major_version=$(jq -r .major cccl-version.json)
           minor_version=$(jq -r .minor cccl-version.json)
+          # log_vars and export_vars read these variables indirectly through ${!var}.
+          # shellcheck disable=SC2034
           patch_version=$(jq -r .patch cccl-version.json)
           branch_name="branch/${major_version}.${minor_version}.x"
 
@@ -67,7 +69,7 @@ jobs:
           fi
 
           # The release tag must not exist:
-          full_version_escaped=$(echo "${full_version}" | sed 's/\./\\./g')
+          full_version_escaped=${full_version//./\\.}
           if git ls-remote --tags origin | grep -q "refs/tags/v${full_version_escaped}\$"; then
             echo "::error::Tag v${full_version} already exists. Was the automated version-bump PR merged?"
             exit 1
@@ -86,6 +88,7 @@ jobs:
           done
 
           next_rc=$((last_rc + 1))
+          # shellcheck disable=SC2034
           tag_name="v${full_version}-rc${next_rc}"
 
           log_vars last_rc next_rc tag_name
@@ -109,8 +112,8 @@ jobs:
           rc_tag=${{ needs.prepare.outputs.tag_name }}
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a -m "CCCL Release Candidate ${rc_tag}" ${rc_tag} ${GITHUB_SHA}
-          git push origin ${rc_tag}
+          git tag -a -m "CCCL Release Candidate ${rc_tag}" "${rc_tag}" "${GITHUB_SHA}"
+          git push origin "${rc_tag}"
           echo "Tagged release candidate ${rc_tag}."
 
   notify-success:

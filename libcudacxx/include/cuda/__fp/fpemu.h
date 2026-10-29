@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -54,6 +54,11 @@
 //!
 //! The API supports both host and device code through appropriate decorators and
 //! can utilize different computational backends based on template parameters.
+//!
+//! ## Example
+//!
+//! - Code:        https://github.com/NVIDIA/cccl/blob/main/examples/cudax/fp/fpemu.cu
+//! - Walkthrough: https://github.com/NVIDIA/cccl/blob/main/examples/cudax/fp/README_fpemu.md
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -75,8 +80,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 // The public accuracy selector fpemu_accuracy is defined in
 // <cuda/__fp/fpemu_common.h> (the public API header); the internal vocabulary
 // types (__fpbits64 / __fpbits64_unpacked) and helpers come from
@@ -133,7 +137,7 @@ public:
   // extension. _Float64 is accepted as a bit-identical alias for double (see
   // __fpemu_is_supported_fp_v).
   static_assert(__fpemu_is_supported_fp_v<_FpType>,
-                "cuda::experimental::fpemu currently supports only _FpType == double (or the bit-identical _Float64), "
+                "cuda::fpemu currently supports only _FpType == double (or the bit-identical _Float64), "
                 "possible future extension to other types emulation");
 
 private:
@@ -482,7 +486,7 @@ public:
 //! emulation builtins use to avoid repeated pack/unpack work in chained operations.
 //!
 //! Precision note: the mantissa field carries 9 guard bits below the 53-bit binary64
-//! significand (EXTRA_BITS in fpemu_impl.h, which places the significand at bits 61..9),
+//! significand (_CCCL_FPEMU_EXTRA_BITS in fpemu_impl.h, which places the significand at bits 61..9),
 //! so arithmetic on values that stay unpacked runs on 62 significand bits and rounds to
 //! the storage format once, when the value is packed, rather than after every operation.
 //! Two consequences follow, and both are intentional:
@@ -518,7 +522,7 @@ public:
   // extension. _Float64 is accepted as a bit-identical alias for double (see
   // __fpemu_is_supported_fp_v).
   static_assert(__fpemu_is_supported_fp_v<_FpType>,
-                "cuda::experimental::fpemu_unpacked currently supports only _FpType == double (or the bit-identical "
+                "cuda::fpemu_unpacked currently supports only _FpType == double (or the bit-identical "
                 "_Float64)");
 
 private:
@@ -906,7 +910,7 @@ using __fpemu_pick_t = typename __fpemu_pick<_Ts...>::type;
 // include guard, and API code (operators, class methods) under this guard.
 // This ensures API code is only compiled after class definitions are complete.
 #define _CCCL_FPEMU_API_CLASSES_DEFINED
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

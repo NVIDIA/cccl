@@ -56,11 +56,11 @@ int counting_payload::__destruct_count  = 0;
 
 // --- static assertions ---
 
-static_assert(!cuda::std::is_trivially_destructible<cuda::mr::__shared_block_ptr<trivial_payload>>::value);
-static_assert(cuda::std::is_copy_constructible<cuda::mr::__shared_block_ptr<trivial_payload>>::value);
-static_assert(cuda::std::is_move_constructible<cuda::mr::__shared_block_ptr<trivial_payload>>::value);
-static_assert(cuda::std::is_copy_assignable<cuda::mr::__shared_block_ptr<trivial_payload>>::value);
-static_assert(cuda::std::is_move_assignable<cuda::mr::__shared_block_ptr<trivial_payload>>::value);
+static_assert(!cuda::std::is_trivially_destructible_v<cuda::mr::__shared_block_ptr<trivial_payload>>);
+static_assert(cuda::std::is_copy_constructible_v<cuda::mr::__shared_block_ptr<trivial_payload>>);
+static_assert(cuda::std::is_move_constructible_v<cuda::mr::__shared_block_ptr<trivial_payload>>);
+static_assert(cuda::std::is_copy_assignable_v<cuda::mr::__shared_block_ptr<trivial_payload>>);
+static_assert(cuda::std::is_move_assignable_v<cuda::mr::__shared_block_ptr<trivial_payload>>);
 
 // --- construction ---
 

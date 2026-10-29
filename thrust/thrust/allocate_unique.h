@@ -189,7 +189,7 @@ template <typename Pointer, typename Lambda>
 struct tagged_deleter : Lambda
 {
   _CCCL_HOST_DEVICE tagged_deleter(Lambda&& l)
-      : Lambda(THRUST_FWD(l))
+      : Lambda(::cuda::std::move(l))
   {}
 
   using pointer = Pointer;

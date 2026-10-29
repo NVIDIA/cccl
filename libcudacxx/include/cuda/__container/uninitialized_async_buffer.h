@@ -27,7 +27,7 @@
 #  include <cuda/__memory_resource/any_resource.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__stream/stream_ref.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__memory/align.h>
 #  include <cuda/std/__new/launder.h>

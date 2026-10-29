@@ -25,17 +25,16 @@
 #include <cuda/std/__iterator/access.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/voidify.h>
-#include <cuda/std/__new/device_new.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__new/device_new.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_array.h>
-#include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__type_traits/is_constructible.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_trivially_constructible.h>
 #include <cuda/std/__type_traits/is_trivially_destructible.h>
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
-#include <cuda/std/__type_traits/void_t.h>
-#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__type_traits/void_t.h> // IWYU pragma: keep
+#include <cuda/std/__utility/declval.h> // IWYU pragma: keep
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 

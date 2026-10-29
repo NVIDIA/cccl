@@ -21,12 +21,10 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_signed_integer.h>
-#include <cuda/std/__type_traits/is_unsigned_integer.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

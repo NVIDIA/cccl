@@ -47,7 +47,7 @@ public:
 
   static const auto& init()
   {
-    cudaDeviceProp deviceProp;
+    cudaDeviceProp deviceProp{};
     cudaGetDeviceProperties(&deviceProp, device_id);
 
     static const BuildInformation singleton{

@@ -27,6 +27,8 @@
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/cstdint>
 
+#include <nv/target>
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
@@ -37,7 +39,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_CUDA_COMPILATION()
 _CCCL_TEMPLATE(class _To, class _From)
 _CCCL_REQUIRES((sizeof(_To) == sizeof(int8_t)))
-[[nodiscard]] _CCCL_DEVICE_API _To __saturating_cast_impl_device(_From __x, int) noexcept
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API _To __saturating_cast_impl_device(_From __x, int) noexcept
 {
   [[maybe_unused]] int __ret;
 
@@ -135,7 +137,7 @@ _CCCL_REQUIRES((sizeof(_To) == sizeof(int8_t)))
 
 _CCCL_TEMPLATE(class _To, class _From)
 _CCCL_REQUIRES((sizeof(_To) == sizeof(int16_t)))
-[[nodiscard]] _CCCL_DEVICE_API _To __saturating_cast_impl_device(_From __x, int) noexcept
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API _To __saturating_cast_impl_device(_From __x, int) noexcept
 {
   [[maybe_unused]] _To __ret;
 
@@ -226,7 +228,7 @@ _CCCL_REQUIRES((sizeof(_To) == sizeof(int16_t)))
 
 _CCCL_TEMPLATE(class _To, class _From)
 _CCCL_REQUIRES((sizeof(_To) == sizeof(int32_t)))
-[[nodiscard]] _CCCL_DEVICE_API _To __saturating_cast_impl_device(_From __x, int) noexcept
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API _To __saturating_cast_impl_device(_From __x, int) noexcept
 {
   [[maybe_unused]] _To __ret;
 
@@ -302,7 +304,7 @@ _CCCL_REQUIRES((sizeof(_To) == sizeof(int32_t)))
 
 _CCCL_TEMPLATE(class _To, class _From)
 _CCCL_REQUIRES((sizeof(_To) == sizeof(int64_t)))
-[[nodiscard]] _CCCL_DEVICE_API _To __saturating_cast_impl_device(_From __x, int) noexcept
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API _To __saturating_cast_impl_device(_From __x, int) noexcept
 {
   [[maybe_unused]] _To __ret;
 

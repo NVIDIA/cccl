@@ -15,7 +15,7 @@
 #include <cuda/std/execution>
 #include <cuda/std/span>
 
-#include <cuda/experimental/__multi_gpu/algorithm/reduce/segmented_reduce.h>
+#include <cuda/experimental/mgmn/segmented_reduce>
 
 #include <exception>
 #include <future>

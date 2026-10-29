@@ -13,20 +13,30 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_reduce_by_key.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
+#include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
-#include <cub/device/dispatch/dispatch_common.cuh>
+#include <cub/detail/non_void_value.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
+#include <cub/util_temporary_storage.cuh>
+#include <cub/util_vsmem.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
-
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__tuple_dir/tie.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -92,8 +102,28 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
   using ScanTileStateT                                      = ReduceByKeyScanTileState<AccumT, local_offset_t>;
   [[maybe_unused]] static constexpr int init_kernel_threads = 128;
 
-  const int threads_per_block = policy.lookback.threads_per_block;
-  const int items_per_thread  = policy.lookback.items_per_thread;
+  // The agent can fall back to a smaller block size and to global memory, so ask the helper.
+  int threads_per_block{};
+  int items_per_thread{};
+  size_t vsmem_per_block{};
+  if (const auto error = CubDebug(dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
+        ::cuda::std::tie(threads_per_block, items_per_thread, vsmem_per_block) = determine_threads_items_vsmem<
+          decltype(policy_getter),
+          KeysInputIteratorT,
+          UniqueOutputIteratorT,
+          ValuesInputIteratorT,
+          AggregatesOutputIteratorT,
+          NumRunsOutputIteratorT,
+          EqualityOpT,
+          ReductionOpT,
+          local_offset_t,
+          AccumT,
+          streaming_context_t>(policy_getter);
+        return cudaSuccess;
+      })))
+  {
+    return error;
+  }
   const auto tile_size =
     static_cast<global_offset_t>(threads_per_block) * static_cast<global_offset_t>(items_per_thread);
 
@@ -111,15 +141,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
 
   const auto max_num_tiles = static_cast<int>(::cuda::ceil_div(max_num_items_per_invocation, tile_size));
 
-  size_t allocation_sizes[3];
+  size_t allocation_sizes[4];
   if (const auto error = CubDebug(ScanTileStateT::AllocationSize(max_num_tiles, allocation_sizes[0])))
   {
     return error;
   }
   allocation_sizes[1] = num_partitions > 1 ? sizeof(global_offset_t) * 2 : size_t{0};
   allocation_sizes[2] = num_partitions > 1 ? sizeof(AccumT) * 2 : size_t{0};
+  // Partitions run in order on one stream, so one partition's blocks are the most at a time.
+  allocation_sizes[3] = max_num_tiles * vsmem_per_block;
 
-  void* allocations[3] = {};
+  void* allocations[4] = {};
   if (const auto error =
         CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
@@ -147,7 +179,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
     const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
     _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
+          detail::TripleChevronFactory{}(init_grid_size, init_kernel_threads, 0, stream)
             .doit(&detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
                   tile_state,
                   num_current_tiles,
@@ -197,7 +229,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
         &tmp_num_uniques[buffer_selector],
         &tmp_num_uniques[buffer_selector ^ 0x01]};
       if (const auto error = CubDebug(
-            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, threads_per_block, 0, stream)
+            detail::TripleChevronFactory{}(num_current_tiles, threads_per_block, 0, stream)
               .doit(reduce_by_key_kernel,
                     d_keys_in + current_partition_offset,
                     d_unique_out,
@@ -210,7 +242,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
                     reduction_op,
                     static_cast<local_offset_t>(current_num_items),
                     streaming_context,
-                    detail::vsmem_t{nullptr})))
+                    detail::vsmem_t{allocations[3]})))
       {
         return error;
       }
@@ -218,7 +250,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
     else
     {
       if (const auto error = CubDebug(
-            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, threads_per_block, 0, stream)
+            detail::TripleChevronFactory{}(num_current_tiles, threads_per_block, 0, stream)
               .doit(reduce_by_key_kernel,
                     d_keys_in + current_partition_offset,
                     d_unique_out,
@@ -231,7 +263,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
                     reduction_op,
                     static_cast<local_offset_t>(current_num_items),
                     NullType{},
-                    detail::vsmem_t{nullptr})))
+                    detail::vsmem_t{allocations[3]})))
       {
         return error;
       }

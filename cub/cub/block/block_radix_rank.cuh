@@ -18,33 +18,36 @@
 #endif // no system header
 
 #include <cub/block/block_scan.cuh>
-#include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/log2.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/thread/thread_scan.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/countl.h>
-#include <cuda/std/__bit/integral.h>
 #include <cuda/std/__bit/popcount.h>
-#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 #include <cuda/std/span>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
 
 CUB_NAMESPACE_BEGIN
 
 //! @brief Radix ranking algorithm, the algorithm used to implement stable ranking of the
 //!        keys from a single tile. Note that different ranking algorithms require different
 //!        initial arrangements of keys to function properly.
-enum RadixRankAlgorithm
+enum RadixRankAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
   //! Ranking using the BlockRadixRank algorithm with `MemoizeOuterScan == false`.
   //! It uses thread-private histograms, and thus uses more shared memory.
@@ -416,7 +419,8 @@ private:
 
 public:
   /// @smemstorage{BlockScan}
-  using TempStorage = Uninitialized<_TempStorage>;
+  struct TempStorage : Uninitialized<_TempStorage>
+  {};
 
   //! @name Collective constructors
   //! @{
@@ -632,7 +636,8 @@ private:
 
 public:
   /// @smemstorage{BlockRadixRankMatch}
-  using TempStorage = Uninitialized<_TempStorage>;
+  struct TempStorage : Uninitialized<_TempStorage>
+  {};
 
   //! @name Collective constructors
   //! @{
@@ -896,7 +901,7 @@ public:
   //! @}
 };
 
-enum WarpMatchAlgorithm
+enum WarpMatchAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
   WARP_MATCH_ANY,
   WARP_MATCH_ATOMIC_OR

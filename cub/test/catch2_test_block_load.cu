@@ -6,6 +6,8 @@
 #include <cub/util_allocator.cuh>
 #include <cub/util_arch.cuh>
 
+#include <cuda/std/span>
+
 #include "cub_test_macros.h"
 
 template <int ItemsPerThread, int ThreadsInBlock, cub::BlockLoadAlgorithm LoadAlgorithm>
@@ -228,5 +230,45 @@ CUB_TEST("Vectorized block load with const and non-const datatype and different 
 
   test_block_load<items_per_thread, threads_in_block, load_algorithm, type, input_ptr_type>(
     d_input_ref, thrust::raw_pointer_cast(d_input.data()) + offset_for_elements);
+}
+
+template <typename T, int ItemsPerThread, int ThreadsInBlock, typename InputIteratorT>
+__global__ void vectorized_full_tile_load_kernel(InputIteratorT input, T* output)
+{
+  T data[ItemsPerThread];
+  cub::BlockLoad<T, ThreadsInBlock, ItemsPerThread, cub::BlockLoadAlgorithm::BLOCK_LOAD_VECTORIZE>().Load(input, data);
+  for (int i = 0; i < ItemsPerThread; i++)
+  {
+    output[threadIdx.x * ItemsPerThread + i] = data[i];
+  }
+}
+
+template <typename T, typename InputT, typename InputIteratorT>
+void test_vectorized_full_tile_load(const c2h::device_vector<InputT>& d_input, InputIteratorT input)
+{
+  constexpr int items_per_thread = 4;
+  constexpr int threads_in_block = 64;
+  REQUIRE(d_input.size() == items_per_thread * threads_in_block);
+
+  c2h::device_vector<T> d_output(d_input.size(), thrust::no_init);
+  vectorized_full_tile_load_kernel<T, items_per_thread, threads_in_block>
+    <<<1, threads_in_block>>>(input, thrust::raw_pointer_cast(d_output.data()));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  const c2h::device_vector<T> expected(d_input.begin(), d_input.end());
+  REQUIRE(expected == d_output);
+}
+
+CUB_TEST_CASE("Vectorized block load converts from iterators of a different value type", "[load][block]", CUB_SMALL)
+{
+  c2h::device_vector<int> d_input(256, thrust::no_init);
+  c2h::gen(C2H_SEED(1), d_input);
+  int* ptr = thrust::raw_pointer_cast(d_input.data());
+
+  test_vectorized_full_tile_load<long long>(d_input, ptr);
+  test_vectorized_full_tile_load<long long>(d_input, cuda::std::span<int>(ptr, d_input.size()).begin());
+  test_vectorized_full_tile_load<long long>(
+    d_input, cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_DEFAULT, int>(ptr));
+  test_vectorized_full_tile_load<int>(d_input, cuda::std::span<volatile int>(ptr, d_input.size()).begin());
 }
 #endif

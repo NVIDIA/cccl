@@ -22,7 +22,6 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__fwd/unexpected.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/is_constructible.h>

@@ -1,11 +1,14 @@
 #include <thrust/detail/config.h>
 
 #include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/remove.h>
 #include <thrust/sort.h>
 #include <thrust/transform.h>
 #include <thrust/zip_function.h>
+
+#include <cuda/std/type_traits>
 
 #include <iostream>
 
@@ -35,6 +38,94 @@ struct TestZipFunctionCtor
   }
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipFunctionCtor, unittest::type_list<int>);
+
+// Const and non-const overloads are distinguishable by their result and exception specification.
+struct ZipConstOnly
+{
+  _CCCL_HOST_DEVICE int operator()(int x, int y) const noexcept
+  {
+    return x + y;
+  }
+};
+
+struct ZipMutableOnly
+{
+  _CCCL_HOST_DEVICE int operator()(int x, int y) noexcept
+  {
+    return x + y;
+  }
+};
+
+struct ZipMixed
+{
+  _CCCL_HOST_DEVICE int operator()(int x, int y) const noexcept
+  {
+    return x + y;
+  }
+
+  _CCCL_HOST_DEVICE int operator()(int x, int y)
+  {
+    return x + y + 1;
+  }
+};
+
+template <typename T>
+struct TestZipFunctionConstness
+{
+  void operator()()
+  {
+    cuda::std::tuple<int, int> args{1, 2};
+    thrust::host_vector<int> first{1};
+    thrust::host_vector<int> second{2};
+    auto zipped            = thrust::make_zip_iterator(first.begin(), second.begin());
+    using zipped_reference = decltype(*zipped);
+
+    {
+      using zip_t = thrust::zip_function<ZipConstOnly>;
+      zip_t fn{};
+      const zip_t& cfn = fn;
+      static_assert(cuda::std::is_invocable_v<zip_t&, decltype(args)&>);
+      static_assert(cuda::std::is_invocable_v<const zip_t&, decltype(args)&>);
+      static_assert(cuda::std::is_nothrow_invocable_v<zip_t&, decltype(args)&>);
+      static_assert(cuda::std::is_nothrow_invocable_v<const zip_t&, decltype(args)&>);
+      static_assert(cuda::std::is_invocable_v<zip_t&, zipped_reference>);
+      static_assert(cuda::std::is_invocable_v<const zip_t&, zipped_reference>);
+      static_assert(cuda::std::is_nothrow_invocable_v<zip_t&, zipped_reference>);
+      static_assert(cuda::std::is_nothrow_invocable_v<const zip_t&, zipped_reference>);
+      REQUIRE(fn(args) == 3);
+      REQUIRE(cfn(args) == 3);
+      REQUIRE(fn(*zipped) == 3);
+      REQUIRE(cfn(*zipped) == 3);
+    }
+    {
+      using zip_t = thrust::zip_function<ZipMutableOnly>;
+      zip_t fn{};
+      static_assert(cuda::std::is_invocable_v<zip_t&, decltype(args)&>);
+      static_assert(!cuda::std::is_invocable_v<const zip_t&, decltype(args)&>);
+      static_assert(cuda::std::is_nothrow_invocable_v<zip_t&, decltype(args)&>);
+      static_assert(cuda::std::is_invocable_v<zip_t&, zipped_reference>);
+      static_assert(!cuda::std::is_invocable_v<const zip_t&, zipped_reference>);
+      static_assert(cuda::std::is_nothrow_invocable_v<zip_t&, zipped_reference>);
+      REQUIRE(fn(args) == 3);
+      REQUIRE(fn(*zipped) == 3);
+    }
+    {
+      using zip_t = thrust::zip_function<ZipMixed>;
+      zip_t fn{};
+      const zip_t& cfn = fn;
+      static_assert(!cuda::std::is_nothrow_invocable_v<zip_t&, decltype(args)&>);
+      static_assert(cuda::std::is_nothrow_invocable_v<const zip_t&, decltype(args)&>);
+      static_assert(!cuda::std::is_nothrow_invocable_v<zip_t&, zipped_reference>);
+      static_assert(cuda::std::is_nothrow_invocable_v<const zip_t&, zipped_reference>);
+      // A non-const zip_function selects the non-const functor. A const one cannot.
+      REQUIRE(fn(args) == 4);
+      REQUIRE(cfn(args) == 3);
+      REQUIRE(fn(*zipped) == 4);
+      REQUIRE(cfn(*zipped) == 3);
+    }
+  }
+};
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipFunctionConstness, unittest::type_list<int>);
 
 template <typename T>
 struct TestZipFunctionTransform

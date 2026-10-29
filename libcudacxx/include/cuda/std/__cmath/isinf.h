@@ -30,6 +30,8 @@
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/limits>
 
+#include <nv/target>
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD

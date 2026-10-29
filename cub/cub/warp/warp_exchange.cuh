@@ -19,8 +19,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 #include <cub/warp/specializations/warp_exchange_shfl.cuh>
 #include <cub/warp/specializations/warp_exchange_smem.cuh>
 
@@ -28,7 +26,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-enum WarpExchangeAlgorithm
+enum WarpExchangeAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
   WARP_EXCHANGE_SMEM,
   WARP_EXCHANGE_SHUFFLE,

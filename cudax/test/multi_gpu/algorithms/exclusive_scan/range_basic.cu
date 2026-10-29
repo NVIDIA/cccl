@@ -21,7 +21,7 @@
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 
-#include <cuda/experimental/__multi_gpu/algorithm/scan/scan.h>
+#include <cuda/experimental/mgmn/scan>
 
 #include <numeric>
 #include <vector>

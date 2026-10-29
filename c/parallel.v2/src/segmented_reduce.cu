@@ -36,7 +36,7 @@ CUresult cccl_device_segmented_reduce_build_ex(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* build_config)
+  const cccl_build_config* build_config)
 try
 {
   const std::string cccl_include_str = cccl::detail::parse_cccl_include_path(libcudacxx_path);

@@ -16,6 +16,7 @@
 #include <cub/detail/binary_search_helpers.cuh>
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/env_dispatch.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/device/device_for.cuh>
 #include <cub/device/device_transform.cuh>
 #include <cub/device/dispatch/dispatch_find.cuh>
@@ -152,15 +153,10 @@ struct DeviceFind
 
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    using default_policy_selector = detail::find::policy_selector_from_types<detail::it_value_t<InputIteratorT>>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage,
-      temp_storage_bytes,
-      env,
-      [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
         return detail::find::dispatch(
-          storage, bytes, d_in, d_out, static_cast<OffsetT>(num_items), scan_op, stream, policy_selector);
+          storage, bytes, d_in, d_out, static_cast<OffsetT>(num_items), scan_op, stream, tuning_env);
       });
   }
 
@@ -499,13 +495,10 @@ struct DeviceFind
 
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    using default_policy_selector = detail::find::policy_selector_from_types<detail::it_value_t<InputIteratorT>>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::find::dispatch(
-          storage, bytes, d_in, d_out, static_cast<OffsetT>(num_items), scan_op, stream, policy_selector);
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+      return detail::find::dispatch(
+        storage, bytes, d_in, d_out, static_cast<OffsetT>(num_items), scan_op, stream, tuning_env);
+    });
   }
 
   //! @rst
@@ -770,7 +763,7 @@ struct DeviceFind
   //! - @devicestorage
   //!
   //! .. versionadded:: 3.5.0
-  //!    First appears in CUDA Toolkit 13.4.
+  //!    First appears in CUDA Toolkit 13.5.
   //!
   //! @endrst
   //!
@@ -789,8 +782,10 @@ struct DeviceFind
   //!   is an integral type representing the number of values to search for.
   //!
   //! @tparam OutputIteratorT
-  //!   is a model of [Random Access Iterator] whose value type is assignable
-  //!   from ``RangeIteratorT``'s difference type.
+  //!   is an output iterator supporting random access and assignable.
+  //!   Each result is a zero-based offset into the haystack range.
+  //!   Before assignment, the offset is converted to the iterator's ``value_type`` if non-void, or to
+  //!   ``cuda::std::ptrdiff_t`` otherwise.
   //!
   //! @tparam CompareOpT
   //!   is a model of [Strict Weak Ordering] over the value types of both
@@ -871,7 +866,7 @@ struct DeviceFind
   //! sorted consistently with ``comp``.
   //!
   //! .. versionadded:: 3.5.0
-  //!    First appears in CUDA Toolkit 13.4.
+  //!    First appears in CUDA Toolkit 13.5.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -1011,6 +1006,7 @@ struct DeviceFind
   //! - @devicestorage
   //!
   //! .. versionadded:: 3.5.0
+  //!    First appears in CUDA Toolkit 13.5.
   //!
   //! @endrst
   //!
@@ -1029,8 +1025,10 @@ struct DeviceFind
   //!   is an integral type representing the number of values to search for.
   //!
   //! @tparam OutputIteratorT
-  //!   is a model of [Random Access Iterator] whose value type is assignable
-  //!   from ``RangeIteratorT``'s difference type.
+  //!   is an output iterator supporting random access and assignable.
+  //!   Each result is a zero-based offset into the haystack range.
+  //!   Before assignment, the offset is converted to the iterator's ``value_type`` if non-void, or to
+  //!   ``cuda::std::ptrdiff_t`` otherwise.
   //!
   //! @tparam CompareOpT
   //!   is a model of [Strict Weak Ordering] over the value types of both
@@ -1111,7 +1109,7 @@ struct DeviceFind
   //! sorted consistently with ``comp``.
   //!
   //! .. versionadded:: 3.5.0
-  //!    First appears in CUDA Toolkit 13.4.
+  //!    First appears in CUDA Toolkit 13.5.
   //!
   //! This is an environment-based API that allows customization of:
   //!

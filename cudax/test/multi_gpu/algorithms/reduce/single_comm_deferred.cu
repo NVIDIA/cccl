@@ -17,7 +17,7 @@
 #include <cuda/std/execution>
 #include <cuda/std/functional>
 
-#include <cuda/experimental/__multi_gpu/algorithm/reduce/reduce.h>
+#include <cuda/experimental/mgmn/reduce>
 
 #include <algorithm>
 #include <exception>

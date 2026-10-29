@@ -71,9 +71,12 @@ public:
     using _MappingResult =
       __mapping_result<__static_ngroups, ::cuda::std::dynamic_extent, _PrevMappingResult::is_always_exhaustive(), false>;
 
-    if (!__prev_mapping_result.is_valid())
+    if constexpr (!_PrevMappingResult::is_always_exhaustive())
     {
-      return _MappingResult::__invalid();
+      if (!__prev_mapping_result.is_valid())
+      {
+        return _MappingResult::__invalid();
+      }
     }
 
     const auto __pred      = static_cast<bool>(__fn_(__prev_mapping_result));
@@ -90,6 +93,16 @@ public:
       static_cast<::cuda::std::uint32_t>(::cuda::std::popcount(__match_mask)),
       static_cast<::cuda::std::uint32_t>(::cuda::std::popcount(__match_mask & ::cuda::ptx::get_sreg_lanemask_lt())),
       ::cuda::device::lane_mask{__match_mask}};
+  }
+
+  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API auto
+  map(const non_exhaustive_t&,
+      const _Unit& __unit,
+      const _ParentGroup& __parent,
+      const _PrevMappingResult& __prev_mapping_result) noexcept(noexcept(map(__unit, __parent, __prev_mapping_result)))
+  {
+    return map(__unit, __parent, __prev_mapping_result);
   }
 };
 

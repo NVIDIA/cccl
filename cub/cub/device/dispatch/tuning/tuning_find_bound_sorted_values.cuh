@@ -14,15 +14,17 @@
 #endif // no system header
 
 #include <cub/thread/thread_load.cuh>
-#include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 
 #include <cuda/__device/compute_capability.h>
-#include <cuda/std/concepts>
 
 #if _CCCL_HOSTED()
 #  include <ostream>
 #endif // _CCCL_HOSTED()
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/util_device.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 

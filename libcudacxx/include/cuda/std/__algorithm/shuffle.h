@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/iterator_operations.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__random/uniform_int_distribution.h>
 #include <cuda/std/__utility/move.h>

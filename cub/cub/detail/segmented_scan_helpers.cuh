@@ -15,16 +15,24 @@
 
 #include <cuda/std/__algorithm/upper_bound.h>
 #include <cuda/std/__bit/integral.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__iterator/readable_traits.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/span>
-#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_scan
 {
 template <typename ValueT, typename FlagT = bool>
+// Producers supply both fields while preserving triviality.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct augmented_value_t
 {
   ValueT value;

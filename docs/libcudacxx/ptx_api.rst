@@ -17,6 +17,12 @@ available.
    ptx/instructions
    ptx/pragmas
 
+Headers
+-------
+
+``<cuda/ptx>`` provides all instructions. Each instruction can also be included on its own through ``<cuda/ptxs/<instruction>.h>``, where ``<instruction>`` is the instruction name with dots replaced by underscores, for example ``<cuda/ptxs/cp_async_bulk_tensor.h>`` for ``cp.async.bulk.tensor``. Variants of an instruction and closely related instructions share one header; the *Header* column of :ref:`the list of instructions <libcudacxx-ptx-instructions>` lists the header for each instruction.
+For example, ``<cuda/ptxs/mbarrier_wait.h>`` provides ``mbarrier.test_wait`` and ``mbarrier.try_wait``. Special registers are in ``<cuda/ptxs/get_sreg.h>``.
+
 Versions and compatibility
 ---------------------------
 

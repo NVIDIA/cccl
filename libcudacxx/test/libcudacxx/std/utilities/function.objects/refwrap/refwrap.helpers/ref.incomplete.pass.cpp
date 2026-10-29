@@ -21,6 +21,10 @@
 
 #include "test_macros.h"
 
+#if TEST_COMPILER(GCC, >=, 16)
+TEST_DIAG_SUPPRESS_GCC("-Wsfinae-incomplete") // defining X, which previously failed to be complete in a SFINAE context
+#endif // TEST_COMPILER(GCC, >=, 16)
+
 struct Foo;
 
 TEST_FUNC Foo& get_foo();
