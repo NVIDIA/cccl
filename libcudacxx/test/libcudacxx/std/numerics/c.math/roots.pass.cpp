@@ -75,6 +75,60 @@ TEST_FUNC void test(const T val)
   test_cbrt<T>(val / T(8));
 }
 
+#if _CCCL_HAS_FLOAT128()
+TEST_FUNC void test_sqrt_float128_edge_cases()
+{
+  using T = __float128;
+
+  // squares of integers with more significant bits than double can hold are exact in binary128
+  const T a = T(1ull << 55) + T(1);
+  assert(eq(cuda::std::sqrt(a * a), a));
+  const T b = T((1ull << 56) - 1);
+  assert(eq(cuda::std::sqrt(b * b), b));
+
+  // the result carries the full binary128 precision
+  const T sqrt2 = cuda::std::sqrt(T(2));
+  assert(cuda::std::fabs(sqrt2 * sqrt2 - T(2)) <= T(4) * cuda::std::numeric_limits<T>::epsilon());
+
+  // exponents beyond the range of double
+  T big      = T(1);
+  T big_root = T(1);
+  for (int i = 0; i < 10; ++i)
+  {
+    big *= T(1ull << 60) * T(1ull << 60);
+    big_root *= T(1ull << 60);
+  }
+  assert(eq(cuda::std::sqrt(big), big_root)); // sqrt(2^1200) == 2^600
+  assert(eq(cuda::std::sqrt(T(1) / big), T(1) / big_root));
+  assert(cuda::std::isfinite(cuda::std::sqrt(cuda::std::numeric_limits<T>::max())));
+
+  // sqrt(2^-16494) == 2^-8247
+  T denorm_root = T(1);
+  for (int i = 0; i < 137; ++i)
+  {
+    denorm_root /= T(1ull << 60);
+  }
+  denorm_root /= T(1ull << 27);
+  assert(eq(cuda::std::sqrt(cuda::std::numeric_limits<T>::denorm_min()), denorm_root));
+
+  // sqrt(-0) is -0
+  assert(eq(cuda::std::sqrt(-T(0.0)), -T(0.0)));
+  assert(cuda::std::signbit(cuda::std::sqrt(-T(0.0))));
+
+  // negative arguments and NaN produce NaN
+  assert(cuda::std::isnan(cuda::std::sqrt(T(-1))));
+  assert(cuda::std::isnan(cuda::std::sqrt(-cuda::std::numeric_limits<T>::infinity())));
+  assert(cuda::std::isnan(cuda::std::sqrt(cuda::std::numeric_limits<T>::quiet_NaN())));
+}
+
+// Only sqrt supports __float128 so far, so the generic driver can not be used
+TEST_FUNC void test_float128(const float val)
+{
+  test_sqrt<__float128>(val);
+  test_sqrt_float128_edge_cases();
+}
+#endif // _CCCL_HAS_FLOAT128()
+
 TEST_FUNC void test(const float val)
 {
   test<float>(val);
@@ -89,6 +143,9 @@ TEST_FUNC void test(const float val)
 #if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>(val);
 #endif // _LIBCUDACXX_HAS_NVBF16()
+#if _CCCL_HAS_FLOAT128()
+  test_float128(val);
+#endif // _CCCL_HAS_FLOAT128()
 
   test<unsigned short>(static_cast<unsigned short>(val));
   test<int>(static_cast<int>(val));
