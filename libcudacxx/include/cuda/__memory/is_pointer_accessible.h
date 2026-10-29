@@ -111,8 +111,8 @@ __is_host_accessible(const void* __p, ::cuda::std::bool_constant<_IsNothrow>) no
   const auto __status      = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __p);
   _CCCL_THROW_OR_RETURN(__status, "Failed to get attributes of a pointer");
   // (1) check if the pointer is unregistered
-  if (__memory_type == static_cast<::CUmemorytype>(0)
-      || (__mempool == nullptr && (__is_managed || __memory_type == ::CU_MEMORYTYPE_HOST)))
+  if (__memory_type == static_cast<::CUmemorytype>(0) || (__mempool == nullptr && __memory_type == ::CU_MEMORYTYPE_HOST)
+      || __is_managed)
   {
     return true;
   }

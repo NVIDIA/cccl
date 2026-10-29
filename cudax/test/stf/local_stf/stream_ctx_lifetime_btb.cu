@@ -42,7 +42,7 @@ constexpr long long BUSY_CYCLES = 5'000'000;
 
 __global__ void slow_set_kernel(int* slice, int n, int value, long long cycles)
 {
-  const int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  const int tid = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   if (tid >= n)
   {
     return;
@@ -164,7 +164,7 @@ void run_shared_handle_no_sync_once()
     cuda_safe_call(cudaMemsetAsync(d_arr, 0, N * sizeof(int), stream));
   }
 
-  async_resources_handle handle;
+  const async_resources_handle handle;
   {
     stream_ctx ctx(stream, handle);
     submit_token_chains(ctx, d_arr, 1);

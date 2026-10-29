@@ -10,11 +10,11 @@
 #include <thrust/host_vector.h>
 #include <thrust/sequence.h>
 
-#include <cuda/devices>
 #include <cuda/std/array>
 #include <cuda/std/execution>
 #include <cuda/std/mdspan>
 
+#include "catch2_test_custom_streams.cuh"
 #include "cub_test_macros.h"
 #include <catch2_test_launch_helper.h>
 
@@ -31,6 +31,40 @@ CUB_TEST("DeviceCopy::Copy: empty mdspan", "[copy][mdspan]", CUB_SMALL)
   auto mdspan_in_empty  = cuda::std::mdspan<int, dims_1d_t>(nullptr, 0);
   auto mdspan_out_empty = cuda::std::mdspan<int, dims_1d_t>(nullptr, 0);
   device_copy_mdspan(mdspan_in_empty, mdspan_out_empty);
+}
+
+CUB_TEST("DeviceCopy::Copy: mdspan with a zero extent", "[copy][mdspan]", CUB_SMALL)
+{
+  constexpr int sentinel = 42;
+  c2h::device_vector<int> d_input(1, 1);
+  c2h::device_vector<int> d_output(1, sentinel);
+  int* in_ptr  = thrust::raw_pointer_cast(d_input.data());
+  int* out_ptr = thrust::raw_pointer_cast(d_output.data());
+
+  SECTION("2D")
+  {
+    device_copy_mdspan(cuda::std::mdspan<int, dims_2d_t>(in_ptr, 0, 5),
+                       cuda::std::mdspan<int, dims_2d_t>(out_ptr, 0, 5));
+    device_copy_mdspan(cuda::std::mdspan<int, dims_2d_t>(in_ptr, 5, 0),
+                       cuda::std::mdspan<int, dims_2d_t>(out_ptr, 5, 0));
+  }
+
+  SECTION("4D")
+  {
+    device_copy_mdspan(cuda::std::mdspan<int, dims_4d_t>(in_ptr, 2, 3, 0, 4),
+                       cuda::std::mdspan<int, dims_4d_t>(out_ptr, 2, 3, 0, 4));
+  }
+
+  SECTION("2D strided")
+  {
+    using extents_t = cuda::std::dextents<int, 2>;
+    using mapping_t = cuda::std::layout_stride::mapping<extents_t>;
+    const mapping_t mapping{extents_t{0, 5}, cuda::std::array<int, 2>{1, 2}};
+    device_copy_mdspan(cuda::std::mdspan<int, extents_t, cuda::std::layout_stride>(in_ptr, mapping),
+                       cuda::std::mdspan<int, extents_t>(out_ptr, 0, 5));
+  }
+
+  REQUIRE(d_output[0] == sentinel);
 }
 
 CUB_TEST("DeviceCopy::Copy: 1D, 2D, 4D mdspan with matching layouts", "[copy][mdspan]", CUB_SMALL)
@@ -105,47 +139,7 @@ CUB_TEST("DeviceCopy::Copy: 1D, 2D, 4D mdspan with matching layouts and user pro
     REQUIRE(d_input == d_output);
   };
 
-  int current_device;
-  auto error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
-  SECTION("DeviceCopy::Copy works with cudaStream_t")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    test_mdspan_copy(stream.get());
-  }
-
-  SECTION("DeviceCopy::Copy works with cuda::stream")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    test_mdspan_copy(stream);
-  }
-
-  SECTION("DeviceCopy::Copy works with cuda::stream_ref")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    const cuda::stream_ref stream_ref{stream};
-    test_mdspan_copy(stream_ref);
-  }
-
-  SECTION("DeviceCopy::Copy works with cuda::std::execution::env")
-  {
-    const cuda::std::execution::env env{};
-    test_mdspan_copy(env);
-  }
-
-  SECTION("DeviceCopy::Copy works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_mdspan_copy(policy);
-  }
-
-  SECTION("DeviceCopy::Copy works with cuda::execution::gpu with stream")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_mdspan_copy(policy);
-  }
+  test_with_custom_streams(test_mdspan_copy);
 }
 #endif // TEST_LAUNCH == 0
 

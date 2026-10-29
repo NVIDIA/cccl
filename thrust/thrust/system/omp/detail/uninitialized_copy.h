@@ -13,5 +13,5 @@
 #  pragma system_header
 #endif // no system header
 
-// this system inherits uninitialized_copy
+// omp system inherits uninitialized_copy
 #include <thrust/system/cpp/detail/uninitialized_copy.h>

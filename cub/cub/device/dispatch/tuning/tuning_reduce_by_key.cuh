@@ -18,9 +18,9 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/numeric_traits.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
@@ -182,7 +182,7 @@ _CCCL_HOST_DEVICE_API constexpr primitive_accum is_primitive_accum()
 template <class ReductionOpT>
 _CCCL_HOST_DEVICE_API constexpr primitive_op is_primitive_op()
 {
-  return basic_binary_op_t<ReductionOpT>::value ? primitive_op::yes : primitive_op::no;
+  return basic_binary_op_v<ReductionOpT> ? primitive_op::yes : primitive_op::no;
 }
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
@@ -1050,21 +1050,24 @@ struct policy_selector
   bool op_is_primitive;
 
 private:
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const
-    -> ReduceByKeyLookbackPolicy
+  // The default policy is a mix of the old CUB and Thrust default policy. We pick whichever is better.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(
+    CacheLoadModifier load_mod,
+    bool prefer_thrust_tuning                = false,
+    BlockLoadAlgorithm thrust_load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE) const -> ReduceByKeyLookbackPolicy
   {
-    constexpr int nominal_4B_items_per_thread = 6;
-    const int combined_input_bytes            = key_size + accum_size;
-    const int max_input_bytes                 = (::cuda::std::max) (key_size, accum_size);
+    const int nominal_4B_items_per_thread = prefer_thrust_tuning ? 9 : 6;
+    const int combined_input_bytes        = key_size + accum_size;
+    const int max_input_bytes             = (::cuda::std::max) (key_size, accum_size);
     const int items_per_thread =
       (max_input_bytes <= 8)
-        ? 6
+        ? nominal_4B_items_per_thread
         : ::cuda::std::clamp(
             ::cuda::ceil_div(nominal_4B_items_per_thread * 8, combined_input_bytes), 1, nominal_4B_items_per_thread);
     return ReduceByKeyLookbackPolicy{
-      128,
+      prefer_thrust_tuning ? 256 : 128,
       items_per_thread,
-      BLOCK_LOAD_DIRECT,
+      prefer_thrust_tuning ? thrust_load_algorithm : BLOCK_LOAD_DIRECT,
       load_mod,
       BLOCK_SCAN_WARP_SCANS,
       default_reduce_by_key_delay_constructor_policy(
@@ -1546,8 +1549,23 @@ private:
         }
       }
 
-      // no tuning, use a default one
-      return __make_default_policy(LOAD_DEFAULT);
+      // no tuning, use a default one based on Thrust (always neutral or faster)
+      return __make_default_policy(LOAD_DEFAULT, true);
+    }
+
+    if (cc == ::cuda::compute_capability{8, 9}) // L4
+    {
+      const bool prefer_thrust_tuning = accum_size == 16;
+      return __make_default_policy(LOAD_LDG, prefer_thrust_tuning);
+    }
+
+    if (cc == ::cuda::compute_capability{8, 6}) // RTX A6000
+    {
+      const bool prefer_thrust_tuning =
+        (key_size <= 4 && accum_size <= 4) || accum_size == 16 || (key_size == 16 && accum_size == 8);
+      // the direct load is faster than the warp transpose for small keys and accumulators
+      const auto load_algorithm = accum_size <= 4 ? BLOCK_LOAD_DIRECT : BLOCK_LOAD_WARP_TRANSPOSE;
+      return __make_default_policy(LOAD_LDG, prefer_thrust_tuning, load_algorithm);
     }
 
     if (cc >= ::cuda::compute_capability{8, 6})
@@ -1758,6 +1776,12 @@ private:
       return __make_default_policy(LOAD_DEFAULT);
     }
 
+    if (cc == ::cuda::compute_capability{7, 5}) // T4
+    {
+      const bool prefer_thrust_tuning = (key_size == 4 && accum_size == 4) || (key_size >= 8 && accum_size == 16);
+      return __make_default_policy(LOAD_LDG, prefer_thrust_tuning);
+    }
+
     // for SM50
     return __make_default_policy(LOAD_LDG);
   }
@@ -1808,7 +1832,7 @@ struct policy_selector_from_types
       is_primitive_v<KeyT>,
       ::cuda::is_trivially_copyable_v<KeyT>,
       is_primitive_v<AccumT>,
-      basic_binary_op_t<ReductionOpT>::value}(cc);
+      basic_binary_op_v<ReductionOpT>}(cc);
   }
 };
 } // namespace detail::reduce_by_key

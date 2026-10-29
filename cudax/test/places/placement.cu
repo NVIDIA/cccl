@@ -34,7 +34,7 @@ namespace
 {
 __global__ void init_kernel(int* ptr, size_t n, int value)
 {
-  size_t tid = blockIdx.x * static_cast<size_t>(blockDim.x) + threadIdx.x;
+  const size_t tid = blockIdx.x * static_cast<size_t>(blockDim.x) + threadIdx.x;
   if (tid < n)
   {
     ptr[tid] = value + static_cast<int>(tid % 1024);
@@ -43,7 +43,7 @@ __global__ void init_kernel(int* ptr, size_t n, int value)
 
 __global__ void check_kernel(const int* ptr, size_t n, int value, int* result)
 {
-  size_t tid = blockIdx.x * static_cast<size_t>(blockDim.x) + threadIdx.x;
+  const size_t tid = blockIdx.x * static_cast<size_t>(blockDim.x) + threadIdx.x;
   if (tid < n)
   {
     if (ptr[tid] != value + static_cast<int>(tid % 1024))
@@ -66,6 +66,7 @@ bool vmm_supported(int dev_id = 0)
 exec_place make_device_grid(int ndevs, size_t nplaces)
 {
   ::std::vector<exec_place> places;
+  places.reserve(nplaces);
   for (size_t i = 0; i < nplaces; i++)
   {
     places.push_back(exec_place::device(static_cast<int>(i % static_cast<size_t>(ndevs))));
@@ -189,8 +190,8 @@ void test_shaped_alloc_callback_composite(int ndevs)
   const size_t n = 1024 * 1024; // ints
   const dim4 data_dims(n);
 
-  auto grid     = make_device_grid(ndevs, 2);
-  data_place dp = data_place::composite(blocked_partition_custom<0>{}, grid);
+  auto grid           = make_device_grid(ndevs, 2);
+  const data_place dp = data_place::composite(blocked_partition_custom<0>{}, grid);
 
   // The byte-count allocate cannot know the tensor geometry: it must throw
   bool thrown = false;
@@ -224,7 +225,7 @@ void test_shaped_alloc_cute_composite(int ndevs)
   auto grid = make_device_grid(ndevs, 2);
   auto part = make_partition(data_dims, partition_spec{blocked<0>}, grid.get_dims());
 
-  data_place dp = make_composite_data_place(grid, part);
+  const data_place dp = make_composite_data_place(grid, part);
 
   // The partition is specific to one tensor: other extents must be rejected
   bool thrown = false;
@@ -268,7 +269,7 @@ void test_shaped_alloc_overflow(int ndevs)
     EXPECT(thrown, "overflowing geometry must throw invalid_argument");
   };
 
-  data_place dev = data_place::device(0);
+  const data_place dev = data_place::device(0);
   expect_invalid(dev, wrapping_dims, 1);
   // elemsize participates in the product too
   expect_invalid(dev, dim4(huge, 1, 1, 1), 2);
@@ -277,8 +278,8 @@ void test_shaped_alloc_overflow(int ndevs)
 
   // On a composite place the wrapped geometry used to reach the blocked
   // partitioner with a zero part_size and kill the process with SIGFPE
-  auto grid    = make_device_grid(ndevs, 2);
-  data_place c = data_place::composite(blocked_partition_custom<1>{}, grid);
+  auto grid          = make_device_grid(ndevs, 2);
+  const data_place c = data_place::composite(blocked_partition_custom<1>{}, grid);
   expect_invalid(c, wrapping_dims, 1);
 }
 
@@ -302,7 +303,7 @@ void test_multi_gpu_residency(int ndevs)
   prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
   prop.location.type       = CU_MEM_LOCATION_TYPE_DEVICE;
   prop.location.id         = 0;
-  size_t granularity       = cuda_try<cuMemGetAllocationGranularity>(&prop, CU_MEM_ALLOC_GRANULARITY_MINIMUM);
+  const size_t granularity = cuda_try<cuMemGetAllocationGranularity>(&prop, CU_MEM_ALLOC_GRANULARITY_MINIMUM);
 
   const size_t n = 2 * granularity / sizeof(int); // one block per place
   const dim4 data_dims(n);
@@ -312,23 +313,23 @@ void test_multi_gpu_residency(int ndevs)
   places.push_back(exec_place::device(1));
   auto grid = make_grid(mv(places));
 
-  data_place dp = data_place::composite(blocked_partition_custom<0>{}, grid);
-  void* ptr     = dp.allocate_nd(data_dims, sizeof(int));
+  const data_place dp = data_place::composite(blocked_partition_custom<0>{}, grid);
+  void* ptr           = dp.allocate_nd(data_dims, sizeof(int));
   EXPECT(ptr != nullptr);
 
   // Each half of the range must be physically backed by its owner
   for (int half = 0; half < 2; half++)
   {
-    int ordinal           = -1;
-    CUdeviceptr probe_ptr = reinterpret_cast<CUdeviceptr>(ptr) + static_cast<size_t>(half) * granularity;
+    int ordinal                 = -1;
+    const CUdeviceptr probe_ptr = reinterpret_cast<CUdeviceptr>(ptr) + static_cast<size_t>(half) * granularity;
     cuda_try(cuPointerGetAttribute(&ordinal, CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL, probe_ptr));
     EXPECT(ordinal == half, "block is not resident on the place that owns it");
   }
 
   // Peer path: touch the whole range (including device-0-owned blocks) from
   // device 1, which exercises the cuMemSetAccess mappings
-  int peer_01 = cuda_try<cudaDeviceCanAccessPeer>(0, 1);
-  int peer_10 = cuda_try<cudaDeviceCanAccessPeer>(1, 0);
+  const int peer_01 = cuda_try<cudaDeviceCanAccessPeer>(0, 1);
+  const int peer_10 = cuda_try<cudaDeviceCanAccessPeer>(1, 0);
   if (peer_01 && peer_10)
   {
     cuda_try(cudaSetDevice(1));

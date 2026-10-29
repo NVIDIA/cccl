@@ -45,7 +45,7 @@ struct rebind_vector<thrust::universal_vector<T, Allocator>, U>
     bool_vector result(lhs.size());                                                                   \
     thrust::transform(lhs.begin(), lhs.end(), rhs.begin(), result.begin(), _1 reference_operator _2); \
                                                                                                       \
-    ASSERT_EQUAL(reference, result);                                                                  \
+    REQUIRE(reference == result);                                                                     \
   }                                                                                                   \
   DECLARE_VECTOR_UNITTEST(TestFunctionalPlaceholdersBinary##name);
 

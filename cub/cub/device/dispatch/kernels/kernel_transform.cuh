@@ -13,9 +13,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/iket_support.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/type_size.cuh>
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/util_arch.cuh>
-#include <cub/util_type.cuh>
 #include <cub/util_vsmem.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
@@ -64,6 +66,13 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::transform
 {
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(Load);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(BarrierSetup);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(BulkCopy);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(ExpectTx);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(SyncAndBarrierWait);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(ProcessAndStore);
+
 // Prefetches (at least on Hopper) a 128 byte cache line. Prefetching out-of-bounds addresses has no side effects
 // TODO(bgruber): there is also the cp.async.bulk.prefetch instruction available on Hopper. May improve perf a tiny bit
 // as we need to create less instructions to prefetch the same amount of data.
@@ -222,9 +231,9 @@ _CCCL_HOST_DEVICE _CCCL_CONSTEVAL auto load_store_type()
 }
 
 // TODO(bgruber): In C++20, we should just pass TransformPolicy by value.
-template <int threads_per_block,
-          int items_per_thread,
-          int vec_size,
+template <int ThreadsPerBlock,
+          int ItemsPerThread,
+          int VecSize,
           int PrefetchByteStride,
           int PrefetchUnrollFactor,
           typename Offset,
@@ -239,18 +248,18 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   RandomAccessIteratorOut out,
   RandomAccessIteratorsIn... ins)
 {
-  // constexpr int threads_per_block    = Policy.vectorized.threads_per_block;
-  // constexpr int items_per_thread = Policy.vectorized.items_per_thread;
-  // constexpr int vec_size         = Policy.vectorized.vec_size;
-  _CCCL_ASSERT(!can_vectorize || (items_per_thread == num_elem_per_thread_prefetch), "");
-  constexpr int tile_size = threads_per_block * items_per_thread;
+  // constexpr int ThreadsPerBlock    = Policy.vectorized.ThreadsPerBlock;
+  // constexpr int ItemsPerThread = Policy.vectorized.ItemsPerThread;
+  // constexpr int VecSize         = Policy.vectorized.VecSize;
+  _CCCL_ASSERT(!can_vectorize || (ItemsPerThread == num_elem_per_thread_prefetch), "");
+  constexpr int tile_size = ThreadsPerBlock * ItemsPerThread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_size;
   const int valid_items   = static_cast<int>((::cuda::std::min) (num_items - offset, static_cast<Offset>(tile_size)));
 
   // if we cannot vectorize or don't have a full tile, fall back to prefetch kernel
   if (!can_vectorize || valid_items != tile_size)
   {
-    transform_kernel_prefetch<threads_per_block, PrefetchByteStride, PrefetchUnrollFactor>(
+    transform_kernel_prefetch<ThreadsPerBlock, PrefetchByteStride, PrefetchUnrollFactor>(
       num_items,
       num_elem_per_thread_prefetch,
       ::cuda::always_true{},
@@ -268,16 +277,17 @@ _CCCL_DEVICE void transform_kernel_vectorized(
 
   using output_t = it_value_t<RandomAccessIteratorOut>;
   using result_t = ::cuda::std::decay_t<::cuda::std::invoke_result_t<F, const it_value_t<RandomAccessIteratorsIn>&...>>;
-  constexpr int load_store_count = items_per_thread / vec_size;
-  static_assert(items_per_thread % vec_size == 0, "The items per thread must be a multiple of the vector size");
+  constexpr int load_store_count = ItemsPerThread / VecSize;
+  static_assert(ItemsPerThread % VecSize == 0, "The items per thread must be a multiple of the vector size");
 
   constexpr bool can_vectorize_store =
     THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut> && ::cuda::is_trivially_copyable_v<output_t>;
 
   // if we can vectorize, we convert f's return type to the output type right away, so we can reinterpret later
   using output_array_t                  = ::cuda::std::conditional_t<can_vectorize_store, output_t, result_t>;
-  constexpr auto output_array_alignment = can_vectorize_store ? sizeof(output_t) * vec_size : alignof(result_t);
-  ::cuda::__uninitialized_array<output_array_t, items_per_thread, output_array_alignment> output;
+  constexpr auto output_array_alignment = can_vectorize_store ? sizeof(output_t) * VecSize : alignof(result_t);
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+  ::cuda::__uninitialized_array<output_array_t, ItemsPerThread, output_array_alignment> output;
 
   auto provide_array = [&](auto... inputs) {
     // load inputs
@@ -288,26 +298,26 @@ _CCCL_DEVICE void transform_kernel_vectorized(
       {
         // TODO(bgruber): we could add a max_load_store_size to the policy to avoid huge load types and huge alignment
         // requirements
-        using load_t   = decltype(load_store_type<sizeof(value_t) * vec_size>());
+        using load_t   = decltype(load_store_type<sizeof(value_t) * VecSize>());
         auto in_vec    = reinterpret_cast<const load_t*>(in) + threadIdx.x;
         auto input_vec = reinterpret_cast<load_t*>(input.data());
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < load_store_count; ++i)
         {
-          input_vec[i] = in_vec[i * threads_per_block];
+          input_vec[i] = in_vec[i * ThreadsPerBlock];
         }
       }
       else
       {
-        in += threadIdx.x * vec_size; // NOLINT(bugprone-misplaced-widening-cast)
+        in += threadIdx.x * VecSize; // NOLINT(bugprone-misplaced-widening-cast)
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < load_store_count; ++i)
         {
           _CCCL_PRAGMA_UNROLL_FULL()
-          for (int j = 0; j < vec_size; ++j)
+          for (int j = 0; j < VecSize; ++j)
           {
             // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
-            input[i * vec_size + j] = in[i * vec_size * threads_per_block + j];
+            input[i * VecSize + j] = in[i * VecSize * ThreadsPerBlock + j];
           }
         }
       }
@@ -320,40 +330,40 @@ _CCCL_DEVICE void transform_kernel_vectorized(
 
     // process
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < items_per_thread; ++i)
+    for (int i = 0; i < ItemsPerThread; ++i)
     {
       output[i] = f(inputs[i]...);
     }
   };
   provide_array(::cuda::__uninitialized_array<it_value_t<RandomAccessIteratorsIn>,
-                                              items_per_thread,
-                                              sizeof(it_value_t<RandomAccessIteratorsIn>) * vec_size>{}...);
+                                              ItemsPerThread,
+                                              sizeof(it_value_t<RandomAccessIteratorsIn>) * VecSize>{}...);
 
   // write output
   if constexpr (can_vectorize_store)
   {
     // vector path
-    using store_t   = decltype(load_store_type<sizeof(output_t) * vec_size>());
+    using store_t   = decltype(load_store_type<sizeof(output_t) * VecSize>());
     auto output_vec = reinterpret_cast<const store_t*>(output.data());
     auto out_vec    = reinterpret_cast<store_t*>(out) + threadIdx.x;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < load_store_count; ++i)
     {
-      out_vec[i * threads_per_block] = output_vec[i];
+      out_vec[i * ThreadsPerBlock] = output_vec[i];
     }
   }
   else
   {
     // serial path
-    out += threadIdx.x * vec_size; // NOLINT(bugprone-misplaced-widening-cast)
+    out += threadIdx.x * VecSize; // NOLINT(bugprone-misplaced-widening-cast)
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < load_store_count; ++i)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int j = 0; j < vec_size; ++j)
+      for (int j = 0; j < VecSize; ++j)
       {
         // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
-        out[i * vec_size * threads_per_block + j] = output[i * vec_size + j];
+        out[i * VecSize * ThreadsPerBlock + j] = output[i * VecSize + j];
       }
     }
   }
@@ -570,7 +580,7 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
 
 // TODO(bgruber): In C++20, we should just pass TransformPolicy by value.
 // note: there is no PDL in this kernel since PDL is not supported below Hopper and this kernel is intended for Ampere
-template <int threads_per_block,
+template <int ThreadsPerBlock,
           int UnrollFactor,
           typename Offset,
           typename Predicate,
@@ -590,8 +600,8 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   static_assert(ldgsts_size_and_align <= 16);
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(smem), "");
 
-  // constexpr int threads_per_block = Policy.async_copy.threads_per_block;
-  const int tile_size   = threads_per_block * num_elem_per_thread;
+  // constexpr int ThreadsPerBlock = Policy.async_copy.ThreadsPerBlock;
+  const int tile_size   = ThreadsPerBlock * num_elem_per_thread;
   const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_size;
   const int valid_items = static_cast<int>(::cuda::std::min(num_items - offset, static_cast<Offset>(tile_size)));
 
@@ -601,8 +611,8 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   // TODO(bgruber): if we used SMEM offsets instead of pointers, we need less registers (but no perf increase)
   [[maybe_unused]] const auto smem_ptrs = ::cuda::std::tuple<const InTs*...>{
-    (inner_blocks ? copy_and_return_smem_dst<threads_per_block>(aligned_ptrs, smem_offset, offset, smem, valid_items)
-                  : copy_and_return_smem_dst_fallback<threads_per_block>(
+    (inner_blocks ? copy_and_return_smem_dst<ThreadsPerBlock>(aligned_ptrs, smem_offset, offset, smem, valid_items)
+                  : copy_and_return_smem_dst_fallback<ThreadsPerBlock>(
                       aligned_ptrs, smem_offset, offset, smem, valid_items, tile_size))...};
 
   asm volatile("cp.async.wait_group %0;" : : "n"(0)); // same as: __pipeline_wait_prior(0);
@@ -615,7 +625,7 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
 
   auto process_tile = [&](auto full_tile) {
     unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
-      const int idx = j * threads_per_block + threadIdx.x;
+      const int idx = j * ThreadsPerBlock + threadIdx.x;
       if (full_tile || idx < valid_items)
       {
         ::cuda::std::apply(
@@ -713,7 +723,7 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
 // Note: we tried implementing work stealing, aka. cluster launch control, aka. UGETNEXTWORKID, (see PR:
 // https://github.com/NVIDIA/cccl/pull/5099) and the slowdowns on some benchmarks outweighed the benefits on B200. So we
 // didn't merge the changes. The problem was mostly a 25% increase in integer instructions, as shown by ncu.
-template <int threads_per_block,
+template <int ThreadsPerBlock,
           int UnrollFactor,
           int StoreVecSize,
           typename Offset,
@@ -729,7 +739,9 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   RandomAccessIteratorOut out,
   aligned_base_ptr<InTs>... aligned_ptrs)
 {
-  // constexpr int threads_per_block       = Policy.async_copy.threads_per_block;
+  _CCCL_IKET_RANGE_PUSH(Load);
+
+  // constexpr int ThreadsPerBlock       = Policy.async_copy.ThreadsPerBlock;
   constexpr int bulk_copy_alignment = transform::bulk_copy_alignment(current_tuning_cc());
 
   // add padding after a tile in shared memory to make space for the next tile's head padding, and retain alignment
@@ -778,7 +790,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
   namespace ptx = ::cuda::ptx;
 
-  const int tile_size   = threads_per_block * num_elem_per_thread;
+  const int tile_size   = ThreadsPerBlock * num_elem_per_thread;
   const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_size;
   const int valid_items = (::cuda::std::min) (num_items - offset, static_cast<Offset>(tile_size));
 
@@ -792,7 +804,9 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     // every block, regardless of position in the grid, share the same single code path.
     if (cuda::device::__block_elect_one())
     {
+      _CCCL_IKET_RANGE_PUSH(BarrierSetup);
       ptx::mbarrier_init(&bar, 1);
+      _CCCL_IKET_RANGE_POP();
 
       char* smem                         = smem_base;
       ::cuda::std::uint32_t total_copied = 0;
@@ -839,10 +853,14 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
       // only elected thread waits, but other threads wait on the barrier fulfilled by the bulk copy later
       _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+      _CCCL_IKET_RANGE_PUSH(BulkCopy);
       // Order of evaluation is left-to-right
       (..., bulk_copy_tile(aligned_ptrs));
+      _CCCL_IKET_RANGE_POP();
 
+      _CCCL_IKET_RANGE_PUSH(ExpectTx);
       ptx::mbarrier_arrive_expect_tx(ptx::sem_relaxed, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
+      _CCCL_IKET_RANGE_POP();
 
       // Triggering the next kernel launch here led to slowdowns in the non .ignore_oob path (see comments there), but
       // we can revisit this.
@@ -858,7 +876,9 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       // use one thread to set up the entire bulk copy
       if (cuda::device::__block_elect_one())
       {
+        _CCCL_IKET_RANGE_PUSH(BarrierSetup);
         ptx::mbarrier_init(&bar, 1);
+        _CCCL_IKET_RANGE_POP();
         // an update to the CUDA memory model blesses skipping the following fence
         // ptx::fence_proxy_async(ptx::space_shared);
 
@@ -902,15 +922,19 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
         // only elected thread waits, but other threads wait on the barrier fulfilled by the bulk copy later
         _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+        _CCCL_IKET_RANGE_PUSH(BulkCopy);
         // Order of evaluation is left-to-right
         (..., bulk_copy_tile(aligned_ptrs));
+        _CCCL_IKET_RANGE_POP();
 
+        _CCCL_IKET_RANGE_PUSH(ExpectTx);
         ptx::mbarrier_arrive_expect_tx(
           ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ptx::sem_relaxed_t, ptx::sem_release_t>{},
           ptx::scope_cta,
           ptx::space_shared,
           &bar,
           total_copied);
+        _CCCL_IKET_RANGE_POP();
 
         // Triggering the next kernel launch here lets the SM ramp up the next kernel while we wait for the bulk copy.
         // Also, the uniform code path should reduce traffic to the CWD (only one thread in a block needs to trigger).
@@ -924,7 +948,9 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       const bool elected = cuda::device::__block_elect_one();
       if (elected)
       {
+        _CCCL_IKET_RANGE_PUSH(BarrierSetup);
         ptx::mbarrier_init(&bar, 1);
+        _CCCL_IKET_RANGE_POP();
         // an update to the CUDA memory model blesses skipping the following fence
         // ptx::fence_proxy_async(ptx::space_shared);
       }
@@ -953,17 +979,21 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       };
 
       _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+      _CCCL_IKET_RANGE_PUSH(BulkCopy);
       // Order of evaluation is left-to-right
       (..., bulk_copy_tile_fallback(aligned_ptrs));
+      _CCCL_IKET_RANGE_POP();
 
       if (elected)
       {
+        _CCCL_IKET_RANGE_PUSH(ExpectTx);
         ptx::mbarrier_arrive_expect_tx(
           ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ptx::sem_relaxed_t, ptx::sem_release_t>{},
           ptx::scope_cta,
           ptx::space_shared,
           &bar,
           total_copied);
+        _CCCL_IKET_RANGE_POP();
       }
 
       // _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // disabled, see comment on previous _CCCL_PDL_TRIGGER_NEXT_LAUNCH
@@ -1000,9 +1030,15 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   }
 
   // all threads wait for bulk copy
+  _CCCL_IKET_RANGE_PUSH(SyncAndBarrierWait);
   __syncthreads();
   while (!ptx::mbarrier_try_wait_parity(&bar, 0))
-    ;
+  {
+  }
+  _CCCL_IKET_RANGE_POP(); // SyncAndBarrierWait
+  _CCCL_IKET_RANGE_POP(); // Load
+
+  _CCCL_IKET_RANGE_PUSH(ProcessAndStore);
 
   if constexpr (vectorize_eligible)
   {
@@ -1013,7 +1049,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       using store_t      = decltype(load_store_type<store_vec_size * out_size>());
       auto* out_vec      = reinterpret_cast<store_t*>(out);
       const int num_vecs = valid_items / store_vec_size;
-      for (auto v = static_cast<int>(threadIdx.x); v < num_vecs; v += threads_per_block)
+      for (auto v = static_cast<int>(threadIdx.x); v < num_vecs; v += ThreadsPerBlock)
       {
         char* smem       = smem_base;
         auto load_in_vec = [&](auto aligned_ptr) {
@@ -1082,7 +1118,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
       // use scalar stores for the tail when element count is not a multiple of store_vec_size
       // implies an always_true predicate, so we store unconditionally.
-      for (int idx = num_vecs * store_vec_size + threadIdx.x; idx < valid_items; idx += threads_per_block)
+      for (int idx = num_vecs * store_vec_size + threadIdx.x; idx < valid_items; idx += ThreadsPerBlock)
       {
         const char* smem   = smem_base;
         auto fetch_operand = [&](auto aligned_ptr) {
@@ -1098,6 +1134,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
           },
           ::cuda::std::tuple<InTs...>{fetch_operand(aligned_ptrs)...});
       }
+      _CCCL_IKET_RANGE_POP(); // ProcessAndStore
       return;
     }
   }
@@ -1107,7 +1144,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   auto process_tile = [&](auto full_tile) {
     unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
       // TODO(bgruber): fbusato suggests to hoist threadIdx.x out of the loop below
-      const int idx = j * threads_per_block + threadIdx.x;
+      const int idx = j * ThreadsPerBlock + threadIdx.x;
       if (full_tile || idx < valid_items)
       {
         const char* smem   = smem_base;
@@ -1140,6 +1177,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   {
     process_tile(::cuda::std::false_type{});
   }
+  _CCCL_IKET_RANGE_POP(); // ProcessAndStore
 }
 
 template <typename It>

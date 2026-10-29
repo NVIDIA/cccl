@@ -20,25 +20,33 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/double_buffer.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_radix_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
+#include <cub/device/dispatch/tuning/tuning_scan.cuh>
+#include <cub/grid/grid_even_share.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
+#include <cub/util_runs_on.cuh>
+#include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 // TODO(bgruber): included for backward compatibility, remove in CCCL 4.0
-#include <cub/device/dispatch/dispatch_segmented_radix_sort.cuh>
-
-#include <cuda/std/__host_stdlib/sstream>
+#include <cub/device/dispatch/dispatch_segmented_radix_sort.cuh> // IWYU pragma: export
 
 // suppress warnings triggered by #pragma unroll:
 // "warning: loop not unrolled: the optimizer was unable to perform the requested transformation; the transformation
@@ -273,40 +281,33 @@ private:
     }
 
     // Log single_tile_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking single_tile_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit "
-            "%d, bit_grain %d\n",
-            1,
-            policy.threads_per_block,
-            (long long) stream,
-            policy.items_per_thread,
-            1,
-            begin_bit,
-            policy.radix_bits);
-#else // CUB_DEBUG_LOG
-    detail::log(
-      "Invoking single_tile_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit "
-      "%d, bit_grain %d\n",
+    _CUB_LOG_KERNEL_LAUNCH(
+      "single_tile_kernel",
+      1,
+      1,
       1,
       policy.threads_per_block,
-      (long long) stream,
-      policy.items_per_thread,
-      1,
+      0,
+      stream,
+      ", current bit: %d, bit_grain: %d",
       begin_bit,
       policy.radix_bits);
-#endif // CUB_DEBUG_LOG
 
     // Invoke upsweep_kernel with same grid size as downsweep_kernel
-    launcher_factory(1, policy.threads_per_block, 0, stream)
-      .doit(single_tile_kernel,
-            d_keys.Current(),
-            d_keys.Alternate(),
-            d_values.Current(),
-            d_values.Alternate(),
-            num_items,
-            begin_bit,
-            end_bit,
-            decomposer);
+    if (const auto error = CubDebug(
+          launcher_factory(1, policy.threads_per_block, 0, stream)
+            .doit(single_tile_kernel,
+                  d_keys.Current(),
+                  d_keys.Alternate(),
+                  d_values.Current(),
+                  d_values.Alternate(),
+                  num_items,
+                  begin_bit,
+                  end_bit,
+                  decomposer)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -350,42 +351,36 @@ public:
     const int pass_bits = ::cuda::std::min(pass_config.radix_bits, end_bit - current_bit);
 
     // Log upsweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking upsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit %d, "
-            "bit_grain %d\n",
-            pass_config.even_share.grid_size,
-            pass_config.upsweep_config.threads_per_block,
-            (long long) stream,
-            pass_config.upsweep_config.items_per_thread,
-            pass_config.upsweep_config.sm_occupancy,
-            current_bit,
-            pass_bits);
-#else // CUB_DEBUG_LOG
-    detail::log(
-      "Invoking upsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit %d, "
-      "bit_grain %d\n",
+    _CUB_LOG_KERNEL_LAUNCH(
+      "upsweep_kernel",
       pass_config.even_share.grid_size,
+      1,
+      1,
       pass_config.upsweep_config.threads_per_block,
-      (long long) stream,
-      pass_config.upsweep_config.items_per_thread,
+      0,
+      stream,
+      ", SM occupancy: %d, current bit: %d, bit_grain: %d",
       pass_config.upsweep_config.sm_occupancy,
       current_bit,
       pass_bits);
-#endif // CUB_DEBUG_LOG
 
     // Spine length written by the upsweep kernel in the current pass.
     const int pass_spine_length = pass_config.even_share.grid_size * pass_config.radix_digits;
 
     // Invoke upsweep_kernel with same grid size as downsweep_kernel
-    launcher_factory(pass_config.even_share.grid_size, pass_config.upsweep_config.threads_per_block, 0, stream)
-      .doit(pass_config.upsweep_kernel,
-            d_keys_in,
-            d_spine,
-            num_items,
-            current_bit,
-            pass_bits,
-            pass_config.even_share,
-            decomposer);
+    if (const auto error = CubDebug(
+          launcher_factory(pass_config.even_share.grid_size, pass_config.upsweep_config.threads_per_block, 0, stream)
+            .doit(pass_config.upsweep_kernel,
+                  d_keys_in,
+                  d_spine,
+                  num_items,
+                  current_bit,
+                  pass_bits,
+                  pass_config.even_share,
+                  decomposer)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -400,23 +395,14 @@ public:
     }
 
     // Log scan_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking scan_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
-            1,
-            pass_config.scan_config.threads_per_block,
-            (long long) stream,
-            pass_config.scan_config.items_per_thread);
-#else // CUB_DEBUG_LOG
-    detail::log("Invoking scan_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
-                1,
-                pass_config.scan_config.threads_per_block,
-                (long long) stream,
-                pass_config.scan_config.items_per_thread);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("scan_kernel", 1, 1, 1, pass_config.scan_config.threads_per_block, 0, stream, "");
 
     // Invoke scan_kernel
-    launcher_factory(1, pass_config.scan_config.threads_per_block, 0, stream)
-      .doit(pass_config.scan_kernel, d_spine, pass_spine_length);
+    if (const auto error = CubDebug(launcher_factory(1, pass_config.scan_config.threads_per_block, 0, stream)
+                                      .doit(pass_config.scan_kernel, d_spine, pass_spine_length)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -431,35 +417,34 @@ public:
     }
 
     // Log downsweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking downsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
-            pass_config.even_share.grid_size,
-            pass_config.downsweep_config.threads_per_block,
-            (long long) stream,
-            pass_config.downsweep_config.items_per_thread,
-            pass_config.downsweep_config.sm_occupancy);
-#else // CUB_DEBUG_LOG
-    detail::log("Invoking downsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
-                pass_config.even_share.grid_size,
-                pass_config.downsweep_config.threads_per_block,
-                (long long) stream,
-                pass_config.downsweep_config.items_per_thread,
-                pass_config.downsweep_config.sm_occupancy);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH(
+      "downsweep_kernel",
+      pass_config.even_share.grid_size,
+      1,
+      1,
+      pass_config.downsweep_config.threads_per_block,
+      0,
+      stream,
+      ", SM occupancy: %d",
+      pass_config.downsweep_config.sm_occupancy);
 
     // Invoke downsweep_kernel
-    launcher_factory(pass_config.even_share.grid_size, pass_config.downsweep_config.threads_per_block, 0, stream)
-      .doit(pass_config.downsweep_kernel,
-            d_keys_in,
-            d_keys_out,
-            d_values_in,
-            d_values_out,
-            d_spine,
-            num_items,
-            current_bit,
-            pass_bits,
-            pass_config.even_share,
-            decomposer);
+    if (const auto error = CubDebug(
+          launcher_factory(pass_config.even_share.grid_size, pass_config.downsweep_config.threads_per_block, 0, stream)
+            .doit(pass_config.downsweep_kernel,
+                  d_keys_in,
+                  d_keys_out,
+                  d_values_in,
+                  d_values_out,
+                  d_spine,
+                  num_items,
+                  current_bit,
+                  pass_bits,
+                  pass_config.even_share,
+                  decomposer)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -484,15 +469,15 @@ public:
   template <typename UpsweepKernelT, typename ScanKernelT, typename DownsweepKernelT>
   struct PassConfig
   {
-    UpsweepKernelT upsweep_kernel;
+    UpsweepKernelT upsweep_kernel{};
     detail::KernelConfig upsweep_config;
-    ScanKernelT scan_kernel;
+    ScanKernelT scan_kernel{};
     detail::KernelConfig scan_config;
-    DownsweepKernelT downsweep_kernel;
+    DownsweepKernelT downsweep_kernel{};
     detail::KernelConfig downsweep_config;
-    int radix_bits;
-    int radix_digits;
-    int max_downsweep_grid_size;
+    int radix_bits{};
+    int radix_digits{};
+    int max_downsweep_grid_size{};
     GridEvenShare<OffsetT> even_share;
 
     // TODO(bgruber): Remove in CCCL 4.0
@@ -666,44 +651,32 @@ private:
     }
 
     // log histogram_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking histogram_kernel<<<%d, %d, 0, %lld>>>(), %d items per iteration, "
-            "%d SM occupancy, bit_grain %d\n",
-            histo_blocks_per_sm * num_sms,
-            HISTO_BLOCK_THREADS,
-            reinterpret_cast<long long>(stream),
-            policy.histogram.items_per_thread,
-            histo_blocks_per_sm,
-            policy.histogram.radix_bits);
-#else // CUB_DEBUG_LOG
-    detail::log(
-      "Invoking histogram_kernel<<<%d, %d, 0, %lld>>>(), %d items per iteration, "
-      "%d SM occupancy, bit_grain %d\n",
+    _CUB_LOG_KERNEL_LAUNCH(
+      "histogram_kernel",
       histo_blocks_per_sm * num_sms,
+      1,
+      1,
       HISTO_BLOCK_THREADS,
-      reinterpret_cast<long long>(stream),
-      policy.histogram.items_per_thread,
+      0,
+      stream,
+      ", SM occupancy: %d, bit_grain: %d",
       histo_blocks_per_sm,
       policy.histogram.radix_bits);
-#endif // CUB_DEBUG_LOG
 
     // exclusive sums to determine starts
     const int SCAN_BLOCK_THREADS = policy.exclusive_sum.threads_per_block;
 
     // log exclusive_sum_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking exclusive_sum_kernel<<<%d, %d, 0, %lld>>>(), bit_grain %d\n",
-            num_passes,
-            SCAN_BLOCK_THREADS,
-            reinterpret_cast<long long>(stream),
-            policy.exclusive_sum.radix_bits);
-#else // CUB_DEBUG_LOG
-    detail::log("Invoking exclusive_sum_kernel<<<%d, %d, 0, %lld>>>(), bit_grain %d\n",
-                num_passes,
-                SCAN_BLOCK_THREADS,
-                reinterpret_cast<long long>(stream),
-                policy.exclusive_sum.radix_bits);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH(
+      "exclusive_sum_kernel",
+      num_passes,
+      1,
+      1,
+      SCAN_BLOCK_THREADS,
+      0,
+      stream,
+      ", bit_grain: %d",
+      policy.exclusive_sum.radix_bits);
 
     // Initialization is intentionally adjacent to the histogram launch. For the PDL path, this avoids consuming the
     // short init kernel's runtime in host-side launch setup work before the dependent histogram is submitted.
@@ -713,17 +686,8 @@ private:
       const int init_startup_blocks =
         static_cast<int>(::cuda::ceil_div(num_init_items, static_cast<size_t>(init_startup_threads)));
 
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking init_bins_and_counters_kernel<<<%d, %d, 0, %lld>>>()\n",
-              init_startup_blocks,
-              init_startup_threads,
-              reinterpret_cast<long long>(stream));
-#else // CUB_DEBUG_LOG
-      detail::log("Invoking init_bins_and_counters_kernel<<<%d, %d, 0, %lld>>>()\n",
-                  init_startup_blocks,
-                  init_startup_threads,
-                  reinterpret_cast<long long>(stream));
-#endif // CUB_DEBUG_LOG
+      _CUB_LOG_KERNEL_LAUNCH(
+        "init_bins_and_counters_kernel", init_startup_blocks, 1, 1, init_startup_threads, 0, stream, "");
 
       if (const auto error = CubDebug(
             launcher_factory(init_startup_blocks, init_startup_threads, 0, stream, use_pdl)
@@ -796,30 +760,19 @@ private:
         }
 
         // log onesweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-        _CubLog("Invoking onesweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, "
-                "current bit %d, bit_grain %d, portion %d/%d\n",
-                num_blocks,
-                ONESWEEP_BLOCK_THREADS,
-                reinterpret_cast<long long>(stream),
-                policy.onesweep.items_per_thread,
-                current_bit,
-                num_bits,
-                static_cast<int>(portion),
-                static_cast<int>(num_portions));
-#else // CUB_DEBUG_LOG
-        detail::log(
-          "Invoking onesweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, "
-          "current bit %d, bit_grain %d, portion %d/%d\n",
+        _CUB_LOG_KERNEL_LAUNCH(
+          "onesweep_kernel",
           num_blocks,
+          1,
+          1,
           ONESWEEP_BLOCK_THREADS,
-          reinterpret_cast<long long>(stream),
-          policy.onesweep.items_per_thread,
+          0,
+          stream,
+          ", current bit: %d, bit_grain: %d, portion: %d/%d",
           current_bit,
           num_bits,
           static_cast<int>(portion),
           static_cast<int>(num_portions));
-#endif // CUB_DEBUG_LOG
 
         auto onesweep_kernel = kernel_source.RadixSortOnesweepKernel();
 
@@ -1299,15 +1252,15 @@ namespace detail::radix_sort
 template <typename UpsweepKernelT, typename ScanKernelT, typename DownsweepKernelT, typename OffsetT>
 struct pass_config
 {
-  UpsweepKernelT upsweep_kernel;
+  UpsweepKernelT upsweep_kernel{};
   KernelConfig upsweep_config;
-  ScanKernelT scan_kernel;
+  ScanKernelT scan_kernel{};
   KernelConfig scan_config;
-  DownsweepKernelT downsweep_kernel;
+  DownsweepKernelT downsweep_kernel{};
   KernelConfig downsweep_config;
-  int radix_bits;
-  int radix_digits;
-  int max_downsweep_grid_size;
+  int radix_bits{};
+  int radix_digits{};
+  int max_downsweep_grid_size{};
   GridEvenShare<OffsetT> even_share;
 
   template <typename KernelLauncherFactory>
@@ -1315,7 +1268,8 @@ struct pass_config
     UpsweepKernelT upsweep_kern,
     ScanKernelT scan_kern,
     DownsweepKernelT downsweep_kern,
-    int sm_count,
+    const experimental::DeviceDescription& device_descr,
+    const void* d_temp_storage,
     OffsetT num_items,
     int pass_radix_bits,
     RadixSortUpsweepPolicy upsweep_policy,
@@ -1329,22 +1283,26 @@ struct pass_config
     this->radix_bits       = pass_radix_bits;
     radix_digits           = 1 << radix_bits;
 
-    if (const auto error = CubDebug(upsweep_config.__init(upsweep_kernel, upsweep_policy, launcher_factory)))
+    if (const auto error = CubDebug(
+          upsweep_config.__init(upsweep_kernel, upsweep_policy, launcher_factory, device_descr, d_temp_storage)))
     {
       return error;
     }
 
-    if (const auto error = CubDebug(scan_config.__init(scan_kernel, scan_policy.lookback, launcher_factory)))
+    if (const auto error = CubDebug(
+          scan_config.__init(scan_kernel, scan_policy.lookback, launcher_factory, device_descr, d_temp_storage)))
     {
       return error;
     }
 
-    if (const auto error = CubDebug(downsweep_config.__init(downsweep_kernel, downsweep_policy, launcher_factory)))
+    if (const auto error = CubDebug(
+          downsweep_config.__init(downsweep_kernel, downsweep_policy, launcher_factory, device_descr, d_temp_storage)))
     {
       return error;
     }
 
-    max_downsweep_grid_size = (downsweep_config.sm_occupancy * sm_count) * detail::subscription_factor;
+    max_downsweep_grid_size =
+      (downsweep_config.sm_occupancy * static_cast<int>(device_descr.__max_sm_count())) * detail::subscription_factor;
 
     even_share.DispatchInit(
       num_items, max_downsweep_grid_size, ::cuda::std::max(downsweep_config.tile_size, upsweep_config.tile_size));
@@ -1353,13 +1311,14 @@ struct pass_config
   }
 };
 
+// Not initialized intentionally. This requires callers to pass every value.
 template <typename KeyT,
           typename ValueT,
           typename OffsetT,
           typename DecomposerT,
           typename KernelSource,
           typename KernelLauncherFactory>
-struct dispatch_impl
+struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
 {
   static constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
 
@@ -1375,6 +1334,7 @@ struct dispatch_impl
   DecomposerT decomposer;
   KernelSource kernel_source;
   KernelLauncherFactory launcher_factory;
+  const experimental::DeviceDescription& device_descr;
 
   template <typename SingleTileKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
@@ -1388,28 +1348,17 @@ struct dispatch_impl
     }
 
     // Log single_tile_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking single_tile_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit "
-            "%d, bit_grain %d\n",
-            1,
-            policy.threads_per_block,
-            (long long) stream,
-            policy.items_per_thread,
-            1,
-            begin_bit,
-            policy.radix_bits);
-#else // CUB_DEBUG_LOG
-    detail::log(
-      "Invoking single_tile_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit "
-      "%d, bit_grain %d\n",
+    _CUB_LOG_KERNEL_LAUNCH(
+      "single_tile_kernel",
+      1,
+      1,
       1,
       policy.threads_per_block,
-      (long long) stream,
-      policy.items_per_thread,
-      1,
+      0,
+      stream,
+      ", current bit: %d, bit_grain: %d",
       begin_bit,
       policy.radix_bits);
-#endif // CUB_DEBUG_LOG
 
     // Invoke upsweep_kernel with same grid size as downsweep_kernel
     if (const auto error = CubDebug(
@@ -1512,28 +1461,18 @@ struct dispatch_impl
     const int pass_bits = ::cuda::std::min(pass_config.radix_bits, end_bit - current_bit);
 
     // Log upsweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking upsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit %d, "
-            "bit_grain %d\n",
-            pass_config.even_share.grid_size,
-            pass_config.upsweep_config.threads_per_block,
-            (long long) stream,
-            pass_config.upsweep_config.items_per_thread,
-            pass_config.upsweep_config.sm_occupancy,
-            current_bit,
-            pass_bits);
-#else // CUB_DEBUG_LOG
-    detail::log(
-      "Invoking upsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit %d, "
-      "bit_grain %d\n",
+    _CUB_LOG_KERNEL_LAUNCH(
+      "upsweep_kernel",
       pass_config.even_share.grid_size,
+      1,
+      1,
       pass_config.upsweep_config.threads_per_block,
-      (long long) stream,
-      pass_config.upsweep_config.items_per_thread,
+      0,
+      stream,
+      ", SM occupancy: %d, current bit: %d, bit_grain: %d",
       pass_config.upsweep_config.sm_occupancy,
       current_bit,
       pass_bits);
-#endif // CUB_DEBUG_LOG
 
     // Spine length written by the upsweep kernel in the current pass.
     const int pass_spine_length = pass_config.even_share.grid_size * pass_config.radix_digits;
@@ -1566,19 +1505,7 @@ struct dispatch_impl
     }
 
     // Log scan_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking scan_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
-            1,
-            pass_config.scan_config.threads_per_block,
-            (long long) stream,
-            pass_config.scan_config.items_per_thread);
-#else // CUB_DEBUG_LOG
-    detail::log("Invoking scan_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
-                1,
-                pass_config.scan_config.threads_per_block,
-                (long long) stream,
-                pass_config.scan_config.items_per_thread);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("scan_kernel", 1, 1, 1, pass_config.scan_config.threads_per_block, 0, stream, "");
 
     // Invoke scan_kernel
     if (const auto error = CubDebug(launcher_factory(1, pass_config.scan_config.threads_per_block, 0, stream)
@@ -1600,21 +1527,16 @@ struct dispatch_impl
     }
 
     // Log downsweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking downsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
-            pass_config.even_share.grid_size,
-            pass_config.downsweep_config.threads_per_block,
-            (long long) stream,
-            pass_config.downsweep_config.items_per_thread,
-            pass_config.downsweep_config.sm_occupancy);
-#else // CUB_DEBUG_LOG
-    detail::log("Invoking downsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
-                pass_config.even_share.grid_size,
-                pass_config.downsweep_config.threads_per_block,
-                (long long) stream,
-                pass_config.downsweep_config.items_per_thread,
-                pass_config.downsweep_config.sm_occupancy);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH(
+      "downsweep_kernel",
+      pass_config.even_share.grid_size,
+      1,
+      1,
+      pass_config.downsweep_config.threads_per_block,
+      0,
+      stream,
+      ", SM occupancy: %d",
+      pass_config.downsweep_config.sm_occupancy);
 
     // Invoke downsweep_kernel
     if (const auto error = CubDebug(
@@ -1661,27 +1583,14 @@ struct dispatch_impl
     DownsweepKernelT alt_downsweep_kernel,
     const RadixSortPolicy& policy)
   {
-    // Get device ordinal
-    int device_ordinal;
-    if (const auto error = CubDebug(cudaGetDevice(&device_ordinal)))
-    {
-      return error;
-    }
-
-    // Get SM count
-    int sm_count;
-    if (const auto error = CubDebug(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal)))
-    {
-      return error;
-    }
-
     // Init regular and alternate-digit kernel configurations
     pass_config<UpsweepKernelT, ScanKernelT, DownsweepKernelT, OffsetT> pc, alt_pc;
     if (const auto error = pc.init(
           upsweep_kernel,
           scan_kernel,
           downsweep_kernel,
-          sm_count,
+          device_descr,
+          d_temp_storage,
           num_items,
           policy.downsweep.radix_bits,
           policy.upsweep,
@@ -1696,7 +1605,8 @@ struct dispatch_impl
           alt_upsweep_kernel,
           scan_kernel,
           alt_downsweep_kernel,
-          sm_count,
+          device_descr,
+          d_temp_storage,
           num_items,
           policy.alt_downsweep.radix_bits,
           policy.alt_upsweep,
@@ -1861,78 +1771,50 @@ struct dispatch_impl
     ValueT* d_values_tmp2     = (ValueT*) allocations[3];
     AtomicOffsetT* d_ctrs     = (AtomicOffsetT*) allocations[4]; // NOLINT(misc-const-correctness)
 
-    ::cuda::compute_capability cc{};
-    if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
-    {
-      return error;
-    }
     constexpr OffsetT pdl_max_items = static_cast<OffsetT>(1) << 24;
-    const bool use_pdl              = num_items <= pdl_max_items && cc >= ::cuda::compute_capability{9, 0};
+    const bool use_pdl =
+      num_items <= pdl_max_items && device_descr.__compute_capability() >= ::cuda::compute_capability{9, 0};
 
     const size_t num_counter_items = static_cast<size_t>(num_portions) * num_passes;
     const size_t num_bin_items     = static_cast<size_t>(num_passes) * radix_digits;
-    int device                     = -1;
-    int num_sms                    = 0;
+    const int num_sms              = static_cast<int>(device_descr.__max_sm_count());
+    const int histo_block_threads  = policy.histogram.threads_per_block;
+    int histo_blocks_per_sm        = 1;
+    auto histogram_kernel          = kernel_source.RadixSortHistogramKernel();
 
-    if (const auto error = CubDebug(cudaGetDevice(&device)))
-    {
-      return error;
-    }
-
-    if (const auto error = CubDebug(cudaDeviceGetAttribute(&num_sms, cudaDevAttrMultiProcessorCount, device)))
-    {
-      return error;
-    }
-
-    const int histo_block_threads = policy.histogram.threads_per_block;
-    int histo_blocks_per_sm       = 1;
-    auto histogram_kernel         = kernel_source.RadixSortHistogramKernel();
-
-    if (const auto error =
-          CubDebug(launcher_factory.MaxSmOccupancy(histo_blocks_per_sm, histogram_kernel, histo_block_threads, 0)))
+    if (const auto error = CubDebug(device_descr.__occupancy(
+          histogram_kernel, launcher_factory, d_temp_storage, histo_block_threads, 0, histo_blocks_per_sm)))
     {
       return error;
     }
 
     // log histogram_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking histogram_kernel<<<%d, %d, 0, %lld>>>(), %d items per iteration, "
-            "%d SM occupancy, bit_grain %d\n",
-            histo_blocks_per_sm * num_sms,
-            histo_block_threads,
-            reinterpret_cast<long long>(stream),
-            policy.histogram.items_per_thread,
-            histo_blocks_per_sm,
-            policy.histogram.radix_bits);
-#else // CUB_DEBUG_LOG
-    detail::log(
-      "Invoking histogram_kernel<<<%d, %d, 0, %lld>>>(), %d items per iteration, "
-      "%d SM occupancy, bit_grain %d\n",
+    _CUB_LOG_KERNEL_LAUNCH(
+      "histogram_kernel",
       histo_blocks_per_sm * num_sms,
+      1,
+      1,
       histo_block_threads,
-      reinterpret_cast<long long>(stream),
-      policy.histogram.items_per_thread,
+      0,
+      stream,
+      ", SM occupancy: %d, bit_grain: %d",
       histo_blocks_per_sm,
       policy.histogram.radix_bits);
-#endif // CUB_DEBUG_LOG
 
     // exclusive sums to determine starts
     const int scan_block_threads = policy.exclusive_sum.threads_per_block;
 
     // log exclusive_sum_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking exclusive_sum_kernel<<<%d, %d, 0, %lld>>>(), bit_grain %d\n",
-            num_passes,
-            scan_block_threads,
-            reinterpret_cast<long long>(stream),
-            policy.exclusive_sum.radix_bits);
-#else // CUB_DEBUG_LOG
-    detail::log("Invoking exclusive_sum_kernel<<<%d, %d, 0, %lld>>>(), bit_grain %d\n",
-                num_passes,
-                scan_block_threads,
-                reinterpret_cast<long long>(stream),
-                policy.exclusive_sum.radix_bits);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH(
+      "exclusive_sum_kernel",
+      num_passes,
+      1,
+      1,
+      scan_block_threads,
+      0,
+      stream,
+      ", bit_grain: %d",
+      policy.exclusive_sum.radix_bits);
 
     // Initialization is intentionally adjacent to the histogram launch. For the PDL path, this avoids consuming the
     // short init kernel's runtime in host-side launch setup work before the dependent histogram is submitted.
@@ -1942,17 +1824,8 @@ struct dispatch_impl
       const int init_startup_blocks =
         static_cast<int>(::cuda::ceil_div(num_init_items, static_cast<size_t>(init_startup_threads)));
 
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking init_bins_and_counters_kernel<<<%d, %d, 0, %lld>>>()\n",
-              init_startup_blocks,
-              init_startup_threads,
-              reinterpret_cast<long long>(stream));
-#else // CUB_DEBUG_LOG
-      detail::log("Invoking init_bins_and_counters_kernel<<<%d, %d, 0, %lld>>>()\n",
-                  init_startup_blocks,
-                  init_startup_threads,
-                  reinterpret_cast<long long>(stream));
-#endif // CUB_DEBUG_LOG
+      _CUB_LOG_KERNEL_LAUNCH(
+        "init_bins_and_counters_kernel", init_startup_blocks, 1, 1, init_startup_threads, 0, stream, "");
 
       if (const auto error = CubDebug(
             launcher_factory(init_startup_blocks, init_startup_threads, 0, stream, use_pdl)
@@ -2025,30 +1898,19 @@ struct dispatch_impl
         }
 
         // log onesweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-        _CubLog("Invoking onesweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, "
-                "current bit %d, bit_grain %d, portion %d/%d\n",
-                num_blocks,
-                onesweep_block_threads,
-                reinterpret_cast<long long>(stream),
-                policy.onesweep.items_per_thread,
-                current_bit,
-                num_bits,
-                static_cast<int>(portion),
-                static_cast<int>(num_portions));
-#else // CUB_DEBUG_LOG
-        detail::log(
-          "Invoking onesweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, "
-          "current bit %d, bit_grain %d, portion %d/%d\n",
+        _CUB_LOG_KERNEL_LAUNCH(
+          "onesweep_kernel",
           num_blocks,
+          1,
+          1,
           onesweep_block_threads,
-          reinterpret_cast<long long>(stream),
-          policy.onesweep.items_per_thread,
+          0,
+          stream,
+          ", current bit: %d, bit_grain: %d, portion: %d/%d",
           current_bit,
           num_bits,
           static_cast<int>(portion),
           static_cast<int>(num_portions));
-#endif // CUB_DEBUG_LOG
 
         auto onesweep_kernel = kernel_source.RadixSortOnesweepKernel();
 
@@ -2169,29 +2031,22 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   int end_bit,
   bool can_overwrite_source_buffer,
   cudaStream_t stream,
+  const experimental::RunsOn& runs_on,
   DecomposerT decomposer                 = {},
   PolicySelector policy_selector         = {},
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  ::cuda::compute_capability cc{};
-  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+  experimental::DeviceDescription description;
+
+  if (const auto error = CubDebug(runs_on.concrete_description(launcher_factory, d_temp_storage, description)))
   {
     return error;
   }
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 std::stringstream ss;
-                 ss << policy_selector(cc);
-                 _CubLog("Dispatching DeviceRadixSort to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
-               }))
-#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  log_dispatch("DeviceRadixSort", cc, policy_selector(cc));
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  const auto cc = description.__compute_capability();
+
+  detail::log_dispatch("DeviceRadixSort", cc, policy_selector(cc));
 
   dispatch_impl<KeyT, ValueT, OffsetT, DecomposerT, KernelSource, KernelLauncherFactory> impl{
     d_temp_storage,
@@ -2205,7 +2060,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     stream,
     decomposer,
     kernel_source,
-    launcher_factory};
+    launcher_factory,
+    description};
 
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     return impl.invoke(policy_getter);

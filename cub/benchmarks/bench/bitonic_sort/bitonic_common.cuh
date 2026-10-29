@@ -45,7 +45,7 @@ NVBENCH_DECLARE_ENUM_TYPE_STRINGS(
     return std::string{};
   })
 
-template <typename ActionT, Mode mode, typename KeyT, typename ValueT, int Len>
+template <typename ActionT, Mode ModeValue, typename KeyT, typename ValueT, int Len>
 void run_bench(nvbench::state& state)
 {
   constexpr int items_per_thread = Len / warp_threads;
@@ -54,7 +54,7 @@ void run_bench(nvbench::state& state)
   int block_dim;
   int grid_dim;
   int num_iterations;
-  if (mode == Mode::Latency)
+  if (ModeValue == Mode::Latency)
   {
     block_dim      = warp_threads;
     grid_dim       = 1;

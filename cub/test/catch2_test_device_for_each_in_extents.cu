@@ -137,11 +137,7 @@ CUB_TEST("DeviceFor::ForEachInExtents static", "[ForEachInExtents][static][devic
   device_for_each_in_extents(ext, store_op_t{d_output_raw});
   const c2h::host_vector<data_t> h_output_gpu = d_output;
   fill_linear(h_output, ext);
-// MSVC error: C3546: '...': there are no parameter packs available to expand in
-//             make_tuple_types.h:__make_tuple_types_flat
-#if !_CCCL_COMPILER(MSVC)
   REQUIRE(h_output == h_output_gpu);
-#endif // !_CCCL_COMPILER(MSVC)
 }
 
 CUB_TEST("DeviceFor::ForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][device]", CUB_SMALL, index_types_dynamic)
@@ -200,4 +196,37 @@ CUB_TEST("DeviceFor::ForEachInExtents works", "[ForEachInExtents]", CUB_SMALL)
   const auto num_of_once_marked_items =
     static_cast<offset_t>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
   REQUIRE(num_of_once_marked_items == num_items);
+}
+
+struct call_counter_t
+{
+  int* d_count;
+
+  template <class... Ts>
+  __device__ void operator()(Ts...) const
+  {
+    atomicAdd(d_count, 1);
+  }
+};
+
+CUB_TEST("DeviceFor::ForEachInExtents handles extents with a zero dimension", "[ForEachInExtents][device]", CUB_SMALL)
+{
+  c2h::device_vector<int> count(1, 0);
+  const call_counter_t op{thrust::raw_pointer_cast(count.data())};
+
+  SECTION("dynamic extents")
+  {
+    device_for_each_in_extents(cuda::std::dextents<int, 2>{0, 5}, op);
+    device_for_each_in_extents(cuda::std::dextents<int, 2>{5, 0}, op);
+    device_for_each_in_extents(cuda::std::dextents<int, 3>{3, 0, 4}, op);
+  }
+
+  SECTION("static extents")
+  {
+    device_for_each_in_extents(cuda::std::extents<int, 0, 5>{}, op);
+    device_for_each_in_extents(cuda::std::extents<int, 5, 0>{}, op);
+    device_for_each_in_extents(cuda::std::extents<int, 3, cuda::std::dynamic_extent, 4>{0}, op);
+  }
+
+  REQUIRE(count[0] == 0);
 }

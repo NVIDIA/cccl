@@ -15,6 +15,7 @@
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -46,6 +47,31 @@ auto compute_find_if_reference(InputIt first, InputIt last, Predicate predicate)
 {
   const auto it = cuda::std::find_if(first, last, predicate); // not thrust::find_if because it will rely on cub::FindIf
   return static_cast<OffsetT>(cuda::std::distance(first, it));
+}
+
+CUB_TEST("Device find_if handles empty input", "[device][find_if]", CUB_SMALL)
+{
+  auto input     = cuda::make_counting_iterator(0);
+  auto predicate = cuda::equal_to_value<int>{0};
+  c2h::device_vector<int> output(1, -1);
+
+  SECTION("contiguous output")
+  {
+    find_if(input, thrust::raw_pointer_cast(output.data()), predicate, 0);
+    REQUIRE(output[0] == 0);
+  }
+  SECTION("contiguous input")
+  {
+    c2h::device_vector<int> device_input(1, 0);
+    find_if(device_input.begin(), thrust::raw_pointer_cast(output.data()), predicate, 0);
+    REQUIRE(output[0] == 0);
+  }
+  SECTION("transformed output")
+  {
+    auto transformed = cuda::make_transform_output_iterator(output.begin(), cuda::std::negate{});
+    find_if(input, transformed, predicate, 0);
+    REQUIRE(output[0] == 0);
+  }
 }
 
 CUB_TEST("Device find_if works", "[device][find_if]", CUB_SMALL, value_types, offset_types)
@@ -349,7 +375,7 @@ CUB_TEST("DeviceFind::UpperBound works", "[find][device][binary-search]", CUB_SM
 
 // this test exceeds 4GiB of memory and the range of 32-bit integers
 CUB_TEST("DeviceFind::LowerBound really large input",
-         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         "[find][device][binary-search][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]",
          CUB_LARGE)
 {
   try
@@ -358,16 +384,15 @@ CUB_TEST("DeviceFind::LowerBound really large input",
     const auto size  = std::int64_t{1} << GENERATE(30, 31, 32, 33);
     test_vectorized<value_type>(lower_bound, std_lower_bound, size);
   }
-  catch (const std::bad_alloc&)
+  catch (...)
   {
-    // allocation failure is not a test failure, so we can run tests on smaller GPUs
-    SUCCEED("allocation failure is not a test failure");
+    c2h::skip_if_allocation_failure();
   }
 }
 
 // this test exceeds 4GiB of memory and the range of 32-bit integers
 CUB_TEST("DeviceFind::UpperBound really large input",
-         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         "[find][device][binary-search][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]",
          CUB_LARGE)
 {
   try
@@ -376,9 +401,8 @@ CUB_TEST("DeviceFind::UpperBound really large input",
     const auto size  = std::int64_t{1} << GENERATE(30, 31, 32, 33);
     test_vectorized<value_type>(upper_bound, std_upper_bound, size);
   }
-  catch (const std::bad_alloc&)
+  catch (...)
   {
-    // allocation failure is not a test failure, so we can run tests on smaller GPUs
-    SUCCEED("allocation failure is not a test failure");
+    c2h::skip_if_allocation_failure();
   }
 }

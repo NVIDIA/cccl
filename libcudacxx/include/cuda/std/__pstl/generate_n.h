@@ -23,22 +23,18 @@
 
 #if _CCCL_HOSTED()
 
-#  include <cuda/__iterator/counting_iterator.h>
 #  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/generate_n.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__execution/policy.h>
+#  include <cuda/std/__functional/invoke.h>
 #  include <cuda/std/__iterator/concepts.h>
-#  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__pstl/dispatch.h>
-#  include <cuda/std/__pstl/generate.h>
 #  include <cuda/std/__type_traits/always_false.h>
-#  include <cuda/std/__type_traits/is_callable.h>
 #  include <cuda/std/__type_traits/is_execution_policy.h>
 #  include <cuda/std/__utility/move.h>
 
 #  if _CCCL_HAS_BACKEND_CUDA()
-#    include <cuda/std/__pstl/cuda/generate_n.h>
+#    include <cuda/std/__pstl/cuda/generate_n.h> // IWYU pragma: keep
 #  endif // _CCCL_HAS_BACKEND_CUDA()
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -55,6 +51,7 @@ generate_n([[maybe_unused]] const _Policy& __policy, _InputIterator __first, _Si
   static_assert(indirectly_writable<_InputIterator, invoke_result_t<_Generator>>,
                 "cuda::std::generate_n requires InputIterator to be indirectly writable with the return value of "
                 "Generator");
+  static_assert(__is_convertible_to_integral_v<_Size>, "_Size must be convertible to an integral");
 
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__generate_n, _Policy>();

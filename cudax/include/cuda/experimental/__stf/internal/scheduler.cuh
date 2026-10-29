@@ -32,6 +32,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
+
 #include <cuda/experimental/__stf/internal/task.cuh> // scheduler uses task
 #include <cuda/experimental/__stf/internal/task_statistics.cuh> // heft_scheduler uses statistics_t
 
@@ -42,6 +44,7 @@
 #include <limits> // ::cuda::std::numeric_limits<double>::max()
 #include <random> // random_scheduler uses rng
 #include <sstream> // ::std::stringstream
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -462,7 +465,7 @@ inline ::std::unique_ptr<scheduler> scheduler::make(const char* schedule_type)
     return ::std::make_unique<heft_scheduler>();
   }
 
-  ::std::cerr << "Invalid CUDASTF_SCHEDULE value '" << schedule_type << "'\n";
-  exit(EXIT_FAILURE);
+  _CCCL_THROW(::std::invalid_argument,
+              ::std::string("invalid CUDASTF_SCHEDULE value '").append(schedule_type_s).append("'"));
 }
 } // namespace cuda::experimental::stf::reserved

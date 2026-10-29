@@ -15,8 +15,10 @@
 
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
+#include <cub/thread/thread_sort.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 
@@ -54,21 +56,19 @@ using AgentMergeSortPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for Devic
   detail::agent_merge_sort_policy<ThreadsPerBlock, ItemsPerThread, LoadAlgorithm, LoadModifier, StoreAlgorithm>;
 
 //! The tuning policy for all algorithms in @ref DeviceMergeSort.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct MergeSortPolicy
 {
-  int threads_per_block; //!< Number of threads in a CUDA block
-  int items_per_thread; //!< Number of items processed per thread
+  int threads_per_block; //!< Number of threads in a CUDA block. Must be a power of two in the range [1; 1024], and a
+                         //!< multiple of the warp size if a @c WARP_TRANSPOSE load or store algorithm is used
+  int items_per_thread; //!< Number of items processed per thread. Must be at least 1
   BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading items from global memory
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
   BlockStoreAlgorithm store_algorithm; //!< The @ref BlockStoreAlgorithm used for storing items to global memory
 
   //! Whether to unroll the loops inside the block merge sort and serial merge implementation
   // RAPIDS cuDF needs to avoid unrolling some loops in sort to prevent compile time issues
-#if defined(CCCL_AVOID_SORT_UNROLL)
-  bool unroll = false;
-#else // CCCL_AVOID_SORT_UNROLL
-  bool unroll = true;
-#endif // CCCL_AVOID_SORT_UNROLL
+  bool unroll = detail::sort_unroll_default;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const MergeSortPolicy& lhs, const MergeSortPolicy& rhs)

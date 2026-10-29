@@ -66,9 +66,9 @@ struct SmemResourceRaw
     }
   }
 
-  template <int numSquads>
+  template <int NumSquads>
   _CCCL_HOST_DEVICE_API constexpr void
-  addPhase(SyncHandler& syncHandler, ::cuda::std::uint64_t* ptrBarrier, const SquadDesc (&squads)[numSquads])
+  addPhase(SyncHandler& syncHandler, ::cuda::std::uint64_t* ptrBarrier, const SquadDesc (&squads)[NumSquads])
   {
     const int numOwningThreads = squadCountThreads(squads);
 
@@ -79,9 +79,9 @@ struct SmemResourceRaw
     mPtrBar[curPhase] = ptrBarrier;
   }
 
-  template <int numSquads>
+  template <int NumSquads>
   _CCCL_HOST_DEVICE_API constexpr void
-  addPhase(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const SquadDesc (&squads)[numSquads])
+  addPhase(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const SquadDesc (&squads)[NumSquads])
   {
     void* ptrBar_raw = smemAllocator.alloc(mStageCount * sizeof(::cuda::std::uint64_t), alignof(::cuda::std::uint64_t));
     // we don't need the pointer during constant evaluation (and casting is not allowed)

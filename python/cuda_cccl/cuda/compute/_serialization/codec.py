@@ -188,7 +188,7 @@ def read_op(r: Reader) -> Op:
 
 
 def write_iterator(w: Writer, it: Iterator) -> None:
-    w.u8(1 if it.is_kind_pointer() else 0)
+    w.u8(1 if it.is_ptr_kind else 0)
     w.u32(it.alignment)
     write_type_info(w, it.value_type)
     write_op(w, it.advance_op)

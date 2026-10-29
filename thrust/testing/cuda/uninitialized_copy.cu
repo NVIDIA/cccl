@@ -21,26 +21,24 @@ void TestUninitializedCopyDevice(ExecutionPolicy exec)
   Vector v2(5);
   uninitialized_copy_kernel<<<1, 1>>>(exec, v1.begin(), v1.end(), v2.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   Vector ref{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(v2, ref);
+  REQUIRE(v2 == ref);
 }
 
-void TestUninitializedCopyDeviceSeq()
+TEST_CASE("TestUninitializedCopyDeviceSeq", "[uninitialized_copy]")
 {
   TestUninitializedCopyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestUninitializedCopyDeviceSeq);
 
-void TestUninitializedCopyDeviceDevice()
+TEST_CASE("TestUninitializedCopyDeviceDevice", "[uninitialized_copy]")
 {
   TestUninitializedCopyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestUninitializedCopyDeviceDevice);
 #endif
 
-void TestUninitializedCopyCudaStreams()
+TEST_CASE("TestUninitializedCopyCudaStreams", "[uninitialized_copy]")
 {
   using Vector = thrust::device_vector<int>;
 
@@ -55,10 +53,9 @@ void TestUninitializedCopyCudaStreams()
   thrust::uninitialized_copy(thrust::cuda::par.on(s), v1.begin(), v1.end(), v2.begin());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(v2, v1);
+  REQUIRE(v2 == v1);
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestUninitializedCopyCudaStreams);
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy, typename Iterator1, typename Size, typename Iterator2>
@@ -78,25 +75,23 @@ void TestUninitializedCopyNDevice(ExecutionPolicy exec)
   Vector v2(5);
   uninitialized_copy_n_kernel<<<1, 1>>>(exec, v1.begin(), v1.size(), v2.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(v2, v1);
+  REQUIRE(v2 == v1);
 }
 
-void TestUninitializedCopyNDeviceSeq()
+TEST_CASE("TestUninitializedCopyNDeviceSeq", "[uninitialized_copy]")
 {
   TestUninitializedCopyNDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestUninitializedCopyNDeviceSeq);
 
-void TestUninitializedCopyNDeviceDevice()
+TEST_CASE("TestUninitializedCopyNDeviceDevice", "[uninitialized_copy]")
 {
   TestUninitializedCopyNDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestUninitializedCopyNDeviceDevice);
 #endif
 
-void TestUninitializedCopyNCudaStreams()
+TEST_CASE("TestUninitializedCopyNCudaStreams", "[uninitialized_copy]")
 {
   using Vector = thrust::device_vector<int>;
 
@@ -110,8 +105,7 @@ void TestUninitializedCopyNCudaStreams()
 
   thrust::uninitialized_copy_n(thrust::cuda::par.on(s), v1.begin(), v1.size(), v2.begin());
   cudaStreamSynchronize(s);
-  ASSERT_EQUAL(v2, v1);
+  REQUIRE(v2 == v1);
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestUninitializedCopyNCudaStreams);

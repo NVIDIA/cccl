@@ -27,11 +27,15 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
+// IWYU pragma: begin_keep
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/functions/common.h>
 #include <cuda/std/__atomic/functions/backend.h>
 #include <cuda/std/__atomic/functions/cuda_ptx_backend.h>
+// IWYU pragma: end_keep
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -45,6 +49,8 @@ extern "C" _CCCL_DEVICE void __atomic_ldst_128b_unsupported_before_SM_70();
 
 _CCCL_DEVICE_API inline void __cuda_atomic_membar(__thread_scope_block_tag)
 { asm volatile("membar.cta;" ::: "memory"); }
+_CCCL_DEVICE_API inline void __cuda_atomic_membar(__thread_scope_cluster_tag)
+{ asm volatile("membar.gl;" ::: "memory"); }
 _CCCL_DEVICE_API inline void __cuda_atomic_membar(__thread_scope_device_tag)
 { asm volatile("membar.gl;" ::: "memory"); }
 _CCCL_DEVICE_API inline void __cuda_atomic_membar(__thread_scope_system_tag)
@@ -83,7 +89,7 @@ _CCCL_DEVICE_API void __cuda_atomic_ptx_maybe_sc_fence(__cuda_atomic_order_volat
 template <typename _Sco>
 _CCCL_DEVICE_API void __cuda_atomic_thread_fence(
   __cuda_atomic_ptx_backend, memory_order __order, _Sco) {
-  [[maybe_unused]] const int __memorder = __atomic_order_to_int(__order);
+  [[maybe_unused]] const int __memorder = ::cuda::std::__atomic_order_to_int(__order);
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70, (
       switch (__memorder) {

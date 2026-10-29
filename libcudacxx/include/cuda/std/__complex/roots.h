@@ -23,11 +23,13 @@
 
 #include <cuda/std/__cmath/copysign.h>
 #include <cuda/std/__cmath/isinf.h>
-#include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__complex/complex.h>
-#include <cuda/std/__complex/math.h>
 #include <cuda/std/__floating_point/mask.h>
+#include <cuda/std/__floating_point/storage.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 

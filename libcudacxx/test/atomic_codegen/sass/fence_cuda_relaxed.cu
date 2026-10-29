@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// %PARAM% SCOPE scope tsb:tsd:tss
+// %PARAM% SCOPE scope tsb:tsc:tsd:tss
 
 #include <cuda/std/cstdint>
 

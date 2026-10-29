@@ -5,99 +5,75 @@
 #include <thrust/partition.h>
 #include <thrust/sort.h>
 
+#include <cuda/functional>
+
 #include <unittest/unittest.h>
 
 #if _CCCL_COMPILER(GCC, >=, 11) && _CCCL_COMPILER(GCC, <, 12)
 #  define WAIVE_GCC11_FAILURES
 #endif
 
-template <typename T>
-struct is_even
-{
-  _CCCL_HOST_DEVICE bool operator()(T x) const
-  {
-    return ((int) x % 2) == 0;
-  }
-};
-
 using PartitionTypes = unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>;
 
 template <typename Vector>
-void TestPartitionSimple()
+void test_partition_simple()
 {
-  using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
-
-  // GCC 11 miscompiles and segfaults for certain versions of this test.
-  // It's not reproducible on other compilers, and the test passes when
-  // optimizations are disabled. It only affects 32-bit value types, and
-  // impacts all CPU host/device combinations tested.
-#ifdef WAIVE_GCC11_FAILURES
-  if (sizeof(T) == 4)
-  {
-    return;
-  }
-#endif
 
   Vector data{1, 2, 1, 1, 2};
 
-  const Iterator iter = thrust::partition(data.begin(), data.end(), is_even<T>());
+  const Iterator iter = thrust::partition(data.begin(), data.end(), cuda::__is_even{});
 
   Vector ref{2, 2, 1, 1, 1};
 
-  ASSERT_EQUAL(iter - data.begin(), 2);
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(iter - data.begin() == 2);
+  REQUIRE(data == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPartitionSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_partition_simple);
 
 template <typename Vector>
-void TestPartitionStencilSimple()
+void test_partition_stencil_simple()
 {
-  using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
 
   Vector data{0, 1, 0, 0, 1};
 
   Vector stencil{1, 2, 1, 1, 2};
 
-  const Iterator iter = thrust::partition(data.begin(), data.end(), stencil.begin(), is_even<T>());
+  const Iterator iter = thrust::partition(data.begin(), data.end(), stencil.begin(), cuda::__is_even{});
 
   Vector ref{1, 1, 0, 0, 0};
 
-  ASSERT_EQUAL(iter - data.begin(), 2);
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(iter - data.begin() == 2);
+  REQUIRE(data == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPartitionStencilSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_partition_stencil_simple);
 
 template <typename Vector>
-void TestPartitionCopySimple()
+void test_partition_copy_simple()
 {
-  using T = typename Vector::value_type;
-
   Vector data{1, 2, 1, 1, 2};
 
   Vector true_results(2);
   Vector false_results(3);
 
   const cuda::std::pair<typename Vector::iterator, typename Vector::iterator> ends =
-    thrust::partition_copy(data.begin(), data.end(), true_results.begin(), false_results.begin(), is_even<T>());
+    thrust::partition_copy(data.begin(), data.end(), true_results.begin(), false_results.begin(), cuda::__is_even{});
 
   Vector true_ref(2, 2);
 
   Vector false_ref(3, 1);
 
-  ASSERT_EQUAL(2, ends.first - true_results.begin());
-  ASSERT_EQUAL(3, ends.second - false_results.begin());
-  ASSERT_EQUAL(true_ref, true_results);
-  ASSERT_EQUAL(false_ref, false_results);
+  REQUIRE(2 == ends.first - true_results.begin());
+  REQUIRE(3 == ends.second - false_results.begin());
+  REQUIRE(true_ref == true_results);
+  REQUIRE(false_ref == false_results);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPartitionCopySimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_partition_copy_simple);
 
 template <typename Vector>
-void TestPartitionCopyStencilSimple()
+void test_partition_copy_stencil_simple()
 {
-  using T = typename Vector::value_type;
-
   Vector data{0, 1, 0, 0, 1};
 
   Vector stencil{1, 2, 1, 1, 2};
@@ -106,38 +82,37 @@ void TestPartitionCopyStencilSimple()
   Vector false_results(3);
 
   const cuda::std::pair<typename Vector::iterator, typename Vector::iterator> ends = thrust::partition_copy(
-    data.begin(), data.end(), stencil.begin(), true_results.begin(), false_results.begin(), is_even<T>());
+    data.begin(), data.end(), stencil.begin(), true_results.begin(), false_results.begin(), cuda::__is_even{});
 
   Vector true_ref(2, 1);
 
   Vector false_ref(3, 0);
 
-  ASSERT_EQUAL(2, ends.first - true_results.begin());
-  ASSERT_EQUAL(3, ends.second - false_results.begin());
-  ASSERT_EQUAL(true_ref, true_results);
-  ASSERT_EQUAL(false_ref, false_results);
+  REQUIRE(2 == ends.first - true_results.begin());
+  REQUIRE(3 == ends.second - false_results.begin());
+  REQUIRE(true_ref == true_results);
+  REQUIRE(false_ref == false_results);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPartitionCopyStencilSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_partition_copy_stencil_simple);
 
 template <typename Vector>
-void TestStablePartitionSimple()
+void test_stable_partition_simple()
 {
-  using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
 
   Vector data{1, 2, 1, 3, 2};
 
-  const Iterator iter = thrust::stable_partition(data.begin(), data.end(), is_even<T>());
+  const Iterator iter = thrust::stable_partition(data.begin(), data.end(), cuda::__is_even{});
 
   Vector ref{2, 2, 1, 1, 3};
 
-  ASSERT_EQUAL(iter - data.begin(), 2);
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(iter - data.begin() == 2);
+  REQUIRE(data == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestStablePartitionSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_stable_partition_simple);
 
 template <typename Vector>
-void TestStablePartitionStencilSimple()
+void test_stable_partition_stencil_simple()
 {
   using Iterator = typename Vector::iterator;
 
@@ -149,37 +124,35 @@ void TestStablePartitionStencilSimple()
 
   Vector ref{2, 2, 1, 1, 3};
 
-  ASSERT_EQUAL(iter - data.begin(), 2);
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(iter - data.begin() == 2);
+  REQUIRE(data == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestStablePartitionStencilSimple);
+DECLARE_VECTOR_UNITTEST(test_stable_partition_stencil_simple);
 
 template <typename Vector>
-void TestStablePartitionCopySimple()
+void test_stable_partition_copy_simple()
 {
-  using T = typename Vector::value_type;
-
   Vector data{1, 2, 1, 1, 2};
 
   Vector true_results(2);
   Vector false_results(3);
 
-  const cuda::std::pair<typename Vector::iterator, typename Vector::iterator> ends =
-    thrust::stable_partition_copy(data.begin(), data.end(), true_results.begin(), false_results.begin(), is_even<T>());
+  const cuda::std::pair<typename Vector::iterator, typename Vector::iterator> ends = thrust::stable_partition_copy(
+    data.begin(), data.end(), true_results.begin(), false_results.begin(), cuda::__is_even{});
 
   Vector true_ref(2, 2);
 
   Vector false_ref(3, 1);
 
-  ASSERT_EQUAL(2, ends.first - true_results.begin());
-  ASSERT_EQUAL(3, ends.second - false_results.begin());
-  ASSERT_EQUAL(true_ref, true_results);
-  ASSERT_EQUAL(false_ref, false_results);
+  REQUIRE(2 == ends.first - true_results.begin());
+  REQUIRE(3 == ends.second - false_results.begin());
+  REQUIRE(true_ref == true_results);
+  REQUIRE(false_ref == false_results);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestStablePartitionCopySimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_stable_partition_copy_simple);
 
 template <typename Vector>
-void TestStablePartitionCopyStencilSimple()
+void test_stable_partition_copy_stencil_simple()
 {
   Vector data{1, 2, 1, 1, 2};
   Vector stencil{false, true, false, false, true};
@@ -194,12 +167,12 @@ void TestStablePartitionCopyStencilSimple()
 
   Vector false_ref(3, 1);
 
-  ASSERT_EQUAL(2, ends.first - true_results.begin());
-  ASSERT_EQUAL(3, ends.second - false_results.begin());
-  ASSERT_EQUAL(true_ref, true_results);
-  ASSERT_EQUAL(false_ref, false_results);
+  REQUIRE(2 == ends.first - true_results.begin());
+  REQUIRE(3 == ends.second - false_results.begin());
+  REQUIRE(true_ref == true_results);
+  REQUIRE(false_ref == false_results);
 }
-DECLARE_VECTOR_UNITTEST(TestStablePartitionCopyStencilSimple);
+DECLARE_VECTOR_UNITTEST(test_stable_partition_copy_stencil_simple);
 
 template <typename T>
 struct TestPartition
@@ -211,17 +184,17 @@ struct TestPartition
     thrust::device_vector<T> d_data = h_data;
 
     const typename thrust::host_vector<T>::iterator h_iter =
-      thrust::partition(h_data.begin(), h_data.end(), is_even<T>());
+      thrust::partition(h_data.begin(), h_data.end(), cuda::__is_even{});
     const typename thrust::device_vector<T>::iterator d_iter =
-      thrust::partition(d_data.begin(), d_data.end(), is_even<T>());
+      thrust::partition(d_data.begin(), d_data.end(), cuda::__is_even{});
 
     thrust::sort(h_data.begin(), h_iter);
     thrust::sort(h_iter, h_data.end());
     thrust::sort(d_data.begin(), d_iter);
     thrust::sort(d_iter, d_data.end());
 
-    ASSERT_EQUAL(h_data, d_data);
-    ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
+    REQUIRE(h_data == d_data);
+    REQUIRE(h_iter - h_data.begin() == d_iter - d_data.begin());
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPartition, PartitionTypes);
@@ -249,17 +222,17 @@ struct TestPartitionStencil
     thrust::device_vector<T> d_stencil = h_stencil;
 
     const typename thrust::host_vector<T>::iterator h_iter =
-      thrust::partition(h_data.begin(), h_data.end(), h_stencil.begin(), is_even<T>());
+      thrust::partition(h_data.begin(), h_data.end(), h_stencil.begin(), cuda::__is_even{});
     const typename thrust::device_vector<T>::iterator d_iter =
-      thrust::partition(d_data.begin(), d_data.end(), d_stencil.begin(), is_even<T>());
+      thrust::partition(d_data.begin(), d_data.end(), d_stencil.begin(), cuda::__is_even{});
 
     thrust::sort(h_data.begin(), h_iter);
     thrust::sort(h_iter, h_data.end());
     thrust::sort(d_data.begin(), d_iter);
     thrust::sort(d_iter, d_data.end());
 
-    ASSERT_EQUAL(h_data, d_data);
-    ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
+    REQUIRE(h_data == d_data);
+    REQUIRE(h_iter - h_data.begin() == d_iter - d_data.begin());
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPartitionStencil, PartitionTypes);
@@ -273,7 +246,7 @@ struct TestPartitionCopy
     thrust::host_vector<T> h_data   = unittest::random_integers<T>(n);
     thrust::device_vector<T> d_data = h_data;
 
-    const std::ptrdiff_t n_true  = thrust::count_if(h_data.begin(), h_data.end(), is_even<T>());
+    const std::ptrdiff_t n_true  = thrust::count_if(h_data.begin(), h_data.end(), cuda::__is_even{});
     const std::ptrdiff_t n_false = static_cast<std::ptrdiff_t>(n - n_true);
 
     // setup output ranges
@@ -284,25 +257,25 @@ struct TestPartitionCopy
 
     const cuda::std::pair<typename thrust::host_vector<T>::iterator, typename thrust::host_vector<T>::iterator> h_ends =
       thrust::partition_copy(
-        h_data.begin(), h_data.end(), h_true_results.begin(), h_false_results.begin(), is_even<T>());
+        h_data.begin(), h_data.end(), h_true_results.begin(), h_false_results.begin(), cuda::__is_even{});
 
     const cuda::std::pair<typename thrust::device_vector<T>::iterator, typename thrust::device_vector<T>::iterator>
       d_ends = thrust::partition_copy(
-        d_data.begin(), d_data.end(), d_true_results.begin(), d_false_results.begin(), is_even<T>());
+        d_data.begin(), d_data.end(), d_true_results.begin(), d_false_results.begin(), cuda::__is_even{});
 
     // check true output
-    ASSERT_EQUAL(h_ends.first - h_true_results.begin(), n_true);
-    ASSERT_EQUAL(d_ends.first - d_true_results.begin(), n_true);
+    REQUIRE(h_ends.first - h_true_results.begin() == n_true);
+    REQUIRE(d_ends.first - d_true_results.begin() == n_true);
     thrust::sort(h_true_results.begin(), h_true_results.end());
     thrust::sort(d_true_results.begin(), d_true_results.end());
-    ASSERT_EQUAL(h_true_results, d_true_results);
+    REQUIRE(h_true_results == d_true_results);
 
     // check false output
-    ASSERT_EQUAL(h_ends.second - h_false_results.begin(), n_false);
-    ASSERT_EQUAL(d_ends.second - d_false_results.begin(), n_false);
+    REQUIRE(h_ends.second - h_false_results.begin() == n_false);
+    REQUIRE(d_ends.second - d_false_results.begin() == n_false);
     thrust::sort(h_false_results.begin(), h_false_results.end());
     thrust::sort(d_false_results.begin(), d_false_results.end());
-    ASSERT_EQUAL(h_false_results, d_false_results);
+    REQUIRE(h_false_results == d_false_results);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPartitionCopy, PartitionTypes);
@@ -318,7 +291,7 @@ struct TestPartitionCopyStencil
     thrust::device_vector<T> d_data    = h_data;
     thrust::device_vector<T> d_stencil = h_stencil;
 
-    const std::ptrdiff_t n_true  = thrust::count_if(h_data.begin(), h_data.end(), is_even<T>());
+    const std::ptrdiff_t n_true  = thrust::count_if(h_data.begin(), h_data.end(), cuda::__is_even{});
     const std::ptrdiff_t n_false = static_cast<std::ptrdiff_t>(n - n_true);
 
     // setup output ranges
@@ -329,25 +302,35 @@ struct TestPartitionCopyStencil
 
     const cuda::std::pair<typename thrust::host_vector<T>::iterator, typename thrust::host_vector<T>::iterator> h_ends =
       thrust::partition_copy(
-        h_data.begin(), h_data.end(), h_stencil.begin(), h_true_results.begin(), h_false_results.begin(), is_even<T>());
+        h_data.begin(),
+        h_data.end(),
+        h_stencil.begin(),
+        h_true_results.begin(),
+        h_false_results.begin(),
+        cuda::__is_even{});
 
     const cuda::std::pair<typename thrust::device_vector<T>::iterator, typename thrust::device_vector<T>::iterator>
       d_ends = thrust::partition_copy(
-        d_data.begin(), d_data.end(), d_stencil.begin(), d_true_results.begin(), d_false_results.begin(), is_even<T>());
+        d_data.begin(),
+        d_data.end(),
+        d_stencil.begin(),
+        d_true_results.begin(),
+        d_false_results.begin(),
+        cuda::__is_even{});
 
     // check true output
-    ASSERT_EQUAL(h_ends.first - h_true_results.begin(), n_true);
-    ASSERT_EQUAL(d_ends.first - d_true_results.begin(), n_true);
+    REQUIRE(h_ends.first - h_true_results.begin() == n_true);
+    REQUIRE(d_ends.first - d_true_results.begin() == n_true);
     thrust::sort(h_true_results.begin(), h_true_results.end());
     thrust::sort(d_true_results.begin(), d_true_results.end());
-    ASSERT_EQUAL(h_true_results, d_true_results);
+    REQUIRE(h_true_results == d_true_results);
 
     // check false output
-    ASSERT_EQUAL(h_ends.second - h_false_results.begin(), n_false);
-    ASSERT_EQUAL(d_ends.second - d_false_results.begin(), n_false);
+    REQUIRE(h_ends.second - h_false_results.begin() == n_false);
+    REQUIRE(d_ends.second - d_false_results.begin() == n_false);
     thrust::sort(h_false_results.begin(), h_false_results.end());
     thrust::sort(d_false_results.begin(), d_false_results.end());
-    ASSERT_EQUAL(h_false_results, d_false_results);
+    REQUIRE(h_false_results == d_false_results);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPartitionCopyStencil, PartitionTypes);
@@ -363,7 +346,7 @@ struct TestStablePartitionCopyStencil
     thrust::device_vector<T> d_data    = h_data;
     thrust::device_vector<T> d_stencil = h_stencil;
 
-    const std::ptrdiff_t n_true  = thrust::count_if(h_stencil.begin(), h_stencil.end(), is_even<T>());
+    const std::ptrdiff_t n_true  = thrust::count_if(h_stencil.begin(), h_stencil.end(), cuda::__is_even{});
     const std::ptrdiff_t n_false = static_cast<std::ptrdiff_t>(n - n_true);
 
     // setup output ranges
@@ -374,25 +357,35 @@ struct TestStablePartitionCopyStencil
 
     const cuda::std::pair<typename thrust::host_vector<T>::iterator, typename thrust::host_vector<T>::iterator> h_ends =
       thrust::stable_partition_copy(
-        h_data.begin(), h_data.end(), h_stencil.begin(), h_true_results.begin(), h_false_results.begin(), is_even<T>());
+        h_data.begin(),
+        h_data.end(),
+        h_stencil.begin(),
+        h_true_results.begin(),
+        h_false_results.begin(),
+        cuda::__is_even{});
 
     const cuda::std::pair<typename thrust::device_vector<T>::iterator, typename thrust::device_vector<T>::iterator>
       d_ends = thrust::stable_partition_copy(
-        d_data.begin(), d_data.end(), d_stencil.begin(), d_true_results.begin(), d_false_results.begin(), is_even<T>());
+        d_data.begin(),
+        d_data.end(),
+        d_stencil.begin(),
+        d_true_results.begin(),
+        d_false_results.begin(),
+        cuda::__is_even{});
 
     // check true output
-    ASSERT_EQUAL(h_ends.first - h_true_results.begin(), n_true);
-    ASSERT_EQUAL(d_ends.first - d_true_results.begin(), n_true);
+    REQUIRE(h_ends.first - h_true_results.begin() == n_true);
+    REQUIRE(d_ends.first - d_true_results.begin() == n_true);
     thrust::sort(h_true_results.begin(), h_true_results.end());
     thrust::sort(d_true_results.begin(), d_true_results.end());
-    ASSERT_EQUAL(h_true_results, d_true_results);
+    REQUIRE(h_true_results == d_true_results);
 
     // check false output
-    ASSERT_EQUAL(h_ends.second - h_false_results.begin(), n_false);
-    ASSERT_EQUAL(d_ends.second - d_false_results.begin(), n_false);
+    REQUIRE(h_ends.second - h_false_results.begin() == n_false);
+    REQUIRE(d_ends.second - d_false_results.begin() == n_false);
     thrust::sort(h_false_results.begin(), h_false_results.end());
     thrust::sort(d_false_results.begin(), d_false_results.end());
-    ASSERT_EQUAL(h_false_results, d_false_results);
+    REQUIRE(h_false_results == d_false_results);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestStablePartitionCopyStencil, PartitionTypes);
@@ -406,21 +399,21 @@ struct TestPartitionCopyToDiscardIterator
     thrust::host_vector<T> h_data   = unittest::random_integers<T>(n);
     thrust::device_vector<T> d_data = h_data;
 
-    const std::ptrdiff_t n_true  = thrust::count_if(h_data.begin(), h_data.end(), is_even<T>());
+    const std::ptrdiff_t n_true  = thrust::count_if(h_data.begin(), h_data.end(), cuda::__is_even{});
     const std::ptrdiff_t n_false = static_cast<std::ptrdiff_t>(n - n_true);
 
     // mask both ranges
     const cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> h_result1 = thrust::partition_copy(
-      h_data.begin(), h_data.end(), thrust::make_discard_iterator(), thrust::make_discard_iterator(), is_even<T>());
+      h_data.begin(), h_data.end(), thrust::make_discard_iterator(), thrust::make_discard_iterator(), cuda::__is_even{});
 
     const cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> d_result1 = thrust::partition_copy(
-      d_data.begin(), d_data.end(), thrust::make_discard_iterator(), thrust::make_discard_iterator(), is_even<T>());
+      d_data.begin(), d_data.end(), thrust::make_discard_iterator(), thrust::make_discard_iterator(), cuda::__is_even{});
 
     const cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> reference1 =
       cuda::std::make_pair(thrust::make_discard_iterator(n_true), thrust::make_discard_iterator(n_false));
 
-    ASSERT_EQUAL_QUIET(reference1, h_result1);
-    ASSERT_EQUAL_QUIET(reference1, d_result1);
+    REQUIRE(reference1 == h_result1);
+    REQUIRE(reference1 == d_result1);
 
     // mask the false range
     thrust::host_vector<T> h_trues(n_true);
@@ -428,11 +421,11 @@ struct TestPartitionCopyToDiscardIterator
 
     const cuda::std::pair<typename thrust::host_vector<T>::iterator, thrust::discard_iterator<>> h_result2 =
       thrust::partition_copy(
-        h_data.begin(), h_data.end(), h_trues.begin(), thrust::make_discard_iterator(), is_even<T>());
+        h_data.begin(), h_data.end(), h_trues.begin(), thrust::make_discard_iterator(), cuda::__is_even{});
 
     const cuda::std::pair<typename thrust::device_vector<T>::iterator, thrust::discard_iterator<>> d_result2 =
       thrust::partition_copy(
-        d_data.begin(), d_data.end(), d_trues.begin(), thrust::make_discard_iterator(), is_even<T>());
+        d_data.begin(), d_data.end(), d_trues.begin(), thrust::make_discard_iterator(), cuda::__is_even{});
 
     const cuda::std::pair<typename thrust::host_vector<T>::iterator, thrust::discard_iterator<>> h_reference2 =
       cuda::std::make_pair(h_trues.begin() + n_true, thrust::make_discard_iterator(n_false));
@@ -440,9 +433,9 @@ struct TestPartitionCopyToDiscardIterator
     const cuda::std::pair<typename thrust::device_vector<T>::iterator, thrust::discard_iterator<>> d_reference2 =
       cuda::std::make_pair(d_trues.begin() + n_true, thrust::make_discard_iterator(n_false));
 
-    ASSERT_EQUAL(h_trues, d_trues);
-    ASSERT_EQUAL_QUIET(h_reference2, h_result2);
-    ASSERT_EQUAL_QUIET(d_reference2, d_result2);
+    REQUIRE(h_trues == d_trues);
+    REQUIRE(h_reference2 == h_result2);
+    REQUIRE(d_reference2 == d_result2);
 
     // mask the true range
     thrust::host_vector<T> h_falses(n_false);
@@ -450,11 +443,11 @@ struct TestPartitionCopyToDiscardIterator
 
     const cuda::std::pair<thrust::discard_iterator<>, typename thrust::host_vector<T>::iterator> h_result3 =
       thrust::partition_copy(
-        h_data.begin(), h_data.end(), thrust::make_discard_iterator(), h_falses.begin(), is_even<T>());
+        h_data.begin(), h_data.end(), thrust::make_discard_iterator(), h_falses.begin(), cuda::__is_even{});
 
     const cuda::std::pair<thrust::discard_iterator<>, typename thrust::device_vector<T>::iterator> d_result3 =
       thrust::partition_copy(
-        d_data.begin(), d_data.end(), thrust::make_discard_iterator(), d_falses.begin(), is_even<T>());
+        d_data.begin(), d_data.end(), thrust::make_discard_iterator(), d_falses.begin(), cuda::__is_even{});
 
     const cuda::std::pair<thrust::discard_iterator<>, typename thrust::host_vector<T>::iterator> h_reference3 =
       cuda::std::make_pair(thrust::make_discard_iterator(n_true), h_falses.begin() + n_false);
@@ -462,9 +455,9 @@ struct TestPartitionCopyToDiscardIterator
     const cuda::std::pair<thrust::discard_iterator<>, typename thrust::device_vector<T>::iterator> d_reference3 =
       cuda::std::make_pair(thrust::make_discard_iterator(n_true), d_falses.begin() + n_false);
 
-    ASSERT_EQUAL(h_falses, d_falses);
-    ASSERT_EQUAL_QUIET(h_reference3, h_result3);
-    ASSERT_EQUAL_QUIET(d_reference3, d_result3);
+    REQUIRE(h_falses == d_falses);
+    REQUIRE(h_reference3 == h_result3);
+    REQUIRE(d_reference3 == d_result3);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPartitionCopyToDiscardIterator, PartitionTypes);
@@ -480,7 +473,7 @@ struct TestPartitionCopyStencilToDiscardIterator
     thrust::device_vector<T> d_data    = h_data;
     thrust::device_vector<T> d_stencil = h_stencil;
 
-    const std::ptrdiff_t n_true  = thrust::count_if(h_stencil.begin(), h_stencil.end(), is_even<T>());
+    const std::ptrdiff_t n_true  = thrust::count_if(h_stencil.begin(), h_stencil.end(), cuda::__is_even{});
     const std::ptrdiff_t n_false = static_cast<std::ptrdiff_t>(n - n_true);
 
     // mask both ranges
@@ -490,7 +483,7 @@ struct TestPartitionCopyStencilToDiscardIterator
       h_stencil.begin(),
       thrust::make_discard_iterator(),
       thrust::make_discard_iterator(),
-      is_even<T>());
+      cuda::__is_even{});
 
     const cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> d_result1 = thrust::partition_copy(
       d_data.begin(),
@@ -498,13 +491,13 @@ struct TestPartitionCopyStencilToDiscardIterator
       d_stencil.begin(),
       thrust::make_discard_iterator(),
       thrust::make_discard_iterator(),
-      is_even<T>());
+      cuda::__is_even{});
 
     const cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> reference1 =
       cuda::std::make_pair(thrust::make_discard_iterator(n_true), thrust::make_discard_iterator(n_false));
 
-    ASSERT_EQUAL_QUIET(reference1, h_result1);
-    ASSERT_EQUAL_QUIET(reference1, d_result1);
+    REQUIRE(reference1 == h_result1);
+    REQUIRE(reference1 == d_result1);
 
     // mask the false range
     thrust::host_vector<T> h_trues(n_true);
@@ -512,11 +505,21 @@ struct TestPartitionCopyStencilToDiscardIterator
 
     const cuda::std::pair<typename thrust::host_vector<T>::iterator, thrust::discard_iterator<>> h_result2 =
       thrust::partition_copy(
-        h_data.begin(), h_data.end(), h_stencil.begin(), h_trues.begin(), thrust::make_discard_iterator(), is_even<T>());
+        h_data.begin(),
+        h_data.end(),
+        h_stencil.begin(),
+        h_trues.begin(),
+        thrust::make_discard_iterator(),
+        cuda::__is_even{});
 
     const cuda::std::pair<typename thrust::device_vector<T>::iterator, thrust::discard_iterator<>> d_result2 =
       thrust::partition_copy(
-        d_data.begin(), d_data.end(), d_stencil.begin(), d_trues.begin(), thrust::make_discard_iterator(), is_even<T>());
+        d_data.begin(),
+        d_data.end(),
+        d_stencil.begin(),
+        d_trues.begin(),
+        thrust::make_discard_iterator(),
+        cuda::__is_even{});
 
     const cuda::std::pair<typename thrust::host_vector<T>::iterator, thrust::discard_iterator<>> h_reference2 =
       cuda::std::make_pair(h_trues.begin() + n_true, thrust::make_discard_iterator(n_false));
@@ -524,9 +527,9 @@ struct TestPartitionCopyStencilToDiscardIterator
     const cuda::std::pair<typename thrust::device_vector<T>::iterator, thrust::discard_iterator<>> d_reference2 =
       cuda::std::make_pair(d_trues.begin() + n_true, thrust::make_discard_iterator(n_false));
 
-    ASSERT_EQUAL(h_trues, d_trues);
-    ASSERT_EQUAL_QUIET(h_reference2, h_result2);
-    ASSERT_EQUAL_QUIET(d_reference2, d_result2);
+    REQUIRE(h_trues == d_trues);
+    REQUIRE(h_reference2 == h_result2);
+    REQUIRE(d_reference2 == d_result2);
 
     // mask the true range
     thrust::host_vector<T> h_falses(n_false);
@@ -539,7 +542,7 @@ struct TestPartitionCopyStencilToDiscardIterator
         h_stencil.begin(),
         thrust::make_discard_iterator(),
         h_falses.begin(),
-        is_even<T>());
+        cuda::__is_even{});
 
     const cuda::std::pair<thrust::discard_iterator<>, typename thrust::device_vector<T>::iterator> d_result3 =
       thrust::partition_copy(
@@ -548,7 +551,7 @@ struct TestPartitionCopyStencilToDiscardIterator
         d_stencil.begin(),
         thrust::make_discard_iterator(),
         d_falses.begin(),
-        is_even<T>());
+        cuda::__is_even{});
 
     const cuda::std::pair<thrust::discard_iterator<>, typename thrust::host_vector<T>::iterator> h_reference3 =
       cuda::std::make_pair(thrust::make_discard_iterator(n_true), h_falses.begin() + n_false);
@@ -556,9 +559,9 @@ struct TestPartitionCopyStencilToDiscardIterator
     const cuda::std::pair<thrust::discard_iterator<>, typename thrust::device_vector<T>::iterator> d_reference3 =
       cuda::std::make_pair(thrust::make_discard_iterator(n_true), d_falses.begin() + n_false);
 
-    ASSERT_EQUAL(h_falses, d_falses);
-    ASSERT_EQUAL_QUIET(h_reference3, h_result3);
-    ASSERT_EQUAL_QUIET(d_reference3, d_result3);
+    REQUIRE(h_falses == d_falses);
+    REQUIRE(h_reference3 == h_result3);
+    REQUIRE(d_reference3 == d_result3);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPartitionCopyStencilToDiscardIterator, PartitionTypes);
@@ -576,12 +579,12 @@ struct TestStablePartition
     thrust::device_vector<T> d_data = h_data;
 
     const typename thrust::host_vector<T>::iterator h_iter =
-      thrust::stable_partition(h_data.begin(), h_data.end(), is_even<T>());
+      thrust::stable_partition(h_data.begin(), h_data.end(), cuda::__is_even{});
     const typename thrust::device_vector<T>::iterator d_iter =
-      thrust::stable_partition(d_data.begin(), d_data.end(), is_even<T>());
+      thrust::stable_partition(d_data.begin(), d_data.end(), cuda::__is_even{});
 
-    ASSERT_EQUAL(h_data, d_data);
-    ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
+    REQUIRE(h_data == d_data);
+    REQUIRE(h_iter - h_data.begin() == d_iter - d_data.begin());
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestStablePartition, PartitionTypes);
@@ -603,12 +606,12 @@ struct TestStablePartitionStencil
     thrust::device_vector<T> d_stencil = h_stencil;
 
     const typename thrust::host_vector<T>::iterator h_iter =
-      thrust::stable_partition(h_data.begin(), h_data.end(), h_stencil.begin(), is_even<T>());
+      thrust::stable_partition(h_data.begin(), h_data.end(), h_stencil.begin(), cuda::__is_even{});
     const typename thrust::device_vector<T>::iterator d_iter =
-      thrust::stable_partition(d_data.begin(), d_data.end(), d_stencil.begin(), is_even<T>());
+      thrust::stable_partition(d_data.begin(), d_data.end(), d_stencil.begin(), cuda::__is_even{});
 
-    ASSERT_EQUAL(h_data, d_data);
-    ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
+    REQUIRE(h_data == d_data);
+    REQUIRE(h_iter - h_data.begin() == d_iter - d_data.begin());
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestStablePartitionStencil, PartitionTypes);
@@ -624,7 +627,7 @@ struct TestStablePartitionCopy
     thrust::host_vector<T> h_data   = unittest::random_integers<T>(n);
     thrust::device_vector<T> d_data = h_data;
 
-    const std::ptrdiff_t n_true  = thrust::count_if(h_data.begin(), h_data.end(), is_even<T>());
+    const std::ptrdiff_t n_true  = thrust::count_if(h_data.begin(), h_data.end(), cuda::__is_even{});
     const std::ptrdiff_t n_false = static_cast<std::ptrdiff_t>(n - n_true);
 
     // setup output ranges
@@ -635,21 +638,21 @@ struct TestStablePartitionCopy
 
     const cuda::std::pair<typename thrust::host_vector<T>::iterator, typename thrust::host_vector<T>::iterator> h_ends =
       thrust::stable_partition_copy(
-        h_data.begin(), h_data.end(), h_true_results.begin(), h_false_results.begin(), is_even<T>());
+        h_data.begin(), h_data.end(), h_true_results.begin(), h_false_results.begin(), cuda::__is_even{});
 
     const cuda::std::pair<typename thrust::device_vector<T>::iterator, typename thrust::device_vector<T>::iterator>
       d_ends = thrust::stable_partition_copy(
-        d_data.begin(), d_data.end(), d_true_results.begin(), d_false_results.begin(), is_even<T>());
+        d_data.begin(), d_data.end(), d_true_results.begin(), d_false_results.begin(), cuda::__is_even{});
 
     // check true output
-    ASSERT_EQUAL(h_ends.first - h_true_results.begin(), n_true);
-    ASSERT_EQUAL(d_ends.first - d_true_results.begin(), n_true);
-    ASSERT_EQUAL(h_true_results, d_true_results);
+    REQUIRE(h_ends.first - h_true_results.begin() == n_true);
+    REQUIRE(d_ends.first - d_true_results.begin() == n_true);
+    REQUIRE(h_true_results == d_true_results);
 
     // check false output
-    ASSERT_EQUAL(h_ends.second - h_false_results.begin(), n_false);
-    ASSERT_EQUAL(d_ends.second - d_false_results.begin(), n_false);
-    ASSERT_EQUAL(h_false_results, d_false_results);
+    REQUIRE(h_ends.second - h_false_results.begin() == n_false);
+    REQUIRE(d_ends.second - d_false_results.begin() == n_false);
+    REQUIRE(h_false_results == d_false_results);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestStablePartitionCopy, PartitionTypes);
@@ -663,23 +666,31 @@ struct TestStablePartitionCopyToDiscardIterator
     thrust::host_vector<T> h_data   = unittest::random_integers<T>(n);
     thrust::device_vector<T> d_data = h_data;
 
-    const std::ptrdiff_t n_true  = thrust::count_if(h_data.begin(), h_data.end(), is_even<T>());
+    const std::ptrdiff_t n_true  = thrust::count_if(h_data.begin(), h_data.end(), cuda::__is_even{});
     const std::ptrdiff_t n_false = static_cast<std::ptrdiff_t>(n - n_true);
 
     // mask both ranges
     const cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> h_result1 =
       thrust::stable_partition_copy(
-        h_data.begin(), h_data.end(), thrust::make_discard_iterator(), thrust::make_discard_iterator(), is_even<T>());
+        h_data.begin(),
+        h_data.end(),
+        thrust::make_discard_iterator(),
+        thrust::make_discard_iterator(),
+        cuda::__is_even{});
 
     const cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> d_result1 =
       thrust::stable_partition_copy(
-        d_data.begin(), d_data.end(), thrust::make_discard_iterator(), thrust::make_discard_iterator(), is_even<T>());
+        d_data.begin(),
+        d_data.end(),
+        thrust::make_discard_iterator(),
+        thrust::make_discard_iterator(),
+        cuda::__is_even{});
 
     const cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> reference1 =
       cuda::std::make_pair(thrust::make_discard_iterator(n_true), thrust::make_discard_iterator(n_false));
 
-    ASSERT_EQUAL_QUIET(reference1, h_result1);
-    ASSERT_EQUAL_QUIET(reference1, d_result1);
+    REQUIRE(reference1 == h_result1);
+    REQUIRE(reference1 == d_result1);
 
     // mask the false range
     thrust::host_vector<T> h_trues(n_true);
@@ -687,11 +698,11 @@ struct TestStablePartitionCopyToDiscardIterator
 
     const cuda::std::pair<typename thrust::host_vector<T>::iterator, thrust::discard_iterator<>> h_result2 =
       thrust::stable_partition_copy(
-        h_data.begin(), h_data.end(), h_trues.begin(), thrust::make_discard_iterator(), is_even<T>());
+        h_data.begin(), h_data.end(), h_trues.begin(), thrust::make_discard_iterator(), cuda::__is_even{});
 
     const cuda::std::pair<typename thrust::device_vector<T>::iterator, thrust::discard_iterator<>> d_result2 =
       thrust::stable_partition_copy(
-        d_data.begin(), d_data.end(), d_trues.begin(), thrust::make_discard_iterator(), is_even<T>());
+        d_data.begin(), d_data.end(), d_trues.begin(), thrust::make_discard_iterator(), cuda::__is_even{});
 
     const cuda::std::pair<typename thrust::host_vector<T>::iterator, thrust::discard_iterator<>> h_reference2 =
       cuda::std::make_pair(h_trues.begin() + n_true, thrust::make_discard_iterator(n_false));
@@ -699,9 +710,9 @@ struct TestStablePartitionCopyToDiscardIterator
     const cuda::std::pair<typename thrust::device_vector<T>::iterator, thrust::discard_iterator<>> d_reference2 =
       cuda::std::make_pair(d_trues.begin() + n_true, thrust::make_discard_iterator(n_false));
 
-    ASSERT_EQUAL(h_trues, d_trues);
-    ASSERT_EQUAL_QUIET(h_reference2, h_result2);
-    ASSERT_EQUAL_QUIET(d_reference2, d_result2);
+    REQUIRE(h_trues == d_trues);
+    REQUIRE(h_reference2 == h_result2);
+    REQUIRE(d_reference2 == d_result2);
 
     // mask the true range
     thrust::host_vector<T> h_falses(n_false);
@@ -709,11 +720,11 @@ struct TestStablePartitionCopyToDiscardIterator
 
     const cuda::std::pair<thrust::discard_iterator<>, typename thrust::host_vector<T>::iterator> h_result3 =
       thrust::stable_partition_copy(
-        h_data.begin(), h_data.end(), thrust::make_discard_iterator(), h_falses.begin(), is_even<T>());
+        h_data.begin(), h_data.end(), thrust::make_discard_iterator(), h_falses.begin(), cuda::__is_even{});
 
     const cuda::std::pair<thrust::discard_iterator<>, typename thrust::device_vector<T>::iterator> d_result3 =
       thrust::stable_partition_copy(
-        d_data.begin(), d_data.end(), thrust::make_discard_iterator(), d_falses.begin(), is_even<T>());
+        d_data.begin(), d_data.end(), thrust::make_discard_iterator(), d_falses.begin(), cuda::__is_even{});
 
     const cuda::std::pair<thrust::discard_iterator<>, typename thrust::host_vector<T>::iterator> h_reference3 =
       cuda::std::make_pair(thrust::make_discard_iterator(n_true), h_falses.begin() + n_false);
@@ -721,9 +732,9 @@ struct TestStablePartitionCopyToDiscardIterator
     const cuda::std::pair<thrust::discard_iterator<>, typename thrust::device_vector<T>::iterator> d_reference3 =
       cuda::std::make_pair(thrust::make_discard_iterator(n_true), d_falses.begin() + n_false);
 
-    ASSERT_EQUAL(h_falses, d_falses);
-    ASSERT_EQUAL_QUIET(h_reference3, h_result3);
-    ASSERT_EQUAL_QUIET(d_reference3, d_result3);
+    REQUIRE(h_falses == d_falses);
+    REQUIRE(h_reference3 == h_result3);
+    REQUIRE(d_reference3 == d_result3);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestStablePartitionCopyToDiscardIterator, PartitionTypes);
@@ -739,7 +750,7 @@ struct TestStablePartitionCopyStencilToDiscardIterator
     thrust::device_vector<T> d_data    = h_data;
     thrust::device_vector<T> d_stencil = h_stencil;
 
-    const std::ptrdiff_t n_true  = thrust::count_if(h_stencil.begin(), h_stencil.end(), is_even<T>());
+    const std::ptrdiff_t n_true  = thrust::count_if(h_stencil.begin(), h_stencil.end(), cuda::__is_even{});
     const std::ptrdiff_t n_false = static_cast<std::ptrdiff_t>(n - n_true);
 
     // mask both ranges
@@ -750,7 +761,7 @@ struct TestStablePartitionCopyStencilToDiscardIterator
         h_stencil.begin(),
         thrust::make_discard_iterator(),
         thrust::make_discard_iterator(),
-        is_even<T>());
+        cuda::__is_even{});
 
     const cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> d_result1 =
       thrust::stable_partition_copy(
@@ -759,13 +770,13 @@ struct TestStablePartitionCopyStencilToDiscardIterator
         d_stencil.begin(),
         thrust::make_discard_iterator(),
         thrust::make_discard_iterator(),
-        is_even<T>());
+        cuda::__is_even{});
 
     const cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> reference1 =
       cuda::std::make_pair(thrust::make_discard_iterator(n_true), thrust::make_discard_iterator(n_false));
 
-    ASSERT_EQUAL_QUIET(reference1, h_result1);
-    ASSERT_EQUAL_QUIET(reference1, d_result1);
+    REQUIRE(reference1 == h_result1);
+    REQUIRE(reference1 == d_result1);
 
     // mask the false range
     thrust::host_vector<T> h_trues(n_true);
@@ -773,11 +784,21 @@ struct TestStablePartitionCopyStencilToDiscardIterator
 
     const cuda::std::pair<typename thrust::host_vector<T>::iterator, thrust::discard_iterator<>> h_result2 =
       thrust::stable_partition_copy(
-        h_data.begin(), h_data.end(), h_stencil.begin(), h_trues.begin(), thrust::make_discard_iterator(), is_even<T>());
+        h_data.begin(),
+        h_data.end(),
+        h_stencil.begin(),
+        h_trues.begin(),
+        thrust::make_discard_iterator(),
+        cuda::__is_even{});
 
     const cuda::std::pair<typename thrust::device_vector<T>::iterator, thrust::discard_iterator<>> d_result2 =
       thrust::stable_partition_copy(
-        d_data.begin(), d_data.end(), d_stencil.begin(), d_trues.begin(), thrust::make_discard_iterator(), is_even<T>());
+        d_data.begin(),
+        d_data.end(),
+        d_stencil.begin(),
+        d_trues.begin(),
+        thrust::make_discard_iterator(),
+        cuda::__is_even{});
 
     const cuda::std::pair<typename thrust::host_vector<T>::iterator, thrust::discard_iterator<>> h_reference2 =
       cuda::std::make_pair(h_trues.begin() + n_true, thrust::make_discard_iterator(n_false));
@@ -785,9 +806,9 @@ struct TestStablePartitionCopyStencilToDiscardIterator
     const cuda::std::pair<typename thrust::device_vector<T>::iterator, thrust::discard_iterator<>> d_reference2 =
       cuda::std::make_pair(d_trues.begin() + n_true, thrust::make_discard_iterator(n_false));
 
-    ASSERT_EQUAL(h_trues, d_trues);
-    ASSERT_EQUAL_QUIET(h_reference2, h_result2);
-    ASSERT_EQUAL_QUIET(d_reference2, d_result2);
+    REQUIRE(h_trues == d_trues);
+    REQUIRE(h_reference2 == h_result2);
+    REQUIRE(d_reference2 == d_result2);
 
     // mask the true range
     thrust::host_vector<T> h_falses(n_false);
@@ -800,7 +821,7 @@ struct TestStablePartitionCopyStencilToDiscardIterator
         h_stencil.begin(),
         thrust::make_discard_iterator(),
         h_falses.begin(),
-        is_even<T>());
+        cuda::__is_even{});
 
     const cuda::std::pair<thrust::discard_iterator<>, typename thrust::device_vector<T>::iterator> d_result3 =
       thrust::stable_partition_copy(
@@ -809,7 +830,7 @@ struct TestStablePartitionCopyStencilToDiscardIterator
         d_stencil.begin(),
         thrust::make_discard_iterator(),
         d_falses.begin(),
-        is_even<T>());
+        cuda::__is_even{});
 
     const cuda::std::pair<thrust::discard_iterator<>, typename thrust::host_vector<T>::iterator> h_reference3 =
       cuda::std::make_pair(thrust::make_discard_iterator(n_true), h_falses.begin() + n_false);
@@ -817,9 +838,9 @@ struct TestStablePartitionCopyStencilToDiscardIterator
     const cuda::std::pair<thrust::discard_iterator<>, typename thrust::device_vector<T>::iterator> d_reference3 =
       cuda::std::make_pair(thrust::make_discard_iterator(n_true), d_falses.begin() + n_false);
 
-    ASSERT_EQUAL(h_falses, d_falses);
-    ASSERT_EQUAL_QUIET(h_reference3, h_result3);
-    ASSERT_EQUAL_QUIET(d_reference3, d_result3);
+    REQUIRE(h_falses == d_falses);
+    REQUIRE(h_reference3 == h_result3);
+    REQUIRE(d_reference3 == d_result3);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestStablePartitionCopyStencilToDiscardIterator, PartitionTypes);
@@ -834,7 +855,7 @@ struct is_ordered
 };
 
 template <typename Vector>
-void TestPartitionZipIterator()
+void test_partition_zip_iterator()
 {
   Vector data1{1, 2, 1, 1, 2};
   Vector data2{2, 1, 2, 2, 1};
@@ -851,14 +872,14 @@ void TestPartitionZipIterator()
   Vector ref1{1, 1, 1, 2, 2};
   Vector ref2{2, 2, 2, 1, 1};
 
-  ASSERT_EQUAL(iter - begin, 3);
-  ASSERT_EQUAL(data1, ref1);
-  ASSERT_EQUAL(data2, ref2);
+  REQUIRE(iter - begin == 3);
+  REQUIRE(data1 == ref1);
+  REQUIRE(data2 == ref2);
 }
-DECLARE_VECTOR_UNITTEST(TestPartitionZipIterator);
+DECLARE_VECTOR_UNITTEST(test_partition_zip_iterator);
 
 template <typename Vector>
-void TestPartitionStencilZipIterator()
+void test_partition_stencil_zip_iterator()
 {
   Vector data{1, 0, 1, 1, 0};
 
@@ -875,13 +896,13 @@ void TestPartitionStencilZipIterator()
 
   Vector ref{1, 1, 1, 0, 0};
 
-  ASSERT_EQUAL(iter - data.begin(), 3);
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(iter - data.begin() == 3);
+  REQUIRE(data == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestPartitionStencilZipIterator);
+DECLARE_VECTOR_UNITTEST(test_partition_stencil_zip_iterator);
 
 template <typename Vector>
-void TestStablePartitionZipIterator()
+void test_stable_partition_zip_iterator()
 {
   Vector data1{1, 2, 1, 1, 2};
   Vector data2{2, 0, 3, 2, 1};
@@ -898,14 +919,14 @@ void TestStablePartitionZipIterator()
   Vector ref1{1, 1, 1, 2, 2};
   Vector ref2{2, 3, 2, 0, 1};
 
-  ASSERT_EQUAL(data1, ref1);
-  ASSERT_EQUAL(data2, ref2);
-  ASSERT_EQUAL(iter - begin, 3);
+  REQUIRE(data1 == ref1);
+  REQUIRE(data2 == ref2);
+  REQUIRE(iter - begin == 3);
 }
-DECLARE_VECTOR_UNITTEST(TestStablePartitionZipIterator);
+DECLARE_VECTOR_UNITTEST(test_stable_partition_zip_iterator);
 
 template <typename Vector>
-void TestStablePartitionStencilZipIterator()
+void test_stable_partition_stencil_zip_iterator()
 {
   Vector data{1, 0, 1, 1, 0};
 
@@ -922,10 +943,10 @@ void TestStablePartitionStencilZipIterator()
 
   Vector ref{1, 1, 1, 0, 0};
 
-  ASSERT_EQUAL(ref, data);
-  ASSERT_EQUAL(mid - data.begin(), 3);
+  REQUIRE(ref == data);
+  REQUIRE(mid - data.begin() == 3);
 }
-DECLARE_VECTOR_UNITTEST(TestStablePartitionStencilZipIterator);
+DECLARE_VECTOR_UNITTEST(test_stable_partition_stencil_zip_iterator);
 
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator partition(my_system& system, ForwardIterator first, ForwardIterator, Predicate)
@@ -934,16 +955,15 @@ ForwardIterator partition(my_system& system, ForwardIterator first, ForwardItera
   return first;
 }
 
-void TestPartitionDispatchExplicit()
+TEST_CASE("TestPartitionDispatchExplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::partition(sys, vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestPartitionDispatchExplicit);
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
 ForwardIterator partition(my_system& system, ForwardIterator first, ForwardIterator, InputIterator, Predicate)
@@ -952,16 +972,15 @@ ForwardIterator partition(my_system& system, ForwardIterator first, ForwardItera
   return first;
 }
 
-void TestPartitionStencilDispatchExplicit()
+TEST_CASE("TestPartitionStencilDispatchExplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::partition(sys, vec.begin(), vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestPartitionStencilDispatchExplicit);
 
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator partition(my_tag, ForwardIterator first, ForwardIterator, Predicate)
@@ -970,15 +989,14 @@ ForwardIterator partition(my_tag, ForwardIterator first, ForwardIterator, Predic
   return first;
 }
 
-void TestPartitionDispatchImplicit()
+TEST_CASE("TestPartitionDispatchImplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::partition(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestPartitionDispatchImplicit);
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
 ForwardIterator partition(my_tag, ForwardIterator first, ForwardIterator, InputIterator, Predicate)
@@ -987,16 +1005,15 @@ ForwardIterator partition(my_tag, ForwardIterator first, ForwardIterator, InputI
   return first;
 }
 
-void TestPartitionStencilDispatchImplicit()
+TEST_CASE("TestPartitionStencilDispatchImplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::partition(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestPartitionStencilDispatchImplicit);
 
 template <typename InputIterator, typename OutputIterator1, typename OutputIterator2, typename Predicate>
 cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
@@ -1006,16 +1023,15 @@ cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
   return cuda::std::make_pair(out_true, out_false);
 }
 
-void TestPartitionCopyDispatchExplicit()
+TEST_CASE("TestPartitionCopyDispatchExplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::partition_copy(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestPartitionCopyDispatchExplicit);
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -1035,16 +1051,15 @@ cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
   return cuda::std::make_pair(out_true, out_false);
 }
 
-void TestPartitionCopyStencilDispatchExplicit()
+TEST_CASE("TestPartitionCopyStencilDispatchExplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::partition_copy(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestPartitionCopyStencilDispatchExplicit);
 
 template <typename InputIterator, typename OutputIterator1, typename OutputIterator2, typename Predicate>
 cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
@@ -1054,7 +1069,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
   return cuda::std::make_pair(out_true, out_false);
 }
 
-void TestPartitionCopyDispatchImplicit()
+TEST_CASE("TestPartitionCopyDispatchImplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -1065,9 +1080,8 @@ void TestPartitionCopyDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()),
     0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestPartitionCopyDispatchImplicit);
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -1087,7 +1101,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
   return cuda::std::make_pair(out_true, out_false);
 }
 
-void TestPartitionCopyStencilDispatchImplicit()
+TEST_CASE("TestPartitionCopyStencilDispatchImplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -1099,9 +1113,8 @@ void TestPartitionCopyStencilDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()),
     0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestPartitionCopyStencilDispatchImplicit);
 
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator stable_partition(my_system& system, ForwardIterator first, ForwardIterator, Predicate)
@@ -1110,16 +1123,15 @@ ForwardIterator stable_partition(my_system& system, ForwardIterator first, Forwa
   return first;
 }
 
-void TestStablePartitionDispatchExplicit()
+TEST_CASE("TestStablePartitionDispatchExplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::stable_partition(sys, vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestStablePartitionDispatchExplicit);
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
 ForwardIterator stable_partition(my_system& system, ForwardIterator first, ForwardIterator, InputIterator, Predicate)
@@ -1128,16 +1140,15 @@ ForwardIterator stable_partition(my_system& system, ForwardIterator first, Forwa
   return first;
 }
 
-void TestStablePartitionStencilDispatchExplicit()
+TEST_CASE("TestStablePartitionStencilDispatchExplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::stable_partition(sys, vec.begin(), vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestStablePartitionStencilDispatchExplicit);
 
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator stable_partition(my_tag, ForwardIterator first, ForwardIterator, Predicate)
@@ -1146,15 +1157,14 @@ ForwardIterator stable_partition(my_tag, ForwardIterator first, ForwardIterator,
   return first;
 }
 
-void TestStablePartitionDispatchImplicit()
+TEST_CASE("TestStablePartitionDispatchImplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::stable_partition(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestStablePartitionDispatchImplicit);
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
 ForwardIterator stable_partition(my_tag, ForwardIterator first, ForwardIterator, InputIterator, Predicate)
@@ -1163,16 +1173,15 @@ ForwardIterator stable_partition(my_tag, ForwardIterator first, ForwardIterator,
   return first;
 }
 
-void TestStablePartitionStencilDispatchImplicit()
+TEST_CASE("TestStablePartitionStencilDispatchImplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::stable_partition(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestStablePartitionStencilDispatchImplicit);
 
 template <typename InputIterator, typename OutputIterator1, typename OutputIterator2, typename Predicate>
 cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
@@ -1182,16 +1191,15 @@ cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   return cuda::std::make_pair(out_true, out_false);
 }
 
-void TestStablePartitionCopyDispatchExplicit()
+TEST_CASE("TestStablePartitionCopyDispatchExplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::stable_partition_copy(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestStablePartitionCopyDispatchExplicit);
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -1211,16 +1219,15 @@ cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   return cuda::std::make_pair(out_true, out_false);
 }
 
-void TestStablePartitionCopyStencilDispatchExplicit()
+TEST_CASE("TestStablePartitionCopyStencilDispatchExplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::stable_partition_copy(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestStablePartitionCopyStencilDispatchExplicit);
 
 template <typename InputIterator, typename OutputIterator1, typename OutputIterator2, typename Predicate>
 cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
@@ -1230,7 +1237,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   return cuda::std::make_pair(out_true, out_false);
 }
 
-void TestStablePartitionCopyDispatchImplicit()
+TEST_CASE("TestStablePartitionCopyDispatchImplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -1241,9 +1248,8 @@ void TestStablePartitionCopyDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()),
     0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestStablePartitionCopyDispatchImplicit);
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -1263,7 +1269,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   return cuda::std::make_pair(out_true, out_false);
 }
 
-void TestStablePartitionCopyStencilDispatchImplicit()
+TEST_CASE("TestStablePartitionCopyStencilDispatchImplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -1275,6 +1281,5 @@ void TestStablePartitionCopyStencilDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()),
     0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestStablePartitionCopyStencilDispatchImplicit);

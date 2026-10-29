@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/variant.h>
 #include <cuda/std/__type_traits/add_const.h>
 #include <cuda/std/__type_traits/add_cv.h>
@@ -118,7 +119,7 @@ struct __traits
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL _Trait __common_trait(initializer_list<_Trait> __traits) noexcept
   {
     _Trait __result = _Trait::_TriviallyAvailable;
-    for (_Trait __t : __traits)
+    for (const _Trait& __t : __traits)
     {
       if (static_cast<int>(__t) > static_cast<int>(__result))
       {

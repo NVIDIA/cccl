@@ -28,20 +28,20 @@ void test_universal_vector_access(VecInT& vec, VecOutT& out)
 {
   universal_vector_device_access_kernel<<<1, 1>>>(vec, out);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
-  ASSERT_EQUAL(out[0], true);
+  REQUIRE(cudaSuccess == err);
+  REQUIRE(out[0]);
 }
 #else
 template <class VecInT, class VecOutT>
 void test_universal_vector_access(VecInT& vec, VecOutT& out)
 {
   universal_vector_access(vec, out);
-  ASSERT_EQUAL(out[0], true);
+  REQUIRE(out[0]);
 }
 #endif
 
 template <typename UniversalIntVector, typename UniversalBoolVector>
-void TestDeviceAccess()
+void test_device_access()
 {
   using in_vector_t  = UniversalIntVector;
   using out_vector_t = UniversalBoolVector;
@@ -69,8 +69,11 @@ void TestDeviceAccess()
   cudaFree(in_ptr);
   cudaFree(out_ptr);
 }
-DECLARE_UNITTEST_WITH_NAME((TestDeviceAccess<thrust::universal_vector<int>, thrust::universal_vector<bool>>),
-                           TestUniversalVectorDeviceAccess);
-DECLARE_UNITTEST_WITH_NAME(
-  (TestDeviceAccess<thrust::universal_host_pinned_vector<int>, thrust::universal_host_pinned_vector<bool>>),
-  TestUniversalHPVectorDeviceAccess);
+TEST_CASE("TestUniversalVectorDeviceAccess", "[device_side_universal_vector]")
+{
+  test_device_access<thrust::universal_vector<int>, thrust::universal_vector<bool>>();
+}
+TEST_CASE("TestUniversalHPVectorDeviceAccess", "[device_side_universal_vector]")
+{
+  test_device_access<thrust::universal_host_pinned_vector<int>, thrust::universal_host_pinned_vector<bool>>();
+}

@@ -25,10 +25,13 @@
 #  include <cuda/std/__compare/ordering.h>
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/climits>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/ratio>
 
@@ -195,8 +198,8 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT duration
     static constexpr intmax_t __d2        = _R2::den / __gcd_d1_d2;
     static constexpr intmax_t max         = -((intmax_t(1) << (sizeof(intmax_t) * CHAR_BIT - 1)) + 1);
 
-    template <intmax_t _Xp, intmax_t _Yp, bool __overflow>
-    struct __mul // __overflow == false
+    template <intmax_t _Xp, intmax_t _Yp, bool _Overflow>
+    struct __mul // _Overflow == false
     {
       static constexpr intmax_t value = _Xp * _Yp;
     };

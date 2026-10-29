@@ -22,6 +22,7 @@ inline std::string membar_scope(Scope sco)
     std::pair{Scope::GPU, ".gl"},
     std::pair{Scope::System, ".sys"},
     std::pair{Scope::CTA, ".cta"},
+    std::pair{Scope::Cluster, ".gl"},
   };
 
   return scope_map[sco];
@@ -40,6 +41,7 @@ _CCCL_DEVICE_API inline void __cuda_atomic_membar({0})
     std::pair{Scope::GPU, ".gl"},
     std::pair{Scope::System, ".sys"},
     std::pair{Scope::CTA, ".cta"},
+    std::pair{Scope::Cluster, ".gl"},
   };
 
   for (const auto& sco : membar_scopes)
@@ -94,7 +96,7 @@ _CCCL_DEVICE_API void __cuda_atomic_ptx_maybe_sc_fence(__cuda_atomic_order_volat
 template <typename _Sco>
 _CCCL_DEVICE_API void __cuda_atomic_thread_fence(
   __cuda_atomic_ptx_backend, memory_order __order, _Sco) {
-  [[maybe_unused]] const int __memorder = __atomic_order_to_int(__order);
+  [[maybe_unused]] const int __memorder = ::cuda::std::__atomic_order_to_int(__order);
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70, (
       switch (__memorder) {

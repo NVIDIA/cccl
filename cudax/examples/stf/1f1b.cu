@@ -15,12 +15,14 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <string>
+
 using namespace cuda::experimental::stf;
 
 __global__ void forward(slice<int>, long long int clock_cnt)
 {
-  long long int start_clock  = clock64();
-  long long int clock_offset = 0;
+  const long long int start_clock = clock64();
+  long long int clock_offset      = 0;
   while (clock_offset < clock_cnt)
   {
     clock_offset = clock64() - start_clock;
@@ -29,8 +31,8 @@ __global__ void forward(slice<int>, long long int clock_cnt)
 
 __global__ void backward(slice<int>, long long int clock_cnt)
 {
-  long long int start_clock  = clock64();
-  long long int clock_offset = 0;
+  const long long int start_clock = clock64();
+  long long int clock_offset      = 0;
   while (clock_offset < clock_cnt)
   {
     clock_offset = clock64() - start_clock;
@@ -41,7 +43,7 @@ int main(int argc, char** argv)
 {
   context ctx;
   // Use a graph context if the second argument is set and not null
-  if (argc > 2 && atoi(argv[2]))
+  if (argc > 2 && ::std::stoi(argv[2]))
   {
     ctx = graph_ctx();
   }
@@ -59,11 +61,11 @@ int main(int argc, char** argv)
   int factor = 1;
   if (argc > 1)
   {
-    factor = atoi(argv[1]);
+    factor = ::std::stoi(argv[1]);
   }
 
-  size_t num_batches = 8 * factor;
-  int num_devs       = 8;
+  const size_t num_batches = 8 * factor;
+  const int num_devs       = 8;
   int real_devs;
   cuda_safe_call(cudaGetDeviceCount(&real_devs));
 
@@ -81,7 +83,7 @@ int main(int argc, char** argv)
 
   cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
 
-  size_t niter = 10;
+  const size_t niter = 10;
 
   for (size_t iter = 0; iter < niter; iter++)
   {
@@ -90,8 +92,8 @@ int main(int argc, char** argv)
       for (int d = 0; d < num_devs; d++)
       {
         ctx.task(exec_place::device(d % real_devs), data[b].rw())->*[=](cudaStream_t s, auto bd) {
-          int ms                  = 10;
-          long long int clock_cnt = (long long int) (ms * clock_rate / factor);
+          const int ms                  = 10;
+          const long long int clock_cnt = (long long int) (ms * clock_rate / factor);
           forward<<<occ_f.min_grid_size, occ_f.block_size, 0, s>>>(bd, clock_cnt);
         };
       }
@@ -101,8 +103,8 @@ int main(int argc, char** argv)
       for (int d = num_devs; d-- > 0;)
       {
         ctx.task(exec_place::device(d % real_devs), data[b].rw())->*[=](cudaStream_t s, auto bd) {
-          int ms                  = 20;
-          long long int clock_cnt = (long long int) (ms * clock_rate / factor);
+          const int ms                  = 20;
+          const long long int clock_cnt = (long long int) (ms * clock_rate / factor);
           backward<<<occ_b.min_grid_size, occ_b.block_size, 0, s>>>(bd, clock_cnt);
         };
       }

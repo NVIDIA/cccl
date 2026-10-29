@@ -76,8 +76,8 @@ struct index_to_summary
   std::size_t num_summaries;
   bool is_descending;
 
-  template <typename index_type>
-  __host__ __device__ summary_t operator()(index_type idx) const
+  template <typename IndexType>
+  __host__ __device__ summary_t operator()(IndexType idx) const
   {
     constexpr KeyType max_key = ::cuda::std::numeric_limits<KeyType>::max();
 
@@ -125,8 +125,8 @@ public:
 template <typename ValueType>
 struct index_to_value
 {
-  template <typename index_type>
-  __host__ __device__ ValueType operator()(index_type index)
+  template <typename IndexType>
+  __host__ __device__ ValueType operator()(IndexType index)
   {
     return static_cast<ValueType>(index);
   }

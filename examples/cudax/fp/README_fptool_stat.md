@@ -63,8 +63,8 @@ under suspicion and leave the rest as plain `fpmp2`, and the counters describe t
 variable's arithmetic instead of the whole kernel's:
 
 ```c++
-cudax::fp32mp2      sum{0.0f}, term{1.0f};
-cudax::fp32mp2_stat compensation{0.0f};   // the only instrumented variable
+cuda::fp32mp2      sum{0.0f}, term{1.0f};
+cuda::fp32mp2_stat compensation{0.0f};   // the only instrumented variable
 
 auto y = term - compensation;   // counted: compensation is instrumented, y becomes so
 auto t = sum + y;               // counted: y is instrumented, t becomes so
@@ -103,16 +103,28 @@ since those internals use plain `fpmp2` and never reach the record.
 Running a measurement
 ---------------------
 
+The feature is opt-in. The counter record is a mutable object at namespace scope, one copy
+shared by every translation unit, and every instrumented operation updates it with an
+`atomicAdd` — so an `#include` left behind after a measurement would carry both the record
+and that traffic into a shipping binary. `<cuda/fptool>` therefore refuses to compile until
+the project asks for it:
+
+```bash
+nvcc -DCCCL_ENABLE_FPTOOL ...
+```
+
+Define it for the whole project rather than per file, since the record above is shared
+across translation units.
+
 ```c++
 #include <cuda/fptool>
 ```
 
 ```c++
-namespace cudax = cuda::experimental;
 
-cudax::fpmp2_stat_reset_device_data(stream);
+cuda::fpmp2_stat_reset_device_data(stream);
 cuda::launch(stream, config, my_kernel, ...);
-const auto record = cudax::fpmp2_stat_read_device_data(stream);
+const auto record = cuda::fpmp2_stat_read_device_data(stream);
 ```
 
 Both functions take a stream and are host-only. The reset enqueues a cleared record, so
@@ -316,8 +328,8 @@ threads lowering the minimum simultaneously may leave the sample of either, thou
 instrumented types are unavailable there.
 
 Including `<cuda/fptool>` costs about a fifth more than the types alone, since the statistics
-math wrappers pull in `<cuda/fpmp_math>`. That is a compile-time cost rather than a runtime
-one, but it is worth knowing when the header goes into something large.
+math wrappers rest on the fpmp math surface. That is a compile-time cost rather than a
+runtime one, but it is worth knowing when the header goes into something large.
 
 A measurement workflow
 ----------------------
@@ -330,3 +342,13 @@ A measurement workflow
 6. Compare the same workload across `_low`, `_mid` and `_high`.
 7. Keep a plain-type run alongside. Results are bit-identical by construction, so a mismatch
    means a race or an uninitialized value rather than a rounding difference.
+
+Optimization guide
+------------------
+
+Several of the recommendations for the `fpmp` types — whether `low` is safe and where to
+renormalize, where `high` pays, whether the pair is earning its cost — are decided from this
+record. The [FP optimization guide](README_fp_optimization_guide.md#using-fptool) gives the
+order to read it in for that purpose, and its [Using fpmp
+efficiently](README_fp_optimization_guide.md#using-fpmp-efficiently) section the recommendations
+themselves.

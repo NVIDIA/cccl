@@ -13,11 +13,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/thread/thread_sort.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/std/__algorithm/min.h>
@@ -61,7 +63,7 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
 
 namespace detail
 {
-template <bool Unroll = true, typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
+template <bool Unroll = detail::sort_unroll_default, typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
 _CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
   KeyIt keys_shared,
   int keys1_beg,
@@ -96,7 +98,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
   }
 }
 
-template <bool Unroll = true, typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
+template <bool Unroll = detail::sort_unroll_default, typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
 _CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
   KeyIt keys_shared,
   int keys1_beg,
@@ -210,7 +212,7 @@ template <typename KeyT,
           int NumThreads,
           int ItemsPerThread,
           typename SynchronizationPolicy,
-          bool _Unroll = true>
+          bool Unroll = detail::sort_unroll_default>
 class BlockMergeSortStrategy
 {
   static_assert(::cuda::is_power_of_two(NumThreads), "NumThreads must be a power of two");
@@ -253,8 +255,7 @@ private:
 
 public:
   /// \smemstorage{BlockMergeSort}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   BlockMergeSortStrategy() = delete;
   explicit _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSortStrategy(unsigned int linear_tid)
@@ -414,7 +415,7 @@ public:
    *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`
    *   `CompareOp` is a model of [Strict Weak Ordering].
    *
-   * @tparam IS_LAST_TILE
+   * @tparam IsLastTile
    *   True if `valid_items` isn't equal to the `ITEMS_PER_TILE`
    *
    * @param[in,out] keys
@@ -436,7 +437,7 @@ public:
    *
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
-  template <typename CompareOp, bool IS_LAST_TILE = true>
+  template <typename CompareOp, bool IsLastTile = true>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   Sort(KeyT (&keys)[ItemsPerThread],
        ValueT (&items)[ItemsPerThread],
@@ -444,7 +445,7 @@ public:
        int valid_items,
        KeyT oob_default)
   {
-    if constexpr (IS_LAST_TILE)
+    if constexpr (IsLastTile)
     {
       // Clamping the merge runs to valid_items, rather than padding the tile with oob_default and
       // sorting the full tile, means oob_default only ever bounds a thread's own padding. Its
@@ -455,7 +456,7 @@ public:
     }
     else
     {
-      detail::stable_odd_even_sort<_Unroll>(keys, items, compare_op);
+      detail::stable_odd_even_sort<Unroll>(keys, items, compare_op);
 
       // each thread has sorted keys
       // merge sort keys in shared memory
@@ -700,7 +701,7 @@ public:
    *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
    *   `CompareOp` is a model of [Strict Weak Ordering].
    *
-   * @tparam IS_LAST_TILE
+   * @tparam IsLastTile
    *   True if `valid_items` isn't equal to the `ITEMS_PER_TILE`
    *
    * @param[in,out] keys
@@ -722,7 +723,7 @@ public:
    *
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
-  template <typename CompareOp, bool IS_LAST_TILE = true>
+  template <typename CompareOp, bool IsLastTile = true>
   _CCCL_DEVICE _CCCL_FORCEINLINE void StableSort(
     KeyT (&keys)[ItemsPerThread],
     ValueT (&items)[ItemsPerThread],
@@ -730,7 +731,7 @@ public:
     int valid_items,
     KeyT oob_default)
   {
-    Sort<CompareOp, IS_LAST_TILE>(keys, items, compare_op, valid_items, oob_default);
+    Sort<CompareOp, IsLastTile>(keys, items, compare_op, valid_items, oob_default);
   }
 
   /**
@@ -893,7 +894,7 @@ private:
         max_key = compare_op(max_key, oob_default) ? oob_default : max_key;
       }
 
-      _CCCL_PRAGMA_UNROLL(_Unroll ? ItemsPerThread : 1)
+      _CCCL_PRAGMA_UNROLL(Unroll ? ItemsPerThread : 1)
       for (int item = 1; item < ItemsPerThread; ++item)
       {
         if (ItemsPerThread * linear_tid + item < valid_items)
@@ -906,7 +907,7 @@ private:
         }
       }
 
-      detail::stable_odd_even_sort<_Unroll>(keys, items, compare_op);
+      detail::stable_odd_even_sort<Unroll>(keys, items, compare_op);
     }
 
     MergeRounds<true>(keys, items, compare_op, valid_items);
@@ -993,7 +994,7 @@ private:
       const int keys2_beg_loc   = keys2_beg + diag - partition_diag;
       const int keys1_count_loc = keys1_end - keys1_beg_loc;
       const int keys2_count_loc = keys2_end - keys2_beg_loc;
-      detail::serial_merge<_Unroll>(
+      detail::serial_merge<Unroll>(
         &temp_storage.keys_shared[0],
         keys1_beg_loc,
         keys2_beg_loc,
@@ -1100,15 +1101,15 @@ template <typename KeyT,
           typename ValueT = NullType,
           int BlockDimY   = 1,
           int BlockDimZ   = 1,
-          bool _Unroll    = true>
+          bool Unroll     = detail::sort_unroll_default>
 class BlockMergeSort
     : public BlockMergeSortStrategy<
         KeyT,
         ValueT,
         BlockDimX * BlockDimY * BlockDimZ,
         ItemsPerThread,
-        BlockMergeSort<KeyT, BlockDimX, ItemsPerThread, ValueT, BlockDimY, BlockDimZ, _Unroll>,
-        _Unroll>
+        BlockMergeSort<KeyT, BlockDimX, ItemsPerThread, ValueT, BlockDimY, BlockDimZ, Unroll>,
+        Unroll>
 {
 private:
   // The thread block size in threads
@@ -1116,7 +1117,7 @@ private:
   static constexpr int ITEMS_PER_TILE = ItemsPerThread * BLOCK_THREADS;
 
   using BlockMergeSortStrategyT =
-    BlockMergeSortStrategy<KeyT, ValueT, BLOCK_THREADS, ItemsPerThread, BlockMergeSort, _Unroll>;
+    BlockMergeSortStrategy<KeyT, ValueT, BLOCK_THREADS, ItemsPerThread, BlockMergeSort, Unroll>;
 
 public:
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSort()

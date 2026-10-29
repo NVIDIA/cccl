@@ -86,28 +86,12 @@ void sum_sparse_vectors(
 int main()
 {
   // initialize sparse vector A with 4 elements
-  thrust::device_vector<int> A_index(4);
-  thrust::device_vector<float> A_value(4);
-
-  // clang-format off
-  A_index[0] = 2;  A_value[0] = 10;
-  A_index[1] = 3;  A_value[1] = 60;
-  A_index[2] = 5;  A_value[2] = 20;
-  A_index[3] = 8;  A_value[3] = 40;
-  // clang-format on
+  const thrust::device_vector<int> A_index{2, 3, 5, 8};
+  const thrust::device_vector<float> A_value{10.0f, 60.0f, 20.0f, 40.0f};
 
   // initialize sparse vector B with 6 elements
-  thrust::device_vector<int> B_index(6);
-  thrust::device_vector<float> B_value(6);
-
-  // clang-format off
-  B_index[0] = 1;  B_value[0] = 50;
-  B_index[1] = 2;  B_value[1] = 30;
-  B_index[2] = 4;  B_value[2] = 80;
-  B_index[3] = 5;  B_value[3] = 30;
-  B_index[4] = 7;  B_value[4] = 90;
-  B_index[5] = 8;  B_value[5] = 10;
-  // clang-format on
+  const thrust::device_vector<int> B_index{1, 2, 4, 5, 7, 8};
+  const thrust::device_vector<float> B_value{50.0f, 30.0f, 80.0f, 30.0f, 90.0f, 10.0f};
 
   // compute sparse vector C = A + B
   thrust::device_vector<int> C_index;

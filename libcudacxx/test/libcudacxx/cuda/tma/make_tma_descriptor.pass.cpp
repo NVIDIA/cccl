@@ -94,8 +94,8 @@ bool test_sizes()
 {
   float* data = nullptr;
   assert(cudaMalloc(&data, 64 * sizeof(float)) == cudaSuccess);
-  constexpr int64_t shape_storage[2]   = {16, int64_t{1} << 32};
-  constexpr int64_t strides_storage[2] = {int64_t{1} << 32, 1};
+  constexpr int64_t shape_storage[2]   = {16, int64_t{1} << 31};
+  constexpr int64_t strides_storage[2] = {int64_t{1} << 31, 1};
 
   DLTensor tensor{};
   tensor.data             = data;

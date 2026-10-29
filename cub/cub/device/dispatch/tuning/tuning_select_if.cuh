@@ -18,12 +18,15 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/prefetch.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
-#include <cub/util_type.cuh>
 
+#include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/is_same.h>
@@ -100,6 +103,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, SelectAlgorithm algo)
 #endif // _CCCL_HOSTED()
 
 //! The tuning policy for all non-ByKey algorithms in @ref DeviceSelect
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct SelectPolicy
 {
   SelectAlgorithm algorithm; //!< The select algorithm to use
@@ -190,6 +194,7 @@ struct PartitionLookbackPolicy
 };
 
 //! The tuning policy for all non-three-way algorithms of @ref DevicePartition
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct PartitionPolicy
 {
   PartitionAlgorithm algorithm = PartitionAlgorithm::lookback; //!< The partition algorithm to use
@@ -3135,7 +3140,7 @@ struct policy_selector_from_types
       is_primitive_v<input_t>,
       ::cuda::std::is_same_v<flag_t, NullType> ? 0 : sizeof(flag_t),
       SelectionOpt == SelectImpl::Partition ? sizeof(OffsetT) : sizeof(::cuda::std::int32_t),
-      is_partition_distinct_output_t<SelectedOutputIteratorT>::value,
+      ::cuda::__is_specialization_of_v<SelectedOutputIteratorT, partition_distinct_output_t>,
       SelectionOpt}(cc);
   }
 };

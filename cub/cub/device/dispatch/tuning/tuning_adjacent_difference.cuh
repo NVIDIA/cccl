@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_adjacent_difference.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 

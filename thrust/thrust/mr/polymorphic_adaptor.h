@@ -26,7 +26,8 @@ public:
       : upstream_resource(t)
   {}
 
-  Pointer do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  Pointer do_allocate(std::size_t bytes, // NOLINT(google-default-arguments)
+                      std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     return upstream_resource->allocate(bytes, alignment);
   }

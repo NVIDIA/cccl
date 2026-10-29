@@ -50,7 +50,9 @@ class JsonCache:
     def get_bench(self, algname):
         if algname not in self.bench_cache:
             result = self.get_jsonlist(algname, "benches")
-            self.bench_cache[algname] = json.loads(result)
+            self.bench_cache[algname] = (
+                json.loads(result) if result.strip() else {"benchmarks": []}
+            )
         return self.bench_cache[algname]
 
     def get_device(self, algname):
@@ -343,6 +345,23 @@ def get_device_name(device):
     return name.replace("NVIDIA ", "")
 
 
+def export_jsonlists(algname):
+    """The jsonlists for `algname`, ready to be handed to another process."""
+    return {"benches": json_benches(algname), "device": device_json(algname)}
+
+
+def prime_jsonlists(algname, jsonlists):
+    """Seed the caches from `export_jsonlists`, launching no benchmark binary.
+
+    Both lists are read by running the base binary, which creates a CUDA context
+    on the device. A process that only needs cached scores would otherwise pay
+    that on a GPU that is busy benchmarking for someone else.
+    """
+    cache = JsonCache()
+    cache.bench_cache[algname] = jsonlists["benches"]
+    cache.device_cache[algname] = jsonlists["device"]
+
+
 def get_gpu_name(algname):
     override = get_gpu_name_override()
     if override is not None:
@@ -609,6 +628,7 @@ class Bench:
         self.algname = algorithm_name
         self.variant = variant
         self.ct_workload = ct_workload
+        self.execution_seconds = 0.0
 
     def label(self):
         return self.algname + "." + self.variant.label()
@@ -792,10 +812,10 @@ class Bench:
                 )
             )
 
-            begin = time.time()
+            begin = time.perf_counter()
             p = ProcessRunner().new_process(cmd)
             p.wait(timeout=timeout)
-            elapsed = time.time() - begin
+            elapsed = time.perf_counter() - begin
 
             logger.info(
                 "finished benchmark {} with {} ({}) in {:.3f}s".format(
@@ -817,7 +837,16 @@ class Bench:
         if not self.build():
             raise Exception("Unable to build benchmark: " + self.label())
 
-        return values_to_space(first_val(self.axes_values(sub_space, True)))
+        ct_axes_values = self.axes_values(sub_space, True)
+        if not ct_axes_values:
+            Logger().info(
+                "skipping {} because the executable registered no benchmarks".format(
+                    self.algname
+                )
+            )
+            return []
+
+        return values_to_space(first_val(ct_axes_values))
 
     def rt_axes_values(self, sub_space):
         if not self.build():
@@ -829,6 +858,7 @@ class Bench:
         logger = Logger()
         bench_cache = BenchCache()
         runs_cache = RunsCache()
+        self.execution_seconds = 0.0
         cached_centers = bench_cache.pull_bench_centers(
             self, ct_workload_point, rt_values
         )
@@ -845,8 +875,32 @@ class Bench:
             timeout = elapsed * 50
 
         result = self.do_run(ct_workload_point, rt_values, timeout, is_search)
+        self.execution_seconds = result.elapsed
         runs_cache.push_run(self, result.code, result.elapsed)
         return bench_cache.push_bench_centers(self, result, estimator)
+
+    def is_score_cached(self, ct_workload_point, rt_values):
+        """Whether the score can be derived from stored results alone.
+
+        A hit means `score` touches neither the compiler nor the GPU, so callers
+        can skip building the variant. Mirrors the falsy check in `run`, which
+        treats an empty result as a miss.
+        """
+        bench_cache = BenchCache()
+
+        if not bench_cache.pull_bench_centers(self, ct_workload_point, rt_values):
+            return False
+
+        if self.is_base():
+            # baseline's score is always 1.0
+            return True
+
+        # variant's center is not enough, need base to know the score
+        return bool(
+            bench_cache.pull_bench_centers(
+                self.get_base(), ct_workload_point, rt_values
+            )
+        )
 
     def speedup(self, ct_workload_point, rt_values, base_estimator, variant_estimator):
         if self.is_base():

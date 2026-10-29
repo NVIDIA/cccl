@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -33,8 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 #if !(defined _CCCL_FPMP_USE_LIB)
 
 /*
@@ -108,7 +107,7 @@ __internal_fpmp2_tanh(const float __x_hi, const float __x_lo, float* __res_hi, f
     __ffloat __two_abs = __abs_a + __abs_a; /* exactly 2|x|: addition of equals */
     float __u_hi;
     float __u_lo;
-    __fpmp2_exp<float>(__two_abs.hi(), __two_abs.lo(), &__u_hi, &__u_lo);
+    ::cuda::__fpmp2_exp<float>(__two_abs.hi(), __two_abs.lo(), &__u_hi, &__u_lo);
     __ffloat __denom  = __ffloat(__u_hi, __u_lo) + __ffloat(1.f);
     __ffloat __r      = __ffloat(2.f) / __denom;
     __ffloat __result = __ffloat(1.f) - __r;
@@ -151,7 +150,7 @@ __internal_fpmp2_tanh(const float __x_hi, const float __x_lo, float* __res_hi, f
   };
 
   __ffloat __a2 = __x * __x; /* x^2 (sign of x cancels) */
-  __ffloat __q  = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 2>(__a2, __tanh_c);
+  __ffloat __q  = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 2>(__a2, __tanh_c);
 
   /* tanh(x) = x + x * x^2 * Q(x^2). Sign-preserving in x; no
    * separate sign fixup needed for the polynomial branch. */
@@ -220,7 +219,7 @@ __internal_fpmp2_sinh(const float __x_hi, const float __x_lo, float* __res_hi, f
     /* ---- large-|x| branch:  sinh(|x|) = (e - 1/e) / 2 ---------- */
     float __u_hi;
     float __u_lo;
-    __fpmp2_exp<float>(__abs_a.hi(), __abs_a.lo(), &__u_hi, &__u_lo);
+    ::cuda::__fpmp2_exp<float>(__abs_a.hi(), __abs_a.lo(), &__u_hi, &__u_lo);
     __ffloat __e(__u_hi, __u_lo);
     __ffloat __half_e     = __e * __ffloat(0.5f);
     __ffloat __half_inv_e = __ffloat(0.5f) / __e;
@@ -268,7 +267,7 @@ __internal_fpmp2_sinh(const float __x_hi, const float __x_lo, float* __res_hi, f
   };
 
   __ffloat __a2 = __x * __x; /* x^2 (sign of x cancels) */
-  __ffloat __q  = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 3>(__a2, __sinh_c);
+  __ffloat __q  = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 3>(__a2, __sinh_c);
 
   /* sinh(x) = x + x * x^2 * P(x^2).  Sign-preserving in x; no
    * separate sign fixup needed for the polynomial branch. */
@@ -331,7 +330,7 @@ __internal_fpmp2_cosh(const float __x_hi, const float __x_lo, float* __res_hi, f
 
   float __u_hi;
   float __u_lo;
-  __fpmp2_exp<float>(__abs_a.hi(), __abs_a.lo(), &__u_hi, &__u_lo);
+  ::cuda::__fpmp2_exp<float>(__abs_a.hi(), __abs_a.lo(), &__u_hi, &__u_lo);
   __ffloat __e(__u_hi, __u_lo);
 
   /* cosh(|x|) = 0.5*e + 0.5/e  (both terms positive; no cancellation). */
@@ -470,7 +469,7 @@ __internal_fpmp2_asinh(const float __x_hi, const float __x_lo, float* __res_hi, 
     constexpr __ffloat __ln2(0x1.62e42fefa39efp-1);
     float __l_hi;
     float __l_lo;
-    __fpmp2_log<float>(__abs_a.hi(), __abs_a.lo(), &__l_hi, &__l_lo);
+    ::cuda::__fpmp2_log<float>(__abs_a.hi(), __abs_a.lo(), &__l_hi, &__l_lo);
     __result = renormalize(__ffloat(__l_hi, __l_lo) + __ln2);
   }
   else
@@ -489,14 +488,14 @@ __internal_fpmp2_asinh(const float __x_hi, const float __x_lo, float* __res_hi, 
     __ffloat __a2p1 = add<fpmp2_accuracy::high>(__a2, 1.0f);
     float __s_hi;
     float __s_lo;
-    __fpmp2_sqrt<float>(__a2p1.hi(), __a2p1.lo(), &__s_hi, &__s_lo);
+    ::cuda::__fpmp2_sqrt<float>(__a2p1.hi(), __a2p1.lo(), &__s_hi, &__s_lo);
     __ffloat __s     = __ffloat(__s_hi, __s_lo);
     __ffloat __denom = add<fpmp2_accuracy::high>(__s, 1.0f);
     __ffloat __t     = renormalize(__abs_a + __a2 / __denom);
 
     float __r_hi;
     float __r_lo;
-    __fpmp2_log1p<float>(__t.hi(), __t.lo(), &__r_hi, &__r_lo);
+    ::cuda::__fpmp2_log1p<float>(__t.hi(), __t.lo(), &__r_hi, &__r_lo);
     __result = __ffloat(__r_hi, __r_lo);
   }
 
@@ -595,7 +594,7 @@ __internal_fpmp2_acosh(const float __x_hi, const float __x_lo, float* __res_hi, 
     constexpr __ffloat __ln2(0x1.62e42fefa39efp-1);
     float __l_hi;
     float __l_lo;
-    __fpmp2_log<float>(__x.hi(), __x.lo(), &__l_hi, &__l_lo);
+    ::cuda::__fpmp2_log<float>(__x.hi(), __x.lo(), &__l_hi, &__l_lo);
     __result = renormalize(__ffloat(__l_hi, __l_lo) + __ln2);
   }
   else
@@ -618,13 +617,13 @@ __internal_fpmp2_acosh(const float __x_hi, const float __x_lo, float* __res_hi, 
     __ffloat __x2m1 = __xm1 * __xp1;
     float __s_hi;
     float __s_lo;
-    __fpmp2_sqrt<float>(__x2m1.hi(), __x2m1.lo(), &__s_hi, &__s_lo);
+    ::cuda::__fpmp2_sqrt<float>(__x2m1.hi(), __x2m1.lo(), &__s_hi, &__s_lo);
     __ffloat __s = __ffloat(__s_hi, __s_lo);
     __ffloat __t = renormalize(__xm1 + __s);
 
     float __r_hi;
     float __r_lo;
-    __fpmp2_log1p<float>(__t.hi(), __t.lo(), &__r_hi, &__r_lo);
+    ::cuda::__fpmp2_log1p<float>(__t.hi(), __t.lo(), &__r_hi, &__r_lo);
     __result = __ffloat(__r_hi, __r_lo);
   }
 
@@ -746,7 +745,7 @@ __internal_fpmp2_atanh(const float __x_hi, const float __x_lo, float* __res_hi, 
     };
 
     __ffloat __y      = __x * __x; /* x^2 (sign of x cancels) */
-    __ffloat __q      = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 4>(__y, __atanh_poly_c);
+    __ffloat __q      = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 4>(__y, __atanh_poly_c);
     __ffloat __result = renormalize(__x + __x * (__y * __q));
     *__res_hi         = __result.hi();
     *__res_lo         = __result.lo();
@@ -767,7 +766,7 @@ __internal_fpmp2_atanh(const float __x_hi, const float __x_lo, float* __res_hi, 
 
   float __l_hi;
   float __l_lo;
-  __fpmp2_log1p<float>(__t.hi(), __t.lo(), &__l_hi, &__l_lo);
+  ::cuda::__fpmp2_log1p<float>(__t.hi(), __t.lo(), &__l_hi, &__l_lo);
 
   __ffloat __result = __ffloat(__l_hi, __l_lo) * __ffloat(0.5f);
   if (__is_neg)
@@ -793,7 +792,7 @@ __internal_fpmp2_atanh(const double __x_hi, const double __x_lo, double* __res_h
 _CCCL_FPMP_MATH_DISPATCH_1A(atanh)
 
 #endif // _CCCL_FPMP_USE_LIB
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

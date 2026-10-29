@@ -26,9 +26,7 @@ struct minmax_unary_op
 {
   __host__ __device__ minmax_pair<T> operator()(const T& x) const
   {
-    minmax_pair<T> result;
-    result.min_val = x;
-    result.max_val = x;
+    minmax_pair<T> result{x, x};
     return result;
   }
 };
@@ -42,9 +40,7 @@ struct minmax_binary_op
 {
   __host__ __device__ minmax_pair<T> operator()(const minmax_pair<T>& x, const minmax_pair<T>& y) const
   {
-    minmax_pair<T> result;
-    result.min_val = thrust::min(x.min_val, y.min_val);
-    result.max_val = thrust::max(x.max_val, y.max_val);
+    minmax_pair<T> result{thrust::min(x.min_val, y.min_val), thrust::max(x.max_val, y.max_val)};
     return result;
   }
 };

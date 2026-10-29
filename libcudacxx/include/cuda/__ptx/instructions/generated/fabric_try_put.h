@@ -1,7 +1,7 @@
 // This file was automatically generated. Do not edit.
 
 // clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
-// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone, readability-identifier-naming)
 
 #ifndef _CUDA_PTX_GENERATED_FABRIC_TRY_PUT_H_
 #define _CUDA_PTX_GENERATED_FABRIC_TRY_PUT_H_
@@ -274,6 +274,6 @@ _CCCL_DEVICE_API void fabric_try_put_multimem_counted(
 }
 #endif // __cccl_ptx_isa >= 930
 
-// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone, readability-identifier-naming)
 
 #endif // _CUDA_PTX_GENERATED_FABRIC_TRY_PUT_H_

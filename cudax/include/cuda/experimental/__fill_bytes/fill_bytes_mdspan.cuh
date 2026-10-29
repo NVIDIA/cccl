@@ -24,6 +24,9 @@
 #if !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__driver/driver_api.h>
+#  include <cuda/__mdspan/__copy/mdspan_to_raw_tensor.h>
+#  include <cuda/__mdspan/__copy/simplify_paired.h>
+#  include <cuda/__mdspan/__copy/tensor_query.h>
 #  include <cuda/__mdspan/host_device_mdspan.h>
 #  include <cuda/__mdspan/traits.h>
 #  include <cuda/__stream/stream_ref.h>
@@ -39,10 +42,7 @@
 #  include <cuda/std/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__type_traits/remove_cvref.h>
 
-#  include <cuda/experimental/__copy_bytes/mdspan_to_raw_tensor.cuh>
 #  include <cuda/experimental/__copy_bytes/memcpy_batch_tiles.cuh>
-#  include <cuda/experimental/__copy_bytes/simplify_paired.cuh>
-#  include <cuda/experimental/__copy_bytes/tensor_query.cuh>
 #  include <cuda/experimental/__fill_bytes/fill_bytes_mdspan_utils.cuh>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -171,7 +171,7 @@ _CCCL_HOST_API void fill_bytes(::cuda::device_mdspan<_Tp, _Extents, _Layout, _Ac
   {
     _CCCL_THROW(::std::invalid_argument, "cudax::fill_bytes: destination mdspan must be sufficiently aligned");
   }
-  if (::cuda::experimental::__has_interleaved_stride_order(__mdspan))
+  if (::cuda::__has_interleaved_stride_order(__mdspan))
   {
     _CCCL_THROW(::std::invalid_argument,
                 "cudax::fill_bytes: destination mdspan must not have interleaved stride order");
@@ -190,14 +190,14 @@ _CCCL_HOST_API void fill_bytes(::cuda::device_mdspan<_Tp, _Extents, _Layout, _Ac
   constexpr auto __rank = _Extents::rank();
   if constexpr (__rank > 0)
   {
-    const auto __raw_tensor = ::cuda::experimental::__to_raw_tensor<__extent_t, __stride_t, __rank>(__mdspan);
-    auto __simplified       = ::cuda::experimental::__sort_by_stride(__raw_tensor);
+    const auto __raw_tensor = ::cuda::__to_raw_tensor<__extent_t, __stride_t, __rank>(__mdspan);
+    auto __simplified       = ::cuda::__sort_by_stride(__raw_tensor);
     ::cuda::experimental::__flip_negative_strides_single(__simplified);
     ::cuda::experimental::__coalesce_single(__simplified);
 
     const bool __stride1      = (__simplified.__strides[0] == 1);
     const auto __tile_size    = __stride1 ? __simplified.__extents[0] : __extent_t{1};
-    const auto __final_tensor = (__tile_size > 1) ? __simplified : ::cuda::experimental::__reverse_modes(__simplified);
+    const auto __final_tensor = (__tile_size > 1) ? __simplified : ::cuda::__reverse_modes(__simplified);
     const auto __num_tiles    = static_cast<::cuda::std::size_t>(__tensor_size / __tile_size);
     const auto __tile_bytes   = static_cast<::cuda::std::size_t>(__tile_size) * sizeof(_Tp);
     _CCCL_ASSERT(__tensor_size % __tile_size == 0, "cudax::fill_bytes: tensor size must be divisible by tile size");

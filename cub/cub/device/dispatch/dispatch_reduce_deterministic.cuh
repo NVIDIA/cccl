@@ -17,29 +17,35 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_reduce.cuh>
+#include <thrust/detail/config.h>
+
 #include <cub/detail/deferred_parameter.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/rfa.cuh>
-#include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce_deterministic.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
 
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
+
 #include <cuda/__argument/argument.h>
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/__execution/determinism.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -114,19 +120,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   }
 
   // Log single_reduce_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
-          "%d items per thread\n",
-          active_policy.single_tile.threads_per_block,
-          (long long) stream,
-          active_policy.single_tile.items_per_thread);
-#else // CUB_DEBUG_LOG
-  log("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
-      "%d items per thread\n",
-      active_policy.single_tile.threads_per_block,
-      (long long) stream,
-      active_policy.single_tile.items_per_thread);
-#endif // CUB_DEBUG_LOG
+  _CUB_LOG_KERNEL_LAUNCH(
+    "DeterministicDeviceReduceSingleTileKernel", 1, 1, 1, active_policy.single_tile.threads_per_block, 0, stream, "");
 
   // Invoke single_reduce_sweep_kernel
   if (const auto error = CubDebug(
@@ -269,7 +264,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     const auto kernel_num_items = [=] {
       if constexpr (::cuda::args::__traits<OffsetT>::is_deferred)
       {
-        return detail::reduce::make_num_items_kernel_arg(num_items);
+        return detail::make_num_items_kernel_arg(num_items);
       }
       else
       {
@@ -278,23 +273,16 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     }();
 
     // Log device_reduce_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking DeterministicDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), %d items "
-            "per thread, %d SM occupancy\n",
-            current_grid_size,
-            active_policy.multi_tile.threads_per_block,
-            (long long) stream,
-            active_policy.multi_tile.items_per_thread,
-            reduce_config.sm_occupancy);
-#else // CUB_DEBUG_LOG
-    log("Invoking DeterministicDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), %d items "
-        "per thread, %d SM occupancy\n",
-        current_grid_size,
-        active_policy.multi_tile.threads_per_block,
-        (long long) stream,
-        active_policy.multi_tile.items_per_thread,
-        reduce_config.sm_occupancy);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH(
+      "DeterministicDeviceReduceKernel",
+      current_grid_size,
+      1,
+      1,
+      active_policy.multi_tile.threads_per_block,
+      0,
+      stream,
+      ", SM occupancy: %d",
+      reduce_config.sm_occupancy);
 
     if (const auto error = CubDebug(
           launcher_factory(current_grid_size, active_policy.multi_tile.threads_per_block, 0, stream)
@@ -334,19 +322,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   }
 
   // Log single_reduce_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
-          "%d items per thread\n",
-          active_policy.single_tile.threads_per_block,
-          (long long) stream,
-          active_policy.single_tile.items_per_thread);
-#else // CUB_DEBUG_LOG
-  log("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
-      "%d items per thread\n",
-      active_policy.single_tile.threads_per_block,
-      (long long) stream,
-      active_policy.single_tile.items_per_thread);
-#endif // CUB_DEBUG_LOG
+  _CUB_LOG_KERNEL_LAUNCH(
+    "DeterministicDeviceReduceSingleTileKernel", 1, 1, 1, active_policy.single_tile.threads_per_block, 0, stream, "");
 
   // Invoke DeterministicDeviceReduceSingleTileKernel/DeterministicDeviceReduceDeferredSingleTileKernel
   const auto second_pass_error = [&] {
@@ -363,7 +340,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
                 DeterministicAccumT>,
               d_block_reductions,
               d_out,
-              detail::reduce::make_num_items_kernel_arg(num_items),
+              detail::make_num_items_kernel_arg(num_items),
               reduce_grid_size,
               reduction_op,
               init,
@@ -409,7 +386,7 @@ template <typename InputIteratorT,
           typename TransformOpT          = ::cuda::std::identity,
           typename AccumT                = accum_t<InitValueT, InputIteratorT, TransformOpT>,
           typename PolicySelector        = policy_selector_from_types<AccumT,
-                                                                      reduce::num_items_offset_t<OffsetT>,
+                                                                      detail::num_items_offset_t<OffsetT>,
                                                                       deterministic_sum_t<AccumT>,
                                                                       __determinism_t::__gpu_to_gpu>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
@@ -434,18 +411,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   const ReducePolicy active_policy = policy_selector(cc);
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 std::stringstream ss;
-                 ss << active_policy;
-                 _CubLog("Dispatching DeviceReduceDeterministic to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
-               }))
-#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  log_dispatch("DeviceReduceDeterministic", cc, active_policy);
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  detail::log_dispatch("DeviceReduceDeterministic", cc, active_policy);
 
   using deterministic_add_t  = deterministic_sum_t<AccumT>;
   using input_unwrapped_it_t = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>;

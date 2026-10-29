@@ -13,7 +13,7 @@
  * @brief A reduction kernel written using launch and CUB
  */
 
-#include <cub/cub.cuh>
+#include <cub/block/block_reduce.cuh>
 
 #include <cuda/experimental/stf.cuh>
 
@@ -41,8 +41,8 @@ int main()
     ref_sum += X[ind];
   }
 
-  auto lX   = ctx.logical_data(&X[0], {N});
-  auto lsum = ctx.logical_data(&sum, {1});
+  auto lX   = ctx.logical_data(&X[0], N);
+  auto lsum = ctx.logical_data(&sum, 1);
 
   auto number_devices = 2;
   auto where          = exec_place::repeat(exec_place::device(0), number_devices);
@@ -60,7 +60,7 @@ int main()
     using BlockReduce = cub::BlockReduce<double, th.static_width(1)>;
     __shared__ typename BlockReduce::TempStorage temp_storage;
 
-    double block_sum = BlockReduce(temp_storage).Sum(local_sum);
+    const double block_sum = BlockReduce(temp_storage).Sum(local_sum);
     if (th.inner().rank() == 0)
     {
       atomicAdd(&sum(0), block_sum);

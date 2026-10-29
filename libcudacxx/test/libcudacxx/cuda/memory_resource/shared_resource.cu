@@ -24,12 +24,12 @@ struct default_constructible_resource
     ++constructed;
   }
 
-  void* allocate_sync(size_t, size_t)
+  void* allocate_sync(std::size_t, std::size_t)
   {
     return this;
   }
 
-  void deallocate_sync(void*, size_t, size_t) noexcept {}
+  void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
 
   friend bool operator==(default_constructible_resource const&, default_constructible_resource const&) noexcept
   {

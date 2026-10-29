@@ -1,7 +1,7 @@
 // This file was automatically generated. Do not edit.
 
 // clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
-// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone, readability-identifier-naming)
 
 #ifndef _CUDA_PTX_GENERATED_BMSK_H_
 #define _CUDA_PTX_GENERATED_BMSK_H_
@@ -40,6 +40,6 @@ _CCCL_DEVICE_API ::cuda::std::uint32_t bmsk_wrap(::cuda::std::uint32_t __a_reg, 
 }
 #endif // __cccl_ptx_isa >= 760
 
-// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone, readability-identifier-naming)
 
 #endif // _CUDA_PTX_GENERATED_BMSK_H_

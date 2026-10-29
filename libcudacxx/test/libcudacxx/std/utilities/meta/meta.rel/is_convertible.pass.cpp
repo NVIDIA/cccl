@@ -210,6 +210,40 @@ int main(int, char**)
   static_assert((!cuda::std::is_convertible<const char, char&>::value));
   static_assert((cuda::std::is_convertible<const char, const char&>::value));
 
+  // [dcl.init.ref]: a (const) volatile lvalue reference cannot bind to an rvalue.
+  static_assert((!cuda::std::is_convertible<char, volatile char&>::value));
+  static_assert((!cuda::std::is_convertible<char, const volatile char&>::value));
+  static_assert((!cuda::std::is_convertible<char&&, volatile char&>::value));
+  static_assert((!cuda::std::is_convertible<char&&, const volatile char&>::value));
+  static_assert((!cuda::std::is_convertible<const char&&, const volatile char&>::value));
+  static_assert((!cuda::std::is_convertible<volatile char&&, volatile char&>::value));
+  static_assert((!cuda::std::is_convertible<volatile char&&, const volatile char&>::value));
+  static_assert((!cuda::std::is_convertible_v<char&&, volatile char&>) );
+  static_assert((!cuda::std::is_convertible_v<char&&, const volatile char&>) );
+  static_assert((!cuda::std::is_convertible_v<const char&&, const volatile char&>) );
+  static_assert((!cuda::std::is_convertible_v<volatile char&&, volatile char&>) );
+  static_assert((!cuda::std::is_convertible_v<volatile char&&, const volatile char&>) );
+
+  // Adding volatile to an lvalue reference is a valid conversion.
+  static_assert((cuda::std::is_convertible<char&, volatile char&>::value));
+  static_assert((cuda::std::is_convertible<volatile char&, volatile char&>::value));
+  static_assert((cuda::std::is_convertible<char&, const volatile char&>::value));
+  static_assert((cuda::std::is_convertible<volatile char&, const volatile char&>::value));
+  static_assert((cuda::std::is_convertible_v<char&, volatile char&>) );
+  static_assert((cuda::std::is_convertible_v<volatile char&, volatile char&>) );
+  static_assert((cuda::std::is_convertible_v<char&, const volatile char&>) );
+  static_assert((cuda::std::is_convertible_v<volatile char&, const volatile char&>) );
+
+  // Rvalue references can bind to (const) volatile rvalue references.
+  static_assert((cuda::std::is_convertible<char&&, char&&>::value));
+  static_assert((cuda::std::is_convertible<char&&, const char&&>::value));
+  static_assert((cuda::std::is_convertible<char&&, volatile char&&>::value));
+  static_assert((cuda::std::is_convertible<char&&, const volatile char&&>::value));
+  static_assert((cuda::std::is_convertible_v<char&&, volatile char&&>) );
+  static_assert((cuda::std::is_convertible_v<char&&, const volatile char&&>) );
+  static_assert((cuda::std::is_convertible_v<volatile char&&, volatile char&&>) );
+  static_assert((cuda::std::is_convertible_v<volatile char&&, const volatile char&&>) );
+
   test_is_not_convertible<char, char*>();
 
   // char&

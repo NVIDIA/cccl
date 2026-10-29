@@ -21,15 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__atomic/functions/backend.h>
 #include <cuda/std/__atomic/functions/common.h>
 #include <cuda/std/__atomic/functions/cuda_ptx_backend.h>
-#include <cuda/std/__atomic/functions/cuda_ptx_generated.h>
+#include <cuda/std/__atomic/functions/cuda_ptx_generated.h> // IWYU pragma: keep
 #include <cuda/std/__atomic/functions/generic.h>
+#include <cuda/std/__atomic/order.h> // IWYU pragma: keep
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/__type_traits/is_void.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/make_unsigned.h>
 
 #include <nv/target>

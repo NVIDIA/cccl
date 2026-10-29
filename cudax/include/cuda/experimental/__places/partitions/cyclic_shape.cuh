@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -34,6 +34,9 @@ using ::cuda::experimental::stf::dim4;
 using ::cuda::experimental::stf::each;
 using ::cuda::experimental::stf::pos4;
 
+// Naming the tuple outside the class template avoids an NVCC 12.0 frontend crash.
+using __cyclic_shape_bounds = ::std::tuple<size_t, size_t, size_t>;
+
 /**
  * @brief An cyclic shape is a shape or rank 'dimensions' where the bounds are
  * explicit in each dimension, and where we jump between elements with a
@@ -48,7 +51,7 @@ public:
   ///@{ @name Constructors
 
   /// Construct and explicit shape from a list of lower and upper bounds
-  _CCCL_HOST_DEVICE explicit cyclic_shape(const ::std::array<::std::tuple<size_t, size_t, size_t>, dimensions>& list)
+  _CCCL_API explicit cyclic_shape(const ::std::array<__cyclic_shape_bounds, dimensions>& list)
   {
     size_t i = 0;
     for (auto& e : list)
@@ -90,7 +93,7 @@ public:
       res *= (ends[d] - begins[d] + strides[d] - 1) / strides[d];
     }
 
-    return res;
+    return static_cast<::std::ptrdiff_t>(res);
   }
 
   // Overload the equality operator to check if two shapes are equal
@@ -216,9 +219,9 @@ public:
   template <size_t dimensions>
   _CCCL_HOST_DEVICE static auto apply(const box<dimensions>& in, pos4 place_position, dim4 grid_dims)
   {
-    ::std::array<size_t, dimensions> begins;
-    ::std::array<size_t, dimensions> ends;
-    ::std::array<size_t, dimensions> strides;
+    ::std::array<size_t, dimensions> begins{};
+    ::std::array<size_t, dimensions> ends{};
+    ::std::array<size_t, dimensions> strides{};
     for (size_t d = 0; d < dimensions; d++)
     {
       begins[d]  = in.get_begin(d) + place_position.get(d);
@@ -322,14 +325,14 @@ UNITTEST("empty cyclic_shape<1>")
 
 UNITTEST("apply cyclic ")
 {
-  box<3> e({{0, 7}, {1, 5}, {10, 20}});
+  const box<3> e({{0, 7}, {1, 5}, {10, 20}});
 
-  size_t dim0 = 2;
-  size_t dim1 = 2;
+  const size_t dim0 = 2;
+  const size_t dim1 = 2;
 
   size_t cnt = 0;
 
-  size_t expected_cnt = 7 * 4 * 10;
+  const size_t expected_cnt = 7 * 4 * 10;
 
   for (size_t i0 = 0; i0 < dim0; i0++)
   {
@@ -361,7 +364,7 @@ UNITTEST("cyclic get_executor is the inverse of apply")
 {
   // Zero-based box so that apply and get_executor use the same coordinate
   // origin: apply assigns coordinate c to place (c % grid extent) per dimension.
-  box<3> e({{0, 7}, {0, 5}, {0, 20}});
+  const box<3> e({{0, 7}, {0, 5}, {0, 20}});
 
   const size_t dim0 = 2;
   const size_t dim1 = 3;

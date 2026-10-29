@@ -22,10 +22,12 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/assignable.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/equality_comparable.h>
+#include <cuda/std/__concepts/referenceable.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/common_iterator.h>
 #include <cuda/std/__iterator/concepts.h>
@@ -36,6 +38,7 @@
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__iterator/variant_like.h>
 #include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>

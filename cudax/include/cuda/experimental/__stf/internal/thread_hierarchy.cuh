@@ -104,12 +104,9 @@ public:
    */
   thread_hierarchy(int devid, interpreted_execution_policy<spec...>& p)
       : devid(devid)
+      , launch_config(p.get_config())
+      , cg_system(p.get_cg_system())
   {
-    launch_config = p.get_config();
-
-    // If we may synchronize across multiple devices.
-    cg_system = p.cg_system;
-
     size_t i = 0;
     for (auto& l : p.get_levels())
     {
@@ -141,7 +138,7 @@ public:
   {
     NV_IF_ELSE_TARGET(
       NV_IS_DEVICE,
-      (int tid = threadIdx.x; int bid = blockIdx.x;
+      (const int tid = threadIdx.x; const int bid = blockIdx.x;
        // config : ndevs    = launch_config[0]
        //          nblocks  = launch_config[1]
        //          nthreads = launch_config[2]
@@ -239,8 +236,8 @@ public:
                      return;
                    }
 
-                   size_t ndevs             = launch_config[0];
-                   size_t system_scope_size = device_scope_size * ndevs;
+                   size_t ndevs                   = launch_config[0];
+                   const size_t system_scope_size = device_scope_size * ndevs;
                    if (target_size == system_scope_size)
                    {
                      cg_system.sync(devid, ndevs);
@@ -338,8 +335,8 @@ public:
                      return make_slice(static_cast<T*>(device_tmp), nelems);
                    }
 
-                   size_t ndevs             = launch_config[0];
-                   size_t system_scope_size = device_scope_size * ndevs;
+                   size_t ndevs                   = launch_config[0];
+                   const size_t system_scope_size = device_scope_size * ndevs;
                    if (target_size == system_scope_size)
                    {
                      // Use system memory (managed memory)
@@ -435,8 +432,8 @@ UNITTEST("thread hierarchy indexing")
   p.add_level({::std::make_pair(hw_scope::device, 2UL)});
   p.add_level({::std::make_pair(hw_scope::block, 8UL), ::std::make_pair(hw_scope::thread, 4UL)});
 
-  int dev_id = 1;
-  auto h     = thread_hierarchy<false, size_t(0), false, size_t(0)>(dev_id, p);
+  const int dev_id = 1;
+  auto h           = thread_hierarchy<false, size_t(0), false, size_t(0)>(dev_id, p);
 
   static_assert(h.static_width(0) == 0);
   static_assert(h.static_width(1) == 0);
@@ -469,14 +466,14 @@ UNITTEST("thread hierarchy sync")
   p.add_level({::std::make_pair(hw_scope::thread, 4UL)});
   p.set_level_sync(1, true);
 
-  size_t dev_id = 1;
-  auto h        = thread_hierarchy(dev_id, p);
+  const size_t dev_id = 1;
+  auto h              = thread_hierarchy(static_cast<int>(dev_id), p);
 
   auto config = p.get_config();
 
   void* args[] = {&h};
   cuda_try(cudaLaunchCooperativeKernel(
-    (void*) reserved::unit_test_thread_hierarchy_sync<true, size_t(0), true, size_t(1)>,
+    reinterpret_cast<void*>(reserved::unit_test_thread_hierarchy_sync<true, size_t(0), true, size_t(1)>),
     config[1],
     config[2],
     args,
@@ -507,8 +504,8 @@ UNITTEST("thread hierarchy inner sync")
   p.add_level({::std::make_pair(hw_scope::thread, 4UL)});
   p.set_level_sync(1, true);
 
-  int dev_id = 1;
-  auto h     = thread_hierarchy<false, size_t(0), true, size_t(0)>(dev_id, p);
+  const int dev_id = 1;
+  auto h           = thread_hierarchy<false, size_t(0), true, size_t(0)>(dev_id, p);
 
   auto config = p.get_config();
   reserved::unit_test_thread_hierarchy_inner_sync<false, size_t(0), true, size_t(0)><<<config[1], config[2]>>>(h);

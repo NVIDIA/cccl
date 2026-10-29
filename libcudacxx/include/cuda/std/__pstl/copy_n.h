@@ -26,7 +26,7 @@
 #  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/copy_n.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__execution/policy.h>
+#  include <cuda/std/__iterator/incrementable_traits.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -34,7 +34,7 @@
 #  include <cuda/std/__utility/move.h>
 
 #  if _CCCL_HAS_BACKEND_CUDA()
-#    include <cuda/std/__pstl/cuda/copy_n.h>
+#    include <cuda/std/__pstl/cuda/copy_n.h> // IWYU pragma: keep
 #  endif // _CCCL_HAS_BACKEND_CUDA()
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -49,6 +49,8 @@ _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND __has_forward_t
 _CCCL_HOST_API _OutputIterator
 copy_n([[maybe_unused]] const _Policy& __policy, _InputIterator __first, _Size __count, _OutputIterator __result)
 {
+  static_assert(__is_convertible_to_integral_v<_Size>, "_Size must be convertible to an integral");
+
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__copy_n, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)

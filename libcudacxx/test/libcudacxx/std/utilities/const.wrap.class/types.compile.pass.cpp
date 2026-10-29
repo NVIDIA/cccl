@@ -7,9 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Find a way to make this work for nvrtc.
-// nvrtc doesn't allow accessing the static constexpr const auto& value member.
-// UNSUPPORTED: nvrtc
+// todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
+//   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
+//   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
 
 // constant_wrapper
 
@@ -23,24 +23,19 @@
 
 #include "test_macros.h"
 
-TEST_NV_DIAG_SUPPRESS(20094) // a host member cannot be directly read in a __device__/__global__ function
+static_assert(cuda::std::constant_wrapper<42>::value == 42);
+static_assert(cuda::std::same_as<decltype(cuda::std::constant_wrapper<42>::value), const int>);
+static_assert(cuda::std::same_as<cuda::std::constant_wrapper<42>::type, cuda::std::constant_wrapper<42>>);
+static_assert(cuda::std::same_as<cuda::std::constant_wrapper<42>::value_type, int>);
 
-static_assert(cuda::std::__constant_wrapper<42>::value == 42);
-// todo(dabayer): This is failing with MSVC.
-#if !_CCCL_COMPILER(MSVC)
-static_assert(cuda::std::same_as<decltype(cuda::std::__constant_wrapper<42>::value), const int>);
-#endif // !_CCCL_COMPILER(MSVC)
-static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<42>::type, cuda::std::__constant_wrapper<42>>);
-static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<42>::value_type, int>);
-
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 struct S
 {
   int member = 42;
 };
 
-constexpr cuda::std::__constant_wrapper<S{5}> s_value;
+constexpr cuda::std::constant_wrapper<S{5}> s_value;
 using SValue = cuda::std::remove_const_t<decltype(s_value)>;
 
 static_assert(s_value.value.member == 5);
@@ -60,21 +55,27 @@ static_assert(cuda::std::same_as<SValue::value_type, S>);
 template <auto V>
 TEST_FUNC constexpr bool value_ref_to_template_parameter_object()
 {
-  return &V == &cuda::std::__constant_wrapper<V>::value;
+// gcc < 13 evaluates this as taking the address of an rvalue.
+// msvc 2019 misdeduces the type of the template-parameter object address.
+#  if !TEST_COMPILER(GCC, <, 13) && !TEST_COMPILER(MSVC, <, 19, 30)
+  return &V == &cuda::std::constant_wrapper<V>{};
+#  else // ^^^ supported template-parameter object address ^^^ / vvv fallback vvv
+  return &V == &cuda::std::constant_wrapper<V>::__get();
+#  endif // ^^^ fallback ^^^
 }
 
 static_assert(value_ref_to_template_parameter_object<S{5}>());
 
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 constexpr int arr[] = {1, 2, 3, 4, 5};
 
-static_assert(cuda::std::__constant_wrapper<arr>::value == arr);
-static_assert(cuda::std::same_as<typename cuda::std::__constant_wrapper<arr>::type, cuda::std::__constant_wrapper<arr>>);
+static_assert(cuda::std::constant_wrapper<arr>{} == arr);
+static_assert(cuda::std::same_as<typename cuda::std::constant_wrapper<arr>::type, cuda::std::constant_wrapper<arr>>);
 
 // nvcc < 13.3 incorrectly generates input file for host compiler.
 #if !(TEST_CUDA_COMPILER(NVCC, <, 13, 3) && _CCCL_HOST_COMPILATION())
-static_assert(cuda::std::same_as<typename cuda::std::__constant_wrapper<arr>::value_type, const int*>);
+static_assert(cuda::std::same_as<typename cuda::std::constant_wrapper<arr>::value_type, const int*>);
 #endif // !(TEST_CUDA_COMPILER(NVCC, <, 13, 3) && _CCCL_HOST_COMPILATION())
 
 int main(int, char**)

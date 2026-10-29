@@ -7,6 +7,7 @@ Mdspan
    :hidden:
    :maxdepth: 1
 
+   mdspan/copy
    mdspan/host_device_accessor
    mdspan/layout_stride_relaxed
    mdspan/restrict_accessor
@@ -22,6 +23,11 @@ Mdspan
      - **Content**
      - **CCCL Availability**
      - **CUDA Toolkit Availability**
+
+   * - :ref:`asynchronous device mdspan copy <libcudacxx-extended-api-mdspan-copy>`
+     - Asynchronously copy elements between device mdspans
+     - CCCL 3.6.0
+     - CUDA 13.6
 
    * - :ref:`host/device/managed mdspan and accessor <libcudacxx-extended-api-mdspan-host-device-accessor>`
      - CUDA memory space ``mdspan`` and accessors

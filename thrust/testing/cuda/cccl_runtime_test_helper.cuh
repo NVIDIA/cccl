@@ -26,7 +26,7 @@ namespace test_runtime
 [[nodiscard]] _CCCL_HOST_API inline cuda::device_ref current_test_device()
 {
   int device = 0;
-  ASSERT_EQUAL(cudaSuccess, cudaGetDevice(&device));
+  REQUIRE(cudaSuccess == cudaGetDevice(&device));
   return cuda::device_ref{device};
 }
 
@@ -92,11 +92,11 @@ assert_equal(cuda::stream_ref stream, Buffer& buffer, cuda::std::initializer_lis
   cuda::copy_bytes(stream, buffer, actual);
   stream.sync();
 
-  ASSERT_EQUAL(actual.size(), expected.size());
+  REQUIRE(actual.size() == expected.size());
 
   for (cuda::std::size_t i = 0; i < expected.size(); ++i)
   {
-    ASSERT_EQUAL(expected.begin()[i], actual[i]);
+    REQUIRE(expected.begin()[i] == actual[i]);
   }
 }
 
@@ -107,11 +107,11 @@ _CCCL_HOST_API inline void assert_equal(cuda::stream_ref stream, Buffer& buffer,
   cuda::copy_bytes(stream, buffer, actual);
   stream.sync();
 
-  ASSERT_EQUAL(actual.size(), expected.size());
+  REQUIRE(actual.size() == expected.size());
 
   for (cuda::std::size_t i = 0; i < expected.size(); ++i)
   {
-    ASSERT_EQUAL(expected[i], actual[i]);
+    REQUIRE(expected[i] == actual[i]);
   }
 }
 } // namespace test_runtime

@@ -47,6 +47,19 @@ class CMakeCache:
 
             return result
 
+    def pull_build_elapsed(self, bench):
+        """How long this target last took to compile, in any revision."""
+        conn = Storage().connection()
+
+        with conn:
+            query = """
+            SELECT elapsed FROM builds WHERE bench = ? AND code = '0' AND elapsed > 0
+            ORDER BY rowid DESC LIMIT 1;
+            """
+            result = conn.execute(query, (bench.label(),)).fetchone()
+
+            return float(result[0]) if result else None
+
     def push_build(self, bench, build):
         config = Config()
         ctk = config.ctk
@@ -100,6 +113,10 @@ class CMake:
             os.killpg(os.getpgid(p.pid), signal.SIGTERM)
             return Build(424242, float("inf"))
 
+    def target_mtime(self, bench):
+        path = os.path.join("bin", bench.exe_name())
+        return os.path.getmtime(path) if os.path.exists(path) else None
+
     def build(self, bench):
         logger = Logger()
         timeout = None
@@ -125,7 +142,27 @@ class CMake:
 
             timeout = base_build.elapsed * 10
 
+        before = self.target_mtime(bench)
         build = self.do_build(bench, timeout)
+
+        if (
+            build.code == 0
+            and before is not None
+            and self.target_mtime(bench) == before
+        ):
+            # Nothing was compiled, so the elapsed time measures ninja deciding
+            # there was no work to do. Left as is, it would become the base build
+            # time that every variant timeout is scaled from.
+            elapsed = cache.pull_build_elapsed(bench)
+
+            if elapsed is not None:
+                logger.info(
+                    "{} was already up to date, keeping recorded build time of {:.3f}s".format(
+                        bench.label(), elapsed
+                    )
+                )
+                build = Build(build.code, elapsed)
+
         cache.push_build(bench, build)
         return build
 

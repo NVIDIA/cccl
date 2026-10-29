@@ -18,9 +18,6 @@
 // to implement the SAXPY operation.  Note that the placeholder
 // implementation is considerably shorter and written inline.
 
-// allows us to use "_1" instead of "thrust::placeholders::_1"
-using namespace thrust::placeholders;
-
 // implementing SAXPY with a functor is cumbersome and verbose
 struct saxpy_functor
 {
@@ -64,6 +61,9 @@ int main()
 
   // SAXPY implemented with a placeholders
   {
+    // allows us to use "_1" instead of "thrust::placeholders::_1"
+    using namespace thrust::placeholders;
+
     thrust::device_vector<float> X = x_data;
     thrust::device_vector<float> Y = y_data;
 

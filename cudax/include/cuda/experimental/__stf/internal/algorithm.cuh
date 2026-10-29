@@ -17,6 +17,7 @@
 
 #include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
 #include <cuda/experimental/__stf/internal/context.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <map>
 
@@ -282,8 +283,17 @@ public:
 
     if (!eg)
     {
+      // A deleter cannot throw: a failing destroy leaks the handle and is reported. The handle is
+      // value-initialized and stays null if instantiation throws; do not destroy it then.
       eg = {new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
-              cuda_safe_call(cudaGraphExecDestroy(*p));
+              if (*p)
+              {
+                ON_THROW(notify)
+                {
+                  cuda_try<cudaGraphExecDestroy>(*p);
+                };
+              }
+              delete p;
             }};
 
       dump_algorithm(gctx_graph);
@@ -341,8 +351,17 @@ public:
 
     if (!eg)
     {
+      // A deleter cannot throw: a failing destroy leaks the handle and is reported. The handle is
+      // value-initialized and stays null if instantiation throws; do not destroy it then.
       eg = {new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
-              cuda_safe_call(cudaGraphExecDestroy(*p));
+              if (*p)
+              {
+                ON_THROW(notify)
+                {
+                  cuda_try<cudaGraphExecDestroy>(*p);
+                };
+              }
+              delete p;
             }};
 
       dump_algorithm(gctx_graph);
@@ -363,7 +382,11 @@ private:
     {
       static int print_to_dot_cnt = 0; // Warning: not thread-safe
       ::std::string filename      = "algo_" + symbol + "_" + ::std::to_string(print_to_dot_cnt++) + ".dot";
-      cuda_safe_call(cudaGraphDebugDotPrint(*gctx_graph, filename.c_str(), cudaGraphDebugDotFlags(0)));
+      // A debugging aid that cannot write its file says so; it does not end the computation.
+      ON_THROW(notify)
+      {
+        cuda_try<cudaGraphDebugDotPrint>(*gctx_graph, filename.c_str(), cudaGraphDebugDotFlags(0));
+      };
     }
   }
 

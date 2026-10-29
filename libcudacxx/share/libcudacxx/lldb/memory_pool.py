@@ -31,6 +31,7 @@ _SNAPSHOT_LANES = len(_POOL_ATTRIBUTE_NAMES) + 1
 _ATTRIBUTE_TYPE = "unsigned long long"
 # A driver call still running after this long is wedged; print only the handle.
 _EXPRESSION_TIMEOUT_US = 1_000_000
+_POOL_SNAPSHOT_EXPRESSIONS: dict[int, str] = {}
 _MAX_BASE_DEPTH = 4
 InternalDict = dict[str, object]
 
@@ -174,7 +175,18 @@ def _evaluate(value: lldb.SBValue, expression: str) -> lldb.SBValue:
 def _query_pool_attributes(
     value: lldb.SBValue, handle: int
 ) -> tuple[tuple[str, int], ...]:
-    result = _evaluate(value, _POOL_SNAPSHOT_EXPRESSION % handle)
+    # A restarted process can load the driver at a different address.
+    process_id = value.GetProcess().GetUniqueID()
+    expression = _POOL_SNAPSHOT_EXPRESSIONS.get(process_id)
+    if expression is None:
+        address = cccl_common.driver_function_address(value, "cuMemPoolGetAttribute")
+        if not address:
+            return ()
+        expression = _POOL_SNAPSHOT_EXPRESSION.replace(
+            "cuMemPoolGetAttribute", f"{address:#x}"
+        )
+        _POOL_SNAPSHOT_EXPRESSIONS[process_id] = expression
+    result = _evaluate(value, expression % handle)
     if not result.IsValid() or result.GetError().Fail():
         return ()
     if result.GetNumChildren() != _SNAPSHOT_LANES:

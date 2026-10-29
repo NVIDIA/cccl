@@ -13,7 +13,9 @@
 
 #include <cuda/buffer>
 #include <cuda/functional>
+#include <cuda/hierarchy>
 #include <cuda/iterator>
+#include <cuda/launch>
 #include <cuda/memory_pool>
 #include <cuda/std/cmath>
 #include <cuda/std/cstddef>
@@ -112,10 +114,18 @@ C2H_TEST("HyperLogLog device ref", "[hyperloglog]", test_types)
   const auto host_estimate = estimator.estimate(stream);
 
   auto device_estimate = cuda::make_buffer<double>(stream, mr, 1, cuda::no_init);
-  estimate_kernel<typename estimator_type::template ref_type<cuda::thread_scope_block>>
-    <<<1, 512, estimator.sketch_bytes(), stream.get()>>>(
-      sketch_size_kb, items.begin(), num_items, device_estimate.begin());
-  REQUIRE(cudaGetLastError() == cudaSuccess);
+  cuda::launch(
+    stream,
+    cuda::make_config(cuda::grid_dims<1>(),
+                      cuda::block_dims<512>(),
+                      cuda::dynamic_shared_memory<cuda::std::byte[]>(estimator.sketch_bytes())),
+    estimate_kernel<typename estimator_type::template ref_type<cuda::thread_scope_block>,
+                    decltype(items.begin()),
+                    decltype(device_estimate.begin())>,
+    sketch_size_kb,
+    items.begin(),
+    num_items,
+    device_estimate.begin());
 
   double device_estimate_value{};
   REQUIRE_CUDART(cudaMemcpyAsync(
@@ -124,7 +134,7 @@ C2H_TEST("HyperLogLog device ref", "[hyperloglog]", test_types)
   REQUIRE_THAT(device_estimate_value, Catch::Matchers::WithinRel(host_estimate, 1e-10));
 }
 
-C2H_TEST("HyperLogLog device ref merge", "[hyperloglog]")
+C2H_TEST("HyperLogLog merge", "[hyperloglog]")
 {
   using T              = int32_t;
   using estimator_type = cudax::cuco::hyperloglog<T>;
@@ -140,9 +150,46 @@ C2H_TEST("HyperLogLog device ref merge", "[hyperloglog]")
   source.add(stream, first, first + num_items);
   const auto source_estimate = source.estimate(stream);
 
-  const estimator_type destination{stream, mr, precision};
-  merge_kernel<<<1, 128, 0, stream.get()>>>(destination.ref(), source.ref());
-  REQUIRE(cudaGetLastError() == cudaSuccess);
+  estimator_type destination{stream, mr, precision};
+
+  SECTION("device reference")
+  {
+    cuda::launch(stream,
+                 cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<128>()),
+                 merge_kernel<decltype(destination.ref())>,
+                 destination.ref(),
+                 source.ref());
+  }
+
+  SECTION("host estimator")
+  {
+    destination.merge(stream, source);
+  }
+
+  SECTION("host estimator asynchronous")
+  {
+    destination.merge_async(stream, source);
+  }
+
+  SECTION("host estimator from reference")
+  {
+    destination.merge(stream, source.ref());
+  }
+
+  SECTION("host estimator from reference asynchronous")
+  {
+    destination.merge_async(stream, source.ref());
+  }
+
+  SECTION("host reference")
+  {
+    destination.ref().merge(stream, source.ref());
+  }
+
+  SECTION("host reference asynchronous")
+  {
+    destination.ref().merge_async(stream, source.ref());
+  }
 
   REQUIRE(destination.estimate(stream) == source_estimate);
   REQUIRE(source.estimate(stream) == source_estimate);
@@ -291,6 +338,44 @@ C2H_TEST("HyperLogLog estimate preserves fractional cardinality", "[hyperloglog]
 
   const auto estimate = estimator.estimate(stream);
   REQUIRE(estimate > 1.0);
+  REQUIRE(estimate < 2.0);
+}
+
+C2H_CCCLRT_TEST("HyperLogLog add preserves the caller context", "[hyperloglog]")
+{
+  using T              = int32_t;
+  using estimator_type = cudax::cuco::hyperloglog<T>;
+
+  constexpr std::size_t num_items = 1024;
+  // Exercise both shared-memory accumulation and the global-memory fallback.
+  const auto precision_value = GENERATE(8, 18);
+  CAPTURE(precision_value);
+
+  const cuda::stream stream{cuda::device_ref{0}};
+  auto mr = cuda::device_default_memory_pool(cuda::device_ref{0});
+  estimator_type estimator{stream, mr, estimator_type::precision{precision_value}};
+
+  SECTION("contiguous input")
+  {
+    auto items = cuda::make_buffer<T>(stream, mr, num_items, T{42});
+    REQUIRE(cuda::__driver::__ctxGetCurrent() == nullptr);
+
+    estimator.add_async(stream, items.data(), items.data() + num_items);
+    CHECK(cuda::__driver::__ctxGetCurrent() == nullptr);
+    stream.sync();
+  }
+
+  SECTION("noncontiguous input")
+  {
+    const auto first = cuda::constant_iterator<T>{42};
+    REQUIRE(cuda::__driver::__ctxGetCurrent() == nullptr);
+
+    estimator.add_async(stream, first, first + num_items);
+    CHECK(cuda::__driver::__ctxGetCurrent() == nullptr);
+  }
+
+  const auto estimate = estimator.estimate(stream);
+  REQUIRE(estimate >= 1.0);
   REQUIRE(estimate < 2.0);
 }
 

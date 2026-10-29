@@ -6,6 +6,12 @@ __global__ void load_relaxed_device_non_volatile(int* data, int* out)
   *out     = ref.load(cuda::std::memory_order_relaxed);
 }
 
+__global__ void load_relaxed_cluster_non_volatile(int* data, int* out)
+{
+  auto ref = cuda::atomic_ref<int, cuda::thread_scope_cluster>{*(data)};
+  *out     = ref.load(cuda::std::memory_order_relaxed);
+}
+
 /*
 
 ; SMXX-LABEL: .target sm_{{[0-9]+[af]?}}
@@ -16,5 +22,17 @@ __global__ void load_relaxed_device_non_volatile(int* data, int* out)
 ; SMXX-DAG:  {{/*[[:space:]] *}}ld.relaxed.gpu.b32 %r[[#DEST:]],[%rd[[#ATOM]]];{{[[:space:]]/*}}
 ; SMXX-NEXT: st.global.{{b|u}}32 [%rd[[#GOUT]]], %r[[#DEST]];
 ; SMXX-NEXT: ret;
+
+; NOT-SM90-PLUS-LABEL: .visible .entry {{_.*load_relaxed_cluster_non_volatile.*}}(
+; NOT-SM90-PLUS-NOT: {{.*}}ld.relaxed.cluster{{.*}}
+; NOT-SM90-PLUS: {{.*}}ld.relaxed.gpu.b32{{.*}}
+; NOT-SM90-PLUS-NOT: {{.*}}ld.relaxed.cluster{{.*}}
+; NOT-SM90-PLUS: ret;
+
+; SM90-PLUS-LABEL: .visible .entry {{_.*load_relaxed_cluster_non_volatile.*}}(
+; SM90-PLUS-NOT: {{.*}}ld.relaxed.gpu{{.*}}
+; SM90-PLUS: {{.*}}ld.relaxed.cluster.b32{{.*}}
+; SM90-PLUS-NOT: {{.*}}ld.relaxed.gpu{{.*}}
+; SM90-PLUS: ret;
 
 */

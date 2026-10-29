@@ -29,8 +29,8 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__mdspan/concepts.h>
-#include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
@@ -42,7 +42,6 @@
 #include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/integer_sequence.h>
-#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/array>
 #include <cuda/std/concepts>
 #include <cuda/std/cstddef>
@@ -199,10 +198,10 @@ private:
   // static mapping of indices to the position in the dynamic values array
   using _DynamicIdxMap = __static_partial_sums<static_cast<size_t>(_Values == _DynTag)...>;
 
-  template <size_t... Indices>
-  [[nodiscard]] _CCCL_API static constexpr _DynamicValues __zeros(index_sequence<Indices...>) noexcept
+  template <size_t... _Indices>
+  [[nodiscard]] _CCCL_API static constexpr _DynamicValues __zeros(index_sequence<_Indices...>) noexcept
   {
-    return _DynamicValues{((void) Indices, 0)...};
+    return _DynamicValues{((void) _Indices, 0)...};
   }
 
 public:

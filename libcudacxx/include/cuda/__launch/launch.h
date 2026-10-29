@@ -25,7 +25,6 @@
 
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__hierarchy/hierarchy_levels.h>
-#  include <cuda/__hierarchy/traits.h>
 #  include <cuda/__launch/configuration.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__runtime/ensure_current_context.h>
@@ -35,9 +34,7 @@
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__type_traits/is_function.h>
 #  include <cuda/std/__type_traits/is_pointer.h>
-#  include <cuda/std/__type_traits/type_identity.h>
 #  include <cuda/std/__utility/forward.h>
-#  include <cuda/std/__utility/pod_tuple.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 

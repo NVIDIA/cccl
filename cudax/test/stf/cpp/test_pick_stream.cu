@@ -69,7 +69,7 @@ int main()
     exec_place place = exec_place::current_device();
 
     // Query the pool size
-    size_t pool_size = place.stream_pool_size(resources);
+    const size_t pool_size = place.stream_pool_size(resources);
     EXPECT(pool_size > 0);
     EXPECT(pool_size == async_resources_handle::pool_size);
 

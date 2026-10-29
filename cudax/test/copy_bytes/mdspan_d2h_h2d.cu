@@ -349,6 +349,20 @@ TEST_CASE("copy_bytes extent mismatch throws", "[copy_bytes][throw]")
   REQUIRE_THROWS_AS(cuda::experimental::copy_bytes(src, dst, stream), std::invalid_argument);
 }
 
+TEST_CASE("copy_bytes empty extent mismatch throws", "[copy_bytes][throw]")
+{
+  thrust::host_vector<int> host_data(1, 0);
+  thrust::device_vector<int> device_data(1, 0);
+  using extents = cuda::std::dims<2>;
+  const cuda::host_mdspan<int, extents> src(host_data.data(), extents(0, 3));
+  const cuda::device_mdspan<int, extents> dst(thrust::raw_pointer_cast(device_data.data()), extents(0, 2));
+  REQUIRE_THROWS_MATCHES(
+    cuda::experimental::copy_bytes(src, dst, stream),
+    std::invalid_argument,
+    Catch::Matchers::Message("cudax::copy_bytes: mdspans must have the same extents (after "
+                             "removing singleton dimensions)"));
+}
+
 /***********************************************************************************************************************
  * Strided Layout Tests
  **********************************************************************************************************************/

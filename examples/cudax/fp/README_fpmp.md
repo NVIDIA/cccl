@@ -3,61 +3,88 @@ FPMP — Multi-Precision Arithmetic on Pairs of Floats
 
 An `fpmp2` value represents a number as the unevaluated sum of two IEEE-754 floats,
 `value = hi + lo`, which roughly doubles the available mantissa. The pair is stored
-directly in the object and every operation is an error-free transformation on the two
-limbs, so the extra precision comes from arithmetic the hardware already does fast rather
-than from a wider format the hardware does not have.
+directly in the object, and each operation is built from error-free transformations —
+primitives such as `two_sum` that recover the rounding error of a single hardware operation
+exactly — so the extra precision comes from arithmetic the hardware already does fast rather
+than from a wider format the hardware does not have. The exactness belongs to those
+primitives rather than to the operation composed from them: a pair addition or multiply
+carries a small error of its own, and how small is what the accuracy levels choose between.
 
 That matters in two places. Below `double`, GPUs typically have far more FP32 throughput
 than FP64, so a float pair can be both more precise than `float` and faster than native
 `double`. Above `double`, there is usually no IEEE-754 binary128 hardware at all, and a
-double pair reaches 104 mantissa bits out of FP64 operations for far less than a software
-binary128 costs.
+double pair reaches 104 mantissa bits out of ordinary FP64 operations.
+
+Which of the two applies is decided by the rate at which the part runs FP64 against FP32 —
+1:2 on B200 against 1:64 on B300 and RTX PRO 6000 Blackwell. `fp64mp2` spends FP64
+throughput, so it is the cheap route to quad-like precision where FP64 runs close to FP32,
+and a costly one where FP64 is rationed: a software binary128 is integer code and is not
+competing for the units `fp64mp2` needs. `fp32mp2` is the mirror image, and wins exactly
+where `fp64mp2` struggles.
 
 For the example set, see the [examples README](README.md).
 
 Where this pays off
 -------------------
 
-The figures below are measured on a midpoint-rule π integration — 2^26 terms, five arithmetic
+The figures below come from a midpoint-rule π integration — 2^26 terms, five arithmetic
 operations per term, no memory traffic worth speaking of — so they price arithmetic pipelines
 rather than bandwidth, and every type runs identical code. "Correct digits" means correct
-decimal digits of the computed integral.
+decimal digits of the computed integral, with every step carried out in the type being
+measured, the sequential reduction of the 131072 per-thread partials included: what is
+reported is therefore what a program written in that type costs end to end, not the loop in
+isolation. Native `double` is measured in the same run, as the baseline each row is reported
+against.
 
-**Below `double`, where FP64 throughput is rationed.** On L40S (Ada), RTX PRO 6000 Blackwell and
-B300, native FP64 runs at roughly 1/35 of FP32. A float pair rides the units that are plentiful:
+**Below `double`, where FP64 throughput is rationed.** On these parts native FP64 runs at
+1/64 of FP32, and a float pair rides the units that are plentiful. Accuracy is a property of
+the arithmetic rather than of the GPU — the three parts below agree on it to the last digit
+reported — so it is one column for all of them:
 
-| Type | Correct digits | Speed vs native `double` |
-|---|---|---|
-| `float` | 6.5 | 34–37× |
-| `fp32mp2`, `low` | 12.8 | **16.7–17.4×** |
-| `fp32mp2`, `mid` | 13.8 | **11.7–11.9×** |
-| `fp32mp2`, `high` | 14.5 | **6.9–7.0×** |
-| `double` | 14.8 | 1.0× |
+| Type | Correct digits | RTX 6000 Ada | RTX PRO 6000 Blackwell | B300 |
+|---|---|---|---|---|
+| `float` | 3.1 | 28.2× | 25.4× | 32.3× |
+| `fp32mp2`, `low` | 9.5 | **15.8×** | **11.5×** | **16.0×** |
+| `fp32mp2`, `mid` | 12.0 | **9.9×** | **8.6×** | **10.8×** |
+| `fp32mp2`, `high` | 12.7 | **6.1×** | **5.5×** | **6.7×** |
+| `double` | 14.8 | 1.0× | 1.0× | 1.0× |
 
-The `high` level lands within 0.4 digits of `double` at about seven times its throughput, and
-the ratios hold across those three architectures to within a few percent, the arithmetic being
-pure FP32. Plain `float` is not an alternative at 6.5 digits: with 24 mantissa bits it cannot
-place the grid points past 2^22 terms, so its error stops improving however many terms are
-added, which is the wall these types exist to get past.
+Each GPU column is speed relative to native `double` on that part, which is why the `double`
+row reads 1.0× in all of them. A float pair lands within three digits of `double` at several
+times its throughput, and the three levels do separate here — but they separate very
+unevenly, and the shape of that is worth reading rather than the numbers alone.
 
-**Above `double`, against software binary128.** Where FP64 runs at full rate (B200), a double
-pair is the cheap way to buy digits beyond `double`:
+The large step is from `low` to `mid`: 2.5 digits, for 1.6× the time. It is not cancellation
+that does it, since every term of this integrand is positive. It is that `low` is the one
+level that omits the closing renormalization, so its two limbs are free to overlap, and the
+overlap compounds along a chain of 131072 additions until part of the trailing limb is no
+longer carrying information. `mid` and `high` both restore the invariant on every operation,
+and neither drifts.
 
-| Type | Correct digits | Speed vs software `fp128` |
-|---|---|---|
-| `fp64mp2` | 17.2 | **13.2×** |
-| software `fp128` | 17.2 | 1.0× |
+The step from `mid` to `high` is small by comparison — 0.7 digits, for another 1.6× — and
+that is what to expect on a sum of same-signed values. Both levels normalize; what `high`
+adds is the recovery of the rounding error committed when the two trailing limbs are added,
+and that error only grows into the result when something amplifies it. Cancellation is the
+usual amplifier and there is none here, so `high` collects a fraction of a digit. On a
+computation that does cancel, the same 0.7 digits can be several. Which is the reason to
+measure a given computation rather than to assume from a table.
 
-The same answer to the last reported digit for a thirteenth of the cost — about 3.6 `double`
-passes against roughly 47. Read that as the benchmark saturating rather than the two formats
-being equivalent: 17.2 digits is this integration's own truncation floor, which the pair already
-resolves past, so binary128's extra significand bits have nothing left to buy here. A
-computation that genuinely needs more than 104 bits still needs binary128.
+Plain `float` is not an alternative, and not merely because it is 11.7 digits behind here.
+Its accuracy gets *worse* as terms are added — 5.2 digits at 2^20 against 2.8 at 2^28 — so
+the extra work buys less answer rather than more. With 24 mantissa bits it can neither place
+the grid points at that spacing nor carry the sum across that many additions. `double` holds
+near 14 digits over the same range. That divergence is the wall these types exist to get
+past.
 
-The ordering does depend on the hardware, and it reverses: on
-the FP64-rationed parts above, the pair rides those scarce FP64 units while a software quad path
-does not, and `fp128` comes out 2.4–3.1× *faster* there. Pair arithmetic above `double` wants
-FP64 throughput underneath it.
+**Above `double`.** The same program run with `fp64mp2` reaches 17.2 digits where `double`
+reaches 14.8, and takes roughly five times `double`'s time on all three parts above: a pair
+operation is a run of operations on the limbs, and on these parts those are the rationed FP64
+ones. The digits past `double` are therefore bought at a real price, unlike the ones below
+it, and how bearable that price is follows from the FP64 throughput underneath. Where FP64
+runs at full rate the comparison that matters is against software binary128, and the
+specification document has it per function: on B200 a `mid` addition is 7.8×
+faster than software binary128 and division 17.8×, while on B300 binary128 is 1.4–4× faster
+than `fp64mp2` operation for operation.
 
 **Retiring 80-bit CPU code.** Computations written for x87 double-extended — `long double` on
 Linux/x86 — carry a 64-bit significand. `fp64mp2` carries 104 by the counting used below, so
@@ -126,12 +153,11 @@ The level can also be chosen per operation instead of per type, which is the poi
 accuracy-explicit functions:
 
 ```c++
-namespace cudax = cuda::experimental;
 
-using ffloat = cudax::fp32mp2_low;              // low accuracy for the bulk of the work
+using ffloat = cuda::fp32mp2_low;              // low accuracy for the bulk of the work
 ffloat a = ..., b = ...;
 
-ffloat r = cudax::add<cudax::fpmp2_accuracy::high>(a, b);   // this one step at high
+ffloat r = cuda::add<cuda::fpmp2_accuracy::high>(a, b);   // this one step at high
 ```
 
 `add`, `sub`, `mul`, `div`, `fma` and `mad` all take the level this way. The result type is
@@ -145,30 +171,24 @@ Using the types
 ---------------
 
 ```c++
-#include <cuda/fpmp>       // types, operators, sqrt, rsqrt, fma, mad
-#include <cuda/fpmp_math>  // adds exp, log, trig, pow, ...; also pulls in <cuda/fpmp>
+#include <cuda/fpmp>   // types, operators, sqrt, rsqrt, fma, mad, and the math functions
 ```
 
-Include only `<cuda/fpmp>` where the transcendentals are not needed — the math header
-costs compile time.
+One header carries the whole interface, the transcendental math functions included.
 
-The CCCL FP component lives in `cuda::experimental` (to be promoted to `cuda::` later). The
-examples abbreviate it rather than using a using-directive:
-
-```c++
-namespace cudax = cuda::experimental;
-```
+The CCCL FP component lives in the `cuda` namespace. The examples qualify its names rather
+than using a using-directive.
 
 Two spellings then appear, and the split is deliberate. Type names and the component's own
-functions — `renormalize`, the accuracy-selecting `add<>` — carry the `cudax::` prefix,
+functions — `renormalize`, the accuracy-selecting `add<>` — carry the `cuda::` prefix,
 since they have no counterpart for `double` and so only occur in code written against the
 component to begin with. The standard-named math functions are left **unqualified** and found
 by argument-dependent lookup:
 
 ```c++
-cudax::fp64mp2 x{2.0};
+cuda::fp64mp2 x{2.0};
 auto r = sqrt(x);                  // unqualified: ADL finds the fpmp2 overload
-auto s = cudax::renormalize(x);    // component-specific: qualified
+auto s = cuda::renormalize(x);    // component-specific: qualified
 ```
 
 This is what lets an existing body of `double` code keep its call sites unchanged when the
@@ -183,8 +203,8 @@ the first thing a new user is likely to hit. A conversion **into** the pair that
 represented exactly is a narrowing conversion, and by default it must be written out:
 
 ```c++
-cudax::fp32mp2 x = 1.2345678901234567;                       // error by default
-cudax::fp32mp2 y = static_cast<cudax::fp32mp2>(1.2345678901234567);   // correct, and constexpr
+cuda::fp32mp2 x = 1.2345678901234567;                       // error by default
+cuda::fp32mp2 y = static_cast<cuda::fp32mp2>(1.2345678901234567);   // correct, and constexpr
 ```
 
 The reason is that an implicit narrowing conversion has only one place to go — the
@@ -207,6 +227,17 @@ So `fp64mp2 acc = 0;` and `fp32mp2 t = some_float;` compile as expected, while
 implicit. The cast is `constexpr`, so full-precision coefficient tables can be built at
 compile time.
 
+Quad interchange is a separate path. `fp64mp2` converts both ways with the
+library's 128-bit type `__fpmp_fp128` (`__float128` on x86, IEEE `long double`
+on aarch64). Both directions are explicit, and both are deleted on `fp32mp2`,
+which cannot hold a 128-bit significand.
+
+On GCC, `_Float128` is often a second binary128 type, distinct from
+`__fpmp_fp128`, with no implicit conversion between the two spellings. The
+same explicit conversions exist for `_Float128` when it is not already
+`__fpmp_fp128`, so `static_cast<_Float128>(fp64mp2_value)` compiles on
+aarch64 as well as on x86.
+
 The same rule reaches the scalar accumulate path: `+=` and `-=` have an optimized overload
 taking a single component, worth about six operations over a full pair addition, and it is
 constrained the same way. `acc += 1.5f` on an `fp32mp2` is fine; `acc += 1.5` is not, because
@@ -218,6 +249,25 @@ edit churn matters more than the diagnostics. The conversion still takes the acc
 two-limb path when it is allowed through — the macro decides whether the conversion is
 written out, not how precisely it is done.
 
+Changing the accuracy tag is a separate matter, and always explicit in both directions:
+
+```c++
+cuda::fp32mp2_low fast = ...;
+cuda::fp32mp2      safe(fast);    // explicit; renormalizes on the way
+```
+
+Converting **out of** `low` renormalizes. The `low` algorithms skip the closing
+normalization step, so their results may have overlapping limbs, while the `mid` and `high`
+algorithms assume they do not — feeding them an overlapping pair compiles fine and quietly
+returns a worse answer. Doing it in the conversion means the mixed-accuracy pattern, `low`
+for the bulk of the work and `mid` for the critical stretch, is correct as written rather
+than depending on a `renormalize` call the caller has to remember.
+
+The step costs one `fast_two_sum` and is exact, so it changes the representation and never
+the number. Conversions in the other direction, into `low`, are a plain limb copy: the pair
+is already normalized, and moving into `low` is a deliberate step into the fast regime. For
+a pure retag with no arithmetic at all, construct from the limbs: `fp32mp2{x.hi(), x.lo()}`.
+
 ### Operations
 
 Arithmetic `+ - * /` and unary negation, compound assignment, and all six comparisons.
@@ -226,9 +276,11 @@ directly, so an `fpmp2` combines with a built-in scalar without a cast on the sc
 
 `renormalize(x)` restores the invariant that the limbs do not overlap (`|lo| < ulp(hi)`).
 Arithmetic at `low` accuracy skips that step, so a run of low-accuracy operations can leave
-a value whose limbs have drifted into overlap; `renormalize` is how it gets repaired.
+a value whose limbs have drifted into overlap; `renormalize` is how it gets repaired. It is
+applied automatically when converting out of `low`, so the call is only needed to repair a
+value that stays at `low` accuracy.
 
-`<cuda/fpmp_math>` adds the transcendentals: `exp`, `log`, `log2`, `log10`, `log1p`, `pow`,
+The same header carries the transcendentals: `exp`, `log`, `log2`, `log10`, `log1p`, `pow`,
 `cbrt`, `rcbrt`, `sin`, `cos`, `tan`, `sincos`, `asin`, `acos`, `atan`, `atan2`, `sinh`,
 `cosh`, `tanh`, `erf`, `erfc`, `normcdfinv`, the rounding family, the min/max family, and
 `icdf` for `fp32mp2` only.
@@ -281,7 +333,7 @@ Demonstrated:
 - mixed-type arithmetic — an `fpmp2` combined directly with a `double` literal, with an
   `int`, with the scalar on the left, and the `+=` scalar accumulate path
 - `sqrt`, `rsqrt` and `fma`
-- math functions, here `exp` and `sin`, from `<cuda/fpmp_math>`
+- math functions, here `exp` and `sin`
 - comparison operators
 - the `hi`/`lo` components the value is stored as
 - the accuracy levels: the same sum on the default and the `high` type, then that same
@@ -319,6 +371,18 @@ little to show beyond the fact that the overloads exist:
 - **The full math surface.** The example calls `exp` and `sin`; the rest of the list above
   is exercised by the test suite, and the accuracy of each is characterized in the
   specification document.
+
+Optimization guide
+------------------
+
+`fp32mp2` pays for its digits in FP32 instructions and wins only where FP64 is rationed;
+`fp64mp2` pays in FP64 instructions and wins only where FP64 runs at full rate. Past that first
+decision, what a kernel gets out of either type depends on where its conversions sit, which
+accuracy level each step runs at, and whether its reductions go through atomics. The [FP
+optimization guide](README_fp_optimization_guide.md#using-fpmp-efficiently) covers those choices
+for both types, with per-operation costs, and its opening section on [choosing the
+type](README_fp_optimization_guide.md#choosing-the-type) places `fpmp` against the other
+components.
 
 References
 ----------

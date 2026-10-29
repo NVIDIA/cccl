@@ -28,6 +28,7 @@ as :ref:`atomic <libcudacxx-extended-api-synchronization-atomic>` or
    enum thread_scope {
      thread_scope_system,
      thread_scope_device,
+     thread_scope_cluster,
      thread_scope_block,
      thread_scope_thread
    };
@@ -43,9 +44,13 @@ Each program thread is related to each other program thread by one or more threa
    - Each GPU thread is related to each other GPU thread in the same CUDA device and within the same `memory
      synchronization domain <https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/memory-sync-domains.html#memory-synchronization-domains>`__
      by the *device* thread scope: ``thread_scope_device``.
+   - Each GPU thread is related to each other GPU thread in the same CUDA thread block cluster by the *cluster* thread
+     scope: ``thread_scope_cluster``.
    - Each GPU thread is related to each other GPU thread in the same CUDA thread block by the *block* thread scope:
      ``thread_scope_block``.
    - Each thread is related to itself by the ``thread`` thread scope: ``thread_scope_thread``.
+
+On architectures before SM90, ``thread_scope_cluster`` operations are widened to ``thread_scope_device``.
 
 Synchronization primitives
 --------------------------

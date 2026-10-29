@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__fwd/extents.h>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
@@ -104,7 +105,7 @@ struct layout_stride : ::cuda::std::layout_stride
  * @tparam dimensions
  */
 template <typename T, size_t dimensions = 1>
-using slice = mdspan<T, ::cuda::std::dextents<size_t, dimensions>, layout_stride>;
+using slice = mdspan<T, ::cuda::std::dims<dimensions>, layout_stride>;
 
 /**
  * @brief Compute how many dimensions of a slice are actually contiguous.
@@ -157,7 +158,7 @@ _CCCL_HOST_DEVICE auto make_slice(ElementType* data, const ::std::tuple<Extents.
       return ::cuda::std::array<size_t, sizeof...(Extents)>{size_t(e)...};
     },
     extents);
-  ::cuda::std::array<size_t, Result::rank()> mdspan_strides{1, size_t(strides)...};
+  const ::cuda::std::array<size_t, Result::rank()> mdspan_strides{1, size_t(strides)...};
   return Result(data, typename Result::mapping_type(sizes, mdspan_strides));
 }
 
@@ -181,7 +182,7 @@ _CCCL_HOST_DEVICE auto make_slice(T* data, const Extents&... extents)
   }
   else
   {
-    ::cuda::std::array<size_t, Result::rank()> sizes{size_t(extents)...}, strides;
+    ::cuda::std::array<size_t, Result::rank()> sizes{size_t(extents)...}, strides{};
     for (size_t i = 1; i < strides.size(); ++i)
     {
       strides[i] = sizes[i - 1];
@@ -901,7 +902,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
 //! `std::hash<E>` or a custom hash function, if available. The hash is computed by
 //! traversing the multidimensional array in a dimension-major order and combining the
 //! hash values of each element. If neither a standard nor custom hash is available for
-//! the element type, the function prints an error and aborts.
+//! the element type, the program does not compile.
 //!
 //! The function supports both rank deduction and explicit index sequence specification.
 //! When called without an explicit index sequence, it generates one corresponding to the
@@ -917,66 +918,59 @@ _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
 //!
 //! @return The combined hash value of all elements in the mdspan.
 //!
-//! @note Requires that either `std::hash<E>` or a custom hash function for `E` is defined.
-//!       If neither is available, the function will print an error and terminate the program.
+//! @note Requires that either `std::hash<E>` or a custom hash function for `E` is defined;
+//!       this is checked at compile time.
 //! @note If the mdspan is empty, the function returns 0.
 template <typename E, typename X, typename L, typename A, size_t... i>
-size_t data_hash([[maybe_unused]] mdspan<E, X, L, A> s, ::cuda::std::index_sequence<i...> = {})
+size_t data_hash(mdspan<E, X, L, A> s, ::cuda::std::index_sequence<i...> = {})
 {
+  static_assert(reserved::has_std_hash_v<E> || reserved::has_cudastf_hash_v<E>,
+                "data_hash requires ::std::hash<E> or a cudastf hash for the element type E");
   using Slice = mdspan<E, X, L, A>;
-  if constexpr (!reserved::has_std_hash_v<E> && !reserved::has_cudastf_hash_v<E>)
+  if constexpr (sizeof...(i) != Slice::rank())
   {
-    fprintf(stderr, "Error: cannot compute data_hash on a mdspan<E, ...> if ::std::hash<E> is not defined.\n");
-    abort();
-    return 0;
+    return data_hash(s, ::cuda::std::make_index_sequence<Slice::rank()>());
   }
   else
   {
-    if constexpr (sizeof...(i) != Slice::rank())
+    if (s.size() == 0)
     {
-      return data_hash(s, ::cuda::std::make_index_sequence<Slice::rank()>());
+      return 0;
     }
-    else
-    {
-      if (s.size() == 0)
+
+    size_t h          = 0;
+    auto content_hash = [&](auto... indices) -> void {
+      for (;;)
       {
-        return 0;
-      }
+        cuda::experimental::stf::hash_combine(h, s(indices...));
 
-      size_t h          = 0;
-      auto content_hash = [&](auto... indices) -> void {
-        for (;;)
+        bool bump = true;
+        each_in_pack(
+          [&](auto current_dim, size_t& index) {
+            if (!bump)
+            {
+              return;
+            }
+            ++index;
+            if (index >= s.extent(current_dim))
+            {
+              index = 0;
+            }
+            else
+            {
+              bump = false;
+            }
+          },
+          indices...);
+        if (bump)
         {
-          cuda::experimental::stf::hash_combine(h, s(indices...));
-
-          bool bump = true;
-          each_in_pack(
-            [&](auto current_dim, size_t& index) {
-              if (!bump)
-              {
-                return;
-              }
-              ++index;
-              if (index >= s.extent(current_dim))
-              {
-                index = 0;
-              }
-              else
-              {
-                bump = false;
-              }
-            },
-            indices...);
-          if (bump)
-          {
-            // Done with all dimensions
-            break;
-          }
+          // Done with all dimensions
+          break;
         }
-      };
-      content_hash((i * 0)...);
-      return h;
-    }
+      }
+    };
+    content_hash((i * 0)...);
+    return h;
   }
 }
 _CCCL_DIAG_POP
@@ -1117,8 +1111,8 @@ UNITTEST("slice hash")
   auto s  = make_slice(A, ::std::tuple{5, 2}, 5);
   auto s2 = make_slice(A, ::std::tuple{4, 2}, 5);
 
-  size_t h  = hash<slice<double, 2>>{}(s);
-  size_t h2 = hash<slice<double, 2>>{}(s2);
+  const size_t h  = hash<slice<double, 2>>{}(s);
+  const size_t h2 = hash<slice<double, 2>>{}(s2);
 
   EXPECT(h != h2);
 };
@@ -1133,8 +1127,8 @@ UNITTEST("slice hash 3D")
   // non-contiguous
   auto s2 = make_slice(A, ::std::tuple{4, 2, 40}, 5, 5 * 2);
 
-  size_t h  = hash<slice<double, 3>>{}(s);
-  size_t h2 = hash<slice<double, 3>>{}(s2);
+  const size_t h  = hash<slice<double, 3>>{}(s);
+  const size_t h2 = hash<slice<double, 3>>{}(s2);
 
   EXPECT(h != h2);
 };

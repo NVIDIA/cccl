@@ -1211,7 +1211,7 @@ def test_serialize_deserialize_counting_iterator_input():
     # rebuilt purely from the blob — no iterator object was passed to deserialize,
     # so a regression to caller-supplied descriptors would fail here, not silently
     # pass via the object reconstructed for the call.
-    assert loaded.d_in_cccl.is_kind_iterator()
+    assert not loaded.d_in_cccl.is_ptr_kind
     _run_loaded_reducer(
         loaded,
         d_in=CountingIterator(np.int32(0)),
@@ -1243,7 +1243,7 @@ def test_serialize_deserialize_transform_iterator_input():
     loaded = deserialize(blob)
     # Iterator descriptor (incl. the transform op's embedded LTOIR) rebuilt from
     # the blob alone — deserialize took no objects.
-    assert loaded.d_in_cccl.is_kind_iterator()
+    assert not loaded.d_in_cccl.is_ptr_kind
     _run_loaded_reducer(
         loaded, d_in=make_it(), d_out=d_out, num_items=n, op=OpKind.PLUS, h_init=h_init
     )

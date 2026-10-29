@@ -94,6 +94,7 @@ public:
     {
       return typeid(*this).before(typeid(other)) ? -1 : 1;
     }
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- typeid checked just above
     const auto& o = static_cast<const green_ctx_data_place_impl&>(other);
     return (o.view_ < view_) - (view_ < o.view_);
   }
@@ -196,11 +197,11 @@ public:
     }
 
     /* Make sure we aren't requesting more SMs than the GPU has available */
-    int max_SMs = cuda_try<cudaDeviceGetAttribute>(cudaDevAttrMultiProcessorCount, devid);
+    const int max_SMs = cuda_try<cudaDeviceGetAttribute>(cudaDevAttrMultiProcessorCount, devid);
     assert(max_SMs >= int(numsm));
 
     /* Determine the device's resources */
-    CUdevice device = cuda_try<cuDeviceGet>(devid);
+    const CUdevice device = cuda_try<cuDeviceGet>(devid);
 
     /* Retain the primary ctx in order to get a set of SM resources for that device */
     CUdevResource input;

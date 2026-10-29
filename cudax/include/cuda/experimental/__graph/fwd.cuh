@@ -23,8 +23,6 @@
 
 #include <cuda/std/array>
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental

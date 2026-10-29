@@ -9,14 +9,13 @@ void verify_stream()
 {
   auto exec   = thrust::device;
   auto stream = thrust::cuda_cub::stream(exec);
-  ASSERT_EQUAL(stream, cudaStreamPerThread);
+  REQUIRE(stream == cudaStreamPerThread);
 }
 
-void TestPerThreadDefaultStream()
+TEST_CASE("TestPerThreadDefaultStream", "[stream_per_thread]")
 {
   verify_stream();
 
   std::thread t(verify_stream);
   t.join();
 }
-DECLARE_UNITTEST(TestPerThreadDefaultStream);

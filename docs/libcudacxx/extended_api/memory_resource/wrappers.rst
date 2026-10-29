@@ -125,6 +125,32 @@ owns a newly constructed ``Resource``. ``Resource`` must satisfy ``cuda::mr::res
      resource.deallocate(stream, ptr, 1024, 16);
    }
 
+Convenience aliases
+~~~~~~~~~~~~~~~~~~~
+.. _libcudacxx-extended-api-memory-resources-wrapper-aliases:
+
+Aliases are provided for the most common accessibility property combinations of the stream-ordered wrappers. Each alias
+names the same type as its expansion, so values can be passed freely between code that uses either spelling.
+
+.. list-table::
+   :widths: 35 65
+   :header-rows: 1
+
+   * - Alias
+     - Type
+   * - ``cuda::mr::device_resource_ref``
+     - ``cuda::mr::resource_ref<cuda::mr::device_accessible>``
+   * - ``cuda::mr::host_resource_ref``
+     - ``cuda::mr::resource_ref<cuda::mr::host_accessible>``
+   * - ``cuda::mr::host_device_resource_ref``
+     - ``cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible>``
+   * - ``cuda::mr::any_device_resource``
+     - ``cuda::mr::any_resource<cuda::mr::device_accessible>``
+   * - ``cuda::mr::any_host_resource``
+     - ``cuda::mr::any_resource<cuda::mr::host_accessible>``
+   * - ``cuda::mr::any_host_device_resource``
+     - ``cuda::mr::any_resource<cuda::mr::host_accessible, cuda::mr::device_accessible>``
+
 Synchronous variants
 ~~~~~~~~~~~~~~~~~~~~
 

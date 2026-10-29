@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/__annotated_ptr/access_property.h>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_ACCESS_PROPERTY

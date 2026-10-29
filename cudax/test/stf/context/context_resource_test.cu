@@ -175,7 +175,7 @@ void test_graph_ctx_manual_resource_release()
   EXPECT(callback_resource_release_count.load() == 0);
 
   // Generate the graph using finalize_as_graph
-  ::std::shared_ptr<cudaGraph_t> graph = ctx.finalize_as_graph();
+  const ::std::shared_ptr<cudaGraph_t> graph = ctx.finalize_as_graph();
 
   // Create stream and instantiate graph for multiple launches
   cudaStream_t test_stream;

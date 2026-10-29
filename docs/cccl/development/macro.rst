@@ -83,7 +83,7 @@ file. Use ``_CCCL_CUDA_COMPILATION()`` to check for the compilation of a CUDA so
 | ``__cccl_ptx_isa``   | PTX ISA version available with the current CUDA compiler, e.g. PTX ISA 8.4 (``840``) is available from CUDA 12.4  |
 +----------------------+-------------------------------------------------------------------------------------------------------------------+
 
-*Note*: When compiling CUDA code with ``nvc++`` the ``_CCCL_PTX_ARCH()`` macro expands to ``0``.
+*Note*: When compiling CUDA code with ``nvc++`` the ``_CCCL_PTX_ARCH()`` macro expands to ``NV_TARGET_MINIMUM_SM_INTEGER * 10``.
 
 ----
 
@@ -357,27 +357,60 @@ In C++23, the ``if consteval`` statement (`link <https://en.cppreference.com/w/c
 | ``_CCCL_IF_NOT_CONSTEVAL_DEFAULT`` | Equivalent to ``if !consteval`` statement (fallbacks to ``if constexpr (false)``) |
 +------------------------------------+-----------------------------------------------------------------------------------+
 
+**Compile-Time Constant Detection**
+
+``_CCCL_IS_CONSTANT_P(...)`` checks whether the compiler can determine the value of an expression at compile time.
+It expands to ``__builtin_constant_p(...)`` when the builtin is available, and to ``false`` otherwise.
+The expression is not evaluated, so its side effects do not occur.
+See the `GCC builtin documentation <https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html#index-__builtin_constant_p>`_
+for details.
+
+.. code-block:: c++
+
+    if (_CCCL_IS_CONSTANT_P(value) && value == 0)
+    {
+        // Optimized implementation for a known zero value.
+    }
+    else
+    {
+        // General implementation, also valid when value is zero.
+    }
+
+Unlike ``_CCCL_IF_CONSTEVAL``, this macro tests an expression's value rather than whether the current evaluation occurs in a constant-evaluated context.
+
 **Exception Macros**
 
 CUDA doesn't support exceptions in device code, however, sometimes we need to write host/device functions that use exceptions on host and ``__trap()`` on device. CCCL provides a set of macros that should be used in place of the standard C++ keywords to make the code compile in both, host and device code.
 
-+-----------------------------+------------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_TRY``               | Replacement for the ``try`` keyword.                                                                             |
-+-----------------------------+------------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_CATCH (X)``         | Replacement for the ``catch (/*X*/)`` statement.                                                                 |
-+-----------------------------+------------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_CATCH_ALL``         | Replacement for the ``catch (...)`` statement.                                                                   |
-+-----------------------------+------------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_THROW(X, ...)``     | Replacement for the ``throw X(...)`` expression. ``X`` must be fully qualified type, without the leading ``::``. |
-+-----------------------------+------------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_RETHROW``           | Replacement for the plain ``throw`` expression.                                                                  |
-+-----------------------------+------------------------------------------------------------------------------------------------------------------+
++-------------------------------------------+-------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_TRY``                             | Replacement for the ``try`` keyword.                                                                                    |
++-------------------------------------------+-------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_CATCH (X)``                       | Replacement for the ``catch (/*X*/)`` statement.                                                                        |
++-------------------------------------------+-------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_CATCH_ALL``                       | Replacement for the ``catch (...)`` statement.                                                                          |
++-------------------------------------------+-------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_THROW(X, ...)``                   | Replacement for the ``throw X(...)`` expression. ``X`` must be fully qualified type, without the leading ``::``.        |
++-------------------------------------------+-------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_RETHROW``                         | Replacement for the plain ``throw`` expression.                                                                         |
++-------------------------------------------+-------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_THROW_WITH_NESTED(X, ...)``       | Replacement for ``std::throw_with_nested(X(...))``: throws an ``X`` carrying the active exception as its nested cause.  |
++-------------------------------------------+-------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_THROW_MAYBE_WITH_NESTED(X, ...)`` | Like ``_CCCL_THROW_WITH_NESTED`` inside a handler; a plain ``throw X(...)`` when no exception is active.                |
++-------------------------------------------+-------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_RETHROW_IF_NESTED(e)``            | Replacement for ``std::rethrow_if_nested(e)``: rethrows the cause nested in ``e`` if there is one, otherwise no effect. |
++-------------------------------------------+-------------------------------------------------------------------------------------------------------------------------+
 
 *Note*: The ``_CCCL_CATCH`` clause must always introduce a named variable, like: ``_CCCL_CATCH(const exception_type& var)``.
 
 .. note::
 
   ``_CCCL_THROW`` requires to include the ``<stdexcept>`` header, regardless exceptions are enabled or not.
+  The nested-exception macros live in ``<cuda/std/__exception/nested_exception_macros.h>``, which includes ``<exception>``.
+  The nested-exception macros are host-only library calls underneath; on device, and in a build without exceptions,
+  they terminate like ``_CCCL_THROW`` and ``_CCCL_RETHROW``. Prefer ``_CCCL_THROW_MAYBE_WITH_NESTED`` where the code
+  may run outside a handler: ``std::throw_with_nested`` called with no active exception stores an empty cause, and
+  rethrowing that cause later calls ``std::terminate``. ``_CCCL_RETHROW_IF_NESTED`` needs RTTI on the host, since
+  ``std::rethrow_if_nested`` finds the cause with a ``dynamic_cast``.
 
 Example:
 

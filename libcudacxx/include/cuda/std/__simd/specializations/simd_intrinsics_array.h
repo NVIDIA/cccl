@@ -24,7 +24,9 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__cstring/memcpy.h>
+#include <cuda/std/__fwd/simd.h>
 #include <cuda/std/__memory/assume_aligned.h>
+#include <cuda/std/__simd/abi.h>
 #include <cuda/std/__simd/specializations/fixed_size_storage.h>
 #include <cuda/std/__simd/specializations/simd_intrinsics.h>
 #include <cuda/std/__type_traits/is_unsigned.h>

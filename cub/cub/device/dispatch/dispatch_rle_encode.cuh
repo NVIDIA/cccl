@@ -13,29 +13,42 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/cc_dispatch.cuh>
+#include <cub/agent/agent_reduce_by_key.cuh>
+#include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
-#include <cub/detail/logging.cuh>
+#include <cub/detail/non_void_value.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce_by_key.cuh>
-#include <cub/device/dispatch/kernels/kernel_rle_encode_lookahead.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_encode.cuh>
-#include <cub/util_debug.cuh>
-#include <cub/util_device.cuh>
-#include <cub/util_temporary_storage.cuh>
+#include <cub/util_vsmem.cuh>
 
-#include <thrust/type_traits/is_contiguous_iterator.h>
-#include <thrust/type_traits/unwrap_contiguous_iterator.h>
-
-#include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
-#include <cuda/__memory/align_up.h>
-#include <cuda/__type_traits/is_trivially_copyable.h>
-#include <cuda/iterator>
-#include <cuda/std/__host_stdlib/sstream>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/cstdint>
+#include <cuda/__iterator/constant_iterator.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/functional>
-#include <cuda/std/limits>
+
+#if __cccl_ptx_isa >= 920
+#  include <thrust/detail/config.h>
+
+#  include <cub/detail/cc_dispatch.cuh>
+#  include <cub/detail/logging.cuh>
+#  include <cub/device/dispatch/kernels/kernel_rle_encode_lookahead.cuh>
+#  include <cub/util_debug.cuh>
+#  include <cub/util_device.cuh>
+#  include <cub/util_temporary_storage.cuh>
+
+#  include <thrust/type_traits/is_contiguous_iterator.h>
+#  include <thrust/type_traits/unwrap_contiguous_iterator.h>
+
+#  include <cuda/__cmath/ceil_div.h>
+#  include <cuda/__type_traits/is_trivially_copyable.h>
+#  include <cuda/std/__limits/numeric_limits.h>
+#  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/cstdint>
+
+#  include <nv/target>
+#endif // __cccl_ptx_isa >= 920
 
 CUB_NAMESPACE_BEGIN
 
@@ -79,7 +92,19 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires rle_encode_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_block))
+__launch_bounds__(int(
+  reduce_by_key::make_vsmem_helper<
+    device_policy_getter<policy_selector_adapter<PolicySelector>, current_tuning_cc().get()>,
+    KeysInputIteratorT,
+    UniqueOutputIteratorT,
+    ValuesInputIteratorT,
+    AggregatesOutputIteratorT,
+    NumRunsOutputIteratorT,
+    EqualityOpT,
+    ReductionOpT,
+    OffsetT,
+    AccumT,
+    StreamingContextT>::type::agent_policy_t::BLOCK_THREADS))
   _CCCL_KERNEL_ATTRIBUTES void DeviceRleEncodeStreamingKernel(
     const KeysInputIteratorT d_keys_in,
     const UniqueOutputIteratorT d_unique_out,
@@ -103,19 +128,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
   }
   else
   {
-    using AgentReduceByKeyPolicyT = agent_reduce_by_key_policy<
-      policy.lookback.threads_per_block,
-      policy.lookback.items_per_thread,
-      policy.lookback.load_algorithm,
-      policy.lookback.load_modifier,
-      policy.lookback.scan_algorithm,
-      delay_constructor_t<policy.lookback.lookback_delay.kind,
-                          policy.lookback.lookback_delay.delay,
-                          policy.lookback.lookback_delay.l2_write_latency>>;
-
-    using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<
-      AgentReduceByKeyPolicyT,
-      reduce_by_key::AgentReduceByKey,
+    using vsmem_helper_t = typename reduce_by_key::make_vsmem_helper<
+      device_policy_getter<policy_selector_adapter<PolicySelector>, current_tuning_cc().get()>,
       KeysInputIteratorT,
       UniqueOutputIteratorT,
       ValuesInputIteratorT,
@@ -125,7 +139,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
       ReductionOpT,
       OffsetT,
       AccumT,
-      StreamingContextT>;
+      StreamingContextT>::type;
 
     using agent_reduce_by_key_t = typename vsmem_helper_t::agent_t;
 
@@ -331,17 +345,8 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
   {
     constexpr int init_kernel_threads = 128;
     const auto init_grid_size         = ::cuda::ceil_div(num_tiles, init_kernel_threads);
-#  ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking DeviceRleEncodeLookaheadInitKernel<<<%d, %d, 0, %lld>>>()\n",
-            init_grid_size,
-            init_kernel_threads,
-            (long long) stream);
-#  else // CUB_DEBUG_LOG
-    log("Invoking DeviceRleEncodeLookaheadInitKernel<<<%d, %d, 0, %lld>>>()\n",
-        init_grid_size,
-        init_kernel_threads,
-        (long long) stream);
-#  endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH(
+      "DeviceRleEncodeLookaheadInitKernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
     if (const auto error = CubDebug(
           launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* dependent_launch */ false)
             .doit(kernel_source.InitKernel(), tile_partial_states, static_cast<::cuda::std::int64_t>(num_tiles))))
@@ -359,19 +364,7 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
   }
   {
     const int block_dim = num_total_threads(lookahead_policy);
-#  ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking DeviceRleEncodeLookaheadKernel<<<%d, %d, %zu, %lld>>>()\n",
-            num_tiles,
-            block_dim,
-            dyn_smem_bytes,
-            (long long) stream);
-#  else // CUB_DEBUG_LOG
-    log("Invoking DeviceRleEncodeLookaheadKernel<<<%d, %d, %zu, %lld>>>()\n",
-        num_tiles,
-        block_dim,
-        dyn_smem_bytes,
-        (long long) stream);
-#  endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("DeviceRleEncodeLookaheadKernel", num_tiles, 1, 1, block_dim, dyn_smem_bytes, stream, "");
     if (const auto error = CubDebug(
           launcher_factory(num_tiles,
                            block_dim,
@@ -446,18 +439,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       return error;
     }
     return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
-#  if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-      NV_IF_TARGET(NV_IS_HOST, ({
-                     ::std::stringstream ss;
-                     ss << policy_getter();
-                     _CubLog("Dispatching DeviceRunLengthEncode::Encode to compute capability %d.%d with tuning: %s\n",
-                             cc.major_cap(),
-                             cc.minor_cap(),
-                             ss.str().c_str());
-                   }))
-#  else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-      log_dispatch("DeviceRunLengthEncode::Encode", cc, policy_getter());
-#  endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+      detail::log_dispatch("DeviceRunLengthEncode::Encode", cc, policy_getter());
 
       if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == RleAlgorithm::lookahead)
       {

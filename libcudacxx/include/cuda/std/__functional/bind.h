@@ -41,10 +41,12 @@
 #  include <cuda/std/__type_traits/is_convertible.h>
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__type_traits/is_void.h>
+#  include <cuda/std/__type_traits/nat.h>
 #  include <cuda/std/__type_traits/remove_cv.h>
 #  include <cuda/std/__type_traits/remove_cvref.h>
 #  include <cuda/std/__type_traits/remove_reference.h>
 #  include <cuda/std/__utility/forward.h>
+#  include <cuda/std/__utility/integer_sequence.h>
 #  include <cuda/std/cstddef>
 #  include <cuda/std/tuple>
 
@@ -110,7 +112,7 @@ __mu(_Ti& __ti, tuple<_Uj...>& __uj)
   return ::cuda::std::__mu_expand(__ti, __uj, __indices());
 }
 
-template <bool IsPh, class _Ti, class _Uj>
+template <bool _IsPh, class _Ti, class _Uj>
 struct __mu_return2
 {};
 
@@ -138,7 +140,7 @@ __mu(_Ti& __ti, _Uj&)
   return __ti;
 }
 
-template <class _Ti, bool IsReferenceWrapper, bool IsBindEx, bool IsPh, class _TupleUj>
+template <class _Ti, bool _IsReferenceWrapper, bool _IsBindEx, bool _IsPh, class _TupleUj>
 struct __mu_return_impl;
 
 template <bool _Invocable, class _Ti, class... _Uj>

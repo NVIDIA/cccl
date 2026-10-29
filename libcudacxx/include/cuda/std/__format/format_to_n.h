@@ -20,14 +20,16 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__format/buffer.h>
 #include <cuda/std/__format/format_args.h>
 #include <cuda/std/__format/format_context.h>
 #include <cuda/std/__format/format_parse_context.h>
 #include <cuda/std/__format/vformat_to.h>
+#include <cuda/std/__fwd/format.h>
+#include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
-#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/move.h>

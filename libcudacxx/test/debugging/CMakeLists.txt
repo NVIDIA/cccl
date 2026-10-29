@@ -167,7 +167,7 @@ function(libcudacxx_add_pretty_printer_test)
   )
   target_link_libraries(
     ${target_name}
-    PRIVATE libcudacxx.compiler_interface CUDA::cudart
+    PRIVATE libcudacxx.compiler_interface CUDA::cudart CUDA::cuda_driver
   )
 
   # Explicitly set max optimization, the printers should work even when everything is
@@ -226,6 +226,7 @@ add_subdirectory(atomic)
 add_subdirectory(buffer)
 add_subdirectory(complex)
 add_subdirectory(event)
+add_subdirectory(expected)
 add_subdirectory(hierarchy)
 add_subdirectory(inplace_vector)
 add_subdirectory(mdspan)
@@ -245,3 +246,4 @@ add_subdirectory(shared_resource)
 add_subdirectory(span)
 add_subdirectory(stream)
 add_subdirectory(tuple)
+add_subdirectory(annotated_ptr)

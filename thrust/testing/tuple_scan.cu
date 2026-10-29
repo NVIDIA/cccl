@@ -5,12 +5,6 @@
 
 #include <unittest/unittest.h>
 
-#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  include <unittest/cuda/testframework.h>
-#endif
-
-using namespace unittest;
-
 struct SumTupleFunctor
 {
   template <typename Tuple>
@@ -51,14 +45,14 @@ struct TestTupleScan
     // inclusive_scan
     thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), SumTupleFunctor());
     thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), SumTupleFunctor());
-    ASSERT_EQUAL_QUIET(h_output, d_output);
+    REQUIRE((h_output == d_output));
 
     // exclusive_scan
     cuda::std::tuple<T, T> init(13, 17);
     thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), init, SumTupleFunctor());
     thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), init, SumTupleFunctor());
 
-    ASSERT_EQUAL_QUIET(h_output, d_output);
+    REQUIRE((h_output == d_output));
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTupleScan, IntegralTypes);

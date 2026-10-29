@@ -7,7 +7,7 @@
 using ReverseTypes = unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>;
 
 template <typename Vector>
-void TestReverseSimple()
+void test_reverse_simple()
 {
   Vector data{1, 2, 3, 4, 5};
 
@@ -15,9 +15,9 @@ void TestReverseSimple()
 
   Vector ref{5, 4, 3, 2, 1};
 
-  ASSERT_EQUAL(ref, data);
+  REQUIRE(ref == data);
 }
-DECLARE_VECTOR_UNITTEST(TestReverseSimple);
+DECLARE_VECTOR_UNITTEST(test_reverse_simple);
 
 template <typename BidirectionalIterator>
 void reverse(my_system& system, BidirectionalIterator, BidirectionalIterator)
@@ -25,16 +25,15 @@ void reverse(my_system& system, BidirectionalIterator, BidirectionalIterator)
   system.validate_dispatch();
 }
 
-void TestReverseDispatchExplicit()
+TEST_CASE("TestReverseDispatchExplicit", "[reverse]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::reverse(sys, vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestReverseDispatchExplicit);
 
 template <typename BidirectionalIterator>
 void reverse(my_tag, BidirectionalIterator first, BidirectionalIterator)
@@ -42,18 +41,17 @@ void reverse(my_tag, BidirectionalIterator first, BidirectionalIterator)
   *first = 13;
 }
 
-void TestReverseDispatchImplicit()
+TEST_CASE("TestReverseDispatchImplicit", "[reverse]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::reverse(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestReverseDispatchImplicit);
 
 template <typename Vector>
-void TestReverseCopySimple()
+void test_reverse_copy_simple()
 {
   using Iterator = typename Vector::iterator;
 
@@ -64,10 +62,10 @@ void TestReverseCopySimple()
 
   output.resize(5);
   Vector ref{5, 4, 3, 2, 1};
-  ASSERT_EQUAL(5, iter - output.begin());
-  ASSERT_EQUAL(ref, output);
+  REQUIRE(5 == iter - output.begin());
+  REQUIRE(ref == output);
 }
-DECLARE_VECTOR_UNITTEST(TestReverseCopySimple);
+DECLARE_VECTOR_UNITTEST(test_reverse_copy_simple);
 
 template <typename BidirectionalIterator, typename OutputIterator>
 OutputIterator reverse_copy(my_system& system, BidirectionalIterator, BidirectionalIterator, OutputIterator result)
@@ -76,16 +74,15 @@ OutputIterator reverse_copy(my_system& system, BidirectionalIterator, Bidirectio
   return result;
 }
 
-void TestReverseCopyDispatchExplicit()
+TEST_CASE("TestReverseCopyDispatchExplicit", "[reverse]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::reverse_copy(sys, vec.begin(), vec.end(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestReverseCopyDispatchExplicit);
 
 template <typename BidirectionalIterator, typename OutputIterator>
 OutputIterator reverse_copy(my_tag, BidirectionalIterator, BidirectionalIterator, OutputIterator result)
@@ -94,16 +91,15 @@ OutputIterator reverse_copy(my_tag, BidirectionalIterator, BidirectionalIterator
   return result;
 }
 
-void TestReverseCopyDispatchImplicit()
+TEST_CASE("TestReverseCopyDispatchImplicit", "[reverse]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::reverse_copy(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestReverseCopyDispatchImplicit);
 
 template <typename T>
 struct TestReverse
@@ -116,7 +112,7 @@ struct TestReverse
     thrust::reverse(h_data.begin(), h_data.end());
     thrust::reverse(d_data.begin(), d_data.end());
 
-    ASSERT_EQUAL(h_data, d_data);
+    REQUIRE(h_data == d_data);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReverse, ReverseTypes);
@@ -135,7 +131,7 @@ struct TestReverseCopy
     thrust::reverse_copy(h_data.begin(), h_data.end(), h_result.begin());
     thrust::reverse_copy(d_data.begin(), d_data.end(), d_result.begin());
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReverseCopy, ReverseTypes);
@@ -156,13 +152,13 @@ struct TestReverseCopyToDiscardIterator
 
     const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
-    ASSERT_EQUAL_QUIET(reference, h_result);
-    ASSERT_EQUAL_QUIET(reference, d_result);
+    REQUIRE(reference == h_result);
+    REQUIRE(reference == d_result);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReverseCopyToDiscardIterator, ReverseTypes);
 
-void TestReverseZippedHost()
+TEST_CASE("TestReverseZippedHost", "[reverse]")
 {
   thrust::host_vector<int> a{1, 2, 3, 4};
   thrust::host_vector<int> b{10, 20, 30, 40};
@@ -172,7 +168,6 @@ void TestReverseZippedHost()
   const thrust::host_vector<int> expected_a{4, 3, 2, 1};
   const thrust::host_vector<int> expected_b{40, 30, 20, 10};
 
-  ASSERT_EQUAL(a, expected_a);
-  ASSERT_EQUAL(b, expected_b);
+  REQUIRE(a == expected_a);
+  REQUIRE(b == expected_b);
 }
-DECLARE_UNITTEST(TestReverseZippedHost);

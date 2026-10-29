@@ -50,14 +50,14 @@ public:
     return begin() + ((last - first) + (stride - 1)) / stride;
   }
 
-protected:
+private:
   Iterator first;
   Iterator last;
   difference_type stride;
 };
 
 template <class Vector>
-void TestSortPermutationIterator()
+void test_sort_permutation_iterator()
 {
   using Iterator = typename Vector::iterator;
 
@@ -68,12 +68,12 @@ void TestSortPermutationIterator()
   thrust::sort(S.begin(), S.end());
 
   Vector ref{0, 9, 2, 1, 5, 3, 7, 6, 8, 4};
-  ASSERT_EQUAL(A, ref);
+  REQUIRE(A == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestSortPermutationIterator);
+DECLARE_VECTOR_UNITTEST(test_sort_permutation_iterator);
 
 template <class Vector>
-void TestStableSortPermutationIterator()
+void test_stable_sort_permutation_iterator()
 {
   using Iterator = typename Vector::iterator;
 
@@ -84,12 +84,12 @@ void TestStableSortPermutationIterator()
   thrust::stable_sort(S.begin(), S.end());
 
   Vector ref{0, 9, 2, 1, 5, 3, 7, 6, 8, 4};
-  ASSERT_EQUAL(A, ref);
+  REQUIRE(A == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestStableSortPermutationIterator);
+DECLARE_VECTOR_UNITTEST(test_stable_sort_permutation_iterator);
 
 template <class Vector>
-void TestSortByKeyPermutationIterator()
+void test_sort_by_key_permutation_iterator()
 {
   using Iterator = typename Vector::iterator;
 
@@ -102,15 +102,15 @@ void TestSortByKeyPermutationIterator()
   thrust::sort_by_key(S.begin(), S.end(), T.begin());
 
   Vector ref_A{0, 9, 2, 1, 5, 3, 7, 6, 8, 4};
-  ASSERT_EQUAL(A, ref_A);
+  REQUIRE(A == ref_A);
 
   Vector ref_B{2, 1, 0, 3, 4, 5, 8, 7, 6, 9};
-  ASSERT_EQUAL(B, ref_B);
+  REQUIRE(B == ref_B);
 }
-DECLARE_VECTOR_UNITTEST(TestSortByKeyPermutationIterator);
+DECLARE_VECTOR_UNITTEST(test_sort_by_key_permutation_iterator);
 
 template <class Vector>
-void TestStableSortByKeyPermutationIterator()
+void test_stable_sort_by_key_permutation_iterator()
 {
   using Iterator = typename Vector::iterator;
 
@@ -123,9 +123,9 @@ void TestStableSortByKeyPermutationIterator()
   thrust::stable_sort_by_key(S.begin(), S.end(), T.begin());
 
   Vector ref_A{0, 9, 2, 1, 5, 3, 7, 6, 8, 4};
-  ASSERT_EQUAL(A, ref_A);
+  REQUIRE(A == ref_A);
 
   Vector ref_B{2, 1, 0, 3, 4, 5, 8, 7, 6, 9};
-  ASSERT_EQUAL(B, ref_B);
+  REQUIRE(B == ref_B);
 }
-DECLARE_VECTOR_UNITTEST(TestStableSortByKeyPermutationIterator);
+DECLARE_VECTOR_UNITTEST(test_stable_sort_by_key_permutation_iterator);

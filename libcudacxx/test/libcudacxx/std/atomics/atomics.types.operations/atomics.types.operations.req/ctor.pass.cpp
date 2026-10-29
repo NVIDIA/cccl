@@ -79,7 +79,9 @@ int main(int, char**)
      TestEachIntegralType<TestFunc, local_memory_selector, cuda::thread_scope_system>()();))
 
   TestFunc<UserType, local_memory_selector, cuda::thread_scope_device>()();
+  TestFunc<UserType, local_memory_selector, cuda::thread_scope_cluster>()();
   TestEachIntegralType<TestFunc, local_memory_selector, cuda::thread_scope_device>()();
+  TestEachIntegralType<TestFunc, local_memory_selector, cuda::thread_scope_cluster>()();
   TestFunc<UserType, local_memory_selector, cuda::thread_scope_block>()();
   TestEachIntegralType<TestFunc, local_memory_selector, cuda::thread_scope_block>()();
 

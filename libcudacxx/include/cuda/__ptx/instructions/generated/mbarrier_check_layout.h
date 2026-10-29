@@ -1,7 +1,7 @@
 // This file was automatically generated. Do not edit.
 
 // clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
-// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone, readability-identifier-naming)
 
 #ifndef _CUDA_PTX_GENERATED_MBARRIER_CHECK_LAYOUT_H_
 #define _CUDA_PTX_GENERATED_MBARRIER_CHECK_LAYOUT_H_
@@ -46,6 +46,6 @@ _CCCL_DEVICE_API bool mbarrier_check_layout(::cuda::ptx::layout_t<_Layout> __lay
 }
 #endif // __cccl_ptx_isa >= 940
 
-// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone, readability-identifier-naming)
 
 #endif // _CUDA_PTX_GENERATED_MBARRIER_CHECK_LAYOUT_H_

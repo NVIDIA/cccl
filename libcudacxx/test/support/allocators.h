@@ -20,13 +20,13 @@ class A1
   int id_;
 
 public:
-  TEST_FUNC explicit A1(int id = 0) noexcept
+  TEST_FUNC constexpr explicit A1(int id = 0) noexcept
       : id_(id)
   {}
 
   using value_type = T;
 
-  TEST_FUNC int id() const
+  TEST_FUNC constexpr int id() const
   {
     return id_;
   }
@@ -96,13 +96,13 @@ public:
 };
 
 template <class T, class U>
-inline TEST_FUNC bool operator==(const A1<T>& x, const A1<U>& y)
+inline TEST_FUNC constexpr bool operator==(const A1<T>& x, const A1<U>& y)
 {
   return x.id() == y.id();
 }
 
 template <class T, class U>
-inline TEST_FUNC bool operator!=(const A1<T>& x, const A1<U>& y)
+inline TEST_FUNC constexpr bool operator!=(const A1<T>& x, const A1<U>& y)
 {
   return !(x == y);
 }
@@ -113,7 +113,7 @@ class A2
   int id_;
 
 public:
-  TEST_FUNC explicit A2(int id = 0) noexcept
+  TEST_FUNC constexpr explicit A2(int id = 0) noexcept
       : id_(id)
   {}
 
@@ -124,7 +124,7 @@ public:
 
   using propagate_on_container_move_assignment = cuda::std::true_type;
 
-  TEST_FUNC int id() const
+  TEST_FUNC constexpr int id() const
   {
     return id_;
   }
@@ -164,13 +164,13 @@ public:
 };
 
 template <class T, class U>
-inline TEST_FUNC bool operator==(const A2<T>& x, const A2<U>& y)
+inline TEST_FUNC constexpr bool operator==(const A2<T>& x, const A2<U>& y)
 {
   return x.id() == y.id();
 }
 
 template <class T, class U>
-inline TEST_FUNC bool operator!=(const A2<T>& x, const A2<U>& y)
+inline TEST_FUNC constexpr bool operator!=(const A2<T>& x, const A2<U>& y)
 {
   return !(x == y);
 }
@@ -181,7 +181,7 @@ class A3
   int id_;
 
 public:
-  TEST_FUNC explicit A3(int id = 0) noexcept
+  TEST_FUNC constexpr explicit A3(int id = 0) noexcept
       : id_(id)
   {}
 
@@ -190,7 +190,7 @@ public:
   using propagate_on_container_copy_assignment = cuda::std::true_type;
   using propagate_on_container_swap            = cuda::std::true_type;
 
-  TEST_FUNC int id() const
+  TEST_FUNC constexpr int id() const
   {
     return id_;
   }
@@ -244,13 +244,13 @@ public:
 };
 
 template <class T, class U>
-inline TEST_FUNC bool operator==(const A3<T>& x, const A3<U>& y)
+inline TEST_FUNC constexpr bool operator==(const A3<T>& x, const A3<U>& y)
 {
   return x.id() == y.id();
 }
 
 template <class T, class U>
-inline TEST_FUNC bool operator!=(const A3<T>& x, const A3<U>& y)
+inline TEST_FUNC constexpr bool operator!=(const A3<T>& x, const A3<U>& y)
 {
   return !(x == y);
 }

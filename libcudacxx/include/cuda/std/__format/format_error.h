@@ -20,7 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__exception/terminate.h> // IWYU pragma: keep
+
+#include <nv/target>
 
 #if __cpp_lib_format >= 201907L
 #  include <format>

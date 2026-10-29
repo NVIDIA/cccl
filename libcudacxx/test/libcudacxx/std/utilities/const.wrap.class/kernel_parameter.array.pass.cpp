@@ -11,7 +11,7 @@
 // the host compiler.
 // UNSUPPORTED: nvcc && (nvhpc || clang || msvc)
 
-// nvrtc is unsupported.
+// This test requires kernel launch from host.
 // UNSUPPORTED: nvrtc
 
 // constant_wrapper
@@ -39,7 +39,7 @@ TEST_GLOBAL_VARIABLE int rhs[8]{8, 7, 6, 5, 4, 3, 2, 1};
 
 void test_host()
 {
-  test_kernel<<<1, 1>>>(cuda::std::__cw<lhs>, cuda::std::__cw<rhs>);
+  test_kernel<<<1, 1>>>(cuda::std::cw<lhs>, cuda::std::cw<rhs>);
   assert(cudaDeviceSynchronize() == cudaSuccess);
 }
 

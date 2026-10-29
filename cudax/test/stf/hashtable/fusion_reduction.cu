@@ -21,7 +21,7 @@ __global__ void gpu_merge_hashtable(hashtable A, const hashtable B)
   {
     if (B.addr[threadid].key != reserved::kEmpty)
     {
-      uint32_t value = B.addr[threadid].value;
+      const uint32_t value = B.addr[threadid].value;
       if (value != reserved::kEmpty)
       {
         //    printf("INSERTING key %d value %d\n", pHashTableB[threadid].key, value);
@@ -38,7 +38,7 @@ void cpu_merge_hashtable(hashtable A, const hashtable B)
   {
     if (B.addr[i].key != reserved::kEmpty)
     {
-      uint32_t value = B.addr[i].value;
+      const uint32_t value = B.addr[i].value;
       if (value != reserved::kEmpty)
       {
         //    printf("INSERTING key %d value %d\n", pHashTableB[threadid].key, value);
@@ -73,15 +73,15 @@ class hashtable_fusion_t : public stream_reduction_operator<hashtable>
 // A kernel to fill the hashtable with some fictitious values
 __global__ void fill_table(size_t dev_id, size_t cnt, hashtable h)
 {
-  unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
-  unsigned int nthreads = blockDim.x * gridDim.x;
+  const unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+  const unsigned int nthreads = blockDim.x * gridDim.x;
 
   for (unsigned int i = threadid; i < cnt; i += nthreads)
   {
-    uint32_t key   = dev_id * 1000 + i;
-    uint32_t value = 2 * i;
+    const uint32_t key   = dev_id * 1000 + i;
+    const uint32_t value = 2 * i;
 
-    reserved::KeyValue kvs(key, value);
+    const reserved::KeyValue kvs(key, value);
     h.insert(kvs);
   }
 }
@@ -91,7 +91,7 @@ int main()
   stream_ctx ctx;
 
   // Explicit capacity of 2048 entries
-  hashtable refh(2048);
+  const hashtable refh(2048);
   auto h_handle = ctx.logical_data(refh);
 
   auto fusion_op = std::make_shared<hashtable_fusion_t>();
@@ -110,8 +110,8 @@ int main()
     {
       for (unsigned i = 0; i < 10; i++)
       {
-        uint32_t key   = static_cast<uint32_t>(dev_id * 1000 + i);
-        uint32_t value = 2 * i;
+        const uint32_t key   = static_cast<uint32_t>(dev_id * 1000 + i);
+        const uint32_t value = 2 * i;
 
         EXPECT(h.get(key) == value);
       }

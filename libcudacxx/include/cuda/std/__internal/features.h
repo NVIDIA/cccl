@@ -24,12 +24,6 @@
 #define _LIBCUDACXX_HAS_MONOTONIC_CLOCK()       0
 #define _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()    0
 
-#if _CCCL_CUDA_COMPILATION() || __cpp_aligned_new < 201606
-#  define _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() 0
-#else
-#  define _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() 1
-#endif // !_CCCL_CUDA_COMPILATION() && __cpp_aligned_new >= 201606
-
 // We need `is_constant_evaluated` for clang and gcc. MSVC also needs extensive rework
 #if !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
 #  define _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS() 0

@@ -20,17 +20,17 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/copyable.h>
-#include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__concepts/different_from.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/get.h>
 #include <cuda/std/__fwd/subrange.h>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
-#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/dangling.h>
@@ -41,13 +41,12 @@
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_pointer.h>
-#include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
-#include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__utility/move.h>
 
@@ -127,7 +126,7 @@ _CCCL_CONCEPT_FRAGMENT(__subrange_from_iter_sent_,
 
 template <class _Iter, class _It, bool _StoreSize>
 _CCCL_CONCEPT __subrange_from_iter_sent =
-  _CCCL_FRAGMENT(__subrange_from_iter_sent_, _Iter, _It, integral_constant<bool, _StoreSize>);
+  _CCCL_FRAGMENT(__subrange_from_iter_sent_, _Iter, _It, bool_constant<_StoreSize>);
 
 template <class _Iter, class _Kind, class _It>
 _CCCL_CONCEPT_FRAGMENT(
@@ -149,12 +148,7 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _Iter, class _Sent, subrange_kind _Kind, class _Range, bool _StoreSize>
 _CCCL_CONCEPT __subrange_from_range = _CCCL_FRAGMENT(
-  __subrange_from_range_,
-  _Iter,
-  _Sent,
-  integral_constant<subrange_kind, _Kind>,
-  _Range,
-  integral_constant<bool, _StoreSize>);
+  __subrange_from_range_, _Iter, _Sent, integral_constant<subrange_kind, _Kind>, _Range, bool_constant<_StoreSize>);
 
 template <class _Iter, class _Sent, class _Kind, class _Range>
 _CCCL_CONCEPT_FRAGMENT(
@@ -403,7 +397,9 @@ template <size_t _Index,
           subrange_kind _Kind,
           enable_if_t<_Index<2, int>>
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
-_CCCL_API constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __subrange)
+// The standard specifies begin() and end() calls on the named parameter.
+_CCCL_API constexpr auto
+get(subrange<_Iter, _Sent, _Kind>&& __subrange) // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
 {
   if constexpr (_Index == 0)
   {

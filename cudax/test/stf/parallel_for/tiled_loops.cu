@@ -22,7 +22,7 @@ using namespace cuda::experimental::stf;
 __host__ __device__ size_t ref_tiling(size_t index, size_t tile_size, size_t nparts)
 {
   // in which tile is this ?
-  size_t tile_id = index / tile_size;
+  const size_t tile_id = index / tile_size;
 
   // part which owns this tile
   return (tile_id % nparts);
@@ -67,8 +67,8 @@ int main()
 
   /* Check the result on the host */
   ctx.parallel_for(exec_place::host(), ly.shape(), ly.read())->*[=](size_t pos, slice<const double> sy) {
-    int expected = static_cast<int>(ref_tiling(pos, tile_size, nparts));
-    int value    = (int) sy(pos);
+    const int expected = static_cast<int>(ref_tiling(pos, tile_size, nparts));
+    const int value    = (int) sy(pos);
     if (expected != value)
     {
       printf("POS %zu -> %d (expected %d)\n", pos, value, expected);

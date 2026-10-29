@@ -25,6 +25,7 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/void_t.h>
@@ -41,6 +42,7 @@
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
 
 #include <memory>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 
@@ -693,15 +695,24 @@ public:
     int device              = -1;
     cudaEvent_t start_event = nullptr, end_event = nullptr;
 
+    // The timing events are released on every path. A failing destroy leaks that event and is
+    // reported; the guard is noexcept, so it cannot become a second exception. One policy per
+    // release, so a failure on the first does not skip the second.
     SCOPE(exit)
     {
       if (start_event)
       {
-        cuda_safe_call(cudaEventDestroy(start_event));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(start_event);
+        };
       }
       if (end_event)
       {
-        cuda_safe_call(cudaEventDestroy(end_event));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(end_event);
+        };
       }
     };
 
@@ -712,21 +723,7 @@ public:
       {
         if (record_time)
         {
-          cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
-          cuda_safe_call(cudaEventSynchronize(end_event));
-
-          float milliseconds = 0;
-          cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
-
-          if (dot.is_tracing())
-          {
-            dot.template add_vertex_timing<typename context::task_type>(t, milliseconds, device);
-          }
-
-          if (statistics.is_calibrating())
-          {
-            statistics.log_task_time(t, milliseconds);
-          }
+          statistics.record_task_timing(t, start_event, end_event, t.get_stream(), dot, device);
         }
       }
 
@@ -817,8 +814,7 @@ public:
       {
         if constexpr (::cuda::std::is_same_v<partitioner_t, null_partition>)
         {
-          fprintf(stderr, "Fatal: Grid execution requires a partitioner.\n");
-          abort();
+          _CCCL_THROW(::std::logic_error, "grid execution requires a partitioner");
         }
         else
         {
@@ -1136,15 +1132,23 @@ public:
     // Wrap this for_each_n call in a host callback launched in CUDA stream associated with that task
     // To do so, we pack all argument in a dynamically allocated tuple
     // that will be deleted by the resource system or immediately in callback
-    auto args = new args_t(mv(instances), n, mv(f), shape);
+    // `args_owner` holds the tuple until ownership is handed to whoever will free it: the
+    // ctx resource (graph) or the host callback (stream). Everything below launches with the
+    // non-owning `args` view, and each path calls release() only once the handoff succeeded,
+    // so any throw in between frees the tuple exactly once.
+    auto args_owner = ::std::make_unique<args_t>(mv(instances), n, mv(f), shape);
+    args_t* args    = args_owner.get();
 
     // For graph contexts, use deferred cleanup via ctx_resource (needed for graph replay)
     // For stream contexts, delete immediately in callback (better memory efficiency)
     if constexpr (::cuda::std::is_same_v<context, graph_ctx>)
     {
-      // The context becomes responsible for `args` once add_resource() returns; `args` stays
-      // usable below as the pointer the graph node references.
+      // The resource is non-owning until the release below, so a throw from add_resource()
+      // leaves args_owner as the owner and it frees correctly -- no graph node references the
+      // tuple yet on that path. After it returns the context is responsible, and `args` stays
+      // usable as the pointer the graph node references.
       ctx.add_resource(::std::make_shared<callback_args_resource<args_t>>(args));
+      args_owner.release();
     }
 
     // The function which the host callback will execute
@@ -1153,7 +1157,7 @@ public:
       // it.
       ON_THROW(abort)
       {
-        auto p = static_cast<decltype(args)>(untyped_args);
+        auto p = static_cast<args_t*>(untyped_args);
 
         auto& data               = ::std::get<0>(*p);
         const size_t n           = ::std::get<1>(*p);
@@ -1191,14 +1195,9 @@ public:
 
     if constexpr (::cuda::std::is_same_v<context, stream_ctx>)
     {
-      // Stream path: the callback owns `args` once the launch succeeds, so delete
-      // it if the enqueue throws. (Graph path hands ownership to a ctx resource
-      // above before the node is created, so it needs no guard here.)
-      SCOPE(fail)
-      {
-        delete args;
-      };
+      // The callback owns `args` once the launch succeeds; until then `args_owner` does.
       cuda_try<cudaLaunchHostFunc>(t.get_stream(), host_func, args);
+      args_owner.release();
     }
     else if constexpr (::cuda::std::is_same_v<context, graph_ctx>)
     {

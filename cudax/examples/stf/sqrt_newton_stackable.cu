@@ -56,10 +56,10 @@ int main()
     // Babylonian step: x = (x + S/x) / 2, reduce max |change|
     ctx.parallel_for(box(N), lX.rw(), lS.read(), lmax_err.reduce(reducer::maxval<double>{}))
         ->*[] __device__(size_t i, auto x, auto s, auto& max_err) {
-              double x_old = x(i);
-              double x_new = 0.5 * (x_old + s(i) / x_old);
-              x(i)         = x_new;
-              max_err      = fabs(x_new - x_old);
+              const double x_old = x(i);
+              const double x_new = 0.5 * (x_old + s(i) / x_old);
+              x(i)               = x_new;
+              max_err            = fabs(x_new - x_old);
             };
 
     while_guard.update_cond(lmax_err.read())->*[tol] __device__(auto max_err) {
@@ -71,7 +71,7 @@ int main()
 
   for (size_t i = 0; i < N; i++)
   {
-    double expected = sqrt(1.0 + static_cast<double>(i));
+    const double expected = sqrt(1.0 + static_cast<double>(i));
     EXPECT(fabs(host_X[i] - expected) < 1e-8);
   }
 

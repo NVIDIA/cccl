@@ -33,6 +33,7 @@ int main()
   // Ensure the guard can be stored as an optional
   ::std::vector<::std::optional<reserved::dot_section::guard>> nested_sections;
 
+  nested_sections.reserve(3);
   for (size_t depth = 0; depth < 3; depth++)
   {
     nested_sections.emplace_back(ctx.dot_section("foo"));

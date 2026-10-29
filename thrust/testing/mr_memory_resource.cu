@@ -38,15 +38,15 @@ public:
   }
 };
 
-void TestMemoryResourceIdentityEquality()
+TEST_CASE("TestMemoryResourceIdentityEquality", "[mr_memory_resource]")
 {
   identity_resource first;
   identity_resource second;
 
-  ASSERT_EQUAL(first == first, true);
-  ASSERT_EQUAL(first != first, false);
-  ASSERT_EQUAL(first == second, false);
-  ASSERT_EQUAL(second == first, false);
+  REQUIRE(first == first);
+  REQUIRE_FALSE(first != first);
+  REQUIRE_FALSE(first == second);
+  REQUIRE_FALSE(second == first);
 
   using allocator = thrust::mr::allocator<int, identity_resource>;
 
@@ -54,29 +54,27 @@ void TestMemoryResourceIdentityEquality()
   const allocator same_allocator(&first);
   const allocator second_allocator(&second);
 
-  ASSERT_EQUAL(first_allocator == same_allocator, true);
-  ASSERT_EQUAL(first_allocator != same_allocator, false);
-  ASSERT_EQUAL(first_allocator == second_allocator, false);
-  ASSERT_EQUAL(second_allocator == first_allocator, false);
+  REQUIRE(first_allocator == same_allocator);
+  REQUIRE_FALSE(first_allocator != same_allocator);
+  REQUIRE_FALSE(first_allocator == second_allocator);
+  REQUIRE_FALSE(second_allocator == first_allocator);
 }
-DECLARE_UNITTEST(TestMemoryResourceIdentityEquality);
 
-void TestMemoryResourceEquivalentEquality()
+TEST_CASE("TestMemoryResourceEquivalentEquality", "[mr_memory_resource]")
 {
   always_equal_resource first;
   always_equal_resource second;
 
-  ASSERT_EQUAL(first == second, true);
-  ASSERT_EQUAL(second == first, true);
-  ASSERT_EQUAL(first != second, false);
+  REQUIRE(first == second);
+  REQUIRE(second == first);
+  REQUIRE_FALSE(first != second);
 
   using allocator = thrust::mr::allocator<int, always_equal_resource>;
 
   const allocator first_allocator(&first);
   const allocator second_allocator(&second);
 
-  ASSERT_EQUAL(first_allocator == second_allocator, true);
-  ASSERT_EQUAL(second_allocator == first_allocator, true);
-  ASSERT_EQUAL(first_allocator != second_allocator, false);
+  REQUIRE(first_allocator == second_allocator);
+  REQUIRE(second_allocator == first_allocator);
+  REQUIRE_FALSE(first_allocator != second_allocator);
 }
-DECLARE_UNITTEST(TestMemoryResourceEquivalentEquality);

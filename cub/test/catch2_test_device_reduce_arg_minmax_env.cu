@@ -11,15 +11,14 @@ struct stream_registry_factory_t;
 
 #include <thrust/device_vector.h>
 
-#include <cuda/devices>
 #include <cuda/execution>
 #include <cuda/iterator>
 #include <cuda/std/execution>
 #include <cuda/std/utility>
-#include <cuda/stream>
 
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/device_and_stream.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::ArgMinMax, device_arg_minmax);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::ArgMinLastMax, device_arg_minlastmax);
@@ -192,8 +191,8 @@ CUB_TEST("Device ArgMin[Last]Max uses custom stream", "[reduce][device]", CUB_SM
   const auto n                                = static_cast<::cuda::std::int64_t>(input.size());
   const cuda::std::int64_t expected_max_index = last_max ? 2 : 1;
 
-  const cuda::stream stream{cuda::devices[0]};
-  const auto error = call_argminmax_api(
+  const cuda::stream stream = c2h::make_current_device_stream();
+  const auto error          = call_argminmax_api(
     last_max, input.begin(), min_out.begin(), min_index.begin(), max_out.begin(), max_index.begin(), n, stream);
   stream.sync();
   REQUIRE(error == cudaSuccess);

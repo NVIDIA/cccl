@@ -32,7 +32,6 @@
 #include <cuda/experimental/launch.cuh>
 
 #include <cooperative_groups.h>
-#include <cuda_runtime_api.h>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 

@@ -21,7 +21,7 @@
 #
 # ## Quick start:
 #
-# 1. Add one or more benchmark regexes under benchmarks.filters.cub and/or
+# 1. Add one or more benchmark regexes under benchmarks.filters.cpp and/or
 #    benchmarks.filters.python.
 # 2. Enable at least one GPU by uncommenting or adding entries in benchmarks.gpus.
 # 3. Push and inspect the dispatched benchmark jobs/artifacts.
@@ -31,11 +31,13 @@ benchmarks:
 
   # Benchmark filters grouped by project.
   filters:
-    # CUB C++ benchmark filters (regex matched against ninja target names).
-    cub:
+    # C++ benchmark filters (CUB, Thrust, libcu++; regex matched against ninja target names).
+    cpp:
       # Examples:
       # - '^cub\.bench\.for_each\.base'
       # - '^cub\.bench\.reduce\.(sum|min)\.'
+      # - '^thrust\.bench\.reduce\.'
+      # - '^libcudacxx\.bench\.'
 
     # Python benchmark filters (regex matched against paths under benchmarks/).
     python:

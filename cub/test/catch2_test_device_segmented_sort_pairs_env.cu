@@ -13,11 +13,11 @@ struct stream_registry_factory_t;
 #include <thrust/device_vector.h>
 
 #include <cuda/__execution/tune.h>
-#include <cuda/devices>
 #include <cuda/stream>
 
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/device_and_stream.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedSort::StableSortPairs, stable_sort_pairs);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedSort::StableSortPairsDescending, stable_sort_pairs_descending);
@@ -220,7 +220,7 @@ CUB_TEST_CASE("DeviceSegmentedSort::SortPairs nonstable uses custom stream",
   auto values_out = c2h::device_vector<int>(7);
   auto offsets    = c2h::device_vector<int>{0, 3, 7};
 
-  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream = c2h::make_current_device_stream();
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -269,7 +269,7 @@ CUB_TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable uses custom st
   auto values_out = c2h::device_vector<int>(7);
   auto offsets    = c2h::device_vector<int>{0, 3, 7};
 
-  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream = c2h::make_current_device_stream();
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -322,7 +322,7 @@ CUB_TEST_CASE("DeviceSegmentedSort::SortPairs nonstable DoubleBuffer uses custom
   cub::DoubleBuffer<int> d_values(
     thrust::raw_pointer_cast(values_buf0.data()), thrust::raw_pointer_cast(values_buf1.data()));
 
-  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream = c2h::make_current_device_stream();
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -372,7 +372,7 @@ CUB_TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer u
   cub::DoubleBuffer<int> d_values(
     thrust::raw_pointer_cast(values_buf0.data()), thrust::raw_pointer_cast(values_buf1.data()));
 
-  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream = c2h::make_current_device_stream();
 
   size_t expected_bytes_allocated{};
   REQUIRE(

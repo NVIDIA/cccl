@@ -9,7 +9,6 @@
 #include <thrust/scan.h>
 #include <thrust/transform.h>
 
-#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/std/execution>
 
@@ -17,9 +16,11 @@
 
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_segmented_sort_helper.cuh"
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_device_memcpy_batched_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -60,15 +61,13 @@ struct object_with_non_trivial_ctor
   std::int32_t magic;
 
   __host__ __device__ object_with_non_trivial_ctor()
-  {
-    magic = magic_constant;
-    field = 0;
-  }
+      : field(0)
+      , magic(magic_constant)
+  {}
   __host__ __device__ object_with_non_trivial_ctor(std::int32_t f)
-  {
-    magic = magic_constant;
-    field = f;
-  }
+      : field(f)
+      , magic(magic_constant)
+  {}
 
   object_with_non_trivial_ctor(const object_with_non_trivial_ctor& x) = default;
 
@@ -208,53 +207,13 @@ try
       REQUIRE(d_out == h_out);
     };
 
-    int current_device;
-    auto error = cudaGetDevice(&current_device);
-    REQUIRE(error == cudaSuccess);
-
-    SECTION("DeviceCopy::Batched works with cudaStream_t")
-    {
-      const cuda::stream stream{cuda::devices[current_device]};
-      test_copy_batched(stream.get());
-    }
-
-    SECTION("DeviceCopy::Batched works with cuda::stream")
-    {
-      const cuda::stream stream{cuda::devices[current_device]};
-      test_copy_batched(stream);
-    }
-
-    SECTION("DeviceCopy::Batched works with cuda::stream_ref")
-    {
-      const cuda::stream stream{cuda::devices[current_device]};
-      const cuda::stream_ref stream_ref{stream};
-      test_copy_batched(stream_ref);
-    }
-
-    SECTION("DeviceCopy::Batched works with cuda::std::execution::env")
-    {
-      const cuda::std::execution::env env{};
-      test_copy_batched(env);
-    }
-
-    SECTION("DeviceCopy::Batched works with cuda::execution::gpu")
-    {
-      const auto policy = cuda::execution::gpu;
-      test_copy_batched(policy);
-    }
-
-    SECTION("DeviceCopy::Batched works with cuda::execution::gpu with stream")
-    {
-      const cuda::stream stream{cuda::devices[current_device]};
-      const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-      test_copy_batched(policy);
-    }
+    test_with_custom_streams(test_copy_batched);
   }
 #endif // TEST_LAUNCH == 0
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
+  c2h::skip_if_allocation_failure();
 }
 
 CUB_TEST("DeviceCopy::Batched works for a very large range",
@@ -287,9 +246,9 @@ try
   // Verify result
   check_result_helper.check_all_results_correct();
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
+  c2h::skip_if_allocation_failure();
 }
 
 CUB_TEST("DeviceCopy::Batched works for non-trivial ctors", "[copy]", CUB_SMALL)
@@ -372,7 +331,7 @@ try
   // Verify result
   check_result_helper.check_all_results_correct();
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
+  c2h::skip_if_allocation_failure();
 }

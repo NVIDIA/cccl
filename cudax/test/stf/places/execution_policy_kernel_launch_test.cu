@@ -35,9 +35,9 @@ int main()
   ctx.launch(spec, exec_place::current_device(), l_test_result.rw())->*[] __device__(auto th, auto result) {
     if (th.rank() == 0)
     {
-      bool level0_correct = (th.size(0) == 1); // device level
-      bool level1_correct = (th.size(1) == 1 * 4) && (gridDim.x == 4); // blocks per device
-      bool level2_correct = (th.size(2) == 1 * 4 * 64) && (blockDim.x == 64); // threads per block
+      const bool level0_correct = (th.size(0) == 1); // device level
+      const bool level1_correct = (th.size(1) == 1 * 4) && (gridDim.x == 4); // blocks per device
+      const bool level2_correct = (th.size(2) == 1 * 4 * 64) && (blockDim.x == 64); // threads per block
 
       // Set test result based on whether all levels are correct
       result[0] = level0_correct && level1_correct && level2_correct ? 1 : 0;

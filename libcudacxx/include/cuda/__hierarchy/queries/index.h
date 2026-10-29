@@ -29,10 +29,9 @@
 #  include <cuda/__hierarchy/queries/extents.h>
 #  include <cuda/__hierarchy/traits.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__mdspan/extents.h>
 
 #  if _CCCL_CUDA_COMPILATION()
-#    include <cuda/__ptx/instructions/get_sreg.h>
+#    include <cuda/__ptx/instructions/get_sreg.h> // IWYU pragma: keep
 #  endif // _CCCL_CUDA_COMPILATION()
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -80,8 +79,6 @@ struct __index_query_native<thread_level, warp_level>
   template <class _Tp>
   [[nodiscard]] _CCCL_DEVICE_API static hierarchy_query_result<_Tp> __call() noexcept
   {
-    // todo(dabayer): Is it worth using cuda::ptx::get_sreg_laneid() here? Doesn't it prevent some other optimizations
-    // due to using inline ptx?
     return {static_cast<_Tp>(::cuda::ptx::get_sreg_laneid()), 0, 0};
   }
 };
@@ -196,7 +193,19 @@ struct __index_query<thread_level, warp_level>
   template <class _Tp, class _Hierarchy>
   [[nodiscard]] _CCCL_DEVICE_API static hierarchy_query_result<_Tp> __call(const _Hierarchy& __hier) noexcept
   {
-    return __index_query_native<thread_level, warp_level>::template __call<_Tp>();
+    using _BlockExts _CCCL_NODEBUG =
+      decltype(__extents_query<thread_level, block_level>::template __call<::cuda::std::size_t>(__hier));
+
+    // When we have only 1D block, we can avoid using inline PTX for %laneid special register read and we can just
+    // return 5 least significant bits of threadIdx.x
+    if constexpr (_BlockExts::static_extent(1) == 1 && _BlockExts::static_extent(2) == 1)
+    {
+      return {static_cast<_Tp>(threadIdx.x & 0x1f), 0, 0};
+    }
+    else
+    {
+      return __index_query_native<thread_level, warp_level>::template __call<_Tp>();
+    }
   }
 };
 

@@ -7,12 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Find a way to make this work for nvrtc.
-// nvrtc doesn't allow accessing the static constexpr const auto& value member.
-// UNSUPPORTED: nvrtc
-
-// todo(dabayer): Make this work with MSVC.
-// UNSUPPORTED: msvc
+// todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
+//   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
+//   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
 
 // constant_wrapper
 
@@ -63,7 +60,7 @@ struct OverloadSet
     return 1;
   }
 
-  TEST_FUNC constexpr int operator[](cuda::std::__constant_wrapper<42>) const
+  TEST_FUNC constexpr int operator[](cuda::std::constant_wrapper<42>) const
   {
     return 2;
   }
@@ -71,6 +68,13 @@ struct OverloadSet
 
 struct ReturnNonStructural
 {
+#if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
+  TEST_FUNC constexpr NonStructural operator[]() const
+  {
+    return NonStructural{0};
+  }
+#endif // _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
+
   TEST_FUNC constexpr NonStructural operator[](int i) const
   {
     return NonStructural{i};
@@ -79,7 +83,7 @@ struct ReturnNonStructural
 
 struct CWOnly
 {
-  TEST_FUNC constexpr int operator[](cuda::std::__constant_wrapper<42>) const
+  TEST_FUNC constexpr int operator[](cuda::std::constant_wrapper<42>) const
   {
     return 42;
   }
@@ -102,6 +106,24 @@ struct NothrowSubscript
 };
 
 constexpr int arr[] = {1, 2, 3, 4};
+
+struct PointerConversion
+{
+  TEST_FUNC constexpr operator const int*() const noexcept
+  {
+    return arr;
+  }
+};
+
+#if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
+struct NothrowNary
+{
+  TEST_FUNC constexpr int operator[](int i, int j) const noexcept
+  {
+    return i + j;
+  }
+};
+#endif // _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
 
 // Let subscr-expr be constant_wrapper<value[remove_cvref_t<Args>::value...]>{} if all types in remove_cvref_t<Args>...
 // satisfy constexpr-param and constant_wrapper<value[remove_cvref_t<Args>::value...]> is a valid type, otherwise let
@@ -126,31 +148,33 @@ template <class T, class Arg>
 inline constexpr bool
   HasSubscript<T, Arg, cuda::std::void_t<decltype(cuda::std::declval<T&>()[cuda::std::declval<Arg>()])>> = true;
 
-template <class T, class Arg, class = void>
+template <class T, class Arg, bool = HasSubscript<T, Arg>>
 inline constexpr bool HasNothrowSubscript = false;
 template <class T, class Arg>
-inline constexpr bool
-  HasNothrowSubscript<T, Arg, cuda::std::enable_if_t<noexcept(cuda::std::declval<T&>()[cuda::std::declval<Arg>()])>> =
-    true;
+// msvc 19.50 with nvcc 13.3 warns about a nonexistent comma operator in the C++17 subscript expression inside noexcept.
+// Use an explicit member call to check the same exception specification without triggering C4709.
+inline constexpr bool HasNothrowSubscript<T, Arg, true> =
+  noexcept(cuda::std::declval<T&>().operator[](cuda::std::declval<Arg>()));
 #endif // ^^^ !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^
 
-static_assert(!HasSubscript<cuda::std::__constant_wrapper<4>, cuda::std::__constant_wrapper<1>>);
+static_assert(!HasSubscript<cuda::std::constant_wrapper<4>, cuda::std::constant_wrapper<1>>);
 
-static_assert(HasSubscript<cuda::std::__constant_wrapper<arr>, int>);
-static_assert(HasSubscript<cuda::std::__constant_wrapper<arr>, cuda::std::__constant_wrapper<1>>);
+static_assert(HasSubscript<cuda::std::constant_wrapper<arr>, int>);
+static_assert(HasSubscript<cuda::std::constant_wrapper<arr>, cuda::std::constant_wrapper<1>>);
+static_assert(!HasSubscript<cuda::std::constant_wrapper<arr>, MoveOnly>);
 
-static_assert(HasNothrowSubscript<cuda::std::__constant_wrapper<arr>, int>);
-static_assert(HasNothrowSubscript<cuda::std::__constant_wrapper<arr>, cuda::std::__constant_wrapper<1>>);
+static_assert(HasNothrowSubscript<cuda::std::constant_wrapper<arr>, int>);
+static_assert(HasNothrowSubscript<cuda::std::constant_wrapper<arr>, cuda::std::constant_wrapper<1>>);
 
-#if TEST_STD_VER >= 2020
-static_assert(HasSubscript<cuda::std::__constant_wrapper<NothrowSubscript{}>, int>);
-static_assert(HasNothrowSubscript<cuda::std::__constant_wrapper<NothrowSubscript{}>, int>);
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
+static_assert(HasSubscript<cuda::std::constant_wrapper<NothrowSubscript{}>, int>);
+static_assert(HasNothrowSubscript<cuda::std::constant_wrapper<NothrowSubscript{}>, int>);
 
-static_assert(HasSubscript<cuda::std::__constant_wrapper<ThrowingSubscript{}>, int>);
-static_assert(!HasNothrowSubscript<cuda::std::__constant_wrapper<ThrowingSubscript{}>, int>);
-static_assert(HasNothrowSubscript<cuda::std::__constant_wrapper<ThrowingSubscript{}>, cuda::std::__constant_wrapper<1>>,
+static_assert(HasSubscript<cuda::std::constant_wrapper<ThrowingSubscript{}>, int>);
+static_assert(!HasNothrowSubscript<cuda::std::constant_wrapper<ThrowingSubscript{}>, int>);
+static_assert(HasNothrowSubscript<cuda::std::constant_wrapper<ThrowingSubscript{}>, cuda::std::constant_wrapper<1>>,
               "the subscript expression is still nothrow because the constexpr path is taken");
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 template <class T>
 struct MustBeInt
@@ -161,7 +185,7 @@ struct MustBeInt
 struct Poison
 {
   template <class T>
-  __host__ __device__ constexpr auto operator[](T) const noexcept -> MustBeInt<T>
+  TEST_FUNC constexpr auto operator[](T) const noexcept -> MustBeInt<T>
   {
     return {};
   }
@@ -177,48 +201,78 @@ TEST_FUNC constexpr bool test()
 {
   {
     // with runtime param
-    using T               = cuda::std::__constant_wrapper<arr>;
+    using T               = cuda::std::constant_wrapper<arr>;
     decltype(auto) result = TEST_SUBSCRIPT(T, 1);
     static_assert(cuda::std::same_as<const int&, decltype(result)>);
     assert(result == 2);
   }
   {
     // with constexpr param
-    using T               = cuda::std::__constant_wrapper<arr>;
-    decltype(auto) result = TEST_SUBSCRIPT(T, cuda::std::__cw<1>);
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<2>, decltype(result)>);
+    using T               = cuda::std::constant_wrapper<arr>;
+    decltype(auto) result = TEST_SUBSCRIPT(T, cuda::std::cw<1>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<2>, decltype(result)>);
     static_assert(result == 2);
   }
 
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 #  if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
   {
     // null-ary
-    using T                                                                    = cuda::std::__constant_wrapper<Nary{}>;
-    cuda::std::same_as<cuda::std::__constant_wrapper<0>> decltype(auto) result = TEST_SUBSCRIPT(T, );
+    using T                                                                  = cuda::std::constant_wrapper<Nary{}>;
+    cuda::std::same_as<cuda::std::constant_wrapper<0>> decltype(auto) result = TEST_SUBSCRIPT(T, );
     static_assert(result == 0);
   }
 
   {
     // n-ary
-    using T = cuda::std::__constant_wrapper<Nary{}>;
-    cuda::std::same_as<cuda::std::__constant_wrapper<3>> decltype(auto) result =
-      TEST_SUBSCRIPT(T, cuda::std::__cw<1>, cuda::std::__cw<2>, cuda::std::__cw<3>);
+    using T = cuda::std::constant_wrapper<Nary{}>;
+    cuda::std::same_as<cuda::std::constant_wrapper<3>> decltype(auto) result =
+      TEST_SUBSCRIPT(T, cuda::std::cw<1>, cuda::std::cw<2>, cuda::std::cw<3>);
     static_assert(result == 3);
+    static_assert(noexcept(TEST_SUBSCRIPT(T, cuda::std::cw<1>, cuda::std::cw<2>, cuda::std::cw<3>)));
   }
 
   {
     // mixing constexpr and runtime
-    using T                                       = cuda::std::__constant_wrapper<Nary{}>;
-    cuda::std::same_as<int> decltype(auto) result = TEST_SUBSCRIPT(T, cuda::std::__cw<1>, 2, cuda::std::__cw<3>);
+    using T                                       = cuda::std::constant_wrapper<Nary{}>;
+    cuda::std::same_as<int> decltype(auto) result = TEST_SUBSCRIPT(T, cuda::std::cw<1>, 2, cuda::std::cw<3>);
     assert(result == 3);
+    static_assert(!noexcept(TEST_SUBSCRIPT(T, cuda::std::cw<1>, 2, cuda::std::cw<3>)));
+  }
+
+  {
+    using T                                       = cuda::std::constant_wrapper<NothrowNary{}>;
+    cuda::std::same_as<int> decltype(auto) result = TEST_SUBSCRIPT(T, cuda::std::cw<2>, 3);
+    assert(result == 5);
+    static_assert(noexcept(TEST_SUBSCRIPT(T, cuda::std::cw<2>, 3)));
+  }
+
+  {
+    // null-ary runtime fallback when the result is non-structural
+    using T                                                 = cuda::std::constant_wrapper<ReturnNonStructural{}>;
+    cuda::std::same_as<NonStructural> decltype(auto) result = TEST_SUBSCRIPT(T, );
+    assert(result.get() == 0);
+    static_assert(!noexcept(TEST_SUBSCRIPT(T, )));
   }
 #  endif // _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
 
   {
+    // built-in subscripting through a class's pointer conversion
+    using T               = cuda::std::constant_wrapper<PointerConversion{}>;
+    decltype(auto) result = TEST_SUBSCRIPT(T, 1);
+    static_assert(cuda::std::same_as<const int&, decltype(result)>);
+    assert(result == 2);
+    static_assert(noexcept(TEST_SUBSCRIPT(T, 1)));
+
+    decltype(auto) constant_result = TEST_SUBSCRIPT(T, cuda::std::cw<1>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<2>, decltype(constant_result)>);
+    static_assert(constant_result == 2);
+  }
+
+  {
     // move only
-    using T = cuda::std::__constant_wrapper<MoveOnlyIndex{}>;
+    using T = cuda::std::constant_wrapper<MoveOnlyIndex{}>;
     MoveOnly m1(1);
     cuda::std::same_as<MoveOnly> decltype(auto) result = TEST_SUBSCRIPT(T, cuda::std::move(m1));
     assert(result.get() == 1);
@@ -226,7 +280,7 @@ TEST_FUNC constexpr bool test()
 #  if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
   {
     // move only n-ary
-    using T = cuda::std::__constant_wrapper<MoveOnlyIndex{}>;
+    using T = cuda::std::constant_wrapper<MoveOnlyIndex{}>;
     MoveOnly m1(1), m2(2), m3(3);
     cuda::std::same_as<MoveOnly> decltype(auto) result =
       TEST_SUBSCRIPT(T, m1, cuda::std::move(m2), cuda::std::move(m3));
@@ -236,17 +290,16 @@ TEST_FUNC constexpr bool test()
   {
     // overload set
     // will always unwrap the constexpr params and call the non-constexpr overload
-    using T                                        = cuda::std::__constant_wrapper<OverloadSet{}>;
+    using T                                        = cuda::std::constant_wrapper<OverloadSet{}>;
     cuda::std::same_as<int> decltype(auto) result1 = TEST_SUBSCRIPT(T, 42);
     assert(result1 == 1);
-    cuda::std::same_as<cuda::std::__constant_wrapper<1>> decltype(auto) result2 =
-      TEST_SUBSCRIPT(T, cuda::std::__cw<42>);
+    cuda::std::same_as<cuda::std::constant_wrapper<1>> decltype(auto) result2 = TEST_SUBSCRIPT(T, cuda::std::cw<42>);
     static_assert(result2 == 1);
   }
 
   {
     // return non-structural type
-    using T                                                 = cuda::std::__constant_wrapper<ReturnNonStructural{}>;
+    using T                                                 = cuda::std::constant_wrapper<ReturnNonStructural{}>;
     cuda::std::same_as<NonStructural> decltype(auto) result = TEST_SUBSCRIPT(T, 5);
     assert(result.get() == 5);
   }
@@ -255,8 +308,8 @@ TEST_FUNC constexpr bool test()
 #  if !_CCCL_COMPILER(GCC, <, 14)
   {
     // return non-structural type with constexpr param
-    using T                                                 = cuda::std::__constant_wrapper<ReturnNonStructural{}>;
-    cuda::std::same_as<NonStructural> decltype(auto) result = TEST_SUBSCRIPT(T, cuda::std::__cw<5>);
+    using T                                                 = cuda::std::constant_wrapper<ReturnNonStructural{}>;
+    cuda::std::same_as<NonStructural> decltype(auto) result = TEST_SUBSCRIPT(T, cuda::std::cw<5>);
     assert(result.get() == 5);
   }
 #  endif // !_CCCL_COMPILER(GCC, <, 14)
@@ -264,28 +317,28 @@ TEST_FUNC constexpr bool test()
   {
     // cw only
     // the upwrapping case doesn't work so it falls back to the normal invoke path
-    using T                                       = cuda::std::__constant_wrapper<CWOnly{}>;
-    cuda::std::same_as<int> decltype(auto) result = TEST_SUBSCRIPT(T, cuda::std::__cw<42>);
+    using T                                       = cuda::std::constant_wrapper<CWOnly{}>;
+    cuda::std::same_as<int> decltype(auto) result = TEST_SUBSCRIPT(T, cuda::std::cw<42>);
     assert(result == 42);
   }
 
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   {
     // integral_constant
-    using T               = cuda::std::__constant_wrapper<arr>;
+    using T               = cuda::std::constant_wrapper<arr>;
     decltype(auto) result = TEST_SUBSCRIPT(T, cuda::std::integral_constant<int, 1>{});
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<2>, decltype(result)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<2>, decltype(result)>);
     static_assert(result == 2);
   }
 
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
   {
-    using T = cuda::std::__constant_wrapper<Poison{}>;
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<MustBeInt<int>{}>> decltype(auto) result =
-      TEST_SUBSCRIPT(T, cuda::std::__cw<5>);
+    using T = cuda::std::constant_wrapper<Poison{}>;
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<MustBeInt<int>{}>> decltype(auto) result =
+      TEST_SUBSCRIPT(T, cuda::std::cw<5>);
   }
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   return true;
 }

@@ -26,6 +26,10 @@ Import-Module "$PSScriptRoot/build_common_python.psm1"
 
 Assert-MinimalEnvironment
 
+# The only Windows lane that still installs a C++ runtime, and only because the
+# CuPy wheel on PyPI imports the system msvcp140.dll (cupy/cupy#10316); every
+# other package here carries its own. Drop this call once that issue is
+# resolved, so this lane also proves the wheel is self-contained.
 Install-MsvcRuntime
 
 $python = Get-Python -Version $PyVersion
@@ -37,7 +41,8 @@ $repoRoot = Get-RepoRoot
 $wheelPath = Get-OnePathMatch -Path (Join-Path $repoRoot 'wheelhouse') -Pattern '^cuda_cccl-.*\.whl' -File
 
 # pytest-benchmark is for the host-benchmark smoke test below.
-Invoke-Checked { & $python -m pip install -U pip pytest pytest-xdist pytest-benchmark } "Failed to install pytest / pytest-xdist / pytest-benchmark"
+# TODO: drop "pytest<9.2" once pytest-benchmark supports pytest 9.2 (Function._nodeid removal, ionelmc/pytest-benchmark#321)
+Invoke-Checked { & $python -m pip install -U pip "pytest<9.2" pytest-xdist pytest-benchmark } "Failed to install pytest / pytest-xdist / pytest-benchmark"
 # CuPy is required by the cuda.compute examples and is not part of the test extras.
 # It resolves curand/cublas/... through cuda-pathfinder at first use and nothing
 # else installs them, so request its own `ctk` extra on the pip-toolkit lanes.

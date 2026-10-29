@@ -10,63 +10,49 @@
 
 /**
  * @file
- * @brief Ensure an error is detected if we use an uninitialized logical data in a task
+ * @brief Ensure an error is reported if we use an uninitialized logical data in a task
  */
 
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
-#include <csignal>
+#include <cstdio>
+#include <cstdlib>
+#include <stdexcept>
 
 using namespace cuda::experimental::stf;
 
-bool should_abort = false;
-
-void cleanupRoutine(int /*unused*/)
+template <typename Ctx>
+bool run()
 {
-  if (should_abort)
+  Ctx ctx;
+
+  int X[128];
+  auto lX = ctx.logical_data(X);
+
+  // Never initialized: using it as a dependency is a programming error.
+  logical_data<slice<int>> lY;
+
+  bool caught = false;
+  try
   {
-    exit(EXIT_SUCCESS);
+    ctx.task(lX.rw(), lY.rw())->*[](cudaStream_t, auto, auto) {};
   }
-  else
+  catch (const ::std::invalid_argument& e)
   {
-    fprintf(stderr, "Unexpected SIGABRT !\n");
-    exit(EXIT_FAILURE);
+    caught = true;
+    fprintf(stderr, "Caught expected error: %s\n", e.what());
   }
+
+  // The rejected task left the context usable.
+  ctx.task(lX.rw())->*[](cudaStream_t, auto) {};
+  ctx.finalize();
+
+  return caught;
 }
 
 int main()
 {
-  /* Setup an handler to catch the SIGABRT signal during the programming error */
-#ifndef NDEBUG
-#  if _CCCL_COMPILER(MSVC)
-  signal(SIGABRT, &cleanupRoutine);
-#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC)
-  struct sigaction sigabrt_action{};
-  memset(&sigabrt_action, 0, sizeof(sigabrt_action));
-  sigabrt_action.sa_handler = &cleanupRoutine;
-
-  if (sigaction(SIGABRT, &sigabrt_action, nullptr) != 0)
-  {
-    perror("sigaction SIGABRT");
-    exit(EXIT_FAILURE);
-  }
-#  endif // !_CCCL_COMPILER(MSVC)
-
-  stream_ctx ctx;
-
-  logical_data<slice<int>> lX;
-  logical_data<slice<int>> lY;
-
-  int X[128];
-  lX = ctx.logical_data(X);
-
-  should_abort = true;
-
-  // We did not initialize lY, so this task should not be able to use it.
-  ctx.task(lX.rw(), lY.rw())->*[](cudaStream_t, auto, auto) {};
-
-  assert(0 && "This should not be reached");
-  return EXIT_FAILURE;
-#endif
+  const bool ok = run<stream_ctx>() && run<graph_ctx>();
+  return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }

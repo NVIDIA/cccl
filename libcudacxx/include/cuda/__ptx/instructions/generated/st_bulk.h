@@ -1,7 +1,7 @@
 // This file was automatically generated. Do not edit.
 
 // clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
-// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone, readability-identifier-naming)
 
 #ifndef _CUDA_PTX_GENERATED_ST_BULK_H_
 #define _CUDA_PTX_GENERATED_ST_BULK_H_
@@ -25,6 +25,6 @@ _CCCL_DEVICE_API void st_bulk(void* __addr, ::cuda::std::uint64_t __size, ::cuda
 }
 #endif // __cccl_ptx_isa >= 860
 
-// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone, readability-identifier-naming)
 
 #endif // _CUDA_PTX_GENERATED_ST_BULK_H_

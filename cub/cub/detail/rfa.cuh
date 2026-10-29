@@ -18,12 +18,14 @@
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/isinf.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/array>
-#include <cuda/std/climits>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -34,7 +36,7 @@ inline constexpr int cub_rfa_max_jump = 5;
 static_assert(cub_rfa_max_jump <= 5, "cub_rfa_max_jump must be less than or equal to 5");
 
 template <typename FType, int Len>
-static _CCCL_DEVICE FType* get_shared_bin_array()
+_CCCL_DEVICE FType* get_shared_bin_array()
 {
   static __shared__ FType bin_computed_array[Len];
   return bin_computed_array;

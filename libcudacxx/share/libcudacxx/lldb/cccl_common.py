@@ -11,6 +11,22 @@ import re
 import lldb
 
 _ABI_NAMESPACE_PATTERN = re.compile(r"::__(?:\d+|version_bump_ver\d+_)(?=::)")
+_DRIVER_FUNCTION_ADDRESSES: dict[tuple[int, str], int] = {}
+
+# Linux RTLD_LAZY | RTLD_NOLOAD finds the existing driver without loading it.
+# Balance the reference acquired by dlopen before returning the function address.
+# https://man7.org/linux/man-pages/man3/dlopen.3.html
+_DRIVER_SYMBOL_EXPRESSION = """
+([]() -> void* {
+  void* library = ((void* (*)(const char*, int))dlopen)("libcuda.so.1", 5);
+  if (!library) {
+    return nullptr;
+  }
+  void* address = ((void* (*)(void*, const char*))dlsym)(library, "%s");
+  ((int (*)(void*))dlclose)(library);
+  return address;
+})()
+"""
 
 # Allocate and copy in one compiled function: an inferior round trip costs far
 # more than the work. 4 is cudaMemcpyDefault; the expression parser does not
@@ -39,6 +55,48 @@ def evaluate(value: lldb.SBValue, expression: str) -> lldb.SBValue:
     options.SetIgnoreBreakpoints(True)
     options.SetUnwindOnError(True)
     return frame.EvaluateExpression(expression, options)
+
+
+def driver_function_address(value: lldb.SBValue, name: str) -> int:
+    """Resolve a driver function without requiring its symbols in LLDB."""
+    target = value.GetTarget()
+    process = value.GetProcess()
+    if not target.IsValid() or not process.IsValid():
+        return 0
+    key = (process.GetUniqueID(), name)
+    if key in _DRIVER_FUNCTION_ADDRESSES:
+        return _DRIVER_FUNCTION_ADDRESSES[key]
+
+    symbols = target.FindSymbols(name)
+    for index in range(symbols.GetSize()):
+        address = (
+            symbols.GetContextAtIndex(index)
+            .GetSymbol()
+            .GetStartAddress()
+            .GetLoadAddress(target)
+        )
+        if address not in (0, lldb.LLDB_INVALID_ADDRESS):
+            _DRIVER_FUNCTION_ADDRESSES[key] = address
+            return address
+
+    # A loaded driver can be absent from LLDB's module list. Ask the inferior's
+    # loader for its exported address instead of adding a declaration to the JIT.
+    if "linux" not in (target.GetTriple() or "").split("-"):
+        return 0
+    frame = value.GetFrame()
+    if not frame.IsValid():
+        return 0
+    options = lldb.SBExpressionOptions()
+    options.SetIgnoreBreakpoints(True)
+    options.SetUnwindOnError(True)
+    options.SetTryAllThreads(False)
+    options.SetTimeoutInMicroSeconds(1_000_000)
+    result = frame.EvaluateExpression(_DRIVER_SYMBOL_EXPRESSION % name, options)
+    address = result.GetValueAsUnsigned(0)
+    if result.GetError().Fail() or address in (0, lldb.LLDB_INVALID_ADDRESS):
+        return 0
+    _DRIVER_FUNCTION_ADDRESSES[key] = address
+    return address
 
 
 class StagingError(RuntimeError):

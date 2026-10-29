@@ -52,6 +52,9 @@
 =============== atomic.cuda_device_integer begin ===============
 (cuda::atomic<int, cuda::thread_scope_device>) <address> (value = 29)
 =============== atomic.cuda_device_integer end ===============
+=============== atomic.cuda_cluster_integer begin ===============
+(cuda::atomic<int, cuda::thread_scope_cluster>) <address> (value = -47)
+=============== atomic.cuda_cluster_integer end ===============
 =============== atomic.cuda_block_reference begin ===============
 (cuda::atomic_ref<int, cuda::thread_scope_block>) <address> ptr=<address>: {
   value = -38

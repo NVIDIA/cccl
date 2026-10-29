@@ -22,26 +22,24 @@ void TestSwapRangesDevice(ExecutionPolicy exec)
 
   swap_ranges_kernel<<<1, 1>>>(exec, v1.begin(), v1.end(), v2.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(v1, v1_ref);
-  ASSERT_EQUAL(v2, v2_ref);
+  REQUIRE(v1 == v1_ref);
+  REQUIRE(v2 == v2_ref);
 }
 
-void TestSwapRangesDeviceSeq()
+TEST_CASE("TestSwapRangesDeviceSeq", "[swap_ranges]")
 {
   TestSwapRangesDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestSwapRangesDeviceSeq);
 
-void TestSwapRangesDeviceDevice()
+TEST_CASE("TestSwapRangesDeviceDevice", "[swap_ranges]")
 {
   TestSwapRangesDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestSwapRangesDeviceDevice);
 #endif
 
-void TestSwapRangesCudaStreams()
+TEST_CASE("TestSwapRangesCudaStreams", "[swap_ranges]")
 {
   using Vector = thrust::device_vector<int>;
 
@@ -56,9 +54,8 @@ void TestSwapRangesCudaStreams()
   thrust::swap_ranges(thrust::cuda::par.on(s), v1.begin(), v1.end(), v2.begin());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(v1, v1_ref);
-  ASSERT_EQUAL(v2, v2_ref);
+  REQUIRE(v1 == v1_ref);
+  REQUIRE(v2 == v2_ref);
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestSwapRangesCudaStreams);

@@ -37,7 +37,7 @@ template <typename ctx_t>
 event_list insert_graph_node(ctx_t& ctx, cudaGraphNode_t node, event_list& input_prereqs)
 {
   cudaGraph_t support_graph = ctx.graph();
-  size_t graph_stage        = ctx.stage();
+  const size_t graph_stage  = ctx.stage();
 
   ::std::vector<cudaGraphNode_t> ready_nodes = reserved::join_with_graph_nodes(ctx, input_prereqs, graph_stage);
 

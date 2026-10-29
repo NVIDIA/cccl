@@ -27,7 +27,7 @@
 
 namespace test
 {
-constexpr auto one_thread_dims = cuda::make_config(cuda::block_dims<1>(), cuda::grid_dims<1>());
+inline constexpr auto one_thread_dims = cuda::make_config(cuda::block_dims<1>(), cuda::grid_dims<1>());
 
 struct _malloc_pinned
 {
@@ -136,7 +136,8 @@ struct spin_until_80
   {
     const cuda::atomic_ref atomic_pi(*pi);
     while (atomic_pi.load() != 80)
-      ;
+    {
+    }
   }
 };
 

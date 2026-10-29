@@ -1,7 +1,7 @@
 // This file was automatically generated. Do not edit.
 
 // clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
-// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone, readability-identifier-naming)
 
 #ifndef _CUDA_PTX_GENERATED_GETCTARANK_H_
 #define _CUDA_PTX_GENERATED_GETCTARANK_H_
@@ -25,6 +25,6 @@ _CCCL_DEVICE_API ::cuda::std::uint32_t getctarank(::cuda::ptx::space_cluster_t, 
 }
 #endif // __cccl_ptx_isa >= 780
 
-// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone, readability-identifier-naming)
 
 #endif // _CUDA_PTX_GENERATED_GETCTARANK_H_

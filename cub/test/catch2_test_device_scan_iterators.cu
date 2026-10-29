@@ -6,7 +6,6 @@
 #include <cub/device/device_scan.cuh>
 
 #include <cuda/buffer>
-#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/std/limits>
 
@@ -17,6 +16,7 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/custom_type.h>
+#include <c2h/device_and_stream.h>
 #include <c2h/extended_types.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSum, device_exclusive_sum);
@@ -178,7 +178,7 @@ CUB_TEST("Device scan works with iterators", "[scan][device]", CUB_SMALL, iterat
       // device reference and cause a segfault if the detail::InputValue is convert-constructed
       // from the future value below.
       auto d_initial_value = cuda::make_device_buffer<init_value_t>(
-        cuda::stream_ref{cudaStream_t{}}, cuda::devices[0], /*__size=*/1, static_cast<init_value_t>(init_value));
+        cuda::stream_ref{cudaStream_t{}}, c2h::current_device(), /*__size=*/1, static_cast<init_value_t>(init_value));
 
       using device_buffer_t = decltype(d_initial_value);
       using future_t = cub::FutureValue<typename device_buffer_t::value_type, typename device_buffer_t::iterator>;

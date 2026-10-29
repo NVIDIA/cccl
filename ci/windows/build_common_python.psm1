@@ -278,10 +278,11 @@ function Install-MsvcRuntime {
     .SYNOPSIS
         Ensures the MSVC runtime redistributable is present.
     .DESCRIPTION
-        Server Core ships no MSVC runtime, and every C++ Python extension used by
-        the test lanes links against it -- numba's _typeconv and
-        cccl.c.parallel.dll among them. It is a Windows prerequisite rather than
-        a packaging gap, so install it instead of expecting a wheel to carry it.
+        Server Core ships no MSVC runtime, and C++ Python extensions that do not
+        bundle their own link against it. The cuda-cccl wheel bundles its
+        runtime (delvewheel) and must never need this, so the compute lanes run
+        without it. The examples lane still installs it for the CuPy wheel on
+        PyPI, which imports the system msvcp140.dll (cupy/cupy#10316).
         vcruntime140*.dll ship next to some interpreters, which makes
         msvcp140.dll the reliable probe.
 
@@ -312,8 +313,8 @@ function Assert-MinimalEnvironment {
         nothing. A no-op outside the container, where a compiler and a CUDA
         toolkit are legitimately present.
 
-        The MSVC *runtime* the payload installs is deliberately not checked: it
-        is a Windows prerequisite, not a compiler.
+        The MSVC *runtime* some payloads install is deliberately not checked: it
+        is a Windows prerequisite for their dependencies, not a compiler.
     #>
     if ($env:CCCL_INSIDE_MINIMAL_CONTAINER -ne '1') { return }
 

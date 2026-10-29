@@ -18,15 +18,27 @@
 #endif // no system header
 
 #include <cub/block/block_exchange.cuh>
+#include <cub/detail/cub_vector.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
-#include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__fwd/format.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
+#include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/is_default_constructible.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_volatile.h>
+#include <cuda/std/__type_traits/remove_reference.h>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
 
 CUB_NAMESPACE_BEGIN
 
@@ -152,8 +164,8 @@ StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
 //!   A suitable 1D thread-identifier for the calling thread
 //!   (e.g., ``(threadIdx.y * blockDim.x) + linear_tid`` for 2D thread blocks)
 //!
-//! @param[in] block_ptr
-//!   Input pointer for storing from
+//! @param[out] block_ptr
+//!   Output pointer for storing to
 //!
 //! @param[in] items
 //!   Data to store
@@ -214,7 +226,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
 //! @striped
 //! @endrst
 //!
-//! @tparam BLOCK_THREADS
+//! @tparam BlockThreads
 //!   The thread block size in threads
 //!
 //! @tparam T
@@ -235,7 +247,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
 //!
 //! @param[in] items
 //!   Data to store
-template <int BLOCK_THREADS, typename T, int ItemsPerThread, typename OutputIteratorT>
+template <int BlockThreads, typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread])
 {
@@ -245,7 +257,7 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ItemsPerThread; ITEM++)
   {
-    thread_itr[(ITEM * BLOCK_THREADS)] = items[ITEM];
+    thread_itr[(ITEM * BlockThreads)] = items[ITEM];
   }
 }
 
@@ -259,7 +271,7 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
 //! @striped
 //! @endrst
 //!
-//! @tparam BLOCK_THREADS
+//! @tparam BlockThreads
 //!   The thread block size in threads
 //!
 //! @tparam T
@@ -283,7 +295,7 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
 //!
 //! @param[in] valid_items
 //!   Number of valid items to write
-template <int BLOCK_THREADS, typename T, int ItemsPerThread, typename OutputIteratorT>
+template <int BlockThreads, typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
 {
@@ -293,9 +305,9 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ItemsPerThread; ITEM++)
   {
-    if ((ITEM * BLOCK_THREADS) + linear_tid < valid_items)
+    if ((ITEM * BlockThreads) + linear_tid < valid_items)
     {
-      thread_itr[(ITEM * BLOCK_THREADS)] = items[ITEM];
+      thread_itr[(ITEM * BlockThreads)] = items[ITEM];
     }
   }
 }
@@ -420,7 +432,7 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[Ite
 
 //! cub::BlockStoreAlgorithm enumerates alternative algorithms for cub::BlockStore to write a
 //! blocked arrangement of items across a CUDA thread block to a linear segment of memory.
-enum BlockStoreAlgorithm
+enum BlockStoreAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
   //! @rst
   //! Overview
@@ -470,7 +482,7 @@ enum BlockStoreAlgorithm
   //! - The following conditions will prevent vectorization and writing will fall back to cub::BLOCK_STORE_DIRECT:
   //!
   //!   - ``ItemsPerThread`` is odd
-  //!   - The ``OutputIteratorT`` is not a simple pointer type
+  //!   - The ``OutputIteratorT`` is not a contiguous iterator
   //!   - The block output offset is not quadword-aligned
   //!   - The data type ``T`` is not a built-in primitive or CUDA vector type
   //!     (e.g., ``short``, ``int2``, ``double``, ``float2``, etc.)
@@ -740,8 +752,7 @@ class BlockStore
 
 public:
   //! @smemstorage{BlockStore}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
@@ -840,7 +851,13 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_STORE_VECTORIZE)
     {
-      if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>)
+      if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>
+                    && ::cuda::std::is_same_v<detail::it_value_t<OutputIteratorT>, T>
+                    // handles contiguous iterators wrapping volatile pointers, like span<volatile int>::iterator
+                    && !::cuda::std::is_volatile_v<
+                       ::cuda::std::remove_reference_t<detail::it_reference_t<OutputIteratorT>>>
+                    // needed to default construct vectors of T
+                    && ::cuda::std::is_default_constructible_v<T>)
       {
         StoreDirectBlockedVectorized(linear_tid, ::cuda::std::to_address(block_itr), items);
       }
