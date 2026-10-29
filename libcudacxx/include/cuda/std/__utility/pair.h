@@ -229,7 +229,7 @@ private:
   // pair(pair<U1, U2>&) and pair(const pair<U1, U2>&&) beat the copy constructor for a non-const lvalue or a const
   // rvalue of the same type. Unlike the copy constructor they are never trivial, so skip them when it is equivalent.
   template <class _UPair, class _Arg1, class _Arg2>
-  using __prefers_trivial_copy_constructor = bool_constant<
+  using __prefers_trivial_copy_constructor _CCCL_NODEBUG = bool_constant<
     !__different_from<pair, _UPair> && is_trivially_copy_constructible_v<_T1> && is_trivially_copy_constructible_v<_T2>
     && is_trivially_constructible_v<_T1, _Arg1> && is_trivially_constructible_v<_T2, _Arg2>>;
 
