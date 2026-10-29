@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#include <cub/util_debug.cuh>
+#include <cub/util_debug.cuh> // IWYU pragma: keep
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -15,10 +15,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/cstdarg>
-#include <cuda/std/__host_stdlib/cstdio>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__host_stdlib/cstdio> // IWYU pragma: keep
+#include <cuda/std/__host_stdlib/sstream> // IWYU pragma: keep
 #include <cuda/std/cstdlib>
+
+#include <nv/target>
 
 #ifdef _CCCL_DOXYGEN_INVOKED
 //! When defined, disables all logging code in CCCL

@@ -321,18 +321,16 @@ CCCL's CI is built on GitHub Actions and relies on a dynamically generated job m
 
 ### Commit Message Controls
 
-Tags appended to the commit summary (case-sensitive) control CI behavior:
+Tags appended to the commit summary (case-sensitive) control PR CI behavior:
 
-* `[bench-only]`: Skip all non-benchmark CI jobs. Equivalent to `[skip-matrix][skip-vdc][skip-docs][skip-tpt]`.
-* `[skip-matrix]`: Skip CCCL project build/test jobs. (Docs, devcontainers, and third-party builds still run.)
+* `[bench-only]`: Skip all non-benchmark CI jobs. Equivalent to `[skip-matrix][skip-vdc][skip-docs]`.
+* `[skip-matrix]`: Skip CCCL project build/test jobs. (Docs and devcontainers still run.)
 * `[skip-vdc]`: Skip "Verify Devcontainer" jobs. Safe unless CI or devcontainer infra is modified.
 * `[skip-docs]`: Skip doc tests/previews. Safe if docs are unaffected.
 * `[skip-compile-time-bench]`: Skip informational compile-time benchmark telemetry. Safe if compile-time benchmark scripts/configuration are unaffected.
 * `[skip-sass-diff]`: Skip the informational CUB benchmark SASS comparison. The job already runs only when `ci/inspect_changes.py` marks CUB dirty, either directly or through a dependency such as libcudacxx or Thrust, so this tag is only necessary to skip a comparison that would otherwise run.
-* `[skip-third-party-testing]` / `[skip-tpt]`: Skip third-party smoke tests (MatX, PyTorch, RAPIDS).
-* `[skip-matx]`: Skip building the MatX third-party smoke test.
-* `[skip-pytorch]`: Skip building the PyTorch third-party smoke test.
-* `[skip-rapids]`: Skip building the RAPIDS third-party smoke test.
+
+Third-party smoke tests (MatX, PyTorch, RAPIDS) run in nightly CI only.
 
 > ⚠️ All of these tags block merging until removed and a full CI run (with no overrides) succeeds.
 

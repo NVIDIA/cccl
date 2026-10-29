@@ -488,8 +488,8 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
 //!   The transform operator for determining privatized counter indices from samples,
 //!   one for each channel (pre-initialized on host)
 //!
-//! @param num_row_pixels
-//!   The number of multi-channel pixels per row in the region of interest
+//! @param num_row_items
+//!   The number of multi-channel items per row in the region of interest
 //!
 //! @param num_rows
 //!   The number of rows in the region of interest
@@ -523,7 +523,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
     const ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op_wrapper,
     const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
-    const OffsetT num_row_pixels,
+    const OffsetT num_row_items,
     const OffsetT num_rows,
     const OffsetT row_stride_samples,
     const int tiles_per_row,
@@ -569,7 +569,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   agent.InitBinCounters();
 
   // Consume input tiles
-  agent.ConsumeTiles(num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue);
+  agent.ConsumeTiles(num_row_items, num_rows, row_stride_samples, tiles_per_row, tile_queue);
 
   // Store output to global (if necessary)
   agent.StoreOutput();
@@ -644,8 +644,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 //!   For DispatchEven: lower level bounds per channel.
 //!   For DispatchRange: level pointers per channel.
 //!
-//! @param num_row_pixels
-//!   The number of multi-channel pixels per row in the region of interest
+//! @param num_row_items
+//!   The number of multi-channel items per row in the region of interest
 //!
 //! @param num_rows
 //!   The number of rows in the region of interest
@@ -683,7 +683,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
     const FirstLevelArrayT first_level_array,
     const SecondLevelArrayT second_level_array,
-    const OffsetT num_row_pixels,
+    const OffsetT num_row_items,
     const OffsetT num_rows,
     const OffsetT row_stride_samples,
     const int tiles_per_row,
@@ -755,7 +755,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   agent.InitBinCounters();
 
   // Consume input tiles
-  agent.ConsumeTiles(num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue);
+  agent.ConsumeTiles(num_row_items, num_rows, row_stride_samples, tiles_per_row, tile_queue);
 
   // Store output to global (if necessary)
   agent.StoreOutput();
