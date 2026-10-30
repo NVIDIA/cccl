@@ -381,6 +381,20 @@ struct Transforms
   };
 };
 
+// Decode op that casts the sample to CastT before calling TransformT's BinSelect.
+template <typename TransformT, typename CastT>
+struct cast_decode_op : TransformT
+{
+  template <CacheLoadModifier LoadModifier, typename Sample>
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
+  {
+    if (valid)
+    {
+      TransformT::template BinSelect<LoadModifier>(static_cast<CastT>(sample), bin, valid);
+    }
+  }
+};
+
 /******************************************************************************
  * Histogram kernel entry points
  *****************************************************************************/
