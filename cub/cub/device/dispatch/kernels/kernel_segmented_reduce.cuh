@@ -187,7 +187,13 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
       constexpr int segments_per_block = decltype(segments_per_block_tag)::value;
       const int sid_within_block       = tid / threads_per_warp;
       const int lane_id                = tid % threads_per_warp;
-      const int global_segment_id      = bid * segments_per_block + sid_within_block;
+
+      // The product of the block index and the number of segments per block can exceed the largest 32-bit
+      // integer if the number of segments covered by a thread block does not evenly divide the number of
+      // segments per kernel invocation, which is capped at INT32_MAX. The segment id must therefore be
+      // computed in 64 bits.
+      const ::cuda::std::int64_t global_segment_id =
+        static_cast<::cuda::std::int64_t>(bid) * segments_per_block + sid_within_block;
 
       if (global_segment_id < num_segments)
       {
