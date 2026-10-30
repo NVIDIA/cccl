@@ -147,6 +147,13 @@ workflows:
     - {jobs: ['test'], project: ['libcudacxx', 'cudax'], std: 'max', gpu: 'h100_2gpu', sm: 'gpu'}
     # RTX PRO 6000 coverage (limited due to small number of runners):
     - {jobs: ['test_lid0'], project: 'cub', std: 'max', cxx: 'gcc', gpu: 'rtxpro6000'}
+    # CUDA forward compatibility (cuda-compat) coverage:
+    # Only test on L4 because it has the most runners.
+    # Forward-compat only works on enterprise SKU GPUs.
+    - {jobs: ['test'],                    project: 'libcudacxx', std: 'max', cxx: 'gcc', gpu: 'l4', environment: ['ENABLE_CUDA_COMPAT=1']}
+    - {jobs: ['test_nolid', 'test_lid0'], project: 'cub',       std: 'max', cxx: 'gcc', gpu: 'l4', environment: ['ENABLE_CUDA_COMPAT=1']}
+    - {jobs: ['test_gpu'],                project: 'thrust',     std: 'max', cxx: 'gcc', gpu: 'l4', environment: ['ENABLE_CUDA_COMPAT=1']}
+    - {jobs: ['test'],                    project: 'cccl_c_stf', ctk: '13.X', cxx: 'gcc13', gpu: 'l4', environment: ['ENABLE_CUDA_COMPAT=1']}
     # Misc:
     - {jobs: ['build'],                     cpu: 'arm64', project: ['libcudacxx', 'thrust', 'cudax'], std: '20', cxx: 'gcc'}
     - {jobs: ['build'],                     cpu: 'arm64', project: ['libcudacxx', 'thrust', 'cudax'], std: 'max', cxx: 'clang'}
