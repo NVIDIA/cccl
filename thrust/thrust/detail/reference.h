@@ -23,6 +23,7 @@
 #include <thrust/system/detail/generic/select_system.h>
 
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/__type_traits/is_convertible.h>
@@ -167,7 +168,7 @@ public:
   // NOLINTNEXTLINE(misc-unconventional-assign-operator): proxy reference, see above
   _CCCL_HOST_DEVICE const derived_type& operator=(value_type const& rhs) const
   {
-    assign_from(&rhs);
+    assign_from(::cuda::std::addressof(rhs));
     return derived();
   }
 

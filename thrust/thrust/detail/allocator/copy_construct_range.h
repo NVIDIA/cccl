@@ -23,6 +23,7 @@
 #include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/is_convertible.h>
@@ -43,7 +44,7 @@ struct copy_construct_with_allocator
     const InputType& in = ::cuda::std::get<0>(t);
     OutputType& out     = ::cuda::std::get<1>(t);
 
-    ::cuda::std::allocator_traits<Allocator>::construct(a, &out, in);
+    ::cuda::std::allocator_traits<Allocator>::construct(a, ::cuda::std::addressof(out), in);
   }
 };
 

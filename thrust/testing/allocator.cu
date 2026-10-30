@@ -140,6 +140,41 @@ void test_allocator_custom_destroy(size_t n)
 }
 DECLARE_VARIABLE_UNITTEST(test_allocator_custom_destroy);
 
+struct deleted_address_of
+{
+  int value;
+
+  _CCCL_HOST_DEVICE deleted_address_of& operator=(int v)
+  {
+    value = v;
+    return *this;
+  }
+
+  void operator&() const = delete;
+};
+
+TEST_CASE("TestAllocatorCustomConstructAndDestroyDeletedAddressOf", "[allocator]")
+{
+  using T = deleted_address_of;
+
+  // Elements must be passed to the allocator without their operator&
+  const thrust::device_vector<T, my_allocator_with_custom_construct1<T>> default_constructed(2);
+  REQUIRE(static_cast<T>(default_constructed[1]).value == 13);
+
+  const thrust::device_vector<T, my_allocator_with_custom_construct2<T>> fill_constructed(2, T{7});
+  REQUIRE(static_cast<T>(fill_constructed[1]).value == 13);
+
+  const thrust::device_vector<T> source(2, T{7});
+  const thrust::device_vector<T, my_allocator_with_custom_construct2<T>> copy_constructed(source.begin(), source.end());
+  REQUIRE(static_cast<T>(copy_constructed[1]).value == 13);
+
+  my_allocator_with_custom_destroy<T>::g_state = false;
+  {
+    const thrust::cpp::vector<T, my_allocator_with_custom_destroy<T>> destroyed(2);
+  }
+  REQUIRE(my_allocator_with_custom_destroy<T>::g_state);
+}
+
 #endif // !WAR_BUG_1731
 
 template <typename T>

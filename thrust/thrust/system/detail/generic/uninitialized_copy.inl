@@ -18,6 +18,7 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/uninitialized_copy.h>
 
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__new/device_new.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
@@ -35,7 +36,7 @@ struct uninitialized_copy_functor
   {
     const InputType& in = ::cuda::std::get<0>(t);
     OutputType& out     = ::cuda::std::get<1>(t);
-    ::new (static_cast<void*>(&out)) OutputType(in);
+    ::new (static_cast<void*>(::cuda::std::addressof(out))) OutputType(in);
   } // end operator()()
 }; // end uninitialized_copy_functor
 
