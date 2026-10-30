@@ -358,14 +358,14 @@ struct AgentRadixSortDownsweep
     {
       // Register pressure work-around: moving valid_items through shfl prevents compiler
       // from reusing guards/addressing from prior guarded loads
-      valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
+      const OffsetT load_valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
       if constexpr (LOAD_WARP_STRIPED)
       {
-        LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values, valid_items);
+        LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values, load_valid_items);
       }
       else
       {
-        BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values, valid_items);
+        BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values, load_valid_items);
         __syncthreads();
       }
     }
@@ -404,14 +404,14 @@ struct AgentRadixSortDownsweep
     {
       // Register pressure work-around: moving valid_items through shfl prevents compiler
       // from reusing guards/addressing from prior guarded loads
-      valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
+      const OffsetT load_valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
       if constexpr (LOAD_WARP_STRIPED)
       {
-        LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys, valid_items, default_key);
+        LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys, load_valid_items, default_key);
       }
       else
       {
-        BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys, valid_items, default_key);
+        BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys, load_valid_items, default_key);
         __syncthreads();
       }
     }
