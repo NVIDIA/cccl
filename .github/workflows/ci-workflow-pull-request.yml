@@ -568,8 +568,6 @@ jobs:
 
       - name: Render the comment
         id: compose
-        env:
-          CHECK_RUN_ID: ${{ job.check_run_id }}
         run: |
           # download-artifact puts the artifact of each matrix job into its own
           # directory under sass-comment, named after the artifact:
@@ -602,7 +600,7 @@ jobs:
 
           python3 ci/sass/render_report.py "${inputs[@]}" --output "${comment_path}"
 
-          echo "<!-- sass-diff-CHECK_RUN_ID:${CHECK_RUN_ID} -->" >> "${comment_path}"
+          echo "<!-- sass-diff-GITHUB_SHA:${GITHUB_SHA} -->" >> "${comment_path}"
 
           cat "${comment_path}" >> "${GITHUB_STEP_SUMMARY}"
           echo "SASS outcome: ${outcome}."
