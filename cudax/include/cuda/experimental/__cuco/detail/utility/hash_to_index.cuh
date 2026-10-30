@@ -56,19 +56,19 @@ __hash_to_index(_HashType __hash, _SizeType __upper_bound) noexcept
   else if constexpr (__hash_bytes == sizeof(::cuda::std::uint32_t) && __index_bytes == sizeof(::cuda::std::uint64_t))
   {
     const auto __bits  = static_cast<::cuda::std::uint32_t>(__hash);
-    const auto __bound = static_cast<::cuda::std::uint64_t>(__upper_bound);
+    const auto __upper = static_cast<::cuda::std::uint64_t>(__upper_bound);
     // Split the 96-bit product so that no 64-bit multiply-high is needed.
     return static_cast<_SizeType>(
-      ::cuda::mul_hi(__bits, static_cast<::cuda::std::uint32_t>(__bound))
-      + static_cast<::cuda::std::uint64_t>(__bits) * static_cast<::cuda::std::uint32_t>(__bound >> 32));
+      ::cuda::mul_hi(__bits, static_cast<::cuda::std::uint32_t>(__upper))
+      + static_cast<::cuda::std::uint64_t>(__bits) * static_cast<::cuda::std::uint32_t>(__upper >> 32));
   }
   else if constexpr (__hash_bytes == sizeof(::cuda::std::uint64_t) && __index_bytes == sizeof(::cuda::std::uint32_t))
   {
     const auto __bits  = static_cast<::cuda::std::uint64_t>(__hash);
-    const auto __bound = static_cast<::cuda::std::uint32_t>(__upper_bound);
+    const auto __upper = static_cast<::cuda::std::uint32_t>(__upper_bound);
     // Only the upper 32 bits of the 96-bit product are needed.
-    const auto __middle = static_cast<::cuda::std::uint64_t>(static_cast<::cuda::std::uint32_t>(__bits >> 32)) * __bound
-                        + ::cuda::mul_hi(static_cast<::cuda::std::uint32_t>(__bits), __bound);
+    const auto __middle = static_cast<::cuda::std::uint64_t>(static_cast<::cuda::std::uint32_t>(__bits >> 32)) * __upper
+                        + ::cuda::mul_hi(static_cast<::cuda::std::uint32_t>(__bits), __upper);
     return static_cast<_SizeType>(__middle >> 32);
   }
   else
