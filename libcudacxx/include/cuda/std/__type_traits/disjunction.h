@@ -41,7 +41,7 @@ template <>
 struct _OrImpl<false>
 {
   template <class _Res, class...>
-  using _Result = _Res;
+  using _Result _CCCL_NODEBUG = _Res;
 };
 
 // _Or always performs lazy evaluation of its arguments.

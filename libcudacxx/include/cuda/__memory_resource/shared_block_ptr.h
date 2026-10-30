@@ -59,7 +59,7 @@ struct __shared_control_block
 template <class _Payload>
 class __shared_block_ptr
 {
-  using __block_t = __shared_control_block<_Payload>;
+  using __block_t _CCCL_NODEBUG = __shared_control_block<_Payload>;
 
   __block_t* __block_ = nullptr;
 

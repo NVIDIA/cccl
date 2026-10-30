@@ -35,7 +35,8 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _Tp>
-using __as_span_t = ::cuda::std::span<::cuda::std::remove_reference_t<::cuda::std::ranges::range_reference_t<_Tp>>>;
+using __as_span_t _CCCL_NODEBUG =
+  ::cuda::std::span<::cuda::std::remove_reference_t<::cuda::std::ranges::range_reference_t<_Tp>>>;
 
 //! @brief A concept that checks if the type can be converted to a `cuda::std::span`.
 //! The type must be a contiguous range.
@@ -45,7 +46,7 @@ _CCCL_CONCEPT __spannable = _CCCL_REQUIRES_EXPR((_Tp))( //
   requires(::cuda::std::convertible_to<_Tp, __as_span_t<_Tp>>));
 
 template <typename _Tp>
-using __as_mdspan_t =
+using __as_mdspan_t _CCCL_NODEBUG =
   ::cuda::std::mdspan<typename ::cuda::std::decay_t<_Tp>::value_type,
                       typename ::cuda::std::decay_t<_Tp>::extents_type,
                       typename ::cuda::std::decay_t<_Tp>::layout_type,

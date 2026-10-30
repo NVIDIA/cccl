@@ -57,7 +57,7 @@ template <class... _Tp>
 class _CCCL_TYPE_VISIBILITY_DEFAULT tuple
 {
 private:
-  using _BaseT = __tuple_impl<__make_tuple_indices_t<sizeof...(_Tp)>, _Tp...>;
+  using _BaseT _CCCL_NODEBUG = __tuple_impl<__make_tuple_indices_t<sizeof...(_Tp)>, _Tp...>;
 
   _BaseT __base_;
 
@@ -73,11 +73,11 @@ private:
     bool_constant<__tuple_constraints<_Tp...>::template __disambiguate_tuple_like_v<_UTuple>>;
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
   template <class... _UTypes>
-  using _DisambiguateVariadic =
+  using _DisambiguateVariadic _CCCL_NODEBUG =
     bool_constant<__tuple_constraints<_Tp...>::template __disambiguate_variadic_constructible<_UTypes...>()>;
 
   template <class _UTuple>
-  using _DisambiguateTupleLike =
+  using _DisambiguateTupleLike _CCCL_NODEBUG =
     bool_constant<__tuple_constraints<_Tp...>::template __disambiguate_tuple_like<_UTuple>()>;
 #endif // !_CCCL_COMPILER(MSVC)
 
@@ -393,11 +393,11 @@ public:
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
   template <class _Tuple>
-  using _TupleLikeConstructible =
+  using _TupleLikeConstructible _CCCL_NODEBUG =
     _ConstructorConstraint<__tuple_constraints<_Tp...>::template __select_tuple_like_constructible_v<_Tuple>>;
 
   template <class _Tuple>
-  using _NothrowTupleLikeConstructible =
+  using _NothrowTupleLikeConstructible _CCCL_NODEBUG =
     bool_constant<__tuple_constraints<_Tp...>::template __nothrow_tuple_like_constructible_v<_Tuple>>;
 
   // NOLINTBEGIN(bugprone-forwarding-reference-overload)
@@ -427,7 +427,7 @@ public:
   // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class _Alloc, class _Tuple>
-  using _NothrowTupleLikeAllocatorConstructible =
+  using _NothrowTupleLikeAllocatorConstructible _CCCL_NODEBUG =
     bool_constant<__tuple_constraints<_Tp...>::template __nothrow_uses_allocator_constructible_v<_Alloc, _Tuple>>;
 
   template <class _Alloc,
@@ -485,7 +485,7 @@ public:
   }
 
   template <bool _IsConst, class... _UTypes>
-  using _ConvertingAssignable =
+  using _ConvertingAssignable _CCCL_NODEBUG =
     bool_constant<__tuple_constraints<_Tp...>::template __select_converting_assignable<_IsConst, _UTypes...>()>;
 
   // [tuple.assign]-15
@@ -534,11 +534,11 @@ public:
   }
 
   template <bool _IsConst, class _UTuple>
-  using _TupleLikeAssignable =
+  using _TupleLikeAssignable _CCCL_NODEBUG =
     bool_constant<__tuple_constraints<_Tp...>::template __select_tuple_like_assignable<_IsConst, _UTuple>()>;
 
   template <bool _IsConst, class _UTuple>
-  using _NothrowTupleLikeAssignable =
+  using _NothrowTupleLikeAssignable _CCCL_NODEBUG =
     bool_constant<__tuple_constraints<_Tp...>::template __nothrow_tuple_like_assignable<_IsConst, _UTuple>()>;
 
   // [tuple.assign]-39

@@ -99,7 +99,7 @@ using __iset = ::cuda::std::__type_call<::cuda::std::__type_unique<typename __is
                                         ::cuda::std::__type_quote<__iset_>>;
 #else // ^^^ _CCCL_COMPILER(GCC, <, 10) ^^^ / vvv _CCCL_COMPILER(GCC, >=, 10) vvv
 template <class... _Interfaces>
-using __iset =
+using __iset _CCCL_NODEBUG =
   ::cuda::std::__type_call<::cuda::std::__type_unique<::cuda::std::__type_concat<__iset_flatten<_Interfaces>...>>,
                            ::cuda::std::__type_quote<__iset_>>;
 #endif // _CCCL_COMPILER(GCC, >=, 10)

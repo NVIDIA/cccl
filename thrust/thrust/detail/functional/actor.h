@@ -79,7 +79,7 @@ struct argument
 template <unsigned int Pos>
 struct placeholder
 {
-  using type = actor<argument<Pos>>;
+  using type _CCCL_NODEBUG = actor<argument<Pos>>;
 };
 
 // composition of actors/nodes

@@ -36,7 +36,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_CTK_AT_LEAST(13, 5) && _CCCL_HAS_NV_ATOMIC_BUILTINS()
 using __cuda_atomic_device_backend = __cuda_atomic_nvvm_backend;
 #else
-using __cuda_atomic_device_backend = __cuda_atomic_ptx_backend;
+using __cuda_atomic_device_backend _CCCL_NODEBUG = __cuda_atomic_ptx_backend;
 #endif
 
 _CCCL_END_NAMESPACE_CUDA_STD

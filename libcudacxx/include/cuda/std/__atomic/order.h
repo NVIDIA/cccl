@@ -62,7 +62,7 @@ enum __legacy_memory_order // NOLINT(cppcoreguidelines-use-enum-class)
   __mo_seq_cst
 };
 
-using __memory_order_underlying_t = underlying_type_t<__legacy_memory_order>;
+using __memory_order_underlying_t _CCCL_NODEBUG = underlying_type_t<__legacy_memory_order>;
 
 #if _CCCL_STD_VER >= 2020
 

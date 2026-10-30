@@ -53,7 +53,7 @@ template <class UnaryFunc, class Iterator>
 struct transform_iterator_reference
 {
   // by default, dereferencing the iterator yields the same as the function.
-  using type = ::cuda::std::invoke_result_t<UnaryFunc&, it_value_t<Iterator>>;
+  using type _CCCL_NODEBUG = ::cuda::std::invoke_result_t<UnaryFunc&, it_value_t<Iterator>>;
 };
 
 // for certain function objects, we need to tweak the reference type. Notably, identity functions must decay to values.
@@ -61,12 +61,12 @@ struct transform_iterator_reference
 template <class Iterator>
 struct transform_iterator_reference<::cuda::std::identity, Iterator>
 {
-  using type = it_value_t<Iterator>;
+  using type _CCCL_NODEBUG = it_value_t<Iterator>;
 };
 template <typename Eval, class Iterator>
 struct transform_iterator_reference<functional::actor<Eval>, Iterator>
 {
-  using type =
+  using type _CCCL_NODEBUG =
     ::cuda::std::remove_reference_t<::cuda::std::invoke_result_t<functional::actor<Eval>&, it_value_t<Iterator>>>;
 };
 

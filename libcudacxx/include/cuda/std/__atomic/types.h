@@ -39,7 +39,7 @@ struct __atomic_traits
 };
 
 template <typename _Tp>
-using __atomic_storage_t =
+using __atomic_storage_t _CCCL_NODEBUG =
   _If<__atomic_traits<_Tp>::__atomic_requires_small,
       __atomic_small_storage<_Tp>,
       _If<__atomic_traits<_Tp>::__atomic_requires_lock, __atomic_locked_storage<_Tp>, __atomic_storage<_Tp>>>;

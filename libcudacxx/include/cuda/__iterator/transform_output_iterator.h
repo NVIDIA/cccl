@@ -59,7 +59,7 @@ private:
   _Fn& __func_;
 
   template <class _MaybeConstFn, class _Arg>
-  using _Ret = ::cuda::std::invoke_result_t<_MaybeConstFn&, _Arg>;
+  using _Ret _CCCL_NODEBUG = ::cuda::std::invoke_result_t<_MaybeConstFn&, _Arg>;
 
 public:
   _CCCL_EXEC_CHECK_DISABLE

@@ -68,7 +68,7 @@ struct lowest_supported_sm_arch_impl<SM, typelist<Head, Tail...>>
 template <class SM>
 struct lowest_supported_sm_arch_impl<SM, typelist<>>
 {
-  using type = SM;
+  using type _CCCL_NODEBUG = SM;
 };
 
 using lowest_supported_sm_arch = typename lowest_supported_sm_arch_impl<void, sm_list>::type;
@@ -140,9 +140,10 @@ struct specialize_plan_msvc10_war
   // if Plan has tuning type, this means it has SM-specific tuning
   // so loop through sm_list to find match,
   // otherwise just specialize on provided SM
-  using type = ::cuda::std::conditional<has_tuning_t<Plan<lowest_supported_sm_arch>>::value,
-                                        specialize_plan_impl_loop<Plan, SM, sm_list>,
-                                        Plan<SM>>;
+  using type _CCCL_NODEBUG =
+    ::cuda::std::conditional<has_tuning_t<Plan<lowest_supported_sm_arch>>::value,
+                             specialize_plan_impl_loop<Plan, SM, sm_list>,
+                             Plan<SM>>;
 };
 
 template <template <class> class Plan, class SM = _THRUST_TUNING_ARCH>
@@ -246,7 +247,7 @@ __THRUST_DEFINE_HAS_NESTED_TYPE(has_Plan, Plan)
 template <class Agent>
 struct return_Plan
 {
-  using type = typename Agent::Plan;
+  using type _CCCL_NODEBUG = typename Agent::Plan;
 };
 
 template <class Agent>
@@ -349,7 +350,7 @@ struct get_arch;
 template <template <class> class Plan, class Arch>
 struct get_arch<Plan<Arch>>
 {
-  using type = Arch;
+  using type _CCCL_NODEBUG = Arch;
 };
 
 // cuda_optional

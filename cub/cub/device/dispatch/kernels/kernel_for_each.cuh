@@ -39,19 +39,19 @@ namespace detail::for_each
 template <class Fn>
 struct first_parameter
 {
-  using type = void;
+  using type _CCCL_NODEBUG = void;
 };
 
 template <class C, class R, class A>
 struct first_parameter<R (C::*)(A)>
 {
-  using type = A;
+  using type _CCCL_NODEBUG = A;
 };
 
 template <class C, class R, class A>
 struct first_parameter<R (C::*)(A) const>
 {
-  using type = A;
+  using type _CCCL_NODEBUG = A;
 };
 
 template <class Fn>

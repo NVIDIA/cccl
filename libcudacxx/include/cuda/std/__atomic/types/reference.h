@@ -44,7 +44,7 @@ inline constexpr bool __atomic_ref_is_volatile_int128_v = false;
 template <typename _Tp>
 struct __atomic_ref_storage
 {
-  using __underlying_t                = _Tp;
+  using __underlying_t _CCCL_NODEBUG  = _Tp;
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_base_tag;
 
 #if _CCCL_COMPILER(GCC, <, 10) // older gcc fails to handle volatile in is_trivially_copyable

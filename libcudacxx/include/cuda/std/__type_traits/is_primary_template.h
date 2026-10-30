@@ -52,9 +52,10 @@ struct __is_primary_cccl_template<_Iter, void_t<typename iterator_traits<_Iter>:
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 
 template <class _Traits>
-using __test_for_primary_template = enable_if_t<is_same_v<_Traits, typename _Traits::__cccl_primary_template>>;
+using __test_for_primary_template _CCCL_NODEBUG =
+  enable_if_t<is_same_v<_Traits, typename _Traits::__cccl_primary_template>>;
 template <class _Iter>
-using __is_primary_cccl_template = _IsValidExpansion<__test_for_primary_template, iterator_traits<_Iter>>;
+using __is_primary_cccl_template _CCCL_NODEBUG = _IsValidExpansion<__test_for_primary_template, iterator_traits<_Iter>>;
 
 #endif // !_CCCL_COMPILER(MSVC)
 
@@ -108,7 +109,7 @@ struct __is_primary_std_template : bool_constant<__is_primary_std_template_impl<
 #  endif // ^^^ _CCCL_HOST_STD_LIB(STL) ^^^
 
 template <class _Iter, class _OtherTraits>
-using __select_traits =
+using __select_traits _CCCL_NODEBUG =
   conditional_t<__is_primary_std_template<_Iter>::value,
                 conditional_t<__is_primary_cccl_template<_Iter>::value, _OtherTraits, iterator_traits<_Iter>>,
                 ::std::iterator_traits<_Iter>>;

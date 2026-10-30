@@ -48,7 +48,7 @@ void __cccl_accepts_implicit_conversion(_Tp) noexcept;
 #endif // no CUDA compilation
 
 template <class...>
-using __cccl_void_t = void;
+using __cccl_void_t _CCCL_NODEBUG = void;
 
 template <class _Dest, class _Source, class = void>
 struct __is_non_narrowing_convertible
