@@ -56,14 +56,14 @@ namespace __layout_stride_detail
 template <class _Extents, class _StrideArray, bool = (_Extents::rank() == 0)>
 struct _CCCL_DECLSPEC_EMPTY_BASES __mapping_base : __mdspan_ebco<_Extents, _StrideArray>
 {
-  using __base = __mdspan_ebco<_Extents, _StrideArray>;
+  using __base _CCCL_NODEBUG = __mdspan_ebco<_Extents, _StrideArray>;
   using __base::__base;
 };
 
 template <class _Extents, class _StrideArray>
 struct _CCCL_DECLSPEC_EMPTY_BASES __mapping_base<_Extents, _StrideArray, true> : __mdspan_ebco<_Extents>
 {
-  using __base = __mdspan_ebco<_Extents>;
+  using __base _CCCL_NODEBUG = __mdspan_ebco<_Extents>;
   using __base::__base;
 
   _CCCL_API constexpr __mapping_base(const _Extents& __ext,
@@ -105,7 +105,7 @@ public:
   using size_type    = typename extents_type::size_type;
   using rank_type    = typename extents_type::rank_type;
   using layout_type  = layout_stride;
-  using __base =
+  using __base _CCCL_NODEBUG =
     __layout_stride_detail::__mapping_base<_Extents,
                                            __mdspan_detail::__possibly_empty_array<index_type, extents_type::rank()>>;
 
@@ -116,7 +116,7 @@ private:
   static constexpr rank_type __rank_    = extents_type::rank();
   static constexpr auto __rank_sequence = ::cuda::std::make_index_sequence<extents_type::rank()>();
 
-  using __stride_array = __mdspan_detail::__possibly_empty_array<index_type, extents_type::rank()>;
+  using __stride_array _CCCL_NODEBUG = __mdspan_detail::__possibly_empty_array<index_type, extents_type::rank()>;
 
   // Used for default construction check and mandates
   [[nodiscard]] _CCCL_API static constexpr bool

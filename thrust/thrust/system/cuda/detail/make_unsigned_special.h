@@ -22,7 +22,7 @@ struct make_unsigned_special;
 template <>
 struct make_unsigned_special<int>
 {
-  using type = unsigned int;
+  using type _CCCL_NODEBUG = unsigned int;
 };
 
 // this is special, because CUDA's atomicAdd doesn't have an overload
@@ -30,13 +30,13 @@ struct make_unsigned_special<int>
 template <>
 struct make_unsigned_special<long>
 {
-  using type = unsigned long long;
+  using type _CCCL_NODEBUG = unsigned long long;
 };
 
 template <>
 struct make_unsigned_special<long long>
 {
-  using type = unsigned long long;
+  using type _CCCL_NODEBUG = unsigned long long;
 };
 } // namespace cuda_cub::detail
 THRUST_NAMESPACE_END

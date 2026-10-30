@@ -52,10 +52,10 @@ template <>
 struct _IterOps<_RangeAlgPolicy>
 {
   template <class _Iter>
-  using __value_type = iter_value_t<_Iter>;
+  using __value_type _CCCL_NODEBUG = iter_value_t<_Iter>;
 
   template <class _Iter>
-  using __difference_type = iter_difference_t<_Iter>;
+  using __difference_type _CCCL_NODEBUG = iter_difference_t<_Iter>;
 
   static constexpr auto advance      = ::cuda::std::ranges::advance;
   static constexpr auto distance     = ::cuda::std::ranges::distance;
@@ -73,10 +73,10 @@ template <>
 struct _IterOps<_ClassicAlgPolicy>
 {
   template <class _Iter>
-  using __value_type = typename iterator_traits<_Iter>::value_type;
+  using __value_type _CCCL_NODEBUG = typename iterator_traits<_Iter>::value_type;
 
   template <class _Iter>
-  using __difference_type = typename iterator_traits<_Iter>::difference_type;
+  using __difference_type _CCCL_NODEBUG = typename iterator_traits<_Iter>::difference_type;
 
   // advance
   template <class _Iter, class _Distance>
@@ -93,10 +93,10 @@ struct _IterOps<_ClassicAlgPolicy>
   }
 
   template <class _Iter>
-  using __deref_t = decltype(*::cuda::std::declval<_Iter&>());
+  using __deref_t _CCCL_NODEBUG = decltype(*::cuda::std::declval<_Iter&>());
 
   template <class _Iter>
-  using __move_t = decltype(::cuda::std::move(*::cuda::std::declval<_Iter&>()));
+  using __move_t _CCCL_NODEBUG = decltype(::cuda::std::move(*::cuda::std::declval<_Iter&>()));
 
   template <class _Iter>
   _CCCL_API constexpr static void __validate_iter_reference()

@@ -27,7 +27,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <bool _Const, class _Tp>
-using __maybe_const = conditional_t<_Const, const _Tp, _Tp>;
+using __maybe_const _CCCL_NODEBUG = conditional_t<_Const, const _Tp, _Tp>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

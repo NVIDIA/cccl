@@ -188,7 +188,7 @@ public:
 
 private:
   /// Shared memory storage layout type for WarpReduce
-  using _TempStorage = typename InternalWarpReduce::TempStorage;
+  using _TempStorage _CCCL_NODEBUG = typename InternalWarpReduce::TempStorage;
 
   /// Shared storage reference
   _TempStorage& temp_storage;
@@ -754,7 +754,7 @@ template <typename T>
 class WarpReduce<T, 1>
 {
 private:
-  using _TempStorage = cub::NullType;
+  using _TempStorage _CCCL_NODEBUG = cub::NullType;
 
 public:
   struct InternalWarpReduce

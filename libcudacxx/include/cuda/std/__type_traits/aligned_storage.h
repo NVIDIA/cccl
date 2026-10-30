@@ -49,7 +49,7 @@ struct __struct_double4
   double __lx[4];
 };
 
-using __all_types =
+using __all_types _CCCL_NODEBUG =
   __type_list<__align_type<unsigned char>,
               __align_type<unsigned short>,
               __align_type<unsigned int>,
@@ -72,7 +72,7 @@ template <size_t _Align>
 struct __has_align
 {
   template <class _Ty>
-  using __call = bool_constant<_Align == _Ty::value>;
+  using __call _CCCL_NODEBUG = bool_constant<_Align == _Ty::value>;
 };
 
 template <class _TL, size_t _Align>
@@ -106,7 +106,7 @@ struct __find_max_align
 template <size_t _Len, size_t _Align = __find_max_align<__all_types, _Len>::value>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT aligned_storage
 {
-  using _Aligner = typename __find_pod<__all_types, _Align>::type;
+  using _Aligner _CCCL_NODEBUG = typename __find_pod<__all_types, _Align>::type;
   union type
   {
     _Aligner __align;

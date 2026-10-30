@@ -916,7 +916,7 @@ class BlockLoad
     }
   }
 
-  using _TempStorage = decltype(temp_storage_helper());
+  using _TempStorage _CCCL_NODEBUG = decltype(temp_storage_helper());
 
   // Internal storage allocator
   _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
@@ -1205,7 +1205,7 @@ public:
 template <class Policy, class It, class T = cub::detail::it_value_t<It>>
 struct BlockLoadType
 {
-  using type = cub::BlockLoad<T, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, Policy::LOAD_ALGORITHM>;
+  using type _CCCL_NODEBUG = cub::BlockLoad<T, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, Policy::LOAD_ALGORITHM>;
 };
 
 CUB_NAMESPACE_END

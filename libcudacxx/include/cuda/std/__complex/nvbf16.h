@@ -75,8 +75,8 @@ inline constexpr size_t __complex_alignment_v<__nv_bfloat16> = alignof(__nv_bflo
 template <>
 struct __cccl_complex_overload_traits<__nv_bfloat16, false, false>
 {
-  using _ValueType   = __nv_bfloat16;
-  using _ComplexType = complex<__nv_bfloat16>;
+  using _ValueType _CCCL_NODEBUG   = __nv_bfloat16;
+  using _ComplexType _CCCL_NODEBUG = complex<__nv_bfloat16>;
 };
 
 #  if _CCCL_TILE_COMPILATION()
@@ -95,10 +95,10 @@ using __complex_nv_bfloat_repr_t = __complex_fake_nv_bfloat162;
 template <>
 struct __type_to_vector<__nv_bfloat16>
 {
-  using __type = __nv_bfloat162;
+  using __type _CCCL_NODEBUG = __nv_bfloat162;
 };
 
-using __complex_nv_bfloat_repr_t = __nv_bfloat162;
+using __complex_nv_bfloat_repr_t _CCCL_NODEBUG = __nv_bfloat162;
 #  endif // !_CCCL_TILE_COMPILATION()
 
 template <>

@@ -123,7 +123,7 @@ private:
   template <class, class, class, class>
   friend class mdspan;
 
-  using __constraints = __mdspan_constraints<_Extents, _LayoutPolicy, _AccessorPolicy>;
+  using __constraints _CCCL_NODEBUG = __mdspan_constraints<_Extents, _LayoutPolicy, _AccessorPolicy>;
 
 public:
   using extents_type     = _Extents;
@@ -137,9 +137,10 @@ public:
   using rank_type        = typename extents_type::rank_type;
   using data_handle_type = typename accessor_type::data_handle_type;
   using reference        = typename accessor_type::reference;
-  using __base           = __mdspan_ebco<typename accessor_type::data_handle_type,
-                                         typename _LayoutPolicy::template mapping<_Extents>,
-                                         _AccessorPolicy>;
+  using __base _CCCL_NODEBUG =
+    __mdspan_ebco<typename accessor_type::data_handle_type,
+                  typename _LayoutPolicy::template mapping<_Extents>,
+                  _AccessorPolicy>;
 
   [[nodiscard]] _CCCL_API static constexpr rank_type rank() noexcept
   {

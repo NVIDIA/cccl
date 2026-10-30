@@ -52,7 +52,7 @@ template <int _Error>
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #if _CCCL_HAS_CTK()
-using __cuda_error_t = ::cudaError_t;
+using __cuda_error_t _CCCL_NODEBUG = ::cudaError_t;
 #else
 using __cuda_error_t = int;
 #endif

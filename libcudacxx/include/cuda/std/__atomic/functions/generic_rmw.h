@@ -38,7 +38,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Backend, class _Operand>
-using __cuda_atomic_enable_generic_rmw = enable_if_t<(_Operand::__size <= _Backend::__widest_cas), bool>;
+using __cuda_atomic_enable_generic_rmw _CCCL_NODEBUG = enable_if_t<(_Operand::__size <= _Backend::__widest_cas), bool>;
 
 template <size_t _Size>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __cuda_atomic_rmw_type_impl() noexcept
@@ -67,7 +67,7 @@ template <size_t _Size>
 }
 
 template <size_t _Size>
-using __cuda_atomic_rmw_type_t = decltype(__cuda_atomic_rmw_type_impl<_Size>());
+using __cuda_atomic_rmw_type_t _CCCL_NODEBUG = decltype(__cuda_atomic_rmw_type_impl<_Size>());
 
 template <class _Type, class _RmwType>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _RmwType

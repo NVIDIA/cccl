@@ -95,7 +95,7 @@ _CCCL_CONCEPT __opt_is_assignable_from_opt = _CCCL_REQUIRES_EXPR((_Tp, _Up)) //
 template <class _Tp>
 class optional : private __optional_move_assign_base<_Tp>
 {
-  using __base = __optional_move_assign_base<_Tp>;
+  using __base _CCCL_NODEBUG = __optional_move_assign_base<_Tp>;
 
   template <class>
   friend class optional;

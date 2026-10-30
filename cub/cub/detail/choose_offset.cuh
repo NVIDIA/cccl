@@ -40,7 +40,7 @@ struct choose_offset
                 "NumItemsT must be an integral type, but not bool");
 
   // Unsigned integer type for global offsets.
-  using type = ::cuda::std::_If<(sizeof(NumItemsT) <= 4), uint32_t, unsigned long long>;
+  using type _CCCL_NODEBUG = ::cuda::std::_If<(sizeof(NumItemsT) <= 4), uint32_t, unsigned long long>;
 };
 
 /**
@@ -58,9 +58,10 @@ using choose_offset_t = typename choose_offset<NumItemsT>::type;
 template <::cuda::std::uint64_t MaxItems>
 struct choose_offset_for_max
 {
-  using type = ::cuda::std::_If<(MaxItems <= ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max()),
-                                ::cuda::std::uint32_t,
-                                unsigned long long>;
+  using type _CCCL_NODEBUG =
+    ::cuda::std::_If<(MaxItems <= ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max()),
+                     ::cuda::std::uint32_t,
+                     unsigned long long>;
 };
 
 /**
@@ -83,7 +84,7 @@ struct promote_small_offset
                 "NumItemsT must be an integral type, but not bool");
 
   // Unsigned integer type for global offsets.
-  using type = ::cuda::std::_If<(sizeof(NumItemsT) < 4), int32_t, NumItemsT>;
+  using type _CCCL_NODEBUG = ::cuda::std::_If<(sizeof(NumItemsT) < 4), int32_t, NumItemsT>;
 };
 
 /**
@@ -146,7 +147,7 @@ using choose_signed_offset_t = typename choose_signed_offset<NumItemsT>::type;
 template <typename... Iter>
 struct common_iterator_value
 {
-  using type = ::cuda::std::common_type_t<::cuda::std::__iter_value_type<Iter>...>;
+  using type _CCCL_NODEBUG = ::cuda::std::common_type_t<::cuda::std::__iter_value_type<Iter>...>;
 };
 template <typename... Iter>
 using common_iterator_value_t = typename common_iterator_value<Iter...>::type;

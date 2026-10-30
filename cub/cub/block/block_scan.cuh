@@ -258,7 +258,7 @@ private:
   using InternalBlockScan = ::cuda::std::_If<SAFE_ALGORITHM == BLOCK_SCAN_WARP_SCANS, WarpScans, Raking>;
 
   /// Shared memory storage layout type for BlockScan
-  using _TempStorage = typename InternalBlockScan::TempStorage;
+  using _TempStorage _CCCL_NODEBUG = typename InternalBlockScan::TempStorage;
 
   /// Shared storage reference
   _TempStorage& temp_storage;

@@ -45,148 +45,148 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<const volatile _Tp> : scalar_ty
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::char1>
 {
-  using type = signed char;
+  using type _CCCL_NODEBUG = signed char;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::char2>
 {
-  using type = signed char;
+  using type _CCCL_NODEBUG = signed char;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::char3>
 {
-  using type = signed char;
+  using type _CCCL_NODEBUG = signed char;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::char4>
 {
-  using type = signed char;
+  using type _CCCL_NODEBUG = signed char;
 };
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::uchar1>
 {
-  using type = unsigned char;
+  using type _CCCL_NODEBUG = unsigned char;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::uchar2>
 {
-  using type = unsigned char;
+  using type _CCCL_NODEBUG = unsigned char;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::uchar3>
 {
-  using type = unsigned char;
+  using type _CCCL_NODEBUG = unsigned char;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::uchar4>
 {
-  using type = unsigned char;
+  using type _CCCL_NODEBUG = unsigned char;
 };
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::short1>
 {
-  using type = short;
+  using type _CCCL_NODEBUG = short;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::short2>
 {
-  using type = short;
+  using type _CCCL_NODEBUG = short;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::short3>
 {
-  using type = short;
+  using type _CCCL_NODEBUG = short;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::short4>
 {
-  using type = short;
+  using type _CCCL_NODEBUG = short;
 };
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::ushort1>
 {
-  using type = unsigned short;
+  using type _CCCL_NODEBUG = unsigned short;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::ushort2>
 {
-  using type = unsigned short;
+  using type _CCCL_NODEBUG = unsigned short;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::ushort3>
 {
-  using type = unsigned short;
+  using type _CCCL_NODEBUG = unsigned short;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::ushort4>
 {
-  using type = unsigned short;
+  using type _CCCL_NODEBUG = unsigned short;
 };
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::int1>
 {
-  using type = int;
+  using type _CCCL_NODEBUG = int;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::int2>
 {
-  using type = int;
+  using type _CCCL_NODEBUG = int;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::int3>
 {
-  using type = int;
+  using type _CCCL_NODEBUG = int;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::int4>
 {
-  using type = int;
+  using type _CCCL_NODEBUG = int;
 };
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::uint1>
 {
-  using type = unsigned;
+  using type _CCCL_NODEBUG = unsigned;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::uint2>
 {
-  using type = unsigned;
+  using type _CCCL_NODEBUG = unsigned;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::uint3>
 {
-  using type = unsigned;
+  using type _CCCL_NODEBUG = unsigned;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::uint4>
 {
-  using type = unsigned;
+  using type _CCCL_NODEBUG = unsigned;
 };
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::long1>
 {
-  using type = long;
+  using type _CCCL_NODEBUG = long;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::long2>
 {
-  using type = long;
+  using type _CCCL_NODEBUG = long;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::long3>
 {
-  using type = long;
+  using type _CCCL_NODEBUG = long;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::long4>
 {
-  using type = long;
+  using type _CCCL_NODEBUG = long;
 };
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 template <>
@@ -204,22 +204,22 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::long4_32a>
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::ulong1>
 {
-  using type = unsigned long;
+  using type _CCCL_NODEBUG = unsigned long;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::ulong2>
 {
-  using type = unsigned long;
+  using type _CCCL_NODEBUG = unsigned long;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::ulong3>
 {
-  using type = unsigned long;
+  using type _CCCL_NODEBUG = unsigned long;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::ulong4>
 {
-  using type = unsigned long;
+  using type _CCCL_NODEBUG = unsigned long;
 };
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 template <>
@@ -237,22 +237,22 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::ulong4_32a>
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::longlong1>
 {
-  using type = long long;
+  using type _CCCL_NODEBUG = long long;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::longlong2>
 {
-  using type = long long;
+  using type _CCCL_NODEBUG = long long;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::longlong3>
 {
-  using type = long long;
+  using type _CCCL_NODEBUG = long long;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::longlong4>
 {
-  using type = long long;
+  using type _CCCL_NODEBUG = long long;
 };
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 template <>
@@ -270,22 +270,22 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::longlong4_32a>
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::ulonglong1>
 {
-  using type = unsigned long long;
+  using type _CCCL_NODEBUG = unsigned long long;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::ulonglong2>
 {
-  using type = unsigned long long;
+  using type _CCCL_NODEBUG = unsigned long long;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::ulonglong3>
 {
-  using type = unsigned long long;
+  using type _CCCL_NODEBUG = unsigned long long;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::ulonglong4>
 {
-  using type = unsigned long long;
+  using type _CCCL_NODEBUG = unsigned long long;
 };
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 template <>
@@ -303,43 +303,43 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::ulonglong4_32a>
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::float1>
 {
-  using type = float;
+  using type _CCCL_NODEBUG = float;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::float2>
 {
-  using type = float;
+  using type _CCCL_NODEBUG = float;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::float3>
 {
-  using type = float;
+  using type _CCCL_NODEBUG = float;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::float4>
 {
-  using type = float;
+  using type _CCCL_NODEBUG = float;
 };
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::double1>
 {
-  using type = double;
+  using type _CCCL_NODEBUG = double;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::double2>
 {
-  using type = double;
+  using type _CCCL_NODEBUG = double;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::double3>
 {
-  using type = double;
+  using type _CCCL_NODEBUG = double;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::double4>
 {
-  using type = double;
+  using type _CCCL_NODEBUG = double;
 };
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 template <>
@@ -357,14 +357,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::double4_32a>
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::dim3>
 {
-  using type = unsigned;
+  using type _CCCL_NODEBUG = unsigned;
 };
 
 #  if _CCCL_HAS_NVFP16()
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__half2>
 {
-  using type = ::__half;
+  using type _CCCL_NODEBUG = ::__half;
 };
 #  endif // _CCCL_HAS_NVFP16()
 
@@ -372,7 +372,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__half2>
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__nv_bfloat162>
 {
-  using type = ::__nv_bfloat16;
+  using type _CCCL_NODEBUG = ::__nv_bfloat16;
 };
 #  endif // _CCCL_HAS_NVBF16()
 
@@ -380,12 +380,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__nv_bfloat162>
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__nv_fp8x2_e4m3>
 {
-  using type = ::__nv_fp8_e4m3;
+  using type _CCCL_NODEBUG = ::__nv_fp8_e4m3;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__nv_fp8x4_e4m3>
 {
-  using type = ::__nv_fp8_e4m3;
+  using type _CCCL_NODEBUG = ::__nv_fp8_e4m3;
 };
 #  endif // _CCCL_HAS_NVFP8_E4M3()
 
@@ -393,12 +393,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__nv_fp8x4_e4m3>
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__nv_fp8x2_e5m2>
 {
-  using type = ::__nv_fp8_e5m2;
+  using type _CCCL_NODEBUG = ::__nv_fp8_e5m2;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__nv_fp8x4_e5m2>
 {
-  using type = ::__nv_fp8_e5m2;
+  using type _CCCL_NODEBUG = ::__nv_fp8_e5m2;
 };
 #  endif // _CCCL_HAS_NVFP8_E5M2()
 
@@ -406,12 +406,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__nv_fp8x4_e5m2>
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__nv_fp8x2_e8m0>
 {
-  using type = ::__nv_fp8_e8m0;
+  using type _CCCL_NODEBUG = ::__nv_fp8_e8m0;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__nv_fp8x4_e8m0>
 {
-  using type = ::__nv_fp8_e8m0;
+  using type _CCCL_NODEBUG = ::__nv_fp8_e8m0;
 };
 #  endif // _CCCL_HAS_NVFP8_E8M0()
 
@@ -419,12 +419,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__nv_fp8x4_e8m0>
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__nv_fp6x2_e2m3>
 {
-  using type = ::__nv_fp6_e2m3;
+  using type _CCCL_NODEBUG = ::__nv_fp6_e2m3;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__nv_fp6x4_e2m3>
 {
-  using type = ::__nv_fp6_e2m3;
+  using type _CCCL_NODEBUG = ::__nv_fp6_e2m3;
 };
 #  endif // _CCCL_HAS_NVFP6_E2M3()
 
@@ -432,12 +432,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__nv_fp6x4_e2m3>
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__nv_fp6x2_e3m2>
 {
-  using type = ::__nv_fp6_e3m2;
+  using type _CCCL_NODEBUG = ::__nv_fp6_e3m2;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__nv_fp6x4_e3m2>
 {
-  using type = ::__nv_fp6_e3m2;
+  using type _CCCL_NODEBUG = ::__nv_fp6_e3m2;
 };
 #  endif // _CCCL_HAS_NVFP6_E3M2()
 
@@ -445,12 +445,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__nv_fp6x4_e3m2>
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__nv_fp4x2_e2m1>
 {
-  using type = ::__nv_fp4_e2m1;
+  using type _CCCL_NODEBUG = ::__nv_fp4_e2m1;
 };
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT scalar_type<::__nv_fp4x4_e2m1>
 {
-  using type = ::__nv_fp4_e2m1;
+  using type _CCCL_NODEBUG = ::__nv_fp4_e2m1;
 };
 #  endif // _CCCL_HAS_NVFP4_E2M1()
 

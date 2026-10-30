@@ -39,25 +39,25 @@ class tuple_of_iterator_references;
 template <typename T>
 struct is_compatible_tuple_normalize
 {
-  using type = T;
+  using type _CCCL_NODEBUG = T;
 };
 
 template <typename... Ts>
 struct is_compatible_tuple_normalize<tuple_of_iterator_references<Ts...>>
 {
-  using type = ::cuda::std::tuple<Ts...>;
+  using type _CCCL_NODEBUG = ::cuda::std::tuple<Ts...>;
 };
 
 template <typename T>
 struct is_compatible_tuple_normalize<thrust::device_reference<T>>
 {
-  using type = T;
+  using type _CCCL_NODEBUG = T;
 };
 
 template <typename T>
 struct is_compatible_tuple_normalize<T&>
 {
-  using type = T;
+  using type _CCCL_NODEBUG = T;
 };
 
 template <typename T>

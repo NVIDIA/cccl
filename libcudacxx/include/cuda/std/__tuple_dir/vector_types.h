@@ -39,7 +39,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
     struct tuple_element<_Ip, __name##__size##__VA_ARGS__>                                          \
     {                                                                                               \
       static_assert(_Ip < __size, "tuple_element index out of range");                              \
-      using type = __type;                                                                          \
+      using type _CCCL_NODEBUG = __type;                                                            \
     };
 
 #  define _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(__name, __type) \

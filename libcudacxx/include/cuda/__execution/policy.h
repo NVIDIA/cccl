@@ -28,7 +28,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION
 
-using __cub_parallel_unsequenced_policy =
+using __cub_parallel_unsequenced_policy _CCCL_NODEBUG =
   ::cuda::std::execution::__execution_policy_base<::cuda::std::execution::__with_backend<
     static_cast<uint32_t>(::cuda::std::execution::__execution_policy::__parallel_unsequenced),
     ::cuda::std::execution::__execution_backend::__cuda>()>;

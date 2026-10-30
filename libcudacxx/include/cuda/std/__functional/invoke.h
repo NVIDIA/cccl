@@ -53,21 +53,22 @@ struct __member_pointer_class_type
 template <class _Ret, class _ClassType>
 struct __member_pointer_class_type<_Ret _ClassType::*>
 {
-  using type = _ClassType;
+  using type _CCCL_NODEBUG = _ClassType;
 };
 
 template <class _DecayedFp>
-using __member_pointer_class_type_t = typename __member_pointer_class_type<_DecayedFp>::type;
+using __member_pointer_class_type_t _CCCL_NODEBUG = typename __member_pointer_class_type<_DecayedFp>::type;
 
 template <class _Fp,
           class _A0,
           class _DecayFp = decay_t<_Fp>,
           class _DecayA0 = decay_t<_A0>,
           class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
-using __enable_if_bullet1 = enable_if_t<is_member_function_pointer_v<_DecayFp> && is_base_of_v<_ClassT, _DecayA0>>;
+using __enable_if_bullet1 _CCCL_NODEBUG =
+  enable_if_t<is_member_function_pointer_v<_DecayFp> && is_base_of_v<_ClassT, _DecayA0>>;
 
 template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = decay_t<_A0>>
-using __enable_if_bullet2 =
+using __enable_if_bullet2 _CCCL_NODEBUG =
   enable_if_t<is_member_function_pointer_v<_DecayFp> && __is_cuda_std_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
@@ -75,18 +76,20 @@ template <class _Fp,
           class _DecayFp = decay_t<_Fp>,
           class _DecayA0 = decay_t<_A0>,
           class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
-using __enable_if_bullet3 = enable_if_t<is_member_function_pointer_v<_DecayFp> && !is_base_of_v<_ClassT, _DecayA0>
-                                        && !__is_cuda_std_reference_wrapper_v<_DecayA0>>;
+using __enable_if_bullet3 _CCCL_NODEBUG =
+  enable_if_t<is_member_function_pointer_v<_DecayFp> && !is_base_of_v<_ClassT, _DecayA0>
+              && !__is_cuda_std_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
           class _A0,
           class _DecayFp = decay_t<_Fp>,
           class _DecayA0 = decay_t<_A0>,
           class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
-using __enable_if_bullet4 = enable_if_t<is_member_object_pointer_v<_DecayFp> && is_base_of_v<_ClassT, _DecayA0>>;
+using __enable_if_bullet4 _CCCL_NODEBUG =
+  enable_if_t<is_member_object_pointer_v<_DecayFp> && is_base_of_v<_ClassT, _DecayA0>>;
 
 template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = decay_t<_A0>>
-using __enable_if_bullet5 =
+using __enable_if_bullet5 _CCCL_NODEBUG =
   enable_if_t<is_member_object_pointer_v<_DecayFp> && __is_cuda_std_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
@@ -94,8 +97,9 @@ template <class _Fp,
           class _DecayFp = decay_t<_Fp>,
           class _DecayA0 = decay_t<_A0>,
           class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
-using __enable_if_bullet6 = enable_if_t<is_member_object_pointer_v<_DecayFp> && !is_base_of_v<_ClassT, _DecayA0>
-                                        && !__is_cuda_std_reference_wrapper_v<_DecayA0>>;
+using __enable_if_bullet6 _CCCL_NODEBUG =
+  enable_if_t<is_member_object_pointer_v<_DecayFp> && !is_base_of_v<_ClassT, _DecayA0>
+              && !__is_cuda_std_reference_wrapper_v<_DecayA0>>;
 
 // __invoke forward declarations
 
@@ -175,7 +179,7 @@ __invoke(_Fp&& __f, _Args&&... __args) noexcept(noexcept(static_cast<_Fp&&>(__f)
 
 // __is_invocable
 template <class _Fp, class... _Args>
-using __invoke_result_t =
+using __invoke_result_t _CCCL_NODEBUG =
   decltype(::cuda::std::__invoke(::cuda::std::declval<_Fp>(), ::cuda::std::declval<_Args>()...));
 
 template <class _Fp, class... _Args>
@@ -291,7 +295,7 @@ _CCCL_API constexpr _Ret invoke_r(_Fn&& __f, _Args&&... __args) noexcept(is_noth
 
 /// The type of intermediate accumulator (according to P2322R6)
 template <typename _Invocable, typename _InputT, typename _InitT = _InputT>
-using __accumulator_t = decay_t<invoke_result_t<_Invocable, _InitT, _InputT>>;
+using __accumulator_t _CCCL_NODEBUG = decay_t<invoke_result_t<_Invocable, _InitT, _InputT>>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

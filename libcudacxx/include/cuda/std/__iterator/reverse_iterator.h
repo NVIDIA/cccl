@@ -343,8 +343,8 @@ make_reverse_iterator(_Iter __i) noexcept(is_nothrow_copy_constructible_v<_Iter>
 template <template <class> class _RevIter1, template <class> class _RevIter2, class _Iter>
 struct __unwrap_reverse_iter_impl
 {
-  using _UnwrappedIter  = decltype(__unwrap_iter_impl<_Iter>::__unwrap(::cuda::std::declval<_Iter>()));
-  using _ReverseWrapper = _RevIter1<_RevIter2<_Iter>>;
+  using _UnwrappedIter _CCCL_NODEBUG  = decltype(__unwrap_iter_impl<_Iter>::__unwrap(::cuda::std::declval<_Iter>()));
+  using _ReverseWrapper _CCCL_NODEBUG = _RevIter1<_RevIter2<_Iter>>;
 
   _CCCL_API static constexpr _ReverseWrapper __rewrap(_ReverseWrapper __orig_iter, _UnwrappedIter __unwrapped_iter)
   {

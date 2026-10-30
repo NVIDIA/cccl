@@ -95,10 +95,10 @@ _CCCL_API constexpr auto __make_nbit_int_impl() noexcept
 }
 
 template <size_t _NBits, bool _IsSigned = true>
-using __make_nbit_int_t = decltype(__make_nbit_int_impl<_NBits, _IsSigned>());
+using __make_nbit_int_t _CCCL_NODEBUG = decltype(__make_nbit_int_impl<_NBits, _IsSigned>());
 
 template <size_t _NBits>
-using __make_nbit_uint_t = __make_nbit_int_t<_NBits, false>;
+using __make_nbit_uint_t _CCCL_NODEBUG = __make_nbit_int_t<_NBits, false>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

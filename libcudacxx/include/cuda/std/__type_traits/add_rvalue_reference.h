@@ -39,7 +39,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 struct add_rvalue_reference
 {
-  using type = _CCCL_BUILTIN_ADD_RVALUE_REFERENCE(_Tp);
+  using type _CCCL_NODEBUG = _CCCL_BUILTIN_ADD_RVALUE_REFERENCE(_Tp);
 };
 
 #  if _CCCL_COMPILER(GCC) // GCC does not accept the builtin in template signatures
