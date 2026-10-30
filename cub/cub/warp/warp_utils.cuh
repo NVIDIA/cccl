@@ -13,6 +13,7 @@
 #endif // no system header
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/__cmath/round_down.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/cstdint>
@@ -30,8 +31,6 @@ template <int LogicalWarpSize = warp_threads>
 _CCCL_FORCEINLINE int logical_lane_id(::cuda::std::integral_constant<int, LogicalWarpSize> = {})
 {
   static_assert(is_valid_logical_warp_size_v<LogicalWarpSize>, "invalid logical warp size");
-  constexpr bool is_full_warp           = LogicalWarpSize == detail::warp_threads;
-  constexpr auto is_single_logical_warp = is_full_warp || !::cuda::is_power_of_two(LogicalWarpSize);
   // _CCCL_ASSUME interferes with constant propagation
   if constexpr (LogicalWarpSize == 1)
   {
@@ -39,10 +38,14 @@ _CCCL_FORCEINLINE int logical_lane_id(::cuda::std::integral_constant<int, Logica
   }
   else
   {
+    constexpr bool is_full_warp           = LogicalWarpSize == warp_threads;
+    constexpr auto is_single_logical_warp = is_full_warp || !::cuda::is_power_of_two(LogicalWarpSize);
+    constexpr auto lane_limit             = is_single_logical_warp ? warp_threads : LogicalWarpSize;
+
     const auto lane             = ::cuda::ptx::get_sreg_laneid();
     const auto logical_lane     = is_single_logical_warp ? lane : lane % LogicalWarpSize;
     const auto logical_lane_int = static_cast<int>(logical_lane);
-    _CCCL_ASSUME(logical_lane_int < LogicalWarpSize);
+    _CCCL_ASSUME(logical_lane_int < lane_limit);
     // TODO(fbusato): Re-enable the nonnegative hint after updating guarded load/store bounds checks to avoid redundant
     // addresses. _CCCL_ASSUME(logical_lane_int >= 0);
     return logical_lane_int;
@@ -55,7 +58,7 @@ template <int LogicalWarpSize = warp_threads>
 _CCCL_FORCEINLINE int logical_warp_id(::cuda::std::integral_constant<int, LogicalWarpSize> = {})
 {
   static_assert(is_valid_logical_warp_size_v<LogicalWarpSize>, "invalid logical warp size");
-  constexpr bool is_full_warp           = LogicalWarpSize == detail::warp_threads;
+  constexpr bool is_full_warp           = LogicalWarpSize == warp_threads;
   constexpr auto is_single_logical_warp = is_full_warp || !::cuda::is_power_of_two(LogicalWarpSize);
   // _CCCL_ASSUME interferes with constant propagation
   if constexpr (is_single_logical_warp)
@@ -66,7 +69,7 @@ _CCCL_FORCEINLINE int logical_warp_id(::cuda::std::integral_constant<int, Logica
   {
     const auto lane            = ::cuda::ptx::get_sreg_laneid();
     const auto logical_warp_id = static_cast<int>(lane / LogicalWarpSize);
-    _CCCL_ASSUME(logical_warp_id >= 0 && logical_warp_id < detail::warp_threads / LogicalWarpSize);
+    _CCCL_ASSUME(logical_warp_id >= 0 && logical_warp_id < warp_threads / LogicalWarpSize);
     return logical_warp_id;
   }
 }
@@ -77,7 +80,7 @@ template <int LogicalWarpSize = warp_threads>
 logical_warp_base_id(::cuda::std::integral_constant<int, LogicalWarpSize> logical_warp_size = {})
 {
   static_assert(is_valid_logical_warp_size_v<LogicalWarpSize>, "invalid logical warp size");
-  constexpr bool is_full_warp           = LogicalWarpSize == detail::warp_threads;
+  constexpr bool is_full_warp           = LogicalWarpSize == warp_threads;
   constexpr auto is_single_logical_warp = is_full_warp || !::cuda::is_power_of_two(LogicalWarpSize);
   // _CCCL_ASSUME interferes with constant propagation
   if constexpr (is_single_logical_warp)
