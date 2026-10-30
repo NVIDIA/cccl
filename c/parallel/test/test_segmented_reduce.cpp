@@ -931,7 +931,7 @@ extern "C" __device__ {2} {0}({1} *functor_state, {2} n) {{
 
   // end_offsets_it reuses advance/dereference definitions provided by
   // start_offsets_it
-  constexpr std::string_view reuse_prior_definitions = "";
+  constexpr std::string_view reuse_prior_definitions{};
 
   auto end_offsets_it = make_iterator<IndexT, HostTransformStateT>(
     {start_offsets_it.state_name, reuse_prior_definitions},
