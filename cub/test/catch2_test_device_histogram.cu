@@ -1234,4 +1234,58 @@ CUB_TEST("DeviceHistogram::HistogramEven does not bin samples just below upper_l
     c2h::host_vector<int> h_histogram = d_histogram;
     CHECK(h_histogram[99] == 1);
   }
+
+  SECTION("double samples")
+  {
+    constexpr int num_bins   = 3;
+    constexpr int num_levels = num_bins + 1;
+    const double lower_level = -7.0;
+    const double upper_level = 1.0;
+
+    const double sample      = std::nextafter(upper_level, lower_level);
+    const double h_samples[] = {sample};
+    auto d_samples           = c2h::device_vector<double>(cs::begin(h_samples), cs::end(h_samples));
+    auto d_histogram         = c2h::device_vector<int>(num_bins, 0);
+
+    histogram_even(
+      thrust::raw_pointer_cast(d_samples.data()),
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      lower_level,
+      upper_level,
+      static_cast<int>(d_samples.size()));
+
+    c2h::host_vector<int> h_histogram = d_histogram;
+    CHECK(h_histogram[num_bins - 1] == 1);
+    CHECK(h_histogram[0] == 0);
+    CHECK(h_histogram[1] == 0);
+  }
+
+#if TEST_HALF_T()
+  SECTION("half_t samples")
+  {
+    constexpr int num_bins   = 3;
+    constexpr int num_levels = num_bins + 1;
+    const auto lower_level   = half_t{-7.0f};
+    const auto upper_level   = half_t{1.0f};
+
+    const auto sample        = half_t{0.99951171875f};
+    const half_t h_samples[] = {sample};
+    auto d_samples           = c2h::device_vector<half_t>(cs::begin(h_samples), cs::end(h_samples));
+    auto d_histogram         = c2h::device_vector<int>(num_bins, 0);
+
+    histogram_even(
+      unwrap(thrust::raw_pointer_cast(d_samples.data())),
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      static_cast<__half>(lower_level),
+      static_cast<__half>(upper_level),
+      static_cast<int>(d_samples.size()));
+
+    c2h::host_vector<int> h_histogram = d_histogram;
+    CHECK(h_histogram[num_bins - 1] == 1);
+    CHECK(h_histogram[0] == 0);
+    CHECK(h_histogram[1] == 0);
+  }
+#endif // TEST_HALF_T()
 }
