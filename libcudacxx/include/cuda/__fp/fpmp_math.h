@@ -252,6 +252,30 @@
       ~= 1.96*10^-14, well below fp32mp2 ulp at expm1(1/2).
       Special cases: NaN->NaN, +inf->+inf, -inf->-1, x=0->0.
 
+    pow(x, y) for fp32mp2:
+      pow(x, y) = exp(y * log|x|) with log|x| = e*ln2 + L from the shared
+      log core (|L| <= 0.35).  The product y * log|x| is never rounded
+      into a pair: an fp32mp2 t carries only 2^-48 * |t| of absolute
+      accuracy, |t| reaches 88 before the result overflows, and every
+      bit lost in t is lost in the result.  The exp kernel receives a
+      directly reduced argument instead:
+        r = (y*e - N1)*ln2 - N2*ln2 + y*L,   N = N1 + N2 = round(t/ln2)
+      with N1 = round(y_hi*e): y*e as two exact products, y_hi*e - N1
+      the exact fraction of y_hi*e, (y*e - N1)*ln2 a small pair times
+      the ln2 pair, N2*ln2 from the three-piece ln2 of the exp
+      reduction, y*L as an exact product with its exact cross terms,
+      and the pieces combined by error-free sums wherever a piece is
+      above 2^-48 * |y*L| (the products' low words are 2^-19 absolute
+      at |y*L| = 35; adding them in float cost 2^-43 each).  The kernel
+      itself (`__internal_fpmp2_exp_core` / `_exp_scales`) is exp's,
+      factored out.  What remains is the log core's relative error
+      times |y*L| <= 35 plus the kernel's own, in place of the old
+      ~9 u^2 * |t|: 44 bits on the normal dataset (was 41), mean error
+      3.4 u^2 (was 12.5) over [0.01, 100]^2.  Results below 2^-102
+      (subnormal low limb) are limited by the format itself, as for
+      exp.  Special cases (x <= 0, infinities, NaN, integer y) are
+      unchanged.
+
     asinh(x), acosh(x), atanh(x) for fp32mp2:
       Inverse hyperbolic family -- all three reduce to a single log1p
       call with cancellation-safe arithmetic forms:

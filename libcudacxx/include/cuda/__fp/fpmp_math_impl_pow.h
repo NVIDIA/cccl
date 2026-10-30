@@ -50,11 +50,12 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  * --------------------------------------------------------------------
  * Algorithm:
  *
- *    pow(a, b) = exp(b * log(|a|))
+ *    pow(a, b) = exp(b * log(|a|)),   log|a| = e ln 2 + L
  *
- * with sign fixup for a < 0 with integer b.  All three primitives
- * (log, mul, exp) are dedicated fp32mp2 - no fp64 operations in the
- * main path.
+ * with the exponent part b e ln 2 handled exactly and the exp kernel
+ * entered with a directly reduced argument (see the main path), and a
+ * sign fixup for a < 0 with integer b.  Dedicated fp32mp2 throughout -
+ * no fp64 operations in the main path.
  *
  * Integer-b detection:
  *   b is integer iff b.lo == 0 AND truncf(b.hi) == b.hi.
@@ -161,18 +162,104 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_pow(
     return;
   }
 
-  /* ---- (9) main path: exp(b * log(|a|)) ---- */
-  float __loga_hi;
-  float __loga_lo;
-  ::cuda::__fpmp2_log<float>(__abs_a_hi, __abs_a_lo, &__loga_hi, &__loga_lo);
+  /* ---- (9) main path: exp(b * log|a|) with the exponent part of log|a|
+   * handled exactly.
+   *
+   * log|a| = e ln 2 + L with |L| <= 0.35 from the shared log core; the
+   * previous composition exp(b * log|a|) formed log|a| and the product
+   * as float-float values, so the ~2 u^2 of the product was amplified
+   * by |b log|a|| in the result (41 bits on the normal dataset at
+   * b log|a| = -35).  Here the argument of the exp kernel is reduced
+   * directly:
+   *     t = b e ln 2 + b L,   N = round(t / ln 2),
+   *     r = (b e - N) ln 2 + b L,
+   * where b e is an exact sum of two products, b e - N is formed with
+   * error-free sums, (b e - N) ln 2 is an exact product with cross terms, and b L is an
+   * exact product plus its cross terms.  What remains is
+   * the error of L itself and of b L, amplified by |b L| <= 0.35 |b|
+   * instead of by |t|.  Results below 2^-102 are still limited by the
+   * format (denormal low limb), as for exp. */
+  int __e;
+  const fp32mp2_low __L = ::cuda::__internal_fpmp2_log_core(__abs_a_hi, __abs_a_lo, 0.0f, &__e);
+  const float __e_f     = ::cuda::__fpmp_int2fp_rn<float>(__e);
 
-  float __prod_hi;
-  float __prod_lo;
-  ::cuda::__fpmp2_mul<float>(__b_hi, __b_lo, __loga_hi, __loga_lo, &__prod_hi, &__prod_lo);
+  constexpr float __inv_ln2(0x1.715476p+0f);
+  constexpr float __ln2_h(0x1.62e430p-1f);
+  constexpr float __ln2_l(-0x1.05c610p-29f);
+  constexpr float __ln2_hi(0x1.62e4000000000p-1f); /* 16-bit head: n * ln2_hi exact for |n| < 256 */
+  constexpr float __ln2_mid(0x1.7f7d1c0000000p-20f);
+  constexpr float __ln2_lo(0x1.ef357a0000000p-45f);
 
-  float __t_hi;
-  float __t_lo;
-  ::cuda::__fpmp2_exp<float>(__prod_hi, __prod_lo, &__t_hi, &__t_lo);
+  /* b e as two exact products; N1 = round(be_h) leaves the exact fraction
+   * d = be_h - N1 */
+  float __be_l, __bl_l;
+  const float __be_h = ::cuda::__fpmp_two_mult_fma(__b_hi, __e_f, &__be_l);
+  const float __bl_h = ::cuda::__fpmp_two_mult_fma(__b_lo, __e_f, &__bl_l);
+
+  /* b L as an exact product with exact cross terms */
+  float __p_l, __q_l, __w_l;
+  const float __p_h = ::cuda::__fpmp_two_mult_fma(__b_hi, __L.hi(), &__p_l);
+  const float __q_h = ::cuda::__fpmp_two_mult_fma(__b_hi, __L.lo(), &__q_l);
+  const float __w_h = ::cuda::__fpmp_two_mult_fma(__b_lo, __L.hi(), &__w_l);
+
+  /* t estimate for the thresholds and N (float accuracy suffices: an N
+   * off by one only widens |r| by ln 2 * 2^-24 |t|) */
+  const float __k   = __be_h + (__be_l + __bl_h); /* ~ b e */
+  const float __t_f = ::cuda::__fpmp_fma_rn(__k, __ln2_h, __p_h);
+  if (__t_f > 0x1.62e430p+6f) /* ln(FLT_MAX): overflow */
+  {
+    *__res_hi = (__a_is_neg && __b_is_odd_int) ? -::cuda::std::__fp_inf<float>() : ::cuda::std::__fp_inf<float>();
+    *__res_lo = 0.0f;
+    return;
+  }
+  if (__t_f < -0x1.9fe3680000000p+6f) /* ln(2^-150): below half the smallest subnormal */
+  {
+    *__res_hi = (__a_is_neg && __b_is_odd_int) ? -0.0f : 0.0f;
+    *__res_lo = 0.0f;
+    return;
+  }
+  const int32_t __n  = ::cuda::__fpmp_fp2int_rn(::cuda::__fpmp_fma_rn(__p_h, __inv_ln2, __k));
+  const int32_t __n1 = ::cuda::__fpmp_fp2int_rn(__be_h);
+  const float __d    = __be_h - ::cuda::__fpmp_int2fp_rn<float>(__n1); /* exact, |d| <= 1/2 */
+  const float __n2   = ::cuda::__fpmp_int2fp_rn<float>(__n - __n1); /* |n2| ~ |b L| / ln 2 */
+
+  /* A = (d + be_l + b_lo e) ln 2: the small fraction of b e, an exact pair
+   * times the ln 2 pair (|A| <= 0.35, so the constant's 2^-52.8 is below
+   * u^2 of r) */
+  float __s1, __s2, __A_l;
+  float __S         = ::cuda::__fpmp_two_sum(__d, __be_l, &__s1);
+  __S               = ::cuda::__fpmp_two_sum(__S, __bl_h, &__s2);
+  const float __S_l = (__s1 + __s2) + __bl_l;
+  const float __A   = ::cuda::__fpmp_two_mult_fma(__S, __ln2_h, &__A_l);
+  __A_l             = __A_l + ::cuda::__fpmp_fma_rn(__S, __ln2_l, ::cuda::__fpmp_mul_rn(__S_l, __ln2_h));
+
+  /* B = n2 ln 2 with the three-piece constant: n2 ln2_hi is exact (|n2| <
+   * 256), n2 ln2_mid an exact pair, the rest float; accurate to ~2^-60 */
+  float __bm_l;
+  const float __B   = ::cuda::__fpmp_mul_rn(__n2, __ln2_hi);
+  const float __bm  = ::cuda::__fpmp_two_mult_fma(__n2, __ln2_mid, &__bm_l);
+  const float __B_l = ::cuda::__fpmp_fma_rn(__n2, __ln2_lo, __bm_l);
+
+  /* r = A - B + C with C = b L; B and C cancel to |r| <= ln 2 / 2.  Every
+   * piece above 2^-48 |b L| -- the high words, and the three products'
+   * low words, which are 2^-24 |b L| and so far larger than r's ulp when
+   * |b L| is large -- goes through the error-free chain; only the sum
+   * errors of that chain (each below half an ulp of a partial sum, i.e.
+   * of r) and the third-order pieces are gathered in float.  What
+   * remains is the error of L itself, scaled by |b L|. */
+  float __h1, __h2, __h3, __h4, __h5, __h6;
+  float __r_h       = ::cuda::__fpmp_two_sum(__p_h, -__B, &__h1);
+  __r_h             = ::cuda::__fpmp_two_sum(__r_h, -__bm, &__h2);
+  __r_h             = ::cuda::__fpmp_two_sum(__r_h, __A, &__h3);
+  __r_h             = ::cuda::__fpmp_two_sum(__r_h, __p_l, &__h4);
+  __r_h             = ::cuda::__fpmp_two_sum(__r_h, __q_h, &__h5);
+  __r_h             = ::cuda::__fpmp_two_sum(__r_h, __w_h, &__h6);
+  const float __r_l = (((__h1 + __h2) + (__h3 + __h4)) + (__h5 + __h6)) + ((__A_l - __B_l) + (__q_l + __w_l));
+
+  float __fscale, __fscale_lo;
+  ::cuda::__internal_fpmp2_exp_scales(__n + 254, &__fscale, &__fscale_lo);
+  float __t_hi, __t_lo;
+  ::cuda::__internal_fpmp2_exp_core(fp32mp2_low(__r_h, __r_l), __fscale, __fscale_lo, &__t_hi, &__t_lo);
 
   /* ---- sign fixup for a < 0 with odd integer b ---- */
   if (__a_is_neg && __b_is_odd_int)
