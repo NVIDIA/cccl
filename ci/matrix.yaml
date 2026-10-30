@@ -144,7 +144,7 @@ workflows:
     # RTX PRO 6000 coverage (limited due to small number of runners):
     - {jobs: ['test_lid0'], project: 'cub', std: 'max', cxx: 'gcc', gpu: 'rtxpro6000'}
     # CUDA forward compatibility (cuda-compat) coverage:
-    # Only test on L4 because we have the most runners.
+    # Only test on L4 because it has the most runners.
     # Forward-compat only works on enterprise SKU GPUs.
     - {jobs: ['test'],                    project: 'libcudacxx', std: 'max', cxx: 'gcc', gpu: 'l4', environment: ['ENABLE_CUDA_COMPAT=1']}
     - {jobs: ['test_nolid', 'test_lid0'], project: 'cub',       std: 'max', cxx: 'gcc', gpu: 'l4', environment: ['ENABLE_CUDA_COMPAT=1']}
