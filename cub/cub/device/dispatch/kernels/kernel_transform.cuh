@@ -44,6 +44,7 @@
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -595,6 +596,10 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   // SMEM is 16-byte aligned by default
   extern __shared__ char smem[];
   static_assert(ldgsts_size_and_align <= 16);
+  // the tile size must be a multiple of ldgsts_size_and_align, so all tiles start at aligned offsets
+  static_assert(ThreadsPerBlock % ldgsts_size_and_align == 0,
+                "TransformPolicy: async_copy.threads_per_block must be a multiple of 16 when algorithm is "
+                "TransformAlgorithm::ldgsts");
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(smem), "");
 
   // constexpr int ThreadsPerBlock = Policy.async_copy.ThreadsPerBlock;
@@ -1298,6 +1303,11 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
   }
   else if constexpr (policy.algorithm == TransformAlgorithm::ldgsts)
   { // NOLINT(bugprone-branch-clone)
+    // we cannot static_assert on nvc++, but custom tunings are unlikely there
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
+    static_assert(::cuda::std::__always_false_v<Offset>,
+                  "TransformPolicy: algorithm must not be TransformAlgorithm::ldgsts when compiling for < sm_80");
+#endif
     NV_IF_TARGET(
       NV_PROVIDES_SM_80,
       (transform_kernel_ldgsts</*policy*/ policy.async_copy.threads_per_block, policy.async_copy.unroll_factor>(
@@ -1310,6 +1320,11 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
   }
   else if constexpr (policy.algorithm == TransformAlgorithm::ublkcp)
   {
+    // we cannot static_assert on nvc++, but custom tunings are unlikely there
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 900
+    static_assert(::cuda::std::__always_false_v<Offset>,
+                  "TransformPolicy: algorithm must not be TransformAlgorithm::ublkcp when compiling for < sm_90");
+#endif
     NV_IF_TARGET(
       NV_PROVIDES_SM_90,
       (transform_kernel_ublkcp<policy.async_copy.threads_per_block,

@@ -22,6 +22,7 @@
 
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_load.cuh>
+#include <cub/block/block_raking_layout.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/detail/iket_support.cuh>
@@ -188,6 +189,19 @@ struct AgentScan
   static constexpr int BLOCK_THREADS    = AgentScanPolicyT::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD = AgentScanPolicyT::ITEMS_PER_THREAD;
   static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
+
+  // The block-wide scan requires the items in a blocked arrangement
+  static_assert(AgentScanPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED || ITEMS_PER_THREAD == 1,
+                "ScanLookbackPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED unless items_per_thread is 1, "
+                "since the scan requires a blocked arrangement");
+  static_assert(AgentScanPolicyT::STORE_ALGORITHM != BLOCK_STORE_STRIPED || ITEMS_PER_THREAD == 1,
+                "ScanLookbackPolicy: store_algorithm must not be BLOCK_STORE_STRIPED unless items_per_thread is 1, "
+                "since the scan produces a blocked arrangement");
+  static_assert(
+    (AgentScanPolicyT::SCAN_ALGORITHM == BLOCK_SCAN_WARP_SCANS && BLOCK_THREADS % detail::warp_threads == 0)
+      || BlockRakingLayout<int, BLOCK_THREADS>::RAKING_THREADS == detail::warp_threads,
+    "ScanLookbackPolicy: the decoupled look-back needs a full warp to enter the block-scan prefix callback: with warp "
+    "scans threads_per_block must be a multiple of 32, otherwise the raking layout must yield 32 raking threads");
 
   // Parameterized BlockLoad type
   using BlockLoadT =
