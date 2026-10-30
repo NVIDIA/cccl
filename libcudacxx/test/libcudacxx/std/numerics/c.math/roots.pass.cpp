@@ -9,10 +9,17 @@
 
 // <cmath>
 
+#include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
+
+#if _CCCL_HOST_COMPILATION()
+#  include <cfenv>
+#endif // _CCCL_HOST_COMPILATION()
+
+#include <nv/target>
 
 #include "comparison.h"
 #include "fp_compare.h"
@@ -121,11 +128,51 @@ TEST_FUNC void test_sqrt_float128_edge_cases()
   assert(cuda::std::isnan(cuda::std::sqrt(cuda::std::numeric_limits<T>::quiet_NaN())));
 }
 
+#  if _CCCL_HOST_COMPILATION()
+// The device has no dynamic rounding modes, so the rounding mode tests only run on the host
+__float128 sqrt_float128_in_mode(__float128 x, int mode)
+{
+  const int old_mode = std::fegetround();
+  std::fesetround(mode);
+  // volatile forces sqrt to execute between the fesetround calls and prevents constant folding under the wrong mode
+  volatile __float128 vx = x;
+  volatile __float128 r  = cuda::std::sqrt(vx);
+  const __float128 res   = r;
+  std::fesetround(old_mode);
+  return res;
+}
+
+// sqrt(x) lies strictly between the representable values with storage lower and lower + 1
+void test_sqrt_float128_rounding_mode(__float128 x, __uint128_t lower, bool nearest_rounds_up)
+{
+  assert(cuda::std::bit_cast<__uint128_t>(sqrt_float128_in_mode(x, FE_DOWNWARD)) == lower);
+  assert(cuda::std::bit_cast<__uint128_t>(sqrt_float128_in_mode(x, FE_TOWARDZERO)) == lower);
+  assert(cuda::std::bit_cast<__uint128_t>(sqrt_float128_in_mode(x, FE_UPWARD)) == lower + 1);
+  assert(cuda::std::bit_cast<__uint128_t>(sqrt_float128_in_mode(x, FE_TONEAREST))
+         == lower + (nearest_rounds_up ? 1 : 0));
+}
+
+void test_sqrt_float128_rounding_modes()
+{
+  // sqrt(2) rounds down and sqrt(5) rounds up to nearest
+  test_sqrt_float128_rounding_mode(2, (__uint128_t{0x3fff6a09e667f3bc} << 64) | 0xc908b2fb1366ea95, false);
+  test_sqrt_float128_rounding_mode(5, (__uint128_t{0x40001e3779b97f4a} << 64) | 0x7c15f39cc0605ced, true);
+
+  // exact roots do not depend on the rounding mode
+  const int modes[] = {FE_TONEAREST, FE_DOWNWARD, FE_TOWARDZERO, FE_UPWARD};
+  for (const int mode : modes)
+  {
+    assert(eq(sqrt_float128_in_mode(4, mode), __float128(2)));
+  }
+}
+#  endif // _CCCL_HOST_COMPILATION()
+
 // Only sqrt supports __float128 so far, so the generic driver can not be used
 TEST_FUNC void test_float128(const float val)
 {
   test_sqrt<__float128>(val);
   test_sqrt_float128_edge_cases();
+  NV_IF_TARGET(NV_IS_HOST, (test_sqrt_float128_rounding_modes();))
 }
 #endif // _CCCL_HAS_FLOAT128()
 
