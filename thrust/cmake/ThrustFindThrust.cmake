@@ -13,6 +13,9 @@ function(_thrust_find_thrust_multiconfig)
   if (THRUST_MULTICONFIG_ENABLE_SYSTEM_OMP)
     list(APPEND req_systems OMP)
   endif()
+  if (THRUST_MULTICONFIG_ENABLE_SYSTEM_HPX)
+    list(APPEND req_systems HPX)
+  endif()
 
   find_package(
     Thrust
