@@ -117,15 +117,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_strict_and
 
 //! \brief A pointer to a type list, often used as a function argument.
 template <class... _Ts>
-using __type_list_ptr = __type_list<_Ts...>*;
+using __type_list_ptr _CCCL_NODEBUG = __type_list<_Ts...>*;
 
 //! \brief Return the size of a type list.
 template <class _List>
-using __type_list_size = integral_constant<size_t, _List::__size>;
+using __type_list_size _CCCL_NODEBUG = integral_constant<size_t, _List::__size>;
 
 //! \brief Given a type list and a list of types, prepend the types to the list.
 template <class _List, class... _Ts>
-using __type_push_front = __type_call1<_List, __type_bind_front_quote<__type_list, _Ts...>>;
+using __type_push_front _CCCL_NODEBUG = __type_call1<_List, __type_bind_front_quote<__type_list, _Ts...>>;
 
 #  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 9)
 
@@ -161,7 +161,7 @@ using __as_type_list = decltype(__detail::__as_type_list_fn(static_cast<__undefi
 namespace __detail
 {
 template <class _Ret, class... _Args>
-using __fn_ptr_t = _Ret (*)(_Args...);
+using __fn_ptr_t _CCCL_NODEBUG = _Ret (*)(_Args...);
 
 template <class _List>
 extern __undefined<_List> __as_type_list_v;
@@ -186,7 +186,7 @@ extern __fn_ptr_t<__type_list<_Ret, _Args...>> __as_type_list_v<_Ret(_Args...)>;
 //! \li `R(As...)`, for any function type `R(As...)`. The resulting type is
 //!     `_Fn<R, As...>`.
 template <class _List>
-using __as_type_list = decltype(__detail::__as_type_list_v<_List>());
+using __as_type_list _CCCL_NODEBUG = decltype(__detail::__as_type_list_v<_List>());
 
 #  endif // if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 9)
 
@@ -197,7 +197,7 @@ using __as_type_list = decltype(__detail::__as_type_list_v<_List>());
 //!
 //! \sa __as_type_list
 template <class _Fn, class _List>
-using __type_apply = __type_call<__as_type_list<_List>, _Fn>;
+using __type_apply _CCCL_NODEBUG = __type_call<__as_type_list<_List>, _Fn>;
 
 //! \brief Given a type that can be interpreted as a type list and a class or
 //! alias template, instantiate the template with the types in the list.
@@ -206,7 +206,7 @@ using __type_apply = __type_call<__as_type_list<_List>, _Fn>;
 //!
 //! \sa __as_type_list
 template <template <class...> class _Fn, class _List>
-using __type_apply_q = __type_call<__as_type_list<_List>, __type_quote<_Fn>>;
+using __type_apply_q _CCCL_NODEBUG = __type_call<__as_type_list<_List>, __type_quote<_Fn>>;
 
 namespace __detail
 {
@@ -224,7 +224,8 @@ _CCCL_API inline auto __type_callable_fn(void*) -> false_type;
 //! the meta-callable can be called with the arguments, and \c false_type
 //! otherwise.
 template <class _Fn, class... _Ts>
-using __type_callable = decltype(__detail::__type_callable_fn(static_cast<__type_list<_Fn, _Ts...>*>(nullptr)));
+using __type_callable _CCCL_NODEBUG =
+  decltype(__detail::__type_callable_fn(static_cast<__type_list<_Fn, _Ts...>*>(nullptr)));
 
 //! \brief A composition of two meta-callables that will attempt to call the
 //! first, and if that fails, call the second.
@@ -355,13 +356,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_concat_fn
 //!
 //! When passed no type lists, \c __type_concat returns an empty type list.
 template <class... _Lists>
-using __type_concat = __type_call<__detail::__type_concat_fn, _Lists...>;
+using __type_concat _CCCL_NODEBUG = __type_call<__detail::__type_concat_fn, _Lists...>;
 
 //! \brief Given a list of type lists, concatenate all the lists into one.
 //!
 //! When passed an empty type list, \c __type_flatten returns an empty type list.
 template <class _ListOfLists>
-using __type_flatten = __type_call1<_ListOfLists, __type_quote<__type_concat>>;
+using __type_flatten _CCCL_NODEBUG = __type_call1<_ListOfLists, __type_quote<__type_concat>>;
 
 namespace __detail
 {
@@ -379,7 +380,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_same_as
 //!
 //! If the type is not in the list, \c __type_find returns an empty type list.
 template <class _List, class _Ty>
-using __type_find = __type_find_if<_List, __detail::__type_same_as<_Ty>>;
+using __type_find _CCCL_NODEBUG = __type_find_if<_List, __detail::__type_same_as<_Ty>>;
 
 namespace __detail
 {
@@ -394,7 +395,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_transform_fn
 //! \brief Given a type list and a unary meta-callable, apply the meta-callable
 //! to each type in the list. It returns a new type list containing the results.
 template <class _List, class _Fn>
-using __type_transform = __type_call1<_List, __detail::__type_transform_fn<_Fn>>;
+using __type_transform _CCCL_NODEBUG = __type_call1<_List, __detail::__type_transform_fn<_Fn>>;
 
 namespace __detail
 {
@@ -445,7 +446,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_fold_left_select_fn
 //! \brief Fold a type list from the left with a binary meta-callable and an
 //! initial state.
 template <class _List, class _Init, class _Fn>
-using __type_fold_left = __type_call1<_List, __detail::__type_fold_left_select_fn<_Init, _Fn>>;
+using __type_fold_left _CCCL_NODEBUG = __type_call1<_List, __detail::__type_fold_left_select_fn<_Init, _Fn>>;
 
 namespace __detail
 {
@@ -459,11 +460,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_remove_fn
 
 //! \brief Remove all occurrences of a type from a type list
 template <class _List, class _Ty>
-using __type_remove = __type_flatten<__type_transform<_List, __detail::__type_remove_fn<_Ty>>>;
+using __type_remove _CCCL_NODEBUG = __type_flatten<__type_transform<_List, __detail::__type_remove_fn<_Ty>>>;
 
 //! \brief Remove all duplicate types from a type list
 template <class _List>
-using __type_unique = __as_type_list<__type_call<_List, __type_quote<__make_type_set>>>;
+using __type_unique _CCCL_NODEBUG = __as_type_list<__type_call<_List, __type_quote<__make_type_set>>>;
 
 namespace __detail
 {
@@ -491,7 +492,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_cartesian_product_fn
 //! `O(N * M)`, where `N` is the size of the outer list, and
 //! `M` is the size of the inner lists.
 template <class... _Lists>
-using __type_cartesian_product =
+using __type_cartesian_product _CCCL_NODEBUG =
   __type_fold_left<__type_list<_Lists...>,
                    __type_list<__type_list<>>,
                    __type_quote_trait2<__detail::__type_cartesian_product_fn>>;
@@ -515,7 +516,7 @@ _CCCL_API inline auto __type_iota_fn(integer_sequence<_Ty, _Is...>*)
 //! \brief Return a \c __type_list of \c _Size integral constants starting at
 //! \c _Start and incrementing by \c _Stride.
 template <class _Ty, _Ty _Start, _Ty _Size, _Ty _Stride = _Ty(1)>
-using __type_iota =
+using __type_iota _CCCL_NODEBUG =
   decltype(__detail::__type_iota_fn<_Ty, _Start, _Stride>(static_cast<make_integer_sequence<_Ty, _Size>*>(nullptr)));
 
 #endif // _CCCL_DOXYGEN_INVOKED

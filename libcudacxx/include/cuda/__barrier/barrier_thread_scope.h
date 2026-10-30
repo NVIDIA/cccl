@@ -33,7 +33,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <>
 class barrier<thread_scope_thread, ::cuda::std::__empty_completion> : private barrier<thread_scope_block>
 {
-  using __base = barrier<thread_scope_block>;
+  using __base _CCCL_NODEBUG = barrier<thread_scope_block>;
 
 public:
   using __base::__base;

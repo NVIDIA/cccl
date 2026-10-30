@@ -1024,10 +1024,10 @@ _CCCL_API constexpr void __sort_dispatch(_RandomAccessIterator __first, _RandomA
 }
 
 template <class _Type, class... _Options>
-using __is_any_of = _Or<is_same<_Type, _Options>...>;
+using __is_any_of _CCCL_NODEBUG = _Or<is_same<_Type, _Options>...>;
 
 template <class _Type>
-using __sort_is_specialized_in_library = __is_any_of<
+using __sort_is_specialized_in_library _CCCL_NODEBUG = __is_any_of<
   _Type,
   char,
 #ifndef _LIBCPP_HAS_NO_WIDE_CHARACTERS

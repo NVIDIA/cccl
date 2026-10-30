@@ -29,7 +29,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class...>
-using __expand_to_true = true_type;
+using __expand_to_true _CCCL_NODEBUG = true_type;
 
 template <class... _Pred>
 _CCCL_HOST_DEVICE __expand_to_true<enable_if_t<_Pred::value>...> __and_helper(int);

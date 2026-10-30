@@ -43,7 +43,7 @@ struct unwrap_reference<reference_wrapper<_Tp>>
 template <class _Tp>
 struct unwrap_reference<::std::reference_wrapper<_Tp>>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Tp&;
+  using type _CCCL_NODEBUG = _Tp&;
 };
 #endif // _CCCL_HAS_HOST_STD_LIB()
 
@@ -53,7 +53,7 @@ using unwrap_reference_t _CCCL_NODEBUG_ALIAS = typename unwrap_reference<_Tp>::t
 template <class _Tp>
 struct unwrap_ref_decay
 {
-  using type _CCCL_NODEBUG_ALIAS = unwrap_reference_t<decay_t<_Tp>>;
+  using type _CCCL_NODEBUG = unwrap_reference_t<decay_t<_Tp>>;
 };
 
 template <class _Tp>

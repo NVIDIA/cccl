@@ -61,7 +61,7 @@ struct __transform_iterator_category_base<_Fn,
                                           _Iter,
                                           ::cuda::std::enable_if_t<::cuda::std::__has_forward_traversal<_Iter>>>
 {
-  using _Cat = typename ::cuda::std::iterator_traits<_Iter>::iterator_category;
+  using _Cat _CCCL_NODEBUG = typename ::cuda::std::iterator_traits<_Iter>::iterator_category;
 
   using iterator_category = ::cuda::std::conditional_t<
     ::cuda::std::is_reference_v<::cuda::std::invoke_result_t<_Fn&, ::cuda::std::iter_reference_t<_Iter>>>,

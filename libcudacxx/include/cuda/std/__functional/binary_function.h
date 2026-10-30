@@ -54,7 +54,7 @@ using __binary_function = binary_function<_Arg1, _Arg2, _Result>;
 _CCCL_SUPPRESS_DEPRECATED_POP
 #else
 template <class _Arg1, class _Arg2, class _Result>
-using __binary_function = __binary_function_keep_layout_base<_Arg1, _Arg2, _Result>;
+using __binary_function _CCCL_NODEBUG = __binary_function_keep_layout_base<_Arg1, _Arg2, _Result>;
 #endif // !_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION
 
 _CCCL_END_NAMESPACE_CUDA_STD

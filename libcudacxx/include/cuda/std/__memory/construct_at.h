@@ -87,7 +87,7 @@ struct __check_narrowing<_To, _From, void_t<decltype(_To{::cuda::std::declval<_F
 #else // ^^^ _CCCL_COMPILER(NVHPC, <, 25, 5) ^^^ / vvv !_CCCL_COMPILER(NVHPC, <, 25, 5) vvv
 // We cannot allow narrowing conversions between arithmetic types as the assignment will generate an error
 template <class _Tp, class... _Args>
-using __check_narrowing =
+using __check_narrowing _CCCL_NODEBUG =
   conditional_t<sizeof...(_Args) == 1, __cccl_internal::__is_non_narrowing_convertible<_Tp, _Args...>, true_type>;
 #endif // !_CCCL_COMPILER(NVHPC, <, 25, 5)
 

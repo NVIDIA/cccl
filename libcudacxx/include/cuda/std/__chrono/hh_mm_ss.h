@@ -37,7 +37,7 @@ class hh_mm_ss
 {
 private:
   static_assert(__is_cuda_std_duration_v<_Duration>, "template parameter of hh_mm_ss must be a std::chrono::duration");
-  using __common_type = common_type_t<_Duration, chrono::seconds>;
+  using __common_type _CCCL_NODEBUG = common_type_t<_Duration, chrono::seconds>;
 
   [[nodiscard]] _CCCL_API static constexpr uint64_t __pow10(unsigned __exp)
   {
