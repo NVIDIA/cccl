@@ -36,7 +36,7 @@ pointer<T> malloc(std::size_t n)
 void free(pointer<void> ptr)
 {
   tag t;
-  return thrust::system::detail::sequential::free(t, ptr);
+  thrust::system::detail::sequential::free(t, ptr);
 } // end free()
 } // namespace system::cpp
 THRUST_NAMESPACE_END

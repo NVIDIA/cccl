@@ -321,7 +321,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   enum class allocation : uint32_t
   {
     // Memory for the source pointers of the buffers that require block-level collaboration
-    MEM_BLEV_BUFFER_SRCS = 0,
+    MEM_BLEV_BUFFER_SRCS,
     // Memory for the destination pointers of the buffers that require block-level collaboration
     MEM_BLEV_BUFFER_DSTS,
     // Memory for the block-level buffers' sizes

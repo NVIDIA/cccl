@@ -46,7 +46,7 @@ struct sum_of_int
   TEST_DEVICE_FUNC constexpr int operator()(const int val) const noexcept
   { // Eulers sum, account for plus_two and start at 1
     const plus_two<int> op{};
-    return op(val) * (op(val) + 1) / 2 - op(1);
+    return (op(val) * (op(val) + 1) / 2) - op(1);
   }
 };
 

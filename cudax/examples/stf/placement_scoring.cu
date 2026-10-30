@@ -65,7 +65,7 @@ localized_stats report(const char* name, const exec_place& grid, const localized
   {
     const auto it   = s.bytes_per_grid_index.find(i);
     const size_t mb = (it == s.bytes_per_grid_index.end()) ? 0 : it->second / MiB;
-    printf("%s%zu", i ? ", " : "", mb);
+    printf("%s%zu", (i != 0) ? ", " : "", mb);
   }
   printf("]\n");
   return s;
@@ -114,8 +114,9 @@ int main()
   // (tile_x, tile_y, tiles_x, tiles_y) with a 1024x512 float payload =
   // exactly one 2 MiB page per tile: ownership runs span whole tiles, so the
   // SAME 2-D blocked distribution becomes page-exact.
-  constexpr size_t TILE_X = 1024, TILE_Y = 512;
-  auto tensor_of_tiles = make_partition(
+  constexpr size_t TILE_X = 1024;
+  constexpr size_t TILE_Y = 512;
+  auto tensor_of_tiles    = make_partition(
     dim4(TILE_X, TILE_Y, COLS / TILE_X, ROWS / TILE_Y),
     partition_spec{whole, whole, blocked<0>, blocked<1>},
     dim4(2, 2));

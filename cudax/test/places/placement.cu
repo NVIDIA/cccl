@@ -34,7 +34,7 @@ namespace
 {
 __global__ void init_kernel(int* ptr, size_t n, int value)
 {
-  const size_t tid = blockIdx.x * static_cast<size_t>(blockDim.x) + threadIdx.x;
+  const size_t tid = (blockIdx.x * static_cast<size_t>(blockDim.x)) + threadIdx.x;
   if (tid < n)
   {
     ptr[tid] = value + static_cast<int>(tid % 1024);
@@ -43,7 +43,7 @@ __global__ void init_kernel(int* ptr, size_t n, int value)
 
 __global__ void check_kernel(const int* ptr, size_t n, int value, int* result)
 {
-  const size_t tid = blockIdx.x * static_cast<size_t>(blockDim.x) + threadIdx.x;
+  const size_t tid = (blockIdx.x * static_cast<size_t>(blockDim.x)) + threadIdx.x;
   if (tid < n)
   {
     if (ptr[tid] != value + static_cast<int>(tid % 1024))
@@ -321,7 +321,7 @@ void test_multi_gpu_residency(int ndevs)
   for (int half = 0; half < 2; half++)
   {
     int ordinal                 = -1;
-    const CUdeviceptr probe_ptr = reinterpret_cast<CUdeviceptr>(ptr) + static_cast<size_t>(half) * granularity;
+    const CUdeviceptr probe_ptr = reinterpret_cast<CUdeviceptr>(ptr) + (static_cast<size_t>(half) * granularity);
     cuda_try(cuPointerGetAttribute(&ordinal, CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL, probe_ptr));
     EXPECT(ordinal == half, "block is not resident on the place that owns it");
   }
@@ -330,7 +330,7 @@ void test_multi_gpu_residency(int ndevs)
   // device 1, which exercises the cuMemSetAccess mappings
   const int peer_01 = cuda_try<cudaDeviceCanAccessPeer>(0, 1);
   const int peer_10 = cuda_try<cudaDeviceCanAccessPeer>(1, 0);
-  if (peer_01 && peer_10)
+  if (peer_01 != 0 && peer_10 != 0)
   {
     cuda_try(cudaSetDevice(1));
     write_and_check(static_cast<int*>(ptr), n, 73);

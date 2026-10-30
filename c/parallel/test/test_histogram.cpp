@@ -135,7 +135,7 @@ auto generate_level_counts_to_test(int max_level_count) -> std::vector<int>
   std::vector<int> r{max_level_count};
   for (size_t c = 1; c < ActiveChannels; ++c)
   {
-    r[c] = r[c - 1] / 2 + 1;
+    r[c] = (r[c - 1] / 2) + 1;
   }
   return r;
 }
@@ -262,7 +262,7 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
   constexpr int active_channels = 1;
 
   const auto padding_bytes     = static_cast<offset_t>(GENERATE(size_t{0}, 13 * sizeof(sample_t)));
-  const offset_t row_pitch     = width * channels * sizeof(sample_t) + padding_bytes;
+  const offset_t row_pitch     = (width * channels * sizeof(sample_t)) + padding_bytes;
   const auto num_levels        = generate_level_counts_to_test<active_channels>(max_level_count);
   const offset_t total_samples = height * (row_pitch / sizeof(sample_t));
 
@@ -431,7 +431,7 @@ C2H_TEST("Histogram build result has serialization metadata populated", "[histog
       build_info.get_libcudacxx_path(),
       build_info.get_ctk_path()));
 
-  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK(build.cc == (build_info.get_cc_major() * 10) + build_info.get_cc_minor());
   CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
   CHECK(build.payload_size > 0);
   CHECK(build.runtime_policy != nullptr);

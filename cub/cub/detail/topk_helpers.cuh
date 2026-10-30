@@ -24,6 +24,7 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/climits>
 
 CUB_NAMESPACE_BEGIN
@@ -58,22 +59,16 @@ template <int BitsPerPass>
 template <typename T, int BitsPerPass>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
 {
-  int start_bit = int{sizeof(T)} * CHAR_BIT - (pass + 1) * BitsPerPass;
-  if (start_bit < 0)
-  {
-    start_bit = 0;
-  }
+  int start_bit = (int{sizeof(T)} * CHAR_BIT) - ((pass + 1) * BitsPerPass);
+  start_bit     = ::cuda::std::max(start_bit, 0);
   return start_bit;
 }
 
 template <int BitsPerPass>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int calc_start_bit(const int total_bits, const int pass)
 {
-  int start_bit = total_bits - (pass + 1) * BitsPerPass;
-  if (start_bit < 0)
-  {
-    start_bit = 0;
-  }
+  int start_bit = total_bits - ((pass + 1) * BitsPerPass);
+  start_bit     = ::cuda::std::max(start_bit, 0);
   return start_bit;
 }
 
@@ -83,7 +78,7 @@ template <int BitsPerPass>
 template <typename KeyT>
 struct key_prefix_storage_t<KeyT, false>
 {
-  static constexpr int num_words = ::cuda::ceil_div<int>(sizeof(KeyT) * CHAR_BIT + 31, 32);
+  static constexpr int num_words = ::cuda::ceil_div<int>((sizeof(KeyT) * CHAR_BIT) + 31, 32);
   unsigned int words[num_words];
 
   // Funnel-shifts the entire bit-vector left by `shift` positions and inserts `value` into the

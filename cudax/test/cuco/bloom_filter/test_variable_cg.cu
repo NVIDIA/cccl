@@ -36,7 +36,7 @@ namespace cuco = cuda::experimental::cuco;
 template <class Ref, class Key>
 _CCCL_KERNEL_ATTRIBUTES void scalar_add_kernel(Ref ref, Key const* keys, size_type n)
 {
-  auto const i = static_cast<size_type>(blockIdx.x) * blockDim.x + threadIdx.x;
+  auto const i = (static_cast<size_type>(blockIdx.x) * blockDim.x) + threadIdx.x;
   if (i < n)
   {
     ref.add(keys[i]);
@@ -46,7 +46,7 @@ _CCCL_KERNEL_ATTRIBUTES void scalar_add_kernel(Ref ref, Key const* keys, size_ty
 template <class Ref, class Key>
 _CCCL_KERNEL_ATTRIBUTES void scalar_contains_kernel(Ref ref, Key const* keys, size_type n, bool* out)
 {
-  auto const i = static_cast<size_type>(blockIdx.x) * blockDim.x + threadIdx.x;
+  auto const i = (static_cast<size_type>(blockIdx.x) * blockDim.x) + threadIdx.x;
   if (i < n)
   {
     out[i] = ref.contains(keys[i]);
@@ -58,7 +58,7 @@ _CCCL_KERNEL_ATTRIBUTES void cg_contains_consistency_kernel(Ref ref, Key const* 
 {
   auto const block = cg::this_thread_block();
   auto const tile  = cg::tiled_partition<CGSize>(block);
-  auto const idx   = static_cast<size_type>((blockIdx.x * blockDim.x + threadIdx.x) / CGSize);
+  auto const idx   = static_cast<size_type>(((blockIdx.x * blockDim.x) + threadIdx.x) / CGSize);
   if (idx >= n)
   {
     return;

@@ -399,8 +399,10 @@ public:
   template <typename F>
   bool for_each_owner_byte_run(size_t elemsize, size_t max_runs, F&& emit) const
   {
-    const size_t t0 = true_dims_.get(0), t1 = true_dims_.get(1);
-    const size_t t2 = true_dims_.get(2), t3 = true_dims_.get(3);
+    const size_t t0 = true_dims_.get(0);
+    const size_t t1 = true_dims_.get(1);
+    const size_t t2 = true_dims_.get(2);
+    const size_t t3 = true_dims_.get(3);
 
     const size_t s = min_owner_run_elems();
     if (s == 0)
@@ -409,7 +411,7 @@ public:
       return emit(size_t(0), t0 * t1 * t2 * t3 * elemsize, owner(pos4(0, 0, 0, 0)));
     }
     const size_t nrows = t1 * t2 * t3;
-    if (nrows * (t0 / s + 2) > max_runs)
+    if (nrows * ((t0 / s) + 2) > max_runs)
     {
       return false;
     }
@@ -419,7 +421,8 @@ public:
     const size_t ps3 = ps2 * padded_dims_.get(2);
 
     // pending merged run
-    size_t run_start = 0, run_len = 0;
+    size_t run_start = 0;
+    size_t run_len   = 0;
     pos4 run_owner;
     bool keep_going = true;
     auto push       = [&](size_t start, size_t len, pos4 o) {
@@ -444,7 +447,7 @@ public:
       {
         for (size_t x1 = 0; keep_going && x1 < t1; x1++)
         {
-          const size_t row_pad_base = x1 * ps1 + x2 * ps2 + x3 * ps3;
+          const size_t row_pad_base = (x1 * ps1) + (x2 * ps2) + (x3 * ps3);
           size_t x0                 = 0;
           while (keep_going && x0 < t0)
           {
@@ -555,7 +558,7 @@ public:
       // small cases would forfeit exact plans for no measurable saving.
       max_runs = ::cuda::std::max<size_t>(16 * nblocks, size_t(1) << 16);
     }
-    if (misplaced_bytes)
+    if (misplaced_bytes != nullptr)
     {
       *misplaced_bytes = 0;
     }
@@ -569,7 +572,8 @@ public:
 
     auto close_block = [&]() {
       pos4 best;
-      size_t best_bytes = 0, sum = 0;
+      size_t best_bytes = 0;
+      size_t sum        = 0;
       for (const auto& e : hist)
       {
         sum += e.second;
@@ -1769,7 +1773,8 @@ inline auto make_partition_placement_provider(
     if (auto owners = partition.try_block_owners(block_size_bytes, elemsize, &misplaced, budget))
     {
       const size_t total_bytes = total_size * elemsize;
-      stats.accuracy = total_bytes == 0 ? 1.0 : 1.0 - static_cast<double>(misplaced) / static_cast<double>(total_bytes);
+      stats.accuracy =
+        total_bytes == 0 ? 1.0 : 1.0 - (static_cast<double>(misplaced) / static_cast<double>(total_bytes));
       return owners_to_block_runs(mv(*owners));
     }
     // Sampled tier: opaque-density fallback (element-pitch interleavings).

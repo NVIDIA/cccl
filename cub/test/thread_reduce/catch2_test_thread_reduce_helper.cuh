@@ -209,7 +209,7 @@ struct merge_segments_op
 {
   bool* error_flag_ptr;
 
-  __device__ void check_inputs(segment left, segment right)
+  __device__ void check_inputs(segment left, segment right) const
   {
     if (left.end != right.begin || left == right)
     {
@@ -217,7 +217,7 @@ struct merge_segments_op
     }
   }
 
-  __host__ __device__ segment operator()(segment left, segment right)
+  __host__ __device__ segment operator()(segment left, segment right) const
   {
     NV_IF_TARGET(NV_IS_DEVICE, check_inputs(left, right););
     return {left.begin, right.end};

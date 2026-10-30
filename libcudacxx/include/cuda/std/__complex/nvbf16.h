@@ -113,17 +113,17 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__nv_bfloat162)) compl
   friend struct __get_complex_impl;
 
   template <class _Tp>
-  [[nodiscard]] _CCCL_API inline static __nv_bfloat16 __convert_to_bfloat16(const _Tp& __value) noexcept
+  [[nodiscard]] _CCCL_API static __nv_bfloat16 __convert_to_bfloat16(const _Tp& __value) noexcept
   {
     return __value;
   }
 
-  [[nodiscard]] _CCCL_API inline static __nv_bfloat16 __convert_to_bfloat16(const float& __value) noexcept
+  [[nodiscard]] _CCCL_API static __nv_bfloat16 __convert_to_bfloat16(const float& __value) noexcept
   {
     return ::__float2bfloat16(__value);
   }
 
-  [[nodiscard]] _CCCL_API inline static __nv_bfloat16 __convert_to_bfloat16(const double& __value) noexcept
+  [[nodiscard]] _CCCL_API static __nv_bfloat16 __convert_to_bfloat16(const double& __value) noexcept
   {
     return ::__double2bfloat16(__value);
   }
@@ -194,11 +194,11 @@ public:
   }
 #  endif // _CCCL_HOSTED()
 
-  [[nodiscard]] _CCCL_API inline value_type real() const
+  [[nodiscard]] _CCCL_API value_type real() const
   {
     return __repr_.x;
   }
-  [[nodiscard]] _CCCL_API inline value_type imag() const
+  [[nodiscard]] _CCCL_API value_type imag() const
   {
     return __repr_.y;
   }
@@ -213,11 +213,11 @@ public:
   }
 
   // Those additional volatile overloads are meant to help with reductions in thrust
-  [[nodiscard]] _CCCL_API inline value_type real() const volatile
+  [[nodiscard]] _CCCL_API value_type real() const volatile
   {
     return __repr_.x;
   }
-  [[nodiscard]] _CCCL_API inline value_type imag() const volatile
+  [[nodiscard]] _CCCL_API value_type imag() const volatile
   {
     return __repr_.y;
   }
@@ -268,7 +268,7 @@ public:
     return __lhs;
   }
 
-  [[nodiscard]] _CCCL_API inline friend bool operator==(const complex& __lhs, const complex& __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend bool operator==(const complex& __lhs, const complex& __rhs) noexcept
   {
 #  if _CCCL_TILE_COMPILATION()
     return ::__heq(__lhs.__repr_.x, __rhs.__repr_.x) && ::__heq(__lhs.__repr_.y, __rhs.__repr_.y);

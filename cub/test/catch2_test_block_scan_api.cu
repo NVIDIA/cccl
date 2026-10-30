@@ -27,7 +27,7 @@ __global__ void InclusiveBlockScanKernel(int* output)
   const int initial_value = 1;
   int thread_data[]       = {
     +1 * ((int) threadIdx.x * num_items_per_thread), // item 0
-    -1 * ((int) threadIdx.x * num_items_per_thread + 1) // item 1
+    -1 * (((int) threadIdx.x * num_items_per_thread) + 1) // item 1
   };
   //  input: {[0, -1], [2, -3],[4, -5], ... [126, -127]}
 
@@ -37,8 +37,8 @@ __global__ void InclusiveBlockScanKernel(int* output)
   // output: {[1, 1], [2, 2],[3, 3], ... [126, 126]}
   // ...
   // example-end inclusive-scan-array-init-value
-  output[threadIdx.x * 2]     = thread_data[0];
-  output[threadIdx.x * 2 + 1] = thread_data[1];
+  output[threadIdx.x * 2]       = thread_data[0];
+  output[(threadIdx.x * 2) + 1] = thread_data[1];
 }
 
 CUB_TEST("Block array-based inclusive scan works with initial value", "[scan][block]", CUB_SMALL)
@@ -77,7 +77,7 @@ __global__ void InclusiveBlockScanKernelAggregate(int* output, int* d_block_aggr
   const int initial_value = 1;
   int thread_data[]       = {
     +1 * ((int) threadIdx.x * num_items_per_thread), // item 0
-    -1 * ((int) threadIdx.x * num_items_per_thread + 1) // item 1
+    -1 * (((int) threadIdx.x * num_items_per_thread) + 1) // item 1
   };
   //  input: {[0, -1], [2, -3],[4, -5], ... [126, -127]}
 
@@ -90,9 +90,9 @@ __global__ void InclusiveBlockScanKernelAggregate(int* output, int* d_block_aggr
   // ...
   // example-end inclusive-scan-array-aggregate-init-value
 
-  *d_block_aggregate          = block_aggregate;
-  output[threadIdx.x * 2]     = thread_data[0];
-  output[threadIdx.x * 2 + 1] = thread_data[1];
+  *d_block_aggregate            = block_aggregate;
+  output[threadIdx.x * 2]       = thread_data[0];
+  output[(threadIdx.x * 2) + 1] = thread_data[1];
 }
 
 CUB_TEST("Block array-based inclusive scan with block aggregate works with initial value", "[scan][block]", CUB_SMALL)

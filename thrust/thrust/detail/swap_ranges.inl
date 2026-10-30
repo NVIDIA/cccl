@@ -23,14 +23,6 @@
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(swap_ranges.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(swap_ranges.h)
 
-// Some build systems need a hint to know which files we could include
-#if 0
-#  include <thrust/system/cpp/detail/swap_ranges.h>
-#  include <thrust/system/cuda/detail/swap_ranges.h>
-#  include <thrust/system/omp/detail/swap_ranges.h>
-#  include <thrust/system/tbb/detail/swap_ranges.h>
-#endif
-
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE

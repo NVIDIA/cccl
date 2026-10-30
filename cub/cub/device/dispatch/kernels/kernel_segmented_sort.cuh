@@ -394,7 +394,7 @@ __launch_bounds__(current_policy<PolicySelector>().small_segment.threads_per_blo
   if (bid < medium_blocks)
   {
     const local_segment_index_t sid_within_block  = tid / threads_per_medium_segment;
-    const local_segment_index_t medium_segment_id = bid * segments_per_medium_block + sid_within_block;
+    const local_segment_index_t medium_segment_id = (bid * segments_per_medium_block) + sid_within_block;
 
     if (medium_segment_id < medium_segments)
     {
@@ -415,7 +415,8 @@ __launch_bounds__(current_policy<PolicySelector>().small_segment.threads_per_blo
   else
   {
     const local_segment_index_t sid_within_block = tid / threads_per_small_segment;
-    const local_segment_index_t small_segment_id = (bid - medium_blocks) * segments_per_small_block + sid_within_block;
+    const local_segment_index_t small_segment_id =
+      ((bid - medium_blocks) * segments_per_small_block) + sid_within_block;
 
     if (small_segment_id < small_segments)
     {

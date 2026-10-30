@@ -120,7 +120,7 @@ struct DeviceFor
       }
       else
       { // Case of fully filled vector
-        const vector_t vec = *reinterpret_cast<const vector_t*>(input + vec_size * i);
+        const vector_t vec = *reinterpret_cast<const vector_t*>(input + (vec_size * i));
 
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int j = 0; j < vec_size; j++)
@@ -150,9 +150,8 @@ struct DeviceFor
   __for_each_n(RandomAccessIteratorT first, NumItemsT num_items, OpT op, const EnvT& env)
   {
     // We tried to detect if we can still use vectorization from the non-Copy CUB APIs, but it's disabled for now:
-    constexpr bool allow_vectorization =
-      (AllowCopy
-       /*|| detail::for_each::can_regain_copy_freedom<detail::it_value_t<RandomAccessIteratorT>, OpT>::value*/);
+    constexpr bool allow_vectorization = AllowCopy
+      /*|| detail::for_each::can_regain_copy_freedom<detail::it_value_t<RandomAccessIteratorT>, OpT>::value*/;
 
     if constexpr (allow_vectorization && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorT>)
     {
@@ -187,7 +186,6 @@ struct DeviceFor
     return __for_each_n(first, num_items, op, env);
   }
 
-public:
   //! @rst
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++

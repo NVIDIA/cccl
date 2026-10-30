@@ -225,8 +225,9 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
     _CCCL_ASSERT(__xor_mask >= 1 && __xor_mask < _Width, "xor_mask must be in the range [1, _Width)");
     using __unsigned_t _CCCL_NODEBUG = __shuffle_bitcast_storage_t<_Up>;
     const auto __value               = ::cuda::device::__shuffle_scalar_cast(__data);
-    const auto __shuffled            = ::__shfl_xor_sync(__lane_mask, __value, __xor_mask, _Width);
-    const auto __narrowed            = static_cast<__unsigned_t>(__shuffled);
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
+    const auto __shuffled = ::__shfl_xor_sync(__lane_mask, __value, __xor_mask, _Width);
+    const auto __narrowed = static_cast<__unsigned_t>(__shuffled);
     return warp_shuffle_result<_Up>{::cuda::std::bit_cast<_Up>(__narrowed), true};
   }
   else
@@ -237,6 +238,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < __ratio; ++i)
     {
+      // NOLINTNEXTLINE(readability-suspicious-call-argument)
       __array[i] = ::__shfl_xor_sync(__lane_mask, __array[i], __xor_mask, _Width);
     }
     return ::cuda::device::__make_shuffle_result<_Up>(__array, true);
@@ -272,6 +274,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   {
     using __unsigned_t _CCCL_NODEBUG = __shuffle_bitcast_storage_t<_Up>;
     const auto __value               = ::cuda::device::__shuffle_scalar_cast(__data);
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     const auto __shuffled = ::cuda::ptx::shfl_sync_up(__value, __pred, __delta, __clamp_segmask, __lane_mask);
     const auto __narrowed = static_cast<__unsigned_t>(__shuffled);
     return warp_shuffle_result<_Up>{::cuda::std::bit_cast<_Up>(__narrowed), __pred};
@@ -318,6 +321,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   {
     using __unsigned_t _CCCL_NODEBUG = __shuffle_bitcast_storage_t<_Up>;
     const auto __value               = ::cuda::device::__shuffle_scalar_cast(__data);
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     const auto __shuffled = ::cuda::ptx::shfl_sync_down(__value, __pred, __delta, __clamp_segmask, __lane_mask);
     const auto __narrowed = static_cast<__unsigned_t>(__shuffled);
     return warp_shuffle_result<_Up>{::cuda::std::bit_cast<_Up>(__narrowed), __pred};

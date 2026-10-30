@@ -35,6 +35,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "mersenne.h"
@@ -103,7 +104,8 @@ struct CommandLineArgs
         continue;
       }
 
-      string key, val;
+      string key;
+      string val;
       const string::size_type pos = arg.find('=');
       if (pos == string::npos)
       {
@@ -126,16 +128,9 @@ struct CommandLineArgs
    */
   bool CheckCmdLineFlag(const char* arg_name)
   {
-    using namespace std;
-
-    for (const auto& key : keys)
-    {
-      if (key == string(arg_name))
-      {
-        return true;
-      }
-    }
-    return false;
+    return ::cuda::std::any_of(keys.begin(), keys.end(), [arg_name](const auto& key) {
+      return key == std::string_view(arg_name);
+    });
   }
 
   /**
@@ -229,7 +224,7 @@ struct CommandLineArgs
   /**
    * The number of pairs parsed
    */
-  int ParsedArgc()
+  int ParsedArgc() const
   {
     return (int) keys.size();
   }
@@ -245,7 +240,7 @@ struct CommandLineArgs
     {
       int deviceCount;
       error = CubDebug(cudaGetDeviceCount(&deviceCount));
-      if (error)
+      if (error != cudaSuccess)
       {
         break;
       }
@@ -265,7 +260,7 @@ struct CommandLineArgs
       }
 
       error = CubDebug(cudaSetDevice(dev));
-      if (error)
+      if (error != cudaSuccess)
       {
         break;
       }
@@ -274,13 +269,13 @@ struct CommandLineArgs
 
       int ptx_version = 0;
       error           = CubDebug(CUB_NS_QUALIFIER::PtxVersion(ptx_version));
-      if (error)
+      if (error != cudaSuccess)
       {
         break;
       }
 
       error = CubDebug(cudaGetDeviceProperties(&deviceProp, dev));
-      if (error)
+      if (error != cudaSuccess)
       {
         break;
       }
@@ -293,14 +288,14 @@ struct CommandLineArgs
 
       int memoryClockRate{};
       error = CubDebug(cudaDeviceGetAttribute(&memoryClockRate, cudaDevAttrMemoryClockRate, dev));
-      if (error)
+      if (error != cudaSuccess)
       {
         break;
       }
 
       int memoryBusWidth{};
       error = CubDebug(cudaDeviceGetAttribute(&memoryBusWidth, cudaDevAttrGlobalMemoryBusWidth, dev));
-      if (error)
+      if (error != cudaSuccess)
       {
         break;
       }
@@ -316,13 +311,13 @@ struct CommandLineArgs
           dev,
           deviceProp.name,
           ptx_version,
-          deviceProp.major * 100 + deviceProp.minor * 10,
+          (deviceProp.major * 100) + (deviceProp.minor * 10),
           deviceProp.multiProcessorCount,
           (unsigned long long) device_free_physmem / 1024 / 1024,
           (unsigned long long) device_total_physmem / 1024 / 1024,
           device_giga_bandwidth,
           memoryClockRate,
-          (deviceProp.ECCEnabled) ? "on" : "off");
+          (deviceProp.ECCEnabled != 0) ? "on" : "off");
         fflush(stdout);
       }
 
@@ -337,7 +332,8 @@ inline std::size_t TotalGlobalMem()
 {
   int device = 0;
   CubDebugExit(cudaGetDevice(&device));
-  std::size_t free_mem = 0, total_mem = 0;
+  std::size_t free_mem  = 0;
+  std::size_t total_mem = 0;
   CubDebugExit(cudaMemGetInfo(&free_mem, &total_mem));
   return total_mem;
 }
@@ -862,7 +858,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.x < x)
+    if (b.x < x)
     {
       return false;
     }
@@ -870,7 +866,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.y < y)
+    if (b.y < y)
     {
       return false;
     }
@@ -878,7 +874,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.z < z)
+    if (b.z < z)
     {
       return false;
     }
@@ -892,7 +888,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.x > x)
+    if (b.x > x)
     {
       return false;
     }
@@ -900,7 +896,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.y > y)
+    if (b.y > y)
     {
       return false;
     }
@@ -908,7 +904,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.z > z)
+    if (b.z > z)
     {
       return false;
     }
@@ -1024,7 +1020,7 @@ struct TestBar
     {
       return true;
     }
-    else if (b.x < x)
+    if (b.x < x)
     {
       return false;
     }
@@ -1038,7 +1034,7 @@ struct TestBar
     {
       return true;
     }
-    else if (b.x > x)
+    if (b.x > x)
     {
       return false;
     }
@@ -1109,7 +1105,8 @@ int CompareResults(T* computed, S* reference, OffsetT len, bool verbose = true)
  * Compares the equivalence of two arrays
  */
 template <typename OffsetT>
-int CompareResults(float* computed, float* reference, OffsetT len, bool verbose = true)
+int CompareResults(
+  float* computed, float* reference, OffsetT len, bool verbose = true) // NOLINT(readability-non-const-parameter)
 {
   for (OffsetT i = 0; i < len; i++)
   {
@@ -1148,7 +1145,8 @@ int CompareResults(
  * Compares the equivalence of two arrays
  */
 template <typename OffsetT>
-int CompareResults(double* computed, double* reference, OffsetT len, bool verbose = true)
+int CompareResults(
+  double* computed, double* reference, OffsetT len, bool verbose = true) // NOLINT(readability-non-const-parameter)
 {
   for (OffsetT i = 0; i < len; i++)
   {
@@ -1400,7 +1398,7 @@ struct CpuTimer
     getrusage(RUSAGE_SELF, &stop);
   }
 
-  float ElapsedMillis()
+  float ElapsedMillis() const
   {
     const float sec  = static_cast<float>(stop.ru_utime.tv_sec - start.ru_utime.tv_sec);
     const float usec = static_cast<float>(stop.ru_utime.tv_usec - start.ru_utime.tv_usec);
@@ -1428,17 +1426,17 @@ struct GpuTimer
     cudaEventDestroy(stop);
   }
 
-  void Start()
+  void Start() // NOLINT(readability-make-member-function-const)
   {
     cudaEventRecord(start, nullptr);
   }
 
-  void Stop()
+  void Stop() // NOLINT(readability-make-member-function-const)
   {
     cudaEventRecord(stop, nullptr);
   }
 
-  float ElapsedMillis()
+  float ElapsedMillis() const
   {
     float elapsed;
     cudaEventSynchronize(stop);

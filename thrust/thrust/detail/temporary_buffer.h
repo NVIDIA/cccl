@@ -26,14 +26,6 @@
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(temporary_buffer.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(temporary_buffer.h)
 
-// Some build systems need a hint to know which files we could include
-#if 0
-#  include <thrust/system/cpp/detail/temporary_buffer.h>
-#  include <thrust/system/cuda/detail/temporary_buffer.h>
-#  include <thrust/system/omp/detail/temporary_buffer.h>
-#  include <thrust/system/tbb/detail/temporary_buffer.h>
-#endif
-
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
@@ -56,25 +48,25 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename T, typename DerivedPolicy>
 _CCCL_HOST_DEVICE ::cuda::std::pair<thrust::pointer<T, DerivedPolicy>,
                                     typename thrust::pointer<T, DerivedPolicy>::difference_type>
-get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>& system,
                      typename thrust::pointer<T, DerivedPolicy>::difference_type n)
 {
   using thrust::detail::get_temporary_buffer; // execute_with_allocator
   using thrust::system::detail::generic::get_temporary_buffer;
 
   return thrust::detail::down_cast_pair<T, DerivedPolicy>(
-    get_temporary_buffer<T>(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), n));
+    get_temporary_buffer<T>(thrust::detail::derived_cast(thrust::detail::strip_const(system)), n));
 } // end get_temporary_buffer()
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename Pointer>
 _CCCL_HOST_DEVICE void
-return_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Pointer p, std::ptrdiff_t n)
+return_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>& system, Pointer p, std::ptrdiff_t n)
 {
   using thrust::detail::return_temporary_buffer; // execute_with_allocator
   using thrust::system::detail::generic::return_temporary_buffer;
 
-  return return_temporary_buffer(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), p, n);
+  return return_temporary_buffer(thrust::detail::derived_cast(thrust::detail::strip_const(system)), p, n);
 } // end return_temporary_buffer()
 
 THRUST_NAMESPACE_END

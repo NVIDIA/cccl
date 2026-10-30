@@ -59,7 +59,7 @@ struct __with_property
     }
     else
     {
-      return void();
+      return;
     }
   }
 
@@ -75,7 +75,7 @@ struct __with_property
       }
       else
       {
-        return void();
+        return;
       }
     }
 

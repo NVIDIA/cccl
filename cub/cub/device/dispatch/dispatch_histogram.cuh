@@ -34,6 +34,7 @@
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__functional/proclaim_return_type.h>
 #include <cuda/std/__algorithm/copy.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__algorithm/transform.h>
 #include <cuda/std/__cstddef/types.h>
@@ -498,10 +499,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
       return cudaErrorInvalidValue;
     }
 
-    if (num_levels > max_levels)
-    {
-      max_levels = num_levels;
-    }
+    max_levels = ::cuda::std::max(max_levels, num_levels);
   }
   int max_num_output_bins = max_levels - 1;
 
@@ -673,10 +671,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
       return cudaErrorInvalidValue;
     }
 
-    if (num_levels > max_levels)
-    {
-      max_levels = num_levels;
-    }
+    max_levels = ::cuda::std::max(max_levels, num_levels);
   }
   int max_num_output_bins = max_levels - 1;
 
@@ -1027,10 +1022,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
 
       output_decode_op[channel].Init(num_levels, upper_level[channel], lower_level[channel]);
 
-      if (num_levels > max_levels)
-      {
-        max_levels = num_levels;
-      }
+      max_levels = ::cuda::std::max(max_levels, num_levels);
     }
     const int max_num_output_bins = max_levels - 1;
 
@@ -1093,10 +1085,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
 
       privatized_decode_op[channel].Init(num_levels, upper_level[channel], lower_level[channel]);
 
-      if (num_levels > max_levels)
-      {
-        max_levels = num_levels;
-      }
+      max_levels = ::cuda::std::max(max_levels, num_levels);
     }
     const int max_num_output_bins = max_levels - 1;
 

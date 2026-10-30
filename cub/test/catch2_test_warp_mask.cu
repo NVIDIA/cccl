@@ -24,7 +24,7 @@ public:
 
 bool is_lane_involved(unsigned int member_mask, unsigned int lane)
 {
-  return member_mask & (1 << lane);
+  return (member_mask & (1 << lane)) != 0;
 }
 
 using logical_warp_threads      = c2h::iota<1, 32>;

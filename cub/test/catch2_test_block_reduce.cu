@@ -26,7 +26,7 @@ __launch_bounds__(BlockDimX * BlockDimY * BlockDimZ) __global__
 
   T thread_data[ItemsPerThread];
 
-  const int tid           = static_cast<int>(cub::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ));
+  const int tid           = cub::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ);
   const int thread_offset = tid * ItemsPerThread;
 
   for (int item = 0; item < ItemsPerThread; item++)

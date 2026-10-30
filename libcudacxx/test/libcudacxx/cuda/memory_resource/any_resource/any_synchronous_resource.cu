@@ -36,14 +36,14 @@ TEMPLATE_TEST_CASE_METHOD(
     CHECK(this->counts == expected);
     {
       const cuda::mr::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr{TestResource{42, this}};
-      expected.new_count += is_big;
+      expected.new_count += static_cast<int>(is_big);
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
       CHECK(get_property(mr, get_data{}) == 42);
       get_property(mr, ::cuda::mr::host_accessible{});
     }
-    expected.delete_count += is_big;
+    expected.delete_count += static_cast<int>(is_big);
     --expected.object_count;
     CHECK(this->counts == expected);
   }
@@ -57,13 +57,13 @@ TEMPLATE_TEST_CASE_METHOD(
     CHECK(this->counts == expected);
     {
       cuda::mr::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr{TestResource{42, this}};
-      expected.new_count += is_big;
+      expected.new_count += static_cast<int>(is_big);
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
 
       auto mr2 = mr;
-      expected.new_count += is_big;
+      expected.new_count += static_cast<int>(is_big);
       ++expected.copy_count;
       ++expected.object_count;
       CHECK(this->counts == expected);
@@ -73,7 +73,7 @@ TEMPLATE_TEST_CASE_METHOD(
       CHECK(this->counts == expected);
 
       auto mr3 = std::move(mr);
-      expected.move_count += !is_big; // for big resources, move is a pointer swap
+      expected.move_count += static_cast<int>(!is_big); // for big resources, move is a pointer swap
       CHECK(this->counts == expected);
       CHECK((mr2 == mr3));
       CHECK(!(mr2 != mr3));
@@ -82,7 +82,7 @@ TEMPLATE_TEST_CASE_METHOD(
 
       // Test inequality with different resource
       const cuda::mr::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr4{TestResource{43, this}};
-      expected.new_count += is_big;
+      expected.new_count += static_cast<int>(is_big);
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
@@ -90,7 +90,7 @@ TEMPLATE_TEST_CASE_METHOD(
       ++expected.equal_to_count;
       CHECK(this->counts == expected);
     }
-    expected.delete_count += 3 * is_big;
+    expected.delete_count += 3 * static_cast<int>(is_big);
     expected.object_count -= 3;
     CHECK(this->counts == expected);
   }
@@ -147,7 +147,7 @@ TEMPLATE_TEST_CASE_METHOD(
     CHECK(this->counts == expected);
     {
       cuda::mr::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr{TestResource{42, this}};
-      expected.new_count += is_big;
+      expected.new_count += static_cast<int>(is_big);
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
@@ -161,7 +161,7 @@ TEMPLATE_TEST_CASE_METHOD(
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
-    expected.delete_count += is_big;
+    expected.delete_count += static_cast<int>(is_big);
     --expected.object_count;
     CHECK(this->counts == expected);
   }
@@ -182,7 +182,7 @@ TEMPLATE_TEST_CASE_METHOD(
       ++expected.equal_to_count;
       CHECK(this->counts == expected);
       const cuda::mr::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr{resource1};
-      expected.new_count += is_big;
+      expected.new_count += static_cast<int>(is_big);
       ++expected.object_count;
       ++expected.copy_count;
       CHECK(this->counts == expected);
@@ -194,7 +194,7 @@ TEMPLATE_TEST_CASE_METHOD(
       ++expected.equal_to_count;
       CHECK(this->counts == expected);
     }
-    expected.delete_count += is_big;
+    expected.delete_count += static_cast<int>(is_big);
     expected.object_count -= 3;
     CHECK(this->counts == expected);
   }
@@ -208,7 +208,7 @@ TEMPLATE_TEST_CASE_METHOD(
     Counts expected{};
     {
       cuda::mr::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr{TestResource{42, this}};
-      expected.new_count += is_big;
+      expected.new_count += static_cast<int>(is_big);
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
@@ -231,7 +231,7 @@ TEMPLATE_TEST_CASE_METHOD(
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
-    expected.delete_count += is_big;
+    expected.delete_count += static_cast<int>(is_big);
     --expected.object_count;
     CHECK(this->counts == expected);
   }
@@ -249,7 +249,7 @@ TEMPLATE_TEST_CASE_METHOD(
       CHECK(this->counts == expected);
 
       const cuda::mr::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr = ref;
-      expected.new_count += is_big;
+      expected.new_count += static_cast<int>(is_big);
       ++expected.object_count;
       ++expected.copy_count;
       CHECK(this->counts == expected);
@@ -262,7 +262,7 @@ TEMPLATE_TEST_CASE_METHOD(
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
-    expected.delete_count += is_big;
+    expected.delete_count += static_cast<int>(is_big);
     expected.object_count -= 2;
     CHECK(this->counts == expected);
   }
@@ -277,13 +277,13 @@ TEMPLATE_TEST_CASE_METHOD(
     {
       const cuda::mr::any_synchronous_resource<::cuda::mr::host_accessible, extra_property, get_data> mr{
         TestResource{42, this}};
-      expected.new_count += is_big;
+      expected.new_count += static_cast<int>(is_big);
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
 
       const cuda::mr::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr2 = mr;
-      expected.new_count += is_big;
+      expected.new_count += static_cast<int>(is_big);
       ++expected.object_count;
       ++expected.copy_count;
       CHECK(this->counts == expected);
@@ -302,7 +302,7 @@ TEMPLATE_TEST_CASE_METHOD(
       static_assert(cuda::std::is_same_v<decltype(unused), bool>);
       CHECK(!unused);
     }
-    expected.delete_count += 2 * is_big;
+    expected.delete_count += 2 * static_cast<int>(is_big);
     expected.object_count -= 2;
     CHECK(this->counts == expected);
   }
@@ -316,7 +316,7 @@ TEMPLATE_TEST_CASE_METHOD(
     CHECK(this->counts == expected);
     {
       cuda::mr::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr{TestResource{42, this}};
-      expected.new_count += is_big;
+      expected.new_count += static_cast<int>(is_big);
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
@@ -329,7 +329,7 @@ TEMPLATE_TEST_CASE_METHOD(
       expected.equal_to_count += 2;
       CHECK(this->counts == expected);
     }
-    expected.delete_count += is_big;
+    expected.delete_count += static_cast<int>(is_big);
     expected.object_count -= 1;
     CHECK(this->counts == expected);
   }
@@ -350,7 +350,7 @@ TEMPLATE_TEST_CASE_METHOD(
       CHECK(this->counts == expected);
 
       cuda::mr::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr = ref;
-      expected.new_count += is_big;
+      expected.new_count += static_cast<int>(is_big);
       ++expected.object_count;
       ++expected.copy_count;
       CHECK(this->counts == expected);
@@ -364,7 +364,7 @@ TEMPLATE_TEST_CASE_METHOD(
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
-    expected.delete_count += is_big;
+    expected.delete_count += static_cast<int>(is_big);
     expected.object_count -= 2;
     CHECK(this->counts == expected);
   }
@@ -379,11 +379,11 @@ TEMPLATE_TEST_CASE_METHOD(
     {
       const cuda::mr::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr =
         cuda::mr::make_any_synchronous_resource<TestResource, ::cuda::mr::host_accessible, get_data>(42, this);
-      expected.new_count += is_big;
+      expected.new_count += static_cast<int>(is_big);
       ++expected.object_count;
       CHECK(this->counts == expected);
     }
-    expected.delete_count += is_big;
+    expected.delete_count += static_cast<int>(is_big);
     --expected.object_count;
     CHECK(this->counts == expected);
   }

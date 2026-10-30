@@ -304,6 +304,7 @@ struct AgentHistogram
         int output_bin       = -1;
         const CounterT count = privatized_histograms[ch][bin];
         const bool is_valid  = count > 0;
+        // NOLINTNEXTLINE(readability-suspicious-call-argument)
         output_decode_op[ch].template BinSelect<load_modifier>(bin, output_bin, is_valid);
 
         if (output_bin >= 0)
@@ -459,11 +460,11 @@ struct AgentHistogram
     {
       if constexpr (IsStriped)
       {
-        is_valid[item] = IsFullTile || (((threadIdx.x + threads_per_block * item) * NumChannels) < valid_samples);
+        is_valid[item] = IsFullTile || (((threadIdx.x + (threads_per_block * item)) * NumChannels) < valid_samples);
       }
       else
       {
-        is_valid[item] = IsFullTile || (((threadIdx.x * items_per_thread + item) * NumChannels) < valid_samples);
+        is_valid[item] = IsFullTile || ((((threadIdx.x * items_per_thread) + item) * NumChannels) < valid_samples);
       }
     }
   }
@@ -653,7 +654,7 @@ struct AgentHistogram
       , prefer_smem((mem_preference == SMEM) ? true : // prefer smem privatized histograms
                       (mem_preference == GMEM) ? false
                                                : // prefer gmem privatized histograms
-                      blockIdx.x & 1) // prefer blended privatized histograms
+                      (blockIdx.x & 1) != 0) // prefer blended privatized histograms
   {
     const int blockId = static_cast<int>((blockIdx.y * gridDim.x) + blockIdx.x);
 

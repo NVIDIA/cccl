@@ -383,7 +383,7 @@ _CCCL_HOST_API inline event::event(stream_ref __stream, unsigned __flags)
     : event_ref(::cudaEvent_t{})
 {
   [[maybe_unused]] const __ensure_current_context __ctx_setter(__stream);
-  __event_ = ::cuda::__driver::__eventCreate(static_cast<unsigned>(__flags));
+  __event_ = ::cuda::__driver::__eventCreate(__flags);
 }
 
 _CCCL_HOST_API inline timed_event::timed_event(stream_ref __stream, event_flags __flags)

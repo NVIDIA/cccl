@@ -41,7 +41,7 @@ public:
     correctly_dispatched = (num_copies == 0);
   }
 
-  bool is_valid()
+  bool is_valid() const
   {
     return correctly_dispatched;
   }
@@ -205,6 +205,7 @@ TEST_CASE("TestMallocDispatchExplicit", "[memory]")
 {
   const size_t n = 0;
 
+  // NOLINTNEXTLINE(misc-const-correctness)
   my_memory_system sys(0);
   thrust::malloc(sys, n);
 
@@ -221,6 +222,7 @@ TEST_CASE("TestFreeDispatchExplicit", "[memory]")
 {
   const thrust::pointer<my_memory_system, void> ptr{};
 
+  // NOLINTNEXTLINE(misc-const-correctness)
   my_memory_system sys(0);
   thrust::free(sys, ptr);
 
@@ -243,6 +245,7 @@ TEST_CASE("TestGetTemporaryBufferDispatchExplicit", "[memory]")
 {
   const std::ptrdiff_t n = 9001;
 
+  // NOLINTNEXTLINE(misc-const-correctness)
   my_memory_system sys(0);
   using pointer                                             = thrust::pointer<int, thrust::device_system_tag>;
   const cuda::std::pair<pointer, std::ptrdiff_t> ptr_and_sz = thrust::get_temporary_buffer<int>(sys, n);
@@ -276,6 +279,7 @@ TEST_CASE("TestGetTemporaryBufferDispatchImplicit", "[memory]")
   thrust::reverse(vec.begin(), vec.end());
 
   // call something we know will invoke get_temporary_buffer
+  // NOLINTNEXTLINE(misc-const-correctness)
   my_memory_system sys(0);
 
   thrust::sort(sys, vec.begin(), vec.end());

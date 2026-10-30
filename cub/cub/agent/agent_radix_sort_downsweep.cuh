@@ -668,7 +668,7 @@ struct AgentRadixSortDownsweep
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessRegion(OffsetT block_offset, OffsetT block_end)
   {
-    if (short_circuit)
+    if (short_circuit != 0)
     {
       // Copy keys
       Copy(d_keys_in, d_keys_out, block_offset, block_end);

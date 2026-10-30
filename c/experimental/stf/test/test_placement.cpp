@@ -86,8 +86,10 @@ C2H_TEST("cute partition creation, accessors and leaf round trip", "[places][pla
   REQUIRE(np == 1);
   REQUIRE(nl == 1);
 
-  std::vector<uint64_t> p_ext(np), l_ext(nl);
-  std::vector<int64_t> p_str(np), l_str(nl);
+  std::vector<uint64_t> p_ext(np);
+  std::vector<uint64_t> l_ext(nl);
+  std::vector<int64_t> p_str(np);
+  std::vector<int64_t> l_str(nl);
   std::vector<int> p_axes(np);
   stf_cute_partition_get_place_leaves(part, p_ext.data(), p_str.data(), p_axes.data());
   stf_cute_partition_get_local_leaves(part, l_ext.data(), l_str.data());
@@ -148,8 +150,10 @@ C2H_TEST("partition evaluation matches the equivalent native mapper", "[places][
   stf_cute_partition_handle part = stf_cute_partition_create(&dims, &grid_dims, spec, 1);
   REQUIRE(part != nullptr);
 
-  stf_placement_stats s_mapper{}, s_part{};
-  uint64_t b_mapper[2] = {0, 0}, b_part[2] = {0, 0};
+  stf_placement_stats s_mapper{};
+  stf_placement_stats s_part{};
+  uint64_t b_mapper[2] = {0, 0};
+  uint64_t b_part[2]   = {0, 0};
 
   REQUIRE(stf_placement_evaluate(grid, stf_partition_fn_blocked(0), &dims, 1, 0, 2 * MiB, &s_mapper, b_mapper) == 0);
   REQUIRE(stf_placement_evaluate_partition(grid, part, 1, 0, 2 * MiB, &s_part, b_part) == 0);
@@ -179,7 +183,7 @@ C2H_TEST("shaped allocation on composite data places", "[places][placement][allo
   REQUIRE(cuDeviceGet(&dev0, 0) == CUDA_SUCCESS);
   REQUIRE(cuDeviceGetAttribute(&supports_vmm, CU_DEVICE_ATTRIBUTE_VIRTUAL_ADDRESS_MANAGEMENT_SUPPORTED, dev0)
           == CUDA_SUCCESS);
-  if (!supports_vmm)
+  if (supports_vmm == 0)
   {
     SKIP("device 0 does not support CUDA VMM (virtual address management)");
   }

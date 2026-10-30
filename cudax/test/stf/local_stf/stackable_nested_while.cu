@@ -84,7 +84,7 @@ int main()
   // Verify results - each element is incremented max_iter1*max_iter2 times
   for (size_t i = 0; i < sz; i++)
   {
-    const int expected = static_cast<int>(i + max_iter1 * max_iter2);
+    const int expected = static_cast<int>(i + (max_iter1 * max_iter2));
     _CCCL_ASSERT(data[i] == expected, "invalid result at index");
   }
 

@@ -97,7 +97,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES restrict_mdspan(_ElementType*, const _MappingTy
 
 template <class _MappingType, class _AccessorType>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES
-restrict_mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
+restrict_mdspan(typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
   -> restrict_mdspan<typename _AccessorType::element_type,
                      typename _MappingType::extents_type,
                      typename _MappingType::layout_type,

@@ -35,7 +35,7 @@ template <typename KeyT, typename ValueT, typename CompareOp>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 compare_swap(KeyT& key_lhs, KeyT& key_rhs, ValueT& item_lhs, ValueT& item_rhs, CompareOp compare_op)
 {
-  if (compare_op(key_rhs, key_lhs))
+  if (compare_op(key_rhs, key_lhs)) // NOLINT(readability-suspicious-call-argument)
   {
     using ::cuda::std::swap;
     swap(key_lhs, key_rhs);

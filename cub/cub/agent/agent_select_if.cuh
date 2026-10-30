@@ -475,7 +475,7 @@ struct AgentSelectIf
       // Out-of-bounds items are selection_flags
       selection_flags[ITEM] = 1;
 
-      if (!IsLastTile || (static_cast<OffsetT>(threadIdx.x * ITEMS_PER_THREAD + ITEM) < num_tile_items))
+      if (!IsLastTile || (static_cast<OffsetT>((threadIdx.x * ITEMS_PER_THREAD) + ITEM) < num_tile_items))
       {
         selection_flags[ITEM] = static_cast<bool>(select_op(items[ITEM]));
       }
@@ -515,7 +515,7 @@ struct AgentSelectIf
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set selection_flags for out-of-bounds items
-      if ((!IsLastTile) || (static_cast<OffsetT>(threadIdx.x * ITEMS_PER_THREAD + ITEM) < num_tile_items))
+      if ((!IsLastTile) || (static_cast<OffsetT>((threadIdx.x * ITEMS_PER_THREAD) + ITEM) < num_tile_items))
       {
         selection_flags[ITEM] = static_cast<bool>(select_op(flags[ITEM]));
       }
@@ -629,7 +629,7 @@ struct AgentSelectIf
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         // Set selection_flags for out-of-bounds items
-        if ((IsLastTile) && (OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM >= num_tile_items))
+        if (IsLastTile && (OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM >= num_tile_items))
         {
           selection_flags[ITEM] = 1;
         }

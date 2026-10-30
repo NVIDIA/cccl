@@ -31,10 +31,10 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 _CCCL_EXEC_CHECK_DISABLE
 template <typename _SizeType, _SizeType _Start, _SizeType _Step, typename _Operator, _SizeType... _Indices, typename... _TArgs>
 _CCCL_API constexpr void
-__static_for_impl(_Operator __op, ::cuda::std::integer_sequence<_SizeType, _Indices...>, _TArgs&&... __args) noexcept(
-  (true && ... && noexcept(__op(::cuda::std::integral_constant<_SizeType, (_Indices * _Step + _Start)>{}, __args...))))
+__static_for_impl(_Operator __op, ::cuda::std::integer_sequence<_SizeType, _Indices...>, _TArgs&&... __args) noexcept((
+  true && ... && noexcept(__op(::cuda::std::integral_constant<_SizeType, ((_Indices * _Step) + _Start)>{}, __args...))))
 {
-  (__op(::cuda::std::integral_constant<_SizeType, (_Indices * _Step + _Start)>{}, __args...), ...);
+  (__op(::cuda::std::integral_constant<_SizeType, ((_Indices * _Step) + _Start)>{}, __args...), ...);
 }
 
 _CCCL_EXEC_CHECK_DISABLE

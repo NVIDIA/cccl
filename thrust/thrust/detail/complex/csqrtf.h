@@ -61,7 +61,8 @@ using thrust::complex;
 // NOLINTBEGIN(misc-redundant-expression)
 _CCCL_HOST_DEVICE inline complex<float> csqrtf(const complex<float>& z)
 {
-  float a = z.real(), b = z.imag();
+  float a = z.real();
+  float b = z.imag();
   float t;
   int scale;
   complex<float> result{};
@@ -95,10 +96,8 @@ _CCCL_HOST_DEVICE inline complex<float> csqrtf(const complex<float>& z)
     {
       return (complex<float>(::cuda::std::fabsf(b - b), ::cuda::std::copysignf(a, b)));
     }
-    else
-    {
-      return (complex<float>(a, ::cuda::std::copysignf(b - b, b)));
-    }
+
+    return (complex<float>(a, ::cuda::std::copysignf(b - b, b)));
   }
   /*
    * The remaining special case (b is NaN) is handled just fine by
@@ -146,14 +145,12 @@ _CCCL_HOST_DEVICE inline complex<float> csqrtf(const complex<float>& z)
   {
     return (result * 2.0f);
   }
-  else if (scale == 2)
+  if (scale == 2)
   {
     return (result * 0.5f);
   }
-  else
-  {
-    return (result);
-  }
+
+  return result;
 }
 // NOLINTEND(misc-redundant-expression)
 } // namespace detail::complex

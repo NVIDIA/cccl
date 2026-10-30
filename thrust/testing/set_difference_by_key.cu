@@ -80,16 +80,20 @@ void test_set_difference_by_key_simple()
 {
   using Iterator = typename Vector::iterator;
 
-  Vector a_key{0, 2, 4, 5}, b_key{0, 3, 3, 4, 6};
-  Vector a_val(4, 0), b_val(5, 1);
+  Vector a_key{0, 2, 4, 5};
+  Vector b_key{0, 3, 3, 4, 6};
+  Vector a_val(4, 0);
+  Vector b_val(5, 1);
 
-  Vector ref_key(2), ref_val(2);
+  Vector ref_key(2);
+  Vector ref_val(2);
   ref_key[0] = 2;
   ref_key[1] = 5;
   ref_val[0] = 0;
   ref_val[1] = 0;
 
-  Vector result_key(2), result_val(2);
+  Vector result_key(2);
+  Vector result_val(2);
 
   const cuda::std::pair<Iterator, Iterator> end = thrust::set_difference_by_key(
     a_key.begin(),
@@ -193,8 +197,10 @@ void test_set_difference_by_key_equivalent_ranges(const size_t n)
   thrust::device_vector<T> d_a_val = h_a_val;
   thrust::device_vector<T> d_b_val = h_b_val;
 
-  thrust::host_vector<T> h_result_key(n), h_result_val(n);
-  thrust::device_vector<T> d_result_key(n), d_result_val(n);
+  thrust::host_vector<T> h_result_key(n);
+  thrust::host_vector<T> h_result_val(n);
+  thrust::device_vector<T> d_result_key(n);
+  thrust::device_vector<T> d_result_val(n);
 
   cuda::std::pair<typename thrust::host_vector<T>::iterator, typename thrust::host_vector<T>::iterator> h_end;
 
@@ -257,8 +263,10 @@ void test_set_difference_by_key_multiset(const size_t n)
   thrust::device_vector<T> d_a_val = h_a_val;
   thrust::device_vector<T> d_b_val = h_b_val;
 
-  thrust::host_vector<T> h_result_key(n), h_result_val(n);
-  thrust::device_vector<T> d_result_key(n), d_result_val(n);
+  thrust::host_vector<T> h_result_key(n);
+  thrust::host_vector<T> h_result_val(n);
+  thrust::device_vector<T> d_result_key(n);
+  thrust::device_vector<T> d_result_val(n);
 
   cuda::std::pair<typename thrust::host_vector<T>::iterator, typename thrust::host_vector<T>::iterator> h_end;
 

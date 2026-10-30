@@ -30,7 +30,7 @@ namespace detail
 // NVTX is DISABLED only for thrust::seq and any policy derived from sequential::execution_policy
 // ENABLED for all other policies (CUDA, OMP, TBB, etc.)
 template <typename DerivedPolicy>
-inline constexpr bool should_enable_nvtx_for_policy()
+constexpr bool should_enable_nvtx_for_policy()
 {
   using Policy = ::cuda::std::decay_t<DerivedPolicy>;
   // This catches thrust::seq, cpp::tag, and any other sequential-based policy

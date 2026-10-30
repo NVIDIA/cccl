@@ -138,7 +138,6 @@ struct index_to_key_value_op
 template <typename UnsignedIntegralKeyT>
 class index_to_expected_key_op
 {
-private:
   static constexpr std::size_t max_key_value =
     static_cast<std::size_t>(cuda::std::numeric_limits<UnsignedIntegralKeyT>::max());
   static constexpr std::size_t lowest_key_value =

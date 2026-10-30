@@ -433,15 +433,15 @@ UNITTEST("pin_memory")
 {
   ::std::vector<double> a(1024);
 
-  EXPECT(!address_is_pinned(&a[0]));
+  EXPECT(!address_is_pinned(a.data()));
   EXPECT(!address_is_pinned(&a[1023]));
 
-  pin_memory(&a[0], 1024);
-  EXPECT(address_is_pinned(&a[0]));
+  pin_memory(a.data(), 1024);
+  EXPECT(address_is_pinned(a.data()));
   EXPECT(address_is_pinned(&a[1023]));
-  unpin_memory(&a[0]);
+  unpin_memory(a.data());
 
-  EXPECT(!address_is_pinned(&a[0]));
+  EXPECT(!address_is_pinned(a.data()));
   EXPECT(!address_is_pinned(&a[1023]));
 };
 
@@ -449,7 +449,7 @@ UNITTEST("pin_memory const")
 {
   ::std::vector<double> a(1024);
 
-  const double* ca = &a[0];
+  const double* ca = a.data();
 
   EXPECT(!address_is_pinned(ca));
 
@@ -470,10 +470,10 @@ UNITTEST("pin_memory ignores stale sticky errors")
   EXPECT(cudaMalloc(&p, size_t(1) << 46) != cudaSuccess);
 
   ::std::vector<double> a(1024);
-  EXPECT(pin_memory(&a[0], 1024) == cudaSuccess);
-  EXPECT(address_is_pinned(&a[0]));
-  unpin_memory(&a[0]);
-  EXPECT(!address_is_pinned(&a[0]));
+  EXPECT(pin_memory(a.data(), 1024) == cudaSuccess);
+  EXPECT(address_is_pinned(a.data()));
+  unpin_memory(a.data());
+  EXPECT(!address_is_pinned(a.data()));
 
   // Consume whatever is left so this test does not poison the next one.
   cudaGetLastError();
@@ -508,7 +508,8 @@ public:
   {
     if (rhs.size() <= small_cap)
     {
-      auto b = rhs.begin(), e = b + rhs.size();
+      auto b = rhs.begin();
+      auto e = b + rhs.size();
       construct_small_elements([&](T* dest, small_size_t) {
         if (b >= e)
         {
@@ -528,7 +529,8 @@ public:
   {
     if (rhs.size() <= small_cap)
     {
-      auto b = rhs.begin(), e = b + rhs.size();
+      auto b = rhs.begin();
+      auto e = b + rhs.size();
       loop([&](auto i) {
         if (b >= e)
         {
@@ -550,7 +552,8 @@ public:
   {
     if (init.size() <= small_cap)
     {
-      auto b = init.begin(), e = init.end();
+      auto b = init.begin();
+      auto e = init.end();
       construct_small_elements([&](T* dest, small_size_t) {
         if (b >= e)
         {
@@ -861,11 +864,8 @@ public:
       assert(size() == new_size);
       return big().data() + (result - big().begin());
     }
-    else
-    {
-      auto result = big().insert(big().begin() + (pos - big().data()), first, last);
-      return big().data() + (result - big().begin());
-    }
+    auto result = big().insert(big().begin() + (pos - big().data()), first, last);
+    return big().data() + (result - big().begin());
   }
 
   iterator insert(const_iterator pos, ::std::initializer_list<T> ilist);
@@ -877,20 +877,18 @@ public:
   {
     if (is_small())
     {
-      auto b = small_begin(), e = b + small_length;
+      auto b = small_begin();
+      auto e = b + small_length;
       assert(b <= first && first <= last && last <= e);
       auto result = ::std::move(last, e, first);
       ::std::destroy(result, e);
       small_length -= static_cast<decltype(small_length)>(last - first);
       return result;
     }
-    else
-    {
-      auto f_     = big().begin() + (first - big().data());
-      auto l_     = big().begin() + (last - big().data());
-      auto result = big().erase(f_, l_);
-      return big().data() + (result - big().begin());
-    }
+    auto f_     = big().begin() + (first - big().data());
+    auto l_     = big().begin() + (last - big().data());
+    auto result = big().erase(f_, l_);
+    return big().data() + (result - big().begin());
   }
 
   void push_back(const T& value)
@@ -908,7 +906,7 @@ public:
         ++small_length;
         return;
       }
-      reserve(small_cap * 2 + 1);
+      reserve((small_cap * 2) + 1);
       assert(!is_small());
       // fall through to big case
     }
@@ -1008,8 +1006,10 @@ public:
           return other.swap(*this);
         }
         // We are longer, the other is shorter
-        auto b = small_begin(), e = small_begin() + small_length, ob = other.small_begin(),
-             oe = other.small_begin() + other.small_length;
+        auto b  = small_begin();
+        auto e  = small_begin() + small_length;
+        auto ob = other.small_begin();
+        auto oe = other.small_begin() + other.small_length;
         ::std::swap_ranges(ob, oe, b);
         ::std::uninitialized_move(b + other.small_length, e, oe);
         ::std::destroy(b + other.small_length, e);

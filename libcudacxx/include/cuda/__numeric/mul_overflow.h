@@ -87,9 +87,9 @@ template <class _Result, class _Lhs, class _Rhs>
     const auto __urhs        = __cccl_uintmax_t{::cuda::uabs(__rhs)};
     const auto __uresult_lo  = __ulhs * __urhs;
     const auto __uresult_hi  = ::cuda::mul_hi(__ulhs, __urhs);
-    const auto __uresult_max = __cccl_uintmax_t{::cuda::uabs((__negative_result) ? __min : __max)};
+    const auto __uresult_max = __cccl_uintmax_t{::cuda::uabs(__negative_result ? __min : __max)};
 
-    const auto __result = static_cast<_Result>((__negative_result) ? ::cuda::neg(__uresult_lo) : __uresult_lo);
+    const auto __result = static_cast<_Result>(__negative_result ? ::cuda::neg(__uresult_lo) : __uresult_lo);
     return {__result, __uresult_hi != 0 || __uresult_lo > __uresult_max};
   }
   else

@@ -161,29 +161,17 @@ int main(int argc, char** argv)
   // Check for correctness (and display results, if specified)
   stream.sync();
   int compare = CompareDeviceResults(h_reference_keys, d_keys.Current(), num_items, true, g_verbose, stream);
-  printf("\t Compare keys (selector %d): %s\n", d_keys.selector, compare ? "FAIL" : "PASS");
+  printf("\t Compare keys (selector %d): %s\n", d_keys.selector, compare != 0 ? "FAIL" : "PASS");
   AssertEquals(0, compare);
   compare = CompareDeviceResults(h_reference_values, d_values.Current(), num_items, true, g_verbose, stream);
-  printf("\t Compare values (selector %d): %s\n", d_values.selector, compare ? "FAIL" : "PASS");
+  printf("\t Compare values (selector %d): %s\n", d_values.selector, compare != 0 ? "FAIL" : "PASS");
   AssertEquals(0, compare);
 
   // Cleanup
-  if (h_keys)
-  {
-    delete[] h_keys;
-  }
-  if (h_reference_keys)
-  {
-    delete[] h_reference_keys;
-  }
-  if (h_values)
-  {
-    delete[] h_values;
-  }
-  if (h_reference_values)
-  {
-    delete[] h_reference_values;
-  }
+  delete[] h_keys;
+  delete[] h_reference_keys;
+  delete[] h_values;
+  delete[] h_reference_values;
 
   printf("\n\n");
 

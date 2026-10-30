@@ -773,7 +773,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys run a small multi-CTA segment through
 // Disabled for now: even with empty segments the driver still has to schedule ~INT_MAX
 // clusters, so the launch takes minutes -- too slow for a routine test. Re-enable to validate the
 // maximum-batch launch geometry.
-#  if 0
+#  if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 // Maximum-batch boundary: `num_segments == INT_MAX` through a multi-CTA cluster. A flattened grid.x ==
 // num_segments * cluster_blocks would overrun the 2^31-1 grid-x limit long before num_segments reached INT_MAX; the
 // launch instead keeps num_segments in grid.x and stacks the CTAs in grid.y, so this must dispatch successfully.
@@ -873,7 +873,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys stream a tiny oversize segment across
 
   CAPTURE(cluster_cap, stages, pad, segment_size, k, num_segments);
 
-  c2h::device_vector<key_t> keys_in_buffer(pad + num_segments * segment_size, thrust::no_init);
+  c2h::device_vector<key_t> keys_in_buffer(pad + (num_segments * segment_size), thrust::no_init);
   c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
   c2h::gen(C2H_SEED(1), keys_in_buffer);
 
@@ -1054,7 +1054,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large fixed-size unaligned 
 
   CAPTURE(pad, static_max_segment_size, static_max_k, segment_size, k, num_segments, direction);
 
-  c2h::device_vector<key_t> keys_in_buffer(pad + num_segments * segment_size, thrust::no_init);
+  c2h::device_vector<key_t> keys_in_buffer(pad + (num_segments * segment_size), thrust::no_init);
   c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
   c2h::gen(C2H_SEED(1), keys_in_buffer);
 
@@ -1108,7 +1108,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys stream large segments with a signed 3
 
   CAPTURE(pad, static_max_segment_size, static_max_k, segment_size, k, num_segments);
 
-  c2h::device_vector<key_t> keys_in_buffer(pad + num_segments * segment_size, thrust::no_init);
+  c2h::device_vector<key_t> keys_in_buffer(pad + (num_segments * segment_size), thrust::no_init);
   c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
   c2h::gen(C2H_SEED(1), keys_in_buffer);
 
@@ -1163,9 +1163,9 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unalign
     0,
     big_segment_size,
     big_segment_size + (big_segment_size - 31),
-    big_segment_size + (big_segment_size - 31) + (96 * 1024 + 17),
-    big_segment_size + (big_segment_size - 31) + (96 * 1024 + 17) + 257,
-    big_segment_size + (big_segment_size - 31) + (96 * 1024 + 17) + 257 + (12 * 1024 + 1)};
+    big_segment_size + (big_segment_size - 31) + ((96 * 1024) + 17),
+    big_segment_size + (big_segment_size - 31) + ((96 * 1024) + 17) + 257,
+    big_segment_size + (big_segment_size - 31) + ((96 * 1024) + 17) + 257 + ((12 * 1024) + 1)};
   c2h::device_vector<segment_size_t> segment_offsets = h_segment_offsets;
   const segment_index_t num_segments                 = static_cast<segment_index_t>(h_segment_offsets.size() - 1);
   const segment_size_t num_items                     = h_segment_offsets.back();

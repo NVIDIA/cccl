@@ -17,7 +17,7 @@ using namespace cuda::experimental::stf;
 
 __global__ void gpu_merge_hashtable(hashtable A, const hashtable B)
 {
-  unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+  unsigned int threadid = (blockIdx.x * blockDim.x) + threadIdx.x;
   while (threadid < reserved::kHashTableCapacity)
   {
     if (B.addr[threadid].key != reserved::kEmpty)

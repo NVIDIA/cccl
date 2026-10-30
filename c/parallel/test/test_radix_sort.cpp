@@ -205,7 +205,8 @@ C2H_TEST("DeviceRadixSort::SortKeys works", "[radix_sort]", test_params_tuple)
   pointer_t<KeyT> input_keys_it(input_keys);
   pointer_t<KeyT> output_keys_it(num_items);
 
-  pointer_t<ItemT> input_items_it, output_items_it;
+  pointer_t<ItemT> input_items_it;
+  pointer_t<ItemT> output_items_it;
 
   auto& build_cache = get_cache<DeviceRadixSort_SortKeys_Fixture_Tag>();
 
@@ -357,7 +358,7 @@ C2H_TEST("RadixSort build result has serialization metadata populated", "[radix_
       build_info.get_libcudacxx_path(),
       build_info.get_ctk_path()));
 
-  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK(build.cc == (build_info.get_cc_major() * 10) + build_info.get_cc_minor());
   CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
   CHECK(build.payload_size > 0);
   CHECK(build.runtime_policy != nullptr);

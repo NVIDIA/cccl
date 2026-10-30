@@ -254,7 +254,7 @@ class iterator_core_access
   }
 
   template <class Facade1, class Facade2>
-  _CCCL_HOST_DEVICE static typename detail::distance_from_result<Facade1, Facade2>
+  _CCCL_HOST_DEVICE static detail::distance_from_result<Facade1, Facade2>
   distance_from(Facade1 const& f1, Facade2 const& f2)
   {
     // dispatch the implementation of this method upon whether or not
@@ -311,7 +311,6 @@ template <typename Derived,
           typename Difference = ::cuda::std::ptrdiff_t>
 class iterator_facade
 {
-private:
   /*! \cond
    */
 

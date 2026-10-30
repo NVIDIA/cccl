@@ -119,7 +119,6 @@ public:
   // Iterator class for cyclic_shape
   class iterator
   {
-  private:
     cyclic_shape* shape;
     size_t index;
     ::std::array<size_t, dimensions> current; // Array to store the current position in each dimension

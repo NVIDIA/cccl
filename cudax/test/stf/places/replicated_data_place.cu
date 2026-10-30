@@ -140,7 +140,7 @@ int main()
   ::std::vector<double> ref(n);
   for (size_t i = 0; i < n; i++)
   {
-    ref[i] = 0.25 * static_cast<double>(i % 1024) + 1.0;
+    ref[i] = (0.25 * static_cast<double>(i % 1024)) + 1.0;
   }
 
   const bool stackable_ok = conditional_body_memcpy_supported();
@@ -154,14 +154,14 @@ int main()
   for (int use_graph = 0; use_graph < 2; use_graph++)
   {
     context ctx;
-    if (use_graph)
+    if (use_graph != 0)
     {
       ctx = graph_ctx();
     }
 
     auto grid = exec_place::repeat(exec_place::current_device(), nplaces);
     auto rep  = data_place::replicated(grid);
-    auto lin  = ctx.logical_data(&ref[0], n);
+    auto lin  = ctx.logical_data(ref.data(), n);
     auto lout = ctx.logical_data(shape_of<slice<double>>(n));
     auto tok  = ctx.token(); // a void_interface dep: the instances tuple is
                             // shorter than the deps tuple, which the
@@ -223,7 +223,7 @@ int main()
     EXPECT(thrown_merged);
 
     ctx.finalize();
-    printf("replicated data place: %s backend OK\n", use_graph ? "graph" : "stream");
+    printf("replicated data place: %s backend OK\n", (use_graph != 0) ? "graph" : "stream");
   }
 
   // ---- green-context grid: member places are DISTINCT, so a replicated
@@ -254,11 +254,11 @@ int main()
       context ctx;
       for (int use_graph_g = 0; use_graph_g < 2; use_graph_g++)
       {
-        if (use_graph_g)
+        if (use_graph_g != 0)
         {
           ctx = graph_ctx();
         }
-        auto lin  = ctx.logical_data(&ref[0], n);
+        auto lin  = ctx.logical_data(ref.data(), n);
         auto lout = ctx.logical_data(shape_of<slice<double>>(n));
         ctx.parallel_for(blocked_partition(), ggrid, lin.shape(), lin.read(grep), lout.write())
             ->*[] __device__(size_t i, auto in, auto out) {
@@ -300,9 +300,9 @@ int main()
 
         ctx.finalize();
         printf("replicated data place: green-context grid (distinct member instances) %s OK\n",
-               use_graph_g ? "[graph]" : "[stream]");
+               (use_graph_g != 0) ? "[graph]" : "[stream]");
         printf("replicated data place: deferred form (grid-bound at acquire + scalar degenerate) %s OK\n",
-               use_graph_g ? "[graph]" : "[stream]");
+               (use_graph_g != 0) ? "[graph]" : "[stream]");
       }
 
       // ---- axis-grouped replication on a (2, 2) grid: axis 0 = the two
@@ -330,11 +330,11 @@ int main()
         // stream and graph backends
         for (int use_graph22 = 0; use_graph22 < 2; use_graph22++)
         {
-          if (use_graph22)
+          if (use_graph22 != 0)
           {
             gctx = graph_ctx();
           }
-          auto lgin  = gctx.logical_data(&ref[0], n);
+          auto lgin  = gctx.logical_data(ref.data(), n);
           auto lgout = gctx.logical_data(shape_of<slice<double>>(n));
           gctx.parallel_for(blocked_partition(), grid22, lgin.shape(), lgin.read(rep22), lgout.write())
               ->*[] __device__(size_t i, auto in, auto out) {

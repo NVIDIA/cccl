@@ -33,13 +33,11 @@ inline __host__ __device__ uint16_t round_to_nearest_even(float src)
   {
     return UINT16_C(0x7FC0);
   }
-  else
-  {
-    uint32_t U32;
-    std::memcpy(&U32, &src, sizeof(U32));
-    const uint32_t rounding_bias = ((U32 >> 16) & 1) + UINT32_C(0x7FFF);
-    return static_cast<uint16_t>((U32 + rounding_bias) >> 16);
-  }
+
+  uint32_t U32;
+  std::memcpy(&U32, &src, sizeof(U32));
+  const uint32_t rounding_bias = ((U32 >> 16) & 1) + UINT32_C(0x7FFF);
+  return static_cast<uint16_t>((U32 + rounding_bias) >> 16);
 }
 } // namespace bf16_detail
 

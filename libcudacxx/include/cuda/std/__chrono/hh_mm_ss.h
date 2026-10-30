@@ -35,7 +35,6 @@ namespace chrono
 template <class _Duration>
 class hh_mm_ss
 {
-private:
   static_assert(__is_cuda_std_duration_v<_Duration>, "template parameter of hh_mm_ss must be a std::chrono::duration");
   using __common_type = common_type_t<_Duration, chrono::seconds>;
 
@@ -137,14 +136,11 @@ private:
   {
     return hours{12};
   }
-  else if (__hours_ <= hours{12})
+  if (__hours_ <= hours{12})
   {
     return __hours_;
   }
-  else
-  {
-    return __hours_ - hours{12};
-  }
+  return __hours_ - hours{12};
 }
 
 [[nodiscard]] _CCCL_API constexpr hours make24(const hours& __hours_, bool __is_pm) noexcept
@@ -153,10 +149,7 @@ private:
   {
     return __hours_ == hours{12} ? __hours_ : __hours_ + hours{12};
   }
-  else
-  {
-    return __hours_ == hours{12} ? hours{0} : __hours_;
-  }
+  return __hours_ == hours{12} ? hours{0} : __hours_;
 }
 } // namespace chrono
 

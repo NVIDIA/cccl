@@ -56,7 +56,7 @@ void writeVTKFile(context& ctx,
       {
         for (size_t k = 0; k < 3; k++)
         {
-          dump[3 * (i + b * BLOCK_SIZE) + k] = p(i).pos[k];
+          dump[(3 * (i + (b * BLOCK_SIZE))) + k] = p(i).pos[k];
         }
       }
     };
@@ -64,7 +64,7 @@ void writeVTKFile(context& ctx,
 
   for (size_t p = 0; p < BODY_CNT; p++)
   {
-    outfile << dump[3 * p] << " " << dump[3 * p + 1] << " " << dump[3 * p + 2] << "\n";
+    outfile << dump[3 * p] << " " << dump[(3 * p) + 1] << " " << dump[(3 * p) + 2] << "\n";
   }
 
   outfile.close();
@@ -80,7 +80,13 @@ void load_input_file(std::string filename, std::vector<body>& particles)
     return;
   }
 
-  double mass, posX, posY, posZ, velX, velY, velZ;
+  double mass;
+  double posX;
+  double posY;
+  double posZ;
+  double velX;
+  double velY;
+  double velZ;
   size_t ind = 0;
 
   // Loop until we reach the end of the file
@@ -155,7 +161,7 @@ int main(int argc, char** argv)
     }
   }
 
-  cuda_safe_call(cudaHostRegister(&particles[0], BODY_CNT * sizeof(body), cudaHostRegisterPortable));
+  cuda_safe_call(cudaHostRegister(particles.data(), BODY_CNT * sizeof(body), cudaHostRegisterPortable));
 
   const double dt    = 0.005;
   const size_t NITER = 7; // 7000;
@@ -217,7 +223,7 @@ int main(int argc, char** argv)
                   {
                     for (size_t j = 0; j < p_other.extent(0); j++)
                     {
-                      if ((b * BLOCK_SIZE + i) != (b_other * BLOCK_SIZE + j))
+                      if (((b * BLOCK_SIZE) + i) != ((b_other * BLOCK_SIZE) + j))
                       {
                         double d[3];
                         for (size_t k = 0; k < 3; k++)
@@ -225,7 +231,7 @@ int main(int argc, char** argv)
                           d[k] = p_other(j).pos[k] - p(i).pos[k];
                         }
 
-                        const double dist     = d[0] * d[0] + d[1] * d[1] + d[2] * d[2] + kSofteningSquared;
+                        const double dist     = (d[0] * d[0]) + (d[1] * d[1]) + (d[2] * d[2]) + kSofteningSquared;
                         const double dist_inv = 1.0 / sqrt(dist);
 
                         for (size_t k = 0; k < 3; k++)
@@ -262,7 +268,7 @@ int main(int argc, char** argv)
 
     // Write the VTK file for this time step
     const char* dump_freq_str = getenv("DUMP_FREQ");
-    if (dump_freq_str && iter % ::std::stoi(dump_freq_str) == 0)
+    if (dump_freq_str != nullptr && iter % ::std::stoi(dump_freq_str) == 0)
     {
       const std::string filename = "time_step_" + std::to_string(iter) + ".vtk";
       writeVTKFile(ctx, filename, BLOCK_SIZE, BODY_CNT, parts);

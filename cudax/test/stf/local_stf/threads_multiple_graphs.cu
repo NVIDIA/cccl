@@ -69,7 +69,7 @@ int main()
   logical_data<slice<int>> lB;
   for (int j = 0; j < N; j++)
   {
-    B[j] = (17 * j + 3);
+    B[j] = ((17 * j) + 3);
   }
   lB = ctx.logical_data(B.data(), N).set_symbol("B");
 
@@ -105,7 +105,7 @@ int main()
     ctx.host_launch(lA[i].read())->*[i](auto ai) {
       for (size_t j = 0; j < N; j++)
       {
-        EXPECT(ai(j) == (i + j) + (i + (17 * j + 3)));
+        EXPECT(ai(j) == (i + j) + (i + ((17 * j) + 3)));
       }
     };
   }

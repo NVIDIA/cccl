@@ -100,9 +100,16 @@ using thrust::complex;
 // NOLINTBEGIN(misc-redundant-expression)
 _CCCL_HOST_DEVICE inline complex<double> ctanh(const complex<double>& z)
 {
-  double x, y;
-  double t, beta, s, rho, denom;
-  uint32_t hx, ix, lx;
+  double x;
+  double y;
+  double t;
+  double beta;
+  double s;
+  double rho;
+  double denom;
+  uint32_t hx;
+  uint32_t ix;
+  uint32_t lx;
 
   x = z.real();
   y = z.imag();
@@ -128,7 +135,7 @@ _CCCL_HOST_DEVICE inline complex<double> ctanh(const complex<double>& z)
    */
   if (ix >= 0x7ff00000)
   {
-    if ((ix & 0xfffff) | lx) /* x is NaN */
+    if (((ix & 0xfffff) | lx) != 0) /* x is NaN */
     {
       return (complex<double>(x, (y == 0 ? y : x * y)));
     }
@@ -160,10 +167,10 @@ _CCCL_HOST_DEVICE inline complex<double> ctanh(const complex<double>& z)
 
   /* Kahan's algorithm */
   t     = ::cuda::std::tan(y);
-  beta  = 1.0 + t * t; /* = 1 / cos^2(y) */
+  beta  = 1.0 + (t * t); /* = 1 / cos^2(y) */
   s     = ::cuda::std::sinh(x);
-  rho   = ::cuda::std::sqrt(1.0 + s * s); /* = cosh(x) */
-  denom = 1.0 + beta * s * s;
+  rho   = ::cuda::std::sqrt(1.0 + (s * s)); /* = cosh(x) */
+  denom = 1.0 + (beta * s * s);
   return (complex<double>((beta * rho * s) / denom, t / denom));
 }
 // NOLINTEND(misc-redundant-expression)

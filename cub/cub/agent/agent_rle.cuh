@@ -166,7 +166,7 @@ struct AgentRle
   /// among block-warps during any store-related data transpositions (versus each warp having
   /// its own storage)
   static constexpr bool STORE_WARP_TIME_SLICING = AgentRlePolicyT::STORE_WARP_TIME_SLICING;
-  static constexpr int ACTIVE_EXCHANGE_WARPS    = (STORE_WARP_TIME_SLICING) ? 1 : WARPS;
+  static constexpr int ACTIVE_EXCHANGE_WARPS    = STORE_WARP_TIME_SLICING ? 1 : WARPS;
 
   /**
    * Special operator that signals all out-of-bounds items are not equal to everything else,
@@ -191,10 +191,8 @@ struct AgentRle
       {
         return !equality_op(first, second);
       }
-      else
-      {
-        return true;
-      }
+
+      return true;
     }
   };
 
@@ -877,7 +875,7 @@ struct AgentRle
       // Return running total (inclusive of this tile)
       return tile_aggregate;
     }
-    else
+
     {
       // Not first tile
 

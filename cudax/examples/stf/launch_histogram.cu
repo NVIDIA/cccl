@@ -58,17 +58,18 @@ int main(int argc, char** argv)
 
   // If we were to register each part one by one, there could be pages which
   // cross multiple parts, and the pinning operation would fail.
-  cuda_safe_call(cudaHostRegister(&X[0], N * sizeof(double), cudaHostRegisterPortable));
+  cuda_safe_call(cudaHostRegister(X.data(), N * sizeof(double), cudaHostRegisterPortable));
 
-  auto lX = ctx.logical_data(&X[0], N);
+  auto lX = ctx.logical_data(X.data(), N);
   lX.set_symbol("X");
 
-  auto lhisto = ctx.logical_data(&histo[0], num_levels - 1);
+  auto lhisto = ctx.logical_data(histo.data(), num_levels - 1);
   lhisto.set_symbol("histogram");
 
   cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
 
-  cudaEvent_t start, stop;
+  cudaEvent_t start;
+  cudaEvent_t stop;
   cuda_safe_call(cudaEventCreate(&start));
   cuda_safe_call(cudaEventCreate(&stop));
   cuda_safe_call(cudaEventRecord(start, ctx.fence()));
@@ -145,7 +146,7 @@ int main(int argc, char** argv)
 
   // fprintf(stdout, "%zu %f ms\n", N / 1024 / 1024, ms);
 
-  if (check)
+  if (check != 0)
   {
     // fprintf(stderr, "Checking result...\n");
     size_t refhist[num_levels - 1];

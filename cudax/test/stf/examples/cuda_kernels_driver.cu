@@ -21,7 +21,7 @@ using namespace cuda::experimental::stf;
 
 __global__ void axpy(double a, slice<const double> x, slice<double> y)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int i = tid; i < x.size(); i += nthreads)
@@ -49,7 +49,8 @@ void test(bool is_graph)
   }
 
   const size_t N = 16;
-  double X[N], Y[N];
+  double X[N];
+  double Y[N];
 
   for (size_t i = 0; i < N; i++)
   {
@@ -109,7 +110,7 @@ void test(bool is_graph)
 
   for (size_t i = 0; i < N; i++)
   {
-    _CCCL_ASSERT(fabs(Y[i] - (Y0(i) + num_axpy * alpha * X0(i))) < 0.0001, "Invalid result");
+    _CCCL_ASSERT(fabs(Y[i] - (Y0(i) + (num_axpy * alpha * X0(i)))) < 0.0001, "Invalid result");
     _CCCL_ASSERT(fabs(X[i] - X0(i)) < 0.0001, "Invalid result");
   }
 }

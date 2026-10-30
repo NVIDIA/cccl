@@ -42,7 +42,7 @@ struct construct_key_flag_op
       : m(m)
       , bijection(bijection)
   {}
-  _CCCL_HOST_DEVICE key_flag_tuple operator()(std::uint64_t idx)
+  _CCCL_HOST_DEVICE key_flag_tuple operator()(std::uint64_t idx) const
   {
     auto gather_key = bijection(idx);
     return key_flag_tuple{gather_key, (gather_key < m) ? 1ull : 0ull};
@@ -109,7 +109,7 @@ _CCCL_HOST_DEVICE void shuffle_copy(
   thrust::inclusive_scan(
     exec,
     key_flag_it,
-    key_flag_it + static_cast<typename decltype(key_flag_it)::difference_type>(n),
+    key_flag_it + static_cast<decltype(key_flag_it)::difference_type>(n),
     gather_output_it,
     key_flag_scan_op());
 }

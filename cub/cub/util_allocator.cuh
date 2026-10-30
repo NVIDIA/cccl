@@ -157,10 +157,8 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
       {
         return (a.d_ptr < b.d_ptr);
       }
-      else
-      {
-        return (a.device < b.device);
-      }
+
+      return (a.device < b.device);
     }
 
     // Comparison functor for comparing allocation sizes
@@ -170,10 +168,8 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
       {
         return (a.bytes < b.bytes);
       }
-      else
-      {
-        return (a.device < b.device);
-      }
+
+      return (a.device < b.device);
     }
   };
 
@@ -212,7 +208,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
     unsigned int retval = 1;
     while (exp > 0)
     {
-      if (exp & 1)
+      if ((exp & 1) != 0)
       {
         retval = retval * base; // multiply the result by the current base
       }
@@ -579,7 +575,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
         mutex.unlock();
 
         // Return under error
-        if (error)
+        if (error != cudaSuccess)
         {
           return error;
         }

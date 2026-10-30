@@ -62,11 +62,21 @@ _CCCL_HOST_DEVICE inline float trim(float x)
 _CCCL_HOST_DEVICE inline complex<float> clogf(const complex<float>& z)
 {
   // Adapted from FreeBSDs msun
-  float x, y;
-  float ax, ay;
-  float x0, y0, x1, y1, x2, y2, t, hm1;
+  float x;
+  float y;
+  float ax;
+  float ay;
+  float x0;
+  float y0;
+  float x1;
+  float y1;
+  float x2;
+  float y2;
+  float t;
+  float hm1;
   float val[12];
-  int i, sorted;
+  int i;
+  int sorted;
   constexpr auto e = ::cuda::std::__numbers<float>::__e();
 
   x = z.real();
@@ -127,12 +137,13 @@ _CCCL_HOST_DEVICE inline complex<float> clogf(const complex<float>& z)
 
   if (ax >= 1.0f)
   {
-    return (complex<float>(::cuda::std::log1pf((ax - 1.f) * (ax + 1.f) + ay * ay) * 0.5f, ::cuda::std::atan2(y, x)));
+    return (
+      complex<float>(::cuda::std::log1pf(((ax - 1.f) * (ax + 1.f)) + (ay * ay)) * 0.5f, ::cuda::std::atan2(y, x)));
   }
 
-  if (ax * ax + ay * ay <= 0.7f)
+  if ((ax * ax) + (ay * ay) <= 0.7f)
   {
-    return (complex<float>(::cuda::std::log(ax * ax + ay * ay) * 0.5f, ::cuda::std::atan2(y, x)));
+    return (complex<float>(::cuda::std::log((ax * ax) + (ay * ay)) * 0.5f, ::cuda::std::atan2(y, x)));
   }
 
   /*
@@ -177,7 +188,7 @@ _CCCL_HOST_DEVICE inline complex<float> clogf(const complex<float>& z)
         val[i + 1] = t;
       }
     }
-  } while (!sorted);
+  } while (sorted == 0);
 
   hm1 = -1;
   for (i = 0; i < 12; i++)

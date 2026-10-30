@@ -320,7 +320,8 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle pointers", "[device][run_leng
   REQUIRE(out_unique == reference_out);
 }
 
-#if 0 // https://github.com/NVIDIA/cccl/issues/400
+// https://github.com/NVIDIA/cccl/issues/400
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 template<class T>
 struct convertible_from_T {
   T val_;
@@ -437,7 +438,7 @@ try
 
   // We repeat each number once for the first <num_small_runs> number of items and all subsequent numbers twice
   const std::size_t num_small_runs = cuda::std::min(uint32_max, num_items) - 4;
-  const auto num_uniques           = static_cast<offset_type>(num_small_runs + (num_items - num_small_runs + 1) / 2);
+  const auto num_uniques           = static_cast<offset_type>(num_small_runs + ((num_items - num_small_runs + 1) / 2));
   auto input_item_it =
     cuda::transform_iterator(counting_it, repeat_item_gen_op<offset_type>{static_cast<offset_type>(num_small_runs)});
 
@@ -555,11 +556,11 @@ CUB_TEST("DeviceRunLengthEncode::Encode is exact over a segment-length grid",
     {150000, 3}, // mid-size, different tile alignment
     {tile, 1}, // single tile, all runs of length 1
     {tile, -static_cast<int>(tile)}, // single tile, one run
-    {3 * tile + 7, 1}, // partial tail tile, dense
-    {3 * tile + 1, -static_cast<int>(tile + 1)}, // run crossing into a one-element tail tile
+    {(3 * tile) + 7, 1}, // partial tail tile, dense
+    {(3 * tile) + 1, -static_cast<int>(tile + 1)}, // run crossing into a one-element tail tile
     {(1 << 20) + 12345, 2}, // partial tail, mid density
-    {64 * tile + 7, 7}, // run count per warp-tile straddles the warp-tile capacity boundary
-    {64 * tile + 7, 100}, // a couple of runs per warp of input
+    {(64 * tile) + 7, 7}, // run count per warp-tile straddles the warp-tile capacity boundary
+    {(64 * tile) + 7, 100}, // a couple of runs per warp of input
     {64 * tile, -40}, // fixed-length runs: run count per warp-tile below one full warp; head phase drifts 8 mod 32
     {64 * tile, -31}, // fixed-length runs: run count per warp-tile just above one full warp
     {64 * tile, -4}, // fixed-length runs: run count per warp-tile exactly at a power of two
@@ -589,13 +590,13 @@ CUB_TEST("DeviceRunLengthEncode::Encode is exact at pipeline-scale sizes",
 
   constexpr std::int64_t tile = segment_grid_tile_size(sizeof(key_t));
 
-  test_segmented_encode<key_t, int>(1030 * tile + 7, 1, 1, 1u); // misaligned input, dense, partial tail
+  test_segmented_encode<key_t, int>((1030 * tile) + 7, 1, 1, 1u); // misaligned input, dense, partial tail
   test_segmented_encode<key_t, int>(1024 * tile, -static_cast<int>(tile), 0, 1u); // a head at every tile start
   // one-element run whose head is the only element of a one-element final tile
-  test_segmented_encode<key_t, int>(1024 * tile + 1, -static_cast<int>(1024 * tile), 0, 1u);
+  test_segmented_encode<key_t, int>((1024 * tile) + 1, -static_cast<int>(1024 * tile), 0, 1u);
   test_segmented_encode<key_t, int>(1024 * tile, 0, 0, 1u); // one constant run over the whole input
   // run length == tile + 1: the run head position drifts through every in-tile offset
-  test_segmented_encode<key_t, int>(1200 * tile + 3, -static_cast<int>(tile + 1), 0, 1u);
+  test_segmented_encode<key_t, int>((1200 * tile) + 3, -static_cast<int>(tile + 1), 0, 1u);
 }
 
 CUB_TEST("DeviceRunLengthEncode::Encode handles every input misalignment",
@@ -611,11 +612,11 @@ CUB_TEST("DeviceRunLengthEncode::Encode handles every input misalignment",
   // sweeps every sub-16B misalignment of the input pointer plus the two 16B-aligned shifted bases
   for (int elem_offset = 1; elem_offset <= offsets_swept; ++elem_offset)
   {
-    test_segmented_encode<key_t, int>(3 * tile + 7, 32, elem_offset, 1u);
+    test_segmented_encode<key_t, int>((3 * tile) + 7, 32, elem_offset, 1u);
     if ((elem_offset * sizeof(key_t)) % 16 == 0)
     {
       // aligned shifted base with a run boundary at every tile boundary
-      test_segmented_encode<key_t, int>(3 * tile + 7, -static_cast<int>(tile), elem_offset, 1u);
+      test_segmented_encode<key_t, int>((3 * tile) + 7, -static_cast<int>(tile), elem_offset, 1u);
     }
   }
 }
@@ -701,11 +702,11 @@ CUB_TEST("DeviceRunLengthEncode::Encode writes the last key of each run", "[devi
 
   test_last_key_selection(1, 0, 1u); // a single element
   test_last_key_selection(tile, -static_cast<int>(tile), 1u); // one run per tile
-  test_last_key_selection(3 * tile + 7, 2, 1u); // dense, partial tail tile
-  test_last_key_selection(3 * tile + 7, 2, 42u);
-  test_last_key_selection(3 * tile + 7, 300, 1u); // mixed lengths crossing tile boundaries
-  test_last_key_selection(3 * tile + 7, 300, 42u);
-  test_last_key_selection(64 * tile + 7, 7, 1u); // run count per warp-tile straddles capacity
+  test_last_key_selection((3 * tile) + 7, 2, 1u); // dense, partial tail tile
+  test_last_key_selection((3 * tile) + 7, 2, 42u);
+  test_last_key_selection((3 * tile) + 7, 300, 1u); // mixed lengths crossing tile boundaries
+  test_last_key_selection((3 * tile) + 7, 300, 42u);
+  test_last_key_selection((64 * tile) + 7, 7, 1u); // run count per warp-tile straddles capacity
   test_last_key_selection(64 * tile, -static_cast<int>(tile + 1), 1u); // head drifts through every in-tile offset
   test_last_key_selection(64 * tile, -static_cast<int>(warp_tile + 1), 1u); // head drifts through warp-tile offsets
   test_last_key_selection(64 * tile, 0, 1u); // one run over the whole input

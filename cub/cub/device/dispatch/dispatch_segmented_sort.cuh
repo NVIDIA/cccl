@@ -77,7 +77,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t device_segmented_sort_c
   device_double_buffer<ValueT> d_values_double_buffer,
   BeginOffsetIteratorT d_begin_offsets,
   EndOffsetIteratorT d_end_offsets,
-  local_segment_index_t* group_sizes,
+  const local_segment_index_t* group_sizes,
   local_segment_index_t* large_and_medium_segments_indices,
   local_segment_index_t* small_segments_indices,
   cudaStream_t stream,
@@ -518,8 +518,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedSort") Dis
     {
       constexpr auto num_segments_per_invocation_limit =
         static_cast<global_segment_offset_t>(::cuda::std::numeric_limits<int>::max());
-      auto const max_num_segments_per_invocation = static_cast<global_segment_offset_t>(
-        (::cuda::std::min) (static_cast<global_segment_offset_t>(num_segments), num_segments_per_invocation_limit));
+      auto const max_num_segments_per_invocation =
+        static_cast<global_segment_offset_t>((::cuda::std::min) (num_segments, num_segments_per_invocation_limit));
 
       large_and_medium_segments_indices.grow(max_num_segments_per_invocation);
       small_segments_indices.grow(max_num_segments_per_invocation);
@@ -530,7 +530,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedSort") Dis
       // We call partition through dispatch instead of device because c.parallel needs to be able to call the kernel.
       // This approach propagates the type erasure to partition.
       using ChooseOffsetT                = detail::choose_signed_offset<global_segment_offset_t>;
-      using PartitionOffsetT             = typename ChooseOffsetT::type;
+      using PartitionOffsetT             = ChooseOffsetT::type;
       using DispatchThreeWayPartitionIfT = cub::detail::three_way_partition::dispatch_three_way_partition_if<
         THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>,
         decltype(large_and_medium_segments_indices.get()),
@@ -643,15 +643,15 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedSort") Dis
      */
     detail::device_double_buffer<KeyT> d_keys_double_buffer(
       (is_overwrite_okay || is_num_passes_odd) ? d_keys.Alternate() : keys_allocation.get(),
-      (is_overwrite_okay)   ? d_keys.Current()
-      : (is_num_passes_odd) ? keys_allocation.get()
-                            : d_keys.Alternate());
+      (is_overwrite_okay) ? d_keys.Current()
+      : is_num_passes_odd ? keys_allocation.get()
+                          : d_keys.Alternate());
 
     detail::device_double_buffer<ValueT> d_values_double_buffer(
       (is_overwrite_okay || is_num_passes_odd) ? d_values.Alternate() : values_allocation.get(),
-      (is_overwrite_okay)   ? d_values.Current()
-      : (is_num_passes_odd) ? values_allocation.get()
-                            : d_values.Alternate());
+      (is_overwrite_okay) ? d_values.Current()
+      : is_num_passes_odd ? values_allocation.get()
+                          : d_values.Alternate());
 
     cudaError_t error;
     if (partition_segments)
@@ -780,8 +780,7 @@ private:
       static_cast<global_segment_offset_t>(::cuda::std::numeric_limits<int>::max());
 
     // We repeatedly invoke the partitioning and sorting kernels until all segments are processed.
-    const global_segment_offset_t num_invocations =
-      ::cuda::ceil_div(static_cast<global_segment_offset_t>(num_segments), num_segments_per_invocation_limit);
+    const global_segment_offset_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation_limit);
     for (global_segment_offset_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
     {
       const global_segment_offset_t current_seg_offset = invocation_index * num_segments_per_invocation_limit;
@@ -805,7 +804,7 @@ private:
       // We call partition through dispatch instead of device because c.parallel needs to be able to call the kernel.
       // This approach propagates the type erasure to partition.
       using ChooseOffsetT                = detail::choose_signed_offset<global_segment_offset_t>;
-      using PartitionOffsetT             = typename ChooseOffsetT::type;
+      using PartitionOffsetT             = ChooseOffsetT::type;
       using DispatchThreeWayPartitionIfT = cub::detail::three_way_partition::dispatch_three_way_partition_if<
         THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>,
         decltype(large_and_medium_segments_indices.get()),
@@ -1035,8 +1034,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_
   constexpr auto num_segments_per_invocation_limit =
     static_cast<global_segment_offset_t>(::cuda::std::numeric_limits<int>::max());
 
-  const global_segment_offset_t num_invocations =
-    ::cuda::ceil_div(static_cast<global_segment_offset_t>(num_segments), num_segments_per_invocation_limit);
+  const global_segment_offset_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation_limit);
   for (global_segment_offset_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
   {
     const global_segment_offset_t current_seg_offset = invocation_index * num_segments_per_invocation_limit;
@@ -1382,8 +1380,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     {
       constexpr auto num_segments_per_invocation_limit =
         static_cast<global_segment_offset_t>(::cuda::std::numeric_limits<int>::max());
-      auto const max_num_segments_per_invocation = static_cast<global_segment_offset_t>(
-        (::cuda::std::min) (static_cast<global_segment_offset_t>(num_segments), num_segments_per_invocation_limit));
+      auto const max_num_segments_per_invocation =
+        static_cast<global_segment_offset_t>((::cuda::std::min) (num_segments, num_segments_per_invocation_limit));
 
       large_and_medium_segments_indices.grow(max_num_segments_per_invocation);
       small_segments_indices.grow(max_num_segments_per_invocation);
@@ -1484,14 +1482,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
     device_double_buffer<KeyT> d_keys_double_buffer(
       (is_overwrite_okay || is_num_passes_odd) ? d_keys.Alternate() : keys_allocation.get(),
-      (is_overwrite_okay)   ? d_keys.Current()
-      : (is_num_passes_odd) ? keys_allocation.get()
-                            : d_keys.Alternate());
+      is_overwrite_okay   ? d_keys.Current()
+      : is_num_passes_odd ? keys_allocation.get()
+                          : d_keys.Alternate());
     device_double_buffer<ValueT> d_values_double_buffer(
       (is_overwrite_okay || is_num_passes_odd) ? d_values.Alternate() : values_allocation.get(),
-      (is_overwrite_okay)   ? d_values.Current()
-      : (is_num_passes_odd) ? values_allocation.get()
-                            : d_values.Alternate());
+      is_overwrite_okay   ? d_values.Current()
+      : is_num_passes_odd ? values_allocation.get()
+                          : d_values.Alternate());
 
     const auto segmented_sort_fallback_kernel = kernel_source.SegmentedSortFallbackKernel();
     const auto segmented_sort_kernel_small    = kernel_source.SegmentedSortKernelSmall();

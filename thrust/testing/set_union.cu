@@ -51,7 +51,8 @@ void test_set_union_simple()
 {
   using Iterator = typename Vector::iterator;
 
-  Vector a{0, 2, 4}, b{0, 3, 3, 4};
+  Vector a{0, 2, 4};
+  Vector b{0, 3, 3, 4};
 
   Vector ref{0, 2, 3, 3, 4};
   Vector result(5);
@@ -68,7 +69,8 @@ void test_set_union_with_equivalent_elements_simple()
 {
   using Iterator = typename Vector::iterator;
 
-  Vector a{0, 2, 2}, b{0, 2, 2, 2, 3};
+  Vector a{0, 2, 2};
+  Vector b{0, 2, 2, 2, 3};
 
   Vector ref{0, 2, 2, 2, 3};
   Vector result(5);

@@ -21,14 +21,6 @@
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(adjacent_difference.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(adjacent_difference.h)
 
-// Some build systems need a hint to know which files we could include
-#if 0
-#  include <thrust/system/cpp/detail/adjacent_difference.h>
-#  include <thrust/system/cuda/detail/adjacent_difference.h>
-#  include <thrust/system/omp/detail/adjacent_difference.h>
-#  include <thrust/system/tbb/detail/adjacent_difference.h>
-#endif
-
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE

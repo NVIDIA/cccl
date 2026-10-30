@@ -303,7 +303,7 @@ struct set_bit_flag_for_write_op
   static constexpr auto bits_per_element = 8 * sizeof(std::uint32_t);
 
   template <typename OffsetT>
-  __host__ __device__ void set_bit_flag(std::uint32_t* d_flags, OffsetT index)
+  __host__ __device__ void set_bit_flag(std::uint32_t* d_flags, OffsetT index) // NOLINT(readability-non-const-parameter)
   {
     // Set the n-th bit from a given flags array
     OffsetT uint_index     = index / static_cast<OffsetT>(bits_per_element);
@@ -334,7 +334,7 @@ class check_unordered_output_helper
   std::size_t num_elements;
 
   // Checks whether all results have been written correctly
-  void check_bit_flags(const c2h::device_vector<std::uint32_t>& flag_vector)
+  void check_bit_flags(const c2h::device_vector<std::uint32_t>& flag_vector) const
   {
     auto correctness_flags_end = flag_vector.cbegin() + static_cast<std::ptrdiff_t>(num_elements / bits_per_element);
     const bool all_correct =
@@ -357,7 +357,7 @@ class check_unordered_output_helper
           break;
         }
       }
-      const auto wrong_element_index = (mismatch_it - flag_vector.cbegin()) * bits_per_element + bit_index;
+      const auto wrong_element_index = ((mismatch_it - flag_vector.cbegin()) * bits_per_element) + bit_index;
       FAIL("First wrong output index: " << wrong_element_index);
     }
     if (num_elements % bits_per_element != 0)
@@ -365,7 +365,7 @@ class check_unordered_output_helper
       auto const last_element_flags = flag_vector[num_elements / bits_per_element];
       for (std::uint32_t i = 0; i < (num_elements % bits_per_element); ++i)
       {
-        const auto element_index = (num_elements / bits_per_element) * bits_per_element + i;
+        const auto element_index = ((num_elements / bits_per_element) * bits_per_element) + i;
         INFO("First wrong output index: " << element_index);
         REQUIRE(((last_element_flags >> i) & 0x01u) == 0x01u);
       }

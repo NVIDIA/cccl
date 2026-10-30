@@ -85,7 +85,7 @@ public:
     }
     else
     {
-      if (getenv("USE_CUDA_MALLOC"))
+      if (getenv("USE_CUDA_MALLOC") != nullptr)
       {
         // Same order as the host branch: allocate first, then add the node, so a failure in
         // either step leaves neither an orphan node in the graph nor an unreachable buffer.
@@ -179,7 +179,7 @@ private:
     params.poolProps.location.id = device_ordinal(memory_node);
     params.accessDescs           = desc.data();
     params.accessDescCount       = size_t(ndevices);
-    params.bytesize              = size_t(s);
+    params.bytesize              = s;
 
     out = cuda_try<cudaGraphAddMemAllocNode>(graph, input_nodes.data(), input_nodes.size(), &params);
 
@@ -208,7 +208,7 @@ private:
  */
 class graph_ctx : public backend_ctx<graph_ctx>
 {
-  using backend_impl = typename backend_ctx<graph_ctx>::impl;
+  using backend_impl = backend_ctx<graph_ctx>::impl;
 
   class impl : public backend_impl
   {
@@ -404,16 +404,16 @@ public:
   {
     _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::submitted, "");
     auto& state = this->state();
-    if (!state.submitted_stream)
+    if (state.submitted_stream == nullptr)
     {
-      if (stream)
+      if (stream != nullptr)
       {
         // We could submit just the last iteration in that specific stream, and synchronize the user-provided
         // stream with this one
         EXPECT(state.graph_stage == 0, "Cannot call submit with an explicit stream and change stage.");
         state.submitted_stream = stream;
       }
-      else if (!state.submitted_stream)
+      else if (state.submitted_stream == nullptr)
       {
         state.submitted_stream = pick_stream();
         assert(state.submitted_stream != nullptr);
@@ -482,7 +482,7 @@ public:
 
     auto& state = this->state();
 
-    if (getenv("CUDASTF_DISPLAY_GRAPH_INFO"))
+    if (getenv("CUDASTF_DISPLAY_GRAPH_INFO") != nullptr)
     {
       display_graph_info(get_graph());
     }
@@ -507,7 +507,7 @@ public:
 
     auto& state = this->state();
 
-    if (getenv("CUDASTF_DUMP_GRAPHS"))
+    if (getenv("CUDASTF_DUMP_GRAPHS") != nullptr)
     {
       static int instantiated_graph = 0;
       print_to_dot("instantiated_graph" + ::std::to_string(instantiated_graph++) + ".dot");
@@ -575,7 +575,7 @@ public:
   }
 
   // flags = cudaGraphDebugDotFlagsVerbose to display all available debug information
-  void print_to_dot(const ::std::string& filename, enum cudaGraphDebugDotFlags flags = cudaGraphDebugDotFlags(0))
+  void print_to_dot(const ::std::string& filename, enum cudaGraphDebugDotFlags flags = cudaGraphDebugDotFlags(0)) const
   {
     cudaGraphDebugDotPrint(get_graph(), filename.c_str(), flags);
   }
@@ -705,7 +705,7 @@ private:
   {
     auto& state = this->state();
     // TODO rework to make sure we don't push a specific stream later ?
-    if (!state.submitted_stream)
+    if (state.submitted_stream == nullptr)
     {
       // fprintf(stderr, "Initializing stream support for ctx ...\n");
       state.submitted_stream = pick_stream();
@@ -726,6 +726,7 @@ private:
     // fprintf(stderr, "Instantiate stage %ld\n", stage);
     display_graph_info(g);
 
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0
         ::std::string name = "stage" + ::std::to_string(stage) + ".dot";
         cudaGraphDebugDotPrint(g, name.c_str(), cudaGraphDebugDotFlagsVerbose);
@@ -771,12 +772,12 @@ private:
   }
 
 public:
-  friend inline cudaGraph_t ctx_to_graph(backend_ctx_untyped& ctx)
+  friend cudaGraph_t ctx_to_graph(backend_ctx_untyped& ctx)
   {
     return ctx.graph();
   }
 
-  friend inline size_t ctx_to_graph_stage(backend_ctx_untyped& ctx)
+  friend size_t ctx_to_graph_stage(backend_ctx_untyped& ctx)
   {
     return ctx.stage();
   }
@@ -810,7 +811,8 @@ UNITTEST("set_symbol on graph_task and graph_task<>")
   // task lives in its own block, since a task holds its data locked until it ends.
   graph_ctx ctx;
 
-  double X[1024], Y[1024];
+  double X[1024];
+  double Y[1024];
   auto lX = ctx.logical_data(X);
   auto lY = ctx.logical_data(Y);
 

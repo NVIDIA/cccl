@@ -62,7 +62,7 @@ int main()
     p.acc[2] = 0.0;
   }
 
-  auto h_particles = ctx.logical_data(make_slice(&particles[0], BODY_CNT));
+  auto h_particles = ctx.logical_data(make_slice(particles.data(), BODY_CNT));
 
   ctx.repeat(NITER)->*[&](context ctx, size_t) {
     // Compute accelerations
@@ -83,7 +83,7 @@ int main()
             d[k] = p(j).pos[k] - p(i).pos[k];
           }
 
-          const double dist     = d[0] * d[0] + d[1] * d[1] + d[2] * d[2] + kSofteningSquared;
+          const double dist     = (d[0] * d[0]) + (d[1] * d[1]) + (d[2] * d[2]) + kSofteningSquared;
           const double dist_inv = 1.0 / sqrt(dist);
 
           for (size_t k = 0; k < 3; k++)

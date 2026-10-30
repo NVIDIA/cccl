@@ -217,7 +217,6 @@ class BlockMergeSortStrategy
 {
   static_assert(::cuda::is_power_of_two(NumThreads), "NumThreads must be a power of two");
 
-private:
   static constexpr int ITEMS_PER_TILE = ItemsPerThread * NumThreads;
 
   // Whether or not there are values to be trucked along with keys
@@ -835,7 +834,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      const int idx                 = ItemsPerThread * linear_tid + item;
+      const int idx                 = (ItemsPerThread * linear_tid) + item;
       temp_storage.keys_shared[idx] = keys[item];
     }
     if (linear_tid == 0)
@@ -852,7 +851,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      const int idx                  = ItemsPerThread * linear_tid + item;
+      const int idx                  = (ItemsPerThread * linear_tid) + item;
       temp_storage.items_shared[idx] = items[item];
     }
 
@@ -897,7 +896,7 @@ private:
       _CCCL_PRAGMA_UNROLL(Unroll ? ItemsPerThread : 1)
       for (int item = 1; item < ItemsPerThread; ++item)
       {
-        if (ItemsPerThread * linear_tid + item < valid_items)
+        if ((ItemsPerThread * linear_tid) + item < valid_items)
         {
           max_key = compare_op(max_key, keys[item]) ? keys[item] : max_key;
         }
@@ -957,7 +956,10 @@ private:
 
       const int thread_idx_in_thread_group_being_merged = mask & linear_tid;
 
-      int keys1_beg, keys1_end, keys2_end, diag;
+      int keys1_beg;
+      int keys1_end;
+      int keys2_end;
+      int diag;
       if constexpr (Clamped)
       {
         keys1_beg = (::cuda::std::min) (valid_items, start);
@@ -1111,7 +1113,6 @@ class BlockMergeSort
         BlockMergeSort<KeyT, BlockDimX, ItemsPerThread, ValueT, BlockDimY, BlockDimZ, Unroll>,
         Unroll>
 {
-private:
   // The thread block size in threads
   static constexpr int BLOCK_THREADS  = BlockDimX * BlockDimY * BlockDimZ;
   static constexpr int ITEMS_PER_TILE = ItemsPerThread * BLOCK_THREADS;

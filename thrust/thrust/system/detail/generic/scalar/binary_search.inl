@@ -28,7 +28,8 @@ lower_bound_n(RandomAccessIterator first, Size n, const T& val, BinaryPredicate 
   // wrap comp
   const thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
 
-  Size start = 0, i;
+  Size start = 0;
+  Size i;
   while (start < n)
   {
     i = start + (n - start) / 2; // Overflow-safe variant of (a+b)/2
@@ -62,7 +63,8 @@ upper_bound_n(RandomAccessIterator first, Size n, const T& val, BinaryPredicate 
   // wrap comp
   const thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
 
-  Size start = 0, i;
+  Size start = 0;
+  Size i;
   while (start < n)
   {
     i = start + (n - start) / 2; // Overflow-safe variant of (a+b)/2

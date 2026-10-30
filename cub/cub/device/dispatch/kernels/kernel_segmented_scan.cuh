@@ -310,7 +310,7 @@ public:
 
       for (unsigned chunk_id = 0; chunk_id < n_chunks; ++chunk_id)
       {
-        const unsigned work_id = chunk_id * threads_per_block + tid;
+        const unsigned work_id = (chunk_id * threads_per_block) + tid;
 
         // TODO: use BlockLoad to load
         const OffsetT input_segment_begin = (work_id < n_segments) ? input_begin_idx_it[work_id] : 0;

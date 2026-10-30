@@ -45,7 +45,6 @@ namespace reserved
  */
 class buddy_allocator_metadata
 {
-private:
   /**
    * @brief Describes an available piece of memory
    */
@@ -179,7 +178,7 @@ private:
     assert(n > 0);
 
     size_t log = 0;
-    while (n >>= 1)
+    while ((n >>= 1) != 0)
     { // Right shift until n becomes 0
       log++;
     }

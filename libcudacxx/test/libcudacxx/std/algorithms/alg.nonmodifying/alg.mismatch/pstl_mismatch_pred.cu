@@ -61,9 +61,9 @@ void test_mismatch(const Policy& policy)
   { // convertible pred
     const auto res = cuda::std::mismatch(
       policy,
-      cuda::counting_iterator{int{0}},
+      cuda::counting_iterator{0},
       cuda::counting_iterator{int{size}},
-      cuda::counting_iterator{int{0}},
+      cuda::counting_iterator{0},
       cuda::std::equal_to<cuda::std::ptrdiff_t>{});
     CHECK(res == cuda::std::pair{cuda::counting_iterator<int>{size}, cuda::counting_iterator<int>{size}});
   }
@@ -81,7 +81,7 @@ void test_mismatch(const Policy& policy)
   { // convertible type and pred
     const auto res = cuda::std::mismatch(
       policy,
-      cuda::counting_iterator{int{0}},
+      cuda::counting_iterator{0},
       cuda::counting_iterator{int{size}},
       cuda::counting_iterator{short{0}},
       cuda::std::equal_to<cuda::std::ptrdiff_t>{});
@@ -149,9 +149,9 @@ void test_mismatch2(const Policy& policy)
   { // convertible pred
     const auto res = cuda::std::mismatch(
       policy,
-      cuda::counting_iterator{int{0}},
+      cuda::counting_iterator{0},
       cuda::counting_iterator{int{size}},
-      cuda::counting_iterator{int{0}},
+      cuda::counting_iterator{0},
       cuda::counting_iterator{int{size}},
       cuda::std::equal_to<cuda::std::ptrdiff_t>{});
     CHECK(res == cuda::std::pair{cuda::counting_iterator<int>{size}, cuda::counting_iterator<int>{size}});
@@ -171,7 +171,7 @@ void test_mismatch2(const Policy& policy)
   { // convertible type and pred
     const auto res = cuda::std::mismatch(
       policy,
-      cuda::counting_iterator{int{0}},
+      cuda::counting_iterator{0},
       cuda::counting_iterator{int{size}},
       cuda::counting_iterator{short{0}},
       cuda::counting_iterator{short{size}},

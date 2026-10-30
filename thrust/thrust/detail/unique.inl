@@ -27,18 +27,6 @@
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(unique_by_key.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(unique_by_key.h)
 
-// Some build systems need a hint to know which files we could include
-#if 0
-#  include <thrust/system/cpp/detail/unique.h>
-#  include <thrust/system/cpp/detail/unique_by_key.h>
-#  include <thrust/system/cuda/detail/unique.h>
-#  include <thrust/system/cuda/detail/unique_by_key.h>
-#  include <thrust/system/omp/detail/unique.h>
-#  include <thrust/system/omp/detail/unique_by_key.h>
-#  include <thrust/system/tbb/detail/unique.h>
-#  include <thrust/system/tbb/detail/unique_by_key.h>
-#endif
-
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -70,11 +58,11 @@ _CCCL_HOST_DEVICE OutputIterator unique_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
-  OutputIterator output)
+  OutputIterator result)
 {
   _CCCL_NVTX_RANGE_SCOPE("unique_copy");
   using thrust::system::detail::generic::unique_copy;
-  return unique_copy(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, output);
+  return unique_copy(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result);
 } // end unique_copy()
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -83,12 +71,12 @@ _CCCL_HOST_DEVICE OutputIterator unique_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
-  OutputIterator output,
+  OutputIterator result,
   BinaryPredicate binary_pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("unique_copy");
   using thrust::system::detail::generic::unique_copy;
-  return unique_copy(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, output, binary_pred);
+  return unique_copy(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, binary_pred);
 } // end unique_copy()
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -131,8 +119,8 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_
   InputIterator1 keys_first,
   InputIterator1 keys_last,
   InputIterator2 values_first,
-  OutputIterator1 keys_output,
-  OutputIterator2 values_output)
+  OutputIterator1 keys_result,
+  OutputIterator2 values_result)
 {
   _CCCL_NVTX_RANGE_SCOPE("unique_by_key_copy");
   using thrust::system::detail::generic::unique_by_key_copy;
@@ -141,8 +129,8 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_
     keys_first,
     keys_last,
     values_first,
-    keys_output,
-    values_output);
+    keys_result,
+    values_result);
 } // end unique_by_key_copy()
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -157,8 +145,8 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_
   InputIterator1 keys_first,
   InputIterator1 keys_last,
   InputIterator2 values_first,
-  OutputIterator1 keys_output,
-  OutputIterator2 values_output,
+  OutputIterator1 keys_result,
+  OutputIterator2 values_result,
   BinaryPredicate binary_pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("unique_by_key_copy");
@@ -168,8 +156,8 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_
     keys_first,
     keys_last,
     values_first,
-    keys_output,
-    values_output,
+    keys_result,
+    values_result,
     binary_pred);
 } // end unique_by_key_copy()
 
@@ -200,7 +188,7 @@ ForwardIterator unique(ForwardIterator first, ForwardIterator last, BinaryPredic
 } // end unique()
 
 template <typename InputIterator, typename OutputIterator>
-OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterator output)
+OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterator result)
 {
   _CCCL_NVTX_RANGE_SCOPE("unique_copy");
   using thrust::system::detail::generic::select_system;
@@ -211,11 +199,11 @@ OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterat
   System1 system1;
   System2 system2;
 
-  return thrust::unique_copy(select_system(system1, system2), first, last, output);
+  return thrust::unique_copy(select_system(system1, system2), first, last, result);
 } // end unique_copy()
 
 template <typename InputIterator, typename OutputIterator, typename BinaryPredicate>
-OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterator output, BinaryPredicate binary_pred)
+OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterator result, BinaryPredicate binary_pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("unique_copy");
   using thrust::system::detail::generic::select_system;
@@ -226,7 +214,7 @@ OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterat
   System1 system1;
   System2 system2;
 
-  return thrust::unique_copy(select_system(system1, system2), first, last, output, binary_pred);
+  return thrust::unique_copy(select_system(system1, system2), first, last, result, binary_pred);
 } // end unique_copy()
 
 template <typename ForwardIterator1, typename ForwardIterator2>
@@ -266,8 +254,8 @@ template <typename InputIterator1, typename InputIterator2, typename OutputItera
   InputIterator1 keys_first,
   InputIterator1 keys_last,
   InputIterator2 values_first,
-  OutputIterator1 keys_output,
-  OutputIterator2 values_output)
+  OutputIterator1 keys_result,
+  OutputIterator2 values_result)
 {
   _CCCL_NVTX_RANGE_SCOPE("unique_by_key_copy");
   using thrust::system::detail::generic::select_system;
@@ -283,7 +271,7 @@ template <typename InputIterator1, typename InputIterator2, typename OutputItera
   System4 system4;
 
   return thrust::unique_by_key_copy(
-    select_system(system1, system2, system3, system4), keys_first, keys_last, values_first, keys_output, values_output);
+    select_system(system1, system2, system3, system4), keys_first, keys_last, values_first, keys_result, values_result);
 } // end unique_by_key_copy()
 
 template <typename InputIterator1,
@@ -295,8 +283,8 @@ template <typename InputIterator1,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
   InputIterator2 values_first,
-  OutputIterator1 keys_output,
-  OutputIterator2 values_output,
+  OutputIterator1 keys_result,
+  OutputIterator2 values_result,
   BinaryPredicate binary_pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("unique_by_key_copy");
@@ -317,8 +305,8 @@ template <typename InputIterator1,
     keys_first,
     keys_last,
     values_first,
-    keys_output,
-    values_output,
+    keys_result,
+    values_result,
     binary_pred);
 } // end unique_by_key_copy()
 

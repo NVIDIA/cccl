@@ -80,11 +80,15 @@ void test_set_symmetric_difference_by_key_simple()
 {
   using Iterator = typename Vector::iterator;
 
-  Vector a_key{0, 2, 4, 6}, b_key{0, 3, 3, 4, 7};
-  Vector a_val(4, 0), b_val(5, 1);
+  Vector a_key{0, 2, 4, 6};
+  Vector b_key{0, 3, 3, 4, 7};
+  Vector a_val(4, 0);
+  Vector b_val(5, 1);
 
-  Vector ref_key{2, 3, 3, 6, 7}, ref_val{0, 1, 1, 0, 1};
-  Vector result_key(5), result_val(5);
+  Vector ref_key{2, 3, 3, 6, 7};
+  Vector ref_val{0, 1, 1, 0, 1};
+  Vector result_key(5);
+  Vector result_val(5);
 
   const cuda::std::pair<Iterator, Iterator> end = thrust::set_symmetric_difference_by_key(
     a_key.begin(),
@@ -192,8 +196,10 @@ void test_set_symmetric_difference_by_key_equivalent_ranges(const size_t n)
 
   const size_t max_size = h_a_key.size() + h_b_key.size();
 
-  thrust::host_vector<T> h_result_key(max_size), h_result_val(max_size);
-  thrust::device_vector<T> d_result_key(max_size), d_result_val(max_size);
+  thrust::host_vector<T> h_result_key(max_size);
+  thrust::host_vector<T> h_result_val(max_size);
+  thrust::device_vector<T> d_result_key(max_size);
+  thrust::device_vector<T> d_result_val(max_size);
 
   cuda::std::pair<typename thrust::host_vector<T>::iterator, typename thrust::host_vector<T>::iterator> h_end;
 
@@ -257,8 +263,10 @@ void test_set_symmetric_difference_by_key_multiset(const size_t n)
   thrust::device_vector<T> d_b_val = h_b_val;
 
   const size_t max_size = h_a_key.size() + h_b_key.size();
-  thrust::host_vector<T> h_result_key(max_size), h_result_val(max_size);
-  thrust::device_vector<T> d_result_key(max_size), d_result_val(max_size);
+  thrust::host_vector<T> h_result_key(max_size);
+  thrust::host_vector<T> h_result_val(max_size);
+  thrust::device_vector<T> d_result_key(max_size);
+  thrust::device_vector<T> d_result_val(max_size);
 
   cuda::std::pair<typename thrust::host_vector<T>::iterator, typename thrust::host_vector<T>::iterator> h_end;
 

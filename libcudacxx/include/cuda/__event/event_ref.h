@@ -40,7 +40,6 @@ class stream_ref;
 //! @brief An non-owning wrapper for an untimed `cudaEvent_t`.
 class event_ref
 {
-private:
   friend class event;
   friend class timed_event;
 
@@ -96,14 +95,11 @@ public:
     {
       return true;
     }
-    else if (__status == ::cudaErrorNotReady)
+    if (__status == ::cudaErrorNotReady)
     {
       return false;
     }
-    else
-    {
-      _CCCL_THROW(::cuda::cuda_error, __status, "Failed to query CUDA event");
-    }
+    _CCCL_THROW(::cuda::cuda_error, __status, "Failed to query CUDA event");
   }
 
   //! @brief Retrieve the native `cudaEvent_t` handle.

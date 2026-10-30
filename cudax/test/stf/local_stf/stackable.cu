@@ -26,7 +26,7 @@ int main()
   int array[1024];
   for (size_t i = 0; i < 1024; i++)
   {
-    array[i] = static_cast<int>(1 + i * i);
+    array[i] = static_cast<int>(1 + (i * i));
   }
 
   auto lC = sctx.logical_data(array);
@@ -38,7 +38,7 @@ int main()
   lA2.set_symbol("A2");
 
   sctx.parallel_for(lA.shape(), lA.write())->*[] __device__(size_t i, auto a) {
-    a(i) = 42 + 2 * i;
+    a(i) = 42 + (2 * i);
   };
 
   /* Create nested graph */
@@ -49,11 +49,11 @@ int main()
     lB.set_symbol("B");
 
     sctx.parallel_for(lB.shape(), lB.write())->*[] __device__(size_t i, auto b) {
-      b(i) = 17 - 3 * i;
+      b(i) = 17 - (3 * i);
     };
 
     sctx.parallel_for(lA2.shape(), lA2.write())->*[] __device__(size_t i, auto a2) {
-      a2(i) = 5 * i + 4;
+      a2(i) = (5 * i) + 4;
     };
 
     sctx.parallel_for(lB.shape(), lA.read(), lB.rw())->*[] __device__(size_t i, auto a, auto b) {
@@ -68,7 +68,7 @@ int main()
   sctx.host_launch(lA2.read())->*[](auto a2) {
     for (size_t i = 0; i < a2.size(); i++)
     {
-      EXPECT(a2(i) == 5 * i + 4);
+      EXPECT(a2(i) == (5 * i) + 4);
     }
   };
 
@@ -79,7 +79,7 @@ int main()
     sctx.host_launch(lA2.read())->*[](auto a2) {
       for (size_t i = 0; i < a2.size(); i++)
       {
-        EXPECT(a2(i) == 5 * i + 4);
+        EXPECT(a2(i) == (5 * i) + 4);
       }
     };
   }

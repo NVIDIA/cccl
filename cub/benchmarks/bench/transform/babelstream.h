@@ -34,7 +34,7 @@ inline constexpr auto startB      = 2; // BabelStream: 0.2
 inline constexpr auto startC      = 1; // BabelStream: 0.1
 inline constexpr auto startScalar = -2; // BabelStream: 0.4
 
-static_assert(startA == (startA + startB + startScalar * startC), "nstream must have a consistent workload");
+static_assert(startA == (startA + startB + (startScalar * startC)), "nstream must have a consistent workload");
 
 template <typename T>
 void mul(nvbench::state& state, nvbench::type_list<T>)

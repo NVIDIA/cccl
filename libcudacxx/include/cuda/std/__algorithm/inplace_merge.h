@@ -46,7 +46,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Predicate>
 class __invert // invert the sense of a comparison
 {
-private:
   _Predicate __p_{};
 
 public:
@@ -128,6 +127,7 @@ _CCCL_API void __buffered_inplace_merge(
     {
       ::cuda::std::__construct_at(__p, _IterOps<_AlgPolicy>::__iter_move(__i));
     }
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     ::cuda::std::__half_inplace_merge<_AlgPolicy>(__buff, __p, __middle, __last, __first, __comp);
   }
   else

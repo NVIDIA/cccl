@@ -45,9 +45,9 @@ int main()
   const int num_vertices = static_cast<int>(offsets.size() - 1);
   std::vector<int> degrees(num_vertices, 0);
 
-  auto loffsets  = ctx.logical_data(&offsets[0], offsets.size());
-  auto lnonzeros = ctx.logical_data(&nonzeros[0], nonzeros.size());
-  auto ldegrees  = ctx.logical_data(&degrees[0], degrees.size());
+  auto loffsets  = ctx.logical_data(offsets.data(), offsets.size());
+  auto lnonzeros = ctx.logical_data(nonzeros.data(), nonzeros.size());
+  auto ldegrees  = ctx.logical_data(degrees.data(), degrees.size());
 
   ctx.parallel_for(box(num_vertices), loffsets.read(), ldegrees.rw())
       ->*[] __device__(size_t idx, auto loffsets, auto ldegrees) {

@@ -51,7 +51,7 @@ public:
   //! @param __major The major compute capability.
   //! @param __minor The minor compute capability. Must be less than 10.
   _CCCL_HOST_DEVICE_API constexpr compute_capability(int __major, int __minor) noexcept
-      : __cc_{10 * __major + __minor}
+      : __cc_{(10 * __major) + __minor}
   {
     _CCCL_ASSERT(__minor < 10, "invalid minor compute capability");
   }

@@ -13,6 +13,8 @@
  * @brief Simulation of a fluid over a regular grid with an implicit Jacobi solver
  */
 
+#include <cuda/std/algorithm>
+
 #include <cuda/experimental/stf.cuh>
 
 #include <chrono>
@@ -72,14 +74,11 @@ double colfunc(double x)
   {
     return 0.0;
   }
-  else if (absx < x1)
+  if (absx < x1)
   {
     return 1.0;
   }
-  else
-  {
-    return 1.0 - pow((absx - x1) / (x2 - x1), 2);
-  }
+  return 1.0 - pow((absx - x1) / (x2 - x1), 2);
 }
 
 void hue2rgb(double hue, int& r, int& g, int& b)
@@ -112,7 +111,7 @@ void writedatafiles(context& ctx, logical_data<slice<double, 2>> lpsi, int m, in
                 const double v1 = vel(i, j, 0);
                 const double v2 = vel(i, j, 1);
 
-                const double modvsq = v1 * v1 + v2 * v2;
+                const double modvsq = (v1 * v1) + (v2 * v2);
 
                 const double hue = pow(modvsq, 0.4);
 
@@ -251,7 +250,8 @@ int main(int argc, char** argv)
   double tolerance    = 0.0001; //-1.0;  // 0.0001; //tolerance for convergence. <=0 means do not check
 
   // command line arguments
-  int scalefactor = 1, numiter = 10;
+  int scalefactor = 1;
+  int numiter     = 10;
 
   double re = -1.0; // Reynold's number - must be less than 3.7
 
@@ -262,7 +262,8 @@ int main(int argc, char** argv)
   const int mbase = 32;
   const int nbase = 32;
 
-  int irrotational = 1, checkerr = 0;
+  int irrotational = 1;
+  int checkerr     = 0;
 
   // do we stop because of tolerance?
   if (tolerance > 0)
@@ -330,7 +331,10 @@ int main(int argc, char** argv)
   // printf("Running CFD on %d x %d grid in serial\n", m, n);
 
   // main arrays and their temporary versions
-  logical_data<slice<double, 2>> lzet, lzettmp, lpsi, lpsitmp;
+  logical_data<slice<double, 2>> lzet;
+  logical_data<slice<double, 2>> lzettmp;
+  logical_data<slice<double, 2>> lpsi;
+  logical_data<slice<double, 2>> lpsitmp;
 
   // allocate arrays
   lpsi    = ctx.logical_data(shape_of<slice<double, 2>>(m + 2, n + 2)).set_symbol("psi");
@@ -341,7 +345,7 @@ int main(int argc, char** argv)
     psi(i, j) = 0.0;
   };
 
-  if (!irrotational)
+  if (irrotational == 0)
   {
     lzet    = ctx.logical_data(lpsi.shape()).set_symbol("zet");
     lzettmp = ctx.logical_data(lpsi.shape()).set_symbol("zet_tmp");
@@ -366,7 +370,7 @@ int main(int argc, char** argv)
             bnorm += psi(i, j) * psi(i, j);
           };
 
-  if (!irrotational)
+  if (irrotational == 0)
   {
     // update zeta BCs that depend on psi
     boundaryzet(ctx, lzet, lpsi, m, n);
@@ -394,7 +398,7 @@ int main(int argc, char** argv)
   for (; iter <= numiter; iter++)
   {
     // calculate psi for next iteration
-    if (irrotational)
+    if (irrotational != 0)
     {
       jacobistep(ctx, lpsitmp, lpsi, m, n);
     }
@@ -404,12 +408,12 @@ int main(int argc, char** argv)
     }
 
     // calculate current error if required
-    const bool compute_error = (iter == numiter) || (checkerr && (iter % printfreq == 0));
+    const bool compute_error = (iter == numiter) || (checkerr != 0 && (iter % printfreq == 0));
     if (compute_error)
     {
       error = deltasq(ctx, lpsitmp, lpsi);
 
-      if (!irrotational)
+      if (irrotational == 0)
       {
         error += deltasq(ctx, lzettmp, lzet);
       }
@@ -417,7 +421,7 @@ int main(int argc, char** argv)
       error = sqrt(error);
       error = error / bnorm;
 
-      if (checkerr && (error < tolerance))
+      if (checkerr != 0 && (error < tolerance))
       {
         // printf("Converged on iteration %d\n", iter);
         break;
@@ -430,7 +434,7 @@ int main(int argc, char** argv)
               psi(i, j) = psitmp(i, j);
             };
 
-    if (!irrotational)
+    if (irrotational == 0)
     {
       ctx.parallel_for(box<2>({1, m + 1}, {1, n + 1}), lzet.rw(), lzettmp.read()).set_symbol("SwitchZet")
           ->*[] __device__(size_t i, size_t j, auto zet, auto zettmp) {
@@ -438,7 +442,7 @@ int main(int argc, char** argv)
               };
     }
 
-    if (!irrotational)
+    if (irrotational == 0)
     {
       // update zeta BCs that depend on psi
       boundaryzet(ctx, lzet, lpsi, m, n);
@@ -454,10 +458,7 @@ int main(int argc, char** argv)
   }
   r_iter.end();
 
-  if (iter > numiter)
-  {
-    iter = numiter;
-  }
+  iter = cuda::std::min(iter, numiter);
 
   const double tstop = gettime();
 

@@ -49,6 +49,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_NOVERSION // purposefully not using versioning na
   _CCCL_UNREACHABLE();
 }
 
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0 // Expose once atomic is universally available
 
 using terminate_handler = void (*)();

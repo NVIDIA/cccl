@@ -671,7 +671,7 @@ CUB_TEST("Device radix sort keys uses environment", "[radix_sort][device]", CUB_
     keys_out.data().get(),
     static_cast<int>(keys_in.size()),
     0,
-    static_cast<int>(static_cast<int>(sizeof(int) * 8)),
+    static_cast<int>(sizeof(int) * 8),
     env);
 
   const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
@@ -703,7 +703,7 @@ CUB_TEST("Device radix sort keys descending uses environment", "[radix_sort][dev
     keys_out.data().get(),
     static_cast<int>(keys_in.size()),
     0,
-    static_cast<int>(static_cast<int>(sizeof(int) * 8)),
+    static_cast<int>(sizeof(int) * 8),
     env);
 
   const c2h::device_vector<int> expected_keys{9, 8, 7, 6, 5, 3, 0};
@@ -1433,7 +1433,7 @@ CUB_TEST_CASE("Device radix sort keys uses custom stream", "[radix_sort][device]
     keys_out.data().get(),
     static_cast<int>(keys_in.size()),
     0,
-    static_cast<int>(static_cast<int>(sizeof(int) * 8)),
+    static_cast<int>(sizeof(int) * 8),
     env);
 
   custom_stream.sync();
@@ -1462,7 +1462,7 @@ CUB_TEST_CASE("Device radix sort keys descending uses custom stream", "[radix_so
     keys_out.data().get(),
     static_cast<int>(keys_in.size()),
     0,
-    static_cast<int>(static_cast<int>(sizeof(int) * 8)),
+    static_cast<int>(sizeof(int) * 8),
     env);
 
   custom_stream.sync();

@@ -26,6 +26,8 @@
 
 #include <cuda/__cmath/ilog.h>
 #include <cuda/__memory/is_valid_alignment.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__host_stdlib/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
@@ -250,7 +252,7 @@ public:
     std::size_t bytes,
     std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
-    bytes = (std::max) (bytes, m_options.smallest_block_size);
+    bytes = (std::max) (bytes, m_options.smallest_block_size); // NOLINT(readability-redundant-parentheses)
     assert(::cuda::__is_valid_alignment(alignment));
 
     // an oversized and/or overaligned allocation requested; needs to be allocated separately
@@ -376,27 +378,19 @@ public:
       if (n == 0)
       {
         n = m_options.min_blocks_per_chunk;
-        if (n < (m_options.min_bytes_per_chunk >> bytes_log2))
-        {
-          n = m_options.min_bytes_per_chunk >> bytes_log2;
-        }
+        n = ::cuda::std::max(n, m_options.min_bytes_per_chunk >> bytes_log2);
       }
       else
       {
         n = n * 3 / 2;
-        if (n > (m_options.max_bytes_per_chunk >> bytes_log2))
-        {
-          n = m_options.max_bytes_per_chunk >> bytes_log2;
-        }
-        if (n > m_options.max_blocks_per_chunk)
-        {
-          n = m_options.max_blocks_per_chunk;
-        }
+        n = ::cuda::std::min(n, m_options.max_bytes_per_chunk >> bytes_log2);
+        n = ::cuda::std::min(n, m_options.max_blocks_per_chunk);
       }
 
-      const std::size_t descriptor_size = (std::max) (sizeof(block_descriptor), m_options.alignment);
-      std::size_t block_size            = bytes + descriptor_size;
-      block_size += m_options.alignment - block_size % m_options.alignment;
+      const std::size_t descriptor_size =
+        (std::max) (sizeof(block_descriptor), m_options.alignment); // NOLINT(readability-redundant-parentheses)
+      std::size_t block_size = bytes + descriptor_size;
+      block_size += m_options.alignment - (block_size % m_options.alignment);
       const std::size_t chunk_size = block_size * n;
 
       const void_ptr allocated = m_upstream->do_allocate(chunk_size + sizeof(chunk_descriptor), m_options.alignment);
@@ -431,7 +425,7 @@ public:
                      std::size_t n,
                      std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
-    n = (std::max) (n, m_options.smallest_block_size);
+    n = (std::max) (n, m_options.smallest_block_size); // NOLINT(readability-redundant-parentheses)
     assert(::cuda::__is_valid_alignment(alignment));
 
     // verify that the pointer is at least as aligned as claimed

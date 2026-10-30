@@ -360,7 +360,7 @@ public:
    * @brief Returns an index guaranteed to be >= 0 (0 for managed CPU, 1 for pinned CPU,  2 for device 0, 3 for device
    * 1, ...). Requires that `p` is initialized and different from `data_place::invalid()`.
    */
-  friend inline size_t to_index(const data_place& p)
+  friend size_t to_index(const data_place& p)
   {
     const int devid = p.pimpl_->get_device_ordinal();
     EXPECT(devid >= -2, "Data place with device id ", devid, " does not refer to a device.");
@@ -372,7 +372,7 @@ public:
    * @brief Inverse of `to_index`: converts an index back to a `data_place`.
    * Index 0 -> managed, 1 -> host, 2 -> device(0), 3 -> device(1), ...
    */
-  friend inline data_place from_index(size_t n)
+  friend data_place from_index(size_t n)
   {
     if (n == 0)
     {
@@ -389,7 +389,7 @@ public:
    * @brief Returns the device ordinal (0 = first GPU, 1 = second GPU, ... and by convention the CPU is -1)
    * Requires that `p` is initialized.
    */
-  friend inline int device_ordinal(const data_place& p)
+  friend int device_ordinal(const data_place& p)
   {
     return p.pimpl_->get_device_ordinal();
   }
@@ -622,7 +622,7 @@ public:
       {
         return typeid(*this).before(typeid(rhs)) ? -1 : 1;
       }
-      return (rhs.affine < affine) - (affine < rhs.affine);
+      return static_cast<int>(rhs.affine < affine) - static_cast<int>(affine < rhs.affine);
     }
 
     virtual size_t hash() const
@@ -786,7 +786,7 @@ public:
    * @param[in] last_axis Last axis to collapse (inclusive)
    * @return A grid over the same places with the selected axes collapsed
    */
-  [[nodiscard]] _CCCL_HOST_API exec_place collapse_axes(const size_t first_axis, const size_t last_axis) const;
+  [[nodiscard]] _CCCL_HOST_API exec_place collapse_axes(size_t first_axis, size_t last_axis) const;
 
   // ===== Activation =====
 
@@ -1027,7 +1027,6 @@ public:
   template <typename Fun>
   auto operator->*(Fun&& fun) const;
 
-public:
   exec_place(::std::shared_ptr<impl> pimpl)
       : pimpl(mv(pimpl))
   {}
@@ -1245,7 +1244,7 @@ inline augmented_stream stream_pool::next(const exec_place& place)
     }
   }
 
-  if (!result.stream)
+  if (result.stream == nullptr)
   {
     auto active   = place.activate();
     result.stream = cuda_try<cudaStreamCreateWithFlags>(cudaStreamNonBlocking);
@@ -1659,12 +1658,12 @@ public:
     // Compare dims first
     auto this_dims  = ::std::tie(dims_.x, dims_.y, dims_.z, dims_.t);
     auto other_dims = ::std::tie(other.dims_.x, other.dims_.y, other.dims_.z, other.dims_.t);
-    if (const int c = (other_dims < this_dims) - (this_dims < other_dims); c != 0)
+    if (const int c = static_cast<int>(other_dims < this_dims) - static_cast<int>(this_dims < other_dims); c != 0)
     {
       return c;
     }
     // Then compare places
-    return (other.places_ < places_) - (places_ < other.places_);
+    return static_cast<int>(other.places_ < places_) - static_cast<int>(places_ < other.places_);
   }
 
   size_t hash() const override
@@ -2120,7 +2119,7 @@ public:
     size_t n        = 1;
     for (size_t a = 0; a < 4; a++)
     {
-      if (axes_mask_ & (1u << a))
+      if ((axes_mask_ & (1u << a)) != 0u)
       {
         n *= dims.get(a);
       }
@@ -2138,10 +2137,11 @@ public:
     }
     const dim4 dims = grid_.get_dims();
     const pos4 pos  = dims.index_to_pos(place_index);
-    size_t idx = 0, mult = 1;
+    size_t idx      = 0;
+    size_t mult     = 1;
     for (size_t a = 0; a < 4; a++)
     {
-      if (axes_mask_ & (1u << a))
+      if ((axes_mask_ & (1u << a)) != 0u)
       {
         idx += static_cast<size_t>(pos.get(a)) * mult;
         mult *= dims.get(a);
@@ -2161,7 +2161,7 @@ public:
     ssize_t c[4]    = {0, 0, 0, 0};
     for (size_t a = 0; a < 4; a++)
     {
-      if (axes_mask_ & (1u << a))
+      if ((axes_mask_ & (1u << a)) != 0u)
       {
         c[a] = static_cast<ssize_t>(instance_index % dims.get(a));
         instance_index /= dims.get(a);
@@ -2229,7 +2229,7 @@ public:
     {
       return (axes_mask_ < o.axes_mask_) ? -1 : 1;
     }
-    return (grid_ < o.grid_) ? -1 : (grid_ != o.grid_);
+    return (grid_ < o.grid_) ? -1 : static_cast<int>(grid_ != o.grid_);
   }
 
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
@@ -2573,7 +2573,7 @@ UNITTEST("pos4 dim4 handle large values beyond 32bit")
 
   const size_t index = dims.get_index(pos);
   // Should be: 50000 + 100000 * 50000 = 5,000,050,000 (> 2^32)
-  const size_t expected_index = 50000ULL + 100000ULL * 50000ULL;
+  const size_t expected_index = 50000ULL + (100000ULL * 50000ULL);
   EXPECT(index == expected_index);
   EXPECT(expected_index > (1ULL << 32)); // Verify it exceeds 2^32
 };

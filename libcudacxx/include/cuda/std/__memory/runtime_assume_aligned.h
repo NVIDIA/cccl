@@ -38,26 +38,23 @@ __runtime_assume_aligned(_Tp* __ptr, [[maybe_unused]] ::cuda::std::size_t __alig
   {
     return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(const_cast<_Up*>(__ptr), 1));
   }
-  else if (__alignment == 2)
+  if (__alignment == 2)
   {
     return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(const_cast<_Up*>(__ptr), 2));
   }
-  else if (__alignment == 4)
+  if (__alignment == 4)
   {
     return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(const_cast<_Up*>(__ptr), 4));
   }
-  else if (__alignment == 8)
+  if (__alignment == 8)
   {
     return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(const_cast<_Up*>(__ptr), 8));
   }
-  else if (__alignment == 16)
+  if (__alignment == 16)
   {
     return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(const_cast<_Up*>(__ptr), 16));
   }
-  else
-  {
-    return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(const_cast<_Up*>(__ptr), 32));
-  }
+  return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(const_cast<_Up*>(__ptr), 32));
 #else
   _CCCL_ASSUME(reinterpret_cast<uintptr_t>(__ptr) % __alignment == 0);
   return __ptr;

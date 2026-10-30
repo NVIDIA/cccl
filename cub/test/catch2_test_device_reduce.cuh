@@ -235,7 +235,7 @@ void compute_fixed_size_segmented_argmax_reference(
       auto seg_begin          = h_begin + static_cast<long>(seg) * segment_size;
       auto seg_end            = seg_begin + segment_size;
       auto expected_result_it = std::max_element(seg_begin, seg_end);
-      const int result_offset = static_cast<int>(::cuda::std::distance((seg_begin), expected_result_it));
+      const int result_offset = static_cast<int>(::cuda::std::distance(seg_begin, expected_result_it));
       h_results[seg]          = {result_offset, *expected_result_it};
     }
   }
@@ -263,7 +263,7 @@ void compute_fixed_size_segmented_argmin_reference(
       auto seg_begin          = h_begin + static_cast<long>(seg) * segment_size;
       auto seg_end            = seg_begin + segment_size;
       auto expected_result_it = std::min_element(seg_begin, seg_end);
-      const int result_offset = static_cast<int>(::cuda::std::distance((seg_begin), expected_result_it));
+      const int result_offset = static_cast<int>(::cuda::std::distance(seg_begin, expected_result_it));
       h_results[seg]          = {result_offset, *expected_result_it};
     }
   }

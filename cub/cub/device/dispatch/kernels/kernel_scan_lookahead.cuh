@@ -79,7 +79,7 @@ _CCCL_IKET_CREATE_PUSH_POP_RANGE(ThreadScan);
 _CCCL_HOST_DEVICE_API constexpr int num_total_threads(const ScanLookaheadPolicy& policy)
 {
   const auto num_total_warps =
-    2 * policy.reduce_and_scan_warps + 1 /*num_load_and_sched_warps*/ + 1 /*num_lookahead_warps*/
+    (2 * policy.reduce_and_scan_warps) + 1 /*num_load_and_sched_warps*/ + 1 /*num_lookahead_warps*/
     + 1 /*num_store_warps*/;
   return num_total_warps * warp_threads;
 }
@@ -108,7 +108,7 @@ struct ScanResources
     static_assert(policy.tile_size() % 16 == 0, "tile_size must be multiple of 16");
 
     // therefore, unaligned inputs need exactly 16 bytes extra for overcopying (tail padding = 16 - head padding)
-    ::cuda::std::byte inout[policy.tile_size() * sizeof(InputT) + 16];
+    ::cuda::std::byte inout[(policy.tile_size() * sizeof(InputT)) + 16];
   };
   static_assert(alignof(in_out_t) >= alignof(InputT));
   static_assert(alignof(in_out_t) >= alignof(OutputT));
@@ -397,9 +397,9 @@ struct lookahead_scan_closure
     int num_tiles) const
   {
     const int valid_items_this_thread =
-      cuda::std::clamp(valid_items - squad.threadRank() * elemPerThread, 0, +elemPerThread);
+      cuda::std::clamp(valid_items - (squad.threadRank() * elemPerThread), 0, +elemPerThread);
     const int valid_threads_this_warp =
-      cuda::std::clamp(::cuda::ceil_div(valid_items, elemPerThread) - squad.warpRank() * 32, 0, 32);
+      cuda::std::clamp(::cuda::ceil_div(valid_items, elemPerThread) - (squad.warpRank() * 32), 0, 32);
     const int valid_warps = ::cuda::ceil_div(valid_items, elemPerThread * 32);
     _CCCL_ASSERT(0 < valid_warps && valid_warps <= squad.warpCount(), "");
 
@@ -510,9 +510,10 @@ struct lookahead_scan_closure
     [[maybe_unused]] int valid_warps             = 0;
     if constexpr (IsLastTile)
     {
-      valid_items_this_thread = ::cuda::std::clamp(valid_items - squad.threadRank() * elemPerThread, 0, +elemPerThread);
+      valid_items_this_thread =
+        ::cuda::std::clamp(valid_items - (squad.threadRank() * elemPerThread), 0, +elemPerThread);
       valid_threads_this_warp =
-        ::cuda::std::clamp(::cuda::ceil_div(valid_items, elemPerThread) - squad.warpRank() * 32, 0, 32);
+        ::cuda::std::clamp(::cuda::ceil_div(valid_items, elemPerThread) - (squad.warpRank() * 32), 0, 32);
       valid_warps = ::cuda::ceil_div(valid_items, elemPerThread * 32);
       _CCCL_ASSERT(0 < valid_warps && valid_warps <= squad.warpCount(), "");
     }
@@ -697,7 +698,7 @@ struct lookahead_scan_closure
     _CCCL_IKET_RANGE_PUSH(ThreadScan);
     // Perform inclusive scan of register array in current thread.
     // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use aggrExclusive
-    const bool use_prefix = hasInit ? true : !(is_first_tile && squad.threadRank() == 0);
+    const bool use_prefix = hasInit || !is_first_tile || squad.threadRank() != 0;
     threadScanPartial<isInclusive, IsLastTile>(
       regAggrInclusive, scan_op, aggrExclusive, use_prefix, valid_items_this_thread);
 
@@ -728,7 +729,7 @@ struct lookahead_scan_closure
 
         // only stage elements of the current chunk to SMEM
         // storeInfo.smemStartSkipBytes < 16 and smem_output_tile contains extra 16 bytes, so we should fit
-        _CCCL_ASSERT(storeInfo.smemStartSkipBytes + elem_per_chunk * sizeof(OutputT) <= res.smemInOut.mSizeBytes, "");
+        _CCCL_ASSERT(storeInfo.smemStartSkipBytes + (elem_per_chunk * sizeof(OutputT)) <= res.smemInOut.mSizeBytes, "");
         warpspeed::squadStoreSmemPartial(
           squad,
           reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.smemStartSkipBytes), // different in each
@@ -1009,7 +1010,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_init_lookahead_body(
   const int num_temp_states,
   [[maybe_unused]] ::cuda::std::uint32_t* atomic_counter)
 {
-  const int tile_id = static_cast<int>(blockDim.x * blockIdx.x + threadIdx.x);
+  const int tile_id = static_cast<int>((blockDim.x * blockIdx.x) + threadIdx.x);
 
   // The atomic counter is only used (and thus only needs zeroing) on SM90.
   NV_IF_TARGET(NV_PROVIDES_SM_100, (), ({

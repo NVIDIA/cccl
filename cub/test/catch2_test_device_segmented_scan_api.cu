@@ -99,7 +99,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with three offsets
   const size_t segment_size = 3;
 
   auto in_end_offsets = thrust::device_vector<size_t>{
-    0 * row_size + segment_size, 1 * row_size + segment_size, 2 * row_size + segment_size};
+    (0 * row_size) + segment_size, (1 * row_size) + segment_size, (2 * row_size) + segment_size};
 
   auto output            = thrust::device_vector<int>(num_segments * segment_size, thrust::no_init);
   auto out_begin_offsets = thrust::device_vector<size_t>{0, segment_size, 2 * segment_size};
@@ -217,7 +217,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with three offsets
   auto output = thrust::device_vector<int>((m + 1) * m, 0);
   // begin offsets to second element of each row
   const size_t lda       = m + 1;
-  auto out_begin_offsets = thrust::device_vector<size_t>{1, lda + 1, 2 * lda + 1, 3 * lda + 1};
+  auto out_begin_offsets = thrust::device_vector<size_t>{1, lda + 1, (2 * lda) + 1, (3 * lda) + 1};
 
   cuda::std::uint8_t* d_temp_storage = nullptr;
   size_t temp_storage_bytes          = 0;

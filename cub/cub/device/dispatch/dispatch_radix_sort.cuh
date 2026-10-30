@@ -893,7 +893,8 @@ private:
     }
 
     // Init regular and alternate-digit kernel configurations
-    PassConfig<UpsweepKernelT, ScanKernelT, DownsweepKernelT> pass_config, alt_pass_config;
+    PassConfig<UpsweepKernelT, ScanKernelT, DownsweepKernelT> pass_config;
+    PassConfig<UpsweepKernelT, ScanKernelT, DownsweepKernelT> alt_pass_config;
     if (const auto error = pass_config.__init_pass_config(
           upsweep_kernel,
           scan_kernel,
@@ -939,7 +940,7 @@ private:
       (is_overwrite_okay) ? 0 : num_items * kernel_source.KeySize(),
 
       // bytes needed for 3rd values buffer
-      (is_overwrite_okay || (KEYS_ONLY)) ? 0 : num_items * kernel_source.ValueSize(),
+      (is_overwrite_okay || KEYS_ONLY) ? 0 : num_items * kernel_source.ValueSize(),
     };
 
     // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
@@ -968,15 +969,15 @@ private:
 
     DoubleBuffer<KeyT> d_keys_remaining_passes(
       (is_overwrite_okay || is_num_passes_odd) ? d_keys.Alternate() : static_cast<KeyT*>(allocations[1]),
-      (is_overwrite_okay)   ? d_keys.Current()
-      : (is_num_passes_odd) ? static_cast<KeyT*>(allocations[1])
-                            : d_keys.Alternate());
+      (is_overwrite_okay) ? d_keys.Current()
+      : is_num_passes_odd ? static_cast<KeyT*>(allocations[1])
+                          : d_keys.Alternate());
 
     DoubleBuffer<ValueT> d_values_remaining_passes(
       (is_overwrite_okay || is_num_passes_odd) ? d_values.Alternate() : static_cast<ValueT*>(allocations[2]),
-      (is_overwrite_okay)   ? d_values.Current()
-      : (is_num_passes_odd) ? static_cast<ValueT*>(allocations[2])
-                            : d_values.Alternate());
+      (is_overwrite_okay) ? d_values.Current()
+      : is_num_passes_odd ? static_cast<ValueT*>(allocations[2])
+                          : d_values.Alternate());
 
     // Run first pass, consuming from the input's current buffers
     int current_bit = begin_bit;
@@ -1584,7 +1585,8 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     const RadixSortPolicy& policy)
   {
     // Init regular and alternate-digit kernel configurations
-    pass_config<UpsweepKernelT, ScanKernelT, DownsweepKernelT, OffsetT> pc, alt_pc;
+    pass_config<UpsweepKernelT, ScanKernelT, DownsweepKernelT, OffsetT> pc;
+    pass_config<UpsweepKernelT, ScanKernelT, DownsweepKernelT, OffsetT> alt_pc;
     if (const auto error = pc.init(
           upsweep_kernel,
           scan_kernel,
@@ -1631,7 +1633,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
       (can_overwrite_source_buffer) ? 0 : num_items * kernel_source.KeySize(),
 
       // bytes needed for 3rd values buffer
-      (can_overwrite_source_buffer || (keys_only)) ? 0 : num_items * kernel_source.ValueSize(),
+      (can_overwrite_source_buffer || keys_only) ? 0 : num_items * kernel_source.ValueSize(),
     };
 
     // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
@@ -1661,13 +1663,13 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     DoubleBuffer<KeyT> d_keys_remaining_passes(
       (can_overwrite_source_buffer || is_num_passes_odd) ? d_keys.Alternate() : static_cast<KeyT*>(allocations[1]),
       (can_overwrite_source_buffer) ? d_keys.Current()
-      : (is_num_passes_odd)         ? static_cast<KeyT*>(allocations[1])
+      : is_num_passes_odd           ? static_cast<KeyT*>(allocations[1])
                                     : d_keys.Alternate());
 
     DoubleBuffer<ValueT> d_values_remaining_passes(
       (can_overwrite_source_buffer || is_num_passes_odd) ? d_values.Alternate() : static_cast<ValueT*>(allocations[2]),
       (can_overwrite_source_buffer) ? d_values.Current()
-      : (is_num_passes_odd)         ? static_cast<ValueT*>(allocations[2])
+      : is_num_passes_odd           ? static_cast<ValueT*>(allocations[2])
                                     : d_values.Alternate());
 
     // Run first pass, consuming from the input's current buffers

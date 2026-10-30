@@ -15,7 +15,8 @@ void test_set_union_key_value(size_t n)
   thrust::host_vector<U> h_keys_b   = unittest::random_integers<U>(n);
   thrust::host_vector<U> h_values_b = unittest::random_integers<U>(n);
 
-  thrust::host_vector<T> h_a(n), h_b(n);
+  thrust::host_vector<T> h_a(n);
+  thrust::host_vector<T> h_b(n);
   for (size_t i = 0; i < n; ++i)
   {
     h_a[i] = T(h_keys_a[i], h_values_a[i]);
@@ -55,7 +56,8 @@ void test_set_union_key_value_descending(size_t n)
   thrust::host_vector<U> h_keys_b   = unittest::random_integers<U>(n);
   thrust::host_vector<U> h_values_b = unittest::random_integers<U>(n);
 
-  thrust::host_vector<T> h_a(n), h_b(n);
+  thrust::host_vector<T> h_a(n);
+  thrust::host_vector<T> h_b(n);
   for (size_t i = 0; i < n; ++i)
   {
     h_a[i] = T(h_keys_a[i], h_values_a[i]);

@@ -93,7 +93,7 @@ CUB_TEST("cub::detail::params::normalize_param leaves non-integer constants unch
   // kept as is. `char` and `bool` are not `__cccl_is_integer` types and take the same path.
   enum class direction
   {
-    forward = 1
+    forward = 1 // NOLINT(readability-enum-initial-value)
   };
 
   using enum_constant_t    = cuda::args::constant<direction::forward>;

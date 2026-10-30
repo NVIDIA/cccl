@@ -85,7 +85,6 @@ CUB_NAMESPACE_BEGIN
 template <CacheStoreModifier MODIFIER, typename ValueType, typename OffsetT = ptrdiff_t>
 class CacheModifiedOutputIterator
 {
-private:
   // Proxy object
   struct Reference
   {

@@ -29,12 +29,12 @@ __global__ void kernel(slice<int> b, long long int clock_cnt)
   }
 
   const size_t n   = b.size();
-  int i            = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  int i            = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int stride = static_cast<int>(blockDim.x * gridDim.x);
 
   while (i < n)
   {
-    b(i) = 17 - 3 * i;
+    b(i) = 17 - (3 * i);
     i += stride;
   }
 }
@@ -69,7 +69,7 @@ int main()
   sctx.host_launch(lB.read())->*[](auto b) {
     for (size_t i = 0; i < b.size(); i++)
     {
-      EXPECT(b(i) == (17 - 3 * i));
+      EXPECT(b(i) == (17 - (3 * i)));
     }
   };
 

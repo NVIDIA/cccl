@@ -136,7 +136,7 @@ struct AgentSegmentedRadixSort
       IsDescending ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
     KeyT oob_default = reinterpret_cast<KeyT&>(default_key_bits);
 
-    if (!KEYS_ONLY)
+    if (KEYS_ONLY == 0)
     {
       BlockValueLoadT(temp_storage.values_load).Load(d_values_in, thread_values, num_items);
 
@@ -156,12 +156,12 @@ struct AgentSegmentedRadixSort
         begin_bit,
         end_bit,
         bool_constant_v<IsDescending>,
-        bool_constant_v<KEYS_ONLY>,
+        bool_constant_v<(KEYS_ONLY != 0)>,
         decomposer);
 
     cub::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_keys_out, thread_keys, num_items);
 
-    if (!KEYS_ONLY)
+    if (KEYS_ONLY == 0)
     {
       cub::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_values_out, thread_values, num_items);
     }

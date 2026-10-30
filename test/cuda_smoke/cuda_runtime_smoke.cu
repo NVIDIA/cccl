@@ -15,7 +15,7 @@
 
 __global__ void increment_kernel(int* p, int n)
 {
-  const int idx = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int idx = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   if (idx < n)
   {
     p[idx] += 1;
@@ -43,7 +43,7 @@ TEST_CASE("cudaMallocManaged round-trip works", "[cuda_smoke][managed_memory]")
 
   int managed_supported = 0;
   CUDART_REQUIRE(cudaDeviceGetAttribute(&managed_supported, cudaDevAttrManagedMemory, 0));
-  if (!managed_supported)
+  if (managed_supported == 0)
   {
     SKIP("Device does not support managed memory (cudaDevAttrManagedMemory == 0).");
   }
@@ -200,7 +200,7 @@ TEST_CASE("cudaHostAlloc mapped (zero-copy) works", "[cuda_smoke][pinned_memory]
 
   int can_map = 0;
   CUDART_REQUIRE(cudaDeviceGetAttribute(&can_map, cudaDevAttrCanMapHostMemory, 0));
-  if (!can_map)
+  if (can_map == 0)
   {
     SKIP("Device cannot map host memory (cudaDevAttrCanMapHostMemory == 0).");
   }

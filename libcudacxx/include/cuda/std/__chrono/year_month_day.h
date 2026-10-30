@@ -44,7 +44,6 @@ class year_month_day_last;
 
 class year_month_day
 {
-private:
   chrono::year __year_;
   chrono::month __month_;
   chrono::day __day_;
@@ -58,17 +57,17 @@ private:
     // nvcc doesn't allow ODR using constexpr globals. Therefore,
     // make a temporary initialized from the global
     auto constexpr __Feb = February;
-    const int __yr       = static_cast<int>(__year_) - (__month_ <= __Feb);
+    const int __yr       = static_cast<int>(__year_) - static_cast<int>(__month_ <= __Feb);
     const unsigned __mth = static_cast<unsigned>(__month_);
     const unsigned __day = static_cast<unsigned>(__day_);
 
     const int __era      = (__yr >= 0 ? __yr : __yr - 399) / 400;
-    const unsigned __yoe = static_cast<unsigned>(__yr - __era * 400); // [0, 399]
-    const unsigned __doy =
-      static_cast<unsigned>((153 * (__mth + static_cast<unsigned>(__mth > 2 ? -3 : 9)) + 2) / 5 + __day - 1); // [0,
-                                                                                                              // 365]
-    const unsigned __doe = __yoe * 365 + __yoe / 4 - __yoe / 100 + __doy; // [0, 146096]
-    return days{__era * 146097 + static_cast<int>(__doe) - 719468};
+    const unsigned __yoe = static_cast<unsigned>(__yr - (__era * 400)); // [0, 399]
+    const unsigned __doy = static_cast<unsigned>(
+      (((153 * (__mth + static_cast<unsigned>(__mth > 2 ? -3 : 9))) + 2) / 5) + __day - 1); // [0,
+                                                                                            // 365]
+    const unsigned __doe = (__yoe * 365) + (__yoe / 4) - (__yoe / 100) + __doy; // [0, 146096]
+    return days{(__era * 146097) + static_cast<int>(__doe) - 719468};
   }
 
   // https://howardhinnant.github.io/date_algorithms.html#civil_from_days
@@ -78,14 +77,14 @@ private:
     static_assert(cuda::std::numeric_limits<int>::digits >= 20);
     const int __z        = __d.count() + 719468;
     const int __era      = (__z >= 0 ? __z : __z - 146096) / 146097;
-    const unsigned __doe = static_cast<unsigned>(__z - __era * 146097); // [0, 146096]
-    const unsigned __yoe = (__doe - __doe / 1460 + __doe / 36524 - __doe / 146096) / 365; // [0, 399]
-    const int __yr       = static_cast<int>(__yoe) + __era * 400;
-    const unsigned __doy = __doe - (365 * __yoe + __yoe / 4 - __yoe / 100); // [0, 365]
-    const unsigned __mp  = (5 * __doy + 2) / 153; // [0, 11]
-    const unsigned __day = __doy - (153 * __mp + 2) / 5 + 1; // [1, 31]
+    const unsigned __doe = static_cast<unsigned>(__z - (__era * 146097)); // [0, 146096]
+    const unsigned __yoe = (__doe - (__doe / 1460) + (__doe / 36524) - (__doe / 146096)) / 365; // [0, 399]
+    const int __yr       = static_cast<int>(__yoe) + (__era * 400);
+    const unsigned __doy = __doe - ((365 * __yoe) + (__yoe / 4) - (__yoe / 100)); // [0, 365]
+    const unsigned __mp  = ((5 * __doy) + 2) / 153; // [0, 11]
+    const unsigned __day = __doy - (((153 * __mp) + 2) / 5) + 1; // [1, 31]
     const unsigned __mth = __mp + static_cast<unsigned>(__mp < 10 ? 3 : -9); // [1, 12]
-    return year_month_day{chrono::year{__yr + (__mth <= 2)}, chrono::month{__mth}, chrono::day{__day}};
+    return year_month_day{chrono::year{__yr + static_cast<int>(__mth <= 2)}, chrono::month{__mth}, chrono::day{__day}};
   }
 
 public:
@@ -301,7 +300,6 @@ public:
 
 class year_month_day_last
 {
-private:
   chrono::year __year_;
   chrono::month_day_last __month_day_last_;
 

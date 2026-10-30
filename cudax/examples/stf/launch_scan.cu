@@ -51,17 +51,18 @@ int main(int argc, char** argv)
     X[i] = X0(static_cast<int>(i));
   }
 
-  auto lX = ctx.logical_data(&X[0], N);
+  auto lX = ctx.logical_data(X.data(), N);
 
   // No need to move this back to the host if we do not check the result
-  if (!check)
+  if (check == 0)
   {
     lX.set_write_back(false);
   }
 
   cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
 
-  cudaEvent_t start, stop;
+  cudaEvent_t start;
+  cudaEvent_t stop;
   cuda_safe_call(cudaEventCreate(&start));
   cuda_safe_call(cudaEventCreate(&stop));
   cuda_safe_call(cudaEventRecord(start, ctx.fence()));
@@ -148,7 +149,7 @@ int main(int argc, char** argv)
          ms,
          double(N * sizeof(double)) / 1024 / 1024 / ms);
 
-  if (check)
+  if (check != 0)
   {
     fprintf(stderr, "Checking result...\n");
     EXPECT(fabs(X[0] - X0(0)) < 0.00001);

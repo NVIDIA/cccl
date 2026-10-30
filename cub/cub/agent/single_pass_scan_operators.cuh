@@ -103,10 +103,10 @@ struct BlockScanRunningPrefixOp
  */
 enum ScanTileStatus // NOLINT(cppcoreguidelines-use-enum-class)
 {
-  SCAN_TILE_OOB, // Out-of-bounds (e.g., padding)
-  SCAN_TILE_INVALID = 99, // Not yet processed
-  SCAN_TILE_PARTIAL, // Tile aggregate is available
-  SCAN_TILE_INCLUSIVE, // Inclusive tile prefix is available
+  SCAN_TILE_OOB       = 0, // Out-of-bounds (e.g., padding)
+  SCAN_TILE_INVALID   = 99, // Not yet processed
+  SCAN_TILE_PARTIAL   = 100, // Tile aggregate is available
+  SCAN_TILE_INCLUSIVE = 101, // Inclusive tile prefix is available
 };
 
 /**
@@ -313,7 +313,7 @@ struct exponential_backoff_jitter_constructor_t
 
     _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
     {
-      return (seed = (a * seed + c) % m) % (max + 1 - min) + min;
+      return ((seed = ((a * seed) + c) % m) % (max + 1 - min)) + min;
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
@@ -351,7 +351,7 @@ struct exponential_backoff_jitter_window_constructor_t
 
     _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
     {
-      return (seed = (a * seed + c) % m) % (max + 1 - min) + min;
+      return ((seed = ((a * seed) + c) % m) % (max + 1 - min)) + min;
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
@@ -389,7 +389,7 @@ struct exponential_backon_jitter_window_constructor_t
 
     _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
     {
-      return (seed = (a * seed + c) % m) % (max + 1 - min) + min;
+      return ((seed = ((a * seed) + c) % m) % (max + 1 - min)) + min;
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
@@ -430,7 +430,7 @@ struct exponential_backon_jitter_constructor_t
 
     _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
     {
-      return (seed = (a * seed + c) % m) % (max + 1 - min) + min;
+      return ((seed = ((a * seed) + c) % m) % (max + 1 - min)) + min;
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
@@ -1238,7 +1238,7 @@ template <typename T,
 struct TilePrefixCallbackOp
 {
   // Parameterized warp reduce
-  using WarpReduceT = WarpReduce<T, (1 << (5))>;
+  using WarpReduceT = WarpReduce<T, (1 << 5)>;
 
   // Temporary storage type
   struct _TempStorage
@@ -1399,14 +1399,14 @@ private:
       tile_status.WaitForValid(predecessor_idx, predecessor_status, value, construct_delay());
       const int my_is_inclusive     = (predecessor_status == StatusWord(SCAN_TILE_INCLUSIVE));
       const int anchor_is_inclusive = __shfl_sync(0xffffffff, my_is_inclusive, anchor_tile_lane);
-      if (anchor_is_inclusive)
+      if (anchor_is_inclusive != 0)
       {
         break;
       }
     }
     _CCCL_IKET_RANGE_POP();
 
-    const int tail_flag = (static_cast<int>(threadIdx.x) == anchor_tile_lane);
+    const int tail_flag = static_cast<int>(static_cast<int>(threadIdx.x) == anchor_tile_lane);
     exclusive_prefix =
       WarpReduceT(temp_storage.warp_reduce).TailSegmentedReduce(value, tail_flag, SwizzleScanOp<ScanOpT>(scan_op));
 

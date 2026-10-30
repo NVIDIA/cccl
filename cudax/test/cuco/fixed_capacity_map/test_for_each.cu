@@ -119,10 +119,11 @@ struct is_zero
 
 // Exercises the device-side `for_each` on the map ref: one cooperative group per query key.
 template <class Ref, class KeyIt, class Value>
+// NOLINTNEXTLINE(readability-non-const-parameter)
 __global__ void for_each_ref_kernel(Ref ref, KeyIt keys, int num_keys, int* visits)
 {
   const auto block     = ::cooperative_groups::this_thread_block();
-  const auto thread_id = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const auto thread_id = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
 
   if constexpr (Ref::cg_size == 1)
   {

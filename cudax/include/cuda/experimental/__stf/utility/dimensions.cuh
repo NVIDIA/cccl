@@ -217,7 +217,7 @@ public:
     _CCCL_ASSERT(p.get(2) >= 0 && pz < z, "invalid position");
     _CCCL_ASSERT(p.get(3) >= 0 && pt < t, "invalid position");
 
-    return px + x * (py + y * (pz + pt * z));
+    return px + (x * (py + (y * (pz + (pt * z)))));
   }
 
   /// Get the maximum dimension that is not 1
@@ -394,7 +394,6 @@ public:
   // Iterator class for box
   class iterator
   {
-  private:
     box iterated; // A copy of the box being iterated
     ::std::array<::std::ptrdiff_t, dimensions> current; // Array to store the current position in each dimension
 
@@ -463,6 +462,7 @@ public:
     { /*printf("EQUALITY TEST index %d %d shape equal ? %s\n", index,
            other.index, (&shape == &other.shape)?"yes":"no"); */
       _CCCL_ASSERT(iterated == rhs.iterated, "Cannot compare iterators in different boxes.");
+      // NOLINTNEXTLINE(readability-use-anyofallof)
       for (auto i : each(0, dimensions))
       {
         if (current[i] != rhs.current[i])
@@ -501,6 +501,7 @@ public:
   // Overload the equality operator to check if two shapes are equal
   _CCCL_HOST_DEVICE bool operator==(const box& rhs) const
   {
+    // NOLINTNEXTLINE(readability-use-anyofallof)
     for (const size_t i : each(0, dimensions))
     {
       if (get_begin(i) != rhs.get_begin(i) || get_end(i) != rhs.get_end(i))
@@ -721,7 +722,7 @@ UNITTEST("pos4 dim4 interaction")
   const size_t index = d.get_index(p);
 
   // Verify index calculation
-  const size_t expected = 50000 + large_dim * (50000 + large_dim * (50000 + 50000 * large_dim));
+  const size_t expected = 50000 + (large_dim * (50000 + (large_dim * (50000 + (50000 * large_dim)))));
   EXPECT(index == expected);
 
   // Test near the boundaries

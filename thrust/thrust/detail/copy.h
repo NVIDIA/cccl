@@ -18,35 +18,39 @@ THRUST_NAMESPACE_BEGIN
 
 template <typename System, typename InputIterator, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator
-copy(const thrust::detail::execution_policy_base<System>& system,
+copy(const thrust::detail::execution_policy_base<System>& exec, // NOLINT(readability-redundant-declaration)
      InputIterator first,
      InputIterator last,
      OutputIterator result);
 
 template <typename System, typename InputIterator, typename Size, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator
-copy_n(const thrust::detail::execution_policy_base<System>& system, InputIterator first, Size n, OutputIterator result);
+_CCCL_HOST_DEVICE OutputIterator copy_n( // NOLINT(readability-redundant-declaration)
+  const thrust::detail::execution_policy_base<System>& exec,
+  InputIterator first,
+  Size n,
+  OutputIterator result);
 
 template <typename InputIterator, typename OutputIterator>
-OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result);
+OutputIterator
+copy(InputIterator first, InputIterator last, OutputIterator result); // NOLINT(readability-redundant-declaration)
 
 template <typename InputIterator, typename Size, typename OutputIterator>
-OutputIterator copy_n(InputIterator first, Size n, OutputIterator result);
+OutputIterator copy_n(InputIterator first, Size n, OutputIterator result); // NOLINT(readability-redundant-declaration)
 
 namespace detail
 {
 template <typename FromSystem, typename ToSystem, typename InputIterator, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator two_system_copy(
-  const thrust::execution_policy<FromSystem>& from_system,
-  const thrust::execution_policy<ToSystem>& two_system,
+  const thrust::execution_policy<FromSystem>& system1,
+  const thrust::execution_policy<ToSystem>& system2,
   InputIterator first,
   InputIterator last,
   OutputIterator result);
 
 template <typename FromSystem, typename ToSystem, typename InputIterator, typename Size, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator two_system_copy_n(
-  const thrust::execution_policy<FromSystem>& from_system,
-  const thrust::execution_policy<ToSystem>& two_system,
+  const thrust::execution_policy<FromSystem>& system1,
+  const thrust::execution_policy<ToSystem>& system2,
   InputIterator first,
   Size n,
   OutputIterator result);

@@ -254,7 +254,6 @@ class WarpLoad
 
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
 
-private:
   /*****************************************************************************
    * Algorithmic variants
    ****************************************************************************/

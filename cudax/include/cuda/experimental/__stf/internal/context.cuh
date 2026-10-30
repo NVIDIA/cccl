@@ -788,7 +788,7 @@ public:
   template <typename... Deps>
   auto launch(exec_place e_place, task_dep<Deps>... deps)
   {
-    return launch(par(par()), mv(e_place), (deps)...);
+    return launch(par(par()), mv(e_place), deps...);
   }
 
   // /* Default execution policy, on automatically selected device */
@@ -1012,7 +1012,7 @@ public:
   }
   const exec_place& current_exec_place() const
   {
-    _CCCL_ASSERT(current_affinity().size() > 0, "current_exec_place no affinity set");
+    _CCCL_ASSERT(!current_affinity().empty(), "current_exec_place no affinity set");
     return *(current_affinity()[0]);
   }
 
@@ -1043,10 +1043,7 @@ public:
     {
       return *ctx;
     }
-    else
-    {
-      _CCCL_THROW(::std::runtime_error, "Payload does not hold graph_ctx");
-    }
+    _CCCL_THROW(::std::runtime_error, "Payload does not hold graph_ctx");
   }
 
   /**
@@ -1085,7 +1082,6 @@ public:
     };
   }
 
-public:
   ::cuda::std::variant<stream_ctx, graph_ctx> payload;
 };
 
@@ -1167,7 +1163,7 @@ struct dummy_released_resource : ctx_resource
   }
   void release_in_callback() noexcept override
   {
-    if (released_)
+    if (released_ != nullptr)
     {
       *released_ = true;
     }
@@ -1644,7 +1640,7 @@ inline void unit_test_recursive_apply()
   ctx.host_launch(lA.read())->*[](auto A) {
     for (size_t i = 0; i < 1280; i++)
     {
-      EXPECT(A(i) == 2 * i + 7);
+      EXPECT(A(i) == (2 * i) + 7);
     }
   };
 
@@ -1662,7 +1658,7 @@ inline void unit_test_recursive_apply()
   ctx.host_launch(lB.read())->*[](auto B) {
     for (size_t i = 0; i < 1280; i++)
     {
-      EXPECT(B(i) == 2 * i + 7);
+      EXPECT(B(i) == (2 * i) + 7);
     }
   };
 }
@@ -1712,7 +1708,7 @@ inline void unit_test_partitioner_product()
   ctx.host_launch(lA.read())->*[](auto A) {
     for (size_t i = 0; i < 1280; i++)
     {
-      EXPECT(A(i) == 2 * i + 7);
+      EXPECT(A(i) == (2 * i) + 7);
     }
   };
 }

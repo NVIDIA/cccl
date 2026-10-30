@@ -125,7 +125,7 @@ struct compose_affine_t
 {
   _CCCL_HOST_DEVICE_API affine_value_t operator()(affine_value_t lhs, affine_value_t rhs) const
   {
-    return {rhs.scale * lhs.scale, rhs.scale * lhs.shift + rhs.shift};
+    return {rhs.scale * lhs.scale, (rhs.scale * lhs.shift) + rhs.shift};
   }
 };
 
@@ -158,6 +158,7 @@ struct select_then_scan_t
 
     const auto deferred_num_items = cuda::args::deferred{d_num_selected_out};
     size_t scan_temp_storage_bytes{};
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     if (const cudaError_t error = cub::DeviceScan::ExclusiveSum(
           nullptr, scan_temp_storage_bytes, d_selected_out, d_scan_out, deferred_num_items, stream);
         error != cudaSuccess)
@@ -185,6 +186,7 @@ struct select_then_scan_t
       return error;
     }
 
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     return cub::DeviceScan::ExclusiveSum(
       d_temp_storage, scan_temp_storage_bytes, d_selected_out, d_scan_out, deferred_num_items, stream);
   }
@@ -269,7 +271,7 @@ CUB_TEST("DeviceScan entry points accept deferred num_items", "[device][scan][de
   device_exclusive_scan(input.begin(), output.begin(), cuda::std::plus<>{}, scan_value_t{7}, count);
   for (count_t i = 0; i < num_items; ++i)
   {
-    REQUIRE(output[i] == scan_value_t{7} + scan_value_t{2} * i);
+    REQUIRE(output[i] == scan_value_t{7} + (scan_value_t{2} * i));
   }
 
   thrust::fill(output.begin(), output.end(), scan_value_t{-1});
@@ -320,7 +322,7 @@ CUB_TEST("DeviceScan in-place entry points accept deferred num_items", "[device]
   thrust::fill(data.begin(), data.end(), scan_value_t{2});
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveScan(data.begin(), cuda::std::plus<>{}, scan_value_t{7}, count));
   check(data, [](count_t i) {
-    return scan_value_t{7} + scan_value_t{2} * i;
+    return scan_value_t{7} + (scan_value_t{2} * i);
   });
 
   thrust::fill(data.begin(), data.end(), scan_value_t{2});
@@ -350,7 +352,7 @@ CUB_TEST("DeviceScan::InclusiveScanInit accepts a deferred num_items", "[device]
     const c2h::host_vector<scan_value_t> host = output;
     for (count_t i = 0; i < num_items; ++i)
     {
-      REQUIRE(host[i] == init + scan_value_t{2} * (i + 1));
+      REQUIRE(host[i] == init + (scan_value_t{2} * (i + 1)));
     }
     if (num_items < capacity)
     {
@@ -460,7 +462,7 @@ CUB_TEST("DeviceScan reusable lookback batches handle exact boundaries",
     batch_items,
     batch_items + 1,
     2 * batch_items,
-    2 * batch_items + 17);
+    (2 * batch_items) + 17);
   CAPTURE(num_items);
 
   const c2h::device_vector<scan_value_t> input(static_cast<size_t>(num_items), scan_value_t{1});
@@ -479,7 +481,7 @@ CUB_TEST("DeviceScan reusable lookback batches handle exact boundaries",
   const auto count_ptr       = thrust::raw_pointer_cast(device_num_items.data());
   const auto unbounded_count = cuda::args::deferred{count_ptr};
   const auto bounded_count =
-    cuda::args::deferred<const large_count_t*, cuda::args::static_bounds<large_count_t{0}, 8 * batch_items + 17>>{
+    cuda::args::deferred<const large_count_t*, cuda::args::static_bounds<large_count_t{0}, (8 * batch_items) + 17>>{
       count_ptr};
   const auto query_storage = [&](auto count) {
     size_t bytes = 0;
@@ -596,12 +598,13 @@ CUB_TEST("DeviceScan batched lookback preserves noncommutative order",
 {
   constexpr int configured_batch_tiles = c2h::get<0, TestType>::value;
   using large_count_t                  = int64_t;
-  constexpr large_count_t num_items    = configured_batch_tiles * large_count_t{128} + 17;
+  constexpr large_count_t num_items    = (configured_batch_tiles * large_count_t{128}) + 17;
 
   c2h::host_vector<affine_value_t> host_input(static_cast<size_t>(num_items));
   for (large_count_t i = 0; i < num_items; ++i)
   {
-    host_input[static_cast<size_t>(i)] = affine_value_t{static_cast<uint32_t>(i % 3 + 1), static_cast<uint32_t>(i % 5)};
+    host_input[static_cast<size_t>(i)] =
+      affine_value_t{static_cast<uint32_t>((i % 3) + 1), static_cast<uint32_t>(i % 5)};
   }
   const c2h::device_vector<affine_value_t> input = host_input;
   const c2h::device_vector<large_count_t> device_num_items(1, num_items);
@@ -653,7 +656,7 @@ CUB_TEST("DeviceScan batched lookback makes progress on concurrent streams",
   constexpr int configured_batch_tiles = c2h::get<0, TestType>::value;
   using large_count_t                  = int64_t;
   constexpr large_count_t batch_items  = configured_batch_tiles * large_count_t{128};
-  constexpr large_count_t num_items    = 2 * batch_items + 12'345;
+  constexpr large_count_t num_items    = (2 * batch_items) + 12'345;
 
   const c2h::device_vector<scan_value_t> input(static_cast<size_t>(num_items), scan_value_t{1});
   const c2h::device_vector<large_count_t> device_num_items(1, num_items);

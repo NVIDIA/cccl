@@ -597,11 +597,11 @@ struct atomic_flag
 
   _CCCL_HOST_DEVICE_API inline bool test_and_set(memory_order __m = memory_order_seq_cst) volatile noexcept
   {
-    return __atomic_exchange_dispatch(&__a, _CCCL_ATOMIC_FLAG_TYPE(true), __m, __thread_scope_system_tag{});
+    return __atomic_exchange_dispatch(&__a, _CCCL_ATOMIC_FLAG_TYPE(true), __m, __thread_scope_system_tag{}) != 0;
   }
   _CCCL_HOST_DEVICE_API inline bool test_and_set(memory_order __m = memory_order_seq_cst) noexcept
   {
-    return __atomic_exchange_dispatch(&__a, _CCCL_ATOMIC_FLAG_TYPE(true), __m, __thread_scope_system_tag{});
+    return __atomic_exchange_dispatch(&__a, _CCCL_ATOMIC_FLAG_TYPE(true), __m, __thread_scope_system_tag{}) != 0;
   }
   _CCCL_HOST_DEVICE_API inline void clear(memory_order __m = memory_order_seq_cst) volatile noexcept
   {
@@ -642,7 +642,7 @@ struct atomic_flag
   _CCCL_HIDE_FROM_ABI atomic_flag() noexcept = default;
 
   _CCCL_HOST_DEVICE_API constexpr atomic_flag(bool __b) noexcept
-      : __a(__b)
+      : __a(static_cast<_CCCL_ATOMIC_FLAG_TYPE>(__b))
   {} // EXTENSION
 
   atomic_flag(const atomic_flag&)                     = delete;
@@ -714,23 +714,23 @@ _CCCL_HOST_DEVICE_API inline void atomic_flag_clear_explicit(atomic_flag* __o, m
 
 _CCCL_HOST_DEVICE_API inline void atomic_flag_wait(const volatile atomic_flag* __o, bool __v) noexcept
 {
-  __o->wait(__v);
+  __o->wait(static_cast<_CCCL_ATOMIC_FLAG_TYPE>(__v));
 }
 
 _CCCL_HOST_DEVICE_API inline void atomic_flag_wait(const atomic_flag* __o, bool __v) noexcept
 {
-  __o->wait(__v);
+  __o->wait(static_cast<_CCCL_ATOMIC_FLAG_TYPE>(__v));
 }
 
 _CCCL_HOST_DEVICE_API inline void
 atomic_flag_wait_explicit(const volatile atomic_flag* __o, bool __v, memory_order __m) noexcept
 {
-  __o->wait(__v, __m);
+  __o->wait(static_cast<_CCCL_ATOMIC_FLAG_TYPE>(__v), __m);
 }
 
 _CCCL_HOST_DEVICE_API inline void atomic_flag_wait_explicit(const atomic_flag* __o, bool __v, memory_order __m) noexcept
 {
-  __o->wait(__v, __m);
+  __o->wait(static_cast<_CCCL_ATOMIC_FLAG_TYPE>(__v), __m);
 }
 
 _CCCL_HOST_DEVICE_API inline void atomic_flag_notify_one(volatile atomic_flag* __o) noexcept

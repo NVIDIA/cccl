@@ -133,7 +133,7 @@ struct projector_iv
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
   {
-    return (f) ? init_v : v;
+    return f ? init_v : v;
   }
 };
 
@@ -166,7 +166,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE search_data_t find(logical_offset_t elem_id) const
   {
     const bool is_small = (m_offsets.size() < LinearBinarySearchThreshold);
-    const auto pos      = (is_small) ? locate_linear_search(elem_id) : locate_binary_search(elem_id);
+    const auto pos      = is_small ? locate_linear_search(elem_id) : locate_binary_search(elem_id);
     return pos;
   }
 
@@ -193,8 +193,8 @@ private:
     {
       const auto offset_n = m_offsets[i];
       const bool cond     = ((offset_c <= pos) && (pos < offset_n));
-      segment_id          = (cond) ? i : segment_id;
-      shifted_offset      = (cond) ? pos - offset_c : shifted_offset;
+      segment_id          = cond ? i : segment_id;
+      shifted_offset      = cond ? pos - offset_c : shifted_offset;
       offset_c            = offset_n;
     }
     return {segment_id, shifted_offset};
@@ -296,7 +296,8 @@ private:
     for (segment_id_t step = start; step > 0; step >>= 1)
     {
       const segment_id_t new_segment_id = segment_id + (step - 1);
-      const segment_id_t cond           = is_it_past_this_segment(pos, new_segment_id, offset_size);
+      // NOLINTNEXTLINE(readability-suspicious-call-argument)
+      const segment_id_t cond = is_it_past_this_segment(pos, new_segment_id, offset_size);
 
       segment_id += cond * step;
     }

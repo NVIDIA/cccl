@@ -250,7 +250,7 @@ public:
   /// @return The depth.
   static constexpr size_t depth()
   {
-    return 1 + sizeof...(lower_levels) / 2;
+    return 1 + (sizeof...(lower_levels) / 2);
   }
 
   /// @brief Check if synchronization is possible.
@@ -312,7 +312,7 @@ public:
    */
 #ifndef _CCCL_DOXYGEN_INVOKED // doxygen fails to parse this
   template <size_t level>
-  static inline constexpr bool is_synchronizable = [] {
+  static constexpr bool is_synchronizable = [] {
     if constexpr (level > 0)
     {
       return thread_hierarchy_spec<lower_levels...>::template is_synchronizable<level - 1>;
@@ -332,7 +332,7 @@ public:
    * @param level The level
    * @return The width (0 if width is dynamic)
    */
-  static inline constexpr size_t static_width(size_t level)
+  static constexpr size_t static_width(size_t level)
   {
     const size_t data[] = {width, lower_levels...};
     return data[2 * level];

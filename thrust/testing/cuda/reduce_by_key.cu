@@ -131,7 +131,7 @@ struct check_valid_item_op
   {
     if (lhs > expected_upper_bound || rhs > expected_upper_bound)
     {
-      if (error_counter)
+      if (error_counter != nullptr)
       {
         atomicAdd(error_counter, 1);
       }
@@ -473,7 +473,7 @@ void test_reduce_by_key_with_big_indexes_helper(int magnitude)
   const std::int64_t sum = (key_size - 1) * key_size / 2;
   for (std::int64_t key_id = 0; key_id < num_unique_keys; key_id++)
   {
-    REQUIRE(result[key_id] == sum + key_id * key_size);
+    REQUIRE(result[key_id] == sum + (key_id * key_size));
   }
 }
 

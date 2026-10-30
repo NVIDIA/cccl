@@ -93,7 +93,7 @@ template <typename T, typename Tag>
 class fixture
 {
 public:
-  using OptionalT = typename std::optional<T>;
+  using OptionalT = std::optional<T>;
 
 private:
   OptionalT v;
@@ -119,7 +119,7 @@ struct KeyBuilder
 {
   static std::string bool_as_key(bool v)
   {
-    return (v) ? std::string("T") : std::string("F");
+    return v ? std::string("T") : std::string("F");
   }
 
   template <typename T>

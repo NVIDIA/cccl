@@ -33,7 +33,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-enum float_round_style // NOLINT(cppcoreguidelines-use-enum-class)
+enum float_round_style // NOLINT(cppcoreguidelines-use-enum-class,readability-enum-initial-value)
 {
   round_indeterminate       = -1,
   round_toward_zero         = 0,
@@ -42,6 +42,7 @@ enum float_round_style // NOLINT(cppcoreguidelines-use-enum-class)
   round_toward_neg_infinity = 3
 };
 
+// NOLINTNEXTLINE(readability-enum-initial-value)
 enum _CCCL_DEPRECATED_IN_CXX23 float_denorm_style // NOLINT(cppcoreguidelines-use-enum-class)
 {
   denorm_indeterminate = -1,
@@ -168,7 +169,7 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed   = type(-1) < type(0);
-  static constexpr int digits       = static_cast<int>(sizeof(type) * CHAR_BIT - is_signed);
+  static constexpr int digits       = static_cast<int>((sizeof(type) * CHAR_BIT) - static_cast<int>(is_signed));
   static constexpr int digits10     = digits * 3 / 10;
   static constexpr int max_digits10 = 0;
   _CCCL_API static constexpr type min() noexcept
@@ -322,7 +323,7 @@ public:
   static constexpr bool is_signed   = true;
   static constexpr int digits       = FLT_MANT_DIG;
   static constexpr int digits10     = FLT_DIG;
-  static constexpr int max_digits10 = 2 + (digits * 30103l) / 100000l;
+  static constexpr int max_digits10 = 2 + ((digits * 30103l) / 100000l);
   _CCCL_API static constexpr type min() noexcept
   {
     return FLT_MIN;
@@ -407,7 +408,7 @@ public:
   static constexpr bool is_signed   = true;
   static constexpr int digits       = DBL_MANT_DIG;
   static constexpr int digits10     = DBL_DIG;
-  static constexpr int max_digits10 = 2 + (digits * 30103l) / 100000l;
+  static constexpr int max_digits10 = 2 + ((digits * 30103l) / 100000l);
   _CCCL_API static constexpr type min() noexcept
   {
     return DBL_MIN;
@@ -494,7 +495,7 @@ public:
   static constexpr bool is_signed   = true;
   static constexpr int digits       = LDBL_MANT_DIG;
   static constexpr int digits10     = LDBL_DIG;
-  static constexpr int max_digits10 = 2 + (digits * 30103l) / 100000l;
+  static constexpr int max_digits10 = 2 + ((digits * 30103l) / 100000l);
   _CCCL_API static constexpr type min() noexcept
   {
     return LDBL_MIN;

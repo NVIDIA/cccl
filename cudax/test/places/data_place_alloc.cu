@@ -28,16 +28,16 @@ using namespace cuda::experimental::places;
 
 __global__ void init_kernel(int* ptr, int n, int value)
 {
-  const int tid = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   if (tid < n)
   {
     ptr[tid] = value + tid;
   }
 }
 
-__global__ void check_kernel(int* ptr, int n, int value, int* result)
+__global__ void check_kernel(const int* ptr, int n, int value, int* result)
 {
-  const int tid = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   if (tid < n)
   {
     if (ptr[tid] != value + tid)
@@ -125,7 +125,7 @@ void test_managed_allocation()
   cuda_try(cudaGetDevice(&dev));
   cudaDeviceProp prop{};
   cuda_try(cudaGetDeviceProperties(&prop, dev));
-  if (!prop.concurrentManagedAccess)
+  if (prop.concurrentManagedAccess == 0)
   {
     printf("  Concurrent CPU/GPU access not supported, skipping managed test.\n");
     return;

@@ -24,9 +24,9 @@ THRUST_NAMESPACE_BEGIN
 namespace random
 {
 template <typename RealType>
-_CCCL_HOST_DEVICE normal_distribution<RealType>::normal_distribution(RealType a, RealType b)
+_CCCL_HOST_DEVICE normal_distribution<RealType>::normal_distribution(RealType mean, RealType stddev)
     : super_t()
-    , m_param(a, b)
+    , m_param(mean, stddev)
 {} // end normal_distribution::normal_distribution()
 
 template <typename RealType>

@@ -44,10 +44,10 @@ TEST_CASE("TestZipIteratorTraits", "[zip_iterator]")
     using value_type = cuda::std::tuple<int, cuda::discard_iterator::__discard_proxy>;
     using reference  = thrust::detail::tuple_of_iterator_references<int&, cuda::discard_iterator::__discard_proxy>;
 
-    static_assert(cuda::std::is_same_v<typename traits::iterator_category, cuda::std::random_access_iterator_tag>);
-    static_assert(cuda::std::is_same_v<typename traits::difference_type, cuda::std::ptrdiff_t>);
-    static_assert(cuda::std::is_same_v<typename traits::value_type, value_type>);
-    static_assert(cuda::std::is_same_v<typename traits::reference, reference>);
+    static_assert(cuda::std::is_same_v<traits::iterator_category, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::is_same_v<traits::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::is_same_v<traits::value_type, value_type>);
+    static_assert(cuda::std::is_same_v<traits::reference, reference>);
 
     static_assert(!cuda::std::output_iterator<it, int>);
     static_assert(cuda::std::input_iterator<it>);
@@ -65,10 +65,10 @@ TEST_CASE("TestZipIteratorTraits", "[zip_iterator]")
     using reference =
       thrust::detail::tuple_of_iterator_references<int&, cuda::__tabulate_proxy<cuda::std::plus<>, short>>;
 
-    static_assert(cuda::std::is_same_v<typename traits::iterator_category, cuda::std::random_access_iterator_tag>);
-    static_assert(cuda::std::is_same_v<typename traits::difference_type, cuda::std::ptrdiff_t>);
-    static_assert(cuda::std::is_same_v<typename traits::value_type, value_type>);
-    static_assert(cuda::std::is_same_v<typename traits::reference, reference>);
+    static_assert(cuda::std::is_same_v<traits::iterator_category, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::is_same_v<traits::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::is_same_v<traits::value_type, value_type>);
+    static_assert(cuda::std::is_same_v<traits::reference, reference>);
 
     static_assert(!cuda::std::output_iterator<it, int>);
     static_assert(cuda::std::input_iterator<it>);
@@ -86,10 +86,10 @@ TEST_CASE("TestZipIteratorTraits", "[zip_iterator]")
     using reference =
       thrust::detail::tuple_of_iterator_references<int&, cuda::__transform_output_proxy<cuda::std::plus<>, short*>>;
 
-    static_assert(cuda::std::is_same_v<typename traits::iterator_category, cuda::std::random_access_iterator_tag>);
-    static_assert(cuda::std::is_same_v<typename traits::difference_type, cuda::std::ptrdiff_t>);
-    static_assert(cuda::std::is_same_v<typename traits::value_type, value_type>);
-    static_assert(cuda::std::is_same_v<typename traits::reference, reference>);
+    static_assert(cuda::std::is_same_v<traits::iterator_category, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::is_same_v<traits::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::is_same_v<traits::value_type, value_type>);
+    static_assert(cuda::std::is_same_v<traits::reference, reference>);
 
     static_assert(!cuda::std::output_iterator<it, int>);
     static_assert(cuda::std::input_iterator<it>);
@@ -108,10 +108,10 @@ TEST_CASE("TestZipIteratorTraits", "[zip_iterator]")
       int&,
       cuda::__transform_input_output_proxy<cuda::std::negate<>, cuda::std::plus<>, short*>>;
 
-    static_assert(cuda::std::is_same_v<typename traits::iterator_category, cuda::std::random_access_iterator_tag>);
-    static_assert(cuda::std::is_same_v<typename traits::difference_type, cuda::std::ptrdiff_t>);
-    static_assert(cuda::std::is_same_v<typename traits::value_type, value_type>);
-    static_assert(cuda::std::is_same_v<typename traits::reference, reference>);
+    static_assert(cuda::std::is_same_v<traits::iterator_category, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::is_same_v<traits::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::is_same_v<traits::value_type, value_type>);
+    static_assert(cuda::std::is_same_v<traits::reference, reference>);
 
     static_assert(!cuda::std::output_iterator<it, int>);
     static_assert(cuda::std::input_iterator<it>);
@@ -293,8 +293,10 @@ void test_zip_iterator_copy()
 {
   using T = typename Vector::value_type;
 
-  Vector input0(4), input1(4);
-  Vector output0(4), output1(4);
+  Vector input0(4);
+  Vector input1(4);
+  Vector output0(4);
+  Vector output1(4);
 
   // initialize input
   thrust::sequence(input0.begin(), input0.end(), T{0});
@@ -386,14 +388,16 @@ TEST_CASE("TestZipIteratorCopyAoSToSoA", "[zip_iterator]")
   device_array_of_structures d_aos(n, cuda::std::make_tuple(7, 13));
 
   // host to host
-  thrust::host_vector<int> h_field0(n), h_field1(n);
+  thrust::host_vector<int> h_field0(n);
+  thrust::host_vector<int> h_field1(n);
   const host_structure_of_arrays h_soa = thrust::make_zip_iterator(h_field0.begin(), h_field1.begin());
 
   thrust::copy(h_aos.begin(), h_aos.end(), h_soa);
   REQUIRE((cuda::std::make_tuple(7, 13) == h_soa[0]));
 
   // host to device
-  thrust::device_vector<int> d_field0(n), d_field1(n);
+  thrust::device_vector<int> d_field0(n);
+  thrust::device_vector<int> d_field1(n);
   const device_structure_of_arrays d_soa = thrust::make_zip_iterator(d_field0.begin(), d_field1.begin());
 
   thrust::copy(h_aos.begin(), h_aos.end(), d_soa);
@@ -428,8 +432,10 @@ TEST_CASE("TestZipIteratorCopySoAToAoS", "[zip_iterator]")
   using device_structure_of_arrays =
     thrust::zip_iterator<cuda::std::tuple<thrust::device_vector<int>::iterator, thrust::device_vector<int>::iterator>>;
 
-  thrust::host_vector<int> h_field0(n, 7), h_field1(n, 13);
-  thrust::device_vector<int> d_field0(n, 7), d_field1(n, 13);
+  thrust::host_vector<int> h_field0(n, 7);
+  thrust::host_vector<int> h_field1(n, 13);
+  thrust::device_vector<int> d_field0(n, 7);
+  thrust::device_vector<int> d_field1(n, 13);
 
   const host_structure_of_arrays h_soa   = thrust::make_zip_iterator(h_field0.begin(), h_field1.begin());
   const device_structure_of_arrays d_soa = thrust::make_zip_iterator(d_field0.begin(), d_field1.begin());

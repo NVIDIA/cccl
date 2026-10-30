@@ -76,10 +76,9 @@
   {                                                                                                                    \
     if (memory_order_acq_rel == __m)                                                                                   \
       return ::cuda::std::__atomic_compare_exchange_weak_dispatch(&__a, &__e, __d, __m, memory_order_acquire, _Sco{}); \
-    else if (memory_order_release == __m)                                                                              \
+    if (memory_order_release == __m)                                                                                   \
       return ::cuda::std::__atomic_compare_exchange_weak_dispatch(&__a, &__e, __d, __m, memory_order_relaxed, _Sco{}); \
-    else                                                                                                               \
-      return ::cuda::std::__atomic_compare_exchange_weak_dispatch(&__a, &__e, __d, __m, __m, _Sco{});                  \
+    return ::cuda::std::__atomic_compare_exchange_weak_dispatch(&__a, &__e, __d, __m, __m, _Sco{});                    \
   }                                                                                                                    \
   _LIBCUDACXX_ATOMIC_MUTATING_CONSTRAINT()                                                                             \
   _CCCL_HOST_DEVICE_API inline bool compare_exchange_strong(                                                           \
@@ -88,11 +87,10 @@
     if (memory_order_acq_rel == __m)                                                                                   \
       return ::cuda::std::__atomic_compare_exchange_strong_dispatch(                                                   \
         &__a, &__e, __d, __m, memory_order_acquire, _Sco{});                                                           \
-    else if (memory_order_release == __m)                                                                              \
+    if (memory_order_release == __m)                                                                                   \
       return ::cuda::std::__atomic_compare_exchange_strong_dispatch(                                                   \
         &__a, &__e, __d, __m, memory_order_relaxed, _Sco{});                                                           \
-    else                                                                                                               \
-      return ::cuda::std::__atomic_compare_exchange_strong_dispatch(&__a, &__e, __d, __m, __m, _Sco{});                \
+    return ::cuda::std::__atomic_compare_exchange_strong_dispatch(&__a, &__e, __d, __m, __m, _Sco{});                  \
   }                                                                                                                    \
   _CCCL_HOST_DEVICE_API inline void wait(remove_cv_t<_Tp> __v, memory_order __m = memory_order_seq_cst)                \
     const _VOLATILE noexcept                                                                                           \

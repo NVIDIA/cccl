@@ -140,12 +140,12 @@ using __map_of = cudax::cuco::fixed_capacity_map<
 
 C2H_TEST("fixed_capacity_map key and slot size constraint", "[container]")
 {
-  static_assert(sizeof(typename __map_of<::cuda::std::uint8_t, ::cuda::std::uint8_t>::value_type) == 2,
+  static_assert(sizeof(__map_of<::cuda::std::uint8_t, ::cuda::std::uint8_t>::value_type) == 2,
                 "<uint8_t, uint8_t> is a valid 2-byte slot");
-  static_assert(sizeof(typename __map_of<::cuda::std::uint16_t, ::cuda::std::uint16_t>::value_type) == 4,
+  static_assert(sizeof(__map_of<::cuda::std::uint16_t, ::cuda::std::uint16_t>::value_type) == 4,
                 "<uint16_t, uint16_t> is a valid 4-byte slot");
-  static_assert(sizeof(typename __map_of<::cuda::std::uint32_t, ::cuda::std::uint32_t>::value_type) == 8,
+  static_assert(sizeof(__map_of<::cuda::std::uint32_t, ::cuda::std::uint32_t>::value_type) == 8,
                 "<uint32_t, uint32_t> is a valid 8-byte slot");
-  static_assert(sizeof(typename __map_of<::cuda::std::uint8_t, ::cuda::std::uint32_t>::value_type) == 8,
+  static_assert(sizeof(__map_of<::cuda::std::uint8_t, ::cuda::std::uint32_t>::value_type) == 8,
                 "a mismatched <uint8_t, uint32_t> slot is a valid 8-byte slot");
 }

@@ -197,7 +197,8 @@ _CCCL_DEVICE_API void squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSme
     const int tail_elements = (cpAsyncOobInfo.ptrGmemEnd - cpAsyncOobInfo.ptrGmemEndAlignDown) / sizeof(load_word_t);
     _CCCL_ASSERT(head_elements <= squad.threadCount(), "");
     _CCCL_ASSERT(tail_elements <= squad.threadCount(), "");
-    load_word_t head_value, tail_value;
+    load_word_t head_value;
+    load_word_t tail_value;
     if (squad.threadRank() < head_elements)
     {
       head_value = reinterpret_cast<const load_word_t*>(cpAsyncOobInfo.ptrGmem)[squad.threadRank()];
@@ -376,7 +377,7 @@ _CCCL_DEVICE_API void squadLoadSmem(Squad squad, AccumT (&outReg)[ElemPerThread]
   _CCCL_IKET_RANGE_PUSH(LoadSmem);
   for (int i = 0; i < ElemPerThread; ++i)
   {
-    const int elem_idx = squad.threadRank() * ElemPerThread + i;
+    const int elem_idx = (squad.threadRank() * ElemPerThread) + i;
     outReg[i]          = smemBuf[elem_idx];
   }
   _CCCL_IKET_RANGE_POP();
@@ -388,7 +389,7 @@ _CCCL_DEVICE_API void squadStoreSmem(Squad squad, OutputT* smemBuf, const AccumT
   _CCCL_IKET_RANGE_PUSH(StoreSmem);
   for (int i = 0; i < ElemPerThread; ++i)
   {
-    const int elem_idx = squad.threadRank() * ElemPerThread + i;
+    const int elem_idx = (squad.threadRank() * ElemPerThread) + i;
     smemBuf[elem_idx]  = inReg[i];
   }
   _CCCL_IKET_RANGE_POP();
@@ -401,7 +402,7 @@ squadStoreSmemPartial(Squad squad, OutputT* smemBuf, const AccumT (&inReg)[ElemP
   _CCCL_IKET_RANGE_PUSH(StoreSmem);
   for (int i = 0; i < ElemPerThread; ++i)
   {
-    const int elem_idx = squad.threadRank() * ElemPerThread + i;
+    const int elem_idx = (squad.threadRank() * ElemPerThread) + i;
     if (beginIndex <= elem_idx && elem_idx < endIndex)
     {
       smemBuf[elem_idx - beginIndex] = inReg[i];

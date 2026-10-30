@@ -34,14 +34,13 @@ namespace chrono
 {
 class month
 {
-private:
   unsigned char __month_;
 
   _CCCL_API constexpr void __add_clamped(long long __add) noexcept
   {
     const auto __mu = static_cast<long long>(static_cast<unsigned>(__month_)) + (__add - 1);
     const auto __yr = (__mu >= 0 ? __mu : __mu - 11) / 12;
-    __month_        = static_cast<unsigned char>(__mu - __yr * 12 + 1);
+    __month_        = static_cast<unsigned char>(__mu - (__yr * 12) + 1);
   }
 
 public:

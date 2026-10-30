@@ -167,10 +167,10 @@ _CCCL_HOST_DEVICE inline float norm(const complex<float>& z)
   {
     const float a = z.real() * 4.0f;
     const float b = z.imag() * 4.0f;
-    return (a * a + b * b) / 16.0f;
+    return ((a * a) + (b * b)) / 16.0f;
   }
 
-  return z.real() * z.real() + z.imag() * z.imag();
+  return (z.real() * z.real()) + (z.imag() * z.imag());
 }
 
 template <>
@@ -181,10 +181,10 @@ _CCCL_HOST_DEVICE inline double norm(const complex<double>& z)
   {
     const double a = z.real() * 4.0;
     const double b = z.imag() * 4.0;
-    return (a * a + b * b) / 16.0;
+    return ((a * a) + (b * b)) / 16.0;
   }
 
-  return z.real() * z.real() + z.imag() * z.imag();
+  return (z.real() * z.real()) + (z.imag() * z.imag());
 }
 
 template <typename T0, typename T1>

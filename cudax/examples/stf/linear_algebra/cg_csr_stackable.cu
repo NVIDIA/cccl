@@ -95,7 +95,7 @@ void genTridiag(size_t* I, size_t* J, double* val, size_t N, size_t nz)
       I[1] = 2;
     }
 
-    start        = static_cast<int>((i - 1) * 3 + 2);
+    start        = static_cast<int>(((i - 1) * 3) + 2);
     J[start]     = i - 1;
     J[start + 1] = i;
 
@@ -185,7 +185,7 @@ void cg_solver(context_t& ctx, csr_matrix& A, vector_t& X, vector_t& B)
     // p = r + (rsnew / rsold) * p;
     ctx.parallel_for(P.shape(), P.rw(), R.read(), rsnew.read(), rsold.read()).set_symbol("P=r+(rsnew/rsold)*P")
         ->*[] _CCCL_DEVICE(size_t i, auto dP, auto dR, auto drsnew, auto drsold) {
-              dP(i) = dR(i) + (*drsnew / *drsold) * dP(i);
+              dP(i) = dR(i) + ((*drsnew / *drsold) * dP(i));
             };
 
     // update old residual
@@ -213,7 +213,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     fprintf(stderr, "N = %zu\n", N);
   }
 
-  const size_t nz = (N - 2) * 3 + 4;
+  const size_t nz = ((N - 2) * 3) + 4;
 
   size_t* row_offsets;
   size_t* column_indices;

@@ -13,7 +13,7 @@
 template <class T>
 __global__ void cub_api_example_x2_0_kernel(const T* d_in, T* d_out, int num_items)
 {
-  const int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int i = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
 
   if (i < num_items)
   {
@@ -24,7 +24,7 @@ __global__ void cub_api_example_x2_0_kernel(const T* d_in, T* d_out, int num_ite
 template <class T>
 __global__ void cub_api_example_x0_5_kernel(const T* d_in, T* d_out, int num_items)
 {
-  const int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int i = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
 
   if (i < num_items)
   {
@@ -38,7 +38,7 @@ struct cub_api_example_t
 
   template <class T, class KernelT>
   CUB_RUNTIME_FUNCTION static cudaError_t invoke(
-    std::uint8_t* d_temp_storage,
+    const std::uint8_t* d_temp_storage,
     std::size_t& temp_storage_bytes,
     KernelT kernel,
     const T* d_in,

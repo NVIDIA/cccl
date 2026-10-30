@@ -60,11 +60,21 @@ _CCCL_HOST_DEVICE inline double trim(double x)
 _CCCL_HOST_DEVICE inline complex<double> clog(const complex<double>& z)
 {
   // Adapted from FreeBSDs msun
-  double x, y;
-  double ax, ay;
-  double x0, y0, x1, y1, x2, y2, t, hm1;
+  double x;
+  double y;
+  double ax;
+  double ay;
+  double x0;
+  double y0;
+  double x1;
+  double y1;
+  double x2;
+  double y2;
+  double t;
+  double hm1;
   double val[12];
-  int i, sorted;
+  int i;
+  int sorted;
   constexpr auto e = ::cuda::std::__numbers<double>::__e();
 
   x = z.real();
@@ -126,12 +136,12 @@ _CCCL_HOST_DEVICE inline complex<double> clog(const complex<double>& z)
 
   if (ax >= 1.0)
   {
-    return (complex<double>(::cuda::std::log1p((ax - 1) * (ax + 1) + ay * ay) * 0.5, ::cuda::std::atan2(y, x)));
+    return (complex<double>(::cuda::std::log1p(((ax - 1) * (ax + 1)) + (ay * ay)) * 0.5, ::cuda::std::atan2(y, x)));
   }
 
-  if (ax * ax + ay * ay <= 0.7)
+  if ((ax * ax) + (ay * ay) <= 0.7)
   {
-    return (complex<double>(::cuda::std::log(ax * ax + ay * ay) * 0.5, ::cuda::std::atan2(y, x)));
+    return (complex<double>(::cuda::std::log((ax * ax) + (ay * ay)) * 0.5, ::cuda::std::atan2(y, x)));
   }
 
   /*
@@ -176,7 +186,7 @@ _CCCL_HOST_DEVICE inline complex<double> clog(const complex<double>& z)
         val[i + 1] = t;
       }
     }
-  } while (!sorted);
+  } while (sorted == 0);
 
   hm1 = -1;
   for (i = 0; i < 12; i++)

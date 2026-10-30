@@ -46,7 +46,7 @@ __device__ void calculating_pagerank(
     const int out_degree = loffsets[neighbor + 1] - loffsets[neighbor];
     rank_sum += lpage_rank[neighbor] / static_cast<float>(out_degree);
   }
-  lnew_page_rank[idx] = static_cast<float>(0.85) * rank_sum + static_cast<float>(1.0 - 0.85) * init_rank;
+  lnew_page_rank[idx] = (static_cast<float>(0.85) * rank_sum) + (static_cast<float>(1.0 - 0.85) * init_rank);
 }
 
 int main()
@@ -71,10 +71,10 @@ int main()
   std::vector<float> page_rank(num_vertices, init_rank);
   std::vector<float> new_page_rank(num_vertices);
 
-  auto loffsets       = ctx.logical_data(&offsets[0], offsets.size());
-  auto lnonzeros      = ctx.logical_data(&nonzeros[0], nonzeros.size());
-  auto lpage_rank     = ctx.logical_data(&page_rank[0], page_rank.size());
-  auto lnew_page_rank = ctx.logical_data(&new_page_rank[0], new_page_rank.size());
+  auto loffsets       = ctx.logical_data(offsets.data(), offsets.size());
+  auto lnonzeros      = ctx.logical_data(nonzeros.data(), nonzeros.size());
+  auto lpage_rank     = ctx.logical_data(page_rank.data(), page_rank.size());
+  auto lnew_page_rank = ctx.logical_data(new_page_rank.data(), new_page_rank.size());
   auto lmax_diff      = ctx.logical_data(shape_of<scalar_view<float>>());
   auto liter          = ctx.logical_data(shape_of<scalar_view<int>>());
 

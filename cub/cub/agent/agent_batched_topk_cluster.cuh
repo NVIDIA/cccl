@@ -130,10 +130,10 @@ struct smem_block_tile_layout
   [[nodiscard]] _CCCL_HOST_DEVICE static constexpr int
   min_smem_bytes_from_num_chunks(::cuda::std::uint64_t num_chunks) noexcept
   {
-    _CCCL_ASSERT(base_padding_bytes + num_chunks * static_cast<::cuda::std::uint64_t>(chunk_bytes)
+    _CCCL_ASSERT(base_padding_bytes + (num_chunks * static_cast<::cuda::std::uint64_t>(chunk_bytes))
                    <= static_cast<::cuda::std::uint64_t>((::cuda::std::numeric_limits<int>::max)()),
                  "dynamic SMEM byte count exceeds int range");
-    return base_padding_bytes + static_cast<int>(num_chunks) * chunk_bytes;
+    return base_padding_bytes + (static_cast<int>(num_chunks) * chunk_bytes);
   }
 
   // Smallest dynamic-SMEM byte count whose per-CTA capacity (`max_block_resident_items`) reaches `items` keys
@@ -259,7 +259,7 @@ struct agent_batched_topk_cluster
   // leader at the last logical rank and scans ascending; every other config (deterministic-prefer-larger and the
   // whole non-deterministic path) keeps the leader at rank 0 and scans descending, which makes rank 0 last. Matches the
   // `leader_rank` computed in `compute_segment_layout`.
-  static constexpr bool is_scan_descending = !(needs_set_determinism && !is_tie_reversed);
+  static constexpr bool is_scan_descending = !needs_set_determinism || is_tie_reversed;
 
   // The deterministic final scan visits chunks in global-index order and bails early (`final_filter_should_stop`), so
   // keeping the *first-visited* chunks resident lets it skip re-reading the streamed overflow. Ascending visits low
@@ -284,7 +284,7 @@ struct agent_batched_topk_cluster
   // (non-deterministic keeps the forward default).
   static constexpr int num_passes = detail::topk::calc_num_passes<key_t>(policy.bits_per_pass);
   static constexpr bool first_wave_is_forward =
-    !needs_set_determinism || ((!is_tie_reversed) ^ ((num_passes & 1) != 0));
+    !needs_set_determinism || ((!is_tie_reversed) != ((num_passes & 1) != 0));
 
   // Static upper bound on segment size: exact for constant/immediate sizes, the type maximum for runtime sizes. The
   // public entry caps this at 2^21, so it fits `int`.
@@ -436,7 +436,7 @@ struct agent_batched_topk_cluster
   [[nodiscard]] static _CCCL_DEVICE _CCCL_FORCEINLINE chunk_desc
   get_chunk(offset_t chunk_idx, offset_t segment_size, offset_t num_cluster_head_items)
   {
-    const offset_t offset = num_cluster_head_items + chunk_idx * offset_t{max_chunk_items};
+    const offset_t offset = num_cluster_head_items + (chunk_idx * offset_t{max_chunk_items});
     // Callers pass a chunk index `< num_cluster_chunks`, so the chunk is non-empty and unsigned `remaining` below can't
     // underflow.
     _CCCL_ASSERT(offset < segment_size, "get_chunk: chunk index lies past the segment end");
@@ -465,7 +465,7 @@ struct agent_batched_topk_cluster
     [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE offset_t global_index(offset_t local_chunk_idx) const
     {
       _CCCL_ASSERT(local_chunk_idx < num_chunks, "global_index: rank-local chunk index out of range");
-      return first + local_chunk_idx * stride;
+      return first + (local_chunk_idx * stride);
     }
   };
 
@@ -846,7 +846,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int j = 0; j < buckets_per_thread; ++j)
     {
-      const int bucket = tid * buckets_per_thread + j;
+      const int bucket = (tid * buckets_per_thread) + j;
       hist_vals[j]     = (bucket < num_buckets) ? temp_storage.hist[bucket] : offset_t{0};
     }
 
@@ -857,7 +857,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int j = 0; j < buckets_per_thread; ++j)
     {
-      const int bucket = tid * buckets_per_thread + j;
+      const int bucket = (tid * buckets_per_thread) + j;
       if (bucket < num_buckets && prefixes[j] < target_k && prefixes[j] + hist_vals[j] >= target_k)
       {
         const out_offset_t new_k                        = target_k - static_cast<out_offset_t>(prefixes[j]);
@@ -1380,7 +1380,7 @@ private:
   {
     if constexpr (Blocked)
     {
-      return tile_base + tid * ItemsPerThread + i;
+      return tile_base + (tid * ItemsPerThread) + i;
     }
     else
     {
@@ -2354,7 +2354,7 @@ private:
         const offset_t num_reverse_cycle_stages = static_cast<offset_t>(num_prologue_stages);
         const offset_t cycle_pos =
           (static_cast<offset_t>(reverse_cycle_seed) + num_reverse_cycle_stages
-           - local_resident_chunk_idx % num_reverse_cycle_stages)
+           - (local_resident_chunk_idx % num_reverse_cycle_stages))
           % num_reverse_cycle_stages;
         const int stage_index = stage_base + static_cast<int>(cycle_pos);
         return stage_index >= num_cycle_stages ? stage_index - num_cycle_stages : stage_index;
@@ -3065,7 +3065,7 @@ private:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int j = 0; j < buckets_per_thread; ++j)
         {
-          const int bucket   = tid * buckets_per_thread + j;
+          const int bucket   = (tid * buckets_per_thread) + j;
           local_hist_vals[j] = (bucket < num_buckets) ? temp_storage.hist[bucket] : offset_t{0};
         }
         block_scan_t(temp_storage.scan_storage).ExclusiveSum(local_hist_vals, local_prefixes);
@@ -3113,7 +3113,7 @@ private:
           const int owner = bucket / buckets_per_thread;
           if (tid == owner)
           {
-            const int slot = bucket - owner * buckets_per_thread;
+            const int slot = bucket - (owner * buckets_per_thread);
             atomicAdd(&temp_storage.num_local_strictly_selected, local_prefixes[slot]);
             temp_storage.num_local_candidates = local_hist_vals[slot];
           }
@@ -3229,7 +3229,7 @@ private:
   {
     constexpr int copy_items         = copy_items_per_thread_clamped;
     const offset_t num_cluster_items = static_cast<offset_t>(segment_size);
-    const offset_t cluster_tid = cluster_block_rank * static_cast<offset_t>(policy.threads_per_block) + threadIdx.x;
+    const offset_t cluster_tid = (cluster_block_rank * static_cast<offset_t>(policy.threads_per_block)) + threadIdx.x;
     const offset_t num_cluster_threads = num_full_cluster_blocks * static_cast<offset_t>(policy.threads_per_block);
     const offset_t step                = num_cluster_threads * static_cast<offset_t>(copy_items);
     auto keys_in_it                    = d_key_segments_it[segment_id];
@@ -3248,8 +3248,9 @@ private:
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int j = 0; j < copy_items; ++j)
       {
-        const auto idx = static_cast<segment_size_val_t>(thread_base + static_cast<offset_t>(j) * num_cluster_threads);
-        keys[j]        = keys_in_it[idx];
+        const auto idx =
+          static_cast<segment_size_val_t>(thread_base + (static_cast<offset_t>(j) * num_cluster_threads));
+        keys[j] = keys_in_it[idx];
       }
       if constexpr (!is_keys_only)
       {
@@ -3258,14 +3259,15 @@ private:
         for (int j = 0; j < copy_items; ++j)
         {
           const auto idx =
-            static_cast<segment_size_val_t>(thread_base + static_cast<offset_t>(j) * num_cluster_threads);
+            static_cast<segment_size_val_t>(thread_base + (static_cast<offset_t>(j) * num_cluster_threads));
           vals[j] = vals_in_it[idx];
         }
       }
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int j = 0; j < copy_items; ++j)
       {
-        const auto idx = static_cast<segment_size_val_t>(thread_base + static_cast<offset_t>(j) * num_cluster_threads);
+        const auto idx =
+          static_cast<segment_size_val_t>(thread_base + (static_cast<offset_t>(j) * num_cluster_threads));
         keys_out_it[idx] = keys[j];
       }
       if constexpr (!is_keys_only)
@@ -3275,7 +3277,7 @@ private:
         for (int j = 0; j < copy_items; ++j)
         {
           const auto idx =
-            static_cast<segment_size_val_t>(thread_base + static_cast<offset_t>(j) * num_cluster_threads);
+            static_cast<segment_size_val_t>(thread_base + (static_cast<offset_t>(j) * num_cluster_threads));
           vals_out_it[idx] = vals[j];
         }
       }

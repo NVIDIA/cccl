@@ -92,7 +92,7 @@ struct head_flag_predicate
   template <typename T>
   _CCCL_HOST_DEVICE bool operator()(const T&, const T& b)
   {
-    return b ? false : true;
+    return !static_cast<bool>(b);
   }
 };
 
@@ -233,12 +233,12 @@ TEST_CASE("TestScanByKeyMixedTypes", "[scan_by_key.exclusive]")
   thrust::exclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_float_output.begin(), (float) 3.5);
   REQUIRE(d_float_output == h_float_output);
 
-  thrust::exclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_float_output.begin(), (int) 3);
-  thrust::exclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_float_output.begin(), (int) 3);
+  thrust::exclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_float_output.begin(), 3);
+  thrust::exclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_float_output.begin(), 3);
   REQUIRE(d_float_output == h_float_output);
 
-  thrust::exclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_int_output.begin(), (int) 3);
-  thrust::exclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_int_output.begin(), (int) 3);
+  thrust::exclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_int_output.begin(), 3);
+  thrust::exclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_int_output.begin(), 3);
   REQUIRE(d_int_output == h_int_output);
 
   thrust::exclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_int_output.begin(), (float) 3.5);

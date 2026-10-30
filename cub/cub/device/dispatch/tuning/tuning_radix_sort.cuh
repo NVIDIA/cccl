@@ -1714,7 +1714,7 @@ struct policy_hub
     using OnesweepPolicyKey32 = detail::agent_radix_sort_onesweep_policy<
       384,
       KEYS_ONLY ? 20 - OFFSET_64BIT - FLOAT_KEYS
-                : (sizeof(ValueT) < 8 ? (OFFSET_64BIT ? 17 : 23) : (OFFSET_64BIT ? 29 : 30)),
+                : (sizeof(ValueT) < 8 ? (OFFSET_64BIT != 0 ? 17 : 23) : (OFFSET_64BIT != 0 ? 29 : 30)),
       DominantT,
       1,
       RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
@@ -1850,7 +1850,7 @@ struct policy_selector
   // Whether this is a keys-only (or key-value) sort
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int __keys_only() const
   {
-    return value_size == 0;
+    return static_cast<int>(value_size == 0);
   }
 
   // Dominant-sized key/value type
@@ -1876,8 +1876,8 @@ struct policy_selector
 
     const auto onesweep_policy_key32 = make_reg_scaled_radix_sort_onesweep_policy(
       384,
-      __keys_only() ? 20 - offset_64bit - key_is_float
-                    : (value_size < 8 ? (offset_64bit ? 17 : 23) : (offset_64bit ? 29 : 30)),
+      __keys_only() != 0 ? 20 - static_cast<int>(offset_64bit) - static_cast<int>(key_is_float)
+                         : (value_size < 8 ? (offset_64bit ? 17 : 23) : (offset_64bit ? 29 : 30)),
       __dominant_size(),
       RADIX_SORT_STORE_DIRECT,
       RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
@@ -2013,7 +2013,7 @@ struct policy_selector
 
       const auto onesweep = make_reg_scaled_radix_sort_onesweep_policy(
         384,
-        offset_64bit && key_size == 4 && !__keys_only() ? 17 : 21,
+        offset_64bit && key_size == 4 && __keys_only() == 0 ? 17 : 21,
         __dominant_size(),
         RADIX_SORT_STORE_DIRECT,
         RADIX_RANK_MATCH_EARLY_COUNTS_ANY,

@@ -21,6 +21,7 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/cstdint>
@@ -210,10 +211,7 @@ baseline_max_covered_segment_size(const baseline_topk_policy& policy)
   for (const auto& worker : policy.worker_per_segment_policies)
   {
     const ::cuda::std::int64_t tile_size = ::cuda::std::int64_t{worker.threads_per_block} * worker.items_per_thread;
-    if (tile_size > max_tile_size)
-    {
-      max_tile_size = tile_size;
-    }
+    max_tile_size                        = ::cuda::std::max(max_tile_size, tile_size);
   }
   return max_tile_size;
 }
@@ -402,7 +400,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024)
+    if (max_k <= 1024)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/352,
@@ -441,7 +439,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024)
+    if (max_k <= 1024)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/512,
@@ -458,7 +456,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 2048)
+    if (max_k <= 2048)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/512,
@@ -497,7 +495,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024)
+    if (max_k <= 1024)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/512,
@@ -514,7 +512,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 2048)
+    if (max_k <= 2048)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/512,
@@ -553,7 +551,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024)
+    if (max_k <= 1024)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/352,
@@ -570,7 +568,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 2048)
+    if (max_k <= 2048)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/256,
@@ -611,7 +609,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 2048)
+    if (max_k <= 2048)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/384,
@@ -650,7 +648,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024)
+    if (max_k <= 1024)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/288,
@@ -667,7 +665,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 2048)
+    if (max_k <= 2048)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/320,
@@ -706,7 +704,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024)
+    if (max_k <= 1024)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/384,
@@ -723,7 +721,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 2048)
+    if (max_k <= 2048)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/512,
@@ -762,7 +760,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024)
+    if (max_k <= 1024)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/256,
@@ -779,7 +777,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 2048)
+    if (max_k <= 2048)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/384,
@@ -805,7 +803,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
     {
       return make_cluster_policy();
     }
-    else if (max_k <= 2048)
+    if (max_k <= 2048)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/512,
@@ -831,7 +829,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
     {
       return make_cluster_policy();
     }
-    else if (max_k <= 2048)
+    if (max_k <= 2048)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/608,
@@ -922,7 +920,7 @@ make_sm100_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024)
+    if (max_k <= 1024)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/352,
@@ -939,7 +937,7 @@ make_sm100_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 2048)
+    if (max_k <= 2048)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/256,
@@ -979,7 +977,7 @@ make_sm100_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 2048)
+    if (max_k <= 2048)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/256,
@@ -1018,7 +1016,7 @@ make_sm100_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024)
+    if (max_k <= 1024)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/352,
@@ -1035,7 +1033,7 @@ make_sm100_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 2048)
+    if (max_k <= 2048)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/352,
@@ -1074,7 +1072,7 @@ make_sm100_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024)
+    if (max_k <= 1024)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/256,
@@ -1113,7 +1111,7 @@ make_sm100_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024)
+    if (max_k <= 1024)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/384,
@@ -1205,7 +1203,7 @@ make_sm103_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024)
+    if (max_k <= 1024)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/352,
@@ -1244,7 +1242,7 @@ make_sm103_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024)
+    if (max_k <= 1024)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/384,
@@ -1261,7 +1259,7 @@ make_sm103_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 2048)
+    if (max_k <= 2048)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/512,
@@ -1300,7 +1298,7 @@ make_sm103_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024)
+    if (max_k <= 1024)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/512,
@@ -1317,7 +1315,7 @@ make_sm103_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 2048)
+    if (max_k <= 2048)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/512,
@@ -1356,7 +1354,7 @@ make_sm103_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024)
+    if (max_k <= 1024)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/256,
@@ -1373,7 +1371,7 @@ make_sm103_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 2048)
+    if (max_k <= 2048)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/256,
@@ -1412,7 +1410,7 @@ make_sm103_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024)
+    if (max_k <= 1024)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/384,
@@ -1429,7 +1427,7 @@ make_sm103_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 2048)
+    if (max_k <= 2048)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/256,
@@ -1468,7 +1466,7 @@ make_sm103_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024)
+    if (max_k <= 1024)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/384,
@@ -1485,7 +1483,7 @@ make_sm103_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 2048)
+    if (max_k <= 2048)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/256,
@@ -1524,7 +1522,7 @@ make_sm103_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024)
+    if (max_k <= 1024)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/384,
@@ -1608,7 +1606,7 @@ make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024) // B300 keys
+    if (max_k <= 1024) // B300 keys
     {
       return cluster_topk_policy{
         /*threads_per_block=*/512,
@@ -1625,7 +1623,7 @@ make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 2048) // sm103 pairs
+    if (max_k <= 2048) // sm103 pairs
     {
       return cluster_topk_policy{
         /*threads_per_block=*/512,
@@ -1664,7 +1662,7 @@ make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024)
+    if (max_k <= 1024)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/256,
@@ -1681,7 +1679,7 @@ make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 2048)
+    if (max_k <= 2048)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/256,
@@ -1720,7 +1718,7 @@ make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024) // sm103 pairs
+    if (max_k <= 1024) // sm103 pairs
     {
       return cluster_topk_policy{
         /*threads_per_block=*/384,
@@ -1737,7 +1735,7 @@ make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 2048) // B200 keys
+    if (max_k <= 2048) // B200 keys
     {
       return cluster_topk_policy{
         /*threads_per_block=*/256,
@@ -1776,7 +1774,7 @@ make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024) // B200 keys
+    if (max_k <= 1024) // B200 keys
     {
       return cluster_topk_policy{
         /*threads_per_block=*/352,
@@ -1793,7 +1791,7 @@ make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 2048) // B200 keys
+    if (max_k <= 2048) // B200 keys
     {
       return cluster_topk_policy{
         /*threads_per_block=*/352,
@@ -1832,7 +1830,7 @@ make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024)
+    if (max_k <= 1024)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/256,
@@ -1871,7 +1869,7 @@ make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 1024)
+    if (max_k <= 1024)
     {
       return cluster_topk_policy{
         /*threads_per_block=*/384,

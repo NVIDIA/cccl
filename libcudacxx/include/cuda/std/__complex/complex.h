@@ -161,11 +161,11 @@ public:
   }
 
   // Those additional volatile overloads are meant to help with reductions in thrust
-  [[nodiscard]] _CCCL_API inline value_type real() const volatile
+  [[nodiscard]] _CCCL_API value_type real() const volatile
   {
     return __re_;
   }
-  [[nodiscard]] _CCCL_API inline value_type imag() const volatile
+  [[nodiscard]] _CCCL_API value_type imag() const volatile
   {
     return __im_;
   }

@@ -32,7 +32,7 @@ __device__ unsigned g_busy_sink;
 // ctx1 is still running when ctx2's kernel races in.
 __global__ void slow_set_kernel(int* arr, int n, int value, int iters)
 {
-  const int tid = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   if (tid >= n)
   {
     return;
@@ -42,7 +42,7 @@ __global__ void slow_set_kernel(int* arr, int n, int value, int iters)
   unsigned acc = 0;
   for (int i = 0; i < iters; ++i)
   {
-    acc += (static_cast<unsigned>(i) * 1103515245u + 12345u) & 0x7fffffffu;
+    acc += ((static_cast<unsigned>(i) * 1103515245u) + 12345u) & 0x7fffffffu;
   }
   // Publish `acc` via an atomic: an observable, race-free side effect that
   // keeps the loop alive while the stored result stays exactly `value`.
@@ -104,7 +104,7 @@ void run_ctx_k_concurrent(cudaStream_t s, int* d_arr, int N, int K, int value, i
     CUstream ts       = stf_task_get_custream(t);
     const int threads = 128;
     const int blocks  = (per + threads - 1) / threads;
-    int* slice        = d_arr + k * per;
+    int* slice        = d_arr + (k * per);
     slow_set_kernel<<<blocks, threads, 0, (cudaStream_t) ts>>>(slice, per, value, iters);
 
     stf_task_end(t);
@@ -149,7 +149,7 @@ void run_ctx_k_chains(cudaStream_t s, int* d_arr, int N, int K, int chain_len, i
       CUstream ts       = stf_task_get_custream(t);
       const int threads = 128;
       const int blocks  = (per + threads - 1) / threads;
-      int* slice        = d_arr + k * per;
+      int* slice        = d_arr + (k * per);
       slow_set_kernel<<<blocks, threads, 0, (cudaStream_t) ts>>>(slice, per, value, iters);
 
       stf_task_end(t);

@@ -481,7 +481,7 @@ public:
   {
     _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::finalized, "");
     auto& state = this->state();
-    if (!state.submitted_stream)
+    if (state.submitted_stream == nullptr)
     {
       // Wasn't submitted yet
       submit();
@@ -656,7 +656,7 @@ public:
   }
 
 private:
-  using base_impl = typename base::impl;
+  using base_impl = base::impl;
 
   /* This class contains all the state associated to a stream_ctx, and all states associated to every contexts (in
    * `impl`) */
@@ -734,7 +734,8 @@ private:
 
     // Maps from a logical data to its last writer. The int is the mapping_id
     ::std::unordered_map<::std::string, ::std::deque<int>> current_readers;
-    ::std::unordered_map<::std::string, int> current_writer, previous_writer;
+    ::std::unordered_map<::std::string, int> current_writer;
+    ::std::unordered_map<::std::string, int> previous_writer;
 
     for (const int id : state.deferred_tasks)
     {
@@ -909,7 +910,8 @@ UNITTEST("stream context basics")
 {
   stream_ctx ctx;
 
-  double X[1024], Y[1024];
+  double X[1024];
+  double Y[1024];
   auto handle_X = ctx.logical_data(X);
   auto handle_Y = ctx.logical_data(Y);
 
@@ -930,9 +932,11 @@ UNITTEST("stream context basics")
 UNITTEST("stream context after logical data")
 {
   stream_ctx ctx;
-  logical_data<slice<double>> handle_X, handle_Y;
+  logical_data<slice<double>> handle_X;
+  logical_data<slice<double>> handle_Y;
 
-  double X[1024], Y[1024];
+  double X[1024];
+  double Y[1024];
   handle_X = ctx.logical_data(X);
   handle_Y = ctx.logical_data(Y);
 
@@ -954,7 +958,8 @@ UNITTEST("set_symbol on stream_task and stream_task<>")
 {
   stream_ctx ctx;
 
-  double X[1024], Y[1024];
+  double X[1024];
+  double Y[1024];
   auto lX = ctx.logical_data(X);
   auto lY = ctx.logical_data(Y);
 
@@ -1005,7 +1010,7 @@ UNITTEST("non contiguous slice")
   {
     for (size_t i = 0; i < 32; i++)
     {
-      const size_t ind   = i + 32 * j;
+      const size_t ind   = i + (32 * j);
       const int expected = ((i < 24) ? 2 : 1);
       EXPECT(X[ind] == expected);
     }
@@ -1230,7 +1235,7 @@ inline void unit_test_pfor_mix_host_dev()
   auto lx = ctx.logical_data(X);
 
   ctx.parallel_for(lx.shape(), lx.write())->*[=] _CCCL_DEVICE(size_t pos, auto sx) {
-    sx(pos) = 17 * pos + 4;
+    sx(pos) = (17 * pos) + 4;
   };
 
   ctx.parallel_for(exec_place::host(), lx.shape(), lx.rw())->*[=](size_t pos, auto sx) {
@@ -1245,7 +1250,7 @@ inline void unit_test_pfor_mix_host_dev()
 
   for (size_t i = 0; i < N; i++)
   {
-    EXPECT(X[i] == (17 * i + 4) * (17 * i + 4) - 7);
+    EXPECT(X[i] == (((17 * i) + 4) * ((17 * i) + 4)) - 7);
   }
 }
 

@@ -67,7 +67,7 @@ void assemble_jacobian_full(
             else if (row == N - 1)
             {
               // Right boundary: u[N-1] = 0 (homogeneous Dirichlet)
-              const size_t val_idx = 1 + 3 * (N - 2);
+              const size_t val_idx = 1 + (3 * (N - 2));
               dvalues[val_idx]     = 1.0;
             }
             else
@@ -78,11 +78,11 @@ void assemble_jacobian_full(
               const double u_im1 = dU[row - 1];
 
               // Jacobian entries: ∂F_i/∂u_{i-1}, ∂F_i/∂u_i, ∂F_i/∂u_{i+1}
-              const double left   = -u_i / (2 * h) - nu / (h * h);
-              const double center = 1.0 / dt + (u_ip1 - u_im1) / (2 * h) + 2.0 * nu / (h * h);
-              const double right  = u_i / (2 * h) - nu / (h * h);
+              const double left   = (-u_i / (2 * h)) - (nu / (h * h));
+              const double center = (1.0 / dt) + ((u_ip1 - u_im1) / (2 * h)) + (2.0 * nu / (h * h));
+              const double right  = (u_i / (2 * h)) - (nu / (h * h));
 
-              const size_t val_idx = 1 + 3 * (row - 1);
+              const size_t val_idx = 1 + (3 * (row - 1));
               dvalues[val_idx]     = left;
               dvalues[val_idx + 1] = center;
               dvalues[val_idx + 2] = right;
@@ -110,7 +110,7 @@ void compute_residual_full(
 
               const double term_time = (u_i - dU_prev(i)) / dt;
               const double term_conv = u_i * (u_ip1 - u_im1) / (2 * h);
-              const double term_diff = -nu * (u_im1 - 2 * u_i + u_ip1) / (h * h);
+              const double term_diff = -nu * (u_im1 - (2 * u_i) + u_ip1) / (h * h);
 
               dresidual(i) = term_time + term_conv + term_diff;
             }
@@ -188,7 +188,7 @@ std::vector<double> generate_nu_samples(double nu_target, double nu_std, size_t 
 void initialize_sensitivity_file(const char* filename, double nu_target, double nu_std, size_t num_samples)
 {
   FILE* fp = fopen(filename, "w");
-  if (fp)
+  if (fp != nullptr)
   {
     fprintf(fp, "# Burger equation sensitivity analysis\n");
     fprintf(fp, "# Target nu: %.6e, std: %.6e, samples: %zu\n", nu_target, nu_std, num_samples);
@@ -205,7 +205,7 @@ void initialize_sensitivity_file(const char* filename, double nu_target, double 
 void initialize_shock_file(const char* filename, double shock_threshold)
 {
   FILE* fp = fopen(filename, "w");
-  if (fp)
+  if (fp != nullptr)
   {
     fprintf(fp, "# Burger equation shock solutions\n");
     fprintf(fp, "# Solutions dumped when gradient exceeds threshold: %.1f\n", shock_threshold);
@@ -420,7 +420,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   auto nu_values = generate_nu_samples(nu_target, nu_std, num_samples);
 
   // Set up CSR structure
-  const size_t nz = 3 * N - 4;
+  const size_t nz = (3 * N) - 4;
   size_t* row_offsets;
   size_t* col_indices;
   cuda_safe_call(cudaHostAlloc(&row_offsets, (N + 1) * sizeof(size_t), cudaHostAllocMapped));
@@ -444,7 +444,9 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     for (size_t i = 0; i < nu_values.size(); ++i)
     {
       const double nu = nu_values[i];
-      double shock_time, max_gradient, final_time;
+      double shock_time;
+      double max_gradient;
+      double final_time;
 
       printf("Sample %zu/%zu: nu=%.6e... ", i + 1, nu_values.size(), nu);
       fflush(stdout);

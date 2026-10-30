@@ -50,8 +50,8 @@ int main()
     Y[ind] = cos(1.0 * static_cast<double>(ind));
   }
 
-  auto handle_X = ctx.logical_data(make_slice(&X[0], n));
-  auto handle_Y = ctx.logical_data(make_slice(&Y[0], n));
+  auto handle_X = ctx.logical_data(make_slice(X.data(), n));
+  auto handle_Y = ctx.logical_data(make_slice(Y.data(), n));
 
   auto where = exec_place::locality_domains(dev);
   EXPECT(where.size() == ndomains);
@@ -65,11 +65,11 @@ int main()
   }
 
   ctx.host_launch(handle_X.read(), handle_Y.read())->*[&](auto hX, auto hY) {
-    for (size_t ind = 0; ind < n; ind += 1 + ind / 16)
+    for (size_t ind = 0; ind < n; ind += 1 + (ind / 16))
     {
       const double x0       = sin(1.0 * static_cast<double>(ind));
       const double y0       = cos(1.0 * static_cast<double>(ind));
-      const double expected = x0 + NITER * y0;
+      const double expected = x0 + (NITER * y0);
       EXPECT(fabs(hX(ind) - expected) < 0.00001);
       EXPECT(fabs(hY(ind) - y0) < 0.00001);
     }

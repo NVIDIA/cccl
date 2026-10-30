@@ -44,7 +44,6 @@ namespace detail
 template <typename T, typename System>
 class temporary_array : public contiguous_storage<T, no_throw_allocator<temporary_allocator<T, System>>>
 {
-private:
   using super_t = contiguous_storage<T, no_throw_allocator<temporary_allocator<T, System>>>;
 
   // to help out the constructor

@@ -85,12 +85,12 @@ void Initialize(int* h_in, unsigned char* h_flags, int num_items, int max_segmen
 /**
  * Solve unique problem
  */
-int Solve(int* h_in, unsigned char* h_flags, int* h_reference, int num_items)
+int Solve(const int* h_in, const unsigned char* h_flags, int* h_reference, int num_items)
 {
   int num_selected = 0;
   for (int i = 0; i < num_items; ++i)
   {
-    if (h_flags[i])
+    if (h_flags[i] != 0)
     {
       h_reference[num_selected] = h_in[i];
       num_selected++;
@@ -191,24 +191,15 @@ int main(int argc, char** argv)
   // Check for correctness (and display results, if specified)
   stream.sync();
   int compare = CompareDeviceResults(h_reference, d_out.data(), num_items, true, g_verbose, stream);
-  printf("\t Data %s ", compare ? "FAIL" : "PASS");
+  printf("\t Data %s ", compare != 0 ? "FAIL" : "PASS");
   compare |= CompareDeviceResults(&num_selected, d_num_selected_out.data(), 1, true, g_verbose, stream);
-  printf("\t Count %s ", compare ? "FAIL" : "PASS");
+  printf("\t Count %s ", compare != 0 ? "FAIL" : "PASS");
   AssertEquals(0, compare);
 
   // Cleanup
-  if (h_in)
-  {
-    delete[] h_in;
-  }
-  if (h_reference)
-  {
-    delete[] h_reference;
-  }
-  if (h_flags)
-  {
-    delete[] h_flags;
-  }
+  delete[] h_in;
+  delete[] h_reference;
+  delete[] h_flags;
 
   printf("\n\n");
 

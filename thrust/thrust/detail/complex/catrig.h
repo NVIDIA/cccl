@@ -40,6 +40,7 @@
 #include <thrust/complex.h>
 #include <thrust/detail/complex/math_private.h>
 
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/copysign.h>
 #include <cuda/std/__cmath/hypot.h>
@@ -160,8 +161,11 @@ _CCCL_HOST_DEVICE inline double f(double a, double b, double hypot_a_b)
 _CCCL_HOST_DEVICE inline void
 do_hard_work(double x, double y, double* rx, int* B_is_usable, double* B, double* sqrt_A2my2, double* new_y)
 {
-  double R, S, A; /* A, B, R, and S are as in Hull et al. */
-  double Am1, Amy; /* A-1, A-y. */
+  double R;
+  double S;
+  double A; /* A, B, R, and S are as in Hull et al. */
+  double Am1;
+  double Amy; /* A-1, A-y. */
   const double A_crossover   = 10; /* Hull et al suggest 1.5, but 10 works better */
   const double FOUR_SQRT_MIN = 5.966672584960165394632772e-154; /* =0x1p-509; >= 4 * sqrt(DBL_MIN) */
   const double B_crossover   = 0.6417; /* suggested by Hull et al */
@@ -176,10 +180,7 @@ do_hard_work(double x, double y, double* rx, int* B_is_usable, double* B, double
    * be so because of rounding errors.  So we will make certain it is
    * so.
    */
-  if (A < 1)
-  {
-    A = 1;
-  }
+  A = ::cuda::std::max(A, 1.0);
 
   if (A < A_crossover)
   {
@@ -222,7 +223,7 @@ do_hard_work(double x, double y, double* rx, int* B_is_usable, double* B, double
   }
   else
   {
-    *rx = ::cuda::std::log(A + ::cuda::std::sqrt(A * A - 1));
+    *rx = ::cuda::std::log(A + ::cuda::std::sqrt((A * A) - 1));
   }
 
   *new_y = y;
@@ -303,7 +304,15 @@ do_hard_work(double x, double y, double* rx, int* B_is_usable, double* B, double
  */
 _CCCL_HOST_DEVICE inline complex<double> casinh(complex<double> z)
 {
-  double x, y, ax, ay, rx, ry, B, sqrt_A2my2, new_y;
+  double x;
+  double y;
+  double ax;
+  double ay;
+  double rx;
+  double ry;
+  double B;
+  double sqrt_A2my2;
+  double new_y;
   int B_is_usable;
   complex<double> w{};
   const double RECIP_EPSILON = 1.0 / DBL_EPSILON;
@@ -340,7 +349,7 @@ _CCCL_HOST_DEVICE inline complex<double> casinh(complex<double> z)
   if (ax > RECIP_EPSILON || ay > RECIP_EPSILON)
   {
     /* clog...() will raise inexact unless x or y is infinite. */
-    if (::cuda::std::signbit(x) == 0)
+    if (!::cuda::std::signbit(x))
     {
       w = clog_for_large_values(z) + ::cuda::std::__numbers<double>::__ln2();
     }
@@ -354,7 +363,7 @@ _CCCL_HOST_DEVICE inline complex<double> casinh(complex<double> z)
   /* Avoid spuriously raising inexact for z = 0. */
   if (x == 0 && y == 0)
   {
-    return (z);
+    return z;
   }
 
   /* All remaining cases are inexact. */
@@ -363,11 +372,11 @@ _CCCL_HOST_DEVICE inline complex<double> casinh(complex<double> z)
   const double SQRT_6_EPSILON = 3.6500241499888571e-8; /*  0x13988e1409212e.0p-77 */
   if (ax < SQRT_6_EPSILON / 4 && ay < SQRT_6_EPSILON / 4)
   {
-    return (z);
+    return z;
   }
 
   do_hard_work(ax, ay, &rx, &B_is_usable, &B, &sqrt_A2my2, &new_y);
-  if (B_is_usable)
+  if (B_is_usable != 0)
   {
     ry = ::cuda::std::asin(B);
   }
@@ -403,8 +412,17 @@ _CCCL_HOST_DEVICE inline complex<double> casin(complex<double> z)
  */
 _CCCL_HOST_DEVICE inline complex<double> cacos(complex<double> z)
 {
-  double x, y, ax, ay, rx, ry, B, sqrt_A2mx2, new_x;
-  int sx, sy;
+  double x;
+  double y;
+  double ax;
+  double ay;
+  double rx;
+  double ry;
+  double B;
+  double sqrt_A2mx2;
+  double new_x;
+  int sx;
+  int sy;
   int B_is_usable;
   complex<double> w{};
   const double pio2_hi          = 1.5707963267948966e0; /*  0x1921fb54442d18.0p-52 */
@@ -412,8 +430,8 @@ _CCCL_HOST_DEVICE inline complex<double> cacos(complex<double> z)
 
   x  = z.real();
   y  = z.imag();
-  sx = ::cuda::std::signbit(x);
-  sy = ::cuda::std::signbit(y);
+  sx = static_cast<int>(::cuda::std::signbit(x));
+  sy = static_cast<int>(::cuda::std::signbit(y));
   ax = ::cuda::std::fabs(x);
   ay = ::cuda::std::fabs(y);
 
@@ -472,7 +490,7 @@ _CCCL_HOST_DEVICE inline complex<double> cacos(complex<double> z)
   }
 
   do_hard_work(ay, ax, &ry, &B_is_usable, &B, &sqrt_A2mx2, &new_x);
-  if (B_is_usable)
+  if (B_is_usable != 0)
   {
     if (sx == 0)
     {
@@ -508,7 +526,8 @@ _CCCL_HOST_DEVICE inline complex<double> cacos(complex<double> z)
 _CCCL_HOST_DEVICE inline complex<double> cacosh(complex<double> z)
 {
   const complex<double> w = cacos(z);
-  double rx, ry;
+  double rx;
+  double ry;
   rx = w.real();
   ry = w.imag();
   /* cacosh(NaN + I*NaN) = NaN + I*NaN */
@@ -535,8 +554,11 @@ _CCCL_HOST_DEVICE inline complex<double> cacosh(complex<double> z)
  */
 _CCCL_HOST_DEVICE inline complex<double> clog_for_large_values(complex<double> z)
 {
-  double x, y;
-  double ax, ay, t;
+  double x;
+  double y;
+  double ax;
+  double ay;
+  double t;
   constexpr auto m_e = ::cuda::std::__numbers<double>::__e();
 
   x  = z.real();
@@ -573,7 +595,7 @@ _CCCL_HOST_DEVICE inline complex<double> clog_for_large_values(complex<double> z
     return (complex<double>(::cuda::std::log(::cuda::std::hypot(x, y)), ::cuda::std::atan2(y, x)));
   }
 
-  return (complex<double>(::cuda::std::log(ax * ax + ay * ay) / 2, ::cuda::std::atan2(y, x)));
+  return (complex<double>(::cuda::std::log((ax * ax) + (ay * ay)) / 2, ::cuda::std::atan2(y, x)));
 }
 
 /*
@@ -598,7 +620,7 @@ _CCCL_HOST_DEVICE inline double sum_squares(double x, double y)
     return (x * x);
   }
 
-  return (x * x + y * y);
+  return ((x * x) + (y * y));
 }
 
 /*
@@ -613,8 +635,10 @@ _CCCL_HOST_DEVICE inline double sum_squares(double x, double y)
 _CCCL_HOST_DEVICE inline double real_part_reciprocal(double x, double y)
 {
   double scale;
-  uint32_t hx, hy;
-  int32_t ix, iy;
+  uint32_t hx;
+  uint32_t hy;
+  int32_t ix;
+  int32_t iy;
 
   /*
    * This code is inspired by the C99 document n1124.pdf, Section G.5.1,
@@ -639,13 +663,13 @@ _CCCL_HOST_DEVICE inline double real_part_reciprocal(double x, double y)
   }
   if (ix <= (BIAS + DBL_MAX_EXP / 2 - CUTOFF) << 20)
   {
-    return (x / (x * x + y * y));
+    return (x / ((x * x) + (y * y)));
   }
   scale = 1;
   set_high_word(scale, 0x7ff00000 - ix); /* 2**(1-ilogb(x)) */
   x *= scale;
   y *= scale;
-  return (x / (x * x + y * y) * scale);
+  return (x / ((x * x) + (y * y)) * scale);
 }
 
 /*
@@ -662,7 +686,12 @@ _CCCL_HOST_DEVICE inline double real_part_reciprocal(double x, double y)
  */
 _CCCL_HOST_DEVICE inline complex<double> catanh(complex<double> z)
 {
-  double x, y, ax, ay, rx, ry;
+  double x;
+  double y;
+  double ax;
+  double ay;
+  double rx;
+  double ry;
   const volatile double pio2_lo = 6.1232339957367659e-17; /*  0x11a62633145c07.0p-106 */
   const double pio2_hi          = 1.5707963267948966e0; /*  0x1921fb54442d18.0p-52 */
 
@@ -718,7 +747,7 @@ _CCCL_HOST_DEVICE inline complex<double> catanh(complex<double> z)
      * explicitly.
      */
     raise_inexact();
-    return (z);
+    return z;
   }
 
   if (ax == 1 && ay < DBL_EPSILON)
@@ -740,7 +769,7 @@ _CCCL_HOST_DEVICE inline complex<double> catanh(complex<double> z)
   }
   else
   {
-    ry = ::cuda::std::atan2(2 * ay, (1 - ax) * (1 + ax) - ay * ay) / 2;
+    ry = ::cuda::std::atan2(2 * ay, ((1 - ax) * (1 + ax)) - (ay * ay)) / 2;
   }
 
   return (complex<double>(::cuda::std::copysign(rx, x), ::cuda::std::copysign(ry, y)));

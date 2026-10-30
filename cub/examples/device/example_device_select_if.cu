@@ -158,7 +158,7 @@ int main(int argc, char** argv)
   unsigned int pivot_index;
   const unsigned int max_int = (unsigned int) -1;
   RandomBits(pivot_index);
-  pivot_index = (unsigned int) ((float(pivot_index) * (float(num_items - 1) / float(max_int))));
+  pivot_index = (unsigned int) (float(pivot_index) * (float(num_items - 1) / float(max_int)));
   printf("Pivot idx: %d\n", pivot_index);
   fflush(stdout);
 
@@ -203,20 +203,14 @@ int main(int argc, char** argv)
   // Check for correctness (and display results, if specified)
   stream.sync();
   int compare = CompareDeviceResults(h_reference, d_out.data(), num_selected, true, g_verbose, stream);
-  printf("\t Data %s ", compare ? "FAIL" : "PASS");
+  printf("\t Data %s ", compare != 0 ? "FAIL" : "PASS");
   compare = compare | CompareDeviceResults(&num_selected, d_num_selected_out.data(), 1, true, g_verbose, stream);
-  printf("\t Count %s ", compare ? "FAIL" : "PASS");
+  printf("\t Count %s ", compare != 0 ? "FAIL" : "PASS");
   AssertEquals(0, compare);
 
   // Cleanup
-  if (h_in)
-  {
-    delete[] h_in;
-  }
-  if (h_reference)
-  {
-    delete[] h_reference;
-  }
+  delete[] h_in;
+  delete[] h_reference;
 
   printf("\n\n");
 

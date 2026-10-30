@@ -111,14 +111,15 @@ void check_case(dim4 data_dims, const ::std::vector<dim_spec>& spec, dim4 grid_d
     if (!((*plan)[b] == brute[b]))
     {
       // re-census this block for the analytic owner's count
-      size_t analytic_bytes = 0, brute_bytes = 0;
-      const size_t lo = b * block;
-      const size_t hi = ::std::min((b + 1) * block, total_elems * elemsize);
+      size_t analytic_bytes = 0;
+      size_t brute_bytes    = 0;
+      const size_t lo       = b * block;
+      const size_t hi       = ::std::min((b + 1) * block, total_elems * elemsize);
       for (size_t byte = lo; byte < hi; byte++)
       {
         const pos4 o = part.owner(data_dims.index_to_pos(byte / elemsize));
-        analytic_bytes += (o == (*plan)[b]);
-        brute_bytes += (o == brute[b]);
+        analytic_bytes += static_cast<size_t>(o == (*plan)[b]);
+        brute_bytes += static_cast<size_t>(o == brute[b]);
       }
       EXPECT(analytic_bytes == brute_bytes); // a genuine tie
     }
@@ -182,7 +183,7 @@ void end_to_end_allocation()
   const auto owners = part.try_block_owners(st.block_size, sizeof(int), &mis);
   EXPECT(owners.has_value() == true);
   EXPECT(mis > 0);
-  EXPECT(st.accuracy == 1.0 - static_cast<double>(mis) / static_cast<double>(n * sizeof(int)));
+  EXPECT(st.accuracy == 1.0 - (static_cast<double>(mis) / static_cast<double>(n * sizeof(int))));
   EXPECT(st.nallocs <= 3); // two shards + at most one straddle merge break
 }
 void malformed_providers_throw()

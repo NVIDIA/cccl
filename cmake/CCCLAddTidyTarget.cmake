@@ -166,7 +166,7 @@ function(cccl_tidy_add_target)
   list(APPEND CMAKE_MESSAGE_CONTEXT "tidy_add_target")
 
   set(options)
-  set(one_value_args)
+  set(one_value_args DIALECT)
   set(multi_value_args SOURCES)
 
   cmake_parse_arguments(
@@ -196,6 +196,16 @@ function(cccl_tidy_add_target)
 
   cccl_tidy_make_subproject_target(subproject_target)
 
+  set(tidy_args)
+  if (_cccl_DIALECT GREATER_EQUAL 20)
+    # This is kind of a special hack. readability-redundant-typename suggests removing
+    # typename for a TON of places in C++20 mode (which is enabled by some targets like
+    # c/parallel), but since the generic headers must support C++17 still this ends up
+    # with a staggering amount of // NOLINT.
+    list(APPEND tidy_args "--checks=-readability-redundant-typename")
+  endif()
+  list(JOIN tidy_args " " tidy_args)
+
   foreach (src IN LISTS _cccl_SOURCES)
     cmake_path(SET src NORMALIZE "${src}")
     if (NOT IS_ABSOLUTE "${src}")
@@ -218,7 +228,7 @@ function(cccl_tidy_add_target)
     add_custom_target(
       "${tidy_target}"
       DEPENDS "${src}" "${CCCL_RUN_CLANG_TIDY_SCRIPT}"
-      COMMAND ${CCCL_RUN_CLANG_TIDY_SCRIPT} "${src}"
+      COMMAND ${CCCL_RUN_CLANG_TIDY_SCRIPT} ${tidy_args} "${src}"
       COMMENT "clang-tidy ${rel_src}"
     )
 

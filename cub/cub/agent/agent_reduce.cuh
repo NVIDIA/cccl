@@ -222,9 +222,9 @@ struct AgentReduceImpl
   // TODO(bgruber): we should not check for `is_pointer_v` but `contiguous_iterator` and unwrap it
   static constexpr bool ATTEMPT_VECTORIZATION =
     (vec_size > 1) && (ITEMS_PER_THREAD % vec_size == 0)
-    && (::cuda::std::is_pointer_v<InputIteratorT>)
-         // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
-         &&(is_primitive<InputT>::value || ::cuda::is_trivially_copyable_v<InputT>)
+    && ::cuda::std::is_pointer_v<InputIteratorT>
+    // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
+    && (is_primitive<InputT>::value || ::cuda::is_trivially_copyable_v<InputT>)
          // vectorizing large types leads to regressions again, see https://github.com/NVIDIA/cccl/issues/9761
          // TODO(bgruber): this should be decided by tuning
          &&sizeof(InputT)

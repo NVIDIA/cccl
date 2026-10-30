@@ -249,7 +249,6 @@ template <int BlockDimX,
           int BlockDimZ                         = 1>
 class BlockRadixRank
 {
-private:
   // Integer type for digit counters (to be packed into words of type PackedCounters)
   using DigitCounter = unsigned short;
 
@@ -351,7 +350,7 @@ private:
   {
     PackedCounter* smem_raking_ptr = temp_storage.aliasable.raking_grid[linear_tid];
 
-    PackedCounter* raking_ptr = (MemoizeOuterScan) ? cached_segment : smem_raking_ptr;
+    PackedCounter* raking_ptr = MemoizeOuterScan ? cached_segment : smem_raking_ptr;
 
     // Exclusive raking downsweep scan
     detail::ThreadScanExclusive<RAKING_SEGMENT>(raking_ptr, raking_ptr, ::cuda::std::plus<>{}, raking_partial);
@@ -565,7 +564,7 @@ public:
         // Obtain ex/inclusive digit counts.  (Unfortunately these all reside in the
         // first counter column, resulting in unavoidable bank conflicts.)
         const unsigned int counter_lane = (bin_idx & (COUNTER_LANES - 1));
-        const unsigned int sub_counter  = bin_idx >> (LOG_COUNTER_LANES);
+        const unsigned int sub_counter  = bin_idx >> LOG_COUNTER_LANES;
 
         exclusive_digit_prefix[track] = temp_storage.aliasable.digit_counters[counter_lane][0][sub_counter];
       }
@@ -586,7 +585,6 @@ template <int BlockDimX,
           int BlockDimZ                         = 1>
 class BlockRadixRankMatch
 {
-private:
   using RankT         = int32_t;
   using DigitCounterT = int32_t;
 
@@ -926,7 +924,7 @@ struct BlockRadixRankMatchEarlyCounts
   static constexpr int RADIX_DIGITS            = 1 << RadixBits;
   static constexpr int BINS_PER_THREAD         = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS;
   static constexpr int BINS_TRACKED_PER_THREAD = BINS_PER_THREAD;
-  static constexpr int FULL_BINS               = BINS_PER_THREAD * BLOCK_THREADS == RADIX_DIGITS;
+  static constexpr int FULL_BINS               = static_cast<int>(BINS_PER_THREAD * BLOCK_THREADS == RADIX_DIGITS);
   static constexpr int WARP_THREADS            = detail::warp_threads;
   static constexpr int PARTIAL_WARP_THREADS    = BLOCK_THREADS % WARP_THREADS;
   static constexpr int BLOCK_WARPS             = BLOCK_THREADS / WARP_THREADS;
@@ -978,7 +976,7 @@ struct BlockRadixRankMatchEarlyCounts
 
     _CCCL_DEVICE _CCCL_FORCEINLINE int ThreadBin(int u)
     {
-      const int bin = threadIdx.x * BINS_PER_THREAD + u;
+      const int bin = (threadIdx.x * BINS_PER_THREAD) + u;
       return IsDescending ? RADIX_DIGITS - 1 - bin : bin;
     }
 
@@ -1029,7 +1027,7 @@ struct BlockRadixRankMatchEarlyCounts
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int u = 0; u < WARP_BINS_PER_THREAD; ++u)
         {
-          const int bin = lane + u * WARP_THREADS;
+          const int bin = lane + (u * WARP_THREADS);
           bins[u]       = cub::ThreadReduce(warp_histograms[bin], ::cuda::std::plus<>{});
         }
         __syncthreads();
@@ -1040,7 +1038,7 @@ struct BlockRadixRankMatchEarlyCounts
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int u = 0; u < WARP_BINS_PER_THREAD; ++u)
         {
-          const int bin     = lane + u * WARP_THREADS;
+          const int bin     = lane + (u * WARP_THREADS);
           warp_offsets[bin] = bins[u];
         }
       }
@@ -1054,7 +1052,7 @@ struct BlockRadixRankMatchEarlyCounts
       {
         bins[u]       = 0;
         const int bin = ThreadBin(u);
-        if (FULL_BINS || (bin >= 0 && bin < RADIX_DIGITS))
+        if (FULL_BINS != 0 || (bin >= 0 && bin < RADIX_DIGITS))
         {
           _CCCL_PRAGMA_UNROLL_FULL()
           for (int j_warp = 0; j_warp < BLOCK_WARPS; ++j_warp)
@@ -1073,7 +1071,7 @@ struct BlockRadixRankMatchEarlyCounts
       for (int u = 0; u < BINS_PER_THREAD; ++u)
       {
         const int bin = ThreadBin(u);
-        if (FULL_BINS || (bin >= 0 && bin < RADIX_DIGITS))
+        if (FULL_BINS != 0 || (bin >= 0 && bin < RADIX_DIGITS))
         {
           const int digit_offset = offsets[u];
           _CCCL_PRAGMA_UNROLL_FULL()
@@ -1111,6 +1109,7 @@ struct BlockRadixRankMatchEarlyCounts
           // atomic is a bit faster
           warp_offset = atomicAdd(&warp_offsets[bin], popc);
         }
+        // NOLINTNEXTLINE(readability-suspicious-call-argument)
         warp_offset = __shfl_sync(WARP_MASK, warp_offset, leader);
         if (lane == leader)
         {
@@ -1143,6 +1142,7 @@ struct BlockRadixRankMatchEarlyCounts
           // atomic is a bit faster
           warp_offset = atomicAdd(&warp_offsets[bin], popc);
         }
+        // NOLINTNEXTLINE(readability-suspicious-call-argument)
         warp_offset = __shfl_sync(WARP_MASK, warp_offset, leader);
         ranks[u]    = warp_offset + popc - 1;
       }

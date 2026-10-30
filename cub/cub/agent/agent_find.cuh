@@ -187,7 +187,7 @@ struct agent_t
           ? ConsumeTile(tile_offset, ::cuda::std::bool_constant<attempt_vectorization>{})
           : ConsumeTile(tile_offset, ::cuda::std::false_type{});
 
-      const bool found_block = __syncthreads_or(found_thread);
+      const bool found_block = __syncthreads_or(static_cast<int>(found_thread)) != 0;
       if (found_block)
       {
         // our block found it, update global position and exit

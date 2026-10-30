@@ -138,7 +138,7 @@ Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]]
   }
 
 #ifdef CUB_STDERR
-  if (error)
+  if (error != cudaSuccess)
   {
     NV_IF_ELSE_TARGET(
       NV_IS_HOST,

@@ -52,6 +52,7 @@ inline cudaError_t get_device_memory(memory_info& info)
 
   if (device_memory_limit > 0)
   {
+    // NOLINTNEXTLINE(readability-redundant-parentheses)
     const std::size_t limited_total     = (std::min) (info.total, device_memory_limit);
     const std::size_t unavailable_bytes = info.total - limited_total;
     info.free                           = info.free > unavailable_bytes ? info.free - unavailable_bytes : 0;
@@ -80,7 +81,7 @@ inline cudaError_t check_free_device_memory(std::size_t bytes)
       const double total_GiB     = static_cast<double>(info.total) / (1024 * 1024 * 1024);
       const double free_GiB      = static_cast<double>(info.free) / (1024 * 1024 * 1024);
       const double requested_GiB = static_cast<double>(bytes) / (1024 * 1024 * 1024);
-      const double padded_GiB    = requested_GiB + static_cast<double>(padding) / (1024 * 1024 * 1024);
+      const double padded_GiB    = requested_GiB + (static_cast<double>(padding) / (1024 * 1024 * 1024));
 
       std::cerr << "Device memory allocation failed due to insufficient free device memory.\n";
 

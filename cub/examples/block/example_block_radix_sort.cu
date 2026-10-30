@@ -235,18 +235,9 @@ void Test()
   fflush(stdout);
 
   // Cleanup
-  if (h_in)
-  {
-    delete[] h_in;
-  }
-  if (h_reference)
-  {
-    delete[] h_reference;
-  }
-  if (h_elapsed)
-  {
-    delete[] h_elapsed;
-  }
+  delete[] h_in;
+  delete[] h_reference;
+  delete[] h_elapsed;
   if (d_in)
   {
     CubDebugExit(cudaFree(d_in));

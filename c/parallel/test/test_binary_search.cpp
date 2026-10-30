@@ -91,7 +91,7 @@ struct binary_search_run
     BuildResultT build, void* scratch, std::size_t* scratch_size, cccl_binary_search_mode_t, Ts... args) const noexcept
   {
     *scratch_size = 1;
-    return (scratch) ? cccl_device_binary_search(build, args...) : CUDA_SUCCESS;
+    return scratch ? cccl_device_binary_search(build, args...) : CUDA_SUCCESS;
   }
 };
 
@@ -147,7 +147,7 @@ template <typename Fixture, typename Value, typename Variant, typename HostVaria
 void test_vectorized(Variant variant, HostVariant host_variant)
 {
   const std::size_t num_items = GENERATE(0, 43, take(4, random(1 << 12, 1 << 16)));
-  operation_t op              = make_operation("op", get_merge_sort_op(get_type_info<Value>().type));
+  const operation_t op        = make_operation("op", get_merge_sort_op(get_type_info<Value>().type));
 
   const std::vector<Value> target_values = generate<Value>(num_items / 100);
   std::vector<Value> data                = generate<Value>(num_items);
@@ -222,7 +222,7 @@ C2H_TEST("BinarySearch build result has serialization metadata populated", "[bin
       build_info.get_libcudacxx_path(),
       build_info.get_ctk_path()));
 
-  CHECK(build.transform.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK(build.transform.cc == (build_info.get_cc_major() * 10) + build_info.get_cc_minor());
   CHECK((build.transform.payload != nullptr && build.transform.payload_kind == CCCL_PAYLOAD_CUBIN));
   CHECK(build.transform.payload_size > 0);
   REQUIRE(build.transform.transform_kernel_lowered_name != nullptr);
@@ -238,7 +238,7 @@ C2H_TEST("BinarySearch compile/load round-trip", "[binary_search][serialization]
   constexpr int device_id = 0;
   const auto& build_info  = BuildInformation<device_id>::init();
 
-  operation_t op = make_operation("op", get_merge_sort_op(get_type_info<T>().type));
+  const operation_t op = make_operation("op", get_merge_sort_op(get_type_info<T>().type));
   pointer_t<T> dummy_data(1);
   pointer_t<T> dummy_values(1);
   pointer_t<std::ptrdiff_t> dummy_out(1);

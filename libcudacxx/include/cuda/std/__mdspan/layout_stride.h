@@ -83,6 +83,7 @@ struct __constraints
 {
   template <class _StridedLayoutMapping, class _Extents>
   static constexpr bool __converts_implicit =
+    // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
     is_convertible_v<typename _StridedLayoutMapping::extents_type, _Extents>
     && (__mdspan_detail::__is_mapping_of<layout_left, _StridedLayoutMapping>
         || __mdspan_detail::__is_mapping_of<layout_right, _StridedLayoutMapping>
@@ -133,6 +134,7 @@ private:
     if constexpr (is_integral_v<_OtherIndexType>)
     {
       using _CommonType = common_type_t<index_type, _OtherIndexType>;
+      // NOLINTNEXTLINE(readability-redundant-parentheses)
       return static_cast<_CommonType>(__stride) > static_cast<_CommonType>((numeric_limits<index_type>::max)());
     }
     else
@@ -408,10 +410,7 @@ public:
     {
       return index_type{0};
     }
-    else
-    {
-      return (index_type{1} + ... + ((extents().extent(_Pos) - index_type{1}) * __strides()[_Pos]));
-    }
+    return (index_type{1} + ... + ((extents().extent(_Pos) - index_type{1}) * __strides()[_Pos]));
   }
 
   [[nodiscard]] _CCCL_API constexpr index_type required_span_size() const noexcept

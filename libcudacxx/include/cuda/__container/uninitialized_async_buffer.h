@@ -77,7 +77,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _Tp, class... _Properties>
 class __uninitialized_async_buffer
 {
-private:
   static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
                 "The properties of cuda::__uninitialized_async_buffer must contain at least one execution space "
                 "property!");
@@ -104,7 +103,7 @@ private:
   //! @brief Determines the allocation size given the alignment and size of `T`
   [[nodiscard]] _CCCL_HOST_API size_t __get_allocation_size(const size_t __count) const noexcept
   {
-    return (__count * sizeof(_Tp) + (__alignment_ - 1)) & ~(__alignment_ - 1);
+    return ((__count * sizeof(_Tp)) + (__alignment_ - 1)) & ~(__alignment_ - 1);
   }
 
   //! @brief Determines the properly aligned start of the buffer given the
@@ -275,7 +274,7 @@ public:
       return *this;
     }
 
-    if (__buf_)
+    if (__buf_ != nullptr)
     {
       __mr_.deallocate(__stream_, __buf_, __get_allocation_size(__count_), __alignment_);
     }
@@ -296,7 +295,7 @@ public:
   //! objects within the buffer have been properly destroyed.
   _CCCL_HOST_API void destroy(::cuda::stream_ref __stream) noexcept
   {
-    if (__buf_)
+    if (__buf_ != nullptr)
     {
       __mr_.deallocate(__stream, __buf_, __get_allocation_size(__count_), __alignment_);
       __buf_   = nullptr;
@@ -468,7 +467,7 @@ public:
   {
     __validate_element_count(__count, __alignment_);
 
-    if (__buf_)
+    if (__buf_ != nullptr)
     {
       __mr_.deallocate(__stream_, __buf_, __get_allocation_size(__old_capacity), __alignment_);
       __buf_   = nullptr;

@@ -692,7 +692,7 @@ C2H_CCCLRT_TEST("device_memory_pool::enable_access", "[memory_resource]")
   if (cuda::devices.size() > 1)
   {
     auto peers = cuda::devices[0].peers();
-    if (peers.size() > 0)
+    if (!peers.empty())
     {
       cuda::device_memory_pool pool{cuda::devices[0]};
       CHECK(pool.is_accessible_from(cuda::devices[0]));
@@ -733,8 +733,9 @@ C2H_CCCLRT_TEST("device_memory_pool with allocation handle", "[memory_resource]"
 {
   test::skip_if_unsupported_memory_pool<cuda::device_memory_pool>();
 
-  if (!(cuda::device_attributes::memory_pool_supported_handle_types(cuda::devices[0])
-        & cudaMemHandleTypePosixFileDescriptor))
+  if ((cuda::device_attributes::memory_pool_supported_handle_types(cuda::devices[0])
+       & cudaMemHandleTypePosixFileDescriptor)
+      == 0)
   {
     return;
   }
@@ -769,8 +770,9 @@ C2H_CCCLRT_TEST("pinned_memory_pool with allocation handle", "[memory_resource]"
 {
   test::skip_if_unsupported_memory_pool<cuda::pinned_memory_pool>();
 
-  if (!(cuda::device_attributes::memory_pool_supported_handle_types(cuda::devices[0])
-        & cudaMemHandleTypePosixFileDescriptor))
+  if ((cuda::device_attributes::memory_pool_supported_handle_types(cuda::devices[0])
+       & cudaMemHandleTypePosixFileDescriptor)
+      == 0)
   {
     return;
   }

@@ -425,8 +425,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T1, class _T2, class... _Args)
   _CCCL_REQUIRES(is_nothrow_constructible_v<_T1, _Args...>)
-  static _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void
-  __reinit_expected(_T1& __newval, _T2& __oldval, _Args&&... __args) noexcept
+  static _CCCL_API _CCCL_CONSTEXPR_CXX20 void __reinit_expected(_T1& __newval, _T2& __oldval, _Args&&... __args) noexcept
   {
     ::cuda::std::__destroy_at(::cuda::std::addressof(__oldval));
     ::cuda::std::__construct_at(::cuda::std::addressof(__newval), ::cuda::std::forward<_Args>(__args)...);
@@ -435,7 +434,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T1, class _T2, class... _Args)
   _CCCL_REQUIRES((!is_nothrow_constructible_v<_T1, _Args...>) _CCCL_AND is_nothrow_move_constructible_v<_T1>)
-  static _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void __reinit_expected(_T1& __newval, _T2& __oldval, _Args&&... __args)
+  static _CCCL_API _CCCL_CONSTEXPR_CXX20 void __reinit_expected(_T1& __newval, _T2& __oldval, _Args&&... __args)
   {
     _T1 __tmp(::cuda::std::forward<_Args>(__args)...);
     ::cuda::std::__destroy_at(::cuda::std::addressof(__oldval));
@@ -445,7 +444,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T1, class _T2, class... _Args)
   _CCCL_REQUIRES((!is_nothrow_constructible_v<_T1, _Args...>) _CCCL_AND(!is_nothrow_move_constructible_v<_T1>))
-  static _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void __reinit_expected(_T1& __newval, _T2& __oldval, _Args&&... __args)
+  static _CCCL_API _CCCL_CONSTEXPR_CXX20 void __reinit_expected(_T1& __newval, _T2& __oldval, _Args&&... __args)
   {
     static_assert(
       is_nothrow_move_constructible_v<_T2>,
@@ -463,7 +462,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Err2 = _Err)
   _CCCL_REQUIRES(is_nothrow_move_constructible_v<_Err2>)
-  static _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void
+  static _CCCL_API _CCCL_CONSTEXPR_CXX20 void
   __swap_val_unex_impl(__expected_storage<_Tp, _Err2>& __with_val, __expected_storage& __with_err)
   {
     _Err __tmp(::cuda::std::move(__with_err.__union_.__unex_));
@@ -483,7 +482,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Err2 = _Err)
   _CCCL_REQUIRES((!is_nothrow_move_constructible_v<_Err2>) )
-  static _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void
+  static _CCCL_API _CCCL_CONSTEXPR_CXX20 void
   __swap_val_unex_impl(__expected_storage<_Tp, _Err2>& __with_val, __expected_storage& __with_err)
   {
     static_assert(is_nothrow_move_constructible_v<_Tp>,
@@ -894,7 +893,7 @@ struct __expected_storage<void, _Err> : __expected_destruct<void, _Err>
   _CCCL_DELEGATE_CONSTRUCTORS(__expected_storage, __expected_destruct, void, _Err);
 
   _CCCL_EXEC_CHECK_DISABLE
-  static _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void __swap_val_unex_impl(
+  static _CCCL_API _CCCL_CONSTEXPR_CXX20 void __swap_val_unex_impl(
     __expected_storage& __with_val, __expected_storage& __with_err) noexcept(is_nothrow_move_constructible_v<_Err>)
   {
     ::cuda::std::__construct_at(

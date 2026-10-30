@@ -575,7 +575,5 @@ C2H_TEST("shared_memory_barrier", "[barrier]")
     cuda::launch(stream, config, test_shared_memory_barrier_kernel<cuda::thread_scope_cluster>);
     stream.sync();
   }
-#else // ^^^ CUDA 13.4+ ^^^ / vvv older toolkits vvv
-  return;
 #endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC) && _CCCL_CUDACC_AT_LEAST(13, 4)
 }

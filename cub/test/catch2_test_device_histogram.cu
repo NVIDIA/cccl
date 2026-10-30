@@ -401,7 +401,7 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
       const auto* sample_ptr = unwrap(thrust::raw_pointer_cast(d_samples.data()));
       if constexpr (ActiveChannels == 1 && Channels == 1)
       {
-        if (true)
+        if (true) // NOLINT(readability-simplify-boolean-expr)
         {
           // call new API entry-point
           histogram_even(
@@ -430,7 +430,7 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
       }
       else
       {
-        if (true)
+        if (true) // NOLINT(readability-simplify-boolean-expr)
         {
           // new API entry-point
           multi_histogram_even<Channels, ActiveChannels>(
@@ -491,7 +491,7 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
       std::copy(h_levels.begin(), h_levels.end(), d_levels.begin());
       if constexpr (ActiveChannels == 1 && Channels == 1)
       {
-        if (true)
+        if (true) // NOLINT(readability-simplify-boolean-expr)
         {
           // call new API entry-point
           histogram_range(
@@ -518,7 +518,7 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
       }
       else
       {
-        if (true)
+        if (true) // NOLINT(readability-simplify-boolean-expr)
         {
           // call new API entry-point
           auto d_histogram_ptrs = to_array_of_ptrs(d_histogram);
@@ -1132,7 +1132,7 @@ CUB_TEST("DeviceHistogram::Histogram* bin indices survive the output decode", "[
     constexpr int fp16_num_levels = fp16_num_bins + 1;
     const auto exact_fp16         = [](int i) {
       // In [2048, 4096), the spacing between adjacent half values becomes 2.
-      const int k = i < 2048 ? i : 2048 + (i - 2048) * 2;
+      const int k = i < 2048 ? i : 2048 + ((i - 2048) * 2);
       return half_t{static_cast<float>(k) / 1024.0f};
     };
 

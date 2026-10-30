@@ -280,7 +280,7 @@ TEST_CASE("fill_bytes preserves padding bytes in strided row-major destination l
   {
     for (int col = 0; col < cols; ++col)
     {
-      fill_expected_element<uint16_t>(expected, row * ld + col, value);
+      fill_expected_element<uint16_t>(expected, (row * ld) + col, value);
     }
   }
   test_impl_stride(input, expected, extents_t{}, strides, value);
@@ -304,7 +304,7 @@ TEST_CASE("fill_bytes preserves padding bytes in strided column-major destinatio
   {
     for (int col = 0; col < cols; ++col)
     {
-      fill_expected_element<uint16_t>(expected, row + col * ld, value);
+      fill_expected_element<uint16_t>(expected, row + (col * ld), value);
     }
   }
   test_impl_stride(input, expected, extents_t{}, strides, value);
@@ -334,7 +334,7 @@ TEST_CASE("fill_bytes handles 3D strided permutation layouts", "[fill_bytes][3d]
   constexpr int dim1 = 37;
   constexpr int dim2 = 41;
   using extents_t    = cuda::std::extents<int, dim0, dim1, dim2>;
-  constexpr int span = (dim0 - 1) + (dim1 - 1) * dim2 * dim0 + (dim2 - 1) * dim0 + 1;
+  constexpr int span = (dim0 - 1) + ((dim1 - 1) * dim2 * dim0) + ((dim2 - 1) * dim0) + 1;
 
   const cuda::std::array<int, 3> strides{1, dim2 * dim0, dim0};
   auto input           = make_host_data<uint32_t>(span, 0xCD);
@@ -347,7 +347,7 @@ TEST_CASE("fill_bytes handles 3D strided permutation layouts", "[fill_bytes][3d]
     {
       for (int k = 0; k < dim2; ++k)
       {
-        const int offset = i + j * dim2 * dim0 + k * dim0;
+        const int offset = i + (j * dim2 * dim0) + (k * dim0);
         fill_expected_element<uint32_t>(expected, offset, value);
       }
     }
@@ -363,7 +363,7 @@ TEST_CASE("fill_bytes handles 3D strided tile_size greater than one", "[fill_byt
   using extents_t         = cuda::std::extents<int, dim0, dim1, dim2>;
   constexpr int stride0   = 64;
   constexpr int stride1   = 2048;
-  constexpr int span_size = (dim0 - 1) * stride0 + (dim1 - 1) * stride1 + dim2;
+  constexpr int span_size = ((dim0 - 1) * stride0) + ((dim1 - 1) * stride1) + dim2;
 
   const cuda::std::array<int, 3> strides{stride0, stride1, 1};
   auto input           = make_host_data<uint32_t>(span_size, 0xCD);
@@ -376,7 +376,7 @@ TEST_CASE("fill_bytes handles 3D strided tile_size greater than one", "[fill_byt
     {
       for (int k = 0; k < dim2; ++k)
       {
-        const int offset = i * stride0 + j * stride1 + k;
+        const int offset = (i * stride0) + (j * stride1) + k;
         fill_expected_element<uint32_t>(expected, offset, value);
       }
     }
@@ -402,7 +402,7 @@ TEST_CASE("fill_bytes preserves surrounding bytes in strided subviews with offse
   {
     for (int col = 0; col < cols; ++col)
     {
-      fill_expected_element<uint32_t>(expected, offset + row + col * ld, value);
+      fill_expected_element<uint32_t>(expected, offset + row + (col * ld), value);
     }
   }
   test_impl_stride(input, expected, extents_t{}, strides, value, offset);

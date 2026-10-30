@@ -65,7 +65,7 @@ public:
   _CCCL_HOST_DEVICE_API constexpr __independent_bits_engine(_Engine& __e, size_t __w) noexcept
       : __e_(__e)
       , __w_(__w)
-      , __n_(__w_ / __m + (__w_ % __m != 0))
+      , __n_((__w_ / __m) + static_cast<size_t>(__w_ % __m != 0))
   {
     // TODO(jfaibussowit):
     //
@@ -97,7 +97,7 @@ public:
         __y0_ = 0;
       }
     }
-    __n0_ = __n_ - __w_ % __n_;
+    __n0_ = __n_ - (__w_ % __n_);
     if (__w0_ < _WDt - 1)
     {
       __y1_ = (_Rp >> (__w0_ + 1)) << (__w0_ + 1);
@@ -172,7 +172,6 @@ public:
 
   class param_type
   {
-  private:
     result_type __a_ = result_type{0};
     result_type __b_ = numeric_limits<result_type>::max();
 
@@ -249,6 +248,7 @@ public:
     }
 
     size_t __w = __dt - ::cuda::std::countl_zero(__rp) - 1;
+    // NOLINTNEXTLINE(readability-redundant-parentheses)
     if ((__rp & ((numeric_limits<_UIntType>::max)() >> (__dt - __w))) != 0)
     {
       ++__w;

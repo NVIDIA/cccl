@@ -220,10 +220,10 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void dereference_helper(volatile T* ptr, T* vals,
     _CUB_STORE_1(cub_modifier, ptx_modifier)
 
 //! Define ThreadStore specializations for the various Cache load modifiers
-_CUB_STORE_ALL(STORE_WB, wb)
-_CUB_STORE_ALL(STORE_CG, cg)
-_CUB_STORE_ALL(STORE_CS, cs)
-_CUB_STORE_ALL(STORE_WT, wt)
+_CUB_STORE_ALL(STORE_WB, wb) // NOLINT(readability-non-const-parameter)
+_CUB_STORE_ALL(STORE_CG, cg) // NOLINT(readability-non-const-parameter)
+_CUB_STORE_ALL(STORE_CS, cs) // NOLINT(readability-non-const-parameter)
+_CUB_STORE_ALL(STORE_WT, wt) // NOLINT(readability-non-const-parameter)
 
 // Macro cleanup
 #  undef _CUB_STORE_ALL

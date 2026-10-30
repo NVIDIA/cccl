@@ -112,7 +112,6 @@ inline constexpr bool treat_as_floating_point_v = is_floating_point_v<_Rep>;
 template <class _Rep>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT duration_values
 {
-public:
   [[nodiscard]] _CCCL_API static constexpr _Rep zero() noexcept
   {
     return _Rep{0};
@@ -196,7 +195,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT duration
     static constexpr intmax_t __d1        = _R1::den / __gcd_d1_d2;
     static constexpr intmax_t __n2        = _R2::num / __gcd_n1_n2;
     static constexpr intmax_t __d2        = _R2::den / __gcd_d1_d2;
-    static constexpr intmax_t max         = -((intmax_t(1) << (sizeof(intmax_t) * CHAR_BIT - 1)) + 1);
+    static constexpr intmax_t max         = -((intmax_t(1) << ((sizeof(intmax_t) * CHAR_BIT) - 1)) + 1);
 
     template <intmax_t _Xp, intmax_t _Yp, bool _Overflow>
     struct __mul // _Overflow == false

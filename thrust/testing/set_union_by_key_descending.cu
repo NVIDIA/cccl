@@ -10,11 +10,15 @@ void test_set_union_by_key_descending_simple()
   using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
 
-  Vector a_key{4, 2, 0}, b_key{4, 3, 3, 0};
-  Vector a_val(3, 0), b_val(4, 1);
+  Vector a_key{4, 2, 0};
+  Vector b_key{4, 3, 3, 0};
+  Vector a_val(3, 0);
+  Vector b_val(4, 1);
 
-  Vector ref_key{4, 3, 3, 2, 0}, ref_val{0, 1, 1, 0, 0};
-  Vector result_key(5), result_val(5);
+  Vector ref_key{4, 3, 3, 2, 0};
+  Vector ref_val{0, 1, 1, 0, 0};
+  Vector result_key(5);
+  Vector result_val(5);
 
   const cuda::std::pair<Iterator, Iterator> end = thrust::set_union_by_key(
     a_key.begin(),
@@ -54,8 +58,10 @@ void test_set_union_by_key_descending(const size_t n)
   thrust::device_vector<T> d_b_val = h_b_val;
 
   const size_t max_size = h_a_key.size() + h_b_key.size();
-  thrust::host_vector<T> h_result_key(max_size), h_result_val(max_size);
-  thrust::device_vector<T> d_result_key(max_size), d_result_val(max_size);
+  thrust::host_vector<T> h_result_key(max_size);
+  thrust::host_vector<T> h_result_val(max_size);
+  thrust::device_vector<T> d_result_key(max_size);
+  thrust::device_vector<T> d_result_val(max_size);
 
   cuda::std::pair<typename thrust::host_vector<T>::iterator, typename thrust::host_vector<T>::iterator> h_end;
 

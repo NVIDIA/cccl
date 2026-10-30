@@ -109,13 +109,11 @@ OutputType reduce(
   {
     return init;
   }
-  else
-  {
-    using Body = typename reduce_detail::body<InputIterator, OutputType, BinaryFunction>;
-    Body reduce_body(begin, init, binary_op);
-    ::tbb::parallel_reduce(::tbb::blocked_range<Size>(0, n), reduce_body);
-    return binary_op(init, reduce_body.sum);
-  }
+
+  using Body = typename reduce_detail::body<InputIterator, OutputType, BinaryFunction>;
+  Body reduce_body(begin, init, binary_op);
+  ::tbb::parallel_reduce(::tbb::blocked_range<Size>(0, n), reduce_body);
+  return binary_op(init, reduce_body.sum);
 }
 } // end namespace system::tbb::detail
 THRUST_NAMESPACE_END

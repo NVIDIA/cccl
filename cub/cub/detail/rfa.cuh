@@ -84,12 +84,9 @@ public:
 
     if (index > 0 && index <= max_index)
     {
-      return ::cuda::std::ldexp(0.75, max_exp + mant_dig - bin_width + 1 - index * bin_width);
+      return ::cuda::std::ldexp(0.75, max_exp + mant_dig - bin_width + 1 - (index * bin_width));
     }
-    else
-    {
-      return ::cuda::std::ldexp(0.75, max_exp + mant_dig - bin_width + 1 - max_index * bin_width);
-    }
+    return ::cuda::std::ldexp(0.75, max_exp + mant_dig - bin_width + 1 - (max_index * bin_width));
   }
 
 private:
@@ -215,7 +212,7 @@ private:
           }
           [[fallthrough]];
         default:
-          return data[2 * Fold - 1];
+          return data[(2 * Fold) - 1];
       }
     }
     else
@@ -241,7 +238,7 @@ private:
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static int exp_val(const ftype x) noexcept
   {
     const auto bits = get_bit_representation(x);
-    return (bits >> (mant_dig - 1)) & (2 * max_exp - 1);
+    return (bits >> (mant_dig - 1)) & ((2 * max_exp) - 1);
   }
 
   /// Get index of float-point precision
@@ -260,11 +257,8 @@ private:
     {
       return max_index;
     }
-    else
-    {
-      (void) ::cuda::std::frexpf(x, &exp);
-      return (::cuda::std::min) ((max_exp - exp) / bin_width, +max_index);
-    }
+    (void) ::cuda::std::frexpf(x, &exp);
+    return (::cuda::std::min) ((max_exp - exp) / bin_width, +max_index);
   }
 
   /// Get index of manually specified binned double precision
@@ -470,9 +464,9 @@ private:
     const auto X_index = binned_index();
     if (X_index <= (3 * mant_dig) / bin_width)
     {
-      const double scale_down = ::cuda::std::ldexpf(0.5f, 1 - (2 * mant_dig - bin_width));
-      const double scale_up   = ::cuda::std::ldexpf(0.5f, 1 - (2 * mant_dig - bin_width));
-      const int scaled        = ::cuda::std::max(::cuda::std::min(Fold, (3 * mant_dig) / bin_width - X_index), 0);
+      const double scale_down = ::cuda::std::ldexpf(0.5f, 1 - ((2 * mant_dig) - bin_width));
+      const double scale_up   = ::cuda::std::ldexpf(0.5f, 1 - ((2 * mant_dig) - bin_width));
+      const int scaled        = ::cuda::std::max(::cuda::std::min(Fold, ((3 * mant_dig) / bin_width) - X_index), 0);
       if (X_index == 0)
       {
         Y += carry(0) * ((binned_bins(0 + X_index) / 6.0) * scale_down * expansion);
@@ -645,10 +639,7 @@ public:
     {
       return conv_binned_to_float();
     }
-    else
-    {
-      return conv_binned_to_double();
-    }
+    return conv_binned_to_double();
   }
 
   /// Add @p x to the binned fp

@@ -39,7 +39,7 @@ int main()
     ref_sum += X[ind];
   }
 
-  auto lX   = ctx.logical_data(&X[0], N);
+  auto lX   = ctx.logical_data(X.data(), N);
   auto lsum = ctx.logical_data(&sum, 1);
 
   auto number_devices = 1; //

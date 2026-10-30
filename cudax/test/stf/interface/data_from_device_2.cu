@@ -16,7 +16,7 @@ using namespace cuda::experimental::stf;
 template <typename T>
 __global__ void axpy(int N, T a, const T* x, T* y)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int ind = tid; ind < N; ind += nthreads)
@@ -28,14 +28,14 @@ __global__ void axpy(int N, T a, const T* x, T* y)
 template <typename T>
 __global__ void setup_vectors(int N, T* x, T* y, T* z)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int ind = tid; ind < N; ind += nthreads)
   {
     x[ind] = 1.0 * ind;
-    y[ind] = 2.0 * ind - 3.0;
-    z[ind] = 7.0 * ind + 6.0;
+    y[ind] = (2.0 * ind) - 3.0;
+    z[ind] = (7.0 * ind) + 6.0;
   }
 }
 
@@ -47,7 +47,9 @@ void run()
   const double alpha = 2.0;
   const int N        = 12;
 
-  double *dX, *dY, *dZ;
+  double* dX;
+  double* dY;
+  double* dZ;
   cuda_safe_call(cudaMalloc(reinterpret_cast<void**>(&dX), N * sizeof(double)));
   cuda_safe_call(cudaMalloc(reinterpret_cast<void**>(&dY), N * sizeof(double)));
   cuda_safe_call(cudaMalloc(reinterpret_cast<void**>(&dZ), N * sizeof(double)));
@@ -79,11 +81,11 @@ void run()
     for (size_t ind = 0; ind < N; ind++)
     {
       // X unchanged
-      EXPECT(fabs(X(ind) - 1.0 * ind) < 0.00001);
+      EXPECT(fabs(X(ind) - (1.0 * ind)) < 0.00001);
       // Y = Y + alpha X
-      EXPECT(fabs(Y(ind) - (-3.0 + ind * (2.0 + alpha))) < 0.00001);
+      EXPECT(fabs(Y(ind) - (-3.0 + (ind * (2.0 + alpha)))) < 0.00001);
       // Z = Z + alpha (X + alpha Y)
-      EXPECT(fabs(Z(ind) - ((6.0 - 3 * alpha) + ind * (7.0 + 3 * alpha + alpha * alpha))) < 0.00001);
+      EXPECT(fabs(Z(ind) - ((6.0 - (3 * alpha)) + (ind * (7.0 + (3 * alpha) + (alpha * alpha))))) < 0.00001);
     }
   };
 

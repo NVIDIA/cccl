@@ -71,7 +71,7 @@ struct lowest_supported_sm_arch_impl<SM, typelist<>>
   using type = SM;
 };
 
-using lowest_supported_sm_arch = typename lowest_supported_sm_arch_impl<void, sm_list>::type;
+using lowest_supported_sm_arch = lowest_supported_sm_arch_impl<void, sm_list>::type;
 
 // metafunction to match next viable PtxPlan specialization
 // --------------------------------------------------------------------------
@@ -270,10 +270,7 @@ struct get_agent_plan_impl<Agent, typelist<SM, Tail...>>
     {
       return Plan(specialize_plan<Agent::template PtxPlan, SM>());
     }
-    else
-    {
-      return get_agent_plan_impl<Agent, typelist<Tail...>>::get(ptx_version);
-    }
+    return get_agent_plan_impl<Agent, typelist<Tail...>>::get(ptx_version);
   }
 };
 
@@ -336,10 +333,7 @@ THRUST_RUNTIME_FUNCTION inline size_t vshmem_size(size_t shmem_per_block, size_t
   {
     return shmem_per_block * num_blocks;
   }
-  else
-  {
-    return 0;
-  }
+  return 0;
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
@@ -408,7 +402,8 @@ THRUST_RUNTIME_FUNCTION int get_ptx_version()
 
     // Any subsequent failure means the provided device binary does not match
     // the generated function code
-    int major = 0, minor = 0;
+    int major = 0;
+    int minor = 0;
     cudaError_t attr_status;
 
     attr_status = cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, current_device);

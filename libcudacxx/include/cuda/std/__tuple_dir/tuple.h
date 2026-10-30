@@ -56,7 +56,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class... _Tp>
 class _CCCL_TYPE_VISIBILITY_DEFAULT tuple
 {
-private:
   using _BaseT = __tuple_impl<__make_tuple_indices_t<sizeof...(_Tp)>, _Tp...>;
 
   _BaseT __base_;

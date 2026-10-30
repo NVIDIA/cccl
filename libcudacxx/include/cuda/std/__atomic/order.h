@@ -66,6 +66,7 @@ using __memory_order_underlying_t = underlying_type_t<__legacy_memory_order>;
 
 #if _CCCL_STD_VER >= 2020
 
+// NOLINTNEXTLINE(readability-enum-initial-value)
 enum class memory_order : __memory_order_underlying_t
 {
   relaxed = __mo_relaxed,
@@ -85,7 +86,7 @@ inline constexpr auto memory_order_seq_cst = memory_order::seq_cst;
 
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
 
-using memory_order = enum memory_order { // NOLINT(cppcoreguidelines-use-enum-class)
+using memory_order = enum memory_order { // NOLINT(cppcoreguidelines-use-enum-class,readability-enum-initial-value)
   memory_order_relaxed = __mo_relaxed,
   memory_order_consume = __mo_consume,
   memory_order_acquire = __mo_acquire,
@@ -135,7 +136,7 @@ _CCCL_HOST_DEVICE_API constexpr int __atomic_failure_order_to_int(memory_order _
                         : (__order == memory_order_acq_rel ? __ATOMIC_ACQUIRE : __ATOMIC_CONSUME))));
 }
 
-static_assert((is_same_v<underlying_type_t<memory_order>, __memory_order_underlying_t>),
+static_assert(is_same_v<underlying_type_t<memory_order>, __memory_order_underlying_t>,
               "unexpected underlying type for std::memory_order");
 
 _CCCL_END_NAMESPACE_CUDA_STD

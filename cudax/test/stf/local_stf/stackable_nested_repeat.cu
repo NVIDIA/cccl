@@ -62,7 +62,7 @@ int main()
   // Verify results - each element is incremented niter1*niter2*niter3 times
   for (size_t i = 0; i < sz; i++)
   {
-    const int expected = static_cast<int>(i + niter1 * niter2 * niter3);
+    const int expected = static_cast<int>(i + (niter1 * niter2 * niter3));
     _CCCL_ASSERT(data[i] == expected, "invalid result at index");
   }
 

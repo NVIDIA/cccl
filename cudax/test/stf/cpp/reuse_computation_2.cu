@@ -24,7 +24,7 @@ int main()
 
   for (int i = 0; i < N; i++)
   {
-    A[i] = 2 * i + 1;
+    A[i] = (2 * i) + 1;
   }
 
   auto lres = ctx.logical_data(A);
@@ -60,6 +60,6 @@ int main()
 
   for (int i = 0; i < N; i++)
   {
-    EXPECT(A[i] == (2 * i + 1) + 2 * i * niter / 2);
+    EXPECT(A[i] == ((2 * i) + 1) + (2 * i * niter / 2));
   }
 }

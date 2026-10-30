@@ -82,7 +82,7 @@ struct BlockReduceRaking
 
   /// Whether or not warp-synchronous reduction should be unguarded (i.e., the warp-reduction elements is a power of
   /// two
-  static constexpr int WARP_SYNCHRONOUS_UNGUARDED = ::cuda::is_power_of_two(RAKING_THREADS);
+  static constexpr int WARP_SYNCHRONOUS_UNGUARDED = static_cast<int>(::cuda::is_power_of_two(RAKING_THREADS));
 
   /// Whether or not accesses into smem are unguarded
   static constexpr bool RAKING_UNGUARDED = BlockRakingLayout::UNGUARDED;
@@ -193,7 +193,7 @@ struct BlockReduceRaking
         partial = RakingReduction<IsFullTile>(reduction_op, raking_segment, partial, num_valid, constant_v<1>);
 
         const int valid_raking_threads =
-          (IsFullTile) ? RAKING_THREADS : (num_valid + SEGMENT_LENGTH - 1) / SEGMENT_LENGTH;
+          IsFullTile ? RAKING_THREADS : (num_valid + SEGMENT_LENGTH - 1) / SEGMENT_LENGTH;
 
         // sync before re-using shmem (warp_storage/raking_grid are aliased)
         static_assert(RAKING_THREADS <= warp_threads, "RAKING_THREADS must be <= warp size.");

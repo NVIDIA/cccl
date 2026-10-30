@@ -108,7 +108,7 @@ void verify_results_exact(const c2h::host_vector<T>& expected_data, const c2h::h
   CubDebugExit(cudaGetDevice(&device_id));
   CubDebugExit(cudaDeviceGetAttribute(&compute_capability_major, cudaDevAttrComputeCapabilityMajor, device_id));
   CubDebugExit(cudaDeviceGetAttribute(&compute_capability_minor, cudaDevAttrComputeCapabilityMinor, device_id));
-  const int compute_capability = 10 * compute_capability_major + compute_capability_minor;
+  const int compute_capability = (10 * compute_capability_major) + compute_capability_minor;
   if (compute_capability < 80 && is_any_bfloat16_v<T>)
   {
     return;

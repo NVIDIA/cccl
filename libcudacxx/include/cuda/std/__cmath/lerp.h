@@ -35,22 +35,19 @@ template <typename _Fp>
 {
   if ((__a <= 0 && __b >= 0) || (__a >= 0 && __b <= 0))
   {
-    return __t * __b + (1 - __t) * __a;
+    return (__t * __b) + ((1 - __t) * __a);
   }
 
   if (__t == 1)
   {
     return __b;
   }
-  const _Fp __x = __a + __t * (__b - __a);
+  const _Fp __x = __a + (__t * (__b - __a));
   if ((__t > 1) == (__b > __a))
   {
     return __b < __x ? __x : __b;
   }
-  else
-  {
-    return __x < __b ? __x : __b;
-  }
+  return __x < __b ? __x : __b;
 }
 
 [[nodiscard]] _CCCL_API constexpr float lerp(float __a, float __b, float __t) noexcept

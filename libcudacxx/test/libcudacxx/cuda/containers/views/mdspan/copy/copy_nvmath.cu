@@ -249,7 +249,7 @@ TEST_CASE("copy d2d nvmath sliced_unaligned_ptr", "[copy][d2d][nvmath][vectorize
 {
   constexpr int src_alloc  = 35 * 255 * 30 * 20;
   constexpr int dst_alloc  = 35 * 255 * 5 * 10;
-  constexpr int src_offset = 10 * 20 + 5;
+  constexpr int src_offset = (10 * 20) + 5;
   const cuda::std::array<int, 4> shape{35, 255, 5, 10};
   const cuda::std::array<int, 4> src_strides{153000, 600, 20, 1};
   const cuda::std::array<int, 4> dst_strides{12750, 50, 10, 1};

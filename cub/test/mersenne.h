@@ -61,7 +61,7 @@ inline void init_genrand(unsigned int s)
   mt[0] = s & 0xffffffff;
   for (mti = 1; mti < static_cast<int>(N); mti++)
   {
-    mt[mti] = (1812433253 * (mt[mti - 1] ^ (mt[mti - 1] >> 30)) + mti);
+    mt[mti] = ((1812433253 * (mt[mti - 1] ^ (mt[mti - 1] >> 30))) + mti);
 
     /* See Knuth TAOCP Vol2. 3rd Ed. P.106 for mtiplier. */
     /* In the previous versions, MSBs of the seed affect   */
@@ -77,14 +77,16 @@ inline void init_genrand(unsigned int s)
 /* init_key is the array for initializing keys */
 /* key_length is its length */
 /* slight change for C++, 2004/2/26 */
-inline void init_by_array(unsigned int init_key[], int key_length)
+inline void init_by_array(const unsigned int init_key[], int key_length)
 {
-  int i, j, k;
+  int i;
+  int j;
+  int k;
   init_genrand(19650218);
   i = 1;
   j = 0;
   k = (static_cast<int>(N) > key_length ? static_cast<int>(N) : key_length);
-  for (; k; k--)
+  for (; k != 0; k--)
   {
     mt[i] = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 30)) * 1664525)) + init_key[j] + j; /* non linear */
     mt[i] &= 0xffffffff; /* for WORDSIZE > 32 machines */
@@ -100,7 +102,7 @@ inline void init_by_array(unsigned int init_key[], int key_length)
       j = 0;
     }
   }
-  for (k = N - 1; k; k--)
+  for (k = N - 1; k != 0; k--)
   {
     mt[i] = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 30)) * 1566083941)) - i; /* non linear */
     mt[i] &= 0xffffffff; /* for WORDSIZE > 32 machines */

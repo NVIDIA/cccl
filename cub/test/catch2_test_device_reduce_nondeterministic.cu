@@ -311,7 +311,8 @@ CUB_TEST("Nondeterministic Device reduce works with various types on gpu with di
   const auto env      = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
   const int num_items = GENERATE_COPY(values({0, 1, 20, 100, 2000, 1 << 10}));
 
-  type min_value{}, max_value{};
+  type min_value{};
+  type max_value{};
 
   if constexpr (cuda::std::is_unsigned_v<type>)
   {

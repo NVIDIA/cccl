@@ -64,7 +64,6 @@ CUB_NAMESPACE_BEGIN
 template <typename OffsetT>
 class GridQueue
 {
-private:
   /// Counter indices
   static constexpr int FILL  = 0;
   static constexpr int DRAIN = 1;

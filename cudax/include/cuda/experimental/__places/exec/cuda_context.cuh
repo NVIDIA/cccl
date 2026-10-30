@@ -143,8 +143,8 @@ public:
     }
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- typeid checked just above
     const auto& other = static_cast<const exec_place_cuda_ctx_impl&>(rhs);
-    return ::std::less<CUcontext>{}(other.driver_context_, driver_context_)
-         - ::std::less<CUcontext>{}(driver_context_, other.driver_context_);
+    return static_cast<int>(::std::less<CUcontext>{}(other.driver_context_, driver_context_))
+         - static_cast<int>(::std::less<CUcontext>{}(driver_context_, other.driver_context_));
   }
 
   size_t hash() const override

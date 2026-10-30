@@ -113,7 +113,7 @@ struct half_t
           ir = static_cast<uint16_t>(ir + ((14 + shift) << 10));
         }
         /* IEEE-754 round to nearest of even */
-        if ((ia > 0x80000000) || ((ia == 0x80000000) && (ir & 1)))
+        if ((ia > 0x80000000) || ((ia == 0x80000000) && ((ir & 1) != 0)))
         {
           ir++;
         }
@@ -147,7 +147,7 @@ struct half_t
     }
     else if (exp == 0)
     {
-      if (mantissa)
+      if (mantissa != 0)
       {
         // subnormal
         exp += 113;
@@ -159,7 +159,7 @@ struct half_t
         mantissa &= 0x3ff;
         f = (sign << 31) | (exp << 23) | (mantissa << 13);
       }
-      else if (sign)
+      else if (sign != 0)
       {
         f = 0x80000000; // negative zero
       }
@@ -170,7 +170,7 @@ struct half_t
     }
     else if (exp == 31)
     {
-      if (mantissa)
+      if (mantissa != 0)
       {
         f = 0x7fffffff; // not a number
       }

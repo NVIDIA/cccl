@@ -42,7 +42,7 @@ int g_grid_size = 1;
  * Simple kernel for performing a block-wide reduction.
  */
 template <int BlockThreads>
-__global__ void BlockReduceKernel(int* d_in, // Tile of input
+__global__ void BlockReduceKernel(const int* d_in, // Tile of input
                                   int* d_out // Tile aggregate
 )
 {
@@ -140,7 +140,7 @@ void Test()
   auto block_reduce_temp_bytes = sizeof(typename cub::BlockReduce<int, BlockThreads>::TempStorage);
   // finally, we need to make sure that we can hold at least one integer
   // needed in the kernel to exchange data after reduction
-  auto smem_size = (std::max) (1 * sizeof(int), block_reduce_temp_bytes);
+  auto smem_size = (std::max) (1 * sizeof(int), block_reduce_temp_bytes); // NOLINT(readability-redundant-parentheses)
 
   // use default stream
   cudaStream_t stream = nullptr;
@@ -163,10 +163,7 @@ void Test()
   CubDebugExit(cudaDeviceSynchronize());
 
   // Cleanup
-  if (h_in)
-  {
-    delete[] h_in;
-  }
+  delete[] h_in;
   if (d_in)
   {
     cudaFree(d_in);

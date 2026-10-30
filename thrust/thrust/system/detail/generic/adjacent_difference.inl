@@ -47,7 +47,7 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
     // empty range, nothing to do
     return result;
   }
-  else
+
   {
     // an in-place operation is requested, copy the input and call the entry point
     // XXX a special-purpose kernel would be faster here since

@@ -423,7 +423,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <>
 class zip_function<sum_five>
 {
-private:
   sum_five fun;
 
 public:

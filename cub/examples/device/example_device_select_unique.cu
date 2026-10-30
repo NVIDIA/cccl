@@ -81,7 +81,7 @@ void Initialize(int* h_in, int num_items, int max_segment)
 /**
  * Solve unique problem
  */
-int Solve(int* h_in, int* h_reference, int num_items)
+int Solve(const int* h_in, int* h_reference, int num_items)
 {
   int num_selected = 0;
   if (num_items > 0)
@@ -173,20 +173,14 @@ int main(int argc, char** argv)
   // Check for correctness (and display results, if specified)
   stream.sync();
   int compare = CompareDeviceResults(h_reference, d_out.data(), num_selected, true, g_verbose, stream);
-  printf("\t Data %s ", compare ? "FAIL" : "PASS");
+  printf("\t Data %s ", compare != 0 ? "FAIL" : "PASS");
   compare = compare | CompareDeviceResults(&num_selected, d_num_selected_out.data(), 1, true, g_verbose, stream);
-  printf("\t Count %s ", compare ? "FAIL" : "PASS");
+  printf("\t Count %s ", compare != 0 ? "FAIL" : "PASS");
   AssertEquals(0, compare);
 
   // Cleanup
-  if (h_in)
-  {
-    delete[] h_in;
-  }
-  if (h_reference)
-  {
-    delete[] h_reference;
-  }
+  delete[] h_in;
+  delete[] h_reference;
 
   printf("\n\n");
 

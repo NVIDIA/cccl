@@ -51,7 +51,7 @@ struct linear_congruential_engine_discard_implementation<std::uint32_t, A, 0, M>
     // see http://en.wikipedia.org/wiki/Modular_exponentiation
     while (z > 0)
     {
-      if (z & 1)
+      if ((z & 1) != 0)
       {
         // multiply in this bit's contribution while using modulus to keep result small
         multiplier_to_z = (multiplier_to_z * multiplier) % modulus;

@@ -27,7 +27,7 @@ int main()
   lA.set_symbol("A");
 
   sctx.parallel_for(lA.shape(), lA.write())->*[] __device__(size_t i, auto a) {
-    a(i) = 42 + 2 * i;
+    a(i) = 42 + (2 * i);
   };
 
   /* Start to use a graph */
@@ -43,7 +43,7 @@ int main()
   lC.set_symbol("C");
 
   sctx.parallel_for(lB.shape(), lB.write(), lA.read(), lC.write())->*[] __device__(size_t i, auto b, auto a, auto c) {
-    b(i) = 17 - 3 * a(i);
+    b(i) = 17 - (3 * a(i));
     c(i) = b(i);
   };
 
@@ -58,7 +58,7 @@ int main()
   sctx.host_launch(lB.read())->*[](auto b) {
     for (size_t i = 0; i < b.size(); i++)
     {
-      EXPECT(b(i) == 2 * (17 - 3 * (42 + 2 * i)));
+      EXPECT(b(i) == 2 * (17 - (3 * (42 + (2 * i)))));
     }
   };
 

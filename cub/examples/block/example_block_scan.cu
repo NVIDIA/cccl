@@ -239,18 +239,9 @@ void Test()
   printf("\tAverage million items / sec: %.4f\n", avg_items_per_sec);
 
   // Cleanup
-  if (h_in)
-  {
-    delete[] h_in;
-  }
-  if (h_reference)
-  {
-    delete[] h_reference;
-  }
-  if (h_gpu)
-  {
-    delete[] h_gpu;
-  }
+  delete[] h_in;
+  delete[] h_reference;
+  delete[] h_gpu;
   if (d_in)
   {
     cudaFree(d_in);
@@ -276,13 +267,13 @@ __global__ void ExclusiveSumArrayKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain a segment of consecutive items that are blocked across threads
   int thread_data[4];
   for (int i = 0; i < 4; i++)
   {
-    thread_data[i] = d_data[threadIdx.x * 4 + i];
+    thread_data[i] = d_data[(threadIdx.x * 4) + i];
   }
 
   // Collectively compute the block-wide exclusive prefix sum
@@ -291,7 +282,7 @@ __global__ void ExclusiveSumArrayKernel(int* d_data)
   // Store results
   for (int i = 0; i < 4; i++)
   {
-    d_data[threadIdx.x * 4 + i] = thread_data[i];
+    d_data[(threadIdx.x * 4) + i] = thread_data[i];
   }
 }
 // example-end exclusive-sum-array
@@ -303,7 +294,7 @@ __global__ void ExclusiveSumSingleKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain input item for each thread
   int thread_data = d_data[threadIdx.x];
@@ -323,7 +314,7 @@ __global__ void ExclusiveSumAggregateKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain input item for each thread
   int thread_data = d_data[threadIdx.x];
@@ -372,9 +363,9 @@ __global__ void ExclusiveSumPrefixCallbackKernel(int* d_data, int num_items)
   // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
   __shared__ union
   {
-    typename BlockLoadT::TempStorage load;
-    typename BlockScanT::TempStorage scan;
-    typename BlockStoreT::TempStorage store;
+    BlockLoadT::TempStorage load;
+    BlockScanT::TempStorage scan;
+    BlockStoreT::TempStorage store;
   } temp_storage;
 
   // Initialize running total
@@ -406,7 +397,7 @@ __global__ void ExclusiveScanSingleKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain input item for each thread
   int thread_data = d_data[threadIdx.x];
@@ -430,9 +421,9 @@ __global__ void InclusiveSumPrefixCallbackKernel(int* d_data, int num_items)
   // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
   __shared__ union
   {
-    typename BlockLoadT::TempStorage load;
-    typename BlockScanT::TempStorage scan;
-    typename BlockStoreT::TempStorage store;
+    BlockLoadT::TempStorage load;
+    BlockScanT::TempStorage scan;
+    BlockStoreT::TempStorage store;
   } temp_storage;
 
   // Initialize running total
@@ -464,13 +455,13 @@ __global__ void InclusiveSumArrayKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain a segment of consecutive items that are blocked across threads
   int thread_data[4];
   for (int i = 0; i < 4; i++)
   {
-    thread_data[i] = d_data[threadIdx.x * 4 + i];
+    thread_data[i] = d_data[(threadIdx.x * 4) + i];
   }
 
   // Collectively compute the block-wide inclusive prefix sum
@@ -479,7 +470,7 @@ __global__ void InclusiveSumArrayKernel(int* d_data)
   // Store results
   for (int i = 0; i < 4; i++)
   {
-    d_data[threadIdx.x * 4 + i] = thread_data[i];
+    d_data[(threadIdx.x * 4) + i] = thread_data[i];
   }
 }
 // example-end inclusive-sum-array
@@ -491,7 +482,7 @@ __global__ void InclusiveSumSingleKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain input item for each thread
   int thread_data = d_data[threadIdx.x];
@@ -511,13 +502,13 @@ __global__ void ExclusiveScanArrayKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain a segment of consecutive items that are blocked across threads
   int thread_data[4];
   for (int i = 0; i < 4; i++)
   {
-    thread_data[i] = d_data[threadIdx.x * 4 + i];
+    thread_data[i] = d_data[(threadIdx.x * 4) + i];
   }
 
   // Collectively compute the block-wide exclusive prefix max scan
@@ -526,7 +517,7 @@ __global__ void ExclusiveScanArrayKernel(int* d_data)
   // Store results
   for (int i = 0; i < 4; i++)
   {
-    d_data[threadIdx.x * 4 + i] = thread_data[i];
+    d_data[(threadIdx.x * 4) + i] = thread_data[i];
   }
 }
 // example-end exclusive-scan-array
@@ -538,7 +529,7 @@ __global__ void ExclusiveScanAggregateKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain input item for each thread
   int thread_data = d_data[threadIdx.x];
@@ -587,9 +578,9 @@ __global__ void ExclusiveScanPrefixCallbackKernel(int* d_data, int num_items)
   // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
   __shared__ union
   {
-    typename BlockLoadT::TempStorage load;
-    typename BlockScanT::TempStorage scan;
-    typename BlockStoreT::TempStorage store;
+    BlockLoadT::TempStorage load;
+    BlockScanT::TempStorage scan;
+    BlockStoreT::TempStorage store;
   } temp_storage;
 
   // Initialize running total
@@ -621,7 +612,7 @@ __global__ void ExclusiveSumSinglePrefixCallbackKernel(int* d_data, int num_item
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Initialize running total
   BlockPrefixCallbackOp prefix_op(0);
@@ -649,13 +640,13 @@ __global__ void ExclusiveSumArrayAggregateKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain a segment of consecutive items that are blocked across threads
   int thread_data[4];
   for (int i = 0; i < 4; i++)
   {
-    thread_data[i] = d_data[threadIdx.x * 4 + i];
+    thread_data[i] = d_data[(threadIdx.x * 4) + i];
   }
 
   // Collectively compute the block-wide exclusive prefix sum
@@ -665,7 +656,7 @@ __global__ void ExclusiveSumArrayAggregateKernel(int* d_data)
   // Store results
   for (int i = 0; i < 4; i++)
   {
-    d_data[threadIdx.x * 4 + i] = thread_data[i];
+    d_data[(threadIdx.x * 4) + i] = thread_data[i];
   }
 }
 // example-end exclusive-sum-array-aggregate
@@ -677,13 +668,13 @@ __global__ void InclusiveScanArrayKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain a segment of consecutive items that are blocked across threads
   int thread_data[4];
   for (int i = 0; i < 4; i++)
   {
-    thread_data[i] = d_data[threadIdx.x * 4 + i];
+    thread_data[i] = d_data[(threadIdx.x * 4) + i];
   }
 
   // Collectively compute the block-wide inclusive prefix max scan
@@ -692,7 +683,7 @@ __global__ void InclusiveScanArrayKernel(int* d_data)
   // Store results
   for (int i = 0; i < 4; i++)
   {
-    d_data[threadIdx.x * 4 + i] = thread_data[i];
+    d_data[(threadIdx.x * 4) + i] = thread_data[i];
   }
 }
 // example-end inclusive-scan-array
@@ -704,7 +695,7 @@ __global__ void InclusiveScanSingleKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain input item for each thread
   int thread_data = d_data[threadIdx.x];
@@ -728,9 +719,9 @@ __global__ void InclusiveScanPrefixCallbackKernel(int* d_data, int num_items)
   // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
   __shared__ union
   {
-    typename BlockLoadT::TempStorage load;
-    typename BlockScanT::TempStorage scan;
-    typename BlockStoreT::TempStorage store;
+    BlockLoadT::TempStorage load;
+    BlockScanT::TempStorage scan;
+    BlockStoreT::TempStorage store;
   } temp_storage;
 
   // Initialize running total
@@ -762,13 +753,13 @@ __global__ void InclusiveSumArrayAggregateKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain a segment of consecutive items that are blocked across threads
   int thread_data[4];
   for (int i = 0; i < 4; i++)
   {
-    thread_data[i] = d_data[threadIdx.x * 4 + i];
+    thread_data[i] = d_data[(threadIdx.x * 4) + i];
   }
 
   // Collectively compute the block-wide inclusive prefix sum
@@ -778,7 +769,7 @@ __global__ void InclusiveSumArrayAggregateKernel(int* d_data)
   // Store results
   for (int i = 0; i < 4; i++)
   {
-    d_data[threadIdx.x * 4 + i] = thread_data[i];
+    d_data[(threadIdx.x * 4) + i] = thread_data[i];
   }
 }
 // example-end inclusive-sum-array-aggregate
@@ -790,7 +781,7 @@ __global__ void InclusiveSumSingleAggregateKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain input item for each thread
   int thread_data = d_data[threadIdx.x];
@@ -835,10 +826,10 @@ void TestDocumentationExamples()
     {
       for (int j = 0; j < 4 && passed; j++)
       {
-        const int expected = i * 4 + j;
-        if (h_data[i * 4 + j] != expected)
+        const int expected = (i * 4) + j;
+        if (h_data[(i * 4) + j] != expected)
         {
-          printf("FAILED at [%d]: expected %d, got %d\n", i * 4 + j, expected, h_data[i * 4 + j]);
+          printf("FAILED at [%d]: expected %d, got %d\n", (i * 4) + j, expected, h_data[(i * 4) + j]);
           passed     = false;
           all_passed = false;
         }
@@ -971,10 +962,10 @@ void TestDocumentationExamples()
     {
       for (int j = 0; j < 4 && passed; j++)
       {
-        const int expected = i * 4 + j + 1;
-        if (h_data[i * 4 + j] != expected)
+        const int expected = (i * 4) + j + 1;
+        if (h_data[(i * 4) + j] != expected)
         {
-          printf("FAILED at [%d]: expected %d, got %d\n", i * 4 + j, expected, h_data[i * 4 + j]);
+          printf("FAILED at [%d]: expected %d, got %d\n", (i * 4) + j, expected, h_data[(i * 4) + j]);
           passed     = false;
           all_passed = false;
         }
@@ -1028,7 +1019,7 @@ void TestDocumentationExamples()
     {
       for (int j = 0; j < 4 && passed; j++)
       {
-        const int idx      = i * 4 + j;
+        const int idx      = (i * 4) + j;
         const int expected = running_max;
         if (h_data[idx] != expected)
         {
@@ -1120,7 +1111,7 @@ void TestDocumentationExamples()
     {
       for (int j = 0; j < 4 && passed; j++)
       {
-        const int idx = i * 4 + j;
+        const int idx = (i * 4) + j;
         running_max   = (idx > running_max) ? idx : running_max;
         if (h_data[idx] != running_max)
         {

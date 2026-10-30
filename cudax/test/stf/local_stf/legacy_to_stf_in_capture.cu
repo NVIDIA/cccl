@@ -50,7 +50,7 @@ using namespace cuda::experimental::stf;
 
 __global__ void initA(double* d_ptrA, size_t N)
 {
-  const size_t tid      = blockIdx.x * blockDim.x + threadIdx.x;
+  const size_t tid      = (blockIdx.x * blockDim.x) + threadIdx.x;
   const size_t nthreads = blockDim.x * gridDim.x;
   for (size_t i = tid; i < N; i += nthreads)
   {
@@ -60,7 +60,7 @@ __global__ void initA(double* d_ptrA, size_t N)
 
 __global__ void initB(double* d_ptrB, size_t N)
 {
-  const size_t tid      = blockIdx.x * blockDim.x + threadIdx.x;
+  const size_t tid      = (blockIdx.x * blockDim.x) + threadIdx.x;
   const size_t nthreads = blockDim.x * gridDim.x;
   for (size_t i = tid; i < N; i += nthreads)
   {
@@ -71,7 +71,7 @@ __global__ void initB(double* d_ptrB, size_t N)
 // B += alpha * A
 __global__ void axpy(double alpha, const double* d_ptrA, double* d_ptrB, size_t N)
 {
-  const size_t tid      = blockIdx.x * blockDim.x + threadIdx.x;
+  const size_t tid      = (blockIdx.x * blockDim.x) + threadIdx.x;
   const size_t nthreads = blockDim.x * gridDim.x;
   for (size_t i = tid; i < N; i += nthreads)
   {
@@ -366,7 +366,7 @@ void run_fork_join_under_capture(const char* label, Submit&& submit)
   for (size_t i = 0; i < N; ++i)
   {
     const double ref_A = sin((double) i);
-    const double ref_B = cos((double) i) + 3.0 * sin((double) i);
+    const double ref_B = cos((double) i) + (3.0 * sin((double) i));
     max_err_A          = std::fmax(max_err_A, std::fabs(h_A[i] - ref_A));
     max_err_B          = std::fmax(max_err_B, std::fabs(h_B[i] - ref_B));
   }
@@ -418,7 +418,7 @@ int main()
     // actually enqueued on ``capture_stream`` after the failed construction.
     cudaGraph_t unused = nullptr;
     cuda_safe_call(cudaStreamEndCapture(capture_stream, &unused));
-    if (unused)
+    if (unused != nullptr)
     {
       cuda_safe_call(cudaGraphDestroy(unused));
     }

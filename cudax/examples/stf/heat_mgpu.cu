@@ -91,10 +91,10 @@ int main(int argc, char** argv)
   ctx.parallel_for(blocked_partition(), all_devs, lU.shape(), lU.write()).set_symbol("init")->*
     [=] _CCCL_DEVICE(size_t i, size_t j, auto U) {
       const double rad = U.extent(0) / 8.0;
-      const double dx  = (double) i - U.extent(0) / 2.0;
-      const double dy  = (double) j - U.extent(1) / 2.0;
+      const double dx  = (double) i - (U.extent(0) / 2.0);
+      const double dy  = (double) j - (U.extent(1) / 2.0);
 
-      U(i, j) = (dx * dx + dy * dy < rad * rad) ? 100.0 : 0.0;
+      U(i, j) = ((dx * dx) + (dy * dy) < rad * rad) ? 100.0 : 0.0;
 
       /* Set up boundary conditions */
       if (static_cast<double>(j) == 0.0)
@@ -128,7 +128,8 @@ int main(int argc, char** argv)
 
   double c = a * dt;
 
-  cudaEvent_t start, stop;
+  cudaEvent_t start;
+  cudaEvent_t stop;
 
   cuda_safe_call(cudaEventCreate(&start));
   cuda_safe_call(cudaEventCreate(&stop));
@@ -147,9 +148,10 @@ int main(int argc, char** argv)
     // Update Un using Un1 value with a finite difference scheme
     ctx.parallel_for(blocked_partition(), all_devs, inner<1>(lU.shape()), lU.read(), lU1.write()).set_symbol("step")->*
       [=] _CCCL_DEVICE(size_t i, size_t j, auto U, auto U1) {
-        U1(i, j) =
-          U(i, j)
-          + c * ((U(i - 1, j) - 2 * U(i, j) + U(i + 1, j)) / dx2 + (U(i, j - 1) - 2 * U(i, j) + U(i, j + 1)) / dy2);
+        U1(i, j) = U(i, j)
+                 + (c
+                    * (((U(i - 1, j) - (2 * U(i, j)) + U(i + 1, j)) / dx2)
+                       + ((U(i, j - 1) - (2 * U(i, j)) + U(i, j + 1)) / dy2)));
       };
 
     std::swap(lU, lU1);

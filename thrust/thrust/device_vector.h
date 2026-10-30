@@ -50,7 +50,6 @@ THRUST_NAMESPACE_BEGIN
 template <typename T, typename Alloc = thrust::device_allocator<T>>
 class device_vector : public detail::vector_base<T, Alloc>
 {
-private:
   using Parent = detail::vector_base<T, Alloc>;
 
 public:

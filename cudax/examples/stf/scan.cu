@@ -101,7 +101,7 @@ int main(int argc, char** argv)
 
   // If we were to register each part one by one, there could be pages which
   // cross multiple parts, and the pinning operation would fail.
-  cuda_safe_call(cudaHostRegister(&X[0], N * sizeof(double), cudaHostRegisterPortable));
+  cuda_safe_call(cudaHostRegister(X.data(), N * sizeof(double), cudaHostRegisterPortable));
 
   for (size_t b = 0; b < NBLOCKS; b++)
   {
@@ -110,7 +110,7 @@ int main(int argc, char** argv)
     lX[b]              = ctx.logical_data(&X[start], end - start).set_symbol("X_" + std::to_string(b));
 
     // No need to move this back to the host if we do not check the result
-    if (!check)
+    if (check == 0)
     {
       lX[b].set_write_back(false);
     }
@@ -127,7 +127,8 @@ int main(int argc, char** argv)
 
   cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
 
-  cudaEvent_t start, stop;
+  cudaEvent_t start;
+  cudaEvent_t stop;
   cuda_safe_call(cudaEventCreate(&start));
   cuda_safe_call(cudaEventCreate(&stop));
   cuda_safe_call(cudaEventRecord(start, ctx.fence()));
@@ -188,14 +189,16 @@ int main(int argc, char** argv)
 
   fprintf(stdout, "%zu %f ms\n", N / 1024 / 1024, ms);
 
-  if (check)
+  if (check != 0)
   {
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0
     for (size_t i = 0; i < N; i++) {
         EXPECT(fabs(X[i] - expected_result[i]) < 0.00001);
     }
 #endif
 
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 1
     fprintf(stderr, "Checking result ...\n");
     EXPECT(fabs(X[0] - X0(0)) < 0.00001);

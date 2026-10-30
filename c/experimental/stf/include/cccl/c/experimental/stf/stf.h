@@ -84,6 +84,7 @@ extern "C" {
 //!
 //! Specifies how a task will access logical data, which determines
 //! synchronization requirements and concurrency opportunities.
+// NOLINTNEXTLINE(readability-enum-initial-value)
 typedef enum stf_access_mode // NOLINT(cppcoreguidelines-use-enum-class)
 {
   STF_NONE  = 0, //!< No access (invalid)
@@ -491,6 +492,7 @@ typedef struct stf_placement_stats
 } stf_placement_stats;
 
 //! \brief Per-dimension distribution policy (see stf_partition_dim_spec).
+// NOLINTNEXTLINE(readability-enum-initial-value)
 typedef enum stf_dim_policy // NOLINT(cppcoreguidelines-use-enum-class)
 {
   STF_DIM_WHOLE        = 0, //!< dimension is not distributed
@@ -2302,6 +2304,7 @@ stf_repeat_scope_handle stf_stackable_push_repeat(stf_ctx_handle ctx, size_t cou
 void stf_stackable_pop_repeat(stf_repeat_scope_handle scope);
 
 //! \brief Comparison operator for built-in while conditions.
+// NOLINTNEXTLINE(readability-enum-initial-value)
 typedef enum stf_compare_op // NOLINT(cppcoreguidelines-use-enum-class)
 {
   STF_CMP_GT = 0, //!< Greater than (>)
@@ -2311,6 +2314,7 @@ typedef enum stf_compare_op // NOLINT(cppcoreguidelines-use-enum-class)
 } stf_compare_op;
 
 //! \brief Scalar element type for \c stf_stackable_while_cond_scalar().
+// NOLINTNEXTLINE(readability-enum-initial-value)
 typedef enum stf_dtype // NOLINT(cppcoreguidelines-use-enum-class)
 {
   STF_DTYPE_FLOAT32 = 0,

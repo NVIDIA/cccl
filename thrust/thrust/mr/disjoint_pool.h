@@ -188,7 +188,6 @@ private:
 
   struct equal_pointers
   {
-  public:
     _CCCL_HOST_DEVICE equal_pointers(void_ptr p)
         : p(p)
     {}
@@ -204,7 +203,6 @@ private:
 
   struct matching_alignment
   {
-  public:
     _CCCL_HOST_DEVICE matching_alignment(std::size_t requested)
         : requested(requested)
     {}
@@ -363,7 +361,7 @@ public:
 
   [[nodiscard]] void_ptr do_allocate_impl(std::size_t bytes, std::size_t alignment)
   {
-    bytes = (std::max) (bytes, m_options.smallest_block_size);
+    bytes = (std::max) (bytes, m_options.smallest_block_size); // NOLINT(readability-redundant-parentheses)
     assert(::cuda::__is_valid_alignment(alignment));
 
     // an oversized and/or overaligned allocation requested; needs to be allocated separately
@@ -474,7 +472,7 @@ public:
                      std::size_t n,
                      std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
-    n = (std::max) (n, m_options.smallest_block_size);
+    n = (std::max) (n, m_options.smallest_block_size); // NOLINT(readability-redundant-parentheses)
     assert(::cuda::__is_valid_alignment(alignment));
 
     // verify that the pointer is at least as aligned as claimed

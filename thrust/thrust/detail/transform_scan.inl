@@ -23,14 +23,6 @@
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(transform_scan.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(transform_scan.h)
 
-// Some build systems need a hint to know which files we could include
-#if 0
-#  include <thrust/system/cpp/detail/transform_scan.h>
-#  include <thrust/system/cuda/detail/transform_scan.h>
-#  include <thrust/system/omp/detail/transform_scan.h>
-#  include <thrust/system/tbb/detail/transform_scan.h>
-#endif
-
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE

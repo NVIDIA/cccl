@@ -95,6 +95,7 @@ public:
   {
     // Workaround for cudafe++ < 13.1 + gcc < 13 replacing `numeric_limits<size_t>` with
     // `numeric_limits<conditional<is_void_v<void>, __common_type2_imp<uint64_t, uint64_t>::type, void>::type>`
+    // NOLINTNEXTLINE(readability-redundant-parentheses): Prevent max macro expansion.
     return (::cuda::std::numeric_limits<SizeType>::max)() / sizeof(T);
   }
 

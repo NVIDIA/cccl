@@ -37,7 +37,7 @@ struct sum_of_int
 {
   TEST_DEVICE_FUNC constexpr int operator()(const int val) const noexcept
   { // Eulers sum with initial value
-    return val * (val + 1) / 2 + 42;
+    return (val * (val + 1) / 2) + 42;
   }
 };
 
@@ -60,7 +60,7 @@ void test_inclusive_scan(
   cuda::std::fill(policy, output.begin(), output.end(), -1);
   { // same output type
     auto res =
-      cuda::std::inclusive_scan(policy, input.begin(), input.end(), output.begin(), cuda::std::plus<int>{}, int{42});
+      cuda::std::inclusive_scan(policy, input.begin(), input.end(), output.begin(), cuda::std::plus<int>{}, 42);
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }
@@ -68,7 +68,7 @@ void test_inclusive_scan(
   cuda::std::fill(policy, output.begin(), output.end(), -1);
   { // same output type, conversion with binary op
     auto res =
-      cuda::std::inclusive_scan(policy, input.begin(), input.end(), output.begin(), cuda::std::plus<long>{}, int{42});
+      cuda::std::inclusive_scan(policy, input.begin(), input.end(), output.begin(), cuda::std::plus<long>{}, 42);
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }
@@ -97,7 +97,7 @@ void test_inclusive_scan(
       cuda::counting_iterator{short{size + 1}},
       output.begin(),
       cuda::std::plus<int>{},
-      int{42});
+      42);
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }
@@ -121,7 +121,7 @@ void test_inclusive_scan(
       cuda::counting_iterator{short{size + 1}},
       output.begin(),
       cuda::std::plus<long>{},
-      int{42});
+      42);
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }
