@@ -811,8 +811,9 @@ public:
     {
       const auto __bucket_slots = __storage_ref[*__probing_iter];
 
-      auto __state              = detail::__equal_result::__unequal;
-      auto __intra_bucket_index = ::cuda::std::int32_t{-1};
+      auto __state = detail::__equal_result::__unequal;
+      // Zero, not -1, so every lane forms an in-bounds slot pointer below.
+      auto __intra_bucket_index = ::cuda::std::int32_t{0};
       for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
       {
         const auto __res =
@@ -828,10 +829,11 @@ public:
       const auto __group_finds_match = __group.ballot(__state == detail::__equal_result::__equal);
       if (__group_finds_match != 0)
       {
-        const auto __src_lane      = __ffs(__group_finds_match) - 1;
-        const auto __probing_index = __group.shfl(*__probing_iter, __src_lane);
-        const auto __slot_index    = __group.shfl(__intra_bucket_index, __src_lane);
-        return __iterator{__get_slot_ptr(__probing_index, __slot_index)};
+        const auto __src_lane = __ffs(__group_finds_match) - 1;
+        // Shuffling one slot pointer instead of the bucket and intra-bucket indices saves a shuffle
+        // and yields fewer SASS instructions.
+        auto* const __slot_ptr = __get_slot_ptr(*__probing_iter, __intra_bucket_index);
+        return __iterator{__group.shfl(__slot_ptr, __src_lane)};
       }
       if (__group.any(__state == detail::__equal_result::__empty))
       {

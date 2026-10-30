@@ -268,6 +268,108 @@ public:
     __impl_->contains_async(__stream, __first, __last, __output_begin, ref());
   }
 
+  //! @brief Writes the stored key equivalent to each query key, or the empty sentinel if none is present.
+  //!
+  //! Unlike `contains`, the output is the stored key, which differs from the query when the key
+  //! equality predicate treats distinct values as equivalent.
+  //! @pre No query key equals the empty sentinel.
+  //! @note Synchronizes the supplied stream. For asynchronous execution use `find_async`.
+  //! @throws cuda_error if the operation or stream synchronization fails
+  //! @tparam _InputIt Device-accessible random-access iterator with compatible query keys
+  //! @tparam _OutputIt Device-accessible random-access iterator assignable from `key_type`
+  //! @param[in] __stream Stream used for lookup
+  //! @param[in] __first Beginning of the query range
+  //! @param[in] __last End of the query range
+  //! @param[out] __output_begin Beginning of the output range
+  template <class _InputIt, class _OutputIt>
+  _CCCL_HOST_API void
+  find(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin) const
+  {
+    find_async(__stream, __first, __last, __output_begin);
+    __stream.sync();
+  }
+
+  //! @brief Asynchronously writes the stored key equivalent to each query key, or the empty
+  //! sentinel if none is present.
+  //!
+  //! @pre No query key equals the empty sentinel.
+  //! @throws cuda_error if lookup fails to launch
+  //! @tparam _InputIt Device-accessible random-access iterator with compatible query keys
+  //! @tparam _OutputIt Device-accessible random-access iterator assignable from `key_type`
+  //! @param[in] __stream Stream used for lookup
+  //! @param[in] __first Beginning of the query range
+  //! @param[in] __last End of the query range
+  //! @param[out] __output_begin Beginning of the output range
+  template <class _InputIt, class _OutputIt>
+  _CCCL_HOST_API void
+  find_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin) const
+  {
+    __impl_->find_async(__stream, __first, __last, __output_begin, ref());
+  }
+
+  //! @brief For each query key `__first[i]` with `__pred(__stencil[i]) == true`, writes the stored
+  //! equivalent key, or the empty sentinel if none is present; writes the empty sentinel otherwise.
+  //!
+  //! @pre No selected query key equals the empty sentinel.
+  //! @pre `__pred` returns the same result for the same stencil value.
+  //! @note `__pred` may be invoked more than once for the same stencil element.
+  //! @note Synchronizes the supplied stream. For asynchronous execution use `find_if_async`.
+  //! @throws cuda_error if the operation or stream synchronization fails
+  //! @tparam _InputIt Device-accessible random-access iterator with compatible query keys
+  //! @tparam _StencilIt Device-accessible random-access iterator whose values are convertible to the
+  //! predicate argument
+  //! @tparam _Predicate Unary predicate returning a value convertible to `bool`
+  //! @tparam _OutputIt Device-accessible random-access iterator assignable from `key_type`
+  //! @param[in] __stream Stream used for lookup
+  //! @param[in] __first Beginning of the query range
+  //! @param[in] __last End of the query range
+  //! @param[in] __stencil Beginning of the stencil range
+  //! @param[in] __pred Predicate applied to each stencil value to select queries
+  //! @param[out] __output_begin Beginning of the output range
+  template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt>
+  _CCCL_HOST_API void find_if(
+    ::cuda::stream_ref __stream,
+    _InputIt __first,
+    _InputIt __last,
+    _StencilIt __stencil,
+    _Predicate __pred,
+    _OutputIt __output_begin) const
+  {
+    find_if_async(__stream, __first, __last, __stencil, __pred, __output_begin);
+    __stream.sync();
+  }
+
+  //! @brief Asynchronously, for each query key `__first[i]` with `__pred(__stencil[i]) == true`,
+  //! writes the stored equivalent key, or the empty sentinel if none is present; writes the empty
+  //! sentinel otherwise.
+  //!
+  //! @pre No selected query key equals the empty sentinel.
+  //! @pre `__pred` returns the same result for the same stencil value.
+  //! @note `__pred` may be invoked more than once for the same stencil element.
+  //! @throws cuda_error if lookup fails to launch
+  //! @tparam _InputIt Device-accessible random-access iterator with compatible query keys
+  //! @tparam _StencilIt Device-accessible random-access iterator whose values are convertible to the
+  //! predicate argument
+  //! @tparam _Predicate Unary predicate returning a value convertible to `bool`
+  //! @tparam _OutputIt Device-accessible random-access iterator assignable from `key_type`
+  //! @param[in] __stream Stream used for lookup
+  //! @param[in] __first Beginning of the query range
+  //! @param[in] __last End of the query range
+  //! @param[in] __stencil Beginning of the stencil range
+  //! @param[in] __pred Predicate applied to each stencil value to select queries
+  //! @param[out] __output_begin Beginning of the output range
+  template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt>
+  _CCCL_HOST_API void find_if_async(
+    ::cuda::stream_ref __stream,
+    _InputIt __first,
+    _InputIt __last,
+    _StencilIt __stencil,
+    _Predicate __pred,
+    _OutputIt __output_begin) const
+  {
+    __impl_->find_if_async(__stream, __first, __last, __stencil, __pred, __output_begin, ref());
+  }
+
   //! @brief Returns the total number of slots.
   //! @return The valid, rounded slot count
   [[nodiscard]] _CCCL_HOST_API size_type capacity() const noexcept
