@@ -17,7 +17,7 @@
 struct custom_difference
 {
   template <typename DataType>
-  __device__ DataType operator()(const DataType& lhs, const DataType& rhs)
+  __device__ DataType operator()(const DataType& lhs, const DataType& rhs) const
   {
     return lhs - rhs;
   }
