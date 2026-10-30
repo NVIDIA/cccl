@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 #pragma once
 
@@ -49,7 +49,7 @@ _CCCL_FORCEINLINE int logical_lane_id(::cuda::std::integral_constant<int, Logica
   }
 }
 
-//! @brief Returns the calling thread's logical warp index within its thread block.
+//! @brief Returns the calling thread's logical warp index within its hardware warp.
 template <int LogicalWarpSize = warp_threads>
 [[nodiscard]] _CCCL_DEVICE_API
 _CCCL_FORCEINLINE int logical_warp_id(::cuda::std::integral_constant<int, LogicalWarpSize> = {})
@@ -71,7 +71,7 @@ _CCCL_FORCEINLINE int logical_warp_id(::cuda::std::integral_constant<int, Logica
   }
 }
 
-//! @brief Returns the calling thread's logical warp base ID (id * warp_size) within its thread block.
+//! @brief Returns the calling thread's logical warp base ID (id * warp_size) within its hardware warp.
 template <int LogicalWarpSize = warp_threads>
 [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE int
 logical_warp_base_id(::cuda::std::integral_constant<int, LogicalWarpSize> logical_warp_size = {})
