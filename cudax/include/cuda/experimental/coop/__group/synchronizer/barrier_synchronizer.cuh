@@ -27,6 +27,7 @@
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/span>
 
 #include <cuda/experimental/coop/__group/concepts.cuh>
@@ -94,6 +95,8 @@ class __barrier_synchronizer_instance_view
   _Barrier* __barrier_;
 
 public:
+  using arrival_token _CCCL_NODEBUG = typename _Barrier::arrival_token;
+
   _CCCL_DEVICE_API explicit __barrier_synchronizer_instance_view(_Barrier* __barrier) noexcept
       : __barrier_{__barrier}
   {}
@@ -108,6 +111,30 @@ public:
   _CCCL_DEVICE_API void do_sync_aligned(const _MappingResult&, const _Hierarchy&) const noexcept
   {
     __barrier_->arrive_and_wait();
+  }
+
+  template <class _MappingResult, class _Hierarchy>
+  _CCCL_DEVICE_API arrival_token do_arrive(const _MappingResult&, const _Hierarchy&) const noexcept
+  {
+    return __barrier_->arrive();
+  }
+
+  template <class _MappingResult, class _Hierarchy>
+  _CCCL_DEVICE_API arrival_token do_arrive_aligned(const _MappingResult&, const _Hierarchy&) const noexcept
+  {
+    return __barrier_->arrive();
+  }
+
+  template <class _MappingResult, class _Hierarchy>
+  _CCCL_DEVICE_API void do_wait(const _MappingResult&, const _Hierarchy&, arrival_token&& __tok) const noexcept
+  {
+    __barrier_->wait(::cuda::std::move(__tok));
+  }
+
+  template <class _MappingResult, class _Hierarchy>
+  _CCCL_DEVICE_API void do_wait_aligned(const _MappingResult&, const _Hierarchy&, arrival_token&& __tok) const noexcept
+  {
+    __barrier_->wait(::cuda::std::move(__tok));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API auto view() const noexcept
@@ -126,6 +153,8 @@ class __barrier_synchronizer_instance
   _Barrier* __barrier_;
 
 public:
+  using arrival_token _CCCL_NODEBUG = typename _Barrier::arrival_token;
+
   _CCCL_DEVICE_API explicit __barrier_synchronizer_instance(_Barrier* __barrier) noexcept
       : __barrier_{__barrier}
   {}
@@ -146,6 +175,30 @@ public:
   _CCCL_DEVICE_API void do_sync_aligned(const _MappingResult&, const _Hierarchy&) const noexcept
   {
     __barrier_->arrive_and_wait();
+  }
+
+  template <class _MappingResult, class _Hierarchy>
+  _CCCL_DEVICE_API arrival_token do_arrive(const _MappingResult&, const _Hierarchy&) const noexcept
+  {
+    return __barrier_->arrive();
+  }
+
+  template <class _MappingResult, class _Hierarchy>
+  _CCCL_DEVICE_API arrival_token do_arrive_aligned(const _MappingResult&, const _Hierarchy&) const noexcept
+  {
+    return __barrier_->arrive();
+  }
+
+  template <class _MappingResult, class _Hierarchy>
+  _CCCL_DEVICE_API void do_wait(const _MappingResult&, const _Hierarchy&, arrival_token&& __tok) const noexcept
+  {
+    __barrier_->wait(::cuda::std::move(__tok));
+  }
+
+  template <class _MappingResult, class _Hierarchy>
+  _CCCL_DEVICE_API void do_wait_aligned(const _MappingResult&, const _Hierarchy&, arrival_token&& __tok) const noexcept
+  {
+    __barrier_->wait(::cuda::std::move(__tok));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API __barrier_synchronizer_instance_view<_Barrier> view() const noexcept

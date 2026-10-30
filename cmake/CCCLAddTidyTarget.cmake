@@ -1,42 +1,6 @@
 include_guard(GLOBAL)
 
 #[=======================================================================[.rst:
-_cccl_create_tidy_plugins
--------------------------
-
-Provide the plugin targets that :command:`cccl_tidy_init` needs to configure
-``clang-tidy`` with CCCL checks.
-
-Arguments
-^^^^^^^^^
-
-``ret_var``
-  The variable in which to store the plugin target list in the parent scope.
-
-#]=======================================================================]
-function(_cccl_create_tidy_plugins ret_var)
-  list(APPEND CMAKE_MESSAGE_CONTEXT "create_tidy_plugins")
-
-  # Use an absolute path for binary directory because we are not certain where this
-  # function will be called from the first time. Also, because we need to pass the path to
-  # the plugins directly to clang-tidy, we need a stable directory where they will be
-  # output.
-  add_subdirectory(
-    "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang_tidy_plugins"
-    "${CCCL_BINARY_DIR}/cccl_clang_tidy_plugins"
-  )
-
-  get_property(plugins GLOBAL PROPERTY CCCL_TIDY_PLUGINS)
-  if (NOT plugins)
-    message(
-      FATAL_ERROR
-      "clang-tidy plugins failed to propagate the list of configured plugins."
-    )
-  endif()
-  set(${ret_var} "${plugins}" PARENT_SCOPE)
-endfunction()
-
-#[=======================================================================[.rst:
 cccl_tidy_init
 --------------
 
@@ -101,13 +65,15 @@ function(cccl_tidy_init)
   )
   set(CCCL_RUN_CLANG_TIDY_SCRIPT "${CCCL_RUN_CLANG_TIDY_SCRIPT}" PARENT_SCOPE)
 
-  _cccl_create_tidy_plugins(all_plugins)
-
-  set(load_cmds)
-  foreach (plugin IN LISTS all_plugins)
-    list(APPEND load_cmds "--load='$<TARGET_FILE:${plugin}>'")
-  endforeach()
-  list(JOIN load_cmds " " CCCL_CLANG_TIDY_PLUGINS)
+  # Use an absolute path for binary directory because we are not certain where this
+  # function will be called from the first time. Also, because we need to pass the path to
+  # the plugins directly to clang-tidy, we need a stable directory where they will be
+  # output.
+  add_subdirectory(
+    "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang_tidy_plugins"
+    "${CCCL_BINARY_DIR}/cccl_clang_tidy_plugins"
+  )
+  set(CCCL_CLANG_TIDY_PLUGINS "--load='$<TARGET_FILE:cccl.tidy.plugins>'")
 
   # configure_file alone does not support generator expressions (which are needed for the
   # clang-tidy plugins), while file(GENERATE) does not support @VAR@ substitutions. So we
@@ -229,7 +195,6 @@ function(cccl_tidy_add_target)
   endif()
 
   cccl_tidy_make_subproject_target(subproject_target)
-  get_property(plugin_targets GLOBAL PROPERTY CCCL_TIDY_PLUGINS)
 
   foreach (src IN LISTS _cccl_SOURCES)
     cmake_path(SET src NORMALIZE "${src}")
@@ -257,9 +222,8 @@ function(cccl_tidy_add_target)
       COMMENT "clang-tidy ${rel_src}"
     )
 
-    # We need to ensure the plugins have actually built before running clang-tidy. Do not
-    # quote, this is a list
-    add_dependencies("${tidy_target}" ${plugin_targets})
+    # We need to ensure the plugins have actually built before running clang-tidy.
+    add_dependencies("${tidy_target}" cccl.tidy.plugins)
     add_dependencies("${subproject_target}" "${tidy_target}")
   endforeach()
 endfunction()

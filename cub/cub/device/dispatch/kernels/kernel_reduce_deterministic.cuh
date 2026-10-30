@@ -13,22 +13,20 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/block/block_reduce.cuh>
 #include <cub/detail/deferred_parameter.cuh>
-#include <cub/detail/it_traits.cuh>
 #include <cub/detail/rfa.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/util_arch.cuh>
 
-#include <thrust/type_traits/unwrap_contiguous_iterator.h>
-
 #include <cuda/__argument/argument.h>
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/min_max.h>
+#include <cuda/std/__functional/identity.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -270,6 +268,16 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
         }
       }
     }
+  }
+
+  // The loops above leave up to `endurance() - 1` deposits un-renormalized. Adding two binned accumulators requires
+  // both to be renormalized: a renormalized bin lies in [1.5, 1.75) * 2^e and the sum of two such bins stays below
+  // 2^(e+1), but a bin with pending deposits may reach [1.75, 2) * 2^e, and the sum then crosses into the next
+  // exponent, which changes the accumulator's bin index and corrupts the result. A thread that deposited nothing
+  // since its last renorm (including an idle thread) holds a renormalized or zero accumulator and is skipped.
+  if (count != 0)
+  {
+    thread_aggregate.renorm();
   }
 
   AccumT block_aggregate = block_reduce_t(temp_storage).Reduce(thread_aggregate, [](AccumT lhs, AccumT rhs) -> AccumT {

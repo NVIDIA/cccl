@@ -140,6 +140,61 @@ CUB_TEST("Device ArgMin and ArgMax compare input values before conversion", "[re
   }
 }
 
+CUB_TEST("Device ArgMin and ArgMax handle empty input", "[reduce][device]", CUB_SMALL)
+{
+  using input_t  = int;
+  using index_t  = cuda::std::int64_t;
+  using limits_t = cuda::std::numeric_limits<input_t>;
+
+  constexpr input_t sentinel_value = 42;
+  constexpr index_t sentinel_index = 42;
+
+  c2h::device_vector<input_t> input(1, input_t{7});
+  c2h::device_vector<input_t> output(1, sentinel_value);
+  c2h::device_vector<index_t> index(1, sentinel_index);
+
+  SECTION("ArgMin")
+  {
+    device_arg_min(input.data(), output.data(), index.data(), 0);
+
+    REQUIRE(output[0] == limits_t::max());
+    REQUIRE(index[0] == 1);
+  }
+
+  SECTION("ArgMin with custom comparison operator")
+  {
+    // abs_less_t only accepts integers, not thrust::device_reference, so pass raw pointers
+    device_arg_min(thrust::raw_pointer_cast(input.data()),
+                   thrust::raw_pointer_cast(output.data()),
+                   thrust::raw_pointer_cast(index.data()),
+                   0,
+                   abs_less_t{});
+
+    REQUIRE(output[0] == input_t{});
+    REQUIRE(index[0] == 1);
+  }
+
+  SECTION("ArgMax")
+  {
+    device_arg_max(input.data(), output.data(), index.data(), 0);
+
+    REQUIRE(output[0] == limits_t::lowest());
+    REQUIRE(index[0] == 1);
+  }
+
+  SECTION("ArgMax with custom comparison operator")
+  {
+    device_arg_max(thrust::raw_pointer_cast(input.data()),
+                   thrust::raw_pointer_cast(output.data()),
+                   thrust::raw_pointer_cast(index.data()),
+                   0,
+                   abs_less_t{});
+
+    REQUIRE(output[0] == input_t{});
+    REQUIRE(index[0] == 1);
+  }
+}
+
 CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", CUB_SMALL, full_type_list)
 {
   using params   = params_t<TestType>;

@@ -130,7 +130,8 @@ using is_contiguous_iterator =
  * \see THRUST_PROCLAIM_CONTIGUOUS_ITERATOR
  */
 template <typename Iterator>
-constexpr bool is_contiguous_iterator_v = detail::is_contiguous_iterator_impl_v<::cuda::std::remove_cvref_t<Iterator>>;
+inline constexpr bool is_contiguous_iterator_v =
+  detail::is_contiguous_iterator_impl_v<::cuda::std::remove_cvref_t<Iterator>>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -424,6 +424,59 @@ TEST_FUNC void test_trunc(T val)
 #endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
+#if _CCCL_HAS_FLOAT128()
+TEST_FUNC void test_float128_edge_cases()
+{
+  using T = __float128;
+
+  // binary128 keeps fractional bits well beyond the 64-bit integer range
+  const T big = T(1ull << 63) * T(4) + T(0.5); // 2^65 + 0.5
+  assert(eq(cuda::std::trunc(big), big - T(0.5)));
+  assert(eq(cuda::std::floor(big), big - T(0.5)));
+  assert(eq(cuda::std::ceil(big), big + T(0.5)));
+  assert(eq(cuda::std::round(big), big + T(0.5)));
+  assert(eq(cuda::std::trunc(-big), -big + T(0.5)));
+  assert(eq(cuda::std::floor(-big), -big - T(0.5)));
+  assert(eq(cuda::std::ceil(-big), -big + T(0.5)));
+  assert(eq(cuda::std::round(-big), -big - T(0.5)));
+
+  // the largest exponent that still has a fractional bit
+  const T huge = T(1ull << 63) * T(1ull << 48) + T(0.5); // 2^111 + 0.5
+  assert(eq(cuda::std::trunc(huge), huge - T(0.5)));
+  assert(eq(cuda::std::floor(huge), huge - T(0.5)));
+  assert(eq(cuda::std::ceil(huge), huge + T(0.5)));
+  assert(eq(cuda::std::round(huge), huge + T(0.5)));
+
+  // halfway cases round away from zero
+  assert(eq(cuda::std::round(T(0.5)), T(1)));
+  assert(eq(cuda::std::round(T(2.5)), T(3)));
+  assert(eq(cuda::std::round(T(-2.5)), T(-3)));
+
+  // results that are zero keep the sign of the argument
+  assert(cuda::std::signbit(cuda::std::ceil(T(-0.5))));
+  assert(cuda::std::signbit(cuda::std::trunc(T(-0.5))));
+  assert(cuda::std::signbit(cuda::std::round(T(-0.25))));
+  assert(!cuda::std::signbit(cuda::std::floor(T(0.5))));
+  assert(eq(cuda::std::floor(T(-0.5)), T(-1)));
+
+  const T nan = cuda::std::numeric_limits<T>::quiet_NaN();
+  assert(cuda::std::isnan(cuda::std::ceil(nan)));
+  assert(cuda::std::isnan(cuda::std::floor(nan)));
+  assert(cuda::std::isnan(cuda::std::round(nan)));
+  assert(cuda::std::isnan(cuda::std::trunc(nan)));
+}
+
+// Only ceil, floor, round and trunc support __float128 so far, so the generic driver can not be used
+TEST_FUNC void test_float128(const float val)
+{
+  test_ceil<__float128>(val);
+  test_floor<__float128>(val);
+  test_round<__float128>(val);
+  test_trunc<__float128>(val);
+  test_float128_edge_cases();
+}
+#endif // _CCCL_HAS_FLOAT128()
+
 template <typename T>
 TEST_FUNC void test(const T val)
 {
@@ -458,6 +511,9 @@ TEST_FUNC void test(const float val)
 #  if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>(val);
 #  endif // _LIBCUDACXX_HAS_NVBF16()
+#  if _CCCL_HAS_FLOAT128()
+  test_float128(val);
+#  endif // _CCCL_HAS_FLOAT128()
 #endif // !_CCCL_TILE_COMPILATION()
 
   test<unsigned short>(static_cast<unsigned short>(val));

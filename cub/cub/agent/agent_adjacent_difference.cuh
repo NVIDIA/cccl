@@ -18,9 +18,8 @@
 #include <cub/block/block_store.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_namespace.cuh>
-
-#include <thrust/system/cuda/detail/core/util.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -146,7 +145,8 @@ struct AgentDifference
       }
       else
       {
-        InputT tile_prev_input = MayAlias ? first_tile_previous[tile_idx] : *(input_it + tile_base - 1);
+        InputT tile_prev_input =
+          MayAlias ? first_tile_previous[tile_idx] : static_cast<InputT>(*(input_it + tile_base - 1));
 
         if (IsLastTile)
         {
@@ -169,7 +169,8 @@ struct AgentDifference
       }
       else
       {
-        InputT tile_next_input = MayAlias ? first_tile_previous[tile_idx] : *(input_it + tile_base + ITEMS_PER_TILE);
+        InputT tile_next_input =
+          MayAlias ? first_tile_previous[tile_idx] : static_cast<InputT>(*(input_it + tile_base + ITEMS_PER_TILE));
 
         BlockAdjacentDifferenceT(temp_storage.adjacent_difference)
           .SubtractRight(input, output, difference_op, tile_next_input);

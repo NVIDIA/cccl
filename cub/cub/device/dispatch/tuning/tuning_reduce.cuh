@@ -14,8 +14,10 @@
 #endif // no system header
 
 #include <cub/agent/agent_reduce.cuh>
+#include <cub/block/block_reduce.cuh>
 #include <cub/detail/key_value_pair.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_macro.cuh>
@@ -23,8 +25,8 @@
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/determinism.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/concepts>
-#include <cuda/std/optional>
+#include <cuda/std/__optional/optional.h>
+#include <cuda/std/__type_traits/void_t.h>
 
 CUB_NAMESPACE_BEGIN
 

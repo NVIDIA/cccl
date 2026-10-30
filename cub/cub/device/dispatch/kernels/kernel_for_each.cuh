@@ -19,6 +19,8 @@
 #include <cub/device/dispatch/tuning/tuning_for.cuh>
 #include <cub/util_arch.cuh>
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
@@ -29,7 +31,6 @@
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__utility/integer_sequence.h>
-#include <cuda/std/cstddef> // size_t
 
 CUB_NAMESPACE_BEGIN
 

@@ -13,11 +13,13 @@
 #include <cstdint>
 #include <limits>
 #include <new>
+#include <vector>
 
 #include <cuda_runtime_api.h>
 
 #include "cub_test_macros.h"
 #include <c2h/buffer_generators.cuh>
+#include <c2h/catch2_test_helper.h>
 #include <c2h/checked_memory_resource.cuh>
 #include <c2h/custom_type.h>
 #include <c2h/detail/env.cuh>
@@ -83,6 +85,68 @@ CUB_TEST("c2h checked host allocation rejects invalid alignments", "[c2h][buffer
 {
   REQUIRE_THROWS_AS(c2h::detail::checked_host_allocation_size(1, 3), std::bad_alloc);
   REQUIRE_THROWS_AS(c2h::detail::checked_host_allocate(0, 0, 3), std::bad_alloc);
+}
+
+CUB_TEST("c2h comparison retains bounded mismatch details in order", "[c2h][comparison]", CUB_SMALL)
+{
+  const auto mismatch_count = GENERATE(std::size_t{0}, 1, 5, 6, 10, 11, 15, 16);
+  const auto first_mismatch = GENERATE(std::size_t{0}, 2, 4);
+  CAPTURE(mismatch_count, first_mismatch);
+
+  // Leave matching values between mismatches so element indices differ from mismatch ordinals.
+  const auto num_items = first_mismatch + 2 * mismatch_count + 1;
+  std::vector<int> expected(num_items);
+  for (std::size_t i = 0; i < num_items; ++i)
+  {
+    expected[i] = static_cast<int>(i + 1);
+  }
+  auto actual = expected;
+  for (std::size_t i = 0; i < mismatch_count; ++i)
+  {
+    const auto index = first_mismatch + 2 * i;
+    actual[index]    = -expected[index];
+  }
+
+  const auto result = c2h::detail::compare_host_ranges(actual, expected);
+  REQUIRE(result.actual_size == num_items);
+  REQUIRE(result.expected_size == num_items);
+  REQUIRE(result.total_mismatches == mismatch_count);
+
+  const auto first_count = (std::min) (mismatch_count, std::size_t{5});
+  REQUIRE(result.first_mismatches.size() == first_count);
+  for (std::size_t i = 0; i < first_count; ++i)
+  {
+    const auto index = first_mismatch + 2 * i;
+    CAPTURE(i, index);
+    CHECK(result.first_mismatches[i].index == index);
+    CHECK(result.first_mismatches[i].actual == actual[index]);
+    CHECK(result.first_mismatches[i].expected == expected[index]);
+  }
+
+  REQUIRE(result.last_mismatches.has_value() == (mismatch_count > 5));
+  if (result.last_mismatches)
+  {
+    const auto last_count = (std::min) (mismatch_count - first_count, std::size_t{5});
+    REQUIRE(result.last_mismatches->size() == last_count);
+    for (std::size_t i = 0; i < last_count; ++i)
+    {
+      const auto index = first_mismatch + 2 * (mismatch_count - last_count + i);
+      CAPTURE(i, index);
+      CHECK((*result.last_mismatches)[i].index == index);
+      CHECK((*result.last_mismatches)[i].actual == actual[index]);
+      CHECK((*result.last_mismatches)[i].expected == expected[index]);
+    }
+  }
+
+  const auto good_count = mismatch_count == 0 ? std::size_t{0} : (std::min) (first_mismatch, std::size_t{3});
+  REQUIRE(result.good_values.size() == good_count);
+  for (std::size_t i = 0; i < good_count; ++i)
+  {
+    const auto index = first_mismatch - good_count + i;
+    CAPTURE(i, index);
+    CHECK(result.good_values[i].index == index);
+    CHECK(result.good_values[i].value == expected[index]);
+  }
 }
 
 CUB_TEST("c2h checked memory rejects sizes that overflow padding", "[c2h][buffers][device_resource]", CUB_SMALL)

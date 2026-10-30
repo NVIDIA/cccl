@@ -29,6 +29,7 @@
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/array>
 
 CUB_NAMESPACE_BEGIN
 

@@ -13,8 +13,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/agent/agent_reduce.cuh>
+#include <cub/block/block_reduce.cuh>
+#include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/util_device.cuh>
 
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN

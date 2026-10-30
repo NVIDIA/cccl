@@ -21,6 +21,8 @@
 #include <cub/util_vsmem.cuh>
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__type_traits/conditional.h>
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
