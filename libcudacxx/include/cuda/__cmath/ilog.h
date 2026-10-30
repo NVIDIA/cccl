@@ -105,6 +105,7 @@ template <class = void>
 
 #  if _CCCL_CUDA_COMPILER(NVHPC)
 // nvc++ cannot initialize a device constant containing __uint128_t (compiler error in process_acc_put_dinit).
+// nvbug 7019781
 struct __ilog10_uint128_constant
 {
   ::cuda::std::uint64_t __low_;
@@ -168,8 +169,7 @@ template <class = void>
     __uint128_t{10'000'000'000'000'000'000ull} * 10'000'000'000'000'0000,
     __uint128_t{10'000'000'000'000'000'000ull} * 100'000'000'000'000'0000,
     __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000'000'000'0000ull,
-    ::cuda::std::numeric_limits<__uint128_t>::max()
-  };
+    ::cuda::std::numeric_limits<__uint128_t>::max()};
   _CCCL_ASSERT(__index >= 0 && __index < static_cast<int>(::cuda::std::size(__powers)), "out of bounds");
   return __powers[__index];
 }
