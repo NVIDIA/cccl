@@ -161,7 +161,7 @@ int main()
 
     auto grid = exec_place::repeat(exec_place::current_device(), nplaces);
     auto rep  = data_place::replicated(grid);
-    auto lin  = ctx.logical_data(&ref[0], n);
+    auto lin  = ctx.logical_data(ref.data(), n);
     auto lout = ctx.logical_data(shape_of<slice<double>>(n));
     auto tok  = ctx.token(); // a void_interface dep: the instances tuple is
                             // shorter than the deps tuple, which the
@@ -258,7 +258,7 @@ int main()
         {
           ctx = graph_ctx();
         }
-        auto lin  = ctx.logical_data(&ref[0], n);
+        auto lin  = ctx.logical_data(ref.data(), n);
         auto lout = ctx.logical_data(shape_of<slice<double>>(n));
         ctx.parallel_for(blocked_partition(), ggrid, lin.shape(), lin.read(grep), lout.write())
             ->*[] __device__(size_t i, auto in, auto out) {
@@ -334,7 +334,7 @@ int main()
           {
             gctx = graph_ctx();
           }
-          auto lgin  = gctx.logical_data(&ref[0], n);
+          auto lgin  = gctx.logical_data(ref.data(), n);
           auto lgout = gctx.logical_data(shape_of<slice<double>>(n));
           gctx.parallel_for(blocked_partition(), grid22, lgin.shape(), lgin.read(rep22), lgout.write())
               ->*[] __device__(size_t i, auto in, auto out) {

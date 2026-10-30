@@ -92,8 +92,8 @@ int main()
     Y[i] = Y0(i);
   }
 
-  auto lX = ctx.logical_data(&X[0], N);
-  auto lY = ctx.logical_data(&Y[0], N);
+  auto lX = ctx.logical_data(X.data(), N);
+  auto lY = ctx.logical_data(Y.data(), N);
 
   const double alpha = 3.14;
 

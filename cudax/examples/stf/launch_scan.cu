@@ -51,7 +51,7 @@ int main(int argc, char** argv)
     X[i] = X0(static_cast<int>(i));
   }
 
-  auto lX = ctx.logical_data(&X[0], N);
+  auto lX = ctx.logical_data(X.data(), N);
 
   // No need to move this back to the host if we do not check the result
   if (check == 0)

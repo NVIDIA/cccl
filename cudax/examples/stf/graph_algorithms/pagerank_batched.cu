@@ -149,8 +149,8 @@ int main()
     lpage_rank_slices.push_back(ctx.logical_data(shape_of<slice<float>>(num_vertices)));
   }
 
-  auto loffsets  = ctx.logical_data(&offsets[0], offsets.size());
-  auto lnonzeros = ctx.logical_data(&nonzeros[0], nonzeros.size());
+  auto loffsets  = ctx.logical_data(offsets.data(), offsets.size());
+  auto lnonzeros = ctx.logical_data(nonzeros.data(), nonzeros.size());
 
   loffsets.set_read_only();
   lnonzeros.set_read_only();

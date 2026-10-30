@@ -76,8 +76,8 @@ int main()
     Y[ind] = (2.0 * ind) - 3.0;
   }
 
-  auto handle_X = ctx.logical_data(make_slice(&X[0], n));
-  auto handle_Y = ctx.logical_data(make_slice(&Y[0], n));
+  auto handle_X = ctx.logical_data(make_slice(X.data(), n));
+  auto handle_Y = ctx.logical_data(make_slice(Y.data(), n));
 
   std::vector<exec_place> exec_places;
 

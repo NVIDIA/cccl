@@ -161,7 +161,7 @@ int main(int argc, char** argv)
     }
   }
 
-  cuda_safe_call(cudaHostRegister(&particles[0], BODY_CNT * sizeof(body), cudaHostRegisterPortable));
+  cuda_safe_call(cudaHostRegister(particles.data(), BODY_CNT * sizeof(body), cudaHostRegisterPortable));
 
   const double dt    = 0.005;
   const size_t NITER = 7; // 7000;
