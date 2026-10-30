@@ -1394,16 +1394,22 @@ void test_segments_derived(const c2h::device_vector<int>& d_offsets_vec)
     &keys_selector,
     &values_selector);
 
-  auto& keys   = (keys_selector || !sort_buffers) ? keys_output : keys_input;
-  auto& values = (values_selector || !sort_buffers) ? values_output : values_input;
+#if defined(TEST_BACKEND) && TEST_BACKEND == 1
+  // Unsupported types skip in the API helper; omit their unreachable validation.
+  if constexpr (cuda::std::is_integral_v<KeyT> && sizeof(KeyT) <= 8 && cuda::std::is_same_v<ValueT, cub::NullType>)
+#endif
+  {
+    auto& keys   = (keys_selector || !sort_buffers) ? keys_output : keys_input;
+    auto& values = (values_selector || !sort_buffers) ? values_output : values_input;
 
-  if (stable_sort)
-  {
-    validate_sorted_derived_outputs<true>(sort_descending, d_offsets_vec, keys, values);
-  }
-  else
-  {
-    validate_sorted_derived_outputs<false>(sort_descending, d_offsets_vec, keys, values);
+    if (stable_sort)
+    {
+      validate_sorted_derived_outputs<true>(sort_descending, d_offsets_vec, keys, values);
+    }
+    else
+    {
+      validate_sorted_derived_outputs<false>(sort_descending, d_offsets_vec, keys, values);
+    }
   }
 }
 
