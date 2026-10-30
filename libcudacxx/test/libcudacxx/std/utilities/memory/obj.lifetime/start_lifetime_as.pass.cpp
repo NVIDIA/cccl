@@ -43,6 +43,13 @@ struct no_default_ctor
   {}
 };
 
+// not an implicit-lifetime type, but arrays of it are
+struct not_implicit_lifetime
+{
+  TEST_HOST_DEVICE_FUNC not_implicit_lifetime() {}
+  TEST_HOST_DEVICE_FUNC ~not_implicit_lifetime() {}
+};
+
 template <class T>
 TEST_HOST_DEVICE_FUNC void test_object(const T& source)
 {
@@ -97,8 +104,28 @@ TEST_HOST_DEVICE_FUNC void test_array(const T (&source)[N])
   assert(static_cast<void*>(result) == p);
   assert(cuda::std::memcmp(result, source, sizeof(T) * N) == 0);
 
-  // an empty array has no effect and returns a pointer to the storage
+  // an empty array has no effect and returns a pointer to the storage, which may be null
   assert(cuda::std::start_lifetime_as_array<T>(p, 0) == static_cast<T*>(p));
+  assert(cuda::std::start_lifetime_as_array<T>(static_cast<void*>(nullptr), 0) == nullptr);
+}
+
+// The storage is modified through another type between two calls. The second call creates a new object with the
+// modified bytes, so the compiler must not reuse the value read through the first object or reorder the accesses.
+_CCCL_NOINLINE TEST_HOST_DEVICE_FUNC float reread_after_store(void* p, void* q)
+{
+  const float a                                         = *cuda::std::start_lifetime_as<float>(p);
+  *cuda::std::start_lifetime_as<cuda::std::uint32_t>(q) = 0x40000000u; // 2.0f
+  const float b                                         = *cuda::std::start_lifetime_as<float>(p);
+  return a + b;
+}
+
+TEST_HOST_DEVICE_FUNC void test_reread_after_store()
+{
+  static_assert(sizeof(float) == sizeof(cuda::std::uint32_t));
+  alignas(float) unsigned char buffer[sizeof(float)];
+  const float one = 1.0f;
+  cuda::std::memcpy(buffer, &one, sizeof(float));
+  assert(reread_after_store(buffer, buffer) == 3.0f);
 }
 
 TEST_HOST_DEVICE_FUNC void test()
@@ -112,6 +139,12 @@ TEST_HOST_DEVICE_FUNC void test()
   test_array(words);
   const aggregate aggregates[] = {{1, 2.0f, 'a'}, {3, 4.0f, 'b'}};
   test_array(aggregates);
+
+  // start_lifetime_as_array only requires a complete type
+  alignas(not_implicit_lifetime) unsigned char buffer[sizeof(not_implicit_lifetime) * 2];
+  assert(static_cast<void*>(cuda::std::start_lifetime_as_array<not_implicit_lifetime>(buffer, 2)) == buffer);
+
+  test_reread_after_store();
 }
 
 int main(int, char**)
