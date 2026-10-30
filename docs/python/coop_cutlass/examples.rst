@@ -36,3 +36,9 @@ defined results against a CPU reference. The :doc:`Programming Guide
 The :download:`debugger walkthrough <debugger_walkthrough.py>` compares
 Direct and Transpose tile copies. It compiles once and executes the compiled
 callable twice; see :ref:`cuda.coop.cutlass.debugger_walkthrough`.
+
+The :download:`minimal CuTe DSL integration example
+<cutlass_integration_example.py>` calls ``cub::BlockReduce`` from a CuTe
+kernel using only the DSL's own interfaces, without ``cuda.coop.cutlass``.
+It isolates the integration mechanisms for review; see
+:doc:`cutlass_integration_example`.

@@ -55,6 +55,7 @@ its controls.
    api
    examples
    developer_guide
+   cutlass_integration_example
    configuration
    faqs
    glossary
