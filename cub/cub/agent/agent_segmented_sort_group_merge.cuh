@@ -86,9 +86,7 @@ struct group_merge_expansion
   using shape_for_bin = typename bin_selection<Bin>::type;
 };
 
-// Adapted from call_group_merge_runtime_impl (sort_block_combined.cuh) and
-// merge_warp_groups_runtime (merge_warp_groups.cuh) in the LRB prototype.
-// This ascending numeric worker omits the FP-twiddle and half-presort paths.
+// Sort segments cooperatively using thread-local sorting and merges across threads.
 // Warp work units have independent scratch and never use CTA barriers.
 template <typename PolicyGetter>
 struct group_merge_implementation
@@ -100,7 +98,7 @@ struct group_merge_implementation
   static_assert(policy.block_threads % 32 == 0);
   static_assert(is_warp || policy.min_threads >= 64);
   static_assert(policy.block_threads % policy.max_threads == 0);
-  static_assert(policy.min_ipt >= 5 && policy.max_ipt <= 15, "GroupMerge workers support IPT 5..15");
+  static_assert(policy.min_ipt >= 9 && policy.max_ipt <= 15, "GroupMerge workers support IPT 9..15");
 
   // Dynamic shared memory for key exchange/merging, including one prefetch slot per work unit.
   template <typename Key>
@@ -121,11 +119,9 @@ struct group_merge_implementation
     }
   }
 
-  // Sort each cooperating group's segment: load, sort thread-local runs, merge, and store.
+  // Obtain a segment ID from the queue slot, load the segment, sort thread-local runs,
+  // merge across cooperating threads, and write the valid keys back.
   // A slot of ~0u masks an unused group while keeping its threads in synchronization.
-  // NaN ordering is unspecified; -0 and +0 compare equal and their relative order
-  // is not guaranteed. This does not match radix-sort ordering used for large
-  // segments in DeviceSegmentedSort. Decide the contract before public dispatch.
   template <int ItemsPerThread, typename Key, typename BeginIterator, typename EndIterator>
   _CCCL_DEVICE_API static void sort_segment(
     unsigned slot,
@@ -238,21 +234,9 @@ struct group_merge_implementation
     Key* out,
     Key* scratch)
   {
-    // Match the source workers: select a fixed register-array size with a switch.
+    // Select the fixed-size per-thread arrays for the chosen IPT.
     switch (config.items_per_thread)
     {
-      case 5:
-        sort_segment<5>(slot, config, bins, begins, ends, in, out, scratch);
-        break;
-      case 6:
-        sort_segment<6>(slot, config, bins, begins, ends, in, out, scratch);
-        break;
-      case 7:
-        sort_segment<7>(slot, config, bins, begins, ends, in, out, scratch);
-        break;
-      case 8:
-        sort_segment<8>(slot, config, bins, begins, ends, in, out, scratch);
-        break;
       case 9:
         sort_segment<9>(slot, config, bins, begins, ends, in, out, scratch);
         break;
