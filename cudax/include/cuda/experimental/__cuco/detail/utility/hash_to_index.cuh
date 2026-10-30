@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___CUCO_DETAIL_UTILITY_PROBE_INDEX_CUH
-#define _CUDAX___CUCO_DETAIL_UTILITY_PROBE_INDEX_CUH
+#ifndef _CUDAX___CUCO_DETAIL_UTILITY_HASH_TO_INDEX_CUH
+#define _CUDAX___CUCO_DETAIL_UTILITY_HASH_TO_INDEX_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -43,14 +43,15 @@ namespace cuda::experimental::cuco::detail
 //! @param[in] __upper_bound Positive exclusive upper bound
 //! @return An index in `[0, __upper_bound)`
 template <class _SizeType, class _HashType>
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _SizeType __probe_index(_HashType __hash, _SizeType __upper_bound) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _SizeType
+__hash_to_index(_HashType __hash, _SizeType __upper_bound) noexcept
 {
   using __unsigned_size        = ::cuda::std::make_unsigned_t<_SizeType>;
   constexpr auto __hash_bytes  = sizeof(_HashType);
   constexpr auto __index_bytes = sizeof(_SizeType);
   if constexpr (__hash_bytes > sizeof(::cuda::std::uint64_t))
   {
-    return ::cuda::experimental::cuco::detail::__probe_index(static_cast<__unsigned_size>(__hash), __upper_bound);
+    return ::cuda::experimental::cuco::detail::__hash_to_index(static_cast<__unsigned_size>(__hash), __upper_bound);
   }
   else if constexpr (__hash_bytes == sizeof(::cuda::std::uint32_t) && __index_bytes == sizeof(::cuda::std::uint64_t))
   {
@@ -90,13 +91,13 @@ template <class _SizeType, class _HashType>
 //! @return An index in `[0, __upper_bound)`
 template <class _SizeType>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _SizeType
-__probe_index(const ::cuda::std::array<::cuda::std::uint64_t, 2>& __hash, _SizeType __upper_bound) noexcept
+__hash_to_index(const ::cuda::std::array<::cuda::std::uint64_t, 2>& __hash, _SizeType __upper_bound) noexcept
 {
   using __unsigned_size = ::cuda::std::make_unsigned_t<_SizeType>;
-  return ::cuda::experimental::cuco::detail::__probe_index(static_cast<__unsigned_size>(__hash[0]), __upper_bound);
+  return ::cuda::experimental::cuco::detail::__hash_to_index(static_cast<__unsigned_size>(__hash[0]), __upper_bound);
 }
 } // namespace cuda::experimental::cuco::detail
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___CUCO_DETAIL_UTILITY_PROBE_INDEX_CUH
+#endif // _CUDAX___CUCO_DETAIL_UTILITY_HASH_TO_INDEX_CUH
