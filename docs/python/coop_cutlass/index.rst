@@ -45,7 +45,8 @@ Start with the :doc:`Programming Guide <programming_guide>` for a complete
 prefix-sum kernel and :doc:`concepts` for participation, layouts, ownership,
 and storage. The :doc:`examples` page links executable programs with CPU
 reference checks. The :doc:`API reference <api>` lists every operation and
-its controls.
+its controls. Developers new to CUTLASS can read :doc:`cutlass_primer`
+before the :doc:`Developer Guide <developer_guide>`.
 
 .. toctree::
    :maxdepth: 2
@@ -55,6 +56,7 @@ its controls.
    api
    examples
    developer_guide
+   cutlass_primer
    cutlass_integration_example
    configuration
    faqs
