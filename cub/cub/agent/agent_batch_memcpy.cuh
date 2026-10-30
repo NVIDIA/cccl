@@ -22,7 +22,6 @@
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_exchange.cuh>
 #include <cub/block/block_load.cuh>
-#include <cub/block/block_raking_layout.cuh>
 #include <cub/block/block_run_length_decode.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/it_traits.cuh>
@@ -644,11 +643,11 @@ private:
 
   // Both prefix callbacks must be invoked by a full warp: BLevBuffScanPrefixCallbackOpT by the first warp and
   // BLevBlockScanPrefixCallbackOpT by BlockBLevTileCountScanT. Also, buffers requiring warp-level collaboration are
-  // only processed if the block has at least one full warp.
-  static_assert(BlockRakingLayout<int, static_cast<int>(BLOCK_THREADS)>::RAKING_THREADS == warp_threads,
-                "BatchedCopyPolicy: lookback.small_buffer.threads_per_block: the decoupled look-back needs a full warp "
-                "to enter the block-scan prefix callback, and BlockScan uses raking here, so the raking layout must "
-                "yield 32 raking threads");
+  // processed by all warps of the block, so the block must not have a partial warp.
+  static_assert(BLOCK_THREADS % warp_threads == 0,
+                "BatchedCopyPolicy: lookback.small_buffer.threads_per_block must be a multiple of 32, since the "
+                "decoupled look-back needs a full warp to enter the block-scan prefix callback and buffers requiring "
+                "warp-level collaboration are processed by full warps");
 
   //-----------------------------------------------------------------------------
   // SHARED MEMORY DECLARATIONS
