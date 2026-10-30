@@ -68,7 +68,11 @@ template <class _Tp>
   static_assert(is_implicit_lifetime_v<_Tp>, "start_lifetime_as requires an implicit-lifetime type");
 #endif // _CCCL_BUILTIN_IS_IMPLICIT_LIFETIME
   static_assert(sizeof(_Tp) > 0, "start_lifetime_as requires a complete type");
+#if defined(_CCCL_BUILTIN_START_LIFETIME_AS)
+  return _CCCL_BUILTIN_START_LIFETIME_AS(_Tp, __ptr);
+#else // ^^^ _CCCL_BUILTIN_START_LIFETIME_AS ^^^ / vvv !_CCCL_BUILTIN_START_LIFETIME_AS vvv
   return static_cast<_Tp*>(::cuda::std::__start_lifetime_as_barrier(__ptr));
+#endif // ^^^ !_CCCL_BUILTIN_START_LIFETIME_AS ^^^
 }
 
 // Arrays are always implicit-lifetime types, so only the element type's completeness is required
@@ -76,57 +80,62 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API _Tp* __start_lifetime_as_array_impl(void* __ptr, size_t __count) noexcept
 {
   static_assert(sizeof(_Tp) > 0, "start_lifetime_as_array requires a complete type");
+#if defined(_CCCL_BUILTIN_START_LIFETIME_AS_ARRAY)
+  return _CCCL_BUILTIN_START_LIFETIME_AS_ARRAY(_Tp, __ptr, __count);
+#else // ^^^ _CCCL_BUILTIN_START_LIFETIME_AS_ARRAY ^^^ / vvv !_CCCL_BUILTIN_START_LIFETIME_AS_ARRAY vvv
   if (__count == 0)
   {
     return static_cast<_Tp*>(__ptr);
   }
   return static_cast<_Tp*>(::cuda::std::__start_lifetime_as_barrier(__ptr));
+#endif // ^^^ !_CCCL_BUILTIN_START_LIFETIME_AS_ARRAY ^^^
 }
 
+// Like in libstdc++ and the MSVC STL, these are not [[nodiscard]], since they can be called just to start the lifetime
 template <class _Tp>
-[[nodiscard]] _CCCL_API _Tp* start_lifetime_as(void* __ptr) noexcept
+_CCCL_API _Tp* start_lifetime_as(void* __ptr) noexcept
 {
   return ::cuda::std::__start_lifetime_as_impl<_Tp>(__ptr);
 }
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API const _Tp* start_lifetime_as(const void* __ptr) noexcept
+_CCCL_API const _Tp* start_lifetime_as(const void* __ptr) noexcept
 {
   return ::cuda::std::__start_lifetime_as_impl<_Tp>(const_cast<void*>(__ptr));
 }
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API volatile _Tp* start_lifetime_as(volatile void* __ptr) noexcept
+_CCCL_API volatile _Tp* start_lifetime_as(volatile void* __ptr) noexcept
 {
   return ::cuda::std::__start_lifetime_as_impl<_Tp>(const_cast<void*>(__ptr));
 }
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API const volatile _Tp* start_lifetime_as(const volatile void* __ptr) noexcept
+_CCCL_API const volatile _Tp* start_lifetime_as(const volatile void* __ptr) noexcept
 {
   return ::cuda::std::__start_lifetime_as_impl<_Tp>(const_cast<void*>(__ptr));
 }
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API _Tp* start_lifetime_as_array(void* __ptr, size_t __count) noexcept
+_CCCL_API _Tp* start_lifetime_as_array(void* __ptr, size_t __count) noexcept
 {
   return ::cuda::std::__start_lifetime_as_array_impl<_Tp>(__ptr, __count);
 }
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API const _Tp* start_lifetime_as_array(const void* __ptr, size_t __count) noexcept
+_CCCL_API const _Tp* start_lifetime_as_array(const void* __ptr, size_t __count) noexcept
 {
   return ::cuda::std::__start_lifetime_as_array_impl<_Tp>(const_cast<void*>(__ptr), __count);
 }
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API volatile _Tp* start_lifetime_as_array(volatile void* __ptr, size_t __count) noexcept
+_CCCL_API volatile _Tp* start_lifetime_as_array(volatile void* __ptr, size_t __count) noexcept
 {
   return ::cuda::std::__start_lifetime_as_array_impl<_Tp>(const_cast<void*>(__ptr), __count);
 }
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API const volatile _Tp* start_lifetime_as_array(const volatile void* __ptr, size_t __count) noexcept
+_CCCL_API const volatile _Tp* start_lifetime_as_array(const volatile void* __ptr, size_t __count) noexcept
 {
   return ::cuda::std::__start_lifetime_as_array_impl<_Tp>(const_cast<void*>(__ptr), __count);
 }
