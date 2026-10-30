@@ -728,7 +728,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
           mutex.unlock();
           if (entrypoint_device != device)
           {
-            CubDebug(cudaSetDevice(entrypoint_device));
+            static_cast<void>(CubDebug(cudaSetDevice(entrypoint_device)));
           }
           return error;
         }
