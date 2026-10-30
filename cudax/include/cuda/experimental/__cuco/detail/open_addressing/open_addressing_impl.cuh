@@ -30,6 +30,7 @@
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__container/buffer.h>
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__functional/always_true_false.h>
 #include <cuda/__hierarchy/level_dimensions.h>
 #include <cuda/__iterator/constant_iterator.h>
 #include <cuda/__iterator/counting_iterator.h>
@@ -41,7 +42,6 @@
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -297,8 +297,10 @@ public:
   template <class _InputIt, class _Ref>
   _CCCL_HOST_API __size_type insert(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _Ref __container_ref)
   {
+    // Unconditional operations pass `always_true`, which ignores the stencil, so the kernels neither
+    // load nor test a stencil value.
     return insert_if(
-      __stream, __first, __last, ::cuda::constant_iterator<bool>{true}, ::cuda::std::identity{}, __container_ref);
+      __stream, __first, __last, ::cuda::constant_iterator<bool>{true}, ::cuda::always_true{}, __container_ref);
   }
 
   //! @brief Inserts keys in `[first, last)` whose stencil satisfies `pred`.
@@ -340,7 +342,7 @@ public:
   _CCCL_HOST_API void insert_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _Ref __container_ref)
   {
     insert_if_async(
-      __stream, __first, __last, ::cuda::constant_iterator<bool>{true}, ::cuda::std::identity{}, __container_ref);
+      __stream, __first, __last, ::cuda::constant_iterator<bool>{true}, ::cuda::always_true{}, __container_ref);
   }
 
   //! @brief Asynchronously inserts keys in `[first, last)` whose stencil satisfies `pred`.
@@ -455,7 +457,7 @@ public:
       __first,
       __last,
       ::cuda::constant_iterator<bool>{true},
-      ::cuda::std::identity{},
+      ::cuda::always_true{},
       __output_begin,
       __container_ref);
   }
@@ -499,10 +501,11 @@ public:
     }
   }
 
-  //! @brief Asynchronously finds payloads for keys in `[first, last)` whose stencil satisfies `pred`.
+  //! @brief Asynchronously finds keys in `[first, last)` whose stencil satisfies `pred`.
   //!
-  //! For each key `first[i]` with `pred(stencil[i]) == true` that is present, the associated payload is
-  //! written to the corresponding output position; otherwise the empty value sentinel is written.
+  //! For each key `first[i]` with `pred(stencil[i]) == true` that is present, the associated payload
+  //! (or the stored key for containers without payloads) is written to the corresponding output
+  //! position; otherwise the empty value (or empty key) sentinel is written.
   //!
   //! @throws cuda_error if the query operation fails to launch
   template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
@@ -530,10 +533,11 @@ public:
       __stream, __config, __kernel, __first, __num_keys, __stencil, __pred, __output_begin, __container_ref);
   }
 
-  //! @brief Asynchronously finds the payloads for keys in `[first, last)`.
+  //! @brief Asynchronously finds the keys in `[first, last)`.
   //!
-  //! For each key that is present, the associated payload is written to the corresponding output
-  //! position; for each key that is absent, the empty value sentinel is written instead.
+  //! For each key that is present, the associated payload (or the stored key for containers without
+  //! payloads) is written to the corresponding output position; for each key that is absent, the
+  //! empty value (or empty key) sentinel is written instead.
   //!
   //! @throws cuda_error if the query operation fails to launch
   template <class _InputIt, class _OutputIt, class _Ref>
@@ -545,7 +549,7 @@ public:
       __first,
       __last,
       ::cuda::constant_iterator<bool>{true},
-      ::cuda::std::identity{},
+      ::cuda::always_true{},
       __output_begin,
       __container_ref);
   }
