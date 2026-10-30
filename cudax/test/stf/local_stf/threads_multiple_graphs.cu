@@ -35,6 +35,10 @@ void worker(
   };
 
   gctx.finalize();
+
+  // The main thread unfreezes the data in its own stream, which does not depend on this one. Wait
+  // for the work submitted here before the thread returns.
+  cuda_safe_call(cudaStreamSynchronize(stream));
 }
 
 int main()
@@ -58,7 +62,7 @@ int main()
       A[i][j] = (i + j);
     }
 
-    lA[i] = ctx.logical_data(A[i].data(), {N}).set_symbol("A_" + ::std::to_string(i));
+    lA[i] = ctx.logical_data(A[i].data(), N).set_symbol("A_" + ::std::to_string(i));
   }
 
   ::std::vector<int> B(N);
@@ -67,7 +71,7 @@ int main()
   {
     B[j] = (17 * j + 3);
   }
-  lB = ctx.logical_data(B.data(), {N}).set_symbol("B");
+  lB = ctx.logical_data(B.data(), N).set_symbol("B");
 
   ::std::vector<frozen_logical_data<slice<int>>> fA(NTHREADS);
   for (int i = 0; i < NTHREADS; i++)
@@ -80,6 +84,7 @@ int main()
   fB.set_automatic_unfreeze(true);
 
   ::std::vector<::std::thread> threads;
+  threads.reserve(NTHREADS);
   for (int i = 0; i < NTHREADS; ++i)
   {
     threads.emplace_back(worker, ctx, i, fA[i], fB, ::std::ref(mutex));

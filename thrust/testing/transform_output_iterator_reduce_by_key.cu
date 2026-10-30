@@ -43,8 +43,7 @@ struct TestTransformOutputIteratorReduceByKey
       thrust::discard_iterator<T>{},
       thrust::make_transform_output_iterator(d_result.begin(), ::cuda::std::negate<T>()));
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 };
-VariableUnitTest<TestTransformOutputIteratorReduceByKey, SignedIntegralTypes>
-  TestTransformOutputIteratorReduceByKeyInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTransformOutputIteratorReduceByKey, SignedIntegralTypes);

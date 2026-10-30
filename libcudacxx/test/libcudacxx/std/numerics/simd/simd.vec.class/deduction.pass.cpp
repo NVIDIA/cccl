@@ -10,6 +10,9 @@
 
 // CTAD is unsupported on MSVC.
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // UNSUPPORTED: msvc
 
 // <cuda/std/__simd_>
@@ -32,49 +35,35 @@
 // deduction from range
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_range_deduction()
+TEST_HOST_DEVICE_FUNC constexpr void test_range_deduction()
 {
-  cuda::std::array<T, N> arr{};
-  for (int i = 0; i < N; ++i)
-  {
-    arr[i] = static_cast<T>(i);
-  }
+  auto arr = make_iota_array<T, N>(0);
   simd::basic_vec vec(arr);
   static_assert(cuda::std::is_same_v<typename decltype(vec)::value_type, T>);
   static_assert(decltype(vec)::size() == N);
-  for (int i = 0; i < N; ++i)
-  {
-    assert(vec[i] == static_cast<T>(i));
-  }
+  assert(vec == arr);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 // deduction from fixed-extent span
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_span_deduction()
+TEST_HOST_DEVICE_FUNC constexpr void test_span_deduction()
 {
-  cuda::std::array<T, N> arr{};
-  for (int i = 0; i < N; ++i)
-  {
-    arr[i] = static_cast<T>(i);
-  }
+  auto arr = make_iota_array<T, N>(0);
 
   const cuda::std::span<T, N> values(arr);
   simd::basic_vec vec(values);
   static_assert(cuda::std::is_same_v<typename decltype(vec)::value_type, T>);
   static_assert(decltype(vec)::size() == N);
-  for (int i = 0; i < N; ++i)
-  {
-    assert(vec[i] == static_cast<T>(i));
-  }
+  assert(vec == arr);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 // deduction from basic_mask
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_mask_deduction()
+TEST_HOST_DEVICE_FUNC constexpr void test_mask_deduction()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   Mask mask(true);
@@ -88,7 +77,7 @@ TEST_FUNC constexpr void test_mask_deduction()
 
 //----------------------------------------------------------------------------------------------------------------------
 
-TEST_FUNC constexpr bool test_deduction()
+TEST_HOST_DEVICE_FUNC constexpr bool test_deduction()
 {
   test_range_deduction<int, 1>();
   test_range_deduction<int, 4>();

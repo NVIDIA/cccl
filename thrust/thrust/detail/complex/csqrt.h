@@ -54,9 +54,14 @@ namespace detail::complex
 {
 using thrust::complex;
 
+// `b - b` and `(b - b) / (b - b)` are deliberate IEEE-754 idioms, not redundant
+// expressions: the former yields +0.0 for a finite b and propagates a NaN, and the latter
+// is 0/0, which produces a NaN and raises the invalid flag. C99 Annex G specifies the
+// complex functions in these terms.
+// NOLINTBEGIN(misc-redundant-expression)
 _CCCL_HOST_DEVICE inline complex<double> csqrt(const complex<double>& z)
 {
-  complex<double> result;
+  complex<double> result{};
   double a, b;
   double t;
   int scale;
@@ -131,7 +136,7 @@ _CCCL_HOST_DEVICE inline complex<double> csqrt(const complex<double>& z)
   else
   {
     t      = ::cuda::std::sqrt((-a + ::cuda::std::hypot(a, b)) * 0.5);
-    result = complex<double>(fabs(b) / (2 * t), ::cuda::std::copysign(t, b));
+    result = complex<double>(::cuda::std::fabs(b) / (2 * t), ::cuda::std::copysign(t, b));
   }
 
   /* Rescale. */
@@ -148,6 +153,7 @@ _CCCL_HOST_DEVICE inline complex<double> csqrt(const complex<double>& z)
     return (result);
   }
 }
+// NOLINTEND(misc-redundant-expression)
 } // namespace detail::complex
 
 template <typename ValueType>

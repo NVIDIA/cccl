@@ -41,8 +41,6 @@ template <typename Op, typename T>
 static void unary(nvbench::state& state, nvbench::type_list<T>)
 try
 {
-  using OffsetT = int64_t;
-
   const auto n = state.get_int64("Elements{io}");
   thrust::device_vector<T> in(n, 1337);
   thrust::device_vector<T> out(n, thrust::no_init);
@@ -51,7 +49,7 @@ try
   state.add_global_memory_reads<T>(n);
   state.add_global_memory_writes<T>(n);
 
-  bench_transform(state, ::cuda::std::tuple{in.begin()}, out.begin(), static_cast<OffsetT>(n), Op{});
+  bench_transform(state, cuda::std::tuple{in.begin()}, out.begin(), n, Op{});
 }
 catch (const std::bad_alloc&)
 {
@@ -78,7 +76,7 @@ using opmath_t = float;
 struct relu_op
 {
   template <typename T>
-  _CCCL_API auto operator()(T value) const
+  _CCCL_HOST_DEVICE_API auto operator()(T value) const
   {
     return static_cast<T>(static_cast<opmath_t>(value) > opmath_t{0} ? static_cast<opmath_t>(value) : opmath_t{0});
   }
@@ -90,7 +88,7 @@ BENCHMARK_UNARY(relu);
 struct sigmoid_op
 {
   template <typename T>
-  _CCCL_API auto operator()(T value) const
+  _CCCL_HOST_DEVICE_API auto operator()(T value) const
   {
     return static_cast<T>(opmath_t{1} / (opmath_t{1} + ::cuda::std::exp(-static_cast<opmath_t>(value))));
   }
@@ -100,7 +98,7 @@ BENCHMARK_UNARY(sigmoid);
 struct tanh_op
 {
   template <typename T>
-  _CCCL_API auto operator()(T value) const
+  _CCCL_HOST_DEVICE_API auto operator()(T value) const
   {
     return ::cuda::std::tanh(value);
   }
@@ -112,7 +110,7 @@ BENCHMARK_UNARY(tanh);
 struct gelu_op
 {
   template <typename T>
-  _CCCL_API auto operator()(T value) const
+  _CCCL_HOST_DEVICE_API auto operator()(T value) const
   {
     return static_cast<opmath_t>(value) * opmath_t{0.5}
          * (opmath_t{1} + ::cuda::std::erf(static_cast<opmath_t>(value) * opmath_t{M_SQRT1_2}));
@@ -123,7 +121,7 @@ BENCHMARK_UNARY(gelu);
 struct sin_op
 {
   template <typename T>
-  _CCCL_API auto operator()(T value) const
+  _CCCL_HOST_DEVICE_API auto operator()(T value) const
   {
     return ::cuda::std::sin(value);
   }
@@ -133,7 +131,7 @@ BENCHMARK_UNARY(sin);
 struct exp_op
 {
   template <typename T>
-  _CCCL_API auto operator()(T value) const
+  _CCCL_HOST_DEVICE_API auto operator()(T value) const
   {
     return ::cuda::std::exp(value);
   }
@@ -144,8 +142,6 @@ template <typename Op, typename T>
 static void binary(nvbench::state& state, nvbench::type_list<T>)
 try
 {
-  using OffsetT = int64_t;
-
   const auto n = state.get_int64("Elements{io}");
   thrust::device_vector<T> in1(n, 1337);
   thrust::device_vector<T> in2(n, 42);
@@ -155,7 +151,7 @@ try
   state.add_global_memory_reads<T>(2 * n);
   state.add_global_memory_writes<T>(n);
 
-  bench_transform(state, ::cuda::std::tuple{in1.begin(), in2.begin()}, out.begin(), static_cast<OffsetT>(n), Op{});
+  bench_transform(state, cuda::std::tuple{in1.begin(), in2.begin()}, out.begin(), n, Op{});
 }
 catch (const std::bad_alloc&)
 {
@@ -195,7 +191,7 @@ BENCHMARK_BINARY(ge);
 struct fmin_op
 {
   template <typename T>
-  _CCCL_API auto operator()(T a, T b) const
+  _CCCL_HOST_DEVICE_API auto operator()(T a, T b) const
   {
     return ::cuda::std::fmin(a, b);
   }
@@ -205,7 +201,7 @@ BENCHMARK_BINARY(fmin);
 struct fmax_op
 {
   template <typename T>
-  _CCCL_API auto operator()(T a, T b) const
+  _CCCL_HOST_DEVICE_API auto operator()(T a, T b) const
   {
     return ::cuda::std::fmax(a, b);
   }

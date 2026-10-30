@@ -3,10 +3,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-import cupy as cp
-import numba.cuda
 import numpy as np
 import pytest
+from _utils.device_array import DeviceArray
 
 import cuda.compute
 from cuda.compute import OpKind
@@ -19,6 +18,8 @@ from cuda.compute.iterators import (
     CountingIterator,
     ReverseIterator,
     TransformIterator,
+    TransformOutputIterator,
+    ZipIterator,
 )
 
 
@@ -43,9 +44,9 @@ def test_counting_iterator_equality():
 
 
 def test_cache_modified_input_iterator_equality():
-    ary1 = cp.asarray([0, 1, 2], dtype="int32")
-    ary2 = cp.asarray([3, 4, 5], dtype="int32")
-    ary3 = cp.asarray([0, 1, 2], dtype="int64")
+    ary1 = DeviceArray.from_numpy(np.asarray([0, 1, 2], dtype="int32"))
+    ary2 = DeviceArray.from_numpy(np.asarray([3, 4, 5], dtype="int32"))
+    ary3 = DeviceArray.from_numpy(np.asarray([0, 1, 2], dtype="int64"))
 
     it1 = CacheModifiedInputIterator(ary1, "stream")
     it2 = CacheModifiedInputIterator(ary1, "stream")
@@ -76,8 +77,8 @@ def test_equality_transform_iterator():
     # op3 has a different name than op1, so should have a different kind
     assert it1.kind != it3.kind
 
-    ary1 = cp.asarray([0, 1, 2])
-    ary2 = cp.asarray([3, 4, 5])
+    ary1 = DeviceArray.from_numpy(np.asarray([0, 1, 2]))
+    ary2 = DeviceArray.from_numpy(np.asarray([3, 4, 5]))
     it4 = TransformIterator(ary1, op1)
     it5 = TransformIterator(ary1, op1)
     it6 = TransformIterator(ary1, op2)
@@ -91,46 +92,10 @@ def test_equality_transform_iterator():
     assert it4.kind != it7.kind
 
 
-@pytest.fixture(
-    params=[
-        # Each tuple is (shape, layout, array_type)
-        ((5,), "C", "cupy"),
-        ((5,), "F", "cupy"),
-        ((5,), "C", "numba"),
-        ((5,), "F", "numba"),
-        ((4, 3), "C", "cupy"),
-        ((4, 3), "F", "cupy"),
-        ((4, 3), "C", "numba"),
-        ((4, 3), "F", "numba"),
-        ((3, 4, 2), "C", "cupy"),
-        ((3, 4, 2), "F", "cupy"),
-        ((3, 4, 2), "C", "numba"),
-        ((3, 4, 2), "F", "numba"),
-    ],
-    ids=lambda param: f"{param[2]}_{param[1]}_{len(param[0])}D",
-)
-def reverse_iterator_array(request):
-    shape, layout, array_type = request.param
-
-    # Create base numpy array
-    base_array = np.arange(np.prod(shape))
-    base_array[-1] = -999
-    base_array = base_array.reshape(shape)
-    if layout == "F":
-        base_array = np.asfortranarray(base_array)
-
-    if array_type == "cupy":
-        array = cp.array(base_array)
-    else:
-        array = numba.cuda.to_device(base_array)
-
-    return array
-
-
 def test_reverse_input_iterator_equality():
-    ary1 = cp.asarray([0, 1, 2], dtype="int32")
-    ary2 = cp.asarray([3, 4, 5], dtype="int32")
-    ary3 = cp.asarray([0, 1, 2], dtype="int64")
+    ary1 = DeviceArray.from_numpy(np.asarray([0, 1, 2], dtype="int32"))
+    ary2 = DeviceArray.from_numpy(np.asarray([3, 4, 5], dtype="int32"))
+    ary3 = DeviceArray.from_numpy(np.asarray([0, 1, 2], dtype="int64"))
 
     it1 = ReverseIterator(ary1)
     it2 = ReverseIterator(ary1)
@@ -142,9 +107,9 @@ def test_reverse_input_iterator_equality():
 
 
 def test_reverse_output_iterator_equality():
-    ary1 = cp.asarray([0, 1, 2], dtype="int32")
-    ary2 = cp.asarray([3, 4, 5], dtype="int32")
-    ary3 = cp.asarray([0, 1, 2], dtype="int64")
+    ary1 = DeviceArray.from_numpy(np.asarray([0, 1, 2], dtype="int32"))
+    ary2 = DeviceArray.from_numpy(np.asarray([3, 4, 5], dtype="int32"))
+    ary3 = DeviceArray.from_numpy(np.asarray([0, 1, 2], dtype="int64"))
 
     it1 = ReverseIterator(ary1)
     it2 = ReverseIterator(ary1)
@@ -205,14 +170,20 @@ def test_transform_iterator_with_lambda():
         CountingIterator(np.int32(first_item)), lambda x: x * 2
     )
     h_init = np.array([0], dtype=np.int32)
-    d_output = cp.empty(1, dtype=np.int32)
+    d_output = DeviceArray.empty(1, np.int32)
 
     # Perform reduction on the transformed iterator
-    cuda.compute.reduce_into(transform_it, d_output, OpKind.PLUS, num_items, h_init)
+    cuda.compute.reduce_into(
+        d_in=transform_it,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
 
     # Expected: sum of (10*2, 11*2, ..., 109*2) = 2 * sum(10..109)
     expected = 2 * sum(range(first_item, first_item + num_items))
-    assert d_output.get()[0] == expected
+    assert d_output.copy_to_host()[0] == expected
 
 
 def test_transform_iterator_with_zip_iterator():
@@ -220,8 +191,10 @@ def test_transform_iterator_with_zip_iterator():
     from cuda.compute.iterators import ZipIterator
 
     # Create a ZipIterator with two int32 arrays
-    d_a = cp.arange(10, dtype=np.int32)
-    d_b = cp.arange(100, 110, dtype=np.int32)
+    h_a = np.arange(10, dtype=np.int32)
+    h_b = np.arange(100, 110, dtype=np.int32)
+    d_a = DeviceArray.from_numpy(h_a)
+    d_b = DeviceArray.from_numpy(h_b)
 
     zip_it = ZipIterator(d_a, d_b)
 
@@ -236,11 +209,120 @@ def test_transform_iterator_with_zip_iterator():
 
     # Use it in a reduction
     h_init = np.array([0], dtype=np.int32)
-    d_output = cp.empty(1, dtype=np.int32)
+    d_output = DeviceArray.empty(1, np.int32)
 
-    cuda.compute.reduce_into(transform_it, d_output, OpKind.PLUS, len(d_a), h_init)
+    cuda.compute.reduce_into(
+        d_in=transform_it,
+        d_out=d_output,
+        num_items=len(h_a),
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
 
-    result = d_output.get()[0]
-    expected = (d_a + d_b).sum().get()
+    result = d_output.copy_to_host()[0]
+    expected = (h_a + h_b).sum()
 
+    assert result == expected, f"Expected {expected}, got {result}"
+
+
+def test_transform_output_iterator_with_stateful_closure():
+    """Numba-path counterpart of test_raw_op.py's
+    test_cpp_stateful_op_with_transform_output_iterator: a stateful Python
+    callable (closing over a device array) used as a TransformOutputIterator's
+    transform op must receive its state."""
+    scale_factor = DeviceArray.from_numpy(np.array([3], dtype=np.int32))
+
+    def scale_by_state(x):
+        return x * scale_factor[0]
+
+    num_items = 10
+    h_input = np.arange(num_items, dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, np.int32)
+
+    output_iterator = TransformOutputIterator(
+        d_output, scale_by_state, output_value_type=cuda.compute.types.int32
+    )
+
+    h_init = np.array(0, dtype=np.int32)
+    cuda.compute.reduce_into(
+        d_in=d_input,
+        d_out=output_iterator,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    result = d_output.copy_to_host()[0]
+    expected = int(np.sum(h_input)) * 3
+    assert result == expected, f"Expected {expected}, got {result}"
+
+
+def test_transform_iterator_with_stateful_closure():
+    """Numba-path counterpart of test_raw_op.py's
+    test_cpp_stateful_op_with_transform_input_iterator."""
+    scale_factor = DeviceArray.from_numpy(np.array([3], dtype=np.int32))
+
+    def scale_by_state(x):
+        return x * scale_factor[0]
+
+    num_items = 10
+    h_input = np.arange(num_items, dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, np.int32)
+
+    transform_iter = TransformIterator(
+        d_input, scale_by_state, value_type=cuda.compute.types.int32
+    )
+
+    h_init = np.array(0, dtype=np.int32)
+    cuda.compute.reduce_into(
+        d_in=transform_iter,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    result = d_output.copy_to_host()[0]
+    expected = int(np.sum(h_input)) * 3
+    assert result == expected, f"Expected {expected}, got {result}"
+
+
+def test_transform_iterator_stateful_closure_nested_in_zip():
+    """Numba-path counterpart of test_raw_op.py's
+    test_cpp_stateful_op_transform_nested_in_zip: a stateful TransformIterator
+    nested inside ZipIterator, which treats its children's state opaquely."""
+    scale_factor = DeviceArray.from_numpy(np.array([3], dtype=np.int32))
+
+    def scale_by_state(x):
+        return x * scale_factor[0]
+
+    def add_pair(pair):
+        return pair[0] + pair[1]
+
+    num_items = 10
+    h_x = np.arange(num_items, dtype=np.int32)
+    h_y = np.arange(num_items, dtype=np.int32) * 100
+    d_x = DeviceArray.from_numpy(h_x)
+    d_y = DeviceArray.from_numpy(h_y)
+
+    scaled_x = TransformIterator(
+        d_x, scale_by_state, value_type=cuda.compute.types.int32
+    )
+    zipped = ZipIterator(scaled_x, d_y)
+    combined = TransformIterator(zipped, add_pair)
+
+    d_output = DeviceArray.empty(1, np.int32)
+    h_init = np.array(0, dtype=np.int32)
+    cuda.compute.reduce_into(
+        d_in=combined,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    result = d_output.copy_to_host()[0]
+    expected = int((h_x * 3 + h_y).sum())
     assert result == expected, f"Expected {expected}, got {result}"

@@ -27,7 +27,6 @@
 #include <cuda/std/__chrono/month.h>
 #include <cuda/std/__chrono/month_day.h>
 #include <cuda/std/__chrono/system_clock.h>
-#include <cuda/std/__chrono/time_point.h>
 #include <cuda/std/__chrono/year.h>
 #include <cuda/std/__chrono/year_month.h>
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()

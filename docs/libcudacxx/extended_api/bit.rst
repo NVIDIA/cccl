@@ -8,7 +8,11 @@ Bit
    :maxdepth: 1
 
    bit/bitmask
+   bit/bit_msb
+   bit/bit_ffs
+   bit/bit_fns
    bit/bit_reverse
+   bit/bit_trunc
    bit/bitfield_insert
    bit/bitfield_extract
 
@@ -26,10 +30,30 @@ Bit
      - CCCL 3.0.0
      - CUDA 13.0
 
+   * - :ref:`bit_msb <libcudacxx-extended-api-bit-bit_msb>`
+     - Find the most significant set bit
+     - CCCL 3.7.0
+     - CUDA 13.7
+
+   * - :ref:`bit_ffs <libcudacxx-extended-api-bit-bit_ffs>`
+     - Find the first (least significant) set bit
+     - CCCL 3.5.0
+     - CUDA 13.5
+
+   * - :ref:`bit_fns <libcudacxx-extended-api-bit-bit_fns>`
+     - Find the n-th set bit
+     - CCCL 3.6.0
+     - CUDA 13.6
+
    * - :ref:`bit_reverse <libcudacxx-extended-api-bit-bit_reverse>`
      - Reverse the order of bits
      - CCCL 3.0.0
      - CUDA 13.0
+
+   * - :ref:`bit_trunc <libcudacxx-extended-api-bit-bit_trunc>`
+     - Retain the least significant bits
+     - CCCL 3.7.0
+     - CUDA 13.7
 
    * - :ref:`bitfield_insert <libcudacxx-extended-api-bit-bitfield_insert>`
      - Insert a bitfield

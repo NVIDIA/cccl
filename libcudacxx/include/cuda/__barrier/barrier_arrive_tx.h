@@ -52,7 +52,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_arrive_tx_is_not_supported_befor
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
   _CCCL_ASSERT(__transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
 
-  barrier<thread_scope_block>::arrival_token __token = {};
+  barrier<thread_scope_block>::arrival_token __token = {}; // NOLINT(misc-const-correctness)
   // On architectures pre-sm90, arrive_tx is not supported.
   // We do not check for the statespace of the barrier here. This is
   // on purpose. This allows debugging tools like memcheck/racecheck

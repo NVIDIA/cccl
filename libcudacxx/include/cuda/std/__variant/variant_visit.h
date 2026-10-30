@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
@@ -65,9 +66,10 @@ struct __variant
   }
 
   // Terminal function call with all indexes determined
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Visitor, class... _Vs, size_t... _ProcessedIndices>
   [[nodiscard]] _CCCL_API static constexpr decltype(auto) __visit_impl(
-    index_sequence<_ProcessedIndices...>, integer_sequence<size_t>, const size_t, _Visitor&& __visitor, _Vs&&... __vs)
+    index_sequence<_ProcessedIndices...>, index_sequence<>, const size_t, _Visitor&& __visitor, _Vs&&... __vs)
   {
     return ::cuda::std::__invoke(
       ::cuda::std::forward<_Visitor>(__visitor),
@@ -141,7 +143,7 @@ struct __variant
     // the common function pointer implementation, as the compiler will abort if the return types do not match.
     const size_t __first_index = __get_runtime_index<sizeof...(_Vs), 0>(__vs...);
     return __visit_impl(
-      integer_sequence<size_t>{},
+      index_sequence<>{},
       index_sequence<(remove_cvref_t<_Vs>::__size() - 1)...>{},
       __first_index,
       __make_value_visitor(::cuda::std::forward<_Visitor>(__visitor)),
@@ -153,7 +155,7 @@ struct __variant
   {
     const size_t __first_index = __get_runtime_index<sizeof...(_Vs), 0>(__vs...);
     return __visit_impl(
-      integer_sequence<size_t>{},
+      index_sequence<>{},
       index_sequence<(remove_cvref_t<_Vs>::__size() - 1)...>{},
       __first_index,
       __make_value_visitor<_Rp>(::cuda::std::forward<_Visitor>(__visitor)),
@@ -169,6 +171,7 @@ struct __variant
   template <class _Visitor>
   struct __value_visitor
   {
+    _CCCL_EXEC_CHECK_DISABLE
     template <class... _Alts>
     [[nodiscard]] _CCCL_API constexpr decltype(auto) operator()(_Alts&&... __alts) const
     {
@@ -182,6 +185,7 @@ struct __variant
   template <class _Rp, class _Visitor>
   struct __value_visitor_return_type
   {
+    _CCCL_EXEC_CHECK_DISABLE
     template <class... _Alts>
     [[nodiscard]] _CCCL_API constexpr _Rp operator()(_Alts&&... __alts) const
     {
@@ -195,6 +199,7 @@ struct __variant
   template <class _Visitor>
   struct __value_visitor_return_type<void, _Visitor>
   {
+    _CCCL_EXEC_CHECK_DISABLE
     template <class... _Alts>
     _CCCL_API constexpr void operator()(_Alts&&... __alts) const
     {

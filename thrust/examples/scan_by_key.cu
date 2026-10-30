@@ -31,7 +31,7 @@ int main()
   int flags[]  = {1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0}; // segments represented with head flags
   int values[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}; // values corresponding to each key
 
-  int N = sizeof(keys) / sizeof(int); // number of elements
+  const int N = sizeof(keys) / sizeof(int); // number of elements
 
   // copy input data to device
   thrust::device_vector<int> d_keys(keys, keys + N);

@@ -20,8 +20,8 @@ using namespace cuda::experimental::stf;
 template <typename T>
 __global__ void setup(slice<T> s)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int ind = tid; ind < s.size(); ind += nthreads)
   {
@@ -32,8 +32,8 @@ __global__ void setup(slice<T> s)
 template <typename T>
 __global__ void check(T* x, size_t n)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int ind = tid; ind < n; ind += nthreads)
   {
@@ -48,7 +48,7 @@ void run()
   const size_t n = 12;
 
   double* dX;
-  cuda_safe_call(cudaMalloc((void**) &dX, n * sizeof(double)));
+  cuda_safe_call(cudaMalloc(reinterpret_cast<void**>(&dX), n * sizeof(double)));
 
   // We here provide device addresses and memory node 1 (which is assumed to
   // be device 0)

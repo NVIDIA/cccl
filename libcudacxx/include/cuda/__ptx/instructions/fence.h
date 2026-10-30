@@ -22,8 +22,10 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/__ptx/ptx_dot_variants.h>
 #include <cuda/__ptx/ptx_helper_functions.h>
+// IWYU pragma: end_exports
 #include <cuda/std/cstdint>
 
 #include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
@@ -39,6 +41,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_PTX
 #include <cuda/__ptx/instructions/generated/fence_proxy_alias.h>
 #include <cuda/__ptx/instructions/generated/fence_proxy_async.h>
 #include <cuda/__ptx/instructions/generated/fence_proxy_async_generic_sync_restrict.h>
+#include <cuda/__ptx/instructions/generated/fence_proxy_fabric_fabric_alias.h>
+#include <cuda/__ptx/instructions/generated/fence_proxy_fabric_generic_alias.h>
+#include <cuda/__ptx/instructions/generated/fence_proxy_generic_fabric_alias.h>
 #include <cuda/__ptx/instructions/generated/fence_proxy_tensormap_generic.h>
 #include <cuda/__ptx/instructions/generated/fence_sync_restrict.h>
 

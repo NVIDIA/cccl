@@ -22,12 +22,6 @@ using value_types = nvbench::type_list<
 #if _CCCL_HAS_FLOAT128()
   __float128,
 #endif
-#if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
-  cuda::std::complex<__half>,
-#endif
-#if _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
-  cuda::std::complex<__nv_bfloat16>,
-#endif
   cuda::std::complex<float>,
   cuda::std::complex<double>>;
 

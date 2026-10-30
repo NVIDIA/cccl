@@ -21,8 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/__launch/configuration.h>
 #include <cuda/__launch/host_launch.h>
 #include <cuda/__launch/launch.h>
+// IWYU pragma: end_exports
 
 #endif //_CUDA_LAUNCH

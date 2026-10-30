@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 #include <cuda/std/__memory_>
 #if defined(_LIBCUDACXX_HAS_STRING)
@@ -19,7 +19,7 @@
 
 #include "test_macros.h"
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     cuda::std::unique_ptr<int> p1 = cuda::std::make_unique<int>(1);

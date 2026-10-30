@@ -39,7 +39,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! \c __basic_any<_DstInterface>.
 _CCCL_TEMPLATE(class _DstInterface, class _SrcInterface)
 _CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface>, __basic_any<_DstInterface>>)
-[[nodiscard]] _CCCL_API auto __dynamic_any_cast(__basic_any<_SrcInterface>&& __src) -> __basic_any<_DstInterface>
+[[nodiscard]] _CCCL_HOST_DEVICE_API auto __dynamic_any_cast(__basic_any<_SrcInterface>&& __src)
+  -> __basic_any<_DstInterface>
 {
   auto __dst = __basic_any_access::__make<_DstInterface>();
   __basic_any_access::__cast_to(::cuda::std::move(__src), __dst);
@@ -49,7 +50,8 @@ _CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface>, __basic_any<_DstInt
 //! \overload
 _CCCL_TEMPLATE(class _DstInterface, class _SrcInterface)
 _CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface>&, __basic_any<_DstInterface>>)
-[[nodiscard]] _CCCL_API auto __dynamic_any_cast(__basic_any<_SrcInterface>& __src) -> __basic_any<_DstInterface>
+[[nodiscard]] _CCCL_HOST_DEVICE_API auto __dynamic_any_cast(__basic_any<_SrcInterface>& __src)
+  -> __basic_any<_DstInterface>
 {
   auto __dst = __basic_any_access::__make<_DstInterface>();
   __basic_any_access::__cast_to(__src, __dst);
@@ -59,7 +61,8 @@ _CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface>&, __basic_any<_DstIn
 //! \overload
 _CCCL_TEMPLATE(class _DstInterface, class _SrcInterface)
 _CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface> const&, __basic_any<_DstInterface>>)
-[[nodiscard]] _CCCL_API auto __dynamic_any_cast(__basic_any<_SrcInterface> const& __src) -> __basic_any<_DstInterface>
+[[nodiscard]] _CCCL_HOST_DEVICE_API auto __dynamic_any_cast(__basic_any<_SrcInterface> const& __src)
+  -> __basic_any<_DstInterface>
 {
   auto __dst = __basic_any_access::__make<_DstInterface>();
   __basic_any_access::__cast_to(__src, __dst);
@@ -75,7 +78,8 @@ _CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface> const&, __basic_any<
 //! \c __basic_any<_DstInterface>.
 _CCCL_TEMPLATE(class _DstInterface, class _SrcInterface)
 _CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface>*, __basic_any<_DstInterface>>)
-[[nodiscard]] _CCCL_API auto __dynamic_any_cast(__basic_any<_SrcInterface>* __src) -> __basic_any<_DstInterface>
+[[nodiscard]] _CCCL_HOST_DEVICE_API auto __dynamic_any_cast(__basic_any<_SrcInterface>* __src)
+  -> __basic_any<_DstInterface>
 {
   static_assert(
     ::cuda::std::is_pointer_v<_DstInterface>,
@@ -89,7 +93,8 @@ _CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface>*, __basic_any<_DstIn
 //! \overload
 _CCCL_TEMPLATE(class _DstInterface, class _SrcInterface)
 _CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface> const*, __basic_any<_DstInterface>>)
-[[nodiscard]] _CCCL_API auto __dynamic_any_cast(__basic_any<_SrcInterface> const* __src) -> __basic_any<_DstInterface>
+[[nodiscard]] _CCCL_HOST_DEVICE_API auto __dynamic_any_cast(__basic_any<_SrcInterface> const* __src)
+  -> __basic_any<_DstInterface>
 {
   static_assert(
     ::cuda::std::is_pointer_v<_DstInterface>,

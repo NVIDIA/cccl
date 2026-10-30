@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
+
 // <cmath>
 
 // clang-format off
@@ -20,6 +22,12 @@
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
+
+// numeric_limits::has_denorm has been deprecated since C++23
+#if _CCCL_STD_VER >= 2023
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+#endif // _CCCL_STD_VER >= 2023
 
 template <class T>
 TEST_FUNC constexpr void test_isnan(const T pos, bool expected)

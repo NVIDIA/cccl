@@ -6,3 +6,4 @@ API Reference
 
    compute_api
    coop_api
+   stf_api

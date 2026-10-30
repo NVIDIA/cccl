@@ -1,6 +1,9 @@
 .idea/
 build*/
 .cache
+# Shared caches for the cu12/cu13 Python wheel builds (ccache + CPM source).
+.ccache/
+.cpm-cache/
 .aws
 .config
 _deps/catch2-src/
@@ -18,4 +21,8 @@ __pycache__
 *.pyd
 wheelhouse/
 bench-artifacts/
+# Local results written by pytest-benchmark --benchmark-save.
+.benchmarks/
 CLAUDE.local.md
+.codegraph/*
+.cursor/rules/codegraph.mdc

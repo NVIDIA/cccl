@@ -10,9 +10,6 @@
 
 // UNSUPPORTED: pre-sm-70
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
-
 // clang-cuda < 20 errors out with "fatal error: error in backend: Cannot cast between two non-generic address spaces"
 // XFAIL: clang-14 && !nvcc
 // XFAIL: clang-15 && !nvcc
@@ -20,6 +17,9 @@
 // XFAIL: clang-17 && !nvcc
 // XFAIL: clang-18 && !nvcc
 // XFAIL: clang-19 && !nvcc
+
+// UNSUPPORTED: force-tile
+// error: asm statement unsupported in tile mode
 
 #include "pipeline_memcpy_async_thread_scope_generic.h"
 

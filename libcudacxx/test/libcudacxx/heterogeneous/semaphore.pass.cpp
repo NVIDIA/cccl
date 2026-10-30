@@ -6,10 +6,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: asm statement is unsupported in tile code
-
 // UNSUPPORTED: nvrtc, pre-sm-70
+
+// UNSUPPORTED: force-tile
+// error: asm statement unsupported in tile mode
 
 // uncomment for a really verbose output detailing what test steps are being launched
 #define DEBUG_TESTERS
@@ -25,7 +25,7 @@ struct release
   static constexpr size_t threadcount = N;
 
   template <typename Semaphore>
-  TEST_FUNC static void perform(Semaphore& semaphore)
+  TEST_HOST_DEVICE_FUNC static void perform(Semaphore& semaphore)
   {
     semaphore.release(1);
   }
@@ -37,7 +37,7 @@ struct acquire
   static constexpr size_t threadcount = N;
 
   template <typename Semaphore>
-  TEST_FUNC static void perform(Semaphore& semaphore)
+  TEST_HOST_DEVICE_FUNC static void perform(Semaphore& semaphore)
   {
     semaphore.acquire();
   }

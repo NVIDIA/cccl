@@ -6,6 +6,7 @@
 #include <cub/device/device_topk.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/fill.h>
 #include <thrust/sort.h>
 
 #include <cuda/__execution/determinism.h>
@@ -18,8 +19,9 @@
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_device_topk_common.cuh"
 #include "catch2_test_launch_helper.h"
+#include "cub_test_macros.h"
 #include "cuda/__iterator/tabulate_output_iterator.h"
-#include <c2h/catch2_test_helper.h>
+#include <c2h/catch2_allocation_failure.h>
 #include <c2h/extended_types.h>
 
 template <cub::detail::topk::select SelectDirection,
@@ -70,7 +72,7 @@ using key_types =
 
 using custom_key_types = c2h::type_list<topk_custom_key_t>;
 
-C2H_TEST("DeviceTopK::{Min,Max}Keys work as expected", "[keys][topk][device]", key_types, directions)
+CUB_TEST("DeviceTopK::{Min,Max}Keys work as expected", "[keys][topk][device]", CUB_SMALL, key_types, directions)
 {
   using key_t              = c2h::get<0, TestType>;
   constexpr auto direction = c2h::get<1, TestType>::value;
@@ -111,7 +113,31 @@ C2H_TEST("DeviceTopK::{Min,Max}Keys work as expected", "[keys][topk][device]", k
   REQUIRE(expected_keys == keys_out);
 }
 
-C2H_TEST("DeviceTopK::{Min,Max}Keys work with iterators", "[keys][topk][device]", key_types)
+CUB_TEST("DeviceTopK::{Min,Max}Keys handle empty input and zero k", "[keys][topk][device]", CUB_SMALL, directions)
+{
+  using key_t              = int;
+  using num_items_t        = cuda::std::uint32_t;
+  constexpr auto direction = c2h::get<0, TestType>::value;
+  constexpr key_t sentinel = 42;
+
+  const num_items_t num_items = GENERATE(num_items_t{0}, num_items_t{8});
+  const num_items_t k         = GENERATE(num_items_t{0}, num_items_t{1}, num_items_t{16});
+  CAPTURE(num_items, k, direction);
+
+  c2h::device_vector<key_t> keys_in(8, key_t{1});
+  c2h::device_vector<key_t> keys_out(16, sentinel);
+
+  topk_keys<direction>(
+    thrust::raw_pointer_cast(keys_in.data()), thrust::raw_pointer_cast(keys_out.data()), num_items, k);
+
+  // k is capped to num_items, and nothing must be written beyond the selected keys
+  const auto num_selected = static_cast<int>((cuda::std::min) (num_items, k));
+  c2h::device_vector<key_t> expected(16, sentinel);
+  thrust::fill_n(expected.begin(), num_selected, key_t{1});
+  REQUIRE(keys_out == expected);
+}
+
+CUB_TEST("DeviceTopK::{Min,Max}Keys work with iterators", "[keys][topk][device]", CUB_SMALL, key_types)
 {
   using key_t              = c2h::get<0, TestType>;
   using num_items_t        = cuda::std::uint32_t;
@@ -152,7 +178,8 @@ C2H_TEST("DeviceTopK::{Min,Max}Keys work with iterators", "[keys][topk][device]"
   }
 }
 
-C2H_TEST("DeviceTopK::{Min,Max}Keys works with a large number of items", "[keys][topk][device]", num_items_types)
+CUB_TEST(
+  "DeviceTopK::{Min,Max}Keys works with a large number of items", "[keys][topk][device]", CUB_LARGE, num_items_types)
 try
 {
   using key_t              = cuda::std::uint32_t;
@@ -188,13 +215,14 @@ try
   auto keys_expected_it = cuda::std::make_reverse_iterator(keys_in + num_items);
   REQUIRE(thrust::equal(keys_out.cbegin(), keys_out.cend(), keys_expected_it));
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
+  c2h::skip_if_allocation_failure();
 }
 
-C2H_TEST("DeviceTopK::{Min,Max}Keys works with custom keys and decomposers",
+CUB_TEST("DeviceTopK::{Min,Max}Keys works with custom keys and decomposers",
          "[keys][topk][device]",
+         CUB_SMALL,
          custom_key_types,
          directions)
 {
@@ -265,8 +293,9 @@ C2H_TEST("DeviceTopK::{Min,Max}Keys works with custom keys and decomposers",
   REQUIRE(expected_keys == keys_out);
 }
 
-C2H_TEST("DeviceTopK::{Min,Max}Keys works for different offset types for num_items and k",
+CUB_TEST("DeviceTopK::{Min,Max}Keys works for different offset types for num_items and k",
          "[keys][topk][device]",
+         CUB_LARGE,
          k_items_types)
 try
 {
@@ -303,7 +332,7 @@ try
   // Verify results
   check_result_helper.check_all_results_correct();
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
+  c2h::skip_if_allocation_failure();
 }

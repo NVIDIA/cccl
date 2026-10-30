@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
+// UNSUPPORTED: force-tile
 // error: bit field read/write is unsupported in tile code
 
 // <cuda/std/format>
@@ -32,7 +32,7 @@ struct TestSpecChronoValues
   bool month_name;
 };
 
-TEST_FUNC TestSpecChronoValues make_test_spec_chrono_values() noexcept
+TEST_HOST_DEVICE_FUNC TestSpecChronoValues make_test_spec_chrono_values() noexcept
 {
   TestSpecChronoValues value{};
   value.alignment            = cuda::std::__fmt_spec_alignment::__center;
@@ -46,7 +46,7 @@ TEST_FUNC TestSpecChronoValues make_test_spec_chrono_values() noexcept
   return value;
 }
 
-TEST_FUNC void verify_spec_chrono(const cuda::std::__fmt_spec_chrono& value) noexcept
+TEST_HOST_DEVICE_FUNC void verify_spec_chrono(const cuda::std::__fmt_spec_chrono& value) noexcept
 {
   const auto ref = make_test_spec_chrono_values();
   assert(value.__alignment_ == cuda::std::to_underlying(ref.alignment));
@@ -59,7 +59,7 @@ TEST_FUNC void verify_spec_chrono(const cuda::std::__fmt_spec_chrono& value) noe
   assert(value.__month_name_ == ref.month_name);
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   static_assert(sizeof(cuda::std::__fmt_spec_chrono) == 2);
 

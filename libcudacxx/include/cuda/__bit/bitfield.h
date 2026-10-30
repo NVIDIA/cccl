@@ -22,11 +22,12 @@
 #endif // no system header
 
 #include <cuda/__bit/bitmask.h>
+#include <cuda/std/__bit/shl.h>
+#include <cuda/std/__bit/shr.h>
 #include <cuda/std/__limits/numeric_limits.h>
-#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/conditional.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -36,27 +37,28 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 #  if __cccl_ptx_isa >= 200
 
 [[nodiscard]]
-_CCCL_DEVICE_API inline uint32_t __bfi(uint32_t __dest, uint32_t __source, int __start, int __width) noexcept
+_CCCL_CONST
+  _CCCL_DEVICE_API inline uint32_t __bfi(uint32_t __dest, uint32_t __source, int __start, int __width) noexcept
 {
   asm("bfi.b32 %0, %1, %2, %3, %4;" : "=r"(__dest) : "r"(__source), "r"(__dest), "r"(__start), "r"(__width));
   return __dest;
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline uint64_t
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline uint64_t
 __bfi(uint64_t __dest, uint64_t __source, int __start, int __width) noexcept
 {
   asm("bfi.b64 %0, %1, %2, %3, %4;" : "=l"(__dest) : "l"(__source), "l"(__dest), "r"(__start), "r"(__width));
   return __dest;
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline uint32_t __bfe(uint32_t __value, int __start, int __width) noexcept
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline uint32_t __bfe(uint32_t __value, int __start, int __width) noexcept
 {
   uint32_t __ret;
   asm("bfe.u32 %0, %1, %2, %3;" : "=r"(__ret) : "r"(__value), "r"(__start), "r"(__width));
   return __ret;
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline uint64_t __bfe(uint64_t __value, int __start, int __width) noexcept
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline uint64_t __bfe(uint64_t __value, int __start, int __width) noexcept
 {
   uint64_t __ret;
   asm("bfe.u64 %0, %1, %2, %3;" : "=l"(__ret) : "l"(__value), "r"(__start), "r"(__width));
@@ -91,7 +93,7 @@ _CCCL_API constexpr _Tp bitfield_insert(const _Tp __dest, const _Tp __source, in
   }
 #endif // !_CCCL_TILE_COMPILATION()
   auto __mask = ::cuda::bitmask<_Tp>(__start, __width);
-  return (::cuda::__shl(__source, __start) & __mask) | (__dest & ~__mask);
+  return (::cuda::std::shl(__source, static_cast<unsigned>(__start)) & __mask) | (__dest & ~__mask);
 }
 
 template <typename _Tp>
@@ -117,7 +119,7 @@ template <typename _Tp>
     }
   }
 #endif // !_CCCL_TILE_COMPILATION()
-  return ::cuda::__shr(__value, __start) & ::cuda::bitmask<_Tp>(0, __width);
+  return ::cuda::std::shr(__value, static_cast<unsigned>(__start)) & ::cuda::bitmask<_Tp>(0, __width);
 }
 
 _CCCL_END_NAMESPACE_CUDA

@@ -253,7 +253,7 @@ static_assert(!cuda::std::is_invocable_v<RangeREndT, REndFunction&&>);
 
 static_assert(cuda::std::is_invocable_v<RangeREndT, REndFunction const&>);
 static_assert(!cuda::std::is_invocable_v<RangeREndT, REndFunction&&>);
-static_assert(!cuda::std::is_invocable_v<RangeREndT, REndFunction&>);
+static_assert(cuda::std::is_invocable_v<RangeREndT, REndFunction&>);
 static_assert(cuda::std::is_invocable_v<RangeCREndT, REndFunction const&>);
 static_assert(cuda::std::is_invocable_v<RangeCREndT, REndFunction&>);
 
@@ -377,7 +377,7 @@ TEST_FUNC constexpr bool testREndFunction()
   assert(cuda::std::ranges::rend(a) == &a.x);
   assert(cuda::std::ranges::crend(a) == &a.x);
   REndFunction aa{};
-  static_assert(!cuda::std::is_invocable_v<RangeREndT, decltype((aa))>);
+  assert(cuda::std::ranges::rend(aa) == &aa.x);
   assert(cuda::std::ranges::crend(aa) == &aa.x);
 
   REndFunctionByValue b{};
@@ -392,28 +392,28 @@ TEST_FUNC constexpr bool testREndFunction()
   assert(cuda::std::ranges::rend(d) == &d.x);
   assert(cuda::std::ranges::crend(d) == &d.x);
   REndFunctionReturnsEmptyPtr dd{};
-  static_assert(!cuda::std::is_invocable_v<RangeREndT, decltype((dd))>);
+  assert(cuda::std::ranges::rend(dd) == &dd.x);
   assert(cuda::std::ranges::crend(dd) == &dd.x);
 
   const REndFunctionWithDataMember e{};
   assert(cuda::std::ranges::rend(e) == &e.x);
   assert(cuda::std::ranges::crend(e) == &e.x);
   REndFunctionWithDataMember ee{};
-  static_assert(!cuda::std::is_invocable_v<RangeREndT, decltype((ee))>);
+  assert(cuda::std::ranges::rend(ee) == &ee.x);
   assert(cuda::std::ranges::crend(ee) == &ee.x);
 
   const REndFunctionWithPrivateEndMember f{};
   assert(cuda::std::ranges::rend(f) == &f.y);
   assert(cuda::std::ranges::crend(f) == &f.y);
   REndFunctionWithPrivateEndMember ff{};
-  static_assert(!cuda::std::is_invocable_v<RangeREndT, decltype((ff))>);
+  assert(cuda::std::ranges::rend(ff) == &ff.y);
   assert(cuda::std::ranges::crend(ff) == &ff.y);
 
   const RBeginMemberEndFunction g{};
   assert(cuda::std::ranges::rend(g) == &g.x);
   assert(cuda::std::ranges::crend(g) == &g.x);
   RBeginMemberEndFunction gg{};
-  static_assert(!cuda::std::is_invocable_v<RangeREndT, decltype((gg))>);
+  assert(cuda::std::ranges::rend(gg) == &gg.x);
   assert(cuda::std::ranges::crend(gg) == &gg.x);
 
   return true;
@@ -680,6 +680,63 @@ _CCCL_GLOBAL_CONSTANT struct NoThrowEndThrowingBegin
 static_assert(!noexcept(cuda::std::ranges::rend(ntetb)));
 static_assert(!noexcept(cuda::std::ranges::crend(ntetb)));
 
+// Copying the iterator returned by `begin()` may throw. `begin()` itself is still noexcept.
+template <bool NoThrowCopy>
+struct RangeWithCopy
+{
+  TEST_FUNC CopyMayThrowIterator<NoThrowCopy> begin() const noexcept;
+  TEST_FUNC CopyMayThrowIterator<NoThrowCopy> end() const noexcept;
+};
+
+_CCCL_GLOBAL_CONSTANT RangeWithCopy<false> throwing_copy{};
+static_assert(cuda::std::same_as<decltype(cuda::std::ranges::rend(throwing_copy)),
+                                 cuda::std::reverse_iterator<CopyMayThrowIterator<false>>>);
+static_assert(!noexcept(cuda::std::ranges::rend(throwing_copy)));
+static_assert(!noexcept(cuda::std::ranges::crend(throwing_copy)));
+
+_CCCL_GLOBAL_CONSTANT RangeWithCopy<true> nothrow_copy{};
+static_assert(noexcept(cuda::std::ranges::rend(nothrow_copy)));
+static_assert(noexcept(cuda::std::ranges::crend(nothrow_copy)));
+
+// `begin`/`end` already return reverse iterators. `rend` must wrap them again.
+struct ReverseEndpointRange
+{
+  int buf_[4] = {1, 2, 3, 4};
+
+  TEST_FUNC constexpr cuda::std::reverse_iterator<int*> begin()
+  {
+    return cuda::std::reverse_iterator{buf_ + 4};
+  }
+  TEST_FUNC constexpr cuda::std::reverse_iterator<int*> end()
+  {
+    return cuda::std::reverse_iterator{buf_};
+  }
+  TEST_FUNC constexpr cuda::std::reverse_iterator<const int*> begin() const
+  {
+    return cuda::std::reverse_iterator{buf_ + 4};
+  }
+  TEST_FUNC constexpr cuda::std::reverse_iterator<const int*> end() const
+  {
+    return cuda::std::reverse_iterator{buf_};
+  }
+};
+
+TEST_FUNC constexpr bool testReverseEndpoints()
+{
+  ReverseEndpointRange range{};
+  static_assert(cuda::std::same_as<decltype(cuda::std::ranges::rend(range)),
+                                   cuda::std::reverse_iterator<cuda::std::reverse_iterator<int*>>>);
+  static_assert(cuda::std::same_as<decltype(cuda::std::ranges::crend(range)),
+                                   cuda::std::reverse_iterator<cuda::std::reverse_iterator<const int*>>>);
+  auto last = cuda::std::ranges::rend(range);
+  --last;
+  assert(*last == 4);
+  auto clast = cuda::std::ranges::crend(range);
+  --clast;
+  assert(*clast == 4);
+  return true;
+}
+
 #if TEST_STD_VER > 2017
 // Test ADL-proofing.
 struct Incomplete;
@@ -709,6 +766,9 @@ int main(int, char**)
 
   testBeginEnd();
   static_assert(testBeginEnd());
+
+  testReverseEndpoints();
+  static_assert(testReverseEndpoints());
 
 #if !TEST_COMPILER(MSVC2019)
   unused(ntmre);

@@ -22,8 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/__chrono/duration.h>
-#include <cuda/std/__chrono/time_point.h>
 #include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/ratio>
 
 #include <cuda/std/__cccl/prologue.h>

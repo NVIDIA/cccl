@@ -1,6 +1,19 @@
 cccl_get_c2h()
 cccl_get_cudatoolkit()
 
+# Since CMake 4.4, the CUDA::cufilt target is available, before that we need to find it manually.
+if ("${CMAKE_VERSION}" VERSION_GREATER_EQUAL "4.4")
+  set(cudax_cufilt_lib CUDA::cufilt)
+else()
+  find_library(
+    cudax_cufilt_lib
+    "cufilt"
+    PATHS "${CUDAToolkit_LIBRARY_DIR}"
+    REQUIRED
+    NO_DEFAULT_PATH
+  )
+endif()
+
 ## cudax_add_test
 #
 # Add a catch2 test executable and register it with ctest.
@@ -16,7 +29,10 @@ function(cudax_add_catch2_test target_name_var test_name) # ARGN=test sources
   set(test_sources ${ARGN})
 
   cccl_add_executable(${test_target} SOURCES ${ARGN} ADD_CTEST)
-  target_include_directories(${test_target} PRIVATE "common")
+  target_include_directories(
+    ${test_target}
+    PRIVATE "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/common"
+  )
   target_link_libraries(
     ${test_target}
     PRIVATE #
@@ -77,7 +93,9 @@ cudax_add_catch2_test(test_target stream
 
 cudax_add_catch2_test(test_target misc
     utility/ensure_current_device.cu
+    utility/unstable_unique.cu
     utility/optionally_static.cu
+    utility/scope.cu
 )
 
 cudax_add_catch2_test(test_target containers
@@ -89,24 +107,12 @@ cudax_add_catch2_test(test_target copy_bytes
     copy_bytes/mdspan_d2h_h2d_relaxed.cu
 )
 
-cudax_add_catch2_test(test_target copy
-    copy/copy.cu
-    copy/copy_edge_cases.cu
-    copy/copy_vectorize.cu
-    copy/copy_vectorize_5d.cu
-    copy/copy_llm.cu
-    copy/copy_nvmath.cu
-    copy/copy_nvmath_transpose.cu
-    copy/copy_shared_memory.cu
+cudax_add_catch2_test(test_target fill_bytes
+    fill_bytes/fill_bytes_mdspan.cu
+    fill_bytes/fill_bytes_mdspan_example.cu
 )
 
-cudax_add_catch2_test(test_target cuco
-    cuco/utility/test_hashers.cu
-)
-
-cudax_add_catch2_test(test_target cuco_hyperloglog ${cudax_target}
-  cuco/hyperloglog/test_hyperloglog.cu
-)
+add_subdirectory(cuco)
 
 cudax_add_catch2_test(test_target green_context
     green_context/green_ctx_smoke.cu
@@ -129,45 +135,21 @@ cudax_add_catch2_test(test_target algorithm
     algorithm/copy.cu
 )
 
-cudax_add_catch2_test(test_target group.mapping.group_as
-    group/mapping/group_as.cu
+cudax_add_catch2_test(test_target hierarchy.implicit_hierarchy
+    hierarchy/implicit_hierarchy.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
 
-cudax_add_catch2_test(test_target group.mapping.group_by
-    group/mapping/group_by.cu
-)
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+add_subdirectory(coop)
+add_subdirectory(multi_gpu)
 
-cudax_add_catch2_test(test_target group.synchronizer.lane_synchronizer
-    group/synchronizer/lane_synchronizer.cu
-)
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
-cudax_add_catch2_test(test_target group.synchronizer.barrier_synchronizer
-    group/synchronizer/barrier_synchronizer.cu
-)
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
-cudax_add_catch2_test(test_target group.cooperative_algorithm
-    group/cooperative_algorithm.cu
-)
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
-cudax_add_catch2_test(test_target group.group
-    group/group.cu
-)
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
-cudax_add_catch2_test(test_target group.make_this_group
-    group/make_this_group.cu
-)
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
-cudax_add_catch2_test(test_target group.this_group
-    group/this_group.cu
-)
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+# Disable cudax::demangle testing on windows, due to:
+#   error LNK2038: mismatch detected for 'RuntimeLibrary': value 'MT_StaticRelease' doesn't match value
+#                  'MD_DynamicRelease' in catch2_runner.cu.obj
+# This is caused by catch2_runner.cu.obj using dynamic runtime and cu++filt.lib using static runtime.
+if (NOT WIN32)
+  cudax_add_catch2_test(test_target binutils.demangle binutils/demangle.cu)
+  target_link_libraries(${test_target} PRIVATE ${cudax_cufilt_lib})
+endif()
 
 if (cudax_ENABLE_CUFILE)
   cudax_add_catch2_test(test_target cufile.driver_attributes

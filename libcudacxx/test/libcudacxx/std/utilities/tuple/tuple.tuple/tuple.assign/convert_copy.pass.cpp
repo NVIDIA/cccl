@@ -3,10 +3,11 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/std/tuple>
+// <tuple>
 
 // template <class... Types> class tuple;
 
@@ -22,19 +23,43 @@ struct B
 {
   int id_;
 
-  TEST_FUNC explicit B(int i = 0)
+  TEST_FUNC constexpr explicit B(int i = 0)
       : id_(i)
   {}
 };
 
 struct D : B
 {
-  TEST_FUNC explicit D(int i = 0)
+  TEST_FUNC constexpr explicit D(int i = 0)
       : B(i)
   {}
 };
 
-int main(int, char**)
+struct NonAssignable
+{
+  NonAssignable& operator=(NonAssignable const&) = delete;
+  NonAssignable& operator=(NonAssignable&&)      = delete;
+};
+
+struct NothrowCopyAssignable
+{
+  NothrowCopyAssignable(NothrowCopyAssignable const&) = delete;
+  TEST_FUNC constexpr NothrowCopyAssignable& operator=(NothrowCopyAssignable const&) noexcept
+  {
+    return *this;
+  }
+};
+
+struct PotentiallyThrowingCopyAssignable
+{
+  PotentiallyThrowingCopyAssignable(PotentiallyThrowingCopyAssignable const&) = delete;
+  TEST_FUNC constexpr PotentiallyThrowingCopyAssignable& operator=(PotentiallyThrowingCopyAssignable const&)
+  {
+    return *this;
+  }
+};
+
+TEST_FUNC constexpr bool test()
 {
   {
     using T0 = cuda::std::tuple<long>;
@@ -77,7 +102,7 @@ int main(int, char**)
   }
   {
     // Test that tuple evaluates correctly applies an lvalue reference
-    // before evaluating is_assignable (ie 'is_assignable<int&, int&>')
+    // before evaluating is_assignable (i.e. 'is_assignable<int&, int&>')
     // instead of evaluating 'is_assignable<int&&, int&>' which is false.
     int x = 42;
     int y = 43;
@@ -87,5 +112,31 @@ int main(int, char**)
     assert(cuda::std::get<0>(t) == 43);
     assert(&cuda::std::get<0>(t) == &x);
   }
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
+
+  {
+    using T = cuda::std::tuple<int, NonAssignable>;
+    using U = cuda::std::tuple<NonAssignable, int>;
+    static_assert(!cuda::std::is_assignable<T&, U const&>::value);
+    static_assert(!cuda::std::is_assignable<U&, T const&>::value);
+  }
+  {
+    using T0 = cuda::std::tuple<NothrowCopyAssignable, long>;
+    using T1 = cuda::std::tuple<NothrowCopyAssignable, int>;
+    static_assert(cuda::std::is_nothrow_assignable<T0&, T1 const&>::value);
+  }
+  {
+    using T0 = cuda::std::tuple<PotentiallyThrowingCopyAssignable, long>;
+    using T1 = cuda::std::tuple<PotentiallyThrowingCopyAssignable, int>;
+    static_assert(cuda::std::is_assignable<T0&, T1 const&>::value);
+    static_assert(!cuda::std::is_nothrow_assignable<T0&, T1 const&>::value);
+  }
+
   return 0;
 }

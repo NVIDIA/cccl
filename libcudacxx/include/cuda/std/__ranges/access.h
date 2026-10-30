@@ -21,10 +21,10 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/class_or_enum.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__ranges/enable_borrowed_range.h>
-#include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
@@ -41,10 +41,13 @@ _CCCL_CONCEPT __can_borrow = is_lvalue_reference_v<_Tp> || enable_borrowed_range
 // [range.access.begin]
 
 _CCCL_BEGIN_NAMESPACE_CPO(__begin)
-template <class _Tp>
-void begin(_Tp&) = delete;
-template <class _Tp>
-void begin(const _Tp&) = delete;
+
+#if _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51)
+// A deleted declaration suppresses ADL on these compilers.
+_CCCL_HOST_DEVICE void begin();
+#else // ^^^ _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51) ^^^ / vvv deleted declaration vvv
+_CCCL_HOST_DEVICE void begin() = delete;
+#endif // _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51)
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
@@ -85,16 +88,18 @@ struct __fn
   // This has been made valid as a defect report for C++17 onwards, however gcc below 11.0 does not implement it
 #if (!_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 11))
   _CCCL_TEMPLATE(class _Tp)
+  // NOLINTNEXTLINE(bugprone-sizeof-expression)
   _CCCL_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp (&__t)[]) const noexcept
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp (&__t)[]) noexcept
   {
     return __t + 0;
   }
 #endif // (!_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 11))
 
   _CCCL_TEMPLATE(class _Tp, size_t _Np)
+  // NOLINTNEXTLINE(bugprone-sizeof-expression)
   _CCCL_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp (&__t)[_Np]) const noexcept
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp (&__t)[_Np]) noexcept
   {
     return __t + 0;
   }
@@ -102,8 +107,8 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__member_begin<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.begin())))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.begin())))
   {
     return _LIBCUDACXX_AUTO_CAST(__t.begin());
   }
@@ -111,22 +116,22 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__unqualified_begin<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(begin(__t))))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(begin(__t))))
   {
     return _LIBCUDACXX_AUTO_CAST(begin(__t));
   }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES((!__member_begin<_Tp>) _CCCL_AND(!__unqualified_begin<_Tp>))
-  void operator()(_Tp&&) const = delete;
+  void _CCCL_STATIC_CALL_OPERATOR(_Tp&&) = delete;
 
 #if _CCCL_COMPILER(MSVC, <, 19, 23)
   template <class _Tp>
-  void operator()(_Tp (&&)[]) const = delete;
+  void _CCCL_STATIC_CALL_OPERATOR(_Tp (&&)[]) = delete;
 
   template <class _Tp, size_t _Np>
-  void operator()(_Tp (&&)[_Np]) const = delete;
+  void _CCCL_STATIC_CALL_OPERATOR(_Tp (&&)[_Np]) = delete;
 #endif // _CCCL_COMPILER(MSVC, <, 19, 23)
 };
 _CCCL_END_NAMESPACE_CPO
@@ -144,10 +149,13 @@ using iterator_t = decltype(::cuda::std::ranges::begin(::cuda::std::declval<_Tp&
 // [range.access.end]
 
 _CCCL_BEGIN_NAMESPACE_CPO(__end)
-template <class _Tp>
-void end(_Tp&) = delete;
-template <class _Tp>
-void end(const _Tp&) = delete;
+
+#if _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51)
+// A deleted declaration suppresses ADL on these compilers.
+_CCCL_HOST_DEVICE void end();
+#else // ^^^ _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51) ^^^ / vvv deleted declaration vvv
+_CCCL_HOST_DEVICE void end() = delete;
+#endif // _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51)
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
@@ -190,8 +198,9 @@ _CCCL_CONCEPT __unqualified_end = _CCCL_FRAGMENT(__unqualified_end_, _Tp);
 struct __fn
 {
   _CCCL_TEMPLATE(class _Tp, size_t _Np)
+  // NOLINTNEXTLINE(bugprone-sizeof-expression)
   _CCCL_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp (&__t)[_Np]) const noexcept
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp (&__t)[_Np]) noexcept
   {
     return __t + _Np;
   }
@@ -199,8 +208,8 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__member_end<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.end())))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.end())))
   {
     return _LIBCUDACXX_AUTO_CAST(__t.end());
   }
@@ -208,21 +217,22 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__unqualified_end<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(end(__t))))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(end(__t))))
   {
     return _LIBCUDACXX_AUTO_CAST(end(__t));
   }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES((!__member_end<_Tp>) _CCCL_AND(!__unqualified_end<_Tp>))
-  void operator()(_Tp&&) const = delete;
+  void _CCCL_STATIC_CALL_OPERATOR(_Tp&&) = delete;
 
 #if _CCCL_COMPILER(MSVC, <, 19, 23)
   template <class _Tp>
-  void operator()(_Tp (&&)[]) const = delete;
+  void _CCCL_STATIC_CALL_OPERATOR(_Tp (&&)[]) = delete;
 
   template <class _Tp, size_t _Np>
-  void operator()(_Tp (&&)[_Np]) const = delete;
+  void _CCCL_STATIC_CALL_OPERATOR(_Tp (&&)[_Np]) = delete;
 #endif // _CCCL_COMPILER(MSVC, <, 19, 23)
 };
 _CCCL_END_NAMESPACE_CPO
@@ -240,9 +250,9 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_lvalue_reference_v<_Tp&&>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::begin(static_cast<const remove_reference_t<_Tp>&>(__t))))
-      -> decltype(::cuda::std::ranges::begin(static_cast<const remove_reference_t<_Tp>&>(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(
+    noexcept(::cuda::std::ranges::begin(static_cast<const remove_reference_t<_Tp>&>(__t))))
+    -> decltype(::cuda::std::ranges::begin(static_cast<const remove_reference_t<_Tp>&>(__t)))
   {
     return ::cuda::std::ranges::begin(static_cast<const remove_reference_t<_Tp>&>(__t));
   }
@@ -250,9 +260,9 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::begin(static_cast<const _Tp&&>(__t))))
-      -> decltype(::cuda::std::ranges::begin(static_cast<const _Tp&&>(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(::cuda::std::ranges::begin(static_cast<const _Tp&&>(__t))))
+    -> decltype(::cuda::std::ranges::begin(static_cast<const _Tp&&>(__t)))
   {
     return ::cuda::std::ranges::begin(static_cast<const _Tp&&>(__t));
   }
@@ -272,9 +282,9 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_lvalue_reference_v<_Tp&&>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::end(static_cast<const remove_reference_t<_Tp>&>(__t))))
-      -> decltype(::cuda::std::ranges::end(static_cast<const remove_reference_t<_Tp>&>(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(
+    noexcept(::cuda::std::ranges::end(static_cast<const remove_reference_t<_Tp>&>(__t))))
+    -> decltype(::cuda::std::ranges::end(static_cast<const remove_reference_t<_Tp>&>(__t)))
   {
     return ::cuda::std::ranges::end(static_cast<const remove_reference_t<_Tp>&>(__t));
   }
@@ -282,9 +292,9 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::end(static_cast<const _Tp&&>(__t))))
-      -> decltype(::cuda::std::ranges::end(static_cast<const _Tp&&>(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(::cuda::std::ranges::end(static_cast<const _Tp&&>(__t))))
+    -> decltype(::cuda::std::ranges::end(static_cast<const _Tp&&>(__t)))
   {
     return ::cuda::std::ranges::end(static_cast<const _Tp&&>(__t));
   }

@@ -8,7 +8,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#include <catch2/catch_test_macros.hpp>
+#include <c2h/catch2_test_macros.h>
 
 inline thread_local const char* current_nvtx_range_name = nullptr;
 

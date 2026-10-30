@@ -62,7 +62,9 @@ d_output = cp.empty(1, dtype=DataPoint.dtype)
 h_init = DataPoint(0, Stats(0, 0.0))
 
 # Perform the reduction
-cuda.compute.reduce_into(d_input, d_output, sum_with_tuples, num_items, h_init)
+cuda.compute.reduce_into(
+    d_in=d_input, d_out=d_output, num_items=num_items, op=sum_with_tuples, h_init=h_init
+)
 
 # Verify the result
 result = d_output.get()[0]

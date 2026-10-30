@@ -41,7 +41,7 @@ void run()
 
   // Read that value on the host
   ctx.host_launch(var_handle.read())->*[](auto da) {
-    [[maybe_unused]] int result = *da.data_handle();
+    [[maybe_unused]] const int result = *da.data_handle();
     assert(result == 43);
   };
 

@@ -10,10 +10,11 @@
 //
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-90
+// UNSUPPORTED: clang && !nvcc
 
 // UNSUPPORTED: no_execute
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: asm statement is unsupported in tile code
 
 // <cuda/barrier>

@@ -34,8 +34,10 @@
 #  define _CCCL_DLPACK_BELOW(_MAJOR, _MINOR) (!_CCCL_DLPACK_AT_LEAST(_MAJOR, _MINOR))
 
 #  if DLPACK_MAJOR_VERSION != 1
-#    error "Unsupported DLPack version, only version 1 is currently supported"
-#  endif // DLPACK_MAJOR_VERSION != 1
+#    define _CCCL_HAS_DLPACK_VERSION_1() 0
+#  else
+#    define _CCCL_HAS_DLPACK_VERSION_1() 1
+#  endif
 
 #endif // _CCCL_HAS_DLPACK()
 

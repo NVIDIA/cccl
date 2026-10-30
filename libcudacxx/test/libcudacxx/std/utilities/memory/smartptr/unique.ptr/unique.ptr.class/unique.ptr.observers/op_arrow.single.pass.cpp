@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 // <memory>
 
@@ -26,12 +26,12 @@ struct A
 {
   int i_;
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 A()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 A()
       : i_(7)
   {}
 };
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   cuda::std::unique_ptr<A> p(new A);
   assert(p->i_ == 7);

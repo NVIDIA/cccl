@@ -21,9 +21,9 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_arithmetic.h>
-#include <cuda/std/__type_traits/is_null_pointer.h>
-#include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/__type_traits/is_arithmetic.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_null_pointer.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_void.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

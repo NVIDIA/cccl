@@ -25,14 +25,14 @@
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__fwd/allocator.h>
 #include <cuda/std/__host_stdlib/new>
-#include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__memory/addressof.h> // IWYU pragma: keep
 #include <cuda/std/__memory/allocate_at_least.h>
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__new_>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/is_volatile.h>
-#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/forward.h> // IWYU pragma: keep
 #include <cuda/std/cstddef>
 
 #ifdef _CCCL_HAS_CONSTEXPR_ALLOCATION
@@ -42,10 +42,12 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 
 #if _CCCL_STD_VER <= 2017
 // These specializations shouldn't be marked CCCL_DEPRECATED.
@@ -144,12 +146,10 @@ public:
     }
   }
 
-#if _CCCL_STD_VER >= 2023
   [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_CXX20_ALLOCATION allocation_result<_Tp*> allocate_at_least(size_t __n)
   {
     return {allocate(__n), __n};
   }
-#endif // _CCCL_HAS_CONSTEXPR_ALLOCATION
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20_ALLOCATION void deallocate(_Tp* __p, size_t __n) noexcept
@@ -246,12 +246,10 @@ public:
     }
   }
 
-#if _CCCL_STD_VER >= 2023
   [[nodiscard]] _CCCL_API constexpr allocation_result<const _Tp*> allocate_at_least(size_t __n)
   {
     return {allocate(__n), __n};
   }
-#endif // _CCCL_STD_VER >= 2023
 
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void deallocate(const _Tp* __p, size_t __n) noexcept
   {

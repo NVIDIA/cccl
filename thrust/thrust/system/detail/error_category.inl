@@ -40,7 +40,7 @@ bool error_category ::equivalent(int code, const error_condition& condition) con
 
 bool error_category ::equivalent(const error_code& code, int condition) const
 {
-  bool result = (this->operator==(code.category())) && (code.value() == condition);
+  const bool result = (this->operator==(code.category())) && (code.value() == condition);
   return result;
 } // end error_code::equivalent()
 

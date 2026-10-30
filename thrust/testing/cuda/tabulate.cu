@@ -23,45 +23,43 @@ void TestTabulateDevice(ExecutionPolicy exec)
   tabulate_kernel<<<1, 1>>>(exec, v.begin(), v.end(), ::cuda::std::identity{});
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   Vector ref{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   tabulate_kernel<<<1, 1>>>(exec, v.begin(), v.end(), -_1);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   ref = {0, -1, -2, -3, -4};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   tabulate_kernel<<<1, 1>>>(exec, v.begin(), v.end(), _1 * _1 * _1);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   ref = {0, 1, 8, 27, 64};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 }
 
-void TestTabulateDeviceSeq()
+TEST_CASE("TestTabulateDeviceSeq", "[tabulate]")
 {
   TestTabulateDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestTabulateDeviceSeq);
 
-void TestTabulateDeviceDevice()
+TEST_CASE("TestTabulateDeviceDevice", "[tabulate]")
 {
   TestTabulateDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestTabulateDeviceDevice);
 #endif
 
-void TestTabulateCudaStreams()
+TEST_CASE("TestTabulateCudaStreams", "[tabulate]")
 {
   using namespace thrust::placeholders;
   using Vector = thrust::device_vector<int>;
@@ -76,20 +74,19 @@ void TestTabulateCudaStreams()
   cudaStreamSynchronize(s);
 
   Vector ref{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   thrust::tabulate(thrust::cuda::par.on(s), v.begin(), v.end(), -_1);
   cudaStreamSynchronize(s);
 
   ref = {0, -1, -2, -3, -4};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   thrust::tabulate(thrust::cuda::par.on(s), v.begin(), v.end(), _1 * _1 * _1);
   cudaStreamSynchronize(s);
 
   ref = {0, 1, 8, 27, 64};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   cudaStreamSynchronize(s);
 }
-DECLARE_UNITTEST(TestTabulateCudaStreams);

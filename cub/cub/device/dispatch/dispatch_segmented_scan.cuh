@@ -15,26 +15,31 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/arch_dispatch.cuh>
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
-#include <cub/detail/type_traits.cuh>
+#include <cub/detail/logging.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
-
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_empty.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -96,17 +101,17 @@ template <
     common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>,
   typename PolicySelector = policy_selector_from_types<AccumT>,
   typename KernelSource   = device_segmented_scan_kernel_source<
-      PolicySelector,
-      InputIteratorT,
-      OutputIteratorT,
-      BeginOffsetIteratorInputT,
-      EndOffsetIteratorInputT,
-      BeginOffsetIteratorOutputT,
-      OffsetT,
-      ScanOpT,
-      InitValueT,
-      AccumT,
-      EnforceInclusive>,
+    PolicySelector,
+    InputIteratorT,
+    OutputIteratorT,
+    BeginOffsetIteratorInputT,
+    EndOffsetIteratorInputT,
+    BeginOffsetIteratorOutputT,
+    OffsetT,
+    ScanOpT,
+    InitValueT,
+    AccumT,
+    EnforceInclusive>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_scan_policy_selector<PolicySelector>
@@ -143,17 +148,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  const segmented_scan_policy active_policy = policy_selector(cc);
+  const SegmentedScanPolicy active_policy = policy_selector(cc);
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (::std::stringstream ss; ss << active_policy;
-     _CubLog("Dispatching DeviceSegmentedScan to compute capability %d.%d with tuning: %s\n",
-             cc.major_cap(),
-             cc.minor_cap(),
-             ss.str().c_str());))
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+  detail::log_dispatch("DeviceSegmentedScan", cc, active_policy);
 
   if (d_temp_storage == nullptr)
   {
@@ -173,10 +170,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       case worker::block: {
         constexpr int workers_per_block = 1;
         const auto max_segments         = active_policy.block.max_segments;
-        const auto block_threads        = active_policy.block.block_threads;
+        const auto threads_per_block    = active_policy.block.threads_per_block;
+        _CCCL_ASSERT(active_policy.block.threads_per_block > 0, "Policy value for threads_per_block is not positive");
+        _CCCL_ASSERT(active_policy.block.items_per_thread > 0, "Policy value for items_per_thread is not positive");
         _CCCL_ASSERT(max_segments > 0, "Policy value for max segments is not positive");
         _CCCL_ASSERT(num_segments_per_worker <= max_segments, "Number of segments per block exceeds maximum value");
-        return {workers_per_block, block_threads, ::cuda::std::min(num_segments_per_worker, max_segments)};
+        return {workers_per_block, threads_per_block, ::cuda::std::min(num_segments_per_worker, max_segments)};
       }
       default:
         _CCCL_UNREACHABLE();

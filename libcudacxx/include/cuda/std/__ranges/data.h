@@ -21,8 +21,8 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/class_or_enum.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__iterator/reverse_iterator.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__type_traits/is_object.h>
@@ -78,7 +78,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__member_data<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(__t.data()))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(__t.data()))
   {
     return __t.data();
   }
@@ -86,12 +86,13 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__ranges_begin_invocable<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::to_address(::cuda::std::ranges::begin(__t))))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(::cuda::std::to_address(::cuda::std::ranges::begin(__t))))
   {
     return ::cuda::std::to_address(::cuda::std::ranges::begin(__t));
   }
 };
+
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
@@ -106,18 +107,18 @@ struct __fn
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_lvalue_reference_v<_Tp&&>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::data(static_cast<const remove_reference_t<_Tp>&>(__t))))
-      -> decltype(::cuda::std::ranges::data(static_cast<const remove_reference_t<_Tp>&>(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(
+    noexcept(::cuda::std::ranges::data(static_cast<const remove_reference_t<_Tp>&>(__t))))
+    -> decltype(::cuda::std::ranges::data(static_cast<const remove_reference_t<_Tp>&>(__t)))
   {
     return ::cuda::std::ranges::data(static_cast<const remove_reference_t<_Tp>&>(__t));
   }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::data(static_cast<const _Tp&&>(__t))))
-      -> decltype(::cuda::std::ranges::data(static_cast<const _Tp&&>(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(::cuda::std::ranges::data(static_cast<const _Tp&&>(__t))))
+    -> decltype(::cuda::std::ranges::data(static_cast<const _Tp&&>(__t)))
   {
     return ::cuda::std::ranges::data(static_cast<const _Tp&&>(__t));
   }

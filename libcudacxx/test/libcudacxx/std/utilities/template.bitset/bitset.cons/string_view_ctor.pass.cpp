@@ -6,9 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile && !c++17
-// nvbug6085905: Segmentation fault (core dumped) tileiras
-
 //    template<class charT, class traits>
 //        explicit bitset(
 //            const basic_string_view<charT,traits>& str,
@@ -197,7 +194,7 @@ TEST_FUNC constexpr void test_for_non_eager_instantiation()
   // non-immediate context.
   static_assert(!cuda::std::is_constructible<cuda::std::bitset<3>, Nonsense*>::value);
   static_assert(
-    !cuda::std::is_constructible<cuda::std::bitset<3>, Nonsense*, cuda::std::size_t, Nonsense&, Nonsense&>::value, "");
+    !cuda::std::is_constructible<cuda::std::bitset<3>, Nonsense*, cuda::std::size_t, Nonsense&, Nonsense&>::value);
 #endif // !_CCCL_TILE_COMPILATION()
 }
 

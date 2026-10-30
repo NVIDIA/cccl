@@ -80,7 +80,7 @@ _CCCL_CONCEPT __is_awaitable = false; // TODO: Implement this concept.
 
 // Sender traits:
 template <class _Sndr>
-_CCCL_API constexpr auto __enable_sender() -> bool
+_CCCL_HOST_DEVICE_API constexpr auto __enable_sender() -> bool
 {
   if constexpr (__is_sender<_Sndr>)
   {
@@ -101,13 +101,13 @@ template <class... _Env>
 struct __completions_tester
 {
   template <class _Sndr, bool _EnableIfConstexpr = ((void) execution::get_completion_signatures<_Sndr, _Env...>(), true)>
-  _CCCL_API static constexpr auto __is_valid(int) -> bool
+  _CCCL_HOST_DEVICE_API static constexpr auto __is_valid(int) -> bool
   {
     return __valid_completion_signatures<completion_signatures_of_t<_Sndr, _Env...>>;
   }
 
   template <class _Sndr>
-  _CCCL_API static constexpr auto __is_valid(long) -> bool
+  _CCCL_HOST_DEVICE_API static constexpr auto __is_valid(long) -> bool
   {
     return false;
   }

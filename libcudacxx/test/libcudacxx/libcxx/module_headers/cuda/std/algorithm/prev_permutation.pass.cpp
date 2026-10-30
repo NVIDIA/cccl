@@ -15,13 +15,13 @@
 
 struct greater
 {
-  __host__ __device__ constexpr bool operator()(int a, int b) const
+  TEST_FUNC constexpr bool operator()(int a, int b) const
   {
     return a > b;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int a[] = {3, 2, 1};
   assert(cuda::std::prev_permutation(a, a + 3));

@@ -57,13 +57,13 @@ int main(int, char**)
   test<double, __half>();
   test<__half, float>();
   test<__half, double>();
-#  if _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test<float, __nv_bfloat16>();
   test<double, __nv_bfloat16>();
   test<__nv_bfloat16, float>();
   test<__nv_bfloat16, double>();
-#  endif
-#endif
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   static_assert(test<float, float>());
   static_assert(test<float, double>());

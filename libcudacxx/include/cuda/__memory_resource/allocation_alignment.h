@@ -35,10 +35,10 @@
 
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__concepts/convertible_to.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__execution/env.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
-#  include <cuda/std/cstddef>
+#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -91,7 +91,7 @@ __is_valid_allocation_alignment(::cuda::std::size_t __alignment, ::cuda::std::si
 
 //! @brief Throws std::invalid_argument if \p __alignment is not a valid allocation alignment
 //! (power of two and at least \p __min_alignment).
-_CCCL_HOST inline void
+_CCCL_HOST_API inline void
 __validate_allocation_alignment(::cuda::std::size_t __alignment, ::cuda::std::size_t __min_alignment)
 {
   if (!__is_valid_allocation_alignment(__alignment, __min_alignment))

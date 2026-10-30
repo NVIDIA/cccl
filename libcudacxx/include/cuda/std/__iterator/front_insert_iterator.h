@@ -21,23 +21,24 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__iterator/iterator.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/cstddef> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 template <class _Container>
 class _CCCL_TYPE_VISIBILITY_DEFAULT front_insert_iterator
 {
 protected:
-  _Container* container;
+  // The standard requires protected access.
+  _Container* container; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
 public:
   using iterator_category = output_iterator_tag;

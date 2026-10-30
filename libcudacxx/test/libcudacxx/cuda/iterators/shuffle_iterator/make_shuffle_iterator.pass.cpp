@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
 
 // constexpr explicit shuffle_iterator(Bijection, index_type = 0);
 // template<class RGN> constexpr explicit shuffle_iterator(index_type, RNG, index_type = 0);
@@ -23,7 +23,7 @@
 #include "types.h"
 
 template <class Bijection>
-TEST_FUNC constexpr bool test(Bijection fun)
+TEST_HOST_DEVICE_FUNC constexpr bool test(Bijection fun)
 {
   auto iter1 = cuda::make_shuffle_iterator(fun, short{0});
   auto iter2 = cuda::make_shuffle_iterator(fun, short{4});
@@ -33,7 +33,7 @@ TEST_FUNC constexpr bool test(Bijection fun)
   return true;
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test(fake_bijection<true>{});
   test(fake_bijection<false>{});

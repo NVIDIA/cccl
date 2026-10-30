@@ -8,9 +8,18 @@ Thrust
    :maxdepth: 2
 
    Overview <self>
-   developer_overview
-   API documentation <api>
+   algorithms
+   containers
+   function_objects
+   iterators
+   memory_management
+   numerics
+   parallel_execution_policies
+   random
+   system
+   utility
    API reference <api/index>
+   developer_overview
 
 Thrust is the C++ parallel algorithms library which inspired the introduction of parallel algorithms to the
 C++ Standard Library. Thrust's **high-level** interface greatly enhances programmer **productivity** while

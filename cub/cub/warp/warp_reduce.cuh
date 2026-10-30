@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
-// SPDX-FileCopyrightText: Copyright (c) 2011-2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 //! @file
@@ -20,11 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/type_traits.cuh>
-#include <cub/thread/thread_operators.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/util_arch.cuh>
-#include <cub/util_type.cuh>
 #include <cub/warp/specializations/warp_reduce_shfl.cuh>
 #include <cub/warp/specializations/warp_reduce_smem.cuh>
 
@@ -51,6 +51,8 @@ CUB_NAMESPACE_BEGIN
 //!   operator to compute a single aggregate from a list of input elements.
 //! - Supports "logical" warps smaller than the physical warp size (e.g., logical warps of 8 threads)
 //! - The number of entrant threads must be an multiple of ``LogicalWarpThreads``
+//! - For floating-point types, ``cuda::minimum`` and ``cuda::maximum`` ignore NaN inputs. If all inputs are NaN, the
+//!   result is NaN.
 //!
 //! Performance Considerations
 //! ++++++++++++++++++++++++++
@@ -62,6 +64,44 @@ CUB_NAMESPACE_BEGIN
 //!
 //!   - Summation (**vs.** generic reduction)
 //!   - The architecture's warp size is a whole multiple of ``LogicalWarpThreads``
+//!
+//! Hardware Warp Redux Optimizations
+//! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//!
+//! For full 32-thread logical warps, ``WarpReduce`` uses PTX ``redux.sync`` instructions for the following operator and
+//! type combinations when the target architecture supports them:
+//!
+//! - On SM80 and later:
+//!
+//!   - ``cuda::std::plus``:
+//!
+//!     - 8-bit, 16-bit, 32-bit integers: A single ``redux.sync.add``
+//!     - 64-bit integers: 3x ``redux.sync.add``
+//!     - 128-bit integers: 5x ``redux.sync.add``
+//!
+//!   - ``cuda::minimum`` and ``cuda::maximum``:
+//!
+//!     - 8-bit, 16-bit, 32-bit integers: A single ``redux.sync.min/max``
+//!     - 64-bit integers: 2x ``redux.sync.min/max``
+//!     - 128-bit integers: 4x ``redux.sync.min/max``
+//!     - ``__half``, ``__nv_bfloat16``, ``float``, ``double``, and ``__float128``: the values are mapped to integers
+//!       and reduced as above.
+//!
+//!   - ``cuda::std::bit_and``, ``cuda::std::bit_or``, and ``cuda::std::bit_xor``: N times ``redux.sync.<bit_op>``,
+//!     where N is ceil(sizeof(T) / sizeof(unsigned)))
+//!
+//! - On SM100f and later in the same architecture family:
+//!
+//!   - ``cuda::minimum`` and ``cuda::maximum`` for ``float``, ``__half``, and ``__nv_bfloat16``.
+//!
+//! Warp Vote Optimizations
+//! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//!
+//! For ``bool`` inputs and power-of-two ``LogicalWarpThreads``, ``WarpReduce`` uses a single warp vote instruction on
+//! all architectures, including partially-full warp reductions:
+//!
+//! - ``cuda::std::logical_or``: ``__any_sync``
+//! - ``cuda::std::logical_and``: ``__all_sync``
 //!
 //! Simple Examples
 //! +++++++++++++++
@@ -155,8 +195,7 @@ private:
 
 public:
   /// \smemstorage{WarpReduce}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
@@ -447,6 +486,9 @@ public:
   //!
   //! Supports non-commutative reduction operators
   //!
+  //! For floating-point types, ``cuda::minimum`` and ``cuda::maximum`` ignore NaN inputs. If all inputs are NaN, the
+  //! result is NaN.
+  //!
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
   //!
@@ -504,7 +546,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(const InputType& input, ReductionOp reduction_op)
   {
     auto thread_reduction = cub::ThreadReduce(input, reduction_op);
-    return WarpReduce<T, LogicalWarpThreads>::Reduce(thread_reduction, LogicalWarpThreads, reduction_op);
+    return WarpReduce<T, LogicalWarpThreads>::Reduce(thread_reduction, reduction_op);
   }
   //! @rst
   //! Computes a partially-full warp-wide reduction in the calling warp using the specified binary
@@ -514,6 +556,9 @@ public:
   //! Otherwise the result is undefined.
   //!
   //! Supports non-commutative reduction operators
+  //!
+  //! For floating-point types, ``cuda::minimum`` and ``cuda::maximum`` ignore NaN inputs. If all inputs are NaN, the
+  //! result is NaN.
   //!
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
@@ -578,6 +623,9 @@ public:
   //!
   //! Supports non-commutative reduction operators
   //!
+  //! For floating-point types, ``cuda::minimum`` and ``cuda::maximum`` ignore NaN inputs. If all inputs of a segment
+  //! are NaN, the result of that segment is NaN.
+  //!
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
   //!
@@ -639,6 +687,9 @@ public:
   //! (which always includes *lane*\ :sub:`0`).
   //!
   //! Supports non-commutative reduction operators
+  //!
+  //! For floating-point types, ``cuda::minimum`` and ``cuda::maximum`` ignore NaN inputs. If all inputs of a segment
+  //! are NaN, the result of that segment is NaN.
   //!
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
@@ -708,19 +759,18 @@ private:
 public:
   struct InternalWarpReduce
   {
-    struct TempStorage : Uninitialized<_TempStorage>
-    {};
+    using TempStorage = Uninitialized<_TempStorage>;
 
     _CCCL_DEVICE _CCCL_FORCEINLINE InternalWarpReduce(TempStorage& /*temp_storage */) {}
 
-    template <bool ALL_LANES_VALID, typename ReductionOp>
+    template <bool AllLanesValid, typename ReductionOp>
     [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
     Reduce(T input, int /* valid_items */, ReductionOp /* reduction_op */)
     {
       return input;
     }
 
-    template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
+    template <bool HeadSegmented, typename FlagT, typename ReductionOp>
     [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
     SegmentedReduce(T input, FlagT /* flag */, ReductionOp /* reduction_op */)
     {

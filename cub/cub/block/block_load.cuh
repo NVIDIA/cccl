@@ -9,6 +9,8 @@
 
 #include <cub/config.cuh>
 
+#include <thrust/type_traits/is_contiguous_iterator.h>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -18,12 +20,27 @@
 #endif // no system header
 
 #include <cub/block/block_exchange.cuh>
+#include <cub/detail/cub_vector.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
+#include <cub/detail/unit_word.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/__new/device_new.h>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
+#include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__new/device_new.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_volatile.h>
+#include <cuda/std/__type_traits/remove_reference.h>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
 
 CUB_NAMESPACE_BEGIN
 
@@ -66,7 +83,7 @@ LoadDirectBlocked(int linear_tid, RandomAccessIterator block_src_it, T (&dst_ite
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    dst_items[i] = block_src_it[linear_tid * ItemsPerThread + i];
+    dst_items[i] = block_src_it[linear_tid * ItemsPerThread + i]; // NOLINT(bugprone-misplaced-widening-cast)
   }
 }
 
@@ -191,6 +208,7 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
 #  if _CCCL_COMPILER(CLANG, >=, 10)
   _CCCL_DIAG_SUPPRESS_CLANG("-Wsizeof-array-div")
 #  endif // _CCCL_COMPILER(CLANG, >=, 10)
+  // NOLINTNEXTLINE(bugprone-sizeof-expression)
   constexpr int total_words = static_cast<int>(sizeof(dst_items) / sizeof(device_word_t));
   _CCCL_DIAG_POP
   constexpr int vector_size        = (total_words % 4 == 0) ? 4 : (total_words % 2 == 0) ? 2 : 1;
@@ -200,7 +218,7 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
   using vector_t = typename CubVector<device_word_t, vector_size>::Type;
 
   // Add the alignment check to ensure the vectorized loading can proceed.
-  if (reinterpret_cast<uintptr_t>(block_src_ptr) % (alignof(vector_t)) == 0)
+  if (::cuda::std::is_sufficiently_aligned<alignof(vector_t)>(block_src_ptr))
   {
     vector_t vec_items[vectors_per_thread];
     // Load into an array of vectors in thread-blocked order
@@ -281,7 +299,7 @@ LoadDirectBlockedVectorized(int linear_tid, T* block_src_ptr, T (&dst_items)[Ite
 //!
 //! @endrst
 //!
-//! @tparam BlockThreads
+//! @tparam ThreadsPerBlock
 //!   The thread block size in threads
 //!
 //! @tparam T
@@ -302,27 +320,28 @@ LoadDirectBlockedVectorized(int linear_tid, T* block_src_ptr, T (&dst_items)[Ite
 //!
 //! @param[out] dst_items
 //!   Destination to load data into
-template <int BlockThreads, typename T, int ItemsPerThread, typename RandomAccessIterator>
+template <int ThreadsPerBlock, typename T, int ItemsPerThread, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 LoadDirectStriped(int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ItemsPerThread])
 {
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    dst_items[i] = block_src_it[linear_tid + i * BlockThreads];
+    dst_items[i] = block_src_it[linear_tid + i * ThreadsPerBlock]; // NOLINT(bugprone-misplaced-widening-cast)
   }
 }
 
 namespace detail
 {
-template <int BlockThreads, typename T, int ItemsPerThread, typename RandomAccessIterator, typename TransformOpT>
+template <int ThreadsPerBlock, typename T, int ItemsPerThread, typename RandomAccessIterator, typename TransformOpT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void load_transform_direct_striped(
   int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ItemsPerThread], TransformOpT transform_op)
 {
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    dst_items[i] = transform_op(block_src_it[linear_tid + i * BlockThreads]);
+    dst_items[i] =
+      transform_op(block_src_it[linear_tid + i * ThreadsPerBlock]); // NOLINT(bugprone-misplaced-widening-cast)
   }
 }
 } // namespace detail
@@ -337,7 +356,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void load_transform_direct_striped(
 //!
 //! @endrst
 //!
-//! @tparam BlockThreads
+//! @tparam ThreadsPerBlock
 //!   The thread block size in threads
 //!
 //! @tparam T
@@ -361,14 +380,14 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void load_transform_direct_striped(
 //!
 //! @param[in] block_items_end
 //!   Number of valid items to load
-template <int BlockThreads, typename T, int ItemsPerThread, typename RandomAccessIterator>
+template <int ThreadsPerBlock, typename T, int ItemsPerThread, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
   int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ItemsPerThread], int block_items_end)
 {
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    const auto src_pos = linear_tid + i * BlockThreads;
+    const auto src_pos = linear_tid + i * ThreadsPerBlock;
     if (src_pos < block_items_end)
     {
       dst_items[i] = block_src_it[src_pos];
@@ -387,7 +406,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
 //!
 //! @endrst
 //!
-//! @tparam BlockThreads
+//! @tparam ThreadsPerBlock
 //!   The thread block size in threads
 //!
 //! @tparam T
@@ -414,7 +433,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
 //!
 //! @param[in] oob_default
 //!   Default value to assign out-of-bound items
-template <int BlockThreads, typename T, typename DefaultT, int ItemsPerThread, typename RandomAccessIterator>
+template <int ThreadsPerBlock, typename T, typename DefaultT, int ItemsPerThread, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
   int linear_tid,
   RandomAccessIterator block_src_it,
@@ -428,7 +447,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
     dst_items[i] = oob_default;
   }
 
-  LoadDirectStriped<BlockThreads>(linear_tid, block_src_it, dst_items, block_items_end);
+  LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
 }
 
 //! @}
@@ -480,7 +499,8 @@ LoadDirectWarpStriped(int linear_tid, RandomAccessIterator block_src_it, T (&dst
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    new (&dst_items[i]) T(block_src_it[warp_offset + tid + (i * detail::warp_threads)]);
+    new (&dst_items[i])
+      T(block_src_it[warp_offset + tid + (i * detail::warp_threads)]); // NOLINT(bugprone-misplaced-widening-cast)
   }
 }
 
@@ -602,7 +622,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectWarpStriped(
 
 //! @brief cub::BlockLoadAlgorithm enumerates alternative algorithms for cub::BlockLoad to read a linear segment of data
 //!        from memory into a blocked arrangement across a CUDA thread block.
-enum BlockLoadAlgorithm
+enum BlockLoadAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
   //! @rst
   //! Overview
@@ -649,8 +669,9 @@ enum BlockLoadAlgorithm
   //! - The following conditions will prevent vectorization and loading will fall back to cub::BLOCK_LOAD_DIRECT:
   //!
   //!   - ``ItemsPerThread`` is odd
-  //!   - The ``RandomAccessIterator`` is not a simple pointer type
-  //!   - The block input offset is not quadword-aligned
+  //!   - The ``RandomAccessIterator`` is not a contiguous iterator (``cub::CacheModifiedInputIterator`` is an exception
+  //!     and is still vectorized)
+  //!   - The block input offset is not aligned to the vector access width
   //!   - The data type ``T`` is not a built-in primitive or CUDA vector type
   //!     (e.g., ``short``, ``int2``, ``double``, ``float2``, etc.)
   //!
@@ -684,7 +705,7 @@ enum BlockLoadAlgorithm
   //! Usage Considerations
   //! ++++++++++++++++++++++++++
   //!
-  //! - BlockThreads must be a multiple of WARP_THREADS
+  //! - ThreadsPerBlock must be a multiple of WARP_THREADS
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -710,7 +731,7 @@ enum BlockLoadAlgorithm
   //! Usage Considerations
   //! ++++++++++++++++++++++++++
   //!
-  //! - BlockThreads must be a multiple of WARP_THREADS
+  //! - ThreadsPerBlock must be a multiple of WARP_THREADS
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -724,27 +745,50 @@ enum BlockLoadAlgorithm
 };
 
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
-inline ::std::ostream& operator<<(::std::ostream& os, BlockLoadAlgorithm algo)
+namespace detail
+{
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(BlockLoadAlgorithm algo) noexcept
 {
   switch (algo)
   {
     case BLOCK_LOAD_DIRECT:
-      return os << "BLOCK_LOAD_DIRECT";
+      return "BLOCK_LOAD_DIRECT";
     case BLOCK_LOAD_STRIPED:
-      return os << "BLOCK_LOAD_STRIPED";
+      return "BLOCK_LOAD_STRIPED";
     case BLOCK_LOAD_VECTORIZE:
-      return os << "BLOCK_LOAD_VECTORIZE";
+      return "BLOCK_LOAD_VECTORIZE";
     case BLOCK_LOAD_TRANSPOSE:
-      return os << "BLOCK_LOAD_TRANSPOSE";
+      return "BLOCK_LOAD_TRANSPOSE";
     case BLOCK_LOAD_WARP_TRANSPOSE:
-      return os << "BLOCK_LOAD_WARP_TRANSPOSE";
+      return "BLOCK_LOAD_WARP_TRANSPOSE";
     case BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED:
-      return os << "BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED";
-    default:
-      return os << "<unknown BlockLoadAlgorithm: " << static_cast<int>(algo) << ">";
+      return "BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED";
   }
+  return "<unknown BlockLoadAlgorithm>";
+}
+} // namespace detail
+
+inline ::std::ostream& operator<<(::std::ostream& os, BlockLoadAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::BlockLoadAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::BlockLoadAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 //! @rst
 //! The BlockLoad class provides :ref:`collective <collective-primitives>` data movement methods for loading a linear
@@ -843,7 +887,7 @@ template <typename T,
           int BlockDimZ                = 1>
 class BlockLoad
 {
-  static constexpr int BlockThreads = BlockDimX * BlockDimY * BlockDimZ; // total threads in the block
+  static constexpr int ThreadsPerBlock = BlockDimX * BlockDimY * BlockDimZ; // total threads in the block
 
   // transposing load algorithms need a BlockExchange
   using block_exchange =
@@ -855,10 +899,10 @@ class BlockLoad
                   BlockDimZ>;
 
   static_assert((Algorithm != BLOCK_LOAD_WARP_TRANSPOSE && Algorithm != BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED)
-                  || (BlockThreads % detail::warp_threads == 0),
-                "BlockThreads must be a multiple of warp_threads for this BlockLoadAlgorithm");
+                  || (ThreadsPerBlock % detail::warp_threads == 0),
+                "ThreadsPerBlock must be a multiple of warp_threads for this BlockLoadAlgorithm");
 
-  _CCCL_API static constexpr auto temp_storage_helper()
+  _CCCL_HOST_DEVICE_API static constexpr auto temp_storage_helper()
   {
     if constexpr (Algorithm == BLOCK_LOAD_DIRECT || Algorithm == BLOCK_LOAD_STRIPED
                   || Algorithm == BLOCK_LOAD_VECTORIZE)
@@ -972,18 +1016,22 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_LOAD_STRIPED)
     {
-      LoadDirectStriped<BlockThreads>(linear_tid, block_src_it, dst_items);
+      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_VECTORIZE)
     {
-      if constexpr (detail::is_CacheModifiedInputIterator<RandomAccessIterator>)
+      if constexpr (detail::is_CacheModifiedInputIterator<RandomAccessIterator>
+                    && ::cuda::std::is_same_v<detail::it_value_t<RandomAccessIterator>, T>)
       {
         InternalLoadDirectBlockedVectorized<RandomAccessIterator::__modifier>(linear_tid, block_src_it.ptr, dst_items);
       }
-      // FIXME(bgruber): we should test for contiguous iterator here
-      else if constexpr (::cuda::std::is_pointer_v<RandomAccessIterator>)
+      else if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIterator>
+                         && ::cuda::std::is_same_v<detail::it_value_t<RandomAccessIterator>, T>
+                         // handles contiguous iterators wrapping volatile pointers, like span<volatile int>::iterator
+                         && !::cuda::std::is_volatile_v<
+                            ::cuda::std::remove_reference_t<detail::it_reference_t<RandomAccessIterator>>>)
       {
-        InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_src_it, dst_items);
+        InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, ::cuda::std::to_address(block_src_it), dst_items);
       }
       else
       {
@@ -992,7 +1040,7 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
     {
-      LoadDirectStriped<BlockThreads>(linear_tid, block_src_it, dst_items);
+      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items);
       block_exchange(temp_storage).StripedToBlocked(dst_items, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_WARP_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED)
@@ -1061,11 +1109,11 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_LOAD_STRIPED)
     {
-      LoadDirectStriped<BlockThreads>(linear_tid, block_src_it, dst_items, block_items_end);
+      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
     {
-      LoadDirectStriped<BlockThreads>(linear_tid, block_src_it, dst_items, block_items_end);
+      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
       block_exchange(temp_storage).StripedToBlocked(dst_items, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_WARP_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED)
@@ -1137,11 +1185,11 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_LOAD_STRIPED)
     {
-      LoadDirectStriped<BlockThreads>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
+      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
     {
-      LoadDirectStriped<BlockThreads>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
+      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
       block_exchange(temp_storage).StripedToBlocked(dst_items, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_WARP_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED)

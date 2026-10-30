@@ -18,6 +18,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -31,6 +33,7 @@
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <deque>
 
@@ -59,15 +62,18 @@ public:
   stream_task(backend_ctx_untyped ctx_, exec_place e_place = exec_place::current_device())
       : task(mv(e_place))
       , ctx(mv(ctx_))
-  {
-    ctx.increment_task_count();
-  }
+  {}
 
-  stream_task(const stream_task<>&)              = default;
-  stream_task<>& operator=(const stream_task<>&) = default;
-  ~stream_task()                                 = default;
-
-  // movable ??
+  // Tasks are move-only: a task wrapper owns per-instance in-flight state
+  // (capture stream, frontier, done nodes, held mutex during stream capture)
+  // on top of the pimpl `task` base, so copying it has no meaningful semantics.
+  // Contexts (`stream_ctx`, `graph_ctx`, `context`) are pimpl handles and
+  // remain copyable.
+  stream_task(const stream_task&)              = delete;
+  stream_task<>& operator=(const stream_task&) = delete;
+  stream_task(stream_task&&)                   = default;
+  stream_task<>& operator=(stream_task&&)      = default;
+  ~stream_task()                               = default;
 
   // Returns the stream associated to that task : any asynchronous operation
   // in the task body should be performed asynchronously with respect to that
@@ -102,7 +108,7 @@ public:
     // We don't need to find a stream from the pool in this case
     automatic_stream = false;
     // -1 identifies streams which are not from our internal pool
-    dstream = decorated_stream(s);
+    dstream = augmented_stream(s);
     return *this;
   }
 
@@ -119,9 +125,10 @@ public:
       _CCCL_ASSERT(automatic_stream, "automatic stream is not enabled");
 
       // Get stream for each place in the grid
+      auto& place_res = ctx.async_resources().get_place_resources();
       for (size_t i = 0; i < e_place.size(); ++i)
       {
-        stream_grid.push_back(e_place.get_place(i).getStream(true));
+        stream_grid.push_back(e_place.get_place(i).getStream(place_res, true));
       }
 
       EXPECT(stream_grid.size() > 0UL);
@@ -130,8 +137,9 @@ public:
     {
       if (automatic_stream)
       {
-        bool found = false;
-        auto& pool = e_place.get_stream_pool(true);
+        bool found      = false;
+        auto& place_res = ctx.async_resources().get_place_resources();
+        auto& pool      = e_place.get_stream_pool(true, place_res);
 
         // To avoid creating inter stream dependencies when this is not
         // necessary, we try to reuse streams which belong to the pool,
@@ -147,11 +155,11 @@ public:
             if (e->outbound_deps == 0)
             {
               auto se                    = reserved::handle<stream_and_event>(e, reserved::use_static_cast);
-              decorated_stream candidate = se->get_decorated_stream();
+              augmented_stream candidate = se->get_augmented_stream();
 
               if (candidate.id != k_no_stream_id)
               {
-                for (const decorated_stream& pool_s : pool)
+                for (const augmented_stream& pool_s : pool)
                 {
                   if (candidate.id == pool_s.id)
                   {
@@ -173,7 +181,7 @@ public:
 
         if (!found)
         {
-          dstream = e_place.getStream(true);
+          dstream = e_place.getStream(place_res, true);
           //    fprintf(stderr, "COULD NOT REUSE ... selected stream ID %ld\n", dstream.id);
         }
       }
@@ -196,12 +204,17 @@ public:
     }
 
     auto& dot = ctx.get_dot();
-    if (dot->is_tracing())
+    // DOT tracing and set_ready_prereqs must not leave the task half-started;
+    // abort instead of letting an exception escape.
+    ON_THROW(abort)
     {
-      dot->template add_vertex<task, logical_data_untyped>(*this);
-    }
+      if (dot->is_tracing())
+      {
+        dot->template add_vertex<task, logical_data_untyped>(*this);
+      }
 
-    set_ready_prereqs(mv(ready_prereqs));
+      set_ready_prereqs(mv(ready_prereqs));
+    };
 
     return *this;
   }
@@ -232,32 +245,44 @@ public:
   }
 
   /* End the task, but do not clear its data structures yet */
-  stream_task<>& end_uncleared()
+  //! \brief Finish the task without clearing it. Never throws.
+  //!
+  //! Resuming after a failure here is not an option: acquire() has locked this task's
+  //! logical-data mutexes, and release() below is what unlocks them, so returning early would
+  //! leave them held and deadlock the next task touching that data. The failures available are
+  //! an allocation failure (the standing ruling is to abort) or a CUDA error from
+  //! insert_dependency / event creation, which in practice means a sticky error has poisoned
+  //! the context. Report and abort.
+  stream_task<>& end_uncleared() noexcept
   {
-    assert(get_task_phase() == task::phase::running);
-
-    event_list end_list;
-
-    const auto& e_place = get_exec_place();
-
-    if (e_place.size() > 1)
+    ON_THROW(abort)
     {
-      // s0 depends on all other streams
-      for (size_t i = 1; i < stream_grid.size(); i++)
+      assert(get_task_phase() == task::phase::running);
+
+      event_list end_list;
+
+      const auto& e_place = get_exec_place();
+
+      if (e_place.size() > 1)
       {
-        stream_and_event::insert_dependency(stream_grid[0].stream, stream_grid[i].stream);
+        // s0 depends on all other streams
+        for (size_t i = 1; i < stream_grid.size(); i++)
+        {
+          stream_and_event::insert_dependency(stream_grid[0].stream, stream_grid[i].stream);
+        }
       }
-    }
 
-    auto se = submitted_events.end_as_event(ctx);
-    end_list.add(se);
+      auto se = submitted_events.end_as_event(ctx);
+      end_list.add(se);
 
-    release(ctx, end_list);
+      release(ctx, end_list);
+    };
 
     return *this;
   }
 
-  stream_task<>& end()
+  //! \brief Finish the task. Never throws, because neither of its steps does.
+  stream_task<>& end() noexcept
   {
     end_uncleared();
     clear();
@@ -278,72 +303,84 @@ public:
   template <typename Fun>
   void operator->*(Fun&& fun)
   {
+    cudaEvent_t start_event = nullptr, end_event = nullptr;
+
+    // The timing events are released on every path. A failing destroy leaks that event and is
+    // reported; the guard is noexcept, so it cannot become a second exception. One policy per
+    // release, so a failure on the first does not skip the second.
+    SCOPE(exit)
+    {
+      if (start_event)
+      {
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(start_event);
+        };
+      }
+      if (end_event)
+      {
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(end_event);
+        };
+      }
+    };
+
     // Apply function to the stream (in the first position) and the data tuple
     nvtx_range nr(get_symbol().c_str());
+    auto& dot              = ctx.get_dot();
+    const bool record_time = reserved::dot::instance().is_timing();
+
     start();
 
-    auto& dot = ctx.get_dot();
-
-    bool record_time = reserved::dot::instance().is_timing();
-
-    cudaEvent_t start_event, end_event;
-
-    if (record_time)
-    {
-      // Events must be created here to avoid issues with multi-gpu
-      cuda_safe_call(cudaEventCreate(&start_event));
-      cuda_safe_call(cudaEventCreate(&end_event));
-      cuda_safe_call(cudaEventRecord(start_event, get_stream()));
-    }
-
-    SCOPE(exit)
+    // If things go well, end the task with time measuremments,
+    SCOPE(success)
     {
       end_uncleared();
 
-      if (record_time)
+      if (start_event && end_event)
       {
-        cuda_safe_call(cudaEventRecord(end_event, get_stream()));
-        cuda_safe_call(cudaEventSynchronize(end_event));
-
-        float milliseconds = 0;
-        cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
-
-        if (dot->is_tracing())
-        {
-          dot->template add_vertex_timing<task>(*this, milliseconds);
-        }
+        reserved::task_statistics::instance().record_task_timing(*this, start_event, end_event, get_stream(), *dot);
       }
 
       clear();
     };
 
-    // Default for the first argument is a `cudaStream_t`.
-    if constexpr (::std::is_invocable_v<Fun, cudaStream_t>)
+    // And if they don't, just end the task. end() is noexcept, so no wrap is needed here.
+    SCOPE(fail)
     {
-      ::std::forward<Fun>(fun)(get_stream());
+      end();
+    };
+
+    if (record_time)
+    {
+      // Events must be created here to avoid issues with multi-gpu.
+      // cudaEventCreate is an overload set, so use the non-overloaded
+      // cudaEventCreateWithFlags with the default flags.
+      start_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+      end_event   = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+      cuda_try<cudaEventRecord>(start_event, get_stream());
+    }
+
+    // Default for the first argument is a `cudaStream_t`.
+    if constexpr (::cuda::std::is_invocable_v<Fun, cudaStream_t>)
+    {
+      ::cuda::std::forward<Fun>(fun)(get_stream());
     }
     else
     {
-      ::std::forward<Fun>(fun)(*this);
+      ::cuda::std::forward<Fun>(fun)(*this);
     }
   }
 
   void populate_deps_scheduling_info() const
   {
-    // Error checking copied from acquire() in acquire_release()
-
-    int index        = 0;
     const auto& deps = get_task_deps();
+    reserved::ensure_task_deps_initialized(deps);
     for (const auto& dep : deps)
     {
-      if (!dep.get_data().is_initialized())
-      {
-        fprintf(stderr, "Error: dependency number %d is an uninitialized logical data.\n", index);
-        abort();
-      }
       dep.set_symbol(dep.get_data().get_symbol());
       dep.set_data_footprint(dep.get_data().get_data_interface().data_footprint());
-      index++;
     }
   }
 
@@ -378,7 +415,7 @@ public:
 
 private:
   // Make all streams depend on streams[0]
-  static void insert_dependencies(::std::vector<decorated_stream>& streams)
+  static void insert_dependencies(::std::vector<augmented_stream>& streams)
   {
     if (streams.size() < 2)
     {
@@ -392,52 +429,36 @@ private:
     // record the event, and restore the current device to its original
     // value.
 
-    // TODO leverage dev_id if known ?
+    const int s0_dev = streams[0].dev_id == -1 ? get_device_from_stream(streams[0].stream) : streams[0].dev_id;
 
-    // Find the stream structure in the driver API
-    CUcontext ctx;
-    cuda_safe_call(cuStreamGetCtx(CUstream(streams[0].stream), &ctx));
+    exec_place::device(s0_dev)->*[&] {
+      // Disable timing to avoid implicit barriers.
+      const cudaEvent_t sync_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDisableTiming);
+      SCOPE(exit)
+      {
+        // Asynchronously destroy the event to avoid a memory leak. A failing destroy leaks it and
+        // is reported; the guard is noexcept, so it cannot become a second exception.
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(sync_event);
+        };
+      };
 
-    // Query the context associated with a stream by using the underlying driver API
-    cuda_safe_call(cuCtxPushCurrent(ctx));
-    const CUdevice s0_dev = cuda_try<cuCtxGetDevice>();
-    cuda_safe_call(cuCtxPopCurrent(&ctx));
+      cuda_try<cudaEventRecord>(sync_event, streams[0].stream);
 
-    const int current_dev = cuda_try<cudaGetDevice>();
-
-    if (current_dev != s0_dev)
-    {
-      cuda_safe_call(cudaSetDevice(s0_dev));
-    }
-
-    // Create a dependency between the last stream and the current stream
-    cudaEvent_t sync_event;
-    // Disable timing to avoid implicit barriers
-    cuda_safe_call(cudaEventCreateWithFlags(&sync_event, cudaEventDisableTiming));
-
-    cuda_safe_call(cudaEventRecord(sync_event, streams[0].stream));
-
-    // According to documentation "event may be from a different device than stream."
-    for (size_t i = 0; i < streams.size(); i++)
-    {
-      cuda_safe_call(cudaStreamWaitEvent(streams[i].stream, sync_event, 0));
-    }
-
-    // Asynchronously destroy event to avoid a memleak
-    cuda_safe_call(cudaEventDestroy(sync_event));
-
-    if (current_dev != s0_dev)
-    {
-      // Restore current device
-      cuda_safe_call(cudaSetDevice(current_dev));
-    }
+      // According to documentation, the event may be from a different device than the stream.
+      for (const auto& stream : streams)
+      {
+        cuda_try<cudaStreamWaitEvent>(stream.stream, sync_event, 0);
+      }
+    };
   }
 
   bool automatic_stream = true; // `true` if the stream is automatically fetched from the internal pool
 
   // Stream and their unique id (if applicable)
-  decorated_stream dstream;
-  ::std::vector<decorated_stream> stream_grid;
+  augmented_stream dstream;
+  ::std::vector<augmented_stream> stream_grid;
 
   // TODO rename to submitted_ops
   stream_async_op submitted_events;
@@ -460,8 +481,8 @@ protected:
  * execution place can be set in the constructor and also dynamically. An invocation of `->*` takes place on the last
  * set execution place.
  *
- * It is possible to copy or move this task into a `stream_task<>` by implicit conversion. Subsequently, the
- * obtained object can be used with dynamic dependencies.
+ * It is possible to move this task into a `stream_task<>` by implicit conversion (copying is disabled because
+ * `stream_task<>` is move-only). Subsequently, the obtained object can be used with dynamic dependencies.
  */
 template <typename... Data>
 class stream_task
@@ -528,71 +549,82 @@ public:
   template <typename Fun>
   auto operator->*(Fun&& fun)
   {
+    cudaEvent_t start_event = nullptr, end_event = nullptr;
+
+    // The timing events are released on every path. A failing destroy leaks that event and is
+    // reported; the guard is noexcept, so it cannot become a second exception. One policy per
+    // release, so a failure on the first does not skip the second.
+    SCOPE(exit)
+    {
+      if (start_event)
+      {
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(start_event);
+        };
+      }
+      if (end_event)
+      {
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(end_event);
+        };
+      }
+    };
+
     // Apply function to the stream (in the first position) and the data tuple
     auto& dot        = ctx.get_dot();
     auto& statistics = reserved::task_statistics::instance();
 
-    cudaEvent_t start_event, end_event;
-
-    bool record_time = schedule_task();
-
-    if (statistics.is_calibrating_to_file())
-    {
-      record_time = true;
-    }
+    const bool record_time = schedule_task() || statistics.is_calibrating_to_file();
 
     nvtx_range nr(get_symbol().c_str());
     start();
 
-    if (record_time)
-    {
-      // Events must be created here to avoid issues with multi-gpu
-      cuda_safe_call(cudaEventCreate(&start_event));
-      cuda_safe_call(cudaEventCreate(&end_event));
-      cuda_safe_call(cudaEventRecord(start_event, get_stream()));
-    }
-
-    SCOPE(exit)
+    // If things go well, end the task with time measurements,
+    SCOPE(success)
     {
       end_uncleared();
 
-      if (record_time)
+      if (start_event && end_event)
       {
-        cuda_safe_call(cudaEventRecord(end_event, get_stream()));
-        cuda_safe_call(cudaEventSynchronize(end_event));
-
-        float milliseconds = 0;
-        cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
-
-        if (dot->is_tracing())
-        {
-          dot->template add_vertex_timing<task>(*this, milliseconds);
-        }
-
-        if (statistics.is_calibrating())
-        {
-          statistics.log_task_time(*this, milliseconds);
-        }
+        statistics.record_task_timing(*this, start_event, end_event, get_stream(), *dot);
       }
 
       clear();
     };
 
-    if constexpr (::std::is_invocable_v<Fun, cudaStream_t, Data...>)
+    // And if they don't, just end the task. end() is noexcept, so no wrap is needed here.
+    SCOPE(fail)
+    {
+      end();
+    };
+
+    if (record_time)
+    {
+      // Events must be created here to avoid issues with multi-gpu.
+      // cudaEventCreate is an overload set, so use the non-overloaded
+      // cudaEventCreateWithFlags with the default flags.
+      start_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+      end_event   = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+      cuda_try<cudaEventRecord>(start_event, get_stream());
+    }
+
+    if constexpr (::cuda::std::is_invocable_v<Fun, cudaStream_t, Data...>)
     {
       // Invoke passing this task's stream as the first argument, followed by the slices
       auto t = tuple_prepend(get_stream(), typed_deps());
-      return ::std::apply(::std::forward<Fun>(fun), t);
+      return ::std::apply(::cuda::std::forward<Fun>(fun), t);
     }
     else if constexpr (reserved::is_applicable_v<Fun, reserved::remove_void_interface_from_pack_t<cudaStream_t, Data...>>)
     {
       // Use the filtered tuple
       auto t = tuple_prepend(get_stream(), reserved::remove_void_interface(typed_deps()));
-      return ::std::apply(::std::forward<Fun>(fun), t);
+      return ::std::apply(::cuda::std::forward<Fun>(fun), t);
     }
     else
     {
-      constexpr bool fun_invocable_task_deps = ::std::is_invocable_v<Fun, decltype(*this), Data...>;
+      constexpr bool fun_invocable_task_deps = ::cuda::std::is_invocable_v<Fun, decltype(*this), Data...>;
       constexpr bool fun_invocable_task_non_void_deps =
         reserved::is_applicable_v<Fun, reserved::remove_void_interface_from_pack_t<decltype(*this), Data...>>;
 
@@ -602,11 +634,11 @@ public:
 
       if constexpr (fun_invocable_task_deps)
       {
-        return ::std::apply(::std::forward<Fun>(fun), tuple_prepend(*this, typed_deps()));
+        return ::std::apply(::cuda::std::forward<Fun>(fun), tuple_prepend(*this, typed_deps()));
       }
       else if constexpr (fun_invocable_task_non_void_deps)
       {
-        return ::std::apply(::std::forward<Fun>(fun),
+        return ::std::apply(::cuda::std::forward<Fun>(fun),
                             tuple_prepend(*this, reserved::remove_void_interface(typed_deps())));
       }
     }

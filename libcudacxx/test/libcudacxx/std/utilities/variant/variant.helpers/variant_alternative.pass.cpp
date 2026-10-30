@@ -35,7 +35,7 @@ TEST_FUNC void test()
   static_assert(cuda::std::is_same_v<typename cuda::std::variant_alternative<I, const V>::type, const E>);
   static_assert(cuda::std::is_same_v<typename cuda::std::variant_alternative<I, volatile V>::type, volatile E>);
   static_assert(
-    cuda::std::is_same_v<typename cuda::std::variant_alternative<I, const volatile V>::type, const volatile E>, "");
+    cuda::std::is_same_v<typename cuda::std::variant_alternative<I, const volatile V>::type, const volatile E>);
   static_assert(cuda::std::is_same_v<cuda::std::variant_alternative_t<I, V>, E>);
   static_assert(cuda::std::is_same_v<cuda::std::variant_alternative_t<I, const V>, const E>);
   static_assert(cuda::std::is_same_v<cuda::std::variant_alternative_t<I, volatile V>, volatile E>);

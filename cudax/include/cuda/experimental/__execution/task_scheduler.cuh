@@ -68,8 +68,9 @@ struct __task_bulk_receiver;
 
 struct __task_scheduler_backend : parallel_scheduler_backend
 {
-  _CCCL_API virtual auto query(get_forward_progress_guarantee_t) const noexcept -> forward_progress_guarantee = 0;
-  _CCCL_API virtual auto __equal_to(const void* __other, ::cuda::std::__type_info_ref __type) -> bool         = 0;
+  _CCCL_HOST_DEVICE_API virtual auto query(get_forward_progress_guarantee_t) const noexcept
+    -> forward_progress_guarantee                                                                                 = 0;
+  _CCCL_HOST_DEVICE_API virtual auto __equal_to(const void* __other, ::cuda::std::__type_info_ref __type) -> bool = 0;
 };
 
 using __backend_ptr_t = __shared_ptr<__task_scheduler_backend>;
@@ -87,7 +88,8 @@ struct task_scheduler_domain : default_domain
 {
   _CCCL_TEMPLATE(class _Sndr, class _Env, class _BulkTag = tag_of_t<_Sndr>)
   _CCCL_REQUIRES(__one_of<_BulkTag, bulk_chunked_t, bulk_unchunked_t>)
-  [[nodiscard]] _CCCL_API static constexpr auto transform_sender(set_value_t, _Sndr&& __sndr, const _Env& __env)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto
+  transform_sender(set_value_t, _Sndr&& __sndr, const _Env& __env)
   {
     using __sched_t =
       __call_result_or_t<get_completion_scheduler_t<set_value_t>, __not_a_scheduler<>, env_of_t<_Sndr>, const _Env&>;
@@ -127,61 +129,65 @@ public:
 
   _CCCL_TEMPLATE(class _Sch, class _Alloc = ::cuda::std::allocator<::cuda::std::byte>)
   _CCCL_REQUIRES(__detail::__non_task_scheduler<_Sch>)
-  _CCCL_API explicit task_scheduler(_Sch __sch, _Alloc __alloc = {})
+  _CCCL_HOST_DEVICE_API explicit task_scheduler(_Sch __sch, _Alloc __alloc = {})
       : __backend_(experimental::__allocate_shared<__backend_for<_Sch, _Alloc>>(__alloc, _CCCL_MOVE(__sch), __alloc))
   {}
 
-  [[nodiscard]] _CCCL_API auto schedule() const noexcept -> __detail::__task_sender;
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto schedule() const noexcept -> __detail::__task_sender;
 
-  [[nodiscard]] _CCCL_API friend bool operator==(const task_scheduler& __lhs, const task_scheduler& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend bool
+  operator==(const task_scheduler& __lhs, const task_scheduler& __rhs) noexcept
   {
     return __lhs.__backend_ == __rhs.__backend_;
   }
 
-  [[nodiscard]] _CCCL_API friend bool operator!=(const task_scheduler& __lhs, const task_scheduler& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend bool
+  operator!=(const task_scheduler& __lhs, const task_scheduler& __rhs) noexcept
   {
     return !(__lhs.__backend_ == __rhs.__backend_);
   }
 
   template <class _Sch>
-  [[nodiscard]] _CCCL_API friend auto operator==(const task_scheduler& __lhs, const _Sch& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend auto operator==(const task_scheduler& __lhs, const _Sch& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)(__detail::__non_task_scheduler<_Sch>)
   {
     return __lhs.__backend_->__equal_to(::cuda::std::addressof(__rhs), _CCCL_TYPEID(_Sch));
   }
 
   template <class _Sch>
-  [[nodiscard]] _CCCL_API friend auto operator!=(const task_scheduler& __lhs, const _Sch& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend auto operator!=(const task_scheduler& __lhs, const _Sch& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)(__detail::__non_task_scheduler<_Sch>)
   {
     return !(__lhs == __rhs);
   }
 
   template <class _Sch>
-  [[nodiscard]] _CCCL_API friend auto operator==(const _Sch& __lhs, const task_scheduler& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend auto operator==(const _Sch& __lhs, const task_scheduler& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)(__detail::__non_task_scheduler<_Sch>)
   {
     return __rhs == __lhs;
   }
 
   template <class _Sch>
-  [[nodiscard]] _CCCL_API friend auto operator!=(const _Sch& __lhs, const task_scheduler& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend auto operator!=(const _Sch& __lhs, const task_scheduler& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)(__detail::__non_task_scheduler<_Sch>)
   {
     return !(__rhs == __lhs);
   }
 
-  [[nodiscard]] _CCCL_API auto query(get_forward_progress_guarantee_t) const noexcept -> forward_progress_guarantee
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto query(get_forward_progress_guarantee_t) const noexcept
+    -> forward_progress_guarantee
   {
     return __backend_->query(get_forward_progress_guarantee_t{});
   }
 
-  [[nodiscard]] _CCCL_API auto query(get_completion_scheduler_t<set_value_t>) const noexcept -> const task_scheduler&
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto query(get_completion_scheduler_t<set_value_t>) const noexcept
+    -> const task_scheduler&
   {
     return *this;
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_value_t>) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_completion_domain_t<set_value_t>) const noexcept
   {
     return task_scheduler_domain{};
   }
@@ -204,12 +210,12 @@ class __task_opstate_t
 public:
   using operation_state_concept = operation_state_t;
 
-  _CCCL_API __task_opstate_t(__backend_ptr_t __backend, _Rcvr __rcvr)
+  _CCCL_HOST_DEVICE_API __task_opstate_t(__backend_ptr_t __backend, _Rcvr __rcvr)
       : __rcvr_proxy_(_CCCL_MOVE(__rcvr))
       , __backend_(_CCCL_MOVE(__backend))
   {}
 
-  _CCCL_API void start() noexcept
+  _CCCL_HOST_DEVICE_API void start() noexcept
   {
     _CCCL_TRY
     {
@@ -237,23 +243,24 @@ struct __task_sender
                           set_error_t(cudaError_t),
                           set_stopped_t()>;
 
-  _CCCL_API explicit __task_sender(task_scheduler __sch)
+  _CCCL_HOST_DEVICE_API explicit __task_sender(task_scheduler __sch)
       : __attrs_{_CCCL_MOVE(__sch)}
   {}
 
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API auto connect(_Rcvr __rcvr) const noexcept -> __task_opstate_t<_Rcvr>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto connect(_Rcvr __rcvr) const noexcept -> __task_opstate_t<_Rcvr>
   {
     return __task_opstate_t<_Rcvr>(get_completion_scheduler<set_value_t>(__attrs_).__backend_, _CCCL_MOVE(__rcvr));
   }
 
   template <class _Self>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept -> __completions_t
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
+    -> __completions_t
   {
     return {};
   }
 
-  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> const __sch_attrs_t<task_scheduler>&
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto get_env() const noexcept -> const __sch_attrs_t<task_scheduler>&
   {
     return __attrs_;
   }
@@ -271,7 +278,7 @@ struct __task_bulk_receiver
   using receiver_concept = receiver_t;
 
   template <class... _As>
-  _CCCL_API void set_value(_As&&... __as) noexcept
+  _CCCL_HOST_DEVICE_API void set_value(_As&&... __as) noexcept
   {
     _CCCL_TRY
     {
@@ -298,17 +305,17 @@ struct __task_bulk_receiver
   }
 
   template <class _Error>
-  _CCCL_API void set_error(_Error&& __err) noexcept
+  _CCCL_HOST_DEVICE_API void set_error(_Error&& __err) noexcept
   {
     execution::set_error(_CCCL_MOVE(__state_->__rcvr_), static_cast<_Error&&>(__err));
   }
 
-  _CCCL_API void set_stopped() noexcept
+  _CCCL_HOST_DEVICE_API void set_stopped() noexcept
   {
     execution::set_stopped(_CCCL_MOVE(__state_->__rcvr_));
   }
 
-  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> env_of_t<_Rcvr>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto get_env() const noexcept -> env_of_t<_Rcvr>
   {
     return execution::get_env(__state_->__rcvr_);
   }
@@ -319,7 +326,7 @@ struct __task_bulk_receiver
 //! Returns a visitor (callable) used to invoke the bulk (unchunked) function with the
 //! predecessor's values, which are stored in a variant in the bulk operation state.
 template <bool _Parallelize, class _Fn>
-[[nodiscard]] _CCCL_API constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 __get_execute_bulk_fn(bulk_unchunked_t, _Fn& __fn, size_t __shape, size_t __begin, size_t) noexcept
 {
   return [=, &__fn](auto& __args) {
@@ -352,7 +359,7 @@ struct __apply_bulk_execute
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _As>
-  _CCCL_API void operator()(_As&... __as) const noexcept(__nothrow_callable<_Fn&, size_t, _As&...>)
+  _CCCL_HOST_DEVICE_API void operator()(_As&... __as) const noexcept(__nothrow_callable<_Fn&, size_t, _As&...>)
   {
     if constexpr (_Parallelize)
     {
@@ -372,7 +379,7 @@ struct __apply_bulk_execute
 //! Returns a visitor (callable) used to invoke the bulk (chunked) function with the
 //! predecessor's values, which are stored in a variant in the bulk operation state.
 template <bool _Parallelize, class _Fn>
-[[nodiscard]] _CCCL_API constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 __get_execute_bulk_fn(bulk_chunked_t, _Fn& __fn, size_t __shape, size_t __begin, size_t __end) noexcept
 {
   return [=, &__fn](auto& __args) {
@@ -396,14 +403,14 @@ template <class _BulkTag, class _Policy, class _Fn, class _Rcvr, class _Values>
 class __task_bulk_state : public __detail::__receiver_proxy_base<_Rcvr, bulk_item_receiver_proxy>
 {
 public:
-  _CCCL_API explicit __task_bulk_state(_Rcvr __rcvr, size_t __shape, _Fn __fn, __backend_ptr_t __backend)
+  _CCCL_HOST_DEVICE_API explicit __task_bulk_state(_Rcvr __rcvr, size_t __shape, _Fn __fn, __backend_ptr_t __backend)
       : __task_bulk_state::__receiver_proxy_base(_CCCL_MOVE(__rcvr))
       , __fn_(_CCCL_MOVE(__fn))
       , __shape_(__shape)
       , __backend_(_CCCL_MOVE(__backend))
   {}
 
-  _CCCL_API void set_value() noexcept final override
+  _CCCL_HOST_DEVICE_API void set_value() noexcept final override
   {
     // Send the stored values to the downstream receiver.
     __visit(
@@ -421,7 +428,7 @@ public:
   }
 
   //! Actually runs the bulk operation over the specified range.
-  _CCCL_API void execute(size_t __begin, size_t __end) noexcept final override
+  _CCCL_HOST_DEVICE_API void execute(size_t __begin, size_t __end) noexcept final override
   {
     _CCCL_TRY
     {
@@ -454,13 +461,13 @@ struct __task_bulk_opstate
 {
   using operation_state_concept = operation_state_t;
 
-  _CCCL_API explicit __task_bulk_opstate(
+  _CCCL_HOST_DEVICE_API explicit __task_bulk_opstate(
     _Sndr&& __sndr, size_t __shape, _Fn __fn, _Rcvr __rcvr, __backend_ptr_t __backend)
       : __state_{_CCCL_MOVE(__rcvr), __shape, _CCCL_MOVE(__fn), _CCCL_MOVE(__backend)}
       , __opstate1_(execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t{&__state_}))
   {}
 
-  _CCCL_API void start() noexcept
+  _CCCL_HOST_DEVICE_API void start() noexcept
   {
     execution::start(__opstate1_);
   }
@@ -480,13 +487,13 @@ struct __task_bulk_sender
 {
   using sender_concept = sender_t;
 
-  _CCCL_API explicit __task_bulk_sender(_Sndr __sndr, task_scheduler __sch)
+  _CCCL_HOST_DEVICE_API explicit __task_bulk_sender(_Sndr __sndr, task_scheduler __sch)
       : __sndr_(_CCCL_MOVE(__sndr))
       , __attrs_{_CCCL_MOVE(__sch)}
   {}
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) &&
+  _CCCL_HOST_DEVICE_API auto connect(_Rcvr __rcvr) &&
   {
     auto& [__tag, __data, __child] = __sndr_;
     auto& [__pol, __shape, __fn]   = __data;
@@ -500,7 +507,7 @@ struct __task_bulk_sender
 
   _CCCL_TEMPLATE(class _Self, class _Env)
   _CCCL_REQUIRES(__same_as<_Self, __task_bulk_sender>) // accept only rvalues.
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     // This calls get_completion_signatures on the wrapped bulk_[un]chunked sender. We
     // call it directly instead of using execution::get_completion_signatures to avoid
@@ -509,7 +516,7 @@ struct __task_bulk_sender
     return transform_completion_signatures(__completions, __decay_transform<set_value_t>(), {}, {}, __eptr_completion());
   }
 
-  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> const __sch_attrs_t<task_scheduler>&
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto get_env() const noexcept -> const __sch_attrs_t<task_scheduler>&
   {
     return __attrs_;
   }
@@ -522,7 +529,7 @@ private:
 //! Function called by the `bulk_chunked` operation; calls `execute` on the bulk_item_receiver_proxy.
 struct __bulk_chunked_fn
 {
-  _CCCL_API void operator()(size_t __begin, size_t __end) noexcept
+  _CCCL_HOST_DEVICE_API void operator()(size_t __begin, size_t __end) noexcept
   {
     __rcvr_.execute(__begin, __end);
   }
@@ -533,7 +540,7 @@ struct __bulk_chunked_fn
 //! Function called by the `bulk_unchunked` operation; calls `execute` on the bulk_item_receiver_proxy.
 struct __bulk_unchunked_fn
 {
-  _CCCL_API void operator()(size_t __idx) noexcept
+  _CCCL_HOST_DEVICE_API void operator()(size_t __idx) noexcept
   {
     __rcvr_.execute(__idx, __idx + 1);
   }
@@ -542,8 +549,8 @@ struct __bulk_unchunked_fn
 };
 
 template <class _Ty, class _Alloc, class... _Args>
-_CCCL_API auto __emplace_into(::cuda::std::span<::cuda::std::byte> __storage, _Alloc& __alloc, _Args&&... __args)
-  -> _Ty&
+_CCCL_HOST_DEVICE_API auto
+__emplace_into(::cuda::std::span<::cuda::std::byte> __storage, _Alloc& __alloc, _Args&&... __args) -> _Ty&
 {
   using __traits_t = ::cuda::std::allocator_traits<__rebind_alloc_t<_Alloc, _Ty>>;
   __rebind_alloc_t<_Alloc, _Ty> __alloc_copy{__alloc};
@@ -561,7 +568,7 @@ public:
   using allocator_type = _Alloc;
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API __opstate_t(_Alloc __alloc, _Sndr __sndr, receiver_proxy& __rcvr_proxy, bool __in_situ)
+  _CCCL_HOST_DEVICE_API __opstate_t(_Alloc __alloc, _Sndr __sndr, receiver_proxy& __rcvr_proxy, bool __in_situ)
       : _Alloc(_CCCL_MOVE(__alloc))
       , __opstate_(execution::connect(
           _CCCL_MOVE(__sndr),
@@ -570,19 +577,19 @@ public:
   {}
   __opstate_t(__opstate_t&&) = delete;
 
-  _CCCL_API void start() noexcept
+  _CCCL_HOST_DEVICE_API void start() noexcept
   {
     execution::start(__opstate_);
   }
 
-  [[nodiscard]] _CCCL_API auto query(get_allocator_t) const noexcept -> const _Alloc&
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto query(get_allocator_t) const noexcept -> const _Alloc&
   {
     return *this;
   }
 
 private:
   template <bool _InSitu>
-  _CCCL_API static void __delete_opstate(void* __ptr) noexcept
+  _CCCL_HOST_DEVICE_API static void __delete_opstate(void* __ptr) noexcept
   {
     using __traits_t = ::cuda::std::allocator_traits<__rebind_alloc_t<_Alloc, __opstate_t>>;
     auto* __opstate  = static_cast<__opstate_t*>(__ptr);
@@ -600,7 +607,7 @@ private:
 };
 } // namespace __detail
 
-[[nodiscard]] _CCCL_API inline auto task_scheduler::schedule() const noexcept -> __detail::__task_sender
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline auto task_scheduler::schedule() const noexcept -> __detail::__task_sender
 {
   return __detail::__task_sender{*this};
 }
@@ -614,7 +621,7 @@ class _CCCL_DECLSPEC_EMPTY_BASES task_scheduler::__backend_for
   friend struct __detail::__proxy_receiver;
 
   template <class _RcvrProxy, class _Sndr>
-  _CCCL_API void
+  _CCCL_HOST_DEVICE_API void
   __schedule(_RcvrProxy& __rcvr_proxy, _Sndr&& __sndr, ::cuda::std::span<::cuda::std::byte> __storage) noexcept
   {
     _CCCL_TRY
@@ -633,29 +640,31 @@ class _CCCL_DECLSPEC_EMPTY_BASES task_scheduler::__backend_for
   }
 
 public:
-  _CCCL_API explicit __backend_for(_Sch __sch, _Alloc __alloc)
+  _CCCL_HOST_DEVICE_API explicit __backend_for(_Sch __sch, _Alloc __alloc)
       : _Alloc(_CCCL_MOVE(__alloc))
       , __sch_(_CCCL_MOVE(__sch))
   {}
 
-  _CCCL_API void schedule(receiver_proxy& __rcvr_proxy,
-                          ::cuda::std::span<::cuda::std::byte> __storage) noexcept final override
+  _CCCL_HOST_DEVICE_API void
+  schedule(receiver_proxy& __rcvr_proxy, ::cuda::std::span<::cuda::std::byte> __storage) noexcept final override
   {
     __schedule(__rcvr_proxy, execution::schedule(__sch_), __storage);
   }
 
-  _CCCL_API void schedule_bulk_chunked(size_t __size,
-                                       bulk_item_receiver_proxy& __rcvr_proxy,
-                                       ::cuda::std::span<::cuda::std::byte> __storage) noexcept final override
+  _CCCL_HOST_DEVICE_API void schedule_bulk_chunked(
+    size_t __size,
+    bulk_item_receiver_proxy& __rcvr_proxy,
+    ::cuda::std::span<::cuda::std::byte> __storage) noexcept final override
   {
     auto __sndr =
       execution::bulk_chunked(execution::schedule(__sch_), par, __size, __detail::__bulk_chunked_fn{__rcvr_proxy});
     __schedule(__rcvr_proxy, _CCCL_MOVE(__sndr), __storage);
   }
 
-  _CCCL_API void schedule_bulk_unchunked(size_t __size,
-                                         bulk_item_receiver_proxy& __rcvr_proxy,
-                                         ::cuda::std::span<::cuda::std::byte> __storage) noexcept override
+  _CCCL_HOST_DEVICE_API void schedule_bulk_unchunked(
+    size_t __size,
+    bulk_item_receiver_proxy& __rcvr_proxy,
+    ::cuda::std::span<::cuda::std::byte> __storage) noexcept override
   {
     auto __sndr =
       execution::bulk_unchunked(execution::schedule(__sch_), par, __size, __detail::__bulk_unchunked_fn{__rcvr_proxy});
@@ -663,13 +672,14 @@ public:
   }
 
   [[nodiscard]]
-  _CCCL_API auto query(get_forward_progress_guarantee_t) const noexcept -> forward_progress_guarantee final override
+  _CCCL_HOST_DEVICE_API auto query(get_forward_progress_guarantee_t) const noexcept
+    -> forward_progress_guarantee final override
   {
     return get_forward_progress_guarantee(__sch_);
   }
 
   [[nodiscard]]
-  _CCCL_API bool __equal_to(const void* __other, ::cuda::std::__type_info_ref __type) final override
+  _CCCL_HOST_DEVICE_API bool __equal_to(const void* __other, ::cuda::std::__type_info_ref __type) final override
   {
     if (__type == _CCCL_TYPEID(_Sch))
     {
@@ -688,7 +698,8 @@ namespace __detail
 // Implementation of the get_scheduler_t query for __proxy_receiver_impl from
 // parallel_scheduler_backend.cuh
 template <class _Rcvr, class _Proxy>
-_CCCL_API auto __receiver_proxy_base<_Rcvr, _Proxy>::query(const get_scheduler_t&) const noexcept -> task_scheduler
+_CCCL_HOST_DEVICE_API auto __receiver_proxy_base<_Rcvr, _Proxy>::query(const get_scheduler_t&) const noexcept
+  -> task_scheduler
 {
   if constexpr (__callable<const get_scheduler_t&, env_of_t<_Rcvr>>)
   {

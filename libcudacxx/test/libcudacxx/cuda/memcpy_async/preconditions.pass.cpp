@@ -10,8 +10,7 @@
 
 #define _LIBCUDACXX_MEMCPY_ASYNC_PRE_TESTING
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
 // error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
 
 #include <cuda/__memcpy_async/check_preconditions.h>
@@ -19,7 +18,7 @@
 
 #include "test_macros.h"
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   using T = int;
 

@@ -95,8 +95,7 @@ TEST_FUNC constexpr void mixin_layout(const H& handle, const A& acc)
   // Use weird layout, make sure it has the properties we want to test
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   static_assert(!cuda::std::is_default_constructible<
-                  typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<signed char, D>>>::value,
-                "");
+                typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<signed char, D>>>::value);
   mixin_extents<hc, false, ac>(handle, layout_wrapping_integral<4>(), acc);
 }
 
@@ -110,11 +109,10 @@ TEST_FUNC constexpr void mixin_accessor()
   // Make sure they actually got the properties we want to test
   // checked_accessor is not default constructible except for const double, where it is not noexcept
   static_assert(
-    cuda::std::is_default_constructible<checked_accessor<T>>::value == cuda::std::is_same<T, const double>::value, "");
+    cuda::std::is_default_constructible<checked_accessor<T>>::value == cuda::std::is_same<T, const double>::value);
   // checked_accessor's data handle type is not default constructible for double
   static_assert(cuda::std::is_default_constructible<typename checked_accessor<T>::data_handle_type>::value
-                  != cuda::std::is_same<T, double>::value,
-                "");
+                != cuda::std::is_same<T, double>::value);
   mixin_layout<!cuda::std::is_same<T, double>::value, cuda::std::is_same<T, const double>::value>(
     typename checked_accessor<T>::data_handle_type(elements.data()), checked_accessor<T>(1024));
 }
@@ -129,11 +127,10 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 void mixin_accessor()
   // Make sure they actually got the properties we want to test
   // checked_accessor is not default constructible except for const double, where it is not noexcept
   static_assert(
-    cuda::std::is_default_constructible<checked_accessor<T>>::value == cuda::std::is_same<T, const double>::value, "");
+    cuda::std::is_default_constructible<checked_accessor<T>>::value == cuda::std::is_same<T, const double>::value);
   // checked_accessor's data handle type is not default constructible for double
   static_assert(cuda::std::is_default_constructible<typename checked_accessor<T>::data_handle_type>::value
-                  != cuda::std::is_same<T, double>::value,
-                "");
+                != cuda::std::is_same<T, double>::value);
   mixin_layout<!cuda::std::is_same<T, double>::value, cuda::std::is_same<T, const double>::value>(
     typename checked_accessor<T>::data_handle_type(elements.get_ptr()), checked_accessor<T>(1024));
 }

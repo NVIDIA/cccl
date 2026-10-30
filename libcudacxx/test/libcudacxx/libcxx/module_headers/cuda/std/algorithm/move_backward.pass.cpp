@@ -13,7 +13,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int a[] = {1, 2, 3, 0, 0};
   auto r  = cuda::std::move_backward(a, a + 3, a + 5);

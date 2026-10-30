@@ -25,7 +25,9 @@ def add_op(a, b):
 
 
 # Perform the inclusive scan.
-cuda.compute.inclusive_scan(d_input, d_output, add_op, h_init, d_input.size)
+cuda.compute.inclusive_scan(
+    d_in=d_input, d_out=d_output, op=add_op, init_value=h_init, num_items=d_input.size
+)
 
 # Verify the result.
 expected = np.asarray([0, 2, 2, 6, 6])

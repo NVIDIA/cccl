@@ -22,6 +22,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import cuda.bench as bench
 import cupy as cp
 import numpy as np
 from utils import (
@@ -34,7 +35,6 @@ from utils import (
     FUNDAMENTAL_TYPES as TYPE_MAP,
 )
 
-import cuda.bench as bench
 from cuda.compute import make_select
 
 # Entropy values from C++ benchmark
@@ -70,15 +70,20 @@ def bench_select_if(state: bench.State):
     def less_than_threshold(x):
         return x < thresh_val
 
-    selector = make_select(d_in, d_out, d_num_selected, less_than_threshold)
+    selector = make_select(
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected,
+        cond=less_than_threshold,
+    )
 
     temp_storage_bytes = selector(
-        None,
-        d_in,
-        d_out,
-        d_num_selected,
-        less_than_threshold,
-        num_elements,
+        temp_storage=None,
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected,
+        cond=less_than_threshold,
+        num_items=num_elements,
     )
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
@@ -90,13 +95,13 @@ def bench_select_if(state: bench.State):
 
     def launcher(launch: bench.Launch):
         selector(
-            temp_storage,
-            d_in,
-            d_out,
-            d_num_selected,
-            less_than_threshold,
-            num_elements,
-            launch.get_stream(),
+            temp_storage=temp_storage,
+            d_in=d_in,
+            d_out=d_out,
+            d_num_selected_out=d_num_selected,
+            cond=less_than_threshold,
+            num_items=num_elements,
+            stream=launch.get_stream(),
         )
 
     state.exec(launcher, batched=False)

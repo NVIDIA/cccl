@@ -33,7 +33,9 @@ def sum_paired_values(pair):
 
 
 # Perform the unary transform.
-cuda.compute.unary_transform(zip_it, d_output, sum_paired_values, num_items)
+cuda.compute.unary_transform(
+    d_in=zip_it, d_out=d_output, op=sum_paired_values, num_items=num_items
+)
 
 # Calculate the expected results.
 expected = d_input1.get() + d_input2.get()

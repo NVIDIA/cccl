@@ -10,7 +10,7 @@
 #include <cuda/cmath>
 #include <cuda/std/type_traits>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 enum struct test_mode
 {
@@ -37,29 +37,30 @@ __global__ void kernel(InputPointerT input, OutputIteratorT output, int num_item
   constexpr int buffer_align             = cub::detail::LoadToSharedBufferAlignBytes<input_t>();
   constexpr int buffer_size              = cub::detail::LoadToSharedBufferSizeBytes<input_t>(max_num_items_first_copy);
   alignas(buffer_align) __shared__ char buffer[num_buffers][buffer_size];
-  cuda::std::span<const input_t> src{input, static_cast<cuda::std::size_t>(num_items)};
-  cuda::std::span<char> dst_buff{buffer[0]};
+  const cuda::std::span<const input_t> src{input, static_cast<cuda::std::size_t>(num_items)};
+  const cuda::std::span<char> dst_buff{buffer[0]};
   const int num_items_first_copy = cuda::std::min(num_items, max_num_items_first_copy);
 
+  // NOLINTNEXTLINE(misc-const-correctness)
   cuda::std::span<input_t> dst = block_load2sh.CopyAsync(dst_buff, src.first(num_items_first_copy));
   if constexpr (Mode == test_mode::single_copy || Mode == test_mode::multi_copy_multi_phase
                 || Mode == test_mode::multi_copy_multi_barrier)
   {
     block_load2sh.CommitAndWait();
 
-    for (int idx = threadIdx.x; idx < num_items_first_copy; idx += ThreadsInBlock)
+    for (int idx = static_cast<int>(threadIdx.x); idx < num_items_first_copy; idx += ThreadsInBlock)
     {
       output[idx] = dst[idx];
     }
   }
   else if constexpr (Mode == test_mode::multi_copy_single_phase)
   {
-    cuda::std::span<char> dst_buff2{buffer[1]};
-    cuda::std::span<input_t> dst2 = block_load2sh.CopyAsync(dst_buff2, src.subspan(num_items_first_copy));
+    const cuda::std::span<char> dst_buff2{buffer[1]};
+    const cuda::std::span<input_t> dst2 = block_load2sh.CopyAsync(dst_buff2, src.subspan(num_items_first_copy));
 
     block_load2sh.CommitAndWait();
 
-    for (int idx = threadIdx.x; idx < num_items; idx += ThreadsInBlock)
+    for (int idx = static_cast<int>(threadIdx.x); idx < num_items; idx += ThreadsInBlock)
     {
       output[idx] = idx < num_items_first_copy ? dst[idx] : dst2[idx - num_items_first_copy];
     }
@@ -85,7 +86,7 @@ __global__ void kernel(InputPointerT input, OutputIteratorT output, int num_item
     // Reuse TempStorage
     block_load2sh_t second_block_load2sh{storage};
 
-    cuda::std::span<input_t> dst = second_block_load2sh.CopyAsync(dst_buff, src.subspan(num_items_first_copy));
+    const cuda::std::span<input_t> dst = second_block_load2sh.CopyAsync(dst_buff, src.subspan(num_items_first_copy));
 
     second_block_load2sh.CommitAndWait();
 
@@ -134,14 +135,14 @@ __global__ void kernel_dyn_smem_dst(InputPointerT input, OutputIteratorT output,
 
   static_assert(alignof(input_t) <= cub::detail::LoadToSharedBufferAlignBytes<char>());
   extern __shared__ char smem_buff[];
-  assert(cuda::is_aligned(smem_buff, cub::detail::LoadToSharedBufferAlignBytes<input_t>()));
+  REQUIRE_DEVICE(cuda::is_aligned(smem_buff, cub::detail::LoadToSharedBufferAlignBytes<input_t>()));
 
   constexpr int ThreadsInBlock = ThreadsInBlockX * ThreadsInBlockY * ThreadsInBlockZ;
 
-  cuda::std::span<input_t> src{input, static_cast<cuda::std::size_t>(num_items)};
-  cuda::std::span<char> dst_buff{smem_buff, cuda::std::size_t{cuda::ptx::get_sreg_dynamic_smem_size()}};
+  const cuda::std::span<input_t> src{input, static_cast<cuda::std::size_t>(num_items)};
+  const cuda::std::span<char> dst_buff{smem_buff, cuda::std::size_t{cuda::ptx::get_sreg_dynamic_smem_size()}};
 
-  cuda::std::span<input_t> dst = block_load2sh.CopyAsync(dst_buff, src.first(num_items));
+  const cuda::std::span<input_t> dst = block_load2sh.CopyAsync(dst_buff, src.first(num_items));
 
   // also test separate Commit and Wait calls with token passing here
   auto token = block_load2sh.Commit();
@@ -201,7 +202,7 @@ struct params_t
   static constexpr int tile_size        = items_per_thread * threads_in_block;
 };
 
-C2H_TEST("Block load to shared works", "[load][block]", types, items_per_thread, threads_in_block, modes)
+CUB_TEST("Block load to shared works", "[load][block]", CUB_SMALL, types, items_per_thread, threads_in_block, modes)
 {
   using params             = params_t<TestType>;
   using type               = typename params::type;
@@ -214,7 +215,12 @@ C2H_TEST("Block load to shared works", "[load][block]", types, items_per_thread,
     d_input, thrust::raw_pointer_cast(d_input.data()));
 }
 
-C2H_TEST("Block load to shared works with even vector types", "[load][block]", vec_types, items_per_thread, a_block_size)
+CUB_TEST("Block load to shared works with even vector types",
+         "[load][block]",
+         CUB_SMALL,
+         vec_types,
+         items_per_thread,
+         a_block_size)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -224,7 +230,7 @@ C2H_TEST("Block load to shared works with even vector types", "[load][block]", v
   test_block_load<params::items_per_thread, params::threads_in_block>(d_input, thrust::raw_pointer_cast(d_input.data()));
 }
 
-C2H_TEST("Block load to shared works with custom types", "[load][block]", items_per_thread)
+CUB_TEST("Block load to shared works with custom types", "[load][block]", CUB_SMALL, items_per_thread)
 {
   using type                     = c2h::custom_type_t<c2h::equal_comparable_t>;
   constexpr int items_per_thread = c2h::get<0, TestType>::value;
@@ -236,7 +242,8 @@ C2H_TEST("Block load to shared works with custom types", "[load][block]", items_
   test_block_load<items_per_thread, threads_in_block>(d_input, thrust::raw_pointer_cast(d_input.data()));
 }
 
-C2H_TEST("Block load to shared works with dyn smem and internal TempStorage", "[load][block]", items_per_thread)
+CUB_TEST(
+  "Block load to shared works with dyn smem and internal TempStorage", "[load][block]", CUB_SMALL, items_per_thread)
 {
   using type                     = int;
   constexpr int items_per_thread = c2h::get<0, TestType>::value;
@@ -249,8 +256,9 @@ C2H_TEST("Block load to shared works with dyn smem and internal TempStorage", "[
 }
 
 #if IPT == 1
-C2H_TEST("Block load to shared works with const and non-const datatype and different alignment cases",
+CUB_TEST("Block load to shared works with const and non-const datatype and different alignment cases",
          "[load][block]",
+         CUB_SMALL,
          c2h::type_list<const int*, int*>)
 {
   using type           = int;

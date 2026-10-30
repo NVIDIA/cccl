@@ -23,10 +23,10 @@ void TestCopyDevice(ExecutionPolicy exec, size_t n)
   copy_kernel<<<1, 1>>>(exec, d_src.begin(), d_src.end(), d_dst.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_dst, d_dst);
+  REQUIRE(h_dst == d_dst);
 }
 
 template <typename T>
@@ -62,10 +62,10 @@ void TestCopyNDevice(ExecutionPolicy exec, size_t n)
   copy_n_kernel<<<1, 1>>>(exec, d_src.begin(), d_src.size(), d_dst.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_dst, d_dst);
+  REQUIRE(h_dst == d_dst);
 }
 
 template <typename T>

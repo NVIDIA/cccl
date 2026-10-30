@@ -27,13 +27,18 @@
 #include <cuda/std/__algorithm/move.h>
 #include <cuda/std/__algorithm/unwrap_iter.h>
 #include <cuda/std/__algorithm/unwrap_range.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/allocator.h>
+#include <cuda/std/__fwd/iterator.h>
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__memory/voidify.h>
-#include <cuda/std/__new/device_new.h>
+#include <cuda/std/__new/device_new.h> // IWYU pragma: keep
 #include <cuda/std/__new_>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/extent.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
@@ -41,7 +46,6 @@
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
 #include <cuda/std/__type_traits/is_trivially_move_constructible.h>
 #include <cuda/std/__type_traits/is_unbounded_array.h>
-#include <cuda/std/__type_traits/negation.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_extent.h>
 #include <cuda/std/__utility/exception_guard.h>
@@ -55,7 +59,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 struct __AlwaysFalse
 {
   template <class... _Args>
-  _CCCL_API constexpr bool operator()(_Args&&...) const noexcept
+  _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(_Args&&...) noexcept
   {
     return false;
   }
@@ -518,7 +522,7 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void __allocator_destroy(_Alloc& __alloc,
 {
   for (; __first != __last; ++__first)
   {
-    allocator_traits<_Alloc>::destroy(__alloc, ::cuda::std::__to_address(__first));
+    allocator_traits<_Alloc>::destroy(__alloc, ::cuda::std::to_address(__first));
   }
 }
 
@@ -557,7 +561,7 @@ __uninitialized_allocator_copy_impl(_Alloc& __alloc, _Iter1 __first1, _Sent1 __l
     _AllocatorDestroyRangeReverse<_Alloc, _Iter2>(__alloc, __destruct_first, __first2));
   while (__first1 != __last1)
   {
-    allocator_traits<_Alloc>::construct(__alloc, ::cuda::std::__to_address(__first2), *__first1);
+    allocator_traits<_Alloc>::construct(__alloc, ::cuda::std::to_address(__first2), *__first1);
     ++__first1;
     ++__first2;
   }
@@ -587,7 +591,7 @@ __uninitialized_allocator_copy_impl(_Alloc&, _In* __first1, _In* __last1, _Out* 
   {
     while (__first1 != __last1)
     {
-      ::cuda::std::__construct_at(::cuda::std::__to_address(__first2), *__first1);
+      ::cuda::std::__construct_at(::cuda::std::to_address(__first2), *__first1);
       ++__first1;
       ++__first2;
     }
@@ -627,9 +631,9 @@ __uninitialized_allocator_move_if_noexcept(_Alloc& __alloc, _Iter1 __first1, _Se
   {
 #if _CCCL_HAS_EXCEPTIONS()
     allocator_traits<_Alloc>::construct(
-      __alloc, ::cuda::std::__to_address(__first2), ::cuda::std::move_if_noexcept(*__first1));
+      __alloc, ::cuda::std::to_address(__first2), ::cuda::std::move_if_noexcept(*__first1));
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-    allocator_traits<_Alloc>::construct(__alloc, ::cuda::std::__to_address(__first2), ::cuda::std::move(*__first1));
+    allocator_traits<_Alloc>::construct(__alloc, ::cuda::std::to_address(__first2), ::cuda::std::move(*__first1));
 #endif // !_CCCL_HAS_EXCEPTIONS()
     ++__first1;
     ++__first2;
@@ -651,14 +655,14 @@ template <class _Alloc,
           class _Type = typename iterator_traits<_Iter1>::value_type,
           class       = enable_if_t<is_trivially_move_constructible_v<_Type> && is_trivially_move_assignable_v<_Type>
                                     && __allocator_has_trivial_move_construct<_Alloc, _Type>>>
-_CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Iter2
-__uninitialized_allocator_move_if_noexcept(_Alloc&, _Iter1 __first1, _Iter1 __last1, _Iter2 __first2)
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20
+_Iter2 __uninitialized_allocator_move_if_noexcept(_Alloc&, _Iter1 __first1, _Iter1 __last1, _Iter2 __first2)
 {
   _CCCL_IF_CONSTEVAL
   {
     while (__first1 != __last1)
     {
-      ::cuda::std::__construct_at(::cuda::std::__to_address(__first2), ::cuda::std::move(*__first1));
+      ::cuda::std::__construct_at(::cuda::std::to_address(__first2), ::cuda::std::move(*__first1));
       ++__first1;
       ++__first2;
     }

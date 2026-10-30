@@ -7,10 +7,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
-
 // UNSUPPORTED: nvrtc
+
+// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
+// the assert does not trigger
 
 #include <cuda/mdspan>
 

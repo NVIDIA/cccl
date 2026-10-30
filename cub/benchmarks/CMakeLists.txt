@@ -80,17 +80,38 @@ function(get_bench_ranges src bench_name)
   register_cccl_tuning("${bench_name}" "${ranges}")
 endfunction()
 
+set(SASS_OBJECTS_DIR "${CMAKE_CURRENT_BINARY_DIR}/objects")
+
 function(add_bench target_name bench_name bench_src)
   set(bench_target ${bench_name})
   set(${target_name} ${bench_target} PARENT_SCOPE)
 
-  cccl_add_executable(${bench_target} NO_METATARGETS SOURCES "${bench_src}")
+  cccl_add_executable(${bench_target} SOURCES "${bench_src}")
+  # Target objects exclude linked helper kernels from SASS comparisons.
+  file(
+    GENERATE OUTPUT "${SASS_OBJECTS_DIR}/${bench_target}.objects"
+    CONTENT "$<JOIN:$<TARGET_OBJECTS:${bench_target}>,\n>\n"
+  )
   target_link_libraries(
     ${bench_target}
     PRIVATE #
       cccl.nvbench_helper
       nvbench::main
   )
+
+  if (
+    CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH
+    AND "${bench_src}" MATCHES "/transform/tile/"
+  )
+    target_compile_options(
+      ${bench_target}
+      PRIVATE "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--enable-tile>"
+    )
+    target_compile_definitions(
+      ${bench_target}
+      PRIVATE _CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH
+    )
+  endif()
 endfunction()
 
 function(add_bench_dir bench_dir)
@@ -111,6 +132,7 @@ function(add_bench_dir bench_dir)
     target_compile_options(
       ${base_bench_target}
       PRIVATE "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>"
+      PRIVATE "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>"
     )
 
     if (CUB_ENABLE_TUNING)

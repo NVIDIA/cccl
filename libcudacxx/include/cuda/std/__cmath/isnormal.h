@@ -24,6 +24,7 @@
 #include <cuda/std/__cmath/fpclassify.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -123,6 +124,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
   return ::cuda::std::fpclassify(__x) == FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVFP4_E2M1()
+
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API constexpr bool isnormal(__float128 __x) noexcept
+{
+  return ::cuda::std::fpclassify(__x) == FP_NORMAL;
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_integral_v<_Tp>)

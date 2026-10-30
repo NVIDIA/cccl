@@ -83,7 +83,8 @@ struct green_context
   {
     if (__green_ctx)
     {
-      [[maybe_unused]] cudaError_t __status = ::cuda::__driver::__greenCtxDestroyNoThrow(__green_ctx);
+      _CCCL_ASSERT_DRIVER_API(
+        ::cuda::__driver::__greenCtxDestroyNoThrow, "Failed to destroy green context", __green_ctx);
     }
   }
 

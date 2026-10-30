@@ -20,7 +20,7 @@ TEST_FUNC void test_lambda_return_type()
 {
 // Ensure type can be queried from cuda::std::invoke_result_t
 #  if _CCCL_TILE_COMPILATION()
-  auto d_lm = [] _CCCL_TILE() -> ReturnT {
+  auto d_lm = [] TEST_TILE_FUNC() -> ReturnT {
     return ReturnT{};
   };
 #  else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION() vvv
@@ -96,11 +96,11 @@ struct h_callable
 
 struct d_callable
 {
-  TEST_DEVICE_FUNC int operator()() const&
+  TEST_TILE_DEVICE_FUNC int operator()() const&
   {
     return 42;
   }
-  TEST_DEVICE_FUNC int operator()() const&&
+  TEST_TILE_DEVICE_FUNC int operator()() const&&
   {
     return 42;
   }

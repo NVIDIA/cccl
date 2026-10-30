@@ -18,18 +18,21 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
-#include <cub/block/radix_rank_sort_operations.cuh>
-#include <cub/util_type.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/topk_helpers.cuh>
+#include <cub/detail/uninitialized.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::topk
 {
-//! @brief Parameterizable tuning policy type for AgentTopK
+//! @brief Parameterizable tuning policy type for agent_topk
 //!
-//! @tparam BlockThreads
+//! @tparam ThreadsPerBlock
 //!   Threads per thread block
 //!
 //! @tparam ItemsPerThread
@@ -44,107 +47,19 @@ namespace detail::topk
 //! @tparam ScanAlgorithm
 //!   The BlockScan algorithm to use
 //!
-template <int BlockThreads,
+template <int ThreadsPerBlock,
           int ItemsPerThread,
           int BitsPerPass,
           BlockLoadAlgorithm LoadAlgorithm,
           BlockScanAlgorithm ScanAlgorithm>
-struct AgentTopKPolicy
+struct agent_topk_policy
 {
-  static constexpr int block_threads                 = BlockThreads;
+  static constexpr int threads_per_block             = ThreadsPerBlock;
   static constexpr int items_per_thread              = ItemsPerThread;
   static constexpr int bits_per_pass                 = BitsPerPass;
   static constexpr BlockLoadAlgorithm load_algorithm = LoadAlgorithm;
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
 };
-
-template <typename KeyT, bool CanTwiddle = detail::radix::can_twiddle<KeyT>>
-struct key_prefix_storage_t;
-
-template <typename KeyT>
-struct key_prefix_storage_t<KeyT, true>
-{
-  using bits_t = typename Traits<KeyT>::UnsignedBits;
-  bits_t bits;
-};
-
-// Calculates the number of passes needed for a type T with BitsPerPass bits processed per pass.
-template <typename T>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_num_passes(int bits_per_pass)
-{
-  return ::cuda::ceil_div<int>(sizeof(T) * 8, bits_per_pass);
-}
-
-template <int BitsPerPass>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int calc_num_passes(const int total_bits)
-{
-  return ::cuda::ceil_div<int>(total_bits, BitsPerPass);
-}
-
-// Calculates the starting bit for a given pass (bit 0 is the least significant (rightmost) bit).
-// We process the input from the most to the least significant bit. This way, we can skip some passes in the end.
-template <typename T, int BitsPerPass>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
-{
-  int start_bit = int{sizeof(T)} * 8 - (pass + 1) * BitsPerPass;
-  if (start_bit < 0)
-  {
-    start_bit = 0;
-  }
-  return start_bit;
-}
-
-template <int BitsPerPass>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int calc_start_bit(const int total_bits, const int pass)
-{
-  int start_bit = total_bits - (pass + 1) * BitsPerPass;
-  if (start_bit < 0)
-  {
-    start_bit = 0;
-  }
-  return start_bit;
-}
-
-// Bit-vector for accumulating prefix digits via funnel shift. Each pass shifts the existing
-// contents left by BitsPerPass and ORs the new bucket at the bottom. Sized to hold all
-// decomposed bits of KeyT plus headroom for the shift padding of the last pass.
-template <typename KeyT>
-struct key_prefix_storage_t<KeyT, false>
-{
-  static constexpr int num_words = ::cuda::ceil_div<int>(sizeof(KeyT) * 8 + 31, 32);
-  unsigned int words[num_words];
-
-  // Funnel-shifts the entire bit-vector left by `shift` positions and inserts `value` into the
-  // vacated low bits. Each word receives carry bits from its lower neighbor (high-to-low order
-  // so each word reads its neighbor's original value). The final word is filled from `value`.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void shift_or(int shift, unsigned int value)
-  {
-    _CCCL_ASSERT(shift > 0 && shift < 32, "shift_or requires 0 < shift < 32");
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = num_words - 1; i > 0; --i)
-    {
-      words[i] = __funnelshift_l(words[i - 1], words[i], shift);
-    }
-    words[0] = (words[0] << shift) | value;
-  }
-};
-
-template <typename KeyT, int BitsPerPass>
-_CCCL_DEVICE _CCCL_FORCEINLINE void
-set_kth_key_bits(key_prefix_storage_t<KeyT>& prefix, const int pass, const int bin_index)
-{
-  if constexpr (detail::radix::can_twiddle<KeyT>)
-  {
-    using bits_t        = typename Traits<KeyT>::UnsignedBits;
-    const int start_bit = calc_start_bit<KeyT, BitsPerPass>(pass);
-    bits_t bucket       = bin_index;
-    prefix.bits |= static_cast<bits_t>(bucket) << start_bit;
-  }
-  else
-  {
-    prefix.shift_or(BitsPerPass, bin_index);
-  }
-}
 
 template <typename KeyInT, typename OffsetT, typename OutOffsetT>
 struct alignas(128) Counter
@@ -186,21 +101,11 @@ struct alignas(128) Counter
   // especially for the segment version.
 };
 
-enum class candidate_class
-{
-  // The given candidate is definitely amongst the top-k items
-  selected,
-  // The given candidate may or may not be amongst the top-k items
-  candidate,
-  // The given candidate is definitely not amongst the top-k items
-  rejected
-};
-
 //! @brief AgentTopK implements a stateful abstraction of CUDA thread blocks for participating in
 //! device-wide topK
 //!
 //! @tparam AgentTopKPolicyT
-//!   Parameterized AgentTopKPolicy tuning policy type
+//!   Parameterized agent_topk_policy tuning policy type
 //!
 //! @tparam KeyInputIteratorT
 //!   **[inferred]** Random-access input iterator type for reading input keys @iterator
@@ -244,22 +149,22 @@ struct AgentTopK
   using key_in_t   = it_value_t<KeyInputIteratorT>;
   using value_in_t = it_value_t<ValueInputIteratorT>;
 
-  static constexpr int block_threads    = AgentTopKPolicyT::block_threads;
-  static constexpr int items_per_thread = AgentTopKPolicyT::items_per_thread;
-  static constexpr int bits_per_pass    = AgentTopKPolicyT::bits_per_pass;
-  static constexpr int tile_items       = block_threads * items_per_thread;
-  static constexpr int num_buckets      = 1 << bits_per_pass;
+  static constexpr int threads_per_block = AgentTopKPolicyT::threads_per_block;
+  static constexpr int items_per_thread  = AgentTopKPolicyT::items_per_thread;
+  static constexpr int bits_per_pass     = AgentTopKPolicyT::bits_per_pass;
+  static constexpr int tile_items        = threads_per_block * items_per_thread;
+  static constexpr int num_buckets       = 1 << bits_per_pass;
 
   static constexpr bool keys_only      = ::cuda::std::is_same_v<value_in_t, NullType>;
-  static constexpr int bins_per_thread = ::cuda::ceil_div(num_buckets, block_threads);
+  static constexpr int bins_per_thread = ::cuda::ceil_div(num_buckets, threads_per_block);
 
   // Parameterized BlockLoad type for input data
-  using block_load_input_t = BlockLoad<key_in_t, block_threads, items_per_thread, AgentTopKPolicyT::load_algorithm>;
-  using block_load_trans_t = BlockLoad<OffsetT, block_threads, bins_per_thread, BLOCK_LOAD_TRANSPOSE>;
+  using block_load_input_t = BlockLoad<key_in_t, threads_per_block, items_per_thread, AgentTopKPolicyT::load_algorithm>;
+  using block_load_trans_t = BlockLoad<OffsetT, threads_per_block, bins_per_thread, BLOCK_LOAD_TRANSPOSE>;
   // Parameterized BlockScan type
-  using block_scan_t = BlockScan<OffsetT, block_threads, AgentTopKPolicyT::SCAN_ALGORITHM>;
+  using block_scan_t = BlockScan<OffsetT, threads_per_block, AgentTopKPolicyT::SCAN_ALGORITHM>;
   // Parameterized BlockStore type
-  using block_store_trans_t = BlockStore<OffsetT, block_threads, bins_per_thread, BLOCK_STORE_TRANSPOSE>;
+  using block_store_trans_t = BlockStore<OffsetT, threads_per_block, bins_per_thread, BLOCK_STORE_TRANSPOSE>;
 
   // Shared memory
   struct _TempStorage
@@ -277,8 +182,7 @@ struct AgentTopK
     OffsetT histogram[num_buckets];
   };
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per-thread fields
@@ -360,16 +264,18 @@ struct AgentTopK
   {
     key_in_t thread_data[items_per_thread];
 
-    const OffsetT items_per_pass   = tile_items * gridDim.x;
+    const OffsetT items_per_pass =
+      static_cast<OffsetT>(tile_items * gridDim.x); // NOLINT(bugprone-misplaced-widening-cast)
     const OffsetT total_num_blocks = ::cuda::ceil_div(num_items, tile_items);
 
     const OffsetT num_remaining_elements = num_items % tile_items;
     const OffsetT last_block_id          = (total_num_blocks - 1) % gridDim.x;
 
-    OffsetT tile_base = blockIdx.x * tile_items;
+    OffsetT tile_base = static_cast<OffsetT>(blockIdx.x * tile_items); // NOLINT(bugprone-misplaced-widening-cast)
     OffsetT offset    = threadIdx.x * items_per_thread + tile_base;
 
-    for (int i_block = blockIdx.x; i_block < total_num_blocks - 1; i_block += gridDim.x)
+    for (int i_block = static_cast<int>(blockIdx.x); i_block < total_num_blocks - 1;
+         i_block += static_cast<int>(gridDim.x))
     {
       // Ensure that the temporary storage from previous iteration can be reused
       __syncthreads();
@@ -415,12 +321,12 @@ struct AgentTopK
 
     // Loop unrolling is beneficial for performance here
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (; histo_offset + block_threads <= num_buckets; histo_offset += block_threads)
+    for (; histo_offset + threads_per_block <= num_buckets; histo_offset += threads_per_block)
     {
       histogram[histo_offset + threadIdx.x] = 0;
     }
     // Finish up with guarded initialization if necessary
-    if ((num_buckets % block_threads != 0) && (histo_offset + threadIdx.x < num_buckets))
+    if ((num_buckets % threads_per_block != 0) && (histo_offset + threadIdx.x < num_buckets))
     {
       histogram[histo_offset + threadIdx.x] = 0;
     }
@@ -432,7 +338,7 @@ struct AgentTopK
 
     // Loop unrolling is beneficial for performance here
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (; histo_offset + block_threads <= num_buckets; histo_offset += block_threads)
+    for (; histo_offset + threads_per_block <= num_buckets; histo_offset += threads_per_block)
     {
       if (temp_storage.histogram[histo_offset + threadIdx.x] != 0)
       {
@@ -441,7 +347,7 @@ struct AgentTopK
     }
 
     // Finish up with guarded merging if necessary
-    if ((num_buckets % block_threads != 0) && (histo_offset + threadIdx.x < num_buckets))
+    if ((num_buckets % threads_per_block != 0) && (histo_offset + threadIdx.x < num_buckets))
     {
       atomicAdd(global_histogram + (histo_offset + threadIdx.x), temp_storage.histogram[histo_offset + threadIdx.x]);
     }
@@ -601,7 +507,7 @@ struct AgentTopK
     int histo_offset = 0;
 
     auto body = [&] {
-      const int bin_idx  = histo_offset + threadIdx.x;
+      const int bin_idx  = static_cast<int>(histo_offset + threadIdx.x);
       const OffsetT prev = (bin_idx == 0) ? 0 : temp_storage.histogram[bin_idx - 1];
       const OffsetT cur  = temp_storage.histogram[bin_idx];
 
@@ -621,12 +527,12 @@ struct AgentTopK
     };
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (; histo_offset + block_threads <= num_buckets; histo_offset += block_threads)
+    for (; histo_offset + threads_per_block <= num_buckets; histo_offset += threads_per_block)
     {
       body();
     }
     // Finish up with guarded initialization if necessary
-    if ((num_buckets % block_threads != 0) && (histo_offset + threadIdx.x < num_buckets))
+    if ((num_buckets % threads_per_block != 0) && (histo_offset + threadIdx.x < num_buckets))
     {
       body();
     }
@@ -645,16 +551,18 @@ struct AgentTopK
     bool is_last_pass,
     CounterUpdateFn counter_update_fn)
   {
-    // Ensure all writes to the global memory-histogram are visible to all threads before
-    // proceeding to compute the prefix sum over the histogram.
+    // Make this block's histogram contributions visible device-wide before publishing retirement
     __threadfence();
+
+    // Wait for all threads in this block to finish merge_histograms() before thread 0 signals completion
+    __syncthreads();
 
     // Identify the last block in the grid to perform the prefix sum over the histogram
     bool is_last_block = false;
     if (threadIdx.x == 0)
     {
-      unsigned int finished = atomicInc(&counter->finished_block_cnt, gridDim.x - 1);
-      is_last_block         = (finished == (gridDim.x - 1));
+      const unsigned int finished = atomicInc(&counter->finished_block_cnt, gridDim.x - 1);
+      is_last_block               = (finished == (gridDim.x - 1));
     }
 
     // syncthreads ensures that the BlockLoad for loading the global histogram can reuse the temporary storage

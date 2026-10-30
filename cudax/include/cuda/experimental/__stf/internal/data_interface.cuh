@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/optional>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -26,6 +27,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/type_traits>
 
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
@@ -36,6 +38,8 @@
 
 #include <deque>
 #include <optional>
+#include <stdexcept>
+#include <string>
 
 namespace cuda::experimental::stf
 {
@@ -77,9 +81,6 @@ struct rw_type_of<mdspan<const T, Extents, Layout, Accessor<const T>>>
 {
   using type = mdspan<T, Extents, Layout, Accessor<T>>;
 };
-
-template <class T>
-inline constexpr bool always_false = false;
 } // namespace reserved
 
 /**
@@ -118,7 +119,8 @@ mdspan<T, Extents, Layout, Accessor<T>> to_rw_type_of(const mdspan<const T, Exte
   }
   else
   {
-    static_assert(reserved::always_false<T>, "Need to implement the conversion of Accessor<T> to Accessor<const T>");
+    static_assert(::cuda::std::__always_false_v<T>,
+                  "Need to implement the conversion of Accessor<T> to Accessor<const T>");
   }
   _CCCL_UNREACHABLE();
 }
@@ -131,7 +133,7 @@ void dep_allocate(
   Data& d,
   access_mode mode,
   const data_place& dplace,
-  const ::std::optional<exec_place> eplace,
+  const ::cuda::std::optional<exec_place> eplace,
   instance_id_t instance_id,
   event_list& prereqs);
 } // end namespace reserved
@@ -220,9 +222,9 @@ public:
     return false;
   }
 
-  virtual ::std::optional<cudaMemoryType> get_memory_type(instance_id_t)
+  virtual ::cuda::std::optional<cudaMemoryType> get_memory_type(instance_id_t)
   {
-    return ::std::nullopt;
+    return ::cuda::std::nullopt;
   }
 
   /// @brief Unpin host memory.
@@ -259,7 +261,7 @@ public:
   {
     using R            = rw_type_of<T>;
     const auto& result = *static_cast<const R*>(get_common_impl(typeid(R), type_name<R>));
-    if constexpr (::std::is_same_v<T, R>)
+    if constexpr (::cuda::std::is_same_v<T, R>)
     {
       return result; // lvalue straight into the store
     }
@@ -281,7 +283,7 @@ public:
   {
     using R      = rw_type_of<T>;
     auto& result = *static_cast<R*>(get_instance_impl(instance_id, typeid(R), type_name<R>));
-    if constexpr (::std::is_same_v<T, R>)
+    if constexpr (::cuda::std::is_same_v<T, R>)
     {
       return result; // lvalue straight into the store
     }
@@ -429,13 +431,9 @@ private:
   {
     if (typeid(shape_t) != asked_ti)
     {
-      fprintf(stderr,
-              "Shape type mismatch.\nAssumed: %.*s\nActual:  %.*s\n",
-              static_cast<int>(type_name<shape_t>.size()),
-              type_name<shape_t>.data(),
-              static_cast<int>(tname.size()),
-              tname.data());
-      abort();
+      _CCCL_THROW(
+        ::std::invalid_argument,
+        ::std::string("shape type mismatch: assumed ").append(type_name<shape_t>).append(", actual ").append(tname));
     }
     return &shape;
   }
@@ -445,13 +443,9 @@ private:
     // We pass types where we removed const qualifiers in instance()
     if (ti != typeid(rw_type_of<T>) && ti != typeid(void))
     {
-      fprintf(stderr,
-              "Data interface type mismatch.\nAssumed: %.*s\nActual:  %.*s\n",
-              static_cast<int>(type_name<T>.size()),
-              type_name<T>.data(),
-              static_cast<int>(tname.size()),
-              tname.data());
-      abort();
+      _CCCL_THROW(
+        ::std::invalid_argument,
+        ::std::string("data interface type mismatch: assumed ").append(type_name<T>).append(", actual ").append(tname));
     }
     return &instance(instance_id);
   }
@@ -462,13 +456,9 @@ private:
     // We pass types where we removed const qualifiers in instance()
     if (ti != typeid(rw_type_of<T>) && ti != typeid(void))
     {
-      fprintf(stderr,
-              "Data interface type mismatch.\nAssumed: %.*s\nActual:  %.*s\n",
-              static_cast<int>(type_name<T>.size()),
-              type_name<T>.data(),
-              static_cast<int>(tname.size()),
-              tname.data());
-      abort();
+      _CCCL_THROW(
+        ::std::invalid_argument,
+        ::std::string("data interface type mismatch: assumed ").append(type_name<T>).append(", actual ").append(tname));
     }
     return &instance(instance_id);
   }

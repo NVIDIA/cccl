@@ -161,7 +161,7 @@ int main(int, char**)
   {
     static_assert(cuda::std::is_convertible<ExplicitTwo&&, ExplicitTwo>::value);
     static_assert(
-      cuda::std::is_convertible<cuda::std::tuple<ExplicitTwo&&>&&, const cuda::std::tuple<ExplicitTwo>&>::value, "");
+      cuda::std::is_convertible<cuda::std::tuple<ExplicitTwo&&>&&, const cuda::std::tuple<ExplicitTwo>&>::value);
 
     ExplicitTwo e;
     [[maybe_unused]] cuda::std::tuple<ExplicitTwo> t = cuda::std::tuple<ExplicitTwo&&>(cuda::std::move(e));

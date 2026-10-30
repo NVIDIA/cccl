@@ -23,9 +23,9 @@
 
 #if _CCCL_HOSTED()
 
+#  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/rotate_copy.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__pstl/copy.h>
 #  include <cuda/std/__pstl/dispatch.h>
@@ -34,7 +34,7 @@
 #  include <cuda/std/__utility/move.h>
 
 #  if _CCCL_HAS_BACKEND_CUDA()
-#    include <cuda/std/__pstl/cuda/rotate_copy.h>
+#    include <cuda/std/__pstl/cuda/rotate_copy.h> // IWYU pragma: keep
 #  endif // _CCCL_HAS_BACKEND_CUDA()
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -62,12 +62,7 @@ _CCCL_HOST_API _OutputIterator rotate_copy(
     {
       return __result;
     }
-    else if (__first == __middle)
-    {
-      return ::cuda::std::copy(
-        __policy, ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__result));
-    }
-    else if (__middle == __last)
+    else if (__first == __middle || __middle == __last)
     {
       return ::cuda::std::copy(
         __policy, ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__result));

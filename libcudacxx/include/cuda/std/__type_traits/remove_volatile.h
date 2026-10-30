@@ -28,11 +28,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 struct remove_volatile
 {
-  using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_VOLATILE(_Tp);
+  using type _CCCL_NODEBUG = _CCCL_BUILTIN_REMOVE_VOLATILE(_Tp);
 };
 
 template <class _Tp>
-using remove_volatile_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_VOLATILE(_Tp);
+using remove_volatile_t _CCCL_NODEBUG = _CCCL_BUILTIN_REMOVE_VOLATILE(_Tp);
 
 #else
 template <class _Tp>
@@ -47,7 +47,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_volatile<volatile _Tp>
 };
 
 template <class _Tp>
-using remove_volatile_t _CCCL_NODEBUG_ALIAS = typename remove_volatile<_Tp>::type;
+using remove_volatile_t _CCCL_NODEBUG = typename remove_volatile<_Tp>::type;
 
 #endif // defined(_CCCL_BUILTIN_REMOVE_VOLATILE) && !defined(_LIBCUDACXX_USE_REMOVE_VOLATILE_FALLBACK)
 

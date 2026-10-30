@@ -83,21 +83,21 @@ inline ZpT __host__ __device__ Zp_add(ZpT v1, ZpT v2, cuda::fast_mod_div<WideT> 
 
 inline MatT __host__ __device__ Zp_matmul(MatT v1, MatT v2, cuda::fast_mod_div<WideT> m_p)
 {
-  ZpT _1_00_2_00 = Zp_mul(v1[0], v2[0], m_p);
-  ZpT _1_01_2_10 = Zp_mul(v1[1], v2[2], m_p);
-  ZpT _r_00      = Zp_add(_1_00_2_00, _1_01_2_10, m_p);
+  const ZpT _1_00_2_00 = Zp_mul(v1[0], v2[0], m_p);
+  const ZpT _1_01_2_10 = Zp_mul(v1[1], v2[2], m_p);
+  const ZpT _r_00      = Zp_add(_1_00_2_00, _1_01_2_10, m_p);
 
-  ZpT _1_00_2_01 = Zp_mul(v1[0], v2[1], m_p);
-  ZpT _1_01_2_11 = Zp_mul(v1[1], v2[3], m_p);
-  ZpT _r_01      = Zp_add(_1_00_2_01, _1_01_2_11, m_p);
+  const ZpT _1_00_2_01 = Zp_mul(v1[0], v2[1], m_p);
+  const ZpT _1_01_2_11 = Zp_mul(v1[1], v2[3], m_p);
+  const ZpT _r_01      = Zp_add(_1_00_2_01, _1_01_2_11, m_p);
 
-  ZpT _1_10_2_00 = Zp_mul(v1[2], v2[0], m_p);
-  ZpT _1_11_2_10 = Zp_mul(v1[3], v2[2], m_p);
-  ZpT _r_10      = Zp_add(_1_10_2_00, _1_11_2_10, m_p);
+  const ZpT _1_10_2_00 = Zp_mul(v1[2], v2[0], m_p);
+  const ZpT _1_11_2_10 = Zp_mul(v1[3], v2[2], m_p);
+  const ZpT _r_10      = Zp_add(_1_10_2_00, _1_11_2_10, m_p);
 
-  ZpT _1_10_2_01 = Zp_mul(v1[2], v2[1], m_p);
-  ZpT _1_11_2_11 = Zp_mul(v1[3], v2[3], m_p);
-  ZpT _r_11      = Zp_add(_1_10_2_01, _1_11_2_11, m_p);
+  const ZpT _1_10_2_01 = Zp_mul(v1[2], v2[1], m_p);
+  const ZpT _1_11_2_11 = Zp_mul(v1[3], v2[3], m_p);
+  const ZpT _r_11      = Zp_add(_1_10_2_01, _1_11_2_11, m_p);
 
   return {_r_00, _r_01, _r_10, _r_11};
 }
@@ -280,15 +280,13 @@ template <typename InputT, typename OutputT>
 template <typename BitsetT, typename OffsetT>
 static void inclusive_scan(nvbench::state& state, nvbench::type_list<BitsetT, OffsetT>)
 {
-  using wrapped_init_t = cub::NullType;
-  using op_t           = impl::RabinKarpOp;
-  using input_t        = BitsetT;
-  using raw_it_t       = const input_t*;
-  using input_it_t     = cuda::transform_iterator<impl::ChunkToMat<input_t>, raw_it_t>;
-  using accum_t        = impl::MatT;
-  using output_ptr_t   = impl::MatT*;
-  using output_it_t    = impl::write_at_specific_index_or_discard<OffsetT, output_ptr_t>;
-  using offset_t       = cub::detail::choose_offset_t<OffsetT>;
+  using op_t         = impl::RabinKarpOp;
+  using input_t      = BitsetT;
+  using raw_it_t     = const input_t*;
+  using input_it_t   = cuda::transform_iterator<impl::ChunkToMat<input_t>, raw_it_t>;
+  using accum_t      = impl::MatT;
+  using output_ptr_t = impl::MatT*;
+  using output_it_t  = impl::write_at_specific_index_or_discard<OffsetT, output_ptr_t>;
 
   using ZpT = impl::ZpT;
 
@@ -310,42 +308,24 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<BitsetT, Of
   state.add_global_memory_reads<input_t>(elements, "Sequence Size");
   state.add_global_memory_writes<accum_t>(1, "Hash Size");
 
-  cudaStream_t bench_stream = state.get_cuda_stream().get_stream();
-
-  size_t tmp_size;
-  cub::detail::scan::dispatch_with_accum<accum_t>(
-    nullptr,
-    tmp_size,
-    inp_it,
-    out_it,
-    op_t{p},
-    wrapped_init_t{},
-    input.size(),
-    bench_stream
-#if !TUNE_BASE
-    ,
-    policy_selector<accum_t>{}
-#endif // !TUNE_BASE
-  );
-
-  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
-  nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::scan::dispatch_with_accum<accum_t>(
-      d_tmp,
-      tmp_size,
-      inp_it,
-      out_it, // iterator that only writes the last element of inclusive prefix scan sequence,
-      op_t{p},
-      wrapped_init_t{},
-      input.size(),
-      launch.get_stream()
+    auto env = cub_bench_env(
+      alloc,
+      launch
 #if !TUNE_BASE
-        ,
-      policy_selector<accum_t>{}
+      ,
+      cuda::execution::tune(policy_selector<accum_t>{})
 #endif // !TUNE_BASE
     );
+    _CCCL_TRY_RUNTIME_API(
+      cub::DeviceScan::InclusiveScan,
+      "InclusiveScan failed",
+      inp_it,
+      out_it, // iterator that only writes the last element of inclusive prefix scan sequence
+      op_t{p},
+      static_cast<OffsetT>(input.size()),
+      env);
   });
 
   // for validation uncomment these two lines

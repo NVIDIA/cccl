@@ -12,12 +12,14 @@
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 #include <cuda/experimental/__stf/utility/pretty_print.cuh>
 
+#include <string>
+
 using namespace cuda::experimental::stf;
 
 template <typename T>
 __global__ void stencil2D_kernel(slice<T, 2> sUn, slice<const T, 2> sUn1)
 {
-  size_t N = sUn.extent(0);
+  const size_t N = sUn.extent(0);
   for (size_t i = threadIdx.x + blockIdx.x * blockDim.x; i < N; i += blockDim.x * gridDim.x)
   {
     for (size_t j = 0; j < N; j++)
@@ -38,21 +40,21 @@ int main(int argc, char** argv)
 
   if (argc > 1)
   {
-    NITER = atoi(argv[1]);
+    NITER = ::std::stoi(argv[1]);
   }
 
   if (argc > 2)
   {
-    N = atoi(argv[2]);
+    N = ::std::stoi(argv[2]);
   }
 
   if (argc > 3)
   {
-    int val  = atoi(argv[3]);
-    vtk_dump = (val == 1);
+    const int val = ::std::stoi(argv[3]);
+    vtk_dump      = (val == 1);
   }
 
-  size_t TOTAL_SIZE = N * N;
+  const size_t TOTAL_SIZE = N * N;
 
   double* Un  = new double[TOTAL_SIZE];
   double* Un1 = new double[TOTAL_SIZE];

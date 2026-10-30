@@ -32,7 +32,7 @@ void TestReplaceDevice(ExecutionPolicy exec, const size_t n)
 
   replace_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), old_value, new_value);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   ASSERT_ALMOST_EQUAL(h_data, d_data);
 }
@@ -75,23 +75,21 @@ void TestReplaceCopyDevice(ExecutionPolicy exec)
 
   replace_copy_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), d_dest.begin(), old_value, new_value);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   ASSERT_ALMOST_EQUAL(h_data, d_data);
   ASSERT_ALMOST_EQUAL(h_dest, d_dest);
 }
 
-void TestReplaceCopyDeviceSeq()
+TEST_CASE("TestReplaceCopyDeviceSeq", "[replace]")
 {
   TestReplaceCopyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestReplaceCopyDeviceSeq);
 
-void TestReplaceCopyDeviceDevice()
+TEST_CASE("TestReplaceCopyDeviceDevice", "[replace]")
 {
   TestReplaceCopyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestReplaceCopyDeviceDevice);
 
 template <typename ExecutionPolicy, typename Iterator, typename Predicate, typename T>
 __global__ void replace_if_kernel(ExecutionPolicy exec, Iterator first, Iterator last, Predicate pred, T new_value)
@@ -110,22 +108,20 @@ void TestReplaceIfDevice(ExecutionPolicy exec)
 
   replace_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), less_than_five<int>(), 0);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   ASSERT_ALMOST_EQUAL(h_data, d_data);
 }
 
-void TestReplaceIfDeviceSeq()
+TEST_CASE("TestReplaceIfDeviceSeq", "[replace]")
 {
   TestReplaceIfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestReplaceIfDeviceSeq);
 
-void TestReplaceIfDeviceDevice()
+TEST_CASE("TestReplaceIfDeviceDevice", "[replace]")
 {
   TestReplaceIfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestReplaceIfDeviceDevice);
 
 template <typename ExecutionPolicy, typename Iterator1, typename Iterator2, typename Predicate, typename T>
 __global__ void replace_if_kernel(
@@ -148,22 +144,20 @@ void TestReplaceIfStencilDevice(ExecutionPolicy exec)
 
   replace_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), d_stencil.begin(), less_than_five<int>(), 0);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   ASSERT_ALMOST_EQUAL(h_data, d_data);
 }
 
-void TestReplaceIfStencilDeviceSeq()
+TEST_CASE("TestReplaceIfStencilDeviceSeq", "[replace]")
 {
   TestReplaceIfStencilDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestReplaceIfStencilDeviceSeq);
 
-void TestReplaceIfStencilDeviceDevice()
+TEST_CASE("TestReplaceIfStencilDeviceDevice", "[replace]")
 {
   TestReplaceIfStencilDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestReplaceIfStencilDeviceDevice);
 
 template <typename ExecutionPolicy, typename Iterator1, typename Iterator2, typename Predicate, typename T>
 __global__ void replace_copy_if_kernel(
@@ -186,23 +180,21 @@ void TestReplaceCopyIfDevice(ExecutionPolicy exec)
 
   replace_copy_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), d_dest.begin(), less_than_five<int>(), 0);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   ASSERT_ALMOST_EQUAL(h_data, d_data);
   ASSERT_ALMOST_EQUAL(h_dest, d_dest);
 }
 
-void TestReplaceCopyIfDeviceSeq()
+TEST_CASE("TestReplaceCopyIfDeviceSeq", "[replace]")
 {
   TestReplaceCopyIfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestReplaceCopyIfDeviceSeq);
 
-void TestReplaceCopyIfDeviceDevice()
+TEST_CASE("TestReplaceCopyIfDeviceDevice", "[replace]")
 {
   TestReplaceCopyIfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestReplaceCopyIfDeviceDevice);
 
 template <typename ExecutionPolicy,
           typename Iterator1,
@@ -240,26 +232,24 @@ void TestReplaceCopyIfStencilDevice(ExecutionPolicy exec)
   replace_copy_if_kernel<<<1, 1>>>(
     exec, d_data.begin(), d_data.end(), d_stencil.begin(), d_dest.begin(), less_than_five<int>(), 0);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   ASSERT_ALMOST_EQUAL(h_data, d_data);
   ASSERT_ALMOST_EQUAL(h_dest, d_dest);
 }
 
-void TestReplaceCopyIfStencilDeviceSeq()
+TEST_CASE("TestReplaceCopyIfStencilDeviceSeq", "[replace]")
 {
   TestReplaceCopyIfStencilDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestReplaceCopyIfStencilDeviceSeq);
 
-void TestReplaceCopyIfStencilDeviceDevice()
+TEST_CASE("TestReplaceCopyIfStencilDeviceDevice", "[replace]")
 {
   TestReplaceCopyIfStencilDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestReplaceCopyIfStencilDeviceDevice);
 #endif
 
-void TestReplaceCudaStreams()
+TEST_CASE("TestReplaceCudaStreams", "[replace]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -274,10 +264,9 @@ void TestReplaceCudaStreams()
 
   cudaStreamSynchronize(s);
 
-  Vector result{4, 5, 4, 3, 5};
+  const Vector result{4, 5, 4, 3, 5};
 
-  ASSERT_EQUAL(data, result);
+  REQUIRE(data == result);
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestReplaceCudaStreams);

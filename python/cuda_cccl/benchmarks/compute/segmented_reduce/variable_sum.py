@@ -18,6 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import cuda.bench as bench
 import cupy as cp
 import numpy as np
 from utils import (
@@ -27,7 +28,6 @@ from utils import (
     generate_uniform_segment_offsets,
 )
 
-import cuda.bench as bench
 from cuda.compute import OpKind, make_segmented_reduce
 
 TYPE_MAP = {k: ALL_TYPES[k] for k in ("I32", "I64", "F32", "F64")}
@@ -44,23 +44,23 @@ def run_segmented_reduce(
     guaranteed_max_seg_size,
 ):
     reducer = make_segmented_reduce(
-        d_in,
-        d_out,
-        start_offsets,
-        end_offsets,
-        OpKind.PLUS,
-        h_init,
+        d_in=d_in,
+        d_out=d_out,
+        start_offsets_in=start_offsets,
+        end_offsets_in=end_offsets,
+        op=OpKind.PLUS,
+        h_init=h_init,
     )
 
     temp_storage_bytes = reducer(
-        None,
-        d_in,
-        d_out,
-        OpKind.PLUS,
-        num_segments,
-        start_offsets,
-        end_offsets,
-        h_init,
+        temp_storage=None,
+        d_in=d_in,
+        d_out=d_out,
+        num_segments=num_segments,
+        start_offsets_in=start_offsets,
+        end_offsets_in=end_offsets,
+        op=OpKind.PLUS,
+        h_init=h_init,
         max_segment_size=guaranteed_max_seg_size,
     )
     alloc_stream = as_cupy_stream(state.get_stream())
@@ -69,16 +69,16 @@ def run_segmented_reduce(
 
     def launcher(launch: bench.Launch):
         reducer(
-            temp_storage,
-            d_in,
-            d_out,
-            OpKind.PLUS,
-            num_segments,
-            start_offsets,
-            end_offsets,
-            h_init,
-            guaranteed_max_seg_size,
-            launch.get_stream(),
+            temp_storage=temp_storage,
+            d_in=d_in,
+            d_out=d_out,
+            num_segments=num_segments,
+            start_offsets_in=start_offsets,
+            end_offsets_in=end_offsets,
+            op=OpKind.PLUS,
+            h_init=h_init,
+            max_segment_size=guaranteed_max_seg_size,
+            stream=launch.get_stream(),
         )
 
     state.exec(launcher, batched=False, sync=True)

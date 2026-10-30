@@ -27,11 +27,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT add_cv
 {
-  using type _CCCL_NODEBUG_ALIAS = const volatile _Tp;
+  using type _CCCL_NODEBUG = const volatile _Tp;
 };
 
 template <class _Tp>
-using add_cv_t _CCCL_NODEBUG_ALIAS = const volatile _Tp;
+using add_cv_t _CCCL_NODEBUG = const volatile _Tp;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

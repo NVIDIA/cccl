@@ -13,11 +13,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_device.cuh>
+#include <cub/util_debug.cuh> // IWYU pragma: keep
 
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__stream/stream_ref.h>
-#include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__exception/terminate.h> // IWYU pragma: keep
 #include <cuda/std/cstdint>
 
 #include <nv/target>
@@ -35,7 +36,7 @@ struct device_memory_resource
     void* ptr{nullptr};
     NV_IF_ELSE_TARGET(
       NV_IS_HOST,
-      (_CCCL_TRY_CUDA_API(::cudaMallocAsync, "allocate failed to allocate with cudaMallocAsync", &ptr, bytes, NULL);),
+      (_CCCL_TRY_RUNTIME_API(::cudaMallocAsync, "allocate failed to allocate with cudaMallocAsync", &ptr, bytes, NULL);),
       ({
         _CubLog("%s\n", "cub::detail::device_memory_resource::allocate not supported from device code.");
         ::cuda::std::terminate();
@@ -48,7 +49,7 @@ struct device_memory_resource
   {
     NV_IF_ELSE_TARGET( //
       NV_IS_HOST,
-      (_CCCL_TRY_CUDA_API(::cudaFree, "deallocate failed", ptr);),
+      (_CCCL_TRY_RUNTIME_API(::cudaFree, "deallocate failed", ptr);),
       ({
         _CubLog("%s\n", "cub::detail::device_memory_resource::deallocate not supported from device code.");
         ::cuda::std::terminate();
@@ -66,7 +67,7 @@ struct device_memory_resource
     NV_IF_ELSE_TARGET( //
       NV_IS_HOST,
       ({
-        _CCCL_TRY_CUDA_API(
+        _CCCL_TRY_RUNTIME_API(
           ::cudaMallocAsync, "allocate failed to allocate with cudaMallocAsync", &ptr, bytes, stream.get());
       }),
       ({
@@ -85,7 +86,7 @@ struct device_memory_resource
   {
     NV_IF_ELSE_TARGET( //
       NV_IS_HOST,
-      (_CCCL_TRY_CUDA_API(::cudaFreeAsync, "deallocate failed", ptr, stream.get());),
+      (_CCCL_TRY_RUNTIME_API(::cudaFreeAsync, "deallocate failed", ptr, stream.get());),
       ({
         _CubLog("%s\n", "cub::detail::device_memory_resource::deallocate not supported from device code.");
         ::cuda::std::terminate();

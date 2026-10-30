@@ -21,7 +21,7 @@
 #  include "pointer_comparison_test_helper.hpp"
 #endif // !TEST_COMPILER(NVRTC)
 
-// ensure that we allow `TEST_DEVICE_FUNC` functions too
+// ensure that we allow `__device__` functions too
 struct with_device_op
 {
   TEST_DEVICE_FUNC friend constexpr bool operator<(const with_device_op&, const with_device_op&)
@@ -35,6 +35,23 @@ __global__ void test_global_kernel()
   const cuda::std::less<with_device_op> f;
   assert(f({}, {}));
 }
+
+#if _CCCL_TILE_COMPILATION()
+// ensure that we allow `__tile__` functions too
+struct with_tile_op
+{
+  TEST_TILE_FUNC friend constexpr bool operator<(const with_tile_op&, const with_tile_op&)
+  {
+    return true;
+  }
+};
+
+__tile_global__ void test_tile_kernel()
+{
+  const cuda::std::less<with_tile_op> f;
+  assert(f({}, {}));
+}
+#endif // _CCCL_TILE_COMPILATION()
 
 int main(int, char**)
 {

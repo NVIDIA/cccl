@@ -8,12 +8,16 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // <cuda/std/__simd_>
 
 // template<class T, class V> struct rebind;
 // template<class T, class V> using rebind_t = typename rebind<T, V>::type;
 
 #include <cuda/std/__simd_>
+#include <cuda/std/complex>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
@@ -24,7 +28,7 @@ namespace simd = cuda::std::simd;
 // rebind with basic_vec
 
 template <typename NewT, typename OldT, int N>
-TEST_FUNC void test_rebind_vec()
+TEST_HOST_DEVICE_FUNC void test_rebind_vec()
 {
   using OldVec = simd::basic_vec<OldT, simd::fixed_size<N>>;
   using Result = simd::rebind_t<NewT, OldVec>;
@@ -33,7 +37,7 @@ TEST_FUNC void test_rebind_vec()
 }
 
 template <typename NewT, typename OldT>
-TEST_FUNC void test_rebind_vec_sizes()
+TEST_HOST_DEVICE_FUNC void test_rebind_vec_sizes()
 {
   test_rebind_vec<NewT, OldT, 1>();
   test_rebind_vec<NewT, OldT, 2>();
@@ -45,16 +49,16 @@ TEST_FUNC void test_rebind_vec_sizes()
 // rebind with basic_mask
 
 template <typename NewT, typename OldT, int N>
-TEST_FUNC void test_rebind_mask()
+TEST_HOST_DEVICE_FUNC void test_rebind_mask()
 {
-  using OldMask = simd::basic_mask<sizeof(OldT), simd::fixed_size<N>>;
+  using OldMask = simd::mask<OldT, N>;
   using Result  = simd::rebind_t<NewT, OldMask>;
-  static_assert(cuda::std::is_same_v<Result, simd::basic_mask<sizeof(NewT), simd::fixed_size<N>>>);
+  static_assert(cuda::std::is_same_v<Result, simd::mask<NewT, N>>);
   static_assert(Result::size() == N);
 }
 
 template <typename NewT, typename OldT>
-TEST_FUNC void test_rebind_mask_sizes()
+TEST_HOST_DEVICE_FUNC void test_rebind_mask_sizes()
 {
   test_rebind_mask<NewT, OldT, 1>();
   test_rebind_mask<NewT, OldT, 2>();
@@ -66,12 +70,12 @@ TEST_FUNC void test_rebind_mask_sizes()
 // rebind_t matches rebind::type
 
 template <typename NewT, typename V>
-TEST_FUNC void test_rebind_t_alias()
+TEST_HOST_DEVICE_FUNC void test_rebind_t_alias()
 {
   static_assert(cuda::std::is_same_v<simd::rebind_t<NewT, V>, typename simd::rebind<NewT, V>::type>);
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   // rebind basic_vec
   test_rebind_vec_sizes<int, int>();
@@ -92,6 +96,10 @@ TEST_FUNC void test()
   test_rebind_mask_sizes<char, int>();
   test_rebind_mask_sizes<double, int>();
   test_rebind_mask_sizes<short, long long>();
+  test_rebind_mask_sizes<cuda::std::complex<float>, int>();
+#if _CCCL_HAS_INT128()
+  test_rebind_mask_sizes<cuda::std::complex<double>, int>();
+#endif // _CCCL_HAS_INT128()
 
   // rebind_t alias matches rebind::type
   test_rebind_t_alias<float, simd::vec<int, 4>>();

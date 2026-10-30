@@ -1,0 +1,99 @@
+=============== tuple.basic begin ===============
+cuda::std::tuple<int, double, char> = {
+  [0] = 42,
+  [1] = 3.1400000000000001,
+  [2] = 120 'x'
+}
+=============== tuple.basic end ===============
+=============== tuple.empty begin ===============
+cuda::std::tuple<>
+=============== tuple.empty end ===============
+=============== tuple.single begin ===============
+cuda::std::tuple<int> = {
+  [0] = 7
+}
+=============== tuple.single end ===============
+=============== tuple.ebco begin ===============
+cuda::std::tuple<int, empty_type, double> = {
+  [0] = 9,
+  [1] = {<No data fields>},
+  [2] = 2.5
+}
+=============== tuple.ebco end ===============
+=============== tuple.ebco_first begin ===============
+cuda::std::tuple<empty_type, int> = {
+  [0] = {<No data fields>},
+  [1] = 21
+}
+=============== tuple.ebco_first end ===============
+=============== tuple.ebco_last begin ===============
+cuda::std::tuple<int, empty_type> = {
+  [0] = 22,
+  [1] = {<No data fields>}
+}
+=============== tuple.ebco_last end ===============
+=============== tuple.ebco_adjacent begin ===============
+cuda::std::tuple<empty_type, empty_type, int> = {
+  [0] = {<No data fields>},
+  [1] = {<No data fields>},
+  [2] = 23
+}
+=============== tuple.ebco_adjacent end ===============
+=============== tuple.pointer begin ===============
+cuda::std::tuple<int*, char const*> = {
+  [0] = <address>,
+  [1] = <address> "tuple"
+}
+=============== tuple.pointer end ===============
+=============== tuple.nested_empty begin ===============
+cuda::std::tuple<int, cuda::std::tuple<>, double> = {
+  [0] = 1,
+  [1] = cuda::std::tuple<>,
+  [2] = 2.5
+}
+=============== tuple.nested_empty end ===============
+=============== tuple.nested begin ===============
+cuda::std::tuple<int, cuda::std::tuple<double, char>> = {
+  [0] = 1,
+  [1] = cuda::std::tuple<double, char> = {
+    [0] = 2.5,
+    [1] = 122 'z'
+  }
+}
+=============== tuple.nested end ===============
+=============== tuple.reference begin ===============
+cuda::std::tuple<int&, double&> = {
+  [0] = 5,
+  [1] = 6.5
+}
+=============== tuple.reference end ===============
+=============== tuple.const begin ===============
+cuda::std::tuple<int, double> = {
+  [0] = 11,
+  [1] = -12.5
+}
+=============== tuple.const end ===============
+=============== tuple.vector.0 begin ===============
+cuda::std::tuple<int, int> = {
+  [0] = 1,
+  [1] = 2
+}
+=============== tuple.vector.0 end ===============
+=============== tuple.vector.1 begin ===============
+cuda::std::tuple<int, int> = {
+  [0] = 3,
+  [1] = 4
+}
+=============== tuple.vector.1 end ===============
+=============== tuple.update.before begin ===============
+cuda::std::tuple<int, double> = {
+  [0] = 1,
+  [1] = 2.5
+}
+=============== tuple.update.before end ===============
+=============== tuple.update.after begin ===============
+cuda::std::tuple<int, double> = {
+  [0] = 9,
+  [1] = -3.5
+}
+=============== tuple.update.after end ===============

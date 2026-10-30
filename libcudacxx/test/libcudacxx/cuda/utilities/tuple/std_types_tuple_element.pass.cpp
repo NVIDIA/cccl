@@ -9,8 +9,11 @@
 
 // UNSUPPORTED: nvrtc
 
+#include <cuda/std/array>
 #include <cuda/std/cassert>
+#include <cuda/std/complex>
 #include <cuda/std/tuple>
+#include <cuda/std/utility>
 
 #include <array>
 #include <complex>
@@ -20,7 +23,7 @@
 #include "test_macros.h"
 
 template <class STD_TYPE, size_t Index, typename Expected>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   static_assert(cuda::std::is_same_v<cuda::std::tuple_element_t<Index, STD_TYPE>, Expected>);
   static_assert(cuda::std::is_same_v<cuda::std::tuple_element_t<Index, const STD_TYPE>, const Expected>);
@@ -29,7 +32,7 @@ __host__ __device__ constexpr void test()
     cuda::std::is_same_v<cuda::std::tuple_element_t<Index, const volatile STD_TYPE>, const volatile Expected>);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // complex has both elements as the template argument
   test<::std::complex<float>, 0, float>();

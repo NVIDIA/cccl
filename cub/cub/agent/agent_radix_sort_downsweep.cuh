@@ -20,29 +20,29 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/block/block_exchange.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_radix_rank.cuh>
+#include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
-#include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__warp/warp_shuffle.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
-
-/******************************************************************************
- * Tuning policy types
- ******************************************************************************/
-
+namespace detail
+{
 /**
  * @brief Parameterizable tuning policy type for AgentRadixSortDownsweep
  *
- * @tparam NominalBlockThreads4B
+ * @tparam NominalThreadsPerBlock4B
  *   Threads per thread block
  *
  * @tparam NominalItemsPerThread4B
@@ -66,7 +66,7 @@ CUB_NAMESPACE_BEGIN
  * @tparam RadixBits
  *   The number of radix bits, i.e., log2(bins)
  */
-template <int NominalBlockThreads4B,
+template <int NominalThreadsPerBlock4B,
           int NominalItemsPerThread4B,
           typename ComputeT,
           BlockLoadAlgorithm LoadAlgorithm,
@@ -74,8 +74,8 @@ template <int NominalBlockThreads4B,
           RadixRankAlgorithm RankAlgorithm,
           BlockScanAlgorithm ScanAlgorithm,
           int RadixBits,
-          typename ScalingType = detail::RegBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
-struct AgentRadixSortDownsweepPolicy : ScalingType
+          typename ScalingType = detail::RegBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
+struct agent_radix_sort_downsweep_policy : ScalingType
 {
   /// The number of radix bits, i.e., log2(bins)
   static constexpr int RADIX_BITS = RadixBits;
@@ -92,6 +92,33 @@ struct AgentRadixSortDownsweepPolicy : ScalingType
   /// The BlockScan algorithm to use
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
 };
+} // namespace detail
+
+/******************************************************************************
+ * Tuning policy types
+ ******************************************************************************/
+
+//! Deprecated [Since 3.5]
+template <int NominalThreadsPerBlock4B,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          BlockLoadAlgorithm LoadAlgorithm,
+          CacheLoadModifier LoadModifier,
+          RadixRankAlgorithm RankAlgorithm,
+          BlockScanAlgorithm ScanAlgorithm,
+          int RadixBits,
+          typename ScalingType = detail::RegBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
+using AgentRadixSortDownsweepPolicy
+  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceRadixSort") = detail::agent_radix_sort_downsweep_policy<
+    NominalThreadsPerBlock4B,
+    NominalItemsPerThread4B,
+    ComputeT,
+    LoadAlgorithm,
+    LoadModifier,
+    RankAlgorithm,
+    ScanAlgorithm,
+    RadixBits,
+    ScalingType>;
 
 /******************************************************************************
  * Thread block abstractions
@@ -106,7 +133,7 @@ namespace detail::radix_sort
  * @tparam AgentRadixSortDownsweepPolicy
  *   Parameterized AgentRadixSortDownsweepPolicy tuning policy type
  *
- * @tparam IS_DESCENDING
+ * @tparam IsDescending
  *   Whether or not the sorted-order is high-to-low
  *
  * @tparam KeyT
@@ -119,7 +146,7 @@ namespace detail::radix_sort
  *   Signed integer type for global offsets
  */
 template <typename AgentRadixSortDownsweepPolicy,
-          bool IS_DESCENDING,
+          bool IsDescending,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
@@ -155,7 +182,7 @@ struct AgentRadixSortDownsweep
   using ValuesItr = CacheModifiedInputIterator<LOAD_MODIFIER, ValueT, OffsetT>;
 
   // Radix ranking type to use
-  using BlockRadixRankT = block_radix_rank_t<RANK_ALGORITHM, BLOCK_THREADS, RADIX_BITS, IS_DESCENDING, SCAN_ALGORITHM>;
+  using BlockRadixRankT = block_radix_rank_t<RANK_ALGORITHM, BLOCK_THREADS, RADIX_BITS, IsDescending, SCAN_ALGORITHM>;
 
   // Digit extractor type
   using fundamental_digit_extractor_t = BFEDigitExtractor<KeyT>;
@@ -194,8 +221,7 @@ struct AgentRadixSortDownsweep
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Thread fields
@@ -233,7 +259,7 @@ struct AgentRadixSortDownsweep
   /**
    * Scatter ranked keys through shared memory, then to device-accessible memory
    */
-  template <bool FULL_TILE>
+  template <bool FullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterKeys(
     bit_ordered_type (&twiddled_keys)[ITEMS_PER_THREAD],
     OffsetT (&relative_bin_offsets)[ITEMS_PER_THREAD],
@@ -252,12 +278,14 @@ struct AgentRadixSortDownsweep
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       bit_ordered_type key       = temp_storage.keys_and_offsets.exchange_keys[threadIdx.x + (ITEM * BLOCK_THREADS)];
-      uint32_t digit             = digit_extractor().Digit(key);
+      const uint32_t digit       = digit_extractor().Digit(key);
       relative_bin_offsets[ITEM] = temp_storage.keys_and_offsets.relative_bin_offsets[digit];
 
       key = bit_ordered_conversion::from_bit_ordered(decomposer, key);
 
-      if (FULL_TILE || (static_cast<OffsetT>(threadIdx.x + (ITEM * BLOCK_THREADS)) < valid_items))
+      if (FullTile
+          || (static_cast<OffsetT>(threadIdx.x + (ITEM * BLOCK_THREADS)) // NOLINT(bugprone-misplaced-widening-cast)
+              < valid_items))
       {
         d_keys_out[relative_bin_offsets[ITEM] + threadIdx.x + (ITEM * BLOCK_THREADS)] = key;
       }
@@ -267,7 +295,7 @@ struct AgentRadixSortDownsweep
   /**
    * Scatter ranked values through shared memory, then to device-accessible memory
    */
-  template <bool FULL_TILE>
+  template <bool FullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterValues(
     ValueT (&values)[ITEMS_PER_THREAD],
     OffsetT (&relative_bin_offsets)[ITEMS_PER_THREAD],
@@ -291,7 +319,9 @@ struct AgentRadixSortDownsweep
     {
       ValueT value = exchange_values[threadIdx.x + (ITEM * BLOCK_THREADS)];
 
-      if (FULL_TILE || (static_cast<OffsetT>(threadIdx.x + (ITEM * BLOCK_THREADS)) < valid_items))
+      if (FullTile
+          || (static_cast<OffsetT>(threadIdx.x + (ITEM * BLOCK_THREADS)) // NOLINT(bugprone-misplaced-widening-cast)
+              < valid_items))
       {
         d_values_out[relative_bin_offsets[ITEM] + threadIdx.x + (ITEM * BLOCK_THREADS)] = value;
       }
@@ -299,173 +329,112 @@ struct AgentRadixSortDownsweep
   }
 
   /**
-   * Load a tile of keys (specialized for full tile, block load)
+   * Load a tile of keys (specialized for full tile)
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void LoadKeys(
     bit_ordered_type (&keys)[ITEMS_PER_THREAD],
     OffsetT block_offset,
     OffsetT valid_items,
     bit_ordered_type oob_item,
-    ::cuda::std::true_type is_full_tile,
-    ::cuda::std::false_type warp_striped)
+    ::cuda::std::true_type is_full_tile)
   {
-    BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys);
-
-    __syncthreads();
+    if constexpr (LOAD_WARP_STRIPED)
+    {
+      LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys);
+    }
+    else
+    {
+      BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys);
+      __syncthreads();
+    }
   }
 
   /**
-   * Load a tile of keys (specialized for partial tile, block load)
+   * Load a tile of keys (specialized for partial tile)
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void LoadKeys(
     bit_ordered_type (&keys)[ITEMS_PER_THREAD],
     OffsetT block_offset,
     OffsetT valid_items,
     bit_ordered_type oob_item,
-    ::cuda::std::false_type is_full_tile,
-    ::cuda::std::false_type warp_striped)
+    ::cuda::std::false_type is_full_tile)
   {
     // Register pressure work-around: moving valid_items through shfl prevents compiler
     // from reusing guards/addressing from prior guarded loads
     valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
 
-    BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys, valid_items, oob_item);
-
-    __syncthreads();
+    if constexpr (LOAD_WARP_STRIPED)
+    {
+      LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys, valid_items, oob_item);
+    }
+    else
+    {
+      BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys, valid_items, oob_item);
+      __syncthreads();
+    }
   }
 
   /**
-   * Load a tile of keys (specialized for full tile, warp-striped load)
+   * Load a tile of values (specialized for full tile)
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadKeys(
-    bit_ordered_type (&keys)[ITEMS_PER_THREAD],
-    OffsetT block_offset,
-    OffsetT valid_items,
-    bit_ordered_type oob_item,
-    ::cuda::std::true_type is_full_tile,
-    ::cuda::std::true_type warp_striped)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadValues(
+    ValueT (&values)[ITEMS_PER_THREAD], OffsetT block_offset, OffsetT valid_items, ::cuda::std::true_type is_full_tile)
   {
-    LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys);
+    if constexpr (LOAD_WARP_STRIPED)
+    {
+      LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values);
+    }
+    else
+    {
+      BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values);
+      __syncthreads();
+    }
   }
 
   /**
-   * Load a tile of keys (specialized for partial tile, warp-striped load)
+   * Load a tile of values (specialized for partial tile)
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadKeys(
-    bit_ordered_type (&keys)[ITEMS_PER_THREAD],
-    OffsetT block_offset,
-    OffsetT valid_items,
-    bit_ordered_type oob_item,
-    ::cuda::std::false_type is_full_tile,
-    ::cuda::std::true_type warp_striped)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadValues(
+    ValueT (&values)[ITEMS_PER_THREAD], OffsetT block_offset, OffsetT valid_items, ::cuda::std::false_type is_full_tile)
   {
     // Register pressure work-around: moving valid_items through shfl prevents compiler
     // from reusing guards/addressing from prior guarded loads
     valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
 
-    LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys, valid_items, oob_item);
-  }
-
-  /**
-   * Load a tile of values (specialized for full tile, block load)
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadValues(
-    ValueT (&values)[ITEMS_PER_THREAD],
-    OffsetT block_offset,
-    OffsetT valid_items,
-    ::cuda::std::true_type is_full_tile,
-    ::cuda::std::false_type warp_striped)
-  {
-    BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values);
-
-    __syncthreads();
-  }
-
-  /**
-   * Load a tile of values (specialized for partial tile, block load)
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadValues(
-    ValueT (&values)[ITEMS_PER_THREAD],
-    OffsetT block_offset,
-    OffsetT valid_items,
-    ::cuda::std::false_type is_full_tile,
-    ::cuda::std::false_type warp_striped)
-  {
-    // Register pressure work-around: moving valid_items through shfl prevents compiler
-    // from reusing guards/addressing from prior guarded loads
-    valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
-
-    BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values, valid_items);
-
-    __syncthreads();
-  }
-
-  /**
-   * Load a tile of items (specialized for full tile, warp-striped load)
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadValues(
-    ValueT (&values)[ITEMS_PER_THREAD],
-    OffsetT block_offset,
-    OffsetT valid_items,
-    ::cuda::std::true_type is_full_tile,
-    ::cuda::std::true_type warp_striped)
-  {
-    LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values);
-  }
-
-  /**
-   * Load a tile of items (specialized for partial tile, warp-striped load)
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadValues(
-    ValueT (&values)[ITEMS_PER_THREAD],
-    OffsetT block_offset,
-    OffsetT valid_items,
-    ::cuda::std::false_type is_full_tile,
-    ::cuda::std::true_type warp_striped)
-  {
-    // Register pressure work-around: moving valid_items through shfl prevents compiler
-    // from reusing guards/addressing from prior guarded loads
-    valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
-
-    LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values, valid_items);
+    if constexpr (LOAD_WARP_STRIPED)
+    {
+      LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values, valid_items);
+    }
+    else
+    {
+      BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values, valid_items);
+      __syncthreads();
+    }
   }
 
   /**
    * Truck along associated values
    */
-  template <bool FULL_TILE>
+  template <bool FullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void GatherScatterValues(
     OffsetT (&relative_bin_offsets)[ITEMS_PER_THREAD],
     int (&ranks)[ITEMS_PER_THREAD],
     OffsetT block_offset,
-    OffsetT valid_items,
-    ::cuda::std::false_type /*is_keys_only*/)
+    OffsetT valid_items)
   {
     ValueT values[ITEMS_PER_THREAD];
 
     __syncthreads();
 
-    LoadValues(values, block_offset, valid_items, bool_constant_v<FULL_TILE>, bool_constant_v<LOAD_WARP_STRIPED>);
+    LoadValues(values, block_offset, valid_items, bool_constant_v<FullTile>);
 
-    ScatterValues<FULL_TILE>(values, relative_bin_offsets, ranks, valid_items);
+    ScatterValues<FullTile>(values, relative_bin_offsets, ranks, valid_items);
   }
-
-  /**
-   * Truck along associated values (specialized for key-only sorting)
-   */
-  template <bool FULL_TILE>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void GatherScatterValues(
-    OffsetT (& /*relative_bin_offsets*/)[ITEMS_PER_THREAD],
-    int (& /*ranks*/)[ITEMS_PER_THREAD],
-    OffsetT /*block_offset*/,
-    OffsetT /*valid_items*/,
-    ::cuda::std::true_type /*is_keys_only*/)
-  {}
 
   /**
    * Process tile
    */
-  template <bool FULL_TILE>
+  template <bool FullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessTile(OffsetT block_offset, OffsetT valid_items = TILE_ITEMS)
   {
     bit_ordered_type keys[ITEMS_PER_THREAD];
@@ -473,12 +442,11 @@ struct AgentRadixSortDownsweep
     OffsetT relative_bin_offsets[ITEMS_PER_THREAD];
 
     // Assign default (min/max) value to all keys
-    bit_ordered_type default_key =
-      IS_DESCENDING ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
+    const bit_ordered_type default_key =
+      IsDescending ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
 
     // Load tile of keys
-    LoadKeys(
-      keys, block_offset, valid_items, default_key, bool_constant_v<FULL_TILE>, bool_constant_v<LOAD_WARP_STRIPED>);
+    LoadKeys(keys, block_offset, valid_items, default_key, bool_constant_v<FullTile>);
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int KEY = 0; KEY < ITEMS_PER_THREAD; KEY++)
@@ -496,7 +464,7 @@ struct AgentRadixSortDownsweep
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
-      int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
+      const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
       if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
         // Store exclusive prefix
@@ -512,10 +480,10 @@ struct AgentRadixSortDownsweep
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
-      int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
+      const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
       if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
-        if (IS_DESCENDING)
+        if (IsDescending)
         {
           // Get inclusive digit prefix from exclusive prefix (higher bins come first)
           inclusive_digit_prefix[track] =
@@ -538,7 +506,7 @@ struct AgentRadixSortDownsweep
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
-      int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
+      const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
       if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
         bin_offset[track] -= exclusive_digit_prefix[track];
@@ -550,10 +518,13 @@ struct AgentRadixSortDownsweep
     __syncthreads();
 
     // Scatter keys
-    ScatterKeys<FULL_TILE>(keys, relative_bin_offsets, ranks, valid_items);
+    ScatterKeys<FullTile>(keys, relative_bin_offsets, ranks, valid_items);
 
     // Gather/scatter values
-    GatherScatterValues<FULL_TILE>(relative_bin_offsets, ranks, block_offset, valid_items, bool_constant_v<KEYS_ONLY>);
+    if constexpr (!KEYS_ONLY)
+    {
+      GatherScatterValues<FullTile>(relative_bin_offsets, ranks, block_offset, valid_items);
+    }
   }
 
   //---------------------------------------------------------------------
@@ -632,7 +603,7 @@ struct AgentRadixSortDownsweep
     {
       this->bin_offset[track] = bin_offset[track];
 
-      int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
+      const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
       if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
         // Short circuit if the histogram has only bin counts of only zeros or problem-size
@@ -675,7 +646,7 @@ struct AgentRadixSortDownsweep
       // Load digit bin offsets (each of the first RADIX_DIGITS threads will load an offset for that digit)
       if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
-        if (IS_DESCENDING)
+        if (IsDescending)
         {
           bin_idx = RADIX_DIGITS - bin_idx - 1;
         }

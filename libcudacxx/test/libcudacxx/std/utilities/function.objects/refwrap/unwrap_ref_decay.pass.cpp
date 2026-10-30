@@ -19,6 +19,10 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#if _CCCL_HAS_HOST_STD_LIB()
+#  include <functional>
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
 #include "test_macros.h"
 
 template <typename T, typename Result>
@@ -58,6 +62,21 @@ int main(int, char**)
   check<cuda::std::reference_wrapper<T[3]>&, T(&)[3]>();
   check<cuda::std::reference_wrapper<T()>, T (&)()>();
   check<cuda::std::reference_wrapper<T()>&, T (&)()>();
+
+#if _CCCL_HAS_HOST_STD_LIB()
+  check<::std::reference_wrapper<T>, T&>();
+  check<::std::reference_wrapper<T>&, T&>();
+  check<::std::reference_wrapper<T const>, T const&>();
+  check<::std::reference_wrapper<T const>&, T const&>();
+  check<::std::reference_wrapper<T*>, T*&>();
+  check<::std::reference_wrapper<T*>&, T*&>();
+  check<::std::reference_wrapper<T const*>, T const*&>();
+  check<::std::reference_wrapper<T const*>&, T const*&>();
+  check<::std::reference_wrapper<T[3]>, T(&)[3]>();
+  check<::std::reference_wrapper<T[3]>&, T(&)[3]>();
+  check<::std::reference_wrapper<T()>, T (&)()>();
+  check<::std::reference_wrapper<T()>&, T (&)()>();
+#endif // _CCCL_HAS_HOST_STD_LIB()
 
   return 0;
 }

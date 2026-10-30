@@ -55,8 +55,7 @@ TEST_FUNC constexpr bool tests()
   static_assert(HasMinus<cuda::std::reverse_iterator<int*>, cuda::std::reverse_iterator<const int*>>);
   static_assert(!HasMinus<cuda::std::reverse_iterator<int*>, cuda::std::reverse_iterator<char*>>);
   static_assert(!HasMinus<cuda::std::reverse_iterator<bidirectional_iterator<int*>>,
-                          cuda::std::reverse_iterator<bidirectional_iterator<int*>>>,
-                "");
+                          cuda::std::reverse_iterator<bidirectional_iterator<int*>>>);
 
   return true;
 }

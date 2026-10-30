@@ -16,7 +16,7 @@
 
 static_assert(cuda::std::same_as<cuda::std::indirect_result_t<int (*)(int), int*>, int>);
 static_assert(
-  cuda::std::same_as<cuda::std::indirect_result_t<double (*)(int const&, float), int const*, float*>, double>, "");
+  cuda::std::same_as<cuda::std::indirect_result_t<double (*)(int const&, float), int const*, float*>, double>);
 
 struct S
 {};

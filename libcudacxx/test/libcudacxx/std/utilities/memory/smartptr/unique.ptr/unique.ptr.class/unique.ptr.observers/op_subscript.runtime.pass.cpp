@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 // <memory>
 
@@ -36,7 +36,7 @@ class A
   int state_;
 
 public:
-  TEST_FUNC TEST_CONSTEXPR_CXX23 A()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 A()
       : state_(0)
   {
     if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
@@ -45,24 +45,24 @@ public:
     }
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 int get() const
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 int get() const
   {
     return state_;
   }
 
-  TEST_FUNC friend TEST_CONSTEXPR_CXX23 bool operator==(const A& x, int y)
+  TEST_HOST_DEVICE_FUNC friend TEST_CONSTEXPR_CXX23 bool operator==(const A& x, int y)
   {
     return x.state_ == y;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 A& operator=(int i)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 A& operator=(int i)
   {
     state_ = i;
     return *this;
   }
 };
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   cuda::std::unique_ptr<A[]> p(new A[3]);
   if (!TEST_IS_CONSTANT_EVALUATED_CXX23())

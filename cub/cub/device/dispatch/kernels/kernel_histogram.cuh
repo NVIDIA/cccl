@@ -16,9 +16,28 @@
 #include <cub/agent/agent_histogram.cuh>
 #include <cub/device/dispatch/tuning/tuning_histogram.cuh>
 #include <cub/grid/grid_queue.cuh>
+#include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/thread/thread_search.cuh>
 #include <cub/util_arch.cuh>
 
-#include <cuda/std/__numeric/reduce.h>
+#include <cuda/__numeric/sub_overflow.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__numeric/reduce.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/array>
+#include <cuda/std/cstdint>
+
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::histogram
@@ -48,18 +67,18 @@ struct Transforms
     }
 
     // Method for converting samples to bin-ids
-    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid) const
+    template <CacheLoadModifier LoadModifier, typename Sample>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
     {
       /// Level iterator wrapper type
       // Wrap the native input pointer with CacheModifiedInputIterator
       // or Directly use the supplied input iterator type
       using WrappedLevelIteratorT =
         ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
-                         CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
+                         CacheModifiedInputIterator<LoadModifier, LevelT, OffsetT>,
                          LevelIteratorT>;
 
-      WrappedLevelIteratorT wrapped_levels(d_levels);
+      const WrappedLevelIteratorT wrapped_levels(d_levels);
 
       const int num_bins = num_output_levels - 1;
       if (valid)
@@ -80,7 +99,7 @@ struct Transforms
     static_assert(::cuda::std::is_convertible_v<CommonT, int>,
                   "The common type of `LevelT` and `SampleT` must be "
                   "convertible to `int`.");
-    static_assert(::cuda::std::is_trivially_copyable_v<CommonT>,
+    static_assert(::cuda::is_trivially_copyable_v<CommonT>,
                   "The common type of `LevelT` and `SampleT` must be "
                   "trivially copyable.");
 
@@ -109,12 +128,50 @@ struct Transforms
     template <typename T>
     using is_integral_excl_int128 =
 #if _CCCL_HAS_INT128()
-      ::cuda::std::_If<::cuda::std::is_same_v<T, __int128_t>&& ::cuda::std::is_same_v<T, __uint128_t>,
+      ::cuda::std::_If<::cuda::std::is_same_v<T, __int128_t> || ::cuda::std::is_same_v<T, __uint128_t>,
                        ::cuda::std::false_type,
                        ::cuda::std::is_integral<T>>;
 #else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
       ::cuda::std::is_integral<T>;
 #endif // !_CCCL_HAS_INT128()
+
+    // prefer uint32 for performance reasons when possible
+    // bool, 8-bit, 16-bit, 32-bit integers -> uint32_t
+    // 64-bit integers                      -> uint64_t
+    // Other types                          -> IntArithmeticT
+    [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto FractionStorageType()
+    {
+      if constexpr (is_integral_excl_int128<CommonT>::value)
+      {
+        if constexpr (sizeof(CommonT) < sizeof(uint32_t))
+        {
+          return uint32_t{};
+        }
+        else
+        {
+          return ::cuda::std::make_unsigned_t<CommonT>{};
+        }
+      }
+      else
+      {
+        return IntArithmeticT{};
+      }
+    }
+
+    using FractionStorageT = decltype(FractionStorageType());
+
+    template <typename T>
+    [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static auto subtract_as_unsigned(T lhs, T rhs) noexcept
+    {
+      if constexpr (::cuda::std::is_same_v<T, bool>)
+      {
+        return ::cuda::__sub_as_unsigned<uint8_t>(lhs, rhs);
+      }
+      else
+      {
+        return ::cuda::__sub_as_unsigned<::cuda::std::make_unsigned_t<T>>(lhs, rhs);
+      }
+    }
 
     union ScaleT
     {
@@ -122,8 +179,8 @@ struct Transforms
       // rounding errors (see NVIDIA/cub#489).
       struct FractionT
       {
-        CommonT bins;
-        CommonT range;
+        FractionStorageT bins;
+        FractionStorageT range;
       } fraction;
 
       // Used when CommonT is floating-point as an optimization.
@@ -138,6 +195,8 @@ struct Transforms
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT
     ComputeScale(int num_levels, T max_level, T min_level, ::cuda::std::true_type /* is_fp */)
     {
+      // The active scale representation is assigned below.
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
       ScaleT result;
       result.reciprocal = static_cast<T>(static_cast<T>(num_levels - 1) / static_cast<T>(max_level - min_level));
       return result;
@@ -147,9 +206,18 @@ struct Transforms
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT
     ComputeScale(int num_levels, T max_level, T min_level, ::cuda::std::false_type /* is_fp */)
     {
+      // The active scale representation is assigned below.
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
       ScaleT result;
-      result.fraction.bins  = static_cast<T>(num_levels - 1);
-      result.fraction.range = static_cast<T>(max_level - min_level);
+      result.fraction.bins = static_cast<FractionStorageT>(num_levels - 1);
+      if constexpr (is_integral_excl_int128<T>::value)
+      {
+        result.fraction.range = FractionStorageT{subtract_as_unsigned(max_level, min_level)};
+      }
+      else
+      {
+        result.fraction.range = static_cast<FractionStorageT>(max_level) - static_cast<FractionStorageT>(min_level);
+      }
       return result;
     }
 
@@ -162,6 +230,8 @@ struct Transforms
 #if _CCCL_HAS_NVFP16()
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT ComputeScale(int num_levels, __half max_level, __half min_level)
     {
+      // The active scale representation is assigned below.
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
       ScaleT result;
       NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53,
                         (result.reciprocal = __hdiv(__float2half(num_levels - 1), __hsub(max_level, min_level));),
@@ -172,9 +242,11 @@ struct Transforms
 #endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16()
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT
-    ComputeScale(int num_levels, __nv_bfloat16 max_level, __nv_bfloat16 min_level)
+    _CCCL_HOST_DEVICE
+    _CCCL_FORCEINLINE ScaleT ComputeScale(int num_levels, __nv_bfloat16 max_level, __nv_bfloat16 min_level)
     {
+      // The active scale representation is assigned below.
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
       ScaleT result;
       NV_IF_ELSE_TARGET(
         NV_PROVIDES_SM_80,
@@ -185,74 +257,74 @@ struct Transforms
     }
 #endif // _CCCL_HAS_NVBF16()
 
-    // All types but __half:
     template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int SampleIsValid(T sample, T max_level, T min_level) const
+    [[nodiscard]] _CCCL_HOST_DEVICE_API
+      _CCCL_FORCEINLINE int SampleIsValid(T sample, T max_level, T min_level) const noexcept
     {
-      return sample >= min_level && sample < max_level;
-    }
-
 #if _CCCL_HAS_NVFP16()
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int SampleIsValid(__half sample, __half max_level, __half min_level) const
-    {
-      NV_IF_ELSE_TARGET(
-        NV_PROVIDES_SM_53,
-        (return __hge(sample, min_level) && __hlt(sample, max_level);),
-        (return __half2float(sample) >= __half2float(min_level) && __half2float(sample) < __half2float(max_level);));
-    }
+      if constexpr (::cuda::std::is_same_v<T, ::__half>)
+      { // NOLINT(bugprone-branch-clone)
+        NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53,
+                          (return ::__hge(sample, min_level) && ::__hlt(sample, max_level);),
+                          (return ::__half2float(sample) >= ::__half2float(min_level)
+                                 && ::__half2float(sample) < ::__half2float(max_level);));
+      }
+      else
 #endif // _CCCL_HAS_NVFP16()
-
 #if _CCCL_HAS_NVBF16()
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int
-    SampleIsValid(__nv_bfloat16 sample, __nv_bfloat16 max_level, __nv_bfloat16 min_level)
-    {
-      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
-                        (return __hge(sample, min_level) && __hlt(sample, max_level);),
-                        (return __bfloat162float(sample) >= __bfloat162float(min_level)
-                               && __bfloat162float(sample) < __bfloat162float(max_level);));
-    }
+        if constexpr (::cuda::std::is_same_v<T, ::__nv_bfloat16>)
+      {
+        NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
+                          (return ::__hge(sample, min_level) && ::__hlt(sample, max_level);),
+                          (return ::__bfloat162float(sample) >= ::__bfloat162float(min_level)
+                                 && ::__bfloat162float(sample) < ::__bfloat162float(max_level);));
+      }
+      else
 #endif // _CCCL_HAS_NVBF16()
+      {
+        return sample >= min_level && sample < max_level;
+      }
+    }
 
-    //! @brief Bin computation for floating point (and extended floating point) types
     template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int
-    ComputeBin(T sample, T min_level, ScaleT scale, ::cuda::std::true_type /* is_fp */) const
+    [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE int
+    ComputeBin(T sample, T min_level, ScaleT scale) const noexcept
     {
-      return static_cast<int>((sample - min_level) * scale.reciprocal);
-    }
-
-    //! @brief Bin computation for custom types and __[u]int128
-    template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int
-    ComputeBin(T sample, T min_level, ScaleT scale, ::cuda::std::false_type /* is_fp */) const
-    {
-      return static_cast<int>(((sample - min_level) * scale.fraction.bins) / scale.fraction.range);
-    }
-
-    //! @brief Bin computation for integral types of up to 64-bit types
-    template <typename T, ::cuda::std::enable_if_t<is_integral_excl_int128<T>::value, int> = 0>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale) const
-    {
-      return static_cast<int>(
-        (static_cast<IntArithmeticT>(sample - min_level) * static_cast<IntArithmeticT>(scale.fraction.bins))
-        / static_cast<IntArithmeticT>(scale.fraction.range));
-    }
-
-    template <typename T, ::cuda::std::enable_if_t<!is_integral_excl_int128<T>::value, int> = 0>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale) const
-    {
-      return this->ComputeBin(sample, min_level, scale, ::cuda::std::is_floating_point<T>{});
-    }
-
+      if constexpr (is_integral_excl_int128<T>::value)
+      {
+        const auto offset = subtract_as_unsigned(sample, min_level);
+        return static_cast<int>(
+          (IntArithmeticT{offset} * IntArithmeticT{scale.fraction.bins}) / IntArithmeticT{scale.fraction.range});
+      }
 #if _CCCL_HAS_NVFP16()
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(__half sample, __half min_level, ScaleT scale) const
-    {
-      NV_IF_ELSE_TARGET(
-        NV_PROVIDES_SM_53,
-        (return static_cast<int>(__hmul(__hsub(sample, min_level), scale.reciprocal));),
-        (return static_cast<int>((__half2float(sample) - __half2float(min_level)) * __half2float(scale.reciprocal));));
-    }
+      else if constexpr (::cuda::std::is_same_v<T, ::__half>)
+      {
+        NV_IF_ELSE_TARGET(
+          NV_PROVIDES_SM_53,
+          (return static_cast<int>(::__hmul(::__hsub(sample, min_level), scale.reciprocal));),
+          (return static_cast<int>(
+                    (::__half2float(sample) - ::__half2float(min_level)) * ::__half2float(scale.reciprocal));));
+      }
 #endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+      else if constexpr (::cuda::std::is_same_v<T, ::__nv_bfloat16>)
+      {
+        // Compute in float on all architectures: bfloat16 cannot represent all bin indices beyond 256.
+        return static_cast<int>(
+          (::__bfloat162float(sample) - ::__bfloat162float(min_level)) * ::__bfloat162float(scale.reciprocal));
+      }
+#endif // _CCCL_HAS_NVBF16()
+      else if constexpr (::cuda::std::is_floating_point_v<T>)
+      {
+        return static_cast<int>((sample - min_level) * scale.reciprocal);
+      }
+      else
+      {
+        // Custom types and __[u]int128
+        return static_cast<int>(((sample - min_level) * static_cast<CommonT>(scale.fraction.bins))
+                                / static_cast<CommonT>(scale.fraction.range));
+      }
+    }
 
   public:
     //! @brief Initializes the ScaleTransform for the given parameters
@@ -264,9 +336,10 @@ struct Transforms
       m_scale = this->ComputeScale(num_levels, m_max, m_min);
     }
 
-    // Method for converting samples to bin-ids
-    template <CacheLoadModifier LOAD_MODIFIER>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(SampleT sample, int& bin, bool valid) const
+    // Method for converting samples to bin-ids. The sample type is a template parameter because the
+    // agent also feeds privatized bin indices through this op, which must not round-trip through SampleT.
+    template <CacheLoadModifier LoadModifier, typename Sample>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
     {
       const CommonT common_sample = static_cast<CommonT>(sample);
 
@@ -297,8 +370,8 @@ struct Transforms
     {}
 
     // Method for converting samples to bin-ids
-    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid) const
+    template <CacheLoadModifier LoadModifier, typename Sample>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
     {
       if (valid)
       {
@@ -343,14 +416,14 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
   ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
   GridQueue<int> tile_queue)
 {
-  [[maybe_unused]] static constexpr histogram_policy policy = current_policy<PolicySelector>();
+  [[maybe_unused]] static constexpr HistogramPolicy policy = current_policy<PolicySelector>();
   _CCCL_PDL_GRID_DEPENDENCY_SYNC(); // TODO(bgruber): if we had the guarantee that there would be no pending
                                     // writes/reads to the temp storage, we could omit the sync here
 
   // we trigger the sweep kernel only if we have a small number of remaining writes in this kernel
   NV_IF_TARGET(NV_PROVIDES_SM_90, ({
                  if (::cuda::std::reduce(num_output_bins_wrapper.begin(), num_output_bins_wrapper.end())
-                     <= policy.pdl_trigger_next_launch_in_init_kernel_max_bin_count)
+                     <= policy.init_kernel_pdl_trigger_max_bins)
                  {
                    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
                  }
@@ -361,7 +434,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
     tile_queue.ResetDrain();
   }
 
-  const int output_bin = (blockIdx.x * blockDim.x) + threadIdx.x;
+  const int output_bin = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ch = 0; ch < NumActiveChannels; ++ch)
@@ -430,8 +503,8 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
 //!   The transform operator for determining privatized counter indices from samples,
 //!   one for each channel (pre-initialized on host)
 //!
-//! @param num_row_pixels
-//!   The number of multi-channel pixels per row in the region of interest
+//! @param num_row_items
+//!   The number of multi-channel items per row in the region of interest
 //!
 //! @param num_rows
 //!   The number of rows in the region of interest
@@ -456,33 +529,33 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().block_threads))
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepKernel(
-    _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
-    _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
-    _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
+    const SampleIteratorT d_samples,
+    const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
+    const ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
-    _CCCL_GRID_CONSTANT const ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op_wrapper,
-    _CCCL_GRID_CONSTANT const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
-    _CCCL_GRID_CONSTANT const OffsetT num_row_pixels,
-    _CCCL_GRID_CONSTANT const OffsetT num_rows,
-    _CCCL_GRID_CONSTANT const OffsetT row_stride_samples,
-    _CCCL_GRID_CONSTANT const int tiles_per_row,
+    const ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op_wrapper,
+    const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
+    const OffsetT num_row_items,
+    const OffsetT num_rows,
+    const OffsetT row_stride_samples,
+    const int tiles_per_row,
     GridQueue<int> tile_queue)
 {
-  static constexpr histogram_policy hp = current_policy<PolicySelector>();
+  static constexpr HistogramPolicy hp = current_policy<PolicySelector>();
 
   // Thread block type for compositing input tiles
-  using AgentHistogramPolicyT =
-    AgentHistogramPolicy<hp.block_threads,
-                         hp.pixels_per_thread,
-                         hp.load_algorithm,
-                         hp.load_modifier,
-                         hp.rle_compress,
-                         hp.mem_preference,
-                         hp.work_stealing,
-                         hp.vec_size>;
+  using AgentHistogramPolicyT = agent_histogram_policy<
+    hp.threads_per_block,
+    hp.pixels_per_thread,
+    hp.load_algorithm,
+    hp.load_modifier,
+    hp.rle_compress,
+    hp.mem_preference,
+    hp.use_work_stealing,
+    hp.vec_size>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
                    PrivatizedSmemBins,
@@ -511,7 +584,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().block_threads))
   agent.InitBinCounters();
 
   // Consume input tiles
-  agent.ConsumeTiles(num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue);
+  agent.ConsumeTiles(num_row_items, num_rows, row_stride_samples, tiles_per_row, tile_queue);
 
   // Store output to global (if necessary)
   agent.StoreOutput();
@@ -586,8 +659,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().block_threads))
 //!   For DispatchEven: lower level bounds per channel.
 //!   For DispatchRange: level pointers per channel.
 //!
-//! @param num_row_pixels
-//!   The number of multi-channel pixels per row in the region of interest
+//! @param num_row_items
+//!   The number of multi-channel items per row in the region of interest
 //!
 //! @param num_rows
 //!   The number of rows in the region of interest
@@ -616,22 +689,22 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().block_threads))
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDeviceInitKernel(
-    _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
+    const SampleIteratorT d_samples,
     ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
-    _CCCL_GRID_CONSTANT const FirstLevelArrayT first_level_array,
-    _CCCL_GRID_CONSTANT const SecondLevelArrayT second_level_array,
-    _CCCL_GRID_CONSTANT const OffsetT num_row_pixels,
-    _CCCL_GRID_CONSTANT const OffsetT num_rows,
-    _CCCL_GRID_CONSTANT const OffsetT row_stride_samples,
-    _CCCL_GRID_CONSTANT const int tiles_per_row,
-    _CCCL_GRID_CONSTANT const GridQueue<int> tile_queue)
+    const FirstLevelArrayT first_level_array,
+    const SecondLevelArrayT second_level_array,
+    const OffsetT num_row_items,
+    const OffsetT num_rows,
+    const OffsetT row_stride_samples,
+    const int tiles_per_row,
+    const GridQueue<int> tile_queue)
 {
-  static constexpr histogram_policy hp = current_policy<PolicySelector>();
+  static constexpr HistogramPolicy hp = current_policy<PolicySelector>();
 
   OutputDecodeOpT output_decode_op[NumActiveChannels];
   PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];
@@ -660,15 +733,15 @@ __launch_bounds__(int(current_policy<PolicySelector>().block_threads))
   }
 
   // Thread block type for compositing input tiles
-  using AgentHistogramPolicyT =
-    AgentHistogramPolicy<hp.block_threads,
-                         hp.pixels_per_thread,
-                         hp.load_algorithm,
-                         hp.load_modifier,
-                         hp.rle_compress,
-                         hp.mem_preference,
-                         hp.work_stealing,
-                         hp.vec_size>;
+  using AgentHistogramPolicyT = agent_histogram_policy<
+    hp.threads_per_block,
+    hp.pixels_per_thread,
+    hp.load_algorithm,
+    hp.load_modifier,
+    hp.rle_compress,
+    hp.mem_preference,
+    hp.use_work_stealing,
+    hp.vec_size>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
                    PrivatizedSmemBins,
@@ -697,7 +770,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().block_threads))
   agent.InitBinCounters();
 
   // Consume input tiles
-  agent.ConsumeTiles(num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue);
+  agent.ConsumeTiles(num_row_items, num_rows, row_stride_samples, tiles_per_row, tile_queue);
 
   // Store output to global (if necessary)
   agent.StoreOutput();

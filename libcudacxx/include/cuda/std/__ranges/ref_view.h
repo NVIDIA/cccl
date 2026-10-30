@@ -20,11 +20,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/different_from.h>
-#include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__iterator/incrementable_traits.h>
-#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__concepts/invocable.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/concepts.h>
@@ -33,7 +32,7 @@
 #include <cuda/std/__ranges/enable_borrowed_range.h>
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/view_interface.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_object.h>
 #include <cuda/std/__utility/forward.h>
 
@@ -67,7 +66,7 @@ public:
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__different_from<_Tp, ref_view> _CCCL_AND convertible_to<_Tp, _Range&> _CCCL_AND
                    __convertible_to_lvalue<_Tp, _Range>)
-  _CCCL_API constexpr ref_view(_Tp&& __t)
+  _CCCL_API constexpr ref_view(_Tp&& __t) // NOLINT(bugprone-forwarding-reference-overload)
       : view_interface<ref_view<_Range>>()
       , __range_(::cuda::std::addressof(static_cast<_Range&>(::cuda::std::forward<_Tp>(__t))))
   {}
@@ -109,7 +108,7 @@ public:
 };
 
 template <class _Range>
-_CCCL_HOST_DEVICE ref_view(_Range&) -> ref_view<_Range>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES ref_view(_Range&) -> ref_view<_Range>;
 
 template <class _Tp>
 inline constexpr bool enable_borrowed_range<ref_view<_Tp>> = true;

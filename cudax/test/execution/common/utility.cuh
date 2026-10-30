@@ -221,17 +221,17 @@ void check_values(Sndr&& sndr, const Values&... values) noexcept
     auto opt = cudax_async::sync_wait(static_cast<Sndr&&>(sndr));
     if (!opt)
     {
-      CUDAX_FAIL("Expected value completion; got stopped instead.");
+      FAIL("Expected value completion; got stopped instead.");
     }
     else
     {
       auto&& vals = *opt;
-      CUDAX_CHECK(vals == ::cuda::std::tie(values...));
+      CHECK(vals == ::cuda::std::tie(values...));
     }
   }
   catch (...)
   {
-    CUDAX_FAIL("Expected value completion; got error instead.");
+    FAIL("Expected value completion; got error instead.");
   }
 }
 

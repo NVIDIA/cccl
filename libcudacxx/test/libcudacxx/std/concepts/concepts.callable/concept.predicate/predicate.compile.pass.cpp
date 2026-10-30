@@ -61,22 +61,19 @@ TEST_FUNC constexpr bool check_lambda(Fun)
 }
 
 static_assert(check_lambda([] {
-                return cuda::std::true_type();
-              }),
-              "");
+  return cuda::std::true_type();
+}));
 static_assert(check_lambda([]() -> int* {
-                return nullptr;
-              }),
-              "");
+  return nullptr;
+}));
 
 struct boolean
 {
   TEST_FUNC operator bool() const noexcept;
 };
 static_assert(check_lambda([] {
-                return boolean();
-              }),
-              "");
+  return boolean();
+}));
 
 struct explicit_bool
 {
@@ -84,8 +81,7 @@ struct explicit_bool
 };
 static_assert(!check_lambda([] {
   return explicit_bool();
-}),
-              "");
+}));
 #endif // !TEST_COMPILER(NVRTC)
 
 int main(int, char**)

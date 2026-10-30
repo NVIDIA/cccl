@@ -31,6 +31,7 @@
 
 #include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__mdspan/default_accessor.h>
 #include <cuda/std/__memory/assume_aligned.h>
 #include <cuda/std/__type_traits/is_abstract.h>
@@ -77,12 +78,13 @@ public:
     return {};
   }
 
-  _CCCL_API constexpr reference access(data_handle_type __p, size_t __i) const noexcept
+  _CCCL_HOST_DEVICE_API constexpr reference access(data_handle_type __p, size_t __i) const noexcept
   {
     return ::cuda::std::assume_aligned<byte_alignment>(__p)[__i];
   }
 
-  _CCCL_API constexpr typename offset_policy::data_handle_type offset(data_handle_type __p, size_t __i) const noexcept
+  _CCCL_HOST_DEVICE_API constexpr typename offset_policy::data_handle_type
+  offset(data_handle_type __p, size_t __i) const noexcept
   {
     return ::cuda::std::assume_aligned<byte_alignment>(__p) + __i;
   }

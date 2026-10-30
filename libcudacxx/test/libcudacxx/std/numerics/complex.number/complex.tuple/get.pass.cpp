@@ -20,7 +20,6 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
-// #include <cuda/std/vector>
 #include <cuda/std/utility>
 
 #include "test_macros.h"
@@ -41,6 +40,34 @@ constexpr TEST_FUNC void test()
     static_assert(noexcept(cuda::std::get<1>(c)));
     assert(i == T{28});
   }
+
+  { // Through unqualified function call via using
+    cuda::std::complex<T> c{T{27}, T{28}};
+    using cuda::std::get;
+
+    auto& r = get<0>(c);
+    static_assert(cuda::std::is_same_v<T&, decltype(get<0>(c))>);
+    static_assert(noexcept(get<0>(c)));
+    assert(r == T{27});
+    auto& i = get<1>(c);
+    static_assert(cuda::std::is_same_v<T&, decltype(get<1>(c))>);
+    static_assert(noexcept(get<1>(c)));
+    assert(i == T{28});
+  }
+#if TEST_STD_VER >= 2020
+  { // Through unqualified function call
+    cuda::std::complex<T> c{T{27}, T{28}};
+
+    auto& r = get<0>(c);
+    static_assert(cuda::std::is_same_v<T&, decltype(get<0>(c))>);
+    static_assert(noexcept(get<0>(c)));
+    assert(r == T{27});
+    auto& i = get<1>(c);
+    static_assert(cuda::std::is_same_v<T&, decltype(get<1>(c))>);
+    static_assert(noexcept(get<1>(c)));
+    assert(i == T{28});
+  }
+#endif // TEST_STD_VER >= 2020
   //  &&
   {
     cuda::std::complex<T> c{T{27}, T{28}};
@@ -58,6 +85,42 @@ constexpr TEST_FUNC void test()
     static_assert(noexcept(cuda::std::get<1>(cuda::std::move(c))));
     assert(i == T{28});
   }
+  { // Through unqualified function call via using
+    cuda::std::complex<T> c{T{27}, T{28}};
+    using cuda::std::get;
+
+    auto&& r = get<0>(cuda::std::move(c));
+    static_assert(cuda::std::is_same_v<T&&, decltype(get<0>(cuda::std::move(c)))>);
+    static_assert(noexcept(get<0>(cuda::std::move(c))));
+    assert(r == T{27});
+  }
+  { // Through unqualified function call via using
+    cuda::std::complex<T> c{T{27}, T{28}};
+    using cuda::std::get;
+
+    auto&& i = get<1>(cuda::std::move(c));
+    static_assert(cuda::std::is_same_v<T&&, decltype(get<1>(cuda::std::move(c)))>);
+    static_assert(noexcept(get<1>(cuda::std::move(c))));
+    assert(i == T{28});
+  }
+#if TEST_STD_VER >= 2020
+  { // Through unqualified function call
+    cuda::std::complex<T> c{T{27}, T{28}};
+
+    auto&& r = get<0>(cuda::std::move(c));
+    static_assert(cuda::std::is_same_v<T&&, decltype(get<0>(cuda::std::move(c)))>);
+    static_assert(noexcept(get<0>(cuda::std::move(c))));
+    assert(r == T{27});
+  }
+  { // Through unqualified function call
+    cuda::std::complex<T> c{T{27}, T{28}};
+
+    auto&& i = get<1>(cuda::std::move(c));
+    static_assert(cuda::std::is_same_v<T&&, decltype(get<1>(cuda::std::move(c)))>);
+    static_assert(noexcept(get<1>(cuda::std::move(c))));
+    assert(i == T{28});
+  }
+#endif // TEST_STD_VER >= 2020
   // const &
   {
     const cuda::std::complex<T> c{T{27}, T{28}};
@@ -71,6 +134,33 @@ constexpr TEST_FUNC void test()
     static_assert(noexcept(cuda::std::get<1>(c)));
     assert(i == T{28});
   }
+  { // Through unqualified function call via using
+    const cuda::std::complex<T> c{T{27}, T{28}};
+    using cuda::std::get;
+
+    const auto& r = get<0>(c);
+    static_assert(cuda::std::is_same_v<const T&, decltype(get<0>(c))>);
+    static_assert(noexcept(get<0>(c)));
+    assert(r == T{27});
+    const auto& i = get<1>(c);
+    static_assert(cuda::std::is_same_v<const T&, decltype(get<1>(c))>);
+    static_assert(noexcept(get<1>(c)));
+    assert(i == T{28});
+  }
+#if TEST_STD_VER >= 2020
+  { // Through unqualified function call
+    const cuda::std::complex<T> c{T{27}, T{28}};
+
+    const auto& r = get<0>(c);
+    static_assert(cuda::std::is_same_v<const T&, decltype(get<0>(c))>);
+    static_assert(noexcept(get<0>(c)));
+    assert(r == T{27});
+    const auto& i = get<1>(c);
+    static_assert(cuda::std::is_same_v<const T&, decltype(get<1>(c))>);
+    static_assert(noexcept(get<1>(c)));
+    assert(i == T{28});
+  }
+#endif // TEST_STD_VER >= 2020
   //  const &&
   {
     const cuda::std::complex<T> c{T{27}, T{28}};
@@ -88,6 +178,42 @@ constexpr TEST_FUNC void test()
     static_assert(noexcept(cuda::std::get<1>(cuda::std::move(c))));
     assert(i == T{28});
   }
+  { // Through unqualified function call via using
+    const cuda::std::complex<T> c{T{27}, T{28}};
+    using cuda::std::get;
+
+    const auto&& r = get<0>(cuda::std::move(c));
+    static_assert(cuda::std::is_same_v<const T&&, decltype(get<0>(cuda::std::move(c)))>);
+    static_assert(noexcept(get<0>(cuda::std::move(c))));
+    assert(r == T{27});
+  }
+  { // Through unqualified function call via using
+    const cuda::std::complex<T> c{T{27}, T{28}};
+    using cuda::std::get;
+
+    const auto&& i = get<1>(cuda::std::move(c));
+    static_assert(cuda::std::is_same_v<const T&&, decltype(get<1>(cuda::std::move(c)))>);
+    static_assert(noexcept(get<1>(cuda::std::move(c))));
+    assert(i == T{28});
+  }
+#if TEST_STD_VER >= 2020
+  { // Through unqualified function call
+    const cuda::std::complex<T> c{T{27}, T{28}};
+
+    const auto&& r = get<0>(cuda::std::move(c));
+    static_assert(cuda::std::is_same_v<const T&&, decltype(get<0>(cuda::std::move(c)))>);
+    static_assert(noexcept(get<0>(cuda::std::move(c))));
+    assert(r == T{27});
+  }
+  { // Through unqualified function call
+    const cuda::std::complex<T> c{T{27}, T{28}};
+
+    const auto&& i = get<1>(cuda::std::move(c));
+    static_assert(cuda::std::is_same_v<const T&&, decltype(get<1>(cuda::std::move(c)))>);
+    static_assert(noexcept(get<1>(cuda::std::move(c))));
+    assert(i == T{28});
+  }
+#endif // TEST_STD_VER >= 2020
 
   // `get()` allows using `complex` with structured bindings
   {

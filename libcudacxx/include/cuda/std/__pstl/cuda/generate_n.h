@@ -26,32 +26,31 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wignored-attributes")
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 #  include <cub/device/device_transform.cuh>
+#  include <cub/util_namespace.cuh>
 
 _CCCL_DIAG_POP
 
-#  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/call_or.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__algorithm/generate_n.h>
+#  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__execution/env.h>
-#  include <cuda/std/__execution/policy.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
-#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__fwd/execution_policy.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__utility/move.h>
+#  include <cuda/std/cstdint>
 #  include <cuda/std/tuple>
-
-#  include <cuda_runtime.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -66,8 +65,11 @@ struct __pstl_dispatch<__pstl_algorithm::__generate_n, __execution_backend::__cu
   [[nodiscard]] _CCCL_HOST_API static _OutputIterator
   __par_impl(const _Policy& __policy, _OutputIterator __result, const int64_t __count, _UnaryOp __func)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     // We pass the policy as an environment to DeviceTransform
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceTransform::Generate,
       "__pstl_cuda_generate: call to cub device_transform::Generate failed",
       __result,
@@ -75,8 +77,6 @@ struct __pstl_dispatch<__pstl_algorithm::__generate_n, __execution_backend::__cu
       ::cuda::std::move(__func),
       __policy);
 
-    // Get the stream for synchronization after the algorithm is run
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     __stream.sync();
 
     return __result + __count;
@@ -84,16 +84,16 @@ struct __pstl_dispatch<__pstl_algorithm::__generate_n, __execution_backend::__cu
 
   _CCCL_TEMPLATE(class _Policy, class _OutputIterator, class _Size, class _UnaryOp)
   _CCCL_REQUIRES(__has_forward_traversal<_OutputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _OutputIterator
-  operator()([[maybe_unused]] const _Policy& __policy, _OutputIterator __result, _Size __count, _UnaryOp __func) const
+  [[nodiscard]] _CCCL_HOST_API _OutputIterator _CCCL_STATIC_CALL_OPERATOR(
+    [[maybe_unused]] const _Policy& __policy, _OutputIterator __result, _Size __count, _UnaryOp __func)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_OutputIterator>)
     {
-      try
+      _CCCL_TRY
       {
         return __par_impl(__policy, ::cuda::std::move(__result), __count, ::cuda::std::move(__func));
       }
-      catch (const ::cuda::cuda_error& __err)
+      _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
         if (__err.status() == cudaErrorMemoryAllocation)
         {
@@ -101,9 +101,10 @@ struct __pstl_dispatch<__pstl_algorithm::__generate_n, __execution_backend::__cu
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
+      _CCCL_CATCH_FALLTHROUGH
     }
     else
     {

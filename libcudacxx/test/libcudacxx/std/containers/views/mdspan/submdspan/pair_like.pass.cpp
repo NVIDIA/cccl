@@ -27,7 +27,7 @@
 #endif // !TEST_COMPILER(NVRTC)
 
 template <class Tuple>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   constexpr char data[] = {'H', 'O', 'P', 'P', 'E', 'R'};
 
@@ -114,7 +114,6 @@ __host__ __device__ constexpr void test()
     assert(md.size() == 6);
     assert(equal_to(md, {"HPE", "OPR"}));
 
-#if !TEST_COMPILER(MSVC) // error C3546: '...': there are no parameter packs available to expand
     { // full extent, then slice of elements from start 0:2
       // ['H', 'P', 'E'] [ x ] [ x    x      ]
       // ['O', 'P', 'R'] [ x ] [ x    x      ]
@@ -134,7 +133,6 @@ __host__ __device__ constexpr void test()
       assert(sub.size() == 4);
       assert(equal_to(sub, {"HP", "OP"}));
     }
-#endif // !TEST_COMPILER(MSVC)
 
     { // Slice of elements from start 0:1, then full extent
       // ['H', 'P', 'E'] [ x ] [ x    x    x ]
@@ -229,7 +227,7 @@ __host__ __device__ constexpr void test()
       static_assert(sub.rank_dynamic() == 1);
 
       using submdspan_t = decltype(sub);
-      static_assert(cuda::std::is_same_v<typename submdspan_t::layout_type, cuda::std::layout_stride>);
+      static_assert(cuda::std::is_same_v<typename submdspan_t::layout_type, cuda::std::layout_left>);
 
       assert(sub.stride(0) == md.stride(0));
       assert(sub.extent(0) == 1);
@@ -239,7 +237,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<cuda::std::array<int, 2>>();
   test<cuda::std::pair<int, int>>();
@@ -260,8 +258,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-#if !_CCCL_COMPILER(GCC, <, 11) // gcc-10 complains about __submdspan_offset not being constexpr...
   static_assert(test());
-#endif // !_CCCL_COMPILER(GCC, <, 11)
   return 0;
 }

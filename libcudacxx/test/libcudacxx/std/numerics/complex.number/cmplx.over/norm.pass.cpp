@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6077402: error: "call to non-tile function not supported!"
+// UNSUPPORTED: force-tile
+// error calling a __host__ __device__ function from a __host__ __device__ __tile__ function is not allowed
 
 // <cuda/std/complex>
 
@@ -24,21 +24,21 @@
 #include "test_macros.h"
 
 template <class T>
-TEST_FUNC void test(T x, typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0)
+TEST_HOST_DEVICE_FUNC void test(T x, typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0)
 {
   static_assert((cuda::std::is_same<decltype(cuda::std::norm(x)), double>::value));
   assert(cuda::std::norm(x) == norm(cuda::std::complex<double>(static_cast<double>(x), 0)));
 }
 
 template <class T>
-TEST_FUNC void test(T x, typename cuda::std::enable_if<!cuda::std::is_integral<T>::value>::type* = 0)
+TEST_HOST_DEVICE_FUNC void test(T x, typename cuda::std::enable_if<!cuda::std::is_integral<T>::value>::type* = 0)
 {
   static_assert((cuda::std::is_same<decltype(cuda::std::norm(x)), T>::value));
   assert(cuda::std::norm(x) == norm(cuda::std::complex<T>(x, 0)));
 }
 
 template <class T>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test<T>(0);
   test<T>(1);

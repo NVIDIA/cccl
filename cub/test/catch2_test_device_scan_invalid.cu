@@ -16,7 +16,7 @@
 
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 #include <c2h/vector.h>
 
@@ -144,7 +144,8 @@ struct merge_segments_op
 };
 
 // Expected to fail for the current implementation.
-C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][device][!mayfail]", element_types)
+CUB_TEST(
+  "Device scan avoids invalid data with all device interfaces", "[scan][device][!mayfail]", CUB_SMALL, element_types)
 {
   using input_t  = c2h::get<0, TestType>;
   using output_t = input_t;
@@ -260,9 +261,9 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
     const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    using init_t        = output_t;
-    c2h::device_vector<init_t> d_initial_value{init_value};
-    const auto future_init_value = cub::FutureValue<init_t>(thrust::raw_pointer_cast(d_initial_value.data()));
+    using init_value_t  = output_t;
+    c2h::device_vector<init_value_t> d_initial_value{init_value};
+    const auto future_init_value = cub::FutureValue<init_value_t>(thrust::raw_pointer_cast(d_initial_value.data()));
     device_exclusive_scan(d_in_it, d_out_it, scan_op, future_init_value, num_items);
 
     const counts h_counts = error_counts.front();

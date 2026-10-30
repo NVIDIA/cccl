@@ -40,10 +40,11 @@ template <allocation_fn Alloc, deallocation_fn Dealloc, typename Pointer>
 class cuda_memory_resource final : public mr::memory_resource<Pointer>
 {
 public:
-  Pointer do_allocate(std::size_t bytes, [[maybe_unused]] std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  Pointer do_allocate(std::size_t bytes, // NOLINT(google-default-arguments)
+                      [[maybe_unused]] std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     void* ret;
-    cudaError_t status = Alloc(&ret, bytes);
+    const cudaError_t status = Alloc(&ret, bytes);
 
     if (status != cudaSuccess)
     {
@@ -62,14 +63,14 @@ public:
   }
 };
 
-inline cudaError_t CUDARTAPI cudaMallocManaged(void** ptr, std::size_t bytes)
+inline cudaError_t CUDARTAPI cuda_malloc_managed(void** ptr, std::size_t bytes)
 {
   return ::cudaMallocManaged(ptr, bytes, cudaMemAttachGlobal);
 }
 
 using device_memory_resource = detail::cuda_memory_resource<cudaMalloc, cudaFree, thrust::cuda::pointer<void>>;
 using managed_memory_resource =
-  detail::cuda_memory_resource<detail::cudaMallocManaged, cudaFree, thrust::cuda::universal_pointer<void>>;
+  detail::cuda_memory_resource<detail::cuda_malloc_managed, cudaFree, thrust::cuda::universal_pointer<void>>;
 using pinned_memory_resource =
   detail::cuda_memory_resource<cudaMallocHost, cudaFreeHost, thrust::cuda::universal_host_pinned_pointer<void>>;
 } // namespace detail

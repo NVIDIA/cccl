@@ -22,19 +22,36 @@
 
 #include <cuda/std/__type_traits/add_const.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+#if defined(_CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_CONSTRUCTIBLE_FALLBACK)
+
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_copy_constructible
-    : public is_nothrow_constructible<_Tp, add_lvalue_reference_t<typename add_const<_Tp>::type>>
+    : public bool_constant<_CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE(_Tp, add_lvalue_reference_t<add_const_t<_Tp>>)>
 {};
 
 template <class _Tp>
-inline constexpr bool is_nothrow_copy_constructible_v = is_nothrow_copy_constructible<_Tp>::value;
+inline constexpr bool is_nothrow_copy_constructible_v =
+  _CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE(_Tp, add_lvalue_reference_t<add_const_t<_Tp>>);
+
+#else // ^^^ Use builtin ^^^ / vvv No builtin
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_nothrow_copy_constructible : bool_constant<is_nothrow_constructible_v<_Tp, add_lvalue_reference_t<add_const_t<_Tp>>>>
+{};
+
+template <class _Tp>
+inline constexpr bool is_nothrow_copy_constructible_v =
+  is_nothrow_constructible_v<_Tp, add_lvalue_reference_t<add_const_t<_Tp>>>;
+
+#endif // No builtin
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

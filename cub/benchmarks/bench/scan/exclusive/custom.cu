@@ -9,7 +9,7 @@
 
 #include <nvbench_helper.cuh>
 
-#define USES_WARPSPEED() 0
+#define USES_LOOKAHEAD() 0
 using op_t              = max_t;
 using scan_offset_types = offset_types;
 #include "base.cuh"

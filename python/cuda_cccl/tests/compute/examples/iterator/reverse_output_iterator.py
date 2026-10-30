@@ -28,7 +28,13 @@ h_init = np.array(0, dtype=np.int32)
 reverse_out_it = ReverseIterator(d_output)
 
 # Perform the reduction.
-cuda.compute.inclusive_scan(d_input, reverse_out_it, OpKind.PLUS, h_init, len(d_input))
+cuda.compute.inclusive_scan(
+    d_in=d_input,
+    d_out=reverse_out_it,
+    op=OpKind.PLUS,
+    init_value=h_init,
+    num_items=len(d_input),
+)
 
 # Verify the result.
 expected_output = np.array([15, 10, 6, 3, 1], dtype=np.int32)

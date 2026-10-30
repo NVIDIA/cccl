@@ -21,9 +21,9 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/class_or_enum.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__iterator/reverse_iterator.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__type_traits/is_reference.h>
@@ -38,10 +38,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 // [ranges.access.rbegin]
 
 _CCCL_BEGIN_NAMESPACE_CPO(__rbegin)
-template <class _Tp>
-void rbegin(_Tp&) = delete;
-template <class _Tp>
-void rbegin(const _Tp&) = delete;
+
+#if _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51)
+// A deleted declaration suppresses ADL on these compilers.
+_CCCL_HOST_DEVICE void rbegin();
+#else // ^^^ _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51) ^^^ / vvv deleted declaration vvv
+_CCCL_HOST_DEVICE void rbegin() = delete;
+#endif // _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51)
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
@@ -102,8 +105,8 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__member_rbegin<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.rbegin())))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.rbegin())))
   {
     return _LIBCUDACXX_AUTO_CAST(__t.rbegin());
   }
@@ -111,8 +114,8 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__unqualified_rbegin<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(rbegin(__t))))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(rbegin(__t))))
   {
     return _LIBCUDACXX_AUTO_CAST(rbegin(__t));
   }
@@ -120,15 +123,17 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__can_reverse<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(::cuda::std::ranges::end(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(
+    noexcept(::cuda::std::make_reverse_iterator(::cuda::std::ranges::end(__t))))
   {
     return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::end(__t));
   }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES((!__member_rbegin<_Tp> && !__unqualified_rbegin<_Tp> && !__can_reverse<_Tp>) )
-  void operator()(_Tp&&) const = delete;
+  void _CCCL_STATIC_CALL_OPERATOR(_Tp&&) = delete;
 };
+
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
@@ -144,9 +149,9 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_lvalue_reference_v<_Tp&&>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::rbegin(static_cast<const remove_reference_t<_Tp>&>(__t))))
-      -> decltype(::cuda::std::ranges::rbegin(static_cast<const remove_reference_t<_Tp>&>(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(
+    noexcept(::cuda::std::ranges::rbegin(static_cast<const remove_reference_t<_Tp>&>(__t))))
+    -> decltype(::cuda::std::ranges::rbegin(static_cast<const remove_reference_t<_Tp>&>(__t)))
   {
     return ::cuda::std::ranges::rbegin(static_cast<const remove_reference_t<_Tp>&>(__t));
   }
@@ -154,9 +159,9 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::rbegin(static_cast<const _Tp&&>(__t))))
-      -> decltype(::cuda::std::ranges::rbegin(static_cast<const _Tp&&>(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(::cuda::std::ranges::rbegin(static_cast<const _Tp&&>(__t))))
+    -> decltype(::cuda::std::ranges::rbegin(static_cast<const _Tp&&>(__t)))
   {
     return ::cuda::std::ranges::rbegin(static_cast<const _Tp&&>(__t));
   }

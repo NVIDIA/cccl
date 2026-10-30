@@ -26,14 +26,15 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wignored-attributes")
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 #  include <cub/device/device_for.cuh>
+#  include <cub/util_namespace.cuh>
 
 _CCCL_DIAG_POP
 
-#  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/call_or.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
@@ -41,12 +42,11 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__algorithm/for_each_n.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__exception/terminate.h>
-#  include <cuda/std/__execution/env.h>
-#  include <cuda/std/__execution/policy.h>
+#  include <cuda/std/__fwd/execution_policy.h>
 #  include <cuda/std/__host_stdlib/new>
 #  include <cuda/std/__iterator/incrementable_traits.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__utility/convert_to_integral.h>
@@ -67,10 +67,13 @@ struct __pstl_dispatch<__pstl_algorithm::__for_each_n, __execution_backend::__cu
   [[nodiscard]] _CCCL_HOST_API static _Iter
   __par_impl([[maybe_unused]] const _Policy& __policy, _Iter __first, _Size __orig_n, _Fn __func)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     const auto __count = ::cuda::std::__convert_to_integral(__orig_n);
 
     // We pass the policy as an environment to DeviceFor
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceFor::ForEachN,
       "__pstl_dispatch: kernel launch failed",
       __first,
@@ -78,23 +81,22 @@ struct __pstl_dispatch<__pstl_algorithm::__for_each_n, __execution_backend::__cu
       ::cuda::std::move(__func),
       __policy);
 
-    // Get the stream for synchronization after the algorithm is run
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     __stream.sync();
 
     return __first + static_cast<iter_difference_t<_Iter>>(__count);
   }
 
   template <class _Policy, class _Iter, class _Size, class _Fn>
-  [[nodiscard]] _CCCL_HOST_API _Iter operator()(const _Policy& __policy, _Iter __first, _Size __orig_n, _Fn __func) const
+  [[nodiscard]] _CCCL_HOST_API _Iter
+  _CCCL_STATIC_CALL_OPERATOR(const _Policy& __policy, _Iter __first, _Size __orig_n, _Fn __func)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_Iter>)
     {
-      try
+      _CCCL_TRY
       {
         return __par_impl(__policy, ::cuda::std::move(__first), __orig_n, ::cuda::std::move(__func));
       }
-      catch (const ::cuda::cuda_error& __err)
+      _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
         if (__err.status() == ::cudaErrorMemoryAllocation)
         {
@@ -102,9 +104,10 @@ struct __pstl_dispatch<__pstl_algorithm::__for_each_n, __execution_backend::__cu
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
+      _CCCL_CATCH_FALLTHROUGH
     }
     else
     {

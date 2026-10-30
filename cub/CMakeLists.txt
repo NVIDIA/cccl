@@ -10,6 +10,23 @@ option(CUB_ENABLE_HEADER_TESTING "Test that all public headers compile." ON)
 option(CUB_ENABLE_TESTING "Build CUB testing suite." ON)
 option(CUB_ENABLE_EXAMPLES "Build CUB examples." ON)
 
+option(
+  CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH
+  "EXPERIMENTAL: build cub::DeviceTransform's tile path (requires nvcc --enable-tile). This flag is experimental and may change or be removed."
+  OFF
+)
+if (
+  CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH
+  AND "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA"
+  AND "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_LESS 13.4
+)
+  message(
+    FATAL_ERROR
+    "CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH requires CUDA 13.4+ (nvcc --enable-tile). "
+    "Found ${CMAKE_CUDA_COMPILER_VERSION}."
+  )
+endif()
+
 option(CUB_ENABLE_TUNING "Build CUB tuning suite." OFF)
 if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   set(CUB_ENABLE_TUNING OFF)

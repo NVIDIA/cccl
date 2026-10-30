@@ -6,8 +6,18 @@
 
 from __future__ import annotations
 
-from ._bindings import Op, OpKind
+import sys
+import sysconfig
+import warnings
+
+from ._bindings import Op, OpKind, TypeEnum
 from ._caching import CachableFunction, cache_with_registered_key_functions
+from ._device_code import DeviceCode
+
+try:
+    from ._build_info import USING_V2  # type: ignore[import-not-found]
+except ImportError:
+    USING_V2 = False
 
 
 def _is_well_known_op(op: OpKind) -> bool:
@@ -46,6 +56,11 @@ class _OpAdapter:
         """
         return b""
 
+    @property
+    def state_alignment(self) -> int:
+        """Return the alignment requirement of the op's state bytes."""
+        return 1
+
     def get_return_type(self, input_types):
         """Get the return type for this op given input types."""
         raise NotImplementedError(
@@ -67,6 +82,14 @@ class _WellKnownOp(_OpAdapter):
         self._kind = kind
 
     def compile(self, input_types, output_type=None) -> Op:
+        # V2 supports some built-in operations on storage types, such as IDENTITY.
+        if not USING_V2:
+            for t in (*input_types, output_type):
+                if t is not None and t.info.typenum == TypeEnum.STORAGE:
+                    raise TypeError(
+                        f"OpKind.{self._kind.name} is not supported for struct or other "
+                        f"opaque types ({t.dtype}). Provide a custom operator instead."
+                    )
         return Op(
             operator_type=self._kind,
             name="",
@@ -91,29 +114,26 @@ class _WellKnownOp(_OpAdapter):
 
 class RawOp(_OpAdapter):
     """
-    ``RawOp`` can be used to directly pass compiled device code (LTO-IR) implementing custom operators.
-
-    This is useful for users who wish to implement custom operators in C++ or another language,
-    or wish to use a different compilation pipeline than the default
-    (JIT compilation from Python callables using Numba CUDA).
+    ``RawOp`` lets you supply pre-compiled device code (LTO-IR) implementing a
+    custom operator, bypassing the default Numba-based JIT pipeline.
 
     Example:
-        The example below shows how to compile C++ device code to LTOIR and use it with
-        :func:`reduce_into <cuda.compute.algorithms.reduce_into>`:
+        Supplying C++ device code compiled to LTO-IR via NVRTC:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/raw_op/cpp_stateless.py
             :language: python
             :start-after: # example-begin
 
     Args:
-        name: The ABI name of the operator
-        ltoir: bytes object containing the LTO-IR of the compiled operator
-        state: Optional bytes representing the operator's state
-        state_alignment: Alignment requirement for the state bytes (default: 1)
-        extra_ltoirs: Optional list of additional LTO-IRs to include during linking
+        name: The ABI name of the operator.
+        ltoir: Raw ``bytes`` of pre-compiled LTO-IR implementing the operator
+            (for example, produced by ``nvcc -dlto`` or NVRTC).
+        state: Optional bytes representing the operator's state.
+        state_alignment: Alignment requirement for the state bytes (default: 1).
+        extra_ltoirs: Optional list of additional LTO-IR ``bytes`` to link.
 
     Notes:
-        - The provided LTO-IR must define a function with the specified name and the correct signature.
+        - The provided code must define a function with the specified name and the correct signature.
         - The function must use untyped pointers for all parameters and return type. The function body
           is responsible for correctly interpreting the pointer arguments based on the expected input and output types.
           For stateless operators, the signature is
@@ -125,17 +145,32 @@ class RawOp(_OpAdapter):
              void func(void* state, void* arg1, void* arg2, ...)
     """
 
-    __slots__ = ["_ltoir", "_name", "_state", "_state_alignment", "_extra_ltoirs"]
+    __slots__ = [
+        "_ltoir",
+        "_name",
+        "_state",
+        "_state_alignment",
+        "_extra_ltoirs",
+    ]
 
     def __init__(
         self,
         *,
-        ltoir: bytes,
+        ltoir: bytes | DeviceCode,
         name: str,
         state: bytes = b"",
         state_alignment: int = 1,
-        extra_ltoirs: list[bytes] | None = None,
+        extra_ltoirs: list[bytes | DeviceCode] | None = None,
     ):
+        if (
+            not isinstance(state_alignment, int)
+            or state_alignment < 1
+            or (state_alignment & (state_alignment - 1)) != 0
+        ):
+            raise ValueError(
+                "state_alignment must be a positive power of two, "
+                f"got {state_alignment!r}"
+            )
         self._ltoir = ltoir
         self._name = name
         self._state = state
@@ -160,11 +195,25 @@ class RawOp(_OpAdapter):
         return self._state
 
     @property
+    def state_alignment(self) -> int:
+        """Return the alignment requirement of the op's state bytes."""
+        return self._state_alignment
+
+    @property
     def _identity(self):
+        # The actual *value* of the state bytes never affects the compiled
+        # LTO-IR/glue code -- only their length (which fixes offsets baked
+        # into generated deref code, see TransformIterator) and alignment
+        # do. Keying the cache on the state's value would force a full
+        # rebuild for every distinct runtime state (e.g. every distinct `n`
+        # in a `sum(x) * (1/n)` mean), defeating the point of passing it as
+        # state rather than baking it into the LTO-IR. Mirrors how iterator
+        # state_bytes are excluded from IteratorBase.kind for the same
+        # reason.
         return (
             self._ltoir,
             self._name,
-            self._state,
+            len(self._state),
             self._state_alignment,
             tuple(self._extra_ltoirs),
         )
@@ -190,18 +239,49 @@ def _jit_op_adapter_factory():
 
         return to_jit_op_adapter
     except ModuleNotFoundError as e:
-        if "numba" in str(e):
+        # The minimal extras ship no JIT backend at all, so this is the error a
+        # minimal-install user sees when they pass a Python callable. Prefer the
+        # structured module name; fall back to the message for errors raised
+        # without one.
+        if "numba_cuda_mlir" in (e.name or str(e)):
 
             def _missing_jit_adapter(op):
                 raise ImportError(
-                    "numba-cuda is required to JIT compile Python callables"
+                    "numba-cuda-mlir is required to JIT compile Python callables"
                 )
 
             return _missing_jit_adapter
         raise
 
 
-to_jit_op_adapter = _jit_op_adapter_factory()
+# Resolved lazily on the first Python-callable operator (see
+# _get_jit_op_adapter) so that `import cuda.compute` never imports the JIT
+# backend. Importing it eagerly would make every consumer pay its import cost,
+# would turn a broken backend installation into a package-wide import failure,
+# and would fail outright on the minimal extras, which do not install it --
+# even for users who only ever pass OpKind/RawOp operators.
+_jit_adapter = None
+
+
+def _get_jit_op_adapter():
+    global _jit_adapter
+    if _jit_adapter is None:
+        # A concurrent first call may run the factory twice; that is benign
+        # (the factory is idempotent) so no lock is taken.
+        gil_was_off = (
+            sysconfig.get_config_var("Py_GIL_DISABLED")
+            and not getattr(sys, "_is_gil_enabled", lambda: True)()
+        )
+        _jit_adapter = _jit_op_adapter_factory()
+        if gil_was_off and sys._is_gil_enabled():
+            warnings.warn(
+                "Compiling a Python callable operator imported a module that "
+                "re-enabled the GIL for this process. To keep free-threaded "
+                "execution, use OpKind or RawOp (pre-compiled LTO-IR) "
+                "operators instead of Python callables.",
+                RuntimeWarning,
+            )
+    return _jit_adapter
 
 
 def make_op_adapter(op) -> OpAdapter:
@@ -223,7 +303,7 @@ def make_op_adapter(op) -> OpAdapter:
         return _WellKnownOp(op)
 
     # It's a Python callable
-    return to_jit_op_adapter(op)
+    return _get_jit_op_adapter()(op)
 
 
 cache_with_registered_key_functions.register(
@@ -238,7 +318,7 @@ cache_with_registered_key_functions.register(
     type(lambda: None), lambda func: CachableFunction(func)
 )
 
-cache_with_registered_key_functions.register(RawOp, lambda op: (op._identity))
+cache_with_registered_key_functions.register(RawOp, lambda op: op._identity)
 
 
 __all__ = [

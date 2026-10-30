@@ -21,10 +21,10 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_function.h>
-#include <cuda/std/__type_traits/is_reference.h>
-#include <cuda/std/__type_traits/remove_all_extents.h>
-#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__type_traits/is_function.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_reference.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/remove_all_extents.h> // IWYU pragma: keep
+#include <cuda/std/__utility/declval.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -33,8 +33,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if defined(_CCCL_BUILTIN_IS_DESTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_DESTRUCTIBLE_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_destructible : public integral_constant<bool, _CCCL_BUILTIN_IS_DESTRUCTIBLE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_destructible : public bool_constant<_CCCL_BUILTIN_IS_DESTRUCTIBLE(_Tp)>
 {};
 
 template <class _Tp>
@@ -84,7 +83,7 @@ template <class _Tp, bool>
 struct __destructible_false;
 
 template <class _Tp>
-struct __destructible_false<_Tp, false> : public __destructible_imp<_Tp, is_reference<_Tp>::value>
+struct __destructible_false<_Tp, false> : public __destructible_imp<_Tp, is_reference_v<_Tp>>
 {};
 
 template <class _Tp>
@@ -92,7 +91,7 @@ struct __destructible_false<_Tp, true> : public false_type
 {};
 
 template <class _Tp>
-struct is_destructible : public __destructible_false<_Tp, is_function<_Tp>::value>
+struct is_destructible : public __destructible_false<_Tp, is_function_v<_Tp>>
 {};
 
 template <class _Tp>

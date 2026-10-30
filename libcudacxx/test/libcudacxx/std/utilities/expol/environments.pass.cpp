@@ -8,8 +8,6 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: nvrtc
-
-// UNSUPPORTED: enable-tile
 // error: function-to-pointer decay is unsupported in tile code
 // error: taking address of a function is unsupported in tile code
 
@@ -18,6 +16,8 @@
 #include <cuda/stream>
 
 #include "test_macros.h"
+
+TEST_DIAG_SUPPRESS_GCC("-Wattributes")
 
 struct SomeValue
 {

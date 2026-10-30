@@ -25,11 +25,7 @@
 #include <cuda/std/__algorithm/iterator_operations.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__iterator/advance.h>
-#include <cuda/std/__iterator/distance.h>
-#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/is_callable.h>
-#include <cuda/std/__type_traits/remove_reference.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -63,7 +59,7 @@ template <class _ForwardIterator, class _Tp, class _Compare>
 [[nodiscard]] _CCCL_API constexpr _ForwardIterator
 lower_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value, _Compare __comp)
 {
-  static_assert(__is_callable<_Compare, decltype(*__first), const _Tp&>::value, "The comparator has to be callable");
+  static_assert(__is_callable_v<_Compare, decltype(*__first), const _Tp&>, "The comparator has to be callable");
   auto __proj = ::cuda::std::identity();
   return ::cuda::std::__lower_bound<_ClassicAlgPolicy>(__first, __last, __value, __comp, __proj);
 }

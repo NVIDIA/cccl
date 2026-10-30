@@ -16,7 +16,9 @@
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/detail/reference_forward_declaration.h>
 
-#include <cuda/std/__tuple_dir/structured_bindings.h>
+#include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__tuple_dir/tuple_size.h>
+#include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
@@ -108,7 +110,7 @@ struct maybe_unwrap_nested<
 {
   _CCCL_HOST_DEVICE ::cuda::std::tuple<Us...> operator()(const tuple_of_iterator_references<Ts...>& t) const
   {
-    return t.template __to_tuple<Us...>(typename ::cuda::std::__make_tuple_indices<sizeof...(Ts)>::type{});
+    return t.template to_tuple<Us...>(::cuda::std::__make_tuple_indices_t<sizeof...(Ts)>{});
   }
 };
 
@@ -169,13 +171,21 @@ public:
     ::cuda::std::enable_if_t<is_compatible_tuple_v<::cuda::std::tuple<Us...>, ::cuda::std::tuple<Ts...>>, int> = 0>
   _CCCL_HOST_DEVICE constexpr operator ::cuda::std::tuple<Us...>() const
   {
-    return __to_tuple<Us...>(typename ::cuda::std::__make_tuple_indices<sizeof...(Ts)>::type{});
+    return to_tuple<Us...>(::cuda::std::__make_tuple_indices_t<sizeof...(Ts)>{});
+  }
+
+  template <class... Us>
+  _CCCL_HOST_DEVICE friend void swap(tuple_of_iterator_references& x, tuple_of_iterator_references<Us...>& y)
+  {
+    x.swap(y);
   }
 
   // this overload of swap() permits swapping tuple_of_iterator_references returned as temporaries from
   // iterator dereferences
   template <class... Us>
-  _CCCL_HOST_DEVICE friend void swap(tuple_of_iterator_references&& x, tuple_of_iterator_references<Us...>&& y)
+  _CCCL_HOST_DEVICE friend void
+  swap(tuple_of_iterator_references&& x, // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+       tuple_of_iterator_references<Us...>&& y) // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
   {
     x.swap(y);
   }
@@ -184,7 +194,7 @@ public:
     class... Us,
     size_t... Id,
     ::cuda::std::enable_if_t<is_compatible_tuple_v<::cuda::std::tuple<Us...>, ::cuda::std::tuple<Ts...>>, int> = 0>
-  _CCCL_HOST_DEVICE constexpr ::cuda::std::tuple<Us...> __to_tuple(::cuda::std::__tuple_indices<Id...>) const
+  _CCCL_HOST_DEVICE constexpr ::cuda::std::tuple<Us...> to_tuple(::cuda::std::__tuple_indices<Id...>) const
   {
     return {maybe_unwrap_nested<Us, Ts>{}(::cuda::std::get<Id>(*this))...};
   }
@@ -210,6 +220,29 @@ struct tuple_element<Id, THRUST_NS_QUALIFIER::detail::tuple_of_iterator_referenc
     : tuple_element<Id, tuple<Ts...>>
 {};
 
+// tuple_of_iterator_references<TTypes...> implicitly converts to tuple<UTypes...> if is_compatible_tuple_v holds.
+// Compute the common reference from the actual element types (not by substituting UTypes/TTypes on both sides),
+// so proxy reference elements (e.g. __transform_input_output_proxy) participate correctly.
+template <class... TTypes, class... UTypes, template <class> class TQual, template <class> class UQual>
+struct basic_common_reference<
+  THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<TTypes...>,
+  tuple<UTypes...>,
+  TQual,
+  UQual,
+  enable_if_t<THRUST_NS_QUALIFIER::detail::is_compatible_tuple_v<tuple<TTypes...>, tuple<UTypes...>>>>
+    : basic_common_reference<tuple<TTypes...>, tuple<UTypes...>, TQual, UQual>
+{};
+
+template <class... TTypes, class... UTypes, template <class> class TQual, template <class> class UQual>
+struct basic_common_reference<
+  tuple<TTypes...>,
+  THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<UTypes...>,
+  TQual,
+  UQual,
+  enable_if_t<THRUST_NS_QUALIFIER::detail::is_compatible_tuple_v<tuple<TTypes...>, tuple<UTypes...>>>>
+    : basic_common_reference<tuple<TTypes...>, tuple<UTypes...>, TQual, UQual>
+{};
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 // structured bindings support
@@ -217,10 +250,10 @@ namespace std
 {
 template <class... Ts>
 struct tuple_size<THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts...>>
-    : ::cuda::std::integral_constant<size_t, sizeof...(Ts)>
+    : ::cuda::std::integral_constant<::cuda::std::size_t, sizeof...(Ts)>
 {};
 
-template <size_t Id, class... Ts>
+template <::cuda::std::size_t Id, class... Ts>
 struct tuple_element<Id, THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts...>>
     : ::cuda::std::tuple_element<Id, ::cuda::std::tuple<Ts...>>
 {};

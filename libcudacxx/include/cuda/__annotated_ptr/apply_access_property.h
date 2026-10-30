@@ -22,14 +22,14 @@
 #endif // no system header
 
 #include <cuda/__annotated_ptr/access_property.h>
-#include <cuda/__memory/address_space.h>
+#include <cuda/__memory/address_space.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _Shape>
-_CCCL_API inline void apply_access_property(
+_CCCL_HOST_DEVICE_API inline void apply_access_property(
   [[maybe_unused]] const volatile void* __ptr,
   [[maybe_unused]] _Shape __shape,
   [[maybe_unused]] access_property::persisting __prop) noexcept
@@ -53,7 +53,7 @@ _CCCL_API inline void apply_access_property(
 }
 
 template <typename _Shape>
-_CCCL_API inline void apply_access_property(
+_CCCL_HOST_DEVICE_API inline void apply_access_property(
   [[maybe_unused]] const volatile void* __ptr,
   [[maybe_unused]] _Shape __shape,
   [[maybe_unused]] access_property::normal __prop) noexcept

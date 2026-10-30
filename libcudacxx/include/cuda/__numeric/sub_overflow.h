@@ -20,26 +20,26 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__numeric/overflow_cast.h>
+#include <cuda/__numeric/overflow_cast.h> // IWYU pragma: keep
 #include <cuda/__numeric/overflow_result.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__limits/numeric_limits.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/__type_traits/is_unsigned.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_void.h>
-#include <cuda/std/__type_traits/make_nbit_int.h>
-#include <cuda/std/__type_traits/make_signed.h>
+#include <cuda/std/__type_traits/make_nbit_int.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/make_signed.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/make_unsigned.h>
-#include <cuda/std/__utility/cmp.h>
+#include <cuda/std/__utility/cmp.h> // IWYU pragma: keep
 
 #include <nv/target>
 
-#if _CCCL_COMPILER(MSVC) && _CCCL_ARCH(X86_64)
+#if _CCCL_COMPILER(MSVC) && _CCCL_HOST_ARCH(X86_64)
 #  include <intrin.h>
-#endif // _CCCL_COMPILER(MSVC) && _CCCL_ARCH(X86_64)
+#endif // _CCCL_COMPILER(MSVC) && _CCCL_HOST_ARCH(X86_64)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -91,7 +91,7 @@ template <typename _Tp>
 #if _CCCL_DEVICE_COMPILATION()
 
 template <class _Tp>
-[[nodiscard]] _CCCL_DEVICE_API overflow_result<_Tp> __sub_overflow_device(_Tp __lhs, _Tp __rhs) noexcept
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API overflow_result<_Tp> __sub_overflow_device(_Tp __lhs, _Tp __rhs) noexcept
 {
   if constexpr (::cuda::std::is_unsigned_v<_Tp>)
   {
@@ -179,7 +179,7 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_HOST_API overflow_result<_Tp> __sub_overflow_host(_Tp __lhs, _Tp __rhs) noexcept
 {
-#  if _CCCL_COMPILER(MSVC) && _CCCL_ARCH(X86_64)
+#  if _CCCL_COMPILER(MSVC) && _CCCL_HOST_ARCH(X86_64)
   if constexpr (sizeof(_Tp) <= 8)
   {
 #    if _CCCL_COMPILER(MSVC, >=, 19, 37)
@@ -233,7 +233,7 @@ template <class _Tp>
       }
   }
   else
-#  endif // ^^^ _CCCL_COMPILER(MSVC) || _CCCL_ARCH(X86_64) ^^^
+#  endif // ^^^ _CCCL_COMPILER(MSVC) || _CCCL_HOST_ARCH(X86_64) ^^^
   {
     return ::cuda::__sub_overflow_generic_impl(__lhs, __rhs);
   }

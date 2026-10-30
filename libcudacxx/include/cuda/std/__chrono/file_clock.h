@@ -21,12 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__chrono/duration.h>
+#include <cuda/std/__chrono/duration.h> // IWYU pragma: keep
 #include <cuda/std/__chrono/time_point.h>
-#include <cuda/std/ctime>
+#include <cuda/std/ctime> // IWYU pragma: keep
 
 #if _CCCL_HOSTED()
-#  include <chrono>
+#  include <chrono> // IWYU pragma: keep
 #endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>

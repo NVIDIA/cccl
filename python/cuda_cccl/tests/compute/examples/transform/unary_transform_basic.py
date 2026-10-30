@@ -24,7 +24,7 @@ def op(a):
 
 
 # Perform the unary transform.
-cuda.compute.unary_transform(d_in, d_out, op, len(d_in))
+cuda.compute.unary_transform(d_in=d_in, d_out=d_out, op=op, num_items=len(d_in))
 
 # Verify the result.
 result = d_out.get()

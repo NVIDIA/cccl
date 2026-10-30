@@ -14,12 +14,13 @@
 #endif // no system header
 #include <thrust/copy.h>
 #include <thrust/detail/internal_functional.h>
-#include <thrust/detail/type_traits.h>
 #include <thrust/for_each.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/uninitialized_copy.h>
 
 #include <cuda/std/__new/device_new.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
@@ -45,14 +46,14 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
   InputIterator first,
   InputIterator last,
   ForwardIterator result,
-  thrust::detail::false_type) // ::cuda::std::is_trivially_copy_constructible
+  ::cuda::std::false_type) // ::cuda::std::is_trivially_copy_constructible
 {
   // zip up the iterators
   using IteratorTuple = ::cuda::std::tuple<InputIterator, ForwardIterator>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-  ZipIterator begin = thrust::make_zip_iterator(first, result);
-  ZipIterator end   = begin;
+  const ZipIterator begin = thrust::make_zip_iterator(first, result);
+  ZipIterator end         = begin;
 
   // get a zip_iterator pointing to the end
   const thrust::detail::it_difference_t<InputIterator> n = ::cuda::std::distance(first, last);
@@ -62,7 +63,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
   using InputType  = thrust::detail::it_value_t<InputIterator>;
   using OutputType = thrust::detail::it_value_t<ForwardIterator>;
 
-  detail::uninitialized_copy_functor<InputType, OutputType> f;
+  const detail::uninitialized_copy_functor<InputType, OutputType> f;
 
   // do the for_each
   thrust::for_each(exec, begin, end, f);
@@ -78,7 +79,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
   InputIterator first,
   InputIterator last,
   ForwardIterator result,
-  thrust::detail::true_type) // ::cuda::std::is_trivially_copy_constructible
+  ::cuda::std::true_type) // ::cuda::std::is_trivially_copy_constructible
 {
   return thrust::copy(exec, first, last, result);
 } // end uninitialized_copy()
@@ -90,22 +91,22 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
   InputIterator first,
   Size n,
   ForwardIterator result,
-  thrust::detail::false_type) // ::cuda::std::is_trivially_copy_constructible
+  ::cuda::std::false_type) // ::cuda::std::is_trivially_copy_constructible
 {
   // zip up the iterators
   using IteratorTuple = ::cuda::std::tuple<InputIterator, ForwardIterator>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-  ZipIterator zipped_first = thrust::make_zip_iterator(first, result);
+  const ZipIterator zipped_first = thrust::make_zip_iterator(first, result);
 
   // create a functor
   using InputType  = thrust::detail::it_value_t<InputIterator>;
   using OutputType = thrust::detail::it_value_t<ForwardIterator>;
 
-  detail::uninitialized_copy_functor<InputType, OutputType> f;
+  const detail::uninitialized_copy_functor<InputType, OutputType> f;
 
   // do the for_each_n
-  ZipIterator zipped_last = thrust::for_each_n(exec, zipped_first, n, f);
+  const ZipIterator zipped_last = thrust::for_each_n(exec, zipped_first, n, f);
 
   // return the end of the output range
   return ::cuda::std::get<1>(zipped_last.get_iterator_tuple());
@@ -118,7 +119,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
   InputIterator first,
   Size n,
   ForwardIterator result,
-  thrust::detail::true_type) // ::cuda::std::is_trivially_copy_constructible
+  ::cuda::std::true_type) // ::cuda::std::is_trivially_copy_constructible
 {
   return thrust::copy_n(exec, first, n, result);
 } // end uninitialized_copy_n()

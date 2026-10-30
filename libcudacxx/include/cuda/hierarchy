@@ -21,10 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__hierarchy/block_level.h>
-#include <cuda/__hierarchy/cluster_level.h>
+// IWYU pragma: begin_exports
 #include <cuda/__hierarchy/get_launch_dimensions.h>
-#include <cuda/__hierarchy/grid_level.h>
 #include <cuda/__hierarchy/hierarchy_dimensions.h>
 #include <cuda/__hierarchy/hierarchy_level_base.h>
 #include <cuda/__hierarchy/hierarchy_levels.h>
@@ -32,8 +30,7 @@
 #include <cuda/__hierarchy/level_dimensions.h>
 #include <cuda/__hierarchy/native_hierarchy_level_base.h>
 #include <cuda/__hierarchy/queries/extents.h>
-#include <cuda/__hierarchy/thread_level.h>
 #include <cuda/__hierarchy/traits.h>
-#include <cuda/__hierarchy/warp_level.h>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_HIERARCHY

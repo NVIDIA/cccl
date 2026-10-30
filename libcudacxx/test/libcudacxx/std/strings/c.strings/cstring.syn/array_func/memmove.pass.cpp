@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6076227: ICE when validating tile MLIR
-
 // void* memmove(void* dst, const void* src, size_t count);
 
 #include <cuda/std/cassert>

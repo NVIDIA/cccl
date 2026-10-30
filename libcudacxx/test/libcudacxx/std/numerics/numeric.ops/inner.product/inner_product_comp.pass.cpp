@@ -88,6 +88,7 @@ TEST_FUNC constexpr void test_string()
 }
 #endif // _LIBCUDACXX_HAS_STRING
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter1, class Iter2, class T>
 TEST_FUNC constexpr void test(Iter1 first1, Iter1 last1, Iter2 first2, T init, T x)
 {
@@ -95,6 +96,7 @@ TEST_FUNC constexpr void test(Iter1 first1, Iter1 last1, Iter2 first2, T init, T
          == x);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter1, class Iter2>
 TEST_FUNC constexpr void test()
 {
@@ -111,6 +113,7 @@ TEST_FUNC constexpr void test()
   test(Iter1(a), Iter1(a + sa), Iter2(b), 10, 1176490);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 TEST_FUNC constexpr bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_input_iterator<const int*>>();
@@ -146,9 +149,9 @@ TEST_FUNC constexpr bool test()
 #if !TEST_COMPILER(NVRTC)
   NV_IF_TARGET(NV_IS_HOST, (test<const int*, host_only_iterator<const int*>>();))
 #endif // !TEST_COMPILER(NVRTC)
-#if TEST_CUDA_COMPILATION()
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
   NV_IF_TARGET(NV_IS_DEVICE, (test<const int*, device_only_iterator<const int*>>();))
-#endif // TEST_CUDA_COMPILATION()
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
 
   test_use_move();
 

@@ -8,7 +8,7 @@
 
 // UNSUPPORTED: msvc
 
-// XFAIL: enable-tile
+// UNSUPPORTED: force-tile
 // error: a non-__tile__ variable cannot be used in tile code
 
 // <cuda/std/tuple>
@@ -27,6 +27,10 @@
 #include <cuda/std/tuple>
 
 #include "test_macros.h"
+
+#if TEST_COMPILER(GCC, >=, 16)
+TEST_DIAG_SUPPRESS_GCC("-Wsfinae-incomplete") // defining X, which previously failed to be complete in a SFINAE context
+#endif // TEST_COMPILER(GCC, >=, 16)
 
 struct IncompleteType;
 _CCCL_GLOBAL_VARIABLE extern IncompleteType inc1;

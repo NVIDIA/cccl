@@ -5,7 +5,7 @@
 
 #include <cub/device/device_for.cuh>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <class T>
 struct value_t
@@ -22,7 +22,7 @@ struct const_ref_t
 template <class T>
 struct rref_t
 {
-  __device__ void operator()(T&&) {}
+  __device__ void operator()(T&&) {} // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
 };
 
 template <class T>
@@ -73,7 +73,7 @@ void test()
   STATIC_REQUIRE(!cub::detail::for_each::has_unique_value_overload<T, tpl_value_t>::value);
 }
 
-C2H_TEST("Device for utils correctly detect value overloads", "[for][device]")
+CUB_TEST("Device for utils correctly detect value overloads", "[for][device]", CUB_SMALL)
 {
   ::test<int>();
   ::test<double>();

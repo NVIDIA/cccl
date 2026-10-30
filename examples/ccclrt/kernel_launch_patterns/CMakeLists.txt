@@ -37,7 +37,7 @@ target_link_libraries(
 )
 
 # Kernel lambdas require extended lambda support.
-if ("${CMAKE_CUDA_COMPILER}" STREQUAL NVIDIA)
+if ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL NVIDIA)
   add_executable(
     cccl.examples.ccclrt.kernel_launch_patterns.kernel_lambda
     kernel_lambda.cu

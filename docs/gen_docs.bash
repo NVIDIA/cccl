@@ -221,7 +221,9 @@ if ! python -c "import sphinx" 2>/dev/null; then
 fi
 
 # Generate Doxygen XML in parallel (if doxygen is available)
-if command -v "${DOXYGEN}" > /dev/null 2>&1; then
+if [[ "${CCCL_DOCS_SKIP_AUTO_API_GENERATOR:-0}" == "1" ]]; then
+    echo "Skipping Doxygen XML generation (CCCL_DOCS_SKIP_AUTO_API_GENERATOR=1)"
+elif command -v "${DOXYGEN}" > /dev/null 2>&1; then
     echo "Generating Doxygen XML..."
     mkdir -p "${BUILDDIR}"/doxygen/cub "${BUILDDIR}"/doxygen/thrust "${BUILDDIR}"/doxygen/cudax "${BUILDDIR}"/doxygen/libcudacxx
 
@@ -257,35 +259,36 @@ else
     echo "Skipping Doxygen (not installed)"
 fi
 
-# Build Sphinx HTML documentation
-echo "Building documentation with Sphinx..."
-# Use the virtual environment's Python
-python -m sphinx.cmd.build -b html -d "${BUILDDIR}/doctrees" -j auto "." "${BUILDDIR}/html" "${SPHINXOPTS[@]}"
-
-# Reorganize output to include versioned directory and root assets
 VERSION="${SPHINX_CCCL_VER:-unstable}"
 BASE_URL="${CCCL_DOCS_BASE_URL:-https://nvidia.github.io/cccl/}"
 BASE_URL="${BASE_URL%/}/"
 IS_LATEST="${CCCL_DOCS_IS_LATEST:-true}"
 
 HTML_DIR="${BUILDDIR}/html"
-ORIG_DIR="${BUILDDIR}/html_orig"
+VERSIONED_HTML_DIR="${HTML_DIR}/${VERSION}"
 
-rm -rf "${ORIG_DIR}"
-mv "${HTML_DIR}" "${ORIG_DIR}"
-mkdir -p "${HTML_DIR}/${VERSION}"
-cp -a "${ORIG_DIR}/." "${HTML_DIR}/${VERSION}/"
-rm -rf "${ORIG_DIR}"
+# Full builds validate the regenerated API sources from a fresh Sphinx state.
+# Fast local builds preserve the caches and HTML outputs for incremental reuse.
+if [[ "${CCCL_DOCS_SKIP_AUTO_API_GENERATOR:-0}" != "1" ]]; then
+    rm -rf "${BUILDDIR}/doctrees" "${VERSIONED_HTML_DIR}"
+fi
+
+# Build Sphinx HTML documentation directly into the versioned directory.
+echo "Building documentation with Sphinx..."
+mkdir -p "${VERSIONED_HTML_DIR}"
+# Use the virtual environment's Python
+python -m sphinx.cmd.build -b html -d "${BUILDDIR}/doctrees" -j auto "." "${VERSIONED_HTML_DIR}" "${SPHINXOPTS[@]}"
 
 # Copy objects.inv to the root to support intersphinx consumers
-if [[ -f "${HTML_DIR}/${VERSION}/objects.inv" ]]; then
-    cp "${HTML_DIR}/${VERSION}/objects.inv" "${HTML_DIR}/objects.inv"
+if [[ -f "${VERSIONED_HTML_DIR}/objects.inv" ]]; then
+    cp "${VERSIONED_HTML_DIR}/objects.inv" "${HTML_DIR}/objects.inv"
 fi
 
 # Scrape docs to generate page list
-./scrape_docs.bash "${HTML_DIR}/${VERSION}"
+./scrape_docs.bash "${VERSIONED_HTML_DIR}"
 
 cp "./404.html" "${HTML_DIR}/404.html"
+cp "./index.html" "${HTML_DIR}/index.html"
 
 # Provide version metadata for the theme switcher
 cat > "${HTML_DIR}/nv-versions.json" <<EOF

@@ -7,6 +7,7 @@
 // We start suppressing deprecation warnings but do not stop at the end of the file. This suppresses warnings in the
 // compiler-generated `catch2_test_iterator.compute_120.cudafe1.stub.c`
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
@@ -20,7 +21,7 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 #include <cstdint>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // %PARAM% TEST_VEC_SIZE types 1:2:3:4
 
@@ -100,7 +101,7 @@ static_assert(cuda::std::is_void_v<cub::detail::it_value_t<cub::CacheModifiedOut
 //                       cub::LOAD_LDG,
 //                       cub::LOAD_VOLATILE>;
 //
-// C2H_TEST("Test cache modified iterator", "[iterator]", types, cache_modifiers)
+// CUB_TEST("Test cache modified iterator", "[iterator]", CUB_SMALL, types, cache_modifiers)
 // {
 //   using T                       = c2h::get<0, TestType>;
 //   constexpr auto cache_modifier = c2h::get<1, TestType>::value;
@@ -126,7 +127,7 @@ struct transform_op_t
   }
 };
 
-C2H_TEST("Test tex-obj texture iterator", "[iterator]", types)
+CUB_TEST("Test tex-obj texture iterator", "[iterator]", CUB_SMALL, types)
 {
   using T                            = c2h::get<0, TestType>;
   constexpr unsigned int TEST_VALUES = 11000;
@@ -144,7 +145,7 @@ C2H_TEST("Test tex-obj texture iterator", "[iterator]", types)
   test_iterator(d_obj_itr, h_reference);
 }
 
-C2H_TEST("Test texture transform iterator", "[iterator]", types)
+CUB_TEST("Test texture transform iterator", "[iterator]", CUB_SMALL, types)
 {
   using T                   = c2h::get<0, TestType>;
   constexpr int TEST_VALUES = 11000;
@@ -153,7 +154,7 @@ C2H_TEST("Test texture transform iterator", "[iterator]", types)
   c2h::gen(C2H_SEED(1), d_data);
   c2h::host_vector<T> h_data(d_data.begin(), d_data.end());
 
-  transform_op_t<T> op;
+  const transform_op_t<T> op;
   const auto h_reference = c2h::host_vector<T>{
     op(h_data[0]),
     op(h_data[100]),
@@ -168,7 +169,7 @@ C2H_TEST("Test texture transform iterator", "[iterator]", types)
   TextureIterator d_tex_itr;
   CubDebugExit(
     d_tex_itr.BindTexture(const_cast<const T*>(thrust::raw_pointer_cast(d_data.data())), sizeof(T) * TEST_VALUES));
-  cuda::transform_iterator<transform_op_t<T>, TextureIterator> xform_itr(d_tex_itr, op);
+  const cuda::transform_iterator<transform_op_t<T>, TextureIterator> xform_itr(d_tex_itr, op);
   test_iterator(xform_itr, h_reference);
   CubDebugExit(d_tex_itr.UnbindTexture());
 }

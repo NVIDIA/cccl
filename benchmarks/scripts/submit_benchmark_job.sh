@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This script schedules a SLURM job via crun on computelab to run all CCCL benchmarks and produce a benchmark database
 # TODO: set those accordingly
@@ -10,7 +10,7 @@ benchmark_preset="benchmark"
 
 batch_script=$scratch/batch.sh
 cat << BATCH_SCRIPT > "$batch_script"
-#!/bin/bash
+#!/usr/bin/env bash
 
 pip install --break-system-packages fpzip pandas scipy
 
@@ -26,9 +26,8 @@ git clone --depth 1 git@github.com:NVIDIA/cccl.git
 cd cccl
 
 # configure cmake
-mkdir build_perf
+cmake -S . -B build_perf --preset $benchmark_preset
 cd build_perf
-cmake .. --preset $benchmark_preset
 
 # run benchmarks
 export CUDA_VISIBLE_DEVICES=0

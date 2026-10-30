@@ -37,7 +37,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT plus : __binary_function<_Tp, _Tp, _Tp>
 {
   using __result_type = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
     return __x + __y;
   }
@@ -49,9 +49,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT plus<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(::cuda::std::forward<_T1>(__t) + ::cuda::std::forward<_T2>(__u)))
-      -> decltype(::cuda::std::forward<_T1>(__t) + ::cuda::std::forward<_T2>(__u))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_T1&& __t, _T2&& __u) noexcept(
+    noexcept(::cuda::std::forward<_T1>(__t) + ::cuda::std::forward<_T2>(__u)))
+    -> decltype(::cuda::std::forward<_T1>(__t) + ::cuda::std::forward<_T2>(__u))
   {
     return ::cuda::std::forward<_T1>(__t) + ::cuda::std::forward<_T2>(__u);
   }
@@ -63,7 +63,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minus : __binary_function<_Tp, _Tp, _Tp>
 {
   using __result_type = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
     return __x - __y;
   }
@@ -75,9 +75,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minus<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(::cuda::std::forward<_T1>(__t) - ::cuda::std::forward<_T2>(__u)))
-      -> decltype(::cuda::std::forward<_T1>(__t) - ::cuda::std::forward<_T2>(__u))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_T1&& __t, _T2&& __u) noexcept(
+    noexcept(::cuda::std::forward<_T1>(__t) - ::cuda::std::forward<_T2>(__u)))
+    -> decltype(::cuda::std::forward<_T1>(__t) - ::cuda::std::forward<_T2>(__u))
   {
     return ::cuda::std::forward<_T1>(__t) - ::cuda::std::forward<_T2>(__u);
   }
@@ -89,7 +89,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT multiplies : __binary_function<_Tp, _Tp, _T
 {
   using __result_type = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
     return __x * __y;
   }
@@ -101,9 +101,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT multiplies<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(::cuda::std::forward<_T1>(__t) * ::cuda::std::forward<_T2>(__u)))
-      -> decltype(::cuda::std::forward<_T1>(__t) * ::cuda::std::forward<_T2>(__u))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_T1&& __t, _T2&& __u) noexcept(
+    noexcept(::cuda::std::forward<_T1>(__t) * ::cuda::std::forward<_T2>(__u)))
+    -> decltype(::cuda::std::forward<_T1>(__t) * ::cuda::std::forward<_T2>(__u))
   {
     return ::cuda::std::forward<_T1>(__t) * ::cuda::std::forward<_T2>(__u);
   }
@@ -115,7 +115,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT divides : __binary_function<_Tp, _Tp, _Tp>
 {
   using __result_type = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
     return __x / __y;
   }
@@ -127,9 +127,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT divides<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(::cuda::std::forward<_T1>(__t) / ::cuda::std::forward<_T2>(__u)))
-      -> decltype(::cuda::std::forward<_T1>(__t) / ::cuda::std::forward<_T2>(__u))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_T1&& __t, _T2&& __u) noexcept(
+    noexcept(::cuda::std::forward<_T1>(__t) / ::cuda::std::forward<_T2>(__u)))
+    -> decltype(::cuda::std::forward<_T1>(__t) / ::cuda::std::forward<_T2>(__u))
   {
     return ::cuda::std::forward<_T1>(__t) / ::cuda::std::forward<_T2>(__u);
   }
@@ -141,7 +141,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT modulus : __binary_function<_Tp, _Tp, _Tp>
 {
   using __result_type = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
     return __x % __y;
   }
@@ -153,9 +153,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT modulus<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(::cuda::std::forward<_T1>(__t) % ::cuda::std::forward<_T2>(__u)))
-      -> decltype(::cuda::std::forward<_T1>(__t) % ::cuda::std::forward<_T2>(__u))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_T1&& __t, _T2&& __u) noexcept(
+    noexcept(::cuda::std::forward<_T1>(__t) % ::cuda::std::forward<_T2>(__u)))
+    -> decltype(::cuda::std::forward<_T1>(__t) % ::cuda::std::forward<_T2>(__u))
   {
     return ::cuda::std::forward<_T1>(__t) % ::cuda::std::forward<_T2>(__u);
   }
@@ -167,7 +167,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT negate : __unary_function<_Tp, _Tp>
 {
   using __result_type = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  constexpr _CCCL_API inline _Tp operator()(const _Tp& __x) const
+  constexpr _CCCL_API inline _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x)
   {
     return -__x;
   }
@@ -179,7 +179,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT negate<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
-  constexpr _CCCL_API inline auto operator()(_Tp&& __x) const noexcept(noexcept(-::cuda::std::forward<_Tp>(__x)))
+  constexpr _CCCL_API inline auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __x) noexcept(noexcept(-::cuda::std::forward<_Tp>(__x)))
     -> decltype(-::cuda::std::forward<_Tp>(__x))
   {
     return -::cuda::std::forward<_Tp>(__x);
@@ -194,7 +195,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_and : __binary_function<_Tp, _Tp, _Tp>
 {
   using __result_type = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
     return __x & __y;
   }
@@ -206,9 +207,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_and<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(::cuda::std::forward<_T1>(__t) & ::cuda::std::forward<_T2>(__u)))
-      -> decltype(::cuda::std::forward<_T1>(__t) & ::cuda::std::forward<_T2>(__u))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_T1&& __t, _T2&& __u) noexcept(
+    noexcept(::cuda::std::forward<_T1>(__t) & ::cuda::std::forward<_T2>(__u)))
+    -> decltype(::cuda::std::forward<_T1>(__t) & ::cuda::std::forward<_T2>(__u))
   {
     return ::cuda::std::forward<_T1>(__t) & ::cuda::std::forward<_T2>(__u);
   }
@@ -219,7 +220,7 @@ template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_not : __unary_function<_Tp, _Tp>
 {
   _CCCL_EXEC_CHECK_DISABLE
-  constexpr _CCCL_API inline _Tp operator()(const _Tp& __x) const
+  constexpr _CCCL_API inline _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x)
   {
     return ~__x;
   }
@@ -231,7 +232,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_not<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
-  constexpr _CCCL_API inline auto operator()(_Tp&& __x) const noexcept(noexcept(~::cuda::std::forward<_Tp>(__x)))
+  constexpr _CCCL_API inline auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __x) noexcept(noexcept(~::cuda::std::forward<_Tp>(__x)))
     -> decltype(~::cuda::std::forward<_Tp>(__x))
   {
     return ~::cuda::std::forward<_Tp>(__x);
@@ -244,7 +246,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_or : __binary_function<_Tp, _Tp, _Tp>
 {
   using __result_type = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  constexpr _CCCL_API inline _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  constexpr _CCCL_API inline _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
     return __x | __y;
   }
@@ -256,9 +258,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_or<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(::cuda::std::forward<_T1>(__t) | ::cuda::std::forward<_T2>(__u)))
-      -> decltype(::cuda::std::forward<_T1>(__t) | ::cuda::std::forward<_T2>(__u))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_T1&& __t, _T2&& __u) noexcept(
+    noexcept(::cuda::std::forward<_T1>(__t) | ::cuda::std::forward<_T2>(__u)))
+    -> decltype(::cuda::std::forward<_T1>(__t) | ::cuda::std::forward<_T2>(__u))
   {
     return ::cuda::std::forward<_T1>(__t) | ::cuda::std::forward<_T2>(__u);
   }
@@ -270,7 +272,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_xor : __binary_function<_Tp, _Tp, _Tp>
 {
   using __result_type = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
     return __x ^ __y;
   }
@@ -282,9 +284,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_xor<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(::cuda::std::forward<_T1>(__t) ^ ::cuda::std::forward<_T2>(__u)))
-      -> decltype(::cuda::std::forward<_T1>(__t) ^ ::cuda::std::forward<_T2>(__u))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_T1&& __t, _T2&& __u) noexcept(
+    noexcept(::cuda::std::forward<_T1>(__t) ^ ::cuda::std::forward<_T2>(__u)))
+    -> decltype(::cuda::std::forward<_T1>(__t) ^ ::cuda::std::forward<_T2>(__u))
   {
     return ::cuda::std::forward<_T1>(__t) ^ ::cuda::std::forward<_T2>(__u);
   }
@@ -298,7 +300,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT equal_to : __binary_function<_Tp, _Tp, bool
 {
   using __result_type = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
     return __x == __y;
   }
@@ -310,9 +312,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT equal_to<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(::cuda::std::forward<_T1>(__t) == ::cuda::std::forward<_T2>(__u)))
-      -> decltype(::cuda::std::forward<_T1>(__t) == ::cuda::std::forward<_T2>(__u))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_T1&& __t, _T2&& __u) noexcept(
+    noexcept(::cuda::std::forward<_T1>(__t) == ::cuda::std::forward<_T2>(__u)))
+    -> decltype(::cuda::std::forward<_T1>(__t) == ::cuda::std::forward<_T2>(__u))
   {
     return ::cuda::std::forward<_T1>(__t) == ::cuda::std::forward<_T2>(__u);
   }
@@ -324,7 +326,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT not_equal_to : __binary_function<_Tp, _Tp, 
 {
   using __result_type = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
     return __x != __y;
   }
@@ -336,9 +338,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT not_equal_to<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(::cuda::std::forward<_T1>(__t) != ::cuda::std::forward<_T2>(__u)))
-      -> decltype(::cuda::std::forward<_T1>(__t) != ::cuda::std::forward<_T2>(__u))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_T1&& __t, _T2&& __u) noexcept(
+    noexcept(::cuda::std::forward<_T1>(__t) != ::cuda::std::forward<_T2>(__u)))
+    -> decltype(::cuda::std::forward<_T1>(__t) != ::cuda::std::forward<_T2>(__u))
   {
     return ::cuda::std::forward<_T1>(__t) != ::cuda::std::forward<_T2>(__u);
   }
@@ -350,7 +352,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT less : __binary_function<_Tp, _Tp, bool>
 {
   using __result_type = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
     return __x < __y;
   }
@@ -362,9 +364,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT less<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(::cuda::std::forward<_T1>(__t) < ::cuda::std::forward<_T2>(__u)))
-      -> decltype(::cuda::std::forward<_T1>(__t) < ::cuda::std::forward<_T2>(__u))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_T1&& __t, _T2&& __u) noexcept(
+    noexcept(::cuda::std::forward<_T1>(__t) < ::cuda::std::forward<_T2>(__u)))
+    -> decltype(::cuda::std::forward<_T1>(__t) < ::cuda::std::forward<_T2>(__u))
   {
     return ::cuda::std::forward<_T1>(__t) < ::cuda::std::forward<_T2>(__u);
   }
@@ -376,7 +378,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT less_equal : __binary_function<_Tp, _Tp, bo
 {
   using __result_type = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
     return __x <= __y;
   }
@@ -388,9 +390,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT less_equal<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(::cuda::std::forward<_T1>(__t) <= ::cuda::std::forward<_T2>(__u)))
-      -> decltype(::cuda::std::forward<_T1>(__t) <= ::cuda::std::forward<_T2>(__u))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_T1&& __t, _T2&& __u) noexcept(
+    noexcept(::cuda::std::forward<_T1>(__t) <= ::cuda::std::forward<_T2>(__u)))
+    -> decltype(::cuda::std::forward<_T1>(__t) <= ::cuda::std::forward<_T2>(__u))
   {
     return ::cuda::std::forward<_T1>(__t) <= ::cuda::std::forward<_T2>(__u);
   }
@@ -402,7 +404,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT greater_equal : __binary_function<_Tp, _Tp,
 {
   using __result_type = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
     return __x >= __y;
   }
@@ -414,9 +416,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT greater_equal<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(::cuda::std::forward<_T1>(__t) >= ::cuda::std::forward<_T2>(__u)))
-      -> decltype(::cuda::std::forward<_T1>(__t) >= ::cuda::std::forward<_T2>(__u))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_T1&& __t, _T2&& __u) noexcept(
+    noexcept(::cuda::std::forward<_T1>(__t) >= ::cuda::std::forward<_T2>(__u)))
+    -> decltype(::cuda::std::forward<_T1>(__t) >= ::cuda::std::forward<_T2>(__u))
   {
     return ::cuda::std::forward<_T1>(__t) >= ::cuda::std::forward<_T2>(__u);
   }
@@ -428,7 +430,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT greater : __binary_function<_Tp, _Tp, bool>
 {
   using __result_type = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
     return __x > __y;
   }
@@ -440,9 +442,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT greater<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(::cuda::std::forward<_T1>(__t) > ::cuda::std::forward<_T2>(__u)))
-      -> decltype(::cuda::std::forward<_T1>(__t) > ::cuda::std::forward<_T2>(__u))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_T1&& __t, _T2&& __u) noexcept(
+    noexcept(::cuda::std::forward<_T1>(__t) > ::cuda::std::forward<_T2>(__u)))
+    -> decltype(::cuda::std::forward<_T1>(__t) > ::cuda::std::forward<_T2>(__u))
   {
     return ::cuda::std::forward<_T1>(__t) > ::cuda::std::forward<_T2>(__u);
   }
@@ -456,7 +458,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_and : __binary_function<_Tp, _Tp, b
 {
   using __result_type = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
     return __x && __y;
   }
@@ -468,9 +470,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_and<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(::cuda::std::forward<_T1>(__t) && ::cuda::std::forward<_T2>(__u)))
-      -> decltype(::cuda::std::forward<_T1>(__t) && ::cuda::std::forward<_T2>(__u))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_T1&& __t, _T2&& __u) noexcept(
+    noexcept(::cuda::std::forward<_T1>(__t) && ::cuda::std::forward<_T2>(__u)))
+    -> decltype(::cuda::std::forward<_T1>(__t) && ::cuda::std::forward<_T2>(__u))
   {
     return ::cuda::std::forward<_T1>(__t) && ::cuda::std::forward<_T2>(__u);
   }
@@ -482,7 +484,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_not : __unary_function<_Tp, bool>
 {
   using __result_type = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __x) const
+  [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x)
   {
     return !__x;
   }
@@ -494,7 +496,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_not<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
-  constexpr _CCCL_API inline auto operator()(_Tp&& __x) const noexcept(noexcept(!::cuda::std::forward<_Tp>(__x)))
+  constexpr _CCCL_API inline auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __x) noexcept(noexcept(!::cuda::std::forward<_Tp>(__x)))
     -> decltype(!::cuda::std::forward<_Tp>(__x))
   {
     return !::cuda::std::forward<_Tp>(__x);
@@ -507,7 +510,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_or : __binary_function<_Tp, _Tp, bo
 {
   using __result_type = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
     return __x || __y;
   }
@@ -519,9 +522,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_or<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(::cuda::std::forward<_T1>(__t) || ::cuda::std::forward<_T2>(__u)))
-      -> decltype(::cuda::std::forward<_T1>(__t) || ::cuda::std::forward<_T2>(__u))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_T1&& __t, _T2&& __u) noexcept(
+    noexcept(::cuda::std::forward<_T1>(__t) || ::cuda::std::forward<_T2>(__u)))
+    -> decltype(::cuda::std::forward<_T1>(__t) || ::cuda::std::forward<_T2>(__u))
   {
     return ::cuda::std::forward<_T1>(__t) || ::cuda::std::forward<_T2>(__u);
   }

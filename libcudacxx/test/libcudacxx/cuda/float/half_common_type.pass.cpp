@@ -34,18 +34,12 @@ static_assert(cuda::std::is_same<cuda::std::common_type<__half&&, float&>::type,
 
 #if _LIBCUDACXX_HAS_NVBF16()
 static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16, __nv_bfloat16>::type, __nv_bfloat16>::value);
-static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16, __nv_bfloat16&>::type, __nv_bfloat16>::value,
-              "");
-static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16&, __nv_bfloat16>::type, __nv_bfloat16>::value,
-              "");
-static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16, __nv_bfloat16&&>::type, __nv_bfloat16>::value,
-              "");
-static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16&&, __nv_bfloat16>::type, __nv_bfloat16>::value,
-              "");
-static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16&, __nv_bfloat16&&>::type, __nv_bfloat16>::value,
-              "");
-static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16&&, __nv_bfloat16&>::type, __nv_bfloat16>::value,
-              "");
+static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16, __nv_bfloat16&>::type, __nv_bfloat16>::value);
+static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16&, __nv_bfloat16>::type, __nv_bfloat16>::value);
+static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16, __nv_bfloat16&&>::type, __nv_bfloat16>::value);
+static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16&&, __nv_bfloat16>::type, __nv_bfloat16>::value);
+static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16&, __nv_bfloat16&&>::type, __nv_bfloat16>::value);
+static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16&&, __nv_bfloat16&>::type, __nv_bfloat16>::value);
 
 static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16, float>::type, float>::value);
 static_assert(cuda::std::is_same<cuda::std::common_type<__nv_bfloat16, float&>::type, float>::value);

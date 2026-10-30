@@ -34,6 +34,10 @@
 #    include <cuda/__memory_pool/managed_memory_pool.h>
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
+#  include <cuda/std/__execution/env.h>
+#  include <cuda/std/__utility/forward.h>
+#  include <cuda/std/initializer_list>
+
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
@@ -50,6 +54,18 @@ _CCCL_HOST_API auto make_device_buffer(stream_ref __stream, device_ref __device,
     __stream, ::cuda::device_default_memory_pool(__device), ::cuda::std::forward<_Args>(__args)...);
 }
 
+//! @brief Creates a buffer backed by the default device memory pool from an initializer_list.
+//! @param __stream The stream used for allocation.
+//! @param __device The device whose default memory pool will be used.
+//! @param __ilist The initializer_list being copied into the buffer.
+//! @param __env The environment providing additional configuration.
+template <class _Tp, class _Env = ::cuda::std::execution::env<>>
+_CCCL_HOST_API auto make_device_buffer(
+  stream_ref __stream, device_ref __device, ::cuda::std::initializer_list<_Tp> __ilist, const _Env& __env = {})
+{
+  return ::cuda::make_buffer<_Tp>(__stream, ::cuda::device_default_memory_pool(__device), __ilist, __env);
+}
+
 #  if _CCCL_CTK_AT_LEAST(12, 9)
 
 //! @brief Creates a buffer backed by the default pinned memory pool.
@@ -61,6 +77,17 @@ _CCCL_HOST_API auto make_pinned_buffer(stream_ref __stream, _Args&&... __args)
 {
   return ::cuda::make_buffer<_Tp>(
     __stream, ::cuda::pinned_default_memory_pool(), ::cuda::std::forward<_Args>(__args)...);
+}
+
+//! @brief Creates a buffer backed by the default pinned memory pool from an initializer_list.
+//! @param __stream The stream used for allocation.
+//! @param __ilist The initializer_list being copied into the buffer.
+//! @param __env The environment providing additional configuration.
+template <class _Tp, class _Env = ::cuda::std::execution::env<>>
+_CCCL_HOST_API auto
+make_pinned_buffer(stream_ref __stream, ::cuda::std::initializer_list<_Tp> __ilist, const _Env& __env = {})
+{
+  return ::cuda::make_buffer<_Tp>(__stream, ::cuda::pinned_default_memory_pool(), __ilist, __env);
 }
 
 #  endif // _CCCL_CTK_AT_LEAST(12, 9)
@@ -76,6 +103,17 @@ _CCCL_HOST_API auto make_managed_buffer(stream_ref __stream, _Args&&... __args)
 {
   return ::cuda::make_buffer<_Tp>(
     __stream, ::cuda::managed_default_memory_pool(), ::cuda::std::forward<_Args>(__args)...);
+}
+
+//! @brief Creates a buffer backed by the default managed memory pool from an initializer_list.
+//! @param __stream The stream used for allocation.
+//! @param __ilist The initializer_list being copied into the buffer.
+//! @param __env The environment providing additional configuration.
+template <class _Tp, class _Env = ::cuda::std::execution::env<>>
+_CCCL_HOST_API auto
+make_managed_buffer(stream_ref __stream, ::cuda::std::initializer_list<_Tp> __ilist, const _Env& __env = {})
+{
+  return ::cuda::make_buffer<_Tp>(__stream, ::cuda::managed_default_memory_pool(), __ilist, __env);
 }
 
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)

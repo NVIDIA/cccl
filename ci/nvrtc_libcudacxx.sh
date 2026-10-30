@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # shellcheck source=ci/build_common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/build_common.sh"

@@ -6,11 +6,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: asm statement is unsupported in tile code
-
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
 
 // <cuda/atomic>
 
@@ -33,7 +33,7 @@ Launch 1024 threads, fetch_add(1), checking for 0x01FF01FF.
 */
 
 template <class T, int Inc>
-TEST_FUNC void fetch_add_into_window(T* window, uint16_t* atomHistory)
+TEST_HOST_DEVICE_FUNC void fetch_add_into_window(T* window, uint16_t* atomHistory)
 {
   using Atom = cuda::atomic_ref<T, cuda::thread_scope_block>;
 

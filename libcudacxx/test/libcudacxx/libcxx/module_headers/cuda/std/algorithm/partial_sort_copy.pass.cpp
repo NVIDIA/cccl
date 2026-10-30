@@ -15,13 +15,13 @@
 
 struct greater
 {
-  __host__ __device__ constexpr bool operator()(int a, int b) const
+  TEST_FUNC constexpr bool operator()(int a, int b) const
   {
     return a > b;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   constexpr int src[] = {3, 1, 4};
   int dst[2]          = {};

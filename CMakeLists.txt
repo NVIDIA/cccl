@@ -53,6 +53,11 @@ option(CCCL_ENABLE_THRUST "Enable the Thrust developer build." OFF)
 option(CCCL_ENABLE_TESTING "Enable CUDA C++ Core Library tests." OFF)
 option(CCCL_ENABLE_EXAMPLES "Enable CUDA C++ Core Library examples." OFF)
 option(CCCL_ENABLE_C_PARALLEL "Enable CUDA C Parallel Library." OFF)
+option(
+  CCCL_ENABLE_C_PARALLEL_V2
+  "Enable CUDA C Parallel Library v2 (HostJIT-based)."
+  OFF
+)
 option(CCCL_ENABLE_C_EXPERIMENTAL_STF "Enable CUDA C CUDASTF Library." OFF)
 option(CCCL_ENABLE_NVBENCH_HELPER "Enable the NVBench Helper Dev Build." OFF)
 
@@ -62,16 +67,8 @@ else()
   option(CCCL_ENABLE_BENCHMARKS "Enable CUDA C++ Core Library benchmarks." OFF)
 endif()
 
-option(CCCL_ENABLE_TILE "Enable tile support" OFF)
-if (CCCL_ENABLE_TILE) # TODO(miscco) sccache currently does not support tile
-  unset(ENV{CMAKE_C_COMPILER_LAUNCHER})
-  unset(ENV{CMAKE_CXX_COMPILER_LAUNCHER})
-  unset(ENV{CMAKE_CUDA_COMPILER_LAUNCHER})
-
-  unset(CMAKE_C_COMPILER_LAUNCHER CACHE)
-  unset(CMAKE_CXX_COMPILER_LAUNCHER CACHE)
-  unset(CMAKE_CUDA_COMPILER_LAUNCHER CACHE)
-endif()
+option(CCCL_FORCE_TILE_TESTS "Force tests to be run as a tile program" OFF)
+option(CCCL_ENABLE_TILE "Enable tile support" ${CCCL_FORCE_TILE_TESTS})
 
 option(
   CCCL_ENABLE_UNSTABLE
@@ -91,21 +88,12 @@ else()
   set(CCCL_ENABLE_CUDAX OFF)
 endif()
 
-option(CCCL_ENABLE_CLANG_TIDY "Enable clang-tidy" OFF)
-mark_as_advanced(CCCL_ENABLE_CLANG_TIDY)
-
-if (CCCL_TOPLEVEL_PROJECT)
-  include(cmake/CCCLAddTidyTarget.cmake)
-
-  if (CCCL_ENABLE_CLANG_TIDY)
-    cccl_tidy_init()
-  endif()
-endif()
-
 include(CTest)
 enable_testing()
 
 option(CCCL_USE_LIBCXX "Use libc++ when compiling and linking" OFF)
+option(CCCL_ENABLE_CLANG_TIDY "Enable clang-tidy" OFF)
+mark_as_advanced(CCCL_ENABLE_CLANG_TIDY)
 
 if (CCCL_TOPLEVEL_PROJECT)
   include(cmake/AppendOptionIfAvailable.cmake)
@@ -119,9 +107,20 @@ if (CCCL_TOPLEVEL_PROJECT)
   include(cmake/CCCLGenerateHeaderTests.cmake)
   include(cmake/CCCLGetDependencies.cmake)
   include(cmake/CCCLTestParams.cmake)
+  include(cmake/CCCLAddTidyTarget.cmake)
 
   cccl_build_compiler_targets()
+  if (CCCL_ENABLE_CLANG_TIDY)
+    cccl_tidy_init()
+  endif()
 endif()
+
+option(
+  CCCL_ENABLE_CUDA_SMOKE_TESTS
+  "Build the CUDA runtime smoke test (cccl.test.cuda_runtime_smoke)."
+  OFF
+)
+set(CCCL_CUDA_SMOKE_TARGET cccl.test.cuda_runtime_smoke)
 
 add_subdirectory(libcudacxx)
 add_subdirectory(cub)
@@ -131,13 +130,21 @@ if (CCCL_ENABLE_UNSTABLE)
   add_subdirectory(cudax)
 endif()
 
-if (CCCL_ENABLE_C_PARALLEL OR CCCL_ENABLE_C_EXPERIMENTAL_STF)
+if (
+  CCCL_ENABLE_C_PARALLEL
+  OR CCCL_ENABLE_C_PARALLEL_V2
+  OR CCCL_ENABLE_C_EXPERIMENTAL_STF
+)
   add_subdirectory(c)
 endif()
 
 if (CCCL_ENABLE_TESTING)
   add_subdirectory("ci")
   add_subdirectory("test")
+endif()
+
+if (CCCL_ENABLE_CUDA_SMOKE_TESTS AND CCCL_TOPLEVEL_PROJECT)
+  add_subdirectory(test/cuda_smoke)
 endif()
 
 if (CCCL_ENABLE_EXAMPLES)

@@ -24,8 +24,14 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/key_value_pair.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_type.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/thread/thread_operators.cuh>
 
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -39,23 +45,19 @@ CUB_NAMESPACE_BEGIN
  * Tuning policy types
  ******************************************************************************/
 
-/**
- * Parameterizable tuning policy type for AgentScanByKey
- *
- * @tparam DelayConstructorT
- *   Implementation detail, do not specify directly, requirements on the
- *   content of this type are subject to breaking change.
- */
-template <int BlockThreads,
+namespace detail
+{
+// TODO(bgruber): remove this when C++20 is the minimum, since then we can pass policy values as NTTP
+template <int ThreadsPerBlock,
           int ItemsPerThread                 = 1,
           BlockLoadAlgorithm LoadAlgorithm   = BLOCK_LOAD_DIRECT,
           CacheLoadModifier LoadModifier     = LOAD_DEFAULT,
           BlockScanAlgorithm ScanAlgorithm   = BLOCK_SCAN_WARP_SCANS,
           BlockStoreAlgorithm StoreAlgorithm = BLOCK_STORE_DIRECT,
           typename DelayConstructorT         = detail::fixed_delay_constructor_t<350, 450>>
-struct AgentScanByKeyPolicy
+struct agent_scan_by_key_policy
 {
-  static constexpr int BLOCK_THREADS    = BlockThreads;
+  static constexpr int BLOCK_THREADS    = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
 
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithm;
@@ -68,6 +70,25 @@ struct AgentScanByKeyPolicy
     using delay_constructor_t = DelayConstructorT;
   };
 };
+} // namespace detail
+
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock,
+          int ItemsPerThread                 = 1,
+          BlockLoadAlgorithm LoadAlgorithm   = BLOCK_LOAD_DIRECT,
+          CacheLoadModifier LoadModifier     = LOAD_DEFAULT,
+          BlockScanAlgorithm ScanAlgorithm   = BLOCK_SCAN_WARP_SCANS,
+          BlockStoreAlgorithm StoreAlgorithm = BLOCK_STORE_DIRECT,
+          typename DelayConstructorT         = detail::fixed_delay_constructor_t<350, 450>>
+using AgentScanByKeyPolicy
+  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScanByKey") = detail::agent_scan_by_key_policy<
+    ThreadsPerBlock,
+    ItemsPerThread,
+    LoadAlgorithm,
+    LoadModifier,
+    ScanAlgorithm,
+    StoreAlgorithm,
+    DelayConstructorT>;
 
 /******************************************************************************
  * Thread block abstractions
@@ -242,7 +263,7 @@ struct AgentScanByKey
   // Zip utility methods
   //---------------------------------------------------------------------
 
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ZipValuesAndFlags(
     OffsetT num_remaining,
     AccumT (&values)[ITEMS_PER_THREAD],
@@ -254,7 +275,7 @@ struct AgentScanByKey
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set segment_flags for first out-of-bounds item, zero for others
-      if (IS_LAST_TILE && OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM == num_remaining)
+      if (IsLastTile && OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM == num_remaining)
       {
         segment_flags[ITEM] = 1;
       }
@@ -297,7 +318,7 @@ struct AgentScanByKey
 
   // Process a tile of input (dynamic chained scan)
   //
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   ConsumeTile(OffsetT /*num_items*/, OffsetT num_remaining, int tile_idx, OffsetT tile_base, ScanTileStateT& tile_state)
   {
@@ -307,7 +328,7 @@ struct AgentScanByKey
     OffsetT segment_flags[ITEMS_PER_THREAD];
     FlagValuePairT scan_items[ITEMS_PER_THREAD];
 
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       // Fill last element with the first element
       // because collectives are not suffix guarded
@@ -320,7 +341,7 @@ struct AgentScanByKey
 
     __syncthreads();
 
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       // Fill last element with the first element
       // because collectives are not suffix guarded
@@ -340,7 +361,7 @@ struct AgentScanByKey
       BlockDiscontinuityKeysT(storage.scan_storage.discontinuity).FlagHeads(segment_flags, keys, inequality_op);
 
       // Zip values and segment_flags
-      ZipValuesAndFlags<IS_LAST_TILE>(num_remaining, values, segment_flags, scan_items);
+      ZipValuesAndFlags<IsLastTile>(num_remaining, values, segment_flags, scan_items);
 
       // Exclusive scan of values and segment_flags
       FlagValuePairT tile_aggregate;
@@ -348,7 +369,7 @@ struct AgentScanByKey
 
       if (threadIdx.x == 0)
       {
-        if (!IS_LAST_TILE)
+        if (!IsLastTile)
         {
           tile_state.SetInclusive(0, tile_aggregate);
         }
@@ -358,13 +379,13 @@ struct AgentScanByKey
     }
     else
     {
-      KeyT tile_pred_key = (threadIdx.x == 0) ? d_keys_prev_in[tile_idx] : KeyT();
+      const KeyT tile_pred_key = (threadIdx.x == 0) ? d_keys_prev_in[tile_idx] : KeyT();
 
       BlockDiscontinuityKeysT(storage.scan_storage.discontinuity)
         .FlagHeads(segment_flags, keys, inequality_op, tile_pred_key);
 
       // Zip values and segment_flags
-      ZipValuesAndFlags<IS_LAST_TILE>(num_remaining, values, segment_flags, scan_items);
+      ZipValuesAndFlags<IsLastTile>(num_remaining, values, segment_flags, scan_items);
 
       FlagValuePairT tile_aggregate;
       TilePrefixCallbackT prefix_op(tile_state, storage.scan_storage.prefix, pair_scan_op, tile_idx);
@@ -378,7 +399,7 @@ struct AgentScanByKey
     AddInitToScan(values, segment_flags);
 
     // Store items
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       BlockStoreValuesT(storage.store_values).Store(d_values_out + tile_base, values, num_remaining);
     }
@@ -428,7 +449,7 @@ struct AgentScanByKey
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT num_items, ScanTileStateT& tile_state, int start_tile)
   {
-    int tile_idx          = blockIdx.x;
+    const int tile_idx    = static_cast<int>(blockIdx.x);
     OffsetT tile_base     = OffsetT(ITEMS_PER_TILE) * tile_idx;
     OffsetT num_remaining = num_items - tile_base;
 

@@ -51,7 +51,7 @@ TEST_FUNC constexpr bool testConstexprSpan(Span sp)
   static_assert(cuda::std::is_same_v<typename Span::value_type, typename S1::value_type>);
   static_assert(cuda::std::is_same_v<typename Span::value_type, typename S2::value_type>);
   static_assert(
-    S1::extent == (Span::extent == cuda::std::dynamic_extent ? cuda::std::dynamic_extent : Span::extent - Offset), "");
+    S1::extent == (Span::extent == cuda::std::dynamic_extent ? cuda::std::dynamic_extent : Span::extent - Offset));
   static_assert(S2::extent == cuda::std::dynamic_extent);
   return s1.data() == s2.data() && s1.size() == s2.size();
 }
@@ -85,7 +85,7 @@ TEST_FUNC void testRuntimeSpan(Span sp)
   static_assert(cuda::std::is_same_v<typename Span::value_type, typename S1::value_type>);
   static_assert(cuda::std::is_same_v<typename Span::value_type, typename S2::value_type>);
   static_assert(
-    S1::extent == (Span::extent == cuda::std::dynamic_extent ? cuda::std::dynamic_extent : Span::extent - Offset), "");
+    S1::extent == (Span::extent == cuda::std::dynamic_extent ? cuda::std::dynamic_extent : Span::extent - Offset));
   static_assert(S2::extent == cuda::std::dynamic_extent);
   assert(s1.data() == s2.data());
   assert(s1.size() == s2.size());

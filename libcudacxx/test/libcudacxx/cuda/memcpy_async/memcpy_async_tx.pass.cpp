@@ -8,8 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
 // error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
 
 // UNSUPPORTED: libcpp-has-no-threads
@@ -33,7 +32,7 @@ TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 static_assert(false, "Insufficient CUDA Compute Capability: cuda::device::memcpy_async_tx is not available.");
 #endif // __CUDA_MINIMUM_ARCH__
 
-alignas(16) TEST_GLOBAL_VARIABLE int gmem_x[2048];
+[[maybe_unused]] alignas(16) TEST_GLOBAL_VARIABLE int gmem_x[2048];
 
 int main(int, char**)
 {

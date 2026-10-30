@@ -18,7 +18,7 @@ int main()
   context ctx;
 
   // Loop count
-  int n = 1024;
+  const int n = 1024;
 
   auto lB = ctx.logical_data<int>(size_t(1024 * 1024));
   ctx.parallel_for(lB.shape(), lB.write())->*[] __device__(size_t i, auto b) {

@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
-// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 /******************************************************************************
@@ -10,6 +10,13 @@
 #pragma once
 
 #include <cub/config.cuh>
+
+#ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+#  if _CCCL_COMPILER(NVRTC)
+#    error \
+      "Including <cub/util_allocator.cuh> is not supported when compiling with NVRTC, which supports device code only. You can define CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+#  endif // _CCCL_COMPILER(NVRTC)
+#endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,10 +29,10 @@
 #include <cub/util_debug.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <cuda/std/__host_stdlib/math.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/mutex>
 
 #include <map>
-#include <mutex>
 #include <set>
 
 CUB_NAMESPACE_BEGIN
@@ -34,8 +41,11 @@ CUB_NAMESPACE_BEGIN
  * CachingDeviceAllocator (host use)
  ******************************************************************************/
 
+// TODO: remove in CCCL 4.0
 /**
  * @brief A simple caching allocator for device memory allocations.
+ *
+ * Deprecated [Since 3.6]
  *
  * @par Overview
  * The allocator is thread-safe and stream-safe and is capable of managing cached
@@ -73,7 +83,9 @@ CUB_NAMESPACE_BEGIN
  * and sets a maximum of 6,291,455 cached bytes per device
  *
  */
-struct CachingDeviceAllocator
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use cuda::device_memory_pool or "
+                               "cuda::device_default_memory_pool instead.") CachingDeviceAllocator
 {
   //---------------------------------------------------------------------
   // Constants
@@ -524,7 +536,7 @@ struct CachingDeviceAllocator
         mutex.lock();
 
         // Iterate the range of free blocks on the same device
-        BlockDescriptor free_key(device);
+        const BlockDescriptor free_key(device);
         CachedBlocks::iterator block_itr = cached_blocks.lower_bound(free_key);
 
         while ((block_itr != cached_blocks.end()) && (block_itr->device == device))
@@ -677,25 +689,59 @@ struct CachingDeviceAllocator
       device = entrypoint_device;
     }
 
+    // Set the device before recording the ready event or changing allocator state.
+    if (device != entrypoint_device)
+    {
+      error = CubDebug(cudaGetDevice(&entrypoint_device));
+      if (cudaSuccess != error)
+      {
+        return error;
+      }
+
+      error = CubDebug(cudaSetDevice(device));
+      if (cudaSuccess != error)
+      {
+        return error;
+      }
+    }
+
     // Lock
     mutex.lock();
 
     // Find corresponding block descriptor
     bool recached = false;
     BlockDescriptor search_key(d_ptr, device);
-    BusyBlocks::iterator block_itr = live_blocks.find(search_key);
+    const BusyBlocks::iterator block_itr = live_blocks.find(search_key);
     if (block_itr != live_blocks.end())
     {
-      // Remove from live blocks
       search_key = *block_itr;
+
+      // Record before publishing the block: another thread may query or destroy its event
+      // as soon as the allocator mutex is released.
+      if ((search_key.bin != INVALID_BIN) && (cached_bytes[device].free + search_key.bytes <= max_cached_bytes))
+      {
+        error = CubDebug(cudaEventRecord(search_key.ready_event, search_key.associated_stream));
+        if (cudaSuccess != error)
+        {
+          // Leave the allocation live if recording fails.
+          mutex.unlock();
+          if (entrypoint_device != device)
+          {
+            CubDebug(cudaSetDevice(entrypoint_device));
+          }
+          return error;
+        }
+        recached = true;
+      }
+
+      // Remove from live blocks
       live_blocks.erase(block_itr);
       cached_bytes[device].live -= search_key.bytes;
 
       // Keep the returned allocation if bin is valid and we won't exceed the max cached threshold
-      if ((search_key.bin != INVALID_BIN) && (cached_bytes[device].free + search_key.bytes <= max_cached_bytes))
+      if (recached)
       {
         // Insert returned allocation into free blocks
-        recached = true;
         cached_blocks.insert(search_key);
         cached_bytes[device].free += search_key.bytes;
 
@@ -715,32 +761,6 @@ struct CachingDeviceAllocator
 
     // Unlock
     mutex.unlock();
-
-    // First set to specified device (entrypoint may not be set)
-    if (device != entrypoint_device)
-    {
-      error = CubDebug(cudaGetDevice(&entrypoint_device));
-      if (cudaSuccess != error)
-      {
-        return error;
-      }
-
-      error = CubDebug(cudaSetDevice(device));
-      if (cudaSuccess != error)
-      {
-        return error;
-      }
-    }
-
-    if (recached)
-    {
-      // Insert the ready event in the associated stream (must have current device set properly)
-      error = CubDebug(cudaEventRecord(search_key.ready_event, search_key.associated_stream));
-      if (cudaSuccess != error)
-      {
-        return error;
-      }
-    }
 
     if (!recached)
     {
@@ -811,7 +831,7 @@ struct CachingDeviceAllocator
     while (!cached_blocks.empty())
     {
       // Get first block
-      CachedBlocks::iterator begin = cached_blocks.begin();
+      const CachedBlocks::iterator begin = cached_blocks.begin();
 
       // Get entry-point device ordinal if necessary
       if (entrypoint_device == INVALID_DEVICE_ORDINAL)
@@ -890,5 +910,6 @@ struct CachingDeviceAllocator
     }
   }
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 CUB_NAMESPACE_END

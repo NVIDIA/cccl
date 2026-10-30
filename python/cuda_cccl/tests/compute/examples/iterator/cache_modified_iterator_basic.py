@@ -30,7 +30,9 @@ h_init = np.array([0], dtype=np.int32)
 d_output = cp.empty(1, dtype=np.int32)
 
 # Perform the reduction.
-cuda.compute.reduce_into(cache_it, d_output, OpKind.PLUS, len(d_input), h_init)
+cuda.compute.reduce_into(
+    d_in=cache_it, d_out=d_output, num_items=len(d_input), op=OpKind.PLUS, h_init=h_init
+)
 
 # Verify the result.
 expected_output = sum(h_input)  # 1 + 2 + 3 + 4 + 5 = 15

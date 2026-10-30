@@ -23,23 +23,25 @@
 #if _CCCL_HAS_DLPACK()
 
 #  include <cuda/__internal/dlpack.h>
-#  include <cuda/__mdspan/host_device_mdspan.h>
-#  include <cuda/__mdspan/layout_stride_relaxed.h>
-#  include <cuda/__mdspan/mdspan_to_dlpack.h>
-#  include <cuda/__mdspan/traits.h>
-#  include <cuda/__memory/is_aligned.h>
-#  include <cuda/__numeric/mul_overflow.h>
-#  include <cuda/mdspan>
-#  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
-#  include <cuda/std/__utility/cmp.h>
-#  include <cuda/std/array>
-#  include <cuda/std/cstdint>
 
-#  include <dlpack/dlpack.h>
+#  if _CCCL_HAS_DLPACK_VERSION_1()
+#    include <cuda/__mdspan/host_device_mdspan.h>
+#    include <cuda/__mdspan/layout_stride_relaxed.h>
+#    include <cuda/__mdspan/mdspan_to_dlpack.h>
+#    include <cuda/__mdspan/traits.h>
+#    include <cuda/__memory/is_aligned.h>
+#    include <cuda/__numeric/mul_overflow.h>
+#    include <cuda/mdspan>
+#    include <cuda/std/__cstddef/types.h>
+#    include <cuda/std/__exception/exception_macros.h>
+#    include <cuda/std/__host_stdlib/stdexcept>
+#    include <cuda/std/__utility/cmp.h>
+#    include <cuda/std/array>
+#    include <cuda/std/cstdint>
+
+#    include <dlpack/dlpack.h>
 //
-#  include <cuda/std/__cccl/prologue.h>
+#    include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -89,9 +91,9 @@ _CCCL_HOST_API void __validate_dlpack_strides(const ::DLTensor& __tensor, [[mayb
   const auto __strides_ptr = __tensor.strides;
   if (__strides_ptr == nullptr)
   {
-#  if _CCCL_DLPACK_AT_LEAST(1, 2)
+#    if _CCCL_DLPACK_AT_LEAST(1, 2)
     _CCCL_THROW(::std::invalid_argument, "strides=nullptr is not supported for DLPack v1.2 and later");
-#  else
+#    else
     // strides == nullptr means row-major (C-contiguous) layout
     if (__is_layout_left && __rank > 1)
     {
@@ -101,7 +103,7 @@ _CCCL_HOST_API void __validate_dlpack_strides(const ::DLTensor& __tensor, [[mayb
     {
       return;
     }
-#  endif // _CCCL_DLPACK_AT_LEAST(1, 2)
+#    endif // _CCCL_DLPACK_AT_LEAST(1, 2)
   }
   for (::cuda::std::size_t __pos = 0; __pos < __rank; ++__pos)
   {
@@ -164,11 +166,31 @@ __to_mdspan(const ::DLTensor& __tensor)
   {
     _CCCL_THROW(::std::invalid_argument, "DLTensor data type does not match expected type");
   }
-  if (__tensor.data == nullptr)
+  [[maybe_unused]] ::cuda::std::array<int64_t, _Rank> __extents_array{};
+  // A rank-0 mdspan has required_span_size() == 1, so it is not empty.
+  bool __empty_tensor = false;
+  if constexpr (_Rank > 0)
+  {
+    // (1) Evaluate Extents
+    if (__tensor.shape == nullptr)
+    {
+      _CCCL_THROW(::std::invalid_argument, "DLTensor shape must be non-null");
+    }
+    for (::cuda::std::size_t __i = 0; __i < _Rank; ++__i)
+    {
+      if (__tensor.shape[__i] < 0)
+      {
+        _CCCL_THROW(::std::invalid_argument, "DLTensor shapes must be positive");
+      }
+      __extents_array[__i] = __tensor.shape[__i];
+      __empty_tensor       = __empty_tensor || __tensor.shape[__i] == 0;
+    }
+  }
+  if (__tensor.data == nullptr && !__empty_tensor)
   {
     _CCCL_THROW(::std::invalid_argument, "DLTensor data must be non-null");
   }
-  // (1) Evaluate Data Pointer
+  // (2) Evaluate Data Pointer
   const auto __datatype_size = __tensor.dtype.bits * __tensor.dtype.lanes / 8;
   __element_type* __data     = nullptr;
   if constexpr (::cuda::__is_layout_stride_relaxed_v<_LayoutPolicy>)
@@ -179,7 +201,7 @@ __to_mdspan(const ::DLTensor& __tensor)
     }
     __data = reinterpret_cast<__element_type*>(__tensor.data);
   }
-  else
+  else if (__tensor.data != nullptr)
   {
     __data = reinterpret_cast<__element_type*>(static_cast<char*>(__tensor.data) + __tensor.byte_offset);
   }
@@ -204,20 +226,6 @@ __to_mdspan(const ::DLTensor& __tensor)
   }
   else // Rank > 0
   {
-    // (2) Evaluate Extents
-    if (__tensor.shape == nullptr)
-    {
-      _CCCL_THROW(::std::invalid_argument, "DLTensor shape must be non-null");
-    }
-    ::cuda::std::array<int64_t, _Rank> __extents_array{};
-    for (::cuda::std::size_t __i = 0; __i < _Rank; ++__i)
-    {
-      if (__tensor.shape[__i] < 0)
-      {
-        _CCCL_THROW(::std::invalid_argument, "DLTensor shapes must be positive");
-      }
-      __extents_array[__i] = __tensor.shape[__i];
-    }
     // (3) Evaluate Strides
     ::cuda::__validate_dlpack_strides<_LayoutPolicy>(__tensor, _Rank);
     if constexpr (::cuda::__is_layout_stride_v<_LayoutPolicy> || ::cuda::__is_layout_stride_relaxed_v<_LayoutPolicy>)
@@ -300,7 +308,8 @@ to_managed_mdspan(const ::DLTensor& __tensor)
 
 _CCCL_END_NAMESPACE_CUDA
 
-#  include <cuda/std/__cccl/epilogue.h>
+#    include <cuda/std/__cccl/epilogue.h>
 
+#  endif // _CCCL_HAS_DLPACK_VERSION_1()
 #endif // __CCCL_HAS_DLPACK()
 #endif // _CUDA___MDSPAN_DLPACK_TO_MDSPAN_H

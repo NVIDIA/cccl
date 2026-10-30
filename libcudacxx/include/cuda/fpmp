@@ -1,0 +1,37 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_FPMP
+#define _CUDA_FPMP
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+// The whole fpmp interface arrives through this one header, math functions included.
+
+// IWYU pragma: begin_exports
+// Core types and operations: constructors, conversions, arithmetic and
+// comparison operators, sqrt, rsqrt, fma.
+#include <cuda/__fp/fpmp.h>
+// cuda::std::numeric_limits<> specialization for the fpmp2 types.
+#include <cuda/__fp/fpmp_limits.h>
+// The math surface: exp, log, pow, the trigonometric and hyperbolic families,
+// the rounding and min/max families, and the classification predicates.
+#include <cuda/__fp/fpmp_math.h>
+// IWYU pragma: end_exports
+
+#endif // _CUDA_FPMP

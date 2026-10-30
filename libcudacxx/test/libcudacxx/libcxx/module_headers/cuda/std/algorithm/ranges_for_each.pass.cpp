@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 #include <cuda/std/algorithm.ranges.for_each.h>
 #include <cuda/std/cassert>
 
@@ -16,13 +19,13 @@
 struct acc
 {
   int* ps;
-  __host__ __device__ void operator()(int x) const
+  TEST_HOST_DEVICE_FUNC void operator()(int x) const
   {
     *ps += x;
   }
 };
 
-__host__ __device__ bool test()
+TEST_HOST_DEVICE_FUNC bool test()
 {
   int a[] = {1, 2, 3};
   int s   = 0;

@@ -178,7 +178,7 @@ _CCCL_HOST_DEVICE void iterative_stable_merge_sort(
   using value_type      = thrust::detail::it_value_t<RandomAccessIterator>;
   using difference_type = thrust::detail::it_difference_t<RandomAccessIterator>;
 
-  difference_type n = last - first;
+  const difference_type n = last - first;
 
   thrust::detail::temporary_array<value_type, DerivedPolicy> temp(exec, n);
 
@@ -223,7 +223,7 @@ _CCCL_HOST_DEVICE void iterative_stable_merge_sort_by_key(
   using value_type2     = thrust::detail::it_value_t<RandomAccessIterator2>;
   using difference_type = thrust::detail::it_difference_t<RandomAccessIterator1>;
 
-  difference_type n = keys_last - keys_first;
+  const difference_type n = keys_last - keys_first;
 
   thrust::detail::temporary_array<value_type1, DerivedPolicy> keys_temp(exec, n);
   thrust::detail::temporary_array<value_type2, DerivedPolicy> values_temp(exec, n);

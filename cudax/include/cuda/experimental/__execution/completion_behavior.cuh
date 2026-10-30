@@ -90,14 +90,16 @@ public:
 // completion behavior
 struct get_completion_behavior_t
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::std::__ignore_t, ::cuda::std::__ignore_t = {}) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  operator()(::cuda::std::__ignore_t, ::cuda::std::__ignore_t = {}) const noexcept
   {
     return completion_behavior::unknown;
   }
 
   _CCCL_TEMPLATE(class _Attrs)
   _CCCL_REQUIRES(__queryable_with<_Attrs, get_completion_behavior_t>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Attrs& __attrs, ::cuda::std::__ignore_t = {}) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  operator()(const _Attrs& __attrs, ::cuda::std::__ignore_t = {}) const noexcept
   {
     static_assert(__nothrow_queryable_with<_Attrs, get_completion_behavior_t>,
                   "The get_completion_behavior query must be noexcept.");
@@ -110,7 +112,7 @@ struct get_completion_behavior_t
 
   _CCCL_TEMPLATE(class _Attrs, class _Env)
   _CCCL_REQUIRES(__queryable_with<_Attrs, get_completion_behavior_t, const _Env&>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Attrs& __attrs, const _Env& __env) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Attrs& __attrs, const _Env& __env) const noexcept
   {
     static_assert(__nothrow_queryable_with<_Attrs, get_completion_behavior_t, const _Env&>,
                   "The get_completion_behavior query must be noexcept.");
@@ -121,7 +123,7 @@ struct get_completion_behavior_t
     return __attrs.query(*this, __env);
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -131,7 +133,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT min_t
 {
   using __completion_behavior_t = __completion_behavior::completion_behavior;
 
-  [[nodiscard]] _CCCL_API static constexpr auto
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto
   __minimum(::cuda::std::initializer_list<__completion_behavior_t> __cbs) noexcept -> __completion_behavior_t
   {
     auto __result = __completion_behavior::completion_behavior::inline_completion;
@@ -146,7 +148,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT min_t
   }
 
   template <__completion_behavior_t... _CBs>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(completion_behavior::__constant_t<_CBs>...) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  operator()(completion_behavior::__constant_t<_CBs>...) const noexcept
   {
     constexpr auto __behavior = __minimum({_CBs...});
 
@@ -173,7 +176,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT min_t
 _CCCL_GLOBAL_CONSTANT min_t min{};
 
 template <class _Sndr, class... _Env>
-[[nodiscard]] _CCCL_API constexpr auto get_completion_behavior() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_completion_behavior() noexcept
 {
   using __behavior_t = __call_result_t<get_completion_behavior_t, env_of_t<_Sndr>, const _Env&...>;
   return __behavior_t{};

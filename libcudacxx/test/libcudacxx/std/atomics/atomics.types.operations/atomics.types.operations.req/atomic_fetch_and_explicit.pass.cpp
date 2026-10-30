@@ -6,11 +6,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: asm statement is unsupported in tile code
-
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
 
 // <cuda/std/atomic>
 
@@ -33,7 +33,7 @@
 template <class T, template <typename, typename> class Selector, cuda::thread_scope>
 struct TestFn
 {
-  TEST_FUNC void operator()() const
+  TEST_HOST_DEVICE_FUNC void operator()() const
   {
     {
       using A = cuda::std::atomic<T>;

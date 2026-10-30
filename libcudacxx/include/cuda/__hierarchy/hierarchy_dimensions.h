@@ -24,14 +24,21 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/__fwd/hierarchy.h>
-#  include <cuda/__hierarchy/level_dimensions.h>
+#  include <cuda/__hierarchy/hierarchy_levels.h>
+#  include <cuda/__hierarchy/level_dimensions.h> // IWYU pragma: keep
 #  include <cuda/__hierarchy/traits.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__tuple_dir/apply.h>
+#  include <cuda/std/__tuple_dir/get.h>
+#  include <cuda/std/__tuple_dir/tie.h>
+#  include <cuda/std/__tuple_dir/tuple.h>
+#  include <cuda/std/__tuple_dir/tuple_cat.h>
+#  include <cuda/std/__type_traits/conditional.h>
+#  include <cuda/std/__type_traits/fold.h>
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__type_traits/type_list.h>
 #  include <cuda/std/__utility/integer_sequence.h>
-#  include <cuda/std/tuple>
-
-#  include <nv/target>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -431,7 +438,7 @@ public:
 
 _CCCL_TEMPLATE(class... _LevelDescs)
 _CCCL_REQUIRES(::cuda::std::__fold_and_v<__is_hierarchy_level_desc_v<_LevelDescs>...>)
-_CCCL_HOST_DEVICE hierarchy(const _LevelDescs&...)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES hierarchy(const _LevelDescs&...)
   -> hierarchy<__detail::__default_unit_below<
                  ::cuda::std::__type_index_c<sizeof...(_LevelDescs) - 1, __level_type_of<_LevelDescs>...>>,
                _LevelDescs...>;
@@ -439,11 +446,12 @@ _CCCL_HOST_DEVICE hierarchy(const _LevelDescs&...)
 _CCCL_TEMPLATE(class _BottomUnit, class... _LevelDescs)
 _CCCL_REQUIRES(
   __is_hierarchy_level_v<_BottomUnit> _CCCL_AND ::cuda::std::__fold_and_v<__is_hierarchy_level_desc_v<_LevelDescs>...>)
-_CCCL_HOST_DEVICE hierarchy(const _BottomUnit&, const _LevelDescs&...) -> hierarchy<_BottomUnit, _LevelDescs...>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES hierarchy(const _BottomUnit&, const _LevelDescs&...)
+  -> hierarchy<_BottomUnit, _LevelDescs...>;
 
 _CCCL_TEMPLATE(class... _LevelDescs)
 _CCCL_REQUIRES(::cuda::std::__fold_and_v<__is_hierarchy_level_desc_v<_LevelDescs>...>)
-_CCCL_HOST_DEVICE hierarchy(const ::cuda::std::tuple<_LevelDescs...>&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES hierarchy(const ::cuda::std::tuple<_LevelDescs...>&)
   -> hierarchy<__detail::__default_unit_below<
                  ::cuda::std::__type_index_c<sizeof...(_LevelDescs) - 1, __level_type_of<_LevelDescs>...>>,
                _LevelDescs...>;
@@ -451,7 +459,7 @@ _CCCL_HOST_DEVICE hierarchy(const ::cuda::std::tuple<_LevelDescs...>&)
 _CCCL_TEMPLATE(class _BottomUnit, class... _LevelDescs)
 _CCCL_REQUIRES(
   __is_hierarchy_level_v<_BottomUnit> _CCCL_AND ::cuda::std::__fold_and_v<__is_hierarchy_level_desc_v<_LevelDescs>...>)
-_CCCL_HOST_DEVICE hierarchy(const _BottomUnit&, const ::cuda::std::tuple<_LevelDescs...>&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES hierarchy(const _BottomUnit&, const ::cuda::std::tuple<_LevelDescs...>&)
   -> hierarchy<_BottomUnit, _LevelDescs...>;
 
 #  if !_CCCL_COMPILER(NVRTC)

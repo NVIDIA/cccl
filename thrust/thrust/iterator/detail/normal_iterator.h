@@ -72,7 +72,8 @@ struct pointer_traits<THRUST_NS_QUALIFIER::detail::normal_iterator<Pointer>>
   template <typename U>
   using rebind = typename THRUST_NS_QUALIFIER::detail::rebind_pointer<pointer, U>::type;
 
-  [[nodiscard]] _CCCL_API inline static pointer pointer_to(Pointer& r) noexcept(noexcept(::cuda::std::addressof(r)))
+  [[nodiscard]] _CCCL_HOST_DEVICE_API inline static pointer
+  pointer_to(Pointer& r) noexcept(noexcept(::cuda::std::addressof(r)))
   {
     return static_cast<element_type*>(::cuda::std::addressof(r));
   }
@@ -80,7 +81,7 @@ struct pointer_traits<THRUST_NS_QUALIFIER::detail::normal_iterator<Pointer>>
   //! @brief Retrieve the address of the element pointed at by an thrust pointer
   //! @param iter A thrust::detail::normal_iterator
   //! @return A pointer to the element pointed to by the thrust pointer
-  [[nodiscard]] _CCCL_API static constexpr auto* to_address(const pointer iter) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto* to_address(const pointer iter) noexcept
   {
     return ::cuda::std::to_address(iter.base());
   }

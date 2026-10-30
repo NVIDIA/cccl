@@ -2,7 +2,7 @@ Param(
     [Parameter(Mandatory = $false)]
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
-    [ValidateSet(17, 20)]
+    [ValidateSet(17, 20, 23)]
     [int]$CXX_STANDARD = 17,
     [Parameter(Mandatory = $false)]
     [Alias("arch")]
@@ -15,7 +15,10 @@ Param(
     [switch]$GPU_ONLY = $false,
     [Parameter(Mandatory = $false)]
     [Alias("cmake-options")]
-    [string]$CMAKE_OPTIONS = ""
+    [string]$CMAKE_OPTIONS = "",
+    [Parameter(Mandatory = $false)]
+    [Alias("enable-tile")]
+    [switch]$ENABLE_TILE = $false
 )
 
 $ErrorActionPreference = "Stop"
@@ -27,14 +30,17 @@ If($CURRENT_PATH -ne "ci") {
 }
 
 if ($CPU_ONLY) {
-    $PRESET = "thrust-cpu"
     $artifactTag = "test_cpu"
+    $presets = @("thrust-cpu")
 } elseif ($GPU_ONLY) {
-    $PRESET = "thrust-gpu"
     $artifactTag = "test_gpu"
+    $presets = @("thrust-gpu")
 } else {
-    $PRESET = "thrust"
+    if ($env:GITHUB_ACTIONS) {
+        throw "Error: test_thrust.ps1 requires -cpu-only or -gpu-only in CI"
+    }
     $artifactTag = ""
+    $presets = @("thrust-cpu", "thrust-gpu")
 }
 
 if ($env:GITHUB_ACTIONS -and $artifactTag) {
@@ -43,14 +49,17 @@ if ($env:GITHUB_ACTIONS -and $artifactTag) {
     Write-Host "Unpacking artifact '$artifactName'"
     & bash "./util/artifacts/download_packed.sh" "$artifactName" "../"
 } else {
-    $cmd = "$PSScriptRoot/build_thrust.ps1 -std $CXX_STANDARD -arch '$CUDA_ARCH' -cmake-options '$CMAKE_OPTIONS'"
-    Write-Host "Running: $cmd"
-    Invoke-Expression $cmd
+    $buildArgs = [hashtable]$PSBoundParameters
+    $buildArgs.Remove("CPU_ONLY")
+    $buildArgs.Remove("GPU_ONLY")
+    & "$PSScriptRoot/build_thrust.ps1" @buildArgs
 }
 
-Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS)
+Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS, $ENABLE_TILE)
 
-test_preset "Thrust ($PRESET)" "$PRESET"
+foreach ($preset in $presets) {
+    test_preset "Thrust ($preset)" $preset
+}
 
 If($CURRENT_PATH -ne "ci") {
     popd

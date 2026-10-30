@@ -25,16 +25,11 @@
 
 #  include <cuda/__fwd/hierarchy.h>
 #  include <cuda/__hierarchy/hierarchy_level_base.h>
-#  include <cuda/__hierarchy/hierarchy_query_result.h>
 #  include <cuda/__hierarchy/queries/count.h>
 #  include <cuda/__hierarchy/queries/extents.h>
 #  include <cuda/__hierarchy/queries/index.h>
 #  include <cuda/__hierarchy/queries/rank.h>
-#  include <cuda/__hierarchy/traits.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__mdspan/extents.h>
-#  include <cuda/std/__type_traits/is_integer.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -52,11 +47,6 @@ _CCCL_DIAG_SUPPRESS_NVHPC(nodiscard_doesnt_apply)
 template <class _Level>
 struct _CCCL_DECLSPEC_EMPTY_BASES __native_hierarchy_level_base : hierarchy_level_base<_Level>
 {
-  template <class _InLevel>
-  using __default_md_query_type = unsigned;
-  template <class _InLevel>
-  using __default_1d_query_type = ::cuda::std::size_t;
-
   using __base_type = hierarchy_level_base<_Level>;
   using __base_type::count;
   using __base_type::count_as;
@@ -73,16 +63,15 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __native_hierarchy_level_base : hierarchy_leve
   using __base_type::rank;
   using __base_type::rank_as;
 
-#    if defined(_CUDAX_GROUP)
-  using __base_type::is_part_of;
+#    if defined(_CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX)
   using __base_type::is_root_rank;
-#    endif // _CUDAX_GROUP
+#    endif // _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
 
   _CCCL_TEMPLATE(class _InLevel)
   _CCCL_REQUIRES(__is_native_hierarchy_level_v<_InLevel>)
   [[nodiscard]] _CCCL_DEVICE_API static auto dims(const _InLevel& __level) noexcept
   {
-    return _Level::template dims_as<__default_md_query_type<_InLevel>>(__level);
+    return _Level::template dims_as<typename __base_type::template __default_md_query_type<_InLevel>>(__level);
   }
 
   _CCCL_TEMPLATE(class _InLevel)
@@ -96,35 +85,35 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __native_hierarchy_level_base : hierarchy_leve
   _CCCL_REQUIRES(__is_native_hierarchy_level_v<_InLevel>)
   [[nodiscard]] _CCCL_DEVICE_API static auto extents(const _InLevel& __level) noexcept
   {
-    return _Level::template extents_as<__default_md_query_type<_InLevel>>(__level);
+    return _Level::template extents_as<typename __base_type::template __default_md_query_type<_InLevel>>(__level);
   }
 
   _CCCL_TEMPLATE(class _InLevel)
   _CCCL_REQUIRES(__is_native_hierarchy_level_v<_InLevel>)
   [[nodiscard]] _CCCL_DEVICE_API static constexpr auto static_count(const _InLevel& __level) noexcept
   {
-    return __base_type::__static_count_impl(__level);
+    return ::cuda::__static_count_query_native<_Level, _InLevel>();
   }
 
   _CCCL_TEMPLATE(class _InLevel)
   _CCCL_REQUIRES(__is_native_hierarchy_level_v<_InLevel>)
   [[nodiscard]] _CCCL_DEVICE_API static auto count(const _InLevel& __level) noexcept
   {
-    return _Level::template count_as<__default_1d_query_type<_InLevel>>(__level);
+    return _Level::template count_as<typename __base_type::template __default_1d_query_type<_InLevel>>(__level);
   }
 
   _CCCL_TEMPLATE(class _InLevel)
   _CCCL_REQUIRES(__is_native_hierarchy_level_v<_InLevel>)
   [[nodiscard]] _CCCL_DEVICE_API static auto index(const _InLevel& __level) noexcept
   {
-    return _Level::template index_as<__default_md_query_type<_InLevel>>(__level);
+    return _Level::template index_as<typename __base_type::template __default_md_query_type<_InLevel>>(__level);
   }
 
   _CCCL_TEMPLATE(class _InLevel)
   _CCCL_REQUIRES(__is_native_hierarchy_level_v<_InLevel>)
   [[nodiscard]] _CCCL_DEVICE_API static auto rank(const _InLevel& __level) noexcept
   {
-    return _Level::template rank_as<__default_1d_query_type<_InLevel>>(__level);
+    return _Level::template rank_as<typename __base_type::template __default_1d_query_type<_InLevel>>(__level);
   }
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel)

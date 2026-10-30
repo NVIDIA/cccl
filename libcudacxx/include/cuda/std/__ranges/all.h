@@ -20,14 +20,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__ranges/access.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/owning_view.h>
 #include <cuda/std/__ranges/range_adaptor.h>
 #include <cuda/std/__ranges/ref_view.h>
 #include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
 #include <cuda/std/__utility/auto_cast.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
@@ -38,43 +37,45 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
 
 _CCCL_BEGIN_NAMESPACE_CPO(__all)
 
-template <class _Tp>
-_CCCL_CONCEPT __to_ref_view = _CCCL_REQUIRES_EXPR((_Tp), _Tp&& __t)(
-  requires(!::cuda::std::ranges::view<decay_t<_Tp>>), (::cuda::std::ranges::ref_view{::cuda::std::forward<_Tp>(__t)}));
+template <class _Range>
+_CCCL_CONCEPT __to_ref_view = _CCCL_REQUIRES_EXPR((_Range), _Range&& __r)(
+  requires(!::cuda::std::ranges::view<decay_t<_Range>>),
+  (::cuda::std::ranges::ref_view{::cuda::std::forward<_Range>(__r)}));
 
-template <class _Tp>
-_CCCL_CONCEPT __to_owning_view = _CCCL_REQUIRES_EXPR((_Tp), _Tp&& __t)(
-  requires(!::cuda::std::ranges::view<decay_t<_Tp>>),
-  requires(!__to_ref_view<_Tp>),
-  (::cuda::std::ranges::owning_view{::cuda::std::forward<_Tp>(__t)}));
+template <class _Range>
+_CCCL_CONCEPT __to_owning_view = _CCCL_REQUIRES_EXPR((_Range), _Range&& __r)(
+  requires(!::cuda::std::ranges::view<decay_t<_Range>>),
+  requires(!__to_ref_view<_Range>),
+  (::cuda::std::ranges::owning_view{::cuda::std::forward<_Range>(__r)}));
 
 struct __fn : __range_adaptor_closure<__fn>
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::ranges::view<decay_t<_Tp>>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Tp>(__t))))
-      -> decltype(_LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Tp>(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Tp>(__t))))
+    -> decltype(_LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Tp>(__t)))
   {
     return _LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Tp>(__t));
   }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__to_ref_view<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::ref_view{::cuda::std::forward<_Tp>(__t)}))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(
+    noexcept(::cuda::std::ranges::ref_view{::cuda::std::forward<_Tp>(__t)}))
   {
     return ::cuda::std::ranges::ref_view{::cuda::std::forward<_Tp>(__t)};
   }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__to_owning_view<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::owning_view{::cuda::std::forward<_Tp>(__t)}))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(
+    noexcept(::cuda::std::ranges::owning_view{::cuda::std::forward<_Tp>(__t)}))
   {
     return ::cuda::std::ranges::owning_view{::cuda::std::forward<_Tp>(__t)};
   }
 };
+
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo

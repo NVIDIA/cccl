@@ -30,6 +30,12 @@ __global__ void test_tcgen05_commit_cta_group_2(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint64_t*)>(cuda::ptx::tcgen05_commit));));
   NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.b64 [smem_bar];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint64_t*)>(cuda::ptx::tcgen05_commit));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.b64 [smem_bar];
@@ -43,6 +49,12 @@ __global__ void test_tcgen05_commit_cta_group_2(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint64_t*)>(cuda::ptx::tcgen05_commit));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.b64 [smem_bar];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint64_t*)>(cuda::ptx::tcgen05_commit));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
     (
         // tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.b64 [smem_bar];
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -71,6 +83,13 @@ __global__ void test_tcgen05_commit_cta_group_2(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint64_t*, cuda::std::uint16_t)>(
             cuda::ptx::tcgen05_commit_multicast));));
   NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64 [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint64_t*, cuda::std::uint16_t)>(
+            cuda::ptx::tcgen05_commit_multicast));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64 [smem_bar], ctaMask;
@@ -92,6 +111,13 @@ __global__ void test_tcgen05_commit_cta_group_2(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint64_t*, cuda::std::uint16_t)>(
             cuda::ptx::tcgen05_commit_multicast));));
   NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64 [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint64_t*, cuda::std::uint16_t)>(
+            cuda::ptx::tcgen05_commit_multicast));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_110f,
     (
         // tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64 [smem_bar], ctaMask;
@@ -99,4 +125,59 @@ __global__ void test_tcgen05_commit_cta_group_2(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint64_t*, cuda::std::uint16_t)>(
             cuda::ptx::tcgen05_commit_multicast));));
 #endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 940
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.multicast::cluster::32b.b64 [smem_bar],
+        // ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint64_t*, cuda::std::uint32_t)>(
+            cuda::ptx::tcgen05_commit_multicast_32b));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.multicast::cluster::32b.b64 [smem_bar],
+        // ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint64_t*, cuda::std::uint32_t)>(
+            cuda::ptx::tcgen05_commit_multicast_32b));));
+#endif // __cccl_ptx_isa >= 940
+
+#if __cccl_ptx_isa >= 940
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // tcgen05.commit.cta_group::2.mbarrier::arrive::one.sync_restrict::shared::read::mma::a.shared::cluster.b64
+        // [smem_bar];
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint64_t*)>(
+          cuda::ptx::tcgen05_commit_sync_restrict_shared_read_mma_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // tcgen05.commit.cta_group::2.mbarrier::arrive::one.sync_restrict::shared::read::mma::a.shared::cluster.b64
+        // [smem_bar];
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint64_t*)>(
+          cuda::ptx::tcgen05_commit_sync_restrict_shared_read_mma_a));));
+#endif // __cccl_ptx_isa >= 940
+
+#if __cccl_ptx_isa >= 940
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // tcgen05.commit.cta_group::2.mbarrier::arrive::one.sync_restrict::shared::read::mma::a.shared::cluster.multicast::cluster::32b.b64
+        // [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint64_t*, cuda::std::uint32_t)>(
+            cuda::ptx::tcgen05_commit_sync_restrict_shared_read_mma_a_multicast_32b));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // tcgen05.commit.cta_group::2.mbarrier::arrive::one.sync_restrict::shared::read::mma::a.shared::cluster.multicast::cluster::32b.b64
+        // [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint64_t*, cuda::std::uint32_t)>(
+            cuda::ptx::tcgen05_commit_sync_restrict_shared_read_mma_a_multicast_32b));));
+#endif // __cccl_ptx_isa >= 940
 }

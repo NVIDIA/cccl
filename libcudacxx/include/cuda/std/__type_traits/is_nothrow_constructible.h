@@ -20,12 +20,16 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_constructible.h>
-#include <cuda/std/__type_traits/is_scalar.h>
-#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__type_traits/is_constructible.h> // IWYU pragma: keep
+#include <cuda/std/__utility/declval.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
+
+#if _CCCL_CHECK_BUILTIN(is_nothrow_constructible) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE(...) __is_nothrow_constructible(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_nothrow_constructible)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -33,7 +37,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_nothrow_constructible : public integral_constant<bool, _CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE(_Tp, _Args...)>
+is_nothrow_constructible : bool_constant<_CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE(_Tp, _Args...)>
 {};
 
 template <class _Tp, class... _Args>
@@ -41,23 +45,23 @@ inline constexpr bool is_nothrow_constructible_v = _CCCL_BUILTIN_IS_NOTHROW_CONS
 
 #else
 
-template <bool, class _Tp, class... _Args>
-inline constexpr bool __cccl_is_nothrow_constructible = false;
+template <bool _IsConstructible, class _Tp, class... _Args>
+inline constexpr bool __cccl_is_nothrow_constructible_v = false;
 
 template <class _Tp, class... _Args>
-inline constexpr bool __cccl_is_nothrow_constructible<true, _Tp, _Args...> =
+inline constexpr bool __cccl_is_nothrow_constructible_v<true, _Tp, _Args...> =
   noexcept(_Tp(::cuda::std::declval<_Args>()...));
 
 template <class _Tp, class _Arg>
-inline constexpr bool __cccl_is_nothrow_constructible<true, _Tp, _Arg> =
+inline constexpr bool __cccl_is_nothrow_constructible_v<true, _Tp, _Arg> =
   noexcept(static_cast<_Tp>(::cuda::std::declval<_Arg>()));
 
 template <class _Tp, size_t _Ns>
-inline constexpr bool __cccl_is_nothrow_constructible<true, _Tp[_Ns]> = __cccl_is_nothrow_constructible<true, _Tp>;
+inline constexpr bool __cccl_is_nothrow_constructible_v<true, _Tp[_Ns]> = __cccl_is_nothrow_constructible_v<true, _Tp>;
 
 template <class _Tp, class... _Args>
 inline constexpr bool is_nothrow_constructible_v =
-  __cccl_is_nothrow_constructible<is_constructible_v<_Tp, _Args...>, _Tp, _Args...>;
+  __cccl_is_nothrow_constructible_v<is_constructible_v<_Tp, _Args...>, _Tp, _Args...>;
 
 template <class _Tp, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_constructible : bool_constant<is_nothrow_constructible_v<_Tp, _Args...>>

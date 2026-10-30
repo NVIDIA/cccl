@@ -70,7 +70,7 @@ TEST_FUNC constexpr bool test()
 
     const optional<X&> optref;
     unused(optref);
-    static_assert(noexcept(cuda::std::move(optref).value()));
+    static_assert(!noexcept(cuda::std::move(optref).value()));
     static_assert(cuda::std::is_same_v<decltype(cuda::std::move(optref).value()), X&>);
   }
 

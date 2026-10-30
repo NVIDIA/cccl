@@ -21,13 +21,8 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/comp.h>
-#include <cuda/std/__functional/identity.h>
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__iterator/advance.h>
-#include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__utility/pair.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -159,8 +154,8 @@ search(_ForwardIterator1 __first1,
            __first2,
            __last2,
            __pred,
-           typename iterator_traits<_ForwardIterator1>::iterator_category(),
-           typename iterator_traits<_ForwardIterator2>::iterator_category())
+           __iterator_traits_category_or_concept_t<_ForwardIterator1>(),
+           __iterator_traits_category_or_concept_t<_ForwardIterator2>())
     .first;
 }
 

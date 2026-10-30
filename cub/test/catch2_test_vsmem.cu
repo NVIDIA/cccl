@@ -10,7 +10,7 @@
 #include <cub/util_vsmem.cuh>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 //----------------------------------------------------------------------------
 // Helper section
@@ -36,7 +36,7 @@ struct launch_config_test_info_t
   // The tile size that's assumed during launch configuration
   std::size_t config_assumes_tile_size;
   // The block size that's assumed during launch configuration
-  std::size_t config_assumes_block_threads;
+  std::size_t config_assumes_threads_per_block;
   // The total amount of virtual shared memory that has to be allocated
   std::size_t config_vsmem_per_block;
 };
@@ -46,11 +46,11 @@ struct launch_config_test_info_t
 //----------------------------------------------------------------------------
 // Tuning policy definition
 //----------------------------------------------------------------------------
-template <int BlockThreads, int ItemsPerThread>
+template <int ThreadsPerBlock, int ItemsPerThread>
 struct agent_dummy_algorithm_policy_t
 {
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
-  static constexpr int BLOCK_THREADS    = BlockThreads;
+  static constexpr int BLOCK_THREADS    = ThreadsPerBlock;
 };
 
 //----------------------------------------------------------------------------
@@ -59,15 +59,15 @@ struct agent_dummy_algorithm_policy_t
 template <typename ActivePolicyT, typename InputIteratorT, typename OutputIteratorT, typename OffsetT>
 struct agent_dummy_algorithm_t
 {
-  static constexpr auto block_threads    = ActivePolicyT::BLOCK_THREADS;
-  static constexpr auto items_per_thread = ActivePolicyT::ITEMS_PER_THREAD;
-  static constexpr auto tile_size        = block_threads * items_per_thread;
+  static constexpr auto threads_per_block = ActivePolicyT::BLOCK_THREADS;
+  static constexpr auto items_per_thread  = ActivePolicyT::ITEMS_PER_THREAD;
+  static constexpr auto tile_size         = threads_per_block * items_per_thread;
 
   using item_t = cub::detail::it_value_t<InputIteratorT>;
 
-  using block_load_t = cub::BlockLoad<item_t, block_threads, items_per_thread, cub::BLOCK_LOAD_TRANSPOSE>;
+  using block_load_t = cub::BlockLoad<item_t, threads_per_block, items_per_thread, cub::BLOCK_LOAD_TRANSPOSE>;
 
-  using block_store_t = cub::BlockStore<item_t, block_threads, items_per_thread, cub::BLOCK_STORE_TRANSPOSE>;
+  using block_store_t = cub::BlockStore<item_t, threads_per_block, items_per_thread, cub::BLOCK_STORE_TRANSPOSE>;
 
   // We are intentionally not aliasing the TempStorage here to double the required shared memory of the test and be able
   // to use a smaller `large_custom_t`, as we experienced slow compilation times for large a `large_custom_t`.
@@ -163,6 +163,8 @@ void __global__ __launch_bounds__(
   vsmem_helper_t::discard_temp_storage(temp_storage);
 }
 
+// TODO(bgruber): rewrite the below test to use policy selectors
+
 //----------------------------------------------------------------------------
 // Tuning policy chain
 //----------------------------------------------------------------------------
@@ -173,7 +175,7 @@ struct device_dummy_algorithm_policy_t
 
   static constexpr int FALLBACK_BLOCK_THREADS = 64;
 
-  struct policy_500 : cub::ChainedPolicy<500, policy_500, policy_500>
+  struct policy_500 : cub::detail::chained_policy<500, policy_500, policy_500>
   {
     using DummyAlgorithmPolicy = agent_dummy_algorithm_policy_t<256, cub::Nominal4BItemsToItems<item_t>(17)>;
 
@@ -271,18 +273,18 @@ struct dispatch_dummy_algorithm_t
     }
 
     // Compute launch configurations
-    constexpr auto block_threads    = vsmem_helper_t::agent_policy_t::BLOCK_THREADS;
-    constexpr auto items_per_thread = vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD;
-    constexpr auto tile_size        = block_threads * items_per_thread;
-    const auto num_tiles            = cuda::ceil_div(num_items, tile_size);
-    const auto total_vsmem          = num_tiles * vsmem_helper_t::vsmem_per_block;
+    constexpr auto threads_per_block = vsmem_helper_t::agent_policy_t::BLOCK_THREADS;
+    constexpr auto items_per_thread  = vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD;
+    constexpr auto tile_size         = threads_per_block * items_per_thread;
+    const auto num_tiles             = cuda::ceil_div(num_items, tile_size);
+    const auto total_vsmem           = num_tiles * vsmem_helper_t::vsmem_per_block;
 
     // Get device ordinal
     cudaError error = cudaSuccess;
 
     // Compute temporary storage requirements
-    void* allocations[1]            = {nullptr};
-    std::size_t allocation_sizes[1] = {total_vsmem};
+    void* allocations[1]                  = {nullptr};
+    const std::size_t allocation_sizes[1] = {total_vsmem};
     error = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
     if (cudaSuccess != error)
     {
@@ -294,11 +296,11 @@ struct dispatch_dummy_algorithm_t
     {
       return error;
     }
-    launch_config_info->config_assumes_tile_size     = static_cast<std::size_t>(tile_size);
-    launch_config_info->config_assumes_block_threads = static_cast<std::size_t>(block_threads);
-    launch_config_info->config_vsmem_per_block       = vsmem_helper_t::vsmem_per_block;
+    launch_config_info->config_assumes_tile_size         = static_cast<std::size_t>(tile_size);
+    launch_config_info->config_assumes_threads_per_block = static_cast<std::size_t>(threads_per_block);
+    launch_config_info->config_vsmem_per_block           = vsmem_helper_t::vsmem_per_block;
 
-    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_tiles, block_threads, 0, stream)
+    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_tiles, threads_per_block, 0, stream)
       .doit(dummy_algorithm_kernel<typename PolicyHub::max_policy_t, InputIteratorT, OutputIteratorT, OffsetT>,
             d_in,
             d_out,
@@ -379,13 +381,13 @@ DECLARE_LAUNCH_WRAPPER(device_dummy_algorithm, dummy_algorithm);
 
 using type_list = c2h::type_list<large_custom_t<1>, large_custom_t<80>, large_custom_t<128>, large_custom_t<512>>;
 
-C2H_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_list)
+CUB_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", CUB_SMALL, type_list)
 {
   using item_t   = typename c2h::get<0, TestType>;
   using offset_t = int32_t;
 
   constexpr offset_t target_size = 10000000;
-  const offset_t num_items       = target_size / sizeof(item_t);
+  constexpr offset_t num_items   = target_size / sizeof(item_t);
 
   // Prepare input and output buffers for a simple copy algorithm test
   c2h::device_vector<uint8_t> in(num_items * sizeof(item_t));
@@ -403,18 +405,18 @@ C2H_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_
   using fallback_agent_t  = agent_dummy_algorithm_t<fallback_policy_t, item_t*, item_t*, offset_t>;
 
   // Get the information as it is expected from the vsmem helper to work as expected
-  std::size_t default_smem_size  = sizeof(typename default_agent_t::TempStorage);
-  std::size_t fallback_smem_size = sizeof(typename fallback_agent_t::TempStorage);
-  bool expected_to_use_fallback =
+  constexpr std::size_t default_smem_size  = sizeof(typename default_agent_t::TempStorage);
+  constexpr std::size_t fallback_smem_size = sizeof(typename fallback_agent_t::TempStorage);
+  constexpr bool expected_to_use_fallback =
     default_smem_size > cub::detail::max_smem_per_block && fallback_smem_size <= cub::detail::max_smem_per_block;
-  std::size_t expected_smem_per_block = expected_to_use_fallback ? fallback_smem_size : default_smem_size;
-  bool expected_needs_vsmem           = expected_smem_per_block > cub::detail::max_smem_per_block;
-  std::size_t expected_block_threads =
+  constexpr std::size_t expected_smem_per_block = expected_to_use_fallback ? fallback_smem_size : default_smem_size;
+  constexpr bool expected_needs_vsmem           = expected_smem_per_block > cub::detail::max_smem_per_block;
+  constexpr std::size_t expected_threads_per_block =
     expected_to_use_fallback ? fallback_policy_t::BLOCK_THREADS : default_policy_t::BLOCK_THREADS;
-  std::size_t expected_items_per_thread =
+  constexpr std::size_t expected_items_per_thread =
     expected_to_use_fallback ? fallback_policy_t::ITEMS_PER_THREAD : default_policy_t::ITEMS_PER_THREAD;
-  std::size_t expected_tile_size       = expected_block_threads * expected_items_per_thread;
-  std::size_t expected_vsmem_per_block = (expected_needs_vsmem ? expected_smem_per_block : 0ULL);
+  constexpr std::size_t expected_tile_size       = expected_threads_per_block * expected_items_per_thread;
+  constexpr std::size_t expected_vsmem_per_block = (expected_needs_vsmem ? expected_smem_per_block : 0ULL);
 
   // Setup vsmem test
   launch_config_test_info_t* launch_config_info = nullptr;
@@ -434,14 +436,14 @@ C2H_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_
 
   // Make sure the launch configuration information retrieved from the vsmem helper is correct
   REQUIRE(launch_config_info->config_assumes_tile_size == expected_tile_size);
-  REQUIRE(launch_config_info->config_assumes_block_threads == expected_block_threads);
-  if (expected_vsmem_per_block == 0)
+  REQUIRE(launch_config_info->config_assumes_threads_per_block == expected_threads_per_block);
+  if constexpr (expected_vsmem_per_block == 0)
   {
     REQUIRE(launch_config_info->config_vsmem_per_block == 0);
   }
   else
   {
-    // The virtual shared memory helper pads vsmem to a multiple of a line size, hence the range check
+    // The virtual shared memory helper pads vsmem to a multiple of a line size, hence the range check.
     REQUIRE(launch_config_info->config_vsmem_per_block >= expected_vsmem_per_block);
   }
 

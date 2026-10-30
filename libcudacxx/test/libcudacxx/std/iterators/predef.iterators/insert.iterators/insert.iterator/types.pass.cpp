@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error calling a __host__ __device__ function from a __host__ __device__ __tile__ function is not allowed
+
 // <cuda/std/iterator>
 
 // insert_iterator
@@ -35,10 +38,10 @@
 template <class C>
 struct find_members : private cuda::std::insert_iterator<C>
 {
-  TEST_FUNC explicit find_members(C& c)
+  TEST_HOST_DEVICE_FUNC explicit find_members(C& c)
       : cuda::std::insert_iterator<C>(c, c.begin())
   {}
-  TEST_FUNC void test()
+  TEST_HOST_DEVICE_FUNC void test()
   {
     this->container = 0;
     TEST_IGNORE_NODISCARD(this->iter == this->iter);
@@ -46,7 +49,7 @@ struct find_members : private cuda::std::insert_iterator<C>
 };
 
 template <class C>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   using R = cuda::std::insert_iterator<C>;
   C c;

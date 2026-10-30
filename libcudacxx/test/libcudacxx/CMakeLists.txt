@@ -125,6 +125,12 @@ else()
   set(LIBCUDACXX_ENABLE_TILE False)
 endif()
 
+if (CCCL_FORCE_TILE_TESTS)
+  set(LIBCUDACXX_FORCE_TILE_TESTS True)
+else()
+  set(LIBCUDACXX_FORCE_TILE_TESTS False)
+endif()
+
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS " -latomic")
 endif()
@@ -241,7 +247,8 @@ set(
 message(STATUS "libcudacxx_LIT_FLAGS: ${libcudacxx_LIT_FLAGS}")
 
 if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
-  # Build but don't run the tests. Used by CI to pre-seed sccache for the test machines.
+  # Build but don't run the tests. CI may preserve the executables for GPU test jobs
+  # via LIT_OPTS.
   # Only executed if explicitly requested.
   add_custom_target(
     libcudacxx.test.lit.precompile
@@ -289,8 +296,7 @@ add_test(
         ${libcudacxx_LIT_FLAGS}
         -j "${libcudacxx_LIT_PARALLEL_LEVEL}"
         "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
-    # gersemi: on
-    USES_TERMINAL
+  # gersemi: on
 )
 
 set_tests_properties(

@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 from .._bindings import Op, OpKind
-from .._cpp_compile import compile_cpp_to_ltoir
+from .._cpp_compile import compile_cpp_op_code
 from .._utils.protocols import get_dtype
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..types import TypeDescriptor, from_numpy_dtype
@@ -59,11 +59,11 @@ class DiscardIterator(IteratorBase):
 extern "C" __device__ void {symbol}(void*, void*) {{
 }}
 """
-        ltoir = compile_cpp_to_ltoir(source)
+        code = compile_cpp_op_code(source)
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
-            ltoir=ltoir,
+            ltoir=code,
             extra_ltoirs=[],
         )
 
@@ -75,11 +75,11 @@ extern "C" __device__ void {symbol}(void*, void*) {{
 extern "C" __device__ void {symbol}(void*, void*) {{
 }}
 """
-        ltoir = compile_cpp_to_ltoir(source)
+        code = compile_cpp_op_code(source)
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
-            ltoir=ltoir,
+            ltoir=code,
             extra_ltoirs=[],
         )
 
@@ -91,11 +91,11 @@ extern "C" __device__ void {symbol}(void*, void*) {{
 extern "C" __device__ void {symbol}(void*, void*) {{
 }}
 """
-        ltoir = compile_cpp_to_ltoir(source)
+        code = compile_cpp_op_code(source)
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
-            ltoir=ltoir,
+            ltoir=code,
             extra_ltoirs=[],
         )
 

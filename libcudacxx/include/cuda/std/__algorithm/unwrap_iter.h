@@ -60,18 +60,18 @@ struct __unwrap_iter_impl
 template <class _Iter>
 struct __unwrap_iter_impl<_Iter, true>
 {
-  using _ToAddressT = decltype(::cuda::std::__to_address(::cuda::std::declval<_Iter>()));
+  using _ToAddressT = decltype(::cuda::std::to_address(::cuda::std::declval<_Iter>()));
 
   _CCCL_EXEC_CHECK_DISABLE
   static _CCCL_API constexpr _Iter __rewrap(_Iter __orig_iter, _ToAddressT __unwrapped_iter)
   {
-    return __orig_iter + (__unwrapped_iter - ::cuda::std::__to_address(__orig_iter));
+    return __orig_iter + (__unwrapped_iter - ::cuda::std::to_address(__orig_iter));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   static _CCCL_API constexpr _ToAddressT __unwrap(_Iter __i) noexcept
   {
-    return ::cuda::std::__to_address(__i);
+    return ::cuda::std::to_address(__i);
   }
 };
 

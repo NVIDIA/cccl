@@ -25,10 +25,12 @@ def add_one_op(a):
 
 
 # Create the unary transform object.
-transformer = cuda.compute.make_unary_transform(d_input, d_output, add_one_op)
+transformer = cuda.compute.make_unary_transform(
+    d_in=d_input, d_out=d_output, op=add_one_op
+)
 
 # Perform the unary transform.
-transformer(d_input, d_output, add_one_op, len(h_input))
+transformer(d_in=d_input, d_out=d_output, op=add_one_op, num_items=len(h_input))
 
 # Verify the result.
 expected_result = np.array([2, 3, 4, 5], dtype=dtype)

@@ -32,6 +32,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/source_location>
+
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 #include <cuda/experimental/__utility/meyers_singleton.cuh>
@@ -92,20 +96,74 @@ public:
     calibrating = true;
   }
 
+  //! @brief Records calibration data without disrupting task teardown on failure.
+  //!
+  //! @param[in] t The task whose timing is recorded.
+  //! @param[in] time The task duration in milliseconds.
+  //! @param[in] loc The caller location reported if recording fails.
   template <typename task_type>
-  void log_task_time(const task_type& t, double time)
+  void log_task_time(const task_type& t,
+                     double time,
+                     const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
   {
-    auto key = ::std::pair{t.get_symbol(), get_data_footprint(t)};
+    // Calibration is diagnostic only; allocation failures must not interfere
+    // with task teardown.
+    ON_THROW(notify, loc)
+    {
+      auto key = ::std::pair{t.get_symbol(), get_data_footprint(t)};
 
-    auto it = statistics.find(key);
-    if (it == statistics.end())
+      auto it = statistics.find(key);
+      if (it == statistics.end())
+      {
+        statistics.emplace(key, statistic(time));
+      }
+      else
+      {
+        it->second.update(time);
+      }
+    };
+  }
+  /**
+   * @brief Time a task between two recorded events and hand the result to the DOT trace and the
+   * calibration statistics.
+   *
+   * Timing is telemetry. A CUDA error here is usually a sticky error from earlier device work
+   * surfacing at the next API call; with exceptions enabled it is reported and the task still
+   * completes, clear() included. (Without exceptions cuda_try ends the program with a report, as
+   * cuda_safe_call did.) Only a sink can change the outcome of the call; a guard cannot.
+   *
+   * @param t The task being timed
+   * @param start_event Event recorded when the task started
+   * @param end_event Event to record now, on `stream`
+   * @param stream Stream the task ran on
+   * @param dot Per-context DOT tracer
+   * @param device Device that executed the task, or -1 if unspecified
+   * @param loc The caller location reported if timing fails
+   */
+  template <typename task_type, typename dot_type>
+  void record_task_timing(
+    const task_type& t,
+    cudaEvent_t start_event,
+    cudaEvent_t end_event,
+    cudaStream_t stream,
+    dot_type& dot,
+    int device                             = -1,
+    const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
+  {
+    ON_THROW(notify, loc)
     {
-      statistics.emplace(key, statistic(time));
-    }
-    else
-    {
-      it->second.update(time);
-    }
+      cuda_try<cudaEventRecord>(end_event, stream);
+      cuda_try<cudaEventSynchronize>(end_event);
+      const float milliseconds = cuda_try<cudaEventElapsedTime>(start_event, end_event);
+      if (dot.is_tracing())
+      {
+        dot.add_vertex_timing(t, milliseconds, device);
+      }
+      if (is_calibrating())
+      {
+        log_task_time(t, milliseconds);
+      }
+    };
   }
 
   class statistic

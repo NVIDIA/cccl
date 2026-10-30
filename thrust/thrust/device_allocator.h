@@ -67,8 +67,9 @@ public:
       : m_upstream(upstream)
   {}
 
-  [[nodiscard]] _CCCL_HOST pointer
-  do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  [[nodiscard]] _CCCL_HOST pointer do_allocate( // NOLINT(google-default-arguments)
+    std::size_t bytes,
+    std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     return pointer(m_upstream->do_allocate(bytes, alignment).get());
   }

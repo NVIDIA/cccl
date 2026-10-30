@@ -17,6 +17,7 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <iostream>
+#include <string>
 
 using namespace cuda::experimental::stf;
 
@@ -35,18 +36,18 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
   if (argc > 2)
   {
-    n = atol(argv[1]);
-    m = atol(argv[2]);
+    n = ::std::stol(argv[1]);
+    m = ::std::stol(argv[2]);
   }
 
   if (argc > 3)
   {
-    tol = atof(argv[3]);
+    tol = ::std::stod(argv[3]);
   }
 
   if (argc > 4)
   {
-    max_iter = atoi(argv[4]);
+    max_iter = ::std::stoi(argv[4]);
   }
 
   auto lA        = ctx.logical_data(shape_of<slice<double, 2>>(m, n));
@@ -70,9 +71,9 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
     ctx.parallel_for(inner<1>(lA.shape()), lA.read(), lAnew.rw(), lresidual.reduce(reducer::maxval<double>()))
         ->*[tol] __device__(size_t i, size_t j, auto A, auto Anew, auto& residual) {
-              Anew(i, j)   = 0.25 * (A(i - 1, j) + A(i + 1, j) + A(i, j - 1) + A(i, j + 1));
-              double error = fabs(A(i, j) - Anew(i, j));
-              residual     = ::std::max(error, residual);
+              Anew(i, j)         = 0.25 * (A(i - 1, j) + A(i + 1, j) + A(i, j - 1) + A(i, j + 1));
+              const double error = fabs(A(i, j) - Anew(i, j));
+              residual           = ::std::max(error, residual);
             };
 
     ctx.parallel_for(inner<1>(lA.shape()), lA.rw(), lAnew.read())->*[] __device__(size_t i, size_t j, auto A, auto Anew) {
@@ -80,14 +81,14 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     };
 
     while_guard.update_cond(lresidual.read(), liter.rw())->*[tol, max_iter] __device__(auto residual, auto iter) {
-      bool converged   = (*residual < tol);
-      bool max_reached = ((*iter)++ >= max_iter); // Maximum iteration limit
+      const bool converged   = (*residual < tol);
+      const bool max_reached = ((*iter)++ >= max_iter); // Maximum iteration limit
       return !converged && !max_reached; // Continue if not converged and under limit
     };
   }
 
-  int final_iterations  = ctx.wait(liter);
-  double final_residual = ctx.wait(lresidual);
+  const int final_iterations  = ctx.wait(liter);
+  const double final_residual = ctx.wait(lresidual);
 
   printf("Converged after %d iterations, residual = %lf\n", final_iterations, final_residual);
 

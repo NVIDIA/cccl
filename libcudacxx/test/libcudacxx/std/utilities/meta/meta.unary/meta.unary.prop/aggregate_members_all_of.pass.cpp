@@ -83,7 +83,7 @@ struct WithArray
 class NonAggregate
 {
 public:
-  __host__ __device__ NonAggregate() {}
+  TEST_FUNC NonAggregate() {}
   int x;
 };
 
@@ -93,7 +93,7 @@ struct NonTriviallyCopyable
 
   NonTriviallyCopyable() = default;
 
-  __host__ __device__ NonTriviallyCopyable(const NonTriviallyCopyable&) {}
+  TEST_FUNC NonTriviallyCopyable(const NonTriviallyCopyable&) {}
 };
 
 struct HasNonTriviallyCopyableMember
@@ -107,7 +107,7 @@ struct HasNonTriviallyCopyableMember
 struct NoDefaultCtor
 {
   NoDefaultCtor() = delete;
-  __host__ __device__ NoDefaultCtor(int) {}
+  TEST_FUNC NoDefaultCtor(int) {}
   int value;
 };
 

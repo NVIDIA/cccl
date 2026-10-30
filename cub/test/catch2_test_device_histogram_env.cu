@@ -12,40 +12,49 @@ struct stream_registry_factory_t;
 #include <thrust/device_vector.h>
 
 #include <cuda/std/array>
+#include <cuda/std/cstdint>
+#include <cuda/std/execution>
 
-#include "catch2_test_env_launch_helper.h"
+#include <sstream>
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceHistogram::HistogramEven, histogram_even);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceHistogram::HistogramRange, histogram_range);
+#include "block_size_extracting_helpers.h"
+#include "catch2_test_custom_streams.cuh"
+#include "catch2_test_launch_helper.h"
 
-DECLARE_TMPL_LAUNCH_WRAPPER(cub::DeviceHistogram::MultiHistogramEven,
-                            multi_histogram_even,
-                            ESCAPE_LIST(int Channels, int ActiveChannels),
-                            ESCAPE_LIST(Channels, ActiveChannels));
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceHistogram::HistogramEven, histogram_even);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceHistogram::HistogramRange, histogram_range);
 
-DECLARE_TMPL_LAUNCH_WRAPPER(cub::DeviceHistogram::MultiHistogramRange,
-                            multi_histogram_range,
-                            ESCAPE_LIST(int Channels, int ActiveChannels),
-                            ESCAPE_LIST(Channels, ActiveChannels));
+DECLARE_TMPL_LAUNCH_WRAPPER_ENV(
+  cub::DeviceHistogram::MultiHistogramEven,
+  multi_histogram_even,
+  ESCAPE_LIST(int Channels, int ActiveChannels),
+  ESCAPE_LIST(Channels, ActiveChannels));
+
+DECLARE_TMPL_LAUNCH_WRAPPER_ENV(
+  cub::DeviceHistogram::MultiHistogramRange,
+  multi_histogram_range,
+  ESCAPE_LIST(int Channels, int ActiveChannels),
+  ESCAPE_LIST(Channels, ActiveChannels));
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
 #include <cuda/__execution/require.h>
+#include <cuda/__execution/tune.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 namespace stdexec = cuda::std::execution;
 
 #if TEST_LAUNCH == 0
 
-TEST_CASE("DeviceHistogram::HistogramEven works with default environment", "[histogram][device]")
+CUB_TEST_CASE("DeviceHistogram::HistogramEven works with default environment", "[histogram][device]", CUB_SMALL)
 {
-  auto d_samples   = c2h::device_vector<int>{0, 2, 1, 0, 3, 4, 2, 1};
-  int num_samples  = static_cast<int>(d_samples.size());
-  int num_levels   = 6;
-  int lower_level  = 0;
-  int upper_level  = 5;
-  auto d_histogram = c2h::device_vector<int>(num_levels - 1, 0);
+  auto d_samples        = c2h::device_vector<int>{0, 2, 1, 0, 3, 4, 2, 1};
+  const int num_samples = static_cast<int>(d_samples.size());
+  const int num_levels  = 6;
+  const int lower_level = 0;
+  const int upper_level = 5;
+  auto d_histogram      = c2h::device_vector<int>(num_levels - 1, 0);
 
   REQUIRE(
     cudaSuccess
@@ -57,17 +66,85 @@ TEST_CASE("DeviceHistogram::HistogramEven works with default environment", "[his
       upper_level,
       num_samples));
 
-  c2h::device_vector<int> expected{2, 2, 2, 1, 1};
+  const c2h::device_vector<int> expected{2, 2, 2, 1, 1};
   REQUIRE(d_histogram == expected);
 }
 
-TEST_CASE("DeviceHistogram::HistogramRange works with default environment", "[histogram][device]")
+CUB_TEST_CASE("DeviceHistogram::HistogramEven works with user provided memory and environment",
+              "[histogram][device]",
+              CUB_SMALL)
 {
-  auto d_samples   = c2h::device_vector<float>{2.2f, 6.1f, 7.5f, 2.9f, 3.5f, 0.3f, 2.9f, 2.1f};
+  auto d_samples   = c2h::device_vector<int>{0, 2, 1, 0, 3, 4, 2, 1};
   int num_samples  = static_cast<int>(d_samples.size());
-  auto d_levels    = c2h::device_vector<float>{0.0f, 2.0f, 4.0f, 6.0f, 8.0f};
-  int num_levels   = static_cast<int>(d_levels.size());
+  int num_levels   = 6;
+  int lower_level  = 0;
+  int upper_level  = 5;
   auto d_histogram = c2h::device_vector<int>(num_levels - 1, 0);
+
+  c2h::device_vector<int> expected{2, 2, 2, 1, 1};
+
+  size_t expected_bytes_allocated{};
+  auto error = cub::DeviceHistogram::HistogramEven(
+    nullptr,
+    expected_bytes_allocated,
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_levels,
+    lower_level,
+    upper_level,
+    num_samples);
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  auto d_temp        = c2h::device_vector<uint8_t>(expected_bytes_allocated, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(d_temp.data());
+
+  auto test_histogram_even = [&](const auto& env) {
+    size_t num_bytes = 0;
+    error            = cub::DeviceHistogram::HistogramEven(
+      nullptr,
+      num_bytes,
+      thrust::raw_pointer_cast(d_samples.data()),
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      lower_level,
+      upper_level,
+      num_samples,
+      env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE(expected_bytes_allocated == num_bytes);
+
+    error = cub::DeviceHistogram::HistogramEven(
+      temp_storage,
+      num_bytes,
+      thrust::raw_pointer_cast(d_samples.data()),
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      lower_level,
+      upper_level,
+      num_samples,
+      env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    // Verify result
+    REQUIRE(d_histogram == expected);
+  };
+
+  test_with_custom_streams(test_histogram_even);
+}
+
+CUB_TEST_CASE("DeviceHistogram::HistogramRange works with default environment", "[histogram][device]", CUB_SMALL)
+{
+  auto d_samples        = c2h::device_vector<float>{2.2f, 6.1f, 7.5f, 2.9f, 3.5f, 0.3f, 2.9f, 2.1f};
+  const int num_samples = static_cast<int>(d_samples.size());
+  auto d_levels         = c2h::device_vector<float>{0.0f, 2.0f, 4.0f, 6.0f, 8.0f};
+  const int num_levels  = static_cast<int>(d_levels.size());
+  auto d_histogram      = c2h::device_vector<int>(num_levels - 1, 0);
 
   REQUIRE(cudaSuccess
           == cub::DeviceHistogram::HistogramRange(
@@ -77,60 +154,124 @@ TEST_CASE("DeviceHistogram::HistogramRange works with default environment", "[hi
             thrust::raw_pointer_cast(d_levels.data()),
             num_samples));
 
-  c2h::device_vector<int> expected{1, 5, 0, 2};
+  const c2h::device_vector<int> expected{1, 5, 0, 2};
   REQUIRE(d_histogram == expected);
 }
 
-TEST_CASE("DeviceHistogram::MultiHistogramEven works with default environment", "[histogram][device]")
+CUB_TEST_CASE("DeviceHistogram::HistogramRange works with user provided memory and environment",
+              "[histogram][device]",
+              CUB_SMALL)
+{
+  auto d_samples   = c2h::device_vector<float>{2.2f, 6.1f, 7.5f, 2.9f, 3.5f, 0.3f, 2.9f, 2.1f};
+  int num_samples  = static_cast<int>(d_samples.size());
+  auto d_levels    = c2h::device_vector<float>{0.0f, 2.0f, 4.0f, 6.0f, 8.0f};
+  int num_levels   = static_cast<int>(d_levels.size());
+  auto d_histogram = c2h::device_vector<int>(num_levels - 1, 0);
+
+  c2h::device_vector<int> expected{1, 5, 0, 2};
+
+  size_t expected_bytes_allocated{};
+  auto error = cub::DeviceHistogram::HistogramRange(
+    nullptr,
+    expected_bytes_allocated,
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_levels,
+    thrust::raw_pointer_cast(d_levels.data()),
+    num_samples);
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  auto d_temp        = c2h::device_vector<uint8_t>(expected_bytes_allocated, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(d_temp.data());
+
+  auto test_histogram_range = [&](const auto& env) {
+    size_t num_bytes = 0;
+    error            = cub::DeviceHistogram::HistogramRange(
+      nullptr,
+      num_bytes,
+      thrust::raw_pointer_cast(d_samples.data()),
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      thrust::raw_pointer_cast(d_levels.data()),
+      num_samples,
+      env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE(expected_bytes_allocated == num_bytes);
+
+    error = cub::DeviceHistogram::HistogramRange(
+      temp_storage,
+      num_bytes,
+      thrust::raw_pointer_cast(d_samples.data()),
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      thrust::raw_pointer_cast(d_levels.data()),
+      num_samples,
+      env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    // Verify result
+    REQUIRE(d_histogram == expected);
+  };
+
+  test_with_custom_streams(test_histogram_range);
+}
+
+CUB_TEST_CASE("DeviceHistogram::MultiHistogramEven works with default environment", "[histogram][device]", CUB_SMALL)
 {
   [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
   [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
 
-  // 2 pixels: (R=0, G=2, B=1, A=255), (R=3, G=4, B=2, A=128)
-  auto d_samples = c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
-  int num_pixels = 2;
+  // 2 items: (R=0, G=2, B=1, A=255), (R=3, G=4, B=2, A=128)
+  auto d_samples      = c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
+  const int num_items = 2;
 
-  cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels            = {5, 5, 5};
-  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> lower_level = {0, 0, 0};
-  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> upper_level = {4, 4, 4};
+  const cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels            = {5, 5, 5};
+  const cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> lower_level = {0, 0, 0};
+  const cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> upper_level = {4, 4, 4};
 
   auto d_histogram_r = c2h::device_vector<int>(4, 0);
   auto d_histogram_g = c2h::device_vector<int>(4, 0);
   auto d_histogram_b = c2h::device_vector<int>(4, 0);
 
-  cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
+  const cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
     thrust::raw_pointer_cast(d_histogram_r.data()),
     thrust::raw_pointer_cast(d_histogram_g.data()),
     thrust::raw_pointer_cast(d_histogram_b.data())};
 
   REQUIRE(cudaSuccess
           == cub::DeviceHistogram::MultiHistogramEven<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
-            thrust::raw_pointer_cast(d_samples.data()), d_histogram, num_levels, lower_level, upper_level, num_pixels));
+            thrust::raw_pointer_cast(d_samples.data()), d_histogram, num_levels, lower_level, upper_level, num_items));
 
-  c2h::device_vector<int> expected_r{1, 0, 0, 1};
-  c2h::device_vector<int> expected_g{0, 0, 1, 0};
-  c2h::device_vector<int> expected_b{0, 1, 1, 0};
+  const c2h::device_vector<int> expected_r{1, 0, 0, 1};
+  const c2h::device_vector<int> expected_g{0, 0, 1, 0};
+  const c2h::device_vector<int> expected_b{0, 1, 1, 0};
   REQUIRE(d_histogram_r == expected_r);
   REQUIRE(d_histogram_g == expected_g);
   REQUIRE(d_histogram_b == expected_b);
 }
 
-TEST_CASE("DeviceHistogram::MultiHistogramRange works with default environment", "[histogram][device]")
+CUB_TEST_CASE("DeviceHistogram::MultiHistogramRange works with default environment", "[histogram][device]", CUB_SMALL)
 {
   [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
   [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
 
-  // 2 pixels: (R=0, G=2, B=1, A=255), (R=3, G=4, B=2, A=128)
-  auto d_samples = c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
-  int num_pixels = 2;
+  // 2 items: (R=0, G=2, B=1, A=255), (R=3, G=4, B=2, A=128)
+  auto d_samples      = c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
+  const int num_items = 2;
 
   auto d_levels_r = c2h::device_vector<unsigned char>{0, 2, 4};
   auto d_levels_g = c2h::device_vector<unsigned char>{0, 3, 5};
   auto d_levels_b = c2h::device_vector<unsigned char>{0, 1, 2, 3};
 
-  cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels = {3, 3, 4};
+  const cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels = {3, 3, 4};
 
-  cuda::std::array<const unsigned char*, NUM_ACTIVE_CHANNELS> d_levels = {
+  const cuda::std::array<const unsigned char*, NUM_ACTIVE_CHANNELS> d_levels = {
     thrust::raw_pointer_cast(d_levels_r.data()),
     thrust::raw_pointer_cast(d_levels_g.data()),
     thrust::raw_pointer_cast(d_levels_b.data())};
@@ -139,34 +280,34 @@ TEST_CASE("DeviceHistogram::MultiHistogramRange works with default environment",
   auto d_histogram_g = c2h::device_vector<int>(2, 0);
   auto d_histogram_b = c2h::device_vector<int>(3, 0);
 
-  cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
+  const cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
     thrust::raw_pointer_cast(d_histogram_r.data()),
     thrust::raw_pointer_cast(d_histogram_g.data()),
     thrust::raw_pointer_cast(d_histogram_b.data())};
 
   REQUIRE(cudaSuccess
           == cub::DeviceHistogram::MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
-            thrust::raw_pointer_cast(d_samples.data()), d_histogram, num_levels, d_levels, num_pixels));
+            thrust::raw_pointer_cast(d_samples.data()), d_histogram, num_levels, d_levels, num_items));
 
-  c2h::device_vector<int> expected_r{1, 1};
-  c2h::device_vector<int> expected_g{1, 1};
-  c2h::device_vector<int> expected_b{0, 1, 1};
+  const c2h::device_vector<int> expected_r{1, 1};
+  const c2h::device_vector<int> expected_g{1, 1};
+  const c2h::device_vector<int> expected_b{0, 1, 1};
   REQUIRE(d_histogram_r == expected_r);
   REQUIRE(d_histogram_g == expected_g);
   REQUIRE(d_histogram_b == expected_b);
 }
 
-TEST_CASE("DeviceHistogram::HistogramEven 2D works with default environment", "[histogram][device]")
+CUB_TEST_CASE("DeviceHistogram::HistogramEven 2D works with default environment", "[histogram][device]", CUB_SMALL)
 {
   // 2 rows, 3 samples per row, stride of 4 (1 padding element)
-  auto d_samples          = c2h::device_vector<int>{0, 1, 2, -1, 1, 2, 0, -1};
-  int num_levels          = 4;
-  int lower_level         = 0;
-  int upper_level         = 3;
-  int num_row_samples     = 3;
-  int num_rows            = 2;
-  size_t row_stride_bytes = 4 * sizeof(int);
-  auto d_histogram        = c2h::device_vector<int>(num_levels - 1, 0);
+  auto d_samples                = c2h::device_vector<int>{0, 1, 2, -1, 1, 2, 0, -1};
+  const int num_levels          = 4;
+  const int lower_level         = 0;
+  const int upper_level         = 3;
+  const int num_row_samples     = 3;
+  const int num_rows            = 2;
+  const size_t row_stride_bytes = 4 * sizeof(int);
+  auto d_histogram              = c2h::device_vector<int>(num_levels - 1, 0);
 
   REQUIRE(
     cudaSuccess
@@ -180,19 +321,19 @@ TEST_CASE("DeviceHistogram::HistogramEven 2D works with default environment", "[
       num_rows,
       row_stride_bytes));
 
-  c2h::device_vector<int> expected{2, 2, 2};
+  const c2h::device_vector<int> expected{2, 2, 2};
   REQUIRE(d_histogram == expected);
 }
 
-TEST_CASE("DeviceHistogram::HistogramRange 2D works with default environment", "[histogram][device]")
+CUB_TEST_CASE("DeviceHistogram::HistogramRange 2D works with default environment", "[histogram][device]", CUB_SMALL)
 {
-  auto d_samples          = c2h::device_vector<int>{0, 1, 2, -1, 1, 2, 0, -1};
-  auto d_levels           = c2h::device_vector<int>{0, 1, 2, 3};
-  int num_levels          = static_cast<int>(d_levels.size());
-  int num_row_samples     = 3;
-  int num_rows            = 2;
-  size_t row_stride_bytes = 4 * sizeof(int);
-  auto d_histogram        = c2h::device_vector<int>(num_levels - 1, 0);
+  auto d_samples                = c2h::device_vector<int>{0, 1, 2, -1, 1, 2, 0, -1};
+  auto d_levels                 = c2h::device_vector<int>{0, 1, 2, 3};
+  const int num_levels          = static_cast<int>(d_levels.size());
+  const int num_row_samples     = 3;
+  const int num_rows            = 2;
+  const size_t row_stride_bytes = 4 * sizeof(int);
+  auto d_histogram              = c2h::device_vector<int>(num_levels - 1, 0);
 
   REQUIRE(
     cudaSuccess
@@ -205,34 +346,34 @@ TEST_CASE("DeviceHistogram::HistogramRange 2D works with default environment", "
       num_rows,
       row_stride_bytes));
 
-  c2h::device_vector<int> expected{2, 2, 2};
+  const c2h::device_vector<int> expected{2, 2, 2};
   REQUIRE(d_histogram == expected);
 }
 
-TEST_CASE("DeviceHistogram::MultiHistogramEven 2D works with default environment", "[histogram][device]")
+CUB_TEST_CASE("DeviceHistogram::MultiHistogramEven 2D works with default environment", "[histogram][device]", CUB_SMALL)
 {
   [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
   [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
 
-  // 2 rows, 2 pixels per row, stride includes 1 extra pixel of padding
+  // 2 rows, 2 items per row, stride includes 1 extra item of padding
   // Row 0: (R=0, G=2, B=1, A=255), (R=3, G=4, B=2, A=128), (PAD, PAD, PAD, PAD)
   // Row 1: (R=1, G=1, B=3, A=200), (R=2, G=3, B=0, A=100), (PAD, PAD, PAD, PAD)
   auto d_samples =
     c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128, 0, 0, 0, 0, 1, 1, 3, 200, 2, 3, 0, 100, 0, 0, 0, 0};
 
-  int num_row_pixels      = 2;
-  int num_rows            = 2;
-  size_t row_stride_bytes = 3 * NUM_CHANNELS * sizeof(unsigned char); // 3 pixels wide, 2 used
+  const int num_row_items       = 2;
+  const int num_rows            = 2;
+  const size_t row_stride_bytes = 3 * NUM_CHANNELS * sizeof(unsigned char); // 3 items wide, 2 used
 
-  cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels            = {5, 5, 5};
-  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> lower_level = {0, 0, 0};
-  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> upper_level = {4, 4, 4};
+  const cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels            = {5, 5, 5};
+  const cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> lower_level = {0, 0, 0};
+  const cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> upper_level = {4, 4, 4};
 
   auto d_histogram_r = c2h::device_vector<int>(4, 0);
   auto d_histogram_g = c2h::device_vector<int>(4, 0);
   auto d_histogram_b = c2h::device_vector<int>(4, 0);
 
-  cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
+  const cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
     thrust::raw_pointer_cast(d_histogram_r.data()),
     thrust::raw_pointer_cast(d_histogram_g.data()),
     thrust::raw_pointer_cast(d_histogram_b.data())};
@@ -245,22 +386,22 @@ TEST_CASE("DeviceHistogram::MultiHistogramEven 2D works with default environment
       num_levels,
       lower_level,
       upper_level,
-      num_row_pixels,
+      num_row_items,
       num_rows,
       row_stride_bytes));
 
   // R: 0,3,1,2 → bin[0]=1, bin[1]=1, bin[2]=1, bin[3]=1
-  c2h::device_vector<int> expected_r{1, 1, 1, 1};
+  const c2h::device_vector<int> expected_r{1, 1, 1, 1};
   // G: 2,4,1,3 → bin[1]=1, bin[2]=1, bin[3]=1 (4 out of range)
-  c2h::device_vector<int> expected_g{0, 1, 1, 1};
+  const c2h::device_vector<int> expected_g{0, 1, 1, 1};
   // B: 1,2,3,0 → bin[0]=1, bin[1]=1, bin[2]=1, bin[3]=1
-  c2h::device_vector<int> expected_b{1, 1, 1, 1};
+  const c2h::device_vector<int> expected_b{1, 1, 1, 1};
   REQUIRE(d_histogram_r == expected_r);
   REQUIRE(d_histogram_g == expected_g);
   REQUIRE(d_histogram_b == expected_b);
 }
 
-TEST_CASE("DeviceHistogram::MultiHistogramRange 2D works with default environment", "[histogram][device]")
+CUB_TEST_CASE("DeviceHistogram::MultiHistogramRange 2D works with default environment", "[histogram][device]", CUB_SMALL)
 {
   [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
   [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
@@ -269,17 +410,17 @@ TEST_CASE("DeviceHistogram::MultiHistogramRange 2D works with default environmen
   auto d_samples =
     c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128, 0, 0, 0, 0, 1, 1, 3, 200, 2, 3, 0, 100, 0, 0, 0, 0};
 
-  int num_row_pixels      = 2;
-  int num_rows            = 2;
-  size_t row_stride_bytes = 3 * NUM_CHANNELS * sizeof(unsigned char);
+  const int num_row_items       = 2;
+  const int num_rows            = 2;
+  const size_t row_stride_bytes = 3 * NUM_CHANNELS * sizeof(unsigned char);
 
   auto d_levels_r = c2h::device_vector<unsigned char>{0, 2, 4};
   auto d_levels_g = c2h::device_vector<unsigned char>{0, 3, 5};
   auto d_levels_b = c2h::device_vector<unsigned char>{0, 1, 2, 3};
 
-  cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels = {3, 3, 4};
+  const cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels = {3, 3, 4};
 
-  cuda::std::array<const unsigned char*, NUM_ACTIVE_CHANNELS> d_levels = {
+  const cuda::std::array<const unsigned char*, NUM_ACTIVE_CHANNELS> d_levels = {
     thrust::raw_pointer_cast(d_levels_r.data()),
     thrust::raw_pointer_cast(d_levels_g.data()),
     thrust::raw_pointer_cast(d_levels_b.data())};
@@ -288,7 +429,7 @@ TEST_CASE("DeviceHistogram::MultiHistogramRange 2D works with default environmen
   auto d_histogram_g = c2h::device_vector<int>(2, 0);
   auto d_histogram_b = c2h::device_vector<int>(3, 0);
 
-  cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
+  const cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
     thrust::raw_pointer_cast(d_histogram_r.data()),
     thrust::raw_pointer_cast(d_histogram_g.data()),
     thrust::raw_pointer_cast(d_histogram_b.data())};
@@ -300,16 +441,16 @@ TEST_CASE("DeviceHistogram::MultiHistogramRange 2D works with default environmen
       d_histogram,
       num_levels,
       d_levels,
-      num_row_pixels,
+      num_row_items,
       num_rows,
       row_stride_bytes));
 
   // R: 0,3,1,2 → [0,2)=2, [2,4)=2
-  c2h::device_vector<int> expected_r{2, 2};
+  const c2h::device_vector<int> expected_r{2, 2};
   // G: 2,4,1,3 → [0,3)=2, [3,5)=2
-  c2h::device_vector<int> expected_g{2, 2};
+  const c2h::device_vector<int> expected_g{2, 2};
   // B: 1,2,3,0 → [0,1)=1, [1,2)=1, [2,3)=1 (3 out of range)
-  c2h::device_vector<int> expected_b{1, 1, 1};
+  const c2h::device_vector<int> expected_b{1, 1, 1};
   REQUIRE(d_histogram_r == expected_r);
   REQUIRE(d_histogram_g == expected_g);
   REQUIRE(d_histogram_b == expected_b);
@@ -317,14 +458,14 @@ TEST_CASE("DeviceHistogram::MultiHistogramRange 2D works with default environmen
 
 #endif
 
-C2H_TEST("DeviceHistogram::HistogramEven uses environment", "[histogram][device]")
+CUB_TEST("DeviceHistogram::HistogramEven uses environment", "[histogram][device]", CUB_SMALL)
 {
-  auto d_samples   = c2h::device_vector<int>{0, 2, 1, 0, 3, 4, 2, 1};
-  int num_samples  = static_cast<int>(d_samples.size());
-  int num_levels   = 6;
-  int lower_level  = 0;
-  int upper_level  = 5;
-  auto d_histogram = c2h::device_vector<int>(num_levels - 1, 0);
+  auto d_samples        = c2h::device_vector<int>{0, 2, 1, 0, 3, 4, 2, 1};
+  const int num_samples = static_cast<int>(d_samples.size());
+  const int num_levels  = 6;
+  const int lower_level = 0;
+  const int upper_level = 5;
+  auto d_histogram      = c2h::device_vector<int>(num_levels - 1, 0);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -350,18 +491,18 @@ C2H_TEST("DeviceHistogram::HistogramEven uses environment", "[histogram][device]
     num_samples,
     env);
 
-  c2h::device_vector<int> expected{2, 2, 2, 1, 1};
+  const c2h::device_vector<int> expected{2, 2, 2, 1, 1};
   REQUIRE(d_histogram == expected);
 }
 
-TEST_CASE("DeviceHistogram::HistogramEven uses custom stream", "[histogram][device]")
+CUB_TEST_CASE("DeviceHistogram::HistogramEven uses custom stream", "[histogram][device]", CUB_SMALL)
 {
-  auto d_samples   = c2h::device_vector<int>{0, 2, 1, 0, 3, 4, 2, 1};
-  int num_samples  = static_cast<int>(d_samples.size());
-  int num_levels   = 6;
-  int lower_level  = 0;
-  int upper_level  = 5;
-  auto d_histogram = c2h::device_vector<int>(num_levels - 1, 0);
+  auto d_samples        = c2h::device_vector<int>{0, 2, 1, 0, 3, 4, 2, 1};
+  const int num_samples = static_cast<int>(d_samples.size());
+  const int num_levels  = 6;
+  const int lower_level = 0;
+  const int upper_level = 5;
+  auto d_histogram      = c2h::device_vector<int>(num_levels - 1, 0);
 
   cudaStream_t custom_stream;
   REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
@@ -393,19 +534,19 @@ TEST_CASE("DeviceHistogram::HistogramEven uses custom stream", "[histogram][devi
 
   REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
 
-  c2h::device_vector<int> expected{2, 2, 2, 1, 1};
+  const c2h::device_vector<int> expected{2, 2, 2, 1, 1};
   REQUIRE(d_histogram == expected);
 
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
-C2H_TEST("DeviceHistogram::HistogramRange uses environment", "[histogram][device]")
+CUB_TEST("DeviceHistogram::HistogramRange uses environment", "[histogram][device]", CUB_SMALL)
 {
-  auto d_samples   = c2h::device_vector<float>{2.2f, 6.1f, 7.5f, 2.9f, 3.5f, 0.3f, 2.9f, 2.1f};
-  int num_samples  = static_cast<int>(d_samples.size());
-  auto d_levels    = c2h::device_vector<float>{0.0f, 2.0f, 4.0f, 6.0f, 8.0f};
-  int num_levels   = static_cast<int>(d_levels.size());
-  auto d_histogram = c2h::device_vector<int>(num_levels - 1, 0);
+  auto d_samples        = c2h::device_vector<float>{2.2f, 6.1f, 7.5f, 2.9f, 3.5f, 0.3f, 2.9f, 2.1f};
+  const int num_samples = static_cast<int>(d_samples.size());
+  auto d_levels         = c2h::device_vector<float>{0.0f, 2.0f, 4.0f, 6.0f, 8.0f};
+  const int num_levels  = static_cast<int>(d_levels.size());
+  auto d_histogram      = c2h::device_vector<int>(num_levels - 1, 0);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -429,17 +570,17 @@ C2H_TEST("DeviceHistogram::HistogramRange uses environment", "[histogram][device
     num_samples,
     env);
 
-  c2h::device_vector<int> expected{1, 5, 0, 2};
+  const c2h::device_vector<int> expected{1, 5, 0, 2};
   REQUIRE(d_histogram == expected);
 }
 
-TEST_CASE("DeviceHistogram::HistogramRange uses custom stream", "[histogram][device]")
+CUB_TEST_CASE("DeviceHistogram::HistogramRange uses custom stream", "[histogram][device]", CUB_SMALL)
 {
-  auto d_samples   = c2h::device_vector<float>{2.2f, 6.1f, 7.5f, 2.9f, 3.5f, 0.3f, 2.9f, 2.1f};
-  int num_samples  = static_cast<int>(d_samples.size());
-  auto d_levels    = c2h::device_vector<float>{0.0f, 2.0f, 4.0f, 6.0f, 8.0f};
-  int num_levels   = static_cast<int>(d_levels.size());
-  auto d_histogram = c2h::device_vector<int>(num_levels - 1, 0);
+  auto d_samples        = c2h::device_vector<float>{2.2f, 6.1f, 7.5f, 2.9f, 3.5f, 0.3f, 2.9f, 2.1f};
+  const int num_samples = static_cast<int>(d_samples.size());
+  auto d_levels         = c2h::device_vector<float>{0.0f, 2.0f, 4.0f, 6.0f, 8.0f};
+  const int num_levels  = static_cast<int>(d_levels.size());
+  auto d_histogram      = c2h::device_vector<int>(num_levels - 1, 0);
 
   cudaStream_t custom_stream;
   REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
@@ -469,29 +610,29 @@ TEST_CASE("DeviceHistogram::HistogramRange uses custom stream", "[histogram][dev
 
   REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
 
-  c2h::device_vector<int> expected{1, 5, 0, 2};
+  const c2h::device_vector<int> expected{1, 5, 0, 2};
   REQUIRE(d_histogram == expected);
 
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
-C2H_TEST("DeviceHistogram::MultiHistogramEven uses environment", "[histogram][device]")
+CUB_TEST("DeviceHistogram::MultiHistogramEven uses environment", "[histogram][device]", CUB_SMALL)
 {
   [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
   [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
 
-  auto d_samples = c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
-  int num_pixels = 2;
+  auto d_samples      = c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
+  const int num_items = 2;
 
-  cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels            = {5, 5, 5};
-  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> lower_level = {0, 0, 0};
-  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> upper_level = {4, 4, 4};
+  const cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels            = {5, 5, 5};
+  const cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> lower_level = {0, 0, 0};
+  const cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> upper_level = {4, 4, 4};
 
   auto d_histogram_r = c2h::device_vector<int>(4, 0);
   auto d_histogram_g = c2h::device_vector<int>(4, 0);
   auto d_histogram_b = c2h::device_vector<int>(4, 0);
 
-  cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
+  const cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
     thrust::raw_pointer_cast(d_histogram_r.data()),
     thrust::raw_pointer_cast(d_histogram_g.data()),
     thrust::raw_pointer_cast(d_histogram_b.data())};
@@ -507,38 +648,38 @@ C2H_TEST("DeviceHistogram::MultiHistogramEven uses environment", "[histogram][de
       num_levels,
       lower_level,
       upper_level,
-      num_pixels));
+      num_items));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
   multi_histogram_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
-    thrust::raw_pointer_cast(d_samples.data()), d_histogram, num_levels, lower_level, upper_level, num_pixels, env);
+    thrust::raw_pointer_cast(d_samples.data()), d_histogram, num_levels, lower_level, upper_level, num_items, env);
 
-  c2h::device_vector<int> expected_r{1, 0, 0, 1};
-  c2h::device_vector<int> expected_g{0, 0, 1, 0};
-  c2h::device_vector<int> expected_b{0, 1, 1, 0};
+  const c2h::device_vector<int> expected_r{1, 0, 0, 1};
+  const c2h::device_vector<int> expected_g{0, 0, 1, 0};
+  const c2h::device_vector<int> expected_b{0, 1, 1, 0};
   REQUIRE(d_histogram_r == expected_r);
   REQUIRE(d_histogram_g == expected_g);
   REQUIRE(d_histogram_b == expected_b);
 }
 
-TEST_CASE("DeviceHistogram::MultiHistogramEven uses custom stream", "[histogram][device]")
+CUB_TEST_CASE("DeviceHistogram::MultiHistogramEven uses custom stream", "[histogram][device]", CUB_SMALL)
 {
   [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
   [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
 
-  auto d_samples = c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
-  int num_pixels = 2;
+  auto d_samples      = c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
+  const int num_items = 2;
 
-  cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels            = {5, 5, 5};
-  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> lower_level = {0, 0, 0};
-  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> upper_level = {4, 4, 4};
+  const cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels            = {5, 5, 5};
+  const cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> lower_level = {0, 0, 0};
+  const cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> upper_level = {4, 4, 4};
 
   auto d_histogram_r = c2h::device_vector<int>(4, 0);
   auto d_histogram_g = c2h::device_vector<int>(4, 0);
   auto d_histogram_b = c2h::device_vector<int>(4, 0);
 
-  cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
+  const cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
     thrust::raw_pointer_cast(d_histogram_r.data()),
     thrust::raw_pointer_cast(d_histogram_g.data()),
     thrust::raw_pointer_cast(d_histogram_b.data())};
@@ -557,19 +698,19 @@ TEST_CASE("DeviceHistogram::MultiHistogramEven uses custom stream", "[histogram]
       num_levels,
       lower_level,
       upper_level,
-      num_pixels));
+      num_items));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
 
   multi_histogram_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
-    thrust::raw_pointer_cast(d_samples.data()), d_histogram, num_levels, lower_level, upper_level, num_pixels, env);
+    thrust::raw_pointer_cast(d_samples.data()), d_histogram, num_levels, lower_level, upper_level, num_items, env);
 
   REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
 
-  c2h::device_vector<int> expected_r{1, 0, 0, 1};
-  c2h::device_vector<int> expected_g{0, 0, 1, 0};
-  c2h::device_vector<int> expected_b{0, 1, 1, 0};
+  const c2h::device_vector<int> expected_r{1, 0, 0, 1};
+  const c2h::device_vector<int> expected_g{0, 0, 1, 0};
+  const c2h::device_vector<int> expected_b{0, 1, 1, 0};
   REQUIRE(d_histogram_r == expected_r);
   REQUIRE(d_histogram_g == expected_g);
   REQUIRE(d_histogram_b == expected_b);
@@ -577,13 +718,16 @@ TEST_CASE("DeviceHistogram::MultiHistogramEven uses custom stream", "[histogram]
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
-C2H_TEST("DeviceHistogram::MultiHistogramRange uses environment", "[histogram][device]")
+#if TEST_LAUNCH == 0
+CUB_TEST("DeviceHistogram::MultiHistogramRange works with user provided memory and environment",
+         "[histogram][device]",
+         CUB_SMALL)
 {
   [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
   [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
 
   auto d_samples = c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
-  int num_pixels = 2;
+  int num_items  = 2;
 
   auto d_levels_r = c2h::device_vector<unsigned char>{0, 2, 4};
   auto d_levels_g = c2h::device_vector<unsigned char>{0, 3, 5};
@@ -605,6 +749,86 @@ C2H_TEST("DeviceHistogram::MultiHistogramRange uses environment", "[histogram][d
     thrust::raw_pointer_cast(d_histogram_g.data()),
     thrust::raw_pointer_cast(d_histogram_b.data())};
 
+  const c2h::device_vector<int> expected_r{1, 1};
+  const c2h::device_vector<int> expected_g{1, 1};
+  const c2h::device_vector<int> expected_b{0, 1, 1};
+
+  size_t expected_bytes_allocated{};
+  auto error = cub::DeviceHistogram::MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+    nullptr,
+    expected_bytes_allocated,
+    thrust::raw_pointer_cast(d_samples.data()),
+    d_histogram,
+    num_levels,
+    d_levels,
+    num_items);
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  auto d_temp        = c2h::device_vector<uint8_t>(expected_bytes_allocated, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(d_temp.data());
+
+  auto test_multi_histogram_range = [&](const auto& env) {
+    size_t num_bytes = 0;
+    error            = cub::DeviceHistogram::MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+      nullptr, num_bytes, thrust::raw_pointer_cast(d_samples.data()), d_histogram, num_levels, d_levels, num_items, env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE(expected_bytes_allocated == num_bytes);
+
+    error = cub::DeviceHistogram::MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+      temp_storage,
+      num_bytes,
+      thrust::raw_pointer_cast(d_samples.data()),
+      d_histogram,
+      num_levels,
+      d_levels,
+      num_items,
+      env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    // Verify result
+    REQUIRE(d_histogram_r == expected_r);
+    REQUIRE(d_histogram_g == expected_g);
+    REQUIRE(d_histogram_b == expected_b);
+  };
+
+  test_with_custom_streams(test_multi_histogram_range);
+}
+#endif // TEST_LAUNCH == 0
+
+CUB_TEST("DeviceHistogram::MultiHistogramRange uses environment", "[histogram][device]", CUB_SMALL)
+{
+  [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
+  [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
+
+  auto d_samples      = c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
+  const int num_items = 2;
+
+  auto d_levels_r = c2h::device_vector<unsigned char>{0, 2, 4};
+  auto d_levels_g = c2h::device_vector<unsigned char>{0, 3, 5};
+  auto d_levels_b = c2h::device_vector<unsigned char>{0, 1, 2, 3};
+
+  const cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels = {3, 3, 4};
+
+  const cuda::std::array<const unsigned char*, NUM_ACTIVE_CHANNELS> d_levels = {
+    thrust::raw_pointer_cast(d_levels_r.data()),
+    thrust::raw_pointer_cast(d_levels_g.data()),
+    thrust::raw_pointer_cast(d_levels_b.data())};
+
+  auto d_histogram_r = c2h::device_vector<int>(2, 0);
+  auto d_histogram_g = c2h::device_vector<int>(2, 0);
+  auto d_histogram_b = c2h::device_vector<int>(3, 0);
+
+  const cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
+    thrust::raw_pointer_cast(d_histogram_r.data()),
+    thrust::raw_pointer_cast(d_histogram_g.data()),
+    thrust::raw_pointer_cast(d_histogram_b.data())};
+
   size_t expected_bytes_allocated{};
   REQUIRE(
     cudaSuccess
@@ -615,36 +839,36 @@ C2H_TEST("DeviceHistogram::MultiHistogramRange uses environment", "[histogram][d
       d_histogram,
       num_levels,
       d_levels,
-      num_pixels));
+      num_items));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
   multi_histogram_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
-    thrust::raw_pointer_cast(d_samples.data()), d_histogram, num_levels, d_levels, num_pixels, env);
+    thrust::raw_pointer_cast(d_samples.data()), d_histogram, num_levels, d_levels, num_items, env);
 
-  c2h::device_vector<int> expected_r{1, 1};
-  c2h::device_vector<int> expected_g{1, 1};
-  c2h::device_vector<int> expected_b{0, 1, 1};
+  const c2h::device_vector<int> expected_r{1, 1};
+  const c2h::device_vector<int> expected_g{1, 1};
+  const c2h::device_vector<int> expected_b{0, 1, 1};
   REQUIRE(d_histogram_r == expected_r);
   REQUIRE(d_histogram_g == expected_g);
   REQUIRE(d_histogram_b == expected_b);
 }
 
-TEST_CASE("DeviceHistogram::MultiHistogramRange uses custom stream", "[histogram][device]")
+CUB_TEST_CASE("DeviceHistogram::MultiHistogramRange uses custom stream", "[histogram][device]", CUB_SMALL)
 {
   [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
   [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
 
-  auto d_samples = c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
-  int num_pixels = 2;
+  auto d_samples      = c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
+  const int num_items = 2;
 
   auto d_levels_r = c2h::device_vector<unsigned char>{0, 2, 4};
   auto d_levels_g = c2h::device_vector<unsigned char>{0, 3, 5};
   auto d_levels_b = c2h::device_vector<unsigned char>{0, 1, 2, 3};
 
-  cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels = {3, 3, 4};
+  const cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels = {3, 3, 4};
 
-  cuda::std::array<const unsigned char*, NUM_ACTIVE_CHANNELS> d_levels = {
+  const cuda::std::array<const unsigned char*, NUM_ACTIVE_CHANNELS> d_levels = {
     thrust::raw_pointer_cast(d_levels_r.data()),
     thrust::raw_pointer_cast(d_levels_g.data()),
     thrust::raw_pointer_cast(d_levels_b.data())};
@@ -653,7 +877,7 @@ TEST_CASE("DeviceHistogram::MultiHistogramRange uses custom stream", "[histogram
   auto d_histogram_g = c2h::device_vector<int>(2, 0);
   auto d_histogram_b = c2h::device_vector<int>(3, 0);
 
-  cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
+  const cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
     thrust::raw_pointer_cast(d_histogram_r.data()),
     thrust::raw_pointer_cast(d_histogram_g.data()),
     thrust::raw_pointer_cast(d_histogram_b.data())};
@@ -671,19 +895,19 @@ TEST_CASE("DeviceHistogram::MultiHistogramRange uses custom stream", "[histogram
       d_histogram,
       num_levels,
       d_levels,
-      num_pixels));
+      num_items));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
 
   multi_histogram_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
-    thrust::raw_pointer_cast(d_samples.data()), d_histogram, num_levels, d_levels, num_pixels, env);
+    thrust::raw_pointer_cast(d_samples.data()), d_histogram, num_levels, d_levels, num_items, env);
 
   REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
 
-  c2h::device_vector<int> expected_r{1, 1};
-  c2h::device_vector<int> expected_g{1, 1};
-  c2h::device_vector<int> expected_b{0, 1, 1};
+  const c2h::device_vector<int> expected_r{1, 1};
+  const c2h::device_vector<int> expected_g{1, 1};
+  const c2h::device_vector<int> expected_b{0, 1, 1};
   REQUIRE(d_histogram_r == expected_r);
   REQUIRE(d_histogram_g == expected_g);
   REQUIRE(d_histogram_b == expected_b);
@@ -691,16 +915,16 @@ TEST_CASE("DeviceHistogram::MultiHistogramRange uses custom stream", "[histogram
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
-C2H_TEST("DeviceHistogram::HistogramEven 2D uses environment", "[histogram][device]")
+CUB_TEST("DeviceHistogram::HistogramEven 2D uses environment", "[histogram][device]", CUB_SMALL)
 {
-  auto d_samples          = c2h::device_vector<int>{0, 1, 2, -1, 1, 2, 0, -1};
-  int num_levels          = 4;
-  int lower_level         = 0;
-  int upper_level         = 3;
-  int num_row_samples     = 3;
-  int num_rows            = 2;
-  size_t row_stride_bytes = 4 * sizeof(int);
-  auto d_histogram        = c2h::device_vector<int>(num_levels - 1, 0);
+  auto d_samples                = c2h::device_vector<int>{0, 1, 2, -1, 1, 2, 0, -1};
+  const int num_levels          = 4;
+  const int lower_level         = 0;
+  const int upper_level         = 3;
+  const int num_row_samples     = 3;
+  const int num_rows            = 2;
+  const size_t row_stride_bytes = 4 * sizeof(int);
+  auto d_histogram              = c2h::device_vector<int>(num_levels - 1, 0);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -730,20 +954,20 @@ C2H_TEST("DeviceHistogram::HistogramEven 2D uses environment", "[histogram][devi
     row_stride_bytes,
     env);
 
-  c2h::device_vector<int> expected{2, 2, 2};
+  const c2h::device_vector<int> expected{2, 2, 2};
   REQUIRE(d_histogram == expected);
 }
 
-TEST_CASE("DeviceHistogram::HistogramEven 2D uses custom stream", "[histogram][device]")
+CUB_TEST_CASE("DeviceHistogram::HistogramEven 2D uses custom stream", "[histogram][device]", CUB_SMALL)
 {
-  auto d_samples          = c2h::device_vector<int>{0, 1, 2, -1, 1, 2, 0, -1};
-  int num_levels          = 4;
-  int lower_level         = 0;
-  int upper_level         = 3;
-  int num_row_samples     = 3;
-  int num_rows            = 2;
-  size_t row_stride_bytes = 4 * sizeof(int);
-  auto d_histogram        = c2h::device_vector<int>(num_levels - 1, 0);
+  auto d_samples                = c2h::device_vector<int>{0, 1, 2, -1, 1, 2, 0, -1};
+  const int num_levels          = 4;
+  const int lower_level         = 0;
+  const int upper_level         = 3;
+  const int num_row_samples     = 3;
+  const int num_rows            = 2;
+  const size_t row_stride_bytes = 4 * sizeof(int);
+  auto d_histogram              = c2h::device_vector<int>(num_levels - 1, 0);
 
   cudaStream_t custom_stream;
   REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
@@ -779,21 +1003,21 @@ TEST_CASE("DeviceHistogram::HistogramEven 2D uses custom stream", "[histogram][d
 
   REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
 
-  c2h::device_vector<int> expected{2, 2, 2};
+  const c2h::device_vector<int> expected{2, 2, 2};
   REQUIRE(d_histogram == expected);
 
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
-C2H_TEST("DeviceHistogram::HistogramRange 2D uses environment", "[histogram][device]")
+CUB_TEST("DeviceHistogram::HistogramRange 2D uses environment", "[histogram][device]", CUB_SMALL)
 {
-  auto d_samples          = c2h::device_vector<int>{0, 1, 2, -1, 1, 2, 0, -1};
-  auto d_levels           = c2h::device_vector<int>{0, 1, 2, 3};
-  int num_levels          = static_cast<int>(d_levels.size());
-  int num_row_samples     = 3;
-  int num_rows            = 2;
-  size_t row_stride_bytes = 4 * sizeof(int);
-  auto d_histogram        = c2h::device_vector<int>(num_levels - 1, 0);
+  auto d_samples                = c2h::device_vector<int>{0, 1, 2, -1, 1, 2, 0, -1};
+  auto d_levels                 = c2h::device_vector<int>{0, 1, 2, 3};
+  const int num_levels          = static_cast<int>(d_levels.size());
+  const int num_row_samples     = 3;
+  const int num_rows            = 2;
+  const size_t row_stride_bytes = 4 * sizeof(int);
+  auto d_histogram              = c2h::device_vector<int>(num_levels - 1, 0);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -821,19 +1045,19 @@ C2H_TEST("DeviceHistogram::HistogramRange 2D uses environment", "[histogram][dev
     row_stride_bytes,
     env);
 
-  c2h::device_vector<int> expected{2, 2, 2};
+  const c2h::device_vector<int> expected{2, 2, 2};
   REQUIRE(d_histogram == expected);
 }
 
-TEST_CASE("DeviceHistogram::HistogramRange 2D uses custom stream", "[histogram][device]")
+CUB_TEST_CASE("DeviceHistogram::HistogramRange 2D uses custom stream", "[histogram][device]", CUB_SMALL)
 {
-  auto d_samples          = c2h::device_vector<int>{0, 1, 2, -1, 1, 2, 0, -1};
-  auto d_levels           = c2h::device_vector<int>{0, 1, 2, 3};
-  int num_levels          = static_cast<int>(d_levels.size());
-  int num_row_samples     = 3;
-  int num_rows            = 2;
-  size_t row_stride_bytes = 4 * sizeof(int);
-  auto d_histogram        = c2h::device_vector<int>(num_levels - 1, 0);
+  auto d_samples                = c2h::device_vector<int>{0, 1, 2, -1, 1, 2, 0, -1};
+  auto d_levels                 = c2h::device_vector<int>{0, 1, 2, 3};
+  const int num_levels          = static_cast<int>(d_levels.size());
+  const int num_row_samples     = 3;
+  const int num_rows            = 2;
+  const size_t row_stride_bytes = 4 * sizeof(int);
+  auto d_histogram              = c2h::device_vector<int>(num_levels - 1, 0);
 
   cudaStream_t custom_stream;
   REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
@@ -867,13 +1091,13 @@ TEST_CASE("DeviceHistogram::HistogramRange 2D uses custom stream", "[histogram][
 
   REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
 
-  c2h::device_vector<int> expected{2, 2, 2};
+  const c2h::device_vector<int> expected{2, 2, 2};
   REQUIRE(d_histogram == expected);
 
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
-C2H_TEST("DeviceHistogram::MultiHistogramEven 2D uses environment", "[histogram][device]")
+CUB_TEST("DeviceHistogram::MultiHistogramEven 2D uses environment", "[histogram][device]", CUB_SMALL)
 {
   [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
   [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
@@ -881,19 +1105,19 @@ C2H_TEST("DeviceHistogram::MultiHistogramEven 2D uses environment", "[histogram]
   auto d_samples =
     c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128, 0, 0, 0, 0, 1, 1, 3, 200, 2, 3, 0, 100, 0, 0, 0, 0};
 
-  int num_row_pixels      = 2;
-  int num_rows            = 2;
-  size_t row_stride_bytes = 3 * NUM_CHANNELS * sizeof(unsigned char);
+  const int num_row_items       = 2;
+  const int num_rows            = 2;
+  const size_t row_stride_bytes = 3 * NUM_CHANNELS * sizeof(unsigned char);
 
-  cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels            = {5, 5, 5};
-  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> lower_level = {0, 0, 0};
-  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> upper_level = {4, 4, 4};
+  const cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels            = {5, 5, 5};
+  const cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> lower_level = {0, 0, 0};
+  const cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> upper_level = {4, 4, 4};
 
   auto d_histogram_r = c2h::device_vector<int>(4, 0);
   auto d_histogram_g = c2h::device_vector<int>(4, 0);
   auto d_histogram_b = c2h::device_vector<int>(4, 0);
 
-  cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
+  const cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
     thrust::raw_pointer_cast(d_histogram_r.data()),
     thrust::raw_pointer_cast(d_histogram_g.data()),
     thrust::raw_pointer_cast(d_histogram_b.data())};
@@ -909,7 +1133,7 @@ C2H_TEST("DeviceHistogram::MultiHistogramEven 2D uses environment", "[histogram]
       num_levels,
       lower_level,
       upper_level,
-      num_row_pixels,
+      num_row_items,
       num_rows,
       row_stride_bytes));
 
@@ -921,20 +1145,20 @@ C2H_TEST("DeviceHistogram::MultiHistogramEven 2D uses environment", "[histogram]
     num_levels,
     lower_level,
     upper_level,
-    num_row_pixels,
+    num_row_items,
     num_rows,
     row_stride_bytes,
     env);
 
-  c2h::device_vector<int> expected_r{1, 1, 1, 1};
-  c2h::device_vector<int> expected_g{0, 1, 1, 1};
-  c2h::device_vector<int> expected_b{1, 1, 1, 1};
+  const c2h::device_vector<int> expected_r{1, 1, 1, 1};
+  const c2h::device_vector<int> expected_g{0, 1, 1, 1};
+  const c2h::device_vector<int> expected_b{1, 1, 1, 1};
   REQUIRE(d_histogram_r == expected_r);
   REQUIRE(d_histogram_g == expected_g);
   REQUIRE(d_histogram_b == expected_b);
 }
 
-TEST_CASE("DeviceHistogram::MultiHistogramEven 2D uses custom stream", "[histogram][device]")
+CUB_TEST_CASE("DeviceHistogram::MultiHistogramEven 2D uses custom stream", "[histogram][device]", CUB_SMALL)
 {
   [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
   [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
@@ -942,19 +1166,19 @@ TEST_CASE("DeviceHistogram::MultiHistogramEven 2D uses custom stream", "[histogr
   auto d_samples =
     c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128, 0, 0, 0, 0, 1, 1, 3, 200, 2, 3, 0, 100, 0, 0, 0, 0};
 
-  int num_row_pixels      = 2;
-  int num_rows            = 2;
-  size_t row_stride_bytes = 3 * NUM_CHANNELS * sizeof(unsigned char);
+  const int num_row_items       = 2;
+  const int num_rows            = 2;
+  const size_t row_stride_bytes = 3 * NUM_CHANNELS * sizeof(unsigned char);
 
-  cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels            = {5, 5, 5};
-  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> lower_level = {0, 0, 0};
-  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> upper_level = {4, 4, 4};
+  const cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels            = {5, 5, 5};
+  const cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> lower_level = {0, 0, 0};
+  const cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> upper_level = {4, 4, 4};
 
   auto d_histogram_r = c2h::device_vector<int>(4, 0);
   auto d_histogram_g = c2h::device_vector<int>(4, 0);
   auto d_histogram_b = c2h::device_vector<int>(4, 0);
 
-  cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
+  const cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
     thrust::raw_pointer_cast(d_histogram_r.data()),
     thrust::raw_pointer_cast(d_histogram_g.data()),
     thrust::raw_pointer_cast(d_histogram_b.data())};
@@ -973,7 +1197,7 @@ TEST_CASE("DeviceHistogram::MultiHistogramEven 2D uses custom stream", "[histogr
       num_levels,
       lower_level,
       upper_level,
-      num_row_pixels,
+      num_row_items,
       num_rows,
       row_stride_bytes));
 
@@ -986,16 +1210,16 @@ TEST_CASE("DeviceHistogram::MultiHistogramEven 2D uses custom stream", "[histogr
     num_levels,
     lower_level,
     upper_level,
-    num_row_pixels,
+    num_row_items,
     num_rows,
     row_stride_bytes,
     env);
 
   REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
 
-  c2h::device_vector<int> expected_r{1, 1, 1, 1};
-  c2h::device_vector<int> expected_g{0, 1, 1, 1};
-  c2h::device_vector<int> expected_b{1, 1, 1, 1};
+  const c2h::device_vector<int> expected_r{1, 1, 1, 1};
+  const c2h::device_vector<int> expected_g{0, 1, 1, 1};
+  const c2h::device_vector<int> expected_b{1, 1, 1, 1};
   REQUIRE(d_histogram_r == expected_r);
   REQUIRE(d_histogram_g == expected_g);
   REQUIRE(d_histogram_b == expected_b);
@@ -1003,7 +1227,10 @@ TEST_CASE("DeviceHistogram::MultiHistogramEven 2D uses custom stream", "[histogr
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
-C2H_TEST("DeviceHistogram::MultiHistogramRange 2D uses environment", "[histogram][device]")
+#if TEST_LAUNCH == 0
+CUB_TEST_CASE("DeviceHistogram::MultiHistogramEven works with user provided memory and environment",
+              "[histogram][device]",
+              CUB_SMALL)
 {
   [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
   [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
@@ -1011,17 +1238,110 @@ C2H_TEST("DeviceHistogram::MultiHistogramRange 2D uses environment", "[histogram
   auto d_samples =
     c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128, 0, 0, 0, 0, 1, 1, 3, 200, 2, 3, 0, 100, 0, 0, 0, 0};
 
-  int num_row_pixels      = 2;
+  int num_row_items       = 2;
   int num_rows            = 2;
   size_t row_stride_bytes = 3 * NUM_CHANNELS * sizeof(unsigned char);
+
+  cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels            = {5, 5, 5};
+  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> lower_level = {0, 0, 0};
+  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> upper_level = {4, 4, 4};
+
+  auto d_histogram_r = c2h::device_vector<int>(4, 0);
+  auto d_histogram_g = c2h::device_vector<int>(4, 0);
+  auto d_histogram_b = c2h::device_vector<int>(4, 0);
+
+  cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
+    thrust::raw_pointer_cast(d_histogram_r.data()),
+    thrust::raw_pointer_cast(d_histogram_g.data()),
+    thrust::raw_pointer_cast(d_histogram_b.data())};
+
+  c2h::device_vector<int> expected_r{1, 1, 1, 1};
+  c2h::device_vector<int> expected_g{0, 1, 1, 1};
+  c2h::device_vector<int> expected_b{1, 1, 1, 1};
+
+  size_t expected_bytes_allocated{};
+  auto error = cub::DeviceHistogram::MultiHistogramEven<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+    nullptr,
+    expected_bytes_allocated,
+    thrust::raw_pointer_cast(d_samples.data()),
+    d_histogram,
+    num_levels,
+    lower_level,
+    upper_level,
+    num_row_items,
+    num_rows,
+    row_stride_bytes);
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  auto d_temp        = c2h::device_vector<uint8_t>(expected_bytes_allocated, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(d_temp.data());
+
+  auto test_multi_histogram_even = [&](const auto& env) {
+    size_t num_bytes = 0;
+    error            = cub::DeviceHistogram::MultiHistogramEven<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+      nullptr,
+      num_bytes,
+      thrust::raw_pointer_cast(d_samples.data()),
+      d_histogram,
+      num_levels,
+      lower_level,
+      upper_level,
+      num_row_items,
+      num_rows,
+      row_stride_bytes,
+      env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE(expected_bytes_allocated == num_bytes);
+
+    error = cub::DeviceHistogram::MultiHistogramEven<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+      temp_storage,
+      num_bytes,
+      thrust::raw_pointer_cast(d_samples.data()),
+      d_histogram,
+      num_levels,
+      lower_level,
+      upper_level,
+      num_row_items,
+      num_rows,
+      row_stride_bytes,
+      env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    // Verify result
+    REQUIRE(d_histogram_r == expected_r);
+    REQUIRE(d_histogram_g == expected_g);
+    REQUIRE(d_histogram_b == expected_b);
+  };
+
+  test_with_custom_streams(test_multi_histogram_even);
+}
+#endif // TEST_LAUNCH == 0
+
+CUB_TEST("DeviceHistogram::MultiHistogramRange 2D uses environment", "[histogram][device]", CUB_SMALL)
+{
+  [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
+  [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
+
+  auto d_samples =
+    c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128, 0, 0, 0, 0, 1, 1, 3, 200, 2, 3, 0, 100, 0, 0, 0, 0};
+
+  const int num_row_items       = 2;
+  const int num_rows            = 2;
+  const size_t row_stride_bytes = 3 * NUM_CHANNELS * sizeof(unsigned char);
 
   auto d_levels_r = c2h::device_vector<unsigned char>{0, 2, 4};
   auto d_levels_g = c2h::device_vector<unsigned char>{0, 3, 5};
   auto d_levels_b = c2h::device_vector<unsigned char>{0, 1, 2, 3};
 
-  cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels = {3, 3, 4};
+  const cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels = {3, 3, 4};
 
-  cuda::std::array<const unsigned char*, NUM_ACTIVE_CHANNELS> d_levels = {
+  const cuda::std::array<const unsigned char*, NUM_ACTIVE_CHANNELS> d_levels = {
     thrust::raw_pointer_cast(d_levels_r.data()),
     thrust::raw_pointer_cast(d_levels_g.data()),
     thrust::raw_pointer_cast(d_levels_b.data())};
@@ -1030,7 +1350,7 @@ C2H_TEST("DeviceHistogram::MultiHistogramRange 2D uses environment", "[histogram
   auto d_histogram_g = c2h::device_vector<int>(2, 0);
   auto d_histogram_b = c2h::device_vector<int>(3, 0);
 
-  cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
+  const cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
     thrust::raw_pointer_cast(d_histogram_r.data()),
     thrust::raw_pointer_cast(d_histogram_g.data()),
     thrust::raw_pointer_cast(d_histogram_b.data())};
@@ -1045,7 +1365,7 @@ C2H_TEST("DeviceHistogram::MultiHistogramRange 2D uses environment", "[histogram
       d_histogram,
       num_levels,
       d_levels,
-      num_row_pixels,
+      num_row_items,
       num_rows,
       row_stride_bytes));
 
@@ -1056,20 +1376,20 @@ C2H_TEST("DeviceHistogram::MultiHistogramRange 2D uses environment", "[histogram
     d_histogram,
     num_levels,
     d_levels,
-    num_row_pixels,
+    num_row_items,
     num_rows,
     row_stride_bytes,
     env);
 
-  c2h::device_vector<int> expected_r{2, 2};
-  c2h::device_vector<int> expected_g{2, 2};
-  c2h::device_vector<int> expected_b{1, 1, 1};
+  const c2h::device_vector<int> expected_r{2, 2};
+  const c2h::device_vector<int> expected_g{2, 2};
+  const c2h::device_vector<int> expected_b{1, 1, 1};
   REQUIRE(d_histogram_r == expected_r);
   REQUIRE(d_histogram_g == expected_g);
   REQUIRE(d_histogram_b == expected_b);
 }
 
-TEST_CASE("DeviceHistogram::MultiHistogramRange 2D uses custom stream", "[histogram][device]")
+CUB_TEST_CASE("DeviceHistogram::MultiHistogramRange 2D uses custom stream", "[histogram][device]", CUB_SMALL)
 {
   [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
   [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
@@ -1077,17 +1397,17 @@ TEST_CASE("DeviceHistogram::MultiHistogramRange 2D uses custom stream", "[histog
   auto d_samples =
     c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128, 0, 0, 0, 0, 1, 1, 3, 200, 2, 3, 0, 100, 0, 0, 0, 0};
 
-  int num_row_pixels      = 2;
-  int num_rows            = 2;
-  size_t row_stride_bytes = 3 * NUM_CHANNELS * sizeof(unsigned char);
+  const int num_row_items       = 2;
+  const int num_rows            = 2;
+  const size_t row_stride_bytes = 3 * NUM_CHANNELS * sizeof(unsigned char);
 
   auto d_levels_r = c2h::device_vector<unsigned char>{0, 2, 4};
   auto d_levels_g = c2h::device_vector<unsigned char>{0, 3, 5};
   auto d_levels_b = c2h::device_vector<unsigned char>{0, 1, 2, 3};
 
-  cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels = {3, 3, 4};
+  const cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels = {3, 3, 4};
 
-  cuda::std::array<const unsigned char*, NUM_ACTIVE_CHANNELS> d_levels = {
+  const cuda::std::array<const unsigned char*, NUM_ACTIVE_CHANNELS> d_levels = {
     thrust::raw_pointer_cast(d_levels_r.data()),
     thrust::raw_pointer_cast(d_levels_g.data()),
     thrust::raw_pointer_cast(d_levels_b.data())};
@@ -1096,7 +1416,7 @@ TEST_CASE("DeviceHistogram::MultiHistogramRange 2D uses custom stream", "[histog
   auto d_histogram_g = c2h::device_vector<int>(2, 0);
   auto d_histogram_b = c2h::device_vector<int>(3, 0);
 
-  cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
+  const cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
     thrust::raw_pointer_cast(d_histogram_r.data()),
     thrust::raw_pointer_cast(d_histogram_g.data()),
     thrust::raw_pointer_cast(d_histogram_b.data())};
@@ -1114,7 +1434,7 @@ TEST_CASE("DeviceHistogram::MultiHistogramRange 2D uses custom stream", "[histog
       d_histogram,
       num_levels,
       d_levels,
-      num_row_pixels,
+      num_row_items,
       num_rows,
       row_stride_bytes));
 
@@ -1126,19 +1446,596 @@ TEST_CASE("DeviceHistogram::MultiHistogramRange 2D uses custom stream", "[histog
     d_histogram,
     num_levels,
     d_levels,
-    num_row_pixels,
+    num_row_items,
     num_rows,
     row_stride_bytes,
     env);
 
   REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
 
-  c2h::device_vector<int> expected_r{2, 2};
-  c2h::device_vector<int> expected_g{2, 2};
-  c2h::device_vector<int> expected_b{1, 1, 1};
+  const c2h::device_vector<int> expected_r{2, 2};
+  const c2h::device_vector<int> expected_g{2, 2};
+  const c2h::device_vector<int> expected_b{1, 1, 1};
   REQUIRE(d_histogram_r == expected_r);
   REQUIRE(d_histogram_g == expected_g);
   REQUIRE(d_histogram_b == expected_b);
 
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
+
+#if TEST_LAUNCH != 1
+
+template <int BlockThreads>
+struct histogram_tuning
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::HistogramPolicy
+  {
+    return {BlockThreads, 1, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, cub::SMEM, false, 0};
+  }
+};
+
+using block_sizes =
+  c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
+
+CUB_TEST("DeviceHistogram::HistogramEven can be tuned", "[histogram][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<unsigned int> d_block_size(1);
+  const block_size_extracting_constant_iterator d_samples(0, thrust::raw_pointer_cast(d_block_size.data()));
+  const int num_samples = 256;
+  const int num_levels  = 257;
+  const int lower_level = 0;
+  const int upper_level = 256;
+  auto d_histogram      = c2h::device_vector<int>(num_levels - 1, 0);
+
+  auto env = cuda::execution::tune(histogram_tuning<target_block_size>{});
+
+  histogram_even(
+    d_samples, thrust::raw_pointer_cast(d_histogram.data()), num_levels, lower_level, upper_level, num_samples, env);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceHistogram::HistogramRange can be tuned", "[histogram][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<unsigned int> d_block_size(1);
+  const block_size_extracting_constant_iterator d_samples(0, thrust::raw_pointer_cast(d_block_size.data()));
+  const int num_samples = 256;
+  auto d_levels         = c2h::device_vector<int>{0, 128, 256};
+  const int num_levels  = static_cast<int>(d_levels.size());
+  auto d_histogram      = c2h::device_vector<int>(num_levels - 1, 0);
+
+  auto env = cuda::execution::tune(histogram_tuning<target_block_size>{});
+
+  histogram_range(
+    d_samples,
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_levels,
+    thrust::raw_pointer_cast(d_levels.data()),
+    num_samples,
+    env);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceHistogram::MultiHistogramEven can be tuned", "[histogram][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr int NUM_CHANNELS               = 4;
+  constexpr int NUM_ACTIVE_CHANNELS        = 3;
+
+  c2h::device_vector<unsigned int> d_block_size(1);
+  const block_size_extracting_constant_iterator d_samples(0, thrust::raw_pointer_cast(d_block_size.data()));
+  const int num_items = 64;
+
+  const cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels  = {5, 5, 5};
+  const cuda::std::array<int, NUM_ACTIVE_CHANNELS> lower_level = {0, 0, 0};
+  const cuda::std::array<int, NUM_ACTIVE_CHANNELS> upper_level = {4, 4, 4};
+
+  auto d_histogram_r = c2h::device_vector<int>(4, 0);
+  auto d_histogram_g = c2h::device_vector<int>(4, 0);
+  auto d_histogram_b = c2h::device_vector<int>(4, 0);
+
+  const cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
+    thrust::raw_pointer_cast(d_histogram_r.data()),
+    thrust::raw_pointer_cast(d_histogram_g.data()),
+    thrust::raw_pointer_cast(d_histogram_b.data())};
+
+  auto env = cuda::execution::tune(histogram_tuning<target_block_size>{});
+
+  multi_histogram_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+    d_samples, d_histogram, num_levels, lower_level, upper_level, num_items, env);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceHistogram::MultiHistogramRange can be tuned", "[histogram][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr int NUM_CHANNELS               = 4;
+  constexpr int NUM_ACTIVE_CHANNELS        = 3;
+
+  c2h::device_vector<unsigned int> d_block_size(1);
+  const block_size_extracting_constant_iterator d_samples(0, thrust::raw_pointer_cast(d_block_size.data()));
+  const int num_items = 64;
+
+  auto d_levels_r = c2h::device_vector<int>{0, 2, 4};
+  auto d_levels_g = c2h::device_vector<int>{0, 2, 4};
+  auto d_levels_b = c2h::device_vector<int>{0, 2, 4};
+
+  const cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels = {3, 3, 3};
+
+  const cuda::std::array<const int*, NUM_ACTIVE_CHANNELS> d_levels = {
+    thrust::raw_pointer_cast(d_levels_r.data()),
+    thrust::raw_pointer_cast(d_levels_g.data()),
+    thrust::raw_pointer_cast(d_levels_b.data())};
+
+  auto d_histogram_r = c2h::device_vector<int>(2, 0);
+  auto d_histogram_g = c2h::device_vector<int>(2, 0);
+  auto d_histogram_b = c2h::device_vector<int>(2, 0);
+
+  const cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
+    thrust::raw_pointer_cast(d_histogram_r.data()),
+    thrust::raw_pointer_cast(d_histogram_g.data()),
+    thrust::raw_pointer_cast(d_histogram_b.data())};
+
+  auto env = cuda::execution::tune(histogram_tuning<target_block_size>{});
+
+  multi_histogram_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(d_samples, d_histogram, num_levels, d_levels, num_items, env);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+#endif // TEST_LAUNCH != 1
+
+#if TEST_LAUNCH == 0
+
+// The deprecated raw-array overloads of MultiHistogramRange forward to the cuda::std::array overloads. Like all
+// two-phase overloads they never allocate, so they do not go through the launch wrappers and would run identically in
+// every TEST_LAUNCH variant. Test them with host launch only.
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
+CUB_TEST_CASE("DeviceHistogram::MultiHistogramRange raw-array overload works with user provided memory and environment",
+              "[histogram][device]",
+              CUB_SMALL)
+{
+  [[maybe_unused]] constexpr int NUM_CHANNELS = 4;
+  constexpr int NUM_ACTIVE_CHANNELS           = 3;
+
+  const auto d_samples = c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
+  const int num_pixels = 2;
+
+  const auto d_levels_r = c2h::device_vector<unsigned char>{0, 2, 4};
+  const auto d_levels_g = c2h::device_vector<unsigned char>{0, 3, 5};
+  const auto d_levels_b = c2h::device_vector<unsigned char>{0, 1, 2, 3};
+
+  const int num_levels[NUM_ACTIVE_CHANNELS] = {3, 3, 4};
+
+  const unsigned char* const d_levels[NUM_ACTIVE_CHANNELS] = {
+    thrust::raw_pointer_cast(d_levels_r.data()),
+    thrust::raw_pointer_cast(d_levels_g.data()),
+    thrust::raw_pointer_cast(d_levels_b.data())};
+
+  auto d_histogram_r = c2h::device_vector<int>(2, thrust::no_init);
+  auto d_histogram_g = c2h::device_vector<int>(2, thrust::no_init);
+  auto d_histogram_b = c2h::device_vector<int>(3, thrust::no_init);
+
+  int* d_histogram[NUM_ACTIVE_CHANNELS] = {
+    thrust::raw_pointer_cast(d_histogram_r.data()),
+    thrust::raw_pointer_cast(d_histogram_g.data()),
+    thrust::raw_pointer_cast(d_histogram_b.data())};
+
+  const c2h::device_vector<int> expected_r{1, 1};
+  const c2h::device_vector<int> expected_g{1, 1};
+  const c2h::device_vector<int> expected_b{0, 1, 1};
+
+  size_t expected_bytes{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceHistogram::MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+      nullptr,
+      expected_bytes,
+      thrust::raw_pointer_cast(d_samples.data()),
+      d_histogram,
+      num_levels,
+      d_levels,
+      num_pixels));
+  auto d_temp        = c2h::device_vector<cuda::std::uint8_t>(expected_bytes, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(d_temp.data());
+
+  const auto test_multi_histogram_range = [&](const auto& env) {
+    size_t num_bytes = 0;
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceHistogram::MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+        nullptr,
+        num_bytes,
+        thrust::raw_pointer_cast(d_samples.data()),
+        d_histogram,
+        num_levels,
+        d_levels,
+        num_pixels,
+        env));
+    REQUIRE(num_bytes == expected_bytes);
+
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceHistogram::MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+        temp_storage,
+        num_bytes,
+        thrust::raw_pointer_cast(d_samples.data()),
+        d_histogram,
+        num_levels,
+        d_levels,
+        num_pixels,
+        env));
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    REQUIRE(d_histogram_r == expected_r);
+    REQUIRE(d_histogram_g == expected_g);
+    REQUIRE(d_histogram_b == expected_b);
+  };
+
+  test_with_custom_streams(test_multi_histogram_range);
+}
+
+CUB_TEST_CASE("DeviceHistogram::MultiHistogramRange 2D raw-array overload works with user provided memory and "
+              "environment",
+              "[histogram][device]",
+              CUB_SMALL)
+{
+  constexpr int NUM_CHANNELS        = 4;
+  constexpr int NUM_ACTIVE_CHANNELS = 3;
+
+  const auto d_samples =
+    c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128, 0, 0, 0, 0, 1, 1, 3, 200, 2, 3, 0, 100, 0, 0, 0, 0};
+
+  const int num_row_pixels      = 2;
+  const int num_rows            = 2;
+  const size_t row_stride_bytes = 3 * NUM_CHANNELS * sizeof(unsigned char);
+
+  const auto d_levels_r = c2h::device_vector<unsigned char>{0, 2, 4};
+  const auto d_levels_g = c2h::device_vector<unsigned char>{0, 3, 5};
+  const auto d_levels_b = c2h::device_vector<unsigned char>{0, 1, 2, 3};
+
+  const int num_levels[NUM_ACTIVE_CHANNELS] = {3, 3, 4};
+
+  const unsigned char* const d_levels[NUM_ACTIVE_CHANNELS] = {
+    thrust::raw_pointer_cast(d_levels_r.data()),
+    thrust::raw_pointer_cast(d_levels_g.data()),
+    thrust::raw_pointer_cast(d_levels_b.data())};
+
+  auto d_histogram_r = c2h::device_vector<int>(2, thrust::no_init);
+  auto d_histogram_g = c2h::device_vector<int>(2, thrust::no_init);
+  auto d_histogram_b = c2h::device_vector<int>(3, thrust::no_init);
+
+  int* d_histogram[NUM_ACTIVE_CHANNELS] = {
+    thrust::raw_pointer_cast(d_histogram_r.data()),
+    thrust::raw_pointer_cast(d_histogram_g.data()),
+    thrust::raw_pointer_cast(d_histogram_b.data())};
+
+  const c2h::device_vector<int> expected_r{2, 2};
+  const c2h::device_vector<int> expected_g{2, 2};
+  const c2h::device_vector<int> expected_b{1, 1, 1};
+
+  size_t expected_bytes{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceHistogram::MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+      nullptr,
+      expected_bytes,
+      thrust::raw_pointer_cast(d_samples.data()),
+      d_histogram,
+      num_levels,
+      d_levels,
+      num_row_pixels,
+      num_rows,
+      row_stride_bytes));
+  auto d_temp        = c2h::device_vector<cuda::std::uint8_t>(expected_bytes, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(d_temp.data());
+
+  const auto test_multi_histogram_range = [&](const auto& env) {
+    size_t num_bytes = 0;
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceHistogram::MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+        nullptr,
+        num_bytes,
+        thrust::raw_pointer_cast(d_samples.data()),
+        d_histogram,
+        num_levels,
+        d_levels,
+        num_row_pixels,
+        num_rows,
+        row_stride_bytes,
+        env));
+    REQUIRE(num_bytes == expected_bytes);
+
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceHistogram::MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+        temp_storage,
+        num_bytes,
+        thrust::raw_pointer_cast(d_samples.data()),
+        d_histogram,
+        num_levels,
+        d_levels,
+        num_row_pixels,
+        num_rows,
+        row_stride_bytes,
+        env));
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    REQUIRE(d_histogram_r == expected_r);
+    REQUIRE(d_histogram_g == expected_g);
+    REQUIRE(d_histogram_b == expected_b);
+  };
+
+  test_with_custom_streams(test_multi_histogram_range);
+}
+
+// Before the environment parameter, the deprecated overloads took `cudaStream_t stream = nullptr`, so callers passing
+// nullptr or a literal 0 for the stream exist. Both must keep compiling and keep running on the default stream.
+CUB_TEST_CASE("DeviceHistogram::MultiHistogramRange raw-array overload accepts legacy null stream arguments",
+              "[histogram][device]",
+              CUB_SMALL)
+{
+  [[maybe_unused]] constexpr int NUM_CHANNELS = 4;
+  constexpr int NUM_ACTIVE_CHANNELS           = 3;
+
+  const auto d_samples = c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
+  const int num_pixels = 2;
+
+  const auto d_levels_r = c2h::device_vector<unsigned char>{0, 2, 4};
+  const auto d_levels_g = c2h::device_vector<unsigned char>{0, 3, 5};
+  const auto d_levels_b = c2h::device_vector<unsigned char>{0, 1, 2, 3};
+
+  const int num_levels[NUM_ACTIVE_CHANNELS] = {3, 3, 4};
+
+  const unsigned char* const d_levels[NUM_ACTIVE_CHANNELS] = {
+    thrust::raw_pointer_cast(d_levels_r.data()),
+    thrust::raw_pointer_cast(d_levels_g.data()),
+    thrust::raw_pointer_cast(d_levels_b.data())};
+
+  auto d_histogram_r = c2h::device_vector<int>(2, thrust::no_init);
+  auto d_histogram_g = c2h::device_vector<int>(2, thrust::no_init);
+  auto d_histogram_b = c2h::device_vector<int>(3, thrust::no_init);
+
+  int* d_histogram[NUM_ACTIVE_CHANNELS] = {
+    thrust::raw_pointer_cast(d_histogram_r.data()),
+    thrust::raw_pointer_cast(d_histogram_g.data()),
+    thrust::raw_pointer_cast(d_histogram_b.data())};
+
+  const auto multi_histogram_range_on = [&](const auto& stream) {
+    size_t temp_storage_bytes = 0;
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceHistogram::MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+        nullptr,
+        temp_storage_bytes,
+        thrust::raw_pointer_cast(d_samples.data()),
+        d_histogram,
+        num_levels,
+        d_levels,
+        num_pixels,
+        stream));
+
+    c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+    const stream_scope scope{cudaStream_t{}};
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceHistogram::MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+        thrust::raw_pointer_cast(temp_storage.data()),
+        temp_storage_bytes,
+        thrust::raw_pointer_cast(d_samples.data()),
+        d_histogram,
+        num_levels,
+        d_levels,
+        num_pixels,
+        stream));
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  };
+
+  SECTION("nullptr")
+  {
+    multi_histogram_range_on(nullptr);
+  }
+
+  SECTION("literal 0")
+  {
+    multi_histogram_range_on(0);
+  }
+
+  const c2h::device_vector<int> expected_r{1, 1};
+  const c2h::device_vector<int> expected_g{1, 1};
+  const c2h::device_vector<int> expected_b{0, 1, 1};
+  REQUIRE(d_histogram_r == expected_r);
+  REQUIRE(d_histogram_g == expected_g);
+  REQUIRE(d_histogram_b == expected_b);
+}
+
+CUB_TEST("DeviceHistogram::MultiHistogramRange raw-array overload can be tuned with user provided memory",
+         "[histogram][device]",
+         CUB_SMALL,
+         block_sizes)
+{
+  constexpr unsigned int target_block_size    = c2h::get<0, TestType>::value;
+  [[maybe_unused]] constexpr int NUM_CHANNELS = 4;
+  constexpr int NUM_ACTIVE_CHANNELS           = 3;
+
+  c2h::device_vector<unsigned int> d_block_size(1);
+  const block_size_extracting_constant_iterator d_samples(0, thrust::raw_pointer_cast(d_block_size.data()));
+  const int num_pixels = 64;
+
+  const auto d_levels_r = c2h::device_vector<int>{0, 2, 4};
+  const auto d_levels_g = c2h::device_vector<int>{0, 2, 4};
+  const auto d_levels_b = c2h::device_vector<int>{0, 2, 4};
+
+  const int num_levels[NUM_ACTIVE_CHANNELS] = {3, 3, 3};
+
+  const int* const d_levels[NUM_ACTIVE_CHANNELS] = {
+    thrust::raw_pointer_cast(d_levels_r.data()),
+    thrust::raw_pointer_cast(d_levels_g.data()),
+    thrust::raw_pointer_cast(d_levels_b.data())};
+
+  auto d_histogram_r = c2h::device_vector<int>(2, thrust::no_init);
+  auto d_histogram_g = c2h::device_vector<int>(2, thrust::no_init);
+  auto d_histogram_b = c2h::device_vector<int>(2, thrust::no_init);
+
+  int* d_histogram[NUM_ACTIVE_CHANNELS] = {
+    thrust::raw_pointer_cast(d_histogram_r.data()),
+    thrust::raw_pointer_cast(d_histogram_g.data()),
+    thrust::raw_pointer_cast(d_histogram_b.data())};
+
+  const auto env = cuda::execution::tune(histogram_tuning<target_block_size>{});
+
+  size_t temp_storage_bytes = 0;
+  REQUIRE(cudaSuccess
+          == cub::DeviceHistogram::MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+            nullptr, temp_storage_bytes, d_samples, d_histogram, num_levels, d_levels, num_pixels, env));
+
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceHistogram::MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+      thrust::raw_pointer_cast(temp_storage.data()),
+      temp_storage_bytes,
+      d_samples,
+      d_histogram,
+      num_levels,
+      d_levels,
+      num_pixels,
+      env));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  // every sample is 0 and falls into the first bin of each channel
+  const c2h::device_vector<int> expected{num_pixels, 0};
+  REQUIRE(d_histogram_r == expected);
+  REQUIRE(d_histogram_g == expected);
+  REQUIRE(d_histogram_b == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceHistogram::MultiHistogramRange 2D raw-array overload can be tuned with user provided memory",
+         "[histogram][device]",
+         CUB_SMALL,
+         block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr int NUM_CHANNELS               = 4;
+  constexpr int NUM_ACTIVE_CHANNELS        = 3;
+
+  c2h::device_vector<unsigned int> d_block_size(1);
+  const block_size_extracting_constant_iterator d_samples(0, thrust::raw_pointer_cast(d_block_size.data()));
+  const int num_row_pixels      = 64;
+  const int num_rows            = 2;
+  const size_t row_stride_bytes = num_row_pixels * NUM_CHANNELS * sizeof(int);
+
+  const auto d_levels_r = c2h::device_vector<int>{0, 2, 4};
+  const auto d_levels_g = c2h::device_vector<int>{0, 2, 4};
+  const auto d_levels_b = c2h::device_vector<int>{0, 2, 4};
+
+  const int num_levels[NUM_ACTIVE_CHANNELS] = {3, 3, 3};
+
+  const int* const d_levels[NUM_ACTIVE_CHANNELS] = {
+    thrust::raw_pointer_cast(d_levels_r.data()),
+    thrust::raw_pointer_cast(d_levels_g.data()),
+    thrust::raw_pointer_cast(d_levels_b.data())};
+
+  auto d_histogram_r = c2h::device_vector<int>(2, thrust::no_init);
+  auto d_histogram_g = c2h::device_vector<int>(2, thrust::no_init);
+  auto d_histogram_b = c2h::device_vector<int>(2, thrust::no_init);
+
+  int* d_histogram[NUM_ACTIVE_CHANNELS] = {
+    thrust::raw_pointer_cast(d_histogram_r.data()),
+    thrust::raw_pointer_cast(d_histogram_g.data()),
+    thrust::raw_pointer_cast(d_histogram_b.data())};
+
+  const auto env = cuda::execution::tune(histogram_tuning<target_block_size>{});
+
+  size_t temp_storage_bytes = 0;
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceHistogram::MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+      nullptr,
+      temp_storage_bytes,
+      d_samples,
+      d_histogram,
+      num_levels,
+      d_levels,
+      num_row_pixels,
+      num_rows,
+      row_stride_bytes,
+      env));
+
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceHistogram::MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+      thrust::raw_pointer_cast(temp_storage.data()),
+      temp_storage_bytes,
+      d_samples,
+      d_histogram,
+      num_levels,
+      d_levels,
+      num_row_pixels,
+      num_rows,
+      row_stride_bytes,
+      env));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  // every sample is 0 and falls into the first bin of each channel
+  const c2h::device_vector<int> expected{num_row_pixels * num_rows, 0};
+  REQUIRE(d_histogram_r == expected);
+  REQUIRE(d_histogram_g == expected);
+  REQUIRE(d_histogram_b == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+_CCCL_SUPPRESS_DEPRECATED_POP
+
+#endif // TEST_LAUNCH == 0
+
+#if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
+CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
+{
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::HistogramPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::HistogramPolicy>);
+
+  // aggregate init
+  constexpr auto p1 = cub::HistogramPolicy{
+    128, 7, 4, cub::BLOCK_LOAD_DIRECT, cub::CacheLoadModifier::LOAD_LDG, false, cub::SMEM, false, 2048};
+
+#  if _CCCL_STD_VER >= 2020
+  // designated init
+  constexpr auto p2 = cub::HistogramPolicy{
+    .threads_per_block                = 128,
+    .pixels_per_thread                = 7,
+    .vec_size                         = 4,
+    .load_algorithm                   = cub::BLOCK_LOAD_DIRECT,
+    .load_modifier                    = cub::CacheLoadModifier::LOAD_LDG,
+    .rle_compress                     = false,
+    .mem_preference                   = cub::SMEM,
+    .use_work_stealing                = false,
+    .init_kernel_pdl_trigger_max_bins = 2048};
+#  else // _CCCL_STD_VER >= 2020
+  constexpr auto p2 = p1;
+#  endif // _CCCL_STD_VER >= 2020
+
+  // comparison
+  STATIC_REQUIRE(p1 == p2);
+  STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1)
+          == "HistogramPolicy { .threads_per_block = 128, .pixels_per_thread = 7, .vec_size = 4"
+             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG, .rle_compress = 0"
+             ", .mem_preference = SMEM, .use_work_stealing = 0, .init_kernel_pdl_trigger_max_bins = 2048 }");
+}
+#endif // _CCCL_COMPILER(GCC, >=, 8)

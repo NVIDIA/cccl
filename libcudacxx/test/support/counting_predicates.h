@@ -106,6 +106,6 @@ public:
 };
 
 template <class Predicate>
-counting_predicate(Predicate pred, int& count) -> counting_predicate<Predicate>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES counting_predicate(Predicate pred, int& count) -> counting_predicate<Predicate>;
 
 #endif // TEST_SUPPORT_COUNTING_PREDICATES_H

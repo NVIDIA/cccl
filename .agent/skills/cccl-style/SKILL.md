@@ -1,0 +1,18 @@
+---
+name: cccl-style
+description: Use when editing or reviewing CCCL code for style conventions; read coding conventions and the path-specific references named by this skill.
+---
+
+# CCCL Style
+
+## Workflow
+
+1. Read the [CCCL C++ Coding Conventions](https://nvidia.github.io/cccl/unstable/cccl/development/coding_conventions.html),
+   which supersede everything.
+2. For `cub/cub/device/**/*`, also read the documentation at `docs/cub/developer/device_scope.rst` and `docs/cub/device_wide.rst`.
+3. For `cub/cub/block/**/*`, also read the documentation at `docs/cub/developer/block_scope.rst`.
+4. For `cub/cub/warp/**/*`, also read the documentation at `docs/cub/developer/warp_level.rst`.
+5. For `cub/cub/thread/**/*`, also read the documentation at `docs/cub/developer/thread_level.rst`.
+6. For `cub/test/**/*`, also read the documentation at `docs/cub/developer/test_overview.rst`.
+7. If no path-specific reference exists, follow nearby code and repository docs. Do not import rules from another subproject.
+8. Apply each reference only to its stated scope. Rules for one CCCL subproject do not automatically apply to another.

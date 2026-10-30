@@ -13,7 +13,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int a[] = {1, 2, 3, 4};
   auto r  = cuda::std::shift_right(a, a + 4, 1);

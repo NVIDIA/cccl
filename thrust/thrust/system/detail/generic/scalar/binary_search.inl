@@ -26,7 +26,7 @@ _CCCL_HOST_DEVICE RandomAccessIterator
 lower_bound_n(RandomAccessIterator first, Size n, const T& val, BinaryPredicate comp)
 {
   // wrap comp
-  thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
 
   Size start = 0, i;
   while (start < n)
@@ -51,7 +51,7 @@ template <typename RandomAccessIterator, typename T, typename BinaryPredicate>
 _CCCL_HOST_DEVICE RandomAccessIterator
 lower_bound(RandomAccessIterator first, RandomAccessIterator last, const T& val, BinaryPredicate comp)
 {
-  thrust::detail::it_difference_t<RandomAccessIterator> n = last - first;
+  const thrust::detail::it_difference_t<RandomAccessIterator> n = last - first;
   return lower_bound_n(first, n, val, comp);
 }
 
@@ -60,7 +60,7 @@ _CCCL_HOST_DEVICE RandomAccessIterator
 upper_bound_n(RandomAccessIterator first, Size n, const T& val, BinaryPredicate comp)
 {
   // wrap comp
-  thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
 
   Size start = 0, i;
   while (start < n)
@@ -83,7 +83,7 @@ template <typename RandomAccessIterator, typename T, typename BinaryPredicate>
 _CCCL_HOST_DEVICE RandomAccessIterator
 upper_bound(RandomAccessIterator first, RandomAccessIterator last, const T& val, BinaryPredicate comp)
 {
-  thrust::detail::it_difference_t<RandomAccessIterator> n = last - first;
+  const thrust::detail::it_difference_t<RandomAccessIterator> n = last - first;
   return upper_bound_n(first, n, val, comp);
 }
 

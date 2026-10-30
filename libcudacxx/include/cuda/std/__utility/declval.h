@@ -37,7 +37,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // incomplete class type. In places where that matters, use __declfn_t<_Tp&&> instead of
 // __declfn_t<_Tp>.
 template <class _Tp, bool _Noexcept = true>
-using __declfn_t _CCCL_NODEBUG_ALIAS = _Tp (*)() noexcept(_Noexcept);
+using __declfn_t _CCCL_NODEBUG = _Tp (*)() noexcept(_Noexcept);
 #endif // _CCCL_DOXYGEN_INVOKED
 
 // When variable templates and noexcept function types are available, a faster
@@ -58,6 +58,7 @@ extern __declfn_t<_Tp&&> declval<_Tp, void_t<_Tp&&>>;
 // Suppress deprecation notice for volatile-qualified return type resulting
 // from volatile-qualified types _Tp.
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 template <class _Tp>
 _CCCL_API inline _Tp&& __declval(int);
 template <class _Tp>

@@ -61,28 +61,28 @@ void assemble_jacobian_full(
             if (row == 0)
             {
               // Left boundary: u[0] = 0 (homogeneous Dirichlet)
-              size_t val_idx   = 0;
-              dvalues[val_idx] = 1.0;
+              const size_t val_idx = 0;
+              dvalues[val_idx]     = 1.0;
             }
             else if (row == N - 1)
             {
               // Right boundary: u[N-1] = 0 (homogeneous Dirichlet)
-              size_t val_idx   = 1 + 3 * (N - 2);
-              dvalues[val_idx] = 1.0;
+              const size_t val_idx = 1 + 3 * (N - 2);
+              dvalues[val_idx]     = 1.0;
             }
             else
             {
               // Interior point: Burger's equation discretization
-              double u_i   = dU[row];
-              double u_ip1 = dU[row + 1];
-              double u_im1 = dU[row - 1];
+              const double u_i   = dU[row];
+              const double u_ip1 = dU[row + 1];
+              const double u_im1 = dU[row - 1];
 
               // Jacobian entries: ∂F_i/∂u_{i-1}, ∂F_i/∂u_i, ∂F_i/∂u_{i+1}
-              double left   = -u_i / (2 * h) - nu / (h * h);
-              double center = 1.0 / dt + (u_ip1 - u_im1) / (2 * h) + 2.0 * nu / (h * h);
-              double right  = u_i / (2 * h) - nu / (h * h);
+              const double left   = -u_i / (2 * h) - nu / (h * h);
+              const double center = 1.0 / dt + (u_ip1 - u_im1) / (2 * h) + 2.0 * nu / (h * h);
+              const double right  = u_i / (2 * h) - nu / (h * h);
 
-              size_t val_idx       = 1 + 3 * (row - 1);
+              const size_t val_idx = 1 + 3 * (row - 1);
               dvalues[val_idx]     = left;
               dvalues[val_idx + 1] = center;
               dvalues[val_idx + 2] = right;
@@ -96,24 +96,21 @@ void compute_residual_full(
 {
   ctx.parallel_for(box(N), residual.write(), U.read(), U_prev.read()).set_symbol("compute_residual_full")
       ->*[N, h, dt, nu] __device__(size_t i, auto dresidual, auto dU, auto dU_prev) {
-            if (i == 0)
+            if (i == 0 || i == N - 1)
             {
-              dresidual(i) = dU(i) - 0.0;
-            }
-            else if (i == N - 1)
-            {
+              // Boundary conditions: u[0] = u[N-1] = 0
               dresidual(i) = dU(i) - 0.0;
             }
             else
             {
               // Interior point: Burger's equation F_i = ∂u/∂t + u*∂u/∂x - nu*∂²u/∂x²
-              double u_i   = dU(i);
-              double u_ip1 = dU(i + 1);
-              double u_im1 = dU(i - 1);
+              const double u_i   = dU(i);
+              const double u_ip1 = dU(i + 1);
+              const double u_im1 = dU(i - 1);
 
-              double term_time = (u_i - dU_prev(i)) / dt;
-              double term_conv = u_i * (u_ip1 - u_im1) / (2 * h);
-              double term_diff = -nu * (u_im1 - 2 * u_i + u_ip1) / (h * h);
+              const double term_time = (u_i - dU_prev(i)) / dt;
+              const double term_conv = u_i * (u_ip1 - u_im1) / (2 * h);
+              const double term_diff = -nu * (u_im1 - 2 * u_i + u_ip1) / (h * h);
 
               dresidual(i) = term_time + term_conv + term_diff;
             }
@@ -127,8 +124,8 @@ void detect_shock(
 {
   ctx.parallel_for(box(N - 1), U.read(), max_gradient.reduce(reducer::maxval<double>{})).set_symbol("detect_shock")
       ->*[h] __device__(size_t i, auto dU, double& dmax_grad) {
-            double gradient = fabs(dU(i + 1) - dU(i)) / h;
-            dmax_grad       = fmax(dmax_grad, gradient);
+            const double gradient = fabs(dU(i + 1) - dU(i)) / h;
+            dmax_grad             = fmax(dmax_grad, gradient);
           };
 }
 
@@ -169,7 +166,7 @@ std::vector<double> generate_nu_samples(double nu_target, double nu_std, size_t 
   // Generate samples and ensure they are positive
   for (size_t i = 0; i < num_samples; ++i)
   {
-    double nu_sample = dist(gen);
+    const double nu_sample = dist(gen);
     // Ensure nu > 0 for physical validity
     if (nu_sample > 1e-6)
     {
@@ -250,7 +247,7 @@ void dump_shock_solution(
 
         for (size_t i = 0; i < N; i++)
         {
-          double x = i * h;
+          const double x = static_cast<double>(i) * h;
           fprintf(fp, "%.10e %.10e\n", x, hU(i));
         }
 
@@ -286,8 +283,8 @@ void run_single_nu_simulation(
 {
   // Reset solution to initial condition
   ctx.parallel_for(U.shape(), U.write()).set_symbol("reset_initial_condition")->*[h, N] __device__(size_t i, auto dU) {
-    double x = i * h;
-    dU(i)    = (i == 0 || i == N - 1) ? 0.0 : sin(M_PI * x);
+    const double x = static_cast<double>(i) * h;
+    dU(i)          = (i == 0 || i == N - 1) ? 0.0 : sin(M_PI * x);
   };
 
   auto current_time    = ctx.logical_data(shape_of<scalar_view<double>>()).set_symbol("current_time");
@@ -308,8 +305,8 @@ void run_single_nu_simulation(
     auto while_guard = ctx.while_graph_scope();
 
     // Create callback function objects
-    BurgerResidualCallback residual_callback{N, h, dt, nu};
-    BurgerJacobianCallback jacobian_callback{N, h, dt, nu};
+    const BurgerResidualCallback residual_callback{N, h, dt, nu};
+    const BurgerJacobianCallback jacobian_callback{N, h, dt, nu};
 
     // Solve the nonlinear system
     newton_solver(ctx, U, csr_values, csr_row_offsets, csr_col_ind, residual_callback, jacobian_callback);
@@ -327,7 +324,7 @@ void run_single_nu_simulation(
     ctx.parallel_for(box(1), max_grad_global.rw(), current_grad.read(), shock_detected.rw())
         .set_symbol("update_shock_detection")
         ->*[shock_threshold] __device__(size_t i, auto dmax_grad, auto dcurrent_grad, auto dshock) {
-              double grad = *dcurrent_grad;
+              const double grad = *dcurrent_grad;
               if (grad > *dmax_grad)
               {
                 *dmax_grad = grad;
@@ -387,28 +384,28 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
   if (argc > 1)
   {
-    N = atoi(argv[1]);
+    N = ::std::stoi(argv[1]);
   }
   if (argc > 2)
   {
-    nu_target = atof(argv[2]);
+    nu_target = ::std::stod(argv[2]);
   }
   if (argc > 3)
   {
-    nu_std = atof(argv[3]);
+    nu_std = ::std::stod(argv[3]);
   }
   if (argc > 4)
   {
-    num_samples = atoi(argv[4]);
+    num_samples = ::std::stoi(argv[4]);
   }
   if (argc > 5)
   {
-    shock_threshold = atof(argv[5]);
+    shock_threshold = ::std::stod(argv[5]);
   }
 
-  double h        = 1.0 / (N - 1);
-  double dt       = 0.001; // Fixed time step
-  double max_time = 2.0; // Maximum simulation time per sample
+  const double h        = 1.0 / static_cast<double>((N - 1));
+  const double dt       = 0.001; // Fixed time step
+  const double max_time = 2.0; // Maximum simulation time per sample
 
   fprintf(stderr, "=== Sensitivity Analysis Parameters ===\n");
   fprintf(stderr, "Grid: N=%zu, h=%e\n", N, h);
@@ -423,7 +420,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   auto nu_values = generate_nu_samples(nu_target, nu_std, num_samples);
 
   // Set up CSR structure
-  size_t nz = 3 * N - 4;
+  const size_t nz = 3 * N - 4;
   size_t* row_offsets;
   size_t* col_indices;
   cuda_safe_call(cudaHostAlloc(&row_offsets, (N + 1) * sizeof(size_t), cudaHostAllocMapped));
@@ -446,7 +443,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     auto g = ctx.graph_scope();
     for (size_t i = 0; i < nu_values.size(); ++i)
     {
-      double nu = nu_values[i];
+      const double nu = nu_values[i];
       double shock_time, max_gradient, final_time;
 
       printf("Sample %zu/%zu: nu=%.6e... ", i + 1, nu_values.size(), nu);

@@ -135,23 +135,23 @@ TEST_FUNC constexpr bool test()
   {
     using mapping_t = cuda::std::layout_stride::mapping<cuda::std::dextents<unsigned, 2>>;
     // wrong strides size
-    static_assert(!cuda::std::is_constructible<mapping_t, cuda::std::dextents<int, 2>, cuda::std::array<int, 3>>::value,
-                  "");
-    static_assert(!cuda::std::is_constructible<mapping_t, cuda::std::dextents<int, 2>, cuda::std::array<int, 1>>::value,
-                  "");
+    static_assert(
+      !cuda::std::is_constructible<mapping_t, cuda::std::dextents<int, 2>, cuda::std::array<int, 3>>::value);
+    static_assert(
+      !cuda::std::is_constructible<mapping_t, cuda::std::dextents<int, 2>, cuda::std::array<int, 1>>::value);
     // wrong extents rank
-    static_assert(!cuda::std::is_constructible<mapping_t, cuda::std::dextents<int, 3>, cuda::std::array<int, 2>>::value,
-                  "");
+    static_assert(
+      !cuda::std::is_constructible<mapping_t, cuda::std::dextents<int, 3>, cuda::std::array<int, 2>>::value);
     // none-convertible strides
     static_assert(
-      !cuda::std::is_constructible<mapping_t, cuda::std::dextents<int, 2>, cuda::std::array<IntType, 2>>::value, "");
+      !cuda::std::is_constructible<mapping_t, cuda::std::dextents<int, 2>, cuda::std::array<IntType, 2>>::value);
   }
   {
     // not no-throw constructible index_type from stride
     using mapping_t = cuda::std::layout_stride::mapping<cuda::std::dextents<unsigned char, 2>>;
     static_assert(cuda::std::is_convertible<IntType, unsigned char>::value);
     static_assert(
-      !cuda::std::is_constructible<mapping_t, cuda::std::dextents<int, 2>, cuda::std::array<IntType, 2>>::value, "");
+      !cuda::std::is_constructible<mapping_t, cuda::std::dextents<int, 2>, cuda::std::array<IntType, 2>>::value);
   }
 
   return true;

@@ -16,22 +16,23 @@
 #include <cub/block/block_adjacent_difference.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_namespace.cuh>
-#include <cub/util_type.cuh>
-
-#include <thrust/system/cuda/detail/core/util.h>
 
 CUB_NAMESPACE_BEGIN
 
-template <int BlockThreads,
+namespace detail
+{
+template <int ThreadsPerBlock,
           int ItemsPerThread                      = 1,
           cub::BlockLoadAlgorithm LoadAlgorithm   = cub::BLOCK_LOAD_DIRECT,
           cub::CacheLoadModifier LoadModifier     = cub::LOAD_LDG,
           cub::BlockStoreAlgorithm StoreAlgorithm = cub::BLOCK_STORE_DIRECT>
-struct AgentAdjacentDifferencePolicy
+struct agent_adjacent_difference_policy
 {
-  static constexpr int BLOCK_THREADS    = BlockThreads;
+  static constexpr int BLOCK_THREADS    = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
   static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
 
@@ -39,6 +40,16 @@ struct AgentAdjacentDifferencePolicy
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER     = LoadModifier;
   static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
 };
+} // namespace detail
+
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock,
+          int ItemsPerThread                      = 1,
+          cub::BlockLoadAlgorithm LoadAlgorithm   = cub::BLOCK_LOAD_DIRECT,
+          cub::CacheLoadModifier LoadModifier     = cub::LOAD_LDG,
+          cub::BlockStoreAlgorithm StoreAlgorithm = cub::BLOCK_STORE_DIRECT>
+using AgentAdjacentDifferencePolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceAdjacentDifference") =
+  detail::agent_adjacent_difference_policy<ThreadsPerBlock, ItemsPerThread, LoadAlgorithm, LoadModifier, StoreAlgorithm>;
 
 namespace detail::adjacent_difference
 {
@@ -68,8 +79,7 @@ struct AgentDifference
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   static constexpr int BLOCK_THREADS      = Policy::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD   = Policy::ITEMS_PER_THREAD;
@@ -93,20 +103,20 @@ struct AgentDifference
     OffsetT num_items)
       : temp_storage(temp_storage.Alias())
       , input_it(input_it)
-      , load_it(LoadIt(input_it))
+      , load_it(try_make_cache_modified_iterator<Policy::LOAD_MODIFIER>(input_it))
       , first_tile_previous(first_tile_previous)
       , result(result)
       , difference_op(difference_op)
       , num_items(num_items)
   {}
 
-  template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
+  template <bool IsLastTile, bool IsFirstTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile_impl(int num_remaining, int tile_idx, OffsetT tile_base)
   {
     InputT input[ITEMS_PER_THREAD];
     OutputT output[ITEMS_PER_THREAD];
 
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       // Fill last elements with the first element
       // because collectives are not suffix guarded
@@ -121,9 +131,9 @@ struct AgentDifference
 
     if (ReadLeft)
     {
-      if (IS_FIRST_TILE)
+      if (IsFirstTile)
       {
-        if (IS_LAST_TILE)
+        if (IsLastTile)
         {
           BlockAdjacentDifferenceT(temp_storage.adjacent_difference)
             .SubtractLeftPartialTile(input, output, difference_op, num_remaining);
@@ -135,9 +145,10 @@ struct AgentDifference
       }
       else
       {
-        InputT tile_prev_input = MayAlias ? first_tile_previous[tile_idx] : *(input_it + tile_base - 1);
+        InputT tile_prev_input =
+          MayAlias ? first_tile_previous[tile_idx] : static_cast<InputT>(*(input_it + tile_base - 1));
 
-        if (IS_LAST_TILE)
+        if (IsLastTile)
         {
           BlockAdjacentDifferenceT(temp_storage.adjacent_difference)
             .SubtractLeftPartialTile(input, output, difference_op, num_remaining, tile_prev_input);
@@ -151,14 +162,15 @@ struct AgentDifference
     }
     else
     {
-      if (IS_LAST_TILE)
+      if (IsLastTile)
       {
         BlockAdjacentDifferenceT(temp_storage.adjacent_difference)
           .SubtractRightPartialTile(input, output, difference_op, num_remaining);
       }
       else
       {
-        InputT tile_next_input = MayAlias ? first_tile_previous[tile_idx] : *(input_it + tile_base + ITEMS_PER_TILE);
+        InputT tile_next_input =
+          MayAlias ? first_tile_previous[tile_idx] : static_cast<InputT>(*(input_it + tile_base + ITEMS_PER_TILE));
 
         BlockAdjacentDifferenceT(temp_storage.adjacent_difference)
           .SubtractRight(input, output, difference_op, tile_next_input);
@@ -167,7 +179,7 @@ struct AgentDifference
 
     __syncthreads();
 
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       BlockStore(temp_storage.store).Store(result + tile_base, output, num_remaining);
     }
@@ -177,16 +189,16 @@ struct AgentDifference
     }
   }
 
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(int num_remaining, int tile_idx, OffsetT tile_base)
   {
     if (tile_idx == 0)
     {
-      consume_tile_impl<IS_LAST_TILE, true>(num_remaining, tile_idx, tile_base);
+      consume_tile_impl<IsLastTile, true>(num_remaining, tile_idx, tile_base);
     }
     else
     {
-      consume_tile_impl<IS_LAST_TILE, false>(num_remaining, tile_idx, tile_base);
+      consume_tile_impl<IsLastTile, false>(num_remaining, tile_idx, tile_base);
     }
   }
 

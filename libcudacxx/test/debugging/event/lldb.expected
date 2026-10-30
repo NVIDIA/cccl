@@ -1,0 +1,33 @@
+=============== event.ref begin ===============
+(cuda::event_ref) <address> (handle = <address>)
+=============== event.ref end ===============
+=============== event.owning begin ===============
+(cuda::event) <address> (handle = <address>)
+=============== event.owning end ===============
+=============== event.timed begin ===============
+(cuda::timed_event) <address> (handle = <address>)
+=============== event.timed end ===============
+=============== event.alias begin ===============
+(cuda::event_ref) <address> (handle = <address>)
+=============== event.alias end ===============
+=============== event.null_ref begin ===============
+(cuda::event_ref) <address> (handle = 0x0000000000000000)
+=============== event.null_ref end ===============
+=============== event.no_init begin ===============
+(cuda::event) <address> (handle = 0x0000000000000000)
+=============== event.no_init end ===============
+=============== event.timed_no_init begin ===============
+(cuda::timed_event) <address> (handle = 0x0000000000000000)
+=============== event.timed_no_init end ===============
+=============== event.nested begin ===============
+(const cuda::std::array<cuda::event_ref, 2> &) <address>: {
+  [0] = (handle = <address>)
+  [1] = (handle = 0x0000000000000000)
+}
+=============== event.nested end ===============
+=============== event.update.before begin ===============
+(cuda::event_ref) <address> (handle = 0x0000000000000000)
+=============== event.update.before end ===============
+=============== event.update.after begin ===============
+(cuda::event_ref) <address> (handle = <address>)
+=============== event.update.after end ===============

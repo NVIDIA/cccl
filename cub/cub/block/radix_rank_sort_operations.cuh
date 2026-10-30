@@ -19,24 +19,20 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/type_traits.cuh>
-#include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
-
-#include <thrust/type_traits/integer_sequence.h>
+#include <cub/detail/numeric_traits.cuh>
 
 #include <cuda/__bit/bitfield.h>
 #include <cuda/__type_traits/is_floating_point.h>
-#include <cuda/__utility/static_for.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/__tuple_dir/tuple_size.h>
+#include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN
 
@@ -76,9 +72,9 @@ struct BaseDigitExtractor<KeyT, true>
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits ProcessFloatMinusZero(UnsignedBits key)
   {
-    UnsignedBits TWIDDLED_MINUS_ZERO_BITS =
+    const UnsignedBits TWIDDLED_MINUS_ZERO_BITS =
       TraitsT::TwiddleIn(UnsignedBits(1) << UnsignedBits(8 * sizeof(UnsignedBits) - 1));
-    UnsignedBits TWIDDLED_ZERO_BITS = TraitsT::TwiddleIn(0);
+    const UnsignedBits TWIDDLED_ZERO_BITS = TraitsT::TwiddleIn(0);
     return key == TWIDDLED_MINUS_ZERO_BITS ? TWIDDLED_ZERO_BITS : key;
   }
 };
@@ -408,7 +404,7 @@ struct digit_f
 
       if (bits_to_copy)
       {
-        bit_ordered_type ordered_src =
+        const bit_ordered_type ordered_src =
           BaseDigitExtractor<T>::ProcessFloatMinusZero(reinterpret_cast<bit_ordered_type&>(src));
 
         const ::cuda::std::uint32_t mask = (1 << bits_to_copy) - 1;
@@ -532,7 +528,7 @@ struct traits_t<T, false /* is_fundamental */>
 #endif // _CCCL_DOXYGEN_INVOKED
 
 //! Twiddling keys for radix sort
-template <bool IS_DESCENDING, typename KeyT>
+template <bool IsDescending, typename KeyT>
 struct RadixSortTwiddle
 {
 private:
@@ -544,11 +540,10 @@ private:
 public:
   template <class DecomposerT = detail::identity_decomposer_t>
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE //
-  bit_ordered_type
-  In(bit_ordered_type key, DecomposerT decomposer = {})
+  bit_ordered_type In(bit_ordered_type key, DecomposerT decomposer = {})
   {
     key = bit_ordered_conversion_policy::to_bit_ordered(decomposer, key);
-    if constexpr (IS_DESCENDING)
+    if constexpr (IsDescending)
     {
       key = bit_ordered_inversion_policy::inverse(decomposer, key);
     }
@@ -557,10 +552,9 @@ public:
 
   template <class DecomposerT = detail::identity_decomposer_t>
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE //
-  bit_ordered_type
-  Out(bit_ordered_type key, DecomposerT decomposer = {})
+  bit_ordered_type Out(bit_ordered_type key, DecomposerT decomposer = {})
   {
-    if constexpr (IS_DESCENDING)
+    if constexpr (IsDescending)
     {
       key = bit_ordered_inversion_policy::inverse(decomposer, key);
     }
@@ -570,10 +564,9 @@ public:
 
   template <class DecomposerT = detail::identity_decomposer_t>
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE //
-  bit_ordered_type
-  DefaultKey(DecomposerT decomposer = {})
+  bit_ordered_type DefaultKey(DecomposerT decomposer = {})
   {
-    return IS_DESCENDING ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
+    return IsDescending ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
   }
 };
 

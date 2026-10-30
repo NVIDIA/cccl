@@ -12,6 +12,9 @@
 
 // UNSUPPORTED: pre-sm-70
 
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
+
 // <cuda/barrier>
 
 #include <cuda/barrier>

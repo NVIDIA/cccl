@@ -18,43 +18,24 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_cpp_dialect.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <cuda/std/__concepts/concept_macros.h> // IWYU pragma: keep
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/array.h>
 #include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed_integer.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/__type_traits/remove_cv.h>
-#include <cuda/std/__type_traits/void_t.h>
-#include <cuda/std/__utility/declval.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
-template <typename T, typename... TArgs>
-inline constexpr bool is_one_of_v = (::cuda::std::is_same_v<T, TArgs> || ...);
-
-template <typename T, typename V, typename = void>
-struct has_binary_call_operator : ::cuda::std::false_type
-{};
-
-template <typename T, typename V>
-struct has_binary_call_operator<
-  T,
-  V,
-  ::cuda::std::void_t<decltype(::cuda::std::declval<T>()(::cuda::std::declval<V>(), ::cuda::std::declval<V>()))>>
-    : ::cuda::std::true_type
-{};
-
 /***********************************************************************************************************************
  * Array-like type traits
  **********************************************************************************************************************/
@@ -73,7 +54,7 @@ inline constexpr bool is_fixed_size_random_access_range_v<::cuda::std::span<T, N
 
 template <typename T, typename E, typename L, typename A>
 inline constexpr bool is_fixed_size_random_access_range_v<::cuda::std::mdspan<T, E, L, A>> =
-  E::rank == 1 && E::rank_dynamic() == 0;
+  E::rank() == 1 && E::rank_dynamic() == 0;
 
 /***********************************************************************************************************************
  * static_size: a type trait that returns the number of elements in an Array-like type
@@ -94,7 +75,7 @@ inline constexpr int static_size_v<::cuda::std::span<T, N>> =
 
 template <typename T, typename E, typename L, typename A>
 inline constexpr int static_size_v<::cuda::std::mdspan<T, E, L, A>> =
-  ::cuda::std::enable_if_t<E::rank == 1 && E::rank_dynamic() == 0, int>{E::static_extent(0)};
+  ::cuda::std::enable_if_t<E::rank() == 1 && E::rank_dynamic() == 0, int>{E::static_extent(0)};
 
 template <typename T>
 using implicit_prom_t = decltype(+T{});

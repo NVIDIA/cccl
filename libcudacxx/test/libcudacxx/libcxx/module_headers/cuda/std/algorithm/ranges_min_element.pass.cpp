@@ -13,7 +13,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int a[] = {3, 1, 4};
   assert(*cuda::std::ranges::min_element(a, a + 3) == 1);

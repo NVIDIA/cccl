@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: a return statement inside a loop is not currently supported in a tile function
+// UNSUPPORTED: force-tile
+// error: a non-__tile__ variable cannot be used in tile code
 
 // Some basic examples of how transform_view might be used in the wild. This is a general
 // collection of sample algorithms and functions that try to mock general usage of
@@ -37,7 +37,7 @@ static_assert(!ValidTransformView<MoveOnlyView, BadFunction>);
 
 struct toUpperFn
 {
-  TEST_FUNC constexpr char operator()(const char c) const noexcept
+  TEST_HOST_DEVICE_FUNC constexpr char operator()(const char c) const noexcept
   {
     if (c >= 'a' && c <= 'z')
     {
@@ -48,13 +48,13 @@ struct toUpperFn
 };
 
 template <class R, cuda::std::enable_if_t<cuda::std::ranges::range<R>, int> = 0>
-TEST_FUNC auto toUpper(R range)
+TEST_HOST_DEVICE_FUNC auto toUpper(R range)
 {
   return cuda::std::ranges::transform_view(range, toUpperFn{});
 }
 
 template <class E1, class E2, size_t N, class Join = cuda::std::plus<E1>>
-TEST_FUNC auto joinArrays(E1 (&a)[N], E2 (&b)[N], Join join = Join())
+TEST_HOST_DEVICE_FUNC auto joinArrays(E1 (&a)[N], E2 (&b)[N], Join join = Join())
 {
   return cuda::std::ranges::transform_view(a, [&a, &b, join](E1& x) {
     auto idx = (&x) - a;
@@ -64,15 +64,15 @@ TEST_FUNC auto joinArrays(E1 (&a)[N], E2 (&b)[N], Join join = Join())
 
 struct NonConstView : cuda::std::ranges::view_base
 {
-  TEST_FUNC explicit NonConstView(int* b, int* e)
+  TEST_HOST_DEVICE_FUNC explicit NonConstView(int* b, int* e)
       : b_(b)
       , e_(e)
   {}
-  TEST_FUNC const int* begin()
+  TEST_HOST_DEVICE_FUNC const int* begin()
   {
     return b_;
   } // deliberately non-const
-  TEST_FUNC const int* end()
+  TEST_HOST_DEVICE_FUNC const int* end()
   {
     return e_;
   } // deliberately non-const
@@ -81,7 +81,7 @@ struct NonConstView : cuda::std::ranges::view_base
 };
 
 template <class Range, class Expected>
-TEST_FUNC constexpr bool equal(Range&& range, Expected&& expected)
+TEST_HOST_DEVICE_FUNC constexpr bool equal(Range&& range, Expected&& expected)
 {
   for (size_t i = 0; i < cuda::std::size(expected); ++i)
   {

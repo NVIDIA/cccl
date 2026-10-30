@@ -17,6 +17,7 @@
 #include <thrust/detail/type_traits/has_nested_type.h>
 #include <thrust/system/cuda/detail/util.h>
 
+#include <cuda/__memory/uninitialized_array.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/type_identity.h>
@@ -40,13 +41,13 @@ struct typelist;
 
 struct sm52
 {
-  static constexpr int ver      = 520;
-  static constexpr int warpSize = 32;
+  static constexpr int ver       = 520;
+  static constexpr int warp_size = 32;
 };
 struct sm60
 {
-  static constexpr int ver      = 600;
-  static constexpr int warpSize = 32;
+  static constexpr int ver       = 600;
+  static constexpr int warp_size = 32;
 };
 
 // list of sm, checked from left to right order
@@ -97,13 +98,13 @@ template <class, class>
 struct has_sm_tuning_impl;
 
 // specializing for Tunig which needs 1 arg
-template <class SM, template <class, class> class Tuning, class _0>
-struct has_sm_tuning_impl<SM, Tuning<lowest_supported_sm_arch, _0>> : has_type_t<Tuning<SM, _0>>
+template <class SM, template <class, class> class Tuning, class Arg0>
+struct has_sm_tuning_impl<SM, Tuning<lowest_supported_sm_arch, Arg0>> : has_type_t<Tuning<SM, Arg0>>
 {};
 
 // specializing for Tunig which needs 2 args
-template <class SM, template <class, class, class> class Tuning, class _0, class _1>
-struct has_sm_tuning_impl<SM, Tuning<lowest_supported_sm_arch, _0, _1>> : has_type_t<Tuning<SM, _0, _1>>
+template <class SM, template <class, class, class> class Tuning, class Arg0, class Arg1>
+struct has_sm_tuning_impl<SM, Tuning<lowest_supported_sm_arch, Arg0, Arg1>> : has_type_t<Tuning<SM, Arg0, Arg1>>
 {};
 
 template <template <class> class P, class SM>
@@ -116,11 +117,11 @@ struct has_sm_tuning : has_sm_tuning_impl<SM, typename P<lowest_supported_sm_arc
 //   otherwise move on to the next sm in the sm_list
 template <template <class> class P, class SM, class... SMs>
 struct specialize_plan_impl_match<P, typelist<SM, SMs...>>
-    : ::cuda::std::conditional<has_sm_tuning<P, SM>::value, P<SM>, specialize_plan_impl_match<P, typelist<SMs...>>>::type
+    : ::cuda::std::conditional_t<has_sm_tuning<P, SM>::value, P<SM>, specialize_plan_impl_match<P, typelist<SMs...>>>
 {};
 
 #if _CCCL_CUDA_COMPILER(NVHPC)
-#  if (__NVCOMPILER_CUDA_ARCH__ >= 600)
+#  if (NV_TARGET_MINIMUM_SM_INTEGER >= 60)
 #    define _THRUST_TUNING_ARCH sm60
 #  else
 #    define _THRUST_TUNING_ARCH sm52
@@ -171,7 +172,7 @@ struct temp_storage_size<Agent, ::cuda::std::void_t<typename Agent::TempStorage>
   static constexpr ::cuda::std::size_t value = sizeof(typename Agent::TempStorage);
 };
 
-// check whether all Agents requires < MAX_SHMEM shared memory
+// check whether all Agents requires < MaxShmem shared memory
 // ---------------------------------------------------------------------------
 // if so, we can use simpler kernel for dispatch, which assumes that all
 // shared memory is on chip.
@@ -193,11 +194,11 @@ template <bool V, class A, size_t S>
 struct has_enough_shmem_impl<V, A, S, typelist<>>
 {
   static constexpr bool value = V;
-  using type = ::cuda::std::conditional_t<value, thrust::detail::true_type, thrust::detail::false_type>;
+  using type                  = ::cuda::std::conditional_t<value, ::cuda::std::true_type, ::cuda::std::false_type>;
 };
 
-template <class Agent, size_t MAX_SHMEM>
-struct has_enough_shmem : has_enough_shmem_impl<true, Agent, MAX_SHMEM, sm_list>
+template <class Agent, size_t MaxShmem>
+struct has_enough_shmem : has_enough_shmem_impl<true, Agent, MaxShmem, sm_list>
 {};
 
 /////////////////////////
@@ -210,7 +211,7 @@ struct has_enough_shmem : has_enough_shmem_impl<true, Agent, MAX_SHMEM, sm_list>
 
 struct AgentPlan
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
   int items_per_tile;
   int shared_memory_size;
@@ -219,10 +220,10 @@ struct AgentPlan
   AgentPlan() = default;
 
   THRUST_RUNTIME_FUNCTION
-  AgentPlan(int block_threads_, int items_per_thread_, int shared_memory_size_, int grid_size_ = 0)
-      : block_threads(block_threads_)
+  AgentPlan(int threads_per_block_, int items_per_thread_, int shared_memory_size_, int grid_size_ = 0)
+      : threads_per_block(threads_per_block_)
       , items_per_thread(items_per_thread_)
-      , items_per_tile(items_per_thread * block_threads)
+      , items_per_tile(items_per_thread * threads_per_block)
       , shared_memory_size(shared_memory_size_)
       , grid_size(grid_size_)
   {}
@@ -232,9 +233,9 @@ struct AgentPlan
   template <class PtxPlan>
   THRUST_RUNTIME_FUNCTION
   AgentPlan(PtxPlan, typename thrust::detail::disable_if_convertible<PtxPlan, AgentPlan>::type* = nullptr)
-      : block_threads(PtxPlan::BLOCK_THREADS)
-      , items_per_thread(PtxPlan::ITEMS_PER_THREAD)
-      , items_per_tile(PtxPlan::ITEMS_PER_TILE)
+      : threads_per_block(PtxPlan::block_threads)
+      , items_per_thread(PtxPlan::items_per_thread)
+      , items_per_tile(PtxPlan::items_per_tile)
       , shared_memory_size(temp_storage_size<PtxPlan>::value)
       , grid_size(0)
   {}
@@ -250,7 +251,7 @@ struct return_Plan
 
 template <class Agent>
 struct get_plan
-    : ::cuda::std::conditional<has_Plan<Agent>::value, return_Plan<Agent>, ::cuda::std::type_identity<AgentPlan>>::type
+    : ::cuda::std::conditional_t<has_Plan<Agent>::value, return_Plan<Agent>, ::cuda::std::type_identity<AgentPlan>>
 {};
 
 // returns AgentPlan corresponding to a given ptx version
@@ -282,7 +283,6 @@ struct get_agent_plan_impl<Agent, typelist<lowest_supported_sm_arch>>
   using Plan = typename get_plan<Agent>::type;
   Plan THRUST_RUNTIME_FUNCTION static get(int /* ptx_version */)
   {
-    using Plan = typename get_plan<Agent>::type;
     return Plan(specialize_plan<Agent::template PtxPlan, lowest_supported_sm_arch>());
   }
 };
@@ -331,7 +331,7 @@ THRUST_RUNTIME_FUNCTION inline size_t get_max_shared_memory_per_block()
 
 THRUST_RUNTIME_FUNCTION inline size_t vshmem_size(size_t shmem_per_block, size_t num_blocks)
 {
-  size_t max_shmem_per_block = get_max_shared_memory_per_block();
+  const size_t max_shmem_per_block = get_max_shared_memory_per_block();
   if (shmem_per_block > max_shmem_per_block)
   {
     return shmem_per_block * num_blocks;
@@ -360,35 +360,35 @@ struct get_arch<Plan<Arch>>
 template <class T>
 class cuda_optional
 {
-  cudaError_t status_{cudaSuccess};
-  T value_{};
+  cudaError_t err{cudaSuccess};
+  T val{};
 
 public:
   cuda_optional() = default;
 
   _CCCL_HOST_DEVICE cuda_optional(T v, cudaError_t status = cudaSuccess)
-      : status_(status)
-      , value_(v)
+      : err(status)
+      , val(v)
   {}
 
-  bool _CCCL_HOST_DEVICE isValid() const
+  bool _CCCL_HOST_DEVICE is_valid() const
   {
-    return cudaSuccess == status_;
+    return cudaSuccess == err;
   }
 
   cudaError_t _CCCL_HOST_DEVICE status() const
   {
-    return status_;
+    return err;
   }
 
   _CCCL_HOST_DEVICE T const& value() const
   {
-    return value_;
+    return val;
   }
 
   _CCCL_HOST_DEVICE operator T const&() const
   {
-    return value_;
+    return val;
   }
 };
 
@@ -426,7 +426,7 @@ THRUST_RUNTIME_FUNCTION int get_ptx_version()
     char str[]      = "This program was not compiled for SM     \n";
 
     auto print_1_helper = [&](int v) {
-      str[code_offset] = static_cast<char>(v) + '0';
+      str[code_offset] = static_cast<char>(static_cast<char>(v) + '0');
       code_offset++;
     };
 
@@ -465,9 +465,9 @@ struct uninitialized
 {
   using DeviceWord = typename cub::UnitWord<T>::DeviceWord;
 
-  static constexpr int WORDS = sizeof(T) / sizeof(DeviceWord);
+  static constexpr int words = sizeof(T) / sizeof(DeviceWord);
 
-  DeviceWord storage[WORDS];
+  DeviceWord storage[words];
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T& get()
   {
@@ -477,42 +477,6 @@ struct uninitialized
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T&()
   {
     return get();
-  }
-};
-
-// uninitialized_array
-// --------------
-// allocates uninitialized data on stack
-template <class T, size_t N, size_t Alignment = alignof(T)>
-struct uninitialized_array
-{
-  using value_type = T;
-  static constexpr ::cuda::std::integral_constant<size_t, N> size{};
-  alignas(Alignment) char data_[N * sizeof(T)];
-
-  _CCCL_HOST_DEVICE T* data()
-  {
-    return reinterpret_cast<T*>(data_);
-  }
-
-  _CCCL_HOST_DEVICE const T* data() const
-  {
-    return reinterpret_cast<T*>(data_);
-  }
-
-  _CCCL_HOST_DEVICE T& operator[](unsigned int idx)
-  {
-    return data()[idx];
-  }
-
-  _CCCL_HOST_DEVICE T const& operator[](unsigned int idx) const
-  {
-    return data()[idx];
-  }
-
-  _CCCL_HOST_DEVICE T (&as_array())[N]
-  {
-    return static_cast<T(&)[N]>(data_);
   }
 };
 

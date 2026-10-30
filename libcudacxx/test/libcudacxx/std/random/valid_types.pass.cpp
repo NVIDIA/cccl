@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
+
 // <random>
 //
 // Verify [rand.req.genl]/1.6 and /1.7 (C++26, P4037R1) for the set of integer

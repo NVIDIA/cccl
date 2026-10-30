@@ -22,11 +22,11 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/ranges_find_if.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__concepts/equality_comparable.h>
-#include <cuda/std/__functional/bind_back.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/reference_wrapper.h>
 #include <cuda/std/__iterator/concepts.h>
@@ -41,8 +41,11 @@
 #include <cuda/std/__ranges/non_propagating_cache.h>
 #include <cuda/std/__ranges/range_adaptor.h>
 #include <cuda/std/__ranges/view_interface.h>
+#include <cuda/std/__type_traits/add_rvalue_reference.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_comparable.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_object.h>
@@ -299,7 +302,7 @@ public:
     is_nothrow_move_constructible_v<_View>
     && is_nothrow_constructible_v<__movable_box<_Pred>, in_place_t, add_rvalue_reference_t<_Pred>>)
       : __base_{::cuda::std::move(__base)}
-      , __pred_{in_place, ::cuda::std::move(__pred)}
+      , __pred_{in_place_t{}, ::cuda::std::move(__pred)}
   {}
 
   _CCCL_TEMPLATE(class _View2 = _View)
@@ -353,19 +356,19 @@ public:
 };
 
 template <class _Range, class _Pred>
-_CCCL_HOST_DEVICE filter_view(_Range&&, _Pred) -> filter_view<ranges::views::all_t<_Range>, _Pred>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES filter_view(_Range&&, _Pred) -> filter_view<ranges::views::all_t<_Range>, _Pred>;
 
 _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(filter_view)
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
-_CCCL_BEGIN_NAMESPACE_CPO(__filter)
 
+_CCCL_BEGIN_NAMESPACE_CPO(__filter)
 struct __fn
 {
   template <class _Range, class _Pred>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range, _Pred&& __pred) const noexcept(noexcept(
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Range&& __range, _Pred&& __pred) noexcept(noexcept(
     ::cuda::std::ranges::filter_view{::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Pred>(__pred)}))
     -> decltype(::cuda::std::ranges::filter_view{
       ::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Pred>(__pred)})
@@ -375,10 +378,10 @@ struct __fn
 
   _CCCL_TEMPLATE(class _Pred)
   _CCCL_REQUIRES(constructible_from<decay_t<_Pred>, _Pred>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Pred&& __pred) const
-    noexcept(is_nothrow_constructible_v<decay_t<_Pred>, _Pred>)
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Pred&& __pred) noexcept(is_nothrow_constructible_v<decay_t<_Pred>, _Pred>)
   {
-    return ::cuda::std::ranges::__pipeable{::cuda::std::__bind_back(*this, ::cuda::std::forward<_Pred>(__pred))};
+    return ::cuda::std::ranges::__pipeable_bind_back(__fn{}, ::cuda::std::forward<_Pred>(__pred));
   }
 };
 _CCCL_END_NAMESPACE_CPO

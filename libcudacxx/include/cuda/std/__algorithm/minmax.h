@@ -47,7 +47,7 @@ template <class _Tp>
 template <class _Tp, class _Compare>
 [[nodiscard]] _CCCL_API constexpr pair<_Tp, _Tp> minmax(initializer_list<_Tp> __t, _Compare __comp)
 {
-  static_assert(__is_callable<_Compare, _Tp, _Tp>::value, "The comparator has to be callable");
+  static_assert(__is_callable_v<_Compare, _Tp, _Tp>, "The comparator has to be callable");
   identity __proj{};
   auto __ret = ::cuda::std::__minmax_element_impl(__t.begin(), __t.end(), __comp, __proj);
   return pair<_Tp, _Tp>(*__ret.first, *__ret.second);

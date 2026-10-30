@@ -14,7 +14,7 @@ Thread Groups
 
 The *ThreadGroup concept* defines the requirements of a type that represents a group of cooperating threads.
 
-The `CUDA Cooperative Groups Library <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#group-collectives>`_
+The `CUDA Cooperative Groups Library <https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/cooperative-groups.html#cooperative-groups>`_
 provides a number of types that satisfy this concept.
 
 Data Members

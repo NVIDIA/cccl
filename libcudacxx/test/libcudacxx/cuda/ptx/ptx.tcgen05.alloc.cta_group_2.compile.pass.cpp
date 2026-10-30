@@ -10,10 +10,9 @@
 
 // UNSUPPORTED: libcpp-has-no-threads
 
-// <cuda/ptx>
+// <cuda/ptxs/tcgen05_alloc.h>
 
-#include <cuda/ptx>
-#include <cuda/std/utility>
+#include <cuda/ptxs/tcgen05_alloc.h>
 
 #include "generated/tcgen05_alloc_cta_group_2.h"
 

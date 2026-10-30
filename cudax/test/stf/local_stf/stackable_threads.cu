@@ -52,19 +52,20 @@ int main()
   int array[N];
   for (size_t i = 0; i < N; i++)
   {
-    array[i] = 1 + i * i;
+    array[i] = static_cast<int>(1 + i * i);
   }
 
   auto lB = sctx.logical_data(array);
 
   lB.set_read_only();
 
-  int main_head = sctx.get_head_offset();
+  const int main_head = sctx.get_head_offset();
 
   ::std::vector<stackable_logical_data<slice<int>>> lA;
 
   const int NTHREADS = 8;
 
+  lA.reserve(NTHREADS);
   for (int i = 0; i < NTHREADS; ++i)
   {
     lA.push_back(sctx.logical_data(shape_of<slice<int>>(N)));
@@ -74,6 +75,7 @@ int main()
   {
     ::std::vector<::std::thread> threads;
 
+    threads.reserve(NTHREADS);
     for (int i = 0; i < NTHREADS; ++i)
     {
       threads.emplace_back(worker, sctx, main_head, lA[i], lB);

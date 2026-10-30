@@ -7,9 +7,10 @@ import json
 import os
 import re
 
-# sccache started reporting PTX/CUBIN hits.
-# We filter these out as they are not included in the `compile_requests` counter.
-sccache_languages = ["C/C++", "CUDA"]
+# rapidsai/sccache tracks CUDA sub-tool compilations (cudafe++, cicc, ptxas)
+# under separate language keys.  Count all of them so the reported rate matches
+# sccache's own "Cache hits rate".
+sccache_languages = {"C/C++", "CUDA", "CUDA (Device code)", "PTX", "CUBIN"}
 
 
 def job_succeeded(job):
@@ -88,15 +89,17 @@ def update_summary_entry(entry, job, job_times=None):
     sccache_stats = get_sccache_stats(job["id"])
     if sccache_stats:
         sccache_stats = sccache_stats["stats"]
-        requests = sccache_stats.get("compile_requests", 0)
-        hits = 0
-        if "cache_hits" in sccache_stats:
-            cache_hits = sccache_stats["cache_hits"]
-            if "counts" in cache_hits:
-                counts = cache_hits["counts"]
-                for lang, lang_hits in counts.items():
-                    if lang in sccache_languages:
-                        hits += lang_hits
+        hits = sum(
+            v
+            for k, v in sccache_stats.get("cache_hits", {}).get("counts", {}).items()
+            if k in sccache_languages
+        )
+        misses = sum(
+            v
+            for k, v in sccache_stats.get("cache_misses", {}).get("counts", {}).items()
+            if k in sccache_languages
+        )
+        requests = hits + misses
         if "sccache" not in entry:
             entry["sccache"] = {"requests": requests, "hits": hits}
         else:

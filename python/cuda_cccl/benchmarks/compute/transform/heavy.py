@@ -7,7 +7,7 @@
 C++ equivalent: cub/benchmarks/bench/transform/heavy.cu
 
 Notes:
-- Migration: Python uses Numba local arrays to emulate register pressure.
+- Python uses device-local arrays to emulate register pressure.
 """
 
 import sys
@@ -15,18 +15,17 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import cuda.bench as bench
 import cupy as cp
-import numba
 import numpy as np
-from numba import cuda as lang
+from numba_cuda_mlir import cuda as lang
 from utils import as_cupy_stream, generate_data_with_entropy
 
-import cuda.bench as bench
 import cuda.compute
 
 
 def _heavy_op_32(data):
-    reg = lang.local.array(shape=32, dtype=numba.uint32)
+    reg = lang.local.array(shape=32, dtype=np.uint32)
     reg[0] = data
     for i in range(1, 32):
         x = reg[i - 1]
@@ -43,7 +42,7 @@ def _heavy_op_32(data):
 
 
 def _heavy_op_64(data):
-    reg = lang.local.array(shape=64, dtype=numba.uint32)
+    reg = lang.local.array(shape=64, dtype=np.uint32)
     reg[0] = data
     for i in range(1, 64):
         x = reg[i - 1]
@@ -60,7 +59,7 @@ def _heavy_op_64(data):
 
 
 def _heavy_op_128(data):
-    reg = lang.local.array(shape=128, dtype=numba.uint32)
+    reg = lang.local.array(shape=128, dtype=np.uint32)
     reg[0] = data
     for i in range(1, 128):
         x = reg[i - 1]
@@ -77,7 +76,7 @@ def _heavy_op_128(data):
 
 
 def _heavy_op_256(data):
-    reg = lang.local.array(shape=256, dtype=numba.uint32)
+    reg = lang.local.array(shape=256, dtype=np.uint32)
     reg[0] = data
     for i in range(1, 256):
         x = reg[i - 1]
@@ -116,14 +115,16 @@ def bench_heavy(state: bench.State):
         return
 
     op = _HEAVY_OPS[n_regs]
-    transform = cuda.compute.make_unary_transform(d_in, d_out, op)
+    transform = cuda.compute.make_unary_transform(d_in=d_in, d_out=d_out, op=op)
 
     state.add_element_count(size)
     state.add_global_memory_reads(size * d_in.dtype.itemsize)
     state.add_global_memory_writes(size * d_out.dtype.itemsize)
 
     def launcher(launch: bench.Launch):
-        transform(d_in, d_out, op, size, launch.get_stream())
+        transform(
+            d_in=d_in, d_out=d_out, op=op, num_items=size, stream=launch.get_stream()
+        )
 
     state.exec(launcher, batched=False)
 

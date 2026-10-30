@@ -39,10 +39,16 @@
 #  define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 0
 #endif // _CCCL_FREESTANDING()
 
+// In tile mode the builtin is tile annotated which can have unintended consequences in SIMT code with e.g int128
+#if defined(__CUDACC_TILE__)
+#  undef _CCCL_HAS_BUILTIN_STD_ADDRESSOF
+#  define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 0
+#endif // defined(__CUDACC_TILE__)
+
 // include minimal std:: headers
 #if _CCCL_HAS_BUILTIN_STD_ADDRESSOF()
 #  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && __has_include(<bits/move.h>)
-#    include <bits/move.h>
+#    include <bits/move.h> // IWYU pragma: keep
 #  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__memory/addressof.h>)
 #    include <__memory/addressof.h>
 #  else

@@ -6,9 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6076227: ICE when validating tile MLIR
-
 // bitset<N> operator>>(size_t pos) const; // constexpr since C++23
 
 #include <cuda/std/bitset>
@@ -40,7 +37,7 @@ TEST_FUNC constexpr bool test_right_shift()
   return true;
 }
 
-TEST_FUNC int main(int, char**)
+int main(int, char**)
 {
   test_right_shift<0>();
   test_right_shift<1>();

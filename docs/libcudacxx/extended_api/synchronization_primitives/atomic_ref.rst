@@ -47,7 +47,7 @@ No object or subobject of an object referenced by an ``atomic_­ref`` shall be c
 For ``cuda::atomic_ref<T>`` and ``cuda::std::atomic_ref<T>`` the type ``T`` must satisfy the following:
   - ``sizeof(T) <= 16``.
   - The referenced object must be aligned to its size: ``alignof(T) == sizeof(T)``.
-  - ``T`` must not have “padding bits”, i.e., T's `object representation <https://en.cppreference.com/w/cpp/language/object#Object_representation_and_value_representation>`_
+  - ``T`` must not have "padding bits", i.e., T's `object representation <https://en.cppreference.com/w/cpp/language/object#Object_representation_and_value_representation>`_
     must not have bits that do not participate in it's value representation.
 
 Concurrency Restrictions
@@ -90,7 +90,7 @@ Example
 
    #include <cuda/atomic>
 
-   __global__ void example_kernel(int *gmem, int *pinned_mem) {
+   __global__ void example_kernel(int *gmem, int *cluster_gmem, int *pinned_mem) {
      // This atomic is suitable for all threads in the system.
      cuda::atomic_ref<int, cuda::thread_scope_system> a(*pinned_mem);
 
@@ -100,9 +100,12 @@ Example
      // This atomic is suitable for all threads on the current processor (e.g. GPU).
      cuda::atomic_ref<int, cuda::thread_scope_device> c(*gmem);
 
+     // This atomic is suitable for all threads in the same thread block cluster.
+     cuda::atomic_ref<int, cuda::thread_scope_cluster> d(*cluster_gmem);
+
      __shared__ int shared_v;
      // This atomic is suitable for threads in the same thread block.
-     cuda::atomic_ref<int, cuda::thread_scope_block> d(shared_v);
+     cuda::atomic_ref<int, cuda::thread_scope_block> e(shared_v);
    }
 
 `See it on Godbolt <https://godbolt.org/z/fr4K7ErEh>`_

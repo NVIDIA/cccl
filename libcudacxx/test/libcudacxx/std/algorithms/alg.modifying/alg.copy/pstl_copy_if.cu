@@ -144,7 +144,7 @@ C2H_TEST("cuda::std::copy_if", "[parallel algorithm]", all_types)
 
   SECTION("with provided stream")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
 
     test_copy_if(policy, input, output, converting);
@@ -160,7 +160,7 @@ C2H_TEST("cuda::std::copy_if", "[parallel algorithm]", all_types)
 
   SECTION("with provided stream and memory_resource")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy =
       cuda::execution::gpu.with(cuda::mr::get_memory_resource, device_resource).with(cuda::get_stream, stream);

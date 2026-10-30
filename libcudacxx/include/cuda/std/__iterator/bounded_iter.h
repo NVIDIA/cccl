@@ -106,7 +106,7 @@ public:
   {
     _CCCL_ASSERT(__in_bounds(__current_),
                  "__bounded_iter::operator->: Attempt to dereference an out-of-range iterator");
-    return ::cuda::std::__to_address(__current_);
+    return ::cuda::std::to_address(__current_);
   }
 
   _CCCL_API constexpr reference operator[](difference_type __n) const noexcept
@@ -242,7 +242,7 @@ struct pointer_traits<__bounded_iter<_Iterator>>
 
   _CCCL_API constexpr static element_type* to_address(pointer __it) noexcept
   {
-    return ::cuda::std::__to_address(__it.__current_);
+    return ::cuda::std::to_address(__it.__current_);
   }
 };
 

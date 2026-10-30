@@ -92,8 +92,11 @@ Example
      // This atomic is suitable for all threads on the current processor (e.g. GPU).
      cuda::atomic<int, cuda::thread_scope_device> c;
 
+     // This atomic is suitable for all threads in the same thread block cluster.
+     cuda::atomic<int, cuda::thread_scope_cluster> d;
+
      // This atomic is suitable for threads in the same thread block.
-     cuda::atomic<int, cuda::thread_scope_block> d;
+     cuda::atomic<int, cuda::thread_scope_block> e;
    }
 
 `See it on Godbolt <https://godbolt.org/z/avo3Evbee>`_

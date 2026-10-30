@@ -29,7 +29,6 @@
 #include <cuda/std/__optional/bad_optional_access.h>
 #include <cuda/std/__optional/nullopt.h>
 #include <cuda/std/__optional/optional_base.h>
-#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
@@ -37,13 +36,11 @@
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
-#include <cuda/std/__type_traits/reference_converts_from_temporary.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
-#include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -108,17 +105,21 @@ public:
     !__is_cuda_std_optional_v<remove_cvref_t<_Up>> && !is_same_v<remove_cvref_t<_Up>, in_place_t>
     && is_constructible_v<_Tp&, _Up> && !__from_temporary<_Up>;
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(__can_construct_from_rvalue<_Up> _CCCL_AND is_convertible_v<_Up, _Tp&>)
   _CCCL_API constexpr optional(_Up&& __u) noexcept(noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up>())))
       : __value_(::cuda::std::addressof(static_cast<_Tp&>(::cuda::std::forward<_Up>(__u))))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(__can_construct_from_rvalue<_Up> _CCCL_AND(!is_convertible_v<_Up, _Tp&>))
   _CCCL_API explicit constexpr optional(_Up&& __u) noexcept(noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up>())))
       : __value_(::cuda::std::addressof(static_cast<_Tp&>(::cuda::std::forward<_Up>(__u))))
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(__from_temporary<_Up>)
@@ -179,15 +180,17 @@ public:
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(__can_convert_from_optional_rvalue_reference<_Up> _CCCL_AND is_convertible_v<_Up, _Tp&>)
-  _CCCL_API constexpr optional(optional<_Up>&& __u) noexcept(noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up>())))
+  _CCCL_API constexpr optional(optional<_Up>&& __u // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+                               ) noexcept(noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up>())))
       : __value_(
           __u.has_value() ? ::cuda::std::addressof(static_cast<_Tp&>(::cuda::std::forward<_Up>(__u.value()))) : nullptr)
   {}
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(__can_convert_from_optional_rvalue_reference<_Up> _CCCL_AND(!is_convertible_v<_Up, _Tp&>))
-  _CCCL_API explicit constexpr optional(optional<_Up>&& __u) noexcept(
-    noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up>())))
+  _CCCL_API explicit constexpr optional(
+    optional<_Up>&& __u // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    ) noexcept(noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up>())))
       : __value_(
           __u.has_value() ? ::cuda::std::addressof(static_cast<_Tp&>(::cuda::std::forward<_Up>(__u.value()))) : nullptr)
   {}
@@ -264,7 +267,7 @@ public:
     return __value_ != nullptr;
   }
 
-  _CCCL_API constexpr _Tp& value() const noexcept
+  _CCCL_API constexpr _Tp& value() const
   {
     if (__value_ != nullptr)
     {

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6077640: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!"
+// UNSUPPORTED: force-tile
+// error calling a __host__ __device__ function from a __host__ __device__ __tile__ function is not allowed
 
 // <cuda/std/iterator>
 
@@ -28,7 +28,7 @@
 #include "test_macros.h"
 
 template <class C>
-TEST_FUNC void
+TEST_HOST_DEVICE_FUNC void
 test(C c1,
      typename C::difference_type j,
      typename C::value_type x1,
@@ -44,7 +44,7 @@ test(C c1,
 }
 
 template <class C>
-TEST_FUNC void
+TEST_HOST_DEVICE_FUNC void
 insert3at(C& c, typename C::iterator i, typename C::value_type x1, typename C::value_type x2, typename C::value_type x3)
 {
   i = c.insert(i, cuda::std::move(x1));

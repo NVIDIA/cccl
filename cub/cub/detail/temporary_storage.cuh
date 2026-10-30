@@ -31,7 +31,8 @@
 
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__exception/exception_macros.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -255,8 +256,8 @@ template <int SlotsCount>
 class layout
 {
   slot m_slots[SlotsCount];
-  size_t m_sizes[SlotsCount];
-  void* m_pointers[SlotsCount];
+  size_t m_sizes[SlotsCount]{};
+  void* m_pointers[SlotsCount]{};
   bool m_layout_was_mapped{};
 
 public:
@@ -313,8 +314,7 @@ public:
 
     this->prepare_interface();
 
-    cudaError_t error = cudaSuccess;
-    if ((error = detail::alias_temporaries(d_temp_storage, temp_storage_bytes, m_pointers, m_sizes)))
+    if (const cudaError_t error = detail::alias_temporaries(d_temp_storage, temp_storage_bytes, m_pointers, m_sizes))
     {
       return error;
     }
@@ -325,7 +325,7 @@ public:
     }
 
     m_layout_was_mapped = true;
-    return error;
+    return cudaSuccess;
   }
 
 private:
@@ -350,28 +350,30 @@ template <typename MRT>
 CUB_RUNTIME_FUNCTION cudaError_t
 allocate(::cuda::stream_ref stream, void*& d_temp_storage, size_t temp_storage_bytes, MRT& mr)
 {
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST,
-    (
-      try { d_temp_storage = mr.allocate(stream, temp_storage_bytes, alignof(::cuda::std::max_align_t)); } catch (...) {
-        return cudaErrorMemoryAllocation;
-      }),
-    (d_temp_storage = mr.allocate(stream, temp_storage_bytes, alignof(::cuda::std::max_align_t));));
-  return cudaSuccess;
+  _CCCL_TRY
+  {
+    d_temp_storage = mr.allocate(stream, temp_storage_bytes, alignof(::cuda::std::max_align_t));
+    return cudaSuccess;
+  }
+  _CCCL_CATCH_ALL
+  {
+    return cudaErrorMemoryAllocation;
+  }
 }
 
 template <typename MRT>
 CUB_RUNTIME_FUNCTION cudaError_t
 deallocate(::cuda::stream_ref stream, void* d_temp_storage, size_t temp_storage_bytes, MRT& mr)
 {
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST,
-    (
-      try {
-        mr.deallocate(stream, d_temp_storage, temp_storage_bytes, alignof(::cuda::std::max_align_t));
-      } catch (...) { return cudaErrorMemoryAllocation; }),
-    (mr.deallocate(stream, d_temp_storage, temp_storage_bytes, alignof(::cuda::std::max_align_t));));
-  return cudaSuccess;
+  _CCCL_TRY
+  {
+    mr.deallocate(stream, d_temp_storage, temp_storage_bytes, alignof(::cuda::std::max_align_t));
+    return cudaSuccess;
+  }
+  _CCCL_CATCH_ALL
+  {
+    return cudaErrorMemoryAllocation;
+  }
 }
 } // namespace detail::temporary_storage
 

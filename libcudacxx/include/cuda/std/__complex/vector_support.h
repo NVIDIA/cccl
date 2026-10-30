@@ -67,6 +67,7 @@ struct __ab_results
   _Tp __b;
 };
 
+_CCCL_EXEC_CHECK_DISABLE
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES((!__has_vector_type_v<_Tp>) )
 _CCCL_API constexpr __abcd_results<_Tp> __complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d) noexcept
@@ -74,6 +75,7 @@ _CCCL_API constexpr __abcd_results<_Tp> __complex_calculate_partials(_Tp __a, _T
   return {__a * __c, __b * __d, __a * __d, __b * __c};
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES((!__has_vector_type_v<_Tp>) )
 _CCCL_API constexpr __ab_results<_Tp> __complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2) noexcept
@@ -81,6 +83,7 @@ _CCCL_API constexpr __ab_results<_Tp> __complex_piecewise_mul(_Tp __x1, _Tp __y1
   return {__x1 * __x2, __y1 * __y2};
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__has_vector_type_v<_Tp>)
 _CCCL_API constexpr __abcd_results<_Tp> __complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d) noexcept
@@ -104,6 +107,7 @@ _CCCL_API constexpr __abcd_results<_Tp> __complex_calculate_partials(_Tp __a, _T
   return __ret;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__has_vector_type_v<_Tp>)
 _CCCL_API constexpr __ab_results<_Tp> __complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2) noexcept

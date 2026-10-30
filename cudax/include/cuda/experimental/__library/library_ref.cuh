@@ -98,11 +98,12 @@ public:
   [[nodiscard]] kernel_ref<_Signature> kernel(const char* __name) const
   {
     ::CUkernel __kernel{};
-    if (const auto __res = ::cuda::__driver::__libraryGetKernelNoThrow(__kernel, __library_, __name);
-        __res != ::cudaSuccess)
-    {
-      _CCCL_THROW(::cuda::cuda_error, __res, "Failed to get the kernel from the library");
-    }
+    _CCCL_TRY_DRIVER_API(
+      ::cuda::__driver::__libraryGetKernelNoThrow,
+      "Failed to get the kernel from the library",
+      __kernel,
+      __library_,
+      __name);
     return kernel_ref<_Signature>{__kernel};
   }
 
@@ -145,11 +146,13 @@ public:
 
     ::CUdeviceptr __dptr{};
     ::cuda::std::size_t __size{};
-    if (const auto __res = ::cuda::__driver::__libraryGetGlobalNoThrow(__dptr, __size, __library_, __name);
-        __res != ::cudaSuccess)
-    {
-      _CCCL_THROW(::cuda::cuda_error, __res, "Failed to get the global symbol from the library");
-    }
+    _CCCL_TRY_DRIVER_API(
+      ::cuda::__driver::__libraryGetGlobalNoThrow,
+      "Failed to get the global symbol from the library",
+      __dptr,
+      __size,
+      __library_,
+      __name);
     return library_symbol_info{reinterpret_cast<void*>(__dptr), __size};
   }
 
@@ -190,11 +193,13 @@ public:
   {
     ::CUdeviceptr __dptr{};
     ::cuda::std::size_t __size{};
-    if (const auto __res = ::cuda::__driver::__libraryGetManagedNoThrow(__dptr, __size, __library_, __name);
-        __res != ::cudaSuccess)
-    {
-      _CCCL_THROW(::cuda::cuda_error, __res, "Failed to get the managed symbol from the library");
-    }
+    _CCCL_TRY_DRIVER_API(
+      ::cuda::__driver::__libraryGetManagedNoThrow,
+      "Failed to get the managed symbol from the library",
+      __dptr,
+      __size,
+      __library_,
+      __name);
     return library_symbol_info{reinterpret_cast<void*>(__dptr), __size};
   }
 

@@ -44,7 +44,7 @@ copy_n(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Size 
   using iterator_tuple = ::cuda::std::tuple<InputIterator, OutputIterator>;
   using zip_iter       = thrust::zip_iterator<iterator_tuple>;
 
-  zip_iter zipped = thrust::make_zip_iterator(first, result);
+  const zip_iter zipped = thrust::make_zip_iterator(first, result);
 
   return ::cuda::std::get<1>(thrust::for_each_n(exec, zipped, n, functor_type{xfrm_type()}).get_iterator_tuple());
 } // end copy_n()

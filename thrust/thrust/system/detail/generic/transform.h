@@ -109,7 +109,7 @@ _CCCL_HOST_DEVICE OutputIterator transform(
   using IteratorTuple = ::cuda::std::tuple<InputIterator, OutputIterator>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-  ZipIterator zipped_result = thrust::for_each(
+  const ZipIterator zipped_result = thrust::for_each(
     exec, thrust::make_zip_iterator(first, result), thrust::make_zip_iterator(last, result), UnaryTransformFunctor{op});
 
   return ::cuda::std::get<1>(zipped_result.get_iterator_tuple());
@@ -135,7 +135,7 @@ _CCCL_HOST_DEVICE OutputIterator transform(
   using IteratorTuple = ::cuda::std::tuple<InputIterator1, InputIterator2, OutputIterator>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-  ZipIterator zipped_result = thrust::for_each(
+  const ZipIterator zipped_result = thrust::for_each(
     exec,
     thrust::make_zip_iterator(first1, first2, result),
     thrust::make_zip_iterator(last1, first2, result),
@@ -163,7 +163,7 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
   using IteratorTuple = ::cuda::std::tuple<InputIterator, ForwardIterator>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-  ZipIterator zipped_result = thrust::for_each(
+  const ZipIterator zipped_result = thrust::for_each(
     exec,
     thrust::make_zip_iterator(first, result),
     thrust::make_zip_iterator(last, result),
@@ -193,7 +193,7 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
   using IteratorTuple = ::cuda::std::tuple<InputIterator1, InputIterator2, ForwardIterator>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-  ZipIterator zipped_result = thrust::for_each(
+  const ZipIterator zipped_result = thrust::for_each(
     exec,
     thrust::make_zip_iterator(first, stencil, result),
     thrust::make_zip_iterator(last, stencil, result),
@@ -225,7 +225,7 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
   using IteratorTuple = ::cuda::std::tuple<InputIterator1, InputIterator2, InputIterator3, ForwardIterator>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-  ZipIterator zipped_result = thrust::for_each(
+  const ZipIterator zipped_result = thrust::for_each(
     exec,
     thrust::make_zip_iterator(first1, first2, stencil, result),
     thrust::make_zip_iterator(last1, first2, stencil, result),

@@ -22,8 +22,10 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/class_or_enum.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/referenceable.h>
 #include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/declval.h>
@@ -94,8 +96,8 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(__unqualified_iter_move<_Ip>)
-  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator()(_Ip&& __i) const
-    noexcept(noexcept(iter_move(::cuda::std::forward<_Ip>(__i))))
+  [[nodiscard]] _CCCL_API constexpr decltype(auto)
+  _CCCL_STATIC_CALL_OPERATOR(_Ip&& __i) noexcept(noexcept(iter_move(::cuda::std::forward<_Ip>(__i))))
   {
     return iter_move(::cuda::std::forward<_Ip>(__i));
   }
@@ -103,9 +105,9 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(__move_deref<_Ip>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Ip&& __i) const
-    noexcept(noexcept(::cuda::std::move(*::cuda::std::forward<_Ip>(__i))))
-      -> decltype(::cuda::std::move(*::cuda::std::forward<_Ip>(__i)))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Ip&& __i) noexcept(noexcept(::cuda::std::move(*::cuda::std::forward<_Ip>(__i))))
+    -> decltype(::cuda::std::move(*::cuda::std::forward<_Ip>(__i)))
   {
     return ::cuda::std::move(*::cuda::std::forward<_Ip>(__i));
   }
@@ -113,17 +115,21 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(__just_deref<_Ip>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Ip&& __i) const noexcept(noexcept(*::cuda::std::forward<_Ip>(__i)))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Ip&& __i) noexcept(noexcept(*::cuda::std::forward<_Ip>(__i)))
     -> decltype(*::cuda::std::forward<_Ip>(__i))
   {
     return *::cuda::std::forward<_Ip>(__i);
   }
 };
+
 _CCCL_END_NAMESPACE_CPO
+
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto iter_move = __iter_move::__fn{};
 } // namespace __cpo
+
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
@@ -131,7 +137,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_CONCEPTS()
 template <__dereferenceable _Tp>
   requires requires(_Tp& __t) {
-    { ::cuda::std::ranges::iter_move(__t) } -> __can_reference;
+    { ::cuda::std::ranges::iter_move(__t) } -> __referenceable;
   }
 using iter_rvalue_reference_t = decltype(::cuda::std::ranges::iter_move(::cuda::std::declval<_Tp&>()));
 
@@ -140,7 +146,7 @@ using iter_rvalue_reference_t = decltype(::cuda::std::ranges::iter_move(::cuda::
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(__can_iter_rvalue_reference_t_,
                        requires(_Tp& __t)(requires(__dereferenceable<_Tp>),
-                                          requires(__can_reference<decltype(::cuda::std::ranges::iter_move(__t))>)));
+                                          requires(__referenceable<decltype(::cuda::std::ranges::iter_move(__t))>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __can_iter_rvalue_reference_t = _CCCL_FRAGMENT(__can_iter_rvalue_reference_t_, _Tp);

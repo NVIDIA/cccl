@@ -14,8 +14,6 @@
 //     typename tuple_element<I, cuda::std::pair<T1, T2> >::type&
 //     get(pair<T1, T2>&);
 
-// UNSUPPORTED: msvc
-
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 #include <cuda/std/utility>

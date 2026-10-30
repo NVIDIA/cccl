@@ -15,20 +15,20 @@
 
 struct transform_double
 {
-  __host__ __device__ constexpr int operator()(int x) const
+  TEST_FUNC constexpr int operator()(int x) const
   {
     return x * 2;
   }
 };
 struct transform_add
 {
-  __host__ __device__ constexpr int operator()(int x, int y) const
+  TEST_FUNC constexpr int operator()(int x, int y) const
   {
     return x + y;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   constexpr int a[] = {1, 2, 3};
   int o[3]          = {};

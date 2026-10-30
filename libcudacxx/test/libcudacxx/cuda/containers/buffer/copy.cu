@@ -10,6 +10,8 @@
 
 #include <cuda/__memory_resource/shared_resource.h>
 #include <cuda/buffer>
+#include <cuda/devices>
+#include <cuda/memory_pool>
 #include <cuda/memory_resource>
 #include <cuda/std/algorithm>
 #include <cuda/std/array>
@@ -41,7 +43,7 @@ C2H_CCCLRT_TEST("cuda::buffer make_buffer", "[container][buffer]", test_types)
     return;
   }
 
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   Resource resource = extract_properties<Buffer>::get_resource();
 
   SECTION("Same resource and stream")
@@ -49,67 +51,67 @@ C2H_CCCLRT_TEST("cuda::buffer make_buffer", "[container][buffer]", test_types)
     { // empty input
       const Buffer input{stream, resource};
       const Buffer buf = cuda::make_buffer(input.stream(), input.memory_resource(), input);
-      CCCLRT_CHECK(buf.empty());
-      CCCLRT_CHECK(buf.data() == nullptr);
+      CHECK(buf.empty());
+      CHECK(buf.data() == nullptr);
     }
 
     { // non-empty input
       const Buffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       const Buffer buf = cuda::make_buffer(input.stream(), input.memory_resource(), input);
-      CCCLRT_CHECK(!buf.empty());
-      CCCLRT_CHECK(equal_range(buf));
+      CHECK(!buf.empty());
+      CHECK(equal_range(buf));
     }
 
     { // empty input
       const Buffer input{stream, resource};
       const Buffer buf = cuda::make_buffer(input.stream(), input.memory_resource(), input);
-      CCCLRT_CHECK(buf.empty());
-      CCCLRT_CHECK(buf.data() == nullptr);
+      CHECK(buf.empty());
+      CHECK(buf.data() == nullptr);
     }
 
     { // non-empty input
       const Buffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       const Buffer buf = cuda::make_buffer(input.stream(), input.memory_resource(), input);
-      CCCLRT_CHECK(!buf.empty());
-      CCCLRT_CHECK(equal_range(buf));
+      CHECK(!buf.empty());
+      CHECK(equal_range(buf));
     }
   }
 
   SECTION("Different stream")
   {
-    cuda::stream other_stream{cuda::device_ref{0}};
+    const cuda::stream other_stream{cuda::device_ref{0}};
     { // empty input
       const Buffer input{stream, resource};
       const Buffer buf = cuda::make_buffer(other_stream, input.memory_resource(), input);
-      CCCLRT_CHECK(buf.empty());
-      CCCLRT_CHECK(buf.data() == nullptr);
+      CHECK(buf.empty());
+      CHECK(buf.data() == nullptr);
     }
 
     { // non-empty input
       const Buffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       const Buffer buf = cuda::make_buffer(other_stream, input.memory_resource(), input);
-      CCCLRT_CHECK(!buf.empty());
-      CCCLRT_CHECK(equal_range(buf));
+      CHECK(!buf.empty());
+      CHECK(equal_range(buf));
     }
   }
 
   SECTION("Different resource and stream")
   {
-    cuda::stream other_stream{cuda::device_ref{0}};
+    const cuda::stream other_stream{cuda::device_ref{0}};
     { // empty input
       const Buffer input{stream, resource};
       auto buf = cuda::make_buffer(other_stream, resource, input);
       static_assert(is_matching_buffer(buf, input));
-      CCCLRT_CHECK(buf.empty());
-      CCCLRT_CHECK(buf.data() == nullptr);
+      CHECK(buf.empty());
+      CHECK(buf.data() == nullptr);
     }
 
     { // non-empty input
       const Buffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       const auto buf = cuda::make_buffer(other_stream, resource, input);
       static_assert(is_matching_buffer(buf, input));
-      CCCLRT_CHECK(!buf.empty());
-      CCCLRT_CHECK(equal_range(buf));
+      CHECK(!buf.empty());
+      CHECK(equal_range(buf));
     }
   }
 
@@ -119,39 +121,39 @@ C2H_CCCLRT_TEST("cuda::buffer make_buffer", "[container][buffer]", test_types)
       const Buffer input{stream, resource};
       const auto buf = cuda::make_buffer(stream, resource, input);
       static_assert(is_matching_buffer(buf, input));
-      CCCLRT_CHECK(buf.empty());
-      CCCLRT_CHECK(buf.data() == nullptr);
+      CHECK(buf.empty());
+      CHECK(buf.data() == nullptr);
     }
 
     { // non-empty input
       const Buffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       const auto buf = cuda::make_buffer(stream, resource, input);
       static_assert(is_matching_buffer(buf, input));
-      CCCLRT_CHECK(!buf.empty());
-      CCCLRT_CHECK(equal_range(buf));
+      CHECK(!buf.empty());
+      CHECK(equal_range(buf));
     }
 
     { // empty input
       const Buffer input{stream, resource};
       const auto buf = cuda::make_buffer(stream, resource, input);
       static_assert(is_matching_buffer(buf, input));
-      CCCLRT_CHECK(buf.empty());
-      CCCLRT_CHECK(buf.data() == nullptr);
+      CHECK(buf.empty());
+      CHECK(buf.data() == nullptr);
     }
 
     { // non-empty input
       const Buffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       const auto buf = cuda::make_buffer(stream, resource, input);
       static_assert(is_matching_buffer(buf, input));
-      CCCLRT_CHECK(!buf.empty());
-      CCCLRT_CHECK(equal_range(buf));
+      CHECK(!buf.empty());
+      CHECK(equal_range(buf));
     }
   }
 }
 
 C2H_CCCLRT_TEST("make_buffer variants", "[container][buffer]")
 {
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   const cuda::buffer<int, cuda::mr::device_accessible, other_property> input{
     stream,
     cuda::device_default_memory_pool(cuda::device_ref{0}),
@@ -159,7 +161,7 @@ C2H_CCCLRT_TEST("make_buffer variants", "[container][buffer]")
 
   // straight from a resource
   auto buf = cuda::make_buffer(input.stream(), cuda::device_default_memory_pool(cuda::device_ref{0}), input);
-  CCCLRT_CHECK(equal_range(buf));
+  CHECK(equal_range(buf));
   static_assert(
     ::cuda::mr::synchronous_resource_with<typename decltype(buf)::__resource_t, cuda::mr::device_accessible>);
   static_assert(
@@ -168,7 +170,7 @@ C2H_CCCLRT_TEST("make_buffer variants", "[container][buffer]")
 
   auto buf2 = cuda::make_buffer<int, cuda::mr::device_accessible>(
     input.stream(), cuda::device_default_memory_pool(cuda::device_ref{0}), input);
-  CCCLRT_CHECK(equal_range(buf2));
+  CHECK(equal_range(buf2));
   static_assert(
     ::cuda::mr::synchronous_resource_with<typename decltype(buf2)::__resource_t, cuda::mr::device_accessible>);
   static_assert(!::cuda::mr::synchronous_resource_with<typename decltype(buf2)::__resource_t, other_property>);
@@ -179,7 +181,7 @@ C2H_CCCLRT_TEST("make_buffer variants", "[container][buffer]")
   auto any_res = cuda::mr::any_resource<cuda::mr::device_accessible, other_property>(
     cuda::device_default_memory_pool(cuda::device_ref{0}));
   auto buf3 = cuda::make_buffer(input.stream(), any_res, input);
-  CCCLRT_CHECK(equal_range(buf3));
+  CHECK(equal_range(buf3));
   static_assert(
     ::cuda::mr::synchronous_resource_with<typename decltype(buf3)::__resource_t, cuda::mr::device_accessible>);
   static_assert(::cuda::mr::synchronous_resource_with<typename decltype(buf3)::__resource_t, other_property>);
@@ -187,7 +189,7 @@ C2H_CCCLRT_TEST("make_buffer variants", "[container][buffer]")
     !::cuda::mr::synchronous_resource_with<typename decltype(buf3)::__resource_t, cuda::mr::host_accessible>);
 
   auto buf4 = cuda::make_buffer<int, cuda::mr::device_accessible>(input.stream(), any_res, input);
-  CCCLRT_CHECK(equal_range(buf4));
+  CHECK(equal_range(buf4));
   static_assert(
     ::cuda::mr::synchronous_resource_with<typename decltype(buf4)::__resource_t, cuda::mr::device_accessible>);
   static_assert(!::cuda::mr::synchronous_resource_with<typename decltype(buf4)::__resource_t, other_property>);
@@ -197,7 +199,7 @@ C2H_CCCLRT_TEST("make_buffer variants", "[container][buffer]")
   // from a resource reference
   auto res_ref = cuda::mr::resource_ref<cuda::mr::device_accessible, other_property>{any_res};
   auto buf5    = cuda::make_buffer(input.stream(), res_ref, input);
-  CCCLRT_CHECK(equal_range(buf5));
+  CHECK(equal_range(buf5));
   static_assert(
     ::cuda::mr::synchronous_resource_with<typename decltype(buf5)::__resource_t, cuda::mr::device_accessible>);
   static_assert(::cuda::mr::synchronous_resource_with<typename decltype(buf5)::__resource_t, other_property>);
@@ -205,7 +207,7 @@ C2H_CCCLRT_TEST("make_buffer variants", "[container][buffer]")
     !::cuda::mr::synchronous_resource_with<typename decltype(buf5)::__resource_t, cuda::mr::host_accessible>);
 
   auto buf6 = cuda::make_buffer<int, cuda::mr::device_accessible>(input.stream(), res_ref, input);
-  CCCLRT_CHECK(equal_range(buf6));
+  CHECK(equal_range(buf6));
   static_assert(
     ::cuda::mr::synchronous_resource_with<typename decltype(buf6)::__resource_t, cuda::mr::device_accessible>);
   static_assert(!::cuda::mr::synchronous_resource_with<typename decltype(buf6)::__resource_t, other_property>);
@@ -215,7 +217,7 @@ C2H_CCCLRT_TEST("make_buffer variants", "[container][buffer]")
   auto shared_res =
     cuda::mr::make_shared_resource<cuda::device_memory_pool_ref>(cuda::device_default_memory_pool(cuda::device_ref{0}));
   auto buf7 = cuda::make_buffer(input.stream(), shared_res, input);
-  CCCLRT_CHECK(equal_range(buf7));
+  CHECK(equal_range(buf7));
   static_assert(
     ::cuda::mr::synchronous_resource_with<typename decltype(buf7)::__resource_t, cuda::mr::device_accessible>);
   static_assert(!::cuda::mr::synchronous_resource_with<typename decltype(buf7)::__resource_t, other_property>);
@@ -223,7 +225,7 @@ C2H_CCCLRT_TEST("make_buffer variants", "[container][buffer]")
     !::cuda::mr::synchronous_resource_with<typename decltype(buf7)::__resource_t, cuda::mr::host_accessible>);
 
   auto buf8 = cuda::make_buffer<int, cuda::mr::device_accessible>(input.stream(), shared_res, input);
-  CCCLRT_CHECK(equal_range(buf8));
+  CHECK(equal_range(buf8));
   static_assert(
     ::cuda::mr::synchronous_resource_with<typename decltype(buf8)::__resource_t, cuda::mr::device_accessible>);
   static_assert(!::cuda::mr::synchronous_resource_with<typename decltype(buf8)::__resource_t, other_property>);
@@ -231,12 +233,91 @@ C2H_CCCLRT_TEST("make_buffer variants", "[container][buffer]")
     !::cuda::mr::synchronous_resource_with<typename decltype(buf8)::__resource_t, cuda::mr::host_accessible>);
 }
 
+C2H_CCCLRT_TEST("cuda::buffer make_buffer uses the explicit device", "[container][buffer][multi_gpu]")
+{
+  if (cuda::devices.size() < 2)
+  {
+    return;
+  }
+
+  const cuda::device_ref current_device{0};
+  const cuda::device_ref explicit_device{1};
+  const cuda::stream explicit_device_stream{explicit_device};
+  cuda::std::array<int, 6> input{1, 42, 1337, 0, 12, -1};
+
+  {
+    const cuda::__ensure_current_context guard{current_device};
+    auto resource = cuda::device_default_memory_pool(explicit_device);
+    const cuda::device_buffer<int> source{explicit_device_stream, resource, input};
+    auto copy = cuda::make_buffer(explicit_device_stream, resource, source);
+
+    CHECK(source.size() == input.size());
+    CHECK(copy.size() == source.size());
+    check_allocation_device(source, explicit_device);
+    check_allocation_device(copy, explicit_device);
+    CHECK(equal_range(source));
+    CHECK(equal_range(copy));
+  }
+
+  explicit_device_stream.sync();
+}
+
+C2H_CCCLRT_TEST("cuda::buffer make_buffer copies between peer devices", "[container][buffer][multi_gpu]")
+{
+  // Cross-device copy coverage requires at least two GPUs.
+  if (cuda::devices.size() < 2)
+  {
+    return;
+  }
+
+  const cuda::device_ref source_device{0};
+  auto peers = source_device.peers();
+  // This test exercises direct peer memory access; non-peer topologies have no legal device-to-device path to cover.
+  if (peers.empty())
+  {
+    return;
+  }
+
+  const cuda::device_ref destination_device = peers.front();
+  // Device buffers are allocated from stream-ordered memory pools.
+  if (!source_device.attribute(cuda::device_attributes::memory_pools_supported)
+      || !destination_device.attribute(cuda::device_attributes::memory_pools_supported))
+  {
+    return;
+  }
+
+  const cuda::stream source_stream{source_device};
+  const cuda::stream destination_stream{destination_device};
+  cuda::device_memory_pool source_pool{source_device};
+  cuda::device_memory_pool destination_pool{destination_device};
+  source_pool.enable_access_from(destination_device);
+  REQUIRE(source_pool.is_accessible_from(destination_device));
+  auto source_resource      = source_pool.as_ref();
+  auto destination_resource = destination_pool.as_ref();
+
+  {
+    const cuda::device_buffer<int> source{source_stream, source_resource, compare_data_initializer_list};
+    destination_stream.wait(source_stream);
+    auto copy = cuda::make_buffer(destination_stream, destination_resource, source);
+
+    CHECK(source.size() == cuda::std::size(compare_data_initializer_list));
+    CHECK(copy.size() == source.size());
+    check_allocation_device(source, source_device);
+    check_allocation_device(copy, destination_device);
+    CHECK(equal_range(source));
+    CHECK(equal_range(copy));
+  }
+
+  source_stream.sync();
+  destination_stream.sync();
+}
+
 C2H_CCCLRT_TEST("make_buffer with legacy resource", "[container][buffer]")
 {
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   auto resource = cuda::mr::legacy_pinned_memory_resource{};
-  cuda::buffer<int, cuda::mr::host_accessible> input{
+  const cuda::buffer<int, cuda::mr::host_accessible> input{
     stream, resource, {int(1), int(42), int(1337), int(0), int(12), int(-1)}};
   auto buf = cuda::make_buffer(input.stream(), resource, input);
-  CCCLRT_CHECK(equal_range(buf));
+  CHECK(equal_range(buf));
 }

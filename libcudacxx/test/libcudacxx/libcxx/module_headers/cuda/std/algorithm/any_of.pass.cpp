@@ -15,13 +15,13 @@
 
 struct any_of_even
 {
-  __host__ __device__ constexpr bool operator()(int x) const
+  TEST_FUNC constexpr bool operator()(int x) const
   {
     return x % 2 == 0;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   constexpr int a[] = {1, 3, 4};
   assert(cuda::std::any_of(a, a + 3, any_of_even{}));

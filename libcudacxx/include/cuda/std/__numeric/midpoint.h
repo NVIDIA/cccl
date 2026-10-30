@@ -20,18 +20,16 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_null_pointer.h>
 #include <cuda/std/__type_traits/is_object.h>
-#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
-#include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -57,6 +55,7 @@ midpoint(_Tp __a, _Tp __b) noexcept
 }
 
 _CCCL_EXEC_CHECK_DISABLE
+// NOLINTNEXTLINE(bugprone-sizeof-expression)
 template <class _Tp, enable_if_t<is_object_v<_Tp> && !is_void_v<_Tp> && (sizeof(_Tp) > 0), int> = 0>
 [[nodiscard]] _CCCL_API constexpr _Tp* midpoint(_Tp* __a, _Tp* __b) noexcept
 {

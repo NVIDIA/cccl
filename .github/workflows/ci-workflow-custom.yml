@@ -1,0 +1,46 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# On-demand workflow that sideloads a CI matrix file from a different branch of
+# this repo and runs the full nightly build matrix defined there. Unlike the
+# scheduled workflows, this always builds a full matrix (no inspect-changes) and
+# fetches the specified branch into '.private' inside ci-matrix-build so the
+# sideloaded matrix file is available to the workflow-build step.
+name: custom
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+on:
+  workflow_dispatch:
+    inputs:
+      matrix_branch:
+        description: "Branch (in this repo) containing the CI matrix file to sideload."
+        required: true
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
+
+jobs:
+
+  matrix-build:
+    name: Build & dispatch CI matrix
+    uses: ./.github/workflows/ci-matrix-build.yml
+    secrets: inherit
+    with:
+      workflows: nightly
+      matrix_branch: ${{ inputs.matrix_branch }}

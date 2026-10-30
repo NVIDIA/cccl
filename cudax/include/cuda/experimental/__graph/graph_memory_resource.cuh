@@ -94,7 +94,9 @@ struct graph_memory_resource
       return;
     }
 
-    auto __deps          = __pb.get_dependencies();
+    auto __deps = __pb.get_dependencies();
+
+    // todo: Use _CCCL_ASSERT_DRIVER_API here.
     auto [__node, __err] = ::cuda::experimental::__driver::__graphAddMemFreeNodeNoThrow(
       __pb.get_native_graph_handle(), __deps.data(), __deps.size(), reinterpret_cast<::CUdeviceptr>(__ptr));
     _CCCL_ASSERT(__err == ::cudaSuccess, "Failed to add a memory free node to graph");
@@ -121,7 +123,7 @@ struct graph_memory_resource
       return;
     }
 
-    _CCCL_ASSERT_CUDA_API(
+    _CCCL_ASSERT_DRIVER_API(
       ::cuda::__driver::__freeAsyncNoThrow,
       "graph_memory_resource::deallocate failed",
       reinterpret_cast<::CUdeviceptr>(__ptr),

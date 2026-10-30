@@ -16,6 +16,8 @@
 #include <cub/detail/warpspeed/squad/squad_desc.cuh>
 
 #include <cuda/__ptx/instructions/elect_sync.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/array>
 
 CUB_NAMESPACE_BEGIN
 
@@ -39,19 +41,18 @@ struct Squad : SquadDesc
   _CCCL_DEVICE_API Squad(SquadDesc squadStatic, SpecialRegisters specialRegisters)
       : SquadDesc(squadStatic)
       , mSpecialRegisters(specialRegisters)
-  {
-    mIsWarpLeader = ::cuda::ptx::elect_sync(~0);
-    mIsLeaderWarp = warpRank() == 0;
-  }
+      , mIsWarpLeader(::cuda::ptx::elect_sync(~0u))
+      , mIsLeaderWarp(warpRank() == 0)
+  {}
 
   [[nodiscard]] _CCCL_DEVICE_API int warpRank() const
   {
-    return mSpecialRegisters.warpIdx % this->warpCount();
+    return static_cast<int>(mSpecialRegisters.warpIdx % this->warpCount());
   }
 
   [[nodiscard]] _CCCL_DEVICE_API int threadRank() const
   {
-    return mSpecialRegisters.threadIdxX % this->threadCount();
+    return static_cast<int>(mSpecialRegisters.threadIdxX % this->threadCount());
   }
 
   [[nodiscard]] _CCCL_DEVICE_API bool isLeaderThread() const
@@ -69,10 +70,10 @@ struct Squad : SquadDesc
     return mIsWarpLeader;
   }
 
-  _CCCL_DEVICE_API void syncThreads()
+  _CCCL_DEVICE_API void syncThreads() const
   {
     // barrier 0 is reserved for __syncthreads(). We use barrier ids 1, ...
-    int barrierIdx = (int) this->mSquadIdx + 1;
+    const int barrierIdx = this->mSquadIdx + 1;
 
     __barrier_sync_count(barrierIdx, this->threadCount());
   }
@@ -98,12 +99,12 @@ struct Squad : SquadDesc
 // the avoidance of linear search and BRX instructions translates into latency
 // reductions.
 //
-template <int numSquads, typename F>
+template <int NumSquads, typename F>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[numSquads], F f, int warpIdxStart = 0)
+squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[NumSquads], F f, int warpIdxStart = 0)
 {
-  static_assert(numSquads > 0);
-  if (numSquads == 1)
+  static_assert(NumSquads > 0);
+  if (NumSquads == 1)
   {
     // Leaf
     SquadDesc squad = squads[0];
@@ -116,7 +117,7 @@ squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[numSquads], F f, in
   }
   else
   {
-    constexpr int mid = numSquads / 2;
+    constexpr int mid = NumSquads / 2;
     // Left
     int warpIdxStartMid = warpIdxStart;
     for (int gi = 0; gi < mid; ++gi)
@@ -137,14 +138,21 @@ squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[numSquads], F f, in
     }
     else
     {
-      SquadDesc squadsRight[numSquads - mid]{};
-      for (int gi = 0; gi < numSquads - mid; ++gi)
+      SquadDesc squadsRight[NumSquads - mid]{};
+      for (int gi = 0; gi < NumSquads - mid; ++gi)
       {
         squadsRight[gi] = squads[mid + gi];
       }
       squadDispatch(sr, squadsRight, f, warpIdxStartMid);
     }
   }
+}
+
+template <::cuda::std::size_t NumSquads, typename F>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
+squadDispatch(SpecialRegisters sr, ::cuda::std::array<SquadDesc, NumSquads> squads, F f, int warpIdxStart = 0)
+{
+  squadDispatch<NumSquads>(sr, squads.__elems_, f, warpIdxStart);
 }
 } // namespace detail::warpspeed
 

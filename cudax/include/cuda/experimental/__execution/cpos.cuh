@@ -143,7 +143,7 @@ struct connect_t
 {
 private:
   template <class _Sndr, class _Rcvr>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __get_declfn() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto __get_declfn() noexcept
   {
     using __new_sender_t = transform_sender_result_t<_Sndr, env_of_t<_Rcvr>>;
     if constexpr (__has_connect_mbr<__new_sender_t, _Rcvr>)
@@ -158,8 +158,8 @@ private:
 
 public:
   template <class _Sndr, class _Rcvr, auto _DeclFn = __get_declfn<_Sndr, _Rcvr>()>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const noexcept(noexcept(_DeclFn()))
-    -> decltype(_DeclFn())
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
+    noexcept(noexcept(_DeclFn())) -> decltype(_DeclFn())
   {
     auto&& __env = get_env(__rcvr);
     return transform_sender(static_cast<_Sndr&&>(__sndr), static_cast<decltype(__env)>(__env))

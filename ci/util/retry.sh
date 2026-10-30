@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 if [[ "$#" -lt 3 ]]; then
     echo "Usage: $0 num_tries sleep_time command [args...]"

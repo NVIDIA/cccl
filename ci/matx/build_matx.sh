@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
@@ -97,17 +97,21 @@ cat "$version_override_file"
 # Configure and build
 rm -rf build
 
-cmake \
+# MatX includes <cub/cub.cuh> directly and builds with -Werror, so disable CUB's compile-time
+# warning about including the umbrella header to avoid breaking the build.
+SCCACHE_NO_DIST_COMPILE=1 cmake \
   -B build -S MatX -G Ninja \
   "-DCMAKE_CUDA_ARCHITECTURES=75;120" \
   "-DRAPIDS_CMAKE_CPM_OVERRIDE_VERSION_FILE=${version_override_file}" \
   -DMATX_BUILD_TESTS=ON \
   -DMATX_BUILD_EXAMPLES=ON \
   -DMATX_BUILD_BENCHMARKS=ON \
-  -DMATX_EN_CUTENSOR=ON
+  -DMATX_EN_CUTENSOR=ON \
+  -DCMAKE_CXX_FLAGS=-DCCCL_DISABLE_CUB_UMBRELLA_HEADER_WARNING \
+  -DCMAKE_CUDA_FLAGS=-DCCCL_DISABLE_CUB_UMBRELLA_HEADER_WARNING
 
 # Disabled because `cmake --build -j ""` is invalid, but so is
 # `cmake --build -j8`. CMake expects a space between `-j` and
 # the numeric argument, or no argument at all.
 # shellcheck disable=SC2086
-cmake --build build -j ${PARALLEL_LEVEL:-}
+time cmake --build build -j ${PARALLEL_LEVEL:-}

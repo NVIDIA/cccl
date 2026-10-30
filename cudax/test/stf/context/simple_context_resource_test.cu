@@ -34,17 +34,17 @@ public:
     alive_count.fetch_sub(1);
   }
 
-  void release(cudaStream_t /*stream*/) override
+  void release(cudaStream_t /*stream*/) noexcept override
   {
     // No special release action needed for this test
   }
 
-  bool can_release_in_callback() const override
+  bool can_release_in_callback() const noexcept override
   {
     return true; // Can be released in a host callback
   }
 
-  void release_in_callback() override
+  void release_in_callback() noexcept override
   {
     // Host-side cleanup - nothing to do for this simple test
   }

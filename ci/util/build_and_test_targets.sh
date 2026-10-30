@@ -73,7 +73,7 @@ if [[ -n "${CONFIGURE_OVERRIDE}" ]]; then
   if [[ -n "${PRESET}" ]]; then
     echo "::warning:: --preset ignored due to --configure-override" >&2
   fi
-  if [[ "${#CMAKE_OPTIONS}" -gt 0 ]]; then
+  if [[ "${#CMAKE_OPTIONS[@]}" -gt 0 ]]; then
     echo "::warning:: --cmake-options ignored due to --configure-override" >&2
   fi
 fi
@@ -103,7 +103,7 @@ if [[ -z "${BUILD_DIR}" ]]; then
   exit 1
 fi
 
-if [[ "${#BUILD_TARGETS}" -gt 0 ]]; then
+if [[ "${#BUILD_TARGETS[@]}" -gt 0 ]]; then
   if ! (set -x; ninja -C "${BUILD_DIR}" "${BUILD_TARGETS[@]}"); then
     echo "::endgroup::"
     echo "🔴🛠️ Ninja build failed for targets ($(elapsed_time)): ${BUILD_TARGETS[*]@Q}"
@@ -111,7 +111,7 @@ if [[ "${#BUILD_TARGETS}" -gt 0 ]]; then
   fi
 fi
 
-if [[ "${#CTEST_TARGETS}" -gt 0 ]]; then
+if [[ "${#CTEST_TARGETS[@]}" -gt 0 ]]; then
   for t in "${CTEST_TARGETS[@]}"; do
     if ! (set -x; ctest --test-dir "${BUILD_DIR}" -R "$t" -V --output-on-failure); then
       echo "::endgroup::"
@@ -121,7 +121,7 @@ if [[ "${#CTEST_TARGETS}" -gt 0 ]]; then
   done
 fi
 
-if [[ "${#LIT_PRECOMPILE_TESTS}" -gt 0 || "${#LIT_TESTS}" -gt 0 ]]; then
+if [[ "${#LIT_PRECOMPILE_TESTS[@]}" -gt 0 || "${#LIT_TESTS[@]}" -gt 0 ]]; then
   lit_site_cfg="${BUILD_DIR}/libcudacxx/test/libcudacxx/lit.site.cfg"
   if [[ ! -f "${lit_site_cfg}" ]]; then
     echo "::endgroup::"
@@ -130,7 +130,7 @@ if [[ "${#LIT_PRECOMPILE_TESTS}" -gt 0 || "${#LIT_TESTS}" -gt 0 ]]; then
   fi
 fi
 
-if [[ "${#LIT_PRECOMPILE_TESTS}" -gt 0 ]]; then
+if [[ "${#LIT_PRECOMPILE_TESTS[@]}" -gt 0 ]]; then
   for t in "${LIT_PRECOMPILE_TESTS[@]}"; do
     t_path="libcudacxx/test/libcudacxx/${t}"
     if ! (set -x; LIBCUDACXX_SITE_CONFIG="${lit_site_cfg}" lit -v "-Dexecutor=NoopExecutor()" "${t_path}"); then
@@ -141,7 +141,7 @@ if [[ "${#LIT_PRECOMPILE_TESTS}" -gt 0 ]]; then
   done
 fi
 
-if [[ "${#LIT_TESTS}" -gt 0 ]]; then
+if [[ "${#LIT_TESTS[@]}" -gt 0 ]]; then
   for t in "${LIT_TESTS[@]}"; do
     t_path="libcudacxx/test/libcudacxx/${t}"
     if ! (set -x; LIBCUDACXX_SITE_CONFIG="${lit_site_cfg}" lit -v "${t_path}"); then

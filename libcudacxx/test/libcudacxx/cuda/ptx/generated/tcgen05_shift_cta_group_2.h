@@ -30,6 +30,12 @@ __global__ void test_tcgen05_shift_cta_group_2(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint32_t)>(cuda::ptx::tcgen05_shift_down));));
   NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // tcgen05.shift.cta_group::2.down [taddr];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint32_t)>(cuda::ptx::tcgen05_shift_down));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.shift.cta_group::2.down [taddr];

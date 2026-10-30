@@ -6,9 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6076227: ICE when validating tile MLIR
-
 // CONSTEXPR_STEPS: 15000000
 
 // bitset<N>& operator<<=(size_t pos); // constexpr since C++23
@@ -55,7 +52,7 @@ TEST_FUNC constexpr bool test_right_shift()
   return true;
 }
 
-TEST_FUNC int main(int, char**)
+int main(int, char**)
 {
   test_right_shift<0>();
   test_right_shift<1>();

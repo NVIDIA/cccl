@@ -21,22 +21,28 @@
 #endif // no system header
 
 #include <cub/agent/agent_rle.cuh>
-#include <cub/detail/arch_dispatch.cuh>
-#include <cub/device/dispatch/dispatch_scan.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
+#include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/logging.cuh>
+#include <cub/detail/non_void_value.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_non_trivial_runs.cuh>
-#include <cub/thread/thread_operators.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
-
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+#include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 #include <nv/target>
 
@@ -99,8 +105,11 @@ struct streaming_context
   {
     GlobalOffsetT total_uniques = num_accumulated_uniques_out() + static_cast<GlobalOffsetT>(num_uniques);
 
-    // Otherwise, just write out the number of unique items in this partition
-    *d_num_accumulated_uniques_out = total_uniques;
+    // The double buffer is only read by a subsequent partition and is not allocated for single-partition invocations
+    if (!last_partition)
+    {
+      *d_num_accumulated_uniques_out = total_uniques;
+    }
 
     return total_uniques;
   }
@@ -174,29 +183,29 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires non_trivial_runs::rle_non_trivial_runs_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().block_threads))
+__launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceRleSweepKernel(
-    _CCCL_GRID_CONSTANT const InputIteratorT d_in,
-    _CCCL_GRID_CONSTANT const OffsetsOutputIteratorT d_offsets_out,
-    _CCCL_GRID_CONSTANT const LengthsOutputIteratorT d_lengths_out,
-    _CCCL_GRID_CONSTANT const NumRunsOutputIteratorT d_num_runs_out,
+    const InputIteratorT d_in,
+    const OffsetsOutputIteratorT d_offsets_out,
+    const LengthsOutputIteratorT d_lengths_out,
+    const NumRunsOutputIteratorT d_num_runs_out,
     ScanTileStateT tile_status,
     EqualityOpT equality_op,
-    _CCCL_GRID_CONSTANT const OffsetT num_items,
-    _CCCL_GRID_CONSTANT const int num_tiles,
-    _CCCL_GRID_CONSTANT const StreamingContextT streaming_context)
+    const OffsetT num_items,
+    const int num_tiles,
+    const StreamingContextT streaming_context)
 {
-  static constexpr non_trivial_runs::rle_non_trivial_runs_policy policy = current_policy<PolicySelector>();
+  static constexpr RleNonTrivialRunsPolicy policy = current_policy<PolicySelector>();
   using AgentRlePolicyT =
-    AgentRlePolicy<policy.block_threads,
-                   policy.items_per_thread,
-                   policy.load_algorithm,
-                   policy.load_modifier,
-                   policy.store_with_time_slicing,
-                   policy.scan_algorithm,
-                   delay_constructor_t<policy.delay_constructor.kind,
-                                       policy.delay_constructor.delay,
-                                       policy.delay_constructor.l2_write_latency>>;
+    agent_rle_policy<policy.lookback.threads_per_block,
+                     policy.lookback.items_per_thread,
+                     policy.lookback.load_algorithm,
+                     policy.lookback.load_modifier,
+                     policy.lookback.store_with_time_slicing,
+                     policy.lookback.scan_algorithm,
+                     delay_constructor_t<policy.lookback.lookback_delay.kind,
+                                         policy.lookback.lookback_delay.delay,
+                                         policy.lookback.lookback_delay.l2_write_latency>>;
 
   using AgentRleT =
     AgentRle<AgentRlePolicyT,
@@ -220,18 +229,21 @@ __launch_bounds__(int(current_policy<PolicySelector>().block_threads))
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability) const
-    -> non_trivial_runs::rle_non_trivial_runs_policy
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const
+    -> RleNonTrivialRunsPolicy
   {
     using RleSweepPolicyT = typename PolicyHub::MaxPolicy::RleSweepPolicyT;
-    return non_trivial_runs::rle_non_trivial_runs_policy{
-      RleSweepPolicyT::BLOCK_THREADS,
-      RleSweepPolicyT::ITEMS_PER_THREAD,
-      RleSweepPolicyT::LOAD_ALGORITHM,
-      RleSweepPolicyT::LOAD_MODIFIER,
-      RleSweepPolicyT::STORE_WARP_TIME_SLICING,
-      RleSweepPolicyT::SCAN_ALGORITHM,
-      delay_constructor_policy_from_type<typename RleSweepPolicyT::detail::delay_constructor_t>,
+    return RleNonTrivialRunsPolicy{
+      RleNonTrivialRunsAlgorithm::lookback,
+      {
+        RleSweepPolicyT::BLOCK_THREADS,
+        RleSweepPolicyT::ITEMS_PER_THREAD,
+        RleSweepPolicyT::LOAD_ALGORITHM,
+        RleSweepPolicyT::LOAD_MODIFIER,
+        RleSweepPolicyT::STORE_WARP_TIME_SLICING,
+        RleSweepPolicyT::SCAN_ALGORITHM,
+        lookback_delay_policy_from_type<typename RleSweepPolicyT::detail::delay_constructor_t>,
+      },
     };
   }
 };
@@ -266,7 +278,6 @@ struct policy_selector_from_hub
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-// TODO(bgruber): deprecate when we make the tuning API public and remove in CCCL 4.0
 template <typename InputIteratorT,
           typename OffsetsOutputIteratorT,
           typename LengthsOutputIteratorT,
@@ -276,7 +287,7 @@ template <typename InputIteratorT,
           typename PolicyHub =
             detail::rle::non_trivial_runs::policy_hub<cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>,
                                                       cub::detail::it_value_t<InputIteratorT>>>
-struct DeviceRleDispatch
+struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDispatch
 {
   /******************************************************************************
    * Types and constants
@@ -363,9 +374,9 @@ struct DeviceRleDispatch
   {
     cudaError error = cudaSuccess;
 
-    constexpr int block_threads    = ActivePolicyT::RleSweepPolicyT::BLOCK_THREADS;
-    constexpr int items_per_thread = ActivePolicyT::RleSweepPolicyT::ITEMS_PER_THREAD;
-    constexpr auto tile_size       = static_cast<global_offset_t>(block_threads * items_per_thread);
+    constexpr int threads_per_block = ActivePolicyT::RleSweepPolicyT::BLOCK_THREADS;
+    constexpr int items_per_thread  = ActivePolicyT::RleSweepPolicyT::ITEMS_PER_THREAD;
+    constexpr auto tile_size        = static_cast<global_offset_t>(threads_per_block * items_per_thread);
 
     // The upper bound of for the number of items that a single kernel invocation will ever process
     auto capped_num_items_per_invocation = num_items;
@@ -388,7 +399,7 @@ struct DeviceRleDispatch
         : ::cuda::ceil_div(num_items, capped_num_items_per_invocation);
 
     // Number of input tiles
-    int max_num_tiles = static_cast<int>(::cuda::ceil_div(max_num_items_per_invocation, tile_size));
+    const int max_num_tiles = static_cast<int>(::cuda::ceil_div(max_num_items_per_invocation, tile_size));
 
     // Specify temporary storage allocation requirements
     size_t allocation_sizes[3];
@@ -419,8 +430,8 @@ struct DeviceRleDispatch
     // Iterate over the partitions until all input is processed
     for (global_offset_t partition_idx = 0; partition_idx < num_partitions; partition_idx++)
     {
-      global_offset_t current_partition_offset = partition_idx * capped_num_items_per_invocation;
-      global_offset_t current_num_items =
+      const global_offset_t current_partition_offset = partition_idx * capped_num_items_per_invocation;
+      const global_offset_t current_num_items =
         (partition_idx + 1 == num_partitions)
           ? (num_items - current_partition_offset)
           : capped_num_items_per_invocation;
@@ -437,19 +448,13 @@ struct DeviceRleDispatch
       }
 
       // Log init_kernel configuration
-      int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
+      const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
 
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking device_scan_init_kernel<<<%d, %d, 0, %lld>>>()\n",
-              init_grid_size,
-              init_kernel_threads,
-              (long long) stream);
-#endif // CUB_DEBUG_LOG
+      _CUB_LOG_KERNEL_LAUNCH("device_scan_init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
 
       // Invoke device_scan_init_kernel to initialize tile descriptors and queue descriptors
-      error = CubDebug(
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
-          .doit(device_scan_init_kernel, tile_status, num_current_tiles, d_num_runs_out));
+      error = CubDebug(detail::TripleChevronFactory{}(init_grid_size, init_kernel_threads, 0, stream)
+                         .doit(device_scan_init_kernel, tile_status, num_current_tiles, d_num_runs_out));
       if (cudaSuccess != error)
       {
         return error;
@@ -468,15 +473,8 @@ struct DeviceRleDispatch
         return error;
       }
 
-// Log device_rle_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking device_rle_sweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per "
-              "thread\n",
-              num_current_tiles,
-              block_threads,
-              (long long) stream,
-              items_per_thread);
-#endif // CUB_DEBUG_LOG
+      // Log device_rle_sweep_kernel configuration
+      _CUB_LOG_KERNEL_LAUNCH("device_rle_sweep_kernel", num_current_tiles, 1, 1, threads_per_block, 0, stream, "");
 
       // Invoke device_rle_sweep_kernel
       if constexpr (use_streaming_invocation)
@@ -498,7 +496,7 @@ struct DeviceRleDispatch
           &tmp_num_uniques[buffer_selector ^ 0x01]};
 
         error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
+          detail::TripleChevronFactory{}(num_current_tiles, threads_per_block, 0, stream)
             .doit(device_rle_sweep_kernel,
                   d_in + current_partition_offset,
                   d_offsets_out,
@@ -517,7 +515,7 @@ struct DeviceRleDispatch
       else
       {
         error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
+          detail::TripleChevronFactory{}(num_current_tiles, threads_per_block, 0, stream)
             .doit(device_rle_sweep_kernel,
                   d_in + current_partition_offset,
                   d_offsets_out,
@@ -645,13 +643,13 @@ template <typename InputIteratorT,
           typename NumRunsOutputIteratorT,
           typename EqualityOpT,
           typename OffsetT,
-          typename length_t       = non_void_value_t<LengthsOutputIteratorT, OffsetT>,
-          typename key_t          = it_value_t<InputIteratorT>,
-          typename PolicySelector = non_trivial_runs::policy_selector_from_types<length_t, key_t>>
+          typename LengthT        = non_void_value_t<LengthsOutputIteratorT, OffsetT>,
+          typename KeyT           = it_value_t<InputIteratorT>,
+          typename PolicySelector = non_trivial_runs::policy_selector_from_types<LengthT, KeyT>>
 #if _CCCL_HAS_CONCEPTS()
   requires non_trivial_runs::rle_non_trivial_runs_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   InputIteratorT d_in,
@@ -668,8 +666,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   static constexpr bool use_streaming_invocation =
     ::cuda::std::numeric_limits<OffsetT>::max() > ::cuda::std::numeric_limits<local_offset_t>::max();
   using streaming_context_t = ::cuda::std::
-    conditional_t<use_streaming_invocation, streaming_context<InputIteratorT, length_t, global_offset_t>, NullType>;
-  using ScanTileStateT                     = ReduceByKeyScanTileState<length_t, local_offset_t>;
+    conditional_t<use_streaming_invocation, streaming_context<InputIteratorT, LengthT, global_offset_t>, NullType>;
+  using ScanTileStateT                     = ReduceByKeyScanTileState<LengthT, local_offset_t>;
   static constexpr int init_kernel_threads = 128;
 
   ::cuda::compute_capability cc{};
@@ -678,21 +676,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
     return error;
   }
 
-  const non_trivial_runs::rle_non_trivial_runs_policy active_policy = policy_selector(cc);
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 ::std::stringstream ss;
-                 ss << active_policy;
-                 _CubLog("Dispatching DeviceRle to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
-               }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  const RleNonTrivialRunsPolicy active_policy = policy_selector(cc);
+  detail::log_dispatch("DeviceRle", cc, active_policy);
 
-  const int block_threads    = active_policy.block_threads;
-  const int items_per_thread = active_policy.items_per_thread;
-  const auto tile_size       = static_cast<global_offset_t>(block_threads * items_per_thread);
+  const int threads_per_block = active_policy.lookback.threads_per_block;
+  const int items_per_thread  = active_policy.lookback.items_per_thread;
+  const auto tile_size =
+    static_cast<global_offset_t>(threads_per_block) * static_cast<global_offset_t>(items_per_thread);
 
   auto capped_num_items_per_invocation = num_items;
   if constexpr (use_streaming_invocation)
@@ -716,7 +706,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
     return error;
   }
   allocation_sizes[1] = num_partitions > 1 ? sizeof(global_offset_t) * 2 : size_t{0};
-  allocation_sizes[2] = num_partitions > 1 ? sizeof(length_t) * 2 : size_t{0};
+  allocation_sizes[2] = num_partitions > 1 ? sizeof(LengthT) * 2 : size_t{0};
 
   void* allocations[3] = {};
   if (const auto error =
@@ -732,8 +722,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
 
   for (global_offset_t partition_idx = 0; partition_idx < num_partitions; partition_idx++)
   {
-    global_offset_t current_partition_offset = partition_idx * capped_num_items_per_invocation;
-    global_offset_t current_num_items =
+    const global_offset_t current_partition_offset = partition_idx * capped_num_items_per_invocation;
+    const global_offset_t current_num_items =
       (partition_idx + 1 == num_partitions) ? (num_items - current_partition_offset) : capped_num_items_per_invocation;
 
     const auto num_current_tiles = static_cast<int>(::cuda::ceil_div(current_num_items, tile_size));
@@ -744,14 +734,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
     }
 
     const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking device_scan_init_kernel<<<%d, %d, 0, %lld>>>()\n",
-            init_grid_size,
-            init_kernel_threads,
-            (long long) stream);
-#endif
+    _CUB_LOG_KERNEL_LAUNCH("device_scan_init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
+          detail::TripleChevronFactory{}(init_grid_size, init_kernel_threads, 0, stream)
             .doit(&detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
                   tile_status,
                   num_current_tiles,
@@ -767,19 +752,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
     {
       return cudaSuccess;
     }
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking device_rle_sweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
-            num_current_tiles,
-            block_threads,
-            (long long) stream,
-            items_per_thread);
-#endif
+    _CUB_LOG_KERNEL_LAUNCH("device_rle_sweep_kernel", num_current_tiles, 1, 1, threads_per_block, 0, stream, "");
 
     auto streaming_context = [&] {
       if constexpr (use_streaming_invocation)
       {
         auto tmp_num_uniques          = static_cast<global_offset_t*>(allocations[1]);
-        auto tmp_prefix               = static_cast<length_t*>(allocations[2]);
+        auto tmp_prefix               = static_cast<LengthT*>(allocations[2]);
         const bool is_first_partition = (partition_idx == 0);
         const bool is_last_partition  = (partition_idx + 1 == num_partitions);
         const int buffer_selector     = partition_idx % 2;
@@ -799,7 +778,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
     }();
 
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
+          detail::TripleChevronFactory{}(num_current_tiles, threads_per_block, 0, stream)
             .doit(&detail::rle::DeviceRleSweepKernel<
                     PolicySelector,
                     InputIteratorT,

@@ -22,14 +22,9 @@
 #endif // no system header
 
 #include <cuda/std/__cmath/isnan.h>
-#include <cuda/std/__floating_point/cuda_fp_types.h>
-#include <cuda/std/__host_stdlib/math.h>
+#include <cuda/std/__host_stdlib/math.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_extended_arithmetic.h>
-#include <cuda/std/__type_traits/is_extended_floating_point.h>
-#include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/promote.h>
 
 #include <nv/target>
@@ -41,7 +36,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // isgreater
 
 template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
-[[nodiscard]] _CCCL_DEVICE_API bool __device_isgreater(_A1 __x, _A1 __y) noexcept
+[[nodiscard]] _CCCL_API bool __device_isgreater(_A1 __x, _A1 __y) noexcept
 {
   if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
   {
@@ -78,7 +73,7 @@ template <class _A1, class _A2, enable_if_t<__is_extended_arithmetic_v<_A1> && _
 // isgreaterequal
 
 template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
-[[nodiscard]] _CCCL_DEVICE_API bool __device_isgreaterequal(_A1 __x, _A1 __y) noexcept
+[[nodiscard]] _CCCL_API bool __device_isgreaterequal(_A1 __x, _A1 __y) noexcept
 {
   if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
   {
@@ -115,7 +110,7 @@ template <class _A1, class _A2, enable_if_t<__is_extended_arithmetic_v<_A1> && _
 // isless
 
 template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
-[[nodiscard]] _CCCL_DEVICE_API bool __device_isless(_A1 __x, _A1 __y) noexcept
+[[nodiscard]] _CCCL_API bool __device_isless(_A1 __x, _A1 __y) noexcept
 {
   if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
   {
@@ -152,7 +147,7 @@ template <class _A1, class _A2, enable_if_t<__is_extended_arithmetic_v<_A1> && _
 // islessequal
 
 template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
-[[nodiscard]] _CCCL_DEVICE_API bool __device_islessequal(_A1 __x, _A1 __y) noexcept
+[[nodiscard]] _CCCL_API bool __device_islessequal(_A1 __x, _A1 __y) noexcept
 {
   if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
   {
@@ -189,7 +184,7 @@ template <class _A1, class _A2, enable_if_t<__is_extended_arithmetic_v<_A1> && _
 // islessgreater
 
 template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
-[[nodiscard]] _CCCL_DEVICE_API bool __device_islessgreater(_A1 __x, _A1 __y) noexcept
+[[nodiscard]] _CCCL_API bool __device_islessgreater(_A1 __x, _A1 __y) noexcept
 {
   if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
   {

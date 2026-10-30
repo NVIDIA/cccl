@@ -23,7 +23,13 @@ d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
 d_output = cp.empty(1, dtype=dtype)
 
 # Perform the reduction using a lambda function.
-cuda.compute.reduce_into(d_input, d_output, lambda a, b: a + b, len(d_input), h_init)
+cuda.compute.reduce_into(
+    d_in=d_input,
+    d_out=d_output,
+    num_items=len(d_input),
+    op=lambda a, b: a + b,
+    h_init=h_init,
+)
 
 # Verify the result.
 expected_output = 15

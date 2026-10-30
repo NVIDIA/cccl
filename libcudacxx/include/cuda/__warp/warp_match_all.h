@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -24,9 +24,12 @@
 #if _CCCL_CUDA_COMPILATION()
 
 #  include <cuda/__cmath/ceil_div.h>
+#  include <cuda/__type_traits/is_bitwise_comparable.h>
+#  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/__warp/lane_mask.h>
 #  include <cuda/std/__cstring/memcpy.h>
 #  include <cuda/std/__memory/addressof.h>
+#  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/cstdint>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -36,25 +39,44 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 extern "C" _CCCL_DEVICE void __cuda__match_all_sync_is_not_supported_before_SM_70__();
 
 template <class _Tp>
-[[nodiscard]] _CCCL_DEVICE_API bool warp_match_all(const _Tp& __data, lane_mask __lane_mask = lane_mask::all()) noexcept
+[[nodiscard]] _CCCL_DEVICE_API bool
+warp_match_all(const _Tp& __data, const lane_mask __lane_mask = lane_mask::all()) noexcept
 {
+  static_assert(is_trivially_copyable_v<_Tp>, "data must be trivially copyable");
   _CCCL_ASSERT(__lane_mask != lane_mask::none(), "lane_mask must be non-zero");
 
-  constexpr int __ratio = ::cuda::ceil_div(sizeof(_Tp), sizeof(uint32_t));
-  uint32_t __array[__ratio]{};
-  ::cuda::std::memcpy(__array, ::cuda::std::addressof(__data), sizeof(_Tp));
-
-  bool __ret = true;
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < __ratio; ++i)
+  if constexpr (::cuda::std::is_same_v<_Tp, bool>)
   {
-    int __pred = false;
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
-                      (::__match_all_sync(__lane_mask.value(), __array[i], &__pred);),
-                      (::cuda::device::__cuda__match_all_sync_is_not_supported_before_SM_70__();));
-    __ret = __ret && __pred;
+    const auto __mask = ::__ballot_sync(__lane_mask.value(), __data);
+    return (__mask == __lane_mask.value() || __mask == 0);
   }
-  return __ret;
+  else
+  {
+    constexpr int __ratio = ::cuda::ceil_div(sizeof(_Tp), sizeof(::cuda::std::uint32_t));
+    ::cuda::std::uint32_t __array[__ratio]{};
+
+#  if defined(_CCCL_BUILTIN_CLEAR_PADDING)
+    auto __data_copy = __data;
+    _CCCL_BUILTIN_CLEAR_PADDING(&__data_copy);
+    const auto __data_ptr = ::cuda::std::addressof(__data_copy);
+#  else // ^^^ _CCCL_BUILTIN_CLEAR_PADDING ^^^ / vvv !_CCCL_BUILTIN_CLEAR_PADDING vvv
+    static_assert(is_bitwise_comparable_v<_Tp>, "data must be bitwise comparable");
+    const auto __data_ptr = ::cuda::std::addressof(__data);
+#  endif // _CCCL_BUILTIN_CLEAR_PADDING
+    ::cuda::std::memcpy(__array, __data_ptr, sizeof(_Tp));
+
+    bool __ret = true;
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < __ratio; ++i)
+    {
+      int __pred = false;
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
+                        (::__match_all_sync(__lane_mask.value(), __array[i], &__pred);),
+                        (::cuda::device::__cuda__match_all_sync_is_not_supported_before_SM_70__();));
+      __ret = __ret && __pred;
+    }
+    return __ret;
+  }
 }
 
 _CCCL_END_NAMESPACE_CUDA_DEVICE

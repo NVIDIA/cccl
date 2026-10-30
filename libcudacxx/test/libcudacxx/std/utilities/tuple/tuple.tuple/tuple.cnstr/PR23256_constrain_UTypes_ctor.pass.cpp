@@ -20,6 +20,7 @@
 // instead. This happens 'sizeof...(UTypes) == 1' and the first element of
 // 'UTypes...' is an instance of the tuple itself. See PR23256.
 
+#include <cuda/std/__memory_>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
@@ -71,31 +72,24 @@ int main(int, char**)
     static_assert(cuda::std::is_copy_constructible<cuda::std::tuple<ExplicitA>>::value);
     static_assert(cuda::std::is_move_constructible<cuda::std::tuple<ExplicitA>>::value);
   }
-  // cuda::std::allocator not supported
-  /*
   {
-      static_assert(cuda::std::is_constructible<
-          cuda::std::tuple<A>,
-          cuda::std::allocator_arg_t, cuda::std::allocator<void>,
-          cuda::std::tuple<A> const&
-      >::value, "");
-      static_assert(cuda::std::is_constructible<
-          cuda::std::tuple<A>,
-          cuda::std::allocator_arg_t, cuda::std::allocator<void>,
-          cuda::std::tuple<A> &&
-      >::value, "");
-      static_assert(cuda::std::is_constructible<
-          cuda::std::tuple<ExplicitA>,
-          cuda::std::allocator_arg_t, cuda::std::allocator<void>,
-          cuda::std::tuple<ExplicitA> const&
-      >::value, "");
-      static_assert(cuda::std::is_constructible<
-          cuda::std::tuple<ExplicitA>,
-          cuda::std::allocator_arg_t, cuda::std::allocator<void>,
-          cuda::std::tuple<ExplicitA> &&
-      >::value, "");
+    static_assert(cuda::std::is_constructible<cuda::std::tuple<A>,
+                                              cuda::std::allocator_arg_t,
+                                              cuda::std::allocator<void>,
+                                              cuda::std::tuple<A> const&>::value);
+    static_assert(cuda::std::is_constructible<cuda::std::tuple<A>,
+                                              cuda::std::allocator_arg_t,
+                                              cuda::std::allocator<void>,
+                                              cuda::std::tuple<A>&&>::value);
+    static_assert(cuda::std::is_constructible<cuda::std::tuple<ExplicitA>,
+                                              cuda::std::allocator_arg_t,
+                                              cuda::std::allocator<void>,
+                                              cuda::std::tuple<ExplicitA> const&>::value);
+    static_assert(cuda::std::is_constructible<cuda::std::tuple<ExplicitA>,
+                                              cuda::std::allocator_arg_t,
+                                              cuda::std::allocator<void>,
+                                              cuda::std::tuple<ExplicitA>&&>::value);
   }
-  */
   {
     [[maybe_unused]] cuda::std::tuple<A&&> t(cuda::std::forward_as_tuple(A{}));
     [[maybe_unused]] cuda::std::tuple<ExplicitA&&> t2(cuda::std::forward_as_tuple(ExplicitA{}));

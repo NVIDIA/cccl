@@ -17,11 +17,11 @@ namespace detail
  * configurations of a given policy.
  */
 // TODO(bgruber): this should be called something like "override_policy"
-template <typename PolicyT, int BLOCK_THREADS_, int ITEMS_PER_THREAD_ = PolicyT::ITEMS_PER_THREAD>
+template <typename PolicyT, int BlockThreads, int ItemsPerThread = PolicyT::ITEMS_PER_THREAD>
 struct policy_wrapper_t : PolicyT
 {
-  static constexpr int ITEMS_PER_THREAD = ITEMS_PER_THREAD_;
-  static constexpr int BLOCK_THREADS    = BLOCK_THREADS_;
+  static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
+  static constexpr int BLOCK_THREADS    = BlockThreads;
   static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
 };
 } // namespace detail

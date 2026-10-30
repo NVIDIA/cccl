@@ -15,10 +15,10 @@ import struct
 
 import cupy as cp
 import numpy as np
+from cuda.core import Device, Program, ProgramOptions
 
 import cuda.compute
 from cuda.compute.op import RawOp
-from cuda.core import Device, Program, ProgramOptions
 
 
 def get_arch():
@@ -93,7 +93,13 @@ d_output = cp.empty(num_items, dtype=np.int32)
 d_num_selected = cp.empty(1, dtype=np.int32)
 
 # Run select with the stateful operator
-cuda.compute.select(d_input, d_output, d_num_selected, select_op, num_items)
+cuda.compute.select(
+    d_in=d_input,
+    d_out=d_output,
+    d_num_selected_out=d_num_selected,
+    cond=select_op,
+    num_items=num_items,
+)
 
 # Get results
 num_selected = d_num_selected.get()[0]

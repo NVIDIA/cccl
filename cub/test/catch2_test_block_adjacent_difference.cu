@@ -3,7 +3,7 @@
 
 #include <cub/block/block_adjacent_difference.cuh>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <int ThreadsInBlock, int ItemsPerThread, class T, class ActionT>
 __global__ void block_adj_diff_kernel(T* data, ActionT action, bool in_place)
@@ -81,11 +81,10 @@ struct last_tile_op_t
       : m_valid_items(valid_items)
   {}
 
-  template <int ITEMS_PER_THREAD, typename T, typename BlockAdjDiff>
-  __device__ void
-  operator()(BlockAdjDiff& block_adj_diff, T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD]) const
+  template <int ItemsPerThread, typename T, typename BlockAdjDiff>
+  __device__ void operator()(BlockAdjDiff& block_adj_diff, T (&input)[ItemsPerThread], T (&output)[ItemsPerThread]) const
   {
-    custom_difference_t<T> diff{};
+    const custom_difference_t<T> diff{};
 
     if (ReadLeft)
     {
@@ -107,11 +106,10 @@ struct middle_tile_op_t
       : m_neighbour_tile_value(neighbour_tile_value)
   {}
 
-  template <int ITEMS_PER_THREAD, typename BlockAdjDiff>
-  __device__ void
-  operator()(BlockAdjDiff& block_adj_diff, T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD]) const
+  template <int ItemsPerThread, typename BlockAdjDiff>
+  __device__ void operator()(BlockAdjDiff& block_adj_diff, T (&input)[ItemsPerThread], T (&output)[ItemsPerThread]) const
   {
-    custom_difference_t<T> diff{};
+    const custom_difference_t<T> diff{};
 
     if (ReadLeft)
     {
@@ -135,11 +133,10 @@ struct last_tile_with_pred_op_t
       , m_neighbour_tile_value(neighbour_tile_value)
   {}
 
-  template <int ITEMS_PER_THREAD, typename BlockAdjDiff>
-  __device__ void
-  operator()(BlockAdjDiff& block_adj_diff, T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD]) const
+  template <int ItemsPerThread, typename BlockAdjDiff>
+  __device__ void operator()(BlockAdjDiff& block_adj_diff, T (&input)[ItemsPerThread], T (&output)[ItemsPerThread]) const
   {
-    custom_difference_t<T> diff{};
+    const custom_difference_t<T> diff{};
     block_adj_diff.SubtractLeftPartialTile(input, output, diff, m_valid_items, m_neighbour_tile_value);
   }
 };
@@ -170,7 +167,7 @@ void host_adj_diff(c2h::host_vector<T>& h_data, int valid_items)
   {
     for (int i = 0; i < valid_items - 1; i++)
     {
-      h_data[i] = diff(h_data[i], h_data[i + 1]);
+      h_data[i] = diff(h_data[i], h_data[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
     }
   }
 }
@@ -217,8 +214,9 @@ struct params_t
   static constexpr bool read_left       = c2h::get<3, TestType>::value;
 };
 
-C2H_TEST("Block adjacent difference works with full tiles",
+CUB_TEST("Block adjacent difference works with full tiles",
          "[adjacent difference][block]",
+         CUB_SMALL,
          key_types,
          items_per_thread,
          threads_in_block,
@@ -240,8 +238,9 @@ C2H_TEST("Block adjacent difference works with full tiles",
   REQUIRE(h_data == d_data);
 }
 
-C2H_TEST("Block adjacent difference works with last tiles",
+CUB_TEST("Block adjacent difference works with last tiles",
          "[adjacent difference][block]",
+         CUB_SMALL,
          key_types,
          items_per_thread,
          threads_in_block,
@@ -265,8 +264,9 @@ C2H_TEST("Block adjacent difference works with last tiles",
   REQUIRE(h_data == d_data);
 }
 
-C2H_TEST("Block adjacent difference works with single tiles",
+CUB_TEST("Block adjacent difference works with single tiles",
          "[adjacent difference][block]",
+         CUB_SMALL,
          key_types,
          items_per_thread,
          threads_in_block,
@@ -283,7 +283,7 @@ C2H_TEST("Block adjacent difference works with single tiles",
   constexpr bool read_left = true;
 
   c2h::host_vector<key_t> h_data = d_data;
-  key_t neighbour_value          = h_data[h_data.size() / 2];
+  const key_t neighbour_value    = h_data[h_data.size() / 2];
 
   host_adj_diff<read_left>(h_data, valid_items, neighbour_value);
 
@@ -293,8 +293,9 @@ C2H_TEST("Block adjacent difference works with single tiles",
   REQUIRE(h_data == d_data);
 }
 
-C2H_TEST("Block adjacent difference works with middle tiles",
+CUB_TEST("Block adjacent difference works with middle tiles",
          "[adjacent difference][block]",
+         CUB_SMALL,
          key_types,
          items_per_thread,
          threads_in_block,
@@ -309,7 +310,7 @@ C2H_TEST("Block adjacent difference works with middle tiles",
   const bool in_place = GENERATE(false, true);
 
   c2h::host_vector<key_t> h_data = d_data;
-  key_t neighbour_value          = h_data[h_data.size() / 2];
+  const key_t neighbour_value    = h_data[h_data.size() / 2];
 
   host_adj_diff<params::read_left>(h_data, params::tile_size, neighbour_value);
 
@@ -319,7 +320,7 @@ C2H_TEST("Block adjacent difference works with middle tiles",
   REQUIRE(h_data == d_data);
 }
 
-C2H_TEST("Block adjacent difference supports custom types", "[adjacent difference][block]", threads_in_block)
+CUB_TEST("Block adjacent difference supports custom types", "[adjacent difference][block]", CUB_SMALL, threads_in_block)
 {
   using key_t = c2h::custom_type_t<c2h::equal_comparable_t, c2h::subtractable_t>;
 

@@ -32,19 +32,15 @@ template <typename T>
 TEST_FUNC void test(T& t)
 {
   static_assert(
-    cuda::std::is_const<typename cuda::std::remove_reference<decltype(cuda::std::as_const(t))>::type>::value, "");
+    cuda::std::is_const<typename cuda::std::remove_reference<decltype(cuda::std::as_const(t))>::type>::value);
   static_assert(
-    cuda::std::is_const<typename cuda::std::remove_reference<decltype(cuda::std::as_const<T>(t))>::type>::value, "");
+    cuda::std::is_const<typename cuda::std::remove_reference<decltype(cuda::std::as_const<T>(t))>::type>::value);
   static_assert(
-    cuda::std::is_const<typename cuda::std::remove_reference<decltype(cuda::std::as_const<const T>(t))>::type>::value,
-    "");
+    cuda::std::is_const<typename cuda::std::remove_reference<decltype(cuda::std::as_const<const T>(t))>::type>::value);
   static_assert(
-    cuda::std::is_const<typename cuda::std::remove_reference<decltype(cuda::std::as_const<volatile T>(t))>::type>::value,
-    "");
-  static_assert(
-    cuda::std::is_const<
-      typename cuda::std::remove_reference<decltype(cuda::std::as_const<const volatile T>(t))>::type>::value,
-    "");
+    cuda::std::is_const<typename cuda::std::remove_reference<decltype(cuda::std::as_const<volatile T>(t))>::type>::value);
+  static_assert(cuda::std::is_const<
+                typename cuda::std::remove_reference<decltype(cuda::std::as_const<const volatile T>(t))>::type>::value);
 
   assert(cuda::std::as_const(t) == t);
   assert(cuda::std::as_const<T>(t) == t);

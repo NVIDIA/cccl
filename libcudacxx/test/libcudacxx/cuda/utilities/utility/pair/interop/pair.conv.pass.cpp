@@ -6,8 +6,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-
-// UNSUPPORTED: enable-tile
 // UNSUPPORTED: nvrtc
 
 #include <cuda/std/cassert>

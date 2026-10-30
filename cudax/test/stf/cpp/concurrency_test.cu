@@ -10,6 +10,8 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <string>
+
 /*
  * The goal of this test is to ensure that using read access modes actually
  * results in concurrent tasks
@@ -83,12 +85,12 @@ int main(int argc, char** argv)
 
   if (argc > 1)
   {
-    NTASKS = atoi(argv[1]);
+    NTASKS = ::std::stoi(argv[1]);
   }
 
   if (argc > 2)
   {
-    ms = atoi(argv[2]);
+    ms = ::std::stoi(argv[2]);
   }
 
   context ctx;

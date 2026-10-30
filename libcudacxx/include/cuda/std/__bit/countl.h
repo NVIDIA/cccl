@@ -21,13 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/conditional.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_same.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 #if _CCCL_COMPILER(MSVC)
 #  include <intrin.h>
@@ -48,6 +47,12 @@
 #if (_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()) || _CCCL_CUDA_COMPILER(NVCC, <, 13)
 #  undef _CCCL_BUILTIN_CLZG
 #endif // (_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()) || _CCCL_CUDA_COMPILER(NVCC, <, 13)
+
+#if _CCCL_TILE_COMPILATION() // nvbug6084444: error: "call to non-tile function not supported!"
+#  undef _CCCL_BUILTIN_CLZ
+#  undef _CCCL_BUILTIN_CLZLL
+#  undef _CCCL_BUILTIN_CLZG
+#endif // _CCCL_TILE_COMPILATION()
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 

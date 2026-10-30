@@ -76,7 +76,7 @@ int main(int, char**)
   auto constexpr January = cuda::std::chrono::January;
 
   static_assert(
-    testConstexpr<year_month_weekday, years>(year_month_weekday{year{1}, January, weekday_indexed{Tuesday, 2}}), "");
+    testConstexpr<year_month_weekday, years>(year_month_weekday{year{1}, January, weekday_indexed{Tuesday, 2}}));
 
   for (int i = 1000; i <= 1010; ++i)
   {

@@ -32,7 +32,9 @@ h_init = np.array([0], dtype=np.int32)
 d_output = cp.empty(1, dtype=np.int32)
 
 # Perform the reduction.
-cuda.compute.reduce_into(first_it, d_output, OpKind.PLUS, num_items, h_init)
+cuda.compute.reduce_into(
+    d_in=first_it, d_out=d_output, num_items=num_items, op=OpKind.PLUS, h_init=h_init
+)
 
 # Verify the result.
 expected_output = functools.reduce(

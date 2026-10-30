@@ -8,10 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-// <memory>
+// UNSUPPORTED: force-tile
+// error: dynamic allocations are not supported in tile mode
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
+// <memory>
 
 // template <class Alloc>
 // struct allocator_traits
@@ -35,12 +35,12 @@ struct NoDestroy
 {
   using value_type = T;
 
-  TEST_FUNC TEST_CONSTEXPR_CXX20 T* allocate(cuda::std::size_t n)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 T* allocate(cuda::std::size_t n)
   {
     return cuda::std::allocator<T>().allocate(n);
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX20 void deallocate(T* p, cuda::std::size_t n) noexcept
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 void deallocate(T* p, cuda::std::size_t n) noexcept
   {
     return cuda::std::allocator<T>().deallocate(p, n);
   }
@@ -49,30 +49,30 @@ struct NoDestroy
 template <class T>
 struct CountDestroy
 {
-  TEST_FUNC constexpr explicit CountDestroy(int* counter)
+  TEST_HOST_DEVICE_FUNC constexpr explicit CountDestroy(int* counter)
       : counter_(counter)
   {}
 
-  TEST_FUNC TEST_CONSTEXPR_CXX20 ~CountDestroy() {}
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 ~CountDestroy() {}
 
   using value_type = T;
 
-  TEST_FUNC TEST_CONSTEXPR_CXX20 T* allocate(cuda::std::size_t n)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 T* allocate(cuda::std::size_t n)
   {
     return &storage;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX20 void deallocate(T* p, cuda::std::size_t n) noexcept {}
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 void deallocate(T* p, cuda::std::size_t n) noexcept {}
 
   template <class U, class... Args>
-  TEST_FUNC TEST_CONSTEXPR_CXX20 void construct(U* p, Args&&... args)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 void construct(U* p, Args&&... args)
   {
     assert(p == nullptr);
     cuda::std::__construct_at(&storage, cuda::std::forward<Args>(args)...);
   }
 
   template <class U>
-  TEST_FUNC TEST_CONSTEXPR_CXX20 void destroy(U* p) noexcept
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 void destroy(U* p) noexcept
   {
     assert(p == nullptr);
     ++*counter_;
@@ -89,11 +89,11 @@ struct CountDestroy
 
 struct CountDestructor
 {
-  TEST_FUNC constexpr explicit CountDestructor(int* counter)
+  TEST_HOST_DEVICE_FUNC constexpr explicit CountDestructor(int* counter)
       : counter_(counter)
   {}
 
-  TEST_FUNC TEST_CONSTEXPR_CXX20 ~CountDestructor()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 ~CountDestructor()
   {
     ++*counter_;
   }
@@ -101,7 +101,7 @@ struct CountDestructor
   int* counter_;
 };
 
-TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
 #if TEST_STD_VER >= 2020
   if (!TEST_IS_CONSTANT_EVALUATED())

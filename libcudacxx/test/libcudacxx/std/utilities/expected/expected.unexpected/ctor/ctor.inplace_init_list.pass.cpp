@@ -56,16 +56,14 @@ struct Error
 // Test Constraints:
 static_assert(
   cuda::std::
-    constructible_from<cuda::std::unexpected<Error>, cuda::std::in_place_t, cuda::std::initializer_list<int>, Arg>,
-  "");
+    constructible_from<cuda::std::unexpected<Error>, cuda::std::in_place_t, cuda::std::initializer_list<int>, Arg>);
 
 // !is_constructible_v<E, initializer_list<U>&, Args...>
 struct Foo
 {};
 static_assert(
   !cuda::std::
-    constructible_from<cuda::std::unexpected<Error>, cuda::std::in_place_t, cuda::std::initializer_list<double>, Arg>,
-  "");
+    constructible_from<cuda::std::unexpected<Error>, cuda::std::in_place_t, cuda::std::initializer_list<double>, Arg>);
 
 // test explicit
 template <class T>
@@ -77,8 +75,7 @@ _CCCL_CONCEPT ImplicitlyConstructible = _CCCL_REQUIRES_EXPR((T, variadic Args), 
 
 static_assert(ImplicitlyConstructible<int, int>);
 static_assert(
-  !ImplicitlyConstructible<cuda::std::unexpected<Error>, cuda::std::in_place_t, cuda::std::initializer_list<int>, Arg>,
-  "");
+  !ImplicitlyConstructible<cuda::std::unexpected<Error>, cuda::std::in_place_t, cuda::std::initializer_list<int>, Arg>);
 
 TEST_FUNC constexpr bool test()
 {

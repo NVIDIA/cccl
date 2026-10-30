@@ -9,10 +9,10 @@ from __future__ import annotations
 from textwrap import dedent
 
 from .._bindings import Op, OpKind
-from .._cpp_compile import compile_cpp_to_ltoir, make_variable_declaration
+from .._cpp_compile import compile_cpp_op_code, make_variable_declaration
 from ..op import make_op_adapter
 from ..types import TypeDescriptor, signature_from_annotations
-from ._base import IteratorBase
+from ._base import IteratorBase, compose_state_blobs
 from ._common import CUDA_PREAMBLE, ensure_iterator
 
 
@@ -46,6 +46,7 @@ class TransformIterator(IteratorBase):
         "_value_type",
         "_is_input",
         "_compiled_op",
+        "_op_state_offset",
     ]
 
     def __init__(
@@ -71,7 +72,12 @@ class TransformIterator(IteratorBase):
         self._underlying = underlying
         self._transform_op = make_op_adapter(transform_op)
         self._is_input = is_input
-        self._compiled_op = None  # Lazy compiled Op
+        # Lazily compiled transform Op, keyed on the build's target compute
+        # capability: its LTO-IR is arch-specific, so reusing one iterator
+        # instance across builds targeting different arches must not reuse the
+        # first arch's op (nvJitLink rejects a newer-arch input linked into an
+        # older-arch result). Mirrors the per-cc op caches in IteratorBase.
+        self._compiled_op: dict = {}
 
         # Determine value type
         if value_type is None:
@@ -93,15 +99,39 @@ class TransformIterator(IteratorBase):
         assert value_type is not None
         self._value_type = value_type
 
+        # A stateful transform_op's state is folded into this
+        # iterator's own device state, alongside the underlying iterator's
+        # state, so that the generated deref glue (see _make_input_deref_op /
+        # _make_output_deref_op) has a pointer to hand the op as its `state`
+        # argument.
+        op_state = self._transform_op.get_state()
+        underlying_state = bytes(memoryview(self._underlying.state))
+        self._op_state_offset: int | None
+        if op_state:
+            state_bytes, state_alignment, offsets = compose_state_blobs(
+                [
+                    (underlying_state, self._underlying.state_alignment),
+                    (op_state, self._transform_op.state_alignment),
+                ]
+            )
+            self._op_state_offset = offsets[1]
+        else:
+            state_bytes = underlying_state
+            state_alignment = self._underlying.state_alignment
+            self._op_state_offset = None
+
         super().__init__(
-            state_bytes=bytes(self._underlying.state),
-            state_alignment=self._underlying.state_alignment,
+            state_bytes=state_bytes,
+            state_alignment=state_alignment,
             value_type=value_type,
         )
 
     def _get_compiled_op(self):
-        """Get the compiled Op, compiling lazily if needed."""
-        if self._compiled_op is None:
+        """Get the compiled Op for the current target cc, compiling lazily if needed."""
+        from .._target_cc import get_target_cc
+
+        key = get_target_cc()
+        if key not in self._compiled_op:
             if self._is_input:
                 input_type = self._underlying.value_type
                 output_type = self._value_type
@@ -109,11 +139,30 @@ class TransformIterator(IteratorBase):
                 input_type = self._value_type
                 output_type = self._underlying.value_type
 
-            self._compiled_op = self._transform_op.compile(
+            self._compiled_op[key] = self._transform_op.compile(
                 (input_type,),
                 output_type,
             )
-        return self._compiled_op
+        return self._compiled_op[key]
+
+    def _op_decl_and_call(
+        self, compiled_op: Op, input_expr: str, output_expr: str
+    ) -> tuple[str, str]:
+        """Return (extern declaration, call statement) for `compiled_op`.
+
+        Handles both the stateless 2-argument `(input, output)` and stateful
+        3-argument `(state, input, output)` calling conventions -- shared by
+        _make_input_deref_op and _make_output_deref_op so the two prototypes
+        only need to agree in one place.
+        """
+        if compiled_op.operator_type == OpKind.STATEFUL:
+            decl = f'extern "C" __device__ void {compiled_op.name}(void* state, void* input, void* output);'
+            state_expr = f"static_cast<char*>(state) + {self._op_state_offset}"
+            call = f"{compiled_op.name}({state_expr}, {input_expr}, {output_expr});"
+        else:
+            decl = f'extern "C" __device__ void {compiled_op.name}(void* input, void* output);'
+            call = f"{compiled_op.name}({input_expr}, {output_expr});"
+        return decl, call
 
     def _make_advance_op(self) -> Op:
         """Provide Op for advance that delegates to underlying iterator."""
@@ -130,13 +179,13 @@ class TransformIterator(IteratorBase):
             }}
         """).strip()
 
-        ltoir = compile_cpp_to_ltoir(source)
+        code = compile_cpp_op_code(source)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
-            ltoir=ltoir,
-            extra_ltoirs=[child_op.ltoir, *child_op.extra_ltoirs],
+            ltoir=code,
+            extra_ltoirs=[child_op.code, *child_op.extra_code],
         )
 
     def _make_input_deref_op(self) -> Op | None:
@@ -152,30 +201,32 @@ class TransformIterator(IteratorBase):
         symbol = self._make_input_deref_symbol()
         temp_decl = make_variable_declaration(self._underlying.value_type, "temp")
 
+        op_decl, op_call = self._op_decl_and_call(compiled_op, "&temp", "result")
+
         source = dedent(f"""
             {CUDA_PREAMBLE}
 
             extern "C" __device__ void {child_op.name}(void* state, void* result);
-            extern "C" __device__ void {compiled_op.name}(void* input, void* output);
+            {op_decl}
 
             extern "C" __device__ void {symbol}(void* state, void* result) {{
                 {temp_decl}
                 {child_op.name}(state, &temp);
-                {compiled_op.name}(&temp, result);
+                {op_call}
             }}
         """).strip()
 
-        ltoir = compile_cpp_to_ltoir(source)
+        code = compile_cpp_op_code(source)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
-            ltoir=ltoir,
+            ltoir=code,
             extra_ltoirs=[
-                compiled_op.ltoir,
-                *compiled_op.extra_ltoirs,
-                child_op.ltoir,
-                *child_op.extra_ltoirs,
+                compiled_op.code,
+                *compiled_op.extra_code,
+                child_op.code,
+                *child_op.extra_code,
             ],
         )
 
@@ -192,30 +243,32 @@ class TransformIterator(IteratorBase):
         symbol = self._make_output_deref_symbol()
         temp_decl = make_variable_declaration(self._underlying.value_type, "temp")
 
+        op_decl, op_call = self._op_decl_and_call(compiled_op, "value", "&temp")
+
         source = dedent(f"""
             {CUDA_PREAMBLE}
 
             extern "C" __device__ void {child_op.name}(void* state, void* value);
-            extern "C" __device__ void {compiled_op.name}(void* input, void* output);
+            {op_decl}
 
             extern "C" __device__ void {symbol}(void* state, void* value) {{
                 {temp_decl}
-                {compiled_op.name}(value, &temp);
+                {op_call}
                 {child_op.name}(state, &temp);
             }}
         """).strip()
 
-        ltoir = compile_cpp_to_ltoir(source)
+        code = compile_cpp_op_code(source)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
-            ltoir=ltoir,
+            ltoir=code,
             extra_ltoirs=[
-                compiled_op.ltoir,
-                *compiled_op.extra_ltoirs,
-                child_op.ltoir,
-                *child_op.extra_ltoirs,
+                compiled_op.code,
+                *compiled_op.extra_code,
+                child_op.code,
+                *child_op.extra_code,
             ],
         )
 

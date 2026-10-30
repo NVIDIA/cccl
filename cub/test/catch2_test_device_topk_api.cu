@@ -14,9 +14,11 @@
 #include <cuda/std/functional>
 #include <cuda/stream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("DeviceTopK::MinKeys API example for non-deterministic, unsorted results", "[device][device_transform]")
+CUB_TEST("DeviceTopK::MinKeys API example for non-deterministic, unsorted results",
+         "[device][device_transform]",
+         CUB_SMALL)
 {
   // example-begin topk-min-keys-non-deterministic-unsorted
   const int k = 4;
@@ -30,7 +32,7 @@ C2H_TEST("DeviceTopK::MinKeys API example for non-deterministic, unsorted result
   // Prepare CUDA stream
   cudaStream_t stream = nullptr;
   cudaStreamCreate(&stream);
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream_ref stream_ref{stream};
 
   // Create the environment with the stream and requirements
   auto env = cuda::std::execution::env{stream_ref, requirements};
@@ -53,13 +55,15 @@ C2H_TEST("DeviceTopK::MinKeys API example for non-deterministic, unsorted result
 
   // Get the top-k results into sorted order for easy comparison
   thrust::sort(output.begin(), output.end());
-  thrust::host_vector<int> expected{-3, 1, 2, 4};
+  const thrust::host_vector<int> expected{-3, 1, 2, 4};
   // example-end topk-min-keys-non-deterministic-unsorted
 
   REQUIRE(output == expected);
 }
 
-C2H_TEST("DeviceTopK::MaxKeys API example for non-deterministic, unsorted results", "[device][device_transform]")
+CUB_TEST("DeviceTopK::MaxKeys API example for non-deterministic, unsorted results",
+         "[device][device_transform]",
+         CUB_SMALL)
 {
   // example-begin topk-max-keys-non-deterministic-unsorted
   const int k = 4;
@@ -73,7 +77,7 @@ C2H_TEST("DeviceTopK::MaxKeys API example for non-deterministic, unsorted result
   // Prepare CUDA stream
   cudaStream_t stream = nullptr;
   cudaStreamCreate(&stream);
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream_ref stream_ref{stream};
 
   // Create the environment with the stream and requirements
   auto env = cuda::std::execution::env{stream_ref, requirements};
@@ -96,13 +100,15 @@ C2H_TEST("DeviceTopK::MaxKeys API example for non-deterministic, unsorted result
 
   // Get the top-k results into sorted order for easy comparison
   thrust::sort(output.begin(), output.end(), cuda::std::greater{});
-  thrust::host_vector<int> expected{8, 7, 6, 5};
+  const thrust::host_vector<int> expected{8, 7, 6, 5};
   // example-end topk-max-keys-non-deterministic-unsorted
 
   REQUIRE(output == expected);
 }
 
-C2H_TEST("DeviceTopK::MinPairs API example for non-deterministic, unsorted results", "[device][device_transform]")
+CUB_TEST("DeviceTopK::MinPairs API example for non-deterministic, unsorted results",
+         "[device][device_transform]",
+         CUB_SMALL)
 {
   // example-begin topk-min-pairs-non-deterministic-unsorted
   const int k     = 4;
@@ -118,7 +124,7 @@ C2H_TEST("DeviceTopK::MinPairs API example for non-deterministic, unsorted resul
   // Prepare CUDA stream
   cudaStream_t stream = nullptr;
   cudaStreamCreate(&stream);
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream_ref stream_ref{stream};
 
   // Create the environment with the stream and requirements
   auto env = cuda::std::execution::env{stream_ref, requirements};
@@ -144,15 +150,17 @@ C2H_TEST("DeviceTopK::MinPairs API example for non-deterministic, unsorted resul
 
   // Get the top-k results into sorted order for easy comparison
   thrust::sort_by_key(keys_out.begin(), keys_out.end(), values_out.begin());
-  thrust::host_vector<int> expected_keys{-3, 1, 2, 4};
-  thrust::host_vector<int> expected_values{1, 2, 5, 6};
+  const thrust::host_vector<int> expected_keys{-3, 1, 2, 4};
+  const thrust::host_vector<int> expected_values{1, 2, 5, 6};
   // example-end topk-min-pairs-non-deterministic-unsorted
 
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
 }
 
-C2H_TEST("DeviceTopK::MaxPairs API example for non-deterministic, unsorted results", "[device][device_transform]")
+CUB_TEST("DeviceTopK::MaxPairs API example for non-deterministic, unsorted results",
+         "[device][device_transform]",
+         CUB_SMALL)
 {
   // example-begin topk-max-pairs-non-deterministic-unsorted
   const int k     = 4;
@@ -168,7 +176,7 @@ C2H_TEST("DeviceTopK::MaxPairs API example for non-deterministic, unsorted resul
   // Prepare CUDA stream
   cudaStream_t stream = nullptr;
   cudaStreamCreate(&stream);
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream_ref stream_ref{stream};
 
   // Create the environment with the stream and requirements
   auto env = cuda::std::execution::env{stream_ref, requirements};
@@ -194,8 +202,8 @@ C2H_TEST("DeviceTopK::MaxPairs API example for non-deterministic, unsorted resul
 
   // Get the top-k results into sorted order for easy comparison
   thrust::sort_by_key(keys_out.begin(), keys_out.end(), values_out.begin(), cuda::std::greater<>{});
-  thrust::host_vector<int> expected_keys{8, 7, 6, 5};
-  thrust::host_vector<int> expected_values{4, 3, 7, 0};
+  const thrust::host_vector<int> expected_keys{8, 7, 6, 5};
+  const thrust::host_vector<int> expected_values{4, 3, 7, 0};
   // example-end topk-max-pairs-non-deterministic-unsorted
 
   REQUIRE(keys_out == expected_keys);
@@ -226,27 +234,27 @@ struct decomposer_t
 };
 // example-end topk-custom-type
 
-static __host__ std::ostream& operator<<(std::ostream& os, const custom_t& self)
+__host__ std::ostream& operator<<(std::ostream& os, const custom_t& self)
 {
   return os << "{ " << self.f << ", " << self.lli << " }";
 }
 
-static __host__ __device__ bool operator==(const custom_t& lhs, const custom_t& rhs)
+__host__ __device__ bool operator==(const custom_t& lhs, const custom_t& rhs)
 {
   return lhs.f == rhs.f && lhs.lli == rhs.lli;
 }
 
-static __host__ __device__ bool operator<(const custom_t& lhs, const custom_t& rhs)
+__host__ __device__ bool operator<(const custom_t& lhs, const custom_t& rhs)
 {
   return lhs.lli == rhs.lli ? lhs.f < rhs.f : lhs.lli < rhs.lli;
 }
 
-static __host__ __device__ bool operator>(const custom_t& lhs, const custom_t& rhs)
+__host__ __device__ bool operator>(const custom_t& lhs, const custom_t& rhs)
 {
   return rhs < lhs;
 }
 
-C2H_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]")
+CUB_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]", CUB_SMALL)
 {
   SECTION("MaxKeys")
   {
@@ -288,7 +296,7 @@ C2H_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]")
 
     // Sort output for comparison (output order is not guaranteed)
     thrust::sort(out.begin(), out.end(), cuda::std::greater<>{});
-    thrust::device_vector<custom_t> expected = {
+    const thrust::device_vector<custom_t> expected = {
       {+3.7f, 5}, //
       {+2.5f, 4}, //
       {+1.1f, 3} //
@@ -335,7 +343,7 @@ C2H_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]")
 
     // Sort output for comparison (output order is not guaranteed)
     thrust::sort(out.begin(), out.end());
-    thrust::device_vector<custom_t> expected = {
+    const thrust::device_vector<custom_t> expected = {
       {-2.5f, 0}, //
       {+0.0f, 1}, //
       {-0.0f, 2} //
@@ -407,13 +415,13 @@ C2H_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]")
     // Sort by key for comparison (output order is not guaranteed)
     thrust::sort_by_key(keys_out.begin(), keys_out.end(), vals_out.begin(), cuda::std::greater<>{});
 
-    thrust::device_vector<custom_t> expected_keys = {
+    const thrust::device_vector<custom_t> expected_keys = {
       {+3.7f, 5}, //
       {+2.5f, 4}, //
       {+1.1f, 3} //
     };
 
-    thrust::device_vector<int> expected_vals = {5, 0, 2};
+    const thrust::device_vector<int> expected_vals = {5, 0, 2};
     // example-end topk-max-pairs-custom-type
 
     REQUIRE(expected_keys == keys_out);
@@ -482,13 +490,13 @@ C2H_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]")
     // Sort by key for comparison (output order is not guaranteed)
     thrust::sort_by_key(keys_out.begin(), keys_out.end(), vals_out.begin());
 
-    thrust::device_vector<custom_t> expected_keys = {
+    const thrust::device_vector<custom_t> expected_keys = {
       {-2.5f, 0}, //
       {+0.0f, 1}, //
       {-0.0f, 2} //
     };
 
-    thrust::device_vector<int> expected_vals = {1, 3, 4};
+    const thrust::device_vector<int> expected_vals = {1, 3, 4};
     // example-end topk-min-pairs-custom-type
 
     REQUIRE(expected_keys == keys_out);

@@ -21,7 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_empty.h>
@@ -166,6 +167,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
 
   // The converting constructor's constraint __is_constructible_from_one_arg<const __mdspan_ebco&> creates a circular
   // dependency in C++20 concepts evaluation on Clang
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)
   _CCCL_REQUIRES((!is_same_v<__mdspan_ebco, remove_cvref_t<_Arg1>>) _CCCL_AND __is_constructible_from_one_arg<_Arg1>)
@@ -173,6 +175,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
       : __base1(::cuda::std::forward<_Arg1>(__arg1))
       , __base2()
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class _Arg1, class _Arg2>
   static constexpr bool __is_constructible_from_two_args =
@@ -264,6 +267,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
     is_nothrow_constructible_v<_Elem1, _Arg1> && is_nothrow_default_constructible_v<_Elem2>
     && is_nothrow_default_constructible_v<_Elem3>;
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)
   _CCCL_REQUIRES((!is_same_v<__mdspan_ebco, remove_cvref_t<_Arg1>>) _CCCL_AND __is_constructible_from_one_arg<_Arg1>)
@@ -272,6 +276,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
       , __base2()
       , __base3()
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class _Arg1, class _Arg2>
   static constexpr bool __is_constructible_from_two_args =

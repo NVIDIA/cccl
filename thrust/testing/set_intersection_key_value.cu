@@ -5,7 +5,7 @@
 #include <unittest/unittest.h>
 
 template <typename U>
-void TestSetIntersectionKeyValue(size_t n)
+void test_set_intersection_key_value(size_t n)
 {
   using T = key_value<U, U>;
 
@@ -41,6 +41,6 @@ void TestSetIntersectionKeyValue(size_t n)
 
   d_result.resize(d_end - d_result.begin());
 
-  ASSERT_EQUAL_QUIET(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetIntersectionKeyValue);
+DECLARE_VARIABLE_UNITTEST(test_set_intersection_key_value);

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Run gersemi on all CMake files, limited to tracked files in git.
 

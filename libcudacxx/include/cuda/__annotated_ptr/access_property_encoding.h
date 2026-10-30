@@ -24,13 +24,12 @@
 #include <cuda/__annotated_ptr/createpolicy.h>
 #include <cuda/__cmath/ilog.h>
 #include <cuda/std/__algorithm/clamp.h>
-#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__numeric/saturating_sub.h>
 #include <cuda/std/__utility/to_underlying.h>
-#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -102,7 +101,7 @@ enum class __l2_descriptor_mode_t : uint32_t
 
 #endif // !_CCCL_CUDA_COMPILER(NVRTC)
 
-[[nodiscard]] _CCCL_API inline uint64_t __block_encoding(
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline uint64_t __block_encoding(
   __l2_evict_t __primary, __l2_evict_t __secondary, const void* __ptr, size_t __primary_bytes, size_t __total_bytes)
 {
   _CCCL_ASSERT(__primary_bytes <= size_t{0xFFFFFFFF}, "primary size must be less than 4GB");
@@ -134,7 +133,7 @@ enum class __l2_descriptor_mode_t : uint32_t
 //   uint32_t                          : 1;
 // };
 
-[[nodiscard]] _CCCL_API constexpr uint64_t
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr uint64_t
 __l2_interleave(__l2_evict_t __primary, __l2_evict_t __secondary, float __fraction)
 {
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT

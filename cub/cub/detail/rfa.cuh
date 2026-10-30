@@ -18,12 +18,14 @@
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/isinf.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/array>
-#include <cuda/std/climits>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -34,7 +36,7 @@ inline constexpr int cub_rfa_max_jump = 5;
 static_assert(cub_rfa_max_jump <= 5, "cub_rfa_max_jump must be less than or equal to 5");
 
 template <typename FType, int Len>
-static _CCCL_DEVICE FType* get_shared_bin_array()
+_CCCL_DEVICE FType* get_shared_bin_array()
 {
   static __shared__ FType bin_computed_array[Len];
   return bin_computed_array;
@@ -104,7 +106,7 @@ private:
   /// Return a binned floating-point bin
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static ftype binned_bins(int index)
   {
-    ftype* bins = get_shared_bin_array<ftype, max_index + max_fold>();
+    const ftype* bins = get_shared_bin_array<ftype, max_index + max_fold>();
     return bins[index];
   }
 
@@ -218,7 +220,7 @@ private:
     }
     else
     {
-      return data[Fold + i];
+      return data[Fold + i]; // NOLINT(bugprone-misplaced-widening-cast)
     }
   }
 
@@ -286,8 +288,8 @@ private:
   //! with absolute value less than @p max_abs_val
   _CCCL_DEVICE void binned_update(const ftype max_abs_val)
   {
-    int X_index = binned_dindex(max_abs_val);
-    int shift   = binned_index() - X_index;
+    const int X_index = binned_dindex(max_abs_val);
+    const int shift   = binned_index() - X_index;
     if (shift > 0)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -468,9 +470,9 @@ private:
     const auto X_index = binned_index();
     if (X_index <= (3 * mant_dig) / bin_width)
     {
-      double scale_down = ::cuda::std::ldexpf(0.5f, 1 - (2 * mant_dig - bin_width));
-      double scale_up   = ::cuda::std::ldexpf(0.5f, 1 - (2 * mant_dig - bin_width));
-      int scaled        = ::cuda::std::max(::cuda::std::min(Fold, (3 * mant_dig) / bin_width - X_index), 0);
+      const double scale_down = ::cuda::std::ldexpf(0.5f, 1 - (2 * mant_dig - bin_width));
+      const double scale_up   = ::cuda::std::ldexpf(0.5f, 1 - (2 * mant_dig - bin_width));
+      const int scaled        = ::cuda::std::max(::cuda::std::min(Fold, (3 * mant_dig) / bin_width - X_index), 0);
       if (X_index == 0)
       {
         Y += carry(0) * ((binned_bins(0 + X_index) / 6.0) * scale_down * expansion);

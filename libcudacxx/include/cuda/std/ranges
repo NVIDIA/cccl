@@ -21,8 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/all.h>
+#include <cuda/std/__ranges/common_view.h>
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/counted.h>
 #include <cuda/std/__ranges/dangling.h>
@@ -49,6 +51,7 @@
 #include <cuda/std/__ranges/transform_view.h>
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__ranges/views.h>
+#include <cuda/std/__ranges/zip_view.h>
 
 // standard-mandated includes
 #include <cuda/std/version>
@@ -63,5 +66,6 @@
 // [tuple.helper]
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
+// IWYU pragma: end_exports
 
 #endif //_CUDA_STD_RANGES

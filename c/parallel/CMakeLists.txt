@@ -8,9 +8,15 @@ option(
   "Build cccl.c.parallel standalone headers."
   OFF
 )
+# Instrument cccl.c.parallel's host code with ThreadSanitizer for the
+# free-threaded (3.14t) TSan CI lane. TSan is a host-only tool, so CUDA device
+# code is never instrumented -- only the host portion of each .cu (via
+# -Xcompiler). The libtsan runtime is assumed loaded in the process (the TSan
+# lane LD_PRELOADs it) rather than linked-and-bundled, so the wheel build must
+# --exclude libtsan from auditwheel repair.
 option(
-  CCCL_C_Parallel_ENABLE_HOSTJIT
-  "Build HostJIT testing infrastructure (requires LLVM fetch, ~20 min first build)."
+  CCCL_C_PARALLEL_SANITIZE_THREAD
+  "Build cccl.c.parallel host code with ThreadSanitizer (-fsanitize=thread)."
   OFF
 )
 
@@ -50,15 +56,26 @@ if (CCCL_C_PARALLEL_LIBRARY_OUTPUT_DIRECTORY)
   )
 endif()
 
+if (CCCL_C_PARALLEL_SANITIZE_THREAD)
+  # Host-only: -fsanitize=thread on C++ TUs, and forwarded to the host compiler
+  # (-Xcompiler, one flag per prefix) for the host side of each .cu. -g1 keeps
+  # file:line frames in TSan reports (minimal debug info -- enough to symbolize
+  # traces, not to attach a debugger); -fno-omit-frame-pointer keeps complete
+  # stack traces through heavily inlined CUB/Thrust code.
+  target_compile_options(
+    cccl.c.parallel
+    PRIVATE
+      $<$<COMPILE_LANGUAGE:CXX>:-fsanitize=thread;-fno-omit-frame-pointer;-g1>
+      $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-fsanitize=thread;-Xcompiler=-fno-omit-frame-pointer;-Xcompiler=-g1>
+  )
+  target_link_options(cccl.c.parallel PRIVATE -fsanitize=thread)
+endif()
+
 cccl_get_cub()
 cccl_get_cudatoolkit()
 cccl_get_thrust()
 
 add_subdirectory(src/jit_templates)
-
-if (CCCL_C_Parallel_ENABLE_HOSTJIT)
-  add_subdirectory(src/hostjit)
-endif()
 
 set_target_properties(cccl.c.parallel PROPERTIES CUDA_RUNTIME_LIBRARY STATIC)
 target_link_libraries(

@@ -32,7 +32,7 @@ int main()
   };
 
   // Create a subset of a limited size
-  box subset_shape(3, 4);
+  const box subset_shape(3, 4);
   ctx.parallel_for(subset_shape, lA.rw())->*[=] _CCCL_DEVICE(size_t i, size_t j, auto sA) {
     sA(i, j) = 13.0;
   };
@@ -43,7 +43,7 @@ int main()
     {
       for (size_t i = 0; i < sA.extent(0); i++)
       {
-        double expected = (i < 3 && j < 4) ? 13.0 : 42.0;
+        const double expected = (i < 3 && j < 4) ? 13.0 : 42.0;
         if (sA(i, j) != expected)
         {
           fprintf(stderr, "sA(%zu,%zu) = %lf, expected %lf\n", i, j, sA(i, j), expected);
@@ -62,7 +62,7 @@ int main()
   };
 
   // Create a subset of a limited size
-  box subset_shape_2({2, 5}, {5, 8});
+  const box subset_shape_2({2, 5}, {5, 8});
   ctx.parallel_for(subset_shape_2, lB.rw())->*[=] _CCCL_DEVICE(size_t i, size_t j, auto sB) {
     sB(i, j) = 13.0;
   };
@@ -73,7 +73,7 @@ int main()
     {
       for (size_t i = 0; i < sB.extent(0); i++)
       {
-        double expected = (2 <= i && i < 5 && 5 <= j && j < 8) ? 13.0 : 42.0;
+        const double expected = (2 <= i && i < 5 && 5 <= j && j < 8) ? 13.0 : 42.0;
         if (sB(i, j) != expected)
         {
           fprintf(stderr, "sB(%zu,%zu) = %lf, expected %lf\n", i, j, sB(i, j), expected);

@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
@@ -42,6 +41,12 @@
 #  undef _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE
 #  define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 0
 #endif // _CCCL_FREESTANDING()
+
+// In tile mode the builtin is tile annotated which can have unintended consequences in SIMT code with e.g int128
+#if defined(__CUDACC_TILE__)
+#  undef _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE
+#  define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 0
+#endif // defined(__CUDACC_TILE__)
 
 // include minimal std:: headers
 #if _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE()
