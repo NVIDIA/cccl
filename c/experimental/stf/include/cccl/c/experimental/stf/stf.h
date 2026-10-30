@@ -112,7 +112,7 @@ typedef enum stf_access_mode // NOLINT(cppcoreguidelines-use-enum-class)
 //!
 //! The category is derived from the C++ exception type; stf_get_last_error_message() has the
 //! exception's full text.
-typedef enum stf_error_t
+typedef enum stf_error_t // NOLINT(cppcoreguidelines-use-enum-class)
 {
   STF_SUCCESS                = 0, //!< No failure
   STF_ERROR_INVALID_ARGUMENT = 1, //!< A precondition on an argument was violated (\c std::invalid_argument, \c
