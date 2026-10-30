@@ -144,8 +144,8 @@ OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cub_transform_many(
   _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(num_items);
 
   cudaError_t status;
-  if constexpr (::cuda::proclaims_copyable_arguments<Predicate>::value
-                && ::cuda::proclaims_copyable_arguments<TransformOp>::value)
+  if constexpr (::cuda::proclaims_copyable_arguments_v<Predicate>
+                && ::cuda::proclaims_copyable_arguments_v<TransformOp>)
   {
     status = CUB_NS_QUALIFIER::DeviceTransform::TransformIf(
       firsts, result, num_items, pred, transform_op, cuda_cub::stream(policy));

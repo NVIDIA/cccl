@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__atomic/functions.h>
 #include <cuda/std/__atomic/functions/backend.h>
 #include <cuda/std/__atomic/functions/device_backend.h> // IWYU pragma: keep
@@ -30,7 +31,6 @@
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__atomic/types/common.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
 
 #include <nv/target>
 
@@ -45,10 +45,11 @@ struct __atomic_storage
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_base_tag;
 
 #if _CCCL_COMPILER(GCC, <, 10) // older gcc fails to handle volatile in is_trivially_copyable
-  static_assert(is_trivially_copyable_v<remove_cvref_t<_Tp>>,
+  static_assert(::cuda::is_trivially_copyable_v<remove_cvref_t<_Tp>>,
                 "std::atomic<Tp> requires that 'Tp' be a trivially copyable type");
 #else // ^^^ _CCCL_COMPILER(GCC, <, 10) ^^^ / vvv !_CCCL_COMPILER(GCC, <, 10) vvv
-  static_assert(is_trivially_copyable_v<_Tp>, "std::atomic<Tp> requires that 'Tp' be a trivially copyable type");
+  static_assert(::cuda::is_trivially_copyable_v<_Tp>,
+                "std::atomic<Tp> requires that 'Tp' be a trivially copyable type");
 #endif // !_CCCL_COMPILER(GCC, <, 10)
 
   _CCCL_ALIGNAS(sizeof(_Tp)) _Tp __a_value;

@@ -61,9 +61,8 @@ struct bfloat16_t
 
   /// Constructor from unsigned long long int
   template <typename T,
-            typename = typename ::cuda::std::enable_if<
-              ::cuda::std::is_same<T, unsigned long long int>::value
-              && (!::cuda::std::is_same<std::size_t, unsigned long long int>::value)>::type>
+            typename = ::cuda::std::enable_if_t<::cuda::std::is_same_v<T, unsigned long long int>
+                                                && (!::cuda::std::is_same_v<std::size_t, unsigned long long int>)>>
   __host__ __device__ __forceinline__ explicit bfloat16_t(T a)
   {
     *this = bfloat16_t(static_cast<float>(a));

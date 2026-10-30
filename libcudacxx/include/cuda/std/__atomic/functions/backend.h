@@ -178,7 +178,7 @@ __cuda_atomic_compare_exchange_initial_load_order(__cuda_atomic_ptx_order<_Order
 }
 
 template <bool _Volatile>
-using __cuda_atomic_mmio_tag = integral_constant<bool, _Volatile>;
+using __cuda_atomic_mmio_tag = bool_constant<_Volatile>;
 
 using __cuda_atomic_mmio_enable  = __cuda_atomic_mmio_tag<true>;
 using __cuda_atomic_mmio_disable = __cuda_atomic_mmio_tag<false>;

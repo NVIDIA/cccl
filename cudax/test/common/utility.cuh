@@ -27,7 +27,7 @@
 
 namespace test
 {
-constexpr auto one_thread_dims = cuda::make_config(cuda::block_dims<1>(), cuda::grid_dims<1>());
+inline constexpr auto one_thread_dims = cuda::make_config(cuda::block_dims<1>(), cuda::grid_dims<1>());
 
 struct _malloc_pinned
 {

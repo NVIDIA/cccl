@@ -43,21 +43,22 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_topk.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/segmented_params.cuh>
+#include <cub/detail/topk_helpers.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/detail/warpspeed/optimize_smem_ptr.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
-#include <cub/device/dispatch/dispatch_topk.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
+#include <cuda/__argument/argument.h>
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_down.h>
@@ -65,25 +66,24 @@
 #include <cuda/__execution/tie_break.h>
 #include <cuda/__memcpy_async/elect_one.h>
 #include <cuda/__memory/align_up.h>
+#include <cuda/__memory/is_aligned.h>
 #include <cuda/__memory/ptr_rebind.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>
 #include <cuda/__ptx/instructions/mbarrier_init.h>
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
-#include <cuda/argument>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/countr.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__memory/pointer_traits.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/forward.h>
-#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 #include <cuda/std/span>
 
 #include <nv/target>
@@ -1529,25 +1529,29 @@ private:
     for (int i = 0; i < ItemsPerThread; ++i)
     {
       const int pos = tile_item_pos<Blocked, ItemsPerThread>(tile_base, i);
-      flags[i]      = flag_none;
-      if (pos < num_keys)
+      // No per-key branch: an out-of-range lane (only in the last, partial tile) reads the last in-range key, which
+      // exists because `process_tiles` classifies a tile only while `tile_base < num_keys`, and is forced to
+      // `flag_none` below. Keeping the per-key body straight-line avoids the reconvergence bookkeeping ptxas emits
+      // once the body grows past its if-conversion threshold.
+      const bool in_range = pos < num_keys;
+      const int clamped   = in_range ? pos : num_keys - 1;
+      // In-region index: forward, or (`Reversed`) counting down from the last element. Shared by the `FromSmem`
+      // local read and the segment-local value index.
+      const int folded_pos = Reversed ? (num_keys - 1 - clamped) : clamped;
+      if constexpr (FromSmem)
       {
-        // In-region index: forward, or (`Reversed`) counting down from the last element. Shared by the `FromSmem`
-        // local read and the segment-local value index.
-        const int folded_pos = Reversed ? (num_keys - 1 - pos) : pos;
-        if constexpr (FromSmem)
-        {
-          keys[i] = smem_src[folded_pos];
-        }
-        else
-        {
-          keys[i] = layout.block_keys_in[static_cast<segment_size_val_t>(seg_base + static_cast<offset_t>(folded_pos))];
-        }
-        const auto cls = state.identify_op(keys[i]);
-        flags[i]       = (cls == detail::topk::candidate_class::candidate)
-                         ? flag_candidate
-                         : (cls == detail::topk::candidate_class::selected ? flag_selected : flag_none);
+        keys[i] = smem_src[folded_pos];
       }
+      else
+      {
+        keys[i] = layout.block_keys_in[static_cast<segment_size_val_t>(seg_base + static_cast<offset_t>(folded_pos))];
+      }
+      const auto cls = state.identify_op(keys[i]);
+      const offset_t flag =
+        (cls == detail::topk::candidate_class::candidate)
+          ? flag_candidate
+          : (cls == detail::topk::candidate_class::selected ? flag_selected : flag_none);
+      flags[i] = in_range ? flag : flag_none;
     }
   }
 

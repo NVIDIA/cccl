@@ -25,13 +25,12 @@ namespace system::detail::sequential
 namespace stable_primitive_sort_detail
 {
 template <typename Iterator>
-struct enable_if_bool_sort
-    : ::cuda::std::enable_if<::cuda::std::is_same<bool, thrust::detail::it_value_t<Iterator>>::value>
+struct enable_if_bool_sort : ::cuda::std::enable_if<::cuda::std::is_same_v<bool, thrust::detail::it_value_t<Iterator>>>
 {};
 
 template <typename Iterator>
 struct disable_if_bool_sort
-    : thrust::detail::disable_if<::cuda::std::is_same<bool, thrust::detail::it_value_t<Iterator>>::value>
+    : thrust::detail::disable_if<::cuda::std::is_same_v<bool, thrust::detail::it_value_t<Iterator>>>
 {};
 
 template <typename DerivedPolicy, typename RandomAccessIterator>

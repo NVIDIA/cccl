@@ -3430,7 +3430,7 @@ CUB_TEST("Test RadixSortPolicy properties", "[radix_sort][device]", CUB_SMALL)
        ", .lookback = ScanLookbackPolicy { .threads_per_block = 512, .items_per_thread = 23, .load_algorithm = "
        "BLOCK_LOAD_WARP_TRANSPOSE, .load_modifier = LOAD_DEFAULT, .store_algorithm = BLOCK_STORE_WARP_TRANSPOSE, "
        ".scan_algorithm = BLOCK_SCAN_RAKING_MEMOIZE, .lookback_delay = LookbackDelayPolicy { .kind = "
-       "LookbackDelayAlgorithm::no_delay, .delay = 0, .l2_write_latency = 0 } }"
+       "LookbackDelayAlgorithm::no_delay, .delay = 0, .l2_write_latency = 0 }, .tiles_per_batch = 65536 }"
        ", .lookahead = ScanLookaheadPolicy { .reduce_and_scan_warps = 0, .items_per_thread = 0, "
        ".lookahead_items_per_thread = 0, .lookahead_stages = 2, .block_idx_stages = -1 } }"
        ", .downsweep = RadixSortDownsweepPolicy { .threads_per_block = 256, .items_per_thread = 25, .load_algorithm = "

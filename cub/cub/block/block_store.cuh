@@ -26,10 +26,19 @@
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
-#include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__fwd/format.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
+#include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/is_default_constructible.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_volatile.h>
+#include <cuda/std/__type_traits/remove_reference.h>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
 
 CUB_NAMESPACE_BEGIN
 
@@ -155,8 +164,8 @@ StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
 //!   A suitable 1D thread-identifier for the calling thread
 //!   (e.g., ``(threadIdx.y * blockDim.x) + linear_tid`` for 2D thread blocks)
 //!
-//! @param[in] block_ptr
-//!   Input pointer for storing from
+//! @param[out] block_ptr
+//!   Output pointer for storing to
 //!
 //! @param[in] items
 //!   Data to store
@@ -473,7 +482,7 @@ enum BlockStoreAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
   //! - The following conditions will prevent vectorization and writing will fall back to cub::BLOCK_STORE_DIRECT:
   //!
   //!   - ``ItemsPerThread`` is odd
-  //!   - The ``OutputIteratorT`` is not a simple pointer type
+  //!   - The ``OutputIteratorT`` is not a contiguous iterator
   //!   - The block output offset is not quadword-aligned
   //!   - The data type ``T`` is not a built-in primitive or CUDA vector type
   //!     (e.g., ``short``, ``int2``, ``double``, ``float2``, etc.)
@@ -842,7 +851,13 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_STORE_VECTORIZE)
     {
-      if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>)
+      if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>
+                    && ::cuda::std::is_same_v<detail::it_value_t<OutputIteratorT>, T>
+                    // handles contiguous iterators wrapping volatile pointers, like span<volatile int>::iterator
+                    && !::cuda::std::is_volatile_v<
+                       ::cuda::std::remove_reference_t<detail::it_reference_t<OutputIteratorT>>>
+                    // needed to default construct vectors of T
+                    && ::cuda::std::is_default_constructible_v<T>)
       {
         StoreDirectBlockedVectorized(linear_tid, ::cuda::std::to_address(block_itr), items);
       }

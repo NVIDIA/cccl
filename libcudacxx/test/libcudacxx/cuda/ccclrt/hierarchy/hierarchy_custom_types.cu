@@ -33,12 +33,12 @@ struct custom_level_test
   template <typename DynDims>
   TEST_FUNC void operator()(const DynDims& dims) const
   {
-    // todo: allow this after fixing CCCLRT_REQUIRE with clang-cuda
+    // todo: allow this after fixing REQUIRE with clang-cuda
 #if !_CCCL_CUDA_COMPILER(CLANG)
-    CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::grid, dims) == 84 * 1024);
-    CCCLRT_REQUIRE(custom_level{}.count(cuda::grid, dims) == 42);
-    CCCLRT_REQUIRE(cuda::gpu_thread.dims(cuda::grid, dims) == dim3(42 * 512, 2, 2));
-    CCCLRT_REQUIRE(custom_level{}.dims(cuda::grid, dims) == dim3(42, 1, 1));
+    REQUIRE(cuda::gpu_thread.count(cuda::grid, dims) == 84 * 1024);
+    REQUIRE(custom_level{}.count(cuda::grid, dims) == 42);
+    REQUIRE(cuda::gpu_thread.dims(cuda::grid, dims) == dim3(42 * 512, 2, 2));
+    REQUIRE(custom_level{}.dims(cuda::grid, dims) == dim3(42, 1, 1));
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
   }
 
@@ -49,11 +49,11 @@ struct custom_level_test
     custom_block.dummy     = 2;
     auto custom_dims       = cuda::make_hierarchy(cuda::grid_dims<256>(), cuda::cluster_dims<8>(), custom_block);
     auto custom_block_back = custom_dims.level(cuda::block);
-    CCCLRT_REQUIRE(custom_block_back.dummy == 2);
+    REQUIRE(custom_block_back.dummy == 2);
 
     auto custom_dims_fragment = custom_dims.fragment(cuda::gpu_thread, cuda::block);
     auto custom_block_back2   = custom_dims_fragment.level(cuda::block);
-    CCCLRT_REQUIRE(custom_block_back2.dummy == 2);
+    REQUIRE(custom_block_back2.dummy == 2);
 
     // Check creating a custom level type works
     auto custom_level_dims = cuda::std::extents<cuda::dimensions_index_type, 2, 2, 2>();

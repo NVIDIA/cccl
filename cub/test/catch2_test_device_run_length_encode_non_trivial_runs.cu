@@ -17,6 +17,7 @@
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::NonTrivialRuns, run_length_encode);
 
@@ -402,9 +403,9 @@ try
   check_offset_out_helper.check_all_results_correct();
   check_run_length_out_helper.check_all_results_correct();
 }
-catch (const std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
+  c2h::skip_if_allocation_failure();
 }
 
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns works for large runs of equal items",
@@ -455,7 +456,7 @@ try
   CHECK(expected_uniques == offsets_out);
   CHECK(expected_run_lengths == run_lengths_out);
 }
-catch (const std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
+  c2h::skip_if_allocation_failure();
 }

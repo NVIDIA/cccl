@@ -20,6 +20,7 @@
 #include "catch2_test_launch_helper.h"
 #include "cub/util_type.cuh"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, partition);
 
@@ -471,8 +472,7 @@ try
   check_second_partition_helper.check_all_results_correct();
   check_third_partition_helper.check_all_results_correct();
 }
-catch (std::bad_alloc&)
+catch (...)
 {
-  // Exceeding memory is not a failure.
-  SUCCEED("exceeding memory is not a failure");
+  c2h::skip_if_allocation_failure();
 }

@@ -19,17 +19,21 @@
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__device/compute_capability.h>
-#include <cuda/__functional/address_stability.h>
-#include <cuda/__functional/always_true_false.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cccl/execution_space.h>
-#include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__fwd/format.h>
+#include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/array>
-#include <cuda/std/concepts>
-#include <cuda/std/tuple>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/util_device.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 
@@ -211,11 +215,12 @@ struct TransformAsyncCopyPolicy
 struct TransformPolicy
 {
   int min_bytes_in_flight; //!< Minimum number of bytes in flight per SM to reach by scaling the items per thread. Has
-                           //!< no effect if algorithm is @p vectorized.
+                           //!< no effect if algorithm is @p vectorized and the vectorized code path is eligible at
+                           //!< runtime.
   TransformAlgorithm algorithm; //!< The transform algorithm to use by the kernel
   TransformPrefetchPolicy prefetch; //!< Sub-policy for the prefetch algorithm. Only used when @p algorithm is @p
-                                    //!< prefetch or when @p algorithm is @p vectorized and the input pointers are not
-                                    //!< sufficiently aligned.
+                                    //!< prefetch or when @p algorithm is @p vectorized and the vectorized code path is
+                                    //!< not eligible at runtime.
   TransformVectorizedPolicy vectorized; //!< Sub-policy for the vectorized algorithm. Only used when @p algorithm is @p
                                         //!< vectorized.
   TransformAsyncCopyPolicy async_copy; //!< Sub-policy for the async copy algorithms. Only used when @p algorithm is @p
@@ -278,7 +283,7 @@ _CCCL_HOST_DEVICE constexpr auto memcpy_async_dyn_smem_for_tile_size(
   return smem_size;
 }
 
-constexpr int bulk_copy_size_multiple = 16;
+inline constexpr int bulk_copy_size_multiple = 16;
 
 _CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(::cuda::compute_capability cc) -> int
 {

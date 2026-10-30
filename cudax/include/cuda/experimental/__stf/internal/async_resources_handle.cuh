@@ -327,7 +327,7 @@ public:
  */
 UNITTEST("async_resources_handle is_default_constructible")
 {
-  static_assert(::cuda::std::is_default_constructible<async_resources_handle>::value,
+  static_assert(::cuda::std::is_default_constructible_v<async_resources_handle>,
                 "async_resources_handle must be default constructible");
 };
 #endif

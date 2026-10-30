@@ -172,7 +172,7 @@ expected_allocation_size(size_t expected)
 }
 
 template <size_t... Is, class TplT, class EnvT>
-[[nodiscard]] auto replace_back(cuda::std::integer_sequence<size_t, Is...>, TplT tpl, const EnvT& env)
+[[nodiscard]] auto replace_back(cuda::std::index_sequence<Is...>, TplT tpl, const EnvT& env)
 {
   return cuda::std::make_tuple(cuda::std::get<Is>(tpl)..., env);
 }

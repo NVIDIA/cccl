@@ -29,8 +29,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
 template <class _Tp, class _Up>
-struct reference_constructs_from_temporary
-    : integral_constant<bool, _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY(_Tp, _Up)>
+struct reference_constructs_from_temporary : bool_constant<_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY(_Tp, _Up)>
 {};
 
 template <class _Tp, class _Up>

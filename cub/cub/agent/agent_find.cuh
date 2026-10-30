@@ -8,14 +8,17 @@
 #include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
-#include <cub/util_arch.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__atomic/order.h>
+#include <cuda/std/__atomic/scopes.h>
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_pointer.h>
 
 #if !_CCCL_HAS_NV_ATOMIC_BUILTINS()
 #  include <cuda/atomic>
@@ -86,8 +89,7 @@ struct agent_t
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE bool
-  ConsumeTile(OffsetT tile_offset, ::cuda::std::integral_constant<bool, true> /*CAN_VECTORIZE*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE bool ConsumeTile(OffsetT tile_offset, ::cuda::std::true_type /*CAN_VECTORIZE*/)
   {
     using InputT  = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
     using VectorT = typename CubVector<InputT, VecSize>::Type;
@@ -127,8 +129,7 @@ struct agent_t
     return false;
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE bool
-  ConsumeTile(OffsetT tile_offset, ::cuda::std::integral_constant<bool, false> /*CAN_VECTORIZE*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE bool ConsumeTile(OffsetT tile_offset, ::cuda::std::false_type /*CAN_VECTORIZE*/)
   {
     for (int i = 0; i < ItemsPerThread; ++i)
     {

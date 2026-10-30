@@ -25,7 +25,6 @@
 #  error "Experimental Cooperative APIs require the _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX macro to be defined before any CCCL header inclusion."
 #endif // !_CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
 
-#include <cuda/experimental/coop/__group/cg_interop.cuh>
 #include <cuda/experimental/coop/__group/coalesced_group.cuh>
 #include <cuda/experimental/coop/__group/concepts.cuh>
 #include <cuda/experimental/coop/__group/fwd.cuh>
@@ -39,6 +38,7 @@
 #include <cuda/experimental/coop/__group/mapping/take.cuh>
 #include <cuda/experimental/coop/__group/queries.cuh>
 #include <cuda/experimental/coop/__group/synchronizer/barrier_synchronizer.cuh>
+#include <cuda/experimental/coop/__group/synchronizer/arrival_token.cuh>
 #include <cuda/experimental/coop/__group/synchronizer/interwarp_synchronizer.cuh>
 #include <cuda/experimental/coop/__group/synchronizer/lane_synchronizer.cuh>
 #include <cuda/experimental/coop/__group/synchronizer/level_synchronizer.cuh>

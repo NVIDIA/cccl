@@ -122,8 +122,8 @@ private:
             bool _FloatBigger = (numeric_limits<_FloatT>::digits > numeric_limits<_IntT>::digits)>
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _IntT __max_representable_int_for_float() noexcept
   {
-    static_assert(::cuda::std::is_floating_point<_FloatT>::value, "must be a floating point type");
-    static_assert(::cuda::std::is_integral<_IntT>::value, "must be an integral type");
+    static_assert(::cuda::std::is_floating_point_v<_FloatT>, "must be a floating point type");
+    static_assert(::cuda::std::is_integral_v<_IntT>, "must be an integral type");
     static_assert(numeric_limits<_FloatT>::radix == 2, "FloatT has incorrect radix");
     constexpr int _bits = ::cuda::std::max(numeric_limits<_IntT>::digits - numeric_limits<_FloatT>::digits, 0);
     return _FloatBigger ? numeric_limits<_IntT>::max() : (numeric_limits<_IntT>::max() >> _bits << _bits);

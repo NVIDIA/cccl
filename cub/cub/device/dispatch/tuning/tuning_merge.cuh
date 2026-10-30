@@ -16,17 +16,20 @@
 #include <cub/block/block_store.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
-#include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
+#include <cub/thread/thread_sort.cuh>
 #include <cub/util_math.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/concepts>
+#include <cuda/std/__type_traits/is_same.h>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/util_device.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 
@@ -40,7 +43,7 @@ struct MergePolicy
   BlockStoreAlgorithm store_algorithm; //!< The @ref BlockStoreAlgorithm used for storing items to global memory
   bool use_bulk_copy_for_keys; //!< Whether to use bulk copy (cp.async.bulk) for loading keys into shared memory
   bool use_bulk_copy_for_values; //!< Whether to use bulk copy (cp.async.bulk) for loading values into shared memory
-  bool unroll = true; //<! Whether to unroll the loops inside the serial merge implementation
+  bool unroll = detail::sort_unroll_default; //<! Whether to unroll the loops inside the serial merge implementation
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const MergePolicy& lhs, const MergePolicy& rhs) noexcept

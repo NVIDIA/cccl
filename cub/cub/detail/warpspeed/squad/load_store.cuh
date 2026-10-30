@@ -18,15 +18,22 @@
 
 #include <cuda/__memory/align_down.h>
 #include <cuda/__memory/align_up.h>
+#include <cuda/__memory/is_aligned.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/cp_async_bulk_commit_group.h>
 #include <cuda/__ptx/instructions/cp_async_bulk_wait_group.h>
 #include <cuda/__ptx/instructions/elect_sync.h>
 #include <cuda/__ptx/instructions/fence.h>
-#include <cuda/std/__type_traits/make_nbit_int.h>
+#include <cuda/std/__cstddef/byte.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/cstdint>
 
 #include <nv/target>
+
+#if __cccl_ptx_isa < 920
+#  include <cuda/std/__type_traits/make_nbit_int.h>
+#  include <cuda/std/climits>
+#endif // __cccl_ptx_isa < 920
 
 CUB_NAMESPACE_BEGIN
 

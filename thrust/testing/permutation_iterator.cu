@@ -71,8 +71,8 @@ void test_permutation_iterator_simple()
   REQUIRE(source == ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(test_permutation_iterator_simple);
-static_assert(cuda::std::is_trivially_copy_constructible<thrust::permutation_iterator<int*, int*>>::value);
-static_assert(cuda::std::is_trivially_copyable<thrust::permutation_iterator<int*, int*>>::value);
+static_assert(cuda::std::is_trivially_copy_constructible_v<thrust::permutation_iterator<int*, int*>>);
+static_assert(cuda::std::is_trivially_copyable_v<thrust::permutation_iterator<int*, int*>>);
 
 template <class Vector>
 void test_permutation_iterator_gather()

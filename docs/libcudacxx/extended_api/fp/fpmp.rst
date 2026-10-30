@@ -8,6 +8,7 @@ fpmp: Arithmetic on Pairs of Floats
    :maxdepth: 1
 
    Examples <fpmp_example>
+   Error bounds <fpmp_error_bounds>
    Full specification <fpmp_spec>
 
 An ``fpmp2`` value represents a number as the unevaluated sum of two IEEE-754 floats,
@@ -26,7 +27,7 @@ reaches 104 significand bits out of ordinary FP64 operations.
 
 Which of the two applies is decided by one number, the rate at which the part runs FP64 against
 FP32, and the :doc:`specification <fpmp_spec>` lists it for every platform measured — 1:2 on B200
-against 1:32 on B300. ``fp64mp2`` spends FP64 throughput, so it is the cheap route to quad-like
+against 1:64 on B300. ``fp64mp2`` spends FP64 throughput, so it is the cheap route to quad-like
 precision on a part where FP64 runs close to FP32, and a costly one where FP64 is rationed: a
 software binary128 is integer code and is not competing for the units ``fp64mp2`` needs.
 ``fp32mp2`` is the mirror image, and wins exactly where ``fp64mp2`` struggles.
@@ -108,6 +109,8 @@ IEEE-754, so ``is_iec559`` is ``false``:
 The minimum exponent is raised relative to the component type because both halves have to stay
 normal for the pair to carry its full significand.
 
+.. _libcudacxx-extended-api-fp-fpmp-80-bit:
+
 Retiring 80-bit CPU code
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -149,7 +152,9 @@ the trailing limb correct. The level is part of the type:
      - ``fpmp2_accuracy::def``
      - The default selector, equal to ``mid``
 
-with the same four names for ``fp64mp2``. Three points are easy to miss. The default is ``mid``, so
+with the same four names for ``fp64mp2``. What each level guarantees, operation by operation and
+in units of the limb's rounding error, is on the :ref:`error bounds
+<libcudacxx-extended-api-fp-fpmp-error-bounds>` page. Three points are easy to miss. The default is ``mid``, so
 asking for ``high`` is a deliberate step up rather than the level you already have. The levels
 differ only in the trailing limb, so a result rounded to one ``double`` will often look identical
 across levels — comparing them means printing ``hi`` and ``lo`` separately.
@@ -404,6 +409,8 @@ copyability retained. A volatile lvalue is not an operand: arithmetic takes ``co
 compute on a non-volatile copy and store the result back, exactly as the compiler does for a
 built-in ``volatile double``.
 
+.. _libcudacxx-extended-api-fp-fpmp-math-accuracy:
+
 Math function accuracy
 ----------------------
 
@@ -557,7 +564,22 @@ to get past.
 pair operation is a run of operations on the limbs, and on these parts those are the rationed FP64
 ones.
 The digits past ``double`` are therefore bought at a real price, unlike the ones below it, and how
-bearable that price is follows from the FP64 throughput underneath.
+bearable that price is follows from the FP64 throughput underneath. Where FP64 runs at full rate the
+comparison that matters is against software binary128, and the :doc:`specification <fpmp_spec>` has
+it per function: on B200 a ``mid`` addition is 7.8× faster than software binary128 and division
+17.8×, while on B300 binary128 is 1.4–4× faster than ``fp64mp2`` operation for operation.
+
+Optimization guide
+------------------
+
+``fp32mp2`` pays for its digits in FP32 instructions and wins only where FP64 is rationed;
+``fp64mp2`` pays in FP64 instructions and wins only where FP64 runs at full rate. Past that first
+decision, what a kernel gets out of either type depends on where its conversions sit, which accuracy
+level each step runs at, and whether its reductions go through atomics. The
+:ref:`FP optimization guide <libcudacxx-extended-api-fp-optimization-guide-fpmp>` covers those
+choices for both types, with per-operation costs, and its opening section on
+:ref:`choosing the type <libcudacxx-extended-api-fp-optimization-guide-choosing>` places ``fpmp``
+against the other components.
 
 References
 ----------

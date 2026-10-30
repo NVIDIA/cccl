@@ -22,16 +22,15 @@
 #include <cub/block/block_discontinuity.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
-#include <cub/block/block_store.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/key_value_pair.cuh>
 #include <cub/detail/non_void_value.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/thread/thread_operators.cuh>
 
-#include <cuda/__functional/operator_properties.h>
-#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -219,14 +218,13 @@ struct AgentReduceByKey
   using ReduceBySegmentOpT = ReduceBySegmentOp<ReductionOpT>;
 
   // Parameterized BlockLoad type for keys
-  using BlockLoadKeysT =
-    BlockLoad<KeyOutputT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentReduceByKeyPolicyT::LOAD_ALGORITHM>;
+  using BlockLoadKeysT = BlockLoad<KeyInputT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentReduceByKeyPolicyT::LOAD_ALGORITHM>;
 
   // Parameterized BlockLoad type for values
   using BlockLoadValuesT = BlockLoad<AccumT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentReduceByKeyPolicyT::LOAD_ALGORITHM>;
 
   // Parameterized BlockDiscontinuity type for keys
-  using BlockDiscontinuityKeys = BlockDiscontinuity<KeyOutputT, BLOCK_THREADS>;
+  using BlockDiscontinuityKeys = BlockDiscontinuity<KeyInputT, BLOCK_THREADS>;
 
   // Parameterized BlockScan type
   using BlockScanT = BlockScan<OffsetValuePairT, BLOCK_THREADS, AgentReduceByKeyPolicyT::SCAN_ALGORITHM>;
@@ -489,10 +487,10 @@ struct AgentReduceByKey
   ConsumeTile(OffsetT num_remaining, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state)
   {
     // Tile keys
-    KeyOutputT keys[ITEMS_PER_THREAD];
+    KeyInputT keys[ITEMS_PER_THREAD];
 
     // Tile keys shuffled up
-    KeyOutputT prev_keys[ITEMS_PER_THREAD];
+    KeyInputT prev_keys[ITEMS_PER_THREAD];
 
     // Tile values
     AccumT values[ITEMS_PER_THREAD];
@@ -520,7 +518,7 @@ struct AgentReduceByKey
     }
 
     // Load tile predecessor key in first thread
-    KeyOutputT tile_predecessor;
+    KeyInputT tile_predecessor;
     if (threadIdx.x == 0)
     {
       // if (tile_idx == 0)
@@ -654,7 +652,7 @@ struct AgentReduceByKey
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
-      scatter_items[ITEM].key   = prev_keys[ITEM];
+      scatter_items[ITEM].key   = static_cast<KeyOutputT>(prev_keys[ITEM]);
       scatter_items[ITEM].value = scan_items[ITEM].value;
       segment_indices[ITEM]     = scan_items[ITEM].key;
     }
@@ -681,7 +679,7 @@ struct AgentReduceByKey
         {
           if (streaming_context.is_last_partition())
           {
-            d_unique_out[num_segments]     = keys[ITEMS_PER_THREAD - 1];
+            d_unique_out[num_segments]     = static_cast<KeyOutputT>(keys[ITEMS_PER_THREAD - 1]);
             d_aggregates_out[num_segments] = total_aggregate.value;
             num_segments++;
           }
@@ -693,7 +691,7 @@ struct AgentReduceByKey
         }
         else
         {
-          d_unique_out[num_segments]     = keys[ITEMS_PER_THREAD - 1];
+          d_unique_out[num_segments]     = static_cast<KeyOutputT>(keys[ITEMS_PER_THREAD - 1]);
           d_aggregates_out[num_segments] = total_aggregate.value;
           num_segments++;
         }

@@ -22,9 +22,9 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
-#include <cuda/__memcpy_async/elect_one.h>
-#include <cuda/__memory/align_down.h>
-#include <cuda/__memory/align_up.h>
+#include <cuda/__memcpy_async/elect_one.h> // IWYU pragma: keep
+#include <cuda/__memory/align_down.h> // IWYU pragma: keep
+#include <cuda/__memory/align_up.h> // IWYU pragma: keep
 #include <cuda/__memory/ptr_rebind.h>
 #include <cuda/std/__host_stdlib/ostream>
 
