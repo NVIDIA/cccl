@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/any_of.h>
 #include <cuda/std/expected>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
@@ -3622,14 +3623,9 @@ struct __status_set
 
   [[nodiscard]] bool __contains(const _Status __status) const noexcept
   {
-    for (const _Status& __value : __values_)
-    {
-      if (__value == __status)
-      {
-        return true;
-      }
-    }
-    return false;
+    return ::cuda::std::any_of(__values_, __values_ + _Count, [&__status](const _Status& __value) {
+      return __value == __status;
+    });
   }
 };
 
