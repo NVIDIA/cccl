@@ -22,7 +22,7 @@
 #include <cuda/stream>
 
 #include <cuda/experimental/__cuco/detail/probing_scheme_base.cuh>
-#include <cuda/experimental/__cuco/detail/utility/hash_to_index.cuh>
+#include <cuda/experimental/__cuco/detail/utility/probe_index.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 
 #include <cooperative_groups.h>
@@ -33,81 +33,152 @@ namespace cg   = cooperative_groups;
 
 using index_types = c2h::type_list<cuda::std::int32_t, cuda::std::uint32_t, cuda::std::int64_t, cuda::std::uint64_t>;
 
+// Computes floor(bits * bound / 2^width) with 32-bit limbs, independently of cuda::mul_hi.
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr cuda::std::uint64_t
+reference_index(cuda::std::uint64_t bits, int width, cuda::std::uint64_t bound)
+{
+  constexpr cuda::std::uint64_t low_mask = 0xffffffff;
+  const auto p00                         = (bits & low_mask) * (bound & low_mask);
+  const auto p01                         = (bits & low_mask) * (bound >> 32);
+  const auto p10                         = (bits >> 32) * (bound & low_mask);
+  const auto p11                         = (bits >> 32) * (bound >> 32);
+  const auto middle                      = (p00 >> 32) + (p01 & low_mask) + (p10 & low_mask);
+  const auto low                         = (middle << 32) | (p00 & low_mask);
+  const auto high                        = p11 + (p01 >> 32) + (p10 >> 32) + (middle >> 32);
+  return width == 64 ? high : (high << (64 - width)) | (low >> width);
+}
+
+// Expected probe index: hashes up to 64 bits keep their width, wider hashes are narrowed to the index width.
+template <class Index, class Hash>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr Index expected_index(Hash hash, Index bound)
+{
+  using unsigned_index = cuda::std::make_unsigned_t<Index>;
+  if constexpr (sizeof(Hash) > sizeof(cuda::std::uint64_t))
+  {
+    return static_cast<Index>(reference_index(
+      static_cast<unsigned_index>(hash),
+      cuda::std::numeric_limits<unsigned_index>::digits,
+      static_cast<cuda::std::uint64_t>(bound)));
+  }
+  else
+  {
+    using unsigned_hash = cuda::std::make_unsigned_t<Hash>;
+    return static_cast<Index>(reference_index(
+      static_cast<unsigned_hash>(hash),
+      cuda::std::numeric_limits<unsigned_hash>::digits,
+      static_cast<cuda::std::uint64_t>(bound)));
+  }
+}
+
+template <class Index>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr Index
+expected_index(const cuda::std::array<cuda::std::uint64_t, 2>& hash, Index bound)
+{
+  using unsigned_index = cuda::std::make_unsigned_t<Index>;
+  return expected_index(static_cast<unsigned_index>(hash[0]), bound);
+}
+
 template <class Index>
 _CCCL_HOST_DEVICE_API void check_hash_reduction()
 {
-  using unsigned_index         = cuda::std::make_unsigned_t<Index>;
-  constexpr auto i64_min       = cuda::std::numeric_limits<cuda::std::int64_t>::min();
-  constexpr auto u64_max       = cuda::std::numeric_limits<cuda::std::uint64_t>::max();
-  constexpr auto limit         = cuda::std::numeric_limits<Index>::max();
-  constexpr auto wide          = cuda::std::uint64_t{0x100000003};
-  constexpr auto min_magnitude = cuda::std::uint64_t{1} << 63;
-  constexpr cuda::std::array<cuda::std::uint64_t, 2> array_hash{wide, u64_max};
+  constexpr auto i64_min = cuda::std::numeric_limits<cuda::std::int64_t>::min();
+  constexpr auto u64_max = cuda::std::numeric_limits<cuda::std::uint64_t>::max();
+  constexpr auto limit   = cuda::std::numeric_limits<Index>::max();
+  constexpr auto half32  = cuda::std::uint32_t{1} << 31;
+  constexpr cuda::std::array<cuda::std::uint64_t, 2> array_hash{0x8000000080000000, u64_max};
 
-  static_assert(cuco::detail::__hash_to_index(-1, Index{17}) == Index{1});
-  CHECK(cuco::detail::__hash_to_index(-1, Index{17}) == Index{1});
-  static_assert(cuco::detail::__hash_to_index(cuda::std::int8_t{-128}, Index{257}) == Index{128});
-  CHECK(cuco::detail::__hash_to_index(cuda::std::int8_t{-128}, Index{257}) == Index{128});
-  static_assert(cuco::detail::__hash_to_index(cuda::std::uint8_t{255}, Index{257}) == Index{255});
-  CHECK(cuco::detail::__hash_to_index(cuda::std::uint8_t{255}, Index{257}) == Index{255});
-  static_assert(cuco::detail::__hash_to_index(i64_min, Index{17})
-                == static_cast<Index>(static_cast<unsigned_index>(min_magnitude) % 17));
-  CHECK(cuco::detail::__hash_to_index(i64_min, Index{17})
-        == static_cast<Index>(static_cast<unsigned_index>(min_magnitude) % 17));
-  static_assert(cuco::detail::__hash_to_index(i64_min, limit)
-                == static_cast<Index>(static_cast<unsigned_index>(min_magnitude) % limit));
-  CHECK(cuco::detail::__hash_to_index(i64_min, limit)
-        == static_cast<Index>(static_cast<unsigned_index>(min_magnitude) % limit));
-  static_assert(
-    cuco::detail::__hash_to_index(u64_max, limit) == static_cast<Index>(static_cast<unsigned_index>(u64_max) % limit));
-  CHECK(cuco::detail::__hash_to_index(u64_max, limit)
-        == static_cast<Index>(static_cast<unsigned_index>(u64_max) % limit));
-  static_assert(
-    cuco::detail::__hash_to_index(u64_max, Index{17}) == static_cast<Index>(static_cast<unsigned_index>(u64_max) % 17));
-  CHECK(cuco::detail::__hash_to_index(u64_max, Index{17})
-        == static_cast<Index>(static_cast<unsigned_index>(u64_max) % 17));
-  static_assert(
-    cuco::detail::__hash_to_index(wide, Index{13}) == static_cast<Index>(static_cast<unsigned_index>(wide) % 13));
-  CHECK(cuco::detail::__hash_to_index(wide, Index{13}) == static_cast<Index>(static_cast<unsigned_index>(wide) % 13));
-  static_assert(
-    cuco::detail::__hash_to_index(array_hash, Index{13}) == static_cast<Index>(static_cast<unsigned_index>(wide) % 13));
-  CHECK(cuco::detail::__hash_to_index(array_hash, Index{13})
-        == static_cast<Index>(static_cast<unsigned_index>(wide) % 13));
-  static_assert(cuco::detail::__hash_to_index(i64_min, Index{1}) == Index{0});
-  CHECK(cuco::detail::__hash_to_index(i64_min, Index{1}) == Index{0});
+  // The high bits select the index: a hash at half of its range maps to half of the bound.
+  static_assert(cuco::detail::__probe_index(half32, Index{10}) == Index{5});
+  CHECK(cuco::detail::__probe_index(half32, Index{10}) == Index{5});
+  static_assert(cuco::detail::__probe_index(-1, Index{17}) == Index{16});
+  CHECK(cuco::detail::__probe_index(-1, Index{17}) == Index{16});
+  static_assert(cuco::detail::__probe_index(cuda::std::int8_t{-128}, Index{257}) == Index{128});
+  CHECK(cuco::detail::__probe_index(cuda::std::int8_t{-128}, Index{257}) == Index{128});
+  static_assert(cuco::detail::__probe_index(cuda::std::uint8_t{255}, Index{257}) == Index{255});
+  CHECK(cuco::detail::__probe_index(cuda::std::uint8_t{255}, Index{257}) == Index{255});
+  static_assert(cuco::detail::__probe_index(i64_min, Index{17}) == Index{8});
+  CHECK(cuco::detail::__probe_index(i64_min, Index{17}) == Index{8});
+  static_assert(cuco::detail::__probe_index(u64_max, Index{17}) == Index{16});
+  CHECK(cuco::detail::__probe_index(u64_max, Index{17}) == Index{16});
+  static_assert(cuco::detail::__probe_index(i64_min, Index{1}) == Index{0});
+  CHECK(cuco::detail::__probe_index(i64_min, Index{1}) == Index{0});
+  static_assert(cuco::detail::__probe_index(u64_max, limit) == limit - 1);
+  CHECK(cuco::detail::__probe_index(u64_max, limit) == limit - 1);
+  static_assert(cuco::detail::__probe_index(i64_min, limit) == expected_index(i64_min, limit));
+  CHECK(cuco::detail::__probe_index(i64_min, limit) == expected_index(i64_min, limit));
+  static_assert(cuco::detail::__probe_index(half32, limit) == expected_index(half32, limit));
+  CHECK(cuco::detail::__probe_index(half32, limit) == expected_index(half32, limit));
+  // The low word of a two-word hash is narrowed to the index width; both widths land at half of the bound.
+  static_assert(cuco::detail::__probe_index(array_hash, Index{13}) == Index{6});
+  CHECK(cuco::detail::__probe_index(array_hash, Index{13}) == Index{6});
 
 #if _CCCL_HAS_INT128()
   constexpr auto wide128        = (__uint128_t{1} << 100) + 3;
   constexpr auto signed_wide128 = -static_cast<__int128_t>(wide128);
   constexpr auto i128_min       = cuda::std::numeric_limits<__int128_t>::min();
   constexpr auto u128_max       = cuda::std::numeric_limits<__uint128_t>::max();
-  static_assert(cuco::detail::__hash_to_index(wide128, Index{13}) == Index{3});
-  CHECK(cuco::detail::__hash_to_index(wide128, Index{13}) == Index{3});
-  static_assert(cuco::detail::__hash_to_index(signed_wide128, Index{13}) == Index{3});
-  CHECK(cuco::detail::__hash_to_index(signed_wide128, Index{13}) == Index{3});
-  static_assert(cuco::detail::__hash_to_index(i128_min, Index{17}) == Index{0});
-  CHECK(cuco::detail::__hash_to_index(i128_min, Index{17}) == Index{0});
-  static_assert(cuco::detail::__hash_to_index(u128_max, Index{17}) == Index{0});
-  CHECK(cuco::detail::__hash_to_index(u128_max, Index{17}) == Index{0});
-  static_assert(cuco::detail::__hash_to_index(u128_max, limit)
-                == static_cast<Index>(static_cast<unsigned_index>(u128_max) % limit));
-  CHECK(cuco::detail::__hash_to_index(u128_max, limit)
-        == static_cast<Index>(static_cast<unsigned_index>(u128_max) % limit));
-  static_assert(cuco::detail::__hash_to_index(i128_min, Index{1}) == Index{0});
-  CHECK(cuco::detail::__hash_to_index(i128_min, Index{1}) == Index{0});
+  // Scalar 128-bit hashes are narrowed to the index width, keeping the low bits.
+  static_assert(cuco::detail::__probe_index(wide128, Index{13}) == Index{0});
+  CHECK(cuco::detail::__probe_index(wide128, Index{13}) == Index{0});
+  static_assert(cuco::detail::__probe_index(signed_wide128, Index{13}) == Index{12});
+  CHECK(cuco::detail::__probe_index(signed_wide128, Index{13}) == Index{12});
+  static_assert(cuco::detail::__probe_index(i128_min, Index{17}) == Index{0});
+  CHECK(cuco::detail::__probe_index(i128_min, Index{17}) == Index{0});
+  static_assert(cuco::detail::__probe_index(u128_max, Index{17}) == Index{16});
+  CHECK(cuco::detail::__probe_index(u128_max, Index{17}) == Index{16});
+  static_assert(cuco::detail::__probe_index(u128_max, limit) == limit - 1);
+  CHECK(cuco::detail::__probe_index(u128_max, limit) == limit - 1);
+  static_assert(cuco::detail::__probe_index(i128_min, Index{1}) == Index{0});
+  CHECK(cuco::detail::__probe_index(i128_min, Index{1}) == Index{0});
 #endif // _CCCL_HAS_INT128()
+}
+
+template <class Index, class Hash>
+_CCCL_HOST_DEVICE_API void check_wide_product(Hash hash)
+{
+  constexpr auto limit = cuda::std::numeric_limits<Index>::max();
+  const Index bounds[] = {
+    Index{1}, Index{2}, Index{3}, Index{7}, Index{65537}, Index{limit / 2}, Index{limit - 1}, limit};
+  for (const auto bound : bounds)
+  {
+    CHECK(cuco::detail::__probe_index(hash, bound) == expected_index(hash, bound));
+  }
+}
+
+template <class Index>
+_CCCL_HOST_DEVICE_API void check_wide_products()
+{
+  // Every hash width against the index width, including the 32-bit hash and 64-bit index split.
+  const cuda::std::uint64_t patterns[] = {
+    0,
+    1,
+    0x7fffffffffffffff,
+    0x8000000000000000,
+    0x9e3779b97f4a7c15,
+    cuda::std::numeric_limits<cuda::std::uint64_t>::max()};
+  for (const auto bits : patterns)
+  {
+    check_wide_product<Index>(static_cast<cuda::std::uint8_t>(bits >> 56));
+    check_wide_product<Index>(static_cast<cuda::std::int32_t>(bits >> 32));
+    check_wide_product<Index>(static_cast<cuda::std::uint32_t>(bits >> 32));
+    check_wide_product<Index>(static_cast<cuda::std::uint32_t>(bits));
+    check_wide_product<Index>(static_cast<cuda::std::int64_t>(bits));
+    check_wide_product<Index>(bits);
+  }
 }
 
 template <class Index>
 _CCCL_KERNEL_ATTRIBUTES void check_hash_reduction_kernel()
 {
   check_hash_reduction<Index>();
+  check_wide_products<Index>();
 }
 
-C2H_TEST("cuco hash reduction handles signed minima and differing widths", "[probing][hash]", index_types)
+C2H_TEST("cuco probe index uses the hash bit pattern across differing widths", "[probing][hash]", index_types)
 {
   using index_type = c2h::get<0, TestType>;
   check_hash_reduction<index_type>();
+  check_wide_products<index_type>();
   const cuda::stream stream{cuda::device_ref{0}};
   cuda::launch(
     stream, cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<1>()), check_hash_reduction_kernel<index_type>);
@@ -222,15 +293,10 @@ check_probing_kernel(Hasher first_hash, Hasher second_hash, int key, unsigned fi
 }
 
 template <class Index, class Hash, int CgSize, int BucketSize>
-void check_probing(cuda::stream_ref stream,
-                   Hash first,
-                   Hash second,
-                   cuda::std::uint64_t first_magnitude,
-                   cuda::std::uint64_t second_magnitude)
+void check_probing(cuda::stream_ref stream, Hash first, Hash second)
 {
-  using unsigned_index    = cuda::std::make_unsigned_t<Index>;
-  const auto first_bucket = static_cast<unsigned>(static_cast<unsigned_index>(first_magnitude) % 7);
-  const auto step         = static_cast<unsigned>(static_cast<unsigned_index>(second_magnitude) % 6 + 1);
+  const auto first_bucket = static_cast<unsigned>(expected_index(first, Index{7}));
+  const auto step         = static_cast<unsigned>(expected_index(second, Index{6})) + 1;
   cuda::launch(
     stream,
     cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<CgSize>()),
@@ -251,13 +317,13 @@ void check_hash_types(cuda::stream_ref stream)
   using u64              = cuda::std::uint64_t;
   constexpr auto u64_max = cuda::std::numeric_limits<u64>::max();
   constexpr auto u32_max = cuda::std::numeric_limits<u32>::max();
-  check_probing<Index, i32, CgSize, BucketSize>(stream, cuda::std::numeric_limits<i32>::min(), i32{-1}, u64{1} << 31, 1);
-  check_probing<Index, u32, CgSize, BucketSize>(stream, u32_max, u32_max - 1, u32_max, u32_max - 1);
-  check_probing<Index, i64, CgSize, BucketSize>(stream, cuda::std::numeric_limits<i64>::min(), i64{-1}, u64{1} << 63, 1);
-  check_probing<Index, u64, CgSize, BucketSize>(stream, u64_max, u64_max - 1, u64_max, u64_max - 1);
+  check_probing<Index, i32, CgSize, BucketSize>(stream, cuda::std::numeric_limits<i32>::min(), i32{-1});
+  check_probing<Index, u32, CgSize, BucketSize>(stream, u32_max, u32_max / 3);
+  check_probing<Index, i64, CgSize, BucketSize>(stream, cuda::std::numeric_limits<i64>::min(), i64{-1});
+  check_probing<Index, u64, CgSize, BucketSize>(stream, u64_max, u64_max / 3);
   using array_hash = cuda::std::array<u64, 2>;
   check_probing<Index, array_hash, CgSize, BucketSize>(
-    stream, array_hash{u64_max, 1}, array_hash{0x100000003, u64_max}, u64_max, 0x100000003);
+    stream, array_hash{u64_max, 1}, array_hash{0x8000000080000000, u64_max});
 }
 
 C2H_TEST("cuco scalar and group probing preserve complete bucket cycles", "[probing][hash][cg]", index_types)
@@ -278,11 +344,11 @@ C2H_TEST("cuco probing accepts public 128-bit hash results", "[probing][hash][cg
   // Reference digests for key 42 from the public MurmurHash3_x64_128 hash tests, with seeds 0 and 42.
   constexpr auto first_hash  = (__uint128_t{0xe2d23d6a2bbcb816ull} << 64) | __uint128_t{0x286f48e61c6e34cfull};
   constexpr auto second_hash = (__uint128_t{0xf9e3fe3d853fa768ull} << 64) | __uint128_t{0x1f35a00f446c3666ull};
-  constexpr auto first = static_cast<unsigned>(static_cast<cuda::std::make_unsigned_t<index_type>>(first_hash) % 7);
-  constexpr auto step = static_cast<unsigned>(static_cast<cuda::std::make_unsigned_t<index_type>>(second_hash) % 6 + 1);
+  constexpr auto first       = static_cast<unsigned>(expected_index(first_hash, index_type{7}));
+  constexpr auto step        = static_cast<unsigned>(expected_index(second_hash, index_type{6})) + 1;
 
-  CHECK(cuco::detail::__hash_to_index(hasher{0}(42), index_type{7}) == static_cast<index_type>(first));
-  CHECK(cuco::detail::__hash_to_index(hasher{42}(42), index_type{6}) == static_cast<index_type>(step - 1));
+  CHECK(cuco::detail::__probe_index(hasher{0}(42), index_type{7}) == static_cast<index_type>(first));
+  CHECK(cuco::detail::__probe_index(hasher{42}(42), index_type{6}) == static_cast<index_type>(step - 1));
   const cuda::stream stream{cuda::device_ref{0}};
   cuda::launch(
     stream,
@@ -315,8 +381,11 @@ _CCCL_KERNEL_ATTRIBUTES void check_wide_group_offsets_kernel()
   const auto lane_offset    = static_cast<Index>(tile.thread_rank()) * Index{bucket_size};
   const cuda::std::extents<Index, cuda::std::dynamic_extent> capacity{Index{7} * stride};
 
-  const cuco::linear_probing<8, constant_hash<Index>> linear{constant_hash<Index>{6}};
-  const cuco::double_hashing<8, constant_hash<Index>> double_hash{constant_hash<Index>{6}, constant_hash<Index>{5}};
+  // An all-ones hash selects the last of 7 groups and the largest step, 6.
+  constexpr auto all_ones = static_cast<Index>(~cuda::std::uint64_t{0});
+  const cuco::linear_probing<8, constant_hash<Index>> linear{constant_hash<Index>{all_ones}};
+  const cuco::double_hashing<8, constant_hash<Index>> double_hash{
+    constant_hash<Index>{all_ones}, constant_hash<Index>{all_ones}};
   auto linear_iterator = linear.template make_iterator<bucket_size>(tile, 0, capacity);
   auto double_iterator = double_hash.template make_iterator<bucket_size>(tile, 0, capacity);
 
