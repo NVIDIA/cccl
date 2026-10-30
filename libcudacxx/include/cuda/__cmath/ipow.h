@@ -27,6 +27,8 @@
 #include <cuda/__cmath/uabs.h>
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
@@ -40,9 +42,14 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _Tp, class _Ep>
 [[nodiscard]] _CCCL_API constexpr _Tp __cccl_ipow_impl_base_pow2(_Tp __b, _Ep __e) noexcept
 {
+  // Bound the exponent before narrowing or multiplying it.
+  if (::cuda::std::cmp_greater(__e, ::cuda::std::numeric_limits<_Tp>::digits))
+  {
+    return _Tp{0};
+  }
   const auto __shift = static_cast<int>(__e - 1) * ::cuda::ilog2(__b);
   const auto __lz    = ::cuda::std::countl_zero(__b);
-  return (__shift >= __lz) ? _Tp{0} : (_Tp{__b} << __shift);
+  return (__shift > __lz) ? _Tp{0} : (_Tp{__b} << __shift);
 }
 
 template <class _Tp, class _Ep>
@@ -55,8 +62,10 @@ template <class _Tp, class _Ep>
     return ::cuda::__cccl_ipow_impl_base_pow2(__b, __e);
   }
 
-  auto __x = __b;
-  auto __y = _Tp{1};
+  // Keep multiplication unsigned even when _Tp is subject to integral promotion.
+  using _Up = ::cuda::std::common_type_t<_Tp, unsigned>;
+  auto __x  = static_cast<_Up>(__b);
+  auto __y  = _Up{1};
 
   while (__e > 1)
   {
@@ -68,7 +77,7 @@ template <class _Tp, class _Ep>
     __x *= __x;
     __e /= 2;
   }
-  return __x * __y;
+  return static_cast<_Tp>(__x * __y);
 }
 
 //! @brief Computes the integer power of a base to an exponent.
@@ -85,15 +94,20 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::std::__cc
   _CCCL_ASSERT(__b != _Tp{0} || ::cuda::std::cmp_greater_equal(__e, _Ep{0}),
                "cuda::ipow() requires non-negative exponent for base 0");
 
-  if (__e == _Ep{0} || __b == _Tp{1})
+  if (__e == _Ep{0})
   {
     return _Tp{1};
   }
-  else if (::cuda::std::cmp_less(__e, _Ep{0}) || __b == _Tp{0})
+  if (::cuda::std::cmp_less(__e, _Ep{0}) || __b == _Tp{0})
   {
-    return _Tp{0};
+    return (__b == _Tp{1}) ? _Tp{1} : _Tp{0};
   }
-  auto __res = ::cuda::__cccl_ipow_impl(::cuda::uabs(__b), ::cuda::std::__to_unsigned_like(__e));
+  const auto __abs = ::cuda::uabs(__b);
+  if (__abs == 1)
+  {
+    return (__e % 2 == 0) ? _Tp{1} : __b;
+  }
+  auto __res = ::cuda::__cccl_ipow_impl(__abs, ::cuda::std::__to_unsigned_like(__e));
   if constexpr (::cuda::std::is_signed_v<_Tp>)
   {
     if (__b < _Tp{0} && (__e % 2u == 1))
