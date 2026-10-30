@@ -1232,3 +1232,70 @@ CUB_TEST("DeviceHistogram::HistogramRange byte samples with wide bins",
     REQUIRE(expected[channel] == d_histogram[channel]);
   }
 }
+
+CUB_TEST("DeviceHistogram::HistogramEven byte samples",
+         "[histogram][device]",
+         CUB_SMALL,
+         c2h::type_list<std::int8_t, std::uint8_t>,
+         c2h::enum_type_list<int, 1, 3>)
+{
+  using sample_t                    = c2h::get<0, TestType>;
+  constexpr int num_active_channels = c2h::get<1, TestType>::value;
+  constexpr int num_channels        = num_active_channels == 1 ? 1 : 4;
+  const int num_pixels              = GENERATE(0, 257, 65'536);
+  const int num_bins                = GENERATE(1, 7, 256);
+  CAPTURE(num_pixels, num_bins);
+
+  auto d_samples = c2h::device_vector<sample_t>(num_pixels * num_channels);
+  c2h::gen(C2H_SEED(2), d_samples, std::numeric_limits<sample_t>::lowest(), std::numeric_limits<sample_t>::max());
+  c2h::host_vector<sample_t> h_samples = d_samples;
+  if (num_pixels > 0)
+  {
+    // Always include both signed/unsigned domain endpoints in every active channel.
+    for (int channel = 0; channel < num_active_channels; ++channel)
+    {
+      h_samples[channel]                = std::numeric_limits<sample_t>::lowest();
+      h_samples[num_channels + channel] = std::numeric_limits<sample_t>::max();
+    }
+    d_samples = h_samples;
+  }
+
+  array<int, num_active_channels> num_levels{};
+  num_levels.fill(num_bins + 1);
+  array<int, num_active_channels> lower_level{};
+  array<int, num_active_channels> upper_level{};
+  auto d_histogram = array<c2h::device_vector<int>, num_active_channels>{};
+  for (int channel = 0; channel < num_active_channels; ++channel)
+  {
+    // Channel zero covers the whole domain; other channels also exercise out-of-range samples.
+    lower_level[channel] = std::numeric_limits<sample_t>::lowest() + channel * 16;
+    upper_level[channel] = std::numeric_limits<sample_t>::max() + 1 - channel * 16;
+    d_histogram[channel].resize(num_bins);
+  }
+  const auto sample_to_bin_index = [&](int channel, sample_t sample) {
+    const int lower = lower_level[channel];
+    const int upper = upper_level[channel];
+    if (sample < lower || sample >= upper)
+    {
+      return -1;
+    }
+    return static_cast<int>(std::int64_t{sample - lower} * num_bins / (upper - lower));
+  };
+  const auto expected = compute_reference_result<num_channels, int>(
+    h_samples, sample_to_bin_index, num_levels, num_pixels, 1, num_pixels * num_channels);
+  const auto* sample_ptr = thrust::raw_pointer_cast(d_samples.data());
+  const auto outputs     = to_array_of_ptrs(d_histogram);
+  if constexpr (num_channels == 1)
+  {
+    histogram_even(sample_ptr, outputs[0], num_levels[0], lower_level[0], upper_level[0], num_pixels);
+  }
+  else
+  {
+    multi_histogram_even<num_channels, num_active_channels>(
+      sample_ptr, outputs, num_levels, lower_level, upper_level, num_pixels);
+  }
+  for (int channel = 0; channel < num_active_channels; ++channel)
+  {
+    REQUIRE(expected[channel] == d_histogram[channel]);
+  }
+}

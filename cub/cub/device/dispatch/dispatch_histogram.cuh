@@ -993,11 +993,16 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
   {
     using TransformsT = Transforms<LevelT, OffsetT, SampleT>;
 
-    // Use the pass-thru transform op for converting samples to privatized bins
-    using PrivatizedDecodeOpT = typename TransformsT::PassThruTransform;
+    using pass_thru_transform = typename TransformsT::PassThruTransform;
+    using scale_transform     = typename TransformsT::ScaleTransform;
 
-    // Use the scale transform op for converting privatized bins to output bins
-    using OutputDecodeOpT = typename TransformsT::ScaleTransform;
+    // Store signed byte samples in unsigned byte bins, then recover signed values before scaling.
+    constexpr bool is_signed = ::cuda::std::is_same_v<SampleT, signed char>
+                            || (::cuda::std::is_signed_v<char> && ::cuda::std::is_same_v<SampleT, char>);
+    using PrivatizedDecodeOpT =
+      ::cuda::std::conditional_t<is_signed, cast_decode_op<pass_thru_transform, unsigned char>, pass_thru_transform>;
+    using OutputDecodeOpT =
+      ::cuda::std::conditional_t<is_signed, cast_decode_op<scale_transform, SampleT>, scale_transform>;
 
     using CommonT = typename TransformsT::ScaleTransform::CommonT;
 
