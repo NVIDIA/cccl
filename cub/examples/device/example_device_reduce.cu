@@ -143,10 +143,7 @@ int main(int argc, char** argv)
   AssertEquals(0, compare);
 
   // Cleanup
-  if (h_in)
-  {
-    delete[] h_in;
-  }
+  delete[] h_in;
 
   printf("\n\n");
 
