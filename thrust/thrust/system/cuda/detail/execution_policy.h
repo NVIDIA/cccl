@@ -20,6 +20,15 @@
 #include <thrust/system/cuda/detail/util.h>
 #include <thrust/version.h>
 
+#include <cuda/__functional/call_or.h>
+#include <cuda/__memory_resource/get_memory_resource.h>
+#include <cuda/__stream/get_stream.h>
+#include <cuda/__stream/stream_ref.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__execution/env.h>
+#include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/is_callable.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
@@ -132,6 +141,46 @@ struct execute_on_stream_nosync : execute_on_stream_nosync_base<execute_on_strea
       : execute_on_stream_nosync_base(stream) {};
 };
 
+namespace detail
+{
+template <class MemoryResource>
+struct env_allocator
+{
+  using value_type = ::cuda::std::max_align_t;
+
+  MemoryResource mr;
+  ::cuda::stream_ref stream;
+
+  _CCCL_HOST value_type* allocate(::cuda::std::size_t n)
+  {
+    return static_cast<value_type*>(mr.allocate(stream, n * sizeof(value_type), alignof(value_type)));
+  }
+
+  _CCCL_HOST void deallocate(value_type* p, ::cuda::std::size_t n)
+  {
+    mr.deallocate(stream, p, n * sizeof(value_type), alignof(value_type));
+  }
+};
+
+template <template <class> class StreamBase, class StreamPolicy, class Env>
+_CCCL_HOST auto policy_from_env(const Env& env)
+{
+  const ::cudaStream_t stream =
+    ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cuda_cub::default_stream()}, env).get();
+
+  if constexpr (::cuda::std::__is_callable_v<::cuda::mr::get_memory_resource_t, const Env&>)
+  {
+    using allocator_t = env_allocator<::cuda::std::decay_t<decltype(::cuda::mr::get_memory_resource(env))>>;
+    using policy_t    = thrust::detail::execute_with_allocator<allocator_t, StreamBase>;
+    return policy_t{StreamBase<policy_t>{stream}, allocator_t{::cuda::mr::get_memory_resource(env), stream}};
+  }
+  else
+  {
+    return StreamPolicy{stream};
+  }
+}
+} // namespace detail
+
 //! Execution policy type, optionally prescribing with CUDA stream to use for execution.
 //! @see thrust::cuda::par
 struct par_t
@@ -144,6 +193,13 @@ struct par_t
   _CCCL_HOST_DEVICE stream_attachment_type on(::cudaStream_t s) const
   {
     return execute_on_stream(s);
+  }
+
+  //! Uses the stream (`cuda::get_stream`) and memory resource (`cuda::mr::get_memory_resource`) of an environment.
+  template <class Env>
+  _CCCL_HOST auto with(const Env& env) const
+  {
+    return detail::policy_from_env<execute_on_stream_base, stream_attachment_type>(env);
   }
 };
 
@@ -160,6 +216,13 @@ struct par_nosync_t
   _CCCL_HOST_DEVICE stream_attachment_type on(::cudaStream_t s) const
   {
     return execute_on_stream_nosync(s);
+  }
+
+  //! Uses the stream (`cuda::get_stream`) and memory resource (`cuda::mr::get_memory_resource`) of an environment.
+  template <class Env>
+  _CCCL_HOST auto with(const Env& env) const
+  {
+    return detail::policy_from_env<execute_on_stream_nosync_base, stream_attachment_type>(env);
   }
 
 private:
