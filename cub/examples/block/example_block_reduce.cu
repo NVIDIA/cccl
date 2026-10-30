@@ -200,14 +200,8 @@ void Test()
   printf("\tAverage million items / sec: %.4f\n", avg_items_per_sec);
 
   // Cleanup
-  if (h_in)
-  {
-    delete[] h_in;
-  }
-  if (h_gpu)
-  {
-    delete[] h_gpu;
-  }
+  delete[] h_in;
+  delete[] h_gpu;
   if (d_in)
   {
     cudaFree(d_in);
