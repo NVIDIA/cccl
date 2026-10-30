@@ -224,6 +224,85 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_ldexp2(fp32mp2_low __p, int __n
 
 /*
  * --------------------------------------------------------------------
+ * Internal helper: exp(r) * 2^n for fp32mp2 (the kernel of exp and pow)
+ * --------------------------------------------------------------------
+ * r is the reduced argument (|r| <= ln(2)/2 plus the slack of a float
+ * integer estimate; the pair need not be renormalized) and the scale 2^n
+ * comes split in two halves, fscale * fscale_lo, so that neither half
+ * overflows or denormalizes on its own and a result in the subnormal
+ * range is rounded once (gradual underflow).  exp derives the halves
+ * from its shift trick, pow from its integer n; see
+ * __internal_fpmp2_exp_scales.
+ * --------------------------------------------------------------------
+ */
+_CCCL_FPMP_CORE_API void __internal_fpmp2_exp_core(
+  const fp32mp2_low __r, const float __fscale, const float __fscale_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  using __ffloat = fp32mp2_low;
+
+  constexpr float __c1(0x1.0p+0);
+  constexpr float __c2(0x1.0p-1);
+
+  constexpr __ffloat __exp_c[11] = {
+    __ffloat(0x1.5555555555555p-3), // [ 0] (= c3,  constant of q)
+    __ffloat(0x1.5555555555555p-5), // [ 1] (= c4)
+    __ffloat(0x1.1111111111111p-7), // [ 2] (= c5)
+    __ffloat(0x1.6c16c16c16c17p-10), // [ 3] (= c6)
+    __ffloat(0x1.a01a01a01a01ap-13), // [ 4] (= c7,  last ff term)
+    /* high-order M = 6 entries: .lo() == 0 by construction */
+    __ffloat(0x1.a01a0p-16f), // [ 5] (= c8)
+    __ffloat(0x1.71de4p-19f), // [ 6] (= c9)
+    __ffloat(0x1.27e50p-22f), // [ 7] (= c10)
+    __ffloat(0x1.ae646p-26f), // [ 8] (= c11)
+    __ffloat(0x1.1eedap-29f), // [ 9] (= c12)
+    __ffloat(0x1.6125p-33f) // [10] (= c13, leading)
+  };
+
+  // Scale the reduced argument by the low part of the scale
+  __ffloat __r_scale = __r * __fscale_lo;
+
+  // Evaluate q(r) = c3 + c4*r + c5*r^2 + ... + c13*r^10 via the
+  // mixed-precision dispatcher (6 high-order terms in plain float,
+  // remaining 5 in ff).
+  //
+  // Note: the dispatcher's transition step uses float*float + ff
+  // (matching the erfc-style layout of `poly_horner_mixed`),
+  // whereas the previous hand-rolled chain used float*ff + ff at
+  // the c8->c7 boundary. The numerical difference is below 1 ULP
+  // at the polynomial value, well inside the Taylor truncation
+  // noise floor.
+  __ffloat __p = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed_fast, 6>(__r, __exp_c);
+
+  // Fold in the low-degree float coefficients c1, c2 outside the
+  // dispatcher (they live at the wrong end of the polynomial for
+  // the M-split optimisation).
+  __p = __p * __r + __c2;
+  __p = __p * __r + __c1;
+
+  __p = __p * __r_scale + __fscale_lo;
+
+  // Scale the result by the high part of the scale
+  __p               = __p * __ffloat(__fscale);
+  __ffloat __result = renormalize(__p);
+
+  *__res_hi = __result.hi();
+  *__res_lo = __result.lo();
+} // __internal_fpmp2_exp_core
+
+/* The two halves of 2^n as floats, from the biased exponent field
+ * k = n + 254 (the sum of the two biased exponents). */
+_CCCL_FPMP_CORE_API void __internal_fpmp2_exp_scales(const int32_t __k, float* __fscale, float* __fscale_lo) noexcept
+{
+  int32_t __scale     = __k << 23;
+  uint32_t __scale_lo = static_cast<uint32_t>(__scale >> 1);
+  __scale_lo &= 0x7F800000u;
+  __scale -= static_cast<int32_t>(__scale_lo);
+  *__fscale    = ::cuda::std::bit_cast<float>(__scale);
+  *__fscale_lo = ::cuda::std::bit_cast<float>(__scale_lo);
+}
+
+/*
+ * --------------------------------------------------------------------
  * Exponential function (fp32mp2) - dedicated implementation
  * --------------------------------------------------------------------
  * Compute exp(x) for float-float (fp32mp2) precision
@@ -271,24 +350,6 @@ __internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, fl
    *     (c8..c13) are plain float literals, the remaining
    *     5 (c3..c7) carry an ff `.lo()` part.
    */
-  constexpr float __c1(0x1.0p+0);
-  constexpr float __c2(0x1.0p-1);
-
-  constexpr __ffloat __exp_c[11] = {
-    __ffloat(0x1.5555555555555p-3), // [ 0] (= c3,  constant of q)
-    __ffloat(0x1.5555555555555p-5), // [ 1] (= c4)
-    __ffloat(0x1.1111111111111p-7), // [ 2] (= c5)
-    __ffloat(0x1.6c16c16c16c17p-10), // [ 3] (= c6)
-    __ffloat(0x1.a01a01a01a01ap-13), // [ 4] (= c7,  last ff term)
-    /* high-order M = 6 entries: .lo() == 0 by construction */
-    __ffloat(0x1.a01a0p-16f), // [ 5] (= c8)
-    __ffloat(0x1.71de4p-19f), // [ 6] (= c9)
-    __ffloat(0x1.27e50p-22f), // [ 7] (= c10)
-    __ffloat(0x1.ae646p-26f), // [ 8] (= c11)
-    __ffloat(0x1.1eedap-29f), // [ 9] (= c12)
-    __ffloat(0x1.6125p-33f) // [10] (= c13, leading)
-  };
-
   // Overflow threshold for single precision: ln(FLT_MAX) ~= 88.7228 = 0x1.62e430p+6
   if (__x_hi > 0x1.62e430p+6f)
   {
@@ -340,35 +401,7 @@ __internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, fl
   const float __tail = (__e1 + __e2) - ::cuda::__fpmp_fma_rn(__tt, __ln2_lo, __pm_lo);
   __ffloat __r(__s2, __tail);
 
-  // Scale the reduced argument by the low part of the scale
-  __ffloat __r_scale = __r * __fscale_lo;
-
-  // Evaluate q(r) = c3 + c4*r + c5*r^2 + ... + c13*r^10 via the
-  // mixed-precision dispatcher (6 high-order terms in plain float,
-  // remaining 5 in ff).
-  //
-  // Note: the dispatcher's transition step uses float*float + ff
-  // (matching the erfc-style layout of `poly_horner_mixed`),
-  // whereas the previous hand-rolled chain used float*ff + ff at
-  // the c8->c7 boundary. The numerical difference is below 1 ULP
-  // at the polynomial value, well inside the Taylor truncation
-  // noise floor.
-  __ffloat __p = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed_fast, 6>(__r, __exp_c);
-
-  // Fold in the low-degree float coefficients c1, c2 outside the
-  // dispatcher (they live at the wrong end of the polynomial for
-  // the M-split optimisation).
-  __p = __p * __r + __c2;
-  __p = __p * __r + __c1;
-
-  __p = __p * __r_scale + __fscale_lo;
-
-  // Scale the result by the high part of the scale
-  __p               = __p * __fscale;
-  __ffloat __result = renormalize(__p);
-
-  *__res_hi = __result.hi();
-  *__res_lo = __result.lo();
+  ::cuda::__internal_fpmp2_exp_core(__r, __fscale, __fscale_lo, __res_hi, __res_lo);
 } // __internal_fpmp2_exp
 
 /*
