@@ -12,6 +12,7 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
+#include <cuda/std/utility>
 
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
@@ -88,7 +89,7 @@ c2h::host_vector<T> segmented_reference(
 // Checks inclusive sums of constant ones without materializing input or output
 struct check_ones_op
 {
-  int segment_size;
+  cuda::std::int64_t segment_size;
   unsigned long long* counters; // [0] mismatches, [1] writes
 
   __device__ void operator()(cuda::std::int64_t i, cuda::std::int64_t value) const
@@ -166,6 +167,13 @@ CUB_TEST("DeviceSegmentedScan fixed-size overloads work", "[segmented][scan][fix
     device_inclusive_segmented_sum(d_in, d_in, num_segments, segment_size);
     REQUIRE(
       segmented_reference<true>(h_input, num_segments, segment_size, plus, empty) == c2h::host_vector<value_t>(input));
+  }
+
+  SECTION("inclusive sum with 64-bit segment size")
+  {
+    device_inclusive_segmented_sum(d_in, d_out, num_segments, cuda::std::int64_t{segment_size});
+    REQUIRE(
+      segmented_reference<true>(h_input, num_segments, segment_size, plus, empty) == c2h::host_vector<value_t>(output));
   }
 }
 
@@ -277,9 +285,10 @@ CUB_TEST("DeviceSegmentedScan fixed-size overloads handle more than INT_MAX item
          "[segmented][scan][fixed_size]",
          CUB_SMALL)
 {
-  // {num_segments, segment_size}: one block per segment with 64-bit item offsets, and several kernel launches
-  const auto [num_segments, segment_size] = GENERATE(
-    table<cuda::std::int64_t, int>({{3, 1 << 30}, {(cuda::std::int64_t{1} << 31) + 5, 1}, {(1 << 30) + 3, 3}}));
+  // {num_segments, segment_size}: one block per segment with 64-bit item offsets, several kernel launches, and a
+  // segment of more than INT_MAX items
+  const auto [num_segments, segment_size] = GENERATE(table<cuda::std::int64_t, cuda::std::int64_t>(
+    {{3, 1 << 30}, {(cuda::std::int64_t{1} << 31) + 5, 1}, {(1 << 30) + 3, 3}, {2, (cuda::std::int64_t{1} << 31) + 7}}));
   CAPTURE(num_segments, segment_size);
 
   c2h::device_vector<unsigned long long> counters(2, 0);
@@ -287,7 +296,15 @@ CUB_TEST("DeviceSegmentedScan fixed-size overloads handle more than INT_MAX item
   const auto d_out = cuda::tabulate_output_iterator{
     check_ones_op{segment_size, thrust::raw_pointer_cast(counters.data())}, cuda::std::int64_t{0}};
 
-  device_inclusive_segmented_sum(d_in, d_out, num_segments, segment_size);
+  // Pass sizes that fit as int, to cover the kernel with 32-bit offsets
+  if (cuda::std::in_range<int>(segment_size))
+  {
+    device_inclusive_segmented_sum(d_in, d_out, num_segments, static_cast<int>(segment_size));
+  }
+  else
+  {
+    device_inclusive_segmented_sum(d_in, d_out, num_segments, segment_size);
+  }
 
   const c2h::host_vector<unsigned long long> h_counters = counters;
   REQUIRE(h_counters[0] == 0);
@@ -317,16 +334,19 @@ CUB_TEST("DeviceSegmentedScan fixed-size overloads validate sizes", "[segmented]
           == cudaErrorInvalidValue);
   REQUIRE(DeviceSegmentedScan::InclusiveSegmentedSum(ptr, ptr, -1, 5) == cudaErrorInvalidValue);
 
-  // segment sizes beyond INT_MAX are rejected rather than truncated, in every form
-  const auto too_large = cuda::std::size_t{1} << 32;
-  REQUIRE(DeviceSegmentedScan::InclusiveSegmentedSum(nullptr, temp_storage_bytes, ptr, ptr, 5, too_large)
+  // segment sizes beyond INT64_MAX are rejected rather than truncated, in every form
+  constexpr auto too_large = (cuda::std::numeric_limits<cuda::std::uint64_t>::max)();
+  REQUIRE(DeviceSegmentedScan::InclusiveSegmentedSum(nullptr, temp_storage_bytes, ptr, ptr, 1, too_large)
           == cudaErrorInvalidValue);
   REQUIRE(DeviceSegmentedScan::InclusiveSegmentedSum(
-            nullptr, temp_storage_bytes, ptr, ptr, 5, cuda::args::immediate{too_large})
+            nullptr, temp_storage_bytes, ptr, ptr, 1, cuda::args::immediate{too_large})
           == cudaErrorInvalidValue);
   REQUIRE(DeviceSegmentedScan::InclusiveSegmentedSum(
-            nullptr, temp_storage_bytes, ptr, ptr, 5, cuda::args::constant<cuda::std::size_t{1} << 32>{})
+            nullptr, temp_storage_bytes, ptr, ptr, 1, cuda::args::constant<too_large>{})
           == cudaErrorInvalidValue);
+  // unsigned sizes beyond INT_MAX are accepted
+  REQUIRE(DeviceSegmentedScan::InclusiveSegmentedSum(nullptr, temp_storage_bytes, ptr, ptr, 5, 3'000'000'000u)
+          == cudaSuccess);
   REQUIRE(
     DeviceSegmentedScan::InclusiveSegmentedSum(nullptr, temp_storage_bytes, ptr, ptr, 5, cuda::args::constant<-1>{})
     == cudaErrorInvalidValue);
