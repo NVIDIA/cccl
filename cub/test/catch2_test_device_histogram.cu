@@ -388,7 +388,8 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
       }
       else
       {
-        return static_cast<int>((sample - min) * fp_scales[channel]);
+        const int bin = static_cast<int>((sample - min) * fp_scales[channel]);
+        return (::cuda::std::min) (bin, static_cast<int>(n - 2));
       }
       _CCCL_UNREACHABLE();
     };
@@ -1160,4 +1161,77 @@ CUB_TEST("DeviceHistogram::Histogram* bin indices survive the output decode", "[
     CHECK(d_histogram == h_fp16_expected);
   }
 #endif // TEST_HALF_T()
+}
+
+// Regression test for NVIDIA/cccl#11937: DeviceHistogram::HistogramEven bins samples just below
+// upper_level as num_bins due to floating-point rounding.
+CUB_TEST("DeviceHistogram::HistogramEven does not bin samples just below upper_level as num_bins",
+         "[histogram_even][device]",
+         CUB_SMALL)
+{
+  SECTION("ScaleTransform host bin clamping for float range")
+  {
+    using TransformOp = cub::detail::histogram::Transforms<float, int, float>::ScaleTransform;
+    TransformOp transform;
+    const float lower_level = -1.0f;
+    const float upper_level = 1.0f;
+    const float sample      = std::nextafter(upper_level, lower_level);
+
+    for (int n = 1; n <= 4096; ++n)
+    {
+      transform.Init(n + 1, upper_level, lower_level);
+      int bin = -1;
+      transform.template BinSelect<cub::LOAD_DEFAULT>(sample, bin, true);
+      REQUIRE(bin == n - 1);
+    }
+  }
+
+  SECTION("float samples")
+  {
+    constexpr int num_bins   = 3;
+    constexpr int num_levels = num_bins + 1;
+    const float lower_level  = -1.0f;
+    const float upper_level  = 1.0f;
+
+    const float sample      = std::nextafter(upper_level, lower_level);
+    const float h_samples[] = {sample};
+    auto d_samples          = c2h::device_vector<float>(cs::begin(h_samples), cs::end(h_samples));
+    auto d_histogram        = c2h::device_vector<int>(num_bins, 0);
+
+    histogram_even(
+      thrust::raw_pointer_cast(d_samples.data()),
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      lower_level,
+      upper_level,
+      static_cast<int>(d_samples.size()));
+
+    c2h::host_vector<int> h_histogram = d_histogram;
+    CHECK(h_histogram[num_bins - 1] == 1);
+    CHECK(h_histogram[0] == 0);
+    CHECK(h_histogram[1] == 0);
+  }
+
+  SECTION("uint8_t samples with float levels")
+  {
+    constexpr int num_bins   = 100;
+    constexpr int num_levels = num_bins + 1;
+    const float lower_level  = 0.0f;
+    const float upper_level  = 96.00001f;
+
+    const uint8_t h_samples[] = {96};
+    auto d_samples            = c2h::device_vector<uint8_t>(cs::begin(h_samples), cs::end(h_samples));
+    auto d_histogram          = c2h::device_vector<int>(num_bins, 0);
+
+    histogram_even(
+      thrust::raw_pointer_cast(d_samples.data()),
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      lower_level,
+      upper_level,
+      static_cast<int>(d_samples.size()));
+
+    c2h::host_vector<int> h_histogram = d_histogram;
+    CHECK(h_histogram[99] == 1);
+  }
 }

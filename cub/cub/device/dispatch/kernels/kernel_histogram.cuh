@@ -190,6 +190,7 @@ struct Transforms
     CommonT m_max; // Max sample level (exclusive)
     CommonT m_min; // Min sample level (inclusive)
     ScaleT m_scale; // Bin scaling
+    int m_num_bins{}; // Number of bins
 
     template <typename T>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT
@@ -299,24 +300,28 @@ struct Transforms
 #if _CCCL_HAS_NVFP16()
       else if constexpr (::cuda::std::is_same_v<T, ::__half>)
       {
+        int bin{};
         NV_IF_ELSE_TARGET(
           NV_PROVIDES_SM_53,
-          (return static_cast<int>(::__hmul(::__hsub(sample, min_level), scale.reciprocal));),
-          (return static_cast<int>(
-                    (::__half2float(sample) - ::__half2float(min_level)) * ::__half2float(scale.reciprocal));));
+          (bin = static_cast<int>(::__hmul(::__hsub(sample, min_level), scale.reciprocal));),
+          (bin = static_cast<int>(
+             (::__half2float(sample) - ::__half2float(min_level)) * ::__half2float(scale.reciprocal));));
+        return (::cuda::std::min) (bin, m_num_bins - 1);
       }
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
       else if constexpr (::cuda::std::is_same_v<T, ::__nv_bfloat16>)
       {
         // Compute in float on all architectures: bfloat16 cannot represent all bin indices beyond 256.
-        return static_cast<int>(
+        const int bin = static_cast<int>(
           (::__bfloat162float(sample) - ::__bfloat162float(min_level)) * ::__bfloat162float(scale.reciprocal));
+        return (::cuda::std::min) (bin, m_num_bins - 1);
       }
 #endif // _CCCL_HAS_NVBF16()
       else if constexpr (::cuda::std::is_floating_point_v<T>)
       {
-        return static_cast<int>((sample - min_level) * scale.reciprocal);
+        const int bin = static_cast<int>((sample - min_level) * scale.reciprocal);
+        return (::cuda::std::min) (bin, m_num_bins - 1);
       }
       else
       {
@@ -330,8 +335,9 @@ struct Transforms
     //! @brief Initializes the ScaleTransform for the given parameters
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(int num_levels, LevelT max_level, LevelT min_level)
     {
-      m_max = static_cast<CommonT>(max_level);
-      m_min = static_cast<CommonT>(min_level);
+      m_max      = static_cast<CommonT>(max_level);
+      m_min      = static_cast<CommonT>(min_level);
+      m_num_bins = num_levels - 1;
 
       m_scale = this->ComputeScale(num_levels, m_max, m_min);
     }
