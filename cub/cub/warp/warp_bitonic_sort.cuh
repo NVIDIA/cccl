@@ -120,12 +120,18 @@ class WarpBitonicSort
   using _TempStorage = cub::NullType;
 
   // to simplify internal recursive call
-  WarpBitonicSort() = default;
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort()
+  {
+    _CCCL_ASSUME(lane >= 0);
+  }
 
 public:
   using TempStorage = Uninitialized<_TempStorage>;
 
-  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&) {}
+  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&)
+  {
+    _CCCL_ASSUME(lane >= 0);
+  }
 
   //! @brief Sorts keys across a logical warp of threads using bitonic sorting network.
   //!
@@ -306,7 +312,7 @@ private:
 
   static constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
 
-  int lane = detail::logical_lane_id<LogicalWarpThreads>();
+  int lane = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
 
   static constexpr int first_half_len  = ::cuda::prev_power_of_two(ItemsPerThread - 1);
   static constexpr int second_half_len = ItemsPerThread - first_half_len;
@@ -447,12 +453,18 @@ class WarpBitonicSort<KeyT, 1, LogicalWarpThreads, ValueT>
   using _TempStorage = cub::NullType;
 
   // to simplify internal recursive call
-  WarpBitonicSort() = default;
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort()
+  {
+    _CCCL_ASSUME(lane >= 0);
+  }
 
 public:
   using TempStorage = Uninitialized<_TempStorage>;
 
-  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&) {}
+  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&)
+  {
+    _CCCL_ASSUME(lane >= 0);
+  }
 
   template <typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void Sort(KeyT (&keys)[1], CompareOp compare_op) const
@@ -520,8 +532,8 @@ private:
   // A logical warp of 2^n lanes is sorted by a network of n stages.
   static constexpr int num_stages = ::cuda::std::countr_zero(static_cast<unsigned>(LogicalWarpThreads));
 
-  int lane                 = detail::logical_lane_id<LogicalWarpThreads>();
-  unsigned int member_mask = WarpMask<LogicalWarpThreads>(detail::logical_warp_id<LogicalWarpThreads>());
+  int lane                 = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
+  unsigned int member_mask = CUB_NS_QUALIFIER::detail::warp_mask<LogicalWarpThreads>();
 
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op) const
