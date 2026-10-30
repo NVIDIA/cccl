@@ -24,7 +24,6 @@
 #include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/thread/thread_reduce.cuh>
-#include <cub/util_math.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
@@ -32,6 +31,7 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 

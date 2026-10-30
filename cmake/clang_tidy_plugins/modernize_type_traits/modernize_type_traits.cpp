@@ -12,8 +12,7 @@
 
 #include <optional>
 
-#include <trait_catalog.h>
-
+#include "trait_catalog.h"
 #include <clang-tidy/ClangTidy.h>
 #include <clang-tidy/ClangTidyCheck.h>
 #include <clang-tidy/ClangTidyModule.h>

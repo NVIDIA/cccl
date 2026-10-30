@@ -22,21 +22,20 @@
 #include <cub/util_ptx.cuh>
 
 #include <cuda/__cmath/round_down.h>
-#include <cuda/__cmath/round_up.h>
 #include <cuda/__memory/address_space.h>
 #include <cuda/__memory/align_up.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/__memory/ptr_rebind.h>
-#include <cuda/__ptx/instructions/cp_async_bulk.h>
-#include <cuda/__ptx/instructions/elect_sync.h>
-#include <cuda/__ptx/instructions/mbarrier_arrive.h>
-#include <cuda/__ptx/instructions/mbarrier_init.h>
-#include <cuda/__ptx/instructions/mbarrier_inval.h>
-#include <cuda/__ptx/instructions/mbarrier_wait.h>
+#include <cuda/__ptx/instructions/cp_async_bulk.h> // IWYU pragma: keep
+#include <cuda/__ptx/instructions/elect_sync.h> // IWYU pragma: keep
+#include <cuda/__ptx/instructions/mbarrier_arrive.h> // IWYU pragma: keep
+#include <cuda/__ptx/instructions/mbarrier_init.h> // IWYU pragma: keep
+#include <cuda/__ptx/instructions/mbarrier_inval.h> // IWYU pragma: keep
+#include <cuda/__ptx/instructions/mbarrier_wait.h> // IWYU pragma: keep
 #include <cuda/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/data.h>
 #include <cuda/std/__iterator/size.h>
 #include <cuda/std/cstdint>

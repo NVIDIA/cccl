@@ -37,7 +37,7 @@ inline constexpr auto startScalar = -2; // BabelStream: 0.4
 static_assert(startA == (startA + startB + startScalar * startC), "nstream must have a consistent workload");
 
 template <typename T>
-static void mul(nvbench::state& state, nvbench::type_list<T>)
+void mul(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n         = state.get_int64("Elements{io}");
@@ -68,7 +68,7 @@ NVBENCH_BENCH_TYPES(mul, NVBENCH_TYPE_AXES(element_types))
   .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
 
 template <typename T>
-static void add(nvbench::state& state, nvbench::type_list<T>)
+void add(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n         = state.get_int64("Elements{io}");
@@ -102,7 +102,7 @@ NVBENCH_BENCH_TYPES(add, NVBENCH_TYPE_AXES(element_types))
   .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
 
 template <typename T>
-static void triad(nvbench::state& state, nvbench::type_list<T>)
+void triad(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n         = state.get_int64("Elements{io}");
@@ -137,7 +137,7 @@ NVBENCH_BENCH_TYPES(triad, NVBENCH_TYPE_AXES(element_types))
   .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
 
 template <typename T>
-static void nstream(nvbench::state& state, nvbench::type_list<T>)
+void nstream(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n         = state.get_int64("Elements{io}");
