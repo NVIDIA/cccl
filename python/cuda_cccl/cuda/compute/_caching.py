@@ -632,19 +632,35 @@ class _CacheWithRegisteredKeyFunctions:
 cache_with_registered_key_functions = _CacheWithRegisteredKeyFunctions()
 
 
-def _make_hashable(value):
-    """Hash a global/closure variable for caching purposes."""
+def _make_hashable(value, keep_alive: list):
+    """Hash a global/closure variable for caching purposes.
+
+    Values that cannot be keyed by content fall back to ``id()``. Such a value
+    is also appended to ``keep_alive`` so the caller can keep it alive. This
+    prevents cache key collisions: once the object is freed, Python may give
+    its address to an unrelated object, and two different operators would
+    then produce equal keys.
+    """
     # duck-type check for a JIT backend's dispatcher:
     if hasattr(value, "py_func") and callable(value.py_func):
         return CachableFunction(value.py_func)
+    elif isinstance(value, types.FunctionType):
+        # A captured plain Python function (e.g. a helper called from the
+        # operator) is keyed by its own content, recursively.
+        return CachableFunction(value)
     elif is_device_array(value):
         # The stateful op machinery threads the array's pointer and
         # shape through the *runtime* state buffer.  Thus, the key
         # includes only dtype and rank, not pointer or shape.
         return (get_dtype(value), len(get_shape(value)))
+    elif isinstance(value, np.ndarray):
+        # A captured host array is frozen into the compiled operator as a
+        # constant, so arrays with different contents are different operators.
+        digest = hashlib.sha256(np.ascontiguousarray(value).tobytes()).digest()
+        return ("numpy.ndarray", value.dtype.str, value.shape, digest)
     elif isinstance(value, (np.number, np.bool_)):
         return ("numpy.scalar", value.dtype.str, value.tobytes())
-    elif isinstance(value, (bool, int, float)):
+    elif isinstance(value, (bool, int, float, str, bytes)):
         # Python scalars are immutable values; key them by type and value so
         # equal-valued scalars share a cache entry. Without this they fall
         # through to ``id(value)`` below, and a fresh (non-interned) ``int``/
@@ -653,12 +669,16 @@ def _make_hashable(value):
         # collisions between like-named scalar subclasses from other modules).
         return ("python.scalar", _type_fqn(value), value)
     elif isinstance(value, (list, tuple)):
-        return tuple(_make_hashable(v) for v in value)
+        return tuple(_make_hashable(v, keep_alive) for v in value)
     elif isinstance(value, dict):
         return tuple(
-            sorted((_make_hashable(k), _make_hashable(v)) for k, v in value.items())
+            sorted(
+                (_make_hashable(k, keep_alive), _make_hashable(v, keep_alive))
+                for k, v in value.items()
+            )
         )
     else:
+        keep_alive.append(value)
         return id(value)
 
 
@@ -706,7 +726,10 @@ class CachableFunction:
     based on its bytecode, constants, and closures, while ignoring other
     attributes such as its docstring.
 
-    It does not hold a reference to the function it was built from.
+    It does not hold a reference to the function it was built from. It does
+    hold a reference to any captured object that could only be keyed by its
+    ``id()`` (see :func:`_make_hashable`), so that address stays valid for
+    the lifetime of the key.
     """
 
     # TODO: eventually, move this class to _jit.py as it only
@@ -716,10 +739,11 @@ class CachableFunction:
         self._name = func.__name__
 
         closure = func.__closure__ if func.__closure__ is not None else []
+        keep_alive: list = []
         contents = []
         # Make closure contents hashable
         for cell in closure:
-            contents.append(_make_hashable(cell.cell_contents))
+            contents.append(_make_hashable(cell.cell_contents, keep_alive))
         self._identity = (
             func.__name__,
             func.__code__.co_code,
@@ -733,10 +757,11 @@ class CachableFunction:
                 # use the hash of the name itself. Assumes numba
                 # known how to interpret the dotted name at JIT
                 # time.
-                _make_hashable(func.__globals__.get(name, name))
+                _make_hashable(func.__globals__.get(name, name), keep_alive)
                 for name in func.__code__.co_names
             ),
         )
+        self._keep_alive = tuple(keep_alive)
 
     def __eq__(self, other):
         return self._identity == other._identity

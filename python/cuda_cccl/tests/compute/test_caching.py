@@ -147,3 +147,65 @@ def test_cached_wrapper_does_not_retain_caller_arrays(run_algorithm):
 
     still_alive = [ref() for ref in array_refs if ref() is not None]
     assert still_alive == []
+
+
+# Operators keyed for the caches must not collide once the user has dropped
+# them. The key does not keep the operator alive, so anything it identifies by
+# address would otherwise be free to be reused by a later, different operator.
+
+
+def _make_helper_op(bias):
+    def helper(x):
+        return x + bias
+
+    def op(x):
+        return helper(x)
+
+    return op
+
+
+def _make_host_table_op(bias):
+    table = np.array([bias], dtype=np.int32)
+
+    def op(x):
+        return x + table[0]
+
+    return op
+
+
+class _Opaque:
+    def __init__(self, bias):
+        self.bias = bias
+
+
+def _make_opaque_op(bias):
+    cfg = _Opaque(bias)
+
+    def op(x):
+        return x + cfg.bias
+
+    return op
+
+
+@pytest.mark.parametrize(
+    "factory", [_make_helper_op, _make_host_table_op, _make_opaque_op]
+)
+def test_operator_cache_identity_does_not_collide_after_operator_is_dropped(factory):
+    from cuda.compute._caching import CachableFunction
+
+    seen = {}
+    for bias in range(2000):
+        op = factory(bias)
+        key = CachableFunction(op)
+        assert key not in seen, f"key for bias {bias} collided with {seen[key]}"
+        seen[key] = bias
+        del op
+        gc.collect()
+
+
+@pytest.mark.parametrize("factory", [_make_helper_op, _make_host_table_op])
+def test_operator_cache_identity_is_content_based(factory):
+    from cuda.compute._caching import CachableFunction
+
+    assert CachableFunction(factory(1)) == CachableFunction(factory(1))
+    assert CachableFunction(factory(1)) != CachableFunction(factory(2))
