@@ -64,7 +64,7 @@ int main(int argc, char** argv)
     factor = ::std::stoi(argv[1]);
   }
 
-  const size_t num_batches = 8 * factor;
+  const size_t num_batches = size_t{8} * factor;
   const int num_devs       = 8;
   int real_devs;
   cuda_safe_call(cudaGetDeviceCount(&real_devs));

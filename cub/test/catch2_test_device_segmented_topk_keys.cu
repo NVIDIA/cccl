@@ -1510,7 +1510,9 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with fixed-size segments and per
   // Materialize fixed-size input offsets: [0, segment_size, 2 * segment_size, ...]
   auto fixed_offsets_it = cuda::make_strided_iterator(cuda::make_counting_iterator<segment_size_t>(0), segment_size);
   c2h::device_vector<segment_size_t> segment_offsets(num_segments + 1, thrust::no_init);
-  thrust::copy(fixed_offsets_it, fixed_offsets_it + (num_segments + 1), segment_offsets.begin());
+  thrust::copy(fixed_offsets_it,
+               fixed_offsets_it + (static_cast<typename decltype(fixed_offsets_it)::difference_type>(num_segments) + 1),
+               segment_offsets.begin());
 
   // Compute compacted output offsets: each output segment holds exactly min(k[i], segment_size) items, tightly packed.
   auto compacted_output_sizes_it = cuda::make_transform_iterator(
@@ -1855,7 +1857,9 @@ CUB_TEST("DeviceBatchedTopK::MaxKeys handles a misaligned temporary storage poin
   REQUIRE(error == cudaSuccess);
 
   thrust::sort(keys_out.begin(), keys_out.begin() + k, cuda::std::greater<int>{});
-  thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k, cuda::std::greater<int>{});
+  thrust::sort(keys_out.begin() + k,
+               keys_out.begin() + 2 * static_cast<typename decltype(keys_out)::difference_type>(k),
+               cuda::std::greater<int>{});
   REQUIRE(keys_out == thrust::device_vector<int>{8, 7, 6, 9, 8, 7});
 }
 
@@ -1915,7 +1919,9 @@ CUB_TEST("DeviceBatchedTopK::MaxKeys accepts an un-annotated narrow-unsigned seg
   REQUIRE(error == cudaSuccess);
 
   thrust::sort(keys_out.begin(), keys_out.begin() + k, cuda::std::greater<int>{});
-  thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k, cuda::std::greater<int>{});
+  thrust::sort(keys_out.begin() + k,
+               keys_out.begin() + 2 * static_cast<typename decltype(keys_out)::difference_type>(k),
+               cuda::std::greater<int>{});
   REQUIRE(keys_out == thrust::device_vector<int>{8, 7, 6, 9, 8, 7});
 }
 
@@ -1972,7 +1978,9 @@ CUB_TEST("DeviceBatchedTopK::MaxKeys clamps a negative segment size to an empty 
   REQUIRE(error == cudaSuccess);
 
   // Segment 0's output slots are left untouched (still the sentinel); segment 1 holds its top-3.
-  thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k, cuda::std::greater<int>{});
+  thrust::sort(keys_out.begin() + k,
+               keys_out.begin() + 2 * static_cast<typename decltype(keys_out)::difference_type>(k),
+               cuda::std::greater<int>{});
   REQUIRE(keys_out == thrust::device_vector<int>{sentinel, sentinel, sentinel, 9, 8, 7});
 }
 
@@ -2019,7 +2027,9 @@ CUB_TEST("DeviceBatchedTopK::MaxKeys clamps a negative segment size to an empty 
     cuda::args::immediate{cuda::std::int64_t{num_segments}});
 
   // Segment 0's output slots are left untouched (still the sentinel); segment 1 holds its top-3.
-  thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k, cuda::std::greater<int>{});
+  thrust::sort(keys_out.begin() + k,
+               keys_out.begin() + 2 * static_cast<typename decltype(keys_out)::difference_type>(k),
+               cuda::std::greater<int>{});
   REQUIRE(keys_out == thrust::device_vector<int>{sentinel, sentinel, sentinel, 9, 8, 7});
 }
 
@@ -2078,10 +2088,10 @@ CUB_TEST("DeviceBatchedTopK::MaxKeys clamps a negative k to no selection (no det
   // Segment 0 selects nothing, so its whole output region stays at the sentinel; segment 1 holds its top-3 in the first
   // k slots of its region, the rest untouched.
   thrust::sort(keys_out.begin() + out_stride, keys_out.begin() + out_stride + k, cuda::std::greater<int>{});
-  auto expected            = thrust::device_vector<int>(num_segments * out_stride, sentinel);
-  expected[out_stride + 0] = 9;
-  expected[out_stride + 1] = 8;
-  expected[out_stride + 2] = 7;
+  auto expected = thrust::device_vector<int>(num_segments * out_stride, sentinel);
+  expected[static_cast<cuda::std::size_t>(out_stride) + 0] = 9;
+  expected[static_cast<cuda::std::size_t>(out_stride) + 1] = 8;
+  expected[static_cast<cuda::std::size_t>(out_stride) + 2] = 7;
   REQUIRE(keys_out == expected);
 }
 
@@ -2124,10 +2134,10 @@ CUB_TEST("DeviceBatchedTopK::MaxKeys clamps a negative k to no selection (determ
   // Segment 0 selects nothing, so its whole output region stays at the sentinel; segment 1 holds its top-3 in the first
   // k slots of its region, the rest untouched.
   thrust::sort(keys_out.begin() + out_stride, keys_out.begin() + out_stride + k, cuda::std::greater<int>{});
-  auto expected            = thrust::device_vector<int>(num_segments * out_stride, sentinel);
-  expected[out_stride + 0] = 9;
-  expected[out_stride + 1] = 8;
-  expected[out_stride + 2] = 7;
+  auto expected = thrust::device_vector<int>(num_segments * out_stride, sentinel);
+  expected[static_cast<cuda::std::size_t>(out_stride) + 0] = 9;
+  expected[static_cast<cuda::std::size_t>(out_stride) + 1] = 8;
+  expected[static_cast<cuda::std::size_t>(out_stride) + 2] = 7;
   REQUIRE(keys_out == expected);
 }
 
