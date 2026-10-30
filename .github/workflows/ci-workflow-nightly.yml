@@ -75,6 +75,23 @@ jobs:
     with:
       enable_slack_alerts: true
 
+  build-flashinfer:
+    name: Build FlashInfer
+    if: ${{ github.repository == 'NVIDIA/cccl' }}
+    runs-on: linux-amd64-cpu16m
+    container:
+      image: flashinfer/flashinfer-ci-cu134:latest
+    timeout-minutes: 1440
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Build FlashInfer
+        run: ./ci/flashinfer/build_flashinfer.sh
+
   analyze-failures:
     name: Analyze nightly failures
     if: >-
@@ -88,7 +105,8 @@ jobs:
           needs.matrix-build.result == 'failure' ||
           needs.build-rapids.result == 'failure' ||
           needs.build-matx.result == 'failure' ||
-          needs.build-pytorch.result == 'failure'
+          needs.build-pytorch.result == 'failure' ||
+          needs.build-flashinfer.result == 'failure'
         )
       }}
     needs:
@@ -96,6 +114,7 @@ jobs:
       - build-rapids
       - build-matx
       - build-pytorch
+      - build-flashinfer
     permissions:
       actions: read
       checks: read
