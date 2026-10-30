@@ -646,8 +646,9 @@ private:
   // BLevBlockScanPrefixCallbackOpT by BlockBLevTileCountScanT. Also, buffers requiring warp-level collaboration are
   // only processed if the block has at least one full warp.
   static_assert(BlockRakingLayout<int, static_cast<int>(BLOCK_THREADS)>::RAKING_THREADS == warp_threads,
-                "BatchedCopyPolicy: lookback.small_buffer.threads_per_block must be a multiple of 32 (or otherwise "
-                "yield a full raking warp of 32 threads), since the decoupled look-back runs on a full warp");
+                "BatchedCopyPolicy: lookback.small_buffer.threads_per_block: the decoupled look-back needs a full warp "
+                "to enter the block-scan prefix callback, and BlockScan uses raking here, so the raking layout must "
+                "yield 32 raking threads");
 
   //-----------------------------------------------------------------------------
   // SHARED MEMORY DECLARATIONS

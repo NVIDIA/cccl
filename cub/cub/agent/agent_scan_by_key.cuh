@@ -164,9 +164,11 @@ struct AgentScanByKey
   static_assert(AgentScanByKeyPolicyT::STORE_ALGORITHM != BLOCK_STORE_STRIPED || ITEMS_PER_THREAD == 1,
                 "ScanByKeyLookbackPolicy: store_algorithm must not be BLOCK_STORE_STRIPED unless items_per_thread is "
                 "1, since the scan produces a blocked arrangement");
-  static_assert(BlockRakingLayout<int, BLOCK_THREADS>::RAKING_THREADS == detail::warp_threads,
-                "ScanByKeyLookbackPolicy: threads_per_block must be a multiple of 32 or otherwise yield a full "
-                "raking warp of 32 threads, since the decoupled look-back runs on a full warp");
+  static_assert(
+    (AgentScanByKeyPolicyT::SCAN_ALGORITHM == BLOCK_SCAN_WARP_SCANS && BLOCK_THREADS % detail::warp_threads == 0)
+      || BlockRakingLayout<int, BLOCK_THREADS>::RAKING_THREADS == detail::warp_threads,
+    "ScanByKeyLookbackPolicy: the decoupled look-back needs a full warp to enter the block-scan prefix callback: with "
+    "warp scans threads_per_block must be a multiple of 32, otherwise the raking layout must yield 32 raking threads");
 
   using WrappedKeysInputIteratorT =
     ::cuda::std::_If<::cuda::std::is_pointer_v<KeysInputIteratorT>,
