@@ -1303,7 +1303,12 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
   }
   else if constexpr (policy.algorithm == TransformAlgorithm::ldgsts)
   { // NOLINT(bugprone-branch-clone)
-    NV_IF_ELSE_TARGET(
+    // we cannot static_assert on nvc++, but custom tunings are unlikely there
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
+    static_assert(::cuda::std::__always_false_v<Offset>,
+                  "TransformPolicy: algorithm must not be TransformAlgorithm::ldgsts when compiling for < sm_80");
+#endif
+    NV_IF_TARGET(
       NV_PROVIDES_SM_80,
       (transform_kernel_ldgsts</*policy*/ policy.async_copy.threads_per_block, policy.async_copy.unroll_factor>(
          num_items,
@@ -1311,14 +1316,16 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
          ::cuda::std::move(pred),
          ::cuda::std::move(f),
          ::cuda::std::move(out),
-         ::cuda::std::move(ins.aligned_ptr)...);),
-      (static_assert(::cuda::std::__always_false_v<Offset>,
-                     "TransformPolicy: algorithm must not be TransformAlgorithm::ldgsts when compiling for "
-                     "architectures below sm_80");));
+         ::cuda::std::move(ins.aligned_ptr)...);));
   }
   else if constexpr (policy.algorithm == TransformAlgorithm::ublkcp)
   {
-    NV_IF_ELSE_TARGET(
+    // we cannot static_assert on nvc++, but custom tunings are unlikely there
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 900
+    static_assert(::cuda::std::__always_false_v<Offset>,
+                  "TransformPolicy: algorithm must not be TransformAlgorithm::ublkcp when compiling for < sm_90");
+#endif
+    NV_IF_TARGET(
       NV_PROVIDES_SM_90,
       (transform_kernel_ublkcp<policy.async_copy.threads_per_block,
                                policy.async_copy.unroll_factor,
@@ -1328,10 +1335,7 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
          ::cuda::std::move(pred),
          ::cuda::std::move(f),
          ::cuda::std::move(out),
-         ::cuda::std::move(ins.aligned_ptr)...);),
-      (static_assert(::cuda::std::__always_false_v<Offset>,
-                     "TransformPolicy: algorithm must not be TransformAlgorithm::ublkcp when compiling for "
-                     "architectures below sm_90");));
+         ::cuda::std::move(ins.aligned_ptr)...);));
   }
   else
   {
