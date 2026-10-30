@@ -243,7 +243,7 @@ C2H_TEST("Reduce works with integral types", "[reduce]", integral_types)
   using T = c2h::get<0, TestType>;
 
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
-  operation_t op              = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const operation_t op        = make_operation("op", get_reduce_op(get_type_info<T>().type));
   const std::vector<T> input  = generate<T>(num_items);
   pointer_t<T> input_ptr(input);
   pointer_t<T> output_ptr(1);
@@ -287,7 +287,7 @@ C2H_TEST("Reduce works with no init value", "[reduce]", integral_types)
   using T = c2h::get<0, TestType>;
 
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
-  operation_t op              = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const operation_t op        = make_operation("op", get_reduce_op(get_type_info<T>().type));
   const std::vector<T> input  = generate<T>(num_items);
   pointer_t<T> input_ptr(input);
   // With no init value the output is left unmodified for empty inputs, so
@@ -316,7 +316,7 @@ C2H_TEST("Reduce works with custom types", "[reduce]")
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
-  operation_t op              = make_operation("op",
+  const operation_t op        = make_operation("op",
                                                R"(struct pair { short a; size_t b; };
 extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {
   pair* lhs = static_cast<pair*>(lhs_ptr);
@@ -353,7 +353,7 @@ C2H_TEST("Reduce works with custom types with well-known operations", "[reduce][
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
-  operation_t op_state        = make_operation("op",
+  const operation_t op_state  = make_operation("op",
                                                R"(struct pair { short a; size_t b; };
 extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {
   pair* lhs = static_cast<pair*>(lhs_ptr);
@@ -391,7 +391,7 @@ struct Reduce_InputIterators_Fixture_Tag;
 C2H_TEST("Reduce works with input iterators", "[reduce]")
 {
   const std::size_t num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
-  operation_t op              = make_operation("op", get_reduce_op(get_type_info<int>().type));
+  const operation_t op        = make_operation("op", get_reduce_op(get_type_info<int>().type));
   iterator_t<int, counting_iterator_state_t<int>> input_it = make_counting_iterator<int>("int");
   input_it.state.value                                     = 0;
   pointer_t<int> output_it(1);
@@ -410,8 +410,8 @@ C2H_TEST("Reduce works with input iterators", "[reduce]")
 struct Reduce_OutputIterators_Fixture_Tag;
 C2H_TEST("Reduce works with output iterators", "[reduce]")
 {
-  const int num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
-  operation_t op      = make_operation("op", get_reduce_op(get_type_info<int>().type));
+  const int num_items  = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
+  const operation_t op = make_operation("op", get_reduce_op(get_type_info<int>().type));
   iterator_t<int, random_access_iterator_state_t<int>> output_it =
     make_random_access_iterator<int>(iterator_kind::OUTPUT, "int", "out", " * 2");
   const std::vector<int> input = generate<int>(num_items);
@@ -433,8 +433,8 @@ C2H_TEST("Reduce works with output iterators", "[reduce]")
 struct Reduce_InputOutputIterators_Fixture_Tag;
 C2H_TEST("Reduce works with input and output iterators", "[reduce]")
 {
-  const int num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
-  operation_t op      = make_operation("op", get_reduce_op(get_type_info<int>().type));
+  const int num_items  = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
+  const operation_t op = make_operation("op", get_reduce_op(get_type_info<int>().type));
   iterator_t<int, constant_iterator_state_t<int>> input_it = make_constant_iterator<int>("int");
   input_it.state.value                                     = 1;
   iterator_t<int, random_access_iterator_state_t<int>> output_it =
@@ -458,7 +458,7 @@ C2H_TEST("Reduce accumulator type is influenced by initial value", "[reduce]")
 {
   const std::size_t num_items = 1 << 14; // 16384 > 128
 
-  operation_t op = make_operation("op", get_reduce_op(get_type_info<size_t>().type));
+  const operation_t op = make_operation("op", get_reduce_op(get_type_info<size_t>().type));
   iterator_t<char, constant_iterator_state_t<char>> input_it = make_constant_iterator<char>("char");
   input_it.state.value                                       = 1;
   pointer_t<size_t> output_it(1);
@@ -477,7 +477,7 @@ C2H_TEST("Reduce accumulator type is influenced by initial value", "[reduce]")
 C2H_TEST("Reduce works with large inputs", "[reduce]")
 {
   const size_t num_items = 1ull << 33;
-  operation_t op         = make_operation("op", get_reduce_op(get_type_info<size_t>().type));
+  const operation_t op   = make_operation("op", get_reduce_op(get_type_info<size_t>().type));
   iterator_t<char, constant_iterator_state_t<char>> input_it = make_constant_iterator<char>("char");
   input_it.state.value                                       = 1;
   pointer_t<size_t> output_it(1);
@@ -551,7 +551,7 @@ C2H_TEST("Reduce works with C++ source operations", "[reduce]")
     }
   )";
 
-  operation_t op = make_cpp_operation("op", cpp_source);
+  const operation_t op = make_cpp_operation("op", cpp_source);
 
   const std::vector<T> input = generate<T>(num_items);
   pointer_t<T> input_ptr(input);
@@ -583,7 +583,7 @@ C2H_TEST("Reduce works with floating point types", "[reduce]", floating_point_ty
 
   // Use small input sizes and values to avoid floating point precision issues.
   const std::size_t num_items = GENERATE(10, 42, 1025);
-  operation_t op              = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const operation_t op        = make_operation("op", get_reduce_op(get_type_info<T>().type));
   const std::vector<T> input(num_items, T{1});
 
   pointer_t<T> input_ptr(input);
@@ -610,7 +610,7 @@ C2H_TEST("Reduce works with bfloat16", "[reduce]")
   // running sums round differently between the host's sequential accumulation
   // and the device's tree reduction order.
   const std::size_t num_items = GENERATE(10, 42, 200);
-  operation_t op              = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const operation_t op        = make_operation("op", get_reduce_op(get_type_info<T>().type));
   const std::vector<T> input(num_items, T{1});
 
   pointer_t<T> input_ptr(input);
@@ -648,7 +648,7 @@ C2H_TEST("Reduce works with C++ source operations using _ex build", "[reduce]")
     }
   )";
 
-  operation_t op = make_cpp_operation("op", cpp_source);
+  const operation_t op = make_cpp_operation("op", cpp_source);
 
   const std::vector<T> input = generate<T>(num_items);
   pointer_t<T> input_ptr(input);
@@ -710,7 +710,7 @@ C2H_TEST("Reduce build result has serialization metadata populated", "[reduce][s
   constexpr int device_id = 0;
   const auto& build_info  = BuildInformation<device_id>::init();
 
-  operation_t op             = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const operation_t op       = make_operation("op", get_reduce_op(get_type_info<T>().type));
   const std::vector<T> input = generate<T>(16);
   pointer_t<T> input_ptr(input);
   pointer_t<T> output_ptr(1);

@@ -93,7 +93,7 @@ C2H_TEST("for works with integral types", "[for]", integral_types)
 
   const uint64_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
-  operation_t op = make_operation("op", get_for_op(get_type_info<T>().type));
+  const operation_t op = make_operation("op", get_for_op(get_type_info<T>().type));
   std::vector<T> input(num_items, T(1));
   pointer_t<T> input_ptr(input);
 
@@ -117,8 +117,8 @@ C2H_TEST("for works with custom types", "[for]")
 {
   const int num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
-  operation_t op = make_operation("op",
-                                  R"XXX(
+  const operation_t op = make_operation("op",
+                                        R"XXX(
 struct pair { short a; size_t b; };
 extern "C" __device__ void op(void* a_ptr) {
   pair* a = static_cast<pair*>(a_ptr);
@@ -221,7 +221,7 @@ C2H_TEST("for works with C++ source operations", "[for]")
     }
   )";
 
-  operation_t op = make_cpp_operation("op", cpp_source);
+  const operation_t op = make_cpp_operation("op", cpp_source);
 
   std::vector<T> input(num_items, T(1));
   pointer_t<T> input_ptr(input);
@@ -257,7 +257,7 @@ C2H_TEST("For works with C++ source operations using custom headers", "[for]")
     }
   )";
 
-  operation_t op = make_cpp_operation("op", cpp_source);
+  const operation_t op = make_cpp_operation("op", cpp_source);
 
   const std::vector<T> input(num_items, T(1));
   pointer_t<T> input_ptr(input);
@@ -308,7 +308,7 @@ C2H_TEST("For build result has serialization metadata populated", "[for][seriali
   constexpr int device_id = 0;
   const auto& build_info  = BuildInformation<device_id>::init();
 
-  operation_t op = make_operation("op", get_for_op(get_type_info<T>().type));
+  const operation_t op = make_operation("op", get_for_op(get_type_info<T>().type));
   pointer_t<T> input_ptr(1);
 
   BuildResultT build{};
@@ -343,7 +343,7 @@ C2H_TEST("For compile/load round-trip", "[for][serialization]")
   constexpr std::size_t n = 16;
   const std::vector<T> input_h(n, T{1});
 
-  operation_t op = make_operation("op", get_for_op(get_type_info<T>().type));
+  const operation_t op = make_operation("op", get_for_op(get_type_info<T>().type));
   pointer_t<T> input_ptr(input_h);
 
   BuildResultT build{};
