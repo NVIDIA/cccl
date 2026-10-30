@@ -21,10 +21,17 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_constructible.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
-#define _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(...) __is_trivially_constructible(__VA_ARGS__)
+// gcc prior to gcc-8.2 reports any ill-formed initialization of a non-class type as trivial, e.g. int&& from int&
+#if _CCCL_COMPILER(GCC, <, 8, 2)
+#  define _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(...) \
+    (::cuda::std::is_constructible_v<__VA_ARGS__> && __is_trivially_constructible(__VA_ARGS__))
+#else // ^^^ _CCCL_COMPILER(GCC, <, 8, 2) ^^^ / vvv !_CCCL_COMPILER(GCC, <, 8, 2) vvv
+#  define _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(...) __is_trivially_constructible(__VA_ARGS__)
+#endif // !_CCCL_COMPILER(GCC, <, 8, 2)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 

@@ -19,10 +19,12 @@
 
 #include <cuda/std/utility>
 
+#include "test_macros.h"
+
 TEST_FUNC cuda::std::piecewise_construct_t f()
 {
-  return {};
-} // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
+  return {}; // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
+}
 
 int main(int, char**)
 {
