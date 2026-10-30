@@ -133,7 +133,7 @@ struct merge_segments_op
     }
     return {left.begin, right.end};
   }
-  __host__ __device__ primitive_t operator()(primitive_t p_left, primitive_t p_right)
+  __host__ __device__ primitive_t operator()(primitive_t p_left, primitive_t p_right) const
   {
     const auto left  = dangerous_bit_cast<segment>(p_left);
     const auto right = dangerous_bit_cast<segment>(p_right);
