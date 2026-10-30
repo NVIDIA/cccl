@@ -25,8 +25,9 @@
 #include <cub/util_arch.cuh>
 #include <cub/util_macro.cuh>
 
+#include <thrust/type_traits/is_contiguous_iterator.h>
+
 #include <cuda/std/__type_traits/always_false.h>
-#include <cuda/std/__type_traits/is_pointer.h>
 
 #include <nv/target>
 
@@ -316,27 +317,24 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   if constexpr (active_policy.algorithm == ScanAlgorithm::lookahead)
   {
     const OffsetT num_items = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
-    // the lookahead implementation copies tiles from and to raw pointers (contiguous iterators are unwrapped)
-    constexpr bool pointer_iterators =
-      ::cuda::std::is_pointer_v<InputIteratorT> && ::cuda::std::is_pointer_v<OutputIteratorT>;
-    static_assert(pointer_iterators,
+    // the lookahead implementation copies tiles from and to raw pointers (the dispatch unwraps contiguous iterators)
+    constexpr bool contiguous_iterators = THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>
+                                       && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
+    static_assert(contiguous_iterators,
                   "ScanPolicy: algorithm must not be ScanAlgorithm::lookahead unless the input and output iterators "
                   "are contiguous");
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-    if constexpr (pointer_iterators) // avoid follow-up errors after the static_assert above
-    {
-      NV_IF_ELSE_TARGET(
-        NV_PROVIDES_SM_90,
-        ({
-          auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
-            d_in, d_out, tile_state.lookahead.tile_states, tile_state.lookahead.atomic_counter, num_items, num_stages};
-          device_scan_lookahead_body<PolicySelector, ForceInclusive, RealInitValueT, StableReductionOrder>(
-            scan_params, scan_op, init_value);
-        }),
-        (static_assert(::cuda::std::__always_false_v<InputIteratorT>,
-                       "ScanPolicy: algorithm must not be ScanAlgorithm::lookahead when compiling for architectures "
-                       "below sm_90");));
-    }
+    NV_IF_ELSE_TARGET(
+      NV_PROVIDES_SM_90,
+      ({
+        auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
+          d_in, d_out, tile_state.lookahead.tile_states, tile_state.lookahead.atomic_counter, num_items, num_stages};
+        device_scan_lookahead_body<PolicySelector, ForceInclusive, RealInitValueT, StableReductionOrder>(
+          scan_params, scan_op, init_value);
+      }),
+      (static_assert(::cuda::std::__always_false_v<InputIteratorT>,
+                     "ScanPolicy: algorithm must not be ScanAlgorithm::lookahead when compiling for architectures "
+                     "below sm_90");));
 #else
     static_assert(sizeof(d_in) == 0,
                   "Implementation bug: Tuning policy selected lookahead, but CUDA compiler does not support it");
