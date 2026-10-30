@@ -33,10 +33,10 @@ namespace detail
 //! All 32 lanes must invoke the collective. Sorting is not stable: the order of equivalent keys is unspecified. The
 //! comparison must have strict weak ordering.
 //!
-//! The algorithm uses no shared-memory scratch or scratch initialization. Larger per-thread arrays can incur compiler
-//! spills to local memory.
+//! The algorithm requires no shared-memory scratch or associated initialization. Larger per-thread arrays can incur
+//! compiler spills to local memory.
 //!
-//! For example, each lane can sort two keys as follows:
+//! For example, launch the following kernel with one block of 32 threads to sort 64 keys:
 //!
 //! .. code-block:: c++
 //!
@@ -45,7 +45,7 @@ namespace detail
 //!
 //!    __global__ void example(int* sorted_output)
 //!    {
-//!        const int tid  = threadIdx.x
+//!        const int tid  = threadIdx.x;
 //!        const int lane = tid % 32;
 //!        int keys[2]    = {63 - 2 * lane, 62 - 2 * lane};
 //!        cub::detail::WarpShuffleSort<int, 2>{}.Sort(keys, cuda::std::less<>{});
@@ -59,16 +59,19 @@ namespace detail
 //! @endrst
 //!
 //! @tparam KeyT
-//! @tparam ItemsPerThread  Number of keys per thread. Must be a power of two.
+//!   Key type. Must be default constructible and trivially copyable.
+//! @tparam ItemsPerThread
+//!   Number of keys per thread. Must be a power of two.
 template <typename KeyT, int ItemsPerThread>
 class WarpShuffleSort
 {
+  // TODO(fbusato): Support power-of-two logical warp sizes.
   static_assert(ItemsPerThread > 0 && ::cuda::is_power_of_two(ItemsPerThread),
                 "ItemsPerThread must be a positive power of two");
   static_assert(::cuda::std::is_default_constructible_v<KeyT> && ::cuda::is_trivially_copyable_v<KeyT>,
                 "KeyT must be default constructible and trivially copyable");
 
-  // Choose the key that is either the lower or upper of the two
+  // Select the earlier key for a lower position or the later key for an upper position
   template <typename CompareOp>
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE static KeyT
   choose(const KeyT key, const KeyT other, const bool lower, CompareOp compare_op)
@@ -95,7 +98,7 @@ class WarpShuffleSort
       }
     }
   }
-
+  // Precondition: keys are bitonic, i.e. keys[i] <= keys[j] for 0 < i < P and P < j < Size
   template <int Distance, typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE static void merge_within_lane(KeyT (&keys)[ItemsPerThread], CompareOp compare_op)
   {
@@ -120,8 +123,6 @@ class WarpShuffleSort
   _CCCL_DEVICE_API _CCCL_FORCEINLINE static void
   merge(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, const int lane)
   {
-    // A mirrored first split fuses reversal with the first comparison. Keep a snapshot until every register has been
-    // published to its partner lane.
     KeyT next[ItemsPerThread];
     const bool lower = (lane & (Group / 2)) == 0; // if a lane is in the lower or upper half of the group
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -136,9 +137,7 @@ class WarpShuffleSort
     {
       keys[i] = next[i];
     }
-    // keys now contains the half of the bitonic merge corresponding to the lane position.
-    // Every key in the lower half is ≤ every key in the upper half
-    // merge_lanes(): merge the two halves across lanes
+    // Each half is now bitonic. Within each group, every key in the lower half <= every key in the upper half
     merge_lanes<Group / 4>(keys, compare_op, lane);
     // Every key in one lane is ≤ every key in the next lane
     merge_within_lane<ItemsPerThread / 2>(keys, compare_op);
