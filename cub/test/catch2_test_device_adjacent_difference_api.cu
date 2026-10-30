@@ -91,8 +91,6 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy API example", "[adjacent_di
   {
     std::cerr << "cub::DeviceAdjacentDifference::SubtractLeftCopy storage query failed: " << query_error << '\n';
   }
-  // example-end subtract-left-copy-query
-  // example-begin subtract-left-copy-run
 
   // Allocate temporary storage and run the operation.
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
@@ -124,8 +122,6 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeft API example", "[adjacent_differ
   {
     std::cerr << "cub::DeviceAdjacentDifference::SubtractLeft storage query failed: " << query_error << '\n';
   }
-  // example-end subtract-left-in-place-query
-  // example-begin subtract-left-in-place-run
 
   // Allocate temporary storage and run the operation.
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
@@ -157,8 +153,6 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy API example", "[adjacent_d
   {
     std::cerr << "cub::DeviceAdjacentDifference::SubtractRightCopy storage query failed: " << query_error << '\n';
   }
-  // example-end subtract-right-copy-query
-  // example-begin subtract-right-copy-run
 
   // Allocate temporary storage and run the operation.
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
@@ -190,8 +184,6 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRight API example", "[adjacent_diffe
   {
     std::cerr << "cub::DeviceAdjacentDifference::SubtractRight storage query failed: " << query_error << '\n';
   }
-  // example-end subtract-right-in-place-query
-  // example-begin subtract-right-in-place-run
 
   // Allocate temporary storage and run the operation.
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);

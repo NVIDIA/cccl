@@ -155,12 +155,6 @@ struct DeviceAdjacentDifference
   //!    :language: c++
   //!    :dedent:
   //!    :start-after: example-begin subtract-left-copy
-  //!    :end-before: example-end subtract-left-copy-query
-  //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_adjacent_difference_api.cu
-  //!    :language: c++
-  //!    :dedent:
-  //!    :start-after: example-begin subtract-left-copy-run
   //!    :end-before: example-end subtract-left-copy
   //!
   //! @endrst
@@ -262,12 +256,6 @@ struct DeviceAdjacentDifference
   //!    :language: c++
   //!    :dedent:
   //!    :start-after: example-begin subtract-left-in-place
-  //!    :end-before: example-end subtract-left-in-place-query
-  //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_adjacent_difference_api.cu
-  //!    :language: c++
-  //!    :dedent:
-  //!    :start-after: example-begin subtract-left-in-place-run
   //!    :end-before: example-end subtract-left-in-place
   //!
   //! @endrst
@@ -366,12 +354,6 @@ struct DeviceAdjacentDifference
   //!    :language: c++
   //!    :dedent:
   //!    :start-after: example-begin subtract-right-copy
-  //!    :end-before: example-end subtract-right-copy-query
-  //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_adjacent_difference_api.cu
-  //!    :language: c++
-  //!    :dedent:
-  //!    :start-after: example-begin subtract-right-copy-run
   //!    :end-before: example-end subtract-right-copy
   //!
   //! @endrst
@@ -468,12 +450,6 @@ struct DeviceAdjacentDifference
   //!    :language: c++
   //!    :dedent:
   //!    :start-after: example-begin subtract-right-in-place
-  //!    :end-before: example-end subtract-right-in-place-query
-  //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_adjacent_difference_api.cu
-  //!    :language: c++
-  //!    :dedent:
-  //!    :start-after: example-begin subtract-right-in-place-run
   //!    :end-before: example-end subtract-right-in-place
   //!
   //! @endrst
