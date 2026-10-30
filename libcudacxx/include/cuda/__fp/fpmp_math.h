@@ -305,6 +305,27 @@
       against the 48 bits of the former double fallback, at a small
       fraction of its cost wherever FP64 is rationed.
 
+    sinh(x), cosh(x), tanh(x) for fp32mp2:
+      sinh: Taylor series x + x^3 P(x^2) (11 terms) for |x| <= 1, else
+      (e - 1/e)/2 with e = exp(|x|).  The exp branch's error is exp's
+      scaled by coth(x) plus the reciprocal's scaled by 1/(e^2x - 1):
+      with the former crossover at 0.6554 that was 1.74 exp + 0.37 div
+      (45 bits; the test suite's worst cases all sat at |x| ~ 0.9), at
+      1 it is 1.31 exp + 0.16 div.  The polynomial cannot take over much
+      further out: its Horner roundings scale with the x^3 term's share
+      and it reads 4.2 u^2 at |x| = 1.5 in the host model.  cosh:
+      (e + 1/e)/2 everywhere.  tanh: degree-22 minimax in x^2 for
+      |x| < 0.6554, saturation to +-1 above 17.5, and 1 - 2/(e^2x + 1)
+      in between, where the quotient's error reaches the result scaled
+      by up to 0.74.  sinh's and tanh's divisions are the refined one
+      (5 u^2 worst, 3.5 with the exact remainder used by tanh, against
+      26 for the generic fast division; cosh keeps the generic one, its
+      reciprocal weighs at most half and the refined one bought 0.5 u^2
+      for 10 % of the latency); the polynomials use the Fast2Sum Horner
+      (bit-identical).  Past exp's overflow (|x| > 88.72) sinh and cosh
+      return +-inf directly (0.5 / inf through the division was 0 * inf
+      = NaN).  Accuracy: 46 bits (sinh and tanh were 45).
+
     asinh(x), acosh(x), atanh(x) for fp32mp2:
       Inverse hyperbolic family -- all three reduce to a single log1p
       call with cancellation-safe arithmetic forms:
@@ -324,6 +345,14 @@
       that the lo-limb ulp accumulation in the (x^2+1)/(x-1)(x+1) chain
       doesn't degrade precision, and the dropped 1/(4x^2) correction
       sits below fp32mp2 ulp throughout the asymptotic region.
+      atanh's division is the refined one with the exact remainder and
+      its argument is split as 2|x| + 2x^2 / (1 - |x|), so the
+      quotient's share of it is |x| (0.25 at the branch point) instead
+      of 1: 44 -> 46 bits.  x_hi = +-1 with a low limb pointing inwards
+      is inside atanh's domain (it returned NaN).  asinh and acosh stay
+      at 45 bits: their worst cases are log1p arguments near sqrt(2) - 1
+      (|x| ~ 0.35 for asinh, x ~ 1.06 for acosh), the log core's e = 0
+      band; the refined division in asinh did not move them.
 
     ldexp(x, n) for fp32mp2:
       result = x * 2^n built directly in fp32 via bit-cast of the
