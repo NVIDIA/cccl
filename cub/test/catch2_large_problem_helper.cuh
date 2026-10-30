@@ -66,8 +66,8 @@ struct flag_correct_writes_op
 };
 
 template <typename ExpectedValuesItT>
-flag_correct_writes_op<ExpectedValuesItT> static make_checking_write_op(
-  ExpectedValuesItT expected_it, std::uint32_t* d_correctness_flags)
+flag_correct_writes_op<ExpectedValuesItT>
+make_checking_write_op(ExpectedValuesItT expected_it, std::uint32_t* d_correctness_flags)
 {
   return flag_correct_writes_op<ExpectedValuesItT>{expected_it, d_correctness_flags};
 }

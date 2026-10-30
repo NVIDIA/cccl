@@ -21,6 +21,8 @@
 
 #include <cub/util_debug.cuh>
 
+#include <cuda/std/__cstddef/types.h>
+
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN

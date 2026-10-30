@@ -5,8 +5,11 @@
 
 #include <cub/device/device_adjacent_difference.cuh>
 
+#include <thrust/iterator/zip_iterator.h>
+
 #include <cuda/iterator>
 #include <cuda/std/execution>
+#include <cuda/std/tuple>
 
 #include <algorithm>
 #include <numeric>
@@ -286,6 +289,76 @@ CUB_TEST(
     thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), num_items, cuda::std::minus<>{});
 
   REQUIRE(reference == out);
+}
+
+struct tuple_diff
+{
+  template <class T>
+  __host__ __device__ constexpr cuda::std::tuple<T, T>
+  operator()(const cuda::std::tuple<T, T>& lhs, const cuda::std::tuple<T, T>& rhs) const noexcept
+  {
+    return {cuda::std::get<0>(lhs) - cuda::std::get<0>(rhs), cuda::std::get<1>(lhs) - cuda::std::get<1>(rhs)};
+  }
+};
+
+using zip_iterators = c2h::type_list<cuda::zip_iterator<std::int32_t*, std::int32_t*>,
+                                     thrust::zip_iterator<cuda::std::tuple<std::int32_t*, std::int32_t*>>>;
+
+CUB_TEST("DeviceAdjacentDifference::SubtractRight works with zip iterators",
+         "[device][adjacent_difference]",
+         CUB_SMALL,
+         zip_iterators)
+{
+  using zip_iterator = typename c2h::get<0, TestType>;
+  using type         = std::int32_t;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  c2h::device_vector<type> in_a(num_items);
+  c2h::device_vector<type> in_b(num_items);
+  c2h::gen(C2H_SEED(1), in_a, type{-1000}, type{1000});
+  c2h::gen(C2H_SEED(1), in_b, type{-1000}, type{1000});
+
+  c2h::host_vector<type> reference_a = in_a;
+  c2h::host_vector<type> reference_b = in_b;
+  std::adjacent_difference(reference_a.rbegin(), reference_a.rend(), reference_a.rbegin());
+  std::adjacent_difference(reference_b.rbegin(), reference_b.rend(), reference_b.rbegin());
+
+  adjacent_difference_subtract_right(
+    zip_iterator{thrust::raw_pointer_cast(in_a.data()), thrust::raw_pointer_cast(in_b.data())}, num_items, tuple_diff{});
+
+  REQUIRE(reference_a == in_a);
+  REQUIRE(reference_b == in_b);
+}
+
+CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy works with zip iterators",
+         "[device][adjacent_difference]",
+         CUB_SMALL,
+         zip_iterators)
+{
+  using zip_iterator = typename c2h::get<0, TestType>;
+  using type         = std::int32_t;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  c2h::device_vector<type> in_a(num_items);
+  c2h::device_vector<type> in_b(num_items);
+  c2h::device_vector<type> out_a(num_items);
+  c2h::device_vector<type> out_b(num_items);
+  c2h::gen(C2H_SEED(1), in_a, type{-1000}, type{1000});
+  c2h::gen(C2H_SEED(1), in_b, type{-1000}, type{1000});
+
+  c2h::host_vector<type> reference_a = in_a;
+  c2h::host_vector<type> reference_b = in_b;
+  std::adjacent_difference(reference_a.rbegin(), reference_a.rend(), reference_a.rbegin());
+  std::adjacent_difference(reference_b.rbegin(), reference_b.rend(), reference_b.rbegin());
+
+  adjacent_difference_subtract_right_copy(
+    zip_iterator{thrust::raw_pointer_cast(in_a.data()), thrust::raw_pointer_cast(in_b.data())},
+    zip_iterator{thrust::raw_pointer_cast(out_a.data()), thrust::raw_pointer_cast(out_b.data())},
+    num_items,
+    tuple_diff{});
+
+  REQUIRE(reference_a == out_a);
+  REQUIRE(reference_b == out_b);
 }
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH

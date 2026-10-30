@@ -20,79 +20,87 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_enum.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
+#include <cuda/std/__type_traits/is_scoped_enum.h>
 #include <cuda/std/__type_traits/underlying_type.h>
+#include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-_CCCL_API constexpr int __convert_to_integral(int __val)
+_CCCL_API constexpr void __convert_to_integral(...) noexcept;
+
+[[nodiscard]] _CCCL_API constexpr int __convert_to_integral(int __val) noexcept
 {
   return __val;
 }
 
-_CCCL_API constexpr unsigned __convert_to_integral(unsigned __val)
+[[nodiscard]] _CCCL_API constexpr unsigned __convert_to_integral(unsigned __val) noexcept
 {
   return __val;
 }
 
-_CCCL_API constexpr long __convert_to_integral(long __val)
+[[nodiscard]] _CCCL_API constexpr long __convert_to_integral(long __val) noexcept
 {
   return __val;
 }
 
-_CCCL_API constexpr unsigned long __convert_to_integral(unsigned long __val)
+[[nodiscard]] _CCCL_API constexpr unsigned long __convert_to_integral(unsigned long __val) noexcept
 {
   return __val;
 }
 
-_CCCL_API constexpr long long __convert_to_integral(long long __val)
+[[nodiscard]] _CCCL_API constexpr long long __convert_to_integral(long long __val) noexcept
 {
   return __val;
 }
 
-_CCCL_API constexpr unsigned long long __convert_to_integral(unsigned long long __val)
-{
-  return __val;
-}
-
-template <typename _Fp>
-_CCCL_API constexpr enable_if_t<is_floating_point_v<_Fp>, long long> __convert_to_integral(_Fp __val)
+[[nodiscard]] _CCCL_API constexpr unsigned long long __convert_to_integral(unsigned long long __val) noexcept
 {
   return __val;
 }
 
 #if _CCCL_HAS_INT128()
-_CCCL_API constexpr __int128_t __convert_to_integral(__int128_t __val)
+[[nodiscard]] _CCCL_API constexpr __int128_t __convert_to_integral(__int128_t __val) noexcept
 {
   return __val;
 }
 
-_CCCL_API constexpr __uint128_t __convert_to_integral(__uint128_t __val)
+[[nodiscard]] _CCCL_API constexpr __uint128_t __convert_to_integral(__uint128_t __val) noexcept
 {
   return __val;
 }
 #endif // _CCCL_HAS_INT128()
 
-template <class _Tp, bool = is_enum_v<_Tp>>
-struct __sfinae_underlying_type
+_CCCL_TEMPLATE(class _Fp)
+_CCCL_REQUIRES(is_floating_point_v<_Fp>)
+[[nodiscard]] _CCCL_API constexpr long long __convert_to_integral(_Fp __val) noexcept
 {
-  using type            = underlying_type_t<_Tp>;
-  using __promoted_type = decltype(((type) 1) + 0);
-};
+  return static_cast<long long>(__val);
+}
 
-template <class _Tp>
-struct __sfinae_underlying_type<_Tp, false>
-{};
-
-template <class _Tp>
-_CCCL_API constexpr typename __sfinae_underlying_type<_Tp>::__promoted_type __convert_to_integral(_Tp __val)
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES((!is_scoped_enum_v<_Tp>) )
+[[nodiscard]] _CCCL_API constexpr decltype(((underlying_type_t<_Tp>) 1) + 0) __convert_to_integral(_Tp __val) noexcept
 {
   return __val;
 }
+
+template <class _Int>
+struct __avoid_promotions;
+
+template <class _Int>
+[[nodiscard]] _CCCL_API constexpr _Int __convert_to_integral(__avoid_promotions<_Int> __self) noexcept
+{
+  return __self.__data;
+}
+
+template <class _Tp, class _Integral = decltype(::cuda::std::__convert_to_integral(::cuda::std::declval<_Tp>()))>
+inline constexpr bool __is_convertible_to_integral_v = true;
+template <class _Tp>
+inline constexpr bool __is_convertible_to_integral_v<_Tp, void> = false;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -13,22 +13,20 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/block/block_reduce.cuh>
 #include <cub/detail/deferred_parameter.cuh>
-#include <cub/detail/it_traits.cuh>
 #include <cub/detail/rfa.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/util_arch.cuh>
 
-#include <thrust/type_traits/unwrap_contiguous_iterator.h>
-
 #include <cuda/__argument/argument.h>
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/min_max.h>
+#include <cuda/std/__functional/identity.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integral.h>

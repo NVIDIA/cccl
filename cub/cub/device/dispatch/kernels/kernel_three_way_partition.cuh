@@ -14,8 +14,16 @@
 #endif // no system header
 
 #include <cub/agent/agent_three_way_partition.cuh>
-#include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
+#include <cub/detail/delay_constructor.cuh>
 #include <cub/util_arch.cuh>
+
+#include <cuda/std/__utility/swap.h>
+#include <cuda/std/cstdint>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 
