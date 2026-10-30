@@ -59,6 +59,8 @@ void copy_to_host(cuda::stream_ref stream, const DeviceItems& device_items, Host
   }
 
   using value_t = typename HostItems::value_type;
+  cuda::copy_configuration config{};
+  config.src_access_order = cuda::source_access_order::stream;
 
   if (detail::is_default_stream(stream))
   {
@@ -66,12 +68,12 @@ void copy_to_host(cuda::stream_ref stream, const DeviceItems& device_items, Host
     detail::assert_current_device(device.get());
     stream.sync();
     auto copy_stream = cuda::stream{device};
-    cuda::copy_bytes(copy_stream, device_items, cuda::std::span<value_t>{host_items.data(), host_items.size()});
+    cuda::copy_bytes(copy_stream, device_items, cuda::std::span<value_t>{host_items.data(), host_items.size()}, config);
     copy_stream.sync();
   }
   else
   {
-    cuda::copy_bytes(stream, device_items, cuda::std::span<value_t>{host_items.data(), host_items.size()});
+    cuda::copy_bytes(stream, device_items, cuda::std::span<value_t>{host_items.data(), host_items.size()}, config);
     stream.sync();
   }
 }
