@@ -7,6 +7,7 @@
 #include <cuda/__driver/driver_api.h>
 #include <cuda/buffer>
 #include <cuda/devices>
+#include <cuda/std/cstddef>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
@@ -34,7 +35,7 @@ namespace detail
 // Default stream handles do not identify a device; infer it from the CUDA
 // allocation before creating a temporary copy stream.
 template <typename T>
-[[nodiscard]] cuda::device_ref pointer_device(const T* ptr)
+[[nodiscard]] cuda::device_ref get_allocation_device(const T* ptr)
 {
   int device{};
   const auto status = cuda::__driver::__pointerGetAttributeNoThrow<CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL>(device, ptr);
@@ -61,7 +62,7 @@ void copy_to_host(cuda::stream_ref stream, const DeviceItems& device_items, Host
 
   if (detail::is_default_stream(stream))
   {
-    const auto device = detail::pointer_device(device_items.data());
+    const auto device = detail::get_allocation_device(device_items.data());
     detail::assert_current_device(device.get());
     stream.sync();
     auto copy_stream = cuda::stream{device};
@@ -77,25 +78,24 @@ void copy_to_host(cuda::stream_ref stream, const DeviceItems& device_items, Host
 
 // Reads the only element of a device buffer and waits for the copy to complete.
 // Requires: buffer contains exactly one element.
+template <typename T, cuda::std::size_t Extent>
+[[nodiscard]] cuda::std::remove_cv_t<T> read_single(cuda::stream_ref stream, cuda::std::span<T, Extent> device_items)
+{
+  static_assert(Extent == cuda::std::dynamic_extent || Extent == 1, "read single requires exactly one element");
+  REQUIRE(device_items.size() == 1);
+
+  using value_t = cuda::std::remove_cv_t<T>;
+  alignas(value_t) cuda::std::byte storage[sizeof(value_t)];
+  auto host_items = cuda::std::span<value_t>{reinterpret_cast<value_t*>(storage), 1};
+
+  c2h::copy_to_host(stream, device_items, host_items);
+  return host_items[0];
+}
+
 template <typename T>
 [[nodiscard]] T read_single(cuda::stream_ref stream, const cuda::device_buffer<T>& buffer)
 {
-  REQUIRE(buffer.size() == 1);
-
-  if constexpr (cuda::std::is_default_constructible_v<T>)
-  {
-    T value[1];
-    auto host_items = cuda::std::span<T>{value};
-    c2h::copy_to_host(stream, buffer, host_items);
-    return value[0];
-  }
-  else
-  {
-    const auto device = detail::pointer_device(buffer.data());
-    auto value        = c2h::make_host_buffer<T>(stream, device, 1, cuda::no_init);
-    c2h::copy_to_host(stream, buffer, value);
-    return value[0];
-  }
+  return c2h::read_single(stream, buffer.subspan(0));
 }
 
 namespace detail
@@ -114,7 +114,7 @@ struct device_buffer_equals_matcher : Catch::Matchers::MatcherGenericBase
 
   bool match(const cuda::device_buffer<T>& actual) const
   {
-    const auto device = actual.size() != 0 ? detail::pointer_device(actual.data()) : c2h::current_device();
+    const auto device = actual.size() != 0 ? detail::get_allocation_device(actual.data()) : c2h::current_device();
     auto actual_host  = c2h::make_host_buffer<T>(stream, device, actual.size(), cuda::no_init);
     c2h::copy_to_host(stream, actual, actual_host);
 

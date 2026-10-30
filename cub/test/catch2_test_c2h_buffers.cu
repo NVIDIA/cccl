@@ -469,6 +469,42 @@ CUB_TEST("c2h read single waits for completion", "[c2h][buffers][copy]", CUB_SMA
   REQUIRE(stream.is_done());
 }
 
+CUB_TEST("c2h read single accepts device spans", "[c2h][buffers][copy]", CUB_SMALL)
+{
+  const auto device = c2h::current_device();
+  const cuda::stream owning_stream{device};
+  const bool use_default_stream = GENERATE(false, true);
+  const auto stream             = use_default_stream ? c2h::default_stream_ref() : cuda::stream_ref{owning_stream};
+  CAPTURE(use_default_stream);
+
+  auto d_items = c2h::make_device_buffer<cuda::std::int32_t>(owning_stream, device, {11, 42, 93});
+
+  SECTION("mutable dynamic extent")
+  {
+    auto item = d_items.subspan(1, 1);
+    REQUIRE(c2h::read_single(stream, item) == 42);
+  }
+  SECTION("const dynamic extent")
+  {
+    const auto& const_items = d_items;
+    auto item               = const_items.subspan(1, 1);
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(c2h::read_single(stream, item)), cuda::std::int32_t>);
+    REQUIRE(c2h::read_single(stream, item) == 42);
+  }
+  SECTION("mutable fixed extent")
+  {
+    auto item = cuda::std::span<cuda::std::int32_t, 1>{d_items.data() + 1, 1};
+    REQUIRE(c2h::read_single(stream, item) == 42);
+  }
+  SECTION("const fixed extent")
+  {
+    auto item = cuda::std::span<const cuda::std::int32_t, 1>{d_items.data() + 1, 1};
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(c2h::read_single(stream, item)), cuda::std::int32_t>);
+    REQUIRE(c2h::read_single(stream, item) == 42);
+  }
+  REQUIRE(stream.is_done());
+}
+
 CUB_TEST("c2h checked host memory resource creates writable host buffers", "[c2h][buffers][host_resource]", CUB_SMALL)
 {
   STATIC_REQUIRE(

@@ -54,6 +54,13 @@ template <template <typename> class... Ps>
 [[nodiscard]] cuda::device_buffer<custom_type_t<Ps...>>
 make_generator_buffer(cuda::stream_ref stream, std::size_t num_items, [[maybe_unused]] const custom_type_t<Ps...>& min)
 {
+  // For custom_type_t<equal_comparable_t>, a typical layout is
+  // [key: 8 bytes][val: 8 bytes][policy member: 1 byte][padding: 7 bytes].
+  // Copying or assigning the members does not guarantee that destination padding is
+  // written—even if the source padding happened to contain zeros.
+  // Initialize with zero bytes first to ensure padding memory is initialized
+  // and resolve compute-sanitizer --tool initcheck ./bin/cub.test.c2h_buffer
+  // and then fill with `min` value.
   auto result = ::c2h::make_device_buffer<custom_type_t<Ps...>>(stream, num_items, cuda::no_init);
   if (num_items != 0)
   {
@@ -75,9 +82,9 @@ make_generator_buffer(cuda::stream_ref stream, std::size_t num_items, [[maybe_un
 }
 } // namespace detail
 
-// Generates random values in data using its associated stream.
-//
-// Requires: Querying the device of the stream associated with data must succeed and return the current C2H test device.
+//! @brief Generates random values in @p data using its associated stream.
+//!
+//! @pre Querying the device of the stream associated with @p data must succeed and return the current C2H test device.
 template <template <typename> class... Ps>
 void gen(seed_t seed,
          cuda::device_buffer<custom_type_t<Ps...>>& data,
@@ -88,9 +95,9 @@ void gen(seed_t seed,
     data.stream(), seed, reinterpret_cast<char*>(data.data()), min, max, data.size(), sizeof(custom_type_t<Ps...>));
 }
 
-// Generates random values in data using its associated stream.
-//
-// Requires: Querying the device of the stream associated with data must succeed and return the current C2H test device.
+//! @brief Generates random values in @p data using its associated stream.
+//!
+//! @pre Querying the device of the stream associated with @p data must succeed and return the current C2H test device.
 template <typename T>
 void gen(seed_t seed,
          cuda::device_buffer<T>& data,
@@ -100,10 +107,10 @@ void gen(seed_t seed,
   ::c2h::detail::gen_values_between(data.stream(), seed, data.first(data.size()), min, max);
 }
 
-// Holds generated device and host buffers for the same logical sequence.
-//
-// h_items contains the complete logical sequence. The corresponding sequence is stored in d_items, which may
-// retain additional allocation capacity beyond its logical size.
+//! @brief Holds generated device and host buffers for the same logical sequence.
+//!
+//! @c h_items contains the complete logical sequence. The corresponding sequence is stored in @c d_items, which may
+//! retain additional allocation capacity beyond its logical size.
 template <typename T, typename DeviceBuffer = cuda::device_buffer<T>>
 struct device_host_buffers
 {
@@ -118,9 +125,9 @@ struct device_host_buffers
   }
 };
 
-// Generates random data with the existing c2h device generator and returns device and host buffers.
-//
-// Requires: Querying the device of stream must succeed and return the current C2H test device.
+//! @brief Generates random data with the existing c2h device generator and returns device and host buffers.
+//!
+//! @pre Querying the device of @p stream must succeed and return the current C2H test device.
 template <typename T>
 [[nodiscard]] device_host_buffers<T> gen_buffers(
   cuda::stream_ref stream,
@@ -138,9 +145,9 @@ template <typename T>
   return {::cuda::std::move(d_items), ::cuda::std::move(h_items)};
 }
 
-// Generates random data with the existing c2h device generator and returns it in host pageable memory.
-//
-// Requires: Querying the device of stream must succeed and return the current C2H test device.
+//! @brief Generates random data with the existing c2h device generator and returns it in host pageable memory.
+//!
+//! @pre Querying the device of @p stream must succeed and return the current C2H test device.
 template <typename T>
 [[nodiscard]] cuda::host_buffer<T> gen_host_buffer(
   cuda::stream_ref stream,
