@@ -167,8 +167,8 @@ struct WarpReduceShfl
     {
       Tp output = input;
       Tp tmp    = CUB_NS_QUALIFIER::ShuffleDown<LogicalWarpThreads>(output, offset, last_lane, member_mask);
-      // Compare the signed distance to the last lane so it can be reused across reduction steps.
-      if (lane_id - last_lane < 1 - offset)
+      // Perform reduction op if valid
+      if (offset + lane_id <= last_lane)
       {
         output = reduction_op(input, tmp);
       }
