@@ -700,10 +700,12 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
 }
 
 //! Each block scans up to segments_per_block consecutive segments. Several segments share a block only when they
-//! fit into one tile, so offsets local to the block fit into int.
+//! fit into one tile, so they are always scanned with 32-bit offsets, which avoids 64-bit divisions when locating
+//! segments.
 template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
+          typename OffsetT,
           typename ScanOpT,
           typename InitValueT,
           typename AccumT,
@@ -717,7 +719,7 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
     const InputIteratorT d_in,
     const OutputIteratorT d_out,
     const int n_segments,
-    const int segment_size,
+    const OffsetT segment_size,
     const ScanOpT scan_op,
     const InitValueT init_value,
     const int segments_per_block)
@@ -738,6 +740,16 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
     policy_getter,
     InputIteratorT,
     OutputIteratorT,
+    OffsetT,
+    ScanOpT,
+    ActualInitValueT,
+    AccumT,
+    ForceInclusive,
+    /* FixedSize */ true>;
+  using multi_segment_agent_t = agent_segmented_scan<
+    policy_getter,
+    InputIteratorT,
+    OutputIteratorT,
     int,
     ScanOpT,
     ActualInitValueT,
@@ -745,7 +757,12 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
     ForceInclusive,
     /* FixedSize */ true>;
 
-  __shared__ typename agent_t::TempStorage temp_storage;
+  union temp_storage_t
+  {
+    typename agent_t::TempStorage one_segment;
+    typename multi_segment_agent_t::TempStorage multi_segment;
+  };
+  __shared__ temp_storage_t temp_storage;
 
   _CCCL_ASSERT(segments_per_block > 0 && segments_per_block <= policy.block.max_segments,
                "Number of segments per block is out of range");
@@ -754,7 +771,7 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
   const int first_segment = static_cast<int>(blockIdx.x) * segments_per_block;
   const auto first_item   = static_cast<::cuda::std::int64_t>(first_segment) * segment_size;
 
-  agent_t agent(temp_storage, d_in + first_item, d_out + first_item, scan_op, init_value);
+  agent_t agent(temp_storage.one_segment, d_in + first_item, d_out + first_item, scan_op, init_value);
 
   if constexpr (policy.block.max_segments == 1)
   {
@@ -767,9 +784,15 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
     {
       agent.scan_one_segment(0, segment_size, 0);
     }
-    else
+    else if constexpr (::cuda::std::is_same_v<OffsetT, int>)
     {
       agent.scan_fixed_size_segments(segment_size, size);
+    }
+    else
+    {
+      multi_segment_agent_t multi_segment_agent(
+        temp_storage.multi_segment, d_in + first_item, d_out + first_item, scan_op, init_value);
+      multi_segment_agent.scan_fixed_size_segments(static_cast<int>(segment_size), size);
     }
   }
 }

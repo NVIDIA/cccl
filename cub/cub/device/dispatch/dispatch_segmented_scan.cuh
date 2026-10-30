@@ -87,6 +87,7 @@ struct device_segmented_scan_kernel_source
 template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
+          typename OffsetT,
           typename ScanOpT,
           typename InitValueT,
           typename AccumT,
@@ -101,15 +102,25 @@ struct device_fixed_size_segmented_scan_kernel_source
       PolicySelector,
       InputIteratorT,
       OutputIteratorT,
+      OffsetT,
       ScanOpT,
       InitValueT,
       AccumT,
       EnforceInclusive == ForceInclusive::Yes>);
 };
 
-// Returns the host-known segment size, or -1 if it does not fit into int
+// The fixed-size kernel uses 32-bit offsets, unless the type or static bounds of the segment size allow values beyond
+// INT_MAX
 template <typename SegmentSizeT>
-CUB_RUNTIME_FUNCTION int host_segment_size(SegmentSizeT segment_size)
+using fixed_size_offset_t = ::cuda::std::conditional_t<
+  ::cuda::std::cmp_less_equal(+params::__validate_uniform_integral_param<SegmentSizeT>::args_traits::highest,
+                              (::cuda::std::numeric_limits<int>::max)()),
+  int,
+  ::cuda::std::int64_t>;
+
+// Returns the host-known segment size, or -1 if it does not fit into OffsetT
+template <typename OffsetT, typename SegmentSizeT>
+CUB_RUNTIME_FUNCTION OffsetT host_segment_size(SegmentSizeT segment_size)
 {
   using validation = params::__validate_uniform_integral_param<SegmentSizeT>;
   static_assert(!validation::args_traits::is_deferred,
@@ -119,11 +130,11 @@ CUB_RUNTIME_FUNCTION int host_segment_size(SegmentSizeT segment_size)
   {
     // Unary plus promotes character types, which in_range does not accept
     const auto size = +params::get_param(segment_size, 0);
-    return ::cuda::std::in_range<int>(size) ? static_cast<int>(size) : -1;
+    return ::cuda::std::in_range<OffsetT>(size) ? static_cast<OffsetT>(size) : OffsetT{-1};
   }
   else
   {
-    return -1;
+    return OffsetT{-1};
   }
 }
 
@@ -309,11 +320,13 @@ template <ForceInclusive EnforceInclusive = ForceInclusive::No,
           typename ScanOpT,
           typename InitValueT,
           typename AccumT         = deduced_accum_t<ScanOpT, InitValueT, it_value_t<InputIteratorT>>,
+          typename OffsetT        = fixed_size_offset_t<SegmentSizeT>,
           typename PolicySelector = policy_selector_from_types<AccumT>,
           typename KernelSource   = device_fixed_size_segmented_scan_kernel_source<
             PolicySelector,
             InputIteratorT,
             OutputIteratorT,
+            OffsetT,
             ScanOpT,
             InitValueT,
             AccumT,
@@ -337,7 +350,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_fixed_size(
   KernelLauncherFactory launcher_factory = {})
 {
   static constexpr auto int64_max = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max();
-  const int segment_size          = host_segment_size(segment_size_arg);
+  const OffsetT segment_size      = host_segment_size<OffsetT>(segment_size_arg);
 
   // The total number of items is used to advance d_in and d_out, so it must fit into int64_t
   if (num_segments < 0 || segment_size < 0 || (segment_size > 0 && num_segments > int64_max / segment_size))
@@ -370,9 +383,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_fixed_size(
                "The memory consistency model does not apply to texture accesses");
   _CCCL_ASSERT(active_policy.block.max_segments > 0, "Policy value for max segments is not positive");
 
-  // Group as many whole segments per block as fit into one tile, so the kernel can use 32-bit local offsets
+  // Group as many whole segments per block as fit into one tile
   const int tile_items         = active_policy.block.threads_per_block * active_policy.block.items_per_thread;
-  const int segments_per_block = ::cuda::std::clamp(tile_items / segment_size, 1, active_policy.block.max_segments);
+  const int segments_per_block = static_cast<int>(
+    ::cuda::std::clamp(tile_items / segment_size, OffsetT{1}, static_cast<OffsetT>(active_policy.block.max_segments)));
 
   static constexpr auto max_num_segments_per_invocation =
     static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());

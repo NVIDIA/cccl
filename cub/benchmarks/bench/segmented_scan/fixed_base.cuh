@@ -11,14 +11,14 @@
 
 #include "common.cuh"
 
-template <typename T>
-static void fixed_size_segmented_scan(nvbench::state& state, nvbench::type_list<T>)
+template <typename T, typename OffsetT>
+static void fixed_size_segmented_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
 #if !TUNE_BASE
   using policy_t = policy_selector_t<TUNE_THREADS, TUNE_ITEMS, TUNE_MAX_SEGMENTS_PER_BLOCK>;
 #endif
 
-  const auto segment_size = static_cast<int>(state.get_int64("SegmentSize{io}"));
+  const auto segment_size = static_cast<OffsetT>(state.get_int64("SegmentSize{io}"));
   // Only whole segments, since all segments have the same size
   const auto num_segments = static_cast<::cuda::std::int64_t>(state.get_int64("Elements{io}") / segment_size);
   const auto elements     = static_cast<size_t>(num_segments * segment_size);
@@ -59,8 +59,8 @@ static void fixed_size_segmented_scan(nvbench::state& state, nvbench::type_list<
   });
 }
 
-NVBENCH_BENCH_TYPES(fixed_size_segmented_scan, NVBENCH_TYPE_AXES(benched_value_types))
+NVBENCH_BENCH_TYPES(fixed_size_segmented_scan, NVBENCH_TYPE_AXES(benched_value_types, offset_types))
   .set_name("fixed_size_segments")
-  .set_type_axes_names({"T{ct}"})
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(18, 26, 4))
   .add_int64_axis("SegmentSize{io}", {1, 7, 32, 51, 123, 233, 513, 1337, 4417});
