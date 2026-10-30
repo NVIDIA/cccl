@@ -21,7 +21,6 @@
 #include <cuda/stream>
 
 #include <cuda/experimental/__cuco/detail/probing_scheme_base.cuh>
-#include <cuda/experimental/__cuco/detail/utility/hash_to_index.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 
 #include <cooperative_groups.h>
