@@ -50,8 +50,8 @@ int main()
     Y[ind] = cos(1.0 * static_cast<double>(ind));
   }
 
-  auto handle_X = ctx.logical_data(make_slice(&X[0], n));
-  auto handle_Y = ctx.logical_data(make_slice(&Y[0], n));
+  auto handle_X = ctx.logical_data(make_slice(X.data(), n));
+  auto handle_Y = ctx.logical_data(make_slice(Y.data(), n));
 
   auto where = exec_place::locality_domains(dev);
   EXPECT(where.size() == ndomains);

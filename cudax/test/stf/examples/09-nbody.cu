@@ -62,7 +62,7 @@ int main()
     p.acc[2] = 0.0;
   }
 
-  auto h_particles = ctx.logical_data(make_slice(&particles[0], BODY_CNT));
+  auto h_particles = ctx.logical_data(make_slice(particles.data(), BODY_CNT));
 
   ctx.repeat(NITER)->*[&](context ctx, size_t) {
     // Compute accelerations

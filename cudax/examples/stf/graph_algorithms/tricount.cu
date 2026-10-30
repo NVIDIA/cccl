@@ -80,8 +80,8 @@ int main()
 
   const int num_vertices = static_cast<int>(offsets.size() - 1);
 
-  auto loffsets     = ctx.logical_data(&offsets[0], offsets.size());
-  auto lnonzeros    = ctx.logical_data(&nonzeros[0], nonzeros.size());
+  auto loffsets     = ctx.logical_data(offsets.data(), offsets.size());
+  auto lnonzeros    = ctx.logical_data(nonzeros.data(), nonzeros.size());
   auto ltotal_count = ctx.logical_data(shape_of<scalar_view<unsigned long long>>());
 
   ctx.parallel_for(
