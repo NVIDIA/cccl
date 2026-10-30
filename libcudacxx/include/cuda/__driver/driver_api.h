@@ -100,7 +100,8 @@ _CCCL_HOST_API inline void __throw_if_failed(
       ::cuda::__throw_cuda_error<::cudaErrorUnknown>(__msg, __status.__api_, __loc);
     case __driver_error_source::__driver_init:
     case __driver_error_source::__api_call:
-      ::cuda::__throw_cuda_error(__status.__status_, __msg, __status.__api_, __loc);
+      // keeps the CUresult, so the thrown error records that a driver call failed
+      _CCCL_THROW(::cuda::cuda_error, __status.__status_, __msg, __status.__api_, __loc);
     case __driver_error_source::__success:
       ::cuda::__throw_cuda_error<::cudaErrorUnknown>(__msg, __status.__api_, __loc);
   }
