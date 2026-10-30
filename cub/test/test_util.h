@@ -35,6 +35,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "mersenne.h"
@@ -127,16 +128,9 @@ struct CommandLineArgs
    */
   bool CheckCmdLineFlag(const char* arg_name)
   {
-    using namespace std;
-
-    for (const auto& key : keys)
-    {
-      if (key == string(arg_name))
-      {
-        return true;
-      }
-    }
-    return false;
+    return ::cuda::std::any_of(keys.begin(), keys.end(), [arg_name](const auto& key) {
+      return key == std::string_view(arg_name);
+    });
   }
 
   /**
