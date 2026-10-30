@@ -35,7 +35,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! \brief Casts one __basic_any reference type to another __basic_any type using
 //! runtime information to determine the validity of the conversion.
 //!
-//! \throws __bad_any_cast when \c __src cannot be dynamically cast to a
+//! \throws std::bad_any_cast when \c __src cannot be dynamically cast to a
 //! \c __basic_any<_DstInterface>.
 _CCCL_TEMPLATE(class _DstInterface, class _SrcInterface)
 _CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface>, __basic_any<_DstInterface>>)
