@@ -239,9 +239,9 @@ struct stream_capture_guard
     if (active)
     {
       cudaGraph_t graph{};
-      cudaStreamEndCapture(stream, &graph);
-      cudaGraphDestroy(graph);
-      cudaGetLastError(); // reset the sticky error state left by the aborted capture
+      static_cast<void>(cudaStreamEndCapture(stream, &graph));
+      static_cast<void>(cudaGraphDestroy(graph));
+      static_cast<void>(cudaGetLastError()); // reset the sticky error state left by the aborted capture
     }
   }
 

@@ -206,8 +206,10 @@ public:
     /* Retain the primary ctx in order to get a set of SM resources for that device */
     CUdevResource input;
     CUcontext primaryCtx = cuda_try<cuDevicePrimaryCtxRetain>(device);
-    cuCtxGetDevResource(primaryCtx, &input, CU_DEV_RESOURCE_TYPE_SM);
+    const auto status    = cuCtxGetDevResource(primaryCtx, &input, CU_DEV_RESOURCE_TYPE_SM);
     cuDevicePrimaryCtxRelease(device);
+    // Release the retained context before reporting a resource-query failure.
+    cuda_try(status);
 
     // First we query how many groups should be created
     unsigned int nbGroups;

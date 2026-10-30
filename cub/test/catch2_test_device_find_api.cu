@@ -7,6 +7,8 @@
 
 #include <thrust/device_vector.h>
 
+#include <iostream>
+
 #include "cub_test_macros.h"
 
 // example-begin find-if-predicate
@@ -29,20 +31,31 @@ CUB_TEST("cub::DeviceFind::FindIf works with int data elements", "[find][device]
   const is_greater_than_t predicate{4};
 
   size_t temp_storage_bytes = 0;
-  cub::DeviceFind::FindIf(nullptr, temp_storage_bytes, d_in.begin(), d_out.begin(), predicate, num_items);
+  const auto query_error =
+    cub::DeviceFind::FindIf(nullptr, temp_storage_bytes, d_in.begin(), d_out.begin(), predicate, num_items);
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceFind::FindIf failed with status: " << query_error << '\n';
+  }
 
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
 
-  cub::DeviceFind::FindIf(
+  const auto error = cub::DeviceFind::FindIf(
     thrust::raw_pointer_cast(temp_storage.data()),
     temp_storage_bytes,
     d_in.begin(),
     d_out.begin(),
     predicate,
     num_items);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceFind::FindIf failed with status: " << error << '\n';
+  }
 
   const int expected = 5;
   // example-end device-find-if
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
   REQUIRE(d_out[0] == expected);
 }
@@ -55,7 +68,7 @@ CUB_TEST("cub::DeviceFind::LowerBound works with int data elements", "[find][dev
   thrust::device_vector<int> d_output(4);
 
   size_t temp_storage_bytes = 0;
-  cub::DeviceFind::LowerBound(
+  const auto query_error    = cub::DeviceFind::LowerBound(
     nullptr,
     temp_storage_bytes,
     d_range.begin(),
@@ -64,10 +77,14 @@ CUB_TEST("cub::DeviceFind::LowerBound works with int data elements", "[find][dev
     static_cast<int>(d_values.size()),
     d_output.begin(),
     cuda::std::less{});
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceFind::LowerBound failed with status: " << query_error << '\n';
+  }
 
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
 
-  cub::DeviceFind::LowerBound(
+  const auto error = cub::DeviceFind::LowerBound(
     thrust::raw_pointer_cast(temp_storage.data()),
     temp_storage_bytes,
     d_range.begin(),
@@ -76,9 +93,15 @@ CUB_TEST("cub::DeviceFind::LowerBound works with int data elements", "[find][dev
     static_cast<int>(d_values.size()),
     d_output.begin(),
     cuda::std::less{});
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceFind::LowerBound failed with status: " << error << '\n';
+  }
 
   const thrust::device_vector<int> expected = {1, 2, 3, 4};
   // example-end device-lower-bound
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
   REQUIRE(d_output == expected);
 }
@@ -91,7 +114,7 @@ CUB_TEST("cub::DeviceFind::UpperBound works with int data elements", "[find][dev
   thrust::device_vector<int> d_output(4);
 
   size_t temp_storage_bytes = 0;
-  cub::DeviceFind::UpperBound(
+  const auto query_error    = cub::DeviceFind::UpperBound(
     nullptr,
     temp_storage_bytes,
     d_range.begin(),
@@ -100,10 +123,14 @@ CUB_TEST("cub::DeviceFind::UpperBound works with int data elements", "[find][dev
     static_cast<int>(d_values.size()),
     d_output.begin(),
     cuda::std::less{});
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceFind::UpperBound failed with status: " << query_error << '\n';
+  }
 
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
 
-  cub::DeviceFind::UpperBound(
+  const auto error = cub::DeviceFind::UpperBound(
     thrust::raw_pointer_cast(temp_storage.data()),
     temp_storage_bytes,
     d_range.begin(),
@@ -112,9 +139,15 @@ CUB_TEST("cub::DeviceFind::UpperBound works with int data elements", "[find][dev
     static_cast<int>(d_values.size()),
     d_output.begin(),
     cuda::std::less{});
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceFind::UpperBound failed with status: " << error << '\n';
+  }
 
   const thrust::device_vector<int> expected = {1, 2, 3, 4};
   // example-end device-upper-bound
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
   REQUIRE(d_output == expected);
 }

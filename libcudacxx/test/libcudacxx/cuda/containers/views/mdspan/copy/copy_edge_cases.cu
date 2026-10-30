@@ -489,7 +489,7 @@ TEST_CASE("copy d2d large count > INT_MAX", "[copy][d2d][large][.]")
 
   size_t free_mem  = 0;
   size_t total_mem = 0;
-  cudaMemGetInfo(&free_mem, &total_mem);
+  REQUIRE(cudaSuccess == cudaMemGetInfo(&free_mem, &total_mem));
   if (free_mem < required + (size_t{256} << 20))
   {
     SKIP("Not enough GPU memory (" << (free_mem >> 20) << " MB free, need ~" << (required >> 20) << " MB)");
@@ -525,7 +525,7 @@ TEST_CASE("copy d2d contiguous kernel outer size > max grid y", "[copy][d2d][con
 
   size_t free_mem  = 0;
   size_t total_mem = 0;
-  cudaMemGetInfo(&free_mem, &total_mem);
+  REQUIRE(cudaSuccess == cudaMemGetInfo(&free_mem, &total_mem));
   if (free_mem < required + (size_t{256} << 20))
   {
     SKIP("Not enough GPU memory (" << (free_mem >> 20) << " MB free, need ~" << (required >> 20) << " MB)");

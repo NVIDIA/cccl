@@ -431,7 +431,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
 
   if ((threadIdx.x == 0) && (blockIdx.x == 0))
   {
-    tile_queue.ResetDrain();
+    static_cast<void>(tile_queue.ResetDrain());
   }
 
   const int output_bin = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);

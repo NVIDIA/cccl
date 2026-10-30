@@ -713,7 +713,7 @@ private:
   void do_deallocate(value_type* ptr)
   {
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-    cudaFree(ptr);
+    static_cast<void>(cudaFree(ptr));
 #else
     delete[] ptr;
 #endif

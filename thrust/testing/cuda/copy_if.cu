@@ -121,7 +121,7 @@ void test_copy_if_cuda_streams(ExecutionPolicy policy)
   Vector result(data.size());
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   const Vector::iterator end =
     thrust::copy_if(policy.on(s), data.begin(), data.end(), result.begin(), cuda::__is_even{});
@@ -131,7 +131,7 @@ void test_copy_if_cuda_streams(ExecutionPolicy policy)
   const Vector ref{2, 2};
   REQUIRE(result == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestCopyIfCudaStreamsSync", "[copy_if]")
@@ -249,7 +249,7 @@ void test_copy_if_stencil_cuda_streams(ExecutionPolicy policy)
   Vector stencil{0, 1, 0, 0, 1};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   const Vector::iterator end =
     thrust::copy_if(policy.on(s), data.begin(), data.end(), stencil.begin(), result.begin(), ::cuda::std::identity{});
@@ -260,7 +260,7 @@ void test_copy_if_stencil_cuda_streams(ExecutionPolicy policy)
   const Vector ref{2, 2};
   REQUIRE(result == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestCopyIfStencilCudaStreamsSync", "[copy_if]")

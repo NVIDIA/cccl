@@ -49,11 +49,11 @@ int main(int argc, char** argv)
   }
 
   int device;
-  cudaGetDevice(&device);
+  cuda_safe_call(cudaGetDevice(&device));
 
   // cudaDevAttrClockRate: Peak clock frequency in kilohertz;
   int clock_rate;
-  cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device);
+  cuda_safe_call(cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device));
 
   auto occ_f = reserved::compute_occupancy(forward);
   auto occ_b = reserved::compute_occupancy(backward);

@@ -81,7 +81,7 @@ int main()
     print<<<8, 4, 0, stream2>>>(dX);
 
     // We synchronize so there is nothing to depend on anymore
-    cudaStreamSynchronize(stream2);
+    cuda_safe_call(cudaStreamSynchronize(stream2));
     fx.unfreeze(event_list());
   }
 

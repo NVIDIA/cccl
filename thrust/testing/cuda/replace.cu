@@ -257,16 +257,16 @@ TEST_CASE("TestReplaceCudaStreams", "[replace]")
   Vector data{1, 2, 1, 3, 2};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::replace(thrust::cuda::par.on(s), data.begin(), data.end(), (T) 1, (T) 4);
   thrust::replace(thrust::cuda::par.on(s), data.begin(), data.end(), (T) 2, (T) 5);
 
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   const Vector result{4, 5, 4, 3, 5};
 
   REQUIRE(data == result);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }

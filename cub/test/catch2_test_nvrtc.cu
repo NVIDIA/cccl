@@ -268,7 +268,7 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
   REQUIRE(NVRTC_SUCCESS == nvrtcCreateProgram(&prog, src, name, 0, nullptr, nullptr));
 
   int ptx_version{};
-  cub::PtxVersion(ptx_version);
+  REQUIRE(cudaSuccess == cub::PtxVersion(ptx_version));
   const std::string arch = std::string("-arch=sm_") + std::to_string(ptx_version / 10);
   const std::string std  = std::string("-std=c++") + std::to_string(_CCCL_STD_VER - 2000);
 

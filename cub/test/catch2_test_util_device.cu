@@ -51,10 +51,10 @@ CUB_TEST("CUB correctly identifies the ptx version the kernel was compiled for",
   // Query the arch the kernel was actually compiled for
   const int ptx_version = [&]() -> int {
     int* buffer{};
-    cudaMallocHost(&buffer, sizeof(*buffer));
+    REQUIRE(cudaSuccess == cudaMallocHost(&buffer, sizeof(*buffer)));
     get_cuda_cc_from_kernel(thrust::raw_pointer_cast(cuda_cc.data()), buffer);
     const int result = *buffer;
-    cudaFreeHost(buffer);
+    REQUIRE(cudaSuccess == cudaFreeHost(buffer));
     return result;
   }();
 
@@ -62,7 +62,7 @@ CUB_TEST("CUB correctly identifies the ptx version the kernel was compiled for",
 
   // Host cub::PtxVersion
   int host_ptx_version{};
-  cub::PtxVersion(host_ptx_version);
+  REQUIRE(cudaSuccess == cub::PtxVersion(host_ptx_version));
 
   // Ensure variable was properly populated
   REQUIRE(0 != kernel_cuda_cc);
@@ -168,7 +168,10 @@ check_chained_policy_prunes_to_cc_list(void* d_temp_storage, size_t& temp_storag
     return cudaSuccess;
   }
   int ptx_version = 0;
-  cub::PtxVersion(ptx_version);
+  if (const auto status = cub::PtxVersion(ptx_version); status != cudaSuccess)
+  {
+    return status;
+  }
   closure_all c{ptx_version};
   return policy_hub_all::max_policy::Invoke(ptx_version, c);
 }
@@ -232,7 +235,10 @@ CUB_RUNTIME_FUNCTION cudaError_t check_chained_policy_selects_correct_policy(
     return cudaSuccess;
   }
   int ptx_version = 0;
-  cub::PtxVersion(ptx_version);
+  if (const auto status = cub::PtxVersion(ptx_version); status != cudaSuccess)
+  {
+    return status;
+  }
   check_policy_closure<NumPolicies> c{ptx_version, std::move(policies)};
   return PolicyHub::max_policy::Invoke(ptx_version, c);
 }
@@ -292,7 +298,7 @@ __global__ void test_max_potential_dynamic_smem_bytes_kernel()
 __global__ void test_max_potential_dynamic_smem_bytes_device(int* result)
 {
   // Just compile on device.
-  cub::MaxPotentialDynamicSmemBytes(*result, test_max_potential_dynamic_smem_bytes_kernel);
+  static_cast<void>(cub::MaxPotentialDynamicSmemBytes(*result, test_max_potential_dynamic_smem_bytes_kernel));
 }
 #endif // CUB_RDC_ENABLED
 

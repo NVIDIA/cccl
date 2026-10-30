@@ -75,7 +75,7 @@ TEST_CASE("TestMismatchCudaStreams", "[mismatch]")
   Vector b = {1, 2, 4, 3};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   REQUIRE(thrust::mismatch(thrust::cuda::par.on(s), a.begin(), a.end(), b.begin()).first - a.begin() == 2);
   REQUIRE(thrust::mismatch(thrust::cuda::par.on(s), a.begin(), a.end(), b.begin()).second - b.begin() == 2);
@@ -90,7 +90,7 @@ TEST_CASE("TestMismatchCudaStreams", "[mismatch]")
   REQUIRE(thrust::mismatch(thrust::cuda::par.on(s), a.begin(), a.end(), b.begin()).first - a.begin() == 4);
   REQUIRE(thrust::mismatch(thrust::cuda::par.on(s), a.begin(), a.end(), b.begin()).second - b.begin() == 4);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 // see https://github.com/NVIDIA/cccl/issues/3591

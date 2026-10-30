@@ -125,7 +125,7 @@ _CCCL_FORCEINLINE cudaError_t trivial_copy_from_device(Type* dst, Type const* sr
   }
 
   status = ::cudaMemcpyAsync(dst, src, sizeof(Type) * count, cudaMemcpyDefault, stream);
-  cudaStreamSynchronize(stream);
+  static_cast<void>(cudaStreamSynchronize(stream));
   return status;
 }
 
@@ -140,7 +140,7 @@ trivial_copy_to_device(Type* dst, Type const* src, size_t count, cudaStream_t st
   }
 
   status = ::cudaMemcpyAsync(dst, src, sizeof(Type) * count, cudaMemcpyDefault, stream);
-  cudaStreamSynchronize(stream);
+  static_cast<void>(cudaStreamSynchronize(stream));
   return status;
 }
 
@@ -167,9 +167,9 @@ _CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status)
   // Clear the global CUDA error state which may have been set by the last
   // call. Otherwise, errors may "leak" to unrelated kernel launches.
 #ifdef THRUST_RDC_ENABLED
-  cudaGetLastError();
+  static_cast<void>(cudaGetLastError());
 #else
-  NV_IF_TARGET(NV_IS_HOST, (cudaGetLastError();));
+  NV_IF_TARGET(NV_IS_HOST, (static_cast<void>(cudaGetLastError());));
 #endif
 
   if (cudaSuccess != status)
@@ -205,9 +205,9 @@ _CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status, char const* msg
   // Clear the global CUDA error state which may have been set by the last
   // call. Otherwise, errors may "leak" to unrelated kernel launches.
 #ifdef THRUST_RDC_ENABLED
-  cudaGetLastError();
+  static_cast<void>(cudaGetLastError());
 #else
-  NV_IF_TARGET(NV_IS_HOST, (cudaGetLastError();));
+  NV_IF_TARGET(NV_IS_HOST, (static_cast<void>(cudaGetLastError());));
 #endif
 
   if (cudaSuccess != status)

@@ -70,10 +70,10 @@ TEST_CASE("TestGenerateCudaStreams", "[generate]")
   const return_value<int> f(value);
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::generate(thrust::cuda::par.on(s), result.begin(), result.end(), f);
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(result[0] == value);
   REQUIRE(result[1] == value);
@@ -81,7 +81,7 @@ TEST_CASE("TestGenerateCudaStreams", "[generate]")
   REQUIRE(result[3] == value);
   REQUIRE(result[4] == value);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -135,10 +135,10 @@ TEST_CASE("TestGenerateNCudaStreams", "[generate]")
   const return_value<int> f(value);
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::generate_n(thrust::cuda::par.on(s), result.begin(), result.size(), f);
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(result[0] == value);
   REQUIRE(result[1] == value);
@@ -146,5 +146,5 @@ TEST_CASE("TestGenerateNCudaStreams", "[generate]")
   REQUIRE(result[3] == value);
   REQUIRE(result[4] == value);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }

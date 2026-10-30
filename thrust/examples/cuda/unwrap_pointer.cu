@@ -3,6 +3,8 @@
 #include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
 
+#include <cuda/__runtime/api_wrapper.h>
+
 #include <cuda.h>
 
 int main()
@@ -16,7 +18,7 @@ int main()
   int* raw_ptr = thrust::raw_pointer_cast(dev_ptr);
 
   // use raw_ptr in CUDA API functions
-  cudaMemset(raw_ptr, 0, N * sizeof(int));
+  _CCCL_TRY_RUNTIME_API(cudaMemset, "cudaMemset failed", raw_ptr, 0, N * sizeof(int));
 
   // free memory
   thrust::device_free(dev_ptr);

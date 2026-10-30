@@ -59,7 +59,7 @@ TEST_CASE("TestPartitionPointCudaStreams", "[partition_point]")
   Iterator ref  = first + 3;
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   REQUIRE(ref == thrust::partition_point(thrust::cuda::par.on(s), first, last, ::cuda::std::identity{}));
 
@@ -67,5 +67,5 @@ TEST_CASE("TestPartitionPointCudaStreams", "[partition_point]")
   ref  = last;
   REQUIRE(ref == thrust::partition_point(thrust::cuda::par.on(s), first, last, ::cuda::std::identity{}));
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
