@@ -94,6 +94,7 @@
 #include <cub/warp/warp_merge_sort.cuh>
 #include <cub/warp/warp_reduce.cuh>
 #include <cub/warp/warp_scan.cuh>
+#include <cub/warp/warp_shuffle_sort.cuh>
 #include <cub/warp/warp_store.cuh>
 
 // Iterator
