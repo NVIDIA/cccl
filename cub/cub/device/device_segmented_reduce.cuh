@@ -130,7 +130,7 @@ private:
             typename ReductionOpT,
             typename InitValueT,
             typename TuningEnvT>
-  CUB_RUNTIME_FUNCTION static cudaError_t select_tuning_and_dispatch_variable_size(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t select_tuning_and_dispatch_variable_size(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
@@ -181,7 +181,7 @@ private:
             typename ReductionOpT,
             typename InitValueT,
             typename TuningEnvT>
-  CUB_RUNTIME_FUNCTION static cudaError_t select_tuning_and_dispatch_fixed_size(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t select_tuning_and_dispatch_fixed_size(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
@@ -214,7 +214,7 @@ private:
   }
 
   template <typename ReductionOpT, typename InputIteratorT, typename OutputIteratorT, typename EnvT>
-  CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_arg_two_phase(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_arg_two_phase(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
@@ -286,7 +286,7 @@ private:
             typename ReductionOpT,
             typename InitValueT,
             typename EnvT>
-  CUB_RUNTIME_FUNCTION static cudaError_t variable_size_two_phase(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t variable_size_two_phase(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
@@ -327,7 +327,7 @@ private:
             typename ReductionOpT,
             typename InitValueT,
             typename EnvT>
-  CUB_RUNTIME_FUNCTION static cudaError_t variable_size_single_phase(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t variable_size_single_phase(
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
@@ -359,7 +359,7 @@ private:
             typename ReductionOpT,
             typename InitValueT,
             typename EnvT>
-  CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_two_phase(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_two_phase(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
@@ -400,7 +400,7 @@ private:
             typename ReductionOpT,
             typename InitValueT,
             typename EnvT>
-  CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_single_phase(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_single_phase(
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
