@@ -1,2 +1,0 @@
-FULL_BUILD=python_v2 python_tsan python
-LITE_BUILD=
