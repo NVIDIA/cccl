@@ -83,6 +83,20 @@ void test_vector_manipulation(size_t n)
     }
   }
 
+  // emplace_back
+  Vector vec3;
+  for (size_t i = 0; i < 10; ++i)
+  {
+    REQUIRE(vec3.size() == i);
+    REQUIRE(vec3.emplace_back(T(i)) == T(i));
+    REQUIRE(vec3.size() == i + 1);
+    for (size_t j = 0; j <= i; j++)
+    {
+      REQUIRE(vec3[j] == T(j));
+    }
+    REQUIRE(vec3.back() == T(i));
+  }
+
   // TODO test swap, erase(pos), erase(begin, end)
 }
 
@@ -99,3 +113,10 @@ void test_vector_manipulation_device(size_t n)
   test_vector_manipulation<thrust::device_vector<T>>(n);
 }
 DECLARE_VARIABLE_UNITTEST(test_vector_manipulation_device);
+
+template <typename T>
+void test_vector_manipulation_universal(size_t n)
+{
+  test_vector_manipulation<thrust::universal_vector<T>>(n);
+}
+DECLARE_VARIABLE_UNITTEST(test_vector_manipulation_universal);

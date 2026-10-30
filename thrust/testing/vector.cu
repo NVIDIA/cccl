@@ -6,6 +6,7 @@
 _CCCL_DIAG_SUPPRESS_GCC("-Wstringop-overflow")
 _CCCL_DIAG_SUPPRESS_GCC("-Warray-bounds")
 
+#include <thrust/count.h>
 #include <thrust/device_malloc_allocator.h>
 #include <thrust/sequence.h>
 
@@ -1022,4 +1023,373 @@ TEST_CASE("TestVectorNoInitResize", "[vector]")
   // non-trivially-constructible type: those should fail to compile
   // thrust::host_vector<IntWithInit>(5).resize(10, thrust::no_init);
   // thrust::device_vector<IntWithInit>(5).resize(10, thrust::no_init);
+}
+
+struct RemembersCopy
+{
+  _CCCL_HOST_DEVICE RemembersCopy()
+      : n_(0)
+  {
+    copied_ = false;
+  }
+
+  _CCCL_HOST_DEVICE explicit RemembersCopy(int n)
+      : n_(n)
+  {
+    copied_ = false;
+  }
+  _CCCL_HOST_DEVICE RemembersCopy(const RemembersCopy& other)
+  {
+    n_      = other.n_;
+    copied_ = true;
+  }
+  _CCCL_HOST_DEVICE RemembersCopy& operator=(const RemembersCopy& other)
+  {
+    n_      = other.n_;
+    copied_ = true;
+    return *this;
+  }
+  _CCCL_HOST_DEVICE bool copied() const
+  {
+    return copied_;
+  }
+
+  int n_;
+  bool copied_;
+};
+
+// functor used to count if elements are copied
+struct is_copied
+{
+  _CCCL_HOST_DEVICE bool operator()(const RemembersCopy& x) const
+  {
+    return x.copied();
+  }
+};
+
+TEST_CASE("TestVectorEmplaceBackDoesNotCopy", "[vector]")
+{
+  using T = RemembersCopy;
+
+  thrust::host_vector<T> v_h;
+  v_h.emplace_back(42);
+
+  thrust::device_vector<T> v_d;
+  v_d.emplace_back(42);
+
+  REQUIRE(v_h[0].copied() == false);
+  // Verbose but necessary: the flag is on device
+  // int n_copied = thrust::count_if(v_d.begin(), v_d.end(), is_copied{}); wrong: this passes copies to the algo !
+  const T* first = thrust::raw_pointer_cast(v_d.data());
+  // Operate on raw pointer instead
+  const int n_copied = thrust::count_if(thrust::device, first, first + v_d.size(), is_copied{});
+  REQUIRE(n_copied == 0);
+}
+
+enum class Loc
+{
+  None,
+  Host,
+  Device
+};
+
+struct RemembersConstructionLocation
+{
+  _CCCL_HOST_DEVICE RemembersConstructionLocation()
+      : n_(0)
+  {
+    NV_IF_TARGET(NV_IS_DEVICE, (loc_ = Loc::Device;), (loc_ = Loc::Host;));
+  }
+
+  _CCCL_HOST_DEVICE explicit RemembersConstructionLocation(int n)
+      : n_(n)
+  {
+    NV_IF_TARGET(NV_IS_DEVICE, (loc_ = Loc::Device;), (loc_ = Loc::Host;));
+  }
+
+  _CCCL_HOST_DEVICE bool constructed_on_host() const
+  {
+    return loc_ == Loc::Host;
+  }
+  _CCCL_HOST_DEVICE bool constructed_on_device() const
+  {
+    return loc_ == Loc::Device;
+  }
+
+  int n_;
+  Loc loc_ = Loc::None;
+};
+
+// functor used to count if elements are constructed on device
+struct IsConstructedOnDevice
+{
+  _CCCL_HOST_DEVICE bool operator()(const RemembersConstructionLocation& x) const
+  {
+    return x.constructed_on_device();
+  }
+};
+
+TEST_CASE("TestVectorEmplaceBackConstructsInTheRightLocation", "[vector]")
+{
+  using T = RemembersConstructionLocation;
+
+  thrust::host_vector<T> v_h;
+  v_h.emplace_back(42);
+  REQUIRE(v_h[0].constructed_on_host() == true);
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+
+  thrust::device_vector<T> v_d;
+  v_d.emplace_back(42);
+
+  const T* first = thrust::raw_pointer_cast(v_d.data());
+  const int n_constructed_on_device =
+    thrust::count_if(thrust::device, first, first + v_d.size(), IsConstructedOnDevice{});
+  REQUIRE(n_constructed_on_device == 1);
+
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+}
+
+struct ThrowsIfBuiltWithInteger
+{
+  _CCCL_HOST_DEVICE ThrowsIfBuiltWithInteger()
+      : n_(0)
+  {}
+
+  _CCCL_HOST_DEVICE explicit ThrowsIfBuiltWithInteger(int n)
+      : n_(n)
+  {
+    NV_IF_TARGET(NV_IS_HOST, (throw std::runtime_error("can't be built like this!");));
+  }
+
+  int n_;
+};
+
+TEST_CASE("TestVectorEmplaceBackThrowsIfCtorThrows", "[vector]")
+{
+  using T = ThrowsIfBuiltWithInteger;
+
+  thrust::host_vector<T> v_h;
+  v_h.emplace_back();
+  v_h.emplace_back();
+  REQUIRE_THROWS_AS(v_h.emplace_back(42), std::runtime_error);
+}
+
+struct HasExplicitCtor
+{
+  _CCCL_HOST_DEVICE explicit HasExplicitCtor(int n)
+      : n_(n)
+  {}
+
+private:
+  int n_;
+};
+
+TEST_CASE("TestVectorEmplaceBackReturnsReference", "[vector]")
+{
+  using T = HasExplicitCtor;
+
+  thrust::device_vector<T> v_d;
+  thrust::host_vector<T> v_h;
+  thrust::universal_vector<T> v_u;
+  static_assert(cuda::std::is_same_v<decltype(v_d.emplace_back(42)), thrust::device_vector<T>::reference>);
+  static_assert(cuda::std::is_same_v<decltype(v_h.emplace_back(42)), thrust::host_vector<T>::reference>);
+  static_assert(cuda::std::is_same_v<decltype(v_u.emplace_back(42)), thrust::universal_vector<T>::reference>);
+}
+
+struct HasMultiArgumentCtor
+{
+  _CCCL_HOST_DEVICE HasMultiArgumentCtor()
+      : n0_(0)
+      , n1_(0)
+  {}
+
+  _CCCL_HOST_DEVICE HasMultiArgumentCtor(int n0, int n1)
+      : n0_(n0)
+      , n1_(n1)
+  {}
+
+  _CCCL_HOST_DEVICE int sum() const
+  {
+    return n0_ + n1_;
+  }
+
+private:
+  int n0_;
+  int n1_;
+};
+
+struct Sum
+{
+  _CCCL_HOST_DEVICE int operator()(const HasMultiArgumentCtor& x)
+  {
+    return x.sum();
+  }
+};
+
+TEST_CASE("TestVectorEmplaceWorksWithMultiArgumentCtor", "[vector]")
+{
+  using T = HasMultiArgumentCtor;
+
+  thrust::device_vector<T> v_d;
+  thrust::host_vector<T> v_h;
+  thrust::universal_vector<T> v_u;
+
+  v_d.emplace_back(41, 42);
+  v_h.emplace_back(41, 42);
+  v_u.emplace_back(41, 42);
+
+  int sum_d = thrust::transform_reduce(thrust::device, v_d.begin(), v_d.end(), Sum{}, 0, ::cuda::std::plus<int>());
+
+  REQUIRE(sum_d == 41 + 42);
+  REQUIRE(v_h[0].sum() == 41 + 42);
+  REQUIRE(v_u[0].sum() == 41 + 42);
+}
+
+template <typename T>
+struct small_allocator : std::allocator<T>
+{
+  std::size_t max_size() const
+  {
+    return 8;
+  }
+};
+
+using small_vector = thrust::host_vector<int, small_allocator<int>>;
+
+TEST_CASE("TestVectorInsertionAtMaxSize", "[vector]")
+{
+  small_vector v(8); // size() == capacity() == max_size()
+
+  REQUIRE_THROWS_AS(v.push_back(1), std::length_error);
+  REQUIRE_THROWS_AS(v.emplace_back(1), std::length_error);
+  REQUIRE_THROWS_AS(v.resize(9), std::length_error);
+  REQUIRE(v.size() == 8);
+}
+
+TEST_CASE("TestVectorBulkInsertionBeyondMaxSize", "[vector]")
+{
+  small_vector v(3);
+  const thrust::host_vector<int> src(6, 1); // 3 + 6 > max_size()
+
+  REQUIRE_THROWS_AS(v.insert(v.end(), 6, 1), std::length_error);
+  REQUIRE_THROWS_AS(v.insert(v.end(), src.begin(), src.end()), std::length_error);
+  REQUIRE_THROWS_AS(v.resize(9, 1), std::length_error);
+  REQUIRE(v.size() == 3);
+}
+
+TEST_CASE("TestVectorGrowthSaturatesAtMaxSize", "[vector]")
+{
+  // doubling capacity 5 would give 10 > max_size(), so growth must stop at 8
+  const std::vector<int> one(1, 1);
+
+  small_vector a(5);
+  a.push_back(1);
+  REQUIRE(a.capacity() == 8);
+
+  small_vector b(5);
+  b.emplace_back(1);
+  REQUIRE(b.capacity() == 8);
+
+  small_vector c(5);
+  c.insert(c.end(), one.begin(), one.end());
+  REQUIRE(c.capacity() == 8);
+
+  small_vector d(5);
+  d.resize(6);
+  REQUIRE(d.capacity() == 8);
+}
+
+struct RemembersConstructionType
+{
+  _CCCL_HOST_DEVICE RemembersConstructionType()
+      : state_(0) {};
+  _CCCL_HOST_DEVICE RemembersConstructionType(RemembersConstructionType& other)
+      : copy_cted_(true)
+      , state_(other.state_) {};
+  _CCCL_HOST_DEVICE RemembersConstructionType(const RemembersConstructionType& other)
+      : const_copy_cted_(true)
+      , state_(other.state_) {};
+  _CCCL_HOST_DEVICE RemembersConstructionType(RemembersConstructionType&& other)
+      : move_cted_(true)
+      , state_(other.state_) {};
+  _CCCL_HOST_DEVICE RemembersConstructionType(const RemembersConstructionType&& other)
+      : const_move_cted_(true)
+      , state_(other.state_) {};
+
+  bool move_cted() const
+  {
+    return move_cted_;
+  }
+  bool copy_cted() const
+  {
+    return copy_cted_;
+  }
+  bool const_move_cted() const
+  {
+    return const_move_cted_;
+  }
+  bool const_copy_cted() const
+  {
+    return const_copy_cted_;
+  }
+
+  bool copy_cted_       = false;
+  bool move_cted_       = false;
+  bool const_copy_cted_ = false;
+  bool const_move_cted_ = false;
+  int state_;
+};
+
+// Helper to read a flag in place on the device: copying the element to host would run a ctor and reset it
+using construction_flag = bool RemembersConstructionType::*;
+struct flag_is_set
+{
+  construction_flag flag;
+  _CCCL_HOST_DEVICE bool operator()(const RemembersConstructionType& t) const
+  {
+    return t.*flag;
+  }
+};
+bool device_flag(const thrust::device_vector<RemembersConstructionType>& v, size_t i, construction_flag flag)
+{
+  const auto* p = thrust::raw_pointer_cast(v.data()) + i;
+  return thrust::count_if(thrust::device, p, p + 1, flag_is_set{flag}) == 1;
+}
+
+TEST_CASE("TestEmplaceBackCallsRightConstructor", "[vector]")
+{
+  using T = RemembersConstructionType;
+
+  {
+    thrust::host_vector<T> v_h;
+
+    T x;
+    const T cx;
+
+    // Interleave tests and emplaces to avoid reallocation side effects.
+    v_h.emplace_back(x);
+    REQUIRE(v_h[0].copy_cted() == true);
+    v_h.emplace_back(cx);
+    REQUIRE(v_h[1].const_copy_cted() == true);
+    v_h.emplace_back(cuda::std::move(x));
+    REQUIRE(v_h[2].move_cted() == true);
+    v_h.emplace_back(cuda::std::move(cx));
+    REQUIRE(v_h[3].const_move_cted() == true);
+  }
+
+  {
+    thrust::device_vector<T> v_d;
+
+    T x;
+    const T cx;
+
+    v_d.emplace_back(x);
+    REQUIRE(device_flag(v_d, 0, &T::copy_cted_));
+    v_d.emplace_back(cx);
+    REQUIRE(device_flag(v_d, 1, &T::const_copy_cted_));
+    v_d.emplace_back(cuda::std::move(x));
+    REQUIRE(device_flag(v_d, 2, &T::move_cted_));
+    v_d.emplace_back(cuda::std::move(cx));
+    REQUIRE(device_flag(v_d, 3, &T::const_move_cted_));
+  }
 }

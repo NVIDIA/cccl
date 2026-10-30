@@ -543,6 +543,20 @@ public:
    */
   void push_back(const value_type& x);
 
+  /**
+   * Constructs an element in-place at the end of this vector.
+   *
+   * @param args The arguments passed to the constructor.
+   * @return A reference to the newly constructed element.
+   *
+   * @pre Constructor invocation and argument expressions are device-callable/device-accessible.
+   *
+   * @note This operation is particularly slow because it launches a kernel
+   *       and performs a synchronization to construct a single element.
+   */
+  template <typename... Args>
+  reference emplace_back(Args&&... args);
+
   /*! This method erases the last element of this vector, invalidating
    *  all iterators and references to it.
    *
