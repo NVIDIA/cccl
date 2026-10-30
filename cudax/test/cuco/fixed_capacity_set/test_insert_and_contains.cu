@@ -35,6 +35,14 @@ struct duplicate_key
   }
 };
 
+struct is_negative
+{
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(int value) const noexcept
+  {
+    return value < 0;
+  }
+};
+
 C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_sizes, bucket_sizes, probing_kinds)
 {
   using key_type                              = c2h::get<0, TestType>;
@@ -91,6 +99,19 @@ C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_
   set.insert_async(context.stream, first, first + num_keys);
   set.contains(context.stream, first, first + num_queries, found.begin());
   REQUIRE(context.matches(found.data(), num_queries, num_keys));
+
+  // The stencil is negative only for the first half while every key is nonnegative, so the stencil, not the key,
+  // selects the first half.
+  const auto stencil = cuda::counting_iterator<int>{-num_keys / 2};
+  set.clear(context.stream);
+  REQUIRE(set.insert_if(context.stream, first, first + num_keys, stencil, is_negative{}) == num_keys / 2);
+  set.contains(context.stream, first, first + num_queries, found.begin());
+  REQUIRE(context.matches(found.data(), num_queries, num_keys / 2));
+
+  set.clear(context.stream);
+  set.insert_if_async(context.stream, first, first + num_keys, stencil, is_negative{});
+  set.contains(context.stream, first, first + num_queries, found.begin());
+  REQUIRE(context.matches(found.data(), num_queries, num_keys / 2));
 
   set_type full{context.stream, context.mr, cuda::std::size_t{13}, cudax::cuco::empty_key{static_cast<key_type>(-1)}};
   const int capacity = static_cast<int>(full.capacity());
