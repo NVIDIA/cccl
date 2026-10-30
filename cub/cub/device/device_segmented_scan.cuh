@@ -2828,7 +2828,7 @@ public:
   //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
   //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
   //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
-  //!   Must be in ``[0, INT_MAX]``, or ``cudaErrorInvalidValue`` is returned.
+  //!   Must be in ``[0, INT64_MAX]``, or ``cudaErrorInvalidValue`` is returned.
   //!   @endrst
   //!
   //! @param[in] stream
@@ -2910,7 +2910,7 @@ public:
   //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
   //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
   //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
-  //!   Must be in ``[0, INT_MAX]``, or ``cudaErrorInvalidValue`` is returned.
+  //!   Must be in ``[0, INT64_MAX]``, or ``cudaErrorInvalidValue`` is returned.
   //!   @endrst
   //!
   //! @param[in] env
@@ -3004,7 +3004,7 @@ public:
   //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
   //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
   //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
-  //!   Must be in ``[0, INT_MAX]``, or ``cudaErrorInvalidValue`` is returned.
+  //!   Must be in ``[0, INT64_MAX]``, or ``cudaErrorInvalidValue`` is returned.
   //!   @endrst
   //!
   //! @param[in] scan_op
@@ -3102,7 +3102,7 @@ public:
   //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
   //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
   //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
-  //!   Must be in ``[0, INT_MAX]``, or ``cudaErrorInvalidValue`` is returned.
+  //!   Must be in ``[0, INT64_MAX]``, or ``cudaErrorInvalidValue`` is returned.
   //!   @endrst
   //!
   //! @param[in] scan_op
@@ -3188,7 +3188,7 @@ public:
   //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
   //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
   //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
-  //!   Must be in ``[0, INT_MAX]``, or ``cudaErrorInvalidValue`` is returned.
+  //!   Must be in ``[0, INT64_MAX]``, or ``cudaErrorInvalidValue`` is returned.
   //!   @endrst
   //!
   //! @param[in] stream
@@ -3268,7 +3268,7 @@ public:
   //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
   //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
   //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
-  //!   Must be in ``[0, INT_MAX]``, or ``cudaErrorInvalidValue`` is returned.
+  //!   Must be in ``[0, INT64_MAX]``, or ``cudaErrorInvalidValue`` is returned.
   //!   @endrst
   //!
   //! @param[in] env
@@ -3349,7 +3349,7 @@ public:
   //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
   //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
   //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
-  //!   Must be in ``[0, INT_MAX]``, or ``cudaErrorInvalidValue`` is returned.
+  //!   Must be in ``[0, INT64_MAX]``, or ``cudaErrorInvalidValue`` is returned.
   //!   @endrst
   //!
   //! @param[in] scan_op
@@ -3431,7 +3431,7 @@ public:
   //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
   //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
   //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
-  //!   Must be in ``[0, INT_MAX]``, or ``cudaErrorInvalidValue`` is returned.
+  //!   Must be in ``[0, INT64_MAX]``, or ``cudaErrorInvalidValue`` is returned.
   //!   @endrst
   //!
   //! @param[in] scan_op
@@ -3522,7 +3522,7 @@ public:
   //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
   //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
   //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
-  //!   Must be in ``[0, INT_MAX]``, or ``cudaErrorInvalidValue`` is returned.
+  //!   Must be in ``[0, INT64_MAX]``, or ``cudaErrorInvalidValue`` is returned.
   //!   @endrst
   //!
   //! @param[in] scan_op
@@ -3623,7 +3623,7 @@ public:
   //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
   //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
   //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
-  //!   Must be in ``[0, INT_MAX]``, or ``cudaErrorInvalidValue`` is returned.
+  //!   Must be in ``[0, INT64_MAX]``, or ``cudaErrorInvalidValue`` is returned.
   //!   @endrst
   //!
   //! @param[in] scan_op
