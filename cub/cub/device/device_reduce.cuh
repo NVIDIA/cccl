@@ -183,7 +183,11 @@ inline constexpr bool is_non_deterministic_v =
 //!   iterator, ``cuda::std::plus``, an accumulator of at least 4 bytes, and an output type equal to the
 //!   accumulator type. Atomics combine partial results in whatever order the hardware schedules them, which can
 //!   differ between runs — hence no run-to-run guarantee, but typically the fastest option. When those conditions
-//!   are not met, the call falls back to ``run_to_run`` rather than failing.
+//!   are not met, the call falls back to ``run_to_run`` rather than failing. ``Min``, ``Max``, ``ArgMin``,
+//!   ``ArgMax`` and ``ArgMinMax`` always use this ``run_to_run`` path. The fallback is only run-to-run
+//!   reproducible with the default tuning: if you request ``not_guaranteed`` and pass a custom tuning whose
+//!   ``reduce_algorithm`` is ``BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC``, the fallback keeps it, so the result of
+//!   a non-associative reduction (e.g., ``float`` addition) may differ between runs.
 //!
 //! @endrst
 struct DeviceReduce
