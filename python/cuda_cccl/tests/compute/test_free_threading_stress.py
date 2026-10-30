@@ -1880,8 +1880,9 @@ def test_distinct_op_cold_build_storm(jit_compute_module):
     _cache_single_flight elects a separate builder per thread and the backend
     compiles run in parallel rather than coalescing. This is the test that
     exercises whether numba-cuda-mlir's compile pipeline -- MLIR contexts,
-    lowering registries, the NVVM path -- tolerates concurrent entry, and
-    whether _compile_op_impl's non-coalescing lru_cache is safe under it.
+    lowering registries, the NVVM path -- tolerates concurrent entry: the
+    compile_op memo coalesces only same-key misses, so distinct keys compile
+    concurrently.
     """
     cc = jit_compute_module
 
