@@ -37,7 +37,7 @@ Top-level keys
    * - ``projects``
      - Project definitions: supported standards, display name, and ``job_map`` expansions.
    * - ``gpus``
-     - GPU runner pools and their ``sm`` value and ``dc`` (data center GPU) classification.
+     - GPU runner pools and their ``sm`` value.
    * - ``tags``
      - The fields a job entry accepts, with ``required`` flags and defaults.
 
@@ -111,7 +111,9 @@ Current defaults for all tags are defined in the ``tags`` section of ``ci/matrix
    * - ``cmake_options``
      - Extra CMake defines, passed as ``-cmake_options "<value>"``.
    * - ``environment``
-     - Environment variables injected into the job.
+     - Environment variables injected into the job. ``ENABLE_CUDA_COMPAT=1`` opts the job into
+       the CUDA forward compatibility (``cuda-compat``) libraries, which are only supported on
+       data center GPUs (see ``.devcontainer/cccl-entrypoint.sh``).
 
 Computed internally, not user-specified:
 
@@ -119,10 +121,6 @@ Computed internally, not user-specified:
 - ``gpu`` requirement, ``cuda_ext``, ``name``, and ``invoke`` script details - also taken from the ``jobs`` section.
 - ``force_producer_ctk`` — set in the ``jobs`` section to pin a producer build's CTK independent
   of the consumer's ``ctk`` tag. Used mainly for python packaging special cases.
-- ``DATA_CENTER_GPU`` — injected into the ``environment`` of every GPU job as ``1`` or ``0``, taken
-  from the selected GPU's ``dc`` field. The devcontainer entrypoint gates the CUDA forward
-  compatibility (``cuda-compat``) setup on this variable; forward compatibility is only
-  supported on data center GPUs.
 
 Annotated example
 ~~~~~~~~~~~~~~~~~

@@ -281,12 +281,6 @@ def get_gpu(gpu_string):
     if "gpu_count" not in result:
         result["gpu_count"] = 1
 
-    # dc (data center GPU) defaults to False. Used to decide whether the CUDA
-    # forward compatibility (cuda-compat) libraries may be activated in the
-    # container; they are only supported on data center GPUs.
-    if "dc" not in result:
-        result["dc"] = False
-
     # runner_id defaults to the GPU key. Used in runner label templates as {gpu_id}.
     if "runner_id" not in result:
         result["runner_id"] = gpu_string
@@ -501,6 +495,12 @@ def generate_dispatch_job_name(matrix_job, job_type):
         if "args" in matrix_job and matrix_job["args"]
         else ""
     )
+    # The environment tag is not exploded, so it remains a list of "K=V"
+    # strings. Displayed in the job name so opt-in variants (e.g.
+    # ENABLE_CUDA_COMPAT=1 forward compatibility lanes) are distinguishable
+    # from otherwise identical jobs.
+    environment = matrix_job.get("environment") or []
+    env_str = (" env{" + ",".join(environment) + "}") if environment else ""
 
     ctk = matrix_job["ctk"]
     host_compiler = get_host_compiler(matrix_job["cxx"])
@@ -517,8 +517,8 @@ def generate_dispatch_job_name(matrix_job, job_type):
     config_tag = f"CTK{ctk} {host_compiler['name']}{host_compiler['version']}{std_str}{py_str}{ctk_mode_str}"
 
     extra_info = (
-        f":{cuda_compile_arch}{cmake_options}{extra_args}"
-        if cuda_compile_arch or cmake_options or extra_args
+        f":{cuda_compile_arch}{cmake_options}{extra_args}{env_str}"
+        if cuda_compile_arch or cmake_options or extra_args or env_str
         else ""
     )
 
@@ -603,21 +603,7 @@ def generate_dispatch_job_image(matrix_job, job_type):
 
 
 def generate_dispatch_job_environment(matrix_job, job_type):
-    environment = list(matrix_job.get("environment") or [])
-
-    # Inject the GPU's data center classification into every GPU job. The
-    # devcontainer entrypoint uses this to decide whether to run the
-    # setup-cuda-compat script, since the CUDA forward compatibility
-    # (cuda-compat) libraries are only supported on data center GPUs.
-    # Explicitly emit both cases ('1' and '0') so mock jobs reproduce CI.
-    # Skip if the tag already set the variable to allow manual overrides.
-    if get_job_type_info(job_type)["gpu"] and not any(
-        env.startswith("DATA_CENTER_GPU=") for env in environment
-    ):
-        gpu = get_gpu(matrix_job["gpu"])
-        environment.append(f"DATA_CENTER_GPU={'1' if gpu['dc'] else '0'}")
-
-    return json.dumps(environment)
+    return json.dumps(matrix_job.get("environment") or [])
 
 
 def generate_dispatch_job_command(matrix_job, job_type):
