@@ -54,6 +54,9 @@ For a hands-on tour, follow the :ref:`cuda.coop.cutlass.debugger_walkthrough`.
 It uses a 128-thread tile copy to show import, planning, code generation,
 linking, and repeated execution.
 
+If CUTLASS and its CuTe DSL are new to you, read :doc:`cutlass_primer`
+first. It explains how the DSL traces a kernel, how that differs from
+Dynamo, Numba, and Triton, and which DSL facilities this package relies on.
 For the CuTe integration mechanisms alone, without the package's
 abstractions, see :doc:`cutlass_integration_example`. It calls
 ``cub::BlockReduce`` from a CuTe kernel in one file and lists the questions
