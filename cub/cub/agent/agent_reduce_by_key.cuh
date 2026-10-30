@@ -192,9 +192,12 @@ struct AgentReduceByKey
   static_assert(AgentReduceByKeyPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED || ITEMS_PER_THREAD == 1,
                 "ReduceByKeyLookbackPolicy/RleLookbackPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED unless "
                 "items_per_thread is 1, since the reduction requires a blocked arrangement");
-  static_assert(BlockRakingLayout<int, BLOCK_THREADS>::RAKING_THREADS == detail::warp_threads,
-                "ReduceByKeyLookbackPolicy/RleLookbackPolicy: threads_per_block must be a multiple of 32 or "
-                "otherwise yield a full raking warp of 32 threads, since the decoupled look-back runs on a full warp");
+  static_assert(
+    (AgentReduceByKeyPolicyT::SCAN_ALGORITHM == BLOCK_SCAN_WARP_SCANS && BLOCK_THREADS % detail::warp_threads == 0)
+      || BlockRakingLayout<int, BLOCK_THREADS>::RAKING_THREADS == detail::warp_threads,
+    "ReduceByKeyLookbackPolicy/RleLookbackPolicy: the decoupled look-back needs a full warp to enter the block-scan "
+    "prefix callback: with warp scans threads_per_block must be a multiple of 32, otherwise the raking layout must "
+    "yield 32 raking threads");
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
   // for keys Wrap the native input pointer with

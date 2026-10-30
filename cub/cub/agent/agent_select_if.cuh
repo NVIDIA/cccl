@@ -273,9 +273,12 @@ struct AgentSelectIf
   static_assert(AgentSelectIfPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED || ITEMS_PER_THREAD == 1,
                 "SelectLookbackPolicy/PartitionLookbackPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED unless "
                 "items_per_thread is 1, since the selection requires a blocked arrangement");
-  static_assert(BlockRakingLayout<int, BLOCK_THREADS>::RAKING_THREADS == detail::warp_threads,
-                "SelectLookbackPolicy/PartitionLookbackPolicy: threads_per_block must be a multiple of 32 or "
-                "otherwise yield a full raking warp of 32 threads, since the decoupled look-back runs on a full warp");
+  static_assert(
+    (AgentSelectIfPolicyT::SCAN_ALGORITHM == BLOCK_SCAN_WARP_SCANS && BLOCK_THREADS % detail::warp_threads == 0)
+      || BlockRakingLayout<int, BLOCK_THREADS>::RAKING_THREADS == detail::warp_threads,
+    "SelectLookbackPolicy/PartitionLookbackPolicy: the decoupled look-back needs a full warp to enter the block-scan "
+    "prefix callback: with warp scans threads_per_block must be a multiple of 32, otherwise the raking layout must "
+    "yield 32 raking threads");
 
   // Parameterized BlockLoad type for input data
   using BlockLoadT = BlockLoad<InputT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentSelectIfPolicyT::LOAD_ALGORITHM>;
