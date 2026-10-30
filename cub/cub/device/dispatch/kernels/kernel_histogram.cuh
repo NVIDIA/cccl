@@ -16,13 +16,28 @@
 #include <cub/agent/agent_histogram.cuh>
 #include <cub/device/dispatch/tuning/tuning_histogram.cuh>
 #include <cub/grid/grid_queue.cuh>
+#include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_arch.cuh>
 
 #include <cuda/__numeric/sub_overflow.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__numeric/reduce.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__numeric/reduce.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/array>
+#include <cuda/std/cstdint>
+
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::histogram
@@ -366,6 +381,20 @@ struct Transforms
   };
 };
 
+// Decode op that casts the sample to CastT before calling TransformT's BinSelect.
+template <typename TransformT, typename CastT>
+struct cast_decode_op : TransformT
+{
+  template <CacheLoadModifier LoadModifier, typename Sample>
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
+  {
+    if (valid)
+    {
+      TransformT::template BinSelect<LoadModifier>(static_cast<CastT>(sample), bin, valid);
+    }
+  }
+};
+
 /******************************************************************************
  * Histogram kernel entry points
  *****************************************************************************/
@@ -488,8 +517,8 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
 //!   The transform operator for determining privatized counter indices from samples,
 //!   one for each channel (pre-initialized on host)
 //!
-//! @param num_row_pixels
-//!   The number of multi-channel pixels per row in the region of interest
+//! @param num_row_items
+//!   The number of multi-channel items per row in the region of interest
 //!
 //! @param num_rows
 //!   The number of rows in the region of interest
@@ -523,7 +552,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
     const ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op_wrapper,
     const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
-    const OffsetT num_row_pixels,
+    const OffsetT num_row_items,
     const OffsetT num_rows,
     const OffsetT row_stride_samples,
     const int tiles_per_row,
@@ -569,7 +598,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   agent.InitBinCounters();
 
   // Consume input tiles
-  agent.ConsumeTiles(num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue);
+  agent.ConsumeTiles(num_row_items, num_rows, row_stride_samples, tiles_per_row, tile_queue);
 
   // Store output to global (if necessary)
   agent.StoreOutput();
@@ -644,8 +673,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 //!   For DispatchEven: lower level bounds per channel.
 //!   For DispatchRange: level pointers per channel.
 //!
-//! @param num_row_pixels
-//!   The number of multi-channel pixels per row in the region of interest
+//! @param num_row_items
+//!   The number of multi-channel items per row in the region of interest
 //!
 //! @param num_rows
 //!   The number of rows in the region of interest
@@ -683,7 +712,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
     const FirstLevelArrayT first_level_array,
     const SecondLevelArrayT second_level_array,
-    const OffsetT num_row_pixels,
+    const OffsetT num_row_items,
     const OffsetT num_rows,
     const OffsetT row_stride_samples,
     const int tiles_per_row,
@@ -755,7 +784,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   agent.InitBinCounters();
 
   // Consume input tiles
-  agent.ConsumeTiles(num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue);
+  agent.ConsumeTiles(num_row_items, num_rows, row_stride_samples, tiles_per_row, tile_queue);
 
   // Store output to global (if necessary)
   agent.StoreOutput();

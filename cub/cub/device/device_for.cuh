@@ -22,6 +22,7 @@
 
 #include <cub/detail/cub_vector.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_for.cuh>
 #include <cub/util_namespace.cuh>
 
@@ -130,16 +131,18 @@ struct DeviceFor
     }
   };
 
-  template <class OffsetT, class OpT, class EnvT>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __bulk(OffsetT num_items, OpT op, const EnvT& env = {})
+  template <class NumItemsT, class OpT, class EnvT>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __bulk(NumItemsT num_items, OpT op, const EnvT& env = {})
   {
-    auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
+    // Tiles can be larger than the range of narrow integer types, so we compute offsets in at least 32 bits
+    using offset_t = detail::implicit_prom_t<NumItemsT>;
+    auto stream    = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
     [[maybe_unused]] const auto tuning_env =
       ::cuda::__call_or(::cuda::execution::__get_tuning, ::cuda::std::execution::env<>{}, env);
     using default_policy_selector = detail::for_each::policy_selector;
     using policy_selector =
       ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), ForPolicy, default_policy_selector>;
-    return detail::for_each::dispatch(num_items, op, stream.get(), policy_selector{});
+    return detail::for_each::dispatch(static_cast<offset_t>(num_items), op, stream.get(), policy_selector{});
   }
 
   template <bool AllowCopy = false, class RandomAccessIteratorT, class NumItemsT, class OpT, class EnvT>

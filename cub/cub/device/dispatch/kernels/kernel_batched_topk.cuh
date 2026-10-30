@@ -17,19 +17,19 @@
 #endif // no system header
 
 #include <cub/agent/agent_batched_topk.cuh>
-#include <cub/agent/agent_batched_topk_cluster.cuh>
+#include <cub/agent/agent_batched_topk_cluster.cuh> // IWYU pragma: keep
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_radix_sort.cuh>
+#include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/detail/null_type.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 #include <cub/util_arch.cuh>
-#include <cub/util_device.cuh>
 
-#include <cuda/__cmath/round_up.h>
-#include <cuda/__device/compute_capability.h>
+#include <cuda/__argument/argument.h>
+#include <cuda/__cmath/round_up.h> // IWYU pragma: keep
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/tie_break.h>
-#include <cuda/argument>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
