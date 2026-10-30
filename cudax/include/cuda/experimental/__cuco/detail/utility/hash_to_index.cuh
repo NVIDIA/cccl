@@ -21,8 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/uabs.h>
-#include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/__cmath/mul_hi.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
 
@@ -30,32 +31,49 @@
 
 namespace cuda::experimental::cuco::detail
 {
-//! @brief Maps the unsigned magnitude of a hash to an index in `[0, __modulus)`.
+//! @brief Maps a hash to an index in `[0, __size)` without a division.
 //!
-//! The unsigned magnitude is converted to the index width before computing the remainder. The
-//! magnitude of a negative hash is computed in unsigned arithmetic, including the signed minimum.
+//! The hash is interpreted as a fraction of the full range of its type and scaled by `__size`
+//! (multiply-high), so the index is driven by the high bits of the hash.
+//!
+//! @tparam _SizeType Unsigned index type of at most 64 bits
+//! @tparam _HashType Unsigned hash type of at most 128 bits; a 128-bit hash contributes its high word
 //!
 //! @param[in] __hash Hash value
-//! @param[in] __modulus Positive exclusive upper bound
-//! @return A nonnegative index smaller than `__modulus`
+//! @param[in] __size Exclusive upper bound
+//! @return An index smaller than `__size`
 template <class _SizeType, class _HashType>
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _SizeType __hash_to_index(_HashType __hash, _SizeType __modulus) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _SizeType __hash_to_index(_HashType __hash, _SizeType __size) noexcept
 {
-  using __unsigned_size = ::cuda::std::make_unsigned_t<_SizeType>;
-  return static_cast<_SizeType>(
-    static_cast<__unsigned_size>(::cuda::uabs(__hash)) % static_cast<__unsigned_size>(__modulus));
+  static_assert(::cuda::std::is_unsigned_v<_SizeType> && ::cuda::std::__num_bits_v<_SizeType> <= 64,
+                "The index type must be an unsigned integer of at most 64 bits");
+  static_assert(::cuda::std::is_unsigned_v<_HashType> && ::cuda::std::__num_bits_v<_HashType> <= 128,
+                "The hash type must be an unsigned integer of at most 128 bits");
+  constexpr int __hash_bits = ::cuda::std::__num_bits_v<_HashType>;
+  // Narrower hashes are left-aligned and wider ones truncated to the high 64 bits, so that every hash
+  // spans the full 64-bit fraction range.
+  ::cuda::std::uint64_t __fraction{};
+  if constexpr (__hash_bits > 64)
+  {
+    __fraction = static_cast<::cuda::std::uint64_t>(__hash >> 64);
+  }
+  else
+  {
+    __fraction = static_cast<::cuda::std::uint64_t>(__hash) << (64 - __hash_bits);
+  }
+  return static_cast<_SizeType>(::cuda::mul_hi(__fraction, static_cast<::cuda::std::uint64_t>(__size)));
 }
 
-//! @brief Maps the low 64-bit word of a 128-bit array hash to a valid index.
+//! @brief Maps a 128-bit array hash to an index in `[0, __size)` using its high 64-bit word.
 //!
 //! @param[in] __hash Hash value with the low word first
-//! @param[in] __modulus Positive exclusive upper bound
-//! @return A nonnegative index smaller than `__modulus`
+//! @param[in] __size Exclusive upper bound
+//! @return An index smaller than `__size`
 template <class _SizeType>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _SizeType
-__hash_to_index(const ::cuda::std::array<::cuda::std::uint64_t, 2>& __hash, _SizeType __modulus) noexcept
+__hash_to_index(const ::cuda::std::array<::cuda::std::uint64_t, 2>& __hash, _SizeType __size) noexcept
 {
-  return ::cuda::experimental::cuco::detail::__hash_to_index(__hash[0], __modulus);
+  return ::cuda::experimental::cuco::detail::__hash_to_index(__hash[1], __size);
 }
 } // namespace cuda::experimental::cuco::detail
 
