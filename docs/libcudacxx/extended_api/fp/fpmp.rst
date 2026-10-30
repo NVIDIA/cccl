@@ -376,8 +376,8 @@ hardware where FP64 is rationed:
 
 - **Exponentials and logarithms** — ``exp``, ``exp2``, ``exp10``, ``expm1``, ``log``, ``log2``,
   ``log10``, ``log1p``
-- **Powers and roots** — ``pow``, ``cbrt``, ``rcbrt``, alongside the ``sqrt`` and ``rsqrt``
-  already named above
+- **Powers, roots and distances** — ``pow``, ``cbrt``, ``rcbrt``, ``hypot``, ``rhypot``, alongside
+  the ``sqrt`` and ``rsqrt`` already named above
 - **Trigonometric** — ``sin``, ``cos``, ``tan``, ``sincos``, ``asin``, ``acos``, ``atan``,
   ``atan2``, and the pi-scaled ``sinpi``, ``cospi``, ``sincospi``, which split the argument over
   the limb pair rather than reducing it against a radian multiple of pi
@@ -396,7 +396,7 @@ hardware where FP64 is rationed:
 The remaining names are present with the same signatures, but implemented generically rather than
 through a dedicated float-float path: ``erfinv``, ``erfcinv``, ``erfcx``, ``normcdf``, ``tgamma``,
 ``lgamma``, the Bessel family ``j0``, ``j1``, ``jn``, ``y0``, ``y1``, ``yn``, ``cyl_bessel_i0``
-and ``cyl_bessel_i1``, the distances ``hypot`` and ``rhypot``, the vector norms ``norm3d``,
+and ``cyl_bessel_i1``, the vector norms ``norm3d``,
 ``norm4d``, ``rnorm3d`` and ``rnorm4d``, ``rint``, ``nearbyint``, ``lrint``, ``lround``,
 ``llrint``, ``llround``, ``copysign``, ``scalbln``, ``frexp``, ``modf``, ``logb``, ``ilogb``,
 ``nextafter``, ``fdim``, ``remquo``, and the classification predicates. For the exact ones among

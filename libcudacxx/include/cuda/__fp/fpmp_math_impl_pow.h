@@ -311,18 +311,18 @@ _CCCL_FPMP_MATH_DISPATCH_2A(pow)
  *      roughly [2^-1, 2^1), which gives the SFU lg2/ex2 pair a tight
  *      enough range that one Halley step recovers full fp32mp2
  *      precision.
- *   5. Initial single-precision approximation:
- *         s = fast_exp2(third * fast_log2(r_hi))            (~23 bits)
- *   6. One Halley iteration in fp32mp2 arithmetic
- *      (cubic convergence -> ~70 theoretical bits, capped by the
- *       ~46-bit fp32mp2 precision):
- *         t_new = t + t * (r - t^3) / (2 t^3 + r)
- *      The numerator (r - t^3) cancels catastrophically (t^3 ~= r),
- *      so it is evaluated with the accurate fp32mp2 fma:
- *         numer = fma<accurate>(-t^2, t, r)
- *      The denominator is well-conditioned (~3 r); a single-precision
- *      reciprocal of denom.hi() is enough -- the resulting correction
- *      contributes only at the 2^-46 level after multiplication by t.
+ *   5. Seed s0 = fast_exp2(third * fast_log2(r_hi)) from the SFU pair
+ *      (~2^-22), polished by one Newton step in float with an exact
+ *      s0^2, so s1 is within an ulp of cbrt(r) whatever the seed did.
+ *   6. One Halley step on s1 with everything that matters exact:
+ *         cbrt(r) = s1 + s1 (r - s1^3) / (2 s1^3 + r) + O(eps^3)
+ *      r - s1^3 as an error-free pair (exact cube pieces, Sterbenz,
+ *      one two_sum), the denominator as a pair, the quotient corrected
+ *      once from its remainder; the correction then carries no
+ *      rounding of its own above 2^-47.  Host model against binary128:
+ *      1.5 u^2 worst, 0.16 mean, independent of the seed.  (The former
+ *      fp32mp2 Halley step rounded its 2^-22 correction through the
+ *      1-ulp rcp.approx: 7 u^2, 45 bits on the device.)
  *   7. Multiply the result back by 2^(nexpo - denorm_div3) using
  *      a power-of-two scale factor (exact, no rounding).
  *   8. Restore the sign.
@@ -333,8 +333,6 @@ _CCCL_FPMP_MATH_DISPATCH_2A(pow)
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_cbrt(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using __ffloat = fp32mp2_low;
-
   // 1/3 in single precision (round-to-nearest); the exact 1/3 is not
   // representable in any binary float, but ulp(1/3) is well below the
   // accuracy of the SFU lg2/ex2 pair so this is sufficient.
@@ -393,35 +391,48 @@ __internal_fpmp2_cbrt(const float __x_hi, const float __x_lo, float* __res_hi, f
   const float __scale_b = ::cuda::std::bit_cast<float>(static_cast<uint32_t>((127 + __rest_pow) * __exp_shift));
   const float __r_lo    = (__ax_lo * __scale_a) * __scale_b;
 
-  /* Initial cbrt approximation via the SFU lg2/ex2 pair (~23 bits). */
-  const float __s = ::cuda::__fpmp_fast_exp2(__third_f * ::cuda::__fpmp_fast_log2(__r_hi));
+  /* Seed: the SFU lg2/ex2 pair, about 2^-22 relative. */
+  const float __s0 = ::cuda::__fpmp_fast_exp2(__third_f * ::cuda::__fpmp_fast_log2(__r_hi));
 
-  /* Halley refinement in fp32mp2:  t_new = t + t * (r - t^3) / (2 t^3 + r).
-   *
-   * The catastrophic cancellation in (r - t^3) is handled by an
-   * accurate fma:  fma<accurate>(-t^2, t, r) computes r - t^2 * t
-   * with a single rounding error followed by an exact correction,
-   * preserving the small difference that drives the iteration.
-   */
-  const __ffloat __r(__r_hi, __r_lo);
-  const __ffloat __t(__s);
+  /* Float polish, one Newton step s1 = s0 - (s0^3 - r) s0 / (3 r) with s0^2 as
+   * an exact pair, so that s1 lands within an ulp of cbrt(r) whatever the seed
+   * did; the raw approximate reciprocal of r only scales a 2^-22 correction. */
+  float __q_lo;
+  const float __q_hi = ::cuda::__fpmp_two_mult_fma(__s0, __s0, &__q_lo);
+  const float __e0   = ::cuda::__fpmp_fma_rn(__q_hi, __s0, -__r_hi) + __q_lo * __s0;
+  const float __g0   = (__third_f * ::cuda::__fpmp_rcp_rn(__r_hi)) * __s0;
+  const float __s1   = ::cuda::__fpmp_fma_rn(-__e0, __g0, __s0);
 
-  // t^2 = s^2 exactly
-  float __t2_lo;
-  const float __t2_hi = ::cuda::__fpmp_two_mult_fma(__s, __s, &__t2_lo);
-  const __ffloat __t2(__t2_hi, __t2_lo);
-  // numer = r - t^3 (computed as fma(-t^2, t, r) with accurate ff fma)
-  const __ffloat __numer = fma<fpmp2_accuracy::high>(-__t2, __t, __r);
-  // denom = 2 t^3 + r ~= 3 r, well-conditioned so fast add suffices
-  const __ffloat __t3    = __t2 * __s;
-  const __ffloat __denom = __t3 * 2.0f + __r;
+  /* Residual r - s1^3 as an error-free pair: s1^2 and s1^2 s1 are exact
+   * products, r_hi minus the cube's high word is exact (Sterbenz), the
+   * 2^-24-sized remainders are gathered in float and the two parts are
+   * joined by a two_sum (their order is not known). */
+  float __l2, __l3, __n_e;
+  const float __h2    = ::cuda::__fpmp_two_mult_fma(__s1, __s1, &__l2);
+  const float __h3    = ::cuda::__fpmp_two_mult_fma(__h2, __s1, &__l3);
+  const float __m3    = __l2 * __s1;
+  const float __d     = __r_hi - __h3;
+  const float __small = ::cuda::__fpmp_fma_rn(-__l2, __s1, __r_lo - __l3);
+  const float __n_h   = ::cuda::__fpmp_two_sum(__d, __small, &__n_e);
 
-  /* Single-precision reciprocal of denom.hi() is enough: the
-   * correction u_corr ~ 2^-23 contributes t * u_corr ~ 2^-46 to
-   * t_new -- exactly fp32mp2 precision. */
-  const float __inv_denom = ::cuda::__fpmp_rcp_rn(__denom.hi());
-  const __ffloat __u_corr = __numer * __inv_denom;
-  const __ffloat __t_new  = __s + __s * __u_corr;
+  /* Halley: cbrt(r) = s1 + s1 (r - s1^3) / (2 s1^3 + r) + O(eps^3).  The
+   * denominator is a pair (2 h3 + r_hi by a Fast2Sum, the rest in float, which
+   * only has to be present) and the quotient is corrected once from its
+   * remainder, so the correction carries no rounding of its own above 2^-47;
+   * a 2^-23-sized piece left for the low word would cost 2^-47 in the final
+   * addition, hence the two_sum above. */
+  float __dn_e, __ns_l, __t_l, __t_lo;
+  const float __dn_h = ::cuda::__fpmp_fast_two_sum(__h3 + __h3, __r_hi, &__dn_e);
+  const float __dn_l = ::cuda::__fpmp_fma_rn(2.0f, __l3, ::cuda::__fpmp_fma_rn(2.0f, __m3, __dn_e + __r_lo));
+  const float __inv  = ::cuda::__fpmp_rcp_rn(__dn_h);
+  const float __ns_h = ::cuda::__fpmp_two_mult_fma(__n_h, __s1, &__ns_l);
+  __ns_l             = ::cuda::__fpmp_fma_rn(__n_e, __s1, __ns_l);
+  const float __q    = __ns_h * __inv;
+  float __rem        = ::cuda::__fpmp_fma_rn(-__dn_h, __q, __ns_h);
+  __rem              = ::cuda::__fpmp_fma_rn(-__dn_l, __q, __rem) + __ns_l;
+  const float __q_l  = __rem * __inv;
+  const float __t_h  = ::cuda::__fpmp_fast_two_sum(__s1, __q, &__t_l);
+  const float __t_hi = ::cuda::__fpmp_fast_two_sum(__t_h, __t_l + __q_l, &__t_lo);
 
   /* Scale back by 2^(nexpo - denorm_div3) via an exact power-of-two
    * float multiply.  back_shift stays in a range that keeps the
@@ -429,8 +440,8 @@ __internal_fpmp2_cbrt(const float __x_hi, const float __x_lo, float* __res_hi, f
    * (biased exponent is always in [77, 170]). */
   const int __back_shift   = __nexpo - __denorm_div3;
   const float __scale_back = ::cuda::std::bit_cast<float>(static_cast<uint32_t>((127 + __back_shift) * __exp_shift));
-  float __t_hi_back        = __t_new.hi() * __scale_back;
-  float __t_lo_back        = __t_new.lo() * __scale_back;
+  float __t_hi_back        = __t_hi * __scale_back;
+  float __t_lo_back        = __t_lo * __scale_back;
 
   /* Restore sign (cbrt is an odd function). */
   if (__signbit != 0u)
@@ -484,20 +495,18 @@ _CCCL_FPMP_MATH_DISPATCH_1A(cbrt)
  *      nexpo = round((expo - 126) / 3).  Reduced r sits in roughly
  *      [2^-2, 2^2), giving the SFU lg2/ex2 pair a tight enough range
  *      that one Halley step recovers full fp32mp2 precision.
- *   5. Initial single-precision approximation:
- *         s = fast_exp2(-third * fast_log2(r_hi))                 ~= 1/cbrt(r_hi) (~23 bits)
- *   6. One Halley iteration in fp32mp2 (cubic convergence ->
- *      ~70 theoretical bits, capped by ~46-bit fp32mp2 precision):
- *
- *          u     = 1 - r * t^3              (catastrophic cancellation)
- *          t_new = t * (1 + u/3 + (2/9) u^2)
- *
- *      The residual u is the dominant source of error and is computed
- *      with the accurate fp32mp2 fma:
- *         u = fma<accurate>(-r, t^3, 1)
- *      preserving the small difference that drives the iteration.
- *      The Halley quadratic (1/3 + (2/9) u) is well conditioned (no
- *      cancellation), so a single fast fma is sufficient there.
+ *   5. Seed s0 = fast_exp2(-third * fast_log2(r_hi)) from the SFU pair
+ *      (~2^-22), polished by one Newton step in float (no reciprocal
+ *      needed), so s1 is within an ulp of 1/cbrt(r) whatever the seed did.
+ *   6. One Halley step on s1 with the residual exact:
+ *          u     = 1 - r s1^3        (error-free pair: exact cube pieces,
+ *                                     1 - (r s1^3)_hi exact, the four
+ *                                     2^-24-sized remainders by two two_sums)
+ *          t_new = s1 + u s1 (1/3 + (2/9) u)
+ *      u s1 and (u s1)/3 as exact products with 1/3 as a pair; the Halley
+ *      term and the remainders go to the low word.  Host model against
+ *      binary128: 1.4 u^2 worst, 0.18 mean, independent of the seed
+ *      (3 u^2 before, with the correction rounded in fp32mp2 arithmetic).
  *   7. Multiply the result back by 2^(-nexpo + denorm_div3) using a
  *      power-of-two scale factor (exact, no rounding).
  *   8. Restore the sign.
@@ -509,8 +518,6 @@ _CCCL_FPMP_MATH_DISPATCH_1A(cbrt)
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_rcbrt(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using __ffloat = fp32mp2_low;
-
   // 1/3 and 2/9 in single precision (round-to-nearest); ulp at this
   // scale is far below the SFU lg2/ex2 estimate's accuracy.
   constexpr float __third_f      = 0x1.555556p-2f; // ~= 1/3
@@ -580,41 +587,52 @@ __internal_fpmp2_rcbrt(const float __x_hi, const float __x_lo, float* __res_hi, 
   const float __scale_b = ::cuda::std::bit_cast<float>(static_cast<uint32_t>((127 + __rest_pow) * __exp_shift));
   const float __r_lo    = (__ax_lo * __scale_a) * __scale_b;
 
-  /* Initial 1/cbrt approximation via the SFU lg2/ex2 pair (~23 bits). */
-  const float __s = ::cuda::__fpmp_fast_exp2(-__third_f * ::cuda::__fpmp_fast_log2(__r_hi));
+  /* Seed: the SFU lg2/ex2 pair, about 2^-22 relative. */
+  const float __s0 = ::cuda::__fpmp_fast_exp2(-__third_f * ::cuda::__fpmp_fast_log2(__r_hi));
 
-  /* Halley refinement in fp32mp2:  t_new = t * (1 + u/3 + (2/9) u^2)
-   * with u = 1 - r * t^3.
-   *
-   * The cancellation in (1 - r * t^3) is the only sensitive step;
-   * everything else (t^2, t^3, the Halley quadratic, the final
-   * combination) is well conditioned in fast fp32mp2 arithmetic.
-   */
-  const __ffloat __r(__r_hi, __r_lo);
+  /* Float polish, one Newton step s1 = s0 (1 + (1 - r s0^3) / 3): no reciprocal
+   * needed, and s1 lands within an ulp of 1/cbrt(r) whatever the seed did. */
+  const float __c0 = (__s0 * __s0) * __s0;
+  const float __e0 = ::cuda::__fpmp_fma_rn(-__r_hi, __c0, 1.0f);
+  const float __s1 = ::cuda::__fpmp_fma_rn(__e0 * __third_f, __s0, __s0);
 
-  // t^2 = s^2 exactly
-  float __t2_lo;
-  const float __t2_hi = ::cuda::__fpmp_two_mult_fma(__s, __s, &__t2_lo);
-  const __ffloat __t2(__t2_hi, __t2_lo);
-  const __ffloat __t3 = __t2 * __s; // t^3
+  /* Residual u = 1 - r s1^3 as an error-free pair: s1^2, s1^2 s1 and
+   * r_hi (s1^3)_hi are exact products, 1 minus the last is exact, and the four
+   * 2^-24-sized remainders enter the HIGH word through two two_sums (left for
+   * the low word they would cost 2^-47 in the final addition). */
+  float __l2, __l3, __p_l, __u_l, __u_l2;
+  const float __h2  = ::cuda::__fpmp_two_mult_fma(__s1, __s1, &__l2);
+  const float __h3  = ::cuda::__fpmp_two_mult_fma(__h2, __s1, &__l3);
+  const float __m3  = __l2 * __s1;
+  const float __p_h = ::cuda::__fpmp_two_mult_fma(__r_hi, __h3, &__p_l);
+  const float __d   = 1.0f - __p_h;
+  const float __w1  = ::cuda::__fpmp_fma_rn(__r_hi, __l3, __p_l);
+  const float __w2  = ::cuda::__fpmp_fma_rn(__r_lo, __h3, __r_hi * __m3);
+  float __u         = ::cuda::__fpmp_two_sum(__d, -__w1, &__u_l);
+  __u               = ::cuda::__fpmp_two_sum(__u, -__w2, &__u_l2);
+  __u_l += __u_l2;
 
-  // u = 1 - r*t^3 (accurate fma to preserve catastrophic cancellation)
-  const __ffloat __u = fma<fpmp2_accuracy::high>(-__r, __t3, 1.0f);
-
-  // Halley quadratic factor:  hf = 1/3 + (2/9) u   (no cancellation)
-  const __ffloat __hf = fma<fpmp2_accuracy::def>(__two_ninths_f, __u, __third_f);
-
-  // delta = u * t * hf,  then  t_new = t + delta
-  const __ffloat __ut    = __u * __s;
-  const __ffloat __t_new = __s + __hf * __ut;
+  /* Halley: 1/cbrt(r) = s1 + u s1 (1/3 + (2/9) u) + O(u^3).  u s1 and (u s1)/3
+   * are exact products with 1/3 as a pair; the Halley term and all remainders
+   * go to the low word. */
+  constexpr float __third_lo_f = -0x1.555556p-27f; // 1/3 - third_f
+  float __us_l, __pp_e, __t_l, __t_lo;
+  const float __us   = ::cuda::__fpmp_two_mult_fma(__u, __s1, &__us_l);
+  __us_l             = ::cuda::__fpmp_fma_rn(__u_l, __s1, __us_l);
+  const float __pp   = ::cuda::__fpmp_two_mult_fma(__us, __third_f, &__pp_e);
+  float __pp_l       = ::cuda::__fpmp_fma_rn(__us, __third_lo_f, __pp_e);
+  __pp_l             = ::cuda::__fpmp_fma_rn(__us_l, __third_f, __pp_l);
+  __pp_l             = ::cuda::__fpmp_fma_rn(__us * __u, __two_ninths_f, __pp_l);
+  const float __t_h  = ::cuda::__fpmp_fast_two_sum(__s1, __pp, &__t_l);
+  const float __t_hi = ::cuda::__fpmp_fast_two_sum(__t_h, __t_l + __pp_l, &__t_lo);
 
   /* Scale back by 2^(-nexpo + denorm_div3) via an exact power-of-two
    * float multiply.  back_shift stays in [-43, +49] for all valid
    * float inputs, so the biased exponent is always in [84, 176]. */
   const int __back_shift   = -__nexpo + __denorm_div3;
   const float __scale_back = ::cuda::std::bit_cast<float>(static_cast<uint32_t>((127 + __back_shift) * __exp_shift));
-  float __t_hi_back        = __t_new.hi() * __scale_back;
-  float __t_lo_back        = __t_new.lo() * __scale_back;
+  float __t_hi_back        = __t_hi * __scale_back;
+  float __t_lo_back        = __t_lo * __scale_back;
 
   /* Restore sign (rcbrt is an odd function). */
   if (__signbit != 0u)
@@ -643,8 +661,6 @@ __internal_fpmp2_rcbrt(const double __x_hi, const double __x_lo, double* __res_h
 
 _CCCL_FPMP_MATH_DISPATCH_1A(rcbrt)
 
-/* hypot has no dedicated fp32mp2 kernel: the fallback macro composes it over
- * double, and the fp64mp2 body follows. */
 /*
  * ====================================================================
  * hypot(x, y) - sqrt(x^2 + y^2) without spurious overflow
@@ -653,10 +669,91 @@ _CCCL_FPMP_MATH_DISPATCH_1A(rcbrt)
 
 /*
  * --------------------------------------------------------------------
- * Hypotenuse hypot(x, y) (fp32mp2) - double fallback
+ * x^2 + y^2 for the fp32mp2 hypot / rhypot kernels
+ * --------------------------------------------------------------------
+ * Both inputs are scaled by one power of two 2^-k chosen from the
+ * larger magnitude (k in [-126, 126]: the squares can neither overflow
+ * nor lose their low limbs to underflow, and the scaling is exact), and
+ * the sum is formed as a normalized pair: the two squares as error-free
+ * products with their cross terms 2 x_hi x_lo folded into the low words
+ * by one fma each, the larger square plus the smaller one by a Fast2Sum,
+ * the two low words folded into the high word by two more Fast2Sums in
+ * magnitude order, the remainders and x_lo^2 + y_lo^2 summed in float.
+ * Host model against binary128, through the sqrt core: 2.6 u^2 worst,
+ * 0.3 mean (the core alone is 2.5).  Returns k; the caller scales its
+ * root back by 2^k (the squares were scaled by 2^-2k), exactly.
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_MATH_FALLBACK_2A(hypot)
+_CCCL_FPMP_CORE_API int __internal_fpmp2_hypot_sum(
+  const float __x_hi, const float __x_lo, const float __y_hi, const float __y_lo, float* __a_hi, float* __a_lo) noexcept
+{
+  constexpr uint32_t __abs_mask = 0x7FFFFFFFu;
+  const float __ax_hi           = ::cuda::std::bit_cast<float>(::cuda::std::bit_cast<uint32_t>(__x_hi) & __abs_mask);
+  const float __ay_hi           = ::cuda::std::bit_cast<float>(::cuda::std::bit_cast<uint32_t>(__y_hi) & __abs_mask);
+  const float __ax_lo           = (__x_hi < 0.0f) ? -__x_lo : __x_lo;
+  const float __ay_lo           = (__y_hi < 0.0f) ? -__y_lo : __y_lo;
+  /* The larger magnitude first: the Fast2Sums below depend on it. */
+  const bool __swap = __ax_hi < __ay_hi;
+  float __bx_hi     = __swap ? __ay_hi : __ax_hi;
+  float __bx_lo     = __swap ? __ay_lo : __ax_lo;
+  float __by_hi     = __swap ? __ax_hi : __ay_hi;
+  float __by_lo     = __swap ? __ax_lo : __ay_lo;
+  /* k: the exponent of the larger magnitude, clamped so that 2^-k and 2^k
+   * are normal floats (denormals and zero scale by 2^126). */
+  const int __e       = static_cast<int>(::cuda::std::bit_cast<uint32_t>(__bx_hi) >> 23);
+  const int __k       = ((__e < 1) ? 1 : ((__e > 253) ? 253 : __e)) - 127;
+  const float __scale = ::cuda::std::bit_cast<float>(static_cast<uint32_t>((127 - __k) << 23));
+  __bx_hi *= __scale;
+  __bx_lo *= __scale;
+  __by_hi *= __scale;
+  __by_lo *= __scale;
+  /* Squares with their cross terms, then the pair. */
+  float __xx_l, __yy_l, __e0, __e1, __e2;
+  const float __xx_h  = ::cuda::__fpmp_two_mult_fma(__bx_hi, __bx_hi, &__xx_l);
+  const float __yy_h  = ::cuda::__fpmp_two_mult_fma(__by_hi, __by_hi, &__yy_l);
+  const float __x_low = ::cuda::__fpmp_fma_rn(__bx_lo + __bx_lo, __bx_hi, __xx_l);
+  const float __y_low = ::cuda::__fpmp_fma_rn(__by_lo + __by_lo, __by_hi, __yy_l);
+  float __s           = ::cuda::__fpmp_fast_two_sum(__xx_h, __yy_h, &__e0);
+  __s                 = ::cuda::__fpmp_fast_two_sum(__s, __x_low, &__e1);
+  __s                 = ::cuda::__fpmp_fast_two_sum(__s, __y_low, &__e2);
+  const float __tiny  = ::cuda::__fpmp_fma_rn(__by_lo, __by_lo, ::cuda::__fpmp_fma_rn(__bx_lo, __bx_lo, __e0));
+  *__a_hi             = ::cuda::__fpmp_fast_two_sum(__s, (__e1 + __e2) + __tiny, __a_lo);
+  return __k;
+}
+
+/*
+ * --------------------------------------------------------------------
+ * Hypotenuse hypot(x, y) (fp32mp2) - dedicated implementation
+ * --------------------------------------------------------------------
+ * sqrt of the scaled pair above through the fp32mp2 sqrt core, scaled
+ * back by 2^k.  An infinite argument gives +inf even when the other
+ * one is NaN (C99 F.10.4.3); otherwise a NaN propagates.  No fp64.
+ * --------------------------------------------------------------------
+ */
+_CCCL_FPMP_CORE_API void __internal_fpmp2_hypot(
+  const float __x_hi,
+  const float __x_lo,
+  const float __y_hi,
+  const float __y_lo,
+  float* __res_hi,
+  float* __res_lo) noexcept
+{
+  const uint32_t __ax = ::cuda::std::bit_cast<uint32_t>(__x_hi) & 0x7FFFFFFFu;
+  const uint32_t __ay = ::cuda::std::bit_cast<uint32_t>(__y_hi) & 0x7FFFFFFFu;
+  if (__ax >= 0x7F800000u || __ay >= 0x7F800000u)
+  {
+    const bool __inf = (__ax == 0x7F800000u) || (__ay == 0x7F800000u);
+    *__res_hi        = __inf ? ::cuda::std::bit_cast<float>(0x7F800000u) : (__x_hi + __y_hi);
+    *__res_lo        = 0.0f;
+    return;
+  }
+  float __a_hi, __a_lo, __h_hi, __h_lo;
+  const int __k = ::cuda::__internal_fpmp2_hypot_sum(__x_hi, __x_lo, __y_hi, __y_lo, &__a_hi, &__a_lo);
+  ::cuda::__fpmp2_sqrt(__a_hi, __a_lo, &__h_hi, &__h_lo);
+  const float __back = ::cuda::std::bit_cast<float>(static_cast<uint32_t>((127 + __k) << 23));
+  *__res_hi          = __h_hi * __back;
+  *__res_lo          = __h_lo * __back;
+}
 
 /*
  * --------------------------------------------------------------------
@@ -934,7 +1031,11 @@ _CCCL_FPMP_MATH_DISPATCH_4A(rnorm4d)
 
 /*
  * --------------------------------------------------------------------
- * Reciprocal hypotenuse rhypot(x, y) (fp32mp2) - double fallback
+ * Reciprocal hypotenuse rhypot(x, y) (fp32mp2) - dedicated implementation
+ * --------------------------------------------------------------------
+ * The scaled pair of __internal_fpmp2_hypot_sum through the fp32mp2
+ * rsqrt core, scaled back by 2^-k.  An infinite argument gives +0
+ * even when the other one is NaN, rhypot(0, 0) = +inf.  No fp64.
  * --------------------------------------------------------------------
  */
 _CCCL_FPMP_CORE_API void __internal_fpmp2_rhypot(
@@ -945,17 +1046,27 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_rhypot(
   float* __res_hi,
   float* __res_lo) noexcept
 {
-  using __mp2_t = fpmp2<float>;
-  double __r    = 0.0;
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE,
-    (__r = ::rhypot(static_cast<double>(__mp2_t(__x_hi, __x_lo)), static_cast<double>(__mp2_t(__y_hi, __y_lo)));),
-    (__r = 1.0
-         / ::cuda::std::hypot(static_cast<double>(__mp2_t(__x_hi, __x_lo)),
-                              static_cast<double>(__mp2_t(__y_hi, __y_lo)));))
-  __mp2_t __result(__r);
-  *__res_hi = __result.hi();
-  *__res_lo = __result.lo();
+  const uint32_t __ax = ::cuda::std::bit_cast<uint32_t>(__x_hi) & 0x7FFFFFFFu;
+  const uint32_t __ay = ::cuda::std::bit_cast<uint32_t>(__y_hi) & 0x7FFFFFFFu;
+  if (__ax >= 0x7F800000u || __ay >= 0x7F800000u)
+  {
+    const bool __inf = (__ax == 0x7F800000u) || (__ay == 0x7F800000u);
+    *__res_hi        = __inf ? 0.0f : (__x_hi + __y_hi);
+    *__res_lo        = 0.0f;
+    return;
+  }
+  if ((__ax | __ay) == 0u)
+  {
+    *__res_hi = ::cuda::std::bit_cast<float>(0x7F800000u);
+    *__res_lo = 0.0f;
+    return;
+  }
+  float __a_hi, __a_lo, __h_hi, __h_lo;
+  const int __k = ::cuda::__internal_fpmp2_hypot_sum(__x_hi, __x_lo, __y_hi, __y_lo, &__a_hi, &__a_lo);
+  ::cuda::__fpmp2_rsqrt(__a_hi, __a_lo, &__h_hi, &__h_lo);
+  const float __back = ::cuda::std::bit_cast<float>(static_cast<uint32_t>((127 - __k) << 23));
+  *__res_hi          = __h_hi * __back;
+  *__res_lo          = __h_lo * __back;
 }
 
 /*

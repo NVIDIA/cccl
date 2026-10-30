@@ -142,8 +142,8 @@
     - remquo(x,y,*q): Remainder with quotient bits - placeholder
 
     Distance:
-    - hypot(x,y): Hypotenuse sqrt(x^2+y^2) - placeholder
-    - rhypot(x,y): Reciprocal hypotenuse - placeholder (host: 1/hypot)
+    - hypot(x,y): Hypotenuse sqrt(x^2+y^2) - dedicated fp32mp2
+    - rhypot(x,y): Reciprocal hypotenuse 1/hypot(x,y) - dedicated fp32mp2
 
     Vector Norms:
     - norm3d(a,b,c)    : 3D Euclidean norm sqrt(a^2+b^2+c^2) - placeholder
@@ -275,6 +275,35 @@
       (subnormal low limb) are limited by the format itself, as for
       exp.  Special cases (x <= 0, infinities, NaN, integer y) are
       unchanged.
+
+    cbrt(x), rcbrt(x) for fp32mp2:
+      x = r * 2^(3n), r in [1/4, 2) (denormals pre-scaled by 2^24).  Seed
+      from the SFU lg2/ex2 pair (~2^-22), polished by one Newton step in
+      float so that it sits within an ulp of the root; then one Halley
+      step in which the residual (r - s^3, or 1 - r s^3) is an error-free
+      pair and the correction is formed without a rounding of its own
+      above 2^-47 (cbrt: pair denominator and a quotient corrected from
+      its remainder; rcbrt: u s/3 as exact products with 1/3 as a pair).
+      Every 2^-23-sized piece enters the high word of the correction
+      through an error-free sum; left for the low word it costs 2^-47 in
+      the final addition.  Host model against binary128: 1.5 / 1.4 u^2
+      worst, independent of the seed.  Accuracy: 47 bits (cbrt was 45:
+      its fp32mp2 Halley step rounded a 2^-22 correction through the
+      1-ulp rcp.approx; rcbrt was 46).  The 2^n scaling is exact; the
+      sign is restored at the end.
+
+    hypot(x, y), rhypot(x, y) for fp32mp2:
+      Both inputs scaled by one power of two chosen from the larger
+      magnitude (exact; no overflow or underflow of the squares); x^2 +
+      y^2 formed as a normalized pair from the two error-free squares
+      with their cross terms 2 x_hi x_lo folded in by one fma each, the
+      pieces joined by Fast2Sums in magnitude order; then the sqrt
+      (rsqrt) core and the exact back-scaling by 2^k.  An infinite
+      argument gives +inf (hypot) / +0 (rhypot) even when the other is
+      NaN; rhypot(0, 0) = +inf.  Host model against binary128: 2.6 u^2
+      worst, 0.3 mean (the sqrt core alone is 2.5).  Accuracy: 46 bits,
+      against the 48 bits of the former double fallback, at a small
+      fraction of its cost wherever FP64 is rationed.
 
     asinh(x), acosh(x), atanh(x) for fp32mp2:
       Inverse hyperbolic family -- all three reduce to a single log1p
