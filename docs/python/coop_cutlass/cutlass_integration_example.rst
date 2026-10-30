@@ -18,7 +18,8 @@ interfaces, NVRTC, and the CCCL headers. It imports nothing from
 The intended readers are CUTLASS developers reviewing whether this is how
 the DSL is meant to be extended, and ``cuda.coop`` developers who want the
 mechanisms without the abstractions. The closing section lists the
-questions we would like CUTLASS reviewers to answer.
+questions we would like CUTLASS reviewers to answer. :doc:`cutlass_primer`
+explains the DSL's tracing model that the script builds on.
 
 Run it from a CCCL checkout with ``nvidia-cutlass-dsl``, ``cuda-bindings``,
 and NumPy installed:
