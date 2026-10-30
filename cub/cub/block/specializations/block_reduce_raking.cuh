@@ -23,11 +23,11 @@
 #include <cub/block/block_raking_layout.cuh>
 #include <cub/detail/constant.cuh>
 #include <cub/detail/uninitialized.cuh>
-#include <cub/thread/thread_reduce.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/std/__functional/operations.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail

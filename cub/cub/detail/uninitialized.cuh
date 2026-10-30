@@ -16,7 +16,7 @@
 
 #include <cub/detail/unit_word.cuh>
 
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h>
 
 CUB_NAMESPACE_BEGIN
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document

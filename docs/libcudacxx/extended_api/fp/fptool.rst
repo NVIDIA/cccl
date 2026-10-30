@@ -111,3 +111,12 @@ component type to look in.
 
    :ref:`fpmp2_stat <libcudacxx-extended-api-fp-fptool-stat>` — **recording what the arithmetic
    did**, without changing what it computes.
+
+Optimization guide
+------------------
+
+Both instruments have a place in an optimization pass: ``fp64_custom`` sizes the precision a
+computation needs before a type is chosen, and the ``fpmp2_stat`` types decide several of the
+recommendations for the ``fpmp`` types from measurements. The
+:ref:`FP optimization guide <libcudacxx-extended-api-fp-optimization-guide-fptool>` says how each
+fits in.

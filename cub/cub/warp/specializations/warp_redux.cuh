@@ -25,6 +25,7 @@
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__floating_point/cast.h>
+#include <cuda/std/__optional/nullopt.h>
 #include <cuda/std/__optional/optional.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integer.h>
@@ -32,7 +33,10 @@
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/array>
 #include <cuda/std/cstdint>
+
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 

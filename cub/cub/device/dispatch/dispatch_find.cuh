@@ -25,17 +25,19 @@
 #include <cub/detail/logging.cuh>
 #include <cub/detail/type_size.cuh>
 #include <cub/device/dispatch/tuning/tuning_find.cuh>
-#include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
 
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
-#include <cuda/__iterator/transform_iterator.h>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__type_traits/is_integral.h>
 
 CUB_NAMESPACE_BEGIN
 

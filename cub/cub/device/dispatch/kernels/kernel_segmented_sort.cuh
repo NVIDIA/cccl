@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/agent/agent_radix_sort_downsweep.cuh>
 #include <cub/agent/agent_segmented_radix_sort.cuh>
 #include <cub/agent/agent_sub_warp_merge_sort.cuh>
 #include <cub/detail/device_double_buffer.cuh>
@@ -20,8 +21,11 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
 #include <cub/util_arch.cuh>
-#include <cub/util_device.cuh>
 #include <cub/warp/warp_reduce.cuh>
+
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::segmented_sort

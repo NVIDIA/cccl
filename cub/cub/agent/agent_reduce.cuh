@@ -22,17 +22,16 @@
 #include <cub/detail/cub_vector.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/numeric_traits.cuh>
-#include <cub/detail/type_traits.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/grid/grid_mapping.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_device.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/identity.h>
-#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
