@@ -139,7 +139,13 @@ def load_analysis_context(analysis_file):
     if not isinstance(context, dict):
         raise ValidationError("analysis context must be an object")
 
-    expected_fields = {"run", "jobs", "groups"}
+    expected_fields = {
+        "run",
+        "jobs",
+        "groups",
+        "missing_log_job_count",
+        "analysis_skipped",
+    }
     missing = sorted(expected_fields - set(context))
     if missing:
         raise ValidationError(f"analysis context is missing fields {missing}")
@@ -147,16 +153,33 @@ def load_analysis_context(analysis_file):
     if extra:
         raise ValidationError(f"analysis context has unexpected fields {extra}")
 
-    schema = load_json(Path(__file__).with_name("model-output.schema.json"))
     analysis = {"groups": context["groups"]}
-    validate_schema(analysis, schema)
-
     jobs = validate_job_manifest(context["jobs"])
-    validate_group_job_references(analysis, jobs)
+    missing_log_job_count = context["missing_log_job_count"]
+    if (
+        not isinstance(missing_log_job_count, int)
+        or isinstance(missing_log_job_count, bool)
+        or not 0 <= missing_log_job_count <= len(jobs)
+    ):
+        raise ValidationError(
+            f"missing_log_job_count must be an integer between 0 and {len(jobs)}"
+        )
+    analysis_skipped = context["analysis_skipped"]
+    if not isinstance(analysis_skipped, bool):
+        raise ValidationError("analysis_skipped must be a boolean")
+    if analysis_skipped:
+        if analysis["groups"] != []:
+            raise ValidationError("skipped analysis must have an empty groups array")
+        if missing_log_job_count != len(jobs):
+            raise ValidationError("skipped analysis must have no available job logs")
+    else:
+        schema = load_json(Path(__file__).with_name("model-output.schema.json"))
+        validate_schema(analysis, schema)
+        validate_group_job_references(analysis, jobs)
 
     run = context["run"]
     validate_run(run)
-    return analysis, jobs, run
+    return analysis, jobs, run, missing_log_job_count, analysis_skipped
 
 
 def validate_repository(repository):
@@ -177,6 +200,24 @@ def clean_text(value, limit=None):
 
 def select_evidence_lines(group, limit=3):
     return [line for line in group["evidence"] if line.strip()][:limit]
+
+
+def missing_logs_notice(
+    missing_log_job_count, failed_job_count, analysis_skipped=False
+):
+    if not missing_log_job_count and not analysis_skipped:
+        return None
+    job_label = "job" if failed_job_count == 1 else "jobs"
+    count = (
+        f"Logs unavailable for {missing_log_job_count} of "
+        f"{failed_job_count} failed {job_label}."
+    )
+    if analysis_skipped:
+        return (
+            "AI analysis skipped: no job logs or failure annotations were available."
+            f"\n\n{count}"
+        )
+    return count
 
 
 # GitHub report.
@@ -307,8 +348,19 @@ def render_github_group(index, group, jobs, repository, run_id, include_all_jobs
     return lines
 
 
-def render_github_report(analysis, jobs, repository, run_id, include_all_jobs):
+def render_github_report(
+    analysis,
+    jobs,
+    repository,
+    run_id,
+    include_all_jobs,
+    missing_log_job_count=0,
+    analysis_skipped=False,
+):
     lines = ["### AI failure analysis", ""]
+    notice = missing_logs_notice(missing_log_job_count, len(jobs), analysis_skipped)
+    if notice:
+        lines.extend([notice, ""])
     for index, group in enumerate(analysis["groups"], start=1):
         lines.extend(
             render_github_group(
@@ -416,19 +468,29 @@ def render_slack_thread(
     repository,
     run_id,
     run_number,
+    missing_log_job_count=0,
+    analysis_skipped=False,
 ):
     failed_job_count = sum(len(group["job_ids"]) for group in analysis["groups"])
     group_count = len(analysis["groups"])
     job_label = "job" if failed_job_count == 1 else "jobs"
     group_label = "group" if group_count == 1 else "groups"
     overview_lines = [
-        f":rotating_light: *AI failure analysis — workflow run #{run_number}*",
-        (
-            f"{group_count} failure {group_label} covering "
-            f"{failed_job_count} primary failed {job_label}."
-        ),
-        "",
+        f":rotating_light: *AI failure analysis — workflow run #{run_number}*"
     ]
+    if not analysis_skipped:
+        overview_lines.extend(
+            [
+                (
+                    f"{group_count} failure {group_label} covering "
+                    f"{failed_job_count} primary failed {job_label}."
+                ),
+                "",
+            ]
+        )
+    notice = missing_logs_notice(missing_log_job_count, len(jobs), analysis_skipped)
+    if notice:
+        overview_lines.extend([notice, ""])
     for index, group in enumerate(analysis["groups"], start=1):
         job_ids = group["job_ids"]
         job_label = "job" if len(job_ids) == 1 else "jobs"
@@ -486,7 +548,9 @@ def parse_args():
 def main():
     args = parse_args()
     validate_repository(args.repository)
-    analysis, jobs, run = load_analysis_context(args.analysis_file)
+    analysis, jobs, run, missing_log_job_count, analysis_skipped = (
+        load_analysis_context(args.analysis_file)
+    )
     run_id = str(run["id"])
 
     if args.format in ("github-comment", "github-verbose-summary"):
@@ -497,6 +561,8 @@ def main():
             args.repository,
             run_id,
             include_all_jobs,
+            missing_log_job_count,
+            analysis_skipped,
         )
     else:
         slack_thread = render_slack_thread(
@@ -505,6 +571,8 @@ def main():
             args.repository,
             run_id,
             str(run["number"]),
+            missing_log_job_count,
+            analysis_skipped,
         )
         rendered = (
             json.dumps(
