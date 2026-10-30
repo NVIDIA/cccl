@@ -85,7 +85,6 @@ Checks:
   - '-readability-redundant-member-init'
   - '-readability-static-definition-in-anonymous-namespace'
   - '-readability-redundant-string-init'
-  - '-readability-const-return-type'
   - '-readability-delete-null-pointer'
   - '-readability-container-data-pointer'
   - '-readability-use-anyofallof'
