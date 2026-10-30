@@ -366,9 +366,9 @@ struct Transforms
   };
 };
 
-// Cast byte samples to nonnegative private bins and back to the sample type before output decoding.
+// Decode op that casts the sample to CastT before calling TransformT's BinSelect.
 template <typename TransformT, typename CastT>
-struct sample_cast_transform : TransformT
+struct cast_decode_op : TransformT
 {
   template <CacheLoadModifier LoadModifier, typename Sample>
   _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
