@@ -110,7 +110,7 @@ public:
   //!
   //! @return An iterator whose value_type is convertible to the slot index type
   template <int _BucketSize, class _ProbeKey, class _Capacity, class _ParentCG>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator(
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto make_iterator(
     ::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __probe_key, _Capacity __cap) const
   {
     using __size_type              = typename _Capacity::index_type;
@@ -212,9 +212,7 @@ public:
     return detail::__probing_iterator<_Capacity, __step_extent>{
       ::cuda::experimental::cuco::detail::__hash_to_index(__hash1(__probe_key), __num_buckets) * _BucketSize,
       __step_extent{static_cast<__size_type>(
-        (::cuda::experimental::cuco::detail::__hash_to_index(
-           __hash2(__probe_key), static_cast<__size_type>(__num_buckets - 1))
-         + 1)
+        (::cuda::experimental::cuco::detail::__hash_to_index(__hash2(__probe_key), __num_buckets - 1) + 1)
         * _BucketSize)},
       __cap};
   }
@@ -232,7 +230,7 @@ public:
   //!
   //! @return An iterator whose value_type is convertible to the slot index type
   template <int _BucketSize, class _ProbeKey, class _Capacity, class _ParentCG>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator(
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto make_iterator(
     ::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __probe_key, _Capacity __cap) const
   {
     using __size_type              = typename _Capacity::index_type;
@@ -244,10 +242,7 @@ public:
       ::cuda::experimental::cuco::detail::__hash_to_index(__hash1(__probe_key), __num_groups) * __stride
         + static_cast<__size_type>(__group.thread_rank()) * _BucketSize,
       __step_extent{static_cast<__size_type>(
-        (::cuda::experimental::cuco::detail::__hash_to_index(
-           __hash2(__probe_key), static_cast<__size_type>(__num_groups - 1))
-         + 1)
-        * __stride)},
+        (::cuda::experimental::cuco::detail::__hash_to_index(__hash2(__probe_key), __num_groups - 1) + 1) * __stride)},
       __cap};
   }
 
