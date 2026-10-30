@@ -50,7 +50,7 @@ void __cccl_accepts_implicit_conversion(_Tp) noexcept;
 // We could include cuda/std/__cccl/attributes.h here to get _CCCL_NODEBUG, but this header is
 // included very early in the header stack and it isn't worth it to bend over backwards for it.
 template <class...>
-using __cccl_void_t = void; // NOLINT(cccl-nodebug-on-alias)
+using __cccl_void_t = void; // NOLINT(cccl-nodebug-on-aliases)
 
 template <class _Dest, class _Source, class = void>
 struct __is_non_narrowing_convertible
