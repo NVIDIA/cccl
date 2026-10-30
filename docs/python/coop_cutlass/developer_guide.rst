@@ -54,6 +54,11 @@ For a hands-on tour, follow the :ref:`cuda.coop.cutlass.debugger_walkthrough`.
 It uses a 128-thread tile copy to show import, planning, code generation,
 linking, and repeated execution.
 
+For the CuTe integration mechanisms alone, without the package's
+abstractions, see :doc:`cutlass_integration_example`. It calls
+``cub::BlockReduce`` from a CuTe kernel in one file and lists the questions
+open for CUTLASS reviewers.
+
 Following a prefix sum
 -----------------------
 
