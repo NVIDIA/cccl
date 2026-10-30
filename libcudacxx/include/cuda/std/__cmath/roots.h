@@ -41,11 +41,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  define _CCCL_BUILTIN_SQRTL(...) __builtin_sqrtl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_sqrt)
 
-#if _CCCL_HAS_FLOAT128()
-#  if _CCCL_CHECK_BUILTIN(builtin_sqrtf128)
-#    define _CCCL_BUILTIN_SQRTF128(...) __builtin_sqrtf128(__VA_ARGS__)
-#  endif // _CCCL_CHECK_BUILTIN(builtin_sqrtf128)
-#endif // _CCCL_HAS_FLOAT128()
+#if _CCCL_HAS_FLOAT128() && _CCCL_CHECK_BUILTIN(builtin_sqrtf128)
+#  define _CCCL_BUILTIN_SQRTF128(...) __builtin_sqrtf128(__VA_ARGS__)
+#endif // _CCCL_HAS_FLOAT128() && _CCCL_CHECK_BUILTIN(builtin_sqrtf128)
 
 // nvcc doesn't implement __builtin_sqrtf128 on device
 #if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
@@ -76,7 +74,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
   }
   if (__bits != __abs_bits)
   {
-    return ::cuda::std::__fp_nan<__float128>();
+    // sqrt(x < 0) is a domain error, return NaN and raise FE_INVALID
+    return (__x - __x) / (__x - __x);
   }
   if (__abs_bits == __fp_exp_mask_of_v<__float128>)
   {
@@ -98,7 +97,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
   }
   else
   {
-    __mant |= static_cast<__storage_t>(__storage_t{1} << __mant_nbits);
+    __mant |= __storage_t{1} << __mant_nbits;
   }
   if (__exp & 1)
   {
@@ -111,7 +110,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
   __storage_t __root       = 0;
   __storage_t __twice_root = 0;
   __storage_t __rem        = __mant;
-  for (auto __bit = static_cast<__storage_t>(__storage_t{1} << __mant_nbits); __bit != 0; __bit >>= 1)
+  for (auto __bit = __storage_t{1} << __mant_nbits; __bit != 0; __bit >>= 1)
   {
     const __storage_t __t = __twice_root + __bit;
     if (__t <= __rem)
@@ -122,16 +121,23 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
     }
     __rem <<= 1;
   }
-  // The exact root is never halfway between two representable values, so a nonzero excess rounds up
-  if (__rem > __twice_root)
+  // Adding __root, which still carries the implicit bit, increments the exponent field by one
+  const auto __exp_field = static_cast<__storage_t>(__exp / 2 + __exp_bias - 1);
+  const auto __result =
+    ::cuda::std::__fp_from_storage<__float128>(static_cast<__storage_t>((__exp_field << __mant_nbits) + __root));
+  if (__rem == 0)
   {
-    ++__root;
+    return __result;
   }
 
-  // Adding __root, which still carries the implicit bit, increments the exponent field by one. This also handles a
+  // The exact root is never halfway between two representable values. Adding a quarter or three quarters of an ulp
+  // lets the floating-point addition round in the current rounding mode and raise FE_INEXACT. This also handles a
   // rounding carry into the exponent.
-  const auto __exp_field = static_cast<__storage_t>(__exp / 2 + __exp_bias - 1);
-  return ::cuda::std::__fp_from_storage<__float128>(static_cast<__storage_t>((__exp_field << __mant_nbits) + __root));
+  const auto __delta_bits =
+    (__rem > __twice_root)
+      ? ((__exp_field - __mant_nbits) << __mant_nbits) | (__storage_t{1} << (__mant_nbits - 1))
+      : (__exp_field - __mant_nbits - 1) << __mant_nbits;
+  return __result + ::cuda::std::__fp_from_storage<__float128>(__delta_bits);
 }
 #endif // _CCCL_HAS_FLOAT128()
 
