@@ -26,16 +26,22 @@
 #include <cub/detail/uninitialized.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_macro.cuh>
 
+#include <cuda/__atomic/atomic.h>
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/atomic>
-#include <cuda/iterator>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__atomic/order.h>
+#include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__bit/integral.h>
-#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
