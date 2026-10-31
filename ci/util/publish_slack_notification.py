@@ -45,12 +45,10 @@ def load_thread(stream):
     replies = thread.get("replies")
     if not isinstance(overview, str) or not overview.strip():
         raise PublishError("thread overview must be a non-empty string")
-    if (
-        not isinstance(replies, list)
-        or not replies
-        or any(not isinstance(reply, str) or not reply.strip() for reply in replies)
+    if not isinstance(replies, list) or any(
+        not isinstance(reply, str) or not reply.strip() for reply in replies
     ):
-        raise PublishError("thread replies must be a non-empty array of strings")
+        raise PublishError("thread replies must be an array of non-empty strings")
     if len(replies) > SLACK_THREAD_REPLY_LIMIT:
         raise PublishError(
             f"thread input exceeds the {SLACK_THREAD_REPLY_LIMIT}-reply limit"

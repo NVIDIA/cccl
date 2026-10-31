@@ -517,6 +517,8 @@ void test_device_record(cuda::stream_ref stream)
   // Nothing here comes near the bottom of the exponent range.
   assert(after_gap.result.denorm_count == 0ull);
 
+  // Fast math flushes the subnormal results.
+  if (!TEST_HAS_CUDA_FAST_MATH)
   { // subnormals: recognized, and measured by their leading bit
     cuda::fpmp2_stat_reset_device_data(stream);
     cuda::launch(stream, one_thread, denorm_kernel, sink.data());

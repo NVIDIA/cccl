@@ -33,7 +33,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 
 #  if _CCCL_HAS_SIMD_SAT()
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t __vadd_sat_u16x2(
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::cuda::std::uint32_t __vadd_sat_u16x2(
   [[maybe_unused]] const ::cuda::std::uint32_t __lhs, [[maybe_unused]] const ::cuda::std::uint32_t __rhs) noexcept
 {
 #    if _CCCL_HAS_SIMD_SAT_INTRINSICS()
@@ -49,7 +49,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   return ::cuda::std::uint32_t{};
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t __vadd_sat_s16x2(
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::cuda::std::uint32_t __vadd_sat_s16x2(
   [[maybe_unused]] const ::cuda::std::uint32_t __lhs, [[maybe_unused]] const ::cuda::std::uint32_t __rhs) noexcept
 {
 #    if _CCCL_HAS_SIMD_SAT_INTRINSICS()
@@ -65,7 +65,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   return ::cuda::std::uint32_t{};
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t __vadd_sat_u8x4(
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::cuda::std::uint32_t __vadd_sat_u8x4(
   [[maybe_unused]] const ::cuda::std::uint32_t __lhs, [[maybe_unused]] const ::cuda::std::uint32_t __rhs) noexcept
 {
 #    if _CCCL_HAS_SIMD_SAT_INTRINSICS()
@@ -81,7 +81,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   return ::cuda::std::uint32_t{};
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t __vadd_sat_s8x4(
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::cuda::std::uint32_t __vadd_sat_s8x4(
   [[maybe_unused]] const ::cuda::std::uint32_t __lhs, [[maybe_unused]] const ::cuda::std::uint32_t __rhs) noexcept
 {
 #    if _CCCL_HAS_SIMD_SAT_INTRINSICS()
@@ -101,7 +101,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 
 #  if _CCCL_HAS_SIMD_IDOT()
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t __dp4a_u8x4_u8x4(
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::cuda::std::uint32_t __dp4a_u8x4_u8x4(
   [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
   [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
   [[maybe_unused]] const ::cuda::std::uint32_t __init) noexcept
@@ -119,7 +119,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   return ::cuda::std::uint32_t{};
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp4a_s8x4_s8x4(
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp4a_s8x4_s8x4(
   [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
   [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
   [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
@@ -139,7 +139,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   return ::cuda::std::int32_t{};
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp4a_u8x4_s8x4(
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp4a_u8x4_s8x4(
   [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
   [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
   [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
@@ -155,7 +155,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   return ::cuda::std::int32_t{};
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp4a_s8x4_u8x4(
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp4a_s8x4_u8x4(
   [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
   [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
   [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
@@ -171,7 +171,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   return ::cuda::std::int32_t{};
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t __dp2a_lo_u16x2_u8x4(
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::cuda::std::uint32_t __dp2a_lo_u16x2_u8x4(
   [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
   [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
   [[maybe_unused]] const ::cuda::std::uint32_t __init) noexcept
@@ -189,7 +189,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   return ::cuda::std::uint32_t{};
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t __dp2a_hi_u16x2_u8x4(
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::cuda::std::uint32_t __dp2a_hi_u16x2_u8x4(
   [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
   [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
   [[maybe_unused]] const ::cuda::std::uint32_t __init) noexcept
@@ -207,7 +207,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   return ::cuda::std::uint32_t{};
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp2a_lo_s16x2_s8x4(
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp2a_lo_s16x2_s8x4(
   [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
   [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
   [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
@@ -227,7 +227,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   return ::cuda::std::int32_t{};
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp2a_hi_s16x2_s8x4(
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp2a_hi_s16x2_s8x4(
   [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
   [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
   [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
@@ -247,7 +247,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   return ::cuda::std::int32_t{};
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp2a_lo_u16x2_s8x4(
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp2a_lo_u16x2_s8x4(
   [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
   [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
   [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
@@ -263,7 +263,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   return ::cuda::std::int32_t{};
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp2a_hi_u16x2_s8x4(
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp2a_hi_u16x2_s8x4(
   [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
   [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
   [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
@@ -279,7 +279,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   return ::cuda::std::int32_t{};
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp2a_lo_s16x2_u8x4(
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp2a_lo_s16x2_u8x4(
   [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
   [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
   [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
@@ -295,7 +295,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   return ::cuda::std::int32_t{};
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp2a_hi_s16x2_u8x4(
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp2a_hi_s16x2_u8x4(
   [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
   [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
   [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
@@ -315,7 +315,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 
 #  if _CCCL_HAS_SIMD_VABSDIFF()
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t __vabsdiff_u8x4(
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::cuda::std::uint32_t __vabsdiff_u8x4(
   [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
   [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
   [[maybe_unused]] const ::cuda::std::uint32_t __c) noexcept
@@ -329,7 +329,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   return ::cuda::std::uint32_t{};
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t __vabsdiff_s8x4(
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::cuda::std::uint32_t __vabsdiff_s8x4(
   [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
   [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
   [[maybe_unused]] const ::cuda::std::uint32_t __c) noexcept
@@ -347,7 +347,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 
 #  if _CCCL_HAS_SIMD_MIN_MAX_RELU() && _CCCL_HAS_SIMD_8BIT_PTX()
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t __vmax_relu_s8x4(
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::cuda::std::uint32_t __vmax_relu_s8x4(
   [[maybe_unused]] const ::cuda::std::uint32_t __lhs, [[maybe_unused]] const ::cuda::std::uint32_t __rhs) noexcept
 {
 #    if (__cccl_ptx_isa >= 940ULL)
@@ -366,7 +366,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   return ::cuda::std::uint32_t{};
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t __vmin_relu_s8x4(
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::cuda::std::uint32_t __vmin_relu_s8x4(
   [[maybe_unused]] const ::cuda::std::uint32_t __lhs, [[maybe_unused]] const ::cuda::std::uint32_t __rhs) noexcept
 {
 #    if (__cccl_ptx_isa >= 940ULL)

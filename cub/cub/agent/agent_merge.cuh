@@ -21,14 +21,18 @@
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/span>
 
 CUB_NAMESPACE_BEGIN
@@ -59,6 +63,32 @@ struct agent_t
   // key and value type are taken from the first input sequence (consistent with old Thrust behavior)
   using key_type  = it_value_t<KeysIt1>;
   using item_type = it_value_t<ItemsIt1>;
+
+  // Bulk copy loads both input ranges as raw memory into one shared memory buffer of the value type of the first range
+  static_assert(!UseBl2ShForKeys
+                  || (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<KeysIt1>
+                      && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<KeysIt2>
+                      && ::cuda::std::is_same_v<key_type, it_value_t<KeysIt2>>),
+                "MergePolicy: use_bulk_copy_for_keys requires both key ranges to be contiguous and have the same value "
+                "type");
+  static_assert(!UseBl2ShForItems
+                  || (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<ItemsIt1>
+                      && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<ItemsIt2>
+                      && ::cuda::std::is_same_v<item_type, it_value_t<ItemsIt2>>),
+                "MergePolicy: use_bulk_copy_for_values requires both value ranges to be contiguous and have the same "
+                "value type");
+
+  // Bulk copy copies the bytes of the input ranges
+  static_assert(!UseBl2ShForKeys || ::cuda::is_trivially_copyable_v<key_type>,
+                "MergePolicy: use_bulk_copy_for_keys requires a trivially copyable key type");
+  static_assert(!UseBl2ShForItems || ::cuda::is_trivially_copyable_v<item_type>,
+                "MergePolicy: use_bulk_copy_for_values requires a trivially copyable value type");
+  // Bulk copy loads both input ranges into one shared memory buffer, which is then indexed as one array. The second
+  // range only starts at a multiple of the type's size if the size equals the alignment.
+  static_assert(!UseBl2ShForKeys || sizeof(key_type) == alignof(key_type),
+                "MergePolicy: use_bulk_copy_for_keys requires a key type whose size equals its alignment");
+  static_assert(!UseBl2ShForItems || sizeof(item_type) == alignof(item_type),
+                "MergePolicy: use_bulk_copy_for_values requires a value type whose size equals its alignment");
 
   using block_load_to_shared = BlockLoadToShared<ThreadsPerBlock>;
   using block_store_keys     = BlockStore<key_type, ThreadsPerBlock, ItemsPerThread, StoreAlgorithm>;

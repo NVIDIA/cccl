@@ -22,17 +22,18 @@
 #endif // no system header
 
 #include <cub/detail/type_traits.cuh>
-#include <cub/thread/thread_operators.cuh>
 
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
 #include <cuda/__functional/operator_properties.h>
-#include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__bit/bit_cast.h> // IWYU pragma: keep
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/always_false.h>
-#include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
+
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 

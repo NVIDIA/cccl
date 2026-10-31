@@ -61,9 +61,7 @@ template <typename KeysInputIteratorT,
           typename OffsetT,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, it_value_t<ValuesInputIteratorT>>,
           typename PolicySelector =
-            policy_selector_from_types<ReductionOpT,
-                                       AccumT,
-                                       non_void_value_t<UniqueOutputIteratorT, it_value_t<KeysInputIteratorT>>>,
+            policy_selector_from_types<AccumT, non_void_value_t<UniqueOutputIteratorT, it_value_t<KeysInputIteratorT>>>,
           typename KernelSource = reduce_by_key_kernel_source>
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_by_key_policy_selector<PolicySelector>

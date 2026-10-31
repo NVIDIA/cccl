@@ -64,10 +64,8 @@ function(_cccl_create_catalog_generator)
       "${generate_target}" -p "${CMAKE_BINARY_DIR}"
       "--namespaces=cuda,cuda::std" "${dummy_file}"
   )
-  _cccl_ensure_plugin_is_built_for_test(
-    "${generate_target}"
-    "${generate_target}"
-  )
+  _cccl_add_build_fixture("${generate_target}")
+  _cccl_test_requires_target("${generate_target}" "${generate_target}")
 
   add_custom_target(
     cccl.tidy.modernize_type_traits.regenerate_catalog
@@ -79,10 +77,7 @@ function(_cccl_create_catalog_generator)
   )
 endfunction()
 
-cccl_create_clang_tidy_plugin(
-  cccl.tidy.modernize_type_traits
-  SOURCES modernize_type_traits.cpp
-)
+cccl_create_clang_tidy_plugin(modernize_type_traits.cpp)
 
 cccl_get_cudatoolkit()
 

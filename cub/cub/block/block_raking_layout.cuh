@@ -22,6 +22,8 @@
 
 #include <cub/detail/uninitialized.cuh>
 
+#include <cuda/std/__algorithm/min.h>
+
 CUB_NAMESPACE_BEGIN
 
 //! @rst

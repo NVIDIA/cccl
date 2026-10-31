@@ -21,8 +21,7 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__device/compute_capability.h>
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/tie_break.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/cstdint>
 

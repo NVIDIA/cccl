@@ -44,10 +44,30 @@ __device__ void test_level_synchronizer(const Level& level, Config config)
     static_assert(cuda::std::is_nothrow_default_constructible_v<SynchronizerInstance>);
     SynchronizerInstance synchronizer_instance{};
 
+    using ArrivalToken = typename SynchronizerInstance::arrival_token;
+
+    // Test arrival_token type.
+    static_assert(cuda::std::is_nothrow_move_constructible_v<ArrivalToken>);
+    static_assert(cuda::std::is_nothrow_move_assignable_v<ArrivalToken>);
+    static_assert(cuda::std::is_destructible_v<ArrivalToken>);
+
     // Test do_sync(...).
     static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync(mapping_result, hierarchy))>);
     static_assert(noexcept(synchronizer_instance.do_sync(mapping_result, hierarchy)));
     synchronizer_instance.do_sync(mapping_result, hierarchy);
+
+    // Test do_arrive(...).
+    static_assert(
+      cuda::std::is_same_v<ArrivalToken, decltype(synchronizer_instance.do_arrive(mapping_result, hierarchy))>);
+    static_assert(noexcept(synchronizer_instance.do_arrive(mapping_result, hierarchy)));
+    auto arrival_token = synchronizer_instance.do_arrive(mapping_result, hierarchy);
+
+    // Test do_wait(...).
+    static_assert(cuda::std::is_same_v<
+                  void,
+                  decltype(synchronizer_instance.do_wait(mapping_result, hierarchy, cuda::std::move(arrival_token)))>);
+    static_assert(noexcept(synchronizer_instance.do_wait(mapping_result, hierarchy, cuda::std::move(arrival_token))));
+    synchronizer_instance.do_wait(mapping_result, hierarchy, cuda::std::move(arrival_token));
 
     // Test do_sync_aligned(...).
     static_assert(
@@ -55,12 +75,31 @@ __device__ void test_level_synchronizer(const Level& level, Config config)
     static_assert(noexcept(synchronizer_instance.do_sync_aligned(mapping_result, hierarchy)));
     synchronizer_instance.do_sync_aligned(mapping_result, hierarchy);
 
+    // Test do_arrive_aligned(...).
+    static_assert(
+      cuda::std::is_same_v<ArrivalToken, decltype(synchronizer_instance.do_arrive_aligned(mapping_result, hierarchy))>);
+    static_assert(noexcept(synchronizer_instance.do_arrive_aligned(mapping_result, hierarchy)));
+    auto arrival_token_a = synchronizer_instance.do_arrive_aligned(mapping_result, hierarchy);
+
+    // Test do_wait_aligned(...).
+    static_assert(
+      cuda::std::is_same_v<
+        void,
+        decltype(synchronizer_instance.do_wait_aligned(mapping_result, hierarchy, cuda::std::move(arrival_token_a)))>);
+    static_assert(
+      noexcept(synchronizer_instance.do_wait_aligned(mapping_result, hierarchy, cuda::std::move(arrival_token_a))));
+    synchronizer_instance.do_wait_aligned(mapping_result, hierarchy, cuda::std::move(arrival_token_a));
+
     // Test view().
     static_assert(cuda::std::is_same_v<decltype(synchronizer_instance), decltype(synchronizer_instance.view())>);
     static_assert(noexcept(synchronizer_instance.view()));
     auto synchronizer_instance_view = synchronizer_instance.view();
     synchronizer_instance_view.do_sync(mapping_result, hierarchy);
     synchronizer_instance_view.do_sync_aligned(mapping_result, hierarchy);
+    synchronizer_instance_view.do_wait(
+      mapping_result, hierarchy, synchronizer_instance_view.do_arrive(mapping_result, hierarchy));
+    synchronizer_instance_view.do_wait_aligned(
+      mapping_result, hierarchy, synchronizer_instance_view.do_arrive_aligned(mapping_result, hierarchy));
     (void) synchronizer_instance_view.view();
     synchronizer_instance_view.deinit(mapping_result, hierarchy); // should be noop
 
