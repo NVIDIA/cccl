@@ -28,6 +28,7 @@
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/device/dispatch/dispatch_topk.cuh>
 
 #include <cuda/__execution/determinism.h>
@@ -122,7 +123,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_topk(
   using tuning_env_t =
     ::cuda::__call_result_or_t<::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>, EnvT>;
   using policy_selector_t =
-    ::cuda::std::execution::__query_result_or_t<tuning_env_t, topk::topk_policy, default_policy_selector_t>;
+    policy_selector_from_tuning_env_t<tuning_env_t, topk::topk_policy, default_policy_selector_t>;
 
   return topk::dispatch<SelectDirection>(
     d_temp_storage,

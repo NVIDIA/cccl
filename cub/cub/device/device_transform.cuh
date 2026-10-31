@@ -22,6 +22,7 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/device/dispatch/dispatch_transform.cuh>
 #include <cub/util_namespace.cuh>
 
@@ -178,7 +179,7 @@ struct DeviceTransform
                                                       RandomAccessIteratorOut>;
 
       using policy_selector =
-        ::cuda::std::execution::__query_result_or_t<tuning_env, TransformPolicy, default_policy_selector>;
+        detail::policy_selector_from_tuning_env_t<tuning_env, TransformPolicy, default_policy_selector>;
 
 #if _CCCL_HAS_CONCEPTS()
       static_assert(detail::transform::transform_policy_selector<policy_selector>);

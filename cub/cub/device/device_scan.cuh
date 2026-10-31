@@ -33,6 +33,7 @@
 #include <cub/detail/input_value.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/dispatch_scan_by_key.cuh>
@@ -374,7 +375,7 @@ private:
                                                       ScanOpT>;
 
     using policy_selector_t =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, ScanByKeyPolicy, default_policy_selector_t>;
+      detail::policy_selector_from_tuning_env_t<TuningEnvT, ScanByKeyPolicy, default_policy_selector_t>;
 
     // we would not need to override the accumulator type, but we must ensure it's the same as for the policy here
     return detail::scan_by_key::dispatch</* OverrideAccumT = */ accum_t>(
