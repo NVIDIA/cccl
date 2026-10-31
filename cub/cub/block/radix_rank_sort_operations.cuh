@@ -21,6 +21,7 @@
 
 #include <cub/detail/numeric_traits.cuh>
 
+#include <cuda/__bit/bit_trunc.h>
 #include <cuda/__bit/bitfield.h>
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__algorithm/min.h>
@@ -407,8 +408,9 @@ struct digit_f
         const bit_ordered_type ordered_src =
           BaseDigitExtractor<T>::ProcessFloatMinusZero(reinterpret_cast<bit_ordered_type&>(src));
 
-        const ::cuda::std::uint32_t mask = (1 << bits_to_copy) - 1;
-        dst                              = dst | (((ordered_src >> src_bit_start) & mask) << dst_bit_start);
+        const auto digit = ::cuda::bit_trunc(
+          static_cast<::cuda::std::uint32_t>(ordered_src >> src_bit_start), static_cast<int>(bits_to_copy));
+        dst |= digit << dst_bit_start;
 
         num_bits -= bits_to_copy;
         dst_bit_start += bits_to_copy;
