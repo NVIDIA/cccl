@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./" >
+    <head>
+        <title>404 &#8212; CUDA Core Compute Libraries</title>
+    </head>
+    <ul>
+        <div id="linkGen"></div>
+    </ul>
+    <script type="module">
+        import Fuse from 'https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.mjs'
+        // This page assumes that the user is already in a versioned subtree
+        // It is no longer the root 404 handler and is instead delagated to.
+        var localUri = window.location.pathname;
+        var hostUrl = window.location.protocol + "//" + window.location.host
+
+        // Check if user query is missing a branch prefix, e.g. cccl/thrust/vector.h
+        var rootPathMatch = localUri.match(/^\/cccl(?:\/unstable|\/branch\/\d+\.\d+\.\d+)/)
+        // Remove leading prefix, this is fed as a URI search argument to the appropriate 404 handler.
+        var searchPathMatch = localUri.replace(/^\/cccl(?:\/unstable|\/branch\/\d+\.\d+\.\d+)?/, "")
+
+        // Project default root leads to unstable
+        var rootPath = "/cccl/unstable"
+
+        // If a root path was found, use it instead
+        if (rootPathMatch !== null) {
+            rootPath = rootPathMatch[0]
+        }
+
+        // User was trying to reach a path, forward to appropriate 404 helper
+        if (searchPathMatch) {
+            // Redirect to the helper page, including the query
+            window.location.href =
+                hostUrl + rootPath + "/404_helper.html?path=" + searchPathMatch
+        }
+        // Redirect to index otherwise
+        else {
+            window.location.href = hostUrl + rootPath
+        }
+    </script>
+</html>
