@@ -18,6 +18,7 @@
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_adjacent_difference.cuh>
 #include <cub/util_arch.cuh>
@@ -326,18 +327,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   NumItemsT num_items,
   DifferenceOpT difference_op,
   cudaStream_t stream,
-  TuningEnvT tuning_env                  = {},
+  TuningEnvT                             = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  using input_t  = detail::it_value_t<InputIteratorT>;
-  using offset_t = detail::choose_offset_t<NumItemsT>;
-  using default_policy_selector_t =
-    detail::adjacent_difference::policy_selector_from_types<InputIteratorT, AliasOpt == MayAlias::Yes>;
-  using default_policy_t = decltype(default_policy_selector_t{}(::cuda::compute_capability{}));
+  using input_t                   = detail::it_value_t<InputIteratorT>;
+  using offset_t                  = detail::choose_offset_t<NumItemsT>;
+  using default_policy_selector_t = policy_selector_from_types<InputIteratorT, AliasOpt == MayAlias::Yes>;
+  using policy_selector_t =
+    policy_selector_from_tuning_env_t<TuningEnvT, AdjacentDifferencePolicy, default_policy_selector_t>;
 
-  auto policy_selector =
-    ::cuda::std::execution::__query_or(tuning_env, default_policy_t{}, default_policy_selector_t{});
-  using policy_selector_t = decltype(policy_selector);
 #if _CCCL_HAS_CONCEPTS()
   static_assert(adjacent_difference_policy_selector<policy_selector_t>,
                 "Invalid policy_selector_t for adjacent_difference::dispatch");
@@ -349,7 +347,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  const AdjacentDifferencePolicy active_policy = policy_selector(cc);
+  const AdjacentDifferencePolicy active_policy = policy_selector_t{}(cc);
   detail::log_dispatch("DeviceAdjacentDifference", cc, active_policy);
 
   const int tile_size = active_policy.threads_per_block * active_policy.items_per_thread;
