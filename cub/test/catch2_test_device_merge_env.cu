@@ -43,6 +43,17 @@ struct merge_tuning
   }
 };
 
+template <int ThreadsPerBlock>
+struct merge_tuning_transformer
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::MergePolicy policy) const
+    -> cub::MergePolicy
+  {
+    policy.threads_per_block = ThreadsPerBlock;
+    return policy;
+  }
+};
+
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 
@@ -104,6 +115,34 @@ CUB_TEST("DeviceMerge::MergeKeys can be tuned", "[merge][device]", CUB_SMALL, bl
   const block_size_extracting_less_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
   auto env = cuda::execution::tune(merge_tuning<target_block_size>{});
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceMerge::MergeKeys(
+      keys1.begin(),
+      static_cast<int>(keys1.size()),
+      keys2.begin(),
+      static_cast<int>(keys2.size()),
+      result.begin(),
+      block_size_check,
+      env));
+
+  const c2h::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
+  REQUIRE(result == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceMerge::MergeKeys tuning can be modified", "[merge][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 96;
+  auto keys1                               = c2h::device_vector<int>{0, 2, 5};
+  auto keys2                               = c2h::device_vector<int>{0, 3, 3, 4};
+  auto result                              = c2h::device_vector<int>(7, thrust::no_init);
+  auto d_block_size                        = c2h::device_vector<unsigned int>(1);
+
+  const block_size_extracting_less_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+
+  auto env = cuda::execution::tune(merge_tuning_transformer<target_block_size>{});
 
   REQUIRE(
     cudaSuccess

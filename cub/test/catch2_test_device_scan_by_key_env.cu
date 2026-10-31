@@ -142,6 +142,18 @@ struct scan_by_key_tuning
   }
 };
 
+template <int BlockThreads>
+struct scan_by_key_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::ScanByKeyPolicy policy) const
+    -> cub::ScanByKeyPolicy
+  {
+    policy.algorithm                  = cub::ScanByKeyAlgorithm::lookback;
+    policy.lookback.threads_per_block = BlockThreads;
+    return policy;
+  }
+};
+
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 using block_size_extracting_scan_op_t  = block_size_extracting_op<cuda::std::plus<>>;
@@ -159,6 +171,25 @@ CUB_TEST("DeviceScan::ExclusiveSumByKey can be tuned", "[scan][by_key][device]",
   auto env         = cuda::execution::tune(scan_by_key_tuning<target_block_size>{});
 
   device_scan_exclusive_sum_by_key(d_keys.begin(), d_in.begin(), d_out.begin(), 7, equality_op, env);
+
+  const c2h::device_vector<int> expected{0, 8, 0, 7, 12, 0, 0};
+  REQUIRE(d_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceScan::ExclusiveScanByKey tuning can be modified", "[scan][by_key][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<int> d_keys{0, 0, 1, 1, 1, 2, 2};
+  c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
+  c2h::device_vector<int> d_out(7);
+  c2h::device_vector<unsigned int> d_block_size(1);
+
+  auto scan_op = block_size_extracting_scan_op_t{thrust::raw_pointer_cast(d_block_size.data())};
+  auto env     = cuda::execution::tune(scan_by_key_tuning_transform<target_block_size>{});
+
+  device_scan_exclusive_scan_by_key(
+    d_keys.begin(), d_in.begin(), d_out.begin(), scan_op, 0, 7, cuda::std::equal_to<>{}, env);
 
   const c2h::device_vector<int> expected{0, 8, 0, 7, 12, 0, 0};
   REQUIRE(d_out == expected);

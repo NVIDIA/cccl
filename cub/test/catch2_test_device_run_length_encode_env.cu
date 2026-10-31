@@ -56,6 +56,30 @@ struct rle_non_trivial_runs_tuning
   }
 };
 
+template <int ThreadsPerBlock>
+struct rle_encode_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::RleEncodePolicy policy) const
+    -> cub::RleEncodePolicy
+  {
+    // the default policy may select lookahead, but this test observes the lookback block size
+    policy.algorithm                  = cub::RleAlgorithm::lookback;
+    policy.lookback.threads_per_block = ThreadsPerBlock;
+    return policy;
+  }
+};
+
+template <int ThreadsPerBlock>
+struct rle_non_trivial_runs_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::RleNonTrivialRunsPolicy policy) const
+    -> cub::RleNonTrivialRunsPolicy
+  {
+    policy.lookback.threads_per_block = ThreadsPerBlock;
+    return policy;
+  }
+};
+
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 
@@ -289,6 +313,28 @@ CUB_TEST("DeviceRunLengthEncode::Encode can be tuned", "[run_length_encode][devi
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+CUB_TEST("DeviceRunLengthEncode::Encode tuning can be modified", "[run_length_encode][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr int num_items                  = 256;
+
+  auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
+  const block_size_extracting_constant_iterator d_in(42, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto d_unique_out   = c2h::device_vector<int>(1);
+  auto d_counts_out   = c2h::device_vector<int>(1);
+  auto d_num_runs_out = c2h::device_vector<int>(1);
+
+  auto env = cuda::execution::tune(rle_encode_tuning_transform<target_block_size>{});
+
+  run_length_encode_env(d_in, d_unique_out.begin(), d_counts_out.begin(), d_num_runs_out.begin(), num_items, env);
+
+  REQUIRE(d_num_runs_out[0] == 1);
+  REQUIRE(d_unique_out[0] == 42);
+  REQUIRE(d_counts_out[0] == num_items);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
 // The agent's temporary storage for 32 threads x 256 items exceeds the static shared memory limit, so the kernel falls
 // back to a larger block of 64 threads, which its launch bounds must allow
 CUB_TEST_CASE("DeviceRunLengthEncode::Encode can be tuned with a small block size that needs the fallback policy",
@@ -338,6 +384,29 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can be tuned", "[run_length_enco
   auto d_num_runs_out = c2h::device_vector<int>(1);
 
   auto env = cuda::execution::tune(rle_non_trivial_runs_tuning<target_block_size>{});
+
+  non_trivial_runs_env(d_in, d_offsets_out.begin(), d_lengths_out.begin(), d_num_runs_out.begin(), num_items, env);
+
+  REQUIRE(d_num_runs_out[0] == 1);
+  REQUIRE(d_offsets_out[0] == 0);
+  REQUIRE(d_lengths_out[0] == num_items);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST(
+  "DeviceRunLengthEncode::NonTrivialRuns tuning can be modified", "[run_length_encode][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr int num_items                  = 256;
+
+  auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
+  const block_size_extracting_constant_iterator d_in(42, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto d_offsets_out  = c2h::device_vector<int>(1);
+  auto d_lengths_out  = c2h::device_vector<int>(1);
+  auto d_num_runs_out = c2h::device_vector<int>(1);
+
+  auto env = cuda::execution::tune(rle_non_trivial_runs_tuning_transform<target_block_size>{});
 
   non_trivial_runs_env(d_in, d_offsets_out.begin(), d_lengths_out.begin(), d_num_runs_out.begin(), num_items, env);
 

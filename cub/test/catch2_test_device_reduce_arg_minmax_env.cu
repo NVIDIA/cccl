@@ -61,6 +61,18 @@ struct reduce_tuning
   }
 };
 
+template <int ThreadsPerBlock>
+struct reduce_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::ReducePolicy policy) const
+    -> cub::ReducePolicy
+  {
+    policy.multi_tile.threads_per_block  = ThreadsPerBlock;
+    policy.single_tile.threads_per_block = ThreadsPerBlock;
+    return policy;
+  }
+};
+
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 32>, cuda::std::integral_constant<unsigned int, 64>>;
 
@@ -234,6 +246,32 @@ CUB_TEST("Device ArgMin[Last]Max can be tuned", "[reduce][device]", CUB_SMALL, b
   REQUIRE(min_index[0] == 3);
   REQUIRE(max_out[0] == 4);
   REQUIRE(max_index[0] == expected_max_index);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("Device ArgMin[Last]Max tuning can be modified", "[reduce][device]", CUB_SMALL, block_sizes)
+{
+  const bool last_max                      = GENERATE(false, true);
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+
+  c2h::device_vector<unsigned int> d_block_size(1);
+  using compare_t = block_size_extracting_op<cuda::std::less<>>;
+  const compare_t compare_op{thrust::raw_pointer_cast(d_block_size.data())};
+
+  auto input     = c2h::device_vector<int>{3, 4, 4, 0, 2};
+  auto min_out   = c2h::device_vector<int>(1);
+  auto min_index = c2h::device_vector<cuda::std::int64_t>(1);
+  auto max_out   = c2h::device_vector<int>(1);
+  auto max_index = c2h::device_vector<cuda::std::int64_t>(1);
+
+  const auto n = static_cast<int>(input.size());
+
+  auto env = cuda::execution::tune(reduce_tuning_transform<target_block_size>{});
+
+  call_argminmax_launch_wrapper(
+    last_max, input.begin(), min_out.begin(), min_index.begin(), max_out.begin(), max_index.begin(), n, compare_op, env);
+
+  REQUIRE(max_out[0] == 4);
   REQUIRE(d_block_size[0] == target_block_size);
 }
 #endif // TEST_LAUNCH != 1

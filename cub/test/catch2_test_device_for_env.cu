@@ -98,6 +98,17 @@ struct for_each_tuning
   }
 };
 
+template <int ThreadsPerBlock>
+struct for_each_tuning_transformer
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::ForPolicy policy) const
+    -> cub::ForPolicy
+  {
+    policy.threads_per_block = ThreadsPerBlock;
+    return policy;
+  }
+};
+
 using block_size_check_t = block_size_extracting_op<cuda::always_false>;
 
 using block_sizes =
@@ -795,6 +806,17 @@ CUB_TEST("DeviceFor::Bulk can be tuned", "[for][device]", CUB_SMALL, block_sizes
   c2h::device_vector<unsigned int> d_block_size(1);
   const block_size_check_t op{thrust::raw_pointer_cast(d_block_size.data())};
   const auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
+
+  REQUIRE(cudaSuccess == cub::DeviceFor::Bulk(4, op, env));
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceFor::Bulk tuning can be modified", "[for][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 96;
+  c2h::device_vector<unsigned int> d_block_size(1);
+  const block_size_check_t op{thrust::raw_pointer_cast(d_block_size.data())};
+  const auto env = cuda::execution::tune(for_each_tuning_transformer<target_block_size>{});
 
   REQUIRE(cudaSuccess == cub::DeviceFor::Bulk(4, op, env));
   REQUIRE(d_block_size[0] == target_block_size);

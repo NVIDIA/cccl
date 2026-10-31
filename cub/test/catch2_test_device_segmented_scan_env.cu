@@ -575,6 +575,17 @@ struct segmented_scan_tuning
   }
 };
 
+template <unsigned int BlockThreads>
+struct segmented_scan_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability, cub::SegmentedScanPolicy policy) const
+    -> cub::SegmentedScanPolicy
+  {
+    policy.block.threads_per_block = static_cast<int>(BlockThreads);
+    return policy;
+  }
+};
+
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 
@@ -643,6 +654,26 @@ CUB_TEST("Device segmented inclusive scan can be tuned", "[segmented_scan][devic
   c2h::device_vector<unsigned int> d_block_size(1);
   const block_size_extracting_op<::cuda::std::plus<>> scan_op{thrust::raw_pointer_cast(d_block_size.data())};
   auto env = cuda::execution::tune(segmented_scan_tuning<target_block_size>{});
+
+  device_segmented_inclusive_scan(
+    d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, scan_op, env);
+
+  const thrust::device_vector<int> expected{8, 14, 21, 26, 3, 3, 12, 1, 3};
+  REQUIRE(d_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("Device segmented inclusive scan tuning can be modified", "[segmented_scan][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  ::cuda::std::int64_t num_segments        = 3;
+  thrust::device_vector<int> d_offsets     = {0, 4, 7, 9};
+  auto d_offsets_it                        = thrust::raw_pointer_cast(d_offsets.data());
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  thrust::device_vector<int> d_out(d_in.size());
+  c2h::device_vector<unsigned int> d_block_size(1);
+  const block_size_extracting_op<::cuda::std::plus<>> scan_op{thrust::raw_pointer_cast(d_block_size.data())};
+  auto env = cuda::execution::tune(segmented_scan_tuning_transform<target_block_size>{});
 
   device_segmented_inclusive_scan(
     d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, scan_op, env);

@@ -56,6 +56,18 @@ struct reduce_tuning
   }
 };
 
+template <int ThreadsPerBlock>
+struct reduce_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::ReducePolicy policy) const
+    -> cub::ReducePolicy
+  {
+    policy.multi_tile.threads_per_block  = ThreadsPerBlock;
+    policy.single_tile.threads_per_block = ThreadsPerBlock;
+    return policy;
+  }
+};
+
 // Selects a non-deterministic block reduce. This is only valid if the reduction is not required to be run-to-run
 // deterministic, which includes a determinism::not_guaranteed request that falls back to a run-to-run deterministic
 // dispatch (e.g., for min/max or arg-min/arg-max).
@@ -149,6 +161,21 @@ CUB_TEST("Device reduce can be tuned", "[reduce][device]", CUB_SMALL, block_size
   auto d_out = thrust::device_vector<int>(1);
 
   auto env = cuda::execution::tune(reduce_tuning<target_block_size>{}, unrelated_tuning{});
+
+  device_reduce(d_in, d_out.begin(), 1, cuda::std::plus<>{}, 0, env);
+  REQUIRE(d_out[0] == 1);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("Device reduce tuning can be modified", "[reduce][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<unsigned int> d_block_size(1);
+
+  auto d_in  = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+  auto d_out = thrust::device_vector<int>(1);
+
+  auto env = cuda::execution::tune(reduce_tuning_transform<target_block_size>{});
 
   device_reduce(d_in, d_out.begin(), 1, cuda::std::plus<>{}, 0, env);
   REQUIRE(d_out[0] == 1);
@@ -407,6 +434,17 @@ struct reduce_by_key_tuning
   }
 };
 
+template <int BlockThreads>
+struct reduce_by_key_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::ReduceByKeyPolicy policy) const
+    -> cub::ReduceByKeyPolicy
+  {
+    policy.lookback.threads_per_block = BlockThreads;
+    return policy;
+  }
+};
+
 using reduce_by_key_block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 
@@ -444,6 +482,33 @@ CUB_TEST("Device ReduceByKey can be tuned", "[reduce][device]", CUB_SMALL, reduc
   d_aggregates_out.resize(5);
   REQUIRE(d_unique_out == expected_keys);
   REQUIRE(d_aggregates_out == expected_aggregates);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("Device ReduceByKey tuning can be modified", "[reduce][device]", CUB_SMALL, reduce_by_key_block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto d_keys_in                           = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto d_values_in                         = c2h::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
+  auto d_unique_out                        = c2h::device_vector<int>(8);
+  auto d_aggregates_out                    = c2h::device_vector<int>(8);
+  auto d_num_runs_out                      = c2h::device_vector<int>(1);
+  auto d_block_size                        = c2h::device_vector<unsigned int>(1);
+
+  const block_size_extracting_minimum_t reduction_op{thrust::raw_pointer_cast(d_block_size.data())};
+  auto env = cuda::execution::tune(reduce_by_key_tuning_transform<target_block_size>{});
+
+  device_reduce_by_key(
+    d_keys_in.begin(),
+    d_unique_out.begin(),
+    d_values_in.begin(),
+    d_aggregates_out.begin(),
+    d_num_runs_out.begin(),
+    reduction_op,
+    static_cast<int>(d_keys_in.size()),
+    env);
+
+  REQUIRE(d_num_runs_out[0] == 5);
   REQUIRE(d_block_size[0] == target_block_size);
 }
 

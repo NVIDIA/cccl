@@ -399,6 +399,20 @@ struct segmented_reduce_tuning
   }
 };
 
+template <int ThreadsPerBlock>
+struct segmented_reduce_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability, cub::SegmentedReducePolicy policy) const
+    -> cub::SegmentedReducePolicy
+  {
+    // the code path taken depends on the segment sizes, so change all sub-policies
+    policy.large_reduce.threads_per_block  = ThreadsPerBlock;
+    policy.medium_reduce.threads_per_block = ThreadsPerBlock;
+    policy.small_reduce.threads_per_block  = ThreadsPerBlock;
+    return policy;
+  }
+};
+
 using block_sizes = c2h::type_list<cuda::std::integral_constant<int, 64>, cuda::std::integral_constant<int, 128>>;
 
 #if TEST_LAUNCH != 1
@@ -418,6 +432,28 @@ CUB_TEST("DeviceSegmentedReduce::Reduce can be tuned", "[segmented_reduce][devic
 
   // We are expecting that `unrelated_tuning` is ignored
   auto env = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
+
+  device_segmented_reduce(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, reduce_op, 0, env);
+
+  const c2h::device_vector<int> expected{26, 12, 3};
+  REQUIRE(d_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceSegmentedReduce::Reduce tuning can be modified", "[segmented_reduce][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+
+  const int num_segments            = 3;
+  c2h::device_vector<int> d_offsets = {0, 4, 7, 9};
+  auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
+  c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  c2h::device_vector<int> d_out(3, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+
+  const block_size_extracting_op<::cuda::std::plus<>> reduce_op{thrust::raw_pointer_cast(d_block_size.data())};
+
+  auto env = cuda::execution::tune(segmented_reduce_tuning_transform<target_block_size>{});
 
   device_segmented_reduce(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, reduce_op, 0, env);
 

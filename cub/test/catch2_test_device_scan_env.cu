@@ -154,6 +154,18 @@ struct scan_tuning
   }
 };
 
+template <int ThreadsPerBlock>
+struct scan_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::ScanPolicy policy) const
+    -> cub::ScanPolicy
+  {
+    policy.algorithm                  = cub::ScanAlgorithm::lookback;
+    policy.lookback.threads_per_block = ThreadsPerBlock;
+    return policy;
+  }
+};
+
 // Lookback delays are only slept (via __nanosleep) if the grid has at least 500 blocks, and are replaced by a thread
 // fence otherwise. __nanosleep sleeps at most 1 ms per call, so delays above INT_MAX (the largest an int can hold) are
 // cheap to run, but they cannot be asserted to have elapsed (the sleep is only guaranteed to be in [0, 2 * t]).
@@ -225,6 +237,25 @@ CUB_TEST("Device scan exclusive-scan can be tuned", "[scan][device]", CUB_SMALL,
 
   // We are expecting that `unrelated_tuning` is ignored
   auto env = cuda::execution::tune(scan_tuning<target_block_size>{}, unrelated_tuning{});
+
+  REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveScan(d_in, d_out.begin(), block_size_check, init, num_items, env));
+
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init)));
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("Device scan exclusive-scan tuning can be modified", "[scan][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<unsigned int> d_block_size(1);
+  const block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+
+  auto num_items = 3;
+  auto d_in      = cuda::constant_iterator(1);
+  auto d_out     = c2h::device_vector<int>(num_items);
+  auto init      = int{42};
+
+  auto env = cuda::execution::tune(scan_tuning_transform<target_block_size>{});
 
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveScan(d_in, d_out.begin(), block_size_check, init, num_items, env));
 

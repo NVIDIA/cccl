@@ -194,6 +194,31 @@ CUB_TEST("DeviceTransform::Transform can be tuned", "[reduce][device]", CUB_SMAL
   REQUIRE(result == expected);
 }
 
+// only change the block size and keep all other defaults
+struct my_policy_transformer
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::TransformPolicy policy) const
+    -> cub::TransformPolicy
+  {
+    policy.algorithm                  = cub::TransformAlgorithm::prefetch;
+    policy.prefetch.threads_per_block = 8;
+    return policy;
+  }
+};
+
+CUB_TEST("DeviceTransform::Transform tuning can be modified", "[reduce][device]", CUB_SMALL)
+{
+  c2h::device_vector<unsigned> result(3 * 8, thrust::no_init);
+
+  auto env = cuda::execution::tune(my_policy_transformer{});
+  REQUIRE(cudaSuccess
+          == cub::DeviceTransform::Transform(cuda::std::tuple{}, result.data(), result.size(), get_thread_id{}, env));
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  const c2h::device_vector<unsigned> expected{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7};
+  REQUIRE(result == expected);
+}
+
 CUB_TEST("DeviceTransform::Transform can be tuned with custom stream", "[reduce][device]", CUB_SMALL)
 {
   c2h::device_vector<unsigned> result(3 * 8, thrust::no_init);

@@ -1474,6 +1474,17 @@ struct histogram_tuning
   }
 };
 
+template <int BlockThreads>
+struct histogram_tuning_transformer
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::HistogramPolicy policy) const
+    -> cub::HistogramPolicy
+  {
+    policy.threads_per_block = BlockThreads;
+    return policy;
+  }
+};
+
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 
@@ -1489,6 +1500,24 @@ CUB_TEST("DeviceHistogram::HistogramEven can be tuned", "[histogram][device]", C
   auto d_histogram      = c2h::device_vector<int>(num_levels - 1, 0);
 
   auto env = cuda::execution::tune(histogram_tuning<target_block_size>{});
+
+  histogram_even(
+    d_samples, thrust::raw_pointer_cast(d_histogram.data()), num_levels, lower_level, upper_level, num_samples, env);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceHistogram::HistogramEven tuning can be modified", "[histogram][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 96;
+  c2h::device_vector<unsigned int> d_block_size(1);
+  const block_size_extracting_constant_iterator d_samples(0, thrust::raw_pointer_cast(d_block_size.data()));
+  const int num_samples = 256;
+  const int num_levels  = 257;
+  const int lower_level = 0;
+  const int upper_level = 256;
+  auto d_histogram      = c2h::device_vector<int>(num_levels - 1, 0);
+
+  auto env = cuda::execution::tune(histogram_tuning_transformer<target_block_size>{});
 
   histogram_even(
     d_samples, thrust::raw_pointer_cast(d_histogram.data()), num_levels, lower_level, upper_level, num_samples, env);
