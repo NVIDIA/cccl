@@ -2049,6 +2049,46 @@ CUB_TEST_CASE("DeviceRadixSort::SortPairs can be tuned", "[radix_sort][device]",
   CHECK(bytes32 != bytes128);
 }
 
+template <int BlockThreads>
+struct tiny_onesweep_policy_transformer
+{
+  _CCCL_API constexpr auto operator()(cuda::compute_capability, cub::RadixSortPolicy policy) const
+    -> cub::RadixSortPolicy
+  {
+    policy.algorithm                       = cub::RadixSortAlgorithm::onesweep;
+    policy.onesweep.threads_per_block      = BlockThreads;
+    policy.onesweep.items_per_thread       = 1;
+    policy.single_tile.threads_per_block   = BlockThreads;
+    policy.single_tile.items_per_thread    = 1;
+    policy.downsweep.threads_per_block     = BlockThreads;
+    policy.downsweep.items_per_thread      = 1;
+    policy.alt_downsweep.threads_per_block = BlockThreads;
+    policy.alt_downsweep.items_per_thread  = 1;
+    policy.histogram.private_partitions    = 1;
+    return policy;
+  }
+};
+
+CUB_TEST_CASE("DeviceRadixSort::SortPairs tuning can be modified", "[radix_sort][device]", CUB_SMALL)
+{
+  auto l = [&](auto env) {
+    auto data = c2h::device_vector<int>(10'000); // must be larger than the single tile path
+    return cub::DeviceRadixSort::SortPairs(
+      data.data().get(),
+      data.data().get(),
+      data.data().get(),
+      data.data().get(),
+      static_cast<int>(data.size()),
+      0,
+      32,
+      env);
+  };
+
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_transformer<32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_transformer<128>{});
+  CHECK(bytes32 != bytes128);
+}
+
 CUB_TEST_CASE("DeviceRadixSort::SortPairs DoubleBuffer can be tuned", "[radix_sort][device]", CUB_SMALL)
 {
   auto l = [&](auto env) {
