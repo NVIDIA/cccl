@@ -75,6 +75,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
   if (__bits != __abs_bits)
   {
     // sqrt(x < 0) is a domain error, return NaN and raise FE_INVALID
+    // NOLINTNEXTLINE(misc-redundant-expression): intentional, raises FE_INVALID
     return (__x - __x) / (__x - __x);
   }
   if (__abs_bits == __fp_exp_mask_of_v<__float128>)
