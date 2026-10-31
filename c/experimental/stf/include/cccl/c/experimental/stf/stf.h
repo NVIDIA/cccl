@@ -103,7 +103,7 @@ typedef enum stf_access_mode // NOLINT(cppcoreguidelines-use-enum-class)
 //! pointer-returning entries, an \c stf_error_t code for entries that have no other result, and
 //! a documented sentinel otherwise.
 //!
-//! Every entry resets the calling thread's last error to \c STF_SUCCESS when it starts, so after
+//! Every entry clears the calling thread's last error (code and message) when it starts, so after
 //! a call whose failure value is ambiguous (for example a predicate returning 0), callers can
 //! consult stf_get_last_error() to tell "no" from "failed".
 //! \{
@@ -131,8 +131,8 @@ stf_error_t stf_get_last_error(void);
 
 //! \brief Message of the last failure recorded on the calling thread; the empty string if none.
 //!
-//! The pointer is owned by the library and stays valid until the next failing \c stf_* call on
-//! this thread (or stf_clear_last_error()). Copy it if it must outlive that.
+//! The pointer is owned by the library; its text stays valid until the next \c stf_* call on
+//! this thread (every entry clears the record). Copy it if it must outlive that.
 const char* stf_get_last_error_message(void);
 
 //! \brief Reset the calling thread's last error to \c STF_SUCCESS with an empty message.

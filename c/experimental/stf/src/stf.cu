@@ -112,13 +112,15 @@ void stf_record_current_exception() noexcept
     // The failure is now reported through the STF error record; consume the runtime's pending
     // error too. This library links its own CUDA runtime, so the caller cannot clear it, and STF
     // helpers that poll cudaGetLastError() (host memory pinning) would otherwise trip on it later.
-  (void) cudaGetLastError();
-  if (const cudaError_t sticky = cudaGetLastError(); sticky != cudaSuccess)
-  {
-    ::std::fprintf(stderr, "FATAL: unrecoverable CUDA error %s (%s); the CUDA context is dead\n",
-                 cudaGetErrorName(sticky), cudaGetErrorString(sticky));
-    ::std::abort();
-  }
+    (void) cudaGetLastError();
+    if (const cudaError_t sticky = cudaGetLastError(); sticky != cudaSuccess)
+    {
+      ::std::fprintf(stderr,
+                     "FATAL: unrecoverable CUDA error %s (%s); the CUDA context is dead\n",
+                     cudaGetErrorName(sticky),
+                     cudaGetErrorString(sticky));
+      ::std::abort();
+    }
   }
   catch (const ::std::invalid_argument& e)
   {
@@ -147,13 +149,13 @@ void stf_record_current_exception() noexcept
 }
 
 // Runs `f` as the body of an entry point. A `void` body yields `stf_error_t`; a pointer-returning
-// body yields its pointer, or `nullptr` on failure. Resets the thread's last error on entry so a
-// successful call always leaves STF_SUCCESS behind.
+// body yields its pointer, or `nullptr` on failure. Clears the thread's last error (code and
+// message) on entry so a successful call always leaves STF_SUCCESS and an empty message behind.
 template <class F>
-[[nodiscard]] auto stf_guard(F&& f) noexcept
+[[nodiscard]] decltype(auto) stf_guard(F&& f) noexcept
 {
-  using R               = decltype(f());
-  stf_last_error().code = STF_SUCCESS;
+  using R = decltype(f());
+  stf_clear_last_error();
   try
   {
     if constexpr (::std::is_void_v<R>)
@@ -187,7 +189,7 @@ template <class R, class F>
 [[nodiscard]] R stf_guard_or(R on_error, F&& f) noexcept
 {
   static_assert(::std::is_same_v<R, decltype(f())>, "stf_guard_or: sentinel and body result types differ");
-  stf_last_error().code = STF_SUCCESS;
+  stf_clear_last_error();
   try
   {
     return f();
@@ -212,8 +214,11 @@ void stf_require_index(size_t idx, size_t size, const char* what)
 // boundary turns it into an error.
 void stf_require_device(int dev_id)
 {
-  const int ndevices = cuda_try<cudaGetDeviceCount>();
-  if (dev_id < 0 || dev_id >= ndevices)
+  if (dev_id < 0)
+  {
+    throw ::std::invalid_argument("invalid device id " + ::std::to_string(dev_id));
+  }
+  if (const int ndevices = cuda_try<cudaGetDeviceCount>(); dev_id >= ndevices)
   {
     throw ::std::invalid_argument(
       "invalid device id " + ::std::to_string(dev_id) + " (" + ::std::to_string(ndevices) + " CUDA device(s) visible)");
@@ -348,6 +353,17 @@ template <class Opaque>
   auto* const c = from_opaque_const(h);
   return const_cast<::std::remove_const_t<::std::remove_pointer_t<decltype(c)>>*>(c);
 }
+
+// Release entries whose body is a `delete`. Destructors are noexcept, so no exception can reach a
+// guard; the entry only keeps the contract of clearing the thread's last error. `delete nullptr`
+// is a no-op, so a NULL handle needs no check.
+template <class T>
+stf_error_t stf_delete(T* p) noexcept
+{
+  stf_clear_last_error();
+  delete p;
+  return STF_SUCCESS;
+}
 } // namespace
 
 namespace
@@ -372,7 +388,7 @@ int stf_fill_placement_outputs(
   if (bytes_per_grid_index != nullptr)
   {
     const size_t grid_size = grid.get_dims().size();
-    for (size_t i = 0; i < grid_size; i++)
+    for (auto i : each(grid_size))
     {
       bytes_per_grid_index[i] = 0;
     }
@@ -399,8 +415,7 @@ stf_error_t stf_get_last_error(void)
 
 const char* stf_get_last_error_message(void)
 {
-  const auto& record = stf_last_error();
-  return record.code == STF_SUCCESS ? "" : record.message.c_str();
+  return stf_last_error().message.c_str();
 }
 
 void stf_clear_last_error(void)
@@ -412,14 +427,14 @@ void stf_clear_last_error(void)
 
 stf_exec_place_handle stf_exec_place_host(void)
 {
-  return stf_guard([&]() -> stf_exec_place_handle {
+  return stf_guard([&] {
     return to_opaque(new exec_place(exec_place::host()));
   });
 }
 
 stf_exec_place_handle stf_exec_place_device(int dev_id)
 {
-  return stf_guard([&]() -> stf_exec_place_handle {
+  return stf_guard([&] {
     stf_require_device(dev_id);
     return to_opaque(new exec_place(exec_place::device(dev_id)));
   });
@@ -427,14 +442,14 @@ stf_exec_place_handle stf_exec_place_device(int dev_id)
 
 stf_exec_place_handle stf_exec_place_current_device(void)
 {
-  return stf_guard([&]() -> stf_exec_place_handle {
+  return stf_guard([&] {
     return to_opaque(new exec_place(exec_place::current_device()));
   });
 }
 
 stf_exec_place_handle stf_exec_place_cuda_context(CUcontext ctx, int dev_id)
 {
-  return stf_guard([&]() -> stf_exec_place_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(ctx != nullptr, "CUcontext must not be null");
     // -1 asks the C++ side to derive the device from the context.
     if (dev_id != -1)
@@ -462,13 +477,13 @@ stf_green_context_helper_handle stf_green_context_helper_create(int sm_count, in
 
 stf_error_t stf_green_context_helper_destroy(stf_green_context_helper_handle h)
 {
-  return stf_guard([&] {
 #if _CCCL_CTK_AT_LEAST(12, 4)
-    delete from_opaque(h);
+  return stf_delete(from_opaque(h));
 #else
-    (void) h;
+  (void) h;
+  stf_clear_last_error();
+  return STF_SUCCESS;
 #endif
-  });
 }
 
 size_t stf_green_context_helper_get_count(stf_green_context_helper_handle h)
@@ -499,7 +514,7 @@ int stf_green_context_helper_get_device_id(stf_green_context_helper_handle h)
 
 stf_exec_place_handle stf_exec_place_clone(stf_exec_place_handle h)
 {
-  return stf_guard([&]() -> stf_exec_place_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(h != nullptr, "exec_place handle must not be null");
     const auto* ep = from_opaque_const(h);
     return to_opaque(new exec_place(*ep));
@@ -508,9 +523,7 @@ stf_exec_place_handle stf_exec_place_clone(stf_exec_place_handle h)
 
 stf_error_t stf_exec_place_destroy(stf_exec_place_handle h)
 {
-  return stf_guard([&] {
-    delete from_opaque(h);
-  });
+  return stf_delete(from_opaque(h));
 }
 
 int stf_exec_place_is_host(stf_exec_place_handle h)
@@ -557,11 +570,11 @@ stf_error_t stf_exec_place_set_affine_data_place(stf_exec_place_handle h, stf_da
 
 stf_exec_place_handle stf_exec_place_grid_from_devices(const int* device_ids, size_t count)
 {
-  return stf_guard([&]() -> stf_exec_place_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(device_ids != nullptr || count == 0, "device_ids must not be null unless count is 0");
     ::std::vector<exec_place> places;
     places.reserve(count);
-    for (size_t i = 0; i < count; i++)
+    for (auto i : each(count))
     {
       stf_require_device(device_ids[i]);
       places.push_back(exec_place::device(device_ids[i]));
@@ -573,11 +586,11 @@ stf_exec_place_handle stf_exec_place_grid_from_devices(const int* device_ids, si
 stf_exec_place_handle
 stf_exec_place_grid_create(const stf_exec_place_handle* places, size_t count, const stf_dim4* grid_dims)
 {
-  return stf_guard([&]() -> stf_exec_place_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(places != nullptr || count == 0, "places must not be null unless count is 0");
     ::std::vector<exec_place> cpp_places;
     cpp_places.reserve(count);
-    for (size_t i = 0; i < count; i++)
+    for (auto i : each(count))
     {
       cpp_places.push_back(*from_opaque_const(places[i]));
     }
@@ -590,7 +603,7 @@ stf_exec_place_grid_create(const stf_exec_place_handle* places, size_t count, co
 
 stf_exec_place_handle stf_exec_place_grid_reshape(stf_exec_place_handle grid, const stf_dim4* grid_dims)
 {
-  return stf_guard([&]() -> stf_exec_place_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(grid != nullptr, "grid must not be null");
     _CCCL_ASSERT(grid_dims != nullptr, "grid_dims must not be null");
     const dim4 dims(grid_dims->x, grid_dims->y, grid_dims->z, grid_dims->t);
@@ -600,7 +613,7 @@ stf_exec_place_handle stf_exec_place_grid_reshape(stf_exec_place_handle grid, co
 
 stf_exec_place_handle stf_exec_place_grid_collapse_axes(stf_exec_place_handle grid, size_t first_axis, size_t last_axis)
 {
-  return stf_guard([&]() -> stf_exec_place_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(grid != nullptr, "grid must not be null");
     return to_opaque(new exec_place(from_opaque_const(grid)->collapse_axes(first_axis, last_axis)));
   });
@@ -613,7 +626,7 @@ stf_error_t stf_exec_place_grid_destroy(stf_exec_place_handle grid)
 
 stf_exec_place_scope_handle stf_exec_place_scope_enter(stf_exec_place_handle place, size_t idx)
 {
-  return stf_guard([&]() -> stf_exec_place_scope_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(place != nullptr, "exec_place handle must not be null");
     stf_require_index(idx, from_opaque(place)->size(), "exec_place index");
     return to_opaque(new exec_place_scope(*from_opaque(place), idx));
@@ -622,14 +635,12 @@ stf_exec_place_scope_handle stf_exec_place_scope_enter(stf_exec_place_handle pla
 
 stf_error_t stf_exec_place_scope_exit(stf_exec_place_scope_handle scope)
 {
-  return stf_guard([&] {
-    delete from_opaque(scope);
-  });
+  return stf_delete(from_opaque(scope));
 }
 
 stf_data_place_handle stf_exec_place_get_affine_data_place(stf_exec_place_handle h)
 {
-  return stf_guard([&]() -> stf_data_place_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(h != nullptr, "exec_place handle must not be null");
     return to_opaque(new data_place(from_opaque(h)->affine_data_place()));
   });
@@ -647,11 +658,10 @@ stf_exec_place_resources_handle stf_exec_place_resources_create(void)
 
 stf_error_t stf_exec_place_resources_destroy(stf_exec_place_resources_handle h)
 {
-  return stf_guard([&] {
-    if (h == nullptr)
-    {
-      return;
-    }
+  // Deletes only; see stf_delete for why no guard is needed.
+  stf_clear_last_error();
+  if (h != nullptr)
+  {
     if (h->owns_resources)
     {
       delete h->resources;
@@ -660,12 +670,13 @@ stf_error_t stf_exec_place_resources_destroy(stf_exec_place_resources_handle h)
     {
       delete h;
     }
-  });
+  }
+  return STF_SUCCESS;
 }
 
 CUstream stf_exec_place_pick_stream(stf_exec_place_resources_handle res, stf_exec_place_handle h, int for_computation)
 {
-  return stf_guard([&]() -> CUstream {
+  return stf_guard([&] {
     _CCCL_ASSERT(res != nullptr, "exec_place_resources handle must not be null");
     _CCCL_ASSERT(h != nullptr, "exec_place handle must not be null");
     return reinterpret_cast<CUstream>(from_opaque(h)->pick_stream(*from_opaque(res), for_computation != 0));
@@ -674,7 +685,7 @@ CUstream stf_exec_place_pick_stream(stf_exec_place_resources_handle res, stf_exe
 
 stf_exec_place_handle stf_exec_place_get_place(stf_exec_place_handle h, size_t idx)
 {
-  return stf_guard([&]() -> stf_exec_place_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(h != nullptr, "exec_place handle must not be null");
     stf_require_index(idx, from_opaque(h)->size(), "exec_place index");
     return to_opaque(new exec_place(from_opaque(h)->get_place(idx)));
@@ -709,14 +720,14 @@ stf_error_t stf_machine_init(void)
 
 stf_data_place_handle stf_data_place_host(void)
 {
-  return stf_guard([&]() -> stf_data_place_handle {
+  return stf_guard([&] {
     return to_opaque(new data_place(data_place::host()));
   });
 }
 
 stf_data_place_handle stf_data_place_device(int dev_id)
 {
-  return stf_guard([&]() -> stf_data_place_handle {
+  return stf_guard([&] {
     stf_require_device(dev_id);
     return to_opaque(new data_place(data_place::device(dev_id)));
   });
@@ -724,28 +735,28 @@ stf_data_place_handle stf_data_place_device(int dev_id)
 
 stf_data_place_handle stf_data_place_managed(void)
 {
-  return stf_guard([&]() -> stf_data_place_handle {
+  return stf_guard([&] {
     return to_opaque(new data_place(data_place::managed()));
   });
 }
 
 stf_data_place_handle stf_data_place_affine(void)
 {
-  return stf_guard([&]() -> stf_data_place_handle {
+  return stf_guard([&] {
     return to_opaque(new data_place(data_place::affine()));
   });
 }
 
 stf_data_place_handle stf_data_place_current_device(void)
 {
-  return stf_guard([&]() -> stf_data_place_handle {
+  return stf_guard([&] {
     return to_opaque(new data_place(data_place::current_device()));
   });
 }
 
 stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_get_executor_fn mapper)
 {
-  return stf_guard([&]() -> stf_data_place_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
     _CCCL_ASSERT(mapper != nullptr, "partitioner function (mapper) must not be null");
     auto* grid_ptr = from_opaque(grid);
@@ -800,7 +811,7 @@ namespace
 
 stf_exec_place_handle stf_exec_place_locality_domain(int dev_id, int domain_id)
 {
-  return stf_guard([&]() -> stf_exec_place_handle {
+  return stf_guard([&] {
     stf_require_device(dev_id);
     return to_opaque(new exec_place(exec_place::locality_domain(dev_id, domain_id)));
   });
@@ -808,7 +819,7 @@ stf_exec_place_handle stf_exec_place_locality_domain(int dev_id, int domain_id)
 
 stf_exec_place_handle stf_exec_place_locality_domain_split(int dev_id, int domain_id, stf_locality_domain_sm_split split)
 {
-  return stf_guard([&]() -> stf_exec_place_handle {
+  return stf_guard([&] {
     stf_require_device(dev_id);
     return to_opaque(new exec_place(exec_place::locality_domain(dev_id, domain_id, stf_to_cpp_sm_split(split))));
   });
@@ -816,7 +827,7 @@ stf_exec_place_handle stf_exec_place_locality_domain_split(int dev_id, int domai
 
 stf_exec_place_handle stf_exec_place_locality_domain_grid(int dev_id)
 {
-  return stf_guard([&]() -> stf_exec_place_handle {
+  return stf_guard([&] {
     stf_require_device(dev_id);
     return to_opaque(new exec_place(::cuda::experimental::places::make_locality_domain_grid(dev_id)));
   });
@@ -824,7 +835,7 @@ stf_exec_place_handle stf_exec_place_locality_domain_grid(int dev_id)
 
 stf_exec_place_handle stf_exec_place_locality_domain_grid_split(int dev_id, stf_locality_domain_sm_split split)
 {
-  return stf_guard([&]() -> stf_exec_place_handle {
+  return stf_guard([&] {
     stf_require_device(dev_id);
     return to_opaque(
       new exec_place(::cuda::experimental::places::make_locality_domain_grid(dev_id, stf_to_cpp_sm_split(split))));
@@ -833,7 +844,7 @@ stf_exec_place_handle stf_exec_place_locality_domain_grid_split(int dev_id, stf_
 
 stf_data_place_handle stf_data_place_locality_domain(int dev_id, int domain_id)
 {
-  return stf_guard([&]() -> stf_data_place_handle {
+  return stf_guard([&] {
     stf_require_device(dev_id);
     return to_opaque(new data_place(data_place::locality_domain(dev_id, domain_id)));
   });
@@ -841,7 +852,7 @@ stf_data_place_handle stf_data_place_locality_domain(int dev_id, int domain_id)
 
 stf_data_place_handle stf_data_place_replicated(stf_exec_place_handle grid)
 {
-  return stf_guard([&]() -> stf_data_place_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
     auto* grid_ptr = from_opaque(grid);
     return to_opaque(new data_place(data_place::replicated(*grid_ptr)));
@@ -850,14 +861,14 @@ stf_data_place_handle stf_data_place_replicated(stf_exec_place_handle grid)
 
 stf_data_place_handle stf_data_place_replicated_deferred(void)
 {
-  return stf_guard([&]() -> stf_data_place_handle {
+  return stf_guard([&] {
     return to_opaque(new data_place(data_place::replicated()));
   });
 }
 
 int stf_data_place_is_replicated(stf_data_place_handle h)
 {
-  return stf_guard_or(int{0}, [&]() -> int {
+  return stf_guard_or(int{0}, [&] {
     _CCCL_ASSERT(h != nullptr, "data place handle must not be null");
     return from_opaque(h)->is_replicated() ? 1 : 0;
   });
@@ -865,7 +876,7 @@ int stf_data_place_is_replicated(stf_data_place_handle h)
 
 stf_get_executor_fn stf_partition_fn_blocked(int dim)
 {
-  return stf_guard([&]() -> stf_get_executor_fn {
+  return stf_guard([&] {
     switch (dim)
     {
       case 0:
@@ -884,7 +895,7 @@ stf_get_executor_fn stf_partition_fn_blocked(int dim)
 
 stf_get_executor_fn stf_partition_fn_cyclic(void)
 {
-  return stf_guard([&]() -> stf_get_executor_fn {
+  return stf_guard([&] {
     return reinterpret_cast<stf_get_executor_fn>(&cyclic_partition::get_executor);
   });
 }
@@ -907,7 +918,7 @@ stf_data_place_handle stf_data_place_green_ctx(stf_green_context_helper_handle h
 
 stf_data_place_handle stf_data_place_clone(stf_data_place_handle h)
 {
-  return stf_guard([&]() -> stf_data_place_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
     const auto* dp = from_opaque_const(h);
     return to_opaque(new data_place(*dp));
@@ -916,9 +927,7 @@ stf_data_place_handle stf_data_place_clone(stf_data_place_handle h)
 
 stf_error_t stf_data_place_destroy(stf_data_place_handle h)
 {
-  return stf_guard([&] {
-    delete from_opaque(h);
-  });
+  return stf_delete(from_opaque(h));
 }
 
 int stf_data_place_get_device_ordinal(stf_data_place_handle h)
@@ -970,7 +979,7 @@ stf_error_t stf_data_place_deallocate(stf_data_place_handle h, void* ptr, size_t
 
 int stf_data_place_allocation_is_stream_ordered(stf_data_place_handle h)
 {
-  return stf_guard_or(int{0}, [&]() -> int {
+  return stf_guard_or(int{0}, [&] {
     _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
     return from_opaque(h)->allocation_is_stream_ordered() ? 1 : 0;
   });
@@ -1051,13 +1060,13 @@ stf_cute_partition_handle stf_cute_partition_create(
   dim4 td, gd;
   ::std::memcpy(&td, true_dims, sizeof(td));
   ::std::memcpy(&gd, grid_dims, sizeof(gd));
-  return stf_guard([&]() -> stf_cute_partition_handle {
+  return stf_guard([&] {
     if (rank > 4)
     {
       throw ::std::invalid_argument("stf_cute_partition_create: rank must be at most 4");
     }
     ::std::vector<::cuda::experimental::places::dim_spec> cpp_spec(rank);
-    for (size_t d = 0; d < rank; d++)
+    for (auto d : each(rank))
     {
       if (spec[d].policy < STF_DIM_WHOLE || spec[d].policy > STF_DIM_BLOCK_CYCLIC)
       {
@@ -1093,15 +1102,15 @@ stf_cute_partition_handle stf_cute_partition_from_leaves(
   ::std::memcpy(&pd, padded_dims, sizeof(pd));
   ::std::memcpy(&td, true_dims, sizeof(td));
   ::std::memcpy(&gd, grid_dims, sizeof(gd));
-  return stf_guard([&]() -> stf_cute_partition_handle {
+  return stf_guard([&] {
     ::std::vector<layout_leaf> pl(num_place_leaves), ll(num_local_leaves);
     ::std::vector<int> axes(num_place_leaves);
-    for (size_t k = 0; k < num_place_leaves; k++)
+    for (auto k : each(num_place_leaves))
     {
       pl[k]   = {place_extents[k], static_cast<::std::ptrdiff_t>(place_strides[k])};
       axes[k] = place_axes[k];
     }
-    for (size_t k = 0; k < num_local_leaves; k++)
+    for (auto k : each(num_local_leaves))
     {
       ll[k] = {local_extents[k], static_cast<::std::ptrdiff_t>(local_strides[k])};
     }
@@ -1151,7 +1160,7 @@ void stf_cute_partition_get_place_leaves(stf_cute_partition_handle h, uint64_t* 
 {
   _CCCL_ASSERT(h != nullptr, "partition handle must not be null");
   const auto* part = from_opaque_const(h);
-  for (size_t k = 0; k < part->place_leaves().size(); k++)
+  for (auto k : each(part->place_leaves().size()))
   {
     if (extents != nullptr)
     {
@@ -1172,7 +1181,7 @@ void stf_cute_partition_get_local_leaves(stf_cute_partition_handle h, uint64_t* 
 {
   _CCCL_ASSERT(h != nullptr, "partition handle must not be null");
   const auto* part = from_opaque_const(h);
-  for (size_t k = 0; k < part->local_leaves().size(); k++)
+  for (auto k : each(part->local_leaves().size()))
   {
     if (extents != nullptr)
     {
@@ -1190,7 +1199,7 @@ int stf_cute_partition_owner(stf_cute_partition_handle h, const stf_pos4* data_c
   _CCCL_ASSERT(h != nullptr, "partition handle must not be null");
   _CCCL_ASSERT(data_coords != nullptr, "data_coords must not be null");
   _CCCL_ASSERT(out_grid_pos != nullptr, "out_grid_pos must not be null");
-  return stf_guard_or(1, [&]() -> int {
+  return stf_guard_or(1, [&] {
     const pos4 coords(data_coords->x, data_coords->y, data_coords->z, data_coords->t);
     const auto* part = from_opaque_const(h);
     const dim4 dims  = part->padded_dims();
@@ -1223,21 +1232,21 @@ stf_data_place_handle stf_data_place_composite_cute(stf_exec_place_handle grid, 
   _CCCL_ASSERT(partition != nullptr, "partition handle must not be null");
   const auto* grid_ptr = from_opaque_const(grid);
   const auto* part     = from_opaque_const(partition);
-  return stf_guard([&]() -> stf_data_place_handle {
+  return stf_guard([&] {
     return to_opaque(new data_place(make_composite_data_place(*grid_ptr, *part)));
   });
 }
 
 stf_ctx_handle stf_ctx_create(void)
 {
-  return stf_guard([&]() -> stf_ctx_handle {
+  return stf_guard([&] {
     return to_opaque(new context{});
   });
 }
 
 stf_ctx_handle stf_ctx_create_graph(void)
 {
-  return stf_guard([&]() -> stf_ctx_handle {
+  return stf_guard([&] {
     return to_opaque(new context{graph_ctx()});
   });
 }
@@ -1261,16 +1270,14 @@ inline async_resources_handle* async_resources_from_opaque(stf_async_resources_h
 
 stf_async_resources_handle stf_async_resources_create(void)
 {
-  return stf_guard([&]() -> stf_async_resources_handle {
+  return stf_guard([&] {
     return async_resources_to_opaque(new async_resources_handle{});
   });
 }
 
 stf_error_t stf_async_resources_destroy(stf_async_resources_handle h)
 {
-  return stf_guard([&] {
-    delete async_resources_from_opaque(h);
-  });
+  return stf_delete(async_resources_from_opaque(h));
 }
 
 stf_ctx_handle stf_ctx_create_ex(const stf_ctx_options* opts)
@@ -1391,7 +1398,7 @@ stf_error_t stf_ctx_wait(stf_ctx_handle ctx, stf_logical_data_handle ld, void* o
 
 stf_logical_data_handle stf_logical_data(stf_ctx_handle ctx, void* addr, size_t sz)
 {
-  return stf_guard([&]() -> stf_logical_data_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
 
     auto* context_ptr = from_opaque(ctx);
@@ -1403,7 +1410,7 @@ stf_logical_data_handle stf_logical_data(stf_ctx_handle ctx, void* addr, size_t 
 stf_logical_data_handle
 stf_logical_data_with_place(stf_ctx_handle ctx, void* addr, size_t sz, stf_data_place_handle dplace)
 {
-  return stf_guard([&]() -> stf_logical_data_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
     _CCCL_ASSERT(dplace != nullptr, "data_place handle must not be null");
 
@@ -1436,7 +1443,7 @@ stf_error_t stf_logical_data_destroy(stf_logical_data_handle ld)
 
 stf_logical_data_handle stf_logical_data_empty(stf_ctx_handle ctx, size_t length)
 {
-  return stf_guard([&]() -> stf_logical_data_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
 
     auto* context_ptr = from_opaque(ctx);
@@ -1447,7 +1454,7 @@ stf_logical_data_handle stf_logical_data_empty(stf_ctx_handle ctx, size_t length
 
 stf_logical_data_handle stf_token(stf_ctx_handle ctx)
 {
-  return stf_guard([&]() -> stf_logical_data_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
 
     auto* context_ptr = from_opaque(ctx);
@@ -1457,7 +1464,7 @@ stf_logical_data_handle stf_token(stf_ctx_handle ctx)
 
 stf_task_handle stf_task_create(stf_ctx_handle ctx)
 {
-  return stf_guard([&]() -> stf_task_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
 
     auto* context_ptr = from_opaque(ctx);
@@ -1556,7 +1563,7 @@ stf_error_t stf_task_enable_capture(stf_task_handle t)
 
 CUstream stf_task_get_custream(stf_task_handle t)
 {
-  return stf_guard([&]() -> CUstream {
+  return stf_guard([&] {
     _CCCL_ASSERT(t != nullptr, "task handle must not be null");
 
     auto* task_ptr = from_opaque(t);
@@ -1585,7 +1592,7 @@ cudaGraph_t stf_task_get_graph(stf_task_handle t)
 
 int stf_task_get_grid_dims(stf_task_handle t, stf_dim4* out_dims)
 {
-  return stf_guard_or(-1, [&]() -> int {
+  return stf_guard_or(-1, [&] {
     if (t == nullptr || out_dims == nullptr)
     {
       return -1;
@@ -1606,7 +1613,7 @@ int stf_task_get_grid_dims(stf_task_handle t, stf_dim4* out_dims)
 
 int stf_task_get_custream_at_index(stf_task_handle t, size_t place_index, CUstream* out_stream)
 {
-  return stf_guard_or(-1, [&]() -> int {
+  return stf_guard_or(-1, [&] {
     if (t == nullptr || out_stream == nullptr)
     {
       return -1;
@@ -1634,7 +1641,7 @@ stf_error_t stf_task_destroy(stf_task_handle t)
 
 stf_cuda_kernel_handle stf_cuda_kernel_create(stf_ctx_handle ctx)
 {
-  return stf_guard([&]() -> stf_cuda_kernel_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
 
     auto* context_ptr = from_opaque(ctx);
@@ -1743,7 +1750,7 @@ stf_error_t stf_cuda_kernel_destroy(stf_cuda_kernel_handle t)
 
 stf_host_launch_handle stf_host_launch_create(stf_ctx_handle ctx)
 {
-  return stf_guard([&]() -> stf_host_launch_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
 
     auto* context_ptr = from_opaque(ctx);
@@ -1799,14 +1806,7 @@ stf_error_t stf_host_launch_submit(stf_host_launch_handle h, stf_host_callback_f
 
 stf_error_t stf_host_launch_destroy(stf_host_launch_handle h)
 {
-  return stf_guard([&] {
-    if (h == nullptr)
-    {
-      return;
-    }
-
-    delete static_cast<context::host_launch_builder*>(static_cast<void*>(h));
-  });
+  return stf_delete(static_cast<context::host_launch_builder*>(static_cast<void*>(h)));
 }
 
 void* stf_host_launch_deps_get(stf_host_launch_deps_handle deps, size_t index)
@@ -2051,7 +2051,7 @@ extern "C" {
 
 stf_ctx_handle stf_stackable_ctx_create(void)
 {
-  return stf_guard([&]() -> stf_ctx_handle {
+  return stf_guard([&] {
     return to_opaque_sctx(new stackable_ctx{});
   });
 }
@@ -2092,7 +2092,7 @@ stf_error_t stf_stackable_pop(stf_ctx_handle ctx)
 
 stf_launchable_graph_handle stf_stackable_pop_prologue(stf_ctx_handle ctx)
 {
-  return stf_guard([&]() -> stf_launchable_graph_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
     auto* sctx = from_opaque_sctx(ctx);
     return to_opaque_launchable(new launchable_graph_handle(sctx->pop_prologue()));
@@ -2141,10 +2141,7 @@ cudaGraph_t stf_launchable_graph_graph(stf_launchable_graph_handle h)
 
 stf_error_t stf_launchable_graph_destroy(stf_launchable_graph_handle h)
 {
-  return stf_guard([&] {
-    // NULL is a no-op, matching the pattern used by other destroy entry points.
-    delete from_opaque_launchable(h);
-  });
+  return stf_delete(from_opaque_launchable(h));
 }
 
 stf_error_t stf_stackable_pop_prologue_shared(stf_ctx_handle ctx, stf_launchable_graph_shared* out)
@@ -2172,18 +2169,15 @@ stf_error_t stf_launchable_graph_shared_dup(stf_launchable_graph_shared h, stf_l
 
 stf_error_t stf_launchable_graph_shared_free(stf_launchable_graph_shared h)
 {
-  return stf_guard([&] {
-    // NULL is a no-op, matching the pattern used by other destroy entry points.
-    // Destruction drops the shared_ptr held inside the launchable_graph; when
-    // the last C-side handle is freed the state destructor runs and triggers
-    // ctx.pop_epilogue() automatically.
-    delete from_opaque_launchable_shared(h);
-  });
+  // Destruction drops the shared_ptr held inside the launchable_graph; when
+  // the last C-side handle is freed the state destructor runs and triggers
+  // ctx.pop_epilogue() automatically.
+  return stf_delete(from_opaque_launchable_shared(h));
 }
 
 int stf_launchable_graph_shared_valid(stf_launchable_graph_shared h)
 {
-  return stf_guard_or(int{0}, [&]() -> int {
+  return stf_guard_or(int{0}, [&] {
     if (h == nullptr)
     {
       return 0;
@@ -2238,9 +2232,7 @@ stf_while_scope_handle stf_stackable_push_while(stf_ctx_handle ctx)
 
 stf_error_t stf_stackable_pop_while(stf_while_scope_handle scope)
 {
-  return stf_guard([&] {
-    delete from_opaque_while(scope);
-  });
+  return stf_delete(from_opaque_while(scope));
 }
 
 uint64_t stf_while_scope_get_cond_handle(stf_while_scope_handle scope)
@@ -2269,9 +2261,7 @@ stf_repeat_scope_handle stf_stackable_push_repeat(stf_ctx_handle ctx, size_t cou
 
 stf_error_t stf_stackable_pop_repeat(stf_repeat_scope_handle scope)
 {
-  return stf_guard([&] {
-    delete from_opaque_repeat(scope);
-  });
+  return stf_delete(from_opaque_repeat(scope));
 }
 
 stf_error_t stf_stackable_while_cond_scalar(
@@ -2319,13 +2309,13 @@ stf_error_t stf_stackable_while_cond_multi(
     // which task-dep slot each term resolves to).
     int dep_index[STF_WHILE_COND_MAX_TERMS];
     int n_deps = 0;
-    for (int i = 0; i < n_terms; ++i)
+    for (auto i : each(n_terms))
     {
       _CCCL_ASSERT(terms[i].ld != nullptr, "stackable logical data handle must not be null");
       _CCCL_ASSERT(terms[i].dtype >= STF_DTYPE_FLOAT32 && terms[i].dtype <= STF_DTYPE_INT64,
                    "unsupported dtype for stf_stackable_while_cond_multi");
       int found = -1;
-      for (int j = 0; j < i; ++j)
+      for (auto j : each(i))
       {
         if (terms[j].ld == terms[i].ld)
         {
@@ -2355,7 +2345,7 @@ stf_error_t stf_stackable_while_cond_multi(
     stf_while_cond_pack pack{};
     pack.n_terms  = n_terms;
     pack.combiner = static_cast<int>(combiner);
-    for (int i = 0; i < n_terms; ++i)
+    for (auto i : each(n_terms))
     {
       auto s                  = task.template get<slice<const char>>(dep_index[i]);
       pack.terms[i].ptr       = s.data_handle();
@@ -2376,7 +2366,7 @@ stf_error_t stf_stackable_while_cond_multi(
 stf_logical_data_handle
 stf_stackable_logical_data_with_place(stf_ctx_handle ctx, void* addr, size_t sz, stf_data_place_handle dplace)
 {
-  return stf_guard([&]() -> stf_logical_data_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
     _CCCL_ASSERT(dplace != nullptr, "data_place handle must not be null");
 
@@ -2391,7 +2381,7 @@ stf_stackable_logical_data_with_place(stf_ctx_handle ctx, void* addr, size_t sz,
 
 stf_logical_data_handle stf_stackable_logical_data(stf_ctx_handle ctx, void* addr, size_t sz)
 {
-  return stf_guard([&]() -> stf_logical_data_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
 
     auto* sctx = from_opaque_sctx(ctx);
@@ -2405,7 +2395,7 @@ stf_logical_data_handle stf_stackable_logical_data(stf_ctx_handle ctx, void* add
 
 stf_logical_data_handle stf_stackable_logical_data_empty(stf_ctx_handle ctx, size_t length)
 {
-  return stf_guard([&]() -> stf_logical_data_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
 
     auto* sctx = from_opaque_sctx(ctx);
@@ -2419,7 +2409,7 @@ stf_logical_data_handle stf_stackable_logical_data_empty(stf_ctx_handle ctx, siz
 
 stf_logical_data_handle stf_stackable_logical_data_no_export_empty(stf_ctx_handle ctx, size_t length)
 {
-  return stf_guard([&]() -> stf_logical_data_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
 
     auto* sctx = from_opaque_sctx(ctx);
@@ -2433,7 +2423,7 @@ stf_logical_data_handle stf_stackable_logical_data_no_export_empty(stf_ctx_handl
 
 stf_logical_data_handle stf_stackable_token(stf_ctx_handle ctx)
 {
-  return stf_guard([&]() -> stf_logical_data_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
 
     auto* sctx = from_opaque_sctx(ctx);
@@ -2489,38 +2479,38 @@ stf_error_t stf_stackable_logical_data_push(stf_logical_data_handle ld, stf_acce
 
 stf_error_t stf_stackable_logical_data_destroy(stf_logical_data_handle ld)
 {
-  return stf_guard([&] {
-    if (ld == nullptr)
-    {
-      return;
-    }
+  // Deletes only; see stf_delete for why no guard is needed.
+  stf_clear_last_error();
+  if (ld != nullptr)
+  {
     auto* w = from_opaque_sld_wrapper(ld);
     _CCCL_ASSERT(!w->is_token,
                  "stf_stackable_logical_data_destroy called on a token handle; use stf_stackable_token_destroy "
                  "instead");
     delete static_cast<stackable_ld_t*>(w->impl);
     delete w;
-  });
+  }
+  return STF_SUCCESS;
 }
 
 stf_error_t stf_stackable_token_destroy(stf_logical_data_handle ld)
 {
-  return stf_guard([&] {
-    if (ld == nullptr)
-    {
-      return;
-    }
+  // Deletes only; see stf_delete for why no guard is needed.
+  stf_clear_last_error();
+  if (ld != nullptr)
+  {
     auto* w = from_opaque_sld_wrapper(ld);
     _CCCL_ASSERT(w->is_token,
                  "stf_stackable_token_destroy called on a non-token handle; use stf_stackable_logical_data_destroy");
     delete static_cast<stackable_token_t*>(w->impl);
     delete w;
-  });
+  }
+  return STF_SUCCESS;
 }
 
 stf_task_handle stf_stackable_task_create(stf_ctx_handle ctx)
 {
-  return stf_guard([&]() -> stf_task_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
 
     auto* sctx           = from_opaque_sctx(ctx);
@@ -2577,7 +2567,7 @@ stf_error_t stf_stackable_task_add_dep_with_dplace(
 
 stf_host_launch_handle stf_stackable_host_launch_create(stf_ctx_handle ctx)
 {
-  return stf_guard([&]() -> stf_host_launch_handle {
+  return stf_guard([&] {
     _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
 
     auto* sctx           = from_opaque_sctx(ctx);
@@ -2622,13 +2612,7 @@ stf_error_t stf_stackable_host_launch_submit(stf_host_launch_handle h, stf_host_
 
 stf_error_t stf_stackable_host_launch_destroy(stf_host_launch_handle h)
 {
-  return stf_guard([&] {
-    if (h == nullptr)
-    {
-      return;
-    }
-    delete static_cast<context::host_launch_builder*>(static_cast<void*>(h));
-  });
+  return stf_delete(static_cast<context::host_launch_builder*>(static_cast<void*>(h)));
 }
 
 } // extern "C"
