@@ -45,27 +45,26 @@ __device__ __forceinline__ static T generate_random_data(uint32_t& seed)
 __device__ static int device_var[16];
 
 template <typename T>
-__device__ __forceinline__ static void sink(T value)
+__device__ __forceinline__ static void sink(const T& value)
 {
-  if (cuda::ptx::get_sreg_smid() == static_cast<uint32_t>(-1))
+  // This also accepts arrays by reference, preserving every element without a numeric conversion or reduction.
+  constexpr auto size = ::cuda::ceil_div(sizeof(T), sizeof(uint32_t));
+  uint32_t words[size]{};
+  ::cuda::std::memcpy(words, &value, sizeof(T));
+  const auto smid = ::cuda::ptx::get_sreg_smid();
+#pragma unroll
+  for (const auto word : words)
   {
-    *reinterpret_cast<T*>(device_var) = value;
-  }
-}
-
-template <typename T, int Size>
-__device__ __forceinline__ static void sink(T (&values)[Size])
-{
-  if (cuda::ptx::get_sreg_smid() == static_cast<uint32_t>(-1))
-  {
-    // use float instead of T to ensure summation order matters (due to floating-point non-associativity), making
-    // `action` less likely to be optimized away
-    float sum(0.0f);
-    for (int i = 0; i < Size; ++i)
-    {
-      sum += values[i];
-    }
-    *reinterpret_cast<float*>(device_var) += sum;
+    // Consume each word before testing the guard, so CUDA C++ compilation cannot move its producer into a dead branch.
+    // Volatile stores retain all words at the same destination; a valid SM never executes the stores.
+    asm volatile(
+      "{ .reg .pred p;\n\t"
+      "setp.eq.u32 p, %2, 0xffffffff;\n\t"
+      "@p st.volatile.global.u32 [%0], %1;\n\t"
+      "}"
+      :
+      : "l"(device_var), "r"(word), "r"(smid)
+      : "memory");
   }
 }
 
