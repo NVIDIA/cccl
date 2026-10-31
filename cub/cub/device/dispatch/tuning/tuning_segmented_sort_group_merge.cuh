@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 // Private GroupMerge defaults: supported thread/IPT ranges and settings for each sorting launch.
 
@@ -35,45 +35,38 @@ struct group_merge_policy
   int min_blocks_per_sm; // __launch_bounds__ target for compiler register allocation, not the grid size.
 };
 
-// Select a tuning architecture, not a policy object. SM90 settings currently cover
-// SM90 and newer; zero marks unsupported older targets. Add newer tuning tiers here.
+// Preserve the compiled compute capability for host-side setup. Dispatch rejects targets below SM90.
 struct group_merge_tuning_arch_selector
 {
-  _CCCL_HOST_DEVICE_API constexpr int operator()(::cuda::compute_capability cc) const
+  _CCCL_HOST_DEVICE_API constexpr ::cuda::compute_capability operator()(::cuda::compute_capability cc) const
   {
-    return cc >= ::cuda::compute_capability{9, 0} ? 90 : 0;
+    return cc;
   }
 };
 
-// Each entry supplies its own reusable getter, parameterized by tuning architecture.
-// The current values form the SM90 baseline; individual getters can add newer tunings.
-template <int TuningArch>
-struct group_merge_warp_policy_getter
+// Independent selectors supply the current SM90+ defaults for each sorting launch.
+// Older targets can compile these kernels, but the host dispatcher does not launch them.
+struct group_merge_warp_policy_selector
 {
-  static_assert(TuningArch >= 90);
-  _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
+  _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()(::cuda::compute_capability) const
   {
     return {256, 1, 32, 9, 15, 128, 1};
   }
 };
 
-template <int TuningArch>
-struct group_merge_small_policy_getter
+struct group_merge_small_policy_selector
 {
-  static_assert(TuningArch >= 90);
-  _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
+  _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()(::cuda::compute_capability) const
   {
     return {256, 64, 256, 9, 15, 128, 1};
   }
 };
 
 // Limit cooperating threads for larger keys to bound shared-memory scratch.
-// Keys wider than 8 bytes need architecture-specific policies before being enabled.
-template <int TuningArch, typename Key>
-struct group_merge_large_policy_getter
+template <typename Key>
+struct group_merge_large_policy_selector
 {
-  static_assert(TuningArch >= 90);
-  _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
+  _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()(::cuda::compute_capability) const
   {
     constexpr int threads = sizeof(Key) <= 4 ? 1024 : 512;
     return {threads, 512, threads, 9, 15, 2, 1};

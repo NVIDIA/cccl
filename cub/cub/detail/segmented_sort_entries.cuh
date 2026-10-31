@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Sorting-entry contract: compose capacity bounds and configurations for partitioning and sorting.
+// Sorting-kernel contract: compose capacity bounds and configurations for partitioning and sorting.
 
 #pragma once
 
@@ -15,6 +15,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/cc_dispatch.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <cuda/std/array>
@@ -25,7 +27,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort_capacity
 {
-// Ordered capacity bounds supplied by sorting entries; partition finds the smallest fitting bin.
+// Ordered capacity bounds supplied by sorting kernels; partition finds the smallest fitting bin.
 template <int... Bounds>
 struct capacity_list
 {
@@ -62,7 +64,7 @@ struct capacity_list
   }
 };
 
-// Flatten entry capacities in launch order, preserving each entry's bin order.
+// Flatten kernel capacities in launch order, preserving each kernel's bin order.
 template <typename... Lists>
 struct concatenate_capacities;
 template <typename List>
@@ -80,75 +82,91 @@ struct concatenate_capacities<capacity_list<Left...>, capacity_list<Right...>, R
 template <int Threads, int ItemsPerThread>
 struct bin_shape
 {
-  static constexpr int threads          = Threads;
-  static constexpr int items_per_thread = ItemsPerThread;
+  static constexpr int threads_per_segment = Threads;
+  static constexpr int items_per_thread    = ItemsPerThread;
 };
 
-// Configuration values returned by lookup_bin_config to sort_entry_kernel for work packing
+// Configuration values returned by lookup_bin_config to sort_kernel for work packing
 // and passed to the GroupMerge worker. Also used during compile-time capacity expansion.
 struct bin_config
 {
-  int threads;
+  int threads_per_segment;
   int items_per_thread;
 };
 
 // An expansion enumerates a sorter's bins: capacities and a shape_for_bin<Bin> type.
 // The runtime local bin selects a leaf whose configuration is known at compile time.
 template <typename Expansion, int Begin = 0, int End = Expansion::capacities::size>
-_CCCL_HOST_DEVICE_API constexpr bin_config lookup_bin_config(int bin)
+_CCCL_HOST_DEVICE_API constexpr bin_config lookup_bin_config(int bin_idx)
 {
   static_assert(Begin < End);
   if constexpr (End - Begin == 1)
   {
     using shape = typename Expansion::template shape_for_bin<Begin>;
-    return {shape::threads, shape::items_per_thread};
+    return {shape::threads_per_segment, shape::items_per_thread};
   }
   else
   {
     constexpr int mid = Begin + (End - Begin) / 2;
-    return bin < mid ? lookup_bin_config<Expansion, Begin, mid>(bin) : lookup_bin_config<Expansion, mid, End>(bin);
+    return bin_idx < mid ? lookup_bin_config<Expansion, Begin, mid>(bin_idx)
+                         : lookup_bin_config<Expansion, mid, End>(bin_idx);
   }
 }
 
-// Describe one sorting launch: its worker, supported bins, and launch settings.
-template <typename Implementation>
-struct sort_entry
+// Describe a sorting launch without fixing its architecture-selected tuning in the type.
+template <template <typename> class Implementation, typename PolicySelector>
+struct sort_kernel_t
 {
-  using implementation                = Implementation;
-  using expansion                     = typename implementation::expansion;
-  using capacities                    = typename expansion::capacities;
-  inline static constexpr auto tuning = implementation::policy;
-  // Threads per independently scheduled work unit (warp or block), which may pack several segments.
-  static constexpr int unit_threads = implementation::unit_threads;
-  static_assert(tuning.block_threads > 0 && tuning.block_threads <= 1024);
-  static_assert(unit_threads > 0 && tuning.block_threads % unit_threads == 0);
-  static_assert(tuning.blocks_per_sm > 0 && tuning.min_blocks_per_sm > 0);
-  static_assert(capacities::valid());
+  using policy_selector = PolicySelector;
+  template <typename ComputeCapabilityGetter>
+  using implementation_t = Implementation<policy_getter<PolicySelector, ComputeCapabilityGetter{}().get()>>;
+  template <typename ComputeCapabilityGetter>
+  using expansion_t = typename implementation_t<ComputeCapabilityGetter>::expansion;
+  template <typename ComputeCapabilityGetter>
+  using capacities_t = typename expansion_t<ComputeCapabilityGetter>::capacities;
 };
 
-// Combine launches into one partition capacity list; each entry owns a consecutive range.
-template <typename... Entries>
-struct sort_entries
+// Compose an ordered kernel list; resolve capacities for host setup or device compilation.
+template <typename... Kernels>
+struct sort_kernel_list_t
 {
-  static constexpr int size = sizeof...(Entries);
+  static constexpr int size = sizeof...(Kernels);
   static_assert(size > 0);
-  using entries = ::cuda::std::tuple<Entries...>;
-  template <::cuda::std::size_t EntryIndex>
-  using entry      = ::cuda::std::tuple_element_t<EntryIndex, entries>;
-  using capacities = typename concatenate_capacities<typename Entries::capacities...>::type;
-  static_assert(capacities::valid(),
-                "Capacities of consecutive sort entries must be strictly increasing: the largest capacity of entry N "
-                "(max_threads * max_ipt) must be below the smallest of entry N+1 (min_threads * min_ipt).");
-  // First bin of this entry in the flattened list; entry-local bin indices start at zero.
-  _CCCL_HOST_DEVICE_API static constexpr int bin_begin(int entry_index)
+  using kernels_t = ::cuda::std::tuple<Kernels...>;
+  template <::cuda::std::size_t KernelIndex>
+  using kernel_t = ::cuda::std::tuple_element_t<KernelIndex, kernels_t>;
+  template <typename ComputeCapabilityGetter>
+  using capacities_t =
+    typename concatenate_capacities<typename Kernels::template capacities_t<ComputeCapabilityGetter>...>::type;
+
+  // First global bin index for the selected kernel; local bin indices start at zero.
+  template <typename ComputeCapabilityGetter>
+  _CCCL_HOST_DEVICE_API static constexpr int kernel_bin_begin_idx(int kernel_idx)
   {
-    constexpr int counts[] = {Entries::capacities::size...};
-    int result             = 0;
-    for (int i = 0; i < entry_index; ++i)
+    constexpr int kernel_bin_counts[] = {Kernels::template capacities_t<ComputeCapabilityGetter>::size...};
+    int first_bin_idx                 = 0;
+    for (int i = 0; i < kernel_idx; ++i)
     {
-      result += counts[i];
+      first_bin_idx += kernel_bin_counts[i];
     }
-    return result;
+    return first_bin_idx;
+  }
+};
+
+// Let partition-only callers supply fixed bounds through the same capacity-selector interface.
+template <typename Capacities>
+struct fixed_capacity_selector_t
+{
+  template <typename>
+  using capacities_t = Capacities;
+};
+
+// Query the architecture being compiled without carrying it in a kernel template argument.
+struct device_compute_capability_getter_t
+{
+  _CCCL_DEVICE_API constexpr auto operator()() const
+  {
+    return current_tuning_cc();
   }
 };
 
