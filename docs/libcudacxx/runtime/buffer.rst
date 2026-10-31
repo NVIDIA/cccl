@@ -87,7 +87,12 @@ Buffers can be constructed in several ways, depending on how you want to initial
 - From initializer list: ``buffer(stream, resource, {val1, val2, ...})``
 - From range: ``buffer(stream, resource, range)``
 
-In each case the memory is allocated and initialized in stream order on the provided stream.
+Memory allocation and destination writes occur in stream order on the provided stream.
+For rvalue initializer lists, including braced lists, all source accesses complete before the constructor or
+factory returns. CUDA 13 uses batched memcpy with source access during the API call; CUDA 12 synchronizes the
+stream after copying a non-empty list. Named lvalue initializer lists are copied in stream order and must remain
+valid until the copy completes. These rules also apply to ``make_buffer``, ``make_device_buffer``,
+``make_pinned_buffer``, and ``make_managed_buffer``.
 
 .. warning::
 
@@ -125,8 +130,8 @@ In each case the memory is allocated and initialized in stream order on the prov
 
    Some ``cudaMemcpyAsync`` paths historically synchronized implicitly when copying from pageable host memory, which
    could mask this bug. Do not rely on that behavior; newer platforms and asynchronous copy implementations may
-   perform a truly asynchronous copy. The same lifetime rule applies to temporary host sources such as initializer
-   lists, whose backing storage is destroyed at the end of the full expression.
+   perform a truly asynchronous copy. Rvalue initializer lists passed directly to the initializer-list overloads
+   are safe; passing their iterators or a view of their backing storage still requires managing the source lifetime.
 
 Example:
 
