@@ -18,6 +18,7 @@
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_adjacent_difference.cuh>
 #include <cub/util_arch.cuh>
@@ -310,28 +311,6 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceAdjacentDifference"
 
 namespace detail::adjacent_difference
 {
-template <typename PolicyTransformer, typename DefaultPolicySelector>
-struct policy_selector_from_transformer
-{
-  _CCCL_API constexpr auto operator()(cuda::compute_capability cc) const
-  {
-    return PolicyTransformer{}(cc, DefaultPolicySelector{}(cc));
-  }
-};
-
-template <typename PolicySelector, typename DefaultPolicySelector>
-_CCCL_NODEBUG_API constexpr auto handle_policy_transformers()
-{
-  if constexpr (::cuda::std::is_invocable_v<PolicySelector, ::cuda::compute_capability>)
-  {
-    return PolicySelector{};
-  }
-  else
-  {
-    return policy_selector_from_transformer<PolicySelector, DefaultPolicySelector>{};
-  }
-}
-
 template <MayAlias AliasOpt,
           ReadOption ReadOpt,
           typename InputIteratorT,
@@ -348,16 +327,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   NumItemsT num_items,
   DifferenceOpT difference_op,
   cudaStream_t stream,
-  TuningEnvT tuning_env                  = {},
+  TuningEnvT                             = {},
   KernelLauncherFactory launcher_factory = {})
 {
   using input_t                   = detail::it_value_t<InputIteratorT>;
   using offset_t                  = detail::choose_offset_t<NumItemsT>;
   using default_policy_selector_t = policy_selector_from_types<InputIteratorT, AliasOpt == MayAlias::Yes>;
-  using policy_selector_or_transformer_t =
-    ::cuda::std::execution::__query_result_or_t<TuningEnvT, AdjacentDifferencePolicy, default_policy_selector_t>;
   using policy_selector_t =
-    decltype(handle_policy_transformers<policy_selector_or_transformer_t, default_policy_selector_t>());
+    policy_selector_from_tuning_env_t<TuningEnvT, AdjacentDifferencePolicy, default_policy_selector_t>;
 
 #if _CCCL_HAS_CONCEPTS()
   static_assert(adjacent_difference_policy_selector<policy_selector_t>,

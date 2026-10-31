@@ -29,6 +29,7 @@
 #include <cub/detail/double_buffer.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/null_type.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
 #include <cub/util_runs_on.cuh>
 
@@ -204,7 +205,7 @@ private:
   {
     using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, ValueT, OffsetT>;
     using policy_selector_t =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, RadixSortPolicy, default_policy_selector_t>;
+      detail::policy_selector_from_tuning_env_t<TuningEnvT, RadixSortPolicy, default_policy_selector_t>;
     return detail::radix_sort::dispatch<Order>(
       d_temp_storage,
       temp_storage_bytes,
