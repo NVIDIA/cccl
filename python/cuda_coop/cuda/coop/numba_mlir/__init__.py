@@ -11,7 +11,7 @@ descriptors can also be created on the host and used as kernel globals.
 Construct TempStorage inside each kernel. During compilation, the compiler
 rebuilds the descriptor from its compile-time constant arguments and
 validates them. The compiler rejects a descriptor that comes from a module
-global. The ``local`` and ``shared`` namespaces and the Reduce and Sum
+global. The ``local`` and ``shared`` namespaces and the Reduce, Sum, and Scan
 markers load on first access.
 """
 
@@ -36,6 +36,13 @@ from ._thread_group import (
 
 if TYPE_CHECKING:
     from ._group._reduce import reduce, sum
+    from ._group._scan import (
+        exclusive_scan,
+        exclusive_sum,
+        inclusive_scan,
+        inclusive_sum,
+        scan,
+    )
     from ._thread_data import local, shared
 
 __all__ = [
@@ -46,9 +53,14 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
     "local",
     "reduce",
+    "scan",
     "shared",
     "store",
     "sum",
@@ -68,9 +80,22 @@ def __getattr__(name):
     Unknown names raise ``AttributeError`` as normal module lookup requires.
     """
 
-    if name in {"reduce", "sum"}:
+    if name in {
+        "exclusive_scan",
+        "exclusive_sum",
+        "inclusive_scan",
+        "inclusive_sum",
+        "reduce",
+        "scan",
+        "sum",
+    }:
         module_name = {
+            "exclusive_scan": "_group._scan",
+            "exclusive_sum": "_group._scan",
+            "inclusive_scan": "_group._scan",
+            "inclusive_sum": "_group._scan",
             "reduce": "_group._reduce",
+            "scan": "_group._scan",
             "sum": "_group._reduce",
         }[name]
         value = getattr(

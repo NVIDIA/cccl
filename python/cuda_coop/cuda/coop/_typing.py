@@ -51,6 +51,8 @@ ReduceAlgorithm: TypeAlias = Literal[
     "warp_reductions",
 ]
 
+ScanAlgorithm: TypeAlias = Literal["raking", "raking_memoize", "warp_scans"]
+
 ReduceOperator: TypeAlias = Literal[
     "+",
     "sum",
@@ -71,6 +73,27 @@ ReduceOperator: TypeAlias = Literal[
     "^",
     "bit_xor",
 ]
+
+SumScanOperator: TypeAlias = Literal["+", "sum", "add", "plus"]
+
+NonSumScanOperator: TypeAlias = Literal[
+    "*",
+    "mul",
+    "multiply",
+    "multiplies",
+    "min",
+    "minimum",
+    "max",
+    "maximum",
+    "&",
+    "bit_and",
+    "|",
+    "bit_or",
+    "^",
+    "bit_xor",
+]
+
+ScanOperator: TypeAlias = SumScanOperator | NonSumScanOperator
 
 
 class CompilerScalarLike(Protocol):
@@ -95,6 +118,8 @@ class CompilerIntegerLike(CompilerScalarLike, Protocol):
 if not TYPE_CHECKING and numpy is None:
     CommonNumericScalar: TypeAlias = int | float | CompilerScalarLike
     IntegerValue: TypeAlias = int | CompilerIntegerLike
+    SignedIntegerScalar: TypeAlias = int | CompilerIntegerLike
+    IntegralScalar: TypeAlias = SignedIntegerScalar
 else:
     CommonNumericScalar: TypeAlias = (
         int
@@ -117,6 +142,11 @@ else:
     else:
         IntegerValue: TypeAlias = int | numpy.integer | CompilerIntegerLike
 
+    SignedIntegerScalar: TypeAlias = (
+        int | numpy.signedinteger[Any] | CompilerIntegerLike
+    )
+
+    IntegralScalar: TypeAlias = SignedIntegerScalar | numpy.unsignedinteger[Any]
 
 ValidItems: TypeAlias = IntegerValue
 

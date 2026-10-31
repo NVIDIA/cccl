@@ -47,6 +47,13 @@ def test_thread_data_example():
 
 
 def test_temp_storage_example():
+    """Reuse one scratch area across load, scan, and store for two tiles.
+
+    Automatic synchronization protects consecutive users of the same storage.
+    The reference restarts the exclusive prefix for each tile, even though one
+    block processes both tiles in a loop.
+    """
+
     # temp-storage-example-begin
     import numpy as np
     from numba_cuda_mlir import cuda
@@ -55,7 +62,7 @@ def test_temp_storage_example():
     from cuda import coop
 
     @cuda.jit
-    def copy_tiles(source, destination, items_per_thread):
+    def scan_tiles(source, destination, items_per_thread):
         block = coop.this_block()
         scratch = coop.TempStorage(alignment=16, auto_sync=True)
         items = coop.ThreadData(items_per_thread)
@@ -69,10 +76,11 @@ def test_temp_storage_example():
                 algorithm="transpose",
                 temp_storage=scratch,
             )
+            prefixes = coop.exclusive_sum(block, items, temp_storage=scratch)
             coop.store(
                 block,
                 destination,
-                items,
+                prefixes,
                 offset=offset,
                 algorithm="transpose",
                 temp_storage=scratch,
@@ -82,6 +90,8 @@ def test_temp_storage_example():
         values = (np.arange(2 * 128 * items_per_thread) % 7).astype(np.int32)
         source = cuda.to_device(values)
         destination = cuda.device_array_like(source)
-        copy_tiles[1, 128](source, destination, items_per_thread)
-        np.testing.assert_array_equal(destination.copy_to_host(), values)
+        scan_tiles[1, 128](source, destination, items_per_thread)
+        tiles = values.reshape(2, 128 * items_per_thread)
+        expected = (np.cumsum(tiles, axis=1) - tiles).ravel()
+        np.testing.assert_array_equal(destination.copy_to_host(), expected)
     # temp-storage-example-end

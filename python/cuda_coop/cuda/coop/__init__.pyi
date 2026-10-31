@@ -6,6 +6,13 @@ from typing import Literal
 
 from ._core.api.load_store import load, store
 from ._core.api.reduce import reduce, sum
+from ._core.api.scan import (
+    exclusive_scan,
+    exclusive_sum,
+    inclusive_scan,
+    inclusive_sum,
+    scan,
+)
 from ._core.api.temp_storage import TempStorage, TempStorageLike
 from ._core.api.thread_data import ThreadData, ThreadDataLike
 from ._core.api.thread_group import (
@@ -34,9 +41,14 @@ __all__ = [
     "ThreadGroup",
     "ThreadHierarchy",
     "__version__",
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
     "reduce",
     "register",
+    "scan",
     "store",
     "sum",
     "this_block",

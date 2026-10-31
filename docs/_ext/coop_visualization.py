@@ -15,11 +15,17 @@ _EXPLORERS = {
     "load": "coop-load.js",
     "store": "coop-movement.js",
     "reduce": "coop-collectives.js",
+    "scan": "coop-collectives.js",
 }
 
 _VISUALIZATION_TITLES = {}
 
 _API_VISUALIZATIONS = {
+    "scan": "scan",
+    "exclusive_scan": "scan",
+    "inclusive_scan": "scan",
+    "exclusive_sum": "scan",
+    "inclusive_sum": "scan",
     "load": "load",
     "store": "store",
     "reduce": "reduce",

@@ -94,6 +94,16 @@ See :ref:`reduction and result ownership <coop-reductions>`.
 .. autofunction:: reduce
 .. autofunction:: sum
 
+Scan
+^^^^
+
+See :ref:`scan operators and prefixes <coop-scans>`.
+
+.. autofunction:: scan
+.. autofunction:: exclusive_sum
+.. autofunction:: inclusive_sum
+.. autofunction:: exclusive_scan
+.. autofunction:: inclusive_scan
 
 .. _coop-numba-extensions:
 
@@ -136,3 +146,12 @@ Reduction
 
 .. autofunction:: reduce
 .. autofunction:: sum
+
+Scan
+^^^^
+
+.. autofunction:: scan
+.. autofunction:: exclusive_sum
+.. autofunction:: inclusive_sum
+.. autofunction:: exclusive_scan
+.. autofunction:: inclusive_scan

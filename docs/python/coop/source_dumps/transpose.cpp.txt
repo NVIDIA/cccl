@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 // NVRTC capture excerpt: generated identifiers shortened and whitespace formatted.
-// The archive contains the original translation unit and the identifier mapping.
 // excerpt-begin
 #include <cuda/std/cstdint>
 
