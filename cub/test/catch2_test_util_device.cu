@@ -296,7 +296,10 @@ __global__ void test_max_potential_dynamic_smem_bytes_device(int* result)
 }
 #endif // CUB_RDC_ENABLED
 
-CUB_TEST("MaxPotentialDynamicSmemBytes", "[util][launch]", CUB_SMALL)
+// The negative test below intentionally passes a null kernel to MaxPotentialDynamicSmemBytes,
+// which is expected to return a CUDA error. compute-sanitizer rejects the expected CUDA
+// API error, so this test is skipped under memcheck.
+CUB_TEST("MaxPotentialDynamicSmemBytes", "[util][launch][skip-cs-memcheck]", CUB_SMALL)
 {
   const cuda::device_ref device{0};
 
