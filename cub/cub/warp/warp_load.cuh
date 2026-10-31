@@ -336,27 +336,17 @@ private:
         : linear_tid(linear_tid)
     {}
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputT* block_ptr, InputT (&items)[ItemsPerThread])
-    {
-      LoadDirectBlockedVectorized(linear_tid, block_ptr, items);
-    }
-
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(const InputT* block_ptr, InputT (&items)[ItemsPerThread])
-    {
-      LoadDirectBlockedVectorized(linear_tid, block_ptr, items);
-    }
-
-    template <CacheLoadModifier MODIFIER, typename ValueType, typename OffsetT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void
-    Load(CacheModifiedInputIterator<MODIFIER, ValueType, OffsetT> block_itr, InputT (&items)[ItemsPerThread])
-    {
-      LoadDirectBlockedVectorized<MODIFIER>(linear_tid, block_itr.ptr, items);
-    }
-
     template <typename InputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr, InputT (&items)[ItemsPerThread])
     {
-      LoadDirectBlocked(linear_tid, block_itr, items);
+      if constexpr (detail::is_CacheModifiedInputIterator<InputIteratorT>)
+      {
+        LoadDirectBlockedVectorized<InputIteratorT::__modifier>(linear_tid, block_itr, items);
+      }
+      else
+      {
+        LoadDirectBlockedVectorized(linear_tid, block_itr, items);
+      }
     }
 
     template <typename InputIteratorT>

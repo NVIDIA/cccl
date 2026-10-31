@@ -158,11 +158,12 @@ private:
     }
   }
 
-  // don't provide access to this part of super_t's interface
-  using super_t::base;
+  // base_type stays private. Callers use raw_pointer.
   using typename super_t::base_type;
 
 public:
+  //! @brief The stored raw pointer. Public so contiguous unwrapping can reach it.
+  using super_t::base;
   /*! The type of the raw pointer
    */
   using raw_pointer = typename super_t::base_type;
@@ -391,6 +392,14 @@ public:
     !detail::ptr_can_compare_less_than<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
     bool>
   operator<=(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs) = delete;
+
+  //! @brief Retargets this pointer at @p __ptr.
+  //! @param[in] __ptr The address that replaces the stored pointer.
+  template <class _Tp>
+  _CCCL_HOST_DEVICE void __rebase(_Tp* __ptr) &
+  {
+    this->base_reference() = static_cast<Element*>(__ptr);
+  }
 };
 
 /*! \} // memory_management
@@ -430,5 +439,9 @@ struct pointer_traits<Pointer, void_t<typename Pointer::raw_pointer>>
     return iter.get();
   }
 };
+
+template <class _Element, class _Tag, class _Reference, class _Derived>
+inline constexpr bool __has_contiguous_traversal<THRUST_NS_QUALIFIER::pointer<_Element, _Tag, _Reference, _Derived>> =
+  true;
 
 _CCCL_END_NAMESPACE_CUDA_STD
