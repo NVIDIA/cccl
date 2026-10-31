@@ -270,6 +270,11 @@ private:
     auto const __launch_config         = get_launch_config(execution::get_env(__state.__state_.__rcvr_));
     constexpr auto __threads_per_block = gpu_thread.count_as<int>(block, __launch_config);
 
+    // *this can live in managed memory (see __managed_box). Once the child operation has
+    // launched a kernel, the host must not touch managed memory on devices without
+    // concurrent managed access (e.g. Windows and WSL), so read the stream first.
+    const stream_ref __stream = __stream_;
+
     // Start the child operation state. This will launch kernels for all the predecessors
     // of this operation.
     execution::start(__state.__opstate_);
@@ -278,7 +283,7 @@ private:
     {
       // launch a kernel to pass the results to the receiver.
       auto* __kernel = &__completion_kernel<__threads_per_block, _Rcvr, __results_t>;
-      ::cuda::launch(__stream_, __launch_config, __kernel, &__state.__state_);
+      ::cuda::launch(__stream, __launch_config, __kernel, &__state.__state_);
     }
     _CCCL_CATCH (::cuda::cuda_error & __error) // Check for errors in the kernel launch.
     {
