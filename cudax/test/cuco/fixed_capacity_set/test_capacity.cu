@@ -235,7 +235,7 @@ void check_last_slot(Set& set, test_context& context, const allocation_record& r
 
   const auto expected = static_cast<key_type>(capacity - 1);
   const auto first    = cuda::counting_iterator<key_type>{expected};
-  // An all-ones hash maps to the final slot for every capacity, including capacity one.
+  // The maximal hash places this key directly in the final slot, including capacity one.
   REQUIRE(set.insert(context.stream, first, first + 1) == 1);
   REQUIRE(cuda::std::equal(context.policy(), set.data() + capacity - 1, set.data() + capacity, first));
   auto results = cuda::make_buffer<int>(context.stream, context.mr, 1, 0);
