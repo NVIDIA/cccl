@@ -6,12 +6,15 @@ from typing import Literal, get_type_hints
 
 import pytest
 
-import cuda.coop._core.thread_group as _thread_group
 from cuda.coop._core import (
+    CoopCompilerContextRequiredError,
+    LaunchFacts,
     ThreadGroup,
     ThreadHierarchy,
     make_thread_group,
+    resolve_thread_group,
     this_block,
+    this_thread,
     this_warp,
 )
 
@@ -46,41 +49,6 @@ def test_current_group_resolution_preserves_backend_type_and_cache_identity():
     assert resolved.static_size == 32
     assert current not in {resolved}
     assert BackendGroup(kind="block", hierarchy=hierarchy) in {resolved}
-
-
-def test_physical_group_rendering_uses_current_or_resolved_hierarchy():
-    current = this_block()
-    assert "implicit_hierarchy()" in _thread_group.render_group_decl(current)
-
-    hierarchy = ThreadHierarchy._resolved(block_dim=(8, 4))
-    resolved = current.with_hierarchy(hierarchy)
-    assert "block_dims<8, 4>()" in "\n".join(
-        _thread_group.render_hierarchy_decl(hierarchy)
-    )
-    assert "this_block group{hierarchy}" in _thread_group.render_group_decl(
-        resolved
-    )
-
-
-@pytest.mark.parametrize(
-    ("kind", "count", "exhaustive", "synchronizer"),
-    [
-        ("warp", 8, True, "lane_synchronizer{}"),
-        ("block", 2, False, "barrier_synchronizer{group_barriers}"),
-    ],
-)
-def test_mapped_group_rendering_uses_membership_and_synchronizer(
-    kind, count, exhaustive, synchronizer
-):
-    group = ThreadGroup(
-        kind=kind, hierarchy=ThreadHierarchy._resolved(block_dim=160)
-    ).group_by(count, exhaustive=exhaustive)
-    source = "\n".join(_thread_group.render_group_decl_lines(group))
-
-    assert f"group_by<{count}, {str(exhaustive).lower()}>" in source
-    assert synchronizer in source
-    if kind == "block":
-        assert "barrier<::cuda::thread_scope_block>[2]" in source
 
 
 def test_partial_warp_mapping_excludes_remainder_lanes():
@@ -125,3 +93,33 @@ def test_group_by_requires_exhaustive_non_nested_membership():
         this_warp().group_by(12)
     with pytest.raises(NotImplementedError, match="nested"):
         this_warp().group_by(8).group_by(2)
+
+
+def test_thread_group_sync_requires_compiler_activation():
+    with pytest.raises(CoopCompilerContextRequiredError, match="sync"):
+        this_block().sync()
+
+
+@pytest.mark.parametrize(
+    ("group", "block_threads"),
+    [(this_block(), 48), (this_thread(), 16)],
+)
+def test_warp_queries_preserve_partial_physical_warps(group, block_threads):
+    resolved = resolve_thread_group(
+        group,
+        LaunchFacts(exact_block_dim=block_threads),
+        through_level="warp",
+    ).require_supported()
+
+    assert resolved.hierarchy.block_thread_count == block_threads
+
+
+def test_block_warp_query_requires_a_complete_physical_warp():
+    with pytest.raises(
+        NotImplementedError, match="at least one complete 32-thread Warp"
+    ):
+        resolve_thread_group(
+            this_block(),
+            LaunchFacts(exact_block_dim=16),
+            through_level="warp",
+        ).require_supported()

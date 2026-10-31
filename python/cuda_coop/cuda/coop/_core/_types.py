@@ -20,8 +20,8 @@ controls that choice where it is available.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from dataclasses import dataclass
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass, field
 from enum import Enum
 from numbers import Integral
 from typing import Any
@@ -47,9 +47,14 @@ class ParameterRole(str, Enum):
     """Describe how a primitive uses an argument, apart from its C++ type.
 
     ``INPUT`` supplies a value, ``OUTPUT`` receives a result, and ``INOUT``
-    does both. ``CONSTANT`` describes an embedded argument. ``TEMP_STORAGE``
-    identifies scratch memory that the implementation needs during the call.
-    An output role does not by itself make the argument a Python return value.
+    does both. ``CONSTANT`` describes an embedded non-operator value, such as
+    a static count or offset. ``TEMP_STORAGE`` identifies scratch memory that
+    the implementation needs during the call. An output role does not by
+    itself make the argument a Python return value.
+
+    ``OPERATOR`` identifies a C++ functor or compiled Python callback selected
+    during specialization. ``STATE`` identifies an operand that supplies a
+    callback's state at runtime.
     """
 
     INPUT = "input"
@@ -57,6 +62,8 @@ class ParameterRole(str, Enum):
     INOUT = "inout"
     CONSTANT = "constant"
     TEMP_STORAGE = "temp_storage"
+    OPERATOR = "operator"
+    STATE = "state"
 
 
 @dataclass(frozen=True)
@@ -197,6 +204,10 @@ class _StaticParameter:
     @property
     def argument_kind(self) -> ArgumentKind:
         return ArgumentKind.STATIC
+
+    @property
+    def role(self) -> ParameterRole:
+        return ParameterRole.OPERATOR
 
 
 @dataclass(frozen=True)
@@ -385,6 +396,120 @@ class CxxFunction(_StaticParameter):
     @property
     def role(self) -> ParameterRole:
         return ParameterRole.CONSTANT
+
+
+@dataclass(frozen=True)
+class CxxOperator(_StaticParameter):
+    """Describe a stateless C++ functor for a generated primitive call.
+
+    The backend constructs the functor in generated code without a runtime
+    operator argument. ``CxxFunction.cpp`` instead contains the expression to
+    use in the call.
+
+    Attributes
+    ----------
+    cpp : str
+        C++ functor type spelling, for example ``::cuda::std::plus<T>``. The
+        backend resolves any dtype placeholder and constructs the object.
+    dtype : object
+        Operand dtype, or a ``Dependency`` resolved from the algorithm's bound
+        template arguments.
+    name : str, optional
+        Parameter name used to identify the operator in the core signature.
+    """
+
+    cpp: str
+    dtype: Any
+    name: str | None = None
+
+
+@dataclass(frozen=True)
+class PythonOperator(_StaticParameter):
+    """Describe a Python callback compiled without a runtime state operand.
+
+    The backend compiles ``op`` for the declared input and result dtypes. The
+    callable may capture values in Python closures or defaults; those values
+    affect compilation identity but add no runtime state argument.
+
+    Attributes
+    ----------
+    ret_dtype : object
+        Callback result dtype, or a dependency resolved by the backend.
+    arg_dtypes : tuple
+        Callback input dtypes in call order. Construction copies the supplied
+        sequence to a tuple. Entries may be dependencies.
+    op : object
+        Python callable or callback wrapper understood by the backend.
+    name : str, optional
+        Parameter name used to identify the operator in the core signature.
+    op_tokenizer : callable, optional
+        Backend policy that describes ``op`` without traversing compiler
+        implementation state. Core identity traversal calls this policy again
+        on each query so changed callback dependencies remain visible. The
+        returned token replaces the ordinary token for ``op``; the policy
+        function itself is excluded from identity and dataclass comparison.
+        With ``None``, the shared encoder inspects ``op`` directly.
+    """
+
+    ret_dtype: Any
+    arg_dtypes: tuple[Any, ...]
+    op: Any
+    name: str | None = None
+    op_tokenizer: Callable[[Any], Any] | None = field(
+        default=None, compare=False, repr=False
+    )
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "arg_dtypes", tuple(self.arg_dtypes))
+
+
+@dataclass(frozen=True)
+class StatefulOperator(_RuntimeParameter):
+    """Describe a Python callback with state supplied as a runtime operand.
+
+    The callback and its type signature are selected during specialization.
+    The primitive caller supplies the state value at runtime. This record
+    describes the requirement; each backend decides whether it can implement
+    stateful callbacks. Its role stays ``STATE`` even for output state.
+
+    Attributes
+    ----------
+    op : object
+        Python callable or callback wrapper understood by the backend.
+    state_dtype : object
+        Dtype of the runtime state supplied to the callback.
+    ret_dtype : object
+        Callback result dtype, or a dependency resolved by the backend.
+    arg_dtypes : tuple
+        Callback input dtypes in call order, separate from ``state_dtype``.
+        Construction copies the supplied sequence to a tuple.
+    name : str, optional
+        Name used to identify the state parameter in the core signature.
+    is_output : bool
+        Whether the descriptor requests output state. Backend lowering defines
+        how that state is returned to the caller.
+    op_tokenizer : callable, optional
+        Backend callback-identity policy, with the same contract as
+        ``PythonOperator.op_tokenizer``. The state value is a runtime operand
+        and is not stored in this descriptor.
+    """
+
+    op: Any
+    state_dtype: Any
+    ret_dtype: Any
+    arg_dtypes: tuple[Any, ...]
+    name: str | None = None
+    is_output: bool = False
+    op_tokenizer: Callable[[Any], Any] | None = field(
+        default=None, compare=False, repr=False
+    )
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "arg_dtypes", tuple(self.arg_dtypes))
+
+    @property
+    def role(self) -> ParameterRole:
+        return ParameterRole.STATE
 
 
 def classify_parameter(parameter: Any) -> ParameterClassification:

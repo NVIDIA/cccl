@@ -15,6 +15,16 @@ from .load_store import (
     make_block_load_store_specialization,
     make_block_store_specialization,
 )
+from .reduce import (
+    BlockReduceAlgorithm,
+    BlockReduceOperation,
+    BlockReduceSemantics,
+    BlockReduceSpecialization,
+    BlockReduceValueKind,
+    make_block_reduce_semantics,
+    make_block_reduce_specialization,
+    normalize_block_reduce_algorithm,
+)
 
 __all__ = [
     "ArgumentBinding",
@@ -23,12 +33,20 @@ __all__ = [
     "BlockLoadStoreAlgorithm",
     "BlockLoadStoreKind",
     "BlockLoadStoreSemantics",
+    "BlockReduceAlgorithm",
+    "BlockReduceOperation",
+    "BlockReduceSemantics",
+    "BlockReduceSpecialization",
+    "BlockReduceValueKind",
     "BlockStoreAlgorithm",
     "binding",
     "make_block_load_specialization",
     "make_block_load_store_semantics",
     "make_block_load_store_specialization",
+    "make_block_reduce_semantics",
+    "make_block_reduce_specialization",
     "make_block_store_specialization",
     "normalize_block_dim",
+    "normalize_block_reduce_algorithm",
     "normalize_positive_int",
 ]

@@ -12,7 +12,7 @@ resolves the dimensions from ``LaunchFacts``.
 A descriptor is a Python planning value. Constructing one does not launch
 a kernel, synchronize threads, or establish that a primitive supports
 the requested group. Group resolution and operation planning check those
-requirements before a backend uses the CUDAX declaration helpers here.
+requirements before a backend lowers the operation.
 """
 
 from __future__ import annotations
@@ -23,13 +23,16 @@ from operator import mul
 from types import GenericAlias
 from typing import Any, TypeVar
 
-# Hierarchy levels identify the coordinate spaces used by group descriptors.
+# Hierarchy levels are the coordinate spaces accepted by rank and count queries.
 THREAD_LEVELS = frozenset({"thread", "warp", "block", "cluster", "grid"})
 # Physical groups use CUDA's thread, warp, block, cluster, and grid levels.
 PHYSICAL_GROUP_KINDS = frozenset({"thread", "warp", "block", "cluster", "grid"})
 MAPPED_GROUP_KINDS = frozenset({"threads_within_warp", "warps_within_block"})
 THREAD_GROUP_KINDS = PHYSICAL_GROUP_KINDS | MAPPED_GROUP_KINDS
 COMPLETE_WARP_GROUP_KINDS = frozenset({"warp"}) | MAPPED_GROUP_KINDS
+THREAD_GROUP_QUERY_DTYPE_NAMES = frozenset(
+    {"int8", "uint8", "int16", "uint16", "int32", "uint32", "int64", "uint64"}
+)
 _ThreadGroupT = TypeVar("_ThreadGroupT", bound="ThreadGroup")
 _CPP_LEVEL_EXPR = {
     "thread": "::cuda::gpu_thread",
@@ -42,6 +45,15 @@ _CPP_LEVEL_EXPR = {
 
 class CoopCompilerContextRequiredError(RuntimeError):
     """Report a cooperative value used outside the compiler stage it needs."""
+
+
+def _compiler_method_marker(method: str) -> Any:
+    """Reject host execution of a method that the backend must replace."""
+
+    raise CoopCompilerContextRequiredError(
+        f"cuda.coop.ThreadGroup.{method} requires compiler-owned activation "
+        "or a qualified backend import before compilation"
+    )
 
 
 def normalize_thread_dim(
@@ -118,6 +130,29 @@ def normalize_thread_group_kind(kind: str, *, scope: str, feature: str) -> str:
     return kind
 
 
+def validate_thread_group_query_dtype(dtype: Any, *, scope: str) -> str:
+    """Normalize a query's integer result type without importing a compiler.
+
+    Read the dtype's name, falling back to its Python name or string form.
+    Accept signed or unsigned 8-, 16-, 32-, and 64-bit integers. Backends can
+    use the returned name to construct their own compiler type; ``scope``
+    identifies the API in a diagnostic when the requested type is unsupported.
+    """
+
+    token = getattr(dtype, "name", None)
+    if token is None:
+        token = getattr(dtype, "__name__", None)
+    if token is None:
+        token = str(dtype)
+    token = str(token).lower()
+    if token not in THREAD_GROUP_QUERY_DTYPE_NAMES:
+        names = ", ".join(sorted(THREAD_GROUP_QUERY_DTYPE_NAMES))
+        raise TypeError(
+            f"{scope}.ThreadGroup query dtype must be one of: {names}"
+        )
+    return token
+
+
 def _thread_count(block_dim: tuple[int, int, int] | None) -> int | None:
     if block_dim is None:
         return None
@@ -135,28 +170,33 @@ def _dims_token(prefix: str, dims: tuple[int, int, int]) -> str:
 
 @dataclass(frozen=True, init=False)
 class ThreadHierarchy:
-    """Describe the launch dimensions known during group planning.
+    """CUDA hierarchy descriptor for the current kernel launch.
 
-    Public construction describes the current kernel launch with unresolved
-    dimensions. Backends supply exact extents from ``LaunchFacts`` when they
-    resolve a group. Callers cannot pass independent launch dimensions to
-    the public constructor.
+    ``ThreadHierarchy()`` and ``ThreadHierarchy.current()`` describe the
+    active launch. ``Hierarchy`` is an alias for this class. The compiler
+    supplies the block, grid, and optional cluster dimensions from the kernel
+    launch; this constructor accepts no dimensions.
 
-    Attributes
-    ----------
-    block_dim : tuple of int or None
-        Threads along each axis of one block, once known.
-    cluster_dim : tuple of int or None
-        Blocks along each axis of one cluster, once needed and known.
-    grid_dim : tuple of int or None
-        Clusters along each axis of the resolved grid. On a non-cluster
-        launch, each cluster contains one block.
-    implicit : bool
-        Whether this descriptor still refers to the current launch without
-        explicit dimensions. A resolved hierarchy can leave higher levels
-        unknown if the selected group does not need them.
+    Use :func:`cuda.coop.this_block`, :func:`cuda.coop.this_warp`, or another
+    group factory in a kernel to obtain a :class:`cuda.coop.ThreadGroup`.
+    See :ref:`thread groups <coop-thread-groups>` for the hierarchy and
+    :ref:`ranks and sizes <coop-group-queries>` for runtime queries.
+    The corresponding C++ abstraction is
+    :ref:`cuda::hierarchy <cccl-runtime-hierarchy>`.
+
+    Notes
+    -----
+    ``ThreadHierarchy()`` and ``current()`` leave ``block_dim``, ``grid_dim``,
+    and ``cluster_dim`` as ``None``. Creating one does not resolve runtime
+    ranks or allocate device storage. Use group methods inside a kernel to
+    query the actual launch.
     """
 
+    # Planner fields: ``block_dim`` counts threads per block, ``cluster_dim``
+    # counts blocks per cluster, and ``grid_dim`` counts clusters per grid. A
+    # non-cluster launch has one block per cluster. A resolved hierarchy can
+    # leave unneeded outer dimensions unknown. ``implicit`` marks a descriptor
+    # that still refers to the current launch.
     block_dim: tuple[int, int, int] | None
     grid_dim: tuple[int, int, int] | None
     cluster_dim: tuple[int, int, int] | None
@@ -221,7 +261,11 @@ class ThreadHierarchy:
 
     @classmethod
     def current(cls) -> ThreadHierarchy:
-        """Describe the current launch before its dimensions are known."""
+        """Return a descriptor for the compiler's current kernel launch.
+
+        Equivalent to ``ThreadHierarchy()``. See
+        :ref:`thread groups <coop-thread-groups>`.
+        """
 
         return cls()
 
@@ -407,16 +451,35 @@ def _validate_mapped_group_extent(
 
 @dataclass(frozen=True)
 class ThreadGroup:
-    """Describe the participants in a cooperative operation.
+    """Describe the threads participating in a cooperative operation.
 
-    Use the ``this_*`` factories to describe groups in the current kernel
-    launch. Constructing a descriptor does not synchronize threads or launch
-    a kernel. Load and Store support blocks, physical warps, and logical
-    warps; see :ref:`thread groups <coop-thread-groups>`.
+    Obtain descriptors from :func:`cuda.coop.this_thread`,
+    :func:`cuda.coop.this_warp`, :func:`cuda.coop.this_block`,
+    :func:`cuda.coop.this_cluster`, or :func:`cuda.coop.this_grid`. Their
+    dimensions come from the kernel launch. A descriptor does not itself
+    execute a primitive or synchronize threads.
 
-    Group descriptors can also be constructed in ordinary Python. Runtime
-    rank, size, membership, and synchronization queries are not available
-    in this API layer.
+    ``rank()`` and ``count()`` query the calling thread's rank and the group's
+    size. ``group_by()`` describes smaller groups within a physical warp or
+    block. The supported primitive scopes are documented by each primitive;
+    see :ref:`thread groups <coop-thread-groups>` and
+    :ref:`participation requirements <coop-participation>`.
+
+    Numba-CUDA-MLIR lowers queries through the
+    :ref:`CUDA C++ hierarchy queries <cccl-runtime-hierarchy-queries>` and
+    synchronization through native CUDA barriers.
+
+    Examples
+    --------
+    Query thread, warp, block, and grid coordinates with Numba-CUDA-MLIR.
+    Every row below has one result per launched thread.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_group_examples.py
+        :language: python
+        :start-after: # queries-example-begin
+        :end-before: # queries-example-end
+        :dedent: 4
     """
 
     __class_getitem__ = classmethod(GenericAlias)
@@ -710,35 +773,43 @@ class ThreadGroup:
         Parameters
         ----------
         count : int
-            Positive compile-time number of units in each subgroup. For a warp
-            parent, the unit is one thread; for a block parent, it is one
-            physical warp. Thus ``this_warp().group_by(8)`` describes eight
-            lanes, while ``this_block().group_by(2)`` describes 64 threads.
+            Compile-time positive number of units in each group. The units
+            are threads for a physical-warp parent and physical warps for a
+            block parent. For example, ``this_block().group_by(2)`` describes
+            64 threads. The count cannot exceed the parent's unit count.
         exhaustive : bool, optional
-            Compile-time flag, default ``True``. An exhaustive partition must
-            divide the parent's unit count exactly. ``False`` permits a
-            remainder outside the complete groups. Each primitive still
-            determines which partitions it supports.
+            Compile-time flag, default ``True``. If true, ``count`` must
+            divide the parent's unit count exactly. If false, trailing units
+            that cannot form a complete group are excluded; query
+            ``is_member()`` before using their ranks.
 
         Returns
         -------
         cuda.coop.ThreadGroup
-            A descriptor for the subgroup containing the calling thread.
-            Nested partitions are unsupported. Load and Store support logical
-            warp widths of 1, 2, 4, 8, 16, or 32; mapped groups of physical
-            warps are not Load or Store targets.
+            A descriptor for the calling thread's mapped group. Nested
+            ``group_by()`` calls are unsupported.
+
+        Notes
+        -----
+        The enclosing block must contain complete physical warps. Logical
+        Warp primitives support widths of 1, 2, 4, 8, 16, or 32. Mapped
+        groups may query their constituents and immediate physical parent,
+        but not a higher hierarchy level. Groups of physical warps support
+        queries and have no explicit synchronization methods.
+        See :ref:`thread groups <coop-thread-groups>` and
+        :ref:`participation requirements <coop-participation>`.
 
         Examples
         --------
-        Descriptors can be inspected without compiling or launching a kernel:
+        Form eight-lane groups, then partition a three-warp block into pairs
+        of warps. The final warp is outside the latter partition.
 
-        .. code-block:: python
-
-            from cuda import coop
-
-            group = coop.this_warp().group_by(8)
-            assert group.kind == "threads_within_warp"
-            assert group.static_size == 8
+        .. literalinclude::
+            ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_group_examples.py
+            :language: python
+            :start-after: # partition-example-begin
+            :end-before: # partition-example-end
+            :dedent: 4
         """
 
         if self.mapping is not None:
@@ -783,6 +854,193 @@ class ThreadGroup:
             source="group_by",
         )
 
+    def rank(self, level: str = "thread") -> Any:
+        """Return a zero-based rank relative to a hierarchy level.
+
+        Parameters
+        ----------
+        level : str, optional
+            Compile-time hierarchy level, default ``"thread"``. An inner
+            level selects the calling constituent's rank within this group;
+            an outer level selects this group's rank within that outer group.
+            For example, ``block.rank("warp")`` gives the calling warp's
+            rank in its block, while ``block.rank("grid")`` gives the block's
+            rank in the grid. See :ref:`ranks and sizes <coop-group-queries>`
+            for supported levels and mapped-group restrictions.
+
+        Returns
+        -------
+        integer scalar
+            The rank, using the backend's unsigned hierarchy result type.
+            Numba-CUDA-MLIR uses ``uint32``, or ``uint64`` when this group or
+            the queried level is the grid. Use ``rank_as`` for an explicit
+            dtype. A mapped-group rank requires ``is_member()`` to be true.
+
+        See Also
+        --------
+        cuda.coop.ThreadGroup : Executable query example.
+        """
+
+        del level
+        return _compiler_method_marker("rank")
+
+    def count(self, level: str = "thread") -> Any:
+        """Return the number of units between this group and a hierarchy level.
+
+        Parameters
+        ----------
+        level : str, optional
+            Compile-time hierarchy level, default ``"thread"``. An inner
+            level counts constituents in this group; an outer level counts
+            groups of this kind in the outer group. For example,
+            ``block.count("warp")`` counts the block's warps and
+            ``block.count("grid")`` counts the grid's blocks. See
+            :ref:`ranks and sizes <coop-group-queries>`.
+
+        Returns
+        -------
+        integer scalar
+            The count, with the same default dtype as ``rank(level)``.
+            Default ``count()`` counts threads. Block warp counts include a
+            partial final warp. Use ``count_as`` for an explicit dtype.
+
+        See Also
+        --------
+        cuda.coop.ThreadGroup : Executable query example.
+        """
+
+        del level
+        return _compiler_method_marker("count")
+
+    def rank_as(self, dtype: Any = None, level: str = "thread") -> Any:
+        """Return a hierarchy rank with a selected integer dtype.
+
+        Parameters
+        ----------
+        dtype : integer dtype, optional
+            Compile-time signed or unsigned integer dtype with 8, 16, 32, or
+            64 bits. ``None`` selects the same dtype as ``rank``. Choose a
+            type large enough to represent the launch's ranks.
+        level : str, optional
+            Compile-time hierarchy level, default ``"thread"``. Has the
+            same meaning and restrictions as ``rank(level)``; see
+            :ref:`ranks and sizes <coop-group-queries>`.
+
+        Returns
+        -------
+        integer scalar
+            The same rank as ``rank(level)``, represented in ``dtype``.
+
+        See Also
+        --------
+        cuda.coop.ThreadGroup : Example using an explicit signed dtype.
+        """
+
+        del dtype, level
+        return _compiler_method_marker("rank_as")
+
+    def count_as(self, dtype: Any = None, level: str = "thread") -> Any:
+        """Return a hierarchy count with a selected integer dtype.
+
+        Parameters
+        ----------
+        dtype : integer dtype, optional
+            Compile-time signed or unsigned integer dtype with 8, 16, 32, or
+            64 bits. ``None`` selects the same dtype as ``count``. Choose a
+            type large enough to represent the launch's counts.
+        level : str, optional
+            Compile-time hierarchy level, default ``"thread"``. Has the
+            same meaning and restrictions as ``count(level)``; see
+            :ref:`ranks and sizes <coop-group-queries>`.
+
+        Returns
+        -------
+        integer scalar
+            The same count as ``count(level)``, represented in ``dtype``.
+
+        See Also
+        --------
+        cuda.coop.ThreadGroup : Example using an explicit signed dtype.
+        """
+
+        del dtype, level
+        return _compiler_method_marker("count_as")
+
+    def sync(self) -> None:
+        """Synchronize the participating members of this group.
+
+        Returns
+        -------
+        None
+            The call waits for the group's participating threads at the
+            barrier. All participants must execute it in converged control
+            flow; see :ref:`participation requirements <coop-participation>`.
+
+        Notes
+        -----
+        Numba-CUDA-MLIR supports thread, physical-warp, logical-warp, block,
+        and supported cluster synchronization. It rejects grid
+        synchronization and synchronization of mapped groups of physical
+        warps. A one-thread synchronization has no other threads to wait for.
+        See :ref:`thread groups <coop-thread-groups>` for scope restrictions.
+
+        See Also
+        --------
+        cuda.coop.ThreadGroup : Example with converged synchronization.
+        """
+
+        _compiler_method_marker("sync")
+
+    def sync_aligned(self) -> None:
+        """Synchronize an aligned group in converged control flow.
+
+        Returns
+        -------
+        None
+            The synchronization has the same scope as ``sync()``. For block
+            and cluster groups, all threads in each participating block must
+            execute the same synchronization instruction in converged control
+            flow. Warp groups synchronize their participating lane mask.
+
+        Notes
+        -----
+        All participating threads must execute the call in converged control
+        flow. Numba-CUDA-MLIR rejects grid and mapped-physical-warp
+        synchronization, as for ``sync()``. See
+        :ref:`participation requirements <coop-participation>`.
+
+        See Also
+        --------
+        cuda.coop.ThreadGroup.group_by : Aligned eight-lane-group example.
+        """
+
+        _compiler_method_marker("sync_aligned")
+
+    def is_member(self) -> Any:
+        """Return whether the calling thread belongs to this group.
+
+        Returns
+        -------
+        integer scalar
+            A predicate suitable for an ``if`` condition. Numba-CUDA-MLIR
+            returns ``uint8``: one for a physical group or a member of a
+            complete mapped group, and zero for trailing threads excluded by
+            a non-exhaustive ``group_by`` partition.
+
+        Notes
+        -----
+        Use this query to guard rank-dependent work for excluded threads.
+        Before guarding a primitive, check that primitive's
+        :ref:`participation requirements <coop-participation>`; a membership
+        check alone does not make a divergent primitive valid.
+
+        See Also
+        --------
+        cuda.coop.ThreadGroup.group_by : Non-exhaustive partition example.
+        """
+
+        return _compiler_method_marker("is_member")
+
 
 def make_thread_group(
     kind: str,
@@ -820,7 +1078,7 @@ def render_hierarchy_decl(
     var_name: str = "hierarchy",
     indent: str = "  ",
 ) -> list[str]:
-    """Generate a CUDAX hierarchy declaration from known dimensions.
+    """Generate a CUDA hierarchy declaration from known dimensions.
 
     An implicit hierarchy needs no declaration and returns an empty list.
     For an explicit hierarchy, emit the known grid and cluster levels before
@@ -847,144 +1105,8 @@ def render_hierarchy_decl(
     return lines
 
 
-def render_group_decl(
-    group: ThreadGroup,
-    *,
-    var_name: str = "group",
-    hierarchy_var: str = "hierarchy",
-    indent: str = "  ",
-) -> str:
-    """Generate one CUDAX declaration for a physical group.
-
-    Use the supplied ``hierarchy_var`` for an explicit hierarchy, or CUDAX's
-    implicit hierarchy for the current launch. The caller must declare an
-    explicit hierarchy first. Mapped groups need additional declarations;
-    reject them here and use ``render_group_decl_lines``.
-    """
-
-    if group.mapping is not None:
-        raise ValueError(
-            "render_group_decl supports physical groups only; use "
-            "render_group_decl_lines for mapped groups"
-        )
-    assert group.hierarchy is not None
-    if group.hierarchy.implicit:
-        return (
-            f"{indent}::cuda::experimental::coop::this_{group.kind} "
-            f"{var_name}{{::cuda::experimental::implicit_hierarchy()}};"
-        )
-    return (
-        f"{indent}::cuda::experimental::coop::this_{group.kind} "
-        f"{var_name}{{{hierarchy_var}}};"
-    )
-
-
-def render_group_decl_lines(
-    group: ThreadGroup,
-    *,
-    var_name: str = "group",
-    hierarchy_var: str = "hierarchy",
-    indent: str = "  ",
-) -> list[str]:
-    """Generate a CUDAX group and any declarations its mapping needs.
-
-    Physical groups need one declaration. A thread subgroup also needs its
-    physical warp parent and a lane synchronizer. A subgroup of physical
-    warps needs its block parent and shared barrier storage, with one
-    barrier slot per complete subgroup.
-
-    The mapped block's subgroup count must be known to size that storage;
-    otherwise raise ``ValueError``. These lines describe the group and its
-    storage. They do not establish the enclosing launch's capabilities or
-    prove that a primitive supports the group.
-    """
-
-    if group.mapping is None:
-        return [
-            render_group_decl(
-                group,
-                var_name=var_name,
-                hierarchy_var=hierarchy_var,
-                indent=indent,
-            )
-        ]
-
-    assert group.parent is not None
-    mapping = group.mapping
-    exhaustive = "true" if mapping.exhaustive else "false"
-    mapping_args = str(mapping.count)
-    if not mapping.exhaustive:
-        mapping_args = (
-            f"::cuda::experimental::coop::non_exhaustive, {mapping.count}"
-        )
-    parent_name = f"{var_name}_parent"
-    lines = [
-        render_group_decl(
-            group.parent,
-            var_name=parent_name,
-            hierarchy_var=hierarchy_var,
-            indent=indent,
-        )
-    ]
-    if group.kind == "threads_within_warp":
-        lines.extend(
-            [
-                (
-                    f"{indent}::cuda::experimental::coop::generic_group "
-                    f"{var_name}{{"
-                ),
-                f"{indent}    ::cuda::gpu_thread, {parent_name},",
-                (
-                    f"{indent}    ::cuda::experimental::coop::group_by<"
-                    f"{mapping.count}, {exhaustive}>{{{mapping_args}}},"
-                ),
-                (
-                    f"{indent}    "
-                    "::cuda::experimental::coop::lane_synchronizer{}};"
-                ),
-            ]
-        )
-        return lines
-
-    groups_per_parent = group.groups_per_parent
-    if groups_per_parent is None:
-        raise ValueError(
-            "mapped warp group requires a static parent group count"
-        )
-    lines.extend(
-        [
-            f"{indent}using {var_name}_barriers_type =",
-            (
-                f"{indent}    ::cuda::barrier<::cuda::thread_scope_block>"
-                f"[{groups_per_parent}];"
-            ),
-            f"{indent}__shared__ ::cuda::std::aligned_storage_t<",
-            f"{indent}    sizeof({var_name}_barriers_type),",
-            (
-                f"{indent}    alignof({var_name}_barriers_type)> "
-                f"{var_name}_barriers_storage;"
-            ),
-            f"{indent}auto& {var_name}_barriers =",
-            f"{indent}    reinterpret_cast<{var_name}_barriers_type&>(",
-            f"{indent}        {var_name}_barriers_storage);",
-            f"{indent}::cuda::experimental::coop::generic_group {var_name}{{",
-            f"{indent}    ::cuda::warp, {parent_name},",
-            (
-                f"{indent}    ::cuda::experimental::coop::group_by<"
-                f"{mapping.count}, {exhaustive}>{{{mapping_args}}},"
-            ),
-            (
-                f"{indent}    "
-                "::cuda::experimental::coop::barrier_synchronizer{"
-                f"{var_name}_barriers}}}};"
-            ),
-        ]
-    )
-    return lines
-
-
 def cpp_level_expr(level: str) -> str:
-    """Translate a hierarchy level to its CUDAX tag expression.
+    """Translate a hierarchy level to its CUDA tag expression.
 
     For example, ``thread`` selects ``::cuda::gpu_thread``. Reuse level
     normalization so the accepted Python spellings stay consistent.
@@ -1022,7 +1144,11 @@ def this_cluster() -> ThreadGroup:
 
 
 def this_grid() -> ThreadGroup:
-    """Describe the launch grid for later cooperative-launch validation."""
+    """Describe the launch grid for hierarchy queries.
+
+    No primitive accepts a grid group, so operation planning rejects it.
+    Queries need exact grid dimensions but not a cooperative launch.
+    """
 
     return make_thread_group("grid")
 
@@ -1032,6 +1158,7 @@ __all__ = [
     "MAPPED_GROUP_KINDS",
     "PHYSICAL_GROUP_KINDS",
     "THREAD_GROUP_KINDS",
+    "THREAD_GROUP_QUERY_DTYPE_NAMES",
     "THREAD_LEVELS",
     "CoopCompilerContextRequiredError",
     "GroupByMapping",
@@ -1043,12 +1170,11 @@ __all__ = [
     "normalize_thread_dim",
     "normalize_thread_group_kind",
     "normalize_thread_level",
-    "render_group_decl",
-    "render_group_decl_lines",
     "render_hierarchy_decl",
     "this_block",
     "this_cluster",
     "this_grid",
     "this_thread",
     "this_warp",
+    "validate_thread_group_query_dtype",
 ]

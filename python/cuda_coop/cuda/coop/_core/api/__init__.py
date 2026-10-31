@@ -9,6 +9,7 @@ to recognize cooperative operations without changing the public call syntax.
 """
 
 from .load_store import load, store
+from .reduce import reduce, sum
 from .temp_storage import TempStorage, TempStorageLike
 from .thread_data import ThreadData, ThreadDataLike
 from .thread_group import (
@@ -46,7 +47,9 @@ __all__ = [
     "ThreadGroup",
     "ThreadHierarchy",
     "load",
+    "reduce",
     "store",
+    "sum",
     "this_block",
     "this_cluster",
     "this_grid",

@@ -113,6 +113,7 @@ class CoopSinglePhaseRewrite(
             bool(self._matches)
             or bool(self._temp_storage_assigns)
             or bool(self._thread_data_func_vars)
+            or bool(self._typed_group_payload_func_vars)
             or bool(self._thread_data_extents)
         )
 
@@ -263,6 +264,18 @@ class CoopSinglePhaseRewrite(
                                 self._extract_thread_data_specification(call),
                             )
                         )
+                    elif self._is_typed_group_payload_ctor_call(call):
+                        self._thread_data_like_vars.add(inst.target.name)
+                        self._thread_data_specifications[inst.target.name] = (
+                            self._merge_thread_data_specifications(
+                                self._thread_data_specifications.get(
+                                    inst.target.name
+                                ),
+                                self._extract_typed_group_payload_specification(
+                                    call
+                                ),
+                            )
+                        )
                     elif self._is_temp_storage_ctor_call(call):
                         self._record_temp_storage_ctor(inst, call)
                         self._temp_storage_ctor_order.setdefault(
@@ -306,6 +319,7 @@ class CoopSinglePhaseRewrite(
         self._temp_storage_assigns = set()
         self._temp_storage_func_vars = set()
         self._thread_data_func_vars = set()
+        self._typed_group_payload_func_vars = set()
 
     def _match_assignment(self, inst: ir.Assign) -> None:
         """Record a payload query, constructor, or provider call."""
@@ -340,6 +354,10 @@ class CoopSinglePhaseRewrite(
             return
         if self._is_thread_data_ctor_call(call):
             self._thread_data_func_vars.add(call.func.name)
+            return
+
+        if self._is_typed_group_payload_ctor_call(call):
+            self._typed_group_payload_func_vars.add(call.func.name)
             return
 
     def _analyze_provider_call(
@@ -445,7 +463,10 @@ class CoopSinglePhaseRewrite(
                 isinstance(inst, ir.Assign)
                 and isinstance(inst.value, ir.Expr)
                 and (inst.value.op == "call")
-                and (self._is_thread_data_ctor_call(inst.value))
+                and (
+                    self._is_thread_data_ctor_call(inst.value)
+                    or self._is_typed_group_payload_ctor_call(inst.value)
+                )
             ):
                 self._emit_thread_data_array(new_block, inst)
                 continue
@@ -470,7 +491,9 @@ class CoopSinglePhaseRewrite(
             if isinstance(inst, ir.Assign)
             and inst.target.name in candidate_dead_factory_kw_vars
         )
-        self._payload_callee_cleanup_names.update(self._thread_data_func_vars)
+        self._payload_callee_cleanup_names.update(
+            self._thread_data_func_vars | self._typed_group_payload_func_vars
+        )
         self._state.typingctx.refresh()
         return new_block
 
@@ -507,7 +530,7 @@ class CoopSinglePhaseRewrite(
         )
 
     def _require_thread_data_specification(
-        self, inst: ir.Assign
+        self, inst: ir.Assign, *, is_typed_group_payload: bool
     ) -> _ThreadDataSpecification:
         """Resolve the payload dtype before emitting a local array.
 
@@ -531,11 +554,15 @@ class CoopSinglePhaseRewrite(
             thread_data_specification is None
             or thread_data_specification.dtype is None
         ):
+            subject = (
+                "typed group payload"
+                if is_typed_group_payload
+                else "coop.ThreadData(...)"
+            )
             raise CoopSinglePhaseRewriteError(
-                "Failed to infer dtype for coop.ThreadData(...). "
-                "Supply type information through a cooperative "
-                "operation, typed indexed assignments, or an "
-                "explicit dtype argument."
+                f"Failed to infer dtype for {subject}. Use it with a "
+                "cooperative group operation "
+                "that provides dtype context."
             )
         if thread_data_specification.common_root:
             from ._parameters import _validate_common_numeric_dtype
@@ -551,7 +578,11 @@ class CoopSinglePhaseRewrite(
         return thread_data_specification
 
     def _thread_data_array_arguments(
-        self, new_block: ir.Block, inst: ir.Assign
+        self,
+        new_block: ir.Block,
+        inst: ir.Assign,
+        *,
+        is_typed_group_payload: bool,
     ) -> tuple[list[ir.Var], list[tuple[str, ir.Var]]]:
         """Emit constant array parameters and adapt constructor arguments.
 
@@ -561,7 +592,7 @@ class CoopSinglePhaseRewrite(
         """
 
         thread_data_specification = self._require_thread_data_specification(
-            inst
+            inst, is_typed_group_payload=is_typed_group_payload
         )
         dtype_var = ir.Var(
             inst.target.scope,
@@ -580,8 +611,8 @@ class CoopSinglePhaseRewrite(
             )
         )
         assert isinstance(inst.value, ir.Expr)
-        rewritten_args = list(inst.value.args)
-        rewritten_kws = list(inst.value.kws)
+        rewritten_args = [] if is_typed_group_payload else list(inst.value.args)
+        rewritten_kws = [] if is_typed_group_payload else list(inst.value.kws)
         rewritten_kws = [
             ("shape" if name == "items_per_thread" else name, value)
             for name, value in rewritten_kws
@@ -589,9 +620,7 @@ class CoopSinglePhaseRewrite(
         ]
         if thread_data_specification.items_per_thread is None:
             raise CoopSinglePhaseRewriteError(
-                "Failed to infer items_per_thread for "
-                "coop.ThreadData(...). The item count must be "
-                "known at compile time."
+                "Failed to infer static extent for typed group payload."
             )
         items_var = ir.Var(
             inst.target.scope,
@@ -647,8 +676,12 @@ class CoopSinglePhaseRewrite(
     ) -> None:
         """Replace a payload constructor with ``cuda.local.array``."""
 
+        assert isinstance(inst.value, ir.Expr)
+        is_typed_group_payload = self._is_typed_group_payload_ctor_call(
+            inst.value
+        )
         rewritten_args, rewritten_kws = self._thread_data_array_arguments(
-            new_block, inst
+            new_block, inst, is_typed_group_payload=is_typed_group_payload
         )
         # Bind cuda.local.array at this call site. Other blocks may
         # still need the original ThreadData constructor alias, and
@@ -869,7 +902,7 @@ class CoopSinglePhaseRewrite(
             ]
 
     def _clear_unused_payload_callees(self) -> None:
-        """Clear references to the ThreadData constructor after lowering calls.
+        """Clear references to payload constructors after lowering their calls.
 
         For example, ``constructor = coop.ThreadData`` must remain while a
         call in another block still uses it. Once all calls through that

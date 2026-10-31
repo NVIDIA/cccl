@@ -13,7 +13,7 @@ Why are there both ``cuda.coop`` and ``cuda.coop.numba_mlir``?
 
 ``cuda.coop`` provides the common API for cooperative operations. A kernel
 compiler's backend implements those calls. Start with this namespace when
-its groups, ``ThreadData`` payloads, and operations cover your needs:
+its groups, ``ThreadData`` payloads, and built-in operators cover your needs:
 
 .. code-block:: python
 
@@ -23,7 +23,7 @@ its groups, ``ThreadData`` payloads, and operations cover your needs:
 
 ``cuda.coop.numba_mlir`` exposes that backend's API, including extensions
 specific to Numba-CUDA-MLIR. Use it for features such as fixed-size Numba
-local-array payloads:
+local-array payloads, or supported device callbacks:
 
 .. code-block:: python
 

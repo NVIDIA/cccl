@@ -2,38 +2,151 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Give compiler dtypes stable identities for specialization and symbol reuse.
+"""Give compiler values stable identities for specialization and symbol reuse.
 
-Two equivalent compiler types should select the same compiled operation even
-when their internal bookkeeping differs. Adapt top-level Numba types to a
-tagged class-and-name description before using the shared semantic encoder.
-All other values follow that encoder's normal rules. The resulting hashable
-descriptions feed cache keys and symbol hashes; they do not serialize compiler
-objects for later reconstruction.
+Equivalent compiler types should select the same compiled operation without
+including their internal bookkeeping. Normalize them to their concrete class
+and equality key. Unwrap an outer device callback to its Python function;
+nested device dispatchers retain their compile options, locals, and any fixed
+signatures because those inputs affect the called implementation. The shared
+semantic encoder then produces hashable descriptions for cache keys and symbol
+hashes, rather than serializing compiler objects for later reconstruction.
 """
 
+import hashlib
 from collections.abc import Hashable
 
 import numba_cuda_mlir.numba_cuda.types as numba_types
+import numpy as np
+from numba_cuda_mlir.descriptor import MLIRDispatcher
 
 from cuda.coop._core import semantic_token
 
 
-def _numba_semantic_token(value: object) -> Hashable:
-    """Describe a compiler dtype without serializing its implementation state.
+def _normalize_numba_callable(value):
+    """Unwrap an outer device dispatcher before recompiling its function.
 
-    The common semantic-token encoder can inspect arbitrary object attributes.
-    For a Numba type, cache and symbol identity instead use its concrete type
-    class and printed spelling, so compiler bookkeeping does not become part
-    of the specialization key. Only a top-level Numba type is normalized here;
-    other values are passed directly to the common encoder.
+    The cooperative callback supplies its own concrete signature and compile
+    options. Other values pass through. Nested dispatchers are handled by the
+    semantic normalizer and retain the settings of those called helpers.
+    """
+
+    if isinstance(value, MLIRDispatcher):
+        return value.py_func
+    return value
+
+
+def _numpy_dtype_identity(dtype):
+    """Describe all NumPy dtype structure that can affect callback constants.
+
+    Keep field types, offsets, optional titles, alignment, and subarray shape.
+    The short dtype string loses record structure, while ``dtype.descr``
+    cannot represent overlapping or out-of-order fields. Recurse through
+    fields and subarrays so distinct layouts cannot share the same identity.
+    """
+
+    fields = None
+    if dtype.fields is not None:
+        fields = tuple(
+            (name, _numpy_dtype_identity(field[0]), *field[1:])
+            for name in dtype.names
+            for field in (dtype.fields[name],)
+        )
+    subdtype = dtype.subdtype
+    return (
+        dtype.str,
+        dtype.isalignedstruct,
+        fields,
+        None
+        if subdtype is None
+        else (_numpy_dtype_identity(subdtype[0]), subdtype[1]),
+    )
+
+
+def _normalize_numba_semantic_value(value):
+    """Expose compiler-relevant state to the shared semantic encoder.
+
+    NumPy scalars contribute exact bytes and dtype structure. Arrays also
+    retain shape, strides, writeability, and a digest of logical elements,
+    including noncontiguous views. Object-containing dtypes are rejected
+    because their bytes would encode object references rather than values.
+
+    Nested device dispatchers retain their function, compile options, locals,
+    and fixed signatures, while Numba types retain concrete class and equality
+    key. Leave other values to the shared encoder. These records exclude
+    compiler caches and preserve inputs that affect code.
+    """
+
+    if isinstance(value, np.generic):
+        if value.dtype.hasobject:
+            raise TypeError(
+                "cuda.coop.numba_mlir callback constants cannot contain "
+                "NumPy scalars with object dtypes"
+            )
+        # Scalar repr loses observable bits, such as a NaN's sign and payload.
+        return (
+            "numba-cuda-mlir-numpy-scalar-v1",
+            _numpy_dtype_identity(value.dtype),
+            value.tobytes(),
+        )
+    if isinstance(value, np.ndarray):
+        if value.dtype.hasobject:
+            raise TypeError(
+                "cuda.coop.numba_mlir callback constants cannot contain "
+                "NumPy arrays with object dtypes"
+            )
+        # repr(array) truncates contents and depends on global print options.
+        # Hash every logical element, including noncontiguous/reversed views.
+        return (
+            "numba-cuda-mlir-numpy-array-v1",
+            _numpy_dtype_identity(value.dtype),
+            value.shape,
+            value.strides,
+            value.flags.writeable,
+            hashlib.sha256(value.tobytes(order="C")).digest(),
+        )
+    if isinstance(value, MLIRDispatcher):
+        # Nested callees retain their own compile options, unlike the outer
+        # callback that cuda.coop recompiles from its Python function. Inspect
+        # only these inputs, not dispatcher caches, locks, or compiler state.
+        signatures = None
+        if not value._can_compile:
+            signatures = tuple(
+                (signature.return_type, signature.args)
+                for signature in value.nopython_signatures
+            )
+        return (
+            "numba-cuda-mlir-device-callee-v1",
+            value.py_func,
+            value.targetoptions,
+            value.locals,
+            signatures,
+        )
+    if isinstance(value, numba_types.Type):
+        # The display name is not unique; key defines Numba type equality.
+        return (
+            "numba-cuda-mlir-type",
+            type(value).__module__,
+            type(value).__qualname__,
+            value.key,
+        )
+    return value
+
+
+def _numba_semantic_token(value: object) -> Hashable:
+    """Describe compiler values without serializing compiler bookkeeping.
+
+    Unwrap the outer device dispatcher to its Python function, then encode
+    nested values with compiler-specific normalization. Numba types contribute
+    their concrete class and equality key. Nested device dispatchers retain
+    their function, compile options, locals, and any fixed signatures.
+    Captured NumPy scalars retain their dtype and exact bytes; arrays retain
+    their dtype, shape, strides, writeability, and a digest of every element.
 
     Parameters
     ----------
     value : object
-        Compiler dtype or other semantic key component. A Numba ``Type`` is
-        replaced with a tagged tuple of its class module, class qualified name,
-        and ``str(value)`` before encoding.
+        Compiler dtype, callback, or other semantic key component.
 
     Returns
     -------
@@ -44,19 +157,15 @@ def _numba_semantic_token(value: object) -> Hashable:
     Raises
     ------
     TypeError
-        The common encoder encounters an unsupported callable value.
+        A NumPy scalar or array has an object-containing dtype, or the common
+        encoder encounters an unsupported callable value.
     """
 
-    if isinstance(value, numba_types.Type):
-        value = (
-            "numba-cuda-mlir-type",
-            type(value).__module__,
-            type(value).__qualname__,
-            str(value),
-        )
-    return semantic_token(value)
+    value = _normalize_numba_callable(value)
+    return semantic_token(value, normalize=_normalize_numba_semantic_value)
 
 
 __all__ = [
+    "_normalize_numba_callable",
     "_numba_semantic_token",
 ]

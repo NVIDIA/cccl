@@ -222,22 +222,62 @@ def provider_synchronization_matches(
 
 
 @dataclass(frozen=True)
-class GroupPrimitiveRegistration:
-    """Connect a public operation to whole-function planning.
+class GroupResultSource:
+    """Name the arguments that determine one public result's type and shape.
 
-    ``lower`` returns replacement IR after the planner has bound public
-    arguments and resolved the group. ``validate_common_arguments`` checks
-    calls made through the common ``cuda.coop`` API before that replacement;
-    backend-qualified calls skip it. ``None`` omits the check. Both hooks
-    receive the active planning context.
+    Group planning reads these policies before a call is lowered. This lets a
+    later group call inspect an earlier call's result without requiring normal
+    Numba type inference first. Names refer to the bound public call
+    signature, not positions in the private provider ABI.
+
+    Attributes
+    ----------
+    dtype_parameter : str or None
+        Argument whose dtype the result inherits. ``None`` supplies no dtype
+        inference through this policy.
+    array_parameter : str or None
+        Argument whose scalar/array form and array extent the result inherits.
+        ``None`` describes a scalar result with one item.
+    """
+
+    dtype_parameter: str | None
+    array_parameter: str | None
+
+    def __post_init__(self) -> None:
+        for name in ("dtype_parameter", "array_parameter"):
+            value = getattr(self, name)
+            if value is not None and (not isinstance(value, str) or not value):
+                raise ValueError(f"{name} must be a non-empty string or None")
+
+
+@dataclass(frozen=True)
+class GroupPrimitiveRegistration:
+    """Connect a public operation to its planner and result policies.
+
+    ``lower`` returns replacement IR after the planner binds public arguments
+    and resolves the group. ``validate_common_arguments`` checks calls through
+    the common ``cuda.coop`` API first; backend-qualified calls skip it.
+    ``None`` omits that check. Both hooks receive the active planning context.
+
+    ``results`` describes return values in order so dtype and extent analysis
+    can follow a call before rewriting. One result is returned directly;
+    multiple result policies describe a tuple. An empty tuple supplies no
+    result provenance. These policies aid inference; they do not allocate or
+    validate returned values.
     """
 
     lower: Callable[..., list[Any]]
+    results: tuple[GroupResultSource, ...] = ()
     validate_common_arguments: Callable[..., None] | None = None
 
     def __post_init__(self) -> None:
         if not callable(self.lower):
             raise TypeError("lower must be callable")
+        object.__setattr__(self, "results", tuple(self.results))
+        if any(
+            not isinstance(result, GroupResultSource) for result in self.results
+        ):
+            raise TypeError("results must contain GroupResultSource records")
         if self.validate_common_arguments is not None and not callable(
             self.validate_common_arguments
         ):
@@ -584,6 +624,7 @@ def register_group_primitive(
     operation: str,
     *,
     lower: Callable[..., list[Any]],
+    results: tuple[GroupResultSource, ...] = (),
     validate_common_arguments: Callable[..., None] | None = None,
 ) -> None:
     """Register group-call lowering for one public operation.
@@ -601,6 +642,11 @@ def register_group_primitive(
     lower : callable
         Hook that receives the planning context, call assignment, resolved
         group, and bound arguments, and returns replacement IR statements.
+    results : tuple of GroupResultSource, optional
+        Result policies in return order, used to infer dtypes and per-thread
+        element counts before replacement statements exist. One policy
+        describes a direct result; several describe a tuple. An empty tuple
+        supplies no result provenance.
     validate_common_arguments : callable or None
         Optional check for calls through the common ``cuda.coop`` API. It runs
         before ``lower`` with the planning context and bound arguments;
@@ -608,13 +654,16 @@ def register_group_primitive(
 
     Raises
     ------
+    TypeError
+        A hook is not callable or a result entry is not a ``GroupResultSource``.
     RuntimeError
-        Different hooks are already registered under this operation name.
+        Different hooks or result policies already use this operation name.
         Repeating the same registration is allowed.
     """
 
     registration = GroupPrimitiveRegistration(
         lower=lower,
+        results=results,
         validate_common_arguments=validate_common_arguments,
     )
     existing = _GROUP_PRIMITIVES.get(operation)
@@ -637,7 +686,7 @@ def register_rewrite_operation(
     operation: str,
     specification: RewriteOperationSpecification,
 ) -> None:
-    """Register one provider ABI with the shared before-inference rewrite.
+    """Register one provider ABI with the shared cooperative-call rewrite.
 
     Equal repeated specifications are allowed. Different specifications for
     one operation would make its calls ambiguous.
@@ -668,7 +717,7 @@ def register_rewrite_operation(
 
 
 def rewrite_operation(operation: str) -> RewriteOperationSpecification | None:
-    """Return the before-inference registration for one operation.
+    """Return the cooperative-call rewrite registration for one operation.
 
     Load the owning primitive family when its registration is missing, without
     eagerly importing every family.
@@ -769,6 +818,7 @@ def factory_operation(function: Any) -> FactoryOperation | None:
 __all__ = [
     "FactoryOperation",
     "GroupPrimitiveRegistration",
+    "GroupResultSource",
     "RewriteOperationSpecification",
     "StorageABI",
     "expected_storage_reuse_barrier",
