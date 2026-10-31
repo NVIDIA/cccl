@@ -350,7 +350,7 @@ def test_shaped_allocation_on_composite_places():
 
     dp = stf.data_place.composite(grid, stf.partition_fn_blocked())
     # A byte count alone cannot carry the tensor geometry
-    with pytest.raises(MemoryError):
+    with pytest.raises(stf.STFError):
         dp.allocate(n * 4)
     ptr = dp.allocate((n,), elemsize=4)
     assert ptr != 0
@@ -359,7 +359,7 @@ def test_shaped_allocation_on_composite_places():
     part = stf.cute_partition.from_spec((n,), (("blocked", 0),), (2,))
     dpc = stf.data_place.composite_cute(grid, part)
     # Extents other than the partition's true extents are rejected
-    with pytest.raises(MemoryError):
+    with pytest.raises(stf.STFError):
         dpc.allocate((n // 2,), elemsize=4)
     ptr2 = dpc.allocate((n,), elemsize=4)
     assert ptr2 != 0
@@ -377,7 +377,7 @@ def test_shaped_allocation_c_order_extents():
     shape = (2, MiB // 2)  # non-square: rows of 512 KiB ints
     part = stf.cute_partition.from_spec(shape, (("blocked", 0), None), (2,))
     dpc = stf.data_place.composite_cute(grid, part)
-    with pytest.raises(MemoryError):
+    with pytest.raises(stf.STFError):
         dpc.allocate(shape[::-1], elemsize=4)
     ptr = dpc.allocate(shape, elemsize=4)
     assert ptr != 0
