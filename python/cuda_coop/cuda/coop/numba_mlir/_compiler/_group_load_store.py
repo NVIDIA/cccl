@@ -73,6 +73,10 @@ from ._rewrite_load_store import (
     prepare_load_store_runtime_args,
     validate_load_store_runtime_controls,
 )
+from ._shared_load_output import (
+    shared_load_thread_row,
+    validate_shared_load_output,
+)
 
 _SUPPORTED_WARP_WIDTHS = frozenset({1, 2, 4, 8, 16, 32})
 
@@ -377,8 +381,22 @@ class _LoadStorePlanning:
         payload_name = "output" if operation == "load" else "value"
         memory_name = "source" if operation == "load" else "destination"
         payload = bound.arguments[payload_name]
-        payload_is_array = self._context.is_array(operation, payload)
-        items_per_thread = self._planning_items_per_thread(operation, payload)
+        shared_output = operation == "load" and not self._context.is_none(
+            bound.arguments["items_per_thread"]
+        )
+        payload_is_array = shared_output or self._context.is_array(
+            operation, payload
+        )
+        items_per_thread = (
+            validate_shared_load_output(
+                self._context,
+                payload,
+                bound.arguments["items_per_thread"],
+                group.hierarchy.block_dim,
+            )
+            if shared_output
+            else self._planning_items_per_thread(operation, payload)
+        )
         payload_dtype = self._context.dtype(payload)
         if operation == "store" and payload_dtype is None:
             payload_dtype = self._context.payload_write_dtype(payload)
@@ -411,7 +429,7 @@ class _LoadStorePlanning:
             raise MemoryDtypeMismatchError(
                 operation, memory_dtype, payload_dtype
             )
-        if operation == "load":
+        if operation == "load" and not shared_output:
             self._context.record_thread_data_dtype(payload, dtype)
 
         oob_default = (
@@ -723,7 +741,9 @@ class _LoadStorePlanning:
 
         if is_common_root:
             if operation == "load":
-                if not self._context.is_thread_data(
+                if self._context.is_none(
+                    bound.arguments["items_per_thread"]
+                ) and not self._context.is_thread_data(
                     operation, "output", bound.arguments["output"]
                 ):
                     raise CommonLoadPayloadError()
@@ -794,9 +814,21 @@ class _LoadStorePlanning:
         if not self._context.is_none(bound.arguments["temp_storage"]):
             factory_kwargs["temp_storage"] = bound.arguments["temp_storage"]
         if operation == "load":
+            output = bound.arguments["output"]
+            if not self._context.is_none(bound.arguments["items_per_thread"]):
+                assert plan.participation is not None
+                assert plan.participation.exact_block_dim is not None
+                output = shared_load_thread_row(
+                    self._context,
+                    statements,
+                    inst,
+                    output,
+                    semantics.items_per_thread,
+                    plan.participation.exact_block_dim,
+                )
             runtime_args = [
                 bound.arguments["source"],
-                bound.arguments["output"],
+                output,
             ]
         else:
             value = bound.arguments["value"]

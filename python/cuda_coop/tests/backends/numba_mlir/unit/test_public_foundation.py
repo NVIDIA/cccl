@@ -163,7 +163,7 @@ def test_qualified_surface_is_common_plus_backend_extensions():
         eval_str=True,
     )
     assert set(get_args(qualified_load_annotations["output"])) == {
-        common_load_annotations["output"],
+        *get_args(common_load_annotations["output"]),
         np.ndarray,
     }
     assert (

@@ -65,15 +65,25 @@ These calls copy a full tile from one array to another:
 
    # Inside a kernel, with `coop` imported from `cuda`:
    block = coop.this_block()
-   items = coop.ThreadData(items_per_thread)
-
-   coop.load(block, source, items, offset=offset)
+   items = coop.load(
+       block, source, items_per_thread=items_per_thread, offset=offset
+   )
    coop.store(block, destination, items, offset=offset)
 
 The kernel supplies the tile's ``offset`` and a compile-time
 ``items_per_thread`` count. With 128 threads and four items per thread,
 the block processes 512 values. All threads in the group must reach the
 cooperative calls, including when only part of the tile is valid.
+
+Prefer returning Load for a fresh ``ThreadData`` payload whose element type
+comes from ``source``.
+You can also construct ``ThreadData`` directly and pass it as Load's output
+when you need to populate an existing payload.
+Load reads global or shared memory. To write directly into shared memory,
+use ``coop.load(group, source, shared, items_per_thread=N)`` and synchronize
+before other threads consume it. Each physical block thread writes its own
+row of ``N`` values. Store writes per-thread values into a global or shared
+array. See the executable :ref:`shared-memory examples <coop-shared-load-store>`.
 
 The :doc:`programming concepts <coop/concepts>` explain participation,
 data layouts, operation results, and temporary storage.

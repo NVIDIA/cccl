@@ -116,7 +116,7 @@ def test_load_store_unexpected_keyword_raises_type_error(
 @pytest.mark.parametrize(
     "dtype", (None, types.int32), ids=("inferred", "explicit")
 )
-def test_load_return_cannot_be_used_as_a_store_payload(qualified, dtype):
+def test_output_load_return_cannot_be_used_as_a_store_payload(qualified, dtype):
     from cuda import coop as common_coop
 
     module = coop if qualified else common_coop

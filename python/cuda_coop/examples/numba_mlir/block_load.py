@@ -18,11 +18,10 @@ def block_load(source, observed, valid_items, items_per_thread):
     """Load a tile; invalid payload slots receive the default value -1."""
 
     thread = cuda.threadIdx.x
-    payload = coop.ThreadData(items_per_thread)
-    coop.load(
+    payload = coop.load(
         coop.this_block(),
         source,
-        payload,
+        items_per_thread=items_per_thread,
         algorithm="direct",
         valid_items=valid_items,
         oob_default=-1,

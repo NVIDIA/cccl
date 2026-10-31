@@ -115,9 +115,8 @@ def test_runtime_payload_index_reuses_one_specialization(
 ):
     @cuda.jit
     def kernel(source, destination, index, items_per_thread):
-        payload = module.ThreadData(items_per_thread)
         group = module.this_block()
-        module.load(group, source, payload)
+        payload = module.load(group, source, items_per_thread=items_per_thread)
         module.store(group, destination, payload[index])
 
     source = np.arange((_THREADS * items_per_thread), dtype=np.int32)
@@ -172,7 +171,7 @@ def _full_load_kernel(numba_dtype, algorithm="direct"):
     """Observe each thread's Load results through ordinary indexed stores.
 
     Keeping Store out of this helper lets the host check Load independently.
-    The cached dispatcher captures the requested dtype and algorithm.
+    The factory cache keeps dtype and algorithm cases separate.
     """
 
     @cuda.jit
@@ -180,14 +179,10 @@ def _full_load_kernel(numba_dtype, algorithm="direct"):
         thread = cuda.threadIdx.x + cuda.blockDim.x * (
             cuda.threadIdx.y + cuda.blockDim.y * cuda.threadIdx.z
         )
-        payload = root_coop.ThreadData(
-            items_per_thread,
-            dtype=numba_dtype,
-        )
-        root_coop.load(
+        payload = root_coop.load(
             root_coop.this_block(),
             source,
-            payload,
+            items_per_thread=items_per_thread,
             algorithm=algorithm,
         )
         for item in range(items_per_thread):
@@ -328,11 +323,10 @@ def _load_valid_prefix(
     """
 
     thread = cuda.threadIdx.x
-    payload = root_coop.ThreadData(items_per_thread, dtype=types.int32)
-    root_coop.load(
+    payload = root_coop.load(
         root_coop.this_block(),
         source,
-        payload,
+        items_per_thread=items_per_thread,
         algorithm="direct",
         valid_items=valid_items,
         offset=source_offset,
@@ -487,14 +481,10 @@ def _algorithm_load_kernel(
             items_per_thread,
         ):
             thread = cuda.threadIdx.x
-            payload = qualified_coop.ThreadData(
-                items_per_thread,
-                dtype=numba_dtype,
-            )
-            qualified_coop.load(
+            payload = qualified_coop.load(
                 qualified_coop.this_block(),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm=algorithm,
                 valid_items=valid_items,
                 oob_default=oob_default,
@@ -515,14 +505,10 @@ def _algorithm_load_kernel(
             items_per_thread,
         ):
             thread = cuda.threadIdx.x
-            payload = root_coop.ThreadData(
-                items_per_thread,
-                dtype=numba_dtype,
-            )
-            root_coop.load(
+            payload = root_coop.load(
                 root_coop.this_block(),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm=algorithm,
                 valid_items=valid_items,
                 oob_default=oob_default,
@@ -801,14 +787,10 @@ def _partial_transpose_load_kernel(algorithm: str, qualified: bool):
         @cuda.jit
         def kernel(source, observed, valid_items, items_per_thread):
             thread = cuda.threadIdx.x
-            payload = qualified_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            qualified_coop.load(
+            payload = qualified_coop.load(
                 qualified_coop.this_block(),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm=algorithm,
                 valid_items=valid_items,
             )
@@ -822,14 +804,10 @@ def _partial_transpose_load_kernel(algorithm: str, qualified: bool):
         @cuda.jit
         def kernel(source, observed, valid_items, items_per_thread):
             thread = cuda.threadIdx.x
-            payload = root_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            root_coop.load(
+            payload = root_coop.load(
                 root_coop.this_block(),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm=algorithm,
                 valid_items=valid_items,
             )
@@ -876,14 +854,10 @@ def _unguarded_wide_load_store_kernel(algorithm: str, qualified: bool):
             load_source, store_source, observed, destination, items_per_thread
         ):
             thread = cuda.threadIdx.x
-            load_payload = qualified_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            qualified_coop.load(
+            load_payload = qualified_coop.load(
                 qualified_coop.this_block(),
                 load_source,
-                load_payload,
+                items_per_thread=items_per_thread,
                 algorithm=algorithm,
             )
             store_payload = qualified_coop.ThreadData(
@@ -908,14 +882,10 @@ def _unguarded_wide_load_store_kernel(algorithm: str, qualified: bool):
             load_source, store_source, observed, destination, items_per_thread
         ):
             thread = cuda.threadIdx.x
-            load_payload = root_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            root_coop.load(
+            load_payload = root_coop.load(
                 root_coop.this_block(),
                 load_source,
-                load_payload,
+                items_per_thread=items_per_thread,
                 algorithm=algorithm,
             )
             store_payload = root_coop.ThreadData(
@@ -975,14 +945,10 @@ def _transpose_reuse_kernel(algorithm: str, dynamic: bool):
             storage = qualified_coop.TempStorage(
                 64 * 1024, alignment=16, auto_sync=True
             )
-            payload = qualified_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            qualified_coop.load(
+            payload = qualified_coop.load(
                 qualified_coop.this_block(),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm=algorithm,
                 temp_storage=storage,
             )
@@ -1004,14 +970,10 @@ def _transpose_reuse_kernel(algorithm: str, dynamic: bool):
             storage = qualified_coop.TempStorage(
                 sharing="shared", auto_sync=True
             )
-            payload = qualified_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            qualified_coop.load(
+            payload = qualified_coop.load(
                 qualified_coop.this_block(),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm=algorithm,
                 temp_storage=storage,
             )
@@ -1076,11 +1038,10 @@ def test_transpose_storage_honors_minimum_alignment(
         storage = module.TempStorage(
             alignment=alignment, sharing=sharing, auto_sync=True
         )
-        payload = module.ThreadData(items_per_thread, dtype=types.int32)
-        module.load(
+        payload = module.load(
             module.this_block(),
             source,
-            payload,
+            items_per_thread=items_per_thread,
             algorithm="transpose",
             temp_storage=storage,
         )
@@ -1109,11 +1070,10 @@ def _common_grid_stride_load_store(source, destination, items_per_thread):
         # Runtime counts trap rather than saturate. Clamp each grid-stride
         # remainder to the exact tile accepted by this block.
         valid_items = min(valid_items, (_THREADS * items_per_thread))
-        payload = root_coop.ThreadData(items_per_thread, dtype=types.int32)
-        root_coop.load(
+        payload = root_coop.load(
             root_coop.this_block(),
             source,
-            payload,
+            items_per_thread=items_per_thread,
             valid_items=valid_items,
             offset=tile_offset,
         )
@@ -1136,14 +1096,10 @@ def _qualified_grid_stride_load_store(source, destination, items_per_thread):
         # Runtime counts trap rather than saturate. Clamp each grid-stride
         # remainder to the exact tile accepted by this block.
         valid_items = min(valid_items, (_THREADS * items_per_thread))
-        payload = qualified_coop.ThreadData(
-            items_per_thread,
-            dtype=types.int32,
-        )
-        qualified_coop.load(
+        payload = qualified_coop.load(
             qualified_coop.this_block(),
             source,
-            payload,
+            items_per_thread=items_per_thread,
             valid_items=valid_items,
             offset=tile_offset,
         )
@@ -1524,8 +1480,12 @@ def test_direct_load_store_ignores_unused_temp_storage(
         storage = module.TempStorage(
             128 * 1024, alignment=16, sharing="exclusive", auto_sync=True
         )
-        payload = module.ThreadData(items_per_thread, dtype=types.int32)
-        module.load(module.this_block(), source, payload, temp_storage=storage)
+        payload = module.load(
+            module.this_block(),
+            source,
+            items_per_thread=items_per_thread,
+            temp_storage=storage,
+        )
         module.store(
             module.this_block(), destination, payload, temp_storage=storage
         )
@@ -1545,11 +1505,10 @@ def _divergent_storage_free_load_store(algorithm: str):
     def kernel(source, destination, observed, items_per_thread):
         thread = cuda.threadIdx.x
         if thread & 1:
-            payload = root_coop.ThreadData(items_per_thread, dtype=types.int32)
-            root_coop.load(
+            payload = root_coop.load(
                 root_coop.this_block(),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm=algorithm,
             )
             root_coop.store(
@@ -1644,11 +1603,10 @@ def test_direct_store_accepts_one_shared_descriptor_in_a_loop(
 @cuda.jit(device=True, inline=True)
 def _inlined_common_load(source, observed, items_per_thread):
     thread = cuda.threadIdx.x
-    payload = root_coop.ThreadData(items_per_thread, dtype=types.int32)
-    root_coop.load(
+    payload = root_coop.load(
         root_coop.this_block(),
         source,
-        payload,
+        items_per_thread=items_per_thread,
         algorithm="direct",
     )
     for item in range(items_per_thread):
@@ -1797,9 +1755,8 @@ def test_exclusive_storage_reused_by_a_looped_call_site_stays_ordered(
 def test_kernel_items_per_thread_specializes_repeated_launches(dtype, module):
     @cuda.jit
     def kernel(source, destination, items_per_thread):
-        payload = module.ThreadData(items_per_thread)
         block = module.this_block()
-        module.load(block, source, payload)
+        payload = module.load(block, source, items_per_thread=items_per_thread)
         for item in range(items_per_thread):
             payload[item] += 7
         module.store(block, destination, payload)

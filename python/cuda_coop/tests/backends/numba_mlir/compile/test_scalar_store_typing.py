@@ -67,9 +67,8 @@ def _compile(kernel, *arg_types):
 def test_store_compiles_a_runtime_payload_index(coop, items_per_thread):
     @cuda.jit(chip="sm_90")
     def kernel(source, destination, index, items_per_thread):
-        payload = coop.ThreadData(items_per_thread)
         group = coop.this_block()
-        coop.load(group, source, payload)
+        payload = coop.load(group, source, items_per_thread=items_per_thread)
         coop.store(group, destination, payload[index])
 
     _compile(

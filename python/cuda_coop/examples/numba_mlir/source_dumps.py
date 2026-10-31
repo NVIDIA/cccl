@@ -20,11 +20,10 @@ from cuda import coop
 @cuda.jit
 def copy_direct(source, destination, items_per_thread):
     block = coop.this_block()
-    items = coop.ThreadData(items_per_thread)
-    coop.load(
+    items = coop.load(
         block,
         source,
-        items,
+        items_per_thread=items_per_thread,
         algorithm="direct",
     )
     coop.store(
@@ -42,12 +41,11 @@ def copy_direct(source, destination, items_per_thread):
 @cuda.jit
 def copy_transpose(source, destination, items_per_thread):
     block = coop.this_block()
-    items = coop.ThreadData(items_per_thread)
     scratch = coop.TempStorage(auto_sync=True)
-    coop.load(
+    items = coop.load(
         block,
         source,
-        items,
+        items_per_thread=items_per_thread,
         algorithm="transpose",
         temp_storage=scratch,
     )
