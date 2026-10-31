@@ -34,6 +34,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -62,6 +63,9 @@ _CCCL_KERNEL_ATTRIBUTES void InitTileStateKernel(
   BlockOffsetScanTileStateT block_offset_scan_tile_state,
   const TileOffsetT num_tiles)
 {
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+
   // Initialize tile status
   buffer_offset_scan_tile_state.InitializeStatus(num_tiles);
   block_offset_scan_tile_state.InitializeStatus(num_tiles);
@@ -92,6 +96,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.large_buffer.thr
     TileT buffer_offset_tile,
     const TileOffsetT last_tile_offset)
 {
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+
   static constexpr BatchedCopyLargeBufferPolicy policy = current_policy<PolicySelector>().lookback.large_buffer;
   using BufferSizeT                                    = it_value_t<BufferSizeIteratorT>;
   /// Internal load/store type. For byte-wise memcpy, a single-byte type
@@ -225,6 +231,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.small_buffer.thr
     const BLevBufferOffsetTileState blev_buffer_scan_state,
     const BLevBlockOffsetTileState blev_block_scan_state)
 {
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+
   static constexpr BatchedCopySmallBufferPolicy policy = current_policy<PolicySelector>().lookback.small_buffer;
 
   // TODO(bgruber): refactor this in C++20, when we can pass policy as NTTP
@@ -468,6 +476,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_buffers, max_num_buffers_per_invocation);
 
+  // PDL speeds up small tasks on newer chips, but it is turned off for huge jobs
+  // to prevent a fast new task from accidentally overwriting data that an older
+  // task is still reading.
+  const bool use_pdl = num_invocations == 1 && cc >= ::cuda::compute_capability{9, 0};
+
   for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
   {
     const auto current_buffer_offset = invocation_index * max_num_buffers_per_invocation;
@@ -492,7 +505,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     }
 
     if (const auto error = CubDebug(
-          detail::TripleChevronFactory{}(init_grid_size, init_kernel_threads, 0, stream)
+          detail::TripleChevronFactory{}(init_grid_size, init_kernel_threads, 0, stream, use_pdl)
             .doit(init_scan_states_kernel, buffer_scan_tile_state, block_scan_tile_state, num_current_tiles)))
     {
       return error;
@@ -504,7 +517,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
     if (const auto error = CubDebug(
           detail::TripleChevronFactory{}(
-            batch_memcpy_grid_size, active_policy.lookback.small_buffer.threads_per_block, 0, stream)
+            batch_memcpy_grid_size, active_policy.lookback.small_buffer.threads_per_block, 0, stream, use_pdl)
             .doit(batch_memcpy_non_blev_kernel,
                   input_buffer_it + current_buffer_offset,
                   output_buffer_it + current_buffer_offset,
@@ -525,7 +538,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     }
 
     if (const auto error = CubDebug(
-          detail::TripleChevronFactory{}(batch_memcpy_blev_grid_size, blev_threads_per_block, 0, stream)
+          detail::TripleChevronFactory{}(batch_memcpy_blev_grid_size, blev_threads_per_block, 0, stream, use_pdl)
             .doit(multi_block_memcpy_kernel,
                   d_blev_src_buffers,
                   d_blev_dst_buffers,
