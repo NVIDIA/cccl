@@ -246,11 +246,12 @@ struct WarpScanSmem
     {
       inclusive_output = input;
     }
-    ::cuda::static_for<STEPS>([&](auto step) {
-      constexpr int offset = 1 << step;
+    // `int` instead of `auto`: NVRTC < 13.2 rejects generic lambdas in device code without -default-device
+    ::cuda::static_for<STEPS>([&](const int step) {
+      const int offset = 1 << step;
 
       // Share partial into buffer
-      if constexpr (step == 0)
+      if (step == 0)
       {
         // Upper half is still uninitialized, i.e. some positions are initialized twice without destructing in between.
         cub::detail::uninitialized_copy_single(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive_output);
