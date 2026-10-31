@@ -3,11 +3,13 @@
 
 #include <cub/warp/warp_bitonic_sort.cuh>
 
+#include <cstdint>
+
 #include <nvbench_helper.cuh>
 
 #include "bitonic_common.cuh"
 
-using modes      = nvbench::enum_type_list<Mode::Latency, Mode::Throughput>;
+using modes      = nvbench::enum_type_list<BenchMode::Latency, BenchMode::Throughput>;
 using key_types  = nvbench::type_list<int16_t, float>;
 using len_values = nvbench::enum_type_list<32, 64, 96, 128, 160, 192, 224, 256>;
 
@@ -25,10 +27,10 @@ struct full_op_t
   }
 };
 
-template <Mode ModeValue, typename KeyT, int Len>
-void full(nvbench::state& state, nvbench::type_list<nvbench::enum_type<ModeValue>, KeyT, nvbench::enum_type<Len>>)
+template <BenchMode Mode, typename KeyT, int Len>
+void full(nvbench::state& state, nvbench::type_list<nvbench::enum_type<Mode>, KeyT, nvbench::enum_type<Len>>)
 {
-  run_bench<full_op_t<Len / warp_threads>, ModeValue, KeyT, void, Len>(state);
+  run_bench<full_op_t<Len / warp_threads>, Mode, KeyT, void, Len>(state);
 }
 
 NVBENCH_BENCH_TYPES(full, NVBENCH_TYPE_AXES(modes, key_types, len_values)).set_type_axes_names({"mode", "KeyT", "len"});
@@ -47,11 +49,10 @@ struct partial_oob_op_t
   }
 };
 
-template <Mode ModeValue, typename KeyT, int Len>
-void partial_oob(nvbench::state& state,
-                 nvbench::type_list<nvbench::enum_type<ModeValue>, KeyT, nvbench::enum_type<Len>>)
+template <BenchMode Mode, typename KeyT, int Len>
+void partial_oob(nvbench::state& state, nvbench::type_list<nvbench::enum_type<Mode>, KeyT, nvbench::enum_type<Len>>)
 {
-  run_bench<partial_oob_op_t<Len / warp_threads>, ModeValue, KeyT, void, Len>(state);
+  run_bench<partial_oob_op_t<Len / warp_threads>, Mode, KeyT, void, Len>(state);
 }
 
 NVBENCH_BENCH_TYPES(partial_oob, NVBENCH_TYPE_AXES(modes, key_types, len_values))
@@ -71,10 +72,10 @@ struct partial_op_t
   }
 };
 
-template <Mode ModeValue, typename KeyT, int Len>
-void partial(nvbench::state& state, nvbench::type_list<nvbench::enum_type<ModeValue>, KeyT, nvbench::enum_type<Len>>)
+template <BenchMode Mode, typename KeyT, int Len>
+void partial(nvbench::state& state, nvbench::type_list<nvbench::enum_type<Mode>, KeyT, nvbench::enum_type<Len>>)
 {
-  run_bench<partial_op_t<Len / warp_threads>, ModeValue, KeyT, void, Len>(state);
+  run_bench<partial_op_t<Len / warp_threads>, Mode, KeyT, void, Len>(state);
 }
 
 NVBENCH_BENCH_TYPES(partial, NVBENCH_TYPE_AXES(modes, key_types, len_values))
