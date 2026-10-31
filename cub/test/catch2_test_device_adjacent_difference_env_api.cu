@@ -148,4 +148,42 @@ CUB_TEST("cub::DeviceAdjacentDifference::SubtractLeftCopy accepts a custom polic
   REQUIRE(output == expected);
 }
 
+// example-begin subtract-left-copy-policy-transformer
+struct AdjacentDifferencePolicyTransformer
+{
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability, cub::AdjacentDifferencePolicy policy) const
+    -> cub::AdjacentDifferencePolicy
+  {
+    policy.threads_per_block = 128; // keep all other values of CUB's default tuning
+    return policy;
+  }
+};
+// example-end subtract-left-copy-policy-transformer
+
+CUB_TEST("cub::DeviceAdjacentDifference::SubtractLeftCopy accepts a custom policy transformer",
+         "[adjacent_difference][env]",
+         CUB_SMALL)
+{
+  // example-begin subtract-left-copy-transformer-tuning
+  auto input  = thrust::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
+  auto output = thrust::device_vector<int>(8, thrust::no_init);
+
+  const auto error = cub::DeviceAdjacentDifference::SubtractLeftCopy(
+    input.begin(),
+    output.begin(),
+    input.size(),
+    cuda::std::minus{},
+    cuda::execution::tune(AdjacentDifferencePolicyTransformer{}));
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceAdjacentDifference::SubtractLeftCopy failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
+  // example-end subtract-left-copy-transformer-tuning
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output == expected);
+}
+
 #endif // _CCCL_STD_VER >= 2020

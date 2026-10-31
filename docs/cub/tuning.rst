@@ -98,6 +98,30 @@ They may occasionally contain member functions that compute derived values from 
 All policy structs are public types and will evolve in a non-breaking way, at least during minor releases,
 by only adding new data members at the end of the struct.
 
+Policy transformers
+--------------------------------------------------------------------------------
+
+Often, only a few values of CUB's default tuning need to change.
+Instead of a policy selector, a *policy transformer* can be passed to :code:`cuda::execution::tune(...)`.
+A policy transformer is a stateless callable taking a :code:`cuda::compute_capability` and
+the policy returned by CUB's default policy selector for that compute capability and workload.
+It returns the (possibly modified) policy, which is then used to tune the algorithm:
+
+.. literalinclude:: ../../cub/test/catch2_test_device_adjacent_difference_env_api.cu
+   :language: c++
+   :dedent:
+   :start-after: example-begin subtract-left-copy-policy-transformer
+   :end-before: example-end subtract-left-copy-policy-transformer
+
+.. literalinclude:: ../../cub/test/catch2_test_device_adjacent_difference_env_api.cu
+   :language: c++
+   :dedent:
+   :start-after: example-begin subtract-left-copy-transformer-tuning
+   :end-before: example-end subtract-left-copy-transformer-tuning
+
+The same requirements as for policy selectors apply:
+a policy transformer must be stateless and semiregular.
+It must return the algorithm's policy struct by value, and accept it as its second parameter.
 
 Passing a policy selector to CUB device-scope algorithms
 --------------------------------------------------------------------------------
