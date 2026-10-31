@@ -84,8 +84,9 @@ _CCCL_NODEBUG_API constexpr auto __detect_policy_return_type()
 }
 
 //! @rst
-//! Creates an environment from a pack of policy selectors that can be passed to device-wide parallel algorithms to
-//! select tunings for different target architectures. See the :ref:`policy selector documentation
+//! Creates an environment from a pack of policy selectors or policy transformers that can be passed to device-wide
+//! parallel algorithms to select tunings for different target architectures. A policy transformer additionally receives
+//! the policy of the default policy selector and returns a modified policy. See the :ref:`policy selector documentation
 //! <cub-policy-selectors>` for more information on how algorithms can be tuned.
 //! @endrst
 template <class... _PolicySelectors>
