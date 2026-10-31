@@ -32,6 +32,7 @@
 #  include <cuda/std/__chrono/time_point.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/terminate.h>
+#  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__utility/exchange.h>
 #  include <cuda/std/cstdint>
@@ -493,6 +494,42 @@ private:
     __unsupported_storage();
   }
 
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr ::cuda::std::uint32_t
+  __suspend_time_hint(::cuda::std::chrono::nanoseconds __hint) noexcept
+  {
+    constexpr auto __max_hint = (::cuda::std::numeric_limits<::cuda::std::uint32_t>::max)();
+    _CCCL_ASSERT(__hint.count() <= __max_hint, "Suspension-time hint must fit in a 32-bit unsigned nanosecond count.");
+    return static_cast<::cuda::std::uint32_t>(__hint.count());
+  }
+
+  template <class _WaitArg>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
+  __try_wait_with_hint_status(_WaitArg __wait_arg, ::cuda::std::chrono::nanoseconds __hint) const
+  {
+    if (__hint.count() <= 0)
+    {
+      return test_wait(__wait_arg, return_status);
+    }
+
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return __poll_try_wait_status(__wait_arg, __suspend_time_hint(__hint));))
+
+    __unsupported_storage();
+  }
+
+  template <class _WaitArg>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool
+  __try_wait_with_hint_ignoring_status(_WaitArg __wait_arg, ::cuda::std::chrono::nanoseconds __hint) const
+  {
+    if (__hint.count() <= 0)
+    {
+      return __test_wait_ignoring_status(__wait_arg);
+    }
+
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return __poll_try_wait_ignoring_status(__wait_arg, __suspend_time_hint(__hint));))
+
+    __unsupported_storage();
+  }
+
   template <class _WaitArg, class _Rep, class _Period>
   [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
   __try_wait_for_status(_WaitArg __wait_arg, const ::cuda::std::chrono::duration<_Rep, _Period>& __dur) const
@@ -691,7 +728,8 @@ public:
 
   //! @brief Tests whether an arrival token's phase completed and returns the status.
   //!
-  //! This performs a single completion check.
+  //! This checks completion without waiting for an incomplete phase to complete. Use `try_wait` to allow a bounded
+  //! wait.
   //!
   //! @param __token Arrival token to test.
   //! @return Completion and report status for the wait operation.
@@ -705,7 +743,8 @@ public:
 
   //! @brief Tests whether an arrival token's phase completed and ignores any status report.
   //!
-  //! This performs a single completion check.
+  //! This checks completion without waiting for an incomplete phase to complete. Use `try_wait` to allow a bounded
+  //! wait.
   //!
   //! @param __token Arrival token to test.
   //! @return `true` if the phase completed, otherwise `false`.
@@ -718,7 +757,8 @@ public:
 
   //! @brief Tries to wait for an arrival token's phase to complete and returns the status.
   //!
-  //! This may wait for an implementation-defined bounded interval before returning.
+  //! This may wait for an implementation-defined bounded interval, then return even if the phase is incomplete.
+  //! Use the duration-hint overload to suggest a wait duration, or `try_wait_for` to wait until completion or timeout.
   //!
   //! @param __token Arrival token to wait on.
   //! @return Completion and report status for the wait operation.
@@ -732,7 +772,8 @@ public:
 
   //! @brief Tries to wait for an arrival token's phase to complete and ignores any status report.
   //!
-  //! This may wait for an implementation-defined bounded interval before returning.
+  //! This may wait for an implementation-defined bounded interval, then return even if the phase is incomplete.
+  //! Use the duration-hint overload to suggest a wait duration, or `try_wait_for` to wait until completion or timeout.
   //!
   //! @param __token Arrival token to wait on.
   //! @return `true` if the phase completed, otherwise `false`.
@@ -741,6 +782,40 @@ public:
     NV_IF_TARGET(NV_PROVIDES_SM_90, (return this->__try_wait(__token_value(__token));))
 
     __unsupported_storage();
+  }
+
+  //! @brief Tries to wait for an arrival token's phase using a duration hint and returns the status.
+  //!
+  //! This provides a lower-overhead alternative to `try_wait_for` when the caller does not need timeout enforcement.
+  //! The implementation may ignore `__hint`: the wait can end before or after the hinted duration, even if the phase
+  //! remains incomplete. Use `try_wait_for` to keep waiting until completion or timeout.
+  //! A nonpositive hint performs a single `test_wait` check instead.
+  //!
+  //! @pre `__hint.count() <= UINT32_MAX`.
+  //! @param __token Arrival token to wait on.
+  //! @param __hint Suggested wait duration in nanoseconds, not a timeout.
+  //! @return Completion and report status for the wait attempt.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
+  try_wait(arrival_token __token, ::cuda::std::chrono::nanoseconds __hint, return_status_t) const
+  {
+    return __try_wait_with_hint_status(__token, __hint);
+  }
+
+  //! @brief Tries to wait for an arrival token's phase using a duration hint and ignores status.
+  //!
+  //! This provides a lower-overhead alternative to `try_wait_for` when the caller does not need timeout enforcement.
+  //! The implementation may ignore `__hint`: the wait can end before or after the hinted duration, even if the phase
+  //! remains incomplete. Use `try_wait_for` to keep waiting until completion or timeout.
+  //! A nonpositive hint performs a single `test_wait` check instead.
+  //!
+  //! @pre `__hint.count() <= UINT32_MAX`.
+  //! @param __token Arrival token to wait on.
+  //! @param __hint Suggested wait duration in nanoseconds, not a timeout.
+  //! @return `true` if the phase completed, otherwise `false`.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool
+  try_wait(arrival_token __token, ::cuda::std::chrono::nanoseconds __hint, ignore_status_t) const
+  {
+    return __try_wait_with_hint_ignoring_status(__token, __hint);
   }
 
   //! @brief Waits until an arrival token's phase completes and returns the status.
@@ -784,7 +859,8 @@ public:
 
   //! @brief Tests whether a primary phase completed and returns the status.
   //!
-  //! This performs a single completion check.
+  //! This checks completion without waiting for an incomplete phase to complete. Use `try_wait` to allow a bounded
+  //! wait.
   //!
   //! @param __phase Primary phase value to test.
   //! @return Completion and report status for the wait operation.
@@ -798,7 +874,8 @@ public:
 
   //! @brief Tests whether a primary phase completed and ignores any status report.
   //!
-  //! This performs a single completion check.
+  //! This checks completion without waiting for an incomplete phase to complete. Use `try_wait` to allow a bounded
+  //! wait.
   //!
   //! @param __phase Primary phase value to test.
   //! @return `true` if the phase completed, otherwise `false`.
@@ -812,7 +889,8 @@ public:
 
   //! @brief Tries to wait for a primary phase to complete and returns the status.
   //!
-  //! This may wait for an implementation-defined bounded interval before returning.
+  //! This may wait for an implementation-defined bounded interval, then return even if the phase is incomplete.
+  //! Use the duration-hint overload to suggest a wait duration, or `try_wait_for` to wait until completion or timeout.
   //!
   //! @param __phase Primary phase value to wait on.
   //! @return Completion and report status for the wait operation.
@@ -826,7 +904,8 @@ public:
 
   //! @brief Tries to wait for a primary phase to complete and ignores any status report.
   //!
-  //! This may wait for an implementation-defined bounded interval before returning.
+  //! This may wait for an implementation-defined bounded interval, then return even if the phase is incomplete.
+  //! Use the duration-hint overload to suggest a wait duration, or `try_wait_for` to wait until completion or timeout.
   //!
   //! @param __phase Primary phase value to wait on.
   //! @return `true` if the phase completed, otherwise `false`.
@@ -836,6 +915,40 @@ public:
     NV_IF_TARGET(NV_PROVIDES_SM_90, (return this->__try_wait_phase(__phase);))
 
     __unsupported_storage();
+  }
+
+  //! @brief Tries to wait for a primary phase using a duration hint and returns the status.
+  //!
+  //! This provides a lower-overhead alternative to `try_wait_for` when the caller does not need timeout enforcement.
+  //! The implementation may ignore `__hint`: the wait can end before or after the hinted duration, even if the phase
+  //! remains incomplete. Use `try_wait_for` to keep waiting until completion or timeout.
+  //! A nonpositive hint performs a single `test_wait` check instead.
+  //!
+  //! @pre `__hint.count() <= UINT32_MAX`.
+  //! @param __phase Primary phase value to wait on.
+  //! @param __hint Suggested wait duration in nanoseconds, not a timeout.
+  //! @return Completion and report status for the wait attempt.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
+  try_wait(::cuda::std::uint32_t __phase, ::cuda::std::chrono::nanoseconds __hint, return_status_t) const
+  {
+    return __try_wait_with_hint_status(__phase, __hint);
+  }
+
+  //! @brief Tries to wait for a primary phase using a duration hint and ignores status.
+  //!
+  //! This provides a lower-overhead alternative to `try_wait_for` when the caller does not need timeout enforcement.
+  //! The implementation may ignore `__hint`: the wait can end before or after the hinted duration, even if the phase
+  //! remains incomplete. Use `try_wait_for` to keep waiting until completion or timeout.
+  //! A nonpositive hint performs a single `test_wait` check instead.
+  //!
+  //! @pre `__hint.count() <= UINT32_MAX`.
+  //! @param __phase Primary phase value to wait on.
+  //! @param __hint Suggested wait duration in nanoseconds, not a timeout.
+  //! @return `true` if the phase completed, otherwise `false`.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool
+  try_wait(::cuda::std::uint32_t __phase, ::cuda::std::chrono::nanoseconds __hint, ignore_status_t) const
+  {
+    return __try_wait_with_hint_ignoring_status(__phase, __hint);
   }
 
   //! @brief Waits until a primary phase completes and returns the status.
@@ -858,6 +971,7 @@ public:
   //! @brief Tests whether a conditional phase completed.
   //!
   //! For layout v1, the conditional phase advances only when the primary phase completes without a report.
+  //! This checks completion without waiting for an incomplete phase to complete.
   //!
   //! @param __phase Conditional phase value to test.
   //! @return `true` if the conditional phase completed, otherwise `false`.
@@ -872,6 +986,9 @@ public:
   //! @brief Tries to wait for a conditional phase to complete.
   //!
   //! For layout v1, the conditional phase advances only when the primary phase completes without a report.
+  //! This may wait for an implementation-defined bounded interval, then return even if the phase is incomplete.
+  //! Use the duration-hint overload to suggest a wait duration, or `try_wait_conditional_phase_for` to wait until
+  //! completion or timeout.
   //!
   //! @param __phase Conditional phase value to wait on.
   //! @return `true` if the conditional phase completed, otherwise `false`.
@@ -881,6 +998,25 @@ public:
     NV_IF_TARGET(NV_PROVIDES_SM_90, (return this->__try_wait_conditional_phase(__phase);))
 
     __unsupported_storage();
+  }
+
+  //! @brief Tries to wait for a conditional phase using a duration hint.
+  //!
+  //! The conditional phase advances only when the primary phase completes without a report.
+  //! This provides a lower-overhead alternative to `try_wait_conditional_phase_for` when the caller does not need
+  //! timeout enforcement. The implementation may ignore `__hint`: the wait can end before or after the hinted
+  //! duration, even if the phase remains incomplete. Use `try_wait_conditional_phase_for` to keep waiting until
+  //! completion or timeout.
+  //! A nonpositive hint performs a single `test_wait_conditional_phase` check instead.
+  //!
+  //! @pre `__hint.count() <= UINT32_MAX`.
+  //! @param __phase Conditional phase value to wait on.
+  //! @param __hint Suggested wait duration in nanoseconds, not a timeout.
+  //! @return `true` if the conditional phase completed, otherwise `false`.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool
+  try_wait_conditional_phase(::cuda::std::uint32_t __phase, ::cuda::std::chrono::nanoseconds __hint) const
+  {
+    return __try_wait_with_hint_ignoring_status(__conditional_phase{__phase}, __hint);
   }
 
   //! @brief Waits until a conditional phase completes.
@@ -894,6 +1030,11 @@ public:
   }
 
   //! @brief Tries to wait for a conditional phase to complete before a relative timeout.
+  //!
+  //! Unlike `try_wait_conditional_phase` with a duration hint, this keeps waiting until completion or timeout.
+  //! It may repeat wait attempts and check elapsed time to enforce the timeout. Use the duration-hint overload of
+  //! `try_wait_conditional_phase` when timeout enforcement is unnecessary.
+  //! Scheduling or other implementation overhead may delay returning after the timeout.
   //!
   //! If `__dur` is nonpositive, this performs a single `test_wait_conditional_phase` check.
   //!
@@ -909,6 +1050,11 @@ public:
 
   //! @brief Tries to wait for a conditional phase to complete before an absolute timeout.
   //!
+  //! Unlike `try_wait_conditional_phase` with a duration hint, this keeps waiting until completion or timeout.
+  //! It may repeat wait attempts and check elapsed time to enforce the timeout. Use the duration-hint overload of
+  //! `try_wait_conditional_phase` when timeout enforcement is unnecessary.
+  //! Scheduling or other implementation overhead may delay returning after the timeout.
+  //!
   //! @param __phase Conditional phase value to wait on.
   //! @param __time Absolute timeout.
   //! @return `true` if the conditional phase completed before the timeout, otherwise `false`.
@@ -920,6 +1066,11 @@ public:
   }
 
   //! @brief Tries to wait for an arrival token's phase to complete before a relative timeout and returns the status.
+  //!
+  //! Unlike `try_wait` with a duration hint, this keeps waiting until completion or timeout. It may repeat wait
+  //! attempts and check elapsed time to enforce the timeout. Use the duration-hint overload of `try_wait` when timeout
+  //! enforcement is unnecessary.
+  //! Scheduling or other implementation overhead may delay returning after the timeout.
   //!
   //! If `__dur` is nonpositive, this performs a single `test_wait` check.
   //!
@@ -935,6 +1086,11 @@ public:
 
   //! @brief Tries to wait for an arrival token's phase to complete before a relative timeout and ignores status.
   //!
+  //! Unlike `try_wait` with a duration hint, this keeps waiting until completion or timeout. It may repeat wait
+  //! attempts and check elapsed time to enforce the timeout. Use the duration-hint overload of `try_wait` when timeout
+  //! enforcement is unnecessary.
+  //! Scheduling or other implementation overhead may delay returning after the timeout.
+  //!
   //! If `__dur` is nonpositive, this performs a single `test_wait` check.
   //!
   //! @param __token Arrival token to wait on.
@@ -949,6 +1105,11 @@ public:
 
   //! @brief Tries to wait for an arrival token's phase to complete before an absolute timeout and returns the status.
   //!
+  //! Unlike `try_wait` with a duration hint, this keeps waiting until completion or timeout. It may repeat wait
+  //! attempts and check elapsed time to enforce the timeout. Use the duration-hint overload of `try_wait` when timeout
+  //! enforcement is unnecessary.
+  //! Scheduling or other implementation overhead may delay returning after the timeout.
+  //!
   //! @param __token Arrival token to wait on.
   //! @param __time Absolute timeout.
   //! @return Completion and report status for the wait operation.
@@ -961,6 +1122,11 @@ public:
 
   //! @brief Tries to wait for an arrival token's phase to complete before an absolute timeout and ignores status.
   //!
+  //! Unlike `try_wait` with a duration hint, this keeps waiting until completion or timeout. It may repeat wait
+  //! attempts and check elapsed time to enforce the timeout. Use the duration-hint overload of `try_wait` when timeout
+  //! enforcement is unnecessary.
+  //! Scheduling or other implementation overhead may delay returning after the timeout.
+  //!
   //! @param __token Arrival token to wait on.
   //! @param __time Absolute timeout.
   //! @return `true` if the phase completed before the timeout, otherwise `false`.
@@ -972,6 +1138,11 @@ public:
   }
 
   //! @brief Tries to wait for a primary phase to complete before a relative timeout and returns the status.
+  //!
+  //! Unlike `try_wait` with a duration hint, this keeps waiting until completion or timeout. It may repeat wait
+  //! attempts and check elapsed time to enforce the timeout. Use the duration-hint overload of `try_wait` when timeout
+  //! enforcement is unnecessary.
+  //! Scheduling or other implementation overhead may delay returning after the timeout.
   //!
   //! If `__dur` is nonpositive, this performs a single `test_wait` check.
   //!
@@ -987,6 +1158,11 @@ public:
 
   //! @brief Tries to wait for a primary phase to complete before a relative timeout and ignores status.
   //!
+  //! Unlike `try_wait` with a duration hint, this keeps waiting until completion or timeout. It may repeat wait
+  //! attempts and check elapsed time to enforce the timeout. Use the duration-hint overload of `try_wait` when timeout
+  //! enforcement is unnecessary.
+  //! Scheduling or other implementation overhead may delay returning after the timeout.
+  //!
   //! If `__dur` is nonpositive, this performs a single `test_wait` check.
   //!
   //! @param __phase Primary phase value to wait on.
@@ -1001,6 +1177,11 @@ public:
 
   //! @brief Tries to wait for a primary phase to complete before an absolute timeout and returns the status.
   //!
+  //! Unlike `try_wait` with a duration hint, this keeps waiting until completion or timeout. It may repeat wait
+  //! attempts and check elapsed time to enforce the timeout. Use the duration-hint overload of `try_wait` when timeout
+  //! enforcement is unnecessary.
+  //! Scheduling or other implementation overhead may delay returning after the timeout.
+  //!
   //! @param __phase Primary phase value to wait on.
   //! @param __time Absolute timeout.
   //! @return Completion and report status for the wait operation.
@@ -1014,6 +1195,11 @@ public:
   }
 
   //! @brief Tries to wait for a primary phase to complete before an absolute timeout and ignores status.
+  //!
+  //! Unlike `try_wait` with a duration hint, this keeps waiting until completion or timeout. It may repeat wait
+  //! attempts and check elapsed time to enforce the timeout. Use the duration-hint overload of `try_wait` when timeout
+  //! enforcement is unnecessary.
+  //! Scheduling or other implementation overhead may delay returning after the timeout.
   //!
   //! @param __phase Primary phase value to wait on.
   //! @param __time Absolute timeout.
