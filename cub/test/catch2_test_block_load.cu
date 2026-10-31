@@ -208,10 +208,10 @@ CUB_TEST("Block load works with caching iterators", "[load][block]", CUB_SMALL, 
 }
 
 #if IPT == 1
-CUB_TEST("Vectorized block load with const and non-const datatype and different alignment cases",
+CUB_TEST("Vectorized block load with const, non-const and cache modified inputs and different alignment cases",
          "[load][block]",
          CUB_SMALL,
-         c2h::type_list<const int*, int*>)
+         c2h::type_list<const int*, int*, cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_LDG, int>>)
 {
   using type           = int;
   using input_ptr_type = c2h::get<0, TestType>;
