@@ -156,12 +156,15 @@ struct agent_t
 
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     // The algorithm only requires comp(haystack, needle) and comp(needle, haystack), so we can only check the
-    // sortedness of the needles if the comparator also accepts two needles.
+    // sortedness of the needles if the comparator also accepts two needles. Note that is_invocable cannot see into the
+    // body of an unconstrained templated operator(), so such a comparator on heterogeneous types fails to compile here
+    // and needs to constrain its overloads.
     if constexpr (::cuda::std::is_invocable_v<CompareOp&, const needles_type&, const needles_type&>)
     {
       if (threadIdx.x == 0)
       {
-        _CCCL_ASSERT(::cuda::std::is_sorted(storage.needles, storage.needles + needles_count, compare_op),
+        const needles_type* const needles_begin = storage.needles;
+        _CCCL_ASSERT(::cuda::std::is_sorted(needles_begin, needles_begin + needles_count, compare_op),
                      "d_values must be sorted consistently with comp");
         if (values_beg > 0 && needles_count > 0)
         {
