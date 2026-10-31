@@ -25,13 +25,11 @@
 #include <cuda/__utility/__basic_any/interfaces.h>
 #include <cuda/__utility/__basic_any/virtual_ptrs.h>
 #include <cuda/__utility/immovable.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__exception/terminate.h> // IWYU pragma: keep
+#include <cuda/std/__host_stdlib/any>
 #include <cuda/std/__type_traits/type_list_operations.h>
 #include <cuda/std/__utility/typeid.h>
-
-#if _CCCL_HOSTED()
-#  include <typeinfo>
-#endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -42,34 +40,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //!
 struct __iunknown : __basic_interface<::cuda::std::__type_always<__iunknown>::__call>
 {};
-
-#if _CCCL_HAS_EXCEPTIONS()
-//!
-//! __bad_any_cast
-//!
-struct __bad_any_cast : ::std::bad_cast
-{
-  __bad_any_cast() noexcept                                         = default;
-  __bad_any_cast(__bad_any_cast const&) noexcept                    = default;
-  ~__bad_any_cast() noexcept override                               = default;
-  auto operator=(__bad_any_cast const&) noexcept -> __bad_any_cast& = default;
-
-  auto what() const noexcept -> char const* override
-  {
-    return "cannot cast value to target type";
-  }
-};
-
-[[noreturn]] _CCCL_HOST_DEVICE_API inline void __throw_bad_any_cast()
-{
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw __bad_any_cast();), (::cuda::std::terminate();))
-}
-#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-[[noreturn]] _CCCL_HOST_DEVICE_API inline void __throw_bad_any_cast()
-{
-  ::cuda::std::terminate();
-}
-#endif // !_CCCL_HAS_EXCEPTIONS()
 
 struct __rtti_base : __immovable
 {
@@ -268,7 +238,7 @@ template <class _SrcInterface, class _DstInterface>
     auto __dst_vptr = __try_vptr_cast<_SrcInterface, _DstInterface>(__src_vptr);
     if (!__dst_vptr && __src_vptr)
     {
-      __throw_bad_any_cast();
+      _CCCL_THROW(::std::bad_any_cast);
     }
     return __dst_vptr;
   }
