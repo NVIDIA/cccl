@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 // Focused checks for capacity mapping, ID partitioning, and the internal bounded GroupMerge sorting path.
 
@@ -16,7 +16,8 @@
 #include <c2h/catch2_test_helper.h>
 #include <c2h/device_and_stream.h>
 
-namespace capacity = cub::detail::segmented_sort_capacity;
+namespace capacity                = cub::detail::segmented_sort_capacity;
+using compute_capability_getter_t = cub::detail::policy_getter<capacity::group_merge_tuning_arch_selector, 90>;
 
 // Irregular capacities exercise bin selection independently of rectangular tuning.
 struct irregular_expansion
@@ -31,15 +32,18 @@ struct irregular_expansion
 // Check generic bounds, irregular configuration mapping, overflow IDs, and empty-workspace reuse.
 CUB_TEST("Capacity partition accepts arbitrary bounds without sort tuning", "[segmented][sort][device]", CUB_SMALL)
 {
-  for (int bin = 0; bin < 3; ++bin)
+  for (int bin_idx = 0; bin_idx < 3; ++bin_idx)
   {
-    const auto config = capacity::lookup_bin_config<irregular_expansion>(bin);
-    REQUIRE(config.threads == (4 << bin));
-    REQUIRE(config.items_per_thread == (bin == 1 ? 10 : 9));
+    const auto config = capacity::lookup_bin_config<irregular_expansion>(bin_idx);
+    REQUIRE(config.threads_per_segment == (4 << bin_idx));
+    REQUIRE(config.items_per_thread == (bin_idx == 1 ? 10 : 9));
   }
-  static_assert(capacity::group_merge_tuning_arch_selector{}(cuda::compute_capability{8, 9}) == 0);
-  static_assert(capacity::group_merge_tuning_arch_selector{}(cuda::compute_capability{9, 0}) == 90);
-  static_assert(capacity::group_merge_tuning_arch_selector{}(cuda::compute_capability{12, 0}) == 90);
+  static_assert(
+    capacity::group_merge_tuning_arch_selector{}(cuda::compute_capability{8, 9}) == cuda::compute_capability{8, 9});
+  static_assert(
+    capacity::group_merge_tuning_arch_selector{}(cuda::compute_capability{9, 0}) == cuda::compute_capability{9, 0});
+  static_assert(
+    capacity::group_merge_tuning_arch_selector{}(cuda::compute_capability{12, 0}) == cuda::compute_capability{12, 0});
   using capacities = capacity::capacity_list<3, 10, 21>;
   static_assert(capacities::first_fit(3) == 0 && capacities::first_fit(4) == 1);
   static_assert(capacities::first_fit(21) == 2 && capacities::first_fit(22) == 3);
@@ -49,7 +53,7 @@ CUB_TEST("Capacity partition accepts arbitrary bounds without sort tuning", "[se
   capacity::partition_result result;
   size_t bytes   = 0;
   const auto run = [&](void* storage, unsigned count) {
-    return capacity::dispatch_partition<capacities>(
+    return capacity::dispatch_partition<capacity::fixed_capacity_selector_t<capacities>, compute_capability_getter_t>(
       storage, bytes, thrust::raw_pointer_cast(d_begins.data()), thrust::raw_pointer_cast(d_ends.data()), count, result);
   };
   REQUIRE(run(nullptr, static_cast<unsigned>(begins.size())) == cudaSuccess);
@@ -62,11 +66,11 @@ CUB_TEST("Capacity partition accepts arbitrary bounds without sort tuning", "[se
   c2h::host_vector<unsigned> ids(offsets.back());
   REQUIRE(
     cudaMemcpy(ids.data(), result.segment_ids, ids.size() * sizeof(unsigned), cudaMemcpyDeviceToHost) == cudaSuccess);
-  for (int bin = 0; bin <= capacities::size; ++bin)
+  for (int bin_idx = 0; bin_idx <= capacities::size; ++bin_idx)
   {
-    for (unsigned i = offsets[bin]; i < offsets[bin + 1]; ++i)
+    for (unsigned i = offsets[bin_idx]; i < offsets[bin_idx + 1]; ++i)
     {
-      REQUIRE(capacities::first_fit(ends[ids[i]] - begins[ids[i]]) == bin);
+      REQUIRE(capacities::first_fit(ends[ids[i]] - begins[ids[i]]) == bin_idx);
     }
   }
   std::sort(ids.begin(), ids.end());
@@ -85,12 +89,12 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
          c2h::type_list<int, double>)
 {
   using key_type       = c2h::get<0, TestType>;
-  using plan           = capacity::group_merge_entries<key_type, 90>;
-  using capacities     = typename plan::capacities;
-  using warp_expansion = typename plan::template entry<0>::expansion;
-  const int bin        = warp_expansion::capacities::first_fit(37);
-  const auto config    = capacity::lookup_bin_config<warp_expansion>(bin);
-  REQUIRE(config.threads == 4);
+  using kernels_t      = capacity::group_merge_sort_kernels_t<key_type>;
+  using capacities     = typename kernels_t::template capacities_t<compute_capability_getter_t>;
+  using warp_expansion = typename kernels_t::template kernel_t<0>::template expansion_t<compute_capability_getter_t>;
+  const int bin_idx    = warp_expansion::capacities::first_fit(37);
+  const auto config    = capacity::lookup_bin_config<warp_expansion>(bin_idx);
+  REQUIRE(config.threads_per_segment == 4);
   REQUIRE(config.items_per_thread == 10);
   std::vector<int> lengths{0, 1};
   for (const int bound : capacities::bounds)
@@ -102,7 +106,7 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   }
   // A partially filled final group, many work iterations, and absent bins.
   lengths.insert(lengths.end(), 4097, warp_expansion::capacities::bounds.back());
-  using small_capacities = typename plan::template entry<1>::capacities;
+  using small_capacities = typename kernels_t::template kernel_t<1>::template capacities_t<compute_capability_getter_t>;
   lengths.insert(lengths.end(), 1000, small_capacities::bounds.back());
   lengths.insert(lengths.end(), 7, capacities::bounds.back() - 1);
   c2h::host_vector<long long> begins, ends;
@@ -171,23 +175,24 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
           == cudaSuccess);
   REQUIRE(offsets.back() - offsets[capacities::size] == 1);
   REQUIRE(c2h::host_vector<key_type>(d_in) == input);
-  // Force scratch reuse and cross-bin work iterations independently in every entry.
-  const auto retry_entry = [&](auto index) {
+  // Force scratch reuse and cross-bin work iterations independently in every sorting kernel.
+  const auto retry_kernel = [&](auto index) {
     constexpr int i           = decltype(index)::value;
-    using entry               = typename plan::template entry<i>;
-    constexpr int first_bin   = plan::bin_begin(i);
+    using kernel_t            = typename kernels_t::template kernel_t<i>;
+    using kernel_capacities_t = typename kernel_t::template capacities_t<compute_capability_getter_t>;
+    constexpr int first_bin   = kernels_t::template kernel_bin_begin_idx<compute_capability_getter_t>(i);
     constexpr int lower_bound = first_bin ? capacities::bounds[static_cast<size_t>(first_bin - 1)] : 0;
     auto retry                = expected;
     for (size_t segment = 0; segment < lengths.size(); ++segment)
     {
-      if (lengths[segment] > lower_bound && lengths[segment] <= entry::capacities::bounds.back())
+      if (lengths[segment] > lower_bound && lengths[segment] <= kernel_capacities_t::bounds.back())
       {
         std::fill(retry.begin() + begins[segment], retry.begin() + ends[segment], key_type{-99});
       }
     }
     d_out = retry;
     REQUIRE(
-      capacity::launch_entry<entry>(
+      capacity::launch_sort_kernel<kernel_t, compute_capability_getter_t>(
         {result.bin_offsets + first_bin, result.segment_ids},
         thrust::raw_pointer_cast(d_begins.data()),
         thrust::raw_pointer_cast(d_ends.data()),
@@ -200,9 +205,9 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
     REQUIRE(cudaStreamSynchronize(stream) == cudaSuccess);
     REQUIRE(c2h::host_vector<key_type>(d_out) == expected);
   };
-  retry_entry(cuda::std::integral_constant<int, 0>{});
-  retry_entry(cuda::std::integral_constant<int, 1>{});
-  retry_entry(cuda::std::integral_constant<int, 2>{});
+  retry_kernel(cuda::std::integral_constant<int, 0>{});
+  retry_kernel(cuda::std::integral_constant<int, 1>{});
+  retry_kernel(cuda::std::integral_constant<int, 2>{});
   // Prefixes and scatter cursors must reset on a subsequent invocation.
   thrust::fill(d_out.begin(), d_out.end(), key_type{-99});
   REQUIRE(run(thrust::raw_pointer_cast(storage.data())) == cudaSuccess);

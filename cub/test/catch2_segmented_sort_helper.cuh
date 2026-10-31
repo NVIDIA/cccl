@@ -4,7 +4,7 @@
 
 #include <cub/device/device_segmented_sort.cuh>
 
-#if defined(TEST_BACKEND) && TEST_BACKEND == 1
+#if defined(TEST_ALGORITHM) && TEST_ALGORITHM == 1
 #  include <cub/device/dispatch/dispatch_binned_segmented_sort.cuh>
 #endif
 
@@ -750,7 +750,7 @@ void validate_sorted_random_outputs(
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-// Sorting abstraction/launcher
+// Sorting abstraction/launcher_factory
 
 template <typename WrappedKeyT, typename ValueT>
 CUB_RUNTIME_FUNCTION cudaError_t call_cub_segmented_sort_api(
@@ -1167,9 +1167,9 @@ public:
   }
 };
 
-#if defined(TEST_BACKEND) && TEST_BACKEND == 1 && TEST_LAUNCH == 0
-// Adapt the internal backend to the same temporary-storage test launcher.
-struct binned_segmented_sort_launcher_t
+#if defined(TEST_ALGORITHM) && TEST_ALGORITHM == 1 && TEST_LAUNCH == 0
+// Adapt the internal backend to the same temporary-storage test launcher_factory.
+struct lrb_sort_launcher_t
 {
   template <typename KeyT>
   cudaError_t operator()(
@@ -1181,9 +1181,17 @@ struct binned_segmented_sort_launcher_t
     const int* begins,
     const int* ends) const
   {
+    using key_type = unwrap_value_t<KeyT>;
     cub::detail::segmented_sort_capacity::partition_result result;
     return cub::detail::segmented_sort_capacity::dispatch(
-      storage, bytes, begins, thrust::device_pointer_cast(ends), segments, input, output, result);
+      storage,
+      bytes,
+      begins,
+      thrust::device_pointer_cast(ends),
+      segments,
+      reinterpret_cast<const key_type*>(input),
+      reinterpret_cast<key_type*>(output),
+      result);
   }
 };
 #endif
@@ -1212,27 +1220,30 @@ void call_cub_segmented_sort_api(
   C2H_TIME_SCOPE("cub::DeviceSegmentedSort");
   CAPTURE(descending, double_buffer, stable_sort, num_items, num_segments);
 
-#if defined(TEST_BACKEND) && TEST_BACKEND == 1
+#if defined(TEST_ALGORITHM) && TEST_ALGORITHM == 1
 #  if TEST_LAUNCH != 0
-  SKIP("CCCL_SKIP_TEST: The internal binned backend currently supports only host launches.");
+  SKIP("CCCL_SKIP_TEST: The internal LRB backend currently supports only host launches.");
 #  else
-  if constexpr (!cuda::std::is_integral_v<KeyT> || sizeof(KeyT) > 8 || !cuda::std::is_same_v<ValueT, cub::NullType>)
+  if constexpr (sizeof(KeyT) > 8 || !cuda::std::is_same_v<ValueT, cub::NullType>)
   {
-    SKIP("The shared binned-backend tests currently cover integer keys only.");
+    SKIP("The shared LRB tests support keys up to eight bytes without associated values.");
   }
   else
   {
-    if (descending || double_buffer || stable_sort)
+    if (descending || double_buffer)
     {
-      SKIP("The internal binned backend currently tests ascending pointer-based SortKeys only.");
+      SKIP("The internal LRB backend currently tests ascending pointer-based key sorting only.");
     }
     ::cuda::compute_capability cc{};
     REQUIRE(cudaSuccess == CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY{}.PtxComputeCap(cc));
     if (cc < ::cuda::compute_capability{9, 0})
     {
-      SKIP("CCCL_SKIP_TEST: The internal binned backend requires a compiled SM90-or-newer target.");
+      SKIP("CCCL_SKIP_TEST: The internal LRB backend requires a compiled SM90-or-newer target.");
     }
-    using plan = cub::detail::segmented_sort_capacity::group_merge_entries<KeyT, 90>;
+    using kernels_t = cub::detail::segmented_sort_capacity::group_merge_sort_kernels_t<unwrap_value_t<KeyT>>;
+    using compute_capability_getter_t =
+      cub::detail::policy_getter<cub::detail::segmented_sort_capacity::group_merge_tuning_arch_selector, 90>;
+    using capacities_t = typename kernels_t::template capacities_t<compute_capability_getter_t>;
     c2h::host_vector<int> begins(num_segments), ends(num_segments);
     if (num_segments)
     {
@@ -1242,13 +1253,13 @@ void call_cub_segmented_sort_api(
     }
     for (int segment = 0; segment < num_segments; ++segment)
     {
-      if (ends[segment] - begins[segment] > plan::capacities::bounds.back())
+      if (ends[segment] - begins[segment] > capacities_t::bounds.back())
       {
-        SKIP("This input requires overflow sorting, which the internal binned backend does not yet implement.");
+        SKIP("This input requires overflow sorting, which the internal LRB backend does not yet implement.");
       }
     }
-    INFO("Backend: internal binned segmented sort; existing input generation and validation.");
-    launch(binned_segmented_sort_launcher_t{},
+    INFO("Backend: internal LRB segmented sort; existing input generation and validation.");
+    launch(lrb_sort_launcher_t{},
            static_cast<const KeyT*>(input_keys),
            output_keys,
            static_cast<unsigned>(num_segments),
@@ -1338,9 +1349,9 @@ void test_segments_derived(const c2h::device_vector<int>& d_offsets_vec)
 
   C2H_TIME_SECTION("Allocate device memory");
 
-#if defined(TEST_BACKEND) && TEST_BACKEND == 1
+#if defined(TEST_ALGORITHM) && TEST_ALGORITHM == 1
   // Keep the original backend's full matrix; select only implemented modes here.
-  const bool stable_sort     = unstable;
+  const bool stable_sort     = GENERATE(unstable, stable);
   const bool sort_descending = ascending;
   const bool sort_buffers    = pointers;
 #else
@@ -1394,9 +1405,9 @@ void test_segments_derived(const c2h::device_vector<int>& d_offsets_vec)
     &keys_selector,
     &values_selector);
 
-#if defined(TEST_BACKEND) && TEST_BACKEND == 1
+#if defined(TEST_ALGORITHM) && TEST_ALGORITHM == 1
   // Unsupported types skip in the API helper; omit their unreachable validation.
-  if constexpr (cuda::std::is_integral_v<KeyT> && sizeof(KeyT) <= 8 && cuda::std::is_same_v<ValueT, cub::NullType>)
+  if constexpr (sizeof(KeyT) <= 8 && cuda::std::is_same_v<ValueT, cub::NullType>)
 #endif
   {
     auto& keys   = (keys_selector || !sort_buffers) ? keys_output : keys_input;
@@ -1444,7 +1455,7 @@ void test_segments_random(
 
   C2H_TIME_SECTION("Allocate device memory");
 
-#if defined(TEST_BACKEND) && TEST_BACKEND == 1
+#if defined(TEST_ALGORITHM) && TEST_ALGORITHM == 1
   const bool sort_descending = ascending;
 #else
   const bool sort_descending = GENERATE(ascending, descending);
@@ -1502,10 +1513,10 @@ void test_segments_random(
   {
     for (const bool sort_buffers : {pointers, double_buffer})
     {
-#if defined(TEST_BACKEND) && TEST_BACKEND == 1
-      if (stable_sort || sort_buffers)
+#if defined(TEST_ALGORITHM) && TEST_ALGORITHM == 1
+      if (sort_buffers)
       {
-        continue; // These modes remain covered by the existing-backend variant.
+        continue; // DoubleBuffer remains covered by the existing-backend variant.
       }
 #endif
       CAPTURE(stable_sort, sort_descending, sort_buffers);
