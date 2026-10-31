@@ -189,9 +189,9 @@ struct AgentReduceByKey
   static constexpr int TWO_PHASE_SCATTER = (ITEMS_PER_THREAD > 1);
 
   // The head flagging, scan and scatter require the items in a blocked arrangement
-  static_assert(AgentReduceByKeyPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED || ITEMS_PER_THREAD == 1,
-                "ReduceByKeyLookbackPolicy/RleLookbackPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED unless "
-                "items_per_thread is 1, since the reduction requires a blocked arrangement");
+  static_assert(AgentReduceByKeyPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,
+                "ReduceByKeyLookbackPolicy/RleLookbackPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since "
+                "the reduction requires a blocked arrangement");
   static_assert(
     (AgentReduceByKeyPolicyT::SCAN_ALGORITHM == BLOCK_SCAN_WARP_SCANS && BLOCK_THREADS % detail::warp_threads == 0)
       || BlockRakingLayout<int, BLOCK_THREADS>::RAKING_THREADS == detail::warp_threads,

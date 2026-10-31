@@ -183,9 +183,9 @@ struct AgentRadixSortDownsweep
                 "the warp size (32) when rank_algorithm is RADIX_RANK_MATCH or RADIX_RANK_MATCH_EARLY_COUNTS_*");
 
   // The ranking of the non-matching rank algorithms is only stable for keys loaded in a blocked arrangement
-  static_assert(LOAD_WARP_STRIPED || LOAD_ALGORITHM != BLOCK_LOAD_STRIPED || ITEMS_PER_THREAD == 1,
+  static_assert(LOAD_WARP_STRIPED || LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,
                 "RadixSortDownsweepPolicy / SegmentedSortRadixSortPolicy: load_algorithm must not be "
-                "BLOCK_LOAD_STRIPED (unless items_per_thread is 1), since ranking requires a blocked arrangement");
+                "BLOCK_LOAD_STRIPED, since ranking requires a blocked arrangement");
 
   // For descending sorts, BlockRadixRankMatchEarlyCounts returns the exclusive digit prefixes in reversed digit order,
   // whereas ProcessTile() expects them in digit order (like the other rank algorithms provide)

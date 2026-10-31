@@ -158,12 +158,12 @@ struct AgentScanByKey
   static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
 
   // The head flagging and block-wide scan require the items in a blocked arrangement
-  static_assert(AgentScanByKeyPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED || ITEMS_PER_THREAD == 1,
-                "ScanByKeyLookbackPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED unless items_per_thread is "
-                "1, since the scan requires a blocked arrangement");
-  static_assert(AgentScanByKeyPolicyT::STORE_ALGORITHM != BLOCK_STORE_STRIPED || ITEMS_PER_THREAD == 1,
-                "ScanByKeyLookbackPolicy: store_algorithm must not be BLOCK_STORE_STRIPED unless items_per_thread is "
-                "1, since the scan produces a blocked arrangement");
+  static_assert(AgentScanByKeyPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,
+                "ScanByKeyLookbackPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since the scan requires a "
+                "blocked arrangement");
+  static_assert(AgentScanByKeyPolicyT::STORE_ALGORITHM != BLOCK_STORE_STRIPED,
+                "ScanByKeyLookbackPolicy: store_algorithm must not be BLOCK_STORE_STRIPED, since the scan produces a "
+                "blocked arrangement");
   static_assert(
     (AgentScanByKeyPolicyT::SCAN_ALGORITHM == BLOCK_SCAN_WARP_SCANS && BLOCK_THREADS % detail::warp_threads == 0)
       || BlockRakingLayout<int, BLOCK_THREADS>::RAKING_THREADS == detail::warp_threads,

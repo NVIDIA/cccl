@@ -131,9 +131,9 @@ struct AgentUniqueByKey
   static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
 
   // The head flagging, scan and scatter require the items in a blocked arrangement
-  static_assert(AgentUniqueByKeyPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED || ITEMS_PER_THREAD == 1,
-                "UniqueByKeyPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED unless items_per_thread is 1, "
-                "since the selection requires a blocked arrangement");
+  static_assert(AgentUniqueByKeyPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,
+                "UniqueByKeyPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since the selection requires a "
+                "blocked arrangement");
   static_assert(
     (AgentUniqueByKeyPolicyT::SCAN_ALGORITHM == BLOCK_SCAN_WARP_SCANS && BLOCK_THREADS % detail::warp_threads == 0)
       || BlockRakingLayout<int, BLOCK_THREADS>::RAKING_THREADS == detail::warp_threads,

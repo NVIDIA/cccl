@@ -381,9 +381,9 @@ __launch_bounds__(current_policy<PolicySelector>().single_tile.threads_per_block
                    policy.single_tile.scan_algorithm>;
 
   // BlockRadixSort::SortBlockedToStriped only sorts stably if the items are loaded in a blocked arrangement
-  static_assert(policy.single_tile.load_algorithm != BLOCK_LOAD_STRIPED || ITEMS_PER_THREAD == 1,
-                "RadixSortPolicy: single_tile.load_algorithm must not be BLOCK_LOAD_STRIPED (unless "
-                "single_tile.items_per_thread is 1), since sorting requires a blocked arrangement");
+  static_assert(policy.single_tile.load_algorithm != BLOCK_LOAD_STRIPED,
+                "RadixSortPolicy: single_tile.load_algorithm must not be BLOCK_LOAD_STRIPED, since sorting requires a "
+                "blocked arrangement");
 
   // BlockLoad type (keys)
   using BlockLoadKeys = BlockLoad<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, policy.single_tile.load_algorithm>;

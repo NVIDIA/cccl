@@ -270,9 +270,9 @@ struct AgentSelectIf
                      FlagsInputIteratorT>;
 
   // The selection flagging, scan and scatter require the items in a blocked arrangement
-  static_assert(AgentSelectIfPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED || ITEMS_PER_THREAD == 1,
-                "SelectLookbackPolicy/PartitionLookbackPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED unless "
-                "items_per_thread is 1, since the selection requires a blocked arrangement");
+  static_assert(AgentSelectIfPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,
+                "SelectLookbackPolicy/PartitionLookbackPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since "
+                "the selection requires a blocked arrangement");
   static_assert(
     (AgentSelectIfPolicyT::SCAN_ALGORITHM == BLOCK_SCAN_WARP_SCANS && BLOCK_THREADS % detail::warp_threads == 0)
       || BlockRakingLayout<int, BLOCK_THREADS>::RAKING_THREADS == detail::warp_threads,
