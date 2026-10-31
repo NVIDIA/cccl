@@ -596,7 +596,8 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   // SMEM is 16-byte aligned by default
   extern __shared__ char smem[];
   static_assert(ldgsts_size_and_align <= 16);
-  // the tile size must be a multiple of ldgsts_size_and_align, so all tiles start at aligned offsets
+  // the code assumes tile_size (in elements) is a multiple of ldgsts_size_and_align, so tile offsets stay aligned for
+  // any input type
   static_assert(ThreadsPerBlock % ldgsts_size_and_align == 0,
                 "TransformPolicy: async_copy.threads_per_block must be a multiple of 16 when algorithm is "
                 "TransformAlgorithm::ldgsts");
