@@ -23,7 +23,10 @@
 #include <cub/detail/topk_helpers.cuh>
 #include <cub/detail/uninitialized.cuh>
 
+#include <thrust/type_traits/is_contiguous_iterator.h>
+
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
@@ -47,11 +50,15 @@ namespace detail::topk
 //! @tparam ScanAlgorithm
 //!   The BlockScan algorithm to use
 //!
+//! @tparam VecSize
+//!   Number of keys per vectorized load of contiguous input with BLOCK_LOAD_VECTORIZE, 0 to load through BlockLoad
+//!
 template <int ThreadsPerBlock,
           int ItemsPerThread,
           int BitsPerPass,
           BlockLoadAlgorithm LoadAlgorithm,
-          BlockScanAlgorithm ScanAlgorithm>
+          BlockScanAlgorithm ScanAlgorithm,
+          int VecSize>
 struct agent_topk_policy
 {
   static constexpr int threads_per_block             = ThreadsPerBlock;
@@ -59,6 +66,7 @@ struct agent_topk_policy
   static constexpr int bits_per_pass                 = BitsPerPass;
   static constexpr BlockLoadAlgorithm load_algorithm = LoadAlgorithm;
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
+  static constexpr int vec_size                      = VecSize;
 };
 
 template <typename KeyInT, typename OffsetT, typename OutOffsetT>
@@ -258,6 +266,22 @@ struct AgentTopK
   // Utility methods for device topK
   //---------------------------------------------------------------------
 
+  // Load a full tile in a blocked arrangement
+  template <typename InputItT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void load_tile(InputItT block_in, key_in_t (&thread_data)[items_per_thread])
+  {
+    if constexpr (AgentTopKPolicyT::load_algorithm == BLOCK_LOAD_VECTORIZE && AgentTopKPolicyT::vec_size != 0
+                  && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputItT>)
+    {
+      LoadDirectBlockedVectorized<LOAD_DEFAULT, AgentTopKPolicyT::vec_size>(
+        static_cast<int>(threadIdx.x), ::cuda::std::to_address(block_in), thread_data);
+    }
+    else
+    {
+      block_load_input_t(temp_storage.load_input).Load(block_in, thread_data);
+    }
+  }
+
   // Process a range of input data in tiles, calling f(key, index) for each element
   template <typename InputItT, typename FuncT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void process_range(InputItT in, const OffsetT num_items, FuncT f)
@@ -280,7 +304,7 @@ struct AgentTopK
       // Ensure that the temporary storage from previous iteration can be reused
       __syncthreads();
 
-      block_load_input_t(temp_storage.load_input).Load(in + tile_base, thread_data);
+      load_tile(in + tile_base, thread_data);
       for (int j = 0; j < items_per_thread; ++j)
       {
         f(thread_data[j], offset + j);
@@ -297,7 +321,7 @@ struct AgentTopK
 
       if (num_remaining_elements == 0)
       {
-        block_load_input_t(temp_storage.load_input).Load(in + tile_base, thread_data);
+        load_tile(in + tile_base, thread_data);
       }
       else
       {

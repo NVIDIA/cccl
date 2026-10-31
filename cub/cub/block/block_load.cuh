@@ -23,19 +23,25 @@
 #include <cub/detail/cub_vector.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
+#include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/detail/unit_word.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_ptx.cuh>
 
+#include <cuda/__memory/__vectorized_storage.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__memory/runtime_assume_aligned.h>
 #include <cuda/std/__new/device_new.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_volatile.h>
 #include <cuda/std/__type_traits/remove_reference.h>
+
+#include <nv/target>
 
 #if __cpp_lib_format >= 201907L
 #  include <cuda/std/__concepts/same_as.h>
@@ -187,61 +193,51 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectBlocked(
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
-//! @brief Internal implementation for load vectorization
+namespace detail
+{
+//! Whether the storage of ``RandomAccessIterator`` can be loaded with vectors
+// TODO(bgruber): remove the check for is_primitive<StorageT> in CCCL 4.0
+template <typename RandomAccessIterator, typename StorageT = it_value_t<RandomAccessIterator>>
+inline constexpr bool block_load_can_vectorize_v =
+  (is_primitive<StorageT>::value || ::cuda::is_trivially_copyable_v<StorageT>) //
+  &&!::cuda::std::is_volatile_v<StorageT>
+  && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIterator>;
+
+//! @brief Internal implementation of LoadDirectBlockedVectorized for input aligned to the vector type
 //!
 //! @param[in] linear_tid
 //!   A suitable 1D thread-identifier for the calling thread (e.g., `(threadIdx.y * blockDim.x) + linear_tid` for 2D
 //!   thread blocks)
 //!
 //! @param[in] block_src_ptr
-//!   Input pointer for loading from
+//!   Input pointer for loading from, aligned to ``cuda::__as_vectorized_storage_t<InputT, ItemsPerThread>``
 //!
 //! @param[out] dst_items
 //!   Destination to load data into
-template <CacheLoadModifier MODIFIER, typename T, int ItemsPerThread>
+template <CacheLoadModifier MODIFIER,
+          ::cuda::std::size_t MaxVectorAccess = ::cuda::__max_memory_access_width,
+          typename T,
+          int ItemsPerThread,
+          typename InputT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&dst_items)[ItemsPerThread])
+InternalLoadDirectBlockedVectorized(int linear_tid, const InputT* block_src_ptr, T (&dst_items)[ItemsPerThread])
 {
-  // Find biggest memory access word that T is a whole multiple of
-  using device_word_t = typename UnitWord<T>::DeviceWord;
-  _CCCL_DIAG_PUSH
-#  if _CCCL_COMPILER(CLANG, >=, 10)
-  _CCCL_DIAG_SUPPRESS_CLANG("-Wsizeof-array-div")
-#  endif // _CCCL_COMPILER(CLANG, >=, 10)
-  // NOLINTNEXTLINE(bugprone-sizeof-expression)
-  constexpr int total_words = static_cast<int>(sizeof(dst_items) / sizeof(device_word_t));
-  _CCCL_DIAG_POP
-  constexpr int vector_size        = (total_words % 4 == 0) ? 4 : (total_words % 2 == 0) ? 2 : 1;
-  constexpr int vectors_per_thread = total_words / vector_size;
+  // All items of a thread are loaded with the widest vectors that evenly divide them
+  using vector_t = ::cuda::__as_vectorized_storage_t<InputT, ItemsPerThread, MaxVectorAccess>;
+  // The caller is responsible for ensuring the pointer is aligned to the vector type
+  block_src_ptr = ::cuda::std::__runtime_assume_aligned(block_src_ptr, alignof(vector_t));
 
-  // Load into an array of vectors in thread-blocked order
-  using vector_t = typename CubVector<device_word_t, vector_size>::Type;
+  // Load in thread-blocked order
+  const vector_t vec_items = ThreadLoad<MODIFIER>(reinterpret_cast<const vector_t*>(block_src_ptr) + linear_tid);
 
-  // Add the alignment check to ensure the vectorized loading can proceed.
-  if (::cuda::std::is_sufficiently_aligned<alignof(vector_t)>(block_src_ptr))
+  // Copy to destination
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int i = 0; i < ItemsPerThread; i++)
   {
-    vector_t vec_items[vectors_per_thread];
-    // Load into an array of vectors in thread-blocked order
-    const vector_t* vec_ptr = reinterpret_cast<const vector_t*>(block_src_ptr) + linear_tid * vectors_per_thread;
-
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < vectors_per_thread; i++)
-    {
-      vec_items[i] = ThreadLoad<MODIFIER>(vec_ptr + i);
-    }
-
-    // Copy to destination
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < ItemsPerThread; i++)
-    {
-      dst_items[i] = *(reinterpret_cast<T*>(vec_items) + i);
-    }
-  }
-  else
-  {
-    LoadDirectBlocked(linear_tid, block_src_ptr, dst_items);
+    dst_items[i] = vec_items.template __alias<InputT>(i);
   }
 }
+} // namespace detail
 
 #endif // _CCCL_DOXYGEN_INVOKED
 
@@ -263,11 +259,22 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
 //!
 //! @endrst
 //!
+//! @tparam Modifier
+//!   **[optional]** Cache load modifier for the vectorized loads (default: ``LOAD_DEFAULT``)
+//!
+//! @tparam VecSize
+//!   **[optional]** The number of consecutive items in each vector. Must evenly divide ``ItemsPerThread``. Each thread
+//!   loads its items with ``ItemsPerThread / VecSize`` vectors, and ``0`` loads them with a single vector
+//!   (default: ``0``)
+//!
 //! @tparam T
 //!   **[inferred]** The data type to load.
 //!
 //! @tparam ItemsPerThread
 //!   **[inferred]** The number of consecutive items partitioned onto each thread.
+//!
+//! @tparam InputT
+//!   **[inferred]** The value type of the input, which is loaded with vectors and converted to ``T``.
 //!
 //! @param[in] linear_tid
 //!   A suitable 1D thread-identifier for the calling thread (e.g., `(threadIdx.y * blockDim.x) +
@@ -278,12 +285,93 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
 //!
 //! @param[out] dst_items
 //!  destination to load data into
+template <CacheLoadModifier Modifier = LOAD_DEFAULT, int VecSize = 0, typename T, int ItemsPerThread, typename InputT>
+_CCCL_DEVICE _CCCL_FORCEINLINE void
+LoadDirectBlockedVectorized(int linear_tid, const InputT* block_src_ptr, T (&dst_items)[ItemsPerThread])
+{
+  constexpr int vec_size = VecSize == 0 ? ItemsPerThread : VecSize;
+  static_assert(ItemsPerThread % vec_size == 0, "VecSize must evenly divide ItemsPerThread");
+
+  if constexpr (detail::block_load_can_vectorize_v<InputT*, InputT>)
+  {
+    // Vector i of a thread is the blocked vector of thread linear_tid * vectors_per_thread + i
+    constexpr int vectors_per_thread = ItemsPerThread / vec_size;
+
+    // Only sm_100 and newer load vectors wider than 16 bytes with a single access, and only without a cache modifier
+    using vector16_t = ::cuda::__as_vectorized_storage_t<InputT, vec_size, 16ull>;
+
+#if __cccl_ptx_isa >= 900ULL
+    using vector32_t = ::cuda::__as_vectorized_storage_t<InputT, vec_size, 32ull>;
+    if constexpr (Modifier == LOAD_DEFAULT && alignof(vector16_t) < alignof(vector32_t))
+    {
+      bool is_vector32_aligned = false;
+      NV_IF_TARGET(NV_PROVIDES_SM_100,
+                   (is_vector32_aligned = ::cuda::std::is_sufficiently_aligned<alignof(vector32_t)>(block_src_ptr);))
+      if (is_vector32_aligned)
+      {
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int i = 0; i < vectors_per_thread; i++)
+        {
+          detail::InternalLoadDirectBlockedVectorized<Modifier, 32ull>(
+            linear_tid * vectors_per_thread + i,
+            block_src_ptr,
+            reinterpret_cast<T(&)[vec_size]>(dst_items[i * vec_size]));
+        }
+        return;
+      }
+    }
+#endif // __cccl_ptx_isa >= 900ULL
+
+    // Add the alignment check to ensure the vectorized loading can proceed.
+    if (::cuda::std::is_sufficiently_aligned<alignof(vector16_t)>(block_src_ptr))
+    {
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int i = 0; i < vectors_per_thread; i++)
+      {
+        detail::InternalLoadDirectBlockedVectorized<Modifier, 16ull>(
+          linear_tid * vectors_per_thread + i, block_src_ptr, reinterpret_cast<T(&)[vec_size]>(dst_items[i * vec_size]));
+      }
+      return;
+    }
+  }
+
+  if constexpr (Modifier != LOAD_DEFAULT)
+  {
+    LoadDirectBlocked(linear_tid, CacheModifiedInputIterator<Modifier, InputT, int>(block_src_ptr), dst_items);
+  }
+  else
+  {
+    LoadDirectBlocked(linear_tid, block_src_ptr, dst_items);
+  }
+}
+
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+// Accepts explicitly specified T and ItemsPerThread, which cannot bind to the leading Modifier of the overload above
 template <typename T, int ItemsPerThread>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 LoadDirectBlockedVectorized(int linear_tid, T* block_src_ptr, T (&dst_items)[ItemsPerThread])
 {
-  InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_src_ptr, dst_items);
+  LoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_src_ptr, dst_items);
 }
+
+//! @brief Internal implementation for load vectorization
+//!
+//! @param[in] linear_tid
+//!   A suitable 1D thread-identifier for the calling thread (e.g., `(threadIdx.y * blockDim.x) + linear_tid` for 2D
+//!   thread blocks)
+//!
+//! @param[in] block_src_ptr
+//!   Input pointer for loading from
+//!
+//! @param[out] dst_items
+//!   Destination to load data into
+template <CacheLoadModifier MODIFIER, typename T, int ItemsPerThread>
+CCCL_DEPRECATED_BECAUSE("Use LoadDirectBlockedVectorized instead") _CCCL_DEVICE _CCCL_FORCEINLINE void
+InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&dst_items)[ItemsPerThread])
+{
+  LoadDirectBlockedVectorized<MODIFIER>(linear_tid, block_src_ptr, dst_items);
+}
+#endif // _CCCL_DOXYGEN_INVOKED
 
 //! @}
 //! @name Striped arrangement I/O (direct)
@@ -1020,18 +1108,13 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_LOAD_VECTORIZE)
     {
-      if constexpr (detail::is_CacheModifiedInputIterator<RandomAccessIterator>
-                    && ::cuda::std::is_same_v<detail::it_value_t<RandomAccessIterator>, T>)
+      if constexpr (detail::is_CacheModifiedInputIterator<RandomAccessIterator>)
       {
-        InternalLoadDirectBlockedVectorized<RandomAccessIterator::__modifier>(linear_tid, block_src_it.ptr, dst_items);
+        LoadDirectBlockedVectorized<RandomAccessIterator::__modifier>(linear_tid, block_src_it.ptr, dst_items);
       }
-      else if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIterator>
-                         && ::cuda::std::is_same_v<detail::it_value_t<RandomAccessIterator>, T>
-                         // handles contiguous iterators wrapping volatile pointers, like span<volatile int>::iterator
-                         && !::cuda::std::is_volatile_v<
-                            ::cuda::std::remove_reference_t<detail::it_reference_t<RandomAccessIterator>>>)
+      else if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIterator>)
       {
-        InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, ::cuda::std::to_address(block_src_it), dst_items);
+        LoadDirectBlockedVectorized(linear_tid, ::cuda::std::to_address(block_src_it), dst_items);
       }
       else
       {
