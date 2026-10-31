@@ -211,7 +211,7 @@ C2H_TEST("cuco scalar and group probing preserve complete bucket cycles", "[prob
   using array_hash = cuda::std::array<u64, 2>;
   const cuda::stream stream{cuda::device_ref{0}};
   // The first bucket is drawn from seven buckets and the step minus one from six.
-  for (const auto [bucket, step] : {cuda::std::pair{0u, 1u}, cuda::std::pair{6u, 6u}})
+  for (const auto& [bucket, step] : {cuda::std::pair{0u, 1u}, cuda::std::pair{6u, 6u}})
   {
     check_hash_type(stream, hash_for<u32>(bucket, 7), hash_for<u32>(step - 1, 6), bucket, step);
     check_hash_type(stream, hash_for<u64>(bucket, 7), hash_for<u64>(step - 1, 6), bucket, step);
