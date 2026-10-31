@@ -28,6 +28,7 @@
 #  include <thrust/detail/type_traits/iterator/is_output_iterator.h>
 #  include <thrust/functional.h>
 #  include <thrust/iterator/iterator_traits.h>
+#  include <thrust/system/cuda/detail/core/util.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
