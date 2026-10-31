@@ -112,7 +112,13 @@ void stf_record_current_exception() noexcept
     // The failure is now reported through the STF error record; consume the runtime's pending
     // error too. This library links its own CUDA runtime, so the caller cannot clear it, and STF
     // helpers that poll cudaGetLastError() (host memory pinning) would otherwise trip on it later.
-    (void) cudaGetLastError();
+  (void) cudaGetLastError();
+  if (const cudaError_t sticky = cudaGetLastError(); sticky != cudaSuccess)
+  {
+    ::std::fprintf(stderr, "FATAL: unrecoverable CUDA error %s (%s); the CUDA context is dead\n",
+                 cudaGetErrorName(sticky), cudaGetErrorString(sticky));
+    ::std::abort();
+  }
   }
   catch (const ::std::invalid_argument& e)
   {
