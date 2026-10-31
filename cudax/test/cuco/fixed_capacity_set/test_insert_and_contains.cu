@@ -35,6 +35,25 @@ struct duplicate_key
   }
 };
 
+struct is_odd
+{
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(int value) const noexcept
+  {
+    return value % 2 != 0;
+  }
+};
+
+struct matches_even_membership
+{
+  const int* results;
+  int num_present;
+
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(int i) const noexcept
+  {
+    return results[i] == static_cast<int>(i < num_present && i % 2 == 0);
+  }
+};
+
 C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_sizes, bucket_sizes, probing_kinds)
 {
   using key_type                              = c2h::get<0, TestType>;
@@ -60,12 +79,16 @@ C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_
   set_type set{
     context.stream, context.mr, cuda::std::size_t{num_keys} * 2, cudax::cuco::empty_key{static_cast<key_type>(-1)}};
   const auto first = cuda::counting_iterator<key_type>{0};
-  auto found       = cuda::make_buffer<int>(context.stream, context.mr, num_queries, 7);
+  // Offset from the keys so that `pred(stencil[i])` and `pred(first[i])` disagree.
+  const auto stencil = cuda::counting_iterator<int>{1};
+  auto found         = cuda::make_buffer<int>(context.stream, context.mr, num_queries, 7);
 
   REQUIRE(set.insert(context.stream, first, first) == 0);
   set.insert_async(context.stream, first, first);
   set.contains(context.stream, first, first, found.begin());
   set.contains_async(context.stream, first, first, found.begin());
+  set.contains_if(context.stream, first, first, stencil, is_odd{}, found.begin());
+  set.contains_if_async(context.stream, first, first, stencil, is_odd{}, found.begin());
   REQUIRE(context.all_equal(found.data(), num_queries, 7));
 
   set.contains(context.stream, first, first + num_queries, found.begin());
@@ -74,6 +97,12 @@ C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_
   set.insert_async(context.stream, first + num_keys / 2, first + num_keys);
   set.contains_async(context.stream, first, first + num_queries, found.begin());
   REQUIRE(context.matches(found.data(), num_queries, num_keys));
+  set.contains_if(context.stream, first, first + num_queries, stencil, is_odd{}, found.begin());
+  REQUIRE(cuda::std::all_of(
+    context.policy(),
+    cuda::counting_iterator<int>{0},
+    cuda::counting_iterator<int>{num_queries},
+    matches_even_membership{found.data(), num_keys}));
   REQUIRE(set.insert(context.stream, first, first + num_keys) == 0);
   set.contains(context.stream, first, first + num_queries, cuda::discard_iterator{});
 

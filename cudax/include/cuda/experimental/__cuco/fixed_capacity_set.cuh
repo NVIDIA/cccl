@@ -268,6 +268,66 @@ public:
     __impl_->contains_async(__stream, __first, __last, __output_begin, ref());
   }
 
+  //! @brief Writes whether each query key is present, or false for keys not selected by `__pred`.
+  //!
+  //! For each key `__first[i]`, writes whether the key is present when `__pred(__stencil[i])` is
+  //! true; otherwise writes false.
+  //! @pre No selected query key equals the empty sentinel.
+  //! @note `__pred` may be invoked more than once for the same stencil element.
+  //! @note Synchronizes the supplied stream. For asynchronous execution use `contains_if_async`.
+  //! @throws cuda_error if the operation or stream synchronization fails
+  //! @tparam _InputIt Device-accessible random-access iterator with compatible query keys
+  //! @tparam _StencilIt Device-accessible random-access iterator with values convertible to the predicate argument
+  //! @tparam _Predicate Unary callable returning a value convertible to `bool`
+  //! @tparam _OutputIt Device-accessible random-access iterator assignable from `bool`
+  //! @param[in] __stream Stream used for lookup
+  //! @param[in] __first Beginning of the query range
+  //! @param[in] __last End of the query range
+  //! @param[in] __stencil Beginning of the stencil range
+  //! @param[in] __pred Predicate applied to the stencil to select the keys to query
+  //! @param[out] __output_begin Beginning of the output range
+  template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt>
+  _CCCL_HOST_API void contains_if(
+    ::cuda::stream_ref __stream,
+    _InputIt __first,
+    _InputIt __last,
+    _StencilIt __stencil,
+    _Predicate __pred,
+    _OutputIt __output_begin) const
+  {
+    contains_if_async(__stream, __first, __last, __stencil, __pred, __output_begin);
+    __stream.sync();
+  }
+
+  //! @brief Asynchronously writes whether each query key is present, or false for keys not selected by `__pred`.
+  //!
+  //! For each key `__first[i]`, writes whether the key is present when `__pred(__stencil[i])` is
+  //! true; otherwise writes false.
+  //! @pre No selected query key equals the empty sentinel.
+  //! @note `__pred` may be invoked more than once for the same stencil element.
+  //! @throws cuda_error if lookup fails to launch
+  //! @tparam _InputIt Device-accessible random-access iterator with compatible query keys
+  //! @tparam _StencilIt Device-accessible random-access iterator with values convertible to the predicate argument
+  //! @tparam _Predicate Unary callable returning a value convertible to `bool`
+  //! @tparam _OutputIt Device-accessible random-access iterator assignable from `bool`
+  //! @param[in] __stream Stream used for lookup
+  //! @param[in] __first Beginning of the query range
+  //! @param[in] __last End of the query range
+  //! @param[in] __stencil Beginning of the stencil range
+  //! @param[in] __pred Predicate applied to the stencil to select the keys to query
+  //! @param[out] __output_begin Beginning of the output range
+  template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt>
+  _CCCL_HOST_API void contains_if_async(
+    ::cuda::stream_ref __stream,
+    _InputIt __first,
+    _InputIt __last,
+    _StencilIt __stencil,
+    _Predicate __pred,
+    _OutputIt __output_begin) const
+  {
+    __impl_->contains_if_async(__stream, __first, __last, __stencil, __pred, __output_begin, ref());
+  }
+
   //! @brief Returns the total number of slots.
   //! @return The valid, rounded slot count
   [[nodiscard]] _CCCL_HOST_API size_type capacity() const noexcept
