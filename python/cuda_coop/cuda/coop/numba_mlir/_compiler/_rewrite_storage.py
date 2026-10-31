@@ -1607,7 +1607,12 @@ class _StorageRewrite:
                     )
             return
 
-        consumed_ctor_keys: set[str] = set()
+        consumed_ctor_keys: set[str] = {
+            release.ctor_key
+            for release in getattr(
+                rewrite, "_temp_storage_releases", {}
+            ).values()
+        }
         for label in sorted(func_ir.blocks):
             scan_block = func_ir.blocks[label]
             self._block = scan_block
@@ -1617,6 +1622,10 @@ class _StorageRewrite:
                 if isinstance(inst, ir.Assign)
             }
             for inst in scan_block.body:
+                if inst in getattr(
+                    rewrite, "_temp_storage_release_methods", ()
+                ):
+                    continue
                 used_vars = list(inst.list_vars())
                 if isinstance(inst, ir.Assign):
                     used_vars = [

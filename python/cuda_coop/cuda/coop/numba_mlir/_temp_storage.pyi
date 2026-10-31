@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from typing import Any
+
 from .._typing import TempStorageSharing
 
 class TempStorage:
@@ -21,5 +23,8 @@ class TempStorage:
         sharing: TempStorageSharing = "shared",
     ) -> None:
         """Configure scratch size, alignment, synchronization, and sharing."""
+
+    def release(self, dtype: object | None = None) -> Any:
+        """Consume the descriptor and return its complete shared array."""
 
 __all__ = ["TempStorage"]
