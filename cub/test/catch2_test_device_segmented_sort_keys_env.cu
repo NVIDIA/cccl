@@ -13,6 +13,8 @@ struct stream_registry_factory_t;
 
 #include <cuda/__execution/tune.h>
 
+#include <algorithm>
+#include <functional>
 #include <sstream>
 
 #include "block_size_extracting_helpers.h"
@@ -622,6 +624,52 @@ CUB_TEST("DeviceSegmentedSort::StableSortKeysDescending can be tuned",
 }
 
 #endif // TEST_LAUNCH != 1
+
+// More radix digits (2^7) than threads per block (64) in the large-segment radix sort, so each thread tracks multiple
+// bins. This exercises the reversal of the bin offsets of descending sorts.
+struct multiple_bins_per_thread_tuning
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::SegmentedSortPolicy
+  {
+    return cub::SegmentedSortPolicy{
+      cub::SegmentedSortRadixSortPolicy{
+        64, 4, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::RADIX_RANK_MEMOIZE, cub::BLOCK_SCAN_WARP_SCANS, 7},
+      cub::SegmentedSortSubWarpMergeSortPolicy{
+        64, 32, 1, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT},
+      cub::SegmentedSortSubWarpMergeSortPolicy{
+        64, 4, 1, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT},
+      1000000};
+  }
+};
+
+#if TEST_LAUNCH == 0
+CUB_TEST("DeviceSegmentedSort::SortKeysDescending works with multiple radix bins per thread",
+         "[segmented_sort][keys][device]",
+         CUB_SMALL)
+{
+  // a single segment spanning many large-segment tiles, so the multi-pass radix sort is used
+  constexpr int num_items = 4096;
+  c2h::device_vector<int> keys_in(num_items, thrust::no_init);
+  c2h::gen(C2H_SEED(2), keys_in);
+  c2h::device_vector<int> keys_out(num_items, thrust::no_init);
+  const c2h::device_vector<int> offsets{0, num_items};
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedSort::SortKeysDescending(
+      thrust::raw_pointer_cast(keys_in.data()),
+      thrust::raw_pointer_cast(keys_out.data()),
+      num_items,
+      1,
+      thrust::raw_pointer_cast(offsets.data()),
+      thrust::raw_pointer_cast(offsets.data()) + 1,
+      cuda::execution::tune(multiple_bins_per_thread_tuning{})));
+
+  c2h::host_vector<int> expected(keys_in);
+  std::sort(expected.begin(), expected.end(), std::greater<>{});
+  REQUIRE(c2h::host_vector<int>(keys_out) == expected);
+}
+#endif // TEST_LAUNCH == 0
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
 CUB_TEST("Test SegmentedSortPolicy properties", "[segmented_sort][device]", CUB_SMALL)
