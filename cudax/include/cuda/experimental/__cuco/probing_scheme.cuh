@@ -22,12 +22,14 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 #include <cuda/experimental/__cuco/detail/probing_scheme_base.cuh>
 
@@ -43,6 +45,10 @@ namespace cuda::experimental::cuco
 //! multiplicity.
 //!
 //! @note `_Hash` should be a callable object type.
+//!
+//! @note `_Hash` must return an unsigned integer whose high bits are uniformly distributed, since the high
+//! bits select the initial bucket. For example, an identity hash of sequential keys clusters them in the first
+//! buckets.
 //!
 //! @tparam _CgSize Cooperative group size
 //! @tparam _Hash Hash functor type
@@ -88,6 +94,8 @@ public:
   template <int _BucketSize, class _ProbeKey, class _Capacity>
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Capacity __cap) const
   {
+    static_assert(::cuda::std::is_same_v<typename _Capacity::index_type, ::cuda::std::size_t>,
+                  "The capacity extent must use cuda::std::size_t as its index type");
     using __size_type               = typename _Capacity::index_type;
     using __step_extent             = ::cuda::std::extents<__size_type, _BucketSize>;
     const __size_type __num_buckets = __cap.extent(0) / _BucketSize;
@@ -111,6 +119,8 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API constexpr auto make_iterator(
     ::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __probe_key, _Capacity __cap) const
   {
+    static_assert(::cuda::std::is_same_v<typename _Capacity::index_type, ::cuda::std::size_t>,
+                  "The capacity extent must use cuda::std::size_t as its index type");
     using __size_type              = typename _Capacity::index_type;
     constexpr __size_type __stride = static_cast<__size_type>(cg_size) * _BucketSize;
     using __step_extent            = ::cuda::std::extents<__size_type, __stride>;
@@ -138,6 +148,9 @@ private:
 //! probing especially when dealing with high multiplicity and/or high occupancy use cases.
 //!
 //! @note `_Hash1` and `_Hash2` should be callable object types.
+//!
+//! @note `_Hash1` and `_Hash2` must return unsigned integers whose high bits are uniformly distributed, since
+//! the high bits select the initial bucket and the step size.
 //!
 //! @note `_Hash2` needs to be able to construct from an integer value to avoid secondary clustering.
 //!
@@ -203,6 +216,8 @@ public:
   template <int _BucketSize, class _ProbeKey, class _Capacity>
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Capacity __cap) const
   {
+    static_assert(::cuda::std::is_same_v<typename _Capacity::index_type, ::cuda::std::size_t>,
+                  "The capacity extent must use cuda::std::size_t as its index type");
     using __size_type               = typename _Capacity::index_type;
     using __step_extent             = ::cuda::std::extents<__size_type, ::cuda::std::dynamic_extent>;
     const __size_type __num_buckets = __cap.extent(0) / _BucketSize;
@@ -228,6 +243,8 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API constexpr auto make_iterator(
     ::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __probe_key, _Capacity __cap) const
   {
+    static_assert(::cuda::std::is_same_v<typename _Capacity::index_type, ::cuda::std::size_t>,
+                  "The capacity extent must use cuda::std::size_t as its index type");
     using __size_type              = typename _Capacity::index_type;
     constexpr __size_type __stride = static_cast<__size_type>(cg_size) * _BucketSize;
     using __step_extent            = ::cuda::std::extents<__size_type, ::cuda::std::dynamic_extent>;
