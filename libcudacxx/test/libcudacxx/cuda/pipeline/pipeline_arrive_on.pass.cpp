@@ -62,6 +62,9 @@ TEST_DEVICE_FUNC void arrive_on_device_copy(
     const int idx = i * blockDim.x + tid;
     assert(global_array[idx] == shared_array[idx]);
   }
+
+  // The next call copies into shared_array again while other threads may still be checking it.
+  __syncthreads();
 }
 
 template <typename T>
