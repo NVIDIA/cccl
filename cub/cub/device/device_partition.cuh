@@ -29,6 +29,7 @@
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 #include <cub/device/dispatch/dispatch_three_way_partition.cuh>
 
@@ -255,7 +256,7 @@ struct DevicePartition
         using default_policy_selector = detail::select::
           policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, offset_t, SelectImpl::Partition>;
         using policy_selector_t =
-          ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), PartitionPolicy, default_policy_selector>;
+          detail::policy_selector_from_tuning_env_t<decltype(tuning_env), PartitionPolicy, default_policy_selector>;
         return detail::select::dispatch<SelectImpl::Partition>(
           storage,
           bytes,
@@ -373,7 +374,7 @@ struct DevicePartition
         using default_policy_selector = detail::select::
           policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, offset_t, SelectImpl::Partition>;
         using policy_selector_t =
-          ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), PartitionPolicy, default_policy_selector>;
+          detail::policy_selector_from_tuning_env_t<decltype(tuning_env), PartitionPolicy, default_policy_selector>;
         return detail::select::dispatch<SelectImpl::Partition>(
           storage,
           bytes,
@@ -534,7 +535,7 @@ struct DevicePartition
         using default_policy_selector = detail::select::
           policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, offset_t, SelectImpl::Partition>;
         using policy_selector_t =
-          ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), PartitionPolicy, default_policy_selector>;
+          detail::policy_selector_from_tuning_env_t<decltype(tuning_env), PartitionPolicy, default_policy_selector>;
         return detail::select::dispatch<SelectImpl::Partition>(
           storage,
           bytes,
@@ -649,7 +650,7 @@ struct DevicePartition
         using default_policy_selector = detail::select::
           policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, offset_t, SelectImpl::Partition>;
         using policy_selector_t =
-          ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), PartitionPolicy, default_policy_selector>;
+          detail::policy_selector_from_tuning_env_t<decltype(tuning_env), PartitionPolicy, default_policy_selector>;
         return detail::select::dispatch<SelectImpl::Partition>(
           storage,
           bytes,
