@@ -186,6 +186,11 @@ struct AgentThreeWayPartition
   static constexpr int ITEMS_PER_THREAD = PolicyT::ITEMS_PER_THREAD;
   static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
 
+  // The selection flagging, scan and scatter require the items in a blocked arrangement
+  static_assert(PolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,
+                "ThreeWayPartitionLookbackPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since the "
+                "partitioning requires a blocked arrangement");
+
   using WrappedInputIteratorT =
     ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
                      cub::CacheModifiedInputIterator<PolicyT::LOAD_MODIFIER, InputT, OffsetT>,

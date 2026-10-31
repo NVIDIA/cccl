@@ -105,6 +105,11 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.large_buffer.thr
   constexpr uint32_t BLOCK_THREADS    = static_cast<uint32_t>(policy.threads_per_block);
   constexpr uint32_t ITEMS_PER_THREAD = static_cast<uint32_t>(policy.bytes_per_thread);
   constexpr BufferSizeT TILE_SIZE     = BufferSizeT{BLOCK_THREADS} * ITEMS_PER_THREAD;
+  // BatchMemcpyKernel splits block-level buffers into tiles of block_level_tile_size bytes, this kernel copies them
+  static_assert(current_policy<PolicySelector>().lookback.small_buffer.block_level_tile_size
+                  == policy.threads_per_block * policy.bytes_per_thread,
+                "BatchedCopyPolicy: lookback.small_buffer.block_level_tile_size must equal "
+                "lookback.large_buffer.threads_per_block * lookback.large_buffer.bytes_per_thread");
 
   BufferOffsetT num_blev_buffers = buffer_offset_tile.LoadValid(last_tile_offset);
 

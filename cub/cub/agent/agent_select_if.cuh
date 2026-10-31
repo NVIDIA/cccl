@@ -22,6 +22,7 @@
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_discontinuity.cuh>
 #include <cub/block/block_load.cuh>
+#include <cub/block/block_raking_layout.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/constant.cuh>
 #include <cub/detail/it_traits.cuh>
@@ -267,6 +268,17 @@ struct AgentSelectIf
     ::cuda::std::_If<::cuda::std::is_pointer_v<FlagsInputIteratorT>,
                      CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER, FlagT, OffsetT>,
                      FlagsInputIteratorT>;
+
+  // The selection flagging, scan and scatter require the items in a blocked arrangement
+  static_assert(AgentSelectIfPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,
+                "SelectLookbackPolicy/PartitionLookbackPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since "
+                "the selection requires a blocked arrangement");
+  static_assert(
+    (AgentSelectIfPolicyT::SCAN_ALGORITHM == BLOCK_SCAN_WARP_SCANS && BLOCK_THREADS % detail::warp_threads == 0)
+      || BlockRakingLayout<int, BLOCK_THREADS>::RAKING_THREADS == detail::warp_threads,
+    "SelectLookbackPolicy/PartitionLookbackPolicy: the decoupled look-back needs a full warp to enter the block-scan "
+    "prefix callback: with warp scans threads_per_block must be a multiple of 32, otherwise the raking layout must "
+    "yield 32 raking threads");
 
   // Parameterized BlockLoad type for input data
   using BlockLoadT = BlockLoad<InputT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentSelectIfPolicyT::LOAD_ALGORITHM>;
