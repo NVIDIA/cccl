@@ -32,8 +32,19 @@ signed ``Int32`` dtype. Bulk Run Length Decode returns a ``Uint32`` total to
 every block member.
 
 Recognized ``operator`` functions and NumPy ufuncs select built-in operators.
-Other callables, custom Reduce and Scan operators, and Scan prefix callbacks
-are unsupported.
+For custom Reduce and Scan binary operators, prepare a :class:`DeviceOperator`
+with :func:`compile_operator` before tracing. See
+:ref:`coop-cutlass-device-operators` for the scalar signature and compiler
+requirements. Scan prefix callbacks and runtime callback state are unsupported.
+
+Compiled device operators
+-------------------------
+
+.. autofunction:: compile_operator
+
+.. autoclass:: DeviceOperator
+   :no-members:
+   :no-special-members:
 
 Thread groups
 -------------
