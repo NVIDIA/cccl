@@ -205,7 +205,7 @@ struct alignas(64) large_type_128
 
 // src: (4,512):(512,1), layout_right, sizeof(T) = 128
 // dst: (4,512):(512,1), layout_right, sizeof(T) = 128
-// sizeof(T) > __max_vector_access → __are_vectorizable_copy is false
+// sizeof(T) > __max_memory_access_width → __are_vectorizable_copy is false
 // inner_extent_bytes = 512 * 128 = 64KB >= __bytes_in_flight → path (2b)
 // 2D with outer dim > 1 → tile_size != tensor_size → bypasses DeviceTransform path (1)
 TEST_CASE("copy d2d large element 128 bytes 2D contiguous", "[copy][d2d][large_element]")
@@ -228,7 +228,7 @@ TEST_CASE("copy d2d large element 128 bytes 2D contiguous", "[copy][d2d][large_e
 // dst: (2,513):(1024,1), layout_stride
 // Padded outer stride (1024 > 513) prevents coalescing → tile_size = 513 != tensor_size = 1026
 // inner_extent_bytes = 513 * 128 = 65664 >= __bytes_in_flight → path (2b)
-// __are_vectorizable_copy is false (alignof(128) > __max_vector_access)
+// __are_vectorizable_copy is false (alignof(128) > __max_memory_access_width)
 // _TileSize = 256, inner_size = 513 = 2 * 256 + 1 → last tile has 1 remaining element
 TEST_CASE("copy d2d contiguous kernel remainder", "[copy][d2d][contiguous][remainder]")
 {
@@ -285,7 +285,7 @@ static_assert(alignof(overaligned_int) >= sizeof(overaligned_int));
 
 // src: (2,4096):(4096,1), layout_right, sizeof(T) = 16, alignof(T) = 16
 // dst: (2,4096):(4096,1), layout_right
-// alignof(T) <= __max_vector_access → __are_vectorizable_copy is true
+// alignof(T) <= __max_memory_access_width → __are_vectorizable_copy is true
 // inner_extent_bytes = 4096 * 16 = 64KB >= __bytes_in_flight → path (2a)
 // 2D with outer dim > 1 → tile_size != tensor_size → bypasses DeviceTransform path (1)
 TEST_CASE("copy d2d overaligned type vectorized", "[copy][d2d][overaligned]")
