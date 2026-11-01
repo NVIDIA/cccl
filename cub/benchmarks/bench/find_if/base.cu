@@ -11,7 +11,7 @@
 
 // %RANGE% TUNE_LOAD ld 0:2:1
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
-// %RANGE% TUNE_THREADS_PER_BLOCK_POW2 tpb 6:10:1
+// %RANGE% TUNE_THREADS_PER_BLOCK tpb 64:1024:64
 
 #if !TUNE_BASE
 #  if TUNE_LOAD == 0
@@ -28,7 +28,7 @@ struct bench_policy_selector
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(::cuda::compute_capability) const -> cub::FindIfPolicy
   {
     return cub::FindIfPolicy{
-      (1 << TUNE_THREADS_PER_BLOCK_POW2), cub::Nominal4BItemsToItems<T>(TUNE_ITEMS_PER_THREAD), 4, TUNE_LOAD_MODIFIER};
+      TUNE_THREADS_PER_BLOCK, cub::Nominal4BItemsToItems<T>(TUNE_ITEMS_PER_THREAD), 4, TUNE_LOAD_MODIFIER};
   }
 };
 #endif // !TUNE_BASE
