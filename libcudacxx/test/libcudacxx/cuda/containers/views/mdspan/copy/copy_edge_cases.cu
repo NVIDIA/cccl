@@ -32,6 +32,34 @@ TEST_CASE("copy d2d scalar", "[copy][d2d][0d]")
   test_copy<layout_right>(data, 1);
 }
 
+// src: float  (), (1,1):(1,1)
+// dst: double (), (1,1):(1,1)
+// single element, not byte-copyable -> element-wise kernel instead of memcpy
+TEST_CASE("copy d2d single element different types", "[copy][d2d][0d][mixed_types]")
+{
+  thrust::device_vector<float> d_src(1, 42.5f);
+  thrust::device_vector<double> d_dst(1, 0.0);
+  auto* src_ptr = thrust::raw_pointer_cast(d_src.data());
+  auto* dst_ptr = thrust::raw_pointer_cast(d_dst.data());
+
+  SECTION("rank 0")
+  {
+    using extents_t = cuda::std::extents<int>;
+    cuda::copy(cuda::device_mdspan<const float, extents_t>(src_ptr, extents_t{}),
+               cuda::device_mdspan<double, extents_t>(dst_ptr, extents_t{}),
+               copy_stream);
+  }
+  SECTION("rank 2 singleton")
+  {
+    using extents_t = cuda::std::dextents<int, 2>;
+    cuda::copy(cuda::device_mdspan<const float, extents_t>(src_ptr, extents_t(1, 1)),
+               cuda::device_mdspan<double, extents_t>(dst_ptr, extents_t(1, 1)),
+               copy_stream);
+  }
+  copy_stream.sync();
+  REQUIRE(d_dst[0] == 42.5);
+}
+
 // src: int   (8):(1)
 // dst: float (8):(1)
 // __to_raw_tensor removes singleton dims, so we use N > 1 to avoid rank-0 tensors.
@@ -177,7 +205,7 @@ struct alignas(64) large_type_128
 
 // src: (4,512):(512,1), layout_right, sizeof(T) = 128
 // dst: (4,512):(512,1), layout_right, sizeof(T) = 128
-// sizeof(T) > __max_vector_access → __are_vectorizable_copy is false
+// sizeof(T) > __max_memory_access_width → __are_vectorizable_copy is false
 // inner_extent_bytes = 512 * 128 = 64KB >= __bytes_in_flight → path (2b)
 // 2D with outer dim > 1 → tile_size != tensor_size → bypasses DeviceTransform path (1)
 TEST_CASE("copy d2d large element 128 bytes 2D contiguous", "[copy][d2d][large_element]")
@@ -200,7 +228,7 @@ TEST_CASE("copy d2d large element 128 bytes 2D contiguous", "[copy][d2d][large_e
 // dst: (2,513):(1024,1), layout_stride
 // Padded outer stride (1024 > 513) prevents coalescing → tile_size = 513 != tensor_size = 1026
 // inner_extent_bytes = 513 * 128 = 65664 >= __bytes_in_flight → path (2b)
-// __are_vectorizable_copy is false (alignof(128) > __max_vector_access)
+// __are_vectorizable_copy is false (alignof(128) > __max_memory_access_width)
 // _TileSize = 256, inner_size = 513 = 2 * 256 + 1 → last tile has 1 remaining element
 TEST_CASE("copy d2d contiguous kernel remainder", "[copy][d2d][contiguous][remainder]")
 {
@@ -257,7 +285,7 @@ static_assert(alignof(overaligned_int) >= sizeof(overaligned_int));
 
 // src: (2,4096):(4096,1), layout_right, sizeof(T) = 16, alignof(T) = 16
 // dst: (2,4096):(4096,1), layout_right
-// alignof(T) <= __max_vector_access → __are_vectorizable_copy is true
+// alignof(T) <= __max_memory_access_width → __are_vectorizable_copy is true
 // inner_extent_bytes = 4096 * 16 = 64KB >= __bytes_in_flight → path (2a)
 // 2D with outer dim > 1 → tile_size != tensor_size → bypasses DeviceTransform path (1)
 TEST_CASE("copy d2d overaligned type vectorized", "[copy][d2d][overaligned]")
@@ -327,6 +355,23 @@ TEST_CASE("copy d2d mismatched shapes", "[copy][d2d][negative]")
     thrust::raw_pointer_cast(d_dst.data()), layout_right::mapping<extents_dst_t>(dst_ext));
 
   CHECK_THROWS_AS(cuda::copy(src, dst, copy_stream), std::invalid_argument);
+}
+
+TEST_CASE("copy d2d mismatched empty shapes", "[copy][d2d][negative][zero_size]")
+{
+  using cuda::std::layout_right;
+  using extents_t = cuda::std::dextents<int, 2>;
+  thrust::device_vector<float> d_src(1);
+  thrust::device_vector<float> d_dst(1);
+
+  const cuda::device_mdspan<const float, extents_t, layout_right> src(
+    thrust::raw_pointer_cast(d_src.data()), extents_t(0, 3));
+  const cuda::device_mdspan<float, extents_t, layout_right> dst(thrust::raw_pointer_cast(d_dst.data()), extents_t(0, 2));
+
+  REQUIRE_THROWS_MATCHES(
+    cuda::copy(src, dst, copy_stream),
+    std::invalid_argument,
+    Catch::Matchers::Message("mdspans must have the same extents (after removing singleton dimensions)"));
 }
 
 /***********************************************************************************************************************
@@ -466,4 +511,42 @@ TEST_CASE("copy d2d large count > INT_MAX", "[copy][d2d][large][.]")
   REQUIRE(d_dst[0] == static_cast<char>(0x42));
   REQUIRE(d_dst[N / 2] == static_cast<char>(0x42));
   REQUIRE(d_dst[N - 1] == static_cast<char>(0x42));
+}
+
+// src: (65537,128K):(128K+128,1), layout_stride
+// dst: (65537,128K):(128K,1), layout_right
+// inner extent >= bytes-in-flight of every architecture -> contiguous kernel (2a), outer size > max grid y-dimension
+TEST_CASE("copy d2d contiguous kernel outer size > max grid y", "[copy][d2d][contiguous][large][.]")
+{
+  constexpr int M         = 65537;
+  constexpr int N         = 128 * 1024;
+  constexpr int Ld        = N + 128;
+  constexpr auto required = size_t{M} * (Ld + N);
+
+  size_t free_mem  = 0;
+  size_t total_mem = 0;
+  cudaMemGetInfo(&free_mem, &total_mem);
+  if (free_mem < required + (size_t{256} << 20))
+  {
+    SKIP("Not enough GPU memory (" << (free_mem >> 20) << " MB free, need ~" << (required >> 20) << " MB)");
+  }
+  thrust::device_vector<char> d_src(size_t{M} * Ld, static_cast<char>(0x42));
+  thrust::device_vector<char> d_dst(size_t{M} * N, static_cast<char>(0x00));
+
+  using extents_t     = cuda::std::dextents<long long, 2>;
+  using src_mdspan_t  = cuda::device_mdspan<const char, extents_t, cuda::std::layout_stride>;
+  using dst_mdspan_t  = cuda::device_mdspan<char, extents_t>;
+  using src_mapping_t = cuda::std::layout_stride::mapping<extents_t>;
+
+  const src_mapping_t src_mapping(extents_t(M, N), cuda::std::array<long long, 2>{Ld, 1});
+
+  const src_mdspan_t src(thrust::raw_pointer_cast(d_src.data()), src_mapping);
+  const dst_mdspan_t dst(thrust::raw_pointer_cast(d_dst.data()), extents_t(M, N));
+
+  cuda::copy(src, dst, copy_stream);
+  copy_stream.sync();
+
+  REQUIRE(d_dst[0] == static_cast<char>(0x42));
+  REQUIRE(d_dst[size_t{M - 1} * N] == static_cast<char>(0x42));
+  REQUIRE(d_dst[size_t{M} * N - 1] == static_cast<char>(0x42));
 }

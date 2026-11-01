@@ -20,11 +20,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/constant.cuh>
+#include <cub/detail/key_value_pair.cuh>
+#include <cub/detail/log2.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__algorithm/clamp.h>
@@ -475,7 +479,7 @@ struct WarpScanShfl
    */
   template <typename Tp, typename ScanOpT>
   _CCCL_DEVICE _CCCL_FORCEINLINE Tp InclusiveScanStep(
-    Tp input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
+    const Tp& input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
   {
     return InclusiveScanStep(input, scan_op, first_lane, offset);
   }
@@ -781,7 +785,7 @@ struct WarpScanShfl
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   UpdatePartial([[maybe_unused]] T input, T& inclusive, T& exclusive, [[maybe_unused]] ScanOpT scan_op, int valid_items)
   {
-    if constexpr (::cuda::std::is_integral_v<T> && cub::detail::is_cuda_std_plus_v<ScanOpT, T>)
+    if constexpr (::cuda::std::is_integral_v<T> && ::cuda::__is_cuda_std_plus_v<ScanOpT, T>)
     {
       // initial value presumed 0
       if (static_cast<int>(lane_id) < valid_items)
@@ -835,7 +839,7 @@ struct WarpScanShfl
     // Get exclusive
     UpdatePartial(input, inclusive, exclusive, scan_op, valid_items);
 
-    if constexpr (!(::cuda::std::is_integral_v<T> && cub::detail::is_cuda_std_plus_v<ScanOpT, T>) )
+    if constexpr (!(::cuda::std::is_integral_v<T> && ::cuda::__is_cuda_std_plus_v<ScanOpT, T>) )
     {
       // Correct first element of exclusive
       if ((lane_id == 0u) && (valid_items > 0))

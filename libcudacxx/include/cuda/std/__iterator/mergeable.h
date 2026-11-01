@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h> // IWYU pragma: keep
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/ranges_operations.h>
 #include <cuda/std/__iterator/concepts.h>

@@ -34,7 +34,7 @@ jobs:
           USERS=("allisonvacanti" "gevtushenko" "jrhemstad" "elstehle" "wmaxey" "miscco" "griwes")
           WEEK=$(date +%U)
           INDEX=$(( WEEK % 7 ))
-          echo "ASSIGNEE=${USERS[$INDEX]}" >> $GITHUB_ENV
+          echo "ASSIGNEE=${USERS[$INDEX]}" >> "$GITHUB_ENV"
 
       - name: Get User ID
         run: |
@@ -42,7 +42,7 @@ jobs:
             query{ user(login: "${{ env.ASSIGNEE }}")
                     { id } }' > user_info.json
 
-           echo 'ASSIGNEE_ID='$(jq '.data.user.id' user_info.json) >> $GITHUB_ENV
+           echo "ASSIGNEE_ID=$(jq '.data.user.id' user_info.json)" >> "$GITHUB_ENV"
 
       - name: Assign issue
         run: |

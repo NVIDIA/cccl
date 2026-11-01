@@ -19,20 +19,24 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/agent/single_pass_scan_operators.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
-#include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/device/dispatch/kernels/kernel_unique_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_unique_by_key.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
+#include <cub/util_temporary_storage.cuh>
 #include <cub/util_vsmem.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__host_stdlib/sstream>
-#include <cuda/std/__type_traits/is_empty.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/climits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -282,8 +286,12 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
     _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
 
     // Invoke init_kernel to initialize tile descriptors
-    launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
-      .doit(kernel_source.CompactInitKernel(), tile_state, num_tiles, d_num_selected_out);
+    if (const auto error = CubDebug(
+          launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+            .doit(kernel_source.CompactInitKernel(), tile_state, num_tiles, d_num_selected_out)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))

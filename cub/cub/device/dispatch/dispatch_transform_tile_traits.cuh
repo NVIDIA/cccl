@@ -38,6 +38,7 @@
 
 #if _CCCL_CUB_HAS_TILE_TRANSFORM()
 
+#  include <cuda/__functional/operator_properties.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
@@ -85,14 +86,9 @@ namespace detail::transform::tile
 template <typename T>
 inline constexpr bool tile_supported_element_v = ::cuda::std::__is_extended_arithmetic_v<T> && sizeof(T) <= 8;
 
-template <typename T>
-inline constexpr bool tile_eligible_v<::cuda::std::plus<T>, T, 2> = tile_supported_element_v<T>;
-template <typename T>
-inline constexpr bool tile_eligible_v<::cuda::std::plus<>, T, 2> = tile_supported_element_v<T>;
-template <typename T>
-inline constexpr bool tile_eligible_v<::cuda::std::multiplies<T>, T, 2> = tile_supported_element_v<T>;
-template <typename T>
-inline constexpr bool tile_eligible_v<::cuda::std::multiplies<>, T, 2> = tile_supported_element_v<T>;
+template <typename Op, typename T>
+inline constexpr bool tile_eligible_v<Op, T, 2> =
+  (::cuda::__is_cuda_std_plus_v<Op, T> || ::cuda::__is_cuda_std_multiplies_v<Op, T>) && tile_supported_element_v<T>;
 
 template <typename T>
 struct tile_operator<::cuda::std::plus<T>>

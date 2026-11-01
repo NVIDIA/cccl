@@ -11,14 +11,21 @@
 
 // template <class T1, class T2> struct pair
 
-// template <class T1, class T2> void swap(pair<T1, T2>& x, pair<T1, T2>& y);
+// template <class T1, class T2> constexpr void swap(pair<T1, T2>& x, pair<T1, T2>& y);
 
 #include <cuda/std/cassert>
+#include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
 #include "test_macros.h"
 
-int main(int, char**)
+struct NotSwappable
+{
+  NotSwappable(const NotSwappable&)            = delete;
+  NotSwappable& operator=(const NotSwappable&) = delete;
+};
+
+TEST_FUNC constexpr bool test()
 {
   {
     using P1 = cuda::std::pair<int, short>;
@@ -31,5 +38,17 @@ int main(int, char**)
     assert(p2.second == 4);
   }
 
+  return true;
+}
+
+static_assert(cuda::std::is_swappable_v<cuda::std::pair<int, int>>);
+static_assert(noexcept(swap(cuda::std::declval<cuda::std::pair<int, int>&>(),
+                            cuda::std::declval<cuda::std::pair<int, int>&>())));
+static_assert(!cuda::std::is_swappable_v<cuda::std::pair<NotSwappable, int>>);
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
   return 0;
 }

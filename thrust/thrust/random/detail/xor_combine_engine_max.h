@@ -75,13 +75,13 @@ struct xor_combine_engine_max_aux_case4
 
   static constexpr ResultType k_plus_1_times_two_to_the_p = lshift(constants::k + 1, constants::p);
 
-  static constexpr ResultType M =
+  static constexpr ResultType m =
     xor_combine_engine_max_aux<ResultType,
                                (constants::u % constants::two_to_the_p) / constants::two_to_the_p,
                                constants::t % constants::two_to_the_p,
                                D>::value;
 
-  static constexpr ResultType value = k_plus_1_times_two_to_the_p + M;
+  static constexpr ResultType value = k_plus_1_times_two_to_the_p + m;
 };
 
 template <typename ResultType, ResultType A, ResultType B, int D>
@@ -91,13 +91,13 @@ struct xor_combine_engine_max_aux_case3
 
   static constexpr ResultType k_plus_1_times_two_to_the_p = lshift(constants::k + 1, constants::p);
 
-  static constexpr ResultType M =
+  static constexpr ResultType m =
     xor_combine_engine_max_aux<ResultType,
                                (constants::t % constants::two_to_the_p) / constants::two_to_the_p,
                                constants::u % constants::two_to_the_p,
                                D>::value;
 
-  static constexpr ResultType value = k_plus_1_times_two_to_the_p + M;
+  static constexpr ResultType value = k_plus_1_times_two_to_the_p + m;
 };
 
 template <typename ResultType, ResultType A, ResultType B, int D>
@@ -164,9 +164,9 @@ struct xor_combine_engine_max
   static constexpr ResultType m2 =
     (::cuda::std::min) (ResultType(Engine2::max - Engine2::min), ResultType(two_to_the_power(w - S2) - 1));
   static constexpr ResultType s = S1 - S2;
-  static constexpr ResultType M = xor_combine_engine_max_aux<ResultType, m1, m2, s>::value;
-  // the value is M(m1,m2,s) lshift_w S2
-  static constexpr ResultType value = lshift(M, ResultType(S2));
+  static constexpr ResultType m = xor_combine_engine_max_aux<ResultType, m1, m2, s>::value;
+  // the value is m(m1,m2,s) lshift_w S2
+  static constexpr ResultType value = lshift(m, ResultType(S2));
 };
 } // namespace random::detail
 

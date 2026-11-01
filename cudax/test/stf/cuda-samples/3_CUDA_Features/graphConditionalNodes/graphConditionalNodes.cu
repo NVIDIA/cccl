@@ -70,7 +70,7 @@ void simpleDoWhileGraph()
 
   // Allocate a byte of device memory to use as input
   char* dPtr;
-  cuda_safe_call(cudaMalloc((void**) &dPtr, 1));
+  cuda_safe_call(cudaMalloc(reinterpret_cast<void**>(&dPtr), 1));
 
   printf("simpleDoWhileGraph: Building graph...\n");
   cuda_safe_call(cudaGraphCreate(&graph, 0));
@@ -181,7 +181,7 @@ void capturedWhileGraph()
 
   // Allocate a byte of device memory to use as input
   char* dPtr;
-  cuda_safe_call(cudaMalloc((void**) &dPtr, 1));
+  cuda_safe_call(cudaMalloc(reinterpret_cast<void**>(&dPtr), 1));
 
   printf("capturedWhileGraph: Building graph...\n");
   cudaStream_t captureStream;

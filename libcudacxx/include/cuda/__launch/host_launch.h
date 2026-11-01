@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -25,11 +25,10 @@
 
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__stream/stream_ref.h>
-#  include <cuda/std/__functional/reference_wrapper.h>
 #  include <cuda/std/__memory/addressof.h>
+#  include <cuda/std/__memory/unique_ptr.h>
 #  include <cuda/std/__tuple_dir/apply.h>
 #  include <cuda/std/__tuple_dir/tuple.h>
-#  include <cuda/std/__type_traits/decay.h>
 #  include <cuda/std/__type_traits/is_function.h>
 #  include <cuda/std/__type_traits/is_move_constructible.h>
 #  include <cuda/std/__type_traits/is_pointer.h>
@@ -40,9 +39,9 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Callable>
-_CCCL_HOST_API inline void CUDA_CB __host_func_launcher(void* __callable_ptr)
+_CCCL_HOST_API void CUDA_CB __host_func_launcher(void* __callable_ptr)
 {
-  (*(_Callable*) __callable_ptr)();
+  (*static_cast<_Callable*>(__callable_ptr))();
 }
 
 template <class _Callable, class... _Args>
@@ -50,17 +49,22 @@ struct __stream_callback_data
 {
   _Callable __callable_;
   ::cuda::std::tuple<_Args...> __args_;
+
+  // NVCC ignores the host annotation on an explicitly defaulted destructor.
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_API ~__stream_callback_data() {} // NOLINT(modernize-use-equals-default)
 };
 
 template <class _CallbackData>
-_CCCL_HOST_API inline void CUDA_CB __stream_callback_launcher(::CUstream, ::CUresult __status, void* __data_ptr)
+_CCCL_HOST_API void CUDA_CB __stream_callback_launcher(::CUstream, ::CUresult __status, void* __data_ptr)
 {
-  auto* __casted_data_ptr = static_cast<_CallbackData*>(__data_ptr);
+  const auto __casted_data_ptr = ::cuda::std::unique_ptr<_CallbackData>{static_cast<_CallbackData*>(__data_ptr)};
+
   if (__status == ::CUDA_SUCCESS)
   {
-    (void) ::cuda::std::apply(__casted_data_ptr->__callable_, ::cuda::std::move(__casted_data_ptr->__args_));
+    static_cast<void>(
+      ::cuda::std::apply(__casted_data_ptr->__callable_, ::cuda::std::move(__casted_data_ptr->__args_)));
   }
-  delete __casted_data_ptr;
 }
 
 //! @brief Launches a host callable to be executed in stream order on the provided stream
@@ -89,24 +93,27 @@ _CCCL_HOST_API void host_launch(stream_ref __stream, _Callable __callable, _Args
 
   if constexpr (!__has_args && ::cuda::std::is_function_v<_Callable> && ::cuda::std::is_pointer_v<_Callable>)
   {
-    ::cuda::__driver::__launchHostFunc(__stream.get(), ::cuda::__host_func_launcher<_Callable>, (void*) __callable);
+    ::cuda::__driver::__launchHostFunc(
+      __stream.get(), ::cuda::__host_func_launcher<_Callable>, static_cast<void*>(__callable));
   }
   else if constexpr (!__has_args && ::cuda::std::__is_cuda_std_reference_wrapper_v<_Callable>)
   {
     ::cuda::__driver::__launchHostFunc(
       __stream.get(),
       ::cuda::__host_func_launcher<typename _Callable::type>,
-      (void*) ::cuda::std::addressof(__callable.get()));
+      static_cast<void*>(::cuda::std::addressof(__callable.get())));
   }
   else
   {
     using _CallbackData = __stream_callback_data<_Callable, _Args...>;
-    _CallbackData* __callback_data_ptr =
-      new _CallbackData{::cuda::std::move(__callable), {::cuda::std::move(__args)...}};
+    ::cuda::std::unique_ptr<_CallbackData> __callback_data_ptr{
+      new _CallbackData{::cuda::std::move(__callable), {::cuda::std::move(__args)...}}};
 
     // We use the callback here to have it execute even on stream error, because it needs to free the above allocation
     ::cuda::__driver::__streamAddCallback(
-      __stream.get(), ::cuda::__stream_callback_launcher<_CallbackData>, __callback_data_ptr);
+      __stream.get(), ::cuda::__stream_callback_launcher<_CallbackData>, __callback_data_ptr.get());
+    // The callback owns the allocation only after registration succeeds.
+    static_cast<void>(__callback_data_ptr.release());
   }
 }
 

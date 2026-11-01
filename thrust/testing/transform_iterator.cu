@@ -39,7 +39,7 @@ TEST_CASE("TestTransformIteratorTraits", "[transform_iterator]")
 }
 
 template <class Vector>
-void TestTransformIterator()
+void test_transform_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -60,10 +60,10 @@ void TestTransformIterator()
   Vector ref{-1, -2, -3, -4};
   REQUIRE(output == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestTransformIterator);
+DECLARE_VECTOR_UNITTEST(test_transform_iterator);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMakeTransformIterator()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_make_transform_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -86,7 +86,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMakeTransformIterator()
   Vector ref{-1, -2, -3, -4};
   REQUIRE(output == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestMakeTransformIterator);
+DECLARE_VECTOR_UNITTEST(test_make_transform_iterator);
 
 template <typename T>
 struct TestTransformIteratorReduce
@@ -160,81 +160,81 @@ struct forward
 
 TEST_CASE("TestTransformIteratorReferenceAndValueType", "[transform_iterator]")
 {
-  using ::cuda::std::is_same;
+  using ::cuda::std::is_same_v;
   using ::cuda::std::negate;
   {
     thrust::host_vector<bool> v;
 
     auto it = v.begin();
-    static_assert(is_same<decltype(it)::reference, bool&>::value); // ordinary reference
-    static_assert(is_same<decltype(it)::value_type, bool>::value);
+    static_assert(is_same_v<decltype(it)::reference, bool&>); // ordinary reference
+    static_assert(is_same_v<decltype(it)::value_type, bool>);
 
     [[maybe_unused]] auto it_tr_val = thrust::make_transform_iterator(it, flip_value{});
-    static_assert(is_same<decltype(it_tr_val)::reference, bool>::value);
-    static_assert(is_same<decltype(it_tr_val)::value_type, bool>::value);
+    static_assert(is_same_v<decltype(it_tr_val)::reference, bool>);
+    static_assert(is_same_v<decltype(it_tr_val)::value_type, bool>);
 
     [[maybe_unused]] auto it_tr_ref = thrust::make_transform_iterator(it, pass_ref{});
-    static_assert(is_same<decltype(it_tr_ref)::reference, const bool&>::value);
-    static_assert(is_same<decltype(it_tr_ref)::value_type, bool>::value);
+    static_assert(is_same_v<decltype(it_tr_ref)::reference, const bool&>);
+    static_assert(is_same_v<decltype(it_tr_ref)::value_type, bool>);
 
     [[maybe_unused]] auto it_tr_fwd = thrust::make_transform_iterator(it, forward{});
-    static_assert(is_same<decltype(it_tr_fwd)::reference, bool&&>::value);
-    static_assert(is_same<decltype(it_tr_fwd)::value_type, bool>::value);
+    static_assert(is_same_v<decltype(it_tr_fwd)::reference, bool&&>);
+    static_assert(is_same_v<decltype(it_tr_fwd)::value_type, bool>);
 
     [[maybe_unused]] auto it_tr_cid = thrust::make_transform_iterator(it, cuda::std::identity{});
-    static_assert(is_same<decltype(it_tr_cid)::reference, bool>::value); // special handling by
-                                                                         // transform_iterator_reference
-    static_assert(is_same<decltype(it_tr_cid)::value_type, bool>::value);
+    static_assert(is_same_v<decltype(it_tr_cid)::reference, bool>); // special handling by
+                                                                    // transform_iterator_reference
+    static_assert(is_same_v<decltype(it_tr_cid)::value_type, bool>);
   }
 
   {
     thrust::device_vector<bool> v;
 
     auto it = v.begin();
-    static_assert(is_same<decltype(it)::reference, thrust::device_reference<bool>>::value); // proxy reference
-    static_assert(is_same<decltype(it)::value_type, bool>::value);
+    static_assert(is_same_v<decltype(it)::reference, thrust::device_reference<bool>>); // proxy reference
+    static_assert(is_same_v<decltype(it)::value_type, bool>);
 
     [[maybe_unused]] auto it_tr_val = thrust::make_transform_iterator(it, flip_value{});
-    static_assert(is_same<decltype(it_tr_val)::reference, bool>::value);
-    static_assert(is_same<decltype(it_tr_val)::value_type, bool>::value);
+    static_assert(is_same_v<decltype(it_tr_val)::reference, bool>);
+    static_assert(is_same_v<decltype(it_tr_val)::value_type, bool>);
 
     [[maybe_unused]] auto it_tr_ref = thrust::make_transform_iterator(it, pass_ref{});
-    static_assert(is_same<decltype(it_tr_ref)::reference, const bool&>::value);
-    static_assert(is_same<decltype(it_tr_ref)::value_type, bool>::value);
+    static_assert(is_same_v<decltype(it_tr_ref)::reference, const bool&>);
+    static_assert(is_same_v<decltype(it_tr_ref)::value_type, bool>);
 
     [[maybe_unused]] auto it_tr_fwd = thrust::make_transform_iterator(it, forward{});
-    static_assert(is_same<decltype(it_tr_fwd)::reference, bool&&>::value); // wrapped reference is decayed
-    static_assert(is_same<decltype(it_tr_fwd)::value_type, bool>::value);
+    static_assert(is_same_v<decltype(it_tr_fwd)::reference, bool&&>); // wrapped reference is decayed
+    static_assert(is_same_v<decltype(it_tr_fwd)::value_type, bool>);
 
     [[maybe_unused]] auto it_tr_cid = thrust::make_transform_iterator(it, cuda::std::identity{});
-    static_assert(is_same<decltype(it_tr_cid)::reference, bool>::value); // special handling by
-                                                                         // transform_iterator_reference
-    static_assert(is_same<decltype(it_tr_cid)::value_type, bool>::value);
+    static_assert(is_same_v<decltype(it_tr_cid)::reference, bool>); // special handling by
+                                                                    // transform_iterator_reference
+    static_assert(is_same_v<decltype(it_tr_cid)::value_type, bool>);
   }
 
   {
     std::vector<bool> v;
 
     auto it = v.begin();
-    static_assert(is_same<decltype(it)::reference, std::vector<bool>::reference>::value); // proxy reference
-    static_assert(is_same<decltype(it)::value_type, bool>::value);
+    static_assert(is_same_v<decltype(it)::reference, std::vector<bool>::reference>); // proxy reference
+    static_assert(is_same_v<decltype(it)::value_type, bool>);
 
     [[maybe_unused]] auto it_tr_val = thrust::make_transform_iterator(it, flip_value{});
-    static_assert(is_same<decltype(it_tr_val)::reference, bool>::value);
-    static_assert(is_same<decltype(it_tr_val)::value_type, bool>::value);
+    static_assert(is_same_v<decltype(it_tr_val)::reference, bool>);
+    static_assert(is_same_v<decltype(it_tr_val)::value_type, bool>);
 
     [[maybe_unused]] auto it_tr_ref = thrust::make_transform_iterator(it, pass_ref{});
-    static_assert(is_same<decltype(it_tr_ref)::reference, const bool&>::value);
-    static_assert(is_same<decltype(it_tr_ref)::value_type, bool>::value);
+    static_assert(is_same_v<decltype(it_tr_ref)::reference, const bool&>);
+    static_assert(is_same_v<decltype(it_tr_ref)::value_type, bool>);
 
     [[maybe_unused]] auto it_tr_fwd = thrust::make_transform_iterator(it, forward{});
-    static_assert(is_same<decltype(it_tr_fwd)::reference, bool&&>::value); // proxy reference is decayed
-    static_assert(is_same<decltype(it_tr_fwd)::value_type, bool>::value);
+    static_assert(is_same_v<decltype(it_tr_fwd)::reference, bool&&>); // proxy reference is decayed
+    static_assert(is_same_v<decltype(it_tr_fwd)::value_type, bool>);
 
     [[maybe_unused]] auto it_tr_cid = thrust::make_transform_iterator(it, cuda::std::identity{});
-    static_assert(is_same<decltype(it_tr_cid)::reference, bool>::value); // special handling by
-                                                                         // transform_iterator_reference
-    static_assert(is_same<decltype(it_tr_cid)::value_type, bool>::value);
+    static_assert(is_same_v<decltype(it_tr_cid)::reference, bool>); // special handling by
+                                                                    // transform_iterator_reference
+    static_assert(is_same_v<decltype(it_tr_cid)::value_type, bool>);
   }
 }
 

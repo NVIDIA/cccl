@@ -788,6 +788,12 @@ using logical_endpoint_unicast_access_on_owner_device_supported_t =
   __cu_dev_attr_impl<::CU_DEVICE_ATTRIBUTE_LOGICAL_ENDPOINT_UNICAST_ACCESS_ON_OWNER_DEVICE_SUPPORTED, bool>;
 inline constexpr logical_endpoint_unicast_access_on_owner_device_supported_t
   logical_endpoint_unicast_access_on_owner_device_supported{};
+
+#    if _CCCL_CTK_AT_LEAST(13, 4)
+using logical_endpoint_supported_handle_types_t =
+  __cu_dev_attr_impl<::CU_DEVICE_ATTRIBUTE_LOGICAL_ENDPOINT_SUPPORTED_HANDLE_TYPES, int>;
+inline constexpr logical_endpoint_supported_handle_types_t logical_endpoint_supported_handle_types{};
+#    endif // ^^^ _CCCL_CTK_AT_LEAST(13, 4) ^^^
 #  endif // ^^^ _CCCL_CTK_AT_LEAST(13, 3) ^^^
 
 // Total global memory available on the device in bytes

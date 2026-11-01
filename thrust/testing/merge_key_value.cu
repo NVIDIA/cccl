@@ -8,21 +8,21 @@
 template <typename T, typename CompareOp, typename... Args>
 auto call_merge(Args&&... args) -> decltype(thrust::merge(std::forward<Args>(args)...))
 {
-  if constexpr (::cuda::std::is_void<CompareOp>::value)
+  if constexpr (::cuda::std::is_void_v<CompareOp>)
   {
     return thrust::merge(std::forward<Args>(args)...);
   }
   else
   {
     // TODO(bgruber): remove next line in C++17 and pass CompareOp{} directly to stable_sort
-    using C = ::cuda::std::conditional_t<::cuda::std::is_void<CompareOp>::value, ::cuda::std::less<T>, CompareOp>;
+    using C = ::cuda::std::conditional_t<::cuda::std::is_void_v<CompareOp>, ::cuda::std::less<T>, CompareOp>;
     return thrust::merge(std::forward<Args>(args)..., C{});
   }
   _CCCL_UNREACHABLE();
 }
 
 template <typename U, typename CompareOp = void>
-void TestMergeKeyValue(size_t n)
+void test_merge_key_value(size_t n)
 {
   using T = key_value<U, U>;
 
@@ -39,7 +39,7 @@ void TestMergeKeyValue(size_t n)
     h_b[i] = T(h_keys_b[i], h_values_b[i]);
   }
 
-  if constexpr (::cuda::std::is_void<CompareOp>::value)
+  if constexpr (::cuda::std::is_void_v<CompareOp>)
   {
     thrust::stable_sort(h_a.begin(), h_a.end());
     thrust::stable_sort(h_b.begin(), h_b.end());
@@ -47,7 +47,7 @@ void TestMergeKeyValue(size_t n)
   else
   {
     // TODO(bgruber): remove next line in C++17 and pass CompareOp{} directly to stable_sort
-    using C = ::cuda::std::conditional_t<::cuda::std::is_void<CompareOp>::value, ::cuda::std::less<T>, CompareOp>;
+    using C = ::cuda::std::conditional_t<::cuda::std::is_void_v<CompareOp>, ::cuda::std::less<T>, CompareOp>;
     thrust::stable_sort(h_a.begin(), h_a.end(), C{});
     thrust::stable_sort(h_b.begin(), h_b.end(), C{});
   }
@@ -65,11 +65,11 @@ void TestMergeKeyValue(size_t n)
   REQUIRE(h_end == h_result.end());
   REQUIRE(d_end == d_result.end());
 }
-DECLARE_VARIABLE_UNITTEST(TestMergeKeyValue);
+DECLARE_VARIABLE_UNITTEST(test_merge_key_value);
 
 template <typename U>
-void TestMergeKeyValueDescending(size_t n)
+void test_merge_key_value_descending(size_t n)
 {
-  TestMergeKeyValue<U, ::cuda::std::greater<key_value<U, U>>>(n);
+  test_merge_key_value<U, ::cuda::std::greater<key_value<U, U>>>(n);
 }
-DECLARE_VARIABLE_UNITTEST(TestMergeKeyValueDescending);
+DECLARE_VARIABLE_UNITTEST(test_merge_key_value_descending);

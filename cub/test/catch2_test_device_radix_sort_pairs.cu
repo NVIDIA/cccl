@@ -13,12 +13,12 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
-#include <new> // bad_alloc
 
 #include "catch2_large_array_sort_helper.cuh"
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -161,14 +161,9 @@ void do_large_offset_test(std::size_t num_items)
 
     arrays.verify_stable_pair_sort(num_items, is_descending, keys, values);
   }
-  catch ([[maybe_unused]] std::bad_alloc& e)
+  catch (...)
   {
-#ifdef DEBUG_CHECKED_ALLOC_FAILURE
-    const std::size_t num_bytes = num_items * (sizeof(KeyT) + sizeof(ValueT));
-    std::cerr
-      << "Skipping radix sort test with " << num_items << " elements (" << num_bytes << " bytes): " << e.what() << "\n";
-#endif // DEBUG_CHECKED_ALLOC_FAILURE
-    SUCCEED("allocation failure is not a test failure");
+    c2h::skip_if_allocation_failure();
   }
 }
 

@@ -146,9 +146,9 @@ void Test()
   int* d_in          = nullptr;
   int* d_out         = nullptr;
   clock_t* d_elapsed = nullptr;
-  cudaMalloc((void**) &d_in, sizeof(int) * TILE_SIZE);
-  cudaMalloc((void**) &d_out, sizeof(int) * (TILE_SIZE + 1));
-  cudaMalloc((void**) &d_elapsed, sizeof(clock_t));
+  cudaMalloc(reinterpret_cast<void**>(&d_in), sizeof(int) * TILE_SIZE);
+  cudaMalloc(reinterpret_cast<void**>(&d_out), sizeof(int) * (TILE_SIZE + 1));
+  cudaMalloc(reinterpret_cast<void**>(&d_elapsed), sizeof(clock_t));
 
   // Display input problem data
   if (g_verbose)

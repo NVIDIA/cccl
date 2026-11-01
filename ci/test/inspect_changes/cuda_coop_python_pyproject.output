@@ -1,0 +1,2 @@
+FULL_BUILD=python_v2 python_tsan python cuda_coop_python
+LITE_BUILD=

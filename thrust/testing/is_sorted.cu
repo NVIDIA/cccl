@@ -4,7 +4,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestIsSortedSimple()
+void test_is_sorted_simple()
 {
   using T = typename Vector::value_type;
 
@@ -31,19 +31,19 @@ void TestIsSortedSimple()
 
   REQUIRE_FALSE(thrust::is_sorted(v.begin(), v.end()));
 }
-DECLARE_VECTOR_UNITTEST(TestIsSortedSimple);
+DECLARE_VECTOR_UNITTEST(test_is_sorted_simple);
 
 template <class Vector>
-void TestIsSortedRepeatedElements()
+void test_is_sorted_repeated_elements()
 {
   Vector v{0, 1, 1, 2, 3, 4, 5, 5, 5, 6};
 
   REQUIRE(thrust::is_sorted(v.begin(), v.end()));
 }
-DECLARE_VECTOR_UNITTEST(TestIsSortedRepeatedElements);
+DECLARE_VECTOR_UNITTEST(test_is_sorted_repeated_elements);
 
 template <class Vector>
-void TestIsSorted()
+void test_is_sorted()
 {
   using T = typename Vector::value_type;
 
@@ -60,7 +60,7 @@ void TestIsSorted()
 
   REQUIRE(thrust::is_sorted(v.begin(), v.end()));
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestIsSorted);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_is_sorted);
 
 template <typename InputIterator>
 bool is_sorted(my_system& system, InputIterator /*first*/, InputIterator)

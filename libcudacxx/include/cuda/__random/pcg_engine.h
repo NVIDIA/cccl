@@ -25,8 +25,6 @@
 #include <cuda/std/__bit/rotr.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/is_seed_sequence.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>

@@ -133,14 +133,14 @@ struct topk_backend_selector
 #  elif TUNE_BLOCK_LOAD_ALGORITHM == 2
     constexpr auto load_alg = cub::BLOCK_LOAD_VECTORIZE;
 #  endif
-    const auto baseline = cub::detail::batched_topk::baseline_topk_policy{{{
+    const auto baseline = cub::detail::batched_topk::baseline_topk_policy{{
       cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
       cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
       cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
       cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
       cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
       cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
-    }}};
+    }};
 #else
     const auto baseline = cub::detail::batched_topk::make_baseline_policy();
 #endif
@@ -184,7 +184,7 @@ template <typename KeyInputItItT,
           typename KParamT,
           typename NumSegmentsParameterT,
           typename EnvT>
-_CCCL_HOST_API static cudaError_t batched_topk_indexed(
+_CCCL_HOST_API cudaError_t batched_topk_indexed(
   KeyInputItItT d_keys_in,
   KeyOutputItItT d_keys_out,
   ValueInputItItT d_values_in,

@@ -34,6 +34,8 @@
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/span>
 
 #include <cuda/experimental/coop/__group/concepts.cuh>
@@ -58,17 +60,6 @@ template <class _Unit, class _ParentGroup, class _MappingResult, class _Synchron
 {
   using _ParentMappingResult  = typename _ParentGroup::__mapping_result_type;
   using _SynchronizerInstance = decltype(__synchronizer.make_instance(__unit, __parent, __mapping_result));
-
-  // Do not invoke the synchronizer instance creation for threads that are not part of the parent group. On the other
-  // hand threads that are not part of this group must create the synchronizer instance, too, because the operation
-  // can synchronize the parent group.
-  if constexpr (!_ParentMappingResult::is_always_exhaustive())
-  {
-    if (!__parent.__mapping_result().is_valid())
-    {
-      return _SynchronizerInstance::invalid();
-    }
-  }
   return __synchronizer.make_instance(__unit, __parent, __mapping_result);
 }
 
@@ -100,6 +91,7 @@ public:
   using level_type            = typename _ParentGroup::level_type;
   using hierarchy_type        = _Hierarchy;
   using __mapping_result_type = _MappingResult;
+  using arrival_token         = typename _SynchronizerInstance::arrival_token;
 
   _CCCL_TEMPLATE(class _Mapping, class _Synchronizer)
   _CCCL_REQUIRES(
@@ -115,6 +107,23 @@ public:
           __unit, __parent, __mapping_result_, ::cuda::std::forward<_Synchronizer>(__synchronizer))}
   {}
 
+  // internal constructor used by make_group(non_exhaustive_t, ...)
+  _CCCL_TEMPLATE(class _Synchronizer)
+  _CCCL_REQUIRES(
+    ::cuda::std::is_same_v<_SynchronizerInstance,
+                           __group_synchronizer_instance_t<_Unit, _ParentGroup, _MappingResult, _Synchronizer>>)
+  _CCCL_DEVICE_API explicit generic_group(
+    const non_exhaustive_t&,
+    const _Unit& __unit,
+    const _ParentGroup& __parent,
+    const _MappingResult& __mapping_result,
+    _Synchronizer&& __synchronizer) noexcept
+      : __hier_{__parent.hierarchy()}
+      , __mapping_result_{__mapping_result}
+      , __synchronizer_instance_{::cuda::experimental::coop::__make_synchronizer_instance(
+          __unit, __parent, __mapping_result_, ::cuda::std::forward<_Synchronizer>(__synchronizer))}
+  {}
+
   // Groups can't be copied, moved nor assigned.
   generic_group(const generic_group&)            = delete;
   generic_group(generic_group&&)                 = delete;
@@ -123,14 +132,6 @@ public:
 
   _CCCL_DEVICE_API ~generic_group()
   {
-    // Skip the synchronization for threads that are not part of this group.
-    if constexpr (!is_always_exhaustive())
-    {
-      if (!__mapping_result_.is_valid())
-      {
-        return;
-      }
-    }
     __synchronizer_instance_.deinit(__mapping_result_, __hier_);
   }
 
@@ -151,11 +152,6 @@ public:
     return __synchronizer_instance_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
-  {
-    return _MappingResult::is_always_exhaustive();
-  }
-
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
   {
     return _MappingResult::is_always_contiguous();
@@ -165,14 +161,32 @@ public:
   //                aligned/unaligned variants?
   _CCCL_DEVICE_API void sync() const noexcept
   {
-    _CCCL_ASSERT(__mapping_result_.is_valid(), "Only units that are part of the group can synchronize.");
     __synchronizer_instance_.do_sync(__mapping_result_, __hier_);
   }
 
   _CCCL_DEVICE_API void sync_aligned() const noexcept
   {
-    _CCCL_ASSERT(__mapping_result_.is_valid(), "Only units that are part of the group can synchronize.");
     __synchronizer_instance_.do_sync_aligned(__mapping_result_, __hier_);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API arrival_token arrive() const noexcept
+  {
+    return __synchronizer_instance_.do_arrive(__mapping_result_, __hier_);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API arrival_token arrive_aligned() const noexcept
+  {
+    return __synchronizer_instance_.do_arrive_aligned(__mapping_result_, __hier_);
+  }
+
+  _CCCL_DEVICE_API void wait(arrival_token&& __tok) const noexcept
+  {
+    __synchronizer_instance_.do_wait(__mapping_result_, __hier_, ::cuda::std::move(__tok));
+  }
+
+  _CCCL_DEVICE_API void wait_aligned(arrival_token&& __tok) const noexcept
+  {
+    __synchronizer_instance_.do_wait_aligned(__mapping_result_, __hier_, ::cuda::std::move(__tok));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count(const _ParentGroup&) noexcept
@@ -184,7 +198,6 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API static constexpr _Tp
   __count_as_impl(const _QueryMappingResult& __mapping_result, const _Hierarchy&, const _ParentGroup&) noexcept
   {
-    _CCCL_ASSERT(__mapping_result.is_valid(), "Only units that are part of the group can be used in queries.");
     return static_cast<_Tp>(__mapping_result.group_count());
   }
 
@@ -204,7 +217,6 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API static constexpr _Tp
   __rank_as_impl(const _QueryMappingResult& __mapping_result, const _Hierarchy&, const _ParentGroup&) noexcept
   {
-    _CCCL_ASSERT(__mapping_result.is_valid(), "Only units that are part of the group can be used in queries.");
     return static_cast<_Tp>(__mapping_result.group_rank());
   }
 

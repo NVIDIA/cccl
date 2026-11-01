@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cuda/std/span>
+#include <cuda/stream>
 
 #include <cstddef>
 
@@ -49,8 +50,17 @@ namespace detail
 void gen_custom_type_state(
   seed_t seed,
   char* data,
-  custom_type_state_t min,
-  custom_type_state_t max,
+  const custom_type_state_t& min,
+  const custom_type_state_t& max,
+  std::size_t elements,
+  std::size_t element_size);
+
+void gen_custom_type_state(
+  ::cuda::stream_ref stream,
+  seed_t seed,
+  char* data,
+  const custom_type_state_t& min,
+  const custom_type_state_t& max,
   std::size_t elements,
   std::size_t element_size);
 
@@ -59,6 +69,9 @@ void init_key_segments(::cuda::std::span<const OffsetT> segment_offsets, KeyT* d
 
 template <typename T>
 void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max);
+
+template <typename T>
+void gen_values_between(::cuda::stream_ref stream, seed_t seed, ::cuda::std::span<T> data, T min, T max);
 
 template <typename T>
 void gen_values_cyclic(modulo_t mod, ::cuda::std::span<T> data);

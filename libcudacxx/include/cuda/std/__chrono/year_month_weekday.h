@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__chrono/calendar.h>
-#include <cuda/std/__chrono/day.h>
 #include <cuda/std/__chrono/duration.h>
 #include <cuda/std/__chrono/month.h>
 #include <cuda/std/__chrono/month_weekday.h>

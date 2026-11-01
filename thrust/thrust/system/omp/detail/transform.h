@@ -13,5 +13,5 @@
 #  pragma system_header
 #endif // no system header
 
-// omp inherits transform
+// omp system inherits transform
 #include <thrust/system/cpp/detail/transform.h>

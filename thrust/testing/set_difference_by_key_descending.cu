@@ -5,7 +5,7 @@
 #include <unittest/unittest.h>
 
 template <typename Vector>
-void TestSetDifferenceByKeyDescendingSimple()
+void test_set_difference_by_key_descending_simple()
 {
   using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
@@ -33,10 +33,10 @@ void TestSetDifferenceByKeyDescendingSimple()
   REQUIRE(ref_key == result_key);
   REQUIRE(ref_val == result_val);
 }
-DECLARE_VECTOR_UNITTEST(TestSetDifferenceByKeyDescendingSimple);
+DECLARE_VECTOR_UNITTEST(test_set_difference_by_key_descending_simple);
 
 template <typename T>
-void TestSetDifferenceByKeyDescending(const size_t n)
+void test_set_difference_by_key_descending(const size_t n)
 {
   thrust::host_vector<T> temp = unittest::random_integers<T>(2 * n);
   thrust::host_vector<T> h_a_key(temp.begin(), temp.begin() + n);
@@ -90,4 +90,4 @@ void TestSetDifferenceByKeyDescending(const size_t n)
   REQUIRE(h_result_key == d_result_key);
   REQUIRE(h_result_val == d_result_val);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetDifferenceByKeyDescending);
+DECLARE_VARIABLE_UNITTEST(test_set_difference_by_key_descending);

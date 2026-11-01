@@ -73,7 +73,7 @@ TEST_CASE("TestMakeDevicePointer", "[device_ptr]")
 }
 
 template <typename Vector>
-void TestRawPointerCast()
+void test_raw_pointer_cast()
 {
   using T = typename Vector::value_type;
 
@@ -95,10 +95,10 @@ void TestRawPointerCast()
   // last  = thrust::raw_pointer_cast(vec.end());
   // ASSERT_EQUAL(last - first, 3);
 }
-DECLARE_VECTOR_UNITTEST(TestRawPointerCast);
+DECLARE_VECTOR_UNITTEST(test_raw_pointer_cast);
 
 template <typename T>
-void TestDevicePointerNullptrCompatibility()
+void test_device_pointer_nullptr_compatibility()
 {
   thrust::device_ptr<T> p0(nullptr);
 
@@ -110,17 +110,17 @@ void TestDevicePointerNullptrCompatibility()
   REQUIRE(nullptr == p0);
   REQUIRE(p0 == nullptr);
 }
-DECLARE_GENERIC_UNITTEST(TestDevicePointerNullptrCompatibility);
+DECLARE_GENERIC_UNITTEST(test_device_pointer_nullptr_compatibility);
 
 template <typename T>
-void TestDevicePointerBoolConversion()
+void test_device_pointer_bool_conversion()
 {
   const thrust::device_ptr<T> p0(nullptr);
   auto const b = bool(p0);
 
   REQUIRE_FALSE(b);
 }
-DECLARE_GENERIC_UNITTEST(TestDevicePointerBoolConversion);
+DECLARE_GENERIC_UNITTEST(test_device_pointer_bool_conversion);
 
 TEST_CASE("TestDevicePointerCompare", "[device_ptr]")
 {
@@ -228,7 +228,7 @@ TEST_CASE("TestDevicePointerCompare", "[device_ptr]")
 }
 
 template <typename Vector>
-void TestToAddress()
+void test_to_address()
 {
   using T = typename Vector::value_type;
 
@@ -249,7 +249,7 @@ void TestToAddress()
   last  = cuda::std::to_address(vec.end());
   REQUIRE(last - first == 3);
 }
-DECLARE_VECTOR_UNITTEST(TestToAddress);
+DECLARE_VECTOR_UNITTEST(test_to_address);
 
 // Verify that cuda::std::pointer_traits<device_ptr<T>>::rebind produces the
 // correct pointer type, not a nested struct. This is required for
@@ -277,3 +277,23 @@ static_assert(
 static_assert(
   cuda::std::is_same_v<cuda::std::allocator_traits<device_char_allocator>::void_pointer, thrust::device_ptr<void>>,
   "allocator_traits::void_pointer should be device_ptr<void> for device_ptr-based allocators");
+
+// iterator_traits<device_ptr<T>>::pointer must be the type returned by device_ptr<T>::operator->(), instead of the
+// injected class name of device_ptr's base class. Otherwise adaptors like reverse_iterator fail to compile.
+// See GitHub issue #11489.
+static_assert(cuda::std::is_same_v<cuda::std::iterator_traits<thrust::device_ptr<int>>::pointer, int*>);
+static_assert(cuda::std::is_same_v<cuda::std::iterator_traits<thrust::device_ptr<const int>>::pointer, const int*>);
+static_assert(cuda::std::is_same_v<cuda::std::iterator_traits<thrust::device_ptr<void>>::pointer, void*>);
+static_assert(
+  cuda::std::is_same_v<cuda::std::iterator_traits<thrust::pointer<int, thrust::device_system_tag>>::pointer, int*>);
+
+// the remaining member types are the ones of device_ptr
+static_assert(cuda::std::is_same_v<cuda::std::iterator_traits<thrust::device_ptr<int>>::value_type, int>);
+static_assert(cuda::std::is_same_v<cuda::std::iterator_traits<thrust::device_ptr<int>>::difference_type, ptrdiff_t>);
+static_assert(
+  cuda::std::is_same_v<cuda::std::iterator_traits<thrust::device_ptr<int>>::reference, thrust::device_reference<int>>);
+static_assert(cuda::std::random_access_iterator<thrust::device_ptr<int>>);
+
+using reverse_device_ptr = cuda::std::reverse_iterator<thrust::device_ptr<int>>;
+static_assert(cuda::std::is_same_v<cuda::std::iterator_traits<reverse_device_ptr>::pointer, int*>);
+static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const reverse_device_ptr&>().operator->()), int*>);

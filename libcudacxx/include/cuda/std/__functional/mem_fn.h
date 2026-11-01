@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__functional/binary_function.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/weak_result_type.h>
 #include <cuda/std/__utility/forward.h>

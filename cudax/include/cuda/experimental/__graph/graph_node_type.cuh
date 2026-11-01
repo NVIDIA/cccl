@@ -21,8 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental

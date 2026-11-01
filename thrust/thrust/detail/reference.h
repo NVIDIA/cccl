@@ -445,6 +445,7 @@ private:
   template <typename System>
   _CCCL_HOST_DEVICE value_type strip_const_get_value(System const& system) const
   {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     System& non_const_system = const_cast<System&>(system);
 
     using thrust::system::detail::generic::get_value;
@@ -470,6 +471,7 @@ private:
   template <typename System, typename OtherPointer>
   _CCCL_HOST_DEVICE void strip_const_assign_value(System const& system, OtherPointer src) const
   {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     System& non_const_system = const_cast<System&>(system);
 
     using thrust::system::detail::generic::assign_value;
@@ -602,6 +604,18 @@ class tagged_reference<void, Tag>
 template <typename Tag>
 class tagged_reference<void const, Tag>
 {};
+
+//! Exchanges the values of two objects referred to by \p reference.
+//!
+//! \param x The first \p reference of interest.
+//! \param y The second \p reference of interest.
+// note: this is not a hidden friend, because we have template specializations of reference
+template <typename Element, typename Pointer>
+_CCCL_HOST_DEVICE_API void swap(reference<Element, Pointer, use_default> x,
+                                reference<Element, Pointer, use_default> y) noexcept(noexcept(x.swap(y)))
+{
+  x.swap(y);
+}
 
 /*! Exchanges the values of two objects referred to by \p tagged_reference.
  *

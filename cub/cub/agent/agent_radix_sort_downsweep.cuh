@@ -20,17 +20,20 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/block/block_exchange.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_radix_rank.cuh>
+#include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
-#include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__warp/warp_shuffle.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -218,8 +221,7 @@ struct AgentRadixSortDownsweep
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Thread fields
@@ -327,90 +329,6 @@ struct AgentRadixSortDownsweep
   }
 
   /**
-   * Load a tile of keys (specialized for full tile)
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadKeys(
-    bit_ordered_type (&keys)[ITEMS_PER_THREAD],
-    OffsetT block_offset,
-    OffsetT valid_items,
-    bit_ordered_type oob_item,
-    ::cuda::std::true_type is_full_tile)
-  {
-    if constexpr (LOAD_WARP_STRIPED)
-    {
-      LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys);
-    }
-    else
-    {
-      BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys);
-      __syncthreads();
-    }
-  }
-
-  /**
-   * Load a tile of keys (specialized for partial tile)
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadKeys(
-    bit_ordered_type (&keys)[ITEMS_PER_THREAD],
-    OffsetT block_offset,
-    OffsetT valid_items,
-    bit_ordered_type oob_item,
-    ::cuda::std::false_type is_full_tile)
-  {
-    // Register pressure work-around: moving valid_items through shfl prevents compiler
-    // from reusing guards/addressing from prior guarded loads
-    valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
-
-    if constexpr (LOAD_WARP_STRIPED)
-    {
-      LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys, valid_items, oob_item);
-    }
-    else
-    {
-      BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys, valid_items, oob_item);
-      __syncthreads();
-    }
-  }
-
-  /**
-   * Load a tile of values (specialized for full tile)
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadValues(
-    ValueT (&values)[ITEMS_PER_THREAD], OffsetT block_offset, OffsetT valid_items, ::cuda::std::true_type is_full_tile)
-  {
-    if constexpr (LOAD_WARP_STRIPED)
-    {
-      LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values);
-    }
-    else
-    {
-      BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values);
-      __syncthreads();
-    }
-  }
-
-  /**
-   * Load a tile of values (specialized for partial tile)
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadValues(
-    ValueT (&values)[ITEMS_PER_THREAD], OffsetT block_offset, OffsetT valid_items, ::cuda::std::false_type is_full_tile)
-  {
-    // Register pressure work-around: moving valid_items through shfl prevents compiler
-    // from reusing guards/addressing from prior guarded loads
-    valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
-
-    if constexpr (LOAD_WARP_STRIPED)
-    {
-      LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values, valid_items);
-    }
-    else
-    {
-      BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values, valid_items);
-      __syncthreads();
-    }
-  }
-
-  /**
    * Truck along associated values
    */
   template <bool FullTile>
@@ -424,7 +342,33 @@ struct AgentRadixSortDownsweep
 
     __syncthreads();
 
-    LoadValues(values, block_offset, valid_items, bool_constant_v<FullTile>);
+    if constexpr (FullTile)
+    {
+      if constexpr (LOAD_WARP_STRIPED)
+      {
+        LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values);
+      }
+      else
+      {
+        BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values);
+        __syncthreads();
+      }
+    }
+    else
+    {
+      // Register pressure work-around: moving valid_items through shfl prevents compiler
+      // from reusing guards/addressing from prior guarded loads
+      const OffsetT load_valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
+      if constexpr (LOAD_WARP_STRIPED)
+      {
+        LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values, load_valid_items);
+      }
+      else
+      {
+        BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values, load_valid_items);
+        __syncthreads();
+      }
+    }
 
     ScatterValues<FullTile>(values, relative_bin_offsets, ranks, valid_items);
   }
@@ -444,7 +388,33 @@ struct AgentRadixSortDownsweep
       IsDescending ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
 
     // Load tile of keys
-    LoadKeys(keys, block_offset, valid_items, default_key, bool_constant_v<FullTile>);
+    if constexpr (FullTile)
+    {
+      if constexpr (LOAD_WARP_STRIPED)
+      {
+        LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys);
+      }
+      else
+      {
+        BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys);
+        __syncthreads();
+      }
+    }
+    else
+    {
+      // Register pressure work-around: moving valid_items through shfl prevents compiler
+      // from reusing guards/addressing from prior guarded loads
+      const OffsetT load_valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
+      if constexpr (LOAD_WARP_STRIPED)
+      {
+        LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys, load_valid_items, default_key);
+      }
+      else
+      {
+        BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys, load_valid_items, default_key);
+        __syncthreads();
+      }
+    }
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int KEY = 0; KEY < ITEMS_PER_THREAD; KEY++)

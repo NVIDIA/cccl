@@ -14,11 +14,16 @@
 #endif // no system header
 
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_type.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/warp/warp_load.cuh>
 #include <cub/warp/warp_merge_sort.cuh>
 #include <cub/warp/warp_store.cuh>
+
+#include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 #include <nv/target>
 
@@ -196,8 +201,7 @@ public:
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   _TempStorage& storage;
 

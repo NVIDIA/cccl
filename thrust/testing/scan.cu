@@ -17,7 +17,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestScanSimple()
+void test_scan_simple()
 {
   using T = typename Vector::value_type;
   typename Vector::iterator iter;
@@ -99,7 +99,7 @@ void TestScanSimple()
   REQUIRE(std::size_t(iter - input.begin()) == input.size());
   REQUIRE(input == result);
 }
-DECLARE_VECTOR_UNITTEST(TestScanSimple);
+DECLARE_VECTOR_UNITTEST(test_scan_simple);
 
 template <typename InputIterator, typename OutputIterator>
 OutputIterator inclusive_scan(my_system& system, InputIterator, InputIterator, OutputIterator result)
@@ -205,7 +205,7 @@ TEST_CASE("TestExclusiveScan32", "[scan]")
 }
 
 template <class IntVector, class FloatVector>
-void TestScanMixedTypes()
+void test_scan_mixed_types()
 {
   // make sure we get types for default args and operators correct
   IntVector int_input{1, 2, 3, 4};
@@ -258,11 +258,11 @@ void TestScanMixedTypes()
 }
 TEST_CASE("TestScanMixedTypesHost", "[scan]")
 {
-  TestScanMixedTypes<thrust::host_vector<int>, thrust::host_vector<float>>();
+  test_scan_mixed_types<thrust::host_vector<int>, thrust::host_vector<float>>();
 }
 TEST_CASE("TestScanMixedTypesDevice", "[scan]")
 {
-  TestScanMixedTypes<thrust::device_vector<int>, thrust::device_vector<float>>();
+  test_scan_mixed_types<thrust::device_vector<int>, thrust::device_vector<float>>();
 }
 
 template <typename T>
@@ -388,7 +388,7 @@ struct TestScanToDiscardIterator
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestScanToDiscardIterator,
                                           unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>);
 
-void TestScanMixedTypes()
+void test_scan_mixed_types()
 {
   const unsigned int n = 113;
 
@@ -425,13 +425,13 @@ void TestScanMixedTypes()
   thrust::exclusive_scan(d_input.begin(), d_input.end(), d_int_output.begin(), (float) 3.5);
   REQUIRE(d_int_output == h_int_output);
 }
-TEST_CASE("TestScanMixedTypes", "[scan]")
+TEST_CASE("test_scan_mixed_types", "[scan]")
 {
-  TestScanMixedTypes();
+  test_scan_mixed_types();
 }
 
 template <typename T, unsigned int N>
-void _TestScanWithLargeTypes()
+void test_scan_with_large_types()
 {
   const size_t n = (1024 * 1024) / sizeof(FixedVector<T, N>);
 
@@ -459,11 +459,11 @@ void _TestScanWithLargeTypes()
 
 TEST_CASE("TestScanWithLargeTypes", "[scan]")
 {
-  _TestScanWithLargeTypes<int, 1>();
+  test_scan_with_large_types<int, 1>();
 
 #if !defined(__QNX__)
-  _TestScanWithLargeTypes<int, 8>();
-  _TestScanWithLargeTypes<int, 64>();
+  test_scan_with_large_types<int, 8>();
+  test_scan_with_large_types<int, 64>();
 #endif
 }
 
@@ -483,7 +483,7 @@ struct plus_mod3
 };
 
 template <typename Vector>
-void TestInclusiveScanWithIndirection()
+void test_inclusive_scan_with_indirection()
 {
   // add numbers modulo 3 with external lookup table
   using T = typename Vector::value_type;
@@ -494,7 +494,7 @@ void TestInclusiveScanWithIndirection()
 
   REQUIRE(data == (Vector{0, 1, 0, 1, 0, 0, 1}));
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestInclusiveScanWithIndirection);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_inclusive_scan_with_indirection);
 
 template <typename T>
 struct const_ref_plus_mod3
@@ -512,7 +512,7 @@ struct const_ref_plus_mod3
 };
 
 template <typename Vector>
-void TestInclusiveScanWithConstAccumulator()
+void test_inclusive_scan_with_const_accumulator()
 {
   // add numbers modulo 3 with external lookup table
   using T = typename Vector::value_type;
@@ -524,7 +524,7 @@ void TestInclusiveScanWithConstAccumulator()
 
   REQUIRE(data == (Vector{0, 1, 0, 1, 0, 0, 1}));
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestInclusiveScanWithConstAccumulator);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_inclusive_scan_with_const_accumulator);
 
 struct only_set_when_expected_it
 {
@@ -592,7 +592,7 @@ struct iterator_traits<only_set_when_expected_it>
 };
 _CCCL_END_NAMESPACE_CUDA_STD
 
-void TestInclusiveScanWithBigIndexesHelper(int magnitude)
+void test_inclusive_scan_with_big_indexes_helper(int magnitude)
 {
   const cuda::constant_iterator<long long> begin(1);
   const cuda::constant_iterator<long long> end = begin + (1ll << magnitude);
@@ -613,15 +613,15 @@ void TestInclusiveScanWithBigIndexesHelper(int magnitude)
 
 TEST_CASE("TestInclusiveScanWithBigIndexes", "[scan]")
 {
-  TestInclusiveScanWithBigIndexesHelper(30);
-  TestInclusiveScanWithBigIndexesHelper(31);
+  test_inclusive_scan_with_big_indexes_helper(30);
+  test_inclusive_scan_with_big_indexes_helper(31);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
-  TestInclusiveScanWithBigIndexesHelper(32);
-  TestInclusiveScanWithBigIndexesHelper(33);
+  test_inclusive_scan_with_big_indexes_helper(32);
+  test_inclusive_scan_with_big_indexes_helper(33);
 #endif
 }
 
-void TestExclusiveScanWithBigIndexesHelper(int magnitude)
+void test_exclusive_scan_with_big_indexes_helper(int magnitude)
 {
   const cuda::constant_iterator<long long> begin(1);
   const cuda::constant_iterator<long long> end = begin + (1ll << magnitude);
@@ -642,11 +642,11 @@ void TestExclusiveScanWithBigIndexesHelper(int magnitude)
 
 TEST_CASE("TestExclusiveScanWithBigIndexes", "[scan]")
 {
-  TestExclusiveScanWithBigIndexesHelper(30);
-  TestExclusiveScanWithBigIndexesHelper(31);
+  test_exclusive_scan_with_big_indexes_helper(30);
+  test_exclusive_scan_with_big_indexes_helper(31);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
-  TestExclusiveScanWithBigIndexesHelper(32);
-  TestExclusiveScanWithBigIndexesHelper(33);
+  test_exclusive_scan_with_big_indexes_helper(32);
+  test_exclusive_scan_with_big_indexes_helper(33);
 #endif
 }
 

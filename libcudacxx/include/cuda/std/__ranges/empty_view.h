@@ -20,6 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__ranges/enable_borrowed_range.h>
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__type_traits/is_object.h>

@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Enable constant_wrapper for msvc.
-// UNSUPPORTED: msvc
-
 // todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
 //   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
 //   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
@@ -61,21 +58,21 @@ inline constexpr bool HasComma<L, R, cuda::std::void_t<decltype(cuda::std::declv
   true;
 
 // Comma operator is deleted for constant_wrapper operands
-static_assert(!HasComma<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
+static_assert(!HasComma<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
 #if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
-static_assert(!HasComma<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>);
-static_assert(!HasComma<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
+static_assert(!HasComma<cuda::std::constant_wrapper<WithOps{6}>, cuda::std::constant_wrapper<WithOps{3}>>);
+static_assert(!HasComma<cuda::std::constant_wrapper<NoOps{}>, cuda::std::constant_wrapper<NoOps{}>>);
 #endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 // Mixed operands - one constant_wrapper, one runtime type (uses built-in operator)
-static_assert(HasComma<cuda::std::__constant_wrapper<42>, int>);
-static_assert(HasComma<int, cuda::std::__constant_wrapper<42>>);
+static_assert(HasComma<cuda::std::constant_wrapper<42>, int>);
+static_assert(HasComma<int, cuda::std::constant_wrapper<42>>);
 
 TEST_FUNC constexpr bool test()
 {
   {
     // only mixed with runtime parameters
-    [[maybe_unused]] cuda::std::__constant_wrapper<42> cw42{};
+    [[maybe_unused]] cuda::std::constant_wrapper<42> cw42{};
     int i                  = 0;
     decltype(auto) result1 = (cw42, i);
     static_assert(cuda::std::same_as<int&, decltype(result1)>);

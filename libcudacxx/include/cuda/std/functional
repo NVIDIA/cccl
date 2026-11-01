@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/binary_function.h>
@@ -52,5 +53,6 @@
 #include <cuda/std/__functional/weak_result_type.h>
 #include <cuda/std/__fwd/string.h>
 #include <cuda/std/version>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_STD_FUNCTIONAL

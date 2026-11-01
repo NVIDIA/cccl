@@ -7,7 +7,7 @@
 #include <unittest/unittest.h>
 
 template <typename T, typename VectorT>
-void TestComplexAlignment()
+void test_complex_alignment()
 {
   static_assert(sizeof(thrust::complex<T>) == sizeof(VectorT));
   static_assert(alignof(thrust::complex<T>) == alignof(VectorT));
@@ -17,29 +17,29 @@ void TestComplexAlignment()
 }
 TEST_CASE("TestComplexCharAlignment", "[complex]")
 {
-  TestComplexAlignment<char, char2>();
+  test_complex_alignment<char, char2>();
 }
 TEST_CASE("TestComplexShortAlignment", "[complex]")
 {
-  TestComplexAlignment<short, short2>();
+  test_complex_alignment<short, short2>();
 }
 TEST_CASE("TestComplexIntAlignment", "[complex]")
 {
-  TestComplexAlignment<int, int2>();
+  test_complex_alignment<int, int2>();
 }
 TEST_CASE("TestComplexLongAlignment", "[complex]")
 {
-  TestComplexAlignment<long, long2>();
+  test_complex_alignment<long, long2>();
 }
 TEST_CASE("TestComplexHalfAlignment", "[complex]")
 {
-  TestComplexAlignment<__half, __half2>();
+  test_complex_alignment<__half, __half2>();
 }
 TEST_CASE("TestComplexFloatAlignment", "[complex]")
 {
-  TestComplexAlignment<float, float2>();
+  test_complex_alignment<float, float2>();
 }
 TEST_CASE("TestComplexDoubleAlignment", "[complex]")
 {
-  TestComplexAlignment<double, double2>();
+  test_complex_alignment<double, double2>();
 }

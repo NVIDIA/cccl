@@ -17,14 +17,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/numeric_traits.cuh>
+#include <cub/detail/unit_word.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
-#include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__utility/integer_sequence.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -33,7 +36,7 @@ CUB_NAMESPACE_BEGIN
 //-----------------------------------------------------------------------------
 
 //! @brief Enumeration of cache modifiers for memory store operations.
-enum CacheStoreModifier
+enum CacheStoreModifier // NOLINT(cppcoreguidelines-use-enum-class)
 {
   STORE_DEFAULT, ///< Default (no modifier)
   STORE_WB, ///< Cache write-back all coherent levels

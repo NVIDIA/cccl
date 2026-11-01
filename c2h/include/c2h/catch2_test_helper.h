@@ -13,6 +13,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include <algorithm>
 #include <cstdint>
 #include <iomanip>
 #include <optional>
@@ -21,6 +22,8 @@
 #include <tuple>
 #include <type_traits>
 #include <vector>
+
+#include <cuda_runtime_api.h>
 
 #include <c2h/catch2_main.h>
 #include <c2h/catch2_test_macros.h>
@@ -233,9 +236,11 @@ class QuietMatchExpr : public Catch::ITransientExpression
   MatcherT const& m_matcher;
 
 public:
-  constexpr QuietMatchExpr(ArgT&& arg, MatcherT const& matcher)
+  // ArgT can be a reference type, so the stored reference must use forward.
+  constexpr QuietMatchExpr(ArgT&& arg, // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+                           MatcherT const& matcher)
       : ITransientExpression{true, matcher.match(arg)}
-      , m_arg(CATCH_FORWARD(arg))
+      , m_arg(cuda::std::forward<ArgT>(arg))
       , m_matcher(matcher)
   {}
 
@@ -372,9 +377,9 @@ struct element_compare_result_t
 template <typename T>
 struct vector_compare_result_t
 {
-  size_t actual_size;
-  size_t expected_size;
-  size_t total_mismatches;
+  size_t actual_size{};
+  size_t expected_size{};
+  size_t total_mismatches{};
   std::vector<indexed_value_t<T>> good_values;
   std::vector<element_compare_result_t<T>> first_mismatches;
   std::optional<std::vector<element_compare_result_t<T>>> last_mismatches;
@@ -396,13 +401,13 @@ auto compare_host_ranges(const LhsRange& actual, const RhsRange& expected) -> ve
     return result;
   }
 
-  std::vector<element_compare_result_t<T>> mismatches;
-  mismatches.reserve(actual.size()); // TODO(bgruber): this seems excessive
+  result.first_mismatches.reserve(first_mismatches_count);
+  size_t next_last_mismatch = 0;
   for (size_t i = 0; i < actual.size(); ++i)
   {
     if (actual[i] != expected[i])
     {
-      if (mismatches.empty()) // at the first mismatch
+      if (result.total_mismatches == 0)
       {
         // store up to 3 good values before the first mismatch
         const size_t count = ::cuda::std::min(good_values_before_mismatch, i);
@@ -411,21 +416,40 @@ auto compare_host_ranges(const LhsRange& actual, const RhsRange& expected) -> ve
           result.good_values.emplace_back(indexed_value_t<T>{j, actual[j]});
         }
       }
-      mismatches.emplace_back(element_compare_result_t<T>{i, actual[i], expected[i]});
+
+      const auto mismatch = element_compare_result_t<T>{i, actual[i], expected[i]};
+      ++result.total_mismatches;
+
+      if (result.first_mismatches.size() < first_mismatches_count)
+      {
+        result.first_mismatches.push_back(mismatch);
+      }
+      else
+      {
+        if (!result.last_mismatches)
+        {
+          result.last_mismatches.emplace();
+          result.last_mismatches->reserve(last_mismatches_count);
+        }
+
+        if (result.last_mismatches->size() < last_mismatches_count)
+        {
+          result.last_mismatches->push_back(mismatch);
+        }
+        else
+        {
+          (*result.last_mismatches)[next_last_mismatch] = mismatch;
+          next_last_mismatch                            = (next_last_mismatch + 1) % last_mismatches_count;
+        }
+      }
     }
   }
-  result.total_mismatches = mismatches.size();
 
-  // Handle first mismatches
-  const size_t first_count = cuda::std::min<size_t>(mismatches.size(), first_mismatches_count);
-  result.first_mismatches.assign(mismatches.begin(), mismatches.begin() + first_count);
-
-  // Handle last mismatches
-  if (mismatches.size() > first_mismatches_count)
+  if (result.last_mismatches && next_last_mismatch != 0)
   {
-    const auto start =
-      mismatches.end() - cuda::std::min<size_t>(mismatches.size() - first_mismatches_count, last_mismatches_count);
-    result.last_mismatches.emplace(start, mismatches.end());
+    std::rotate(result.last_mismatches->begin(),
+                result.last_mismatches->begin() + next_last_mismatch,
+                result.last_mismatches->end());
   }
 
   return result;

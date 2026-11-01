@@ -127,7 +127,7 @@ void initialize_values(Vector& values)
 }
 
 template <typename Vector>
-void TestUniqueByKeySimple()
+void test_unique_by_key_simple()
 {
   using T = typename Vector::value_type;
 
@@ -170,10 +170,10 @@ void TestUniqueByKeySimple()
   values_ref = {0, 2, 7};
   REQUIRE(values == values_ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestUniqueByKeySimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_unique_by_key_simple);
 
 template <typename Vector>
-void TestUniqueCopyByKeySimple()
+void test_unique_copy_by_key_simple()
 {
   using T = typename Vector::value_type;
 
@@ -220,7 +220,7 @@ void TestUniqueCopyByKeySimple()
   values_ref = {0, 2, 7};
   REQUIRE(output_values == values_ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestUniqueCopyByKeySimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_unique_copy_by_key_simple);
 
 template <typename K>
 struct TestUniqueByKey

@@ -13,39 +13,44 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/config.h>
+
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/detect_cuda_runtime.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
-#include <cub/detail/uninitialized_copy.cuh>
+#include <cub/detail/type_size.cuh>
 #include <cub/device/dispatch/dispatch_transform_tile_config.cuh>
 #include <cub/device/dispatch/kernels/kernel_transform.cuh>
-#include <cub/util_arch.cuh>
-#include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
-#include <cub/util_type.cuh>
+#include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/device/dispatch/tuning/tuning_transform.cuh>
+#include <cub/util_debug.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/std/__algorithm/clamp.h>
-#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__host_stdlib/sstream>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__expected/expected.h>
+#include <cuda/std/__expected/unexpected.h>
+#include <cuda/std/__host_stdlib/cstdio>
+#include <cuda/std/__optional/optional.h>
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__tuple_dir/tie.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/void_t.h>
-#include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
-#include <cuda/std/expected>
-#include <cuda/std/optional>
-#include <cuda/std/tuple>
+
+#include <nv/target>
 
 #if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 #  include <cub/device/dispatch/dispatch_transform_tile.cuh>
@@ -273,7 +278,31 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
 
   const int ipt = spread_out_items_per_thread(
     num_items, policy.async_copy, config->items_per_thread, config->sm_count, config->max_occupancy);
-  const int tile_size     = threads_per_block * ipt;
+  const int tile_size = threads_per_block * ipt;
+
+#if _CCCL_HOSTED()
+  NV_IF_TARGET(
+    NV_IS_HOST, ({
+      if (detail::logging_enabled())
+      {
+        char reduced_note[64] = "";
+        if (ipt != config->items_per_thread)
+        {
+          ::std::snprintf(
+            reduced_note, sizeof(reduced_note), ", reduced from %d to spread load evenly", config->items_per_thread);
+        }
+        detail::log_always(
+          "DeviceTransform: with occupancy %d, picked %d items per thread, achieving %d bytes in flight "
+          "(target: %d)%s\n",
+          config->max_occupancy,
+          ipt,
+          config->max_occupancy * tile_size * kernel_source.LoadedBytesPerIteration(),
+          policy.min_bytes_in_flight,
+          reduced_note);
+      }
+    }));
+#endif // _CCCL_HOSTED()
+
   const int dyn_smem_size = dyn_smem_for_tile_size(tile_size, alignment);
   _CCCL_ASSERT(NoInputs != (dyn_smem_size != 0), ""); // logical xor
 
@@ -293,7 +322,7 @@ template <typename Offset,
           typename Predicate,
           typename TransformOp,
           typename SMemFunc,
-          std::size_t... Is,
+          size_t... Is,
           typename PolicyGetter,
           typename KernelSource,
           typename KernelLauncherFactory>
@@ -467,7 +496,7 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
   Offset num_items;
   Predicate pred;
   TransformOp op;
-  cudaStream_t stream;
+  cudaStream_t stream = nullptr;
   KernelSource kernel_source;
   KernelLauncherFactory launcher_factory;
   ::cuda::compute_capability cc;

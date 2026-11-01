@@ -36,10 +36,12 @@
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/data.h>
 #include <cuda/std/__ranges/size.h>
+#include <cuda/std/__simd/abi.h>
 #include <cuda/std/__simd/basic_vec.h>
 #include <cuda/std/__simd/concepts.h>
 #include <cuda/std/__simd/flag.h>
 #include <cuda/std/__simd/utility.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/forward.h>
@@ -110,7 +112,7 @@ __full_load_from_ptr(const _Up* __ptr, const typename _Result::mask_type& __mask
     {
       // minimum condition for pointer alignment
       constexpr auto __base_alignment = __has_aligned_flag ? alignment_v<_Result, _Up> : alignof(_Up);
-      constexpr auto __ptr_alignment  = ::cuda::std::max(__base_alignment, __overaligned_value_v<_Flags...>);
+      constexpr auto __ptr_alignment  = ::cuda::std::max(__base_alignment, __overaligned_alignment_v<_Flags...>);
       constexpr auto __simd_size      = _Result::__size;
       constexpr auto __data_size      = __simd_size * sizeof(_Up);
 

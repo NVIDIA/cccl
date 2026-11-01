@@ -102,7 +102,7 @@ TEST_CASE("TestTransformExclusiveScanDispatchImplicit", "[transform_scan]")
 }
 
 template <class Vector>
-void TestTransformScanSimple()
+void test_transform_scan_simple()
 {
   using T = typename Vector::value_type;
 
@@ -177,7 +177,7 @@ void TestTransformScanSimple()
   REQUIRE(std::size_t(iter - input.begin()) == input.size());
   REQUIRE(input == result);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestTransformScanSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_transform_scan_simple);
 
 struct Record
 {
@@ -295,7 +295,7 @@ struct TestTransformScan
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTransformScan, IntegralTypes);
 
 template <class Vector>
-void TestTransformScanCountingIterator()
+void test_transform_scan_counting_iterator()
 {
   using T     = typename Vector::value_type;
   using space = typename thrust::iterator_system<typename Vector::iterator>::type;
@@ -309,7 +309,7 @@ void TestTransformScanCountingIterator()
   Vector ref{-1, -3, -6};
   REQUIRE(result == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestTransformScanCountingIterator);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_transform_scan_counting_iterator);
 
 template <typename T>
 struct TestTransformScanToDiscardIterator
@@ -372,7 +372,7 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTransformScanToDiscardIterator, In
 // transform_inclusive_scan implementation was instantiated using a reference
 // type for the value_type.
 template <typename T>
-void TestValueCategoryDeduction()
+void test_value_category_deduction()
 {
   thrust::device_vector<T> vec;
 
@@ -397,7 +397,7 @@ void TestValueCategoryDeduction()
 
   REQUIRE((thrust::device_vector<T>{0, 5, 5, 5, 8, 8, 8, 8, 8, 8}) == vec);
 }
-DECLARE_GENERIC_UNITTEST(TestValueCategoryDeduction);
+DECLARE_GENERIC_UNITTEST(test_value_category_deduction);
 
 // User-defined Int type with poison default constructor
 struct TransformInt

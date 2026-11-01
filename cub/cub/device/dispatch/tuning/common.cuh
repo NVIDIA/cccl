@@ -13,19 +13,21 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/numeric_traits.cuh>
+#include <cub/detail/type_size.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
-#include <cuda/__functional/maximum.h>
-#include <cuda/__functional/minimum.h>
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/is_signed.h>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
 
 CUB_NAMESPACE_BEGIN
 
@@ -106,17 +108,13 @@ enum class op_kind_t
   other
 };
 
-template <typename T>
-inline constexpr auto classify_op = op_kind_t::other;
-
-template <typename T>
-inline constexpr auto classify_op<::cuda::std::plus<T>> = op_kind_t::plus;
-
-template <typename T>
-inline constexpr auto classify_op<::cuda::minimum<T>> = op_kind_t::min;
-
-template <typename T>
-inline constexpr auto classify_op<::cuda::maximum<T>> = op_kind_t::max;
+template <typename Op>
+inline constexpr auto classify_op =
+  ::cuda::__is_cuda_std_plus_v<Op>  ? op_kind_t::plus
+  : ::cuda::__is_cuda_minimum_v<Op> ? op_kind_t::min
+  : ::cuda::__is_cuda_maximum_v<Op>
+    ? op_kind_t::max
+    : op_kind_t::other;
 
 struct iterator_info
 {

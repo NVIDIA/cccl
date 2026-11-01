@@ -314,7 +314,7 @@ struct set_bit_flag_for_write_op
   template <typename OffsetT, typename T>
   __host__ __device__ void operator()(OffsetT index, T val)
   {
-    static_assert(cuda::std::is_integral<T>::value, "set_bit_for_element_op requires values to be of integral type");
+    static_assert(cuda::std::is_integral_v<T>, "set_bit_for_element_op requires values to be of integral type");
     set_bit_flag(d_element_flags, static_cast<OffsetT>(val));
     set_bit_flag(d_index_flags, index);
   }

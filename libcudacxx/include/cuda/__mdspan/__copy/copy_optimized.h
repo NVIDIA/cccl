@@ -115,7 +115,7 @@ _CCCL_HOST_API void __copy_optimized(
   _ExtentT __tensor_size,
   ::cuda::stream_ref __stream,
   const _SrcAccessor& __src_accessor = {},
-  const _DstAccessor& __dst_accessor = {}) noexcept
+  const _DstAccessor& __dst_accessor = {})
 {
   // Block size = 256 is a heuristic based on benchmark results. Smaller block sizes (e.g. 128) show significant
   // performance degradation.

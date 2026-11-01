@@ -15,12 +15,20 @@
 
 #include <cub/block/block_scan.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/numeric_traits.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
+#include <cuda/__bit/bitmask.h>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/cstdint>
 
@@ -577,8 +585,7 @@ private:
   }
 
 public:
-  struct TempStorage : Uninitialized<TempStorage_>
-  {};
+  using TempStorage = Uninitialized<TempStorage_>;
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE block_topk_air(TempStorage& storage)
       : storage(storage.Alias())

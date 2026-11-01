@@ -32,7 +32,7 @@ TEST_CASE("TestOffsetIteratorTraits", "[offset_iterator]")
 }
 
 template <typename Vector>
-void TestOffsetConstructor()
+void test_offset_constructor()
 {
   thrust::offset_iterator<int*> iter0;
   REQUIRE(iter0.base() == static_cast<int*>(nullptr));
@@ -56,10 +56,10 @@ void TestOffsetConstructor()
   REQUIRE(*iter3.offset() == 1);
   REQUIRE(*iter3 == 43);
 }
-DECLARE_VECTOR_UNITTEST(TestOffsetConstructor);
+DECLARE_VECTOR_UNITTEST(test_offset_constructor);
 
 template <typename Vector>
-void TestOffsetIteratorCopyConstructorAndAssignment()
+void test_offset_iterator_copy_constructor_and_assignment()
 {
   Vector v{42, 43};
 
@@ -105,10 +105,10 @@ void TestOffsetIteratorCopyConstructorAndAssignment()
     REQUIRE(*iter0 == *iter2);
   }
 }
-DECLARE_VECTOR_UNITTEST(TestOffsetIteratorCopyConstructorAndAssignment);
+DECLARE_VECTOR_UNITTEST(test_offset_iterator_copy_constructor_and_assignment);
 
 template <typename Vector>
-void TestOffsetIteratorIncrement()
+void test_offset_iterator_increment()
 {
   auto test = [](auto iter) {
     REQUIRE(*iter == 0);
@@ -128,10 +128,10 @@ void TestOffsetIteratorIncrement()
   const typename Vector::iterator::difference_type offset = 1;
   test(thrust::offset_iterator(v.begin() + 1, &offset));
 }
-DECLARE_VECTOR_UNITTEST(TestOffsetIteratorIncrement);
+DECLARE_VECTOR_UNITTEST(test_offset_iterator_increment);
 
 template <typename Vector>
-void TestOffsetIteratorMutation()
+void test_offset_iterator_mutation()
 {
   {
     Vector v{-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8};
@@ -155,10 +155,10 @@ void TestOffsetIteratorMutation()
     REQUIRE(v == (Vector{-2, -1, 42, 43, 44, 3, 4, 5, 6, 7, 8}));
   }
 }
-DECLARE_VECTOR_UNITTEST(TestOffsetIteratorMutation);
+DECLARE_VECTOR_UNITTEST(test_offset_iterator_mutation);
 
 template <typename Vector>
-void TestOffsetIteratorComparisonAndDistance()
+void test_offset_iterator_comparison_and_distance()
 {
   auto test = [](auto iter1, auto iter2) {
     REQUIRE(iter1 == iter2);
@@ -192,10 +192,10 @@ void TestOffsetIteratorComparisonAndDistance()
   const typename Vector::iterator::difference_type offset = 0;
   test(thrust::offset_iterator(v.begin(), &offset), thrust::offset_iterator(v.begin(), &offset));
 }
-DECLARE_VECTOR_UNITTEST(TestOffsetIteratorComparisonAndDistance);
+DECLARE_VECTOR_UNITTEST(test_offset_iterator_comparison_and_distance);
 
 template <typename Vector>
-void TestOffsetIteratorLateValue()
+void test_offset_iterator_late_value()
 {
   typename Vector::difference_type offset;
   Vector v{0, 1, 2, 3, 4, 5, 6, 7, 8};
@@ -203,10 +203,10 @@ void TestOffsetIteratorLateValue()
   offset = 2; // we provide the offset value **after** constructing the iterator
   REQUIRE(*iter == 2);
 }
-DECLARE_VECTOR_UNITTEST(TestOffsetIteratorLateValue);
+DECLARE_VECTOR_UNITTEST(test_offset_iterator_late_value);
 
 template <typename Vector>
-void TestOffsetIteratorIndirectValueFancyIterator()
+void test_offset_iterator_indirect_value_fancy_iterator()
 {
   using thrust::placeholders::_1;
 
@@ -216,4 +216,4 @@ void TestOffsetIteratorIndirectValueFancyIterator()
   const thrust::offset_iterator iter(v.begin(), it);
   REQUIRE(*iter == 6);
 }
-DECLARE_VECTOR_UNITTEST(TestOffsetIteratorIndirectValueFancyIterator);
+DECLARE_VECTOR_UNITTEST(test_offset_iterator_indirect_value_fancy_iterator);

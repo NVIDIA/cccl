@@ -20,6 +20,7 @@
 #include "catch2_test_device_memcpy_batched_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -60,15 +61,13 @@ struct object_with_non_trivial_ctor
   std::int32_t magic;
 
   __host__ __device__ object_with_non_trivial_ctor()
-  {
-    magic = magic_constant;
-    field = 0;
-  }
+      : field(0)
+      , magic(magic_constant)
+  {}
   __host__ __device__ object_with_non_trivial_ctor(std::int32_t f)
-  {
-    magic = magic_constant;
-    field = f;
-  }
+      : field(f)
+      , magic(magic_constant)
+  {}
 
   object_with_non_trivial_ctor(const object_with_non_trivial_ctor& x) = default;
 
@@ -212,9 +211,9 @@ try
   }
 #endif // TEST_LAUNCH == 0
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
+  c2h::skip_if_allocation_failure();
 }
 
 CUB_TEST("DeviceCopy::Batched works for a very large range",
@@ -247,9 +246,9 @@ try
   // Verify result
   check_result_helper.check_all_results_correct();
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
+  c2h::skip_if_allocation_failure();
 }
 
 CUB_TEST("DeviceCopy::Batched works for non-trivial ctors", "[copy]", CUB_SMALL)
@@ -332,7 +331,7 @@ try
   // Verify result
   check_result_helper.check_all_results_correct();
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
+  c2h::skip_if_allocation_failure();
 }

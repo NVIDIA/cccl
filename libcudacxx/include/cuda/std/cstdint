@@ -11,6 +11,8 @@
 #ifndef _CUDA_STD_CSTDINT
 #define _CUDA_STD_CSTDINT
 
+// IWYU pragma: always_keep
+
 #include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -21,10 +23,14 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_keep
 #include <cuda/std/version>
+// IWYU pragma: end_keep
 
 #if _CCCL_HOSTED()
+// IWYU pragma: begin_exports
 #  include <cstdint>
+// IWYU pragma: end_exports
 #elif _CCCL_COMPILER(NVRTC) || (_CCCL_HOSTJIT() && _CCCL_OS(WINDOWS))
 #  include <cuda/std/climits>
 

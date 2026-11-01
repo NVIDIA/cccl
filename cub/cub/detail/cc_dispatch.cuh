@@ -14,6 +14,8 @@
 #endif // no system header
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/integer_sequence.h>
@@ -90,7 +92,10 @@ using policy_constant = ::cuda::std::integral_constant<Tp, P>;
 
 template <typename PolicySelector, typename FunctorT, size_t... Is>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_to_cc_list(
-  PolicySelector policy_selector, ::cuda::compute_capability device_cc, FunctorT&& f, ::cuda::std::index_sequence<Is...>)
+  PolicySelector policy_selector,
+  ::cuda::compute_capability device_cc,
+  const FunctorT& f,
+  ::cuda::std::index_sequence<Is...>)
 {
   constexpr auto all_ccs = ::cuda::__target_compute_capabilities();
 
@@ -154,7 +159,7 @@ template <typename PolicySelector, typename F>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cudaError_t
 dispatch_compute_cap(PolicySelector policy_selector, ::cuda::compute_capability device_cc, F&& f)
 {
-  return f([&] {
+  return ::cuda::std::forward<F>(f)([&] {
     return policy_selector(device_cc);
   });
 }

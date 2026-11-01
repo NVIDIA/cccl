@@ -64,7 +64,7 @@ _CCCL_HOST_DEVICE inline complex<float> csqrtf(const complex<float>& z)
   float a = z.real(), b = z.imag();
   float t;
   int scale;
-  complex<float> result;
+  complex<float> result{};
 
   /* We risk spurious overflow for components >= FLT_MAX / (1 + sqrt(2)). */
   const float THRESH = 1.40949553037932e+38f;

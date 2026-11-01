@@ -230,7 +230,7 @@ TEST_HOST_DEVICE_FUNC auto get_colons()
 TEST_HOST_DEVICE_FUNC constexpr cuda::std::string_view get_format_types()
 {
   return "aAbBcdeEfFgGopPsxX"
-#if TEST_STD_VER > 20
+#if TEST_STD_VER > 2020
          "?"
 #endif
     ;

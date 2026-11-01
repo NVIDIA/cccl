@@ -10,10 +10,9 @@
 
 // UNSUPPORTED: libcpp-has-no-threads
 
-// <cuda/ptx>
+// <cuda/ptxs/fence.h>
 
-#include <cuda/ptx>
-#include <cuda/std/utility>
+#include <cuda/ptxs/fence.h>
 
 #include "generated/fence.h"
 #include "generated/fence_mbarrier_init.h"

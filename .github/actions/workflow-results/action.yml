@@ -1,12 +1,9 @@
 name: "CCCL Workflow Sentinel"
-description: "Check the results of the dispatched jobs and comment on the PR."
+description: "Check the results of the dispatched jobs and prepare their summary."
 
 inputs:
   github_token:
-    description: "The GitHub token to use for commenting on the PR. No comment will be made if not provided."
-    required: false
-  pr_number:
-    description: "The PR number to comment on, if applicable. No comment will be made if not provided."
+    description: "The GitHub token to use for fetching workflow job information."
     required: false
   slack_token:
     description: "The Slack token to use for notifications. No notifications will be sent if not provided."
@@ -19,6 +16,9 @@ inputs:
     required: false
 
 outputs:
+  pr_comment:
+    description: "Prepared CI results comment for this workflow run."
+    value: ${{ steps.final-summary.outputs.pr_comment }}
   failure_message:
     description: "Prepared workflow failure notification text."
     value: ${{ steps.failure-message.outputs.text }}
@@ -35,11 +35,19 @@ runs:
 
     - name: Download job artifacts
       continue-on-error: true # This may fail if no jobs succeed. The checks below will catch this.
-      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
-      with:
-        path: jobs
-        pattern: zz_jobs-*
-        merge-multiple: true
+      env:
+        GH_TOKEN: ${{ github.token }}
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        artifact_dir=$(mktemp -d)
+        trap 'rm -rf "$artifact_dir"' EXIT
+
+        # actions/download-artifact truncates discovery at 1000 artifacts; gh follows all pages.
+        gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" \
+          --pattern 'zz_jobs-*' --dir "$artifact_dir"
+
+        mkdir -p jobs
+        mv "$artifact_dir"/zz_jobs-*/* jobs/
 
     - name: Clean up job artifacts
       continue-on-error: true
@@ -162,17 +170,12 @@ runs:
         ) | tee pr_comment.md
         echo "::endgroup::"
 
-    - name: Comment on PR
-      if: ${{ !cancelled() && inputs.pr_number != '' && inputs.github_token != ''}}
-      continue-on-error: true
-      uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db  # v2.9.2
-      with:
-        github_token: ${{ inputs.github_token }}
-        header: ci-results
-        number: ${{ inputs.pr_number }}
-        path: pr_comment.md
-        hide_and_recreate: true
-        hide_classify: "OUTDATED"
+        delimiter="EOF_$(openssl rand -hex 16)"
+        {
+          echo "pr_comment<<${delimiter}"
+          cat pr_comment.md
+          echo "${delimiter}"
+        } >> "${GITHUB_OUTPUT}"
 
     - name: Check for workflow success
       id: check-workflow

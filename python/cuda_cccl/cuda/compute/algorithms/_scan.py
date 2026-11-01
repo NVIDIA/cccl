@@ -102,7 +102,7 @@ class _Scan(Serializable):
                 init_value_type_info = self.init_value_cccl.value_type
 
             case _bindings.InitKind.VALUE_INIT:
-                init_value_typed = cast(np.ndarray | GpuStruct, init_value)
+                init_value_typed = cast("np.ndarray | GpuStruct", init_value)
                 self.init_value_cccl = cccl.to_cccl_value(init_value_typed)
                 value_type = get_value_type(init_value_typed)
                 init_value_type_info = self.init_value_cccl.type
@@ -195,7 +195,7 @@ class _Scan(Serializable):
             case _bindings.InitKind.VALUE_INIT:
                 self.init_value_cccl = cast(_bindings.Value, self.init_value_cccl)
                 self.init_value_cccl.state = to_cccl_value_state(
-                    cast(np.ndarray | GpuStruct, init_value)
+                    cast("np.ndarray | GpuStruct", init_value)
                 )
 
         stream_handle = validate_and_get_stream(stream)

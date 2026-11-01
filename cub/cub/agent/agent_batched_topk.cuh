@@ -18,13 +18,19 @@
 #include <cub/block/block_store.cuh>
 #include <cub/block/block_topk.cuh>
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/segmented_params.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
-#include <cub/util_type.cuh>
 
+#include <cuda/__argument/argument.h>
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/argument>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 

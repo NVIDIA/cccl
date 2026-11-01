@@ -22,11 +22,14 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
+
+#include <nv/target>
 
 #if _CCCL_COMPILER(MSVC)
 #  include <intrin.h>

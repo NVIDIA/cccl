@@ -19,20 +19,23 @@
 
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_reduce.cuh>
-#include <cub/detail/type_traits.cuh>
+#include <cub/detail/cub_vector.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/numeric_traits.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/grid/grid_mapping.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/warp/warp_reduce.cuh>
+
+#include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/identity.h>
-#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
@@ -202,27 +205,22 @@ struct AgentReduceImpl
   /// Vector type of InputT for data movement
   using VectorT = typename CubVector<InputT, AgentReducePolicy::VECTOR_LOAD_LENGTH>::Type;
 
-  /// Input iterator wrapper type (for applying cache modifier)
-  // Wrap the native input pointer with CacheModifiedInputIterator
-  // or directly use the supplied input iterator type
-  using WrappedInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
-                     CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, InputT, OffsetT>,
-                     InputIteratorT>;
+  /// Input iterator with the cache modifier (also unwraps contiguous iterators to pointers)
+  using cache_modified_input_iterator_t =
+    try_make_cache_modified_iterator_t<AgentReducePolicy::LOAD_MODIFIER, InputIteratorT>;
 
   /// Constants
   static constexpr int ITEMS_PER_THREAD = AgentReducePolicy::ITEMS_PER_THREAD;
   static constexpr int TILE_ITEMS       = NumThreads * ITEMS_PER_THREAD;
   static constexpr int vec_size         = ::cuda::std::min(ITEMS_PER_THREAD, AgentReducePolicy::VECTOR_LOAD_LENGTH);
 
-  // Can vectorize according to the policy if the input iterator is a native
-  // pointer to a primitive type
-  // TODO(bgruber): we should not check for `is_pointer_v` but `contiguous_iterator` and unwrap it
+  // Vectorize if the policy asks for vector loads (vec_size > 1) and the input is a contiguous range of small trivially
+  // copyable values
   static constexpr bool ATTEMPT_VECTORIZATION =
     (vec_size > 1) && (ITEMS_PER_THREAD % vec_size == 0)
-    && (::cuda::std::is_pointer_v<InputIteratorT>)
-         // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
-         &&(is_primitive<InputT>::value || ::cuda::is_trivially_copyable_v<InputT>)
+    && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>
+    // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
+    && (is_primitive<InputT>::value || ::cuda::is_trivially_copyable_v<InputT>)
          // vectorizing large types leads to regressions again, see https://github.com/NVIDIA/cccl/issues/9761
          // TODO(bgruber): this should be decided by tuning
          &&sizeof(InputT)
@@ -237,16 +235,14 @@ struct AgentReduceImpl
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per-thread fields
   //---------------------------------------------------------------------
 
   _TempStorage& temp_storage; ///< Reference to temp_storage
-  InputIteratorT d_in; ///< Input data to reduce
-  WrappedInputIteratorT d_wrapped_in; ///< Wrapped input data to reduce
+  cache_modified_input_iterator_t d_in; ///< Input data to reduce
   ReductionOp reduction_op; ///< Binary reduction operator
   TransformOp transform_op; ///< Transform operator
   unsigned int lane_id; ///< Local thread index inside a Warp or Block
@@ -261,7 +257,7 @@ struct AgentReduceImpl
   {
     if constexpr (AttemptVectorization)
     {
-      return ::cuda::std::is_sufficiently_aligned<alignof(VectorT)>(d_in);
+      return ::cuda::std::is_sufficiently_aligned<alignof(VectorT)>(d_in.ptr);
     }
     else
     {
@@ -282,8 +278,7 @@ struct AgentReduceImpl
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduceImpl(
     TempStorage& temp_storage, InputIteratorT d_in, ReductionOp reduction_op, TransformOp transform_op, int lane_id)
       : temp_storage(temp_storage.Alias())
-      , d_in(d_in)
-      , d_wrapped_in(d_in)
+      , d_in(try_make_cache_modified_iterator<AgentReducePolicy::LOAD_MODIFIER>(d_in))
       , reduction_op(reduction_op)
       , transform_op(transform_op)
       , lane_id(lane_id)
@@ -304,10 +299,9 @@ struct AgentReduceImpl
   {
     if constexpr (CanVectorize)
     {
-      // Fabricate a vectorized input iterator
-      InputT* d_in_unqualified = const_cast<InputT*>(d_in) + block_offset + (lane_id * vec_size);
-      const CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, VectorT, OffsetT> d_vec_in(
-        reinterpret_cast<VectorT*>(d_in_unqualified));
+      // Take the pointer from the cache modified iterator and rewrap it as a vector iterator
+      const auto d_vec_in = CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, VectorT, OffsetT>(
+        reinterpret_cast<VectorT*>(d_in.ptr + block_offset + lane_id * vec_size));
 
       // Load items as vector items
       alignas(VectorT) InputT input_items[ITEMS_PER_THREAD];
@@ -337,7 +331,7 @@ struct AgentReduceImpl
     {
       // Scalar path: load items in striped fashion and reduce items within each thread stripe
       AccumT items[ITEMS_PER_THREAD];
-      load_transform_direct_striped<NumThreads>(lane_id, d_wrapped_in + block_offset, items, transform_op);
+      load_transform_direct_striped<NumThreads>(lane_id, d_in + block_offset, items, transform_op);
       thread_aggregate =
         IsFirstTile ? cub::ThreadReduce(items, reduction_op) : cub::ThreadReduce(items, reduction_op, thread_aggregate);
     }
@@ -358,15 +352,14 @@ struct AgentReduceImpl
     // Read first item
     if (IsFirstTile && (thread_offset < valid_items))
     {
-      thread_aggregate =
-        transform_op(d_wrapped_in[block_offset + thread_offset]); // NOLINT(bugprone-misplaced-widening-cast)
+      thread_aggregate = transform_op(d_in[block_offset + thread_offset]); // NOLINT(bugprone-misplaced-widening-cast)
       thread_offset += NumThreads;
     }
 
     // Continue reading items (block-striped)
     while (thread_offset < valid_items)
     {
-      const InputT item(d_wrapped_in[block_offset + thread_offset]); // NOLINT(bugprone-misplaced-widening-cast)
+      const InputT item(d_in[block_offset + thread_offset]); // NOLINT(bugprone-misplaced-widening-cast)
 
       thread_aggregate = reduction_op(thread_aggregate, transform_op(item));
       thread_offset += NumThreads;

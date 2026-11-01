@@ -27,11 +27,9 @@
 #  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
-#  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__runtime/ensure_current_context.h>
-#  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
 
 #  include <cuda/std/__cccl/prologue.h>
 

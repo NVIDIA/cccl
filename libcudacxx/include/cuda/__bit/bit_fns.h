@@ -21,15 +21,58 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__bit/countr.h>
+#include <cuda/std/__bit/integral.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
+#include <cuda/std/__type_traits/make_nbit_int.h>
+#include <cuda/std/__type_traits/num_bits.h>
+#include <cuda/std/cstdint>
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
+
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr int __bit_fns_impl(const _Tp __v, const int __rank) noexcept
+{
+  using ::cuda::std::uint32_t;
+
+  if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
+  {
+    constexpr auto __nbits = ::cuda::std::__num_bits_v<_Tp>;
+
+    // A zero mask preserves the -1 sentinel when the requested rank is absent.
+    uint32_t __mask = (__rank < ::cuda::std::popcount(__v)) ? static_cast<_Tp>(~_Tp{0}) : 0u;
+
+    // Find the shortest low-bit prefix containing the selected bit, keeping its rank fixed.
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int __step = __nbits / 2; __step != 0; __step /= 2)
+    {
+      const auto __candidate = __mask >> __step;
+      __mask                 = (::cuda::std::popcount(__v & __candidate) > __rank) ? __candidate : __mask;
+    }
+    return static_cast<int>(::cuda::std::__bit_log2(__mask));
+  }
+  else
+  {
+    // Discard half the bits at each step until the search fits in a 32-bit word.
+    constexpr int __half_bits = ::cuda::std::__num_bits_v<_Tp> / 2;
+    using _Half               = ::cuda::std::__make_nbit_uint_t<__half_bits>;
+    const auto __lo           = static_cast<_Half>(__v);
+    const int __lo_count      = ::cuda::std::popcount(__lo);
+    const bool __is_in_hi     = __rank >= __lo_count;
+    const auto __word         = __is_in_hi ? static_cast<_Half>(__v >> __half_bits) : __lo;
+    const int __word_rank     = __is_in_hi ? __rank - __lo_count : __rank;
+    const int __position      = ::cuda::__bit_fns_impl(__word, __word_rank);
+    // The half's offset occupies a bit above every valid position in that half.
+    // Bitwise OR adds the offset while preserving the all-ones -1 sentinel.
+    return __position | (__is_in_hi ? __half_bits : 0);
+  }
+}
 
 //! @brief Finds the position of the set bit with rank \p __rank in \p __value, counting set bits from the least
 //! significant one.
@@ -42,44 +85,19 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr int bit_fns(const _Tp __value, const int __rank) noexcept
 {
-  constexpr int __digits = ::cuda::std::numeric_limits<_Tp>::digits;
-  _CCCL_ASSERT(__rank >= 0 && __rank < __digits, "rank out of range");
-  if (__rank >= ::cuda::std::popcount(__value))
+  constexpr auto __nbits = ::cuda::std::__num_bits_v<_Tp>;
+  _CCCL_ASSERT(__rank >= 0 && __rank < __nbits, "rank out of range");
+  int __ret{};
+  if (_CCCL_IS_CONSTANT_P(__rank) && __rank == __nbits - 1)
   {
-    return -1;
+    __ret = (__value == static_cast<_Tp>(-1)) ? __nbits - 1 : -1;
   }
-#if defined(_CCCL_BUILTIN_CONSTANT_P)
-  if (_CCCL_BUILTIN_CONSTANT_P(__rank))
+  else
   {
-    if (__rank == 0)
-    {
-      return ::cuda::std::countr_zero(__value);
-    }
-    if (__rank == __digits - 1)
-    {
-      return (__value == static_cast<_Tp>(-1)) ? __digits - 1 : -1;
-    }
+    __ret = ::cuda::__bit_fns_impl(__value, __rank);
   }
-#endif // _CCCL_BUILTIN_CONSTANT_P
-  auto __window   = +__value; // small types are promoted to 32 bits
-  int __remaining = __rank;
-  int __position  = 0;
-  // Binary search: each step keeps the half of the window that contains the wanted set bit.
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int __half_width = __digits / 2; __half_width >= 1; __half_width /= 2)
-  {
-    // __half_width < __digits, so neither shift reaches the width of the type.
-    const auto __low_half_mask = static_cast<_Tp>((_Tp{1} << __half_width) - _Tp{1});
-    const int __low_half_count = ::cuda::std::popcount(static_cast<_Tp>(__window & __low_half_mask));
-    if (__remaining >= __low_half_count)
-    {
-      __remaining -= __low_half_count;
-      __position += __half_width;
-      __window = __window >> __half_width;
-    }
-  }
-  _CCCL_ASSUME(__position >= 0 && __position < __digits);
-  return __position;
+  _CCCL_ASSUME(__ret >= -1 && __ret < __nbits);
+  return __ret;
 }
 
 _CCCL_END_NAMESPACE_CUDA

@@ -28,8 +28,6 @@
 #include <cuda/experimental/__driver/driver_api.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental

@@ -21,7 +21,7 @@
 #endif // no system header
 
 #include <cuda/std/__format/format_error.h>
-#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/cstdint>
 

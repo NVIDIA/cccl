@@ -107,7 +107,7 @@ class _Reduce(Serializable):
                 )
 
             case _bindings.InitKind.VALUE_INIT:
-                h_init_typed = cast(np.ndarray | GpuStruct, h_init)
+                h_init_typed = cast("np.ndarray | GpuStruct", h_init)
                 self.h_init_cccl = cccl.to_cccl_value(h_init_typed)
                 value_type = get_value_type(h_init_typed)
                 init_value_type_info = self.h_init_cccl.type
@@ -182,7 +182,7 @@ class _Reduce(Serializable):
             # to minimize the work we do prior to calling the kernel.
             self.h_init_cccl = cast(_bindings.Value, self.h_init_cccl)
             self.h_init_cccl.state = to_cccl_value_state(
-                cast(np.ndarray | GpuStruct, h_init)
+                cast("np.ndarray | GpuStruct", h_init)
             )
 
         stream_handle = validate_and_get_stream(stream)

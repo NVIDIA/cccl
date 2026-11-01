@@ -119,7 +119,7 @@ int main(int argc, char** argv)
     /* Each thread contributes to an histogram in shared memory */
     for (size_t k = 0; k < num_levels - 1; k++)
     {
-      atomicAdd((unsigned long long*) &smem_hist[k], local_hist[k]);
+      atomicAdd(reinterpret_cast<unsigned long long*>(&smem_hist[k]), local_hist[k]);
     }
 
     // histo was zero'ed
@@ -139,6 +139,8 @@ int main(int argc, char** argv)
   ctx.finalize();
 
   float ms = 0;
+  // finalize() does not wait for work recorded in a stream returned by fence().
+  cuda_safe_call(cudaEventSynchronize(stop));
   cuda_safe_call(cudaEventElapsedTime(&ms, start, stop));
 
   // fprintf(stdout, "%zu %f ms\n", N / 1024 / 1024, ms);

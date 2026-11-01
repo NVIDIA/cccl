@@ -3,7 +3,7 @@
 #include <cuda/__cccl_config>
 
 _CCCL_DIAG_PUSH
-// gcc 10 and 11 wrongly warn about an out-of-bounds access in TestWritingStridedIteratorToStructMember
+// gcc 10 and 11 wrongly warn about an out-of-bounds access in test_writing_strided_iterator_to_struct_member
 #if _CCCL_COMPILER(GCC, >=, 10) && _CCCL_COMPILER(GCC, <, 12)
 _CCCL_DIAG_SUPPRESS_GCC("-Warray-bounds")
 #endif // _CCCL_COMPILER(GCC, >=, 10) && _CCCL_COMPILER(GCC, <, 12)
@@ -38,7 +38,7 @@ TEST_CASE("TestReadingStridedIterator", "[strided_iterator]")
 }
 
 template <typename Vector>
-void TestWritingStridedIterator()
+void test_writing_strided_iterator()
 {
   // iterate over all second elements (runtime stride)
   {
@@ -62,9 +62,9 @@ void TestWritingStridedIterator()
     REQUIRE(v == (Vector{42, 0, 42, 0, 42, 0, 0, 0, 0, 0}));
   }
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestWritingStridedIterator);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_writing_strided_iterator);
 
-void TestWritingStridedIteratorToStructMember()
+void test_writing_strided_iterator_to_struct_member()
 {
   using pair            = ::cuda::std::pair<int, double>;
   using arr_of_pairs    = ::cuda::std::array<pair, 4>;
@@ -89,9 +89,9 @@ void TestWritingStridedIteratorToStructMember()
     REQUIRE(arr == reference);
   }
 }
-TEST_CASE("TestWritingStridedIteratorToStructMember", "[strided_iterator]")
+TEST_CASE("test_writing_strided_iterator_to_struct_member", "[strided_iterator]")
 {
-  TestWritingStridedIteratorToStructMember();
+  test_writing_strided_iterator_to_struct_member();
 }
 
 _CCCL_DIAG_POP

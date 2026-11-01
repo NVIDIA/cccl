@@ -11,7 +11,7 @@
 #include <unittest/unittest.h>
 
 template <typename Vector>
-void TestMergeByKeySimple()
+void test_merge_by_key_simple()
 {
   const Vector a_key{0, 2, 4}, a_val{13, 7, 42}, b_key{0, 3, 3, 4}, b_val{42, 42, 7, 13};
   Vector ref_key{0, 0, 2, 3, 3, 4, 4}, ref_val{13, 42, 7, 42, 7, 42, 13};
@@ -33,7 +33,7 @@ void TestMergeByKeySimple()
   REQUIRE(ref_key == result_key);
   REQUIRE(ref_val == result_val);
 }
-DECLARE_VECTOR_UNITTEST(TestMergeByKeySimple);
+DECLARE_VECTOR_UNITTEST(test_merge_by_key_simple);
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -91,14 +91,14 @@ cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
 template <typename T, typename CompareOp, typename... Args>
 auto call_merge_by_key(Args&&... args) -> decltype(thrust::merge_by_key(std::forward<Args>(args)...))
 {
-  if constexpr (::cuda::std::is_void<CompareOp>::value)
+  if constexpr (::cuda::std::is_void_v<CompareOp>)
   {
     return thrust::merge_by_key(std::forward<Args>(args)...);
   }
   else
   {
     // TODO(bgruber): remove next line in C++17 and pass CompareOp{} directly to stable_sort
-    using C = ::cuda::std::conditional_t<::cuda::std::is_void<CompareOp>::value, ::cuda::std::less<T>, CompareOp>;
+    using C = ::cuda::std::conditional_t<::cuda::std::is_void_v<CompareOp>, ::cuda::std::less<T>, CompareOp>;
     return thrust::merge_by_key(std::forward<Args>(args)..., C{});
   }
   _CCCL_UNREACHABLE();
@@ -122,7 +122,7 @@ TEST_CASE("TestMergeByKeyDispatchImplicit", "[merge_by_key]")
 }
 
 template <typename T, typename CompareOp = void>
-void TestMergeByKey(size_t n)
+void test_merge_by_key(size_t n)
 {
   const auto random_keys = unittest::random_integers<unittest::int8_t>(n);
   const auto random_vals = unittest::random_integers<unittest::int8_t>(n);
@@ -139,7 +139,7 @@ void TestMergeByKey(size_t n)
       random_vals.begin(), random_vals.begin() + static_cast<std::ptrdiff_t>(size_a));
     const thrust::host_vector<T> h_b_vals(random_vals.begin() + static_cast<std::ptrdiff_t>(size_a), random_vals.end());
 
-    if constexpr (::cuda::std::is_void<CompareOp>::value)
+    if constexpr (::cuda::std::is_void_v<CompareOp>)
     {
       thrust::stable_sort(h_a_keys.begin(), h_a_keys.end());
       thrust::stable_sort(h_b_keys.begin(), h_b_keys.end());
@@ -147,7 +147,7 @@ void TestMergeByKey(size_t n)
     else
     {
       // TODO(bgruber): remove next line in C++17 and pass CompareOp{} directly to stable_sort
-      using C = ::cuda::std::conditional_t<::cuda::std::is_void<CompareOp>::value, ::cuda::std::less<T>, CompareOp>;
+      using C = ::cuda::std::conditional_t<::cuda::std::is_void_v<CompareOp>, ::cuda::std::less<T>, CompareOp>;
       thrust::stable_sort(h_a_keys.begin(), h_a_keys.end(), C{});
       thrust::stable_sort(h_b_keys.begin(), h_b_keys.end(), C{});
     }
@@ -197,10 +197,10 @@ void TestMergeByKey(size_t n)
     REQUIRE(d_end.second == d_result_vals.end());
   }
 }
-DECLARE_VARIABLE_UNITTEST(TestMergeByKey);
+DECLARE_VARIABLE_UNITTEST(test_merge_by_key);
 
 template <typename T>
-void TestMergeByKeyToDiscardIterator(size_t n)
+void test_merge_by_key_to_discard_iterator(size_t n)
 {
   auto h_a_keys = unittest::random_integers<T>(n);
   auto h_b_keys = unittest::random_integers<T>(n);
@@ -246,14 +246,14 @@ void TestMergeByKeyToDiscardIterator(size_t n)
   REQUIRE(reference == d_result.first);
   REQUIRE(reference == d_result.second);
 }
-DECLARE_VARIABLE_UNITTEST(TestMergeByKeyToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_merge_by_key_to_discard_iterator);
 
 template <typename T>
-void TestMergeByKeyDescending(size_t n)
+void test_merge_by_key_descending(size_t n)
 {
-  TestMergeByKey<T, ::cuda::std::greater<T>>(n);
+  test_merge_by_key<T, ::cuda::std::greater<T>>(n);
 }
-DECLARE_VARIABLE_UNITTEST(TestMergeByKeyDescending);
+DECLARE_VARIABLE_UNITTEST(test_merge_by_key_descending);
 
 struct def_level_fn
 {

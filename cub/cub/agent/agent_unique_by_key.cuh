@@ -23,7 +23,15 @@
 #include <cub/block/block_discontinuity.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/uninitialized.cuh>
+#include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_operators.cuh>
+
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_pointer.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -181,8 +189,7 @@ struct AgentUniqueByKey
   };
 
   // Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per-thread fields

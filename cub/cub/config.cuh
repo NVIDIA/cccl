@@ -25,5 +25,5 @@
 #include <cub/util_namespace.cuh> // IWYU pragma: export
 
 #if !_CCCL_COMPILER(NVRTC)
-#  include <cuda/__nvtx/nvtx.h>
+#  include <cuda/__nvtx/nvtx.h> // IWYU pragma: export
 #endif // !_CCCL_COMPILER(NVRTC)

@@ -20,6 +20,13 @@
 #  pragma system_header
 #endif // no system header
 
+#if !_CCCL_CUDA_COMPILER(CLANG)
+#  include <cuda/__memory/address_space.h>
+#  include <cuda/std/__type_traits/is_floating_point.h>
+#endif // !_CCCL_CUDA_COMPILER(CLANG)
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_integral.h>
+
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
@@ -47,13 +54,36 @@ struct BlockHistogramAtomic
    *   Reference to shared/device-accessible memory histogram
    */
   template <typename T, typename CounterT, int ItemsPerThread>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ItemsPerThread], CounterT histogram[Bins])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(const T (&items)[ItemsPerThread], CounterT histogram[Bins])
   {
-    // Update histogram
+    // Use unsigned, unsigned long long for all integer counters
+    constexpr bool is_integer_counter =
+      ::cuda::std::is_integral_v<CounterT> && (sizeof(CounterT) == 4 || sizeof(CounterT) == 8);
+    using unsigned_t       = ::cuda::std::conditional_t<sizeof(CounterT) == 4, unsigned, unsigned long long>;
+    using atomic_counter_t = ::cuda::std::conditional_t<is_integer_counter, unsigned_t, CounterT>;
+    auto* atomic_histogram = reinterpret_cast<atomic_counter_t*>(histogram);
+
+    // Clang does not lower block-scoped atomics to shared-memory instructions
+#if !_CCCL_CUDA_COMPILER(CLANG)
+    if constexpr (is_integer_counter || ::cuda::std::is_floating_point_v<CounterT>)
+    {
+      if (::cuda::device::is_address_from(histogram, ::cuda::device::address_space::shared))
+      {
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int i = 0; i < ItemsPerThread; ++i)
+        {
+          atomicAdd_block(atomic_histogram + items[i], 1);
+        }
+        return;
+      }
+    }
+#endif // !_CCCL_CUDA_COMPILER(CLANG)
+
+    // Global histograms need device scope; other counter types may provide atomicAdd through ADL
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
     {
-      atomicAdd_block(histogram + items[i], 1);
+      atomicAdd(atomic_histogram + items[i], 1);
     }
   }
 };

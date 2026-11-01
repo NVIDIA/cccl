@@ -214,6 +214,7 @@ function(
       # gersemi: on
       GPUS 1
       PERCENT ${CCCL_TEST_GPU_PERCENT_SMALL}
+      INSTALL_TARGET "${test_target}"
     )
     set_tests_properties(
       ${test_target}
@@ -235,6 +236,7 @@ function(
         # gersemi: on
         GPUS 1
         PERCENT ${CCCL_TEST_GPU_PERCENT_LARGE}
+        INSTALL_TARGET "${test_target}"
       )
       set_tests_properties(
         ${test_target}.large
@@ -383,6 +385,7 @@ function(
         # gersemi: on
         GPUS 1
         PERCENT ${_cub_gpu_percent}
+        INSTALL_TARGET "${test_target}"
       )
       set_tests_properties(
         ${test_target}

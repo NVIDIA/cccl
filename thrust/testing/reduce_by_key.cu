@@ -29,7 +29,7 @@ void initialize_values(Vector& values)
 }
 
 template <typename Vector>
-void TestReduceByKeySimple()
+void test_reduce_by_key_simple()
 {
   using T = typename Vector::value_type;
 
@@ -103,7 +103,7 @@ void TestReduceByKeySimple()
   ref_values = {1, 2, 3, 15, 15};
   REQUIRE(output_values == ref_values);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestReduceByKeySimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_reduce_by_key_simple);
 
 template <typename K>
 struct TestReduceByKey

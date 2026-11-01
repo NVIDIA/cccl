@@ -10,7 +10,8 @@ The workflow has already collected the complete failed-job manifest and availabl
 failure logs in `CI_LOG_DIR`:
 
 - `jobs.json` contains the metadata and GitHub failure annotations for every failed job.
-- `job-JOB_ID.log`, when present, contains the complete log for that failed job.
+  Each job's `log_path` points to its collected log; an empty string means log retrieval
+  failed or returned an empty log.
 - `pr.diff`, when present, contains the pull request diff.
 
 Read every available failure log and failure annotation before grouping. Use `jobs.json`

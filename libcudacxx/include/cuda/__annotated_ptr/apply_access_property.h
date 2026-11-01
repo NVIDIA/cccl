@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/__annotated_ptr/access_property.h>
-#include <cuda/__memory/address_space.h>
+#include <cuda/__memory/address_space.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

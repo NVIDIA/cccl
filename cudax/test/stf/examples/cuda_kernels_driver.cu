@@ -74,7 +74,7 @@ void test(bool is_graph)
 
   // CUfunction driver API
   CUfunction axpy_fun;
-  cuda_safe_call(cudaGetFuncBySymbol(&axpy_fun, (void*) axpy));
+  cuda_safe_call(cudaGetFuncBySymbol(&axpy_fun, reinterpret_cast<void*>(axpy)));
 
   ctx.cuda_kernel(lX.read(), lY.rw())->*[&](auto dX, auto dY) {
     return cuda_kernel_desc{axpy_fun, 16, 128, 0, alpha, dX, dY};
@@ -84,7 +84,7 @@ void test(bool is_graph)
 #if _CCCL_CTK_AT_LEAST(12, 1)
   // CUkernel driver API
   CUkernel axpy_kernel;
-  cuda_safe_call(cudaGetKernel(&axpy_kernel, (void*) axpy));
+  cuda_safe_call(cudaGetKernel(&axpy_kernel, reinterpret_cast<void*>(axpy)));
 
   ctx.cuda_kernel(lX.read(), lY.rw())->*[&](auto dX, auto dY) {
     return cuda_kernel_desc{axpy_kernel, 16, 128, 0, alpha, dX, dY};

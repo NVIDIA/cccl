@@ -29,6 +29,7 @@
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/coop/__group/fwd.cuh>
@@ -96,11 +97,6 @@ public:
     return true;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
-  {
-    return true;
-  }
-
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
   {
     return false;
@@ -122,6 +118,7 @@ public:
   using level_type            = warp_level;
   using hierarchy_type        = _Hierarchy;
   using __mapping_result_type = _MappingResult;
+  using arrival_token         = typename _SynchronizerInstance::arrival_token;
 
   _CCCL_TEMPLATE(class _HierarchyLike)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Hierarchy, __hierarchy_type_of<_HierarchyLike>>)
@@ -150,11 +147,6 @@ public:
     return __synchronizer_instance_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
-  {
-    return _MappingResult::is_always_exhaustive();
-  }
-
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
   {
     return _MappingResult::is_always_contiguous();
@@ -172,6 +164,26 @@ public:
     __synchronizer_instance_.do_sync_aligned(__mapping_result_, __hier_);
   }
 
+  [[nodiscard]] _CCCL_DEVICE_API arrival_token arrive() const noexcept
+  {
+    return __synchronizer_instance_.do_arrive(__mapping_result_, __hier_);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API arrival_token arrive_aligned() const noexcept
+  {
+    return __synchronizer_instance_.do_arrive_aligned(__mapping_result_, __hier_);
+  }
+
+  _CCCL_DEVICE_API void wait(arrival_token&& __tok) const noexcept
+  {
+    __synchronizer_instance_.do_wait(__mapping_result_, __hier_, ::cuda::std::move(__tok));
+  }
+
+  _CCCL_DEVICE_API void wait_aligned(arrival_token&& __tok) const noexcept
+  {
+    __synchronizer_instance_.do_wait_aligned(__mapping_result_, __hier_, ::cuda::std::move(__tok));
+  }
+
   _CCCL_TEMPLATE(class _InLevel)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
   [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count(const _InLevel& __in_level) noexcept
@@ -182,7 +194,7 @@ public:
     }
     else
     {
-      return level_type::static_count(__in_level, _Hierarchy{});
+      return ::cuda::__static_count_query<level_type, _InLevel, _Hierarchy>();
     }
   }
 
@@ -196,7 +208,7 @@ public:
     }
     else
     {
-      return level_type::template count_as<_Tp>(__in_level, __hier);
+      return __count_query<level_type, _InLevel>::template __call<_Tp>(__hier);
     }
   }
 
@@ -224,7 +236,7 @@ public:
     }
     else
     {
-      return level_type::template rank_as<_Tp>(__in_level, __hier);
+      return __rank_query<level_type, _InLevel>::template __call<_Tp>(__hier);
     }
   }
 

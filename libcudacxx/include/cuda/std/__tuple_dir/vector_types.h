@@ -25,13 +25,10 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 
-#  include <cuda/std/__fwd/get.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__tuple_dir/tuple_element.h>
 #  include <cuda/std/__tuple_dir/tuple_size.h>
-#  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
-#  include <cuda/std/__utility/forward.h>
-#  include <cuda/std/__utility/move.h>
 
 #  define _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__name, __type, __size, ...)                       \
     template <>                                                                                     \
@@ -63,7 +60,8 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
       return ::cuda::std::__get_element<_Ip>::template get<__name, __base_type>(__val);                              \
     }                                                                                                                \
     template <size_t _Ip>                                                                                            \
-    _CCCL_API constexpr __base_type&& get(__name&& __val) noexcept                                                   \
+    _CCCL_API constexpr __base_type&& get(                                                                           \
+      __name&& __val /* NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved) */) noexcept                      \
     {                                                                                                                \
       return ::cuda::std::__get_element<_Ip>::template get<__name, __base_type>(static_cast<__name&&>(__val));       \
     }                                                                                                                \

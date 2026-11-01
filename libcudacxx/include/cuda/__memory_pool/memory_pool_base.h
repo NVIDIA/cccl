@@ -23,25 +23,19 @@
 
 #if _CCCL_HAS_CTK()
 
+#  include <cuda/__container/simple_vector.h>
 #  include <cuda/__device/attributes.h>
 #  include <cuda/__device/device_ref.h>
-#  include <cuda/__memory_resource/any_resource.h>
 #  include <cuda/__memory_resource/properties.h>
-#  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__runtime/types.h>
 #  include <cuda/__stream/internal_streams.h>
 #  include <cuda/__stream/relaxed_capture_scope.h>
 #  include <cuda/__stream/stream.h>
 #  include <cuda/__stream/stream_ref.h>
-#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
-#  include <cuda/std/cstddef>
-
-#  if _CCCL_HOSTED()
-#    include <vector>
-#  endif // _CCCL_HOSTED()
+#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -378,11 +372,10 @@ _CCCL_HOST_API inline void __verify_device_supports_export_handle_type(
 _CCCL_HOST_API inline void
 __mempool_set_access(::CUmemoryPool __pool, ::cuda::std::span<const device_ref> __devices, ::CUmemAccess_flags __flags)
 {
-  ::std::vector<::CUmemAccessDesc> __descs;
-  __descs.reserve(__devices.size());
+  ::cuda::__simple_vector<::CUmemAccessDesc> __descs(__devices.size(), ::cuda::no_init);
   for (const auto& __dev : __devices)
   {
-    __descs.push_back({::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __dev.get()}, __flags});
+    __descs.emplace_back(::CUmemAccessDesc{::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __dev.get()}, __flags});
   }
   ::cuda::__driver::__mempoolSetAccess(__pool, __descs.data(), __descs.size());
 }
@@ -485,7 +478,8 @@ struct memory_pool_properties
 class __memory_pool_base
 {
 protected:
-  ::cudaMemPool_t __pool_;
+  // Derived pool classes release and destroy this handle.
+  ::cudaMemPool_t __pool_; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   //! @brief Checks whether the passed in alignment is valid.
   //! @param __alignment the alignment to check.

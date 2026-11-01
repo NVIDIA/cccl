@@ -41,13 +41,13 @@ struct typelist;
 
 struct sm52
 {
-  static constexpr int ver      = 520;
-  static constexpr int warpSize = 32;
+  static constexpr int ver       = 520;
+  static constexpr int warp_size = 32;
 };
 struct sm60
 {
-  static constexpr int ver      = 600;
-  static constexpr int warpSize = 32;
+  static constexpr int ver       = 600;
+  static constexpr int warp_size = 32;
 };
 
 // list of sm, checked from left to right order
@@ -117,7 +117,7 @@ struct has_sm_tuning : has_sm_tuning_impl<SM, typename P<lowest_supported_sm_arc
 //   otherwise move on to the next sm in the sm_list
 template <template <class> class P, class SM, class... SMs>
 struct specialize_plan_impl_match<P, typelist<SM, SMs...>>
-    : ::cuda::std::conditional<has_sm_tuning<P, SM>::value, P<SM>, specialize_plan_impl_match<P, typelist<SMs...>>>::type
+    : ::cuda::std::conditional_t<has_sm_tuning<P, SM>::value, P<SM>, specialize_plan_impl_match<P, typelist<SMs...>>>
 {};
 
 #if _CCCL_CUDA_COMPILER(NVHPC)
@@ -194,7 +194,7 @@ template <bool V, class A, size_t S>
 struct has_enough_shmem_impl<V, A, S, typelist<>>
 {
   static constexpr bool value = V;
-  using type = ::cuda::std::conditional_t<value, thrust::detail::true_type, thrust::detail::false_type>;
+  using type                  = ::cuda::std::conditional_t<value, ::cuda::std::true_type, ::cuda::std::false_type>;
 };
 
 template <class Agent, size_t MaxShmem>
@@ -233,9 +233,9 @@ struct AgentPlan
   template <class PtxPlan>
   THRUST_RUNTIME_FUNCTION
   AgentPlan(PtxPlan, typename thrust::detail::disable_if_convertible<PtxPlan, AgentPlan>::type* = nullptr)
-      : threads_per_block(PtxPlan::BLOCK_THREADS)
-      , items_per_thread(PtxPlan::ITEMS_PER_THREAD)
-      , items_per_tile(PtxPlan::ITEMS_PER_TILE)
+      : threads_per_block(PtxPlan::block_threads)
+      , items_per_thread(PtxPlan::items_per_thread)
+      , items_per_tile(PtxPlan::items_per_tile)
       , shared_memory_size(temp_storage_size<PtxPlan>::value)
       , grid_size(0)
   {}
@@ -251,7 +251,7 @@ struct return_Plan
 
 template <class Agent>
 struct get_plan
-    : ::cuda::std::conditional<has_Plan<Agent>::value, return_Plan<Agent>, ::cuda::std::type_identity<AgentPlan>>::type
+    : ::cuda::std::conditional_t<has_Plan<Agent>::value, return_Plan<Agent>, ::cuda::std::type_identity<AgentPlan>>
 {};
 
 // returns AgentPlan corresponding to a given ptx version
@@ -360,35 +360,35 @@ struct get_arch<Plan<Arch>>
 template <class T>
 class cuda_optional
 {
-  cudaError_t status_{cudaSuccess};
-  T value_{};
+  cudaError_t err{cudaSuccess};
+  T val{};
 
 public:
   cuda_optional() = default;
 
   _CCCL_HOST_DEVICE cuda_optional(T v, cudaError_t status = cudaSuccess)
-      : status_(status)
-      , value_(v)
+      : err(status)
+      , val(v)
   {}
 
-  bool _CCCL_HOST_DEVICE isValid() const
+  bool _CCCL_HOST_DEVICE is_valid() const
   {
-    return cudaSuccess == status_;
+    return cudaSuccess == err;
   }
 
   cudaError_t _CCCL_HOST_DEVICE status() const
   {
-    return status_;
+    return err;
   }
 
   _CCCL_HOST_DEVICE T const& value() const
   {
-    return value_;
+    return val;
   }
 
   _CCCL_HOST_DEVICE operator T const&() const
   {
-    return value_;
+    return val;
   }
 };
 
@@ -465,9 +465,9 @@ struct uninitialized
 {
   using DeviceWord = typename cub::UnitWord<T>::DeviceWord;
 
-  static constexpr int WORDS = sizeof(T) / sizeof(DeviceWord);
+  static constexpr int words = sizeof(T) / sizeof(DeviceWord);
 
-  DeviceWord storage[WORDS];
+  DeviceWord storage[words];
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T& get()
   {

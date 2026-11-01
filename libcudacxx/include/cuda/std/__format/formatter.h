@@ -20,9 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cstddef/types.h>
-#include <cuda/std/string_view>
-
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD

@@ -2,19 +2,12 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/partition.h>
 
+#include <cuda/functional>
+
 #include <unittest/unittest.h>
 
-template <typename T>
-struct is_even
-{
-  _CCCL_HOST_DEVICE bool operator()(T x) const
-  {
-    return ((int) x % 2) == 0;
-  }
-};
-
 template <typename Vector>
-void TestIsPartitionedSimple()
+void test_is_partitioned_simple()
 {
   Vector v{1, 1, 1, 0};
 
@@ -38,10 +31,10 @@ void TestIsPartitionedSimple()
   // not partitioned
   REQUIRE_FALSE(thrust::is_partitioned(v.begin(), v.end(), ::cuda::std::identity{}));
 }
-DECLARE_VECTOR_UNITTEST(TestIsPartitionedSimple);
+DECLARE_VECTOR_UNITTEST(test_is_partitioned_simple);
 
 template <class Vector>
-void TestIsPartitioned()
+void test_is_partitioned()
 {
   using T = typename Vector::value_type;
 
@@ -52,13 +45,13 @@ void TestIsPartitioned()
   v[0] = 1;
   v[1] = 0;
 
-  REQUIRE_FALSE(thrust::is_partitioned(v.begin(), v.end(), is_even<T>()));
+  REQUIRE_FALSE(thrust::is_partitioned(v.begin(), v.end(), cuda::__is_even{}));
 
-  thrust::partition(v.begin(), v.end(), is_even<T>());
+  thrust::partition(v.begin(), v.end(), cuda::__is_even{});
 
-  REQUIRE(thrust::is_partitioned(v.begin(), v.end(), is_even<T>()));
+  REQUIRE(thrust::is_partitioned(v.begin(), v.end(), cuda::__is_even{}));
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestIsPartitioned);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_is_partitioned);
 
 template <typename InputIterator, typename Predicate>
 bool is_partitioned(my_system& system, InputIterator /*first*/, InputIterator, Predicate)

@@ -82,10 +82,35 @@ TEST_DEVICE_FUNC void test_bool()
   }
 }
 
+template <int NumBits>
+TEST_DEVICE_FUNC void test_match_any_bits()
+{
+  constexpr uint32_t low_bits = NumBits == 32 ? 0xFFFFFFFF : ((1u << NumBits) - 1);
+  for (unsigned i = 1; i <= 32; ++i)
+  {
+    if (threadIdx.x < i)
+    {
+      auto mask                   = cuda::device::lane_mask{make_low_mask(i)};
+      const unsigned num_groups[] = {1, 2, 3, 32};
+      for (unsigned groups : num_groups)
+      {
+        // bits above NumBits differ across lanes and must be ignored
+        const uint32_t value = (threadIdx.x % groups) * 0x9E3779B9u;
+        assert(cuda::device::__warp_match_any_bits<NumBits>(value, mask)
+               == cuda::device::warp_match_any(value & low_bits, mask));
+      }
+    }
+  }
+}
+
 TEST_DEVICE_FUNC void test()
 {
   using array_t = cuda::std::array<char, 6>;
   test_bool();
+  test_match_any_bits<1>();
+  test_match_any_bits<4>();
+  test_match_any_bits<8>();
+  test_match_any_bits<32>();
 
   test_all_equal<uint8_t>();
   test_all_equal<uint16_t>();

@@ -1,2 +1,2 @@
-#include <cub/cub.cuh>
+#include <cub/util_device.cuh>
 // CHECK-NOT: EmptyKernel

@@ -67,7 +67,7 @@ inline auto create_fake_strided_mdspan()
 #else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 6) ^^^ / vvv _CCCL_CUDA_COMPILER(NVCC, >=, 12, 6) vvv
   const cuda::std::layout_stride::mapping map{dynamic_extents, strides};
 #endif // ^^^ _CCCL_CUDA_COMPILER(NVCC, >=, 12, 6) ^^^
-  return cuda::std::mdspan<int, cuda::std::dextents<size_t, 3>, cuda::std::layout_stride>(nullptr, map);
+  return cuda::std::mdspan<int, cuda::std::dims<3>, cuda::std::layout_stride>(nullptr, map);
 };
 
 namespace cuda::experimental
@@ -82,7 +82,7 @@ struct weird_buffer
 
   weird_buffer(::cuda::mr::legacy_pinned_memory_resource& res, std::size_t s)
       : resource(res)
-      , data((int*) res.allocate_sync(s * sizeof(int)))
+      , data(static_cast<int*>(res.allocate_sync(s * sizeof(int))))
       , size(s)
   {
     memset(data, 0, size);

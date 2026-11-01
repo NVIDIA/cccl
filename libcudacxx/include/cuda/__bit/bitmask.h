@@ -22,12 +22,11 @@
 #endif // no system header
 
 #include <cuda/std/__bit/shl.h>
-#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
-#include <cuda/std/limits>
 
 #if _CCCL_CUDA_COMPILATION() && !_CCCL_TILE_COMPILATION()
-#  include <cuda/__ptx/instructions/bmsk.h>
+#  include <cuda/__ptx/instructions/bmsk.h> // IWYU pragma: keep
 #endif // _CCCL_CUDA_COMPILATION() && !_CCCL_TILE_COMPILATION()
 
 #include <cuda/std/__cccl/prologue.h>
@@ -47,7 +46,11 @@ template <typename _Tp = uint32_t>
   {
     if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_70, (return ::cuda::ptx::bmsk_clamp(__start, __width);))
+      // inline ptx prevents constant folding
+      if (!_CCCL_IS_CONSTANT_P(__start) || !_CCCL_IS_CONSTANT_P(__width))
+      {
+        NV_IF_TARGET(NV_PROVIDES_SM_70, (return ::cuda::ptx::bmsk_clamp(__start, __width);))
+      }
     }
   }
 #endif // !_CCCL_TILE_COMPILATION()

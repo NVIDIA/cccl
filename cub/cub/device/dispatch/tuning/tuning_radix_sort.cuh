@@ -18,16 +18,31 @@
 #include <cub/agent/agent_radix_sort_onesweep.cuh>
 #include <cub/agent/agent_radix_sort_upsweep.cuh>
 #include <cub/agent/agent_scan.cuh>
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_radix_rank.cuh>
+#include <cub/block/block_scan.cuh>
+#include <cub/block/block_store.cuh>
 #include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 
 #include <cuda/__device/compute_capability.h>
-#include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__fwd/format.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/optional>
+#include <cuda/std/__optional/optional.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/cstdint>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
 
 CUB_NAMESPACE_BEGIN
 
@@ -252,6 +267,7 @@ struct RadixSortUpsweepPolicy
 };
 
 //! The tuning policy for all algorithms in @ref DeviceRadixSort.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct RadixSortPolicy
 {
   RadixSortAlgorithm algorithm; //!< The radix sort algorithm to use
@@ -481,7 +497,6 @@ template <typename ValueT> struct sm100_small_key_tuning<ValueT, 1,  4, 8> { sta
 // same as previous tuning
 template <typename ValueT> struct sm100_small_key_tuning<ValueT, 1,  16, 8> : sm90_small_key_tuning<1, 16, 8> {};
 
-
 // pairs 2-byte key
 
 // ipt_20.tpb_448  1.031929  0.936849  1.023411  1.075172
@@ -513,7 +528,6 @@ template <typename ValueT> struct sm100_small_key_tuning<ValueT, 2,  4, 8> { sta
 
 // same as previous tuning
 template <typename ValueT> struct sm100_small_key_tuning<ValueT, 2,  16, 8> : sm90_small_key_tuning<2, 16, 8> {};
-
 
 // pairs 4-byte key
 
@@ -835,7 +849,8 @@ _CCCL_HOST_DEVICE_API constexpr auto get_sm100_tuning(int key_size, int value_si
     // ipt_21.tpb_256 1.220607  1.000239  1.196400  1.390471
     if (value_size == 4 && offset_size == 8) return small_key_tuning_values{256, 21};
 
-    // if (value_size == 8 && offset_size == 8) // same as previous tuning
+    // ipt_22.tpb_352 1.208726  1.025035  1.189955  1.320080
+    if (value_size == 8 && offset_size == 8) return small_key_tuning_values{352, 22};
 
     // if (value_size == 16 && offset_size == 8) // same as previous tuning
 
@@ -1971,7 +1986,11 @@ struct policy_selector
 
     if (cc >= ::cuda::compute_capability{10, 0})
     {
-      return make_onesweep_small_key_policy(get_sm100_tuning(key_size, value_size, offset_size, key_type));
+      // Only the sm100 int64 key-value tuning with 64-bit offsets overrides the large-key policy
+      const bool use_tuning_for_large_keys =
+        cc < ::cuda::compute_capability{10, 1} && key_type == type_t::int64 && value_size == 8 && offset_size == 8;
+      return make_onesweep_small_key_policy(
+        get_sm100_tuning(key_size, value_size, offset_size, key_type), use_tuning_for_large_keys);
     }
 
     if (cc >= ::cuda::compute_capability{9, 0})

@@ -20,7 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_type.cuh>
+#include <cub/detail/uninitialized.cuh>
+
+#include <cuda/std/__algorithm/min.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -91,8 +93,7 @@ struct BlockRakingLayout
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   /**
    * @brief Returns the location for the calling thread to place data into the grid

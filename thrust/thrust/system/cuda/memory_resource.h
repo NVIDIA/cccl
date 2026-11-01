@@ -63,14 +63,14 @@ public:
   }
 };
 
-inline cudaError_t CUDARTAPI cudaMallocManaged(void** ptr, std::size_t bytes)
+inline cudaError_t CUDARTAPI cuda_malloc_managed(void** ptr, std::size_t bytes)
 {
   return ::cudaMallocManaged(ptr, bytes, cudaMemAttachGlobal);
 }
 
 using device_memory_resource = detail::cuda_memory_resource<cudaMalloc, cudaFree, thrust::cuda::pointer<void>>;
 using managed_memory_resource =
-  detail::cuda_memory_resource<detail::cudaMallocManaged, cudaFree, thrust::cuda::universal_pointer<void>>;
+  detail::cuda_memory_resource<detail::cuda_malloc_managed, cudaFree, thrust::cuda::universal_pointer<void>>;
 using pinned_memory_resource =
   detail::cuda_memory_resource<cudaMallocHost, cudaFreeHost, thrust::cuda::universal_host_pinned_pointer<void>>;
 } // namespace detail

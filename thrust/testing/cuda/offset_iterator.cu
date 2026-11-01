@@ -80,7 +80,7 @@ private:
   pointer m_ptr;
 };
 
-_CCCL_HOST_DEVICE void TestOffsetIteratorBoth(thrust::offset_iterator<device_only_iterator> iter)
+_CCCL_HOST_DEVICE void test_offset_iterator_both(thrust::offset_iterator<device_only_iterator> iter)
 {
   assert(iter.offset() == 0);
   ++iter;
@@ -95,9 +95,9 @@ _CCCL_HOST_DEVICE void TestOffsetIteratorBoth(thrust::offset_iterator<device_onl
   assert(iter.offset() == 100);
 }
 
-__global__ void TestOffsetIteratorDevice(thrust::offset_iterator<device_only_iterator> iter)
+__global__ void test_offset_iterator_device(thrust::offset_iterator<device_only_iterator> iter)
 {
-  TestOffsetIteratorBoth(iter);
+  test_offset_iterator_both(iter);
 
   // access
   assert(*iter == 1);
@@ -119,6 +119,6 @@ TEST_CASE("TestOffsetIteratorWithDeviceOnlyIterator", "[offset_iterator]")
   thrust::device_vector<int> v{1, 2, 3, 4, 5};
   const device_only_iterator base(thrust::raw_pointer_cast(v.data()));
   const thrust::offset_iterator iter(base);
-  TestOffsetIteratorBoth(iter);
-  TestOffsetIteratorDevice<<<1, 1>>>(iter);
+  test_offset_iterator_both(iter);
+  test_offset_iterator_device<<<1, 1>>>(iter);
 }

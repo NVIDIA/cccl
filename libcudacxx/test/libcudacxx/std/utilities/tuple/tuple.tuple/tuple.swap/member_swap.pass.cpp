@@ -10,7 +10,7 @@
 
 // template <class... Types> class tuple;
 
-// void swap(tuple& rhs);
+// constexpr void swap(tuple& rhs);
 
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
@@ -18,12 +18,12 @@
 #include "MoveOnly.h"
 #include "test_macros.h"
 
-int main(int, char**)
+TEST_FUNC constexpr bool test()
 {
   {
     using T = cuda::std::tuple<>;
-    T t0;
-    T t1;
+    T t0{};
+    T t1{};
     t0.swap(t1);
   }
   {
@@ -56,5 +56,12 @@ int main(int, char**)
     assert(cuda::std::get<1>(t1) == 1);
     assert(cuda::std::get<2>(t1) == 2);
   }
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
   return 0;
 }

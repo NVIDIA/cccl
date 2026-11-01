@@ -21,7 +21,7 @@ int main(int argc, char** argv)
   const int dev_id = 0;
   cuda_safe_call(cudaSetDevice(dev_id));
 
-  cudaDeviceProp prop;
+  cudaDeviceProp prop{};
   cuda_safe_call(cudaGetDeviceProperties(&prop, dev_id));
 
   const size_t total_mem_ref = prop.totalGlobalMem;

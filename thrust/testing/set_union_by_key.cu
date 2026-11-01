@@ -76,7 +76,7 @@ TEST_CASE("TestSetUnionByKeyDispatchImplicit", "[set_union_by_key]")
 }
 
 template <typename Vector>
-void TestSetUnionByKeySimple()
+void test_set_union_by_key_simple()
 {
   using Iterator = typename Vector::iterator;
 
@@ -101,10 +101,10 @@ void TestSetUnionByKeySimple()
   REQUIRE(ref_key == result_key);
   REQUIRE(ref_val == result_val);
 }
-DECLARE_VECTOR_UNITTEST(TestSetUnionByKeySimple);
+DECLARE_VECTOR_UNITTEST(test_set_union_by_key_simple);
 
 template <typename T>
-void TestSetUnionByKey(const size_t n)
+void test_set_union_by_key(const size_t n)
 {
   thrust::host_vector<T> random_keys = unittest::random_integers<unittest::int8_t>(n);
   thrust::host_vector<T> random_vals = unittest::random_integers<unittest::int8_t>(n);
@@ -170,10 +170,10 @@ void TestSetUnionByKey(const size_t n)
     REQUIRE(h_result_vals == d_result_vals);
   }
 }
-DECLARE_VARIABLE_UNITTEST(TestSetUnionByKey);
+DECLARE_VARIABLE_UNITTEST(test_set_union_by_key);
 
 template <typename T>
-void TestSetUnionByKeyEquivalentRanges(const size_t n)
+void test_set_union_by_key_equivalent_ranges(const size_t n)
 {
   const thrust::host_vector<T> temp = unittest::random_integers<T>(n);
 
@@ -226,10 +226,10 @@ void TestSetUnionByKeyEquivalentRanges(const size_t n)
   REQUIRE(h_result_key == d_result_key);
   REQUIRE(h_result_val == d_result_val);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetUnionByKeyEquivalentRanges);
+DECLARE_VARIABLE_UNITTEST(test_set_union_by_key_equivalent_ranges);
 
 template <typename T>
-void TestSetUnionByKeyMultiset(const size_t n)
+void test_set_union_by_key_multiset(const size_t n)
 {
   thrust::host_vector<T> vec = unittest::random_integers<int>(2 * n);
 
@@ -291,4 +291,4 @@ void TestSetUnionByKeyMultiset(const size_t n)
   REQUIRE(h_result_key == d_result_key);
   REQUIRE(h_result_val == d_result_val);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetUnionByKeyMultiset);
+DECLARE_VARIABLE_UNITTEST(test_set_union_by_key_multiset);

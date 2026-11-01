@@ -4,7 +4,7 @@
 #include <unittest/unittest.h>
 
 template <typename MemoryResource>
-void TestAlignment(MemoryResource memres, std::size_t size, std::size_t alignment)
+void test_alignment(MemoryResource memres, std::size_t size, std::size_t alignment)
 {
   void* ptr = memres.do_allocate(size, alignment);
   REQUIRE(reinterpret_cast<std::size_t>(ptr) % alignment == 0u);
@@ -30,7 +30,7 @@ TEST_CASE("TestNewDeleteResourceAlignedAllocation", "[mr_new]")
     for (std::size_t alignment = MinTestedAlignment; alignment <= MaxTestedAlignment;
          alignment <<= TestedAlignmentShift)
     {
-      TestAlignment(thrust::mr::new_delete_resource(), size, alignment);
+      test_alignment(thrust::mr::new_delete_resource(), size, alignment);
     }
   }
 }

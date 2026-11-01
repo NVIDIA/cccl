@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/double_buffer.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
 #include <cub/device/device_radix_sort.cuh>
 
@@ -21,7 +22,6 @@
 #include <vector>
 
 #include "cccl/c/types.h"
-#include "cub/util_type.cuh"
 #include "kernels/operators.h"
 #include "util/context.h"
 #include "util/errors.h"
@@ -231,7 +231,7 @@ CUresult cccl_device_radix_sort_compile(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 try
 {
   const char* name = "test";
@@ -551,7 +551,7 @@ CUresult cccl_device_radix_sort_build_ex(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 {
   CUresult r = cccl_device_radix_sort_compile(
     build_ptr,
@@ -635,6 +635,7 @@ CUresult cccl_device_radix_sort_impl(
       end_bit,
       is_overwrite_okay,
       stream,
+      /*runs_on_guarantee=*/{},
       decomposer,
       *static_cast<cub::detail::radix_sort::policy_selector*>(build.runtime_policy),
       radix_sort::radix_sort_kernel_source{build},

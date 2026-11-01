@@ -110,7 +110,7 @@ TEST_CASE("TestTabulateOutputIteratorTraits", "[tabulate_output_iterator]")
 }
 
 template <class Vector>
-void TestTabulateOutputIterator()
+void test_tabulate_output_iterator()
 {
   using T     = typename Vector::value_type;
   using it_t  = typename Vector::iterator;
@@ -121,9 +121,9 @@ void TestTabulateOutputIterator()
   Vector output(num_items, T{42});
 
   // Use operator type that supports the targeted system
-  using op_t = typename ::cuda::std::conditional<(::cuda::std::is_same<space, thrust::host_system_tag>::value),
-                                                 host_write_first_op<it_t>,
-                                                 device_write_first_op<it_t>>::type;
+  using op_t = ::cuda::std::conditional_t<(::cuda::std::is_same_v<space, thrust::host_system_tag>),
+                                          host_write_first_op<it_t>,
+                                          device_write_first_op<it_t>>;
 
   // Construct tabulate_output_iterator
   const op_t op{output.begin()};
@@ -150,7 +150,7 @@ void TestTabulateOutputIterator()
   REQUIRE(expected_num_selected == num_selected);
   REQUIRE(output == expected_output);
 }
-DECLARE_VECTOR_UNITTEST(TestTabulateOutputIterator);
+DECLARE_VECTOR_UNITTEST(test_tabulate_output_iterator);
 
 TEST_CASE("TestTabulateOutputIteratorSubscript", "[tabulate_output_iterator]")
 {

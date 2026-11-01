@@ -19,6 +19,7 @@
 // The execution gets stuck in nvcc 12.0 with msvc.
 // UNSUPPORTED: msvc && nvcc-12.0
 
+#include <cuda/numeric>
 #include <cuda/std/__simd_>
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
@@ -28,6 +29,21 @@
 #include "test_macros.h"
 
 namespace simd = cuda::std::simd;
+
+template <typename T>
+TEST_HOST_DEVICE_FUNC void check_complex_math(const cuda::std::complex<T>& a, const cuda::std::complex<T>& b)
+{
+  if constexpr (TEST_HAS_CUDA_FAST_MATH && cuda::std::is_same_v<T, float>)
+  {
+    // For these moderate inputs, allow a small absolute/relative error between differently optimized fast intrinsics.
+    // Keep the shared SIMD comparison tolerances unchanged for other tests and execution modes.
+    NV_IF_TARGET(NV_IS_DEVICE,
+                 (assert(cuda::isclose(a.real(), b.real(), 1.e-5f, 1.e-5f));
+                  assert(cuda::isclose(a.imag(), b.imag(), 1.e-5f, 1.e-5f));
+                  return;))
+  }
+  is_fp_close(a, b);
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // sin, cos, tan, asin, acos, atan
@@ -60,12 +76,12 @@ TEST_HOST_DEVICE_FUNC void test_trig()
   ComplexVec vec_atan = simd::atan(vec);
   for (int i = 0; i < N; ++i)
   {
-    is_fp_close(vec_sin[i], cuda::std::sin(vec[i]));
-    is_fp_close(vec_cos[i], cuda::std::cos(vec[i]));
-    is_fp_close(vec_tan[i], cuda::std::tan(vec[i]));
-    is_fp_close(vec_asin[i], cuda::std::asin(vec[i]));
-    is_fp_close(vec_acos[i], cuda::std::acos(vec[i]));
-    is_fp_close(vec_atan[i], cuda::std::atan(vec[i]));
+    check_complex_math(vec_sin[i], cuda::std::sin(vec[i]));
+    check_complex_math(vec_cos[i], cuda::std::cos(vec[i]));
+    check_complex_math(vec_tan[i], cuda::std::tan(vec[i]));
+    check_complex_math(vec_asin[i], cuda::std::asin(vec[i]));
+    check_complex_math(vec_acos[i], cuda::std::acos(vec[i]));
+    check_complex_math(vec_atan[i], cuda::std::atan(vec[i]));
   }
 }
 
@@ -101,14 +117,14 @@ TEST_HOST_DEVICE_FUNC void test_hyperbolic()
   [[maybe_unused]] ComplexVec vec_atanh = simd::atanh(vec);
   for (int i = 0; i < N; ++i)
   {
-    is_fp_close(vec_sinh[i], cuda::std::sinh(vec[i]));
-    is_fp_close(vec_cosh[i], cuda::std::cosh(vec[i]));
-    is_fp_close(vec_tanh[i], cuda::std::tanh(vec[i]));
-    is_fp_close(vec_asinh[i], cuda::std::asinh(vec[i]));
-    is_fp_close(vec_acosh[i], cuda::std::acosh(vec[i]));
+    check_complex_math(vec_sinh[i], cuda::std::sinh(vec[i]));
+    check_complex_math(vec_cosh[i], cuda::std::cosh(vec[i]));
+    check_complex_math(vec_tanh[i], cuda::std::tanh(vec[i]));
+    check_complex_math(vec_asinh[i], cuda::std::asinh(vec[i]));
+    check_complex_math(vec_acosh[i], cuda::std::acosh(vec[i]));
     // cicc seg faults on atanh with clang 14 and nvcc 12.0
 #if !_CCCL_COMPILER(CLANG, <=, 14) && !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
-    is_fp_close(vec_atanh[i], cuda::std::atanh(vec[i]));
+    check_complex_math(vec_atanh[i], cuda::std::atanh(vec[i]));
 #endif
   }
 }

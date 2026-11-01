@@ -5,7 +5,7 @@
 #include <unittest/unittest.h>
 
 template <typename U>
-void TestSetDifferenceKeyValue(size_t n)
+void test_set_difference_key_value(size_t n)
 {
   using T = key_value<U, U>;
 
@@ -43,4 +43,4 @@ void TestSetDifferenceKeyValue(size_t n)
 
   REQUIRE(h_result == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetDifferenceKeyValue);
+DECLARE_VARIABLE_UNITTEST(test_set_difference_key_value);

@@ -24,11 +24,12 @@
 #include <cuda/std/__algorithm/fill_n.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/countr.h>
-#include <cuda/std/__bit/popcount.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__utility/swap.h>
 
 #include <cuda/std/__cccl/prologue.h>

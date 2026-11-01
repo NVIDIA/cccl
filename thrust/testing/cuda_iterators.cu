@@ -144,10 +144,10 @@ struct fake_bijection
 
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr index_type operator()(index_type n) const noexcept
   {
-    return __random_indices[n];
+    return random_indices[n];
   }
 
-  ::cuda::std::uint32_t __random_indices[5] = {4, 1, 2, 0, 3};
+  ::cuda::std::uint32_t random_indices[5] = {4, 1, 2, 0, 3};
 };
 
 TEST_CASE("shuffle_iterator", "[iterators]")

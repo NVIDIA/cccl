@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/std/__algorithm/iter_swap.h>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_STD_ALGORITHM_ALGORITHM_ITER_SWAP_H

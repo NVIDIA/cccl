@@ -20,14 +20,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/referenceable.h>
-#include <cuda/std/__type_traits/add_pointer.h>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_array.h>
-#include <cuda/std/__type_traits/is_function.h>
-#include <cuda/std/__type_traits/remove_cv.h>
-#include <cuda/std/__type_traits/remove_extent.h>
-#include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__concepts/referenceable.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/add_pointer.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_array.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_function.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/remove_cv.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/remove_extent.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/remove_reference.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -89,18 +88,14 @@ struct __decay_impl<__decay_choice::__decay_function>
   using type _CCCL_NODEBUG = add_pointer_t<_Up>;
 };
 
-template <class _Up>
-inline constexpr __decay_choice __decay_select =
-  !__referenceable<_Up> ? __decay_choice::__default
-  : is_array_v<_Up>     ? __decay_choice::__decay_array
-  : is_function_v<_Up>  ? __decay_choice::__decay_function
-                        : __decay_choice::__default;
-
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT decay
 {
-  using type _CCCL_NODEBUG =
-    typename __decay_impl<__decay_select<remove_reference_t<_Tp>>>::template type<remove_reference_t<_Tp>>;
+  using type _CCCL_NODEBUG = typename __decay_impl<
+    !__referenceable<remove_reference_t<_Tp>> ? __decay_choice::__default
+    : is_array_v<remove_reference_t<_Tp>>     ? __decay_choice::__decay_array
+    : is_function_v<remove_reference_t<_Tp>>  ? __decay_choice::__decay_function
+                                              : __decay_choice::__default>::template type<remove_reference_t<_Tp>>;
 };
 
 template <class _Tp>

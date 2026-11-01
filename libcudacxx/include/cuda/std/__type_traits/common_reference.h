@@ -23,20 +23,23 @@
 
 #include <cuda/std/__type_traits/add_pointer.h>
 #include <cuda/std/__type_traits/common_type.h>
-#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/copy_cv.h>
 #include <cuda/std/__type_traits/copy_cvref.h>
-#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_reference.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_scalar.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
+
+#if _CCCL_COMPILER(MSVC)
+#  include <cuda/std/__type_traits/conditional.h>
+#  include <cuda/std/__type_traits/decay.h>
+#  include <cuda/std/__type_traits/is_array.h>
+#  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__type_traits/is_scalar.h>
+#endif // _CCCL_COMPILER(MSVC)
 
 #include <cuda/std/__cccl/prologue.h>
 

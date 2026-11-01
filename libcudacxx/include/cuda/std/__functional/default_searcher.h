@@ -21,18 +21,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm/search.h>
-#include <cuda/std/__functional/identity.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__utility/ctad_support.h>
-#include <cuda/std/__utility/pair.h>
+#ifndef __cuda_std__
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__algorithm/search.h>
+#  include <cuda/std/__functional/identity.h>
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__utility/ctad_support.h>
+#  include <cuda/std/__utility/pair.h>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-#ifndef __cuda_std__
 
 // default searcher
 template <class _ForwardIterator, class _BinaryPredicate = equal_to<>>
@@ -67,10 +67,10 @@ private:
 };
 _CCCL_CTAD_SUPPORTED_FOR_TYPE(default_searcher);
 
-#endif // __cuda_std__
-
 _CCCL_END_NAMESPACE_CUDA_STD
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // __cuda_std__
 
 #endif // _CUDA_STD___FUNCTIONAL_DEFAULT_SEARCHER_H

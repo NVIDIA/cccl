@@ -25,10 +25,10 @@
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/movable.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__tuple_dir/sfinae_helpers.h>
-#include <cuda/std/__type_traits/is_copy_assignable.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_empty.h>
@@ -42,12 +42,9 @@
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
-#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
 #include <cuda/std/__type_traits/is_trivially_destructible.h>
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
-#include <cuda/std/__type_traits/is_trivially_move_constructible.h>
 #include <cuda/std/__type_traits/remove_cv.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/delegate_constructors.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>

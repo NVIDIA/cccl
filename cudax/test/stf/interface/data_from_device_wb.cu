@@ -48,7 +48,7 @@ void run()
   const size_t n = 12;
 
   double* dX;
-  cuda_safe_call(cudaMalloc((void**) &dX, n * sizeof(double)));
+  cuda_safe_call(cudaMalloc(reinterpret_cast<void**>(&dX), n * sizeof(double)));
 
   // We here provide device addresses and memory node 1 (which is assumed to
   // be device 0)

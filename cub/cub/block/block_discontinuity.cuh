@@ -20,8 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/binary_op_has_idx_param.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 CUB_NAMESPACE_BEGIN
 
@@ -212,8 +213,7 @@ private:
 
 public:
   /// @smemstorage{BlockDiscontinuity}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{

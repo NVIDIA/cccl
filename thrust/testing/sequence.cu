@@ -37,7 +37,7 @@ TEST_CASE("TestSequenceDispatchImplicit", "[sequence]")
 }
 
 template <class Vector>
-void TestSequenceSimple()
+void test_sequence_simple()
 {
   using value_type = typename Vector::value_type;
   Vector v(5);
@@ -57,10 +57,10 @@ void TestSequenceSimple()
   ref = {10, 12, 14, 16, 18};
   REQUIRE(v == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestSequenceSimple);
+DECLARE_VECTOR_UNITTEST(test_sequence_simple);
 
 template <typename T>
-void TestSequence(size_t n)
+void test_sequence(size_t n)
 {
   thrust::host_vector<T> h_data(n);
   thrust::device_vector<T> d_data(n);
@@ -85,10 +85,10 @@ void TestSequence(size_t n)
 
   REQUIRE(h_data == d_data);
 }
-DECLARE_VARIABLE_UNITTEST(TestSequence);
+DECLARE_VARIABLE_UNITTEST(test_sequence);
 
 template <typename T>
-void TestSequenceToDiscardIterator(size_t n)
+void test_sequence_to_discard_iterator(size_t n)
 {
   const thrust::host_vector<T> h_data(n);
   const thrust::device_vector<T> d_data(n);
@@ -100,7 +100,7 @@ void TestSequenceToDiscardIterator(size_t n)
 
   // nothing to check -- just make sure it compiles
 }
-DECLARE_VARIABLE_UNITTEST(TestSequenceToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_sequence_to_discard_iterator);
 
 TEST_CASE("TestSequenceComplex", "[sequence]")
 {

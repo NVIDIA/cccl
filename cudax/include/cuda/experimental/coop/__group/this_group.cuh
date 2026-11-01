@@ -26,11 +26,10 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/coop/__group/fwd.cuh>
-#include <cuda/experimental/coop/__group/implicit_hierarchy.cuh>
 #include <cuda/experimental/coop/__group/synchronizer/level_synchronizer.cuh>
 #include <cuda/experimental/coop/__group/traits.cuh>
 
@@ -118,6 +117,7 @@ public:
   using level_type            = _Level;
   using __mapping_result_type = __this_mapping_result<_Level>;
   using hierarchy_type        = _Hierarchy;
+  using arrival_token         = typename _SynchronizerInstance::arrival_token;
 
 private:
   _Hierarchy __hier_;
@@ -153,11 +153,6 @@ public:
     return __synchronizer_instance_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
-  {
-    return __mapping_result_type::is_always_exhaustive();
-  }
-
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
   {
     return __mapping_result_type::is_always_contiguous();
@@ -173,6 +168,26 @@ public:
     __synchronizer_instance_.do_sync_aligned(__mapping_result_, __hier_);
   }
 
+  [[nodiscard]] _CCCL_DEVICE_API arrival_token arrive() const noexcept
+  {
+    return __synchronizer_instance_.do_arrive(__mapping_result_, __hier_);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API arrival_token arrive_aligned() const noexcept
+  {
+    return __synchronizer_instance_.do_arrive_aligned(__mapping_result_, __hier_);
+  }
+
+  _CCCL_DEVICE_API void wait(arrival_token&& __tok) const noexcept
+  {
+    __synchronizer_instance_.do_wait(__mapping_result_, __hier_, ::cuda::std::move(__tok));
+  }
+
+  _CCCL_DEVICE_API void wait_aligned(arrival_token&& __tok) const noexcept
+  {
+    __synchronizer_instance_.do_wait_aligned(__mapping_result_, __hier_, ::cuda::std::move(__tok));
+  }
+
   _CCCL_TEMPLATE(class _InLevel)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
   [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count(const _InLevel& __in_level) noexcept
@@ -183,7 +198,7 @@ public:
     }
     else
     {
-      return _Level::static_count(__in_level, _Hierarchy{});
+      return ::cuda::__static_count_query<_Level, _InLevel, _Hierarchy>();
     }
   }
 
@@ -197,7 +212,7 @@ public:
     }
     else
     {
-      return _Level::template count_as<_Tp>(__in_level, __hier);
+      return __count_query<_Level, _InLevel>::template __call<_Tp>(__hier);
     }
   }
 
@@ -225,7 +240,7 @@ public:
     }
     else
     {
-      return _Level::template rank_as<_Tp>(__in_level, __hier);
+      return __rank_query<_Level, _InLevel>::template __call<_Tp>(__hier);
     }
   }
 
@@ -309,29 +324,29 @@ _CCCL_TEMPLATE(class _Hierarchy)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_grid(const _Hierarchy&) -> this_grid<__hierarchy_type_of<_Hierarchy>>;
 
-_CCCL_TEMPLATE(class _Level, class... _Args)
-_CCCL_REQUIRES(__is_hierarchy_level_v<_Level>)
-[[nodiscard]] _CCCL_DEVICE_API auto make_this_group(const _Level&, _Args&&... __args) noexcept
+_CCCL_TEMPLATE(class _Level, class _HierarchyLike)
+_CCCL_REQUIRES(__is_hierarchy_level_v<_Level> _CCCL_AND __is_or_has_hierarchy_member_v<_HierarchyLike>)
+[[nodiscard]] _CCCL_DEVICE_API auto make_this_group(const _Level&, const _HierarchyLike& __hier_like) noexcept
 {
   if constexpr (::cuda::std::is_same_v<_Level, thread_level>)
   {
-    return this_thread{::cuda::std::forward<_Args>(__args)...};
+    return this_thread{__hier_like};
   }
   else if constexpr (::cuda::std::is_same_v<_Level, warp_level>)
   {
-    return this_warp{::cuda::std::forward<_Args>(__args)...};
+    return this_warp{__hier_like};
   }
   else if constexpr (::cuda::std::is_same_v<_Level, block_level>)
   {
-    return this_block{::cuda::std::forward<_Args>(__args)...};
+    return this_block{__hier_like};
   }
   else if constexpr (::cuda::std::is_same_v<_Level, cluster_level>)
   {
-    return this_cluster{::cuda::std::forward<_Args>(__args)...};
+    return this_cluster{__hier_like};
   }
   else if constexpr (::cuda::std::is_same_v<_Level, grid_level>)
   {
-    return this_grid{::cuda::std::forward<_Args>(__args)...};
+    return this_grid{__hier_like};
   }
   else
   {
