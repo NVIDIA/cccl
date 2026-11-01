@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from ._device_operator import DeviceOperator as DeviceOperator
+from ._device_operator import compile_operator as compile_operator
 from ._group_exchange import exchange as exchange
 from ._group_histogram import histogram as histogram
 from ._group_load_store import load as load

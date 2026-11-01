@@ -2,12 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Trace built-in BlockScan and WarpScan calls from CuTe kernels.
+"""Trace BlockScan and WarpScan calls from CuTe kernels.
 
 Normalize mode and algorithm strings and adapt register tensors and TensorSSA
 values to ThreadData before planning. The provider reconciles dtypes, owns
-scratch, and emits the C++ call. The public functions support built-in
-operators, per-warp valid prefixes, and aggregate outputs.
+scratch, and emits the C++ call. The public functions support built-in and
+compiled operators, per-warp valid prefixes, and aggregate outputs.
 """
 
 from __future__ import annotations
@@ -28,6 +28,7 @@ from cuda.coop.cutlass._typing import (
 )
 from cuda.coop.cutlass._validation import _validate_temp_storage
 
+from ._device_operator import DeviceOperator
 from ._thread_data import (
     CutlassTensorSample,
     CutlassTensorSSASample,
@@ -64,7 +65,10 @@ def scan(
     /,
     *,
     mode: Literal["exclusive", "inclusive"] = "exclusive",
-    scan_op: ScanOperator | Callable[[object, object], object] | None = None,
+    scan_op: ScanOperator
+    | DeviceOperator
+    | Callable[[object, object], object]
+    | None = None,
     initial_value: CommonNumericScalar | None = None,
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
@@ -93,12 +97,14 @@ def scan(
         Compile-time choice, default ``"exclusive"``. Exclusive prefixes
         combine ``initial_value`` with preceding inputs. Inclusive prefixes
         also include the current item and require no initial value.
-    scan_op : str or built-in alias, optional
+    scan_op : str, built-in alias, or DeviceOperator, optional
         Compile-time operator, default sum. Supports ``"sum"``,
         ``"multiplies"``, ``"min"``, ``"max"``, ``"bit_and"``, ``"bit_or"``,
         and ``"bit_xor"``, and corresponding ``operator`` or NumPy aliases
         such as ``operator.add`` and ``numpy.maximum``. Bitwise operators
-        require an integer dtype. Custom device functions are not supported.
+        require an integer dtype. A device operator prepared with
+        :func:`compile_operator` must accept and return the input dtype and
+        be associative. Exclusive mode requires an explicit initial value.
     initial_value : numeric scalar, optional
         Starting value for exclusive mode. Sum defaults to zero; other
         operators require an explicit value. A typed CuTe or NumPy scalar
@@ -233,7 +239,10 @@ def exclusive_scan(
     | _ItemT,
     /,
     *,
-    scan_op: ScanOperator | Callable[[object, object], object] | None = None,
+    scan_op: ScanOperator
+    | DeviceOperator
+    | Callable[[object, object], object]
+    | None = None,
     initial_value: CommonNumericScalar | None = None,
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
@@ -244,7 +253,7 @@ def exclusive_scan(
 
     Uses the parameters and return behavior of
     :func:`cuda.coop.cutlass.scan`, with exclusive mode fixed.
-    Sum starts from zero unless ``initial_value`` is supplied; other built-in
+    Sum starts from zero unless ``initial_value`` is supplied; other
     operators require it. ``aggregate_output`` receives the input aggregate
     without that initial value.
 
@@ -289,13 +298,16 @@ def inclusive_scan(
     | _ItemT,
     /,
     *,
-    scan_op: ScanOperator | Callable[[object, object], object] | None = None,
+    scan_op: ScanOperator
+    | DeviceOperator
+    | Callable[[object, object], object]
+    | None = None,
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
     valid_items: ValidItems | None = None,
     aggregate_output: ThreadDataLike[Any] | None = None,
 ) -> ThreadData | _ItemT:
-    """Return inclusive prefixes with a built-in operator.
+    """Return inclusive prefixes with an associative operator.
 
     Uses the parameters and return behavior of
     :func:`cuda.coop.cutlass.scan`, with inclusive mode fixed.
@@ -360,7 +372,7 @@ def exclusive_sum(
     Uses the parameters and return behavior of
     :func:`cuda.coop.cutlass.scan`, with exclusive mode and sum
     fixed. Use :func:`cuda.coop.cutlass.exclusive_scan` for an explicit
-    ``initial_value`` or a different built-in operator. The
+    ``initial_value`` or a different associative operator. The
     ``valid_items`` and ``aggregate_output`` controls are available here too.
 
     Returns
@@ -433,7 +445,7 @@ def inclusive_sum(
     See Also
     --------
     cuda.coop.cutlass.inclusive_scan
-        Inclusive prefixes with other built-in operators.
+        Inclusive prefixes with other associative operators.
     cuda.coop.cutlass.exclusive_scan
         Partial-warp example. For an inclusive sum, replace the call with
         ``inclusive_sum`` and omit ``scan_op`` and ``initial_value``.
