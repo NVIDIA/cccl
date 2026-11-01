@@ -92,6 +92,20 @@ def test_equality_transform_iterator():
     assert it4.kind != it7.kind
 
 
+def test_transform_iterator_uid_distinguishes_same_named_ops():
+    # Device symbol names are derived from str(kind). Two ops with the same
+    # __name__ but different bodies must not share a symbol, or linking the
+    # two iterators into one algorithm would collide; equal ops must share
+    # one so identical iterators deduplicate.
+    ary = DeviceArray.from_numpy(np.asarray([0, 1, 2], dtype="int32"))
+    it1 = TransformIterator(ary, lambda x: x + 1)
+    it2 = TransformIterator(ary, lambda x: x + 1)
+    it3 = TransformIterator(ary, lambda x: x * 2)
+
+    assert it1._get_uid() == it2._get_uid()
+    assert it1._get_uid() != it3._get_uid()
+
+
 def test_reverse_input_iterator_equality():
     ary1 = DeviceArray.from_numpy(np.asarray([0, 1, 2], dtype="int32"))
     ary2 = DeviceArray.from_numpy(np.asarray([3, 4, 5], dtype="int32"))
