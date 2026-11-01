@@ -55,6 +55,21 @@ The functions perform the following operations in device code:
 - ``ilog10``: ``FLO``, ``FMUL``, ``F2I``, constant memory lookup, ``SEL`` + ``IADD`` only if ``T == uint32_t`` or ``T == __uint128_t``
 - ``ceil_ilog10``: ``ilog10`` with an additional comparison, subtraction, and ``IADD``
 
+``ilog10`` and ``ceil_ilog10`` rely on a constant-memory lookup table. The implementation performs well when lanes within each warp have the same digit count and the table is cached, as with repeated calls. Otherwise a simpler code could be faster:
+
+.. code:: cuda
+
+    #include <cuda/std/limits>
+
+    template <class Integer>
+    __host__ __device__ constexpr unsigned ilog10(Integer n) {
+        unsigned result = 0;
+        #pragma unroll cuda::std::numeric_limits<Integer>::digits10
+        for (; n >= 10u; n /= 10u)
+            ++result;
+        return result;
+    }
+
 Example
 -------
 
