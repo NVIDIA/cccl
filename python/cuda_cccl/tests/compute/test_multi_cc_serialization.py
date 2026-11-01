@@ -26,8 +26,8 @@ import threading
 import numpy as np
 import pytest
 from _utils.device_array import DeviceArray
+from cuda.bindings import runtime as cudart
 from cuda.core import Device
-from cuda.core.system import get_num_devices
 
 import cuda.compute._cccl_interop as cccl_interop
 from cuda.compute import (
@@ -870,8 +870,14 @@ def _same_cc_device_pair():
     when a second device resolves the same cc entry that another device
     already owns, which requires two devices of equal compute capability.
     """
+    # Count the devices this process can open: cuda.core.system.get_num_devices()
+    # reports every GPU in the system and ignores CUDA_VISIBLE_DEVICES, so it can
+    # name ordinals that Device() rejects.
+    err, num_devices = cudart.cudaGetDeviceCount()
+    if err != cudart.cudaError_t.cudaSuccess:
+        return None
     by_cc = {}
-    for device_id in range(get_num_devices()):
+    for device_id in range(num_devices):
         major, minor = Device(device_id).compute_capability
         by_cc.setdefault(cc_to_key((int(major), int(minor))), []).append(device_id)
     for cc_key, device_ids in by_cc.items():
