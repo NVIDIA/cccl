@@ -1,0 +1,58 @@
+{
+  "baseline_library": "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/formal-retained-A/cccl_baseline_h20.so",
+  "candidate_library": "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/formal-retained-P/cccl_patch_h20.so",
+  "baseline_sha256": "c535a50dcffa2cde3aa5a09c88aa1df0d8ed39ef5d2a00ab5c2113c62cc98eeb",
+  "candidate_sha256": "211662c0c54b065db998a060b098858bf7d0bc29c7dcafd81e73fa55bdfe8be0",
+  "default_kernels": [
+    {
+      "name": "_Z16normalize_kernelILi512ELb0EEvPKfPfi",
+      "exact": true,
+      "sass_sha256": "84ad2c31e82020bd5ee279d059b50acc37c8915d1d6d108cc7260465347e4524"
+    },
+    {
+      "name": "_Z25normalize_retained_kernelILi512ELi2ELb0EEvPKfPfi",
+      "exact": true,
+      "sass_sha256": "f77b6e59e68e8a1070b6d6f4f09c2099e72b3a385e0f99a81bd8dac08108e8ff"
+    },
+    {
+      "name": "_Z25normalize_retained_kernelILi512ELi1ELb0EEvPKfPfi",
+      "exact": true,
+      "sass_sha256": "d15ab895399f849d1911f622fdf0e279b388f6015a03681d63026e880dc4f622"
+    },
+    {
+      "name": "_Z19first_thread_kernelILi512EEvPKfPf",
+      "exact": true,
+      "sass_sha256": "8f4a5cc383a737ab4d71a07f2a1bed0a1c199e17e4f507a8e0b7dc77b155b86f"
+    },
+    {
+      "name": "_Z25normalize_retained_kernelILi256ELi1ELb0EEvPKfPfi",
+      "exact": true,
+      "sass_sha256": "3adc470c6d18855ce684a14da94be5fb30c5dafe3bceb77056dee82a2d07d9e7"
+    },
+    {
+      "name": "_Z19first_thread_kernelILi256EEvPKfPf",
+      "exact": true,
+      "sass_sha256": "d0ca0fd3102fdaa1950236c9bae2db63444cfa154a7d03184542b61e536250cb"
+    },
+    {
+      "name": "_Z25normalize_retained_kernelILi128ELi1ELb0EEvPKfPfi",
+      "exact": true,
+      "sass_sha256": "4ef6ff7b80f9636b5fb41e69b4a646b9795c751d46009c50bead477d289ec9b8"
+    },
+    {
+      "name": "_Z19first_thread_kernelILi128EEvPKfPf",
+      "exact": true,
+      "sass_sha256": "1dd74f9299aac606b410d1715f8a1b9d6b510741897a1caded6a88e222c76e54"
+    },
+    {
+      "name": "_Z25normalize_retained_kernelILi32ELi1ELb0EEvPKfPfi",
+      "exact": true,
+      "sass_sha256": "ef0fa0a62b887b5c418572c0952931d309aa664b000c5ad1372d1e5d04bc0957"
+    },
+    {
+      "name": "_Z19first_thread_kernelILi32EEvPKfPf",
+      "exact": true,
+      "sass_sha256": "5060e785ee920234f2c9c913946ef40dbf5f287f4b0d5f357a0575c6fe932d09"
+    }
+  ]
+}

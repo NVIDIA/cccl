@@ -1,0 +1,28 @@
+{
+  "baseline_library": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/integer-A/cccl_baseline_h20.so",
+  "candidate_library": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/integer-P/cccl_patch_h20.so",
+  "baseline_library_sha256": "7e21f3c54990defce9d927a1bae46ab5a1720c6626cc5c0261b823924e5940a7",
+  "candidate_library_sha256": "7966a6d28568c4fcb1141da8229ba7416bf900bf5441c89186ef7f24c51570ba",
+  "kernels": [
+    {
+      "kernel": "_Z19first_thread_kernelILi512EEvPKiPi",
+      "exact_instructions_and_encodings": true,
+      "sha256": "c7add2f12b09b809d26e3036acee1f86b2baa2475ae69490d9556e23379bb83d"
+    },
+    {
+      "kernel": "_Z19first_thread_kernelILi256EEvPKiPi",
+      "exact_instructions_and_encodings": true,
+      "sha256": "e1940a94d6f6574f07707253a5cdaeb1ac4bc85613dd2da8a9b182afecdbd7c6"
+    },
+    {
+      "kernel": "_Z19first_thread_kernelILi128EEvPKiPi",
+      "exact_instructions_and_encodings": true,
+      "sha256": "6c183ce915b7212bf2c1228260993e6b06bbd74cd4b04cde9762c553eded064e"
+    },
+    {
+      "kernel": "_Z19first_thread_kernelILi32EEvPKiPi",
+      "exact_instructions_and_encodings": true,
+      "sha256": "5fd87e9a2953ae66e51b57990c9f536688e818b65698de92867bf0b0386e25b0"
+    }
+  ]
+}

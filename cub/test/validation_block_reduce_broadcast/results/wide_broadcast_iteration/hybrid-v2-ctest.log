@@ -1,0 +1,64 @@
+Internal ctest changing into directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-hybrid-v2-ready
+Test project /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-hybrid-v2-ready
+      Start   1: generate_resource_spec
+ 1/29 Test   #1: generate_resource_spec ..............................   Passed    0.04 sec
+      Start  81: cub.test.block.reduce.dimx_1.dimyz_1
+ 2/29 Test  #81: cub.test.block.reduce.dimx_1.dimyz_1 ................   Passed    5.92 sec
+      Start  82: cub.test.block.reduce.dimx_1.dimyz_2
+ 3/29 Test  #82: cub.test.block.reduce.dimx_1.dimyz_2 ................   Passed    6.00 sec
+      Start  83: cub.test.block.reduce.dimx_7.dimyz_1
+ 4/29 Test  #83: cub.test.block.reduce.dimx_7.dimyz_1 ................   Passed    5.77 sec
+      Start  84: cub.test.block.reduce.dimx_7.dimyz_2
+ 5/29 Test  #84: cub.test.block.reduce.dimx_7.dimyz_2 ................   Passed    5.81 sec
+      Start  85: cub.test.block.reduce.dimx_32.dimyz_1
+ 6/29 Test  #85: cub.test.block.reduce.dimx_32.dimyz_1 ...............   Passed    5.96 sec
+      Start  86: cub.test.block.reduce.dimx_32.dimyz_2
+ 7/29 Test  #86: cub.test.block.reduce.dimx_32.dimyz_2 ...............   Passed    5.79 sec
+      Start  87: cub.test.block.reduce.dimx_65.dimyz_1
+ 8/29 Test  #87: cub.test.block.reduce.dimx_65.dimyz_1 ...............   Passed    5.76 sec
+      Start  88: cub.test.block.reduce.dimx_65.dimyz_2
+ 9/29 Test  #88: cub.test.block.reduce.dimx_65.dimyz_2 ...............   Passed    6.06 sec
+      Start  89: cub.test.block.reduce.dimx_128.dimyz_1
+10/29 Test  #89: cub.test.block.reduce.dimx_128.dimyz_1 ..............   Passed    5.97 sec
+      Start  90: cub.test.block.reduce.dimx_128.dimyz_2
+11/29 Test  #90: cub.test.block.reduce.dimx_128.dimyz_2 ..............   Passed    6.29 sec
+      Start  91: cub.test.block.reduce_broadcast.dimx_1.dimyz_1
+12/29 Test  #91: cub.test.block.reduce_broadcast.dimx_1.dimyz_1 ......   Passed    1.58 sec
+      Start  92: cub.test.block.reduce_broadcast.dimx_1.dimyz_2
+13/29 Test  #92: cub.test.block.reduce_broadcast.dimx_1.dimyz_2 ......   Passed    1.59 sec
+      Start  93: cub.test.block.reduce_broadcast.dimx_7.dimyz_1
+14/29 Test  #93: cub.test.block.reduce_broadcast.dimx_7.dimyz_1 ......   Passed    1.67 sec
+      Start  94: cub.test.block.reduce_broadcast.dimx_7.dimyz_2
+15/29 Test  #94: cub.test.block.reduce_broadcast.dimx_7.dimyz_2 ......   Passed    1.54 sec
+      Start  95: cub.test.block.reduce_broadcast.dimx_32.dimyz_1
+16/29 Test  #95: cub.test.block.reduce_broadcast.dimx_32.dimyz_1 .....   Passed    1.59 sec
+      Start  96: cub.test.block.reduce_broadcast.dimx_32.dimyz_2
+17/29 Test  #96: cub.test.block.reduce_broadcast.dimx_32.dimyz_2 .....   Passed    1.65 sec
+      Start  97: cub.test.block.reduce_broadcast.dimx_65.dimyz_1
+18/29 Test  #97: cub.test.block.reduce_broadcast.dimx_65.dimyz_1 .....   Passed    1.58 sec
+      Start  98: cub.test.block.reduce_broadcast.dimx_65.dimyz_2
+19/29 Test  #98: cub.test.block.reduce_broadcast.dimx_65.dimyz_2 .....   Passed    1.62 sec
+      Start  99: cub.test.block.reduce_broadcast.dimx_128.dimyz_1
+20/29 Test  #99: cub.test.block.reduce_broadcast.dimx_128.dimyz_1 ....   Passed    1.68 sec
+      Start 100: cub.test.block.reduce_broadcast.dimx_128.dimyz_2
+21/29 Test #100: cub.test.block.reduce_broadcast.dimx_128.dimyz_2 ....   Passed    1.58 sec
+      Start 101: cub.test.block.reduce_broadcast.dimx_256.dimyz_1
+22/29 Test #101: cub.test.block.reduce_broadcast.dimx_256.dimyz_1 ....   Passed    1.58 sec
+      Start 102: cub.test.block.reduce_broadcast.dimx_256.dimyz_2
+23/29 Test #102: cub.test.block.reduce_broadcast.dimx_256.dimyz_2 ....   Passed    1.66 sec
+      Start 702: cub.test.block.reduce_broadcast_fail.algo_0.clean
+24/29 Test #702: cub.test.block.reduce_broadcast_fail.algo_0.clean ...   Passed    0.00 sec
+      Start 703: cub.test.block.reduce_broadcast_fail.algo_0
+25/29 Test #703: cub.test.block.reduce_broadcast_fail.algo_0 .........   Passed    3.52 sec
+      Start 704: cub.test.block.reduce_broadcast_fail.algo_1.clean
+26/29 Test #704: cub.test.block.reduce_broadcast_fail.algo_1.clean ...   Passed    0.00 sec
+      Start 705: cub.test.block.reduce_broadcast_fail.algo_1
+27/29 Test #705: cub.test.block.reduce_broadcast_fail.algo_1 .........   Passed    3.50 sec
+      Start 706: cub.test.block.reduce_broadcast_fail.algo_2.clean
+28/29 Test #706: cub.test.block.reduce_broadcast_fail.algo_2.clean ...   Passed    0.00 sec
+      Start 707: cub.test.block.reduce_broadcast_fail.algo_2
+29/29 Test #707: cub.test.block.reduce_broadcast_fail.algo_2 .........   Passed    3.61 sec
+
+100% tests passed, 0 tests failed out of 29
+
+Total Test time (real) =  89.37 sec

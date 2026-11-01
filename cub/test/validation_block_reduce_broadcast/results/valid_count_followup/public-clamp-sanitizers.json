@@ -1,0 +1,98 @@
+[
+  {
+    "tool": "memcheck",
+    "dim_x": 65,
+    "dim_yz": 1,
+    "command": [
+      "/usr/local/cuda-12.8/bin/compute-sanitizer",
+      "--tool",
+      "memcheck",
+      "--error-exitcode",
+      "1",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_65.dimyz_1",
+      "[broadcast]"
+    ],
+    "exit_code": 0,
+    "log": "/root/autodl-tmp/cccl-reduce-broadcast-h20/evidence/iteration/public-clamp-memcheck-65-1.log"
+  },
+  {
+    "tool": "memcheck",
+    "dim_x": 65,
+    "dim_yz": 2,
+    "command": [
+      "/usr/local/cuda-12.8/bin/compute-sanitizer",
+      "--tool",
+      "memcheck",
+      "--error-exitcode",
+      "1",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_65.dimyz_2",
+      "[broadcast]"
+    ],
+    "exit_code": 0,
+    "log": "/root/autodl-tmp/cccl-reduce-broadcast-h20/evidence/iteration/public-clamp-memcheck-65-2.log"
+  },
+  {
+    "tool": "racecheck",
+    "dim_x": 65,
+    "dim_yz": 1,
+    "command": [
+      "/usr/local/cuda-12.8/bin/compute-sanitizer",
+      "--tool",
+      "racecheck",
+      "--error-exitcode",
+      "1",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_65.dimyz_1",
+      "[broadcast]"
+    ],
+    "exit_code": 0,
+    "log": "/root/autodl-tmp/cccl-reduce-broadcast-h20/evidence/iteration/public-clamp-racecheck-65-1.log"
+  },
+  {
+    "tool": "racecheck",
+    "dim_x": 65,
+    "dim_yz": 2,
+    "command": [
+      "/usr/local/cuda-12.8/bin/compute-sanitizer",
+      "--tool",
+      "racecheck",
+      "--error-exitcode",
+      "1",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_65.dimyz_2",
+      "[broadcast]"
+    ],
+    "exit_code": 0,
+    "log": "/root/autodl-tmp/cccl-reduce-broadcast-h20/evidence/iteration/public-clamp-racecheck-65-2.log"
+  },
+  {
+    "tool": "synccheck",
+    "dim_x": 65,
+    "dim_yz": 1,
+    "command": [
+      "/usr/local/cuda-12.8/bin/compute-sanitizer",
+      "--tool",
+      "synccheck",
+      "--error-exitcode",
+      "1",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_65.dimyz_1",
+      "[broadcast]"
+    ],
+    "exit_code": 0,
+    "log": "/root/autodl-tmp/cccl-reduce-broadcast-h20/evidence/iteration/public-clamp-synccheck-65-1.log"
+  },
+  {
+    "tool": "synccheck",
+    "dim_x": 65,
+    "dim_yz": 2,
+    "command": [
+      "/usr/local/cuda-12.8/bin/compute-sanitizer",
+      "--tool",
+      "synccheck",
+      "--error-exitcode",
+      "1",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_65.dimyz_2",
+      "[broadcast]"
+    ],
+    "exit_code": 0,
+    "log": "/root/autodl-tmp/cccl-reduce-broadcast-h20/evidence/iteration/public-clamp-synccheck-65-2.log"
+  }
+]

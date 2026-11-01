@@ -1,0 +1,9 @@
+{
+  "archive_sha256": "08f2b8d05614a36ff04f0337ddd8339318f33385960b83c0dd2cff4ce56bcccc",
+  "workers": 64,
+  "cases": 4,
+  "invalid_quartets": 0,
+  "Mac_raw_index_verified_files": 166,
+  "Mac_auditor_exact_replay": true,
+  "parent_session85746_natural_exit": 0
+}

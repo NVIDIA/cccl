@@ -1,0 +1,8 @@
+{
+  "relative_path": "cuda_cuobjdump/linux-x86_64/cuda_cuobjdump-linux-x86_64-13.2.51-archive.tar.xz",
+  "sha256": "f0fb475dfc5b08a0e77cdcd05e7ea15402756ad8418898f4e93ada8b19661271",
+  "md5": "3e5735911e89fa182701ebd8e65518d7",
+  "size": "275444",
+  "version": "13.2.51",
+  "url": "https://developer.download.nvidia.com/compute/cuda/redist/cuda_cuobjdump/linux-x86_64/cuda_cuobjdump-linux-x86_64-13.2.51-archive.tar.xz"
+}

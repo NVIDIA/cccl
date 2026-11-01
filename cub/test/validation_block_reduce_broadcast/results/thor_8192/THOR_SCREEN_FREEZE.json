@@ -1,0 +1,171 @@
+{
+  "sources": {
+    "source": "0909f9ee05c632af18fba74a366b657370a12aee",
+    "candidate": "76db7e3f3ab0d665fc87282b0160a321e51e698e"
+  },
+  "gpu": "NVIDIA Thor, GPU-a7c66ad2-6dbb-0ab8-c1a2-37ba6dba3600, 595.78",
+  "files": [
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/integer-A/cccl_baseline_h20.so",
+      "bytes": 548672,
+      "sha256": "a679c435fe7441d958bdd15c0cbe0ce01b0554822f68c9f51225044fab80a7fb"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/integer-P/cccl_patch_h20.so",
+      "bytes": 681712,
+      "sha256": "d1d1e3ff6cc0302c71d89a09353150a8408d9c1f03dd944cd5a6fe5b7e156fa4"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/legacy-A/cccl_baseline_h20.so",
+      "bytes": 614912,
+      "sha256": "d2584fcacbfa19b51ff92aae39473d7e70d9f1bdf6043009279c716c4207166c"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/legacy-P/cccl_patch_h20.so",
+      "bytes": 749088,
+      "sha256": "dcb8c1967e2b58fbd15d3b4c047a8273dcdfbd29097554e9acc88e2b32369ba5"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/retained-A/cccl_baseline_h20.so",
+      "bytes": 614912,
+      "sha256": "155875c5e70760841a67df9dd986c9afb2ca49c0dd893a8dd6182b4ef3efb3b9"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/retained-P/cccl_patch_h20.so",
+      "bytes": 749088,
+      "sha256": "3fc988450b02343e89b1082f43eb0decd436718760a9eb8150edbd38fdd5248c"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/torch_order-A/cccl_baseline_h20.so",
+      "bytes": 679440,
+      "sha256": "392361eb8ff5e5734b393aa33f47c8a635f194024de3995af8bf840beb88e884"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/torch_order-P/cccl_patch_h20.so",
+      "bytes": 877544,
+      "sha256": "596cf6eebab47bda750066498d57b3c4f35e32eddafdffc3f4535a3e30f51ae2"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_integer/benchmark.py",
+      "bytes": 4528,
+      "sha256": "e7cc4ba607d8081264e230c07b5c741fb4a54fc4d4c3c7bbf3d1af85eaa4a529"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_integer/bindings.cpp",
+      "bytes": 516,
+      "sha256": "84eff6522ef789a264ec7c098637140bd333797092d3062e99a4b48e9389644a"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_integer/build.py",
+      "bytes": 2438,
+      "sha256": "38856c3cc1adf52d0700de8a372fdd7e36332b09e85354d0faefa9addfbdc311"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_integer/common.py",
+      "bytes": 1927,
+      "sha256": "3aacf34535aa9097dbea73a147e9d58da497c084986651c7a7cce00dcc473b5e"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_integer/normalization.cu",
+      "bytes": 3827,
+      "sha256": "7962ad0bc85e72cc069ef1cc660e558e91c1deacd9b334a3f035f010bde3ade1"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_legacy/benchmark.py",
+      "bytes": 4399,
+      "sha256": "5e3a712dd16d1b0151f2c70c595eb543284134f1c4f15a988e132afbba82fd31"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_legacy/bindings.cpp",
+      "bytes": 516,
+      "sha256": "84eff6522ef789a264ec7c098637140bd333797092d3062e99a4b48e9389644a"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_legacy/build.py",
+      "bytes": 2548,
+      "sha256": "52e23ffec7ab4b21563f9a267cf9a06517cd025bff3ebbd96a7034dbd2ea1237"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_legacy/common.py",
+      "bytes": 1927,
+      "sha256": "3aacf34535aa9097dbea73a147e9d58da497c084986651c7a7cce00dcc473b5e"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_legacy/normalization.cu",
+      "bytes": 7473,
+      "sha256": "713613cb342b9cbc5f36cd64a7124248bb4763385271dc0ca6b245b91f6b1f5f"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_retained/benchmark.py",
+      "bytes": 4497,
+      "sha256": "76167587aa5885ede4a685713b0583cc4220bab291c34f8907724ee2c322c952"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_retained/bindings.cpp",
+      "bytes": 516,
+      "sha256": "84eff6522ef789a264ec7c098637140bd333797092d3062e99a4b48e9389644a"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_retained/build.py",
+      "bytes": 2438,
+      "sha256": "38856c3cc1adf52d0700de8a372fdd7e36332b09e85354d0faefa9addfbdc311"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_retained/common.py",
+      "bytes": 1927,
+      "sha256": "3aacf34535aa9097dbea73a147e9d58da497c084986651c7a7cce00dcc473b5e"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_retained/normalization.cu",
+      "bytes": 7473,
+      "sha256": "713613cb342b9cbc5f36cd64a7124248bb4763385271dc0ca6b245b91f6b1f5f"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_torch_order/accuracy_probe.py",
+      "bytes": 2548,
+      "sha256": "5b7a47b3eea61216c6b9ee6f62aa1f953f6598e553cee87c4d42b838846c39f0"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_torch_order/bindings.cpp",
+      "bytes": 516,
+      "sha256": "84eff6522ef789a264ec7c098637140bd333797092d3062e99a4b48e9389644a"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_torch_order/build.py",
+      "bytes": 2673,
+      "sha256": "d314af30dc11650d25a8715934b70cff71c6a5655bf61786c63aa83c2c67951a"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_torch_order/common.py",
+      "bytes": 1759,
+      "sha256": "eabc5785bdb6e21dba43f93f7c3870ed2be0cb8627a96438d2b4425c4ba2fa86"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_torch_order/normalization.cu",
+      "bytes": 5091,
+      "sha256": "12768692c5c299b02c07116a6ea3afa74366cbbee2353d6f44675515e2d978ea"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/fetch_model.py",
+      "bytes": 1339,
+      "sha256": "3c67a941022d040dcd3acd849cc117cd41366ef2a4ab3eee6ca819b2dc7317a8"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/gpu_plan_gpu0.py",
+      "bytes": 4423,
+      "sha256": "3890baad18363ccf2778a7a1584d34b92f30665e593af174bacf0325ca5b65df"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/model_generation_screen.py",
+      "bytes": 11764,
+      "sha256": "f7e7400b4735133d778344135a81162d076ef135761bc455c3dbce3a62ca9172"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/summarize_formal_iteration.py",
+      "bytes": 7655,
+      "sha256": "5f81fc02f6f4ea1d75734c95f9898dc471fe78ed7c59789b1b03b28e4e7489cc"
+    }
+  ],
+  "plan_sha256": "ee5467099990e59be53fc41a6ea9bf6ac0e25e8c02b401cd0411ebf4596c7899",
+  "mode": "finite screening; excluded from formal timing estimates"
+}

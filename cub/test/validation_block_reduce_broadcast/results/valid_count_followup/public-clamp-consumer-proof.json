@@ -1,0 +1,16 @@
+[
+  {
+    "mode": "legacy",
+    "all_cuda_kernels_identical": true,
+    "kernel_count": 12,
+    "before_sha256": "123ad3851737346fb1f24ba7899779fa4d7e0fc65616c222f3b84c9c4e86279b",
+    "after_sha256": "086e6b2e15734369458b9a500aaf9b24f52106ae461ec704373456c7b0a0220d"
+  },
+  {
+    "mode": "retained",
+    "all_cuda_kernels_identical": true,
+    "kernel_count": 16,
+    "before_sha256": "ace38d97eaf81337c38c37d1c8134a6150dad5fab528178b6ae6130aa8a2f508",
+    "after_sha256": "ce59d2717af831b14f01f80cf6758a9ec37c0ae998620ac3ebaea1430feb2c3b"
+  }
+]

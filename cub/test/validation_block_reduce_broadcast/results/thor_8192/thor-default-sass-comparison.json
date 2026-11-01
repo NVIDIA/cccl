@@ -1,0 +1,22 @@
+[
+  {
+    "kernel": "_Z19first_thread_kernelILi512EEvPKfPf",
+    "exact_instructions_and_encodings": true,
+    "sha256": "7f9db989f86c81dbd4fdafd273c357a37cab87d28dd76a2a40f5df9ac908873b"
+  },
+  {
+    "kernel": "_Z19first_thread_kernelILi256EEvPKfPf",
+    "exact_instructions_and_encodings": true,
+    "sha256": "448cf9b5a516d3ca65daea700bae273e75f9f16a12a5b6d88f7c482ce82b330d"
+  },
+  {
+    "kernel": "_Z19first_thread_kernelILi128EEvPKfPf",
+    "exact_instructions_and_encodings": true,
+    "sha256": "4a5f4e5d3fc14b360fdc25545a48e2ea05ce119985d69d2b6f5fab5bdd057b18"
+  },
+  {
+    "kernel": "_Z19first_thread_kernelILi32EEvPKfPf",
+    "exact_instructions_and_encodings": true,
+    "sha256": "943117577364537390ce7f8c90b70053029c52f1604d17c59d3af013df591cb2"
+  }
+]

@@ -1,0 +1,150 @@
+[
+  {
+    "label": "thor-screen-retained-A",
+    "command": [
+      "/home/jwipc/projects/host-gateway/.vllm/bin/python",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_retained/benchmark.py",
+      "--source",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/source",
+      "--variant",
+      "baseline",
+      "--build",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/retained-A",
+      "--rows",
+      "8192",
+      "--output",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/thor-screen-retained-A.json"
+    ],
+    "cwd": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001",
+    "log": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/thor-screen-retained-A.log"
+  },
+  {
+    "label": "thor-screen-retained-P",
+    "command": [
+      "/home/jwipc/projects/host-gateway/.vllm/bin/python",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_retained/benchmark.py",
+      "--source",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/candidate",
+      "--variant",
+      "patch",
+      "--build",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/retained-P",
+      "--rows",
+      "8192",
+      "--output",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/thor-screen-retained-P.json"
+    ],
+    "cwd": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001",
+    "log": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/thor-screen-retained-P.log"
+  },
+  {
+    "label": "thor-screen-integer-A",
+    "command": [
+      "/home/jwipc/projects/host-gateway/.vllm/bin/python",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_integer/benchmark.py",
+      "--source",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/source",
+      "--variant",
+      "baseline",
+      "--build",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/integer-A",
+      "--rows",
+      "8192",
+      "--output",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/thor-screen-integer-A.json"
+    ],
+    "cwd": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001",
+    "log": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/thor-screen-integer-A.log"
+  },
+  {
+    "label": "thor-screen-integer-P",
+    "command": [
+      "/home/jwipc/projects/host-gateway/.vllm/bin/python",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_integer/benchmark.py",
+      "--source",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/candidate",
+      "--variant",
+      "patch",
+      "--build",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/integer-P",
+      "--rows",
+      "8192",
+      "--output",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/thor-screen-integer-P.json"
+    ],
+    "cwd": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001",
+    "log": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/thor-screen-integer-P.log"
+  },
+  {
+    "label": "thor-screen-legacy-A",
+    "command": [
+      "/home/jwipc/projects/host-gateway/.vllm/bin/python",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_legacy/benchmark.py",
+      "--source",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/source",
+      "--variant",
+      "baseline",
+      "--build",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/legacy-A",
+      "--rows",
+      "8192",
+      "--output",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/thor-screen-legacy-A.json"
+    ],
+    "cwd": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001",
+    "log": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/thor-screen-legacy-A.log"
+  },
+  {
+    "label": "thor-screen-legacy-P",
+    "command": [
+      "/home/jwipc/projects/host-gateway/.vllm/bin/python",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_legacy/benchmark.py",
+      "--source",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/candidate",
+      "--variant",
+      "patch",
+      "--build",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/legacy-P",
+      "--rows",
+      "8192",
+      "--output",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/thor-screen-legacy-P.json"
+    ],
+    "cwd": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001",
+    "log": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/thor-screen-legacy-P.log"
+  },
+  {
+    "label": "thor-accuracy-torch-order-A",
+    "command": [
+      "/home/jwipc/projects/host-gateway/.vllm/bin/python",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_torch_order/accuracy_probe.py",
+      "--source",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/source",
+      "--variant",
+      "baseline",
+      "--build",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/torch_order-A",
+      "--output",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/thor-accuracy-torch-order-A.json"
+    ],
+    "cwd": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001",
+    "log": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/thor-accuracy-torch-order-A.log"
+  },
+  {
+    "label": "thor-accuracy-torch-order-P",
+    "command": [
+      "/home/jwipc/projects/host-gateway/.vllm/bin/python",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_torch_order/accuracy_probe.py",
+      "--source",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/candidate",
+      "--variant",
+      "patch",
+      "--build",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/torch_order-P",
+      "--output",
+      "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/thor-accuracy-torch-order-P.json"
+    ],
+    "cwd": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001",
+    "log": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/thor-accuracy-torch-order-P.log"
+  }
+]

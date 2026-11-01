@@ -1,0 +1,7 @@
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+
+Loading weights:   0%|          | 0/311 [00:00<?, ?it/s]
+Loading weights:  40%|███▉      | 124/311 [00:00<00:00, 1236.28it/s]
+Loading weights:  80%|████████  | 250/311 [00:00<00:00, 1248.37it/s]
+Loading weights: 100%|██████████| 311/311 [00:00<00:00, 1342.66it/s]
+A 0 0 [449.436, 464.652]

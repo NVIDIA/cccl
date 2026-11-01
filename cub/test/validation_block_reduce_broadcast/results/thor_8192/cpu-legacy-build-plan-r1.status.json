@@ -1,0 +1,26 @@
+{
+  "state": "FAILED",
+  "jobs": [
+    {
+      "label": "legacy-A",
+      "command": [
+        "/home/jwipc/projects/host-gateway/.vllm/bin/python",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_legacy/build.py",
+        "--source",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/source",
+        "--variant",
+        "baseline",
+        "--build",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/legacy-A",
+        "--output",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/build-legacy-A.json",
+        "--arch",
+        "110",
+        "--fast-exp",
+        "0"
+      ],
+      "code": 1,
+      "seconds": 2.0318057537078857
+    }
+  ]
+}

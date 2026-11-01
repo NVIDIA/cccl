@@ -1,0 +1,32 @@
+{
+  "archive_sha256": "fb9f48cc0041abda4535e7d4c71228bf9a4b103a79688ad919cb3830d85e07c5",
+  "raw_index_files_verified": 245,
+  "cases": 24,
+  "workers": 96,
+  "invalid_quartets": 0,
+  "Mac_auditor_classification_and_hashes_exact": true,
+  "Mac_auditor_float_comparison_tolerance": 1e-12,
+  "roundoff_field_count": 4,
+  "roundoff_fields": [
+    [
+      "/cases/6/ratio",
+      1.0746916734976746,
+      1.0746916734976748
+    ],
+    [
+      "/cases/6/ci95/1",
+      1.0750970968541136,
+      1.0750970968541138
+    ],
+    [
+      "/cases/6/quartets/4/candidate",
+      10.34479776728037,
+      10.344797767280365
+    ],
+    [
+      "/cases/6/quartets/4/ratio",
+      1.0754468279510014,
+      1.075446827951002
+    ]
+  ]
+}

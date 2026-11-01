@@ -1,0 +1,16 @@
+{
+  "utc": "2026-10-01T14:49:08.884960+00:00",
+  "h20_ssh": "connection refused port39817; exec49996 exit255",
+  "signals_sent": false,
+  "new_h20_work": false,
+  "preserved_remaining_workers": 14,
+  "first_four_quartets_workers": 16,
+  "latest_unbacked_observation": "remaining16/48 completed; firstB16 started",
+  "formal_complete": false,
+  "remote_cleanup": "unverified; two own checkpoint copies remain unless externally removed",
+  "next_hardware": [
+    "RTX5080",
+    "Thor"
+  ],
+  "performance_pooling_across_hardware": false
+}

@@ -1,0 +1,123 @@
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+
+Loading weights:   0%|          | 0/311 [00:00<?, ?it/s]
+Loading weights:  31%|███       | 96/311 [00:00<00:00, 952.91it/s]
+Loading weights:  63%|██████▎   | 197/311 [00:00<00:00, 978.63it/s]
+Loading weights: 100%|██████████| 311/311 [00:00<00:00, 1188.40it/s]
+In file included from /mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tmp/tmp0bnr0d1s/cuda_utils.c:1:
+/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/triton/backends/nvidia/include/cuda.h:56:10: fatal error: stdlib.h: No such file or directory
+   56 | #include <stdlib.h>
+      |          ^~~~~~~~~~
+compilation terminated.
+Traceback (most recent call last):
+  File "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py", line 43, in <module>
+    runpy.run_path(str(script), run_name="__main__")
+  File "<frozen runpy>", line 286, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/model_generation_screen.py", line 174, in <module>
+    native_tokens = generate(ids)
+                    ^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/model_generation_screen.py", line 158, in generate
+    return model.generate(
+           ^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/transformers/generation/utils.py", line 2681, in generate
+    result = decoding_method(
+             ^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/transformers/generation/utils.py", line 2881, in _sample
+    outputs = self._prefill(
+              ^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/transformers/generation/utils.py", line 3961, in _prefill
+    return self(**model_inputs, return_dict=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/transformers/utils/generic.py", line 911, in wrapper
+    output = func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/transformers/models/qwen3/modeling_qwen3.py", line 492, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+                                       ^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/transformers/utils/generic.py", line 1040, in wrapper
+    output = func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/transformers/utils/output_capturing.py", line 262, in wrapper
+    outputs = func(self, *args, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/transformers/models/qwen3/modeling_qwen3.py", line 421, in forward
+    position_embeddings = self.rotary_emb(hidden_states, position_ids)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/transformers/modeling_rope_utils.py", line 128, in wrapper
+    return rope_forward(self, x, position_ids, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/transformers/models/qwen3/modeling_qwen3.py", line 143, in forward
+    freqs = (inv_freq_expanded.float() @ position_ids_expanded.float()).transpose(1, 2)
+             ~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/_native/registry.py", line 923, in eager_router
+    result = _dispatch(args, kwargs, swallow_cond_exceptions=False)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/_native/registry.py", line 919, in _dispatch
+    return getattr(torch.ops._native, impl_name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/_ops.py", line 1279, in __call__
+    return self._op(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/_native/ops/bmm_outer_product/triton_impl.py", line 28, in _bmm_outer_product_impl
+    return bmm_outer_product(a, b)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/_native/ops/bmm_outer_product/triton_kernels.py", line 76, in bmm_outer_product
+    _bmm_outer_product_kernel[(B * triton.cdiv(M, BLOCK_M) * triton.cdiv(N, BLOCK_N),)](
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/triton/runtime/jit.py", line 370, in <lambda>
+    return lambda *args, **kwargs: self.run(grid=grid, warmup=False, *args, **kwargs)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/triton/runtime/jit.py", line 713, in run
+    device = driver.active.get_current_device()
+             ^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/triton/runtime/driver.py", line 39, in active
+    self._active = self.default
+                   ^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/triton/runtime/driver.py", line 33, in default
+    self._default = _create_driver()
+                    ^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/triton/runtime/driver.py", line 21, in _create_driver
+    return active_drivers[0]()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/triton/backends/nvidia/driver.py", line 336, in __init__
+    self.utils = CudaUtils()  # TODO: make static
+                 ^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/triton/backends/nvidia/driver.py", line 66, in __init__
+    mod = compile_module_from_src(
+          ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/triton/runtime/build.py", line 93, in compile_module_from_src
+    so = _build(name, src_path, tmpdir, library_dirs or [], include_dirs or [], libraries or [], ccflags or [])
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/triton/runtime/build.py", line 48, in _build
+    subprocess.check_call(cc_cmd, stdout=subprocess.DEVNULL)
+  File "/usr/lib/python3.12/subprocess.py", line 413, in check_call
+    raise CalledProcessError(retcode, cmd)
+subprocess.CalledProcessError: Command '['/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/native/usr/bin/x86_64-linux-gnu-gcc-13', '/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tmp/tmp0bnr0d1s/cuda_utils.c', '-O3', '-shared', '-fPIC', '-Wno-psabi', '-o', '/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tmp/tmp0bnr0d1s/cuda_utils.cpython-312-x86_64-linux-gnu.so', '-l:libcuda.so.1', '-L/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/triton/backends/nvidia/lib', '-L/usr/lib/wsl/lib', '-I/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/triton/backends/nvidia/include', '-I/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tmp/tmp0bnr0d1s', '-I/usr/include/python3.12']' returned non-zero exit status 1.

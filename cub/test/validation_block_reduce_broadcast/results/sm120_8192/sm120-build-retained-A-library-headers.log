@@ -1,0 +1,40 @@
+W1002 00:03:03.215000 303 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/toolchain/nvidia/cu13'
+[1/3] /mnt/d/0z5a/cccl-broadcast-blackwell-20261001/toolchain/nvidia/cu13/bin/nvcc -MD -MF normalization.cuda.o.d -ccbin /mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/native/usr/bin/x86_64-linux-gnu-gcc-13 -DTORCH_EXTENSION_NAME=cccl_baseline_h20 -DTORCH_API_INCLUDE_EXTENSION_H -I/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/source/cub -I/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/source/libcudacxx/include -I/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/source/thrust -isystem /mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/include -isystem /mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/include/torch/csrc/api/include -isystem /mnt/d/0z5a/cccl-broadcast-blackwell-20261001/toolchain/nvidia/cu13/include -isystem /usr/include/python3.12 -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options '-fPIC' -O3 -lineinfo -std=c++17 -DUSE_BROADCAST=0 -gencode=arch=compute_120,code=sm_120 -c /mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_retained/normalization.cu -o normalization.cuda.o
+FAILED: [code=1] normalization.cuda.o
+/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/toolchain/nvidia/cu13/bin/nvcc -MD -MF normalization.cuda.o.d -ccbin /mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/native/usr/bin/x86_64-linux-gnu-gcc-13 -DTORCH_EXTENSION_NAME=cccl_baseline_h20 -DTORCH_API_INCLUDE_EXTENSION_H -I/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/source/cub -I/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/source/libcudacxx/include -I/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/source/thrust -isystem /mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/include -isystem /mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/include/torch/csrc/api/include -isystem /mnt/d/0z5a/cccl-broadcast-blackwell-20261001/toolchain/nvidia/cu13/include -isystem /usr/include/python3.12 -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options '-fPIC' -O3 -lineinfo -std=c++17 -DUSE_BROADCAST=0 -gencode=arch=compute_120,code=sm_120 -c /mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_retained/normalization.cu -o normalization.cuda.o
+In file included from /mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/include/ATen/cuda/CUDAContext.h:4,
+                 from /mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_retained/normalization.cu:15:
+/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/include/ATen/cuda/CUDAContextLight.h:10:10: fatal error: cusparse.h: No such file or directory
+   10 | #include <cusparse.h>
+      |          ^~~~~~~~~~~~
+compilation terminated.
+[2/3] /mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/native/usr/bin/x86_64-linux-gnu-g++-13 -MMD -MF bindings.o.d -DTORCH_EXTENSION_NAME=cccl_baseline_h20 -DTORCH_API_INCLUDE_EXTENSION_H -I/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/source/cub -I/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/source/libcudacxx/include -I/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/source/thrust -isystem /mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/include -isystem /mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/include/torch/csrc/api/include -isystem /mnt/d/0z5a/cccl-broadcast-blackwell-20261001/toolchain/nvidia/cu13/include -isystem /usr/include/python3.12 -fPIC -std=c++20 -O3 -std=c++17 -c /mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_retained/bindings.cpp -o bindings.o
+ninja: build stopped: subcommand failed.
+Traceback (most recent call last):
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/utils/cpp_extension.py", line 2893, in _run_ninja_build
+    subprocess.run(
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['ninja', '-v', '-j', '2']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py", line 42, in <module>
+    runpy.run_path(str(script), run_name="__main__")
+  File "<frozen runpy>", line 286, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_retained/build.py", line 25, in <module>
+    extension = load(
+                ^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/utils/cpp_extension.py", line 1927, in load
+    return _jit_compile(
+           ^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/utils/cpp_extension.py", line 2382, in _jit_compile
+    _write_ninja_file_and_build_library(
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/utils/cpp_extension.py", line 2543, in _write_ninja_file_and_build_library
+    _run_ninja_build(
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/utils/cpp_extension.py", line 2910, in _run_ninja_build
+    raise RuntimeError(message) from e
+RuntimeError: Error building extension 'cccl_baseline_h20'

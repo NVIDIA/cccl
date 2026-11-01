@@ -1,0 +1,13 @@
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+
+Loading weights:   0%|          | 0/311 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 311/311 [00:00<00:00, 6992.27it/s]
+[transformers] The attention mask is not set with a batched input, and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+A 0 0 [788.446, 2317.851]
+P 0 1 [789.722, 2322.304]
+P 0 2 [790.419, 2318.674]
+A 0 3 [788.398, 2320.636]
+P 1 0 [788.445, 2321.336]
+A 1 1 [822.688, 2325.627]
+A 1 2 [785.737, 2322.443]
+P 1 3 [795.469, 2323.37]
