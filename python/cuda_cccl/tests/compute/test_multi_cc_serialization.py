@@ -49,6 +49,9 @@ from cuda.compute._cccl_interop import (
     normalize_compute_capabilities,
 )
 from cuda.compute._target_cc import target_cc
+from cuda.compute.algorithms._select import _Select
+from cuda.compute.algorithms._sort._merge_sort import _MergeSort
+from cuda.compute.algorithms._three_way_partition import _ThreeWayPartition
 from cuda.compute.iterators import CountingIterator, TransformIterator
 from cuda.compute.types import from_numpy_dtype
 
@@ -168,6 +171,86 @@ class _TrackingLock:
 
     def __exit__(self, exc_type, exc_value, traceback):
         self._lock.release()
+
+
+@pytest.mark.parametrize("multi_target", [False, True])
+def test_bind_preserves_portable_wrapper_and_device_ownership(
+    monkeypatch, multi_target
+):
+    current = {"device_id": 0}
+
+    class FakeDevice:
+        def __init__(self, device_id=None):
+            self.device_id = current["device_id"] if device_id is None else device_id
+
+        def set_current(self):
+            current["device_id"] = self.device_id
+
+    monkeypatch.setattr(cccl_interop, "CudaDevice", FakeDevice)
+    monkeypatch.setattr(cccl_interop, "current_device_id", lambda: current["device_id"])
+    monkeypatch.setattr(
+        cccl_interop, "current_device_info", lambda: (current["device_id"], 80)
+    )
+    source = _FakeBuildResult(b"sm80-cubin")
+    entries = {80: source}
+    if multi_target:
+        entries[90] = _FakeBuildResult(b"sm90-cubin")
+    portable = _MergeSort.__new__(_MergeSort)
+    portable.build_results = _PerCCBuildResults(entries)
+    portable._bound_build_result = None
+
+    owner = portable.bind(device_id=0)
+    other = owner.bind(device_id=1)
+    assert owner is not portable
+    assert other is not owner
+    assert portable._bound_build_result is None
+    assert owner.build_results is other.build_results is portable.build_results
+    assert owner._bound_build_result is source
+    assert other._bound_build_result is not source
+    assert other._bound_build_result.payload == source.payload
+    assert portable.bind()._bound_build_result is other._bound_build_result
+    assert source.load_count == 1
+    assert source.serialize_count == 1
+    assert other._bound_build_result.load_count == 1
+    if multi_target:
+        assert not portable.build_results[90]._loaded
+
+    def unexpected_query():
+        raise AssertionError("bound resolution queried the device")
+
+    monkeypatch.setattr(cccl_interop, "current_device_id", unexpected_query)
+    monkeypatch.setattr(cccl_interop, "current_device_info", unexpected_query)
+    assert (
+        cccl_interop.resolve_build_result(
+            owner.build_results, owner._bound_build_result
+        )
+        is source
+    )
+
+
+def test_select_bind_copies_nested_wrapper(monkeypatch):
+    calls = []
+    loaded = object()
+
+    def bind_partitioner(self, *, device_id=None):
+        calls.append(device_id)
+        result = _ThreeWayPartition.__new__(_ThreeWayPartition)
+        result._bound_build_result = loaded
+        return result
+
+    monkeypatch.setattr(_ThreeWayPartition, "bind", bind_partitioner)
+    portable = _Select.__new__(_Select)
+    portable._bound_build_result = None
+    portable.partitioner = _ThreeWayPartition.__new__(_ThreeWayPartition)
+    portable.partitioner._bound_build_result = None
+    executable = portable.bind(device_id=1)
+    assert executable is not portable
+    assert executable.partitioner is not portable.partitioner
+    assert portable._bound_build_result is None
+    assert portable.partitioner._bound_build_result is None
+    assert executable._bound_build_result is loaded
+    assert executable.partitioner._bound_build_result is loaded
+    assert calls == [1]
 
 
 def test_aot_build_results_load_once_per_device_without_recompiling():

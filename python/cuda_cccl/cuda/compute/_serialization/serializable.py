@@ -15,9 +15,13 @@ auto-register by their ``__qualname__`` for the free-function
 
 from __future__ import annotations
 
-from typing import Any, Callable, TypeVar
+from copy import copy
+from typing import TYPE_CHECKING, Any, Callable, TypeVar
 
 from . import codec
+
+if TYPE_CHECKING:
+    from .._caching import _PerCCBuildResults
 
 
 class _Kind:
@@ -247,6 +251,9 @@ class Serializable:
     # subclass's __slots__; __init__ or deserialize() below assigns it.
     _bound_build_result: Any
 
+    # Direct algorithm wrappers supply this slot; composite wrappers override bind().
+    build_results: _PerCCBuildResults
+
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
         Serializable._registry[cls.__qualname__] = cls
@@ -265,6 +272,25 @@ class Serializable:
         for attr, kind in self.__serialization_schema__:
             kind.write(w, getattr(self, attr), self)
         return w.getvalue()
+
+    def bind(self: _S, *, device_id: int | None = None) -> _S:
+        """Return a new wrapper bound to the selected device.
+
+        Selects the device as current on the calling thread and resolves its
+        loaded build result once. Subsequent calls must use that device.
+
+        The returned wrapper shares build results and argument descriptors
+        with this wrapper; binding does not provide thread isolation.
+        """
+        from .._cccl_interop import CudaDevice, resolve_build_result
+
+        device = CudaDevice(device_id)
+        device.set_current()
+        # Ignore any existing binding so an already-bound wrapper can be rebound.
+        bound_result = resolve_build_result(self.build_results)
+        executable = copy(self)
+        executable._bound_build_result = bound_result
+        return executable
 
     @classmethod
     def deserialize(cls: type[_S], blob: bytes) -> _S:

@@ -7,8 +7,10 @@ from typing import List
 import numpy as np
 import pytest
 from _utils.device_array import DeviceArray
+from cuda.core import Device
 
 import cuda.compute
+import cuda.compute._cccl_interop as cccl_interop
 from cuda.compute import (
     CacheModifiedInputIterator,
     OpKind,
@@ -445,6 +447,57 @@ def _run(sorter, *, d_in_keys, d_in_values, d_out_keys, d_out_values, num_items,
         num_items=num_items,
         op=op,
     )
+
+
+@pytest.mark.serialization
+@pytest.mark.parametrize("with_values", [False, True], ids=["keys", "pairs"])
+def test_bound_deserialized_merge_sort_results(monkeypatch, with_values):
+    h_keys = np.array([5, -2, 8, 1, 5, 0, -2, 9, 3, 1], dtype=np.int32)
+    h_values = np.arange(h_keys.size, dtype=np.int64)
+    d_in_keys = DeviceArray.from_numpy(h_keys)
+    d_out_keys = DeviceArray.empty(h_keys.shape, h_keys.dtype)
+    d_in_values = DeviceArray.from_numpy(h_values) if with_values else None
+    d_out_values = (
+        DeviceArray.empty(h_values.shape, h_values.dtype) if with_values else None
+    )
+    builder = make_merge_sort(
+        d_in_keys=d_in_keys,
+        d_in_values=d_in_values,
+        d_out_keys=d_out_keys,
+        d_out_values=d_out_values,
+        op=OpKind.LESS,
+    )
+    blob = serialize(builder)
+    portable = deserialize(blob)
+    executable = portable.bind(device_id=Device().device_id)
+    assert executable is not portable
+    assert portable._bound_build_result is None
+    assert executable._bound_build_result is not None
+    assert executable.build_results is portable.build_results
+    assert serialize(executable) == serialize(portable) == blob
+
+    def unexpected_device_query():
+        raise AssertionError("bound merge sort queried the device during execution")
+
+    monkeypatch.setattr(cccl_interop, "current_device_id", unexpected_device_query)
+    monkeypatch.setattr(cccl_interop, "current_device_info", unexpected_device_query)
+    _run(
+        executable,
+        d_in_keys=d_in_keys,
+        d_in_values=d_in_values,
+        d_out_keys=d_out_keys,
+        d_out_values=d_out_values,
+        num_items=h_keys.size,
+        op=OpKind.LESS,
+    )
+
+    order = np.argsort(h_keys, kind="stable")
+    np.testing.assert_array_equal(d_out_keys.copy_to_host(), h_keys[order])
+    np.testing.assert_array_equal(d_in_keys.copy_to_host(), h_keys)
+    if with_values:
+        np.testing.assert_array_equal(d_out_values.copy_to_host(), h_values[order])
+        np.testing.assert_array_equal(d_in_values.copy_to_host(), h_values)
+    assert portable._bound_build_result is None
 
 
 @pytest.mark.serialization

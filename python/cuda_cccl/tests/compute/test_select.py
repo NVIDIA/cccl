@@ -5,8 +5,10 @@
 import numpy as np
 import pytest
 from _utils.device_array import DeviceArray
+from cuda.core import Device
 
 import cuda.compute
+import cuda.compute._cccl_interop as cccl_interop
 from cuda.compute import (
     CacheModifiedInputIterator,
     ZipIterator,
@@ -773,6 +775,55 @@ def test_stateful_caching_same_dtype_different_values():
 
 def _even(x):
     return x % 2 == 0
+
+
+@pytest.mark.serialization
+@pytest.mark.parametrize("selection", ["mixed", "all", "none"])
+def test_bound_deserialized_select_results(monkeypatch, selection):
+    h_in = np.arange(1024, dtype=np.int32)
+    if selection == "all":
+        h_in *= 2
+    elif selection == "none":
+        h_in = h_in * 2 + 1
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
+    d_num_selected = DeviceArray.empty(2, np.uint64)
+    builder = make_select(
+        d_in=d_in, d_out=d_out, d_num_selected_out=d_num_selected, cond=_even
+    )
+    blob = serialize(builder)
+    portable = deserialize(blob)
+    executable = portable.bind(device_id=Device().device_id)
+    assert executable is not portable
+    assert executable.partitioner is not portable.partitioner
+    assert portable._bound_build_result is None
+    assert portable.partitioner._bound_build_result is None
+    assert executable._bound_build_result is not None
+    assert executable.partitioner._bound_build_result is executable._bound_build_result
+    assert executable.partitioner.build_results is portable.partitioner.build_results
+    assert serialize(executable) == serialize(portable) == blob
+
+    def unexpected_device_query():
+        raise AssertionError("bound select queried the device during execution")
+
+    monkeypatch.setattr(cccl_interop, "current_device_id", unexpected_device_query)
+    monkeypatch.setattr(cccl_interop, "current_device_info", unexpected_device_query)
+    arguments = dict(
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected,
+        cond=_even,
+        num_items=h_in.size,
+    )
+    nbytes = executable(temp_storage=None, **arguments)
+    executable(temp_storage=TempStorageBuffer(nbytes, None), **arguments)
+
+    k = _read_count(d_num_selected)
+    expected = h_in[h_in % 2 == 0]
+    assert k == expected.size
+    np.testing.assert_array_equal(d_out.copy_to_host()[:k], expected)
+    np.testing.assert_array_equal(d_in.copy_to_host(), h_in)
+    assert portable.partitioner._bound_build_result is None
 
 
 @pytest.mark.serialization
