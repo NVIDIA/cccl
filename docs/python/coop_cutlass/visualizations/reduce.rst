@@ -61,7 +61,9 @@ participates. The explorer offers this choice only for one item per thread.
 
 Built-in names include ``"sum"``, ``"max"``, ``"min"``, ``"multiplies"``,
 and the integer bitwise operators. Recognized operator and NumPy aliases
-select these same built-ins; custom callbacks are unsupported.
+select these same built-ins. The kernel API also accepts
+:ref:`compiled scalar device operators <coop-cutlass-device-operators>`;
+the explorer illustrates the built-ins above.
 
 Using Reduce in a kernel
 ------------------------

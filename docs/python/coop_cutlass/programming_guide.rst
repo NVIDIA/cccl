@@ -61,9 +61,10 @@ All threads in the group must call the primitive, even when ``valid_items``
 selects a short tile or only rank zero uses the result. The sections below
 describe the requirements for block, warp, and mapped groups.
 
-Reduce and Scan support the built-in operators listed below. Custom operators
-and Scan prefix callbacks are not yet supported. See the :doc:`API reference
-<api>` for operation signatures and return values.
+Reduce and Scan support the built-in operators listed below and
+:ref:`compiled scalar device operators <coop-cutlass-device-operators>`.
+Scan prefix callbacks are unsupported. See the :doc:`API reference <api>`
+for operation signatures and return values.
 
 .. _coop-cutlass-requirements:
 
@@ -251,9 +252,10 @@ branches and loops. Scalar controls such as ``valid_items`` and ``offset``
 may be runtime values where the primitive allows them.
 
 A helper containing a cooperative call is different from an operator passed
-to Reduce, Scan, or Merge Sort. CUTLASS currently accepts the documented
-built-in operators and aliases; it does not compile arbitrary device
-callbacks.
+to Reduce, Scan, or Merge Sort. Reduce and Scan accept
+:ref:`compiled scalar device operators <coop-cutlass-device-operators>`
+prepared before kernel tracing. Merge Sort accepts its documented built-in
+comparators. Cooperative operations cannot be used inside a scalar callback.
 
 Block algorithms
 ----------------
@@ -484,10 +486,53 @@ launch flags supplied by the compiler. Cluster primitives require consistent
 cluster dimensions and launch mode; grid queries also require exact grid
 dimensions.
 
+.. _coop-cutlass-device-operators:
+
+Compiled scalar device operators
+--------------------------------
+
+``compile_operator(function, dtype, arch=...)`` prepares a CuTe ``@cute.jit``
+binary function for ``reduce`` and ``scan``. Call it on the host before
+tracing the enclosing kernel. It returns an immutable ``DeviceOperator``
+specialized for one scalar dtype and GPU target. Both inputs and the result
+must have that dtype, and the function must declare that dtype as its return
+annotation. The operator must be pure and associative; it must not synchronize
+threads, access mutable shared state, or invoke a cooperative primitive.
+
+For example, the associative operation ``a + b + 1`` can be written as:
+
+.. code-block:: python
+
+   import cutlass
+   from cutlass import cute
+   import cuda.coop.cutlass as coop
+
+   @cute.jit
+   def combine(a: cutlass.Int32, b: cutlass.Int32) -> cutlass.Int32:
+       return a + b + 1
+
+   combine_op = coop.compile_operator(combine, cutlass.Int32, arch="sm_80")
+
+Inside a kernel compiled for the same target, use
+``coop.reduce(block, value, binary_op=combine_op)`` or
+``coop.inclusive_scan(block, value, scan_op=combine_op)``. Exclusive Scan
+requires an explicit initial value, for example
+``coop.exclusive_scan(block, value, scan_op=combine_op, initial_value=-1)``.
+The dtype must match the input values exactly. Block Reduce's
+``raking_commutative_only`` algorithm rejects custom operators because the
+compiler does not prove their commutativity.
+
+This requires CUTLASS DSL 4.9 device-function export support through
+``cute.compile_to`` and ``cutlass.compiler.ArtifactType.LtoIr``, including
+typed declaration metadata. The callback's LTO-IR, the generated CUB wrapper,
+and the enclosing kernel are linked together. Existing group, scratch, and
+synchronization rules still apply. Runtime captures, Scan prefix callbacks,
+and operators returning tuples or structures are unsupported.
+
 .. _coop-cutlass-reduce:
 
-Built-in Reduce and Sum
------------------------
+Reduce and Sum
+--------------
 
 ``reduce(group, value, ...)`` and ``sum(group, value, ...)`` use CUB for block,
 physical-warp, and logical-warp reductions. Each member supplies a scalar or
@@ -503,8 +548,9 @@ The built-in operators are sum, product, minimum, maximum, bitwise AND,
 bitwise OR, and bitwise XOR. For example, ``binary_op="max"`` selects maximum,
 and ``binary_op="bit_or"`` selects bitwise OR. An omitted operator selects
 sum. Bitwise operators require integer values. The API also accepts
-known ``operator`` and NumPy callable aliases; arbitrary callbacks are
-unsupported.
+known ``operator`` and NumPy callable aliases. For a custom binary operator,
+pass a :ref:`DeviceOperator <coop-cutlass-device-operators>` through
+``binary_op``. Undecorated or uncompiled Python callables are not accepted.
 
 Only group rank zero may use the scalar result; the other members must still
 call the primitive. The input payload remains unchanged.
@@ -553,8 +599,8 @@ and a scalar valid-prefix sum whose result is read only at block rank zero.
 
 .. _coop-cutlass-scan:
 
-Built-in Scan
--------------
+Scan
+----
 
 ``scan``, ``exclusive_scan``, ``inclusive_scan``, ``exclusive_sum``, and
 ``inclusive_sum`` support block, physical warp, and logical warp groups. Block
@@ -574,7 +620,9 @@ value. Inclusive scans do not accept an initial value.
 The initial value must be uniform within the group. A typed value must match
 the input dtype exactly. Python numeric literals must be finite and
 representable in that dtype; integer input requires an integer literal.
-Custom operators, prefix callbacks, and callback state are unsupported.
+For a custom binary operator, pass a
+:ref:`DeviceOperator <coop-cutlass-device-operators>` through ``scan_op``.
+Prefix callbacks and runtime callback state are unsupported.
 
 The block algorithms are ``raking`` (the default), ``raking_memoize``, and
 ``warp_scans``. The last requires a block size divisible by 32. All block Scan
