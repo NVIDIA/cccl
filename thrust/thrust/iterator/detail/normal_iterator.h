@@ -21,6 +21,7 @@
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/__iterator/contiguous_iterator_adaptor.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>
 
@@ -44,6 +45,15 @@ public:
   normal_iterator(const normal_iterator<OtherPointer>& other, enable_if_convertible_t<OtherPointer, Pointer>* = nullptr)
       : super_t(other.base())
   {}
+
+  //! @brief Retargets the stored pointer at @p ptr.
+  //! @param[in] ptr The address that replaces the contiguous storage.
+  _CCCL_TEMPLATE(class T)
+  _CCCL_REQUIRES(::cuda::__iterator_can_rebase<Pointer, T> || ::cuda::std::is_pointer_v<Pointer>)
+  _CCCL_HOST_DEVICE void __rebase(T* ptr) & // NOLINT(readability-identifier-naming): libcu++ calls this by name
+  {
+    ::cuda::__rebase_contiguous_iterator_adaptor(this->base_reference(), ptr);
+  }
 };
 
 template <typename Pointer>
@@ -86,5 +96,9 @@ struct pointer_traits<THRUST_NS_QUALIFIER::detail::normal_iterator<Pointer>>
     return ::cuda::std::to_address(iter.base());
   }
 };
+
+template <class Pointer>
+inline constexpr bool __has_contiguous_traversal<THRUST_NS_QUALIFIER::detail::normal_iterator<Pointer>> =
+  __has_contiguous_traversal<Pointer>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
