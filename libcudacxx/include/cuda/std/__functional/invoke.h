@@ -173,6 +173,35 @@ __invoke(_Fp&& __f, _Args&&... __args) noexcept(noexcept(static_cast<_Fp&&>(__f)
   return static_cast<_Fp&&>(__f)(static_cast<_Args&&>(__args)...);
 }
 
+// extended lambda restriction 14
+
+template <class _Fp>
+_CCCL_CONCEPT __is_lambda_return_type_query_safe =
+#if _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_EXTENDED_LAMBDA__) && !_CCCL_DEVICE_COMPILATION()
+#  if _CCCL_CUDACC_BELOW(12, 3)
+  !__nv_is_extended_device_lambda_closure_type(remove_cvref_t<_Fp>);
+#  else // ^^^ _CCCL_CUDACC_BELOW(12, 3) ^^^ / vvv _CCCL_CUDACC_AT_LEAST(12, 3) vvv
+  !__nv_is_extended_device_lambda_closure_type(remove_cvref_t<_Fp>)
+  || __nv_is_extended_host_device_lambda_closure_type(remove_cvref_t<_Fp>)
+  || __nv_is_extended_device_lambda_with_preserved_return_type(remove_cvref_t<_Fp>);
+#  endif // _CCCL_CUDACC_AT_LEAST(12, 3)
+#else // ^^^ NVCC host compilation with extended lambdas ^^^ / vvv other compilers or device compilation vvv
+  true;
+#endif // ^^^ other compilers or device compilation ^^^
+
+template <class _Fp>
+_CCCL_CONCEPT __is_lambda_signature_query_safe =
+#if _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_EXTENDED_LAMBDA__) && !_CCCL_DEVICE_COMPILATION()
+#  if _CCCL_CUDACC_BELOW(12, 3)
+  !__nv_is_extended_device_lambda_closure_type(remove_cvref_t<_Fp>);
+#  else // ^^^ _CCCL_CUDACC_BELOW(12, 3) ^^^ / vvv _CCCL_CUDACC_AT_LEAST(12, 3) vvv
+  !__nv_is_extended_device_lambda_closure_type(remove_cvref_t<_Fp>)
+  || __nv_is_extended_host_device_lambda_closure_type(remove_cvref_t<_Fp>);
+#  endif // _CCCL_CUDACC_AT_LEAST(12, 3)
+#else // ^^^ NVCC host compilation with extended lambdas ^^^ / vvv other compilers or device compilation vvv
+  true;
+#endif // ^^^ other compilers or device compilation ^^^
+
 // __is_invocable
 template <class _Fp, class... _Args>
 using __invoke_result_t =
@@ -191,36 +220,36 @@ template <class _Fp, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT invoke_result //
     : public enable_if<__is_invocable<_Fp, _Args...>, __invoke_result_t<_Fp, _Args...>>
 {
-#if _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_EXTENDED_LAMBDA__) && !_CCCL_DEVICE_COMPILATION()
-#  if _CCCL_CUDACC_BELOW(12, 3)
-  static_assert(!__nv_is_extended_device_lambda_closure_type(remove_cvref_t<_Fp>),
+  static_assert(__is_lambda_return_type_query_safe<_Fp>,
                 "Attempt to use an extended __device__ lambda in a context "
                 "that requires querying its return type in host code. Use a "
                 "named function object, an extended __host__ __device__ lambda, or "
-                "cuda::proclaim_return_type instead.");
-#  else // ^^^ _CCCL_CUDACC_BELOW(12, 3) ^^^ / vvv _CCCL_CUDACC_AT_LEAST(12, 3) vvv
-  static_assert(
-    !__nv_is_extended_device_lambda_closure_type(remove_cvref_t<_Fp>)
-      || __nv_is_extended_host_device_lambda_closure_type(remove_cvref_t<_Fp>)
-      || __nv_is_extended_device_lambda_with_preserved_return_type(remove_cvref_t<_Fp>),
-    "Attempt to use an extended __device__ lambda in a context "
-    "that requires querying its return type in host code. Use a "
-    "named function object, an extended __host__ __device__ lambda, "
-    "cuda::proclaim_return_type, or an extended __device__ lambda "
-    "with a trailing return type instead ([] __device__ (...) -> RETURN_TYPE {...}).");
-#  endif // _CCCL_CUDACC_AT_LEAST(12, 3)
-#endif
+                "cuda::proclaim_return_type instead. From CUDA 12.3 onwards you "
+                "can also use an extended __device__ lambda with a trailing "
+                "return type ([] __device__ (...) -> RETURN_TYPE {...}).");
 };
 
 // is_invocable
 
 template <class _Fn, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable : bool_constant<__is_invocable<_Fn, _Args...>>
-{};
+{
+  static_assert(__is_lambda_signature_query_safe<_Fn>,
+                "Attempt to use an extended __device__ lambda in a context "
+                "that requires checking if it's invocable with a set of arguments "
+                "in host code. Use a named function object or an extended "
+                "__host__ __device__ lambda instead.");
+};
 
 template <class _Ret, class _Fn, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable_r : bool_constant<__is_invocable_r<_Ret, _Fn, _Args...>>
-{};
+{
+  static_assert(__is_lambda_return_type_query_safe<_Fn> && __is_lambda_signature_query_safe<_Fn>,
+                "Attempt to use an extended __device__ lambda in a context "
+                "that requires checking if it's invocable with a set of arguments "
+                "in host code. Use a named function object or an extended "
+                "__host__ __device__ lambda instead.");
+};
 
 template <class _Fn, class... _Args>
 inline constexpr bool is_invocable_v = __is_invocable<_Fn, _Args...>;
