@@ -211,7 +211,7 @@ class heterogeneous_iterator
         ::cuda::std::is_const_v<_CvTp> ? __is_heterogeneous_const_iter::__yes : __is_heterogeneous_const_iter::__no,
         ::cuda::mr::__memory_accessibility_from_properties_v<_Properties...>>
 {
-  using __base = __heterogeneous_iterator_access<
+  using __base _CCCL_NODEBUG = __heterogeneous_iterator_access<
     ::cuda::std::remove_const_t<_CvTp>,
     ::cuda::std::is_const_v<_CvTp> ? __is_heterogeneous_const_iter::__yes : __is_heterogeneous_const_iter::__no,
     ::cuda::mr::__memory_accessibility_from_properties_v<_Properties...>>;

@@ -41,8 +41,8 @@ public:
   using result_type = _UIntType;
 
 private:
-  using _Engine_result_type = typename _Engine::result_type;
-  using _Working_result_type =
+  using _Engine_result_type _CCCL_NODEBUG = typename _Engine::result_type;
+  using _Working_result_type _CCCL_NODEBUG =
     conditional_t<sizeof(_Engine_result_type) <= sizeof(result_type), result_type, _Engine_result_type>;
 
   _Engine& __e_;

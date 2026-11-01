@@ -34,19 +34,19 @@ TEST_FUNC constexpr void for_each(type_list<Types...>, Functor f);
 template <class... Types>
 struct concatenate<type_list<Types...>>
 {
-  using type = type_list<Types...>;
+  using type _CCCL_NODEBUG = type_list<Types...>;
 };
 
 template <class... Types1, class... Types2>
 struct concatenate<type_list<Types1...>, type_list<Types2...>>
 {
-  using type = type_list<Types1..., Types2...>;
+  using type _CCCL_NODEBUG = type_list<Types1..., Types2...>;
 };
 
 template <class... Types1, class... Types2, class... Rest>
 struct concatenate<type_list<Types1...>, type_list<Types2...>, Rest...>
 {
-  using type = concatenate_t<type_list<Types1..., Types2...>, Rest...>;
+  using type _CCCL_NODEBUG = concatenate_t<type_list<Types1..., Types2...>, Rest...>;
 };
 
 template <class... Types>
@@ -67,7 +67,7 @@ _CCCL_DIAG_POP
 template <class T>
 struct type_identity
 {
-  using type = T;
+  using type _CCCL_NODEBUG = T;
 };
 
 template <class Func>
@@ -152,7 +152,7 @@ struct type_list_as_pointers;
 template <class... Types>
 struct type_list_as_pointers<type_list<Types...>>
 {
-  using type = type_list<Types*...>;
+  using type _CCCL_NODEBUG = type_list<Types*...>;
 };
 
 template <class T>

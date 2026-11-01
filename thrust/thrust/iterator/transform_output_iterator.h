@@ -59,7 +59,7 @@ private:
 template <typename UnaryFunction, typename OutputIterator>
 struct transform_output_iterator_base
 {
-  using type =
+  using type _CCCL_NODEBUG =
     iterator_adaptor<transform_output_iterator<UnaryFunction, OutputIterator>,
                      OutputIterator,
                      use_default,

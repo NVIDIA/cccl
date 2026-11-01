@@ -35,43 +35,43 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 struct _CCCL_DECLSPEC_EMPTY_BASES thread_level : __native_hierarchy_level_base<thread_level>
 {
-  using __product_type  = ::cuda::std::uint32_t;
-  using __allowed_above = __allowed_levels<block_level>;
-  using __allowed_below = __allowed_levels<>;
+  using __product_type _CCCL_NODEBUG  = ::cuda::std::uint32_t;
+  using __allowed_above _CCCL_NODEBUG = __allowed_levels<block_level>;
+  using __allowed_below _CCCL_NODEBUG = __allowed_levels<>;
 
-  using __next_native_level = block_level;
+  using __next_native_level _CCCL_NODEBUG = block_level;
 };
 
 struct _CCCL_DECLSPEC_EMPTY_BASES warp_level : __native_hierarchy_level_base<warp_level>
 {
-  using __product_type = ::cuda::std::uint32_t;
+  using __product_type _CCCL_NODEBUG = ::cuda::std::uint32_t;
 
-  using __next_native_level = block_level;
+  using __next_native_level _CCCL_NODEBUG = block_level;
 };
 
 struct _CCCL_DECLSPEC_EMPTY_BASES block_level : __native_hierarchy_level_base<block_level>
 {
-  using __product_type  = ::cuda::std::uint32_t;
-  using __allowed_above = __allowed_levels<grid_level, cluster_level>;
-  using __allowed_below = __allowed_levels<thread_level>;
+  using __product_type _CCCL_NODEBUG  = ::cuda::std::uint32_t;
+  using __allowed_above _CCCL_NODEBUG = __allowed_levels<grid_level, cluster_level>;
+  using __allowed_below _CCCL_NODEBUG = __allowed_levels<thread_level>;
 
-  using __next_native_level = cluster_level;
+  using __next_native_level _CCCL_NODEBUG = cluster_level;
 };
 
 struct _CCCL_DECLSPEC_EMPTY_BASES cluster_level : __native_hierarchy_level_base<cluster_level>
 {
-  using __product_type  = ::cuda::std::uint32_t;
-  using __allowed_above = __allowed_levels<grid_level>;
-  using __allowed_below = __allowed_levels<block_level>;
+  using __product_type _CCCL_NODEBUG  = ::cuda::std::uint32_t;
+  using __allowed_above _CCCL_NODEBUG = __allowed_levels<grid_level>;
+  using __allowed_below _CCCL_NODEBUG = __allowed_levels<block_level>;
 
-  using __next_native_level = grid_level;
+  using __next_native_level _CCCL_NODEBUG = grid_level;
 };
 
 struct _CCCL_DECLSPEC_EMPTY_BASES grid_level : __native_hierarchy_level_base<grid_level>
 {
-  using __product_type  = ::cuda::std::uint64_t;
-  using __allowed_above = __allowed_levels<>;
-  using __allowed_below = __allowed_levels<block_level, cluster_level>;
+  using __product_type _CCCL_NODEBUG  = ::cuda::std::uint64_t;
+  using __allowed_above _CCCL_NODEBUG = __allowed_levels<>;
+  using __allowed_below _CCCL_NODEBUG = __allowed_levels<block_level, cluster_level>;
 };
 
 _CCCL_GLOBAL_CONSTANT thread_level gpu_thread;
@@ -85,13 +85,13 @@ _CCCL_GLOBAL_CONSTANT grid_level grid;
 template <typename... _Levels>
 struct __allowed_levels
 {
-  using __default_unit = ::cuda::std::__type_index_c<0, _Levels..., void>;
+  using __default_unit _CCCL_NODEBUG = ::cuda::std::__type_index_c<0, _Levels..., void>;
 };
 
 namespace __detail
 {
 template <typename _LevelType>
-using __default_unit_below = typename _LevelType::__allowed_below::__default_unit;
+using __default_unit_below _CCCL_NODEBUG = typename _LevelType::__allowed_below::__default_unit;
 
 template <class _QueryLevel, class _AllowedLevels>
 inline constexpr bool __is_level_allowed = false;

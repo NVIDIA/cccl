@@ -66,7 +66,7 @@ template <class _Tp>
 }
 
 template <class _Start>
-using _IotaDiffT = typename ::cuda::std::conditional_t<
+using _IotaDiffT _CCCL_NODEBUG = typename ::cuda::std::conditional_t<
   (!::cuda::std::integral<_Start> || sizeof(::cuda::std::iter_difference_t<_Start>) > sizeof(_Start)),
   ::cuda::std::type_identity<::cuda::std::iter_difference_t<_Start>>,
   decltype(::cuda::__get_wider_signed<_Start>())>::type;

@@ -631,7 +631,8 @@ template <::CUpointer_attribute _Attr>
 }
 
 template <::CUpointer_attribute _Attr>
-using __pointer_attribute_value_type_t = decltype(::cuda::__driver::__pointer_attribute_value_type_t_impl<_Attr>());
+using __pointer_attribute_value_type_t _CCCL_NODEBUG =
+  decltype(::cuda::__driver::__pointer_attribute_value_type_t_impl<_Attr>());
 
 template <::CUpointer_attribute _Attr>
 [[nodiscard]] _CCCL_HOST_API inline __driver_status

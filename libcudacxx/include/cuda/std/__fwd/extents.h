@@ -47,18 +47,19 @@ template <class _IndexType, size_t _Rank, class _Extents = extents<_IndexType>>
 struct __make_dextents;
 
 template <class _IndexType, size_t _Rank, class _Extents = extents<_IndexType>>
-using __make_dextents_t = typename __make_dextents<_IndexType, _Rank, _Extents>::type;
+using __make_dextents_t _CCCL_NODEBUG = typename __make_dextents<_IndexType, _Rank, _Extents>::type;
 
 template <class _IndexType, size_t _Rank, size_t... _ExtentsPack>
 struct __make_dextents<_IndexType, _Rank, extents<_IndexType, _ExtentsPack...>>
 {
-  using type = __make_dextents_t<_IndexType, _Rank - 1, extents<_IndexType, dynamic_extent, _ExtentsPack...>>;
+  using type _CCCL_NODEBUG =
+    __make_dextents_t<_IndexType, _Rank - 1, extents<_IndexType, dynamic_extent, _ExtentsPack...>>;
 };
 
 template <class _IndexType, size_t... _ExtentsPack>
 struct __make_dextents<_IndexType, 0, extents<_IndexType, _ExtentsPack...>>
 {
-  using type = extents<_IndexType, _ExtentsPack...>;
+  using type _CCCL_NODEBUG = extents<_IndexType, _ExtentsPack...>;
 };
 
 // [mdspan.extents.dextents], alias template

@@ -93,7 +93,7 @@ static_assert(sizeof(__rtti_base) == sizeof(uint64_t) + sizeof(void*));
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct __base_info
 {
-  using __cast_fn_t = auto(__rtti const*) noexcept -> __base_vptr;
+  using __cast_fn_t _CCCL_NODEBUG = auto(__rtti const*) noexcept -> __base_vptr;
 
   ::cuda::std::__type_info_ptr __typeid_;
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)

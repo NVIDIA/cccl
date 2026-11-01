@@ -124,7 +124,7 @@ template <typename RealType>
 struct normal_distribution_base
 {
 #if _CCCL_CUDA_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)
-  using type = normal_distribution_nvcc<RealType>;
+  using type _CCCL_NODEBUG = normal_distribution_nvcc<RealType>;
 #else // ^^^ _CCCL_CUDA_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC) ^^^ /
       // vvv !_CCCL_CUDA_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC) vvv
   using type = normal_distribution_portable<RealType>;

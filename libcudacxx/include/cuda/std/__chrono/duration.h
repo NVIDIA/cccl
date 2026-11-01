@@ -64,7 +64,7 @@ template <class _Rep1, class _Period1, class _Rep2, class _Period2>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
 common_type<::cuda::std::chrono::duration<_Rep1, _Period1>, ::cuda::std::chrono::duration<_Rep2, _Period2>>
 {
-  using type =
+  using type _CCCL_NODEBUG =
     ::cuda::std::chrono::duration<common_type_t<_Rep1, _Rep2>, typename __ratio_gcd<_Period1, _Period2>::type>;
 };
 

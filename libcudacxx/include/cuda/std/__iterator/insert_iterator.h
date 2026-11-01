@@ -31,7 +31,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Container>
-using __insert_iterator_iter_t = typename _Container::iterator;
+using __insert_iterator_iter_t _CCCL_NODEBUG = typename _Container::iterator;
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG

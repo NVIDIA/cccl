@@ -31,21 +31,21 @@ template <typename T1,
           bool LessEqual    = ::cuda::std::is_convertible_v<T2, T1>>
 struct smaller_type
 {
-  using type = T1;
+  using type _CCCL_NODEBUG = T1;
 };
 
 // T1 >= T2
 template <typename T1, typename T2>
 struct smaller_type<T1, T2, true, false>
 {
-  using type = T2;
+  using type _CCCL_NODEBUG = T2;
 };
 
 // unordered
 template <typename T1, typename T2>
 struct smaller_type<T1, T2, false, false>
 {
-  using type = no_minimum_type_marker;
+  using type _CCCL_NODEBUG = no_minimum_type_marker;
 };
 
 template <typename Head, typename... Tail>
@@ -55,7 +55,7 @@ struct minimum_type_impl : smaller_type<Head, typename minimum_type_impl<Tail...
 template <typename T>
 struct minimum_type_impl<T>
 {
-  using type = T;
+  using type _CCCL_NODEBUG = T;
 };
 
 // Has no nested ::type to produce a SFINAE-friendly error, in case the minimum_type is `no_minimum_type_marker`

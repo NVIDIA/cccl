@@ -96,7 +96,7 @@ using __type_info_ref_ = type_info const&;
 //    Everything between them is the name of type _Tp.
 
 template <class _Tp>
-using _CCCL_TYPEID_ONLY_SUPPORTS_TYPES = _Tp;
+using _CCCL_TYPEID_ONLY_SUPPORTS_TYPES _CCCL_NODEBUG = _Tp;
 
 // Earlier versions of gcc (before gcc-9) do not treat __PRETTY_FUNCTION__ as a
 // constexpr value after a reference to it has been returned from a function.
@@ -394,9 +394,9 @@ struct __type_info_ref_ : __type_info
 }
 
 #  if defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
-using type_info       = __type_info;
-using __type_info_ptr = __type_info_ptr_;
-using __type_info_ref = __type_info_ref_;
+using type_info                     = __type_info;
+using __type_info_ptr _CCCL_NODEBUG = __type_info_ptr_;
+using __type_info_ref _CCCL_NODEBUG = __type_info_ref_;
 #  endif // defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
 
 #  define _CCCL_TYPEID_FALLBACK(...) \

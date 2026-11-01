@@ -75,8 +75,8 @@ inline constexpr size_t __complex_alignment_v<__half> = alignof(__half2);
 template <>
 struct __cccl_complex_overload_traits<__half, false, false>
 {
-  using _ValueType   = __half;
-  using _ComplexType = complex<__half>;
+  using _ValueType _CCCL_NODEBUG   = __half;
+  using _ComplexType _CCCL_NODEBUG = complex<__half>;
 };
 
 #  if _CCCL_TILE_COMPILATION()
@@ -95,10 +95,10 @@ using __complex_half_repr_t = __complex_fake_half2;
 template <>
 struct __type_to_vector<__half>
 {
-  using __type = __half2;
+  using __type _CCCL_NODEBUG = __half2;
 };
 
-using __complex_half_repr_t = __half2;
+using __complex_half_repr_t _CCCL_NODEBUG = __half2;
 #  endif // !_CCCL_TILE_COMPILATION()
 
 template <>

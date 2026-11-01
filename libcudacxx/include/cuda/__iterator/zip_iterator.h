@@ -52,7 +52,7 @@ struct __zv_iter_category_base_tag
 };
 
 template <class... _Iterators>
-using __zv_iter_category_base =
+using __zv_iter_category_base _CCCL_NODEBUG =
   ::cuda::std::conditional_t<__zip_iter_constraints<_Iterators...>::__all_forward,
                              __zv_iter_category_base_tag,
                              __zv_iter_category_base_none>;

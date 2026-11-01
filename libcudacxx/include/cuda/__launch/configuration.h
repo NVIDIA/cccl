@@ -250,7 +250,7 @@ class _CCCL_DECLSPEC_EMPTY_BASES dynamic_shared_memory_option
     : __dyn_smem_option_base<_Tp>
     , public __detail::launch_option
 {
-  using __base_type = __dyn_smem_option_base<_Tp>;
+  using __base_type _CCCL_NODEBUG = __dyn_smem_option_base<_Tp>;
 
   static_assert(::cuda::std::rank_v<_Tp> <= 1,
                 "multidimensional arrays cannot be used with dynamic shared "

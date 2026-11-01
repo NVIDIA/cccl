@@ -237,7 +237,7 @@ public:
   }
 
   template <size_t _Offset, size_t _Count>
-  using __subspan_t = span<element_type, _Count != dynamic_extent ? _Count : _Extent - _Offset>;
+  using __subspan_t _CCCL_NODEBUG = span<element_type, _Count != dynamic_extent ? _Count : _Extent - _Offset>;
 
   template <size_t _Offset, size_t _Count = dynamic_extent>
   _CCCL_API constexpr __subspan_t<_Offset, _Count> subspan() const noexcept
@@ -487,7 +487,7 @@ public:
   }
 
   template <size_t _Offset, size_t _Count>
-  using __subspan_t = span<element_type, _Count>;
+  using __subspan_t _CCCL_NODEBUG = span<element_type, _Count>;
 
   template <size_t _Offset, size_t _Count = dynamic_extent>
   _CCCL_API constexpr __subspan_t<_Offset, _Count> subspan() const noexcept

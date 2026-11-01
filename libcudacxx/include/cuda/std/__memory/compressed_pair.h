@@ -54,9 +54,9 @@ struct __value_init_tag
 template <class _Tp, int _Idx, bool _CanBeEmptyBase = is_empty_v<_Tp> && !is_final_v<_Tp>>
 struct __compressed_pair_elem
 {
-  using _ParamT         = _Tp;
-  using reference       = _Tp&;
-  using const_reference = const _Tp&;
+  using _ParamT _CCCL_NODEBUG = _Tp;
+  using reference             = _Tp&;
+  using const_reference       = const _Tp&;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr explicit __compressed_pair_elem(__default_init_tag) noexcept(
@@ -101,10 +101,10 @@ private:
 template <class _Tp, int _Idx>
 struct __compressed_pair_elem<_Tp, _Idx, true> : private _Tp
 {
-  using _ParamT         = _Tp;
-  using reference       = _Tp&;
-  using const_reference = const _Tp&;
-  using __value_type    = _Tp;
+  using _ParamT _CCCL_NODEBUG      = _Tp;
+  using reference                  = _Tp&;
+  using const_reference            = const _Tp&;
+  using __value_type _CCCL_NODEBUG = _Tp;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HIDE_FROM_ABI explicit constexpr __compressed_pair_elem() = default;

@@ -240,14 +240,14 @@ public:
 template <typename T>
 struct unwrap_value_t_impl
 {
-  using type = T;
+  using type _CCCL_NODEBUG = T;
 };
 
 #if TEST_HALF_T()
 template <>
 struct unwrap_value_t_impl<half_t>
 {
-  using type = __half;
+  using type _CCCL_NODEBUG = __half;
 };
 #endif // TEST_HALF_T()
 
@@ -255,7 +255,7 @@ struct unwrap_value_t_impl<half_t>
 template <>
 struct unwrap_value_t_impl<bfloat16_t>
 {
-  using type = __nv_bfloat16;
+  using type _CCCL_NODEBUG = __nv_bfloat16;
 };
 #endif // TEST_BF_T()
 

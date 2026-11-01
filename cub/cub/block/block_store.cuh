@@ -732,7 +732,7 @@ class BlockStore
     }
   }
 
-  using _TempStorage = decltype(temp_storage_helper());
+  using _TempStorage _CCCL_NODEBUG = decltype(temp_storage_helper());
 
   _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
   {
@@ -964,7 +964,8 @@ public:
 template <class Policy, class It, class T = cub::detail::it_value_t<It>>
 struct BlockStoreType
 {
-  using type = cub::BlockStore<T, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, Policy::STORE_ALGORITHM>;
+  using type _CCCL_NODEBUG =
+    cub::BlockStore<T, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, Policy::STORE_ALGORITHM>;
 };
 #endif // _CCCL_DOXYGEN_INVOKED
 

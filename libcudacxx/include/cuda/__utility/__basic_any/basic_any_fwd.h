@@ -45,13 +45,13 @@ template <class _Interface>
 struct __basic_any<_Interface&>;
 
 template <auto _Value>
-using __constant = ::cuda::std::integral_constant<decltype(_Value), _Value>;
+using __constant _CCCL_NODEBUG = ::cuda::std::integral_constant<decltype(_Value), _Value>;
 
 template <class _InterfaceOrModel, class... _VirtualFnsOrOverrides>
 struct __overrides_list;
 
 template <class _InterfaceOrModel, auto... _VirtualFnsOrOverrides>
-using __overrides_for = __overrides_list<_InterfaceOrModel, __constant<_VirtualFnsOrOverrides>...>;
+using __overrides_for _CCCL_NODEBUG = __overrides_list<_InterfaceOrModel, __constant<_VirtualFnsOrOverrides>...>;
 
 template <class _Interface, auto... _Mbrs>
 struct _CCCL_DECLSPEC_EMPTY_BASES __basic_vtable;

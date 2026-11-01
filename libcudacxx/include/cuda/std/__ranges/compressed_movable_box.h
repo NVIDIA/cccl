@@ -290,7 +290,7 @@ template <size_t _Index, class _Tp>
 struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_base<_Index, _Tp, __compressed_box_specialization::__with_engaged>
     : __compressed_box_storage<_Index, _Tp>
 {
-  using __base = __compressed_box_storage<_Index, _Tp>;
+  using __base _CCCL_NODEBUG = __compressed_box_storage<_Index, _Tp>;
 
   _CCCL_API constexpr __compressed_box_base(bool __engaged) noexcept
       : __base(__engaged)
@@ -641,7 +641,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box;
 template <class _Elem1>
 struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1> : __compressed_box<0, _Elem1>
 {
-  using __base1 = __compressed_box<0, _Elem1>;
+  using __base1 _CCCL_NODEBUG = __compressed_box<0, _Elem1>;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box(const __compressed_movable_box&) = default;
@@ -693,8 +693,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2>
     : __compressed_box<0, _Elem1>
     , __compressed_box<1, _Elem2>
 {
-  using __base1 = __compressed_box<0, _Elem1>;
-  using __base2 = __compressed_box<1, _Elem2>;
+  using __base1 _CCCL_NODEBUG = __compressed_box<0, _Elem1>;
+  using __base2 _CCCL_NODEBUG = __compressed_box<1, _Elem2>;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box(const __compressed_movable_box&) = default;
@@ -792,9 +792,9 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2, _Elem
     , __compressed_box<1, _Elem2>
     , __compressed_box<2, _Elem3>
 {
-  using __base1 = __compressed_box<0, _Elem1>;
-  using __base2 = __compressed_box<1, _Elem2>;
-  using __base3 = __compressed_box<2, _Elem3>;
+  using __base1 _CCCL_NODEBUG = __compressed_box<0, _Elem1>;
+  using __base2 _CCCL_NODEBUG = __compressed_box<1, _Elem2>;
+  using __base3 _CCCL_NODEBUG = __compressed_box<2, _Elem3>;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HIDE_FROM_ABI constexpr __compressed_movable_box(const __compressed_movable_box&) = default;
