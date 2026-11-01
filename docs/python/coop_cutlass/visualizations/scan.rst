@@ -73,7 +73,8 @@ payload containing the input aggregate at every member. It excludes the
 initial value and any input lanes beyond ``valid_items``.
 
 Built-in scans, initial values, and aggregate outputs are supported.
-Custom binary operators and prefix callbacks are unsupported.
+The kernel API also accepts :ref:`compiled scalar binary operators
+<coop-cutlass-device-operators>`. Prefix callbacks are unsupported.
 
 Using Scan in a kernel
 ----------------------

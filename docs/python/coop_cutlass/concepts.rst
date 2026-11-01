@@ -23,8 +23,10 @@ compiler markers; compilation turns them into device operations. The
 ``cuda.coop`` parent is a namespace package. The standalone distribution
 installs its public operations only under ``cuda.coop.cutlass``.
 
-Built-in operators and their documented aliases are supported. Custom
-operators and stateful Scan callbacks are currently unsupported.
+Built-in operators and their documented aliases are supported. Reduce and
+Scan also accept :ref:`compiled scalar device operators
+<coop-cutlass-device-operators>`. Prepare these operators on the host before
+kernel tracing. Stateful Scan prefix callbacks are unsupported.
 
 .. _coop-common-calling-conventions:
 
