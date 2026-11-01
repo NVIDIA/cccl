@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import operator
+from collections.abc import Callable
 from typing import Any
 
 import numpy as np
@@ -16,6 +17,20 @@ from cutlass import (
 from typing_extensions import assert_type
 
 import cuda.coop.cutlass as coop
+
+
+def check_compiled_operator(
+    function: Callable[[Uint32, Uint32], Uint32], scalar: Uint32
+) -> None:
+    """Accept prepared callbacks without changing reduction result types."""
+    compiled = coop.compile_operator(function, Uint32, arch="sm_80")
+    assert_type(compiled, coop.DeviceOperator)
+    assert_type(
+        coop.reduce(coop.this_block(), scalar, binary_op=compiled), Uint32
+    )
+    assert_type(
+        coop.reduce(coop.this_warp(), scalar, binary_op=compiled), Uint32
+    )
 
 
 def check_cutlass_reduce_surface(scalar: Uint32) -> None:

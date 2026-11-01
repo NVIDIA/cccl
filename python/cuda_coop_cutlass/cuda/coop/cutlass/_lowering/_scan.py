@@ -48,10 +48,12 @@ from cutlass.cute.ffi import ffi
 
 from .._compiler import _rendering, _state, _storage, _types
 from .._compiler._types import ALL_PROVIDER_TYPES, TYPE_SPECIFICATIONS
+from .._device_operator import DeviceOperator
 from .._group_reduce import _classify_valid_items
 from .._operators import (
-    OPERATOR_CPP,
+    operator_cpp_type,
     operator_expression,
+    operator_symbol_token,
     validate_operator_dtype,
 )
 from .._thread_data import ThreadData, _make_rmem_tensor
@@ -68,7 +70,6 @@ _BLOCK_ALGORITHM_TOKENS = {
     BlockScanAlgorithm.RAKING_MEMOIZE.value: "raking_memoize",
     BlockScanAlgorithm.WARP_SCANS.value: "warp_scans",
 }
-_SCAN_OPERATOR_CPP = OPERATOR_CPP
 
 
 def _make_group_scan_plan(
@@ -79,7 +80,7 @@ def _make_group_scan_plan(
     value_kind: ScanValueKind,
     items_per_thread: int,
     mode: str,
-    op: str,
+    op: str | DeviceOperator,
     initial_value: Any = None,
     aggregate: bool = False,
     valid_items: Any = None,
@@ -109,7 +110,7 @@ def _make_group_scan_plan(
     mode : str
         Exclusive or inclusive scan.
     op : str
-        Normalized built-in operator name.
+        Normalized built-in name or compiled device operator.
     initial_value : object, optional
         Presence selects an explicit seed operand. Inclusive mode rejects it;
         non-sum exclusive mode requires it.
@@ -153,7 +154,7 @@ def _make_group_scan_plan(
     scan_operator = None
     if op != "sum" or initial_descriptor is not None:
         try:
-            cpp = _SCAN_OPERATOR_CPP[op]
+            cpp = operator_cpp_type(op)
         except KeyError as exc:
             raise NotImplementedError(
                 f"unsupported group scan operator {op!r}"
@@ -191,7 +192,7 @@ def _normalize_cpp_operator(cpp: str) -> str:
 def _validate_scan_request_plan(
     plan: GroupLoweringPlan,
     *,
-    op: str,
+    op: str | DeviceOperator,
     value_type: type,
     external_scratch: bool,
 ) -> GroupScanSemantics:
@@ -222,6 +223,8 @@ def _validate_scan_request_plan(
         raise TypeError("group scan request requires scan semantics")
     if operation.dtype is not value_type:
         raise ValueError("group scan request dtype does not match its plan")
+    if isinstance(op, DeviceOperator):
+        validate_operator_dtype(op, value_type, primitive="scan")
 
     scan_operator = operation.scan_operator
     if scan_operator is None:
@@ -232,7 +235,7 @@ def _validate_scan_request_plan(
     else:
         if not isinstance(scan_operator, CxxOperator):
             raise NotImplementedError(
-                "CUTLASS group scan supports built-in C++ operators only"
+                "CUTLASS group scan requires a C++ functor description"
             )
         expected_cpp = _normalize_cpp_operator(operator_expression(op))
         if _normalize_cpp_operator(scan_operator.cpp) != expected_cpp:
@@ -351,7 +354,7 @@ def _validate_scan_request_plan(
 class _CubScanRequest:
     """Bind a supported Scan plan to one generated CUB wrapper.
 
-    ``op`` and ``value_type`` identify the built-in operator and scalar ABI.
+    ``op`` and ``value_type`` identify the operator and scalar ABI.
     ``external_scratch`` distinguishes a wrapper receiving scratch operands
     from one declaring scratch internally, so they cannot share an artifact
     identity. It describes the wrapper boundary, not user ownership: ordinary
@@ -364,7 +367,7 @@ class _CubScanRequest:
     """
 
     plan: GroupLoweringPlan
-    op: str
+    op: str | DeviceOperator
     value_type: type
     external_scratch: bool = False
     kind: str = "cub_group_scan"
@@ -464,7 +467,8 @@ class _CubScanRequest:
         symbol = (
             "cuda_coop_cutlass_cub_scan_"
             f"{self.group.symbol_suffix}_"
-            f"{implementation.method_name.lower()}_{self.op}_"
+            f"{implementation.method_name.lower()}_"
+            f"{operator_symbol_token(self.op)}_"
             f"{TYPE_SPECIFICATIONS[self.value_type].token}_{value_kind}_"
             f"{self._algorithm_suffix}_{initial}_{aggregate}_{valid_items}_"
             f"{signature}"
@@ -1072,7 +1076,7 @@ def provider_scan(
     launch: LaunchFacts,
     value: Any,
     mode: str = "exclusive",
-    op: str = "sum",
+    op: str | DeviceOperator = "sum",
     initial_value: Any = None,
     algorithm: Any = None,
     aggregate_output: Any = None,
@@ -1082,7 +1086,7 @@ def provider_scan(
     """Plan one Scan input and emit its CUB call into a CuTe trace.
 
     Resolve the homogeneous scalar dtype and preserve scalar versus array
-    form. Validate the built-in operator, then use ``group`` and ``launch`` to
+    form. Validate the operator dtype, then use ``group`` and ``launch`` to
     obtain the shared plan. All block calls use deferred external scratch;
     warp calls use storage declared inside the wrapper. ``temp_storage`` can
     override only the block allocation policy.

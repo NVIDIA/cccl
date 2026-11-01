@@ -28,6 +28,7 @@ from cuda.coop.cutlass._typing import (
 )
 
 from ._compiler._launch import current_kernel_launch_facts
+from ._device_operator import DeviceOperator
 from ._group_load_store import _is_boolean
 from ._thread_data import (
     CutlassTensorSample,
@@ -101,13 +102,14 @@ def reduce(
     /,
     *,
     binary_op: ReduceOperator
+    | DeviceOperator
     | Callable[[object, object], object]
     | None = None,
     valid_items: ValidItems | None = None,
     algorithm: ReduceAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> _ItemT:
-    """Reduce scalars or per-thread register payloads with a built-in operator.
+    """Reduce scalars or register payloads with an associative operator.
 
     Every member of the block or warp participates. Only group rank zero may
     read the result. CuTe register payloads contribute all their elements.
@@ -128,13 +130,14 @@ def reduce(
         contributes to one scalar result. Inputs remain unchanged. Supported
         dtypes are signed and unsigned 8-, 16-, 32-, and 64-bit integers,
         ``Float32``, and ``Float64``.
-    binary_op : str or built-in alias, optional
+    binary_op : str, built-in alias, or DeviceOperator, optional
         Compile-time operator, default sum. Supported strings are ``"sum"``,
         ``"multiplies"``, ``"min"``, ``"max"``, ``"bit_and"``, ``"bit_or"``,
         and ``"bit_xor"``. Also accepts the corresponding ``operator`` or
         NumPy aliases, such as ``operator.add`` and ``numpy.maximum``.
-        Bitwise operators require an integer dtype. Custom device functions
-        are not supported.
+        Bitwise operators require an integer dtype. A device operator prepared
+        with :func:`compile_operator` must accept and return the input dtype
+        and be associative. It cannot use ``"raking_commutative_only"``.
 
     valid_items : integer, optional
         Group-uniform count of contributing members, from one through the

@@ -163,6 +163,24 @@ def bundle_scratch_layout_probes(requests):
     return probes
 
 
+def bundle_device_operators(requests):
+    """Collect the prepared callbacks referenced by this trace's requests."""
+
+    from .._device_operator import DeviceOperator
+
+    operators = {}
+    for request in canonical_bundle_requests(requests):
+        operator = getattr(request, "op", None)
+        if isinstance(operator, DeviceOperator):
+            existing = operators.get(operator.symbol)
+            if existing is not None and existing != operator:
+                raise ValueError(
+                    f"conflicting device operator {operator.symbol!r}"
+                )
+            operators[operator.symbol] = operator
+    return tuple(operators[symbol] for symbol in sorted(operators))
+
+
 def render_bundle_source(requests):
     """Render the complete C++ bundle: preamble, shared types, wrappers.
 
@@ -188,6 +206,7 @@ def render_bundle_source(requests):
             definitions[definition.name] = definition.code
     lines = [
         *bundle_include_lines(requests),
+        *(op.cpp_definition for op in bundle_device_operators(requests)),
         *definitions.values(),
         'extern "C" {',
     ]

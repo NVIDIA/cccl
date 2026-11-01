@@ -41,10 +41,12 @@ from cutlass.cute.ffi import ffi
 
 from .._compiler import _rendering, _state, _types
 from .._compiler._types import ALL_PROVIDER_TYPES, TYPE_SPECIFICATIONS
+from .._device_operator import DeviceOperator
 from .._group_reduce import _classify_valid_items
 from .._operators import (
-    OPERATOR_CPP,
+    operator_cpp_type,
     operator_expression,
+    operator_symbol_token,
     validate_operator_dtype,
 )
 from .._thread_data import ThreadData
@@ -54,7 +56,6 @@ _provider_state = _state
 _provider_types = _types
 
 _ROOT_SCOPE = "cuda.coop.cutlass"
-_REDUCE_OPERATOR_CPP = OPERATOR_CPP
 
 
 def _make_group_reduce_plan(
@@ -64,14 +65,14 @@ def _make_group_reduce_plan(
     dtype: Any,
     value_kind: ReduceValueKind,
     items_per_thread: int,
-    op: str,
+    op: str | DeviceOperator,
     valid_items: ArgumentBinding | None = None,
     algorithm: Any = None,
     temp_storage: Any = None,
 ) -> GroupLoweringPlan:
     """Build shared reduction semantics and select a lowering route.
 
-    Represent built-in non-sum operators as C++ functors with a payload dtype
+    Represent non-sum operators as C++ functors with a payload dtype
     dependency. Shared planning decides result visibility, participation,
     scratch, and specialization; this helper does not emit a device call.
     """
@@ -80,7 +81,7 @@ def _make_group_reduce_plan(
     operation = ReduceOperation.SUM
     if op != "sum":
         try:
-            cpp = _REDUCE_OPERATOR_CPP[op]
+            cpp = operator_cpp_type(op)
         except KeyError as exc:
             raise NotImplementedError(
                 f"unsupported group reduce operator {op!r}"
@@ -153,7 +154,7 @@ def _validate_valid_items_payload(
 def _validate_reduce_request_plan(
     plan: GroupLoweringPlan,
     *,
-    op: str,
+    op: str | DeviceOperator,
     value_type: type,
 ) -> GroupReduceSemantics:
     """Match a wrapper request to its planned dtype and operator.
@@ -167,6 +168,8 @@ def _validate_reduce_request_plan(
         raise TypeError("group reduce request requires reduce semantics")
     if operation.dtype is not value_type:
         raise ValueError("group reduce request dtype does not match its plan")
+    if isinstance(op, DeviceOperator):
+        validate_operator_dtype(op, value_type)
     expected_operation = (
         ReduceOperation.SUM if op == "sum" else ReduceOperation.REDUCE
     )
@@ -175,7 +178,10 @@ def _validate_reduce_request_plan(
             "group reduce request operator does not match its plan"
         )
     if expected_operation is ReduceOperation.REDUCE:
-        expected_cpp = _REDUCE_OPERATOR_CPP.get(op)
+        try:
+            expected_cpp = operator_cpp_type(op)
+        except KeyError:
+            expected_cpp = None
         if expected_cpp is None or operation.reduce_operator is None:
             raise ValueError(
                 "group reduce request operator does not match its plan"
@@ -233,12 +239,12 @@ class _CubReduceRequest:
     """
 
     plan: GroupLoweringPlan
-    op: str
+    op: str | DeviceOperator
     value_type: type
     kind: str = "cub_group_reduce"
 
     def __post_init__(self) -> None:
-        """Require a CUB plan with a matching dtype and built-in operator."""
+        """Require a CUB plan with a matching dtype and operator."""
 
         self.plan.require_supported()
         if self.plan.target not in {
@@ -343,7 +349,7 @@ class _CubReduceRequest:
         ).hexdigest()[:12]
         return (
             "cuda_coop_cutlass_cub_reduce_"
-            f"{self.group.symbol_suffix}_{self.op}_"
+            f"{self.group.symbol_suffix}_{operator_symbol_token(self.op)}_"
             f"{TYPE_SPECIFICATIONS[self.value_type].token}{arity}_"
             f"{self.algorithm_suffix}_{self.valid_items_suffix}_{signature}"
         )
@@ -586,7 +592,7 @@ def provider_reduce(
     group: ThreadGroup,
     launch: LaunchFacts,
     value: Any,
-    op: str = "sum",
+    op: str | DeviceOperator = "sum",
     valid_items: Any = None,
     valid_items_binding: ArgumentBinding | None = None,
     algorithm: Any = None,
@@ -595,7 +601,7 @@ def provider_reduce(
     """Plan a reduction and emit its typed CuTe extern call.
 
     Resolve scalar or initialized ThreadData values to one dtype and validate
-    the built-in operator. Each payload element becomes a scalar ABI argument;
+    the operator dtype. Each payload element becomes a scalar ABI argument;
     a runtime valid count follows those items. Inputs remain unchanged, and
     the returned scalar follows the plan's result visibility.
     """
