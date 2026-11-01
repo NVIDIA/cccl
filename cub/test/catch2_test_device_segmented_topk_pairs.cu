@@ -2305,7 +2305,9 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with fixed-size segments and pe
   // Materialize fixed-size input offsets: [0, segment_size, 2 * segment_size, ...]
   auto fixed_offsets_it = cuda::make_strided_iterator(cuda::make_counting_iterator<segment_size_t>(0), segment_size);
   c2h::device_vector<segment_size_t> segment_offsets(num_segments + 1, thrust::no_init);
-  thrust::copy(fixed_offsets_it, fixed_offsets_it + (num_segments + 1), segment_offsets.begin());
+  thrust::copy(fixed_offsets_it,
+               fixed_offsets_it + (static_cast<typename decltype(fixed_offsets_it)::difference_type>(num_segments) + 1),
+               segment_offsets.begin());
 
   // Compute compacted output offsets: each output segment holds exactly min(k[i], segment_size) items, tightly packed.
   auto compacted_output_sizes_it = cuda::make_transform_iterator(

@@ -17,6 +17,7 @@
 #include <cub/agent/agent_segmented_radix_sort.cuh>
 #include <cub/agent/agent_sub_warp_merge_sort.cuh>
 #include <cub/detail/device_double_buffer.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
@@ -54,9 +55,13 @@ struct LargeSegmentsSelectorT
 
   _CCCL_DEVICE _CCCL_FORCEINLINE bool operator()(local_segment_index_t segment_id) const
   {
-    // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
-    const OffsetT segment_size =
-      d_offset_end[base_segment_offset + segment_id] - d_offset_begin[base_segment_offset + segment_id];
+    using end_difference_t _CCCL_NODEBUG   = it_difference_t<EndOffsetIteratorT>;
+    using begin_difference_t _CCCL_NODEBUG = it_difference_t<BeginOffsetIteratorT>;
+
+    const auto end_offset      = static_cast<end_difference_t>(base_segment_offset);
+    const auto begin_offset    = static_cast<begin_difference_t>(base_segment_offset);
+    const OffsetT segment_size = d_offset_end[end_offset + segment_id] - d_offset_begin[begin_offset + segment_id];
+
     return segment_size > value;
   }
 };
@@ -80,9 +85,12 @@ struct SmallSegmentsSelectorT
 
   _CCCL_DEVICE _CCCL_FORCEINLINE bool operator()(local_segment_index_t segment_id) const
   {
-    // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
-    const OffsetT segment_size =
-      d_offset_end[base_segment_offset + segment_id] - d_offset_begin[base_segment_offset + segment_id];
+    using end_difference_t _CCCL_NODEBUG   = it_difference_t<EndOffsetIteratorT>;
+    using begin_difference_t _CCCL_NODEBUG = it_difference_t<BeginOffsetIteratorT>;
+
+    const auto end_offset      = static_cast<end_difference_t>(base_segment_offset);
+    const auto begin_offset    = static_cast<begin_difference_t>(base_segment_offset);
+    const OffsetT segment_size = d_offset_end[end_offset + segment_id] - d_offset_begin[begin_offset + segment_id];
     return segment_size < value;
   }
 };

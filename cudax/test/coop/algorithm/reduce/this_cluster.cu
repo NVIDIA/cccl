@@ -214,7 +214,11 @@ C2H_TEST("reduce/this_cluster Integral Type Tests",
   for (const int num_items : {1, 4})
   {
     auto reference_result = cuda::std::accumulate(
-      h_in.begin(), h_in.begin() + num_items * cluster_size_t::value * block_size, operator_identity, reduce_op);
+      h_in.begin(),
+      h_in.begin()
+        + static_cast<typename decltype(h_in)::difference_type>(num_items) * cluster_size_t::value * block_size,
+      operator_identity,
+      reduce_op);
     run_reduce_kernel(stream, cluster_size_t{}, num_items, d_in, d_out, reduce_op);
     verify_results(reference_result, c2h::host_vector<value_t>(d_out)[0]);
   }
@@ -247,7 +251,11 @@ C2H_TEST("reduce/this_cluster Floating-Point Type Tests",
   for (const int num_items : {1, 4})
   {
     auto reference_result = cuda::std::accumulate(
-      h_in.begin(), h_in.begin() + num_items * cluster_size_t::value * block_size, operator_identity, reduce_op);
+      h_in.begin(),
+      h_in.begin()
+        + static_cast<typename decltype(h_in)::difference_type>(num_items) * cluster_size_t::value * block_size,
+      operator_identity,
+      reduce_op);
     run_reduce_kernel(stream, cluster_size_t{}, num_items, d_in, d_out, reduce_op);
     verify_results(reference_result, c2h::host_vector<value_t>(d_out)[0]);
   }
@@ -276,7 +284,11 @@ C2H_TEST("reduce/this_cluster Broadcasted", "[reduce][this_cluster]", integral_t
   {
     c2h::device_vector<value_t> d_out(cluster_size_t::value * block_size);
     auto reference_result = cuda::std::accumulate(
-      h_in.begin(), h_in.begin() + num_items * cluster_size_t::value * block_size, operator_identity, reduce_op);
+      h_in.begin(),
+      h_in.begin()
+        + static_cast<typename decltype(h_in)::difference_type>(num_items) * cluster_size_t::value * block_size,
+      operator_identity,
+      reduce_op);
     run_reduce_kernel(stream, cluster_size_t{}, num_items, d_in, d_out, reduce_op, cuda::std::true_type{});
     verify_results(c2h::host_vector<value_t>(cluster_size_t::value * block_size, reference_result),
                    c2h::host_vector<value_t>(d_out));

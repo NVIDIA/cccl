@@ -120,7 +120,7 @@ struct batched_sample_kernel
       // We assume here that the following sample call will poll the rng less than max_draws
       // per call. If it doesn't, then subsequent iterations of the loop will get overlapping
       // streamz of random numbers as a previous iteration which pollutes the result.
-      rng.discard(i * max_draws);
+      rng.discard(static_cast<unsigned long long>(i) * max_draws);
       cuda::sample(first, last, &out(i, 0), out.extent(1), rng);
     }
   }

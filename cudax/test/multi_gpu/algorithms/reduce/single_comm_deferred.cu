@@ -257,7 +257,7 @@ MULTI_GPU_TEST("reduce single-comm with a deferred count, multiple elements per 
   const T expected = [&] {
     std::vector<T> reference;
 
-    reference.reserve(comms.front().size() * values_per_rank);
+    reference.reserve(static_cast<cuda::std::size_t>(comms.front().size()) * values_per_rank);
     for (int r = 0; r < comms.front().size(); ++r)
     {
       const auto v = make_value<T>(r);
@@ -328,7 +328,7 @@ MULTI_GPU_TEST("reduce single-comm with a deferred count, some ranks empty", val
   const T expected = [&] {
     std::vector<T> reference;
 
-    reference.reserve(comms.front().size() * values_per_rank);
+    reference.reserve(static_cast<cuda::std::size_t>(comms.front().size()) * values_per_rank);
     for (int r = 0; r < comms.front().size(); ++r)
     {
       if (r % 2 == 0)
@@ -445,7 +445,7 @@ MULTI_GPU_TEST("reduce single-comm with a deferred count smaller than the input 
   const T expected = [&] {
     std::vector<T> reference;
 
-    reference.reserve(comms.front().size() * counted_per_rank);
+    reference.reserve(static_cast<cuda::std::size_t>(comms.front().size()) * counted_per_rank);
     for (int r = 0; r < comms.front().size(); ++r)
     {
       reference.insert(reference.end(), counted_per_rank, make_value<T>(r));
