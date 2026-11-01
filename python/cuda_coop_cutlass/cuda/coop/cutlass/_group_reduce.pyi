@@ -6,7 +6,7 @@
 
 Overloads preserve the input element type and separate full-group payloads
 from scalar valid prefixes. Structural callable types admit built-in aliases;
-tracing checks their identities and rejects custom callbacks.
+compiled device operators have an explicit descriptor type.
 """
 
 from collections.abc import Callable
@@ -23,6 +23,7 @@ from cuda.coop.cutlass._typing import (
     ValidItems,
 )
 
+from ._device_operator import DeviceOperator
 from ._thread_data import CutlassTensorSample, CutlassTensorSSASample
 from ._typing import BlockGroup, WarpGroup
 
@@ -50,11 +51,12 @@ class _NumpyReduceUfunc(Protocol):
     def nout(self) -> Literal[1]: ...
 
 # Built-in operator aliases have object-wide types. The compiler validates
-# known callable identities; arbitrary user callbacks are unsupported.
+# known callable identities; user callbacks need a DeviceOperator.
 _OperatorReduceAlias: TypeAlias = Callable[[object, object], object]
 _BuiltinReduceOperator: TypeAlias = (
     ReduceOperator | _OperatorReduceAlias | _NumpyReduceUfunc
 )
+_ReduceOperator: TypeAlias = _BuiltinReduceOperator | DeviceOperator
 
 @overload
 def reduce(
@@ -62,7 +64,7 @@ def reduce(
     value: CommonThreadDataLike[_ItemT],
     /,
     *,
-    binary_op: _BuiltinReduceOperator | None = None,
+    binary_op: _ReduceOperator | None = None,
     valid_items: None = None,
     algorithm: ReduceAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
@@ -75,7 +77,7 @@ def reduce(
     value: _ItemT,
     /,
     *,
-    binary_op: _BuiltinReduceOperator | None = None,
+    binary_op: _ReduceOperator | None = None,
     valid_items: ValidItems | None = None,
     algorithm: ReduceAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
@@ -88,7 +90,7 @@ def reduce(
     value: CommonThreadDataLike[_ItemT],
     /,
     *,
-    binary_op: _BuiltinReduceOperator | None = None,
+    binary_op: _ReduceOperator | None = None,
     valid_items: None = None,
     algorithm: None = None,
     temp_storage: None = None,
@@ -101,7 +103,7 @@ def reduce(
     value: _ItemT,
     /,
     *,
-    binary_op: _BuiltinReduceOperator | None = None,
+    binary_op: _ReduceOperator | None = None,
     valid_items: ValidItems | None = None,
     algorithm: None = None,
     temp_storage: None = None,
@@ -114,7 +116,7 @@ def reduce(
     value: _RegisterPayload,
     /,
     *,
-    binary_op: _BuiltinReduceOperator | None = None,
+    binary_op: _ReduceOperator | None = None,
     valid_items: None = None,
     algorithm: ReduceAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
@@ -127,7 +129,7 @@ def reduce(
     value: _RegisterPayload,
     /,
     *,
-    binary_op: _BuiltinReduceOperator | None = None,
+    binary_op: _ReduceOperator | None = None,
     valid_items: None = None,
     algorithm: None = None,
     temp_storage: None = None,

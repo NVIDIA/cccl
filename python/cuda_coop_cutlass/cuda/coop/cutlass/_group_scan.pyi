@@ -8,8 +8,8 @@ Block payloads return writable ThreadData; warp calls return scalars. Paired
 NumPy/CUTLASS overloads keep typed initial values at the input dtype. The
 generic keyword TypedDicts used with ``Unpack`` also keep aggregate outputs
 at that dtype. Register-tensor overloads leave the element type to compiler
-validation. Callable annotations admit operator aliases; the compiler still
-accepts only recognized built-in identities, not arbitrary callbacks.
+validation. Callable annotations admit built-in operator aliases; compiled
+device operators have an explicit descriptor type.
 """
 
 from collections.abc import Callable
@@ -72,6 +72,7 @@ from cuda.coop.cutlass._typing import (
     ValidItems,
 )
 
+from ._device_operator import DeviceOperator
 from ._thread_data import (
     CutlassTensorSample,
     CutlassTensorSSASample,
@@ -106,15 +107,15 @@ class _NumpySumScanUfunc(_NumpyScanUfunc, Protocol):
 
 # The compiler accepts known identities only, not arbitrary callbacks.
 _OperatorScanAlias: TypeAlias = Callable[[object, object], object]
-_BuiltinScanOperator: TypeAlias = (
-    ScanOperator | _OperatorScanAlias | _NumpyScanUfunc
+_ScanOperator: TypeAlias = (
+    ScanOperator | _OperatorScanAlias | _NumpyScanUfunc | DeviceOperator
 )
 _SeededScanOperator: TypeAlias = (
-    NonSumScanOperator | _OperatorScanAlias | _NumpyScanUfunc
+    NonSumScanOperator | _OperatorScanAlias | _NumpyScanUfunc | DeviceOperator
 )
 
 class _BlockSeededScanOptions(TypedDict, Generic[_ItemT], total=False):
-    scan_op: _BuiltinScanOperator | None
+    scan_op: _ScanOperator | None
     algorithm: ScanAlgorithm | None
     temp_storage: TempStorageLike | None
     valid_items: None
@@ -124,7 +125,7 @@ class _BlockSeededScanModeOptions(_BlockSeededScanOptions[_ItemT], total=False):
     mode: Literal["exclusive"]
 
 class _WarpSeededScanOptions(TypedDict, Generic[_ItemT], total=False):
-    scan_op: _BuiltinScanOperator | None
+    scan_op: _ScanOperator | None
     algorithm: None
     temp_storage: None
     valid_items: ValidItems | None
@@ -348,7 +349,7 @@ def scan(
     /,
     *,
     mode: Literal["inclusive"],
-    scan_op: _BuiltinScanOperator | None = None,
+    scan_op: _ScanOperator | None = None,
     initial_value: None = None,
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
@@ -598,7 +599,7 @@ def scan(
     /,
     *,
     mode: Literal["inclusive"],
-    scan_op: _BuiltinScanOperator | None = None,
+    scan_op: _ScanOperator | None = None,
     initial_value: None = None,
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
@@ -612,7 +613,7 @@ def scan(
     /,
     *,
     mode: Literal["inclusive"],
-    scan_op: _BuiltinScanOperator | None = None,
+    scan_op: _ScanOperator | None = None,
     initial_value: None = None,
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
@@ -834,7 +835,7 @@ def scan(
     /,
     *,
     mode: Literal["inclusive"],
-    scan_op: _BuiltinScanOperator | None = None,
+    scan_op: _ScanOperator | None = None,
     initial_value: None = None,
     algorithm: None = None,
     temp_storage: None = None,
@@ -1579,7 +1580,7 @@ def inclusive_scan(
     value: _ScalarT,
     /,
     *,
-    scan_op: _BuiltinScanOperator | None = None,
+    scan_op: _ScanOperator | None = None,
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
     valid_items: None = None,
@@ -1591,7 +1592,7 @@ def inclusive_scan(
     value: CommonThreadDataLike[_ItemT],
     /,
     *,
-    scan_op: _BuiltinScanOperator | None = None,
+    scan_op: _ScanOperator | None = None,
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
     valid_items: None = None,
@@ -1603,7 +1604,7 @@ def inclusive_scan(
     value: _RegisterPayload,
     /,
     *,
-    scan_op: _BuiltinScanOperator | None = None,
+    scan_op: _ScanOperator | None = None,
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
     valid_items: None = None,
@@ -1615,7 +1616,7 @@ def inclusive_scan(
     value: _ScalarT,
     /,
     *,
-    scan_op: _BuiltinScanOperator | None = None,
+    scan_op: _ScanOperator | None = None,
     algorithm: None = None,
     temp_storage: None = None,
     valid_items: ValidItems | None = None,
