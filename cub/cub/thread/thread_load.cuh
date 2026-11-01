@@ -26,6 +26,8 @@
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/__memory/__vectorized_storage.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -379,6 +381,38 @@ _CCCL_DEVICE _CCCL_FORCEINLINE detail::it_value_t<RandomAccessIterator> ThreadLo
     LoadWord words[LOAD_MULTIPLE];
     UnrolledThreadLoad<LOAD_MULTIPLE, MODIFIER>(reinterpret_cast<const LoadWord*>(::cuda::std::to_address(itr)), words);
     return *reinterpret_cast<T*>(words);
+  }
+}
+
+//! ThreadLoad definition for cache modifiers on vectorized storage, which loads the storage word by word
+template <CacheLoadModifier MODIFIER,
+          typename WordT,
+          ::cuda::std::size_t NumVectors,
+          ::cuda::std::size_t WordsPerVector,
+          ::cuda::std::size_t MinAlignment,
+          ::cuda::std::size_t MaxMemoryAccessWidth>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE auto
+ThreadLoad(const ::cuda::__vectorized_storage_t<WordT, NumVectors, WordsPerVector, MinAlignment, MaxMemoryAccessWidth>*
+             ptr) noexcept
+  -> ::cuda::__vectorized_storage_t<WordT, NumVectors, WordsPerVector, MinAlignment, MaxMemoryAccessWidth>
+{
+  if constexpr (MODIFIER == LOAD_DEFAULT)
+  {
+    return *ptr;
+  }
+  else if constexpr (MODIFIER == LOAD_VOLATILE)
+  {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    ::cuda::__vectorized_storage_t<WordT, NumVectors, WordsPerVector, MinAlignment, MaxMemoryAccessWidth> retval;
+    UnrolledCopy<NumVectors * WordsPerVector>(reinterpret_cast<const volatile WordT*>(ptr->data()), retval.data());
+    return retval;
+  }
+  else
+  {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    ::cuda::__vectorized_storage_t<WordT, NumVectors, WordsPerVector, MinAlignment, MaxMemoryAccessWidth> retval;
+    UnrolledThreadLoad<NumVectors * WordsPerVector, MODIFIER>(ptr->data(), retval.data());
+    return retval;
   }
 }
 

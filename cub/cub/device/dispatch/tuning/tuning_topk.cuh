@@ -58,12 +58,15 @@ struct topk_policy
   BlockLoadAlgorithm load_algorithm;
   BlockScanAlgorithm scan_algorithm;
   int bits_per_pass;
+  int vec_size             = 0; //!< Number of keys per vectorized load, 0 = all keys of a thread
+  int last_filter_vec_size = 0; //!< vec_size of the last filter pass
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const topk_policy& lhs, const topk_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.scan_algorithm == rhs.scan_algorithm
-        && lhs.bits_per_pass == rhs.bits_per_pass;
+        && lhs.bits_per_pass == rhs.bits_per_pass && lhs.vec_size == rhs.vec_size
+        && lhs.last_filter_vec_size == rhs.last_filter_vec_size;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool operator!=(const topk_policy& lhs, const topk_policy& rhs)
@@ -74,9 +77,11 @@ struct topk_policy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const topk_policy& p)
   {
-    return os << "topk_policy { .threads_per_block = " << p.threads_per_block
-              << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
-              << ", .scan_algorithm = " << p.scan_algorithm << ", .bits_per_pass = " << p.bits_per_pass << " }";
+    return os
+        << "topk_policy { .threads_per_block = " << p.threads_per_block
+        << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .bits_per_pass = " << p.bits_per_pass
+        << ", .vec_size = " << p.vec_size << ", .last_filter_vec_size = " << p.last_filter_vec_size << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -133,7 +138,22 @@ struct policy_selector
     {
       // Try to load 16 bytes per thread: int64 -> 2, int32 -> 4, int16 -> 8.
       const int items_per_thread = ::cuda::std::max(1, nominal_4b_items_per_thread * 4 / key_size);
-      return topk_policy{512, items_per_thread, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS, bits_per_pass};
+      auto policy = topk_policy{512, items_per_thread, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS, bits_per_pass};
+
+      // ptxas predicates a single vector of all 8- or 16-bit keys of a thread together with its fallback. Where that
+      // costs occupancy or spills against vectors of 4 keys with CUDA 13.4, the keys are loaded in vectors of 4 keys
+      if (key_size <= 2)
+      {
+        const bool is_sm90            = cc < ::cuda::compute_capability{10, 0};
+        const bool is_sm120           = cc >= ::cuda::compute_capability{12, 0};
+        const bool narrow_all         = !is_sm90 && offset_size == 4;
+        const bool narrow_passes      = is_sm90 && offset_size == 8
+                                     && (value_size == 0 || value_size == 8 || (value_size == 1 && out_offset_size == 4));
+        const bool narrow_last_filter = (is_sm90 || is_sm120) && key_size == 1;
+        policy.vec_size               = narrow_all || narrow_passes ? 4 : 0;
+        policy.last_filter_vec_size   = narrow_all || narrow_last_filter ? 4 : 0;
+      }
+      return policy;
     }
 
     // Default tuning used on older architectures.
