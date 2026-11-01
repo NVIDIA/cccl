@@ -21,8 +21,10 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_namespace.cuh>
 
+#include <cuda/std/__algorithm/is_sorted.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__utility/forward.h>
 
 CUB_NAMESPACE_BEGIN
@@ -153,14 +155,22 @@ struct agent_t
     __syncthreads();
 
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int item = 0; item < ItemsPerThread; ++item)
+    // The algorithm only requires comp(haystack, needle) and comp(needle, haystack), so we can only check the
+    // sortedness of the needles if the comparator also accepts two needles. Note that is_invocable cannot see into the
+    // body of an unconstrained templated operator(), so such a comparator on heterogeneous types fails to compile here
+    // and needs to constrain its overloads.
+    if constexpr (::cuda::std::is_invocable_v<CompareOp&, const needles_type&, const needles_type&>)
     {
-      const int idx = ThreadsPerBlock * item + threadIdx.x;
-      if (idx < needles_count && (values_beg + idx) > 0)
+      if (threadIdx.x == 0)
       {
-        const needles_type prev = (idx == 0) ? d_values[values_beg - 1] : storage.needles[idx - 1];
-        _CCCL_ASSERT(!compare_op(storage.needles[idx], prev), "d_values must be sorted consistently with comp");
+        const needles_type* const needles_begin = storage.needles;
+        _CCCL_ASSERT(::cuda::std::is_sorted(needles_begin, needles_begin + needles_count, compare_op),
+                     "d_values must be sorted consistently with comp");
+        if (values_beg > 0 && needles_count > 0)
+        {
+          const needles_type prev = d_values[values_beg - 1];
+          _CCCL_ASSERT(!compare_op(storage.needles[0], prev), "d_values must be sorted consistently with comp");
+        }
       }
     }
 #endif // CCCL_ENABLE_DEVICE_ASSERTIONS
