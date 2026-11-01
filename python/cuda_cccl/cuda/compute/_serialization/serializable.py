@@ -183,8 +183,7 @@ class _BuildResults(_Kind):
                 raise ValueError(
                     f"duplicate compute-capability key {cc} in build_results blob"
                 )
-            result[cc] = self.cls.deserialize(
-                blob, load=False, check_cc=check_cc)
+            result[cc] = self.cls.deserialize(blob, load=False, check_cc=check_cc)
 
         from .._caching import _PerCCBuildResults
 
