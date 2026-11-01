@@ -1,0 +1,1607 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>FP Optimization Guide - Choosing a Type and Using It Well &#8212; CUDA Core Compute Libraries</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+
+
+    <script src="../../../_static/documentation_options.js?v=bbe6ed3a"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=5ceeb459"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'libcudacxx/extended_api/fp/fp_optimization_guide';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://NVIDIA.github.io/cccl/nv-versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'unstable';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <script src="../../../_static/deduplicate_toc.js?v=abc5616f"></script>
+
+    <link rel="canonical" href="https://NVIDIA.github.io/cccl/libcudacxx/extended_api/fp/fp_optimization_guide.html" />
+    <link rel="icon" href="../../../_static/favicon.png"/>
+
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Mdspan" href="../mdspan.html" />
+    <link rel="prev" title="fpmp2_stat: What the Arithmetic Actually Did" href="fptool_stat.html" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="unstable" />
+  
+    
+    <script src="../../../_static/searchtools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script src="../../../searchindex.js"></script>
+  
+
+
+  </head>
+
+  <body data-default-mode="">
+
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../../../cccl/index.html">CCCL C++ Libraries</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="../../index.html">libcu++</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../../index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../setup.html">Setup</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../setup/getting.html">Getting libcu++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../setup/building_and_testing.html">Building &amp; Testing libcu++</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../standard_api.html">Standard API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../standard_api/algorithms_library.html">Algorithms Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../standard_api/c_library.html">C Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../standard_api/concepts_library.html">Concepts Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../standard_api/container_library.html">Container Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../standard_api/execution_library.html">Execution Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../standard_api/numerics_library.html">Numerics Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../standard_api/ranges_library.html">Ranges Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../standard_api/synchronization_library.html">Synchronization Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../standard_api/time_library.html">Time Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../standard_api/type_support.html">Type Support Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../standard_api/utility_library.html">Utility Library</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 current active has-children"><a class="reference internal" href="../../extended_api.html">Extended API</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../macros.html">Macros</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bit.html">Bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../execution_model.html">Execution model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../exceptions.html">Exception Handling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../memory_model.html">Memory model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thread_groups.html">Thread Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../synchronization_primitives.html">Synchronization Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../asynchronous_operations.html">Asynchronous Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../memory_access_properties.html">Memory access properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../functional.html">Functional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../iterators.html">Fancy Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../type_traits.html">Type traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../vector_tuple_protocol.html">Vector Tuple Protocol</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../numeric.html">Numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../simd.html">SIMD</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../random.html">Random</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../memory.html">Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../memory_resource.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../math.html">Math</a></li>
+<li class="toctree-l4 current active"><a class="reference internal" href="../fp.html">FP Component</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../mdspan.html">Mdspan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../warp.html">Warp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../utility.html">Utility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../work_stealing.html">Work stealing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/stream.html">Streams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/event.html">Events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/algorithm.html">Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/legacy_resources.html">Legacy resources</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../ptx/examples.html">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../ptx/instructions.html">PTX Instructions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../ptx/pragmas.html">PTX Pragmas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tile.html">CUDA Tile support</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../cub/index.html">CUB</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../cub/index.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cub/thread_level.html">Thread-level Primitives</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../cub/warp_wide.html">Warp-Wide “Collective” Primitives</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../cub/api/warp.html">Warp-wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../cub/block_wide.html">Block-Wide “Collective” Primitives</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../cub/api/block.html">Block-wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../cub/device_wide.html">Device-Wide Primitives</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../cub/api/device.html">Device-wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cub/environment.html">Execution Environments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cub/determinism.html">Determinism</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cub/benchmarking.html">Benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cub/tuning.html">Tunings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cub/tuning_infra.html">Automated Tuning Infrastructure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cub/api/index.html">API reference</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../cub/developer_overview.html">Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../cub/developer/thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cub/developer/warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cub/developer/block_scope.html">Block-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cub/developer/device_scope.html">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cub/developer/test_overview.html">CUB Tests</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../thrust/index.html">Thrust</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../thrust/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../thrust/algorithms.html">Algorithms</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/algorithms/copying.html">Copying</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/algorithms/merging.html">Merging</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/algorithms/prefix_sum.html">Prefix sums</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/algorithms/reductions.html">Reductions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/algorithms/reordering.html">Reordering</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/algorithms/searching.html">Searching</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/algorithms/set_operations.html">Set Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/algorithms/sorting.html">Sorting</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/algorithms/transformations.html">Transformations</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../thrust/containers.html">Containers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/classthrust_1_1host__vector.html">thrust::host_vector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/classthrust_1_1device__vector.html">thrust::device_vector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__containers_1ga4a980d5c4f2e1843c6f2139216dac7fc.html">thrust::universal_host_pinned_vector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__containers_1ga74d92bb13ce59a1fa025cfb8dc4fbaa0.html">thrust::universal_vector</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../thrust/function_objects.html">Function Objects</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/function_objects/adaptors.html">Function Object Adaptors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/function_objects/placeholder.html">Placeholder Objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/function_objects/predefined.html">Function Objects</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../thrust/iterators.html">Iterators</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__fancyiterator_1ga1f3d8a73d04fa5823eadb68308d3d810.html">thrust::make_transform_input_output_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__fancyiterator_1ga2265d864e1e8bd7f297559eb7f08b8e8.html">thrust::make_constant_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__fancyiterator_1ga4f2edada3feda60b0abe3650dcea65ac.html">thrust::make_counting_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__fancyiterator_1ga549a86af93e685d3a6b539cc1b24f50e.html">thrust::make_permutation_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__fancyiterator_1ga56e698ac979cc389b19e089e345a2297.html">thrust::make_tabulate_output_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__fancyiterator_1ga5af828629716c6ea8f93e489470c4b02.html">thrust::make_strided_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__fancyiterator_1ga6bc8a980eab36d724ee7912c6d4e6d14.html">thrust::make_transform_output_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__fancyiterator_1ga999b5157d2e341f2c92be25a5bb85469.html">thrust::make_discard_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__fancyiterator_1gaa2438805284fb0ac36829328819d52f3.html">thrust::make_zip_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__fancyiterator_1gaad803009f6b4759363ec08a96de01cd8.html">thrust::make_transform_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__fancyiterator_1gab1e9bf724c638af51d3a02f3ff1d4e80.html">thrust::make_shuffle_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__traits_1ga07227760c8422364daec7a72d21803cd.html">thrust::iterator_traversal_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__traits_1ga582d0a9dd09f407b743a8dcea3e5a7cb.html">thrust::iterator_system_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__traits_1ga6bbc4f5672e0638f4fb040db3a3ea90b.html">thrust::iterator_reference_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__traits_1ga9410f26f50e2038f458b0274dd0a39cf.html">thrust::iterator_pointer_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__traits_1ga9768cd2705c09755d0dd2cf7a1cd84cc.html">thrust::iterator_traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__traits_1gadffd965cb3b426d99eab1f6506c30ed6.html">thrust::iterator_difference_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__traits_1gae8bd11a16155201e9778f4c75680a299.html">thrust::iterator_value_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__tags_1ga20e12ff89385c6c4658f39316e91e7ab.html">thrust::bidirectional_host_iterator_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__tags_1ga52f67176b2139d334ad3fc1b93558fd6.html">thrust::random_access_host_iterator_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__tags_1gaaa2d3281a2028d43aa8a6ab49ec70f6d.html">thrust::output_host_iterator_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__tags_1gaaee0807fd12662c9c768a596c56224dd.html">thrust::input_host_iterator_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__tags_1gaf265cb57247c2f8b81477cdac757f252.html">thrust::forward_host_iterator_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__tag__utilities_1ga931a99cbb9d6073f2d1bca493dda5163.html">thrust::retag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__tag__utilities_1gad9db2309839c1adf493522c6e879d0f5.html">thrust::reinterpret_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/structthrust_1_1bidirectional__traversal__tag.html">thrust::bidirectional_traversal_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/structthrust_1_1forward__traversal__tag.html">thrust::forward_traversal_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/structthrust_1_1incrementable__traversal__tag.html">thrust::incrementable_traversal_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/structthrust_1_1no__traversal__tag.html">thrust::no_traversal_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/structthrust_1_1random__access__traversal__tag.html">thrust::random_access_traversal_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/structthrust_1_1single__pass__traversal__tag.html">thrust::single_pass_traversal_tag</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../thrust/memory_management.html">Memory Management</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/memory_management/allocators.html">Allocators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/memory_management/memory_resources.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management.html">Memory Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1ga085f1930b39e9d7331267f39c75785a8.html">thrust::device_pointer_cast</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1ga1a350740a6ade432f3781096df91f162.html">thrust::device_free</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1ga1c393e01036d27ed0c0ab2a1750957dc.html">thrust::device_delete</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1ga45b46200ffdb02a4ef9191103e6f12b9.html">thrust::device_malloc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1ga50cdf0d543be6da1dd4d3f9ba3e38105.html">thrust::malloc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1ga72bb86f95d3b115663a0d9fb668165fa.html">thrust::return_temporary_buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1ga85e62452603ffae3dc05c681841aefba.html">thrust::swap</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1ga86a38bc1d1e0801e1a7b9abe186645ba.html">thrust::device_new</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1ga987c4cb56d112d9fbedee453df25bc31.html">thrust::free</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1gaa7bf641aa7af0b0dfccf11fc42bbfb6b.html">thrust::raw_pointer_cast</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1gae72a6da67baf8579e17836fe2c31a641.html">thrust::raw_reference_cast</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1gafa54f974b47c05fc24814aa1eb28d584.html">thrust::get_temporary_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../thrust/numerics.html">Numerics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers.html">Complex Numbers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga040f9fbb88115eebdb8dd423c5e7e134.html">thrust::operator&lt;&lt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga0d00cfa41156151dc1dcd5e254c646be.html">thrust::sqrt</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga10d992afe589adffa671b976a5225b3e.html">thrust::sinh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga2402d40d11cc358cbd8a15f0d3e0a640.html">thrust::asin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga2ec4be34f6b564b8e143ea57e0fa9a94.html">thrust::cosh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga2ffc507023dd15495760fee46cdbebf9.html">thrust::acosh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga35e716adc045312f862c2bf561f0f07e.html">thrust::abs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga43083869bf43ea7965c742797b2dde74.html">thrust::log10</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga4a3a56ebc4cd4390daf813feb058228f.html">thrust::atanh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga4aea440ee8f92a90b9c1cc5070349614.html">thrust::cos</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga4c8bdbf96d6533ba08aad19b8844205a.html">thrust::exp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga4d1b06b9e0ae6849982172915e04d70b.html">thrust::asinh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga564cffab4edc9458fbf036dbda49964e.html">thrust::pow</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga5c23c580733a912c4a782c4ec023c6b1.html">thrust::norm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga6cdba0f86d026da897aed8d758298544.html">thrust::operator/</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga7038bbec1ad0891c7e84cf49691de669.html">thrust::arg</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga8224f8e3822afe73300642b65b339331.html">thrust::log</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga8a71b59095aad09fb37a4d63df982320.html">thrust::operator*</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga8afd023e30b61d23806633f29010bc69.html">thrust::proj</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga8ff5d15853a4f98d229636510adcca97.html">thrust::tan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga93a39be3e9ec0ce730540be08267928e.html">thrust::operator&gt;&gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga969f3d40a0d9f7a2bcfdce2a83233edc.html">thrust::conj</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga992a76b40905fb6cddb8e4ff9bdd0306.html">thrust::polar</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga999d22f32e88807f5b629905eab61646.html">thrust::operator==</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga9a987acfaaa1f71722c2cc80426db066.html">thrust::operator-</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1gaa8228e3d100b0eb806d42b325f6a95d8.html">thrust::acos</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1gaaa0d52f6873d7cc2cb39bfa64040c69b.html">thrust::operator!=</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1gab608ce4c32a54c6e849ece60df42a036.html">thrust::tanh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1gae3cb9b2e1de24c92ea91a61eb9477c0e.html">thrust::atan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1gaf838b7d375bd0bcf2e86938cdbe49aff.html">thrust::sin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1gaf8d90cd8139cb521bbcdc3b4adcf2e03.html">thrust::operator+</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../thrust/parallel_execution_policies.html">Parallel Execution Policies</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__execution__policies.html">Parallel Execution Policies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__execution__policies_1ga61bff7f6dead1da5c85eaafa9f9f5ded.html">thrust::device</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__execution__policies_1gaebabcc1c0958344babfccdcf379915e5.html">thrust::host</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../thrust/random.html">Random Number Generators</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/random/predefined.html">Random Number Engines with Predefined Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/random/distributions.html">Random Number Distributions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/random/engine.html">Random Number Engines</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/random/engine_adaptors.html">Random Number Engine Adaptors</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../thrust/system.html">System</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/system/systems.html">Systems</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/system/diagnostics.html">System Diagnostics</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../thrust/utility.html">Utility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/utility/pair.html">Pair</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/utility/tuple.html">Tuple</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/utility/type_traits.html">Type Traits</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../thrust/api/index.html">API reference</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../thrust/developer_overview.html">Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/developer/cmake_options.html">Developer CMake Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/developer/systems.html">Thrust systems</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../cudax/index.html">CUDA Experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../cudax/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../cudax/container.html">Containers library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/api/classcuda_1_1experimental_1_1uninitialized__buffer.html">cuda::experimental::uninitialized_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../cudax/graph.html">Graphs library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/api/structcuda_1_1experimental_1_1graph.html">cuda::experimental::graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/api/structcuda_1_1experimental_1_1graph__builder.html">cuda::experimental::graph_builder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/api/structcuda_1_1experimental_1_1graph__builder__ref.html">cuda::experimental::graph_builder_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/api/structcuda_1_1experimental_1_1graph__memory__resource.html">cuda::experimental::graph_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/api/structcuda_1_1experimental_1_1graph__node__ref.html">cuda::experimental::graph_node_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of.html">cuda::experimental::stf::graphed_interface_of</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; mdspan&lt; T, P… &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; scalar_view&lt; T &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; void_interface &gt;</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cudax/places.html">Places</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../cudax/stf.html">CUDASTF</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/stf/custom_data_interface.html">Implementation of the <code class="docutils literal notranslate"><span class="pre">matrix</span></code> class</a></li>
+
+
+
+
+
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/stf/lower_level_api.html">Lower-level API</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../cudax/coop/index.html">CCCL Cooperative</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/coop/group/index.html">CCCL Cooperative Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/coop/algorithm/index.html">CCCL Cooperative Algorithms</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cudax/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cccl/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cccl/determinism.html">Determinism</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cccl/config_macros.html">CCCL configuration macros</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cccl/3.0_migration_guide.html">CCCL 2.x ‐ CCCL 3.0 migration guide</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../cccl/development/index.html">CCCL Development Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../cccl/development/coding_conventions.html">CCCL C++ Coding Conventions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cccl/development/review_checks.html">CCCL Review Checks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cccl/development/macro.html">CCCL Internal Macros</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cccl/development/testing.html">CCCL Testing Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cccl/development/build_and_bisect_tools.html">Build and Bisect Utilities</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../cccl/development/visibility.html">Symbol Visibility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../cccl/development/visibility/host_stub_visibility.html">Host Stub Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cccl/development/visibility/device_kernel_visibility.html">Device Kernel Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cccl/development/visibility/different_architectures.html">Linking TUs compiled with different architectures</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cccl/development/debugger_setup.html">General Debugging</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../python/index.html">CCCL Python Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../python/setup.html">Setup and Installation</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../python/compute/index.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../python/compute/index.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../python/compute/developer_overview.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> Developer Overview</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../python/coop.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>: Cooperative Group Primitives</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../python/coop.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../python/coop/concepts.html">Programming concepts</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../python/coop/visualizations/index.html">Visualizations</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../python/coop/visualizations/load.html">Load</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../python/coop/visualizations/store.html">Store</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../python/coop/glossary.html">Glossary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../python/coop/faqs.html">FAQs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../python/coop/configuration.html">Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../python/coop/programming_guide.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> Programming Guide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../python/coop/developer_overview.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> Developer Overview</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../python/stf.html"><code class="docutils literal notranslate"><span class="pre">cuda.stf._experimental</span></code>: Sequential Task Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../python/resources.html">Resources</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../python/api_reference.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../python/compute_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> API Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../python/coop_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> API Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../python/stf_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.stf._experimental</span></code> API Reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../contributors/index.html">Contributor Docs</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../contributors/how_tos/index.html">How Tos</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../contributors/how_tos/install_build_test.html">Install, Build, Test</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../contributors/how_tos/targeted_builds.html">Build and run targeted tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../contributors/how_tos/launching.html">Launching a container</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../contributors/how_tos/vscode_cmake_tools.html">Using CMake Presets via VS Code GUI extension</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../contributors/how_tos/creating_a_pull_request.html">Creating a Pull Request</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../contributors/how_tos/reproducing_ci.html">Reproducing CI locally</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../contributors/how_tos/override_matrix.html">Override matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../contributors/how_tos/adding_build_target.html">Adding a build target</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../contributors/code_of_conduct.html">Code of Conduct</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../contributors/license.html">License</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../maintainers/index.html">Maintainer Docs</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../maintainers/how_tos/index.html">How Tos</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../maintainers/backport_process.html">How to commit fixes to release branches (backport process)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../maintainers/how_tos/compile_time.html">Run compile-time benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../maintainers/how_tos/plan_work_with_github_issues.html">How To Plan Work with GitHub Issues</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../maintainers/how_tos/adding_ci_coverage.html">Adding CI coverage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../maintainers/how_tos/adding_new_devcontainer.html">Adding a new devcontainer toolchain</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../maintainers/references/index.html">References</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../maintainers/branching_strategy.html">Git Methodology</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../maintainers/coderabbit.html">CodeRabbit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../maintainers/references/compile_time.html">Compile-time benchmark reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../infrastructure/index.html">Infrastructure</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../infrastructure/ci/references/index.html">CI Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/ci/references/ci_overview.html">CI overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/ci/references/change_detection.html">Change detection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/ci/references/matrix_yaml.html">matrix.yaml reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/ci/references/ci_scripts.html">CI scripts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/ci/references/ci_artifacts.html">Artifact system</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/ci/references/gha_workflows.html">GitHub Actions workflows</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/ci/references/skip_tags.html">Skip tags</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../infrastructure/cmake/references/index.html">CMake Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/cmake/references/preset_reference.html">Preset reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/cmake/references/cmake_modules.html">CMake helper modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/cmake/references/architecture_flags.html">Architecture flags</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../infrastructure/devcontainer/references/index.html">Devcontainer Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/devcontainer/references/devcontainer_overview.html">Devcontainer overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/devcontainer/references/launch_sh_reference.html">launch.sh reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../cccl/index.html" class="nav-link">CCCL C++ Libraries</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">libcu++</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../extended_api.html" class="nav-link">Extended API</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../fp.html" class="nav-link">FP Component</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">FP Optimization Guide - Choosing a Type and Using It Well</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="fp-optimization-guide-choosing-a-type-and-using-it-well">
+<span id="libcudacxx-extended-api-fp-optimization-guide"></span><h1>FP Optimization Guide - Choosing a Type and Using It Well<a class="headerlink" href="#fp-optimization-guide-choosing-a-type-and-using-it-well" title="Link to this heading">#</a></h1>
+<p>The CCCL FP component offers several ways to get arithmetic the hardware does not sell directly, and
+they are not interchangeable: each one spends a different pipe, holds a different number of bits,
+and keeps or drops different parts of <code class="docutils literal notranslate"><span class="pre">double</span></code>’s semantics. This guide is the cross-component
+view. It says how to choose between them, how the types combine inside one kernel, how to get the
+most out of each, and how to use the two instruments so that those decisions rest on measurements
+rather than guesses. The component pages - <a class="reference internal" href="fpmp.html#libcudacxx-extended-api-fp-fpmp"><span class="std std-ref">fpmp</span></a>,
+<a class="reference internal" href="fpemu.html#libcudacxx-extended-api-fp-fpemu"><span class="std std-ref">fpemu</span></a>,
+<a class="reference internal" href="fptool_custom.html#libcudacxx-extended-api-fp-fptool-custom"><span class="std std-ref">fptool custom</span></a> and
+<a class="reference internal" href="fptool_stat.html#libcudacxx-extended-api-fp-fptool-stat"><span class="std std-ref">fptool stat</span></a> - describe each type; this document
+assumes them and does not repeat them.</p>
+<section id="choosing-the-type">
+<span id="libcudacxx-extended-api-fp-optimization-guide-choosing"></span><h2>Choosing the type<a class="headerlink" href="#choosing-the-type" title="Link to this heading">#</a></h2>
+<p>Four questions settle most choices, and they are worth answering in this order.</p>
+<ol class="arabic simple">
+<li><p><strong>What does the target do to FP64?</strong> The rate at which the part runs FP64 against FP32 decides
+more than anything in the code does. The CUDA Best Practices Guide gives it per compute
+capability, as results per clock per SM: 1:2 on A100, H100 and B200, and 1:64 on every
+part that rations FP64 - L40S, B300, RTX PRO 6000 Blackwell and the consumer GPUs - where FP64
+issues 2 results per clock per SM against 128 for FP32. Everything below <code class="docutils literal notranslate"><span class="pre">double</span></code> in the table
+is a way of avoiding the FP64 pipe and pays only where it is rationed; <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> spends it and
+pays only where it is not.</p></li>
+<li><p><strong>How many significand bits does the computation need?</strong> <code class="docutils literal notranslate"><span class="pre">float</span></code> has 24, <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> 46,
+<code class="docutils literal notranslate"><span class="pre">double</span></code> 53, <code class="docutils literal notranslate"><span class="pre">fp64emu_unpacked</span></code> 62 between operations, <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> 104, binary128 113 - all
+counted with the implicit leading bit, as <code class="docutils literal notranslate"><span class="pre">cuda::std::numeric_limits::digits</span></code> counts them, so
+the pair figures are 2×24 − 2 and 2×53 − 2 rather than stored-bit totals. When the answer is not
+known, <a class="reference internal" href="#libcudacxx-extended-api-fp-optimization-guide-fptool"><span class="std std-ref">fp64_custom</span></a> exists to find
+it.</p></li>
+<li><p><strong>Which of</strong> <code class="docutils literal notranslate"><span class="pre">double</span></code> <strong>‘s semantics must survive?</strong> Its exponent range, which <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> does
+not provide; bit-for-bit reproducibility, which only <code class="docutils literal notranslate"><span class="pre">double</span></code> itself and packed <code class="docutils literal notranslate"><span class="pre">fp64emu</span></code> at
+<code class="docutils literal notranslate"><span class="pre">high</span></code> offer; subnormals, infinities and NaNs full IEEE-754 compliance which the <code class="docutils literal notranslate"><span class="pre">low</span></code> and
+<code class="docutils literal notranslate"><span class="pre">mid</span></code> levels of both arithmetic components drop.</p></li>
+<li><p><strong>What else does the kernel need?</strong> Transcendentals, which <code class="docutils literal notranslate"><span class="pre">fpmp</span></code> has and <code class="docutils literal notranslate"><span class="pre">fpemu</span></code> does not;
+atomics; bytes per value, which decide bandwidth and occupancy; and whether the same code has to
+run on the host.</p></li>
+</ol>
+<p>The table puts the answers together. Speed figures are from the π integration the component pages
+measure, relative to native <code class="docutils literal notranslate"><span class="pre">double</span></code> on the same part, and “rationed” means a part whose FP64 rate
+is 1:64.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 31.7%" />
+<col style="width: 7.9%" />
+<col style="width: 17.8%" />
+<col style="width: 42.6%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Need</strong></p></th>
+<th class="head"><p><strong>FP64 on the target</strong></p></th>
+<th class="head"><p><strong>Reach for</strong></p></th>
+<th class="head"><p><strong>Why</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>More than 104 significand bits, or a wider exponent range than <code class="docutils literal notranslate"><span class="pre">double</span></code>’s</p></td>
+<td><p>any</p></td>
+<td><p>software binary128 (<code class="docutils literal notranslate"><span class="pre">__float128</span></code>) on the device sm_100 and later</p></td>
+<td><p>nothing narrower holds it</p></td>
+</tr>
+<tr class="row-odd"><td><p>Beyond <code class="docutils literal notranslate"><span class="pre">double</span></code>, up to 104 bits</p></td>
+<td><p>full rate</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code></p></td>
+<td><p>7.8× faster than software binary128 per <code class="docutils literal notranslate"><span class="pre">mid</span></code> addition on B200, 17.8× per division</p></td>
+</tr>
+<tr class="row-even"><td><p>Beyond <code class="docutils literal notranslate"><span class="pre">double</span></code>, up to 104 bits</p></td>
+<td><p>rationed</p></td>
+<td><p>software binary128, or <code class="docutils literal notranslate"><span class="pre">double</span></code> with a compensated algorithm</p></td>
+<td><p>binary128 is integer code and runs 1.4–4× faster than <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> there; <a class="reference internal" href="#libcudacxx-extended-api-fp-optimization-guide-fp64mp2"><span class="std std-ref">fp64mp2</span></a> has the register-pressure exception</p></td>
+</tr>
+<tr class="row-odd"><td><p>An x87 <code class="docutils literal notranslate"><span class="pre">long</span> <span class="pre">double</span></code> port, 64-bit significand</p></td>
+<td><p>full rate</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code></p></td>
+<td><p>104 bits covers 64 with room; the exponent range does not carry over</p></td>
+</tr>
+<tr class="row-even"><td><p>Extra precision between operations only, result stored as <code class="docutils literal notranslate"><span class="pre">double</span></code></p></td>
+<td><p>rationed</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fp64emu_unpacked</span></code></p></td>
+<td><p>62-bit intermediates rounded once at the pack; about 1.5× <code class="docutils literal notranslate"><span class="pre">double</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">double</span></code> results bit for bit, without the FP64 pipe</p></td>
+<td><p>rationed</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fp64emu</span></code>, packed, at its default <code class="docutils literal notranslate"><span class="pre">high</span></code></p></td>
+<td><p>identical results off the FP64 pipe; near <code class="docutils literal notranslate"><span class="pre">double</span></code>’s speed only in small kernels</p></td>
+</tr>
+<tr class="row-even"><td><p>About <code class="docutils literal notranslate"><span class="pre">double</span></code> precision, <code class="docutils literal notranslate"><span class="pre">float</span></code>’s range is enough</p></td>
+<td><p>rationed</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code></p></td>
+<td><p>46 bits in 8 bytes on the FP32 pipe; 5.5–16× <code class="docutils literal notranslate"><span class="pre">double</span></code> by level</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">float</span></code> precision over <code class="docutils literal notranslate"><span class="pre">double</span></code>’s exponent range</p></td>
+<td><p>rationed</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fp64emu_low</span></code></p></td>
+<td><p>the cheapest emulated arithmetic, about 2× <code class="docutils literal notranslate"><span class="pre">double</span></code>, reaching ±10<sup>308</sup></p></td>
+</tr>
+<tr class="row-even"><td><p>Up to <code class="docutils literal notranslate"><span class="pre">double</span></code> precision</p></td>
+<td><p>full rate</p></td>
+<td><p>native <code class="docutils literal notranslate"><span class="pre">double</span></code></p></td>
+<td><p>every emulation only slows the mix down</p></td>
+</tr>
+<tr class="row-odd"><td><p>To find out how much precision an algorithm needs</p></td>
+<td><p>any</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fp64_custom&lt;E,</span> <span class="pre">M&gt;</span></code></p></td>
+<td><p>sweeps formats within <code class="docutils literal notranslate"><span class="pre">double</span></code> layout, ~ same cost</p></td>
+</tr>
+<tr class="row-even"><td><p>To know what the pair arithmetic is doing</p></td>
+<td><p>any, on the device</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fp32mp2_stat</span></code>, <code class="docutils literal notranslate"><span class="pre">fp64mp2_stat</span></code></p></td>
+<td><p>bit-identical results + statistic record</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Three forks in that table deserve more than a row:</p>
+<ol class="arabic simple">
+<li><p><strong>Around</strong> <code class="docutils literal notranslate"><span class="pre">double</span></code> <strong>on a rationed HW target</strong>, three types compete, and the trade is sharp.
+<code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> is the fastest by a wide margin and carries a full math API, but holds 46 bits in
+<code class="docutils literal notranslate"><span class="pre">float</span></code>’s exponent range, so it overflows at 10<sup>38</sup> and asks for a cast wherever a
+<code class="docutils literal notranslate"><span class="pre">double</span></code> enters. Packed <code class="docutils literal notranslate"><span class="pre">fp64emu</span></code> keeps every bit of <code class="docutils literal notranslate"><span class="pre">double</span></code>’s semantics and converts as
+freely as <code class="docutils literal notranslate"><span class="pre">double</span></code> does, but at its best it only matches hardware <code class="docutils literal notranslate"><span class="pre">double</span></code>’s speed and in a
+large kernel it falls behind - its point is exactness without the FP64 pipe, not throughput.
+<code class="docutils literal notranslate"><span class="pre">fp64emu_unpacked</span></code> is the one that beats <code class="docutils literal notranslate"><span class="pre">double</span></code> on both speed and accuracy over a chain, at
+16 bytes per value, with explicit conversions, without bit-for-bit agreement with <code class="docutils literal notranslate"><span class="pre">double</span></code>.</p></li>
+<li><p><strong>Above</strong> <code class="docutils literal notranslate"><span class="pre">double</span></code>, the choice between <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> and <code class="docutils literal notranslate"><span class="pre">fp64emu_unpacked</span></code> is a choice about
+how much extra precision and where it lives. The pair carries 104 bits in the stored value, so a
+result keeps them; the unpacked form carries 62 between operations and rounds to 53 at the pack,
+so only the chain benefits. The second is far cheaper and runs on the FP32 and integer pipes, so
+it is the one to consider on a rationed part when the goal is a <code class="docutils literal notranslate"><span class="pre">double</span></code> result more accurate
+than <code class="docutils literal notranslate"><span class="pre">double</span></code> arithmetic would give, rather than a wider result.</p></li>
+<li><p><strong>Below</strong> <code class="docutils literal notranslate"><span class="pre">double</span></code>, <code class="docutils literal notranslate"><span class="pre">fp64emu_low</span></code> is <code class="docutils literal notranslate"><span class="pre">float</span></code>-precision arithmetic with <code class="docutils literal notranslate"><span class="pre">double</span></code>’s range,
+for computations such as power series whose intermediates leave <code class="docutils literal notranslate"><span class="pre">float</span></code>’s exponent long before
+the sum converges.</p></li>
+</ol>
+</section>
+<section id="mixed-cases">
+<span id="libcudacxx-extended-api-fp-optimization-guide-mixed"></span><h2>Mixed cases<a class="headerlink" href="#mixed-cases" title="Link to this heading">#</a></h2>
+<p>The types are designed to be mixed, some real kernels end up using two of them: one for the bulk of
+the work and one for the part that sets the accuracy. The patterns below are the ones the component
+documentation already relies on, collected in one place.</p>
+<ul class="simple">
+<li><p><strong>A fast level for the kernel, a careful step inside it.</strong> The accuracy level is part of an
+<code class="docutils literal notranslate"><span class="pre">fpmp</span></code> type, but <code class="docutils literal notranslate"><span class="pre">add&lt;&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">sub&lt;&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">mul&lt;&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">div&lt;&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">fma&lt;&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">mad&lt;&gt;</span></code> take it per
+operation and return the operand type, so a kernel written in <code class="docutils literal notranslate"><span class="pre">fp32mp2_low</span></code> can run one addition
+at <code class="docutils literal notranslate"><span class="pre">high</span></code> without changing anything else. Argument reductions and the subtraction of nearly
+equal values are the usual candidates. The reverse mixing - a <code class="docutils literal notranslate"><span class="pre">low</span></code> value handed to <code class="docutils literal notranslate"><span class="pre">mid</span></code> or
+<code class="docutils literal notranslate"><span class="pre">high</span></code> code - is handled by the conversion, which renormalizes on the way; see
+<a class="reference internal" href="fpmp.html#libcudacxx-extended-api-fp-fpmp-accuracy"><span class="std std-ref">Accuracy levels</span></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">double</span></code> <strong>data, a wider accumulator.</strong> Inputs that are exact as <code class="docutils literal notranslate"><span class="pre">double</span></code> stay in <code class="docutils literal notranslate"><span class="pre">double</span></code>
+arrays; only the running sum, or the sum of products, outgrows them. An <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> accumulator
+fed with <code class="docutils literal notranslate"><span class="pre">acc</span> <span class="pre">+=</span> <span class="pre">d</span></code> is compensated summation written for you, at 10 FP64 instructions per term,
+and the terms never leave their 8-byte storage. On a rationed part the same role goes to
+<code class="docutils literal notranslate"><span class="pre">fp64emu_unpacked</span></code>, which absorbs the summation error in its guard bits and rounds once at the
+end.</p></li>
+<li><p><strong>Packed storage, unpacked arithmetic.</strong> With <code class="docutils literal notranslate"><span class="pre">fpemu</span></code>, the 8-byte packed form belongs in memory
+and the 16-byte unpacked form in registers: unpack once on load, run the chain, pack once on
+store. <code class="docutils literal notranslate"><span class="pre">fma</span></code>, <code class="docutils literal notranslate"><span class="pre">mad</span></code>, <code class="docutils literal notranslate"><span class="pre">dot</span></code> and <code class="docutils literal notranslate"><span class="pre">cmul</span></code> are fused for the same reason, so that intermediate
+products are not rounded and repacked between steps. Alternating the two representations inside a
+loop pays the pack/unpack tax the unpacked form exists to avoid, and a <code class="docutils literal notranslate"><span class="pre">double</span></code> literal in an
+unpacked expression is such an alternation, since entering the unpacked form is a conversion
+written out; hoist constants as <code class="docutils literal notranslate"><span class="pre">fp64emu_unpacked</span></code> values.</p></li>
+<li><p><strong>Emulated arithmetic, native transcendentals.</strong> <code class="docutils literal notranslate"><span class="pre">fpemu</span></code> has <code class="docutils literal notranslate"><span class="pre">+</span> <span class="pre">-</span> <span class="pre">*</span> <span class="pre">/</span></code>, <code class="docutils literal notranslate"><span class="pre">fma</span></code>, <code class="docutils literal notranslate"><span class="pre">mad</span></code>,
+<code class="docutils literal notranslate"><span class="pre">sqrt</span></code>, <code class="docutils literal notranslate"><span class="pre">dot</span></code> and <code class="docutils literal notranslate"><span class="pre">cmul</span></code>, and nothing else. A kernel that needs an occasional <code class="docutils literal notranslate"><span class="pre">exp</span></code> or
+<code class="docutils literal notranslate"><span class="pre">sin</span></code> converts to <code class="docutils literal notranslate"><span class="pre">double</span></code>, calls the native function and converts back - one FP64 call per
+element, acceptable where the call is rare - moreover this case may get performance benefits from
+GPU pipes parallelization - see the next case.</p></li>
+<li><p><strong>Two pipes at once.</strong> On a rationed part the FP64 units sit idle while <code class="docutils literal notranslate"><span class="pre">fpemu</span></code> runs on the FP32
+and integer pipes, and would still deliver their own rate if asked, so a reduction split between
+native <code class="docutils literal notranslate"><span class="pre">double</span></code> and <code class="docutils literal notranslate"><span class="pre">fpemu</span></code> could in principle sum the two throughputs -
+<a class="reference internal" href="fpemu.html#libcudacxx-extended-api-fp-fpemu"><span class="std std-ref">the fpemu page</span></a> measures <code class="docutils literal notranslate"><span class="pre">fp64emu_unpacked_mid</span></code> at
+1.78–1.96× <code class="docutils literal notranslate"><span class="pre">double</span></code>, so the sum would be 2.8–3.0× <code class="docutils literal notranslate"><span class="pre">double</span></code>. No such kernel has been built or
+measured, and the two halves share issue bandwidth, registers and the scheduler, so treat it as an
+upper bound to test rather than a result to plan on. Packed <code class="docutils literal notranslate"><span class="pre">high</span></code> is the partner when the split
+must not change the result: it holds <code class="docutils literal notranslate"><span class="pre">double</span></code>’s layout and returns <code class="docutils literal notranslate"><span class="pre">double</span></code>’s bits, so the
+handover costs nothing and the two halves agree. The unpacked form is the partner when throughput matters more, its pack boundary
+being where the handover would sit.</p></li>
+<li><p><strong>Size first, then choose.</strong> When the precision a computation needs is not known,
+<code class="docutils literal notranslate"><span class="pre">fp64_custom&lt;11,</span> <span class="pre">M&gt;</span></code> answers it before any type is committed to: sweep <code class="docutils literal notranslate"><span class="pre">M</span></code> downward with the
+reference reduction kept wide, find where the digits give way, and read the result against the
+table above - 24 bits point at <code class="docutils literal notranslate"><span class="pre">float</span></code> or <code class="docutils literal notranslate"><span class="pre">fp64emu_low</span></code>, up to 46 at <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code>, 53 at
+<code class="docutils literal notranslate"><span class="pre">double</span></code> or <code class="docutils literal notranslate"><span class="pre">fp64emu</span></code>, more at <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code>. A separate sweep of the exponent axis says whether
+<code class="docutils literal notranslate"><span class="pre">float</span></code>’s range would have been the problem.</p></li>
+</ul>
+</section>
+<section id="using-fpmp-efficiently">
+<span id="libcudacxx-extended-api-fp-optimization-guide-fpmp"></span><h2>Using fpmp efficiently<a class="headerlink" href="#using-fpmp-efficiently" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> is written to take <code class="docutils literal notranslate"><span class="pre">double</span></code>’s place in existing code, and <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> to take the
+place of a wider CPU type - binary128, or the x87 80-bit <code class="docutils literal notranslate"><span class="pre">long</span> <span class="pre">double</span></code> of code being ported to the
+GPU - but neither has the cost model of the type it replaces: a pair operation is a run of hardware
+operations on the limbs, and how long a run depends on the operation and on the accuracy level. The
+table gives the length, in instructions on the floating-point pipe of the component type, from the
+SASS counts in the <a class="reference internal" href="fpmp_spec.html"><span class="doc">specification</span></a> - one representative count per operation. The
+algorithms are the same for both widths, so the counts are too; what differs is the pipe they
+occupy, FP32 for <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> and FP64 for <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code>, and that is the whole of the hardware
+question.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 37.6%" />
+<col style="width: 18.8%" />
+<col style="width: 24.8%" />
+<col style="width: 18.8%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Operation</strong></p></th>
+<th class="head"><p><code class="docutils literal notranslate"><span class="pre">low</span></code></p></th>
+<th class="head"><p><code class="docutils literal notranslate"><span class="pre">mid</span></code></p></th>
+<th class="head"><p><code class="docutils literal notranslate"><span class="pre">high</span></code></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">+</span></code>, <code class="docutils literal notranslate"><span class="pre">-</span></code></p></td>
+<td><p>8</p></td>
+<td><p>11</p></td>
+<td><p>20</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">+=</span></code>, <code class="docutils literal notranslate"><span class="pre">-=</span></code> with a one-limb scalar</p></td>
+<td><p>7</p></td>
+<td><p>10</p></td>
+<td><p>13</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">*</span></code></p></td>
+<td><p>5</p></td>
+<td><p>9</p></td>
+<td><p>9</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mad</span></code></p></td>
+<td><p>13</p></td>
+<td><p>16</p></td>
+<td><p>29</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fma</span></code></p></td>
+<td><p>16</p></td>
+<td><p>19</p></td>
+<td><p>37</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">/</span></code> on <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code></p></td>
+<td><p>6</p></td>
+<td><p>13</p></td>
+<td><p>23, plus 23 integer</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">/</span></code> on <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code></p></td>
+<td><p>11, plus 27 integer</p></td>
+<td><p>18, plus 25 integer</p></td>
+<td><p>28, plus 49 integer</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sqrt</span></code>, one implementation for all levels</p></td>
+<td><p>—</p></td>
+<td><p>18 (<code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code>), 23 plus 25 integer (<code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code>)</p></td>
+<td><p>—</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">double</span></code> → <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code></p></td>
+<td><p>—</p></td>
+<td><p>25, integer &amp; fp32</p></td>
+<td><p>—</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> → <code class="docutils literal notranslate"><span class="pre">double</span></code></p></td>
+<td><p>—</p></td>
+<td><p>40, integer &amp; fp32</p></td>
+<td><p>—</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Three things follow from the table before any type-specific advice:</p>
+<ol class="arabic simple">
+<li><p>Multiplication costs the same at <code class="docutils literal notranslate"><span class="pre">mid</span></code> and <code class="docutils literal notranslate"><span class="pre">high</span></code>, so <code class="docutils literal notranslate"><span class="pre">high</span></code> is paid for on additions and
+divisions.</p></li>
+<li><p>Division is the expensive basic operation, and the one <code class="docutils literal notranslate"><span class="pre">high</span></code> makes most expensive.</p></li>
+<li><p>And for <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code>, a conversion to or from <code class="docutils literal notranslate"><span class="pre">double</span></code> costs as much as two to four additions -
+on B300 the two conversions run at 1290 and 734 billion per second against 2782 billion <code class="docutils literal notranslate"><span class="pre">mid</span></code>
+additions.</p></li>
+</ol>
+<p>The statistics type, <code class="docutils literal notranslate"><span class="pre">fp32mp2_stat</span></code> / <code class="docutils literal notranslate"><span class="pre">fp64mp2_stat</span></code> from <code class="docutils literal notranslate"><span class="pre">&lt;cuda/fptool&gt;</span></code>, is the tool several
+of the points below lean on. It computes bit-identical results and records, per instrumented
+variable, the operation mix, the cancellation and overflow events, and how the limbs were placed;
+<a class="reference internal" href="#libcudacxx-extended-api-fp-optimization-guide-fptool"><span class="std std-ref">Using fptool</span></a> below and
+<a class="reference internal" href="fptool_stat.html#libcudacxx-extended-api-fp-fptool-stat"><span class="std std-ref">the fpmp2_stat page</span></a> say how to read the record. It
+is a diagnostic rather than a mode: an instrumented run is two to three orders of magnitude slower,
+so instrument one variable on a reduced problem and build without it for the runs that count.</p>
+<section id="fp32mp2">
+<span id="libcudacxx-extended-api-fp-optimization-guide-fp32mp2"></span><h3>fp32mp2<a class="headerlink" href="#fp32mp2" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><strong>Use it only where FP64 throughput is much lower than FP32.</strong> The type pays for its digits in
+FP32 instructions, and the bargain holds only where those are cheap relative to FP64. On the
+FP64-rationed parts - L40S, RTX PRO 6000 Blackwell, B300, consumer GPUs generally - a <code class="docutils literal notranslate"><span class="pre">mid</span></code>
+addition runs 5.6× faster than a native <code class="docutils literal notranslate"><span class="pre">double</span></code> addition, and the well-known π integration
+benchmark on <a class="reference internal" href="fpmp.html#libcudacxx-extended-api-fp-fpmp-performance"><span class="std std-ref">the fpmp page</span></a> comes out
+8.6–10.8× ahead. On a full-rate part such as B200 the same addition runs at 0.36× of native
+<code class="docutils literal notranslate"><span class="pre">double</span></code>: <code class="docutils literal notranslate"><span class="pre">double</span></code> is both faster and more accurate there, and the float pair has nothing to
+offer. The code is portable; the win is not. Decide from the FP64:FP32 rate of the target, and
+keep <code class="docutils literal notranslate"><span class="pre">double</span></code> reachable behind a type alias.</p></li>
+<li><p><strong>Keep</strong> <code class="docutils literal notranslate"><span class="pre">double</span></code> <strong>↔</strong> <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> <strong>conversions out of hot loops.</strong> A conversion is
+arithmetic, not a register move: about 25 instructions into the pair and 40 out of it. They hide
+in two places. One is a <code class="docutils literal notranslate"><span class="pre">double</span></code> <em>variable</em> in a pair expression - <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">*</span> <span class="pre">scale</span></code> with <code class="docutils literal notranslate"><span class="pre">double</span>
+<span class="pre">scale</span></code> - which the mixed-type operator converts on every evaluation before running the full pair
+operation; a literal can be folded at compile time, a variable cannot. Hoist such scalars into
+<code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> values before the loop. The other is storage. An array of <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> is 8 bytes per
+element, exactly like <code class="docutils literal notranslate"><span class="pre">double</span></code>, so keeping the data in pair form costs no bandwidth and saves a
+conversion on every load and store; convert once, at the I/O boundary.</p></li>
+<li><p><strong>Stay at</strong> <code class="docutils literal notranslate"><span class="pre">mid</span></code>, <strong>and drop to</strong> <code class="docutils literal notranslate"><span class="pre">low</span></code> <strong>only on the paths that dominate the profile.</strong>
+<code class="docutils literal notranslate"><span class="pre">mid</span></code> renormalizes after every operation, so results do not degrade along a chain, at 11
+instructions per addition against 8 for <code class="docutils literal notranslate"><span class="pre">low</span></code> and 20 for <code class="docutils literal notranslate"><span class="pre">high</span></code>. <code class="docutils literal notranslate"><span class="pre">low</span></code> saves a quarter on
+additions and nearly half on multiplications by skipping the closing <code class="docutils literal notranslate"><span class="pre">fast_two_sum</span></code>, and the
+price is drift: the limbs are free to overlap, and along a long chain part of the trailing limb
+stops carrying information. The remedy is <code class="docutils literal notranslate"><span class="pre">renormalize()</span></code>, three instructions that restore the
+invariant exactly, placed where the chain ends rather than where each operation does: at the end
+of the inner loop, every so many iterations of a long accumulation, or where the value is handed
+to code that assumes normalization - a conversion out of <code class="docutils literal notranslate"><span class="pre">low</span></code> into <code class="docutils literal notranslate"><span class="pre">mid</span></code> or <code class="docutils literal notranslate"><span class="pre">high</span></code> does
+this on its own. <code class="docutils literal notranslate"><span class="pre">fp32mp2_stat_low</span></code> says whether <code class="docutils literal notranslate"><span class="pre">low</span></code> is safe on your data, and where:
+<code class="docutils literal notranslate"><span class="pre">overlap_count</span></code> and <code class="docutils literal notranslate"><span class="pre">min_hi_lo_gap</span></code> show how often and how far the limbs drift, and
+<code class="docutils literal notranslate"><span class="pre">invert_count</span></code> has to stay zero. The pattern is the <code class="docutils literal notranslate"><span class="pre">low</span></code> type for the kernel and
+<code class="docutils literal notranslate"><span class="pre">add&lt;fpmp2_accuracy::high&gt;</span></code> for the one step that needs more, as in
+<a class="reference internal" href="fpmp.html#libcudacxx-extended-api-fp-fpmp-accuracy"><span class="std std-ref">Accuracy levels</span></a>.</p></li>
+<li><p><strong>Use</strong> <code class="docutils literal notranslate"><span class="pre">high</span></code> <strong>only on accuracy-critical steps - reductions above all.</strong> <code class="docutils literal notranslate"><span class="pre">high</span></code> recovers the
+rounding error committed when the two trailing limbs are added, and that error only grows into the
+result when something amplifies it; cancellation is the usual amplifier. It costs 20 instructions
+per addition against 11, and 46 per division against 13, while multiplication is 9 at both levels
+- a product-heavy kernel gains nothing from <code class="docutils literal notranslate"><span class="pre">high</span></code> and pays for it on every addition. Where it
+pays is where nearly equal values are subtracted, where a long sum carries terms of both signs,
+and in argument reductions. <code class="docutils literal notranslate"><span class="pre">fp32mp2_stat</span></code> points at those places: <code class="docutils literal notranslate"><span class="pre">partial_cancel_count</span></code> and
+<code class="docutils literal notranslate"><span class="pre">full_cancel_count</span></code> count the operations where significance was lost, per instrumented variable.
+Then raise the level per operation, with <code class="docutils literal notranslate"><span class="pre">add&lt;&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">sub&lt;&gt;</span></code> and the rest on the critical step,
+rather than raising the type for the whole kernel.</p></li>
+<li><p><strong>The conversion macros trade FP64 instructions for registers.</strong>
+<code class="docutils literal notranslate"><span class="pre">CCCL_FPMP_OPTIMIZED_DOUBLE_TO_FPMP</span></code> and <code class="docutils literal notranslate"><span class="pre">CCCL_FPMP_OPTIMIZED_FPMP_TO_DOUBLE</span></code>, both on by
+default, implement the <code class="docutils literal notranslate"><span class="pre">double</span></code> ↔ <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> conversions in integer and FP32 arithmetic so that
+no FP64 instruction sits on the hot path. The cast-based conversions they replace are two and
+three FP64 operations: shorter, with fewer live registers, but on the rationed FP64 pipe. Setting
+either to <code class="docutils literal notranslate"><span class="pre">0</span></code> is worth trying in two cases - a large kernel whose register count or spills, as
+<code class="docutils literal notranslate"><span class="pre">-Xptxas</span> <span class="pre">-v</span></code> reports them, are limiting occupancy, and a part where FP64 is cheap anyway, where
+the integer path is extra instructions for nothing. Measure before keeping it: on a 1:64 part a
+few FP64 operations per element can cost more than the registers buy back. The macros change the
+bodies of inline functions, so set them for the whole build rather than for one file, and they
+affect <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> only; an <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> conversion is FP64 either way.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CCCL_FPMP_EXPLICIT_CASTS=0</span></code> <strong>is for the first compile of a migration, not for the build you
+ship.</strong> The default makes every narrowing conversion into the pair a visible cast; switching it
+off lets a large <code class="docutils literal notranslate"><span class="pre">double</span></code> codebase compile against <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> without touching the call sites.
+The conversions still take the accurate two-limb path, so what is saved is edit churn rather than
+correctness - but the diagnostics it silences are exactly the list the second point says to work
+through: every place a <code class="docutils literal notranslate"><span class="pre">double</span></code> enters a pair expression and a conversion runs. With the macro
+off, a <code class="docutils literal notranslate"><span class="pre">double</span></code> intermediate in a hot loop, or a helper that still takes <code class="docutils literal notranslate"><span class="pre">double</span></code>, costs a
+conversion in each direction and FP64 arithmetic in between, with nothing to say so. The genuinely
+lossy conversions - <code class="docutils literal notranslate"><span class="pre">int64_t</span></code> and <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> into <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> - pass silently as well. Use it
+to get a large port compiling, then turn it back on and work through the errors; each one is a
+conversion site worth knowing about.</p></li>
+<li><p><strong>Avoid the atomics, even though they are provided.</strong> <code class="docutils literal notranslate"><span class="pre">atomicAdd</span></code> and <code class="docutils literal notranslate"><span class="pre">atomicSub</span></code> on
+<code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> are a 64-bit <code class="docutils literal notranslate"><span class="pre">atomicCAS</span></code> loop: each attempt reads the pair, performs a <code class="docutils literal notranslate"><span class="pre">high</span></code>
+addition and tries to exchange, and under contention a failed exchange means the whole addition is
+redone. Hardware <code class="docutils literal notranslate"><span class="pre">atomicAdd</span></code> on <code class="docutils literal notranslate"><span class="pre">float</span></code> or <code class="docutils literal notranslate"><span class="pre">double</span></code> is one instruction resolved in L2. The
+gap is small while every thread hits a different address and large when many hit the same one,
+which is the reduction pattern. Reduce first: the <code class="docutils literal notranslate"><span class="pre">__shfl_down_sync</span></code> family is overloaded for
+the pair, so a warp reduces in five shuffle steps and a block finishes in shared memory, leaving
+one atomic per block - or none, with per-block partials and a second pass, which also makes the
+result deterministic. The type is trivially copyable with the usual operators, so generic block
+and warp reductions accept it as they do any user-defined type.</p></li>
+<li><p><strong>Smaller things that add up:</strong></p>
+<ul>
+<li><p><strong>Prefer the one-limb accumulate.</strong> <code class="docutils literal notranslate"><span class="pre">acc</span> <span class="pre">+=</span> <span class="pre">f</span></code> with a <code class="docutils literal notranslate"><span class="pre">float</span></code> operand takes a dedicated
+path, 10 instructions against 11 at <code class="docutils literal notranslate"><span class="pre">mid</span></code> and 13 against 20 at <code class="docutils literal notranslate"><span class="pre">high</span></code>, and builds no
+temporary pair.</p></li>
+<li><p><strong>Prefer</strong> <code class="docutils literal notranslate"><span class="pre">mad</span></code> <strong>to a multiply and an add, and use</strong> <code class="docutils literal notranslate"><span class="pre">fma</span></code> <strong>for its rounding, not by
+habit.</strong> <code class="docutils literal notranslate"><span class="pre">mad(a,</span> <span class="pre">b,</span> <span class="pre">c)</span></code> is a <code class="docutils literal notranslate"><span class="pre">low</span></code> multiply followed by an addition at the type’s level, 16
+instructions at <code class="docutils literal notranslate"><span class="pre">mid</span></code> against 20 for the two operations written out. <code class="docutils literal notranslate"><span class="pre">fma</span></code> is 19 at <code class="docutils literal notranslate"><span class="pre">mid</span></code>
+and 37 at <code class="docutils literal notranslate"><span class="pre">high</span></code>, more than the separate operations at <code class="docutils literal notranslate"><span class="pre">high</span></code>, so it belongs where the fused
+rounding of the main term matters.</p></li>
+<li><p><strong>Hoist divisions.</strong> Division is the most expensive basic operation and the least accurate. A
+loop-invariant divisor is a reciprocal computed once and multiplied, at the price of one extra
+rounding, and where a square root feeds a division, <code class="docutils literal notranslate"><span class="pre">rsqrt</span></code> and a multiply replace the pair.</p></li>
+<li><p><strong>Mind the register count.</strong> Each pair is two registers, and the <code class="docutils literal notranslate"><span class="pre">high</span></code> algorithms carry more
+temporaries. <code class="docutils literal notranslate"><span class="pre">-Xptxas</span> <span class="pre">-v</span></code> or Nsight Compute shows spills; <code class="docutils literal notranslate"><span class="pre">__launch_bounds__</span></code> and the
+conversion macros above are the levers.</p></li>
+<li><p><strong>The fast-math flags do not reach the arithmetic.</strong> The error-free transformations are written
+with the <code class="docutils literal notranslate"><span class="pre">_rn</span></code> intrinsics - <code class="docutils literal notranslate"><span class="pre">__fadd_rn</span></code>, <code class="docutils literal notranslate"><span class="pre">__fmul_rn</span></code>, <code class="docutils literal notranslate"><span class="pre">__fmaf_ieee_rn</span></code> and their
+<code class="docutils literal notranslate"><span class="pre">double</span></code> counterparts - and the seeds with explicit approximation instructions, so <code class="docutils literal notranslate"><span class="pre">--fmad</span></code>
+contraction and the <code class="docutils literal notranslate"><span class="pre">--use_fast_math</span></code> division and square-root replacements do not alter them;
+flush-to-zero touches only the subnormal range, which <code class="docutils literal notranslate"><span class="pre">low</span></code> and <code class="docutils literal notranslate"><span class="pre">mid</span></code> do not support in any
+case.</p></li>
+<li><p><strong>Template the kernel on the type.</strong> The level is part of the type, so a kernel templated on it
+compares <code class="docutils literal notranslate"><span class="pre">low</span></code>, <code class="docutils literal notranslate"><span class="pre">mid</span></code>, <code class="docutils literal notranslate"><span class="pre">high</span></code> and <code class="docutils literal notranslate"><span class="pre">double</span></code> from the build line with no change to the
+code, which is how the figures above were taken.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="fp64mp2">
+<span id="libcudacxx-extended-api-fp-optimization-guide-fp64mp2"></span><h3>fp64mp2<a class="headerlink" href="#fp64mp2" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><strong>Use it only on GPUs with full-rate FP64.</strong> <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> spends FP64 throughput - 11 FP64
+instructions per <code class="docutils literal notranslate"><span class="pre">mid</span></code> addition, 9 per multiplication - so the price of its digits is set by how
+the part rations that pipe. Where FP64 runs at half the FP32 rate, as on B200, H100 and A100, the
+price is fair: on B200 a <code class="docutils literal notranslate"><span class="pre">mid</span></code> addition sustains 1347 giga-additions per second and is 7.8×
+faster than software binary128, and division is 17.8× faster. On B300, with FP64 at 1/64 of FP32,
+the same addition sustains 45 - a thirtieth - and software binary128, which is integer code and
+does not compete for the FP64 units, is 1.4–4× faster than <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> operation for operation. On
+such a part the choice is usually <code class="docutils literal notranslate"><span class="pre">fp128</span></code> for the digits or <code class="docutils literal notranslate"><span class="pre">double</span></code> for the speed, with
+<code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> the worst of both - usually, because those figures come from small kernels. Software
+binary128 is long integer code with many values live at once, and a large kernel already near its
+register budget can spill where the pair, at four registers per value and a dozen instructions per
+operation, does not; once the spills sit in the inner loop the ordering can reverse, and
+<code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> comes out ahead on rationed FP64 after all. The same code size shows up at build time,
+since every <code class="docutils literal notranslate"><span class="pre">fp128</span></code> operation instantiated adds noticeably to compile time. So measure in the
+real kernel, with <code class="docutils literal notranslate"><span class="pre">-Xptxas</span> <span class="pre">-v</span></code> on both builds, rather than from the table. The host side has no
+such rationing, so CPU code is on the good side of this line.</p></li>
+<li><p><strong>Conversions are free; bandwidth and registers are not.</strong> Unlike the float pair, <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code>
+converts to and from <code class="docutils literal notranslate"><span class="pre">double</span></code> at no cost worth measuring: <code class="docutils literal notranslate"><span class="pre">double</span></code> into the pair is a limb
+copy with a zero tail, and the pair into <code class="docutils literal notranslate"><span class="pre">double</span></code> is at most one FP64 addition, so the
+conversion macros above play no part here. What the wider type costs is 16 bytes per value against
+8, and four registers against two. Keep data that is <code class="docutils literal notranslate"><span class="pre">double</span></code> precision to begin with in
+<code class="docutils literal notranslate"><span class="pre">double</span></code> arrays, and promote where the extra width is needed - typically the accumulator, since
+the inputs are exact as <code class="docutils literal notranslate"><span class="pre">double</span></code> and it is the running sum, or sum of products, that outgrows
+it. <code class="docutils literal notranslate"><span class="pre">acc</span> <span class="pre">+=</span> <span class="pre">d</span></code> with a <code class="docutils literal notranslate"><span class="pre">double</span></code> operand is the cheap path for exactly that, 10 FP64
+instructions at <code class="docutils literal notranslate"><span class="pre">mid</span></code> against 11 for a pair addition after promotion and 13 against 20 at
+<code class="docutils literal notranslate"><span class="pre">high</span></code>. Convert the result back once, when it leaves the kernel. Where whole arrays must be
+<code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code>, the type is 16-byte aligned, so each element is one 128-bit load or store: keep them
+contiguous and aligned, and budget half the elements per byte of bandwidth. The exception to
+“free” is the quad interchange: <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> ↔ <code class="docutils literal notranslate"><span class="pre">__float128</span></code> is software in both directions, about
+1200 instructions on the device, and belongs at the I/O boundary.</p></li>
+<li><p><strong>The accuracy levels follow the float pair, with one extra check.</strong> The costs are the same - 8,
+11 and 20 FP64 instructions per addition - and so is the advice: <code class="docutils literal notranslate"><span class="pre">mid</span></code> by default, <code class="docutils literal notranslate"><span class="pre">low</span></code> on
+the dominant path with <code class="docutils literal notranslate"><span class="pre">renormalize()</span></code> where the chain ends, <code class="docutils literal notranslate"><span class="pre">high</span></code> per operation where
+cancellation is possible, and <code class="docutils literal notranslate"><span class="pre">fp64mp2_stat</span></code> to find both. The extra check is <code class="docutils literal notranslate"><span class="pre">zero_lo_count</span></code>.
+The point of the type is digits beyond <code class="docutils literal notranslate"><span class="pre">double</span></code>; if that counter is a large share of
+<code class="docutils literal notranslate"><span class="pre">ops_count</span></code>, the second limb is idle for most of the data, the computation is not using what it
+pays for, and <code class="docutils literal notranslate"><span class="pre">double</span></code> would give the same answer faster.</p></li>
+<li><p><strong>Math functions are where the time goes.</strong> The arithmetic, <code class="docutils literal notranslate"><span class="pre">sqrt</span></code>, <code class="docutils literal notranslate"><span class="pre">rsqrt</span></code>, <code class="docutils literal notranslate"><span class="pre">fma</span></code> and
+<code class="docutils literal notranslate"><span class="pre">mad</span></code> have dedicated double-double implementations; the transcendentals currently not. As
+<a class="reference internal" href="fpmp.html#libcudacxx-extended-api-fp-fpmp-math-accuracy"><span class="std std-ref">Math function accuracy</span></a> describes, they
+evaluate in a binary128 backend where one is active and in <code class="docutils literal notranslate"><span class="pre">double</span></code> where not, and the two cases
+call for opposite handling.</p></li>
+<li><p><strong>Division costs more than on the float pair.</strong> A <code class="docutils literal notranslate"><span class="pre">mid</span></code> division is 18 FP64 and 25 integer
+instructions, <code class="docutils literal notranslate"><span class="pre">high</span></code> 28 and 49, with the integer part doing the branch-free scaling that keeps
+reciprocals in range. On B200 a <code class="docutils literal notranslate"><span class="pre">mid</span></code> division has 80% of the throughput of a <code class="docutils literal notranslate"><span class="pre">mid</span></code> addition
+and a <code class="docutils literal notranslate"><span class="pre">high</span></code> division 44%, so the hoisting advice above applies with more force: reciprocals
+once, <code class="docutils literal notranslate"><span class="pre">rsqrt</span></code> and a multiply rather than one over <code class="docutils literal notranslate"><span class="pre">sqrt</span></code>.</p></li>
+<li><p><strong>The atomics need sm_90 and are slower still.</strong> <code class="docutils literal notranslate"><span class="pre">atomicAdd</span></code> on <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> is a 128-bit
+compare-exchange loop, which exists on Hopper and later only - elsewhere the call fails to link
+with an error naming the requirement - while hardware <code class="docutils literal notranslate"><span class="pre">double</span></code> <code class="docutils literal notranslate"><span class="pre">atomicAdd</span></code> has been one
+instruction since sm_60, so the gap to the native type is wider than for the float pair. The
+remedy is the same: shuffle and shared-memory reduction first, one atomic per block at most, or
+per-block partials and a second pass for a deterministic result.</p></li>
+<li><p><strong>It is the type to port 80-bit</strong> <code class="docutils literal notranslate"><span class="pre">long</span> <span class="pre">double</span></code> <strong>code to.</strong> CPU code written for the x87
+double-extended format - <code class="docutils literal notranslate"><span class="pre">long</span> <span class="pre">double</span></code> on Linux/x86 - meets a GPU that has no such format in
+device code. <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> carries 104 significand bits against that format’s 64, so the precision
+survives the port with room to spare, and on a full-rate FP64 part it is the cheapest way to carry
+it: a software binary128 would pay for 113 bits where 64 were asked for. What does not survive is
+exponent range, <code class="docutils literal notranslate"><span class="pre">double</span></code>’s ±10<sup>308</sup> against x87’s ±10<sup>4932</sup>, so code that chose
+the format for its range rather than its mantissa needs rescaling or binary128 - see the note on
+retiring 80-bit code under <a class="reference internal" href="fpmp.html#libcudacxx-extended-api-fp-fpmp-80-bit"><span class="std std-ref">Where this pays off</span></a>.</p></li>
+<li><p><strong>Know when the alternative is better.</strong> Two cases call for something other than <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> even
+on a full-rate part. A computation that needs more than 104 significand bits, or a wider exponent
+range than <code class="docutils literal notranslate"><span class="pre">double</span></code>’s, needs binary128 and nothing else will do. And a computation whose only
+ill-conditioned part is a sum or a dot product may get its digits from compensated <code class="docutils literal notranslate"><span class="pre">double</span></code>
+arithmetic - Kahan, pairwise summation, the Ogita–Rump–Oishi dot product in the references - which
+is built from the same error-free transformations as the pair. Where only the accumulation needs
+the extra width, <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> for the accumulator alone, as above, is that algorithm written for
+you, at 10 FP64 instructions per term.</p></li>
+</ul>
+</section>
+</section>
+<section id="using-fpemu-efficiently">
+<span id="libcudacxx-extended-api-fp-optimization-guide-fpemu"></span><h2>Using fpemu efficiently<a class="headerlink" href="#using-fpemu-efficiently" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">fpemu</span></code> is <code class="docutils literal notranslate"><span class="pre">double</span></code> built from 32-bit integer and <code class="docutils literal notranslate"><span class="pre">float</span></code> operations. Its costs are the pack
+and unpack at the boundaries and the integer work inside, and almost everything below is about
+keeping the first out of the loop and matching the second to what the computation needs. The
+measured figures live on <a class="reference internal" href="fpemu.html#libcudacxx-extended-api-fp-fpemu"><span class="std std-ref">the fpemu page</span></a>; the advice here
+is qualitative.</p>
+<ul class="simple">
+<li><p><strong>The unpacked form can beat native</strong> <code class="docutils literal notranslate"><span class="pre">double</span></code> <strong>on both speed and accuracy; the packed form
+rarely does in real applications.</strong> <code class="docutils literal notranslate"><span class="pre">fp64emu_unpacked</span></code> pays the pack and unpack once per chain
+rather than once per operation and keeps 9 guard bits between operations, so on a rationed part a
+chain of it runs ahead of hardware <code class="docutils literal notranslate"><span class="pre">double</span></code> and lands closer to the exact answer. That is the
+form that competes with native <code class="docutils literal notranslate"><span class="pre">double</span></code> in real applications, and sometimes wins. Packed
+<code class="docutils literal notranslate"><span class="pre">fp64emu</span></code> is a different proposition. The π integration on <a class="reference internal" href="fpemu.html#libcudacxx-extended-api-fp-fpemu"><span class="std std-ref">the fpemu page</span></a> puts it close to parity with hardware <code class="docutils literal notranslate"><span class="pre">double</span></code> on RTX 6000
+Ada, RTX PRO 6000 Blackwell and B300, with the unpacked form at about 1.5× it, but that kernel is
+the exception rather than the rule: a few operations per term, no memory traffic, nothing else
+competing for registers. A real kernel is larger and rarely bound by arithmetic alone, and each
+emulated operation replaces one FP64 instruction with a run of integer and FP32 instructions and
+several more live registers, so in a large kernel the packed form usually means register pressure,
+spills and a net loss against the FP64 pipe, slow as that pipe is. Its uses are the ones the
+unpacked form cannot serve: <code class="docutils literal notranslate"><span class="pre">double</span></code> work moved onto the FP32 and integer pipes alongside a
+saturated FP64 pipe, see <a class="reference internal" href="#libcudacxx-extended-api-fp-optimization-guide-mixed"><span class="std std-ref">Mixed cases</span></a>;
+results that must match <code class="docutils literal notranslate"><span class="pre">double</span></code> bit for bit while the FP64 pipe is avoided; and a target with
+no FP64 arithmetic at all. On a full-rate part hardware <code class="docutils literal notranslate"><span class="pre">double</span></code> is the fast path for
+everything, and emulating it only slows the mix down.</p></li>
+<li><p><strong>Know what the default buys.</strong> <code class="docutils literal notranslate"><span class="pre">fpemu</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">high</span></code>, the opposite of <code class="docutils literal notranslate"><span class="pre">fpmp</span></code>, so
+packed <code class="docutils literal notranslate"><span class="pre">fp64emu</span></code> reproduces <code class="docutils literal notranslate"><span class="pre">double</span></code> bit for bit out of the box - and at best runs at about
+<code class="docutils literal notranslate"><span class="pre">double</span></code>’s speed. That is the right type when the requirement is exact <code class="docutils literal notranslate"><span class="pre">double</span></code> semantics off
+the FP64 pipe, and the wrong one when the requirement is speed: for speed, step up to the unpacked
+form, step down a level, or both.</p></li>
+<li><p><strong>Chains go unpacked.</strong> Everything the unpacked form gains, in speed and in accuracy, comes from
+paying the pack and unpack once per chain instead of once per operation, and from the 9 guard bits
+that survive between operations. Enter it once, leave it once, and keep the intermediate values in
+it. The explicit constructor is the reminder: every <code class="docutils literal notranslate"><span class="pre">fp64emu_unpacked{x}</span></code> in a loop body is a
+repacking that was probably avoidable.</p></li>
+<li><p><strong>Budget 16 bytes per unpacked value.</strong> Four registers rather than two, and twice the bytes if it
+is ever stored. Store packed, compute unpacked, and watch <code class="docutils literal notranslate"><span class="pre">-Xptxas</span> <span class="pre">-v</span></code> in kernels with many live
+values; the unpacked form is the one that costs occupancy.</p></li>
+<li><p><strong>Step down with the range in mind.</strong> <code class="docutils literal notranslate"><span class="pre">mid</span></code> is 1–2 ulp and <code class="docutils literal notranslate"><span class="pre">low</span></code> about <code class="docutils literal notranslate"><span class="pre">float</span></code>’s precision;
+<code class="docutils literal notranslate"><span class="pre">mid</span></code> runs at 1.4–1.6× <code class="docutils literal notranslate"><span class="pre">double</span></code> packed and 1.8–2.0× unpacked, <code class="docutils literal notranslate"><span class="pre">low</span></code> at 1.7–2.0× and
+2.0–2.3×. In the packed form both handle the normal range only and drop the subnormal, infinity
+and NaN handling that <code class="docutils literal notranslate"><span class="pre">high</span></code> carries; the unpacked form keeps full-range pack and unpack at
+every level, so stepping down there is the safer move. <code class="docutils literal notranslate"><span class="pre">low</span></code>’s error is biased rather than
+scattered - a long accumulation in <code class="docutils literal notranslate"><span class="pre">low</span></code> tracks plain <code class="docutils literal notranslate"><span class="pre">float</span></code> - so its place is a
+range-limited loop body with a wider accumulator elsewhere, not the accumulator itself.</p></li>
+<li><p><strong>Use the fused operations.</strong> <code class="docutils literal notranslate"><span class="pre">fma</span></code>, <code class="docutils literal notranslate"><span class="pre">mad</span></code>, <code class="docutils literal notranslate"><span class="pre">dot</span></code> and <code class="docutils literal notranslate"><span class="pre">cmul</span></code> exist because composing them
+from <code class="docutils literal notranslate"><span class="pre">*</span></code> and <code class="docutils literal notranslate"><span class="pre">+</span></code> would round and repack between the steps. Where an expression has one of
+those shapes, call the fused form.</p></li>
+<li><p><strong>Directed rounding is a packed-only feature.</strong> The <code class="docutils literal notranslate"><span class="pre">rz</span></code>, <code class="docutils literal notranslate"><span class="pre">ru</span></code> and <code class="docutils literal notranslate"><span class="pre">rd</span></code> spellings of the
+intrinsics exist for the packed representation; the unpacked form rounds to nearest and nothing
+else. Interval arithmetic and its relatives therefore stay packed.</p></li>
+<li><p><strong>Decide what “reproduces double” means before choosing.</strong> Only packed <code class="docutils literal notranslate"><span class="pre">high</span></code> returns
+<code class="docutils literal notranslate"><span class="pre">double</span></code>’s values. A chain in the unpacked form behaves like x87 extended precision stored at
+the end: more accurate, and different. Code validated bit for bit against a <code class="docutils literal notranslate"><span class="pre">double</span></code> reference
+needs the packed form, or a reference computed the same way.</p></li>
+</ul>
+</section>
+<section id="using-fptool">
+<span id="libcudacxx-extended-api-fp-optimization-guide-fptool"></span><h2>Using fptool<a class="headerlink" href="#using-fptool" title="Link to this heading">#</a></h2>
+<p>The two instruments answer the two questions the previous sections keep raising: <strong>how much
+precision does this computation need</strong>, and <strong>what is the pair arithmetic actually doing</strong>. Both are
+opt-in behind <code class="docutils literal notranslate"><span class="pre">CCCL_ENABLE_FPTOOL</span></code>, defined for the whole build; both cost rather than save; and
+both are used the same way - change a type alias, read the answer, change it back. The macro is
+there because both tools keep their state in global memory and touch it from inside the arithmetic:
+<code class="docutils literal notranslate"><span class="pre">fp64_custom</span></code> reads its run-time field sizes there, and <code class="docutils literal notranslate"><span class="pre">fpmp2_stat</span></code> writes its counter record
+there through atomics on every operation. Global objects reached that way can cause problems in a
+complex parallel application, so the gate makes sure they leave the target application together with
+the research work that brought them in rather than staying behind.
+<a class="reference internal" href="fptool_custom.html#libcudacxx-extended-api-fp-fptool-custom"><span class="std std-ref">The fp64_custom page</span></a> and
+<a class="reference internal" href="fptool_stat.html#libcudacxx-extended-api-fp-fptool-stat"><span class="std std-ref">the fpmp2_stat page</span></a> describe them; this section says
+how they fit into an optimization pass.</p>
+<section id="fp64-custom-how-much-precision-is-enough">
+<span id="libcudacxx-extended-api-fp-optimization-guide-fptool-custom"></span><h3>fp64_custom: how much precision is enough<a class="headerlink" href="#fp64-custom-how-much-precision-is-enough" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">fp64_custom&lt;E,</span> <span class="pre">M&gt;</span></code> is a <code class="docutils literal notranslate"><span class="pre">double</span></code> that rounds to <code class="docutils literal notranslate"><span class="pre">M</span></code> mantissa bits and <code class="docutils literal notranslate"><span class="pre">E</span></code> exponent bits
+before and after every operation, so an algorithm can be run as though the hardware had that format.
+It is the tool for the second question in
+<a class="reference internal" href="#libcudacxx-extended-api-fp-optimization-guide-choosing"><span class="std std-ref">Choosing the type</span></a>.</p>
+<ul class="simple">
+<li><p><strong>Sweep the mantissa with the range held native.</strong> <code class="docutils literal notranslate"><span class="pre">fp64_custom&lt;11,</span> <span class="pre">M&gt;</span></code> reduces the significand
+and clamps nothing, so a sweep over <code class="docutils literal notranslate"><span class="pre">M</span></code> shows where the computation itself gives way. The
+run-time sizes, <code class="docutils literal notranslate"><span class="pre">fp_custom_dynamic_size</span></code> with the setters, make the sweep one binary and one
+loop; the compile-time sizes make the native format cost nothing.</p></li>
+<li><p><strong>Keep the reference reduction wider than the format under test.</strong> Reduce the per-thread partials
+in <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> or the like, so the sweep measures the loop rather than the summation. That gives
+the best result each format can produce, which is what a sizing question wants.</p></li>
+<li><p><strong>Then sweep the exponent separately.</strong> <code class="docutils literal notranslate"><span class="pre">fp64_custom&lt;E,</span> <span class="pre">52&gt;</span></code> keeps the precision and narrows the
+range, which separates an algorithm that needs bits from one that needs headroom - the distinction
+between <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code>, which has <code class="docutils literal notranslate"><span class="pre">float</span></code>’s range, and <code class="docutils literal notranslate"><span class="pre">fp64emu_low</span></code>, which has <code class="docutils literal notranslate"><span class="pre">double</span></code>’s.</p></li>
+<li><p><strong>Know what is not reduced.</strong> Construction stores the value unreduced, comparisons compare
+unreduced bits, and every math function except <code class="docutils literal notranslate"><span class="pre">sqrt</span></code> and <code class="docutils literal notranslate"><span class="pre">fma</span></code> resolves through <code class="docutils literal notranslate"><span class="pre">operator</span>
+<span class="pre">double()</span></code> and computes at full FP64 precision, silently. A sensitivity study that leans on
+<code class="docutils literal notranslate"><span class="pre">exp</span></code> or <code class="docutils literal notranslate"><span class="pre">fabs</span></code> is measuring less than it thinks.</p></li>
+<li><p><strong>It is cheap to run.</strong> Every reduced format costs about 10% over plain <code class="docutils literal notranslate"><span class="pre">double</span></code> on the π
+integration, so a full sweep is an afternoon’s measurement rather than a project. The run-time
+sizes pay a memory read per reduction, and under whole-program compilation each translation unit
+has its own copy of them, so a size set in one is not seen by the others; relocatable device code
+shares them.</p></li>
+</ul>
+</section>
+<section id="fpmp2-stat-what-the-arithmetic-did">
+<span id="libcudacxx-extended-api-fp-optimization-guide-fptool-stat"></span><h3>fpmp2_stat: what the arithmetic did<a class="headerlink" href="#fpmp2-stat-what-the-arithmetic-did" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">fp32mp2_stat</span></code> and <code class="docutils literal notranslate"><span class="pre">fp64mp2_stat</span></code> wrap the <code class="docutils literal notranslate"><span class="pre">fpmp2</span></code> types, compute bit-identical results, and
+record on the device how many operations of each kind ran, which numerical events occurred and how
+the limbs were placed. Several points in
+<a class="reference internal" href="#libcudacxx-extended-api-fp-optimization-guide-fpmp"><span class="std std-ref">Using fpmp efficiently</span></a> lean on them;
+this is the order to read the record in.</p>
+<ol class="arabic simple">
+<li><p><strong>Validate</strong> <code class="docutils literal notranslate"><span class="pre">ops_count</span></code> <strong>against a closed form.</strong> Most kernels have one. A count that
+disagrees means the region is not the one intended, something was optimized away, or part of the
+arithmetic ran on the host, where nothing is collected.</p></li>
+<li><p><strong>Read</strong> <code class="docutils literal notranslate"><span class="pre">zero_lo_count</span></code> <strong>as a share of</strong> <code class="docutils literal notranslate"><span class="pre">ops_count</span></code>. A large share means the second limb
+was idle for most of the data and the pair type is not earning its cost - <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> might be
+only <code class="docutils literal notranslate"><span class="pre">float</span></code>’s job (<code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> <code class="docutils literal notranslate"><span class="pre">double</span></code>’s).</p></li>
+<li><p><strong>Compare</strong> <code class="docutils literal notranslate"><span class="pre">_low</span></code>, <code class="docutils literal notranslate"><span class="pre">_mid</span></code> <strong>and</strong> <code class="docutils literal notranslate"><span class="pre">_high</span></code> <strong>records on the same workload.</strong>
+<code class="docutils literal notranslate"><span class="pre">overlap_count</span></code>, <code class="docutils literal notranslate"><span class="pre">invert_count</span></code> and <code class="docutils literal notranslate"><span class="pre">min_hi_lo_gap</span></code> on the <code class="docutils literal notranslate"><span class="pre">_low</span></code> record say whether the
+fast level is safe on this data and how far the limbs drift, which is where to put
+<code class="docutils literal notranslate"><span class="pre">renormalize()</span></code>. The <code class="docutils literal notranslate"><span class="pre">invert_count</span></code> must be zero at every level - important.</p></li>
+<li><p><strong>Read the cancellation counters as locations, not damage.</strong> <code class="docutils literal notranslate"><span class="pre">partial_cancel_count</span></code> and
+<code class="docutils literal notranslate"><span class="pre">full_cancel_count</span></code> mark the operations where significance was lost, which is where <code class="docutils literal notranslate"><span class="pre">high</span></code>
+pays and where a reformulation might. A compensated sum cancels on every term while being at its
+most accurate, so the count is a map of where to look rather than an error count.</p></li>
+<li><p><strong>Check the exponent range.</strong> <code class="docutils literal notranslate"><span class="pre">min_exp</span></code>, <code class="docutils literal notranslate"><span class="pre">max_exp</span></code> and <code class="docutils literal notranslate"><span class="pre">denorm_count</span></code> say whether the data
+approaches the edges: <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> inherits <code class="docutils literal notranslate"><span class="pre">float</span></code>’s range, and the <code class="docutils literal notranslate"><span class="pre">low</span></code> and <code class="docutils literal notranslate"><span class="pre">mid</span></code> levels
+support the normal range only, so any subnormal means a configuration is being used outside its
+domain.</p></li>
+</ol>
+<p>Instrument one variable and leave the rest plain - the property spreads along an expression from
+either operand until a plain variable absorbs it, so the counters describe that variable’s
+arithmetic rather than the kernel’s. Run on a reduced problem with a small grid, one block of 32
+threads being enough, since every operation updates one device-wide record through atomics and an
+instrumented run is two to three orders of magnitude slower than the plain type. Bracket the region
+tightly with <code class="docutils literal notranslate"><span class="pre">fpmp2_stat_reset_device_data</span></code> and <code class="docutils literal notranslate"><span class="pre">fpmp2_stat_read_device_data</span></code>, measure one type
+at a time because all eight aliases share the record, and keep the alias behind a build flag so the
+instrumentation cannot ship.</p>
+</section>
+</section>
+<section id="measuring">
+<span id="libcudacxx-extended-api-fp-optimization-guide-measuring"></span><h2>Measuring<a class="headerlink" href="#measuring" title="Link to this heading">#</a></h2>
+<p>Every recommendation above ends in the same place: the figures in these documents are one benchmark
+on a handful of parts, and the computation that matters is yours. The component types are built to
+make that measurement cheap.</p>
+<ul>
+<li><p><strong>Template the kernel on the type.</strong> The level, the width and the component are all part of the
+type, so a kernel templated on it compares <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">double</span></code>, every <code class="docutils literal notranslate"><span class="pre">fpmp</span></code> and <code class="docutils literal notranslate"><span class="pre">fpemu</span></code>
+variant and the <code class="docutils literal notranslate"><span class="pre">fptool</span></code> instruments from the build line with no change to the code. One alias
+is the whole configuration, and the π integration behind the figures in these pages is written
+that way.</p></li>
+<li><p><strong>Measure end to end, with the accumulator where it lives.</strong> Both the <code class="docutils literal notranslate"><span class="pre">fpmp</span></code> and the <code class="docutils literal notranslate"><span class="pre">fpemu</span></code>
+measurements show the reduction deciding most of the accuracy column. A measurement that reduces
+in a wider type than the one under test reports the loop’s accuracy; one that reduces in the same
+type reports the program’s. Neither is wrong, but only one matches the program you are going to
+ship.</p></li>
+<li><p><strong>Report digits and time together.</strong> A faster type that loses the digits the computation needed
+has not won, and a slower one that gains digits the computation cannot use has not either. The
+tables in the component pages pair the two columns for that reason; a measurement of your own
+should do the same.</p></li>
+<li><p><strong>Check the pipe you meant to use.</strong> For an <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> or <code class="docutils literal notranslate"><span class="pre">fpemu</span></code> kernel on a rationed part,
+the loop body should carry no FP64 instructions - the <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> conversions keep a few on a cold
+fallback path, and that is all:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cuobjdump<span class="w"> </span>--dump-sass<span class="w"> </span>kernel.o<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-cE<span class="w"> </span><span class="s1">'DADD|DMUL|DFMA|DSETP|F2D|D2F|F2F\.F64|F2F\.F32\.F64'</span>
+</pre></div>
+</div>
+<p>A count beyond those few points at a hidden conversion - a <code class="docutils literal notranslate"><span class="pre">double</span></code> variable in a pair
+expression, a <code class="docutils literal notranslate"><span class="pre">double</span></code> literal that did not fold, a helper that still takes <code class="docutils literal notranslate"><span class="pre">double</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">CCCL_FPMP_EXPLICIT_CASTS=0</span></code> letting one through - and the same count on an <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> kernel
+says how much of the FP64 pipe each element costs.</p>
+</li>
+<li><p><strong>Check registers and spills.</strong> <code class="docutils literal notranslate"><span class="pre">-Xptxas</span> <span class="pre">-v</span></code> reports both per kernel. <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> and
+<code class="docutils literal notranslate"><span class="pre">fp64emu_unpacked</span></code> double the register footprint of the value they replace, and the <code class="docutils literal notranslate"><span class="pre">high</span></code>
+algorithms carry more temporaries. A kernel that spills is usually a kernel to restructure before
+it is a kernel to speed up, and it is also the one case where software binary128 and <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code>
+can trade places on a rationed part.</p></li>
+<li><p><strong>Compare against the type you are replacing, on the same part.</strong> The question is never whether
+<code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> is fast but whether it is faster than <code class="docutils literal notranslate"><span class="pre">double</span></code> on the GPU the program runs on, and
+the ratios in these documents move by an order of magnitude between a 1:2 and a 1:64 part. Measure
+the baseline in the same run.</p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="fptool_stat.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">fpmp2_stat: What the Arithmetic Actually Did</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../mdspan.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Mdspan</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#choosing-the-type">Choosing the type</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mixed-cases">Mixed cases</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#using-fpmp-efficiently">Using fpmp efficiently</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fp32mp2">fp32mp2</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fp64mp2">fp64mp2</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#using-fpemu-efficiently">Using fpemu efficiently</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#using-fptool">Using fptool</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fp64-custom-how-much-precision-is-enough">fp64_custom: how much precision is enough</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fpmp2-stat-what-the-arithmetic-did">fpmp2_stat: what the arithmetic did</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#measuring">Measuring</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2026, NVIDIA Corporation.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.1.
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
