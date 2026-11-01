@@ -21,6 +21,7 @@
 #include <cub/util_type.cuh>
 #include <cub/warp/specializations/warp_reduce_shfl_ptx.cuh>
 #include <cub/warp/specializations/warp_redux.cuh>
+#include <cub/warp/warp_utils.cuh>
 
 #include <cuda/__cmath/ilog.h>
 #include <cuda/__cmath/pow2.h>
@@ -63,24 +64,15 @@ struct WarpReduceShfl
   using TempStorage = NullType;
 
   /// Lane index in logical warp
-  int lane_id;
+  int lane_id = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
 
   /// Logical warp index in 32-thread physical warp
-  int warp_id;
+  int warp_id = CUB_NS_QUALIFIER::detail::logical_warp_id<LogicalWarpThreads>();
 
   /// 32-thread physical warp member mask of logical warp
-  ::cuda::std::uint32_t member_mask;
+  ::cuda::std::uint32_t member_mask = CUB_NS_QUALIFIER::WarpMask<LogicalWarpThreads>(warp_id);
 
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpReduceShfl(TempStorage& /*temp_storage*/)
-      : lane_id(static_cast<int>(::cuda::ptx::get_sreg_laneid()))
-      , warp_id(is_full_warp ? 0 : (lane_id / LogicalWarpThreads))
-      , member_mask(CUB_NS_QUALIFIER::WarpMask<LogicalWarpThreads>(warp_id))
-  {
-    if constexpr (!is_full_warp)
-    {
-      lane_id = lane_id % LogicalWarpThreads;
-    }
-  }
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpReduceShfl(TempStorage& /*temp_storage*/) {}
 
   /**
    * @brief Reduction (specialized for swizzled ReduceByKeyOp<::cuda::std::plus<>> across

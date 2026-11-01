@@ -24,6 +24,7 @@
 #include <cub/detail/log2.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
+#include <cub/warp/warp_utils.cuh>
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
@@ -90,8 +91,8 @@ struct WarpReduceSmem
    ******************************************************************************/
 
   _TempStorage& temp_storage;
-  unsigned int lane_id;
-  unsigned int member_mask;
+  unsigned int lane_id     = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
+  unsigned int member_mask = CUB_NS_QUALIFIER::detail::warp_mask<LogicalWarpThreads>();
 
   /******************************************************************************
    * Construction
@@ -100,8 +101,6 @@ struct WarpReduceSmem
   /// Constructor
   explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduceSmem(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads)
-      , member_mask(WarpMask<LogicalWarpThreads>(::cuda::ptx::get_sreg_laneid() / LogicalWarpThreads))
   {}
 
   /******************************************************************************
@@ -205,10 +204,7 @@ struct WarpReduceSmem
     warp_flags &= ::cuda::ptx::get_sreg_lanemask_gt();
 
     // Accommodate packing of multiple logical warps in a single physical warp
-    if (!IS_ARCH_WARP)
-    {
-      warp_flags >>= (::cuda::ptx::get_sreg_laneid() / LogicalWarpThreads) * LogicalWarpThreads;
-    }
+    warp_flags >>= CUB_NS_QUALIFIER::detail::logical_warp_base_id<LogicalWarpThreads>();
 
     // Find next flag
     int next_flag = ::cuda::std::countr_zero(warp_flags);

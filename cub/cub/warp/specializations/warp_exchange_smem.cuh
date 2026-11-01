@@ -21,9 +21,9 @@
 
 #include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
+#include <cub/warp/warp_utils.cuh>
 
 #include <cuda/__cmath/pow2.h>
-#include <cuda/__ptx/instructions/get_sreg.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -35,8 +35,6 @@ class WarpExchangeSmem
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
 
   static constexpr int ITEMS_PER_TILE = ItemsPerThread * LogicalWarpThreads + 1;
-
-  static constexpr bool IS_ARCH_WARP = LogicalWarpThreads == warp_threads;
 
   static constexpr int LOG_SMEM_BANKS = log2_smem_banks;
 
@@ -54,9 +52,8 @@ class WarpExchangeSmem
   /// Shared storage reference
   _TempStorage& temp_storage;
 
-  const unsigned int lane_id;
-  const unsigned int warp_id;
-  const unsigned int member_mask;
+  const unsigned int lane_id     = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
+  const unsigned int member_mask = CUB_NS_QUALIFIER::detail::warp_mask<LogicalWarpThreads>();
 
 public:
   using TempStorage = Uninitialized<_TempStorage>;
@@ -65,9 +62,6 @@ public:
 
   explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpExchangeSmem(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads))
-      , warp_id(IS_ARCH_WARP ? 0 : (::cuda::ptx::get_sreg_laneid() / LogicalWarpThreads))
-      , member_mask(WarpMask<LogicalWarpThreads>(warp_id))
   {}
 
   template <typename OutputT>
