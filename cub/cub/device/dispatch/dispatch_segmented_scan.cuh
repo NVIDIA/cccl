@@ -20,6 +20,7 @@
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/null_type.cuh>
+#include <cub/detail/segmented_params.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
@@ -29,6 +30,7 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cstddef/types.h>
@@ -39,6 +41,7 @@
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -80,6 +83,60 @@ struct device_segmented_scan_kernel_source
       AccumT,
       EnforceInclusive == ForceInclusive::Yes>);
 };
+
+template <typename PolicySelector,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename ScanOpT,
+          typename InitValueT,
+          typename AccumT,
+          ForceInclusive EnforceInclusive>
+struct device_fixed_size_segmented_scan_kernel_source
+{
+  static_assert(::cuda::std::is_empty_v<PolicySelector>);
+
+  CUB_DEFINE_KERNEL_GETTER(
+    fixed_size_segmented_scan_kernel,
+    device_fixed_size_segmented_scan_kernel<
+      PolicySelector,
+      InputIteratorT,
+      OutputIteratorT,
+      OffsetT,
+      ScanOpT,
+      InitValueT,
+      AccumT,
+      EnforceInclusive == ForceInclusive::Yes>);
+};
+
+// The fixed-size kernel uses 32-bit offsets, unless the type or static bounds of the segment size allow values beyond
+// INT_MAX
+template <typename SegmentSizeT>
+using fixed_size_offset_t = ::cuda::std::conditional_t<
+  ::cuda::std::cmp_less_equal(+params::__validate_uniform_integral_param<SegmentSizeT>::args_traits::highest,
+                              (::cuda::std::numeric_limits<int>::max)()),
+  int,
+  ::cuda::std::int64_t>;
+
+// Returns the host-known segment size, or -1 if it does not fit into OffsetT
+template <typename OffsetT, typename SegmentSizeT>
+CUB_RUNTIME_FUNCTION OffsetT host_segment_size(SegmentSizeT segment_size)
+{
+  using validation = params::__validate_uniform_integral_param<SegmentSizeT>;
+  static_assert(!validation::args_traits::is_deferred,
+                "cub::DeviceSegmentedScan: a fixed segment size must be known on the host, so cuda::args::deferred "
+                "is not supported.");
+  if constexpr (validation::all_ok && !validation::args_traits::is_deferred)
+  {
+    // Unary plus promotes character types, which in_range does not accept
+    const auto size = +params::get_param(segment_size, 0);
+    return ::cuda::std::in_range<OffsetT>(size) ? static_cast<OffsetT>(size) : OffsetT{-1};
+  }
+  else
+  {
+    return OffsetT{-1};
+  }
+}
 
 template <typename ScanOpT, typename InitValueT, typename InputValueT>
 using deduced_accum_t = ::cuda::std::__accumulator_t<
@@ -244,6 +301,122 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       input_begin_offsets += num_segments_per_invocation;
       input_end_offsets += num_segments_per_invocation;
       output_begin_offsets += num_segments_per_invocation;
+    }
+
+    if (const auto error = CubDebug(DebugSyncStream(stream)); cudaSuccess != error)
+    {
+      return error;
+    }
+  }
+
+  return cudaSuccess;
+}
+
+// Segment i occupies [i * segment_size, (i + 1) * segment_size) in both input and output
+template <ForceInclusive EnforceInclusive = ForceInclusive::No,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename SegmentSizeT,
+          typename ScanOpT,
+          typename InitValueT,
+          typename AccumT         = deduced_accum_t<ScanOpT, InitValueT, it_value_t<InputIteratorT>>,
+          typename OffsetT        = fixed_size_offset_t<SegmentSizeT>,
+          typename PolicySelector = policy_selector_from_types<AccumT>,
+          typename KernelSource   = device_fixed_size_segmented_scan_kernel_source<
+            PolicySelector,
+            InputIteratorT,
+            OutputIteratorT,
+            OffsetT,
+            ScanOpT,
+            InitValueT,
+            AccumT,
+            EnforceInclusive>,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+#if _CCCL_HAS_CONCEPTS()
+  requires segmented_scan_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_fixed_size(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  InputIteratorT d_in,
+  OutputIteratorT d_out,
+  ::cuda::std::int64_t num_segments,
+  SegmentSizeT segment_size_arg,
+  ScanOpT scan_op,
+  InitValueT init_value,
+  cudaStream_t stream,
+  PolicySelector policy_selector         = {},
+  KernelSource kernel_source             = {},
+  KernelLauncherFactory launcher_factory = {})
+{
+  static constexpr auto int64_max = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max();
+  const OffsetT segment_size      = host_segment_size<OffsetT>(segment_size_arg);
+
+  // The total number of items is used to advance d_in and d_out, so it must fit into int64_t
+  if (num_segments < 0 || segment_size < 0 || (segment_size > 0 && num_segments > int64_max / segment_size))
+  {
+    return cudaErrorInvalidValue;
+  }
+
+  if (d_temp_storage == nullptr)
+  {
+    temp_storage_bytes = 1;
+    return cudaSuccess;
+  }
+
+  if (num_segments == 0 || segment_size == 0)
+  {
+    return cudaSuccess;
+  }
+
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+  {
+    return error;
+  }
+
+  const SegmentedScanPolicy active_policy = policy_selector(cc);
+
+  detail::log_dispatch("DeviceSegmentedScan (fixed size)", cc, active_policy);
+
+  _CCCL_ASSERT((active_policy.block.load_modifier != CacheLoadModifier::LOAD_LDG),
+               "The memory consistency model does not apply to texture accesses");
+  _CCCL_ASSERT(active_policy.block.max_segments > 0, "Policy value for max segments is not positive");
+
+  // Group as many whole segments per block as fit into one tile
+  const int tile_items         = active_policy.block.threads_per_block * active_policy.block.items_per_thread;
+  const int segments_per_block = static_cast<int>(
+    ::cuda::std::clamp(tile_items / segment_size, OffsetT{1}, static_cast<OffsetT>(active_policy.block.max_segments)));
+
+  static constexpr auto max_num_segments_per_invocation =
+    static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
+
+  for (::cuda::std::int64_t first_segment = 0; first_segment < num_segments;
+       first_segment += max_num_segments_per_invocation)
+  {
+    const auto num_segments_per_invocation =
+      static_cast<int>(::cuda::std::min(num_segments - first_segment, max_num_segments_per_invocation));
+    const auto first_item = first_segment * segment_size;
+    const int grid_size   = ::cuda::ceil_div(num_segments_per_invocation, segments_per_block);
+
+    if (const auto error = CubDebug(
+          launcher_factory(grid_size, active_policy.block.threads_per_block, 0, stream)
+            .doit(kernel_source.fixed_size_segmented_scan_kernel(),
+                  d_in + first_item,
+                  d_out + first_item,
+                  num_segments_per_invocation,
+                  segment_size,
+                  scan_op,
+                  init_value,
+                  segments_per_block));
+        cudaSuccess != error)
+    {
+      return error;
+    }
+
+    if (const auto error = CubDebug(cudaPeekAtLastError()); cudaSuccess != error)
+    {
+      return error;
     }
 
     if (const auto error = CubDebug(DebugSyncStream(stream)); cudaSuccess != error)
