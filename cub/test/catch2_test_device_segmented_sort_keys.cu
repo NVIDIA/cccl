@@ -19,6 +19,8 @@
 // graph launch.
 // %PARAM% TEST_LAUNCH lid 0:1
 // %PARAM% TEST_TYPES types 0:1
+// %PARAM% TEST_ALGORITHM alg 0:1
+// Algorithm 0 retains public API coverage; algorithm 1 tests supported cases through internal dispatch.
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortKeys, stable_sort_keys);
 
@@ -27,6 +29,11 @@ using key_types = c2h::type_list<bool, std::uint8_t>;
 #elif TEST_TYPES == 1
 using key_types =
   c2h::type_list<std::uint64_t
+#  if TEST_ALGORITHM == 1
+                 ,
+                 float,
+                 double
+#  endif
 #  if TEST_HALF_T()
                  ,
                  half_t
@@ -66,6 +73,7 @@ CUB_TEST("DeviceSegmentedSortKeys: No segments", "[keys][segmented][sort][device
     int{},
     int{},
     nullptr,
+    nullptr,
     &keys_buffer.selector,
     &values_buffer.selector);
 
@@ -103,6 +111,7 @@ CUB_TEST("DeviceSegmentedSortKeys: Empty segments", "[keys][segmented][sort][dev
     int{},
     num_segments,
     d_offsets,
+    d_offsets + 1,
     &keys_buffer.selector,
     &values_buffer.selector);
 
@@ -190,6 +199,9 @@ CUB_TEST("DeviceSegmentedSortKeys: very large number of segments",
          all_offset_types)
 try
 {
+#  if TEST_ALGORITHM == 1
+  SKIP("CCCL_SKIP_TEST: The internal LRB backend does not yet support more than UINT_MAX segments.");
+#  else
   using key_t                        = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
   using segment_offset_t             = std::int64_t;
   using offset_t                     = c2h::get<0, TestType>;
@@ -224,6 +236,7 @@ try
 
   // Verify the keys are sorted correctly
   verification_helper.verify_sorted(out_keys, offsets + num_empty_segments, num_segments - num_empty_segments);
+#  endif
 }
 catch (...)
 {
@@ -236,6 +249,9 @@ CUB_TEST("DeviceSegmentedSort::SortKeys: very large segments",
          all_offset_types)
 try
 {
+#  if TEST_ALGORITHM == 1
+  SKIP("CCCL_SKIP_TEST: The internal LRB backend does not yet sort oversized segments.");
+#  else
   using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
   using segment_offset_t           = std::int32_t;
   using offset_t                   = c2h::get<0, TestType>;
@@ -268,6 +284,7 @@ try
 
   // Verify the keys are sorted correctly
   verification_helper.verify_sorted(out_keys);
+#  endif
 }
 catch (...)
 {
