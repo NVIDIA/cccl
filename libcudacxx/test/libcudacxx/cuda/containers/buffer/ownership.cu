@@ -123,10 +123,10 @@ inline constexpr bool has_as_type<Buf, U, cuda::std::void_t<decltype(cuda::std::
 C2H_CCCLRT_TEST("cuda::buffer release, acquire and byte conversion", "[container][buffer]", test_types)
 {
   using Buffer               = c2h::get<0, TestType>;
-  using BufferProperties     = Buffer::properties_list;
+  using BufferProperties     = typename Buffer::properties_list;
   using T                    = typename Buffer::value_type;
   using ByteBuffer           = decltype(cuda::std::declval<Buffer>().template as_bytes<cuda::std::byte>());
-  using ByteBufferProperties = Buffer::properties_list;
+  using ByteBufferProperties = typename Buffer::properties_list;
 
   static_assert(has_release<Buffer>);
   static_assert(!has_release<Buffer&>);
