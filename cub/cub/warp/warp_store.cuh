@@ -20,9 +20,9 @@
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/warp/warp_exchange.cuh>
+#include <cub/warp/warp_utils.cuh>
 
 #include <cuda/__cmath/pow2.h>
-#include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__host_stdlib/ostream>
 
 #if __cpp_lib_format >= 201907L
@@ -257,8 +257,6 @@ class WarpStore
 {
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
 
-  static constexpr bool IS_ARCH_WARP = LogicalWarpThreads == detail::warp_threads;
-
 private:
   /// Store helper
   template <WarpStoreAlgorithm Algorithm, int DUMMY>
@@ -389,7 +387,7 @@ private:
 
   _TempStorage& temp_storage;
 
-  int linear_tid;
+  int linear_tid = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
 
 public:
   using TempStorage = Uninitialized<_TempStorage>;
@@ -401,16 +399,12 @@ public:
   //!        memory as temporary storage.
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpStore()
       : temp_storage(PrivateStorage())
-      , linear_tid(
-          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads))
   {}
 
   //! @brief Collective constructor using the specified memory allocation as
   //!        temporary storage.
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpStore(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(
-          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads))
   {}
 
   //! @}
