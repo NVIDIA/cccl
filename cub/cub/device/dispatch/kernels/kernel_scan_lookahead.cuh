@@ -105,8 +105,8 @@ struct scan_batch_kernel_params
   OutputT* ptrOut;
   warpspeed::tile_state_t<AccumT>* ptrTileStates;
   warpspeed::lookahead_batch_state<AccumT, NumBuffers>* batchState;
-  ::cuda::std::size_t numElem;
-  int numStages;
+  ::cuda::std::size_t numElem     = 0;
+  int numStages                   = 0;
   ::cuda::std::uint64_t firstTile = 0; // claimed by device_scan_batch_lookahead_body before squad dispatch
 };
 
@@ -374,7 +374,8 @@ struct lookahead_scan_closure
       __cub_detail::always_delay<batch_wait_delay_ns>();
     }
     // Only lookahead needs the preceding batches' prefix; load and reduce can start before it is published.
-    if (squad == squadLookahead && required_batch != 0)
+    // Slice is intentional, see SquadDesc::operator==().
+    if (squad == squadLookahead && required_batch != 0) // NOLINT(cppcoreguidelines-slicing)
     {
       auto incoming_prefix_ready =
         ::cuda::atomic_ref<::cuda::std::uint32_t, ::cuda::thread_scope_device>{buffer.incoming_prefix_ready};

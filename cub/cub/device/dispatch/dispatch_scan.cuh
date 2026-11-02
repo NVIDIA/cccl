@@ -1427,7 +1427,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
     lookahead_policy.completed_tiles_per_flush > 0, "Lookahead scan completed tiles per flush must be positive");
   CUB_DETAIL_STATIC_ISH_ASSERT(
     static_cast<::cuda::std::uint64_t>(lookahead_policy.num_buffers) * lookahead_policy.tiles_per_batch
-      <= (::cuda::std::numeric_limits<int>::max)(),
+      <= static_cast<::cuda::std::uint64_t>((::cuda::std::numeric_limits<int>::max)()),
     "Lookahead scan tile-state count must fit in int");
 
   const auto max_tiles = ::cuda::ceil_div(static_cast<::cuda::std::uint64_t>(max_num_items),
