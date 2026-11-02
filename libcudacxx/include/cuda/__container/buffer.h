@@ -863,7 +863,7 @@ public:
   _CCCL_REQUIRES(__is_buffer_byte_type_v<_Byte>)
   [[nodiscard]] _CCCL_HOST_API buffer<_Up, _Properties...> as_type() &&
   {
-    if (size() % sizeof(_Up) != 0 || alignment() < alignof(_Up))
+    if ((size() * sizeof(_Tp)) % sizeof(_Up) != 0 || alignment() < alignof(_Up))
     {
       _CCCL_THROW(::std::invalid_argument, "cuda::buffer::as_type: size or alignment is incompatible with _Up");
     }
