@@ -15,6 +15,21 @@ Group Mappings
 
 Group mappings define how a parent group's units are assigned to subgroups, independently of the synchronization mechanism. To communicate this information, they are required to accept and return types that satisfy the *group mapping result* concept.
 
+.. _cudax-coop-group-mapping-exhaustivness:
+
+Group Mapping Exhaustivity
+--------------------------
+
+Imagine a group of :math:`N` units that shall be split into :math:`N / M` groups of :math:`M` units. When :math:`N` is divisible by :math:`M` without a remainder, every unit can be assigned to a new group. However, when :math:`N` is not divisible by :math:`M` without a remainder, you are left with 3 options:
+
+#. mark this case as unsupported,
+#. create :math:`N / M` groups and leave :math:`N \bmod M` units without a group, or
+#. create :math:`N / M + 1` groups with the last group being incomplete.
+
+Cases **1.** and **3.** can be handled inside the mapping implementation; however, case **2.** requires additional support from the groups implementation.
+
+For this reason, CCCL Cooperative Groups introduce 2 versions of the mapping process based on whether every unit is required to be assigned to a group. We call them exhaustive and non-exhaustive mapping.
+
 Group Mapping Result Concept
 ----------------------------
 
@@ -54,7 +69,7 @@ Where:
 #. The number of units in every group known at compile time. When equal to ``cuda::std::dynamic_extent``, the number of units is known only at runtime and may differ between groups.
 #. The number of units within the unit's group known at runtime. It is equal to ``static_cast<cuda::std::uint32_t>(static_unit_count())`` when ``static_unit_count() != cuda::std::dynamic_extent``.
 #. The current unit's rank.
-#. A property known at compile time that specifies whether all units are always part of a group.
+#. A property known at compile time that specifies whether all units are always part of a group. Always ``true`` during exhaustive mapping.
 #. A property known at compile time that guarantees that each group occupies a contiguous range of physical units, with ``unit_rank()`` numbering them in ascending physical order starting at zero. This guarantee must hold after mapping composition as well.
 #. A property that defines whether the mapping result is valid for the current unit. If not, it means that the unit won't be part of the newly created group.
 #. The mask of threads within this warp that are part of this group.
