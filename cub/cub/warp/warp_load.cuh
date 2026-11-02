@@ -423,7 +423,7 @@ private:
   using InternalLoad = LoadInternal<ALGORITHM, 0>;
 
   /// Shared memory storage layout type
-  using _TempStorage = typename InternalLoad::TempStorage;
+  using _TempStorage _CCCL_NODEBUG = typename InternalLoad::TempStorage;
 
   /*****************************************************************************
    * Utility methods

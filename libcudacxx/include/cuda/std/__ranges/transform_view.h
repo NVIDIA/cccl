@@ -74,7 +74,7 @@ struct __transform_view_iterator_category_base
 template <class _View, class _Fn>
 struct __transform_view_iterator_category_base<_View, _Fn, enable_if_t<forward_range<_View>>>
 {
-  using _Cat = typename iterator_traits<iterator_t<_View>>::iterator_category;
+  using _Cat _CCCL_NODEBUG = typename iterator_traits<iterator_t<_View>>::iterator_category;
 
   using iterator_category =
     conditional_t<is_reference_v<invoke_result_t<_Fn&, range_reference_t<_View>>>,
@@ -111,8 +111,8 @@ public:
   template <bool _Const>
   class __iterator : public __transform_view_iterator_category_base<_View, _Fn>
   {
-    using _Parent = __maybe_const<_Const, transform_view>;
-    using _Base   = __maybe_const<_Const, _View>;
+    using _Parent _CCCL_NODEBUG = __maybe_const<_Const, transform_view>;
+    using _Base _CCCL_NODEBUG   = __maybe_const<_Const, _View>;
 
     _Parent* __parent_ = nullptr;
 
@@ -344,8 +344,8 @@ public:
   template <bool _Const>
   class __sentinel
   {
-    using _Parent = __maybe_const<_Const, transform_view>;
-    using _Base   = __maybe_const<_Const, _View>;
+    using _Parent _CCCL_NODEBUG = __maybe_const<_Const, transform_view>;
+    using _Base _CCCL_NODEBUG   = __maybe_const<_Const, _View>;
 
     sentinel_t<_Base> __end_ = sentinel_t<_Base>();
 

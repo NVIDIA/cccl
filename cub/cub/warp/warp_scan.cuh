@@ -160,7 +160,7 @@ private:
     _If<IS_POW_OF_TWO, detail::WarpScanShfl<T, LogicalWarpThreads>, detail::WarpScanSmem<T, LogicalWarpThreads>>;
 
   /// Shared memory storage layout type for WarpScan
-  using _TempStorage = typename InternalWarpScan::TempStorage;
+  using _TempStorage _CCCL_NODEBUG = typename InternalWarpScan::TempStorage;
 
   /******************************************************************************
    * Thread fields

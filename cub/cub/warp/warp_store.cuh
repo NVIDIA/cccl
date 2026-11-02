@@ -379,7 +379,7 @@ private:
   using InternalStore = StoreInternal<ALGORITHM, 0>;
 
   /// Shared memory storage layout type
-  using _TempStorage = typename InternalStore::TempStorage;
+  using _TempStorage _CCCL_NODEBUG = typename InternalStore::TempStorage;
 
   _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
   {

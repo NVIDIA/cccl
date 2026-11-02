@@ -30,7 +30,7 @@ namespace detail
 template <typename It, typename FallbackT, bool = ::cuda::std::is_void_v<::cuda::std::remove_pointer_t<It>>>
 struct non_void_value_impl
 {
-  using type = FallbackT;
+  using type _CCCL_NODEBUG = FallbackT;
 };
 
 template <typename It, typename FallbackT>
@@ -38,10 +38,11 @@ struct non_void_value_impl<It, FallbackT, false>
 {
   // we consider thrust::discard_iterator's value_type (`any_assign`) as `void` as well, so users can switch from
   // cub::DiscardInputIterator to thrust::discard_iterator.
-  using type = ::cuda::std::_If<::cuda::std::is_void_v<it_value_t<It>>
-                                  || ::cuda::std::is_same_v<it_value_t<It>, THRUST_NS_QUALIFIER::detail::any_assign>,
-                                FallbackT,
-                                it_value_t<It>>;
+  using type _CCCL_NODEBUG =
+    ::cuda::std::_If<::cuda::std::is_void_v<it_value_t<It>>
+                       || ::cuda::std::is_same_v<it_value_t<It>, THRUST_NS_QUALIFIER::detail::any_assign>,
+                     FallbackT,
+                     it_value_t<It>>;
 };
 
 /**
