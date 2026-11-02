@@ -26,9 +26,7 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
-using ffloat = cudax::fp32mp2;
+using ffloat = cuda::fp32mp2;
 
 #if _CCCL_HAS_INT128()
 // 128-bit integer construction and conversion are deliberately deleted: they would
@@ -47,28 +45,28 @@ static_assert(::cuda::std::is_constructible_v<int64_t, ffloat>, "");
 // enough mantissa (~106 bits) to hold a 128-bit float, so quad construction and
 // conversion are deliberately SUPPORTED (not deleted). __fpmp_fp128 is __float128
 // wherever _CCCL_HAS_FLOAT128() and long double on IEEE-128 long double platforms.
-static_assert(::cuda::std::is_constructible_v<cudax::fp64mp2, cudax::__fpmp_fp128>, "");
-static_assert(::cuda::std::is_constructible_v<cudax::__fpmp_fp128, cudax::fp64mp2>, "");
+static_assert(::cuda::std::is_constructible_v<cuda::fp64mp2, cuda::__fpmp_fp128>, "");
+static_assert(::cuda::std::is_constructible_v<cuda::__fpmp_fp128, cuda::fp64mp2>, "");
 #  if _CCCL_FPMP_HAS_IEC_FLOAT128 == 1
 // GCC's _Float128 is often a second binary128 type (distinct from __fpmp_fp128
 // on both x86 __float128 and aarch64 long double). The extra members cover that
 // spelling; when the types coincide these asserts still hold via __fpmp_fp128.
-static_assert(::cuda::std::is_constructible_v<cudax::fp64mp2, _Float128>, "");
-static_assert(::cuda::std::is_constructible_v<_Float128, cudax::fp64mp2>, "");
+static_assert(::cuda::std::is_constructible_v<cuda::fp64mp2, _Float128>, "");
+static_assert(::cuda::std::is_constructible_v<_Float128, cuda::fp64mp2>, "");
 #  endif // _CCCL_FPMP_HAS_IEC_FLOAT128 == 1
 
 // fp32mp2 carries ~48 bits, fewer than a double, so quad is not its interchange
 // type: both directions are deliberately deleted, like the 128-bit integers above.
 // Without the deletions the constructor would report an ambiguity and the
 // conversion would silently route through operator double().
-static_assert(!::cuda::std::is_constructible_v<ffloat, cudax::__fpmp_fp128>, "");
-static_assert(!::cuda::std::is_constructible_v<cudax::__fpmp_fp128, ffloat>, "");
+static_assert(!::cuda::std::is_constructible_v<ffloat, cuda::__fpmp_fp128>, "");
+static_assert(!::cuda::std::is_constructible_v<cuda::__fpmp_fp128, ffloat>, "");
 #  if _CCCL_FPMP_HAS_IEC_FLOAT128 == 1
 static_assert(!::cuda::std::is_constructible_v<ffloat, _Float128>, "");
 static_assert(!::cuda::std::is_constructible_v<_Float128, ffloat>, "");
 #  endif // _CCCL_FPMP_HAS_IEC_FLOAT128 == 1
 // The double image stays reachable, spelled out.
-static_assert(::cuda::std::is_constructible_v<cudax::__fpmp_fp128, double>, "");
+static_assert(::cuda::std::is_constructible_v<cuda::__fpmp_fp128, double>, "");
 #endif // _CCCL_FPMP_FP128_ENABLE == 1
 
 TEST_HOST_DEVICE_FUNC void run_test()
@@ -183,10 +181,10 @@ void run_iec_float128()
   // 1 + 2^-80 is exact in binary128 and in fp64mp2 (~104 bits), but not in
   // double. A conversion that kept only hi would round-trip to 1.
   const _Float128 q = static_cast<_Float128>(1) + static_cast<_Float128>(0x1p-80);
-  const cudax::fp64mp2 x(q);
+  const cuda::fp64mp2 x(q);
   assert(x.lo() != 0);
   assert(static_cast<_Float128>(x) == q);
-  const cudax::fp64mp2 y = x / cudax::fp64mp2(static_cast<_Float128>(1));
+  const cuda::fp64mp2 y = x / cuda::fp64mp2(static_cast<_Float128>(1));
   assert(static_cast<_Float128>(y) == q);
 }
 #endif // _CCCL_FPMP_FP128_ENABLE == 1 && _CCCL_FPMP_HAS_IEC_FLOAT128 == 1

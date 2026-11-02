@@ -5,6 +5,8 @@
 Checks:
   - '-*'
 
+  - 'cccl-*'
+
   # HICPP is 99% aliased to other checks (mostly modernize-* and bugprone-*). We don't
   # want to also enable it because then we need to duplicate the NOLINT. The only 2 checks
   # that aren't aliases are:
@@ -206,6 +208,8 @@ Checks:
   - '-cert-dcl59-cpp'
   # Same as readability-uppercase-literal-suffix
   - '-cert-dcl16-c'
+  # Same as misc-static-assert
+  - 'cert-dcl03-c'
 
   - 'portability-*'
   - '-portability-template-virtual-member-function'
@@ -368,6 +372,8 @@ CheckOptions:
   # bugprone-*
   bugprone-dangling-handle.HandleClasses: '::cuda::std::span;::cuda::std::mdspan'
   bugprone-unused-return-value.AllowCastToVoid: 'true'
+  # Match canonical enum names: cudaError_t is cudaError, and CUresult is cudaError_enum.
+  bugprone-unused-return-value.CheckedReturnTypes: '^::cuda::std::errc$;^::cuda::std::expected$;^::cuda::std::unexpected$;^::cudaError$;^::cudaError_t;^::cudaError_enum$;^::CUresult'
   bugprone-lambda-function-name.IgnoreMacros: 'true'
   # There are some single-argument functions that we would not like to ignore
   # (`to_string(bool provenance = false)` comes to mind), but setting this to false makes

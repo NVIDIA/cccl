@@ -16,8 +16,9 @@
 #include <cub/detail/warpspeed/resource/smem_phase.cuh>
 #include <cub/detail/warpspeed/resource/smem_resource_raw.cuh>
 
-#include <cuda/std/__tuple_dir/tuple_element.h>
-#include <cuda/std/__tuple_dir/tuple_size.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__tuple_dir/tuple_element.h> // IWYU pragma: keep
+#include <cuda/std/__tuple_dir/tuple_size.h> // IWYU pragma: keep
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN

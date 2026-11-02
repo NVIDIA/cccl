@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3
 
 #include <cub/device/device_copy.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_ptx.cuh>
 
 #include <thrust/logical.h>
@@ -23,6 +24,7 @@
 
 #include "cub_non_catch2_test_memory.h"
 #include "test_util.h"
+#include <c2h/allocation_failure.h>
 #include <c2h/catch2_test_helper.h>
 #include <c2h/vector.h>
 
@@ -94,12 +96,12 @@ GetShuffledRangeOffsets(const c2h::host_vector<RangeSizeT>& range_sizes, const s
 }
 
 template <size_t N, typename... T>
-std::enable_if_t<N >= cuda::std::tuple_size<cuda::std::tuple<T...>>::value>
+std::enable_if_t<N >= cuda::std::tuple_size_v<cuda::std::tuple<T...>>>
 print_tuple(std::ostream&, const cuda::std::tuple<T...>&)
 {}
 
 template <size_t N, typename... T>
-std::enable_if_t<N + 1 <= cuda::std::tuple_size<cuda::std::tuple<T...>>::value>
+std::enable_if_t<N + 1 <= cuda::std::tuple_size_v<cuda::std::tuple<T...>>>
 print_tuple(std::ostream& os, const cuda::std::tuple<T...>& tup)
 {
   if constexpr (N != 0)
@@ -254,15 +256,16 @@ try
   }
   AssertEquals(it_pair.first, h_gpu_results.cend());
 }
-catch ([[maybe_unused]] std::bad_alloc& e)
+catch (...)
 {
+  c2h::rethrow_unless_allocation_failure();
 #ifdef DEBUG_CHECKED_ALLOC_FAILURE
   std::cout
     << "Skipping test 'RunTest(" << num_ranges << ", " //
     << min_range_size << ", " //
     << max_range_size << ", " //
     << TestDataGenToString(output_gen) << ")" //
-    << "' due to insufficient memory: " << e.what() << "\n";
+    << "' due to insufficient memory\n";
 #endif // DEBUG_CHECKED_ALLOC_FAILURE
   return;
 }
@@ -311,12 +314,14 @@ void nontrivial_constructor_test()
   std::uint8_t* d_temp_storage{};
   std::size_t temp_storage_bytes{};
 
-  cub::DeviceCopy::Batched(d_temp_storage, temp_storage_bytes, a_iter.begin(), b_iter.begin(), sizes, num_buffers);
+  CubDebugExit(
+    cub::DeviceCopy::Batched(d_temp_storage, temp_storage_bytes, a_iter.begin(), b_iter.begin(), sizes, num_buffers));
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-  cub::DeviceCopy::Batched(d_temp_storage, temp_storage_bytes, a_iter.begin(), b_iter.begin(), sizes, num_buffers);
+  CubDebugExit(
+    cub::DeviceCopy::Batched(d_temp_storage, temp_storage_bytes, a_iter.begin(), b_iter.begin(), sizes, num_buffers));
 
   for (int i = 0; i < num_buffers; i++)
   {

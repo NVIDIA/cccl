@@ -64,7 +64,6 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __native_hierarchy_level_base : hierarchy_leve
   using __base_type::rank_as;
 
 #    if defined(_CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX)
-  using __base_type::is_part_of;
   using __base_type::is_root_rank;
 #    endif // _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
 

@@ -12,7 +12,7 @@
 #include "../policy_selector.h"
 
 template <typename T, typename OffsetT>
-static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 try
 {
   using init_value_t             = T;

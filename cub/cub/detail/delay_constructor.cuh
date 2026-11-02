@@ -16,8 +16,6 @@
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 
-#include <cuda/std/__concepts/same_as.h>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail

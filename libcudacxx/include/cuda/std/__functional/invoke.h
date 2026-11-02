@@ -33,7 +33,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/nat.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/remove_cvref.h> // IWYU pragma: keep
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 

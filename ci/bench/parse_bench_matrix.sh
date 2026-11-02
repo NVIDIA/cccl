@@ -38,19 +38,19 @@ if ! bench_cfg_json="$(yq -o=json '.benchmarks // {}' "${bench_yaml_path}" 2>&1)
 fi
 
 # Extract CUB and Python filter arrays (default to empty arrays).
-cub_filters_json="$(jq -c '.filters.cub // []' <<<"${bench_cfg_json}")"
+cpp_filters_json="$(jq -c '.filters.cpp // []' <<<"${bench_cfg_json}")"
 python_filters_json="$(jq -c '.filters.python // []' <<<"${bench_cfg_json}")"
 
-has_cub_filters="$(jq -e 'type == "array" and length > 0 and all(.[]; type == "string")' <<<"${cub_filters_json}" >/dev/null 2>&1 && echo true || echo false)"
+has_cpp_filters="$(jq -e 'type == "array" and length > 0 and all(.[]; type == "string")' <<<"${cpp_filters_json}" >/dev/null 2>&1 && echo true || echo false)"
 has_python_filters="$(jq -e 'type == "array" and length > 0 and all(.[]; type == "string")' <<<"${python_filters_json}" >/dev/null 2>&1 && echo true || echo false)"
 
-if [[ "${has_cub_filters}" != "true" && "${has_python_filters}" != "true" ]]; then
-  die "${bench_yaml_path} must define at least one string entry in benchmarks.filters.cub or benchmarks.filters.python."
+if [[ "${has_cpp_filters}" != "true" && "${has_python_filters}" != "true" ]]; then
+  die "${bench_yaml_path} must define at least one string entry in benchmarks.filters.cpp or benchmarks.filters.python."
 fi
 
-cub_filters_arg=""
-if [[ "${has_cub_filters}" == "true" ]]; then
-  cub_filters_arg="$(jq -r '.filters.cub | map(@sh) | join(" ")' <<<"${bench_cfg_json}")"
+cpp_filters_arg=""
+if [[ "${has_cpp_filters}" == "true" ]]; then
+  cpp_filters_arg="$(jq -r '.filters.cpp | map(@sh) | join(" ")' <<<"${bench_cfg_json}")"
 fi
 
 python_filters_arg=""
@@ -60,7 +60,7 @@ fi
 
 jq -cn \
   --argjson cfg "${bench_cfg_json}" \
-  --arg cub_filters "${cub_filters_arg}" \
+  --arg cpp_filters "${cpp_filters_arg}" \
   --arg python_filters "${python_filters_arg}" \
   '{
     "include": [
@@ -71,7 +71,7 @@ jq -cn \
           "arch": ($cfg.arch // "native"),
           "base_ref": ($cfg.base_ref // "origin/main"),
           "test_ref": ($cfg.test_ref // "HEAD"),
-          "cub_filters": $cub_filters,
+          "cpp_filters": $cpp_filters,
           "python_filters": $python_filters,
           "nvbench_args": ($cfg.nvbench_args // ""),
           "nvbench_compare_args": ($cfg.nvbench_compare_args // ""),

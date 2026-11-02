@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -37,8 +37,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 #if _CCCL_CUDA_COMPILATION()
 /*
  * --------------------------------------------------------------------
@@ -132,7 +131,7 @@ _CCCL_FPMP_CORE_DEVICE_API inline void __fpmp2_atomicAdd<float>(
     // Perform addition based on method
     float __new_hi;
     float __new_lo;
-    __fpmp2_high_add(__old_hi_val, __old_lo_val, __addition_hi, __addition_lo, &__new_hi, &__new_lo);
+    ::cuda::__fpmp2_high_add(__old_hi_val, __old_lo_val, __addition_hi, __addition_lo, &__new_hi, &__new_lo);
 
     // Pack new values into a 64-bit integer
     uint32_t __new_hi_bits = ::cuda::std::bit_cast<uint32_t>(__new_hi);
@@ -224,7 +223,7 @@ _CCCL_FPMP_CORE_DEVICE_API inline void __fpmp2_atomicAdd<double>(
     // Perform addition based on method
     double __new_hi;
     double __new_lo;
-    __fpmp2_high_add(__old_hi_val, __old_lo_val, __addition_hi, __addition_lo, &__new_hi, &__new_lo);
+    ::cuda::__fpmp2_high_add(__old_hi_val, __old_lo_val, __addition_hi, __addition_lo, &__new_hi, &__new_lo);
 
     // Pack new values into a 128-bit structure
     __new_bits.__hi = ::cuda::std::bit_cast<uint64_t>(__new_hi);
@@ -245,7 +244,7 @@ _CCCL_FPMP_CORE_DEVICE_API inline void __fpmp2_atomicAdd<double>(
   (void) __addition_lo;
   (void) __old_hi;
   (void) __old_lo;
-  __fpmp2_dd_atomic_requires_SM_90_and_ptx_isa_840();
+  ::cuda::__fpmp2_dd_atomic_requires_SM_90_and_ptx_isa_840();
 #      endif // ^^^ _CCCL_PTX_ARCH() < 900 ^^^
 #    else // ^^^ __cccl_ptx_isa >= 840 ^^^ / vvv __cccl_ptx_isa < 840 vvv
   // The toolkit itself cannot emit a 128-bit compare-exchange, so no target provides it.
@@ -255,7 +254,7 @@ _CCCL_FPMP_CORE_DEVICE_API inline void __fpmp2_atomicAdd<double>(
   (void) __addition_lo;
   (void) __old_hi;
   (void) __old_lo;
-  __fpmp2_dd_atomic_requires_SM_90_and_ptx_isa_840();
+  ::cuda::__fpmp2_dd_atomic_requires_SM_90_and_ptx_isa_840();
 #    endif // ^^^ __cccl_ptx_isa < 840 ^^^
 }
 
@@ -338,7 +337,7 @@ _CCCL_FPMP_CORE_DEVICE_API inline void __fpmp2_atomicAdd<float>(
   float* __old_hi,
   float* __old_lo) noexcept
 {
-  __fp32mp2_atomicAdd(__address_hi, __address_lo, __addition_hi, __addition_lo, __old_hi, __old_lo);
+  ::cuda::__fp32mp2_atomicAdd(__address_hi, __address_lo, __addition_hi, __addition_lo, __old_hi, __old_lo);
 }
 template <>
 _CCCL_FPMP_CORE_DEVICE_API inline void __fpmp2_atomicSub<float>(
@@ -349,7 +348,7 @@ _CCCL_FPMP_CORE_DEVICE_API inline void __fpmp2_atomicSub<float>(
   float* __old_hi,
   float* __old_lo) noexcept
 {
-  __fp32mp2_atomicSub(__address_hi, __address_lo, __val_hi, __val_lo, __old_hi, __old_lo);
+  ::cuda::__fp32mp2_atomicSub(__address_hi, __address_lo, __val_hi, __val_lo, __old_hi, __old_lo);
 }
 #  endif // _CCCL_CUDA_COMPILATION()
 
@@ -364,7 +363,7 @@ _CCCL_FPMP_CORE_DEVICE_API inline void __fpmp2_atomicAdd<double>(
   double* __old_hi,
   double* __old_lo) noexcept
 {
-  __fp64mp2_atomicAdd(__address_hi, __address_lo, __addition_hi, __addition_lo, __old_hi, __old_lo);
+  ::cuda::__fp64mp2_atomicAdd(__address_hi, __address_lo, __addition_hi, __addition_lo, __old_hi, __old_lo);
 }
 template <>
 _CCCL_FPMP_CORE_DEVICE_API inline void __fpmp2_atomicSub<double>(
@@ -375,12 +374,12 @@ _CCCL_FPMP_CORE_DEVICE_API inline void __fpmp2_atomicSub<double>(
   double* __old_hi,
   double* __old_lo) noexcept
 {
-  __fp64mp2_atomicSub(__address_hi, __address_lo, __val_hi, __val_lo, __old_hi, __old_lo);
+  ::cuda::__fp64mp2_atomicSub(__address_hi, __address_lo, __val_hi, __val_lo, __old_hi, __old_lo);
 }
 #  endif // _CCCL_CUDA_COMPILATION()
 
 #endif // _CCCL_FPMP_USE_LIB
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

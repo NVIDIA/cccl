@@ -332,8 +332,8 @@ private:
 
 UNITTEST("buddy_allocator is movable")
 {
-  static_assert(std::is_move_constructible<buddy_allocator>::value, "buddy_allocator must be move constructible");
-  static_assert(std::is_move_assignable<buddy_allocator>::value, "buddy_allocator must be move assignable");
+  static_assert(std::is_move_constructible_v<buddy_allocator>, "buddy_allocator must be move constructible");
+  static_assert(std::is_move_assignable_v<buddy_allocator>, "buddy_allocator must be move assignable");
 };
 
 UNITTEST("buddy allocator meta data")

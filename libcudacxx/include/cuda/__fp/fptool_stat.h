@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -29,21 +29,24 @@
 //! observes them, so swapping `fp32mp2` for `fp32mp2_stat` never changes what a program
 //! computes.
 //!
+//! ## Example
+//!
+//! - Code:        https://github.com/NVIDIA/cccl/blob/main/examples/cudax/fp/fptool_stat.cu
+//! - Walkthrough: https://github.com/NVIDIA/cccl/blob/main/examples/cudax/fp/README_fptool_stat.md
+//!
 //! ## Quick Start
 //!
 //! ```cpp
 //! #include <cuda/fptool>
 //!
-//! using namespace cuda::experimental;
-//!
-//! using Real = fp32mp2_stat; // instead of fp32mp2
+//! using Real = cuda::fp32mp2_stat; // instead of cuda::fp32mp2
 //!
 //! cuda::stream_ref stream = ...;
 //!
-//! fpmp2_stat_reset_device_data(stream);          // clear the counters
+//! cuda::fpmp2_stat_reset_device_data(stream);    // clear the counters
 //! my_kernel<<<blocks, threads, 0, stream.get()>>>(); // run the region of interest
 //!
-//! const fpmp2_stat_data stats = fpmp2_stat_read_device_data(stream);
+//! const cuda::fpmp2_stat_data stats = cuda::fpmp2_stat_read_device_data(stream);
 //! printf("%llu adds, %llu muls\n", stats.add_count, stats.mul_count);
 //! ```
 //!
@@ -293,8 +296,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 // === collected record ===
 
 //! @brief Summary of the fpmp2 values that passed through one operand or result slot
@@ -404,9 +406,9 @@ enum class __fpmp2_stat_binop
   fpmp2_stat_data __data{};
   for (int __i = 0; __i < 3; ++__i)
   {
-    __data.arg[__i] = __fpmp2_stat_cleared_value();
+    __data.arg[__i] = ::cuda::__fpmp2_stat_cleared_value();
   }
-  __data.result = __fpmp2_stat_cleared_value();
+  __data.result = ::cuda::__fpmp2_stat_cleared_value();
   return __data;
 }
 
@@ -419,7 +421,7 @@ enum class __fpmp2_stat_binop
 // The dummy parameter exists only to make it a template; the counters are deliberately
 // shared by all instantiations of fpmp2_stat.
 template <class _Void = void>
-_CCCL_DEVICE fpmp2_stat_data __fpmp2_stat_device_data = __fpmp2_stat_cleared_data();
+_CCCL_DEVICE fpmp2_stat_data __fpmp2_stat_device_data = ::cuda::__fpmp2_stat_cleared_data();
 #endif // _CCCL_CUDA_COMPILATION()
 
 #if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
@@ -434,7 +436,7 @@ _CCCL_DEVICE fpmp2_stat_data __fpmp2_stat_device_data = __fpmp2_stat_cleared_dat
 //! @throws cuda::cuda_error if the copy cannot be enqueued
 _CCCL_HOST_API inline void fpmp2_stat_reset_device_data(::cuda::stream_ref __stream)
 {
-  const fpmp2_stat_data __cleared = __fpmp2_stat_cleared_data();
+  const fpmp2_stat_data __cleared = ::cuda::__fpmp2_stat_cleared_data();
   fpmp2_stat_data* __data_ptr     = ::cuda::get_device_address(__fpmp2_stat_device_data<>, __stream.device());
   // The copy has to consume the cleared record before returning rather than at a later
   // point of its own choosing, so that the record does not have to outlive the call.
@@ -547,8 +549,8 @@ template <class _FpType>
 _CCCL_DEVICE_API inline __fpmp2_stat_summary
 __fpmp2_stat_accumulate(fpmp2_stat_value* __slot, _FpType __hi, _FpType __lo) noexcept
 {
-  const __fpmp2_stat_parts __p_hi = __fpmp2_stat_split(__hi);
-  const __fpmp2_stat_parts __p_lo = __fpmp2_stat_split(__lo);
+  const __fpmp2_stat_parts __p_hi = ::cuda::__fpmp2_stat_split(__hi);
+  const __fpmp2_stat_parts __p_lo = ::cuda::__fpmp2_stat_split(__lo);
 
   constexpr int __exp_min = 1 - ::cuda::std::numeric_limits<_FpType>::max_exponent;
 
@@ -674,9 +676,9 @@ _CCCL_DEVICE_API inline void __fpmp2_stat_note_binop(
     ::atomicAdd(&__data.div_count, 1ull);
   }
 
-  const __fpmp2_stat_summary __s_x = __fpmp2_stat_accumulate(&__data.arg[0], __x.hi(), __x.lo());
-  const __fpmp2_stat_summary __s_y = __fpmp2_stat_accumulate(&__data.arg[1], __y.hi(), __y.lo());
-  const __fpmp2_stat_summary __s_r = __fpmp2_stat_accumulate(&__data.result, __r.hi(), __r.lo());
+  const __fpmp2_stat_summary __s_x = ::cuda::__fpmp2_stat_accumulate(&__data.arg[0], __x.hi(), __x.lo());
+  const __fpmp2_stat_summary __s_y = ::cuda::__fpmp2_stat_accumulate(&__data.arg[1], __y.hi(), __y.lo());
+  const __fpmp2_stat_summary __s_r = ::cuda::__fpmp2_stat_accumulate(&__data.result, __r.hi(), __r.lo());
 
   // Cancellation, underflow and overflow are only meaningful where both operands were
   // ordinary values: otherwise a zero or a non-finite result may just be an operand passing
@@ -767,7 +769,7 @@ private:
           [[maybe_unused]] const base_type& __y,
           [[maybe_unused]] const base_type& __r) noexcept
   {
-    NV_IF_TARGET(NV_IS_DEVICE, (__fpmp2_stat_note_binop<_Kind>(__x, __y, __r);))
+    NV_IF_TARGET(NV_IS_DEVICE, (::cuda::__fpmp2_stat_note_binop<_Kind>(__x, __y, __r);))
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr fpmp2_stat __from_base(const base_type& __v) noexcept
@@ -1425,7 +1427,7 @@ _CCCL_DEVICE_API inline fpmp2_stat<_FpType, _TypeAcc>
 atomicAdd(fpmp2_stat<_FpType, _TypeAcc>* __address, const fpmp2_stat<_FpType, _TypeAcc>& __val) noexcept
 {
   const fpmp2<_FpType, _TypeAcc> __old = atomicAdd(&__address->as_fpmp2(), __val.as_fpmp2());
-  __fpmp2_stat_note_binop<__fpmp2_stat_binop::__add>(__old, __val.as_fpmp2(), __old + __val.as_fpmp2());
+  ::cuda::__fpmp2_stat_note_binop<__fpmp2_stat_binop::__add>(__old, __val.as_fpmp2(), __old + __val.as_fpmp2());
   return fpmp2_stat<_FpType, _TypeAcc>(__old);
 }
 
@@ -1434,7 +1436,7 @@ _CCCL_DEVICE_API inline fpmp2_stat<_FpType, _TypeAcc>
 atomicSub(fpmp2_stat<_FpType, _TypeAcc>* __address, const fpmp2_stat<_FpType, _TypeAcc>& __val) noexcept
 {
   const fpmp2<_FpType, _TypeAcc> __old = atomicSub(&__address->as_fpmp2(), __val.as_fpmp2());
-  __fpmp2_stat_note_binop<__fpmp2_stat_binop::__sub>(__old, __val.as_fpmp2(), __old - __val.as_fpmp2());
+  ::cuda::__fpmp2_stat_note_binop<__fpmp2_stat_binop::__sub>(__old, __val.as_fpmp2(), __old - __val.as_fpmp2());
   return fpmp2_stat<_FpType, _TypeAcc>(__old);
 }
 
@@ -1447,28 +1449,28 @@ template <class _FpType, fpmp2_accuracy _TypeAcc>
 [[nodiscard]] _CCCL_DEVICE_API inline fpmp2_stat<_FpType, _TypeAcc>
 __shfl_sync(unsigned mask, const fpmp2_stat<_FpType, _TypeAcc>& var, int srcLane, int width = warpSize) noexcept
 {
-  return fpmp2_stat<_FpType, _TypeAcc>(__shfl_sync(mask, var.as_fpmp2(), srcLane, width));
+  return fpmp2_stat<_FpType, _TypeAcc>(::cuda::__shfl_sync(mask, var.as_fpmp2(), srcLane, width));
 }
 
 template <class _FpType, fpmp2_accuracy _TypeAcc>
 [[nodiscard]] _CCCL_DEVICE_API inline fpmp2_stat<_FpType, _TypeAcc>
 __shfl_xor_sync(unsigned mask, const fpmp2_stat<_FpType, _TypeAcc>& var, int laneMask, int width = warpSize) noexcept
 {
-  return fpmp2_stat<_FpType, _TypeAcc>(__shfl_xor_sync(mask, var.as_fpmp2(), laneMask, width));
+  return fpmp2_stat<_FpType, _TypeAcc>(::cuda::__shfl_xor_sync(mask, var.as_fpmp2(), laneMask, width));
 }
 
 template <class _FpType, fpmp2_accuracy _TypeAcc>
 [[nodiscard]] _CCCL_DEVICE_API inline fpmp2_stat<_FpType, _TypeAcc> __shfl_down_sync(
   unsigned mask, const fpmp2_stat<_FpType, _TypeAcc>& var, unsigned int delta, int width = warpSize) noexcept
 {
-  return fpmp2_stat<_FpType, _TypeAcc>(__shfl_down_sync(mask, var.as_fpmp2(), delta, width));
+  return fpmp2_stat<_FpType, _TypeAcc>(::cuda::__shfl_down_sync(mask, var.as_fpmp2(), delta, width));
 }
 
 template <class _FpType, fpmp2_accuracy _TypeAcc>
 [[nodiscard]] _CCCL_DEVICE_API inline fpmp2_stat<_FpType, _TypeAcc> __shfl_up_sync(
   unsigned mask, const fpmp2_stat<_FpType, _TypeAcc>& var, unsigned int delta, int width = warpSize) noexcept
 {
-  return fpmp2_stat<_FpType, _TypeAcc>(__shfl_up_sync(mask, var.as_fpmp2(), delta, width));
+  return fpmp2_stat<_FpType, _TypeAcc>(::cuda::__shfl_up_sync(mask, var.as_fpmp2(), delta, width));
 }
 #endif // _CCCL_CUDA_COMPILATION()
 
@@ -1498,7 +1500,7 @@ static_assert(sizeof(fp32mp2_stat) == sizeof(fp32mp2) && alignof(fp32mp2_stat) =
 static_assert(sizeof(fp64mp2_stat) == sizeof(fp64mp2) && alignof(fp64mp2_stat) == alignof(fp64mp2));
 static_assert(::cuda::std::is_trivially_copyable_v<fp32mp2_stat>);
 static_assert(::cuda::std::is_trivially_copyable_v<fp64mp2_stat>);
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -1507,15 +1509,14 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 //! Inherits every characteristic from the wrapped type's specialization and only
 //! rewraps the values it hands out, so `numeric_limits<fp32mp2_stat>::epsilon()` reports
 //! the same number as `numeric_limits<fp32mp2>::epsilon()`.
-template <class _FpType, ::cuda::experimental::fpmp2_accuracy _TypeAcc>
-class numeric_limits<::cuda::experimental::fpmp2_stat<_FpType, _TypeAcc>>
-    : public numeric_limits<::cuda::experimental::fpmp2<_FpType, _TypeAcc>>
+template <class _FpType, ::cuda::fpmp2_accuracy _TypeAcc>
+class numeric_limits<::cuda::fpmp2_stat<_FpType, _TypeAcc>> : public numeric_limits<::cuda::fpmp2<_FpType, _TypeAcc>>
 {
 private:
-  using __base = numeric_limits<::cuda::experimental::fpmp2<_FpType, _TypeAcc>>;
+  using __base = numeric_limits<::cuda::fpmp2<_FpType, _TypeAcc>>;
 
 public:
-  using type = ::cuda::experimental::fpmp2_stat<_FpType, _TypeAcc>;
+  using type = ::cuda::fpmp2_stat<_FpType, _TypeAcc>;
 
   _CCCL_HOST_DEVICE_API static constexpr type min() noexcept
   {

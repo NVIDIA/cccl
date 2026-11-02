@@ -20,9 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__tuple_dir/get.h>
-#include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__tuple_dir/tuple_indices.h>
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
@@ -30,6 +30,7 @@
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/integer_sequence.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

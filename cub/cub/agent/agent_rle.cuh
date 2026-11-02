@@ -22,11 +22,19 @@
 
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_discontinuity.cuh>
-#include <cub/block/block_exchange.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
-#include <cub/block/block_store.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/key_value_pair.cuh>
+#include <cub/detail/non_void_value.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/thread/thread_operators.cuh>
+#include <cub/warp/warp_exchange.cuh>
+#include <cub/warp/warp_scan.cuh>
 
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__functional/operations.h>
@@ -150,6 +158,13 @@ struct AgentRle
   static constexpr int WARP_ITEMS       = WARP_THREADS * ITEMS_PER_THREAD;
   static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
   static constexpr int WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS;
+
+  // The run detection and the warp-wide scans and exchanges require full warps and a blocked arrangement
+  static_assert(BLOCK_THREADS % WARP_THREADS == 0,
+                "RleNonTrivialRunsLookbackPolicy: threads_per_block must be a multiple of the warp size (32)");
+  static_assert(AgentRlePolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,
+                "RleNonTrivialRunsLookbackPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since the run "
+                "detection requires a blocked arrangement");
 
   /// Whether or not to sync after loading data
   static constexpr bool SYNC_AFTER_LOAD = (AgentRlePolicyT::LOAD_ALGORITHM != BLOCK_LOAD_DIRECT);

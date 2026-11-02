@@ -83,10 +83,10 @@ jobs:
           # If it's not a draft and it's an opened trigger, the status should be "Ready for Review", otherwise "In Progress"
           if [ ${{ github.event.pull_request.draft }} == false ] && [ ${{ github.event.action }} == "opened" ]; then
             echo "PR is not a draft, setting status to 'In Review'"
-            echo "STATUS_OPTION_ID=$IN_REVIEW_PROJECT_OPTION_ID" >> $GITHUB_ENV
+            echo "STATUS_OPTION_ID=$IN_REVIEW_PROJECT_OPTION_ID" >> "$GITHUB_ENV"
           else
             echo "PR is a draft, setting status to 'In Progress'"
-            echo "STATUS_OPTION_ID=$IN_PROGRESS_PROJECT_OPTION_ID" >> $GITHUB_ENV
+            echo "STATUS_OPTION_ID=$IN_PROGRESS_PROJECT_OPTION_ID" >> "$GITHUB_ENV"
           fi
         continue-on-error: true
 
@@ -125,7 +125,7 @@ jobs:
             pr_id=$(jq -r '.data.organization.repository.issueOrPullRequest.projectItems.edges[] |
                            select(.node.project.id == "${{ env.PROJECT_ID }}") |
                            .node.id' project_data.json)
-            echo "PR_ID=$pr_id" >> $GITHUB_ENV
+            echo "PR_ID=$pr_id" >> "$GITHUB_ENV"
         continue-on-error: true
 
       - name: Set PR Fields
@@ -167,7 +167,7 @@ jobs:
                   }
                 }' > start_sprint_exists_data.json
               start_sprint_option_id=$(jq -r '.data.node.fieldValueByName.id' start_sprint_exists_data.json)
-              echo "START_SPRINT_OPTION_ID=$start_sprint_option_id" >> $GITHUB_ENV
+              echo "START_SPRINT_OPTION_ID=$start_sprint_option_id" >> "$GITHUB_ENV"
 
             # If there is no start sprint assigned, assign the current start sprint
             if [ "$start_sprint_option_id" == 'null' ]; then
@@ -193,7 +193,7 @@ jobs:
                     }
                     }' > start_sprint_option_data.json
                 current_start_sprint_option_id=$(jq -r '.data.node.field.configuration.iterations[0].id' start_sprint_option_data.json)
-                echo "CURRENT_START_SPRINT_OPTION_ID=$current_start_sprint_option_id" >> $GITHUB_ENV
+                echo "CURRENT_START_SPRINT_OPTION_ID=$current_start_sprint_option_id" >> "$GITHUB_ENV"
 
                 # The query below is constructed differently than the ones above due to bash variable syntax + github actions syntax interactions
                 QUERY="mutation {
@@ -236,7 +236,7 @@ jobs:
                 }
                 }' > working_sprint_options_data.json
             current_working_sprint_option_id=$(jq -r '.data.node.field.configuration.iterations[0].id' working_sprint_options_data.json)
-            echo "CURRENT_WORKING_SPRINT_OPTION_ID=$current_working_sprint_option_id" >> $GITHUB_ENV
+            echo "CURRENT_WORKING_SPRINT_OPTION_ID=$current_working_sprint_option_id" >> "$GITHUB_ENV"
 
             # Set the working sprint to the current working sprint
             QUERY="mutation {

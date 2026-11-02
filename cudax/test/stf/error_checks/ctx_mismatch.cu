@@ -10,64 +10,49 @@
 
 /**
  * @file
- * @brief Ensure an error is detected when a task uses a logical data from a
+ * @brief Ensure an error is reported when a task uses a logical data from a
  *        different context
  */
 
-#include <cuda/experimental/stf.cuh>
+#include <cuda/experimental/__stf/graph/graph_ctx.cuh>
+#include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
-#include <csignal>
-#include <random>
+#include <cstdio>
+#include <cstdlib>
+#include <stdexcept>
 
 using namespace cuda::experimental::stf;
 
-bool should_abort = false;
-
-void cleanupRoutine(int /*unused*/)
-{
-  if (should_abort)
-  {
-    exit(EXIT_SUCCESS);
-  }
-  else
-  {
-    fprintf(stderr, "Unexpected SIGABRT !\n");
-    exit(EXIT_FAILURE);
-  }
-}
-
 template <typename Ctx, size_t n>
-void run(double (&X)[n])
+bool run(double (&X)[n])
 {
   Ctx ctx1;
   auto lX = ctx1.logical_data(X);
 
-  // We are now using lX in the wrong context
-  should_abort = true;
-
   Ctx ctx2;
-  ctx2.task(lX.rw())->*[&](cudaStream_t /*unused*/, auto /*unused*/) {};
 
-  assert(0 && "This should not be reached");
+  bool caught = false;
+  try
+  {
+    // lX belongs to ctx1: a task of ctx2 cannot use it.
+    ctx2.task(lX.rw())->*[&](cudaStream_t /*unused*/, auto /*unused*/) {};
+  }
+  catch (const ::std::invalid_argument& e)
+  {
+    caught = true;
+    fprintf(stderr, "Caught expected error: %s\n", e.what());
+  }
+
+  // Both contexts are still usable.
+  ctx1.task(lX.rw())->*[&](cudaStream_t /*unused*/, auto /*unused*/) {};
+  ctx2.finalize();
+  ctx1.finalize();
+
+  return caught;
 }
 
 int main()
 {
-  /* Setup an handler to catch the SIGABRT signal during the programming error */
-#if _CCCL_COMPILER(MSVC)
-  signal(SIGABRT, &cleanupRoutine);
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC)
-  struct sigaction sigabrt_action{};
-  memset(&sigabrt_action, 0, sizeof(sigabrt_action));
-  sigabrt_action.sa_handler = &cleanupRoutine;
-
-  if (sigaction(SIGABRT, &sigabrt_action, nullptr) != 0)
-  {
-    perror("sigaction SIGABRT");
-    exit(EXIT_FAILURE);
-  }
-#endif // !_CCCL_COMPILER(MSVC)
-
   const int n = 12;
   double X[n];
 
@@ -76,16 +61,6 @@ int main()
     X[ind] = 1.0 * ind;
   }
 
-  // We can't run both stream and graph tests because either will abort the program. So choose one at random.
-  if (::std::random_device{}() % 2 == 0)
-  {
-    run<stream_ctx>(X);
-  }
-  else
-  {
-    run<graph_ctx>(X);
-  }
-
-  assert(0 && "This should not be reached");
-  return EXIT_FAILURE;
+  const bool ok = run<stream_ctx>(X) && run<graph_ctx>(X);
+  return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }

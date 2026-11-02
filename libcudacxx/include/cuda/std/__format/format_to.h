@@ -22,8 +22,9 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__format/format_args.h>
-#include <cuda/std/__format/format_string.h>
+#include <cuda/std/__format/format_string.h> // IWYU pragma: keep
 #include <cuda/std/__format/vformat_to.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__utility/move.h>
 

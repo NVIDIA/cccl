@@ -124,12 +124,12 @@ void test_unique_cuda_streams(ExecutionPolicy policy)
   Vector::iterator new_last;
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   auto streampolicy = policy.on(s);
 
   new_last = thrust::unique(streampolicy, data.begin(), data.end());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(new_last - data.begin() == 7);
   data.erase(new_last, data.end());
@@ -137,14 +137,14 @@ void test_unique_cuda_streams(ExecutionPolicy policy)
   REQUIRE(data == ref);
 
   new_last = thrust::unique(streampolicy, data.begin(), new_last, div_n_equality_op<T>{10});
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(new_last - data.begin() == 3);
   data.erase(new_last, data.end());
   ref = {11, 20, 31};
   REQUIRE(data == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestUniqueCudaStreamsSync", "[unique]")
@@ -243,12 +243,12 @@ void test_unique_copy_cuda_streams(ExecutionPolicy policy)
   Vector::iterator new_last;
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   auto streampolicy = policy.on(s);
 
   new_last = thrust::unique_copy(streampolicy, data.begin(), data.end(), output.begin());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(new_last - output.begin() == 7);
   output.erase(new_last, output.end());
@@ -256,14 +256,14 @@ void test_unique_copy_cuda_streams(ExecutionPolicy policy)
   REQUIRE(output == ref);
 
   new_last = thrust::unique_copy(streampolicy, output.begin(), new_last, data.begin(), div_n_equality_op<T>{10});
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(new_last - data.begin() == 3);
   data.erase(new_last, data.end());
   ref = {11, 20, 31};
   REQUIRE(data == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestUniqueCopyCudaStreamsSync", "[unique]")
@@ -342,21 +342,21 @@ void test_unique_count_cuda_streams(ExecutionPolicy policy)
   Vector data{11, 11, 12, 20, 29, 21, 21, 31, 31, 37};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   auto streampolicy = policy.on(s);
 
   int result = thrust::unique_count(streampolicy, data.begin(), data.end());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(result == 7);
 
   result = thrust::unique_count(streampolicy, data.begin(), data.end(), div_n_equality_op<T>{10});
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(result == 3);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestUniqueCountCudaStreamsSync", "[unique]")

@@ -21,13 +21,19 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__atomic/api/owned.h>
+#include <cuda/std/__atomic/order.h>
+#include <cuda/std/__atomic/scopes.h>
+#include <cuda/std/__atomic/wait/notify_wait.h>
 #include <cuda/std/__barrier/empty_completion.h>
 #include <cuda/std/__barrier/poll_tester.h>
-#include <cuda/std/__chrono/duration.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__new_>
 #include <cuda/std/__thread/poll.h>
-#include <cuda/std/atomic>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/atomic> // IWYU pragma: keep
 #include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 

@@ -181,7 +181,7 @@ public:
 
   // Allow construction from any integral numeric.
   // fill() initializes every element.
-  template <typename T, typename = typename ::cuda::std::enable_if<::cuda::std::is_integral<T>::value>::type>
+  template <typename T, typename = ::cuda::std::enable_if_t<::cuda::std::is_integral_v<T>>>
   _CCCL_HOST_DEVICE custom_numeric(const T& i) // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     fill(static_cast<int>(i));

@@ -29,12 +29,14 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__fwd/extents.h>
 #include <cuda/std/__fwd/mdspan.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__mdspan/concepts.h>
-#include <cuda/std/__mdspan/default_accessor.h>
+#include <cuda/std/__mdspan/default_accessor.h> // IWYU pragma: keep
 #include <cuda/std/__mdspan/empty_base.h>
 #include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/__mdspan/layout_right.h>
+#include <cuda/std/__mdspan/layout_right.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/extent.h>
 #include <cuda/std/__type_traits/is_abstract.h>
 #include <cuda/std/__type_traits/is_array.h>
@@ -50,7 +52,6 @@
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/remove_reference.h>
-#include <cuda/std/__utility/as_const.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/integer_sequence.h>
@@ -562,11 +563,11 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_CArray&)
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_ElementType*, const array<_OtherIndexType, _Size>&)
-  -> mdspan<_ElementType, dextents<size_t, _Size>>;
+  -> mdspan<_ElementType, dims<_Size>>;
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_ElementType*, span<_OtherIndexType, _Size>)
-  -> mdspan<_ElementType, dextents<size_t, _Size>>;
+  -> mdspan<_ElementType, dims<_Size>>;
 
 // This one is necessary because all the constructors take `data_handle_type`s, not
 // `_ElementType*`s, and `data_handle_type` is taken from `accessor_type::data_handle_type`, which

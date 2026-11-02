@@ -15,7 +15,7 @@ on:
       launch_args:
         description: "'.devcontainer/launch.sh -d' add'l args. Ex: '--cuda 12.9 --host gcc13'"
         required: false
-        default: "--cuda 13.3 --host gcc14"
+        default: "--cuda 13.4 --host gcc14"
         type: string
       preset:
         description: "CMake preset. Ex: cub-cpp20"
@@ -60,7 +60,6 @@ on:
       runner:
         description: "Runner label. Ex: 'linux-amd64-cpu16', 'linux-amd64-gpu-rtxa6000-latest-1'"
         required: true
-        default: linux-amd64-cpu16
         type: string
       launch_args:
         description: "'.devcontainer/launch.sh -d' add'l args. Ex: '--ctk 12.9 --host gcc13'"
@@ -70,7 +69,6 @@ on:
       preset:
         description: "CMake preset. Ex: cub-cpp20"
         required: true
-        default: ""
         type: string
       cmake_options:
         description: "Additional options passed to CMake preset configure (e.g. -DVAR=ON)"
@@ -112,7 +110,7 @@ jobs:
   # job id from within a running job, unless the name is unique across the entire run.
   generate-job-name:
     name: Generate Unique Job Name
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     outputs:
       job-name: ${{ steps.set-name.outputs.unique-name }}
     steps:
@@ -158,8 +156,6 @@ jobs:
           }
 
           preset=$(sanitize "${{ inputs.preset }}")
-          good_ref=$(sanitize "${{ inputs.good_ref }}")
-          bad_ref=$(sanitize "${{ inputs.bad_ref }}")
           build_targets=$(sanitize "${{ inputs.build_targets }}")
           ctest_targets=$(sanitize "${{ inputs.ctest_targets }}")
           lit_precompile_tests=$(sanitize "${{ inputs.lit_precompile_tests }}")
@@ -181,22 +177,21 @@ jobs:
           cpu_arch=$(echo "${runner}" | grep -oP '(?:^|-)\K(?:amd64|arm64)(?=-)' || true)
           gpu_name=$(echo "${runner}" | grep -oP '(?:-gpu-)\K[^-]+' || true)
 
-          # Vars to include in unique name:
-          declare -a vars=(
-            "cuda_version"
-            "host_name"
-            "preset"
-            "build_targets_part"
-            "ctest_targets_part"
-            "lit_precompile_tests_part"
-            "lit_tests_part"
-            "gpu_name"
-            "cpu_arch"
-            "short_hash"
+          # Values to include in unique name:
+          declare -a name_parts=(
+            "$cuda_version"
+            "$host_name"
+            "$preset"
+            "$build_targets_part"
+            "$ctest_targets_part"
+            "$lit_precompile_tests_part"
+            "$lit_tests_part"
+            "$gpu_name"
+            "$cpu_arch"
+            "$short_hash"
           )
           unique_name="bisect"
-          for var in "${vars[@]}"; do
-            val=${!var}
+          for val in "${name_parts[@]}"; do
             if [[ -n "$val" ]]; then
               unique_name+="-$val"
             fi
@@ -208,7 +203,9 @@ jobs:
   bisect:
     needs: [generate-job-name]
     name: ${{ needs.generate-job-name.outputs.job-name }}
-    runs-on: ${{ github.repository == 'NVIDIA/cccl' && inputs.runner || 'ubuntu-latest' }}
+    runs-on: |-
+      ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) &&
+          inputs.runner || 'ubuntu-latest' }}
     permissions:
       id-token: write
       contents: read
@@ -221,7 +218,7 @@ jobs:
           fetch-tags: true        # Ensure tags are present
 
       - name: Get AWS credentials for sccache bucket
-        if: ${{ github.repository == 'NVIDIA/cccl' }}
+        if: ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) }}
         uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b  # v6
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
@@ -257,6 +254,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           LAUNCH_ARGS: ${{ inputs.launch_args }}
+          RUNNER_LABEL: ${{ inputs.runner }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           # AWS credentials from the configure-aws-credentials action
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
@@ -267,7 +265,7 @@ jobs:
           echo -e "\e[1;34mLaunching devcontainer and running git bisect...\e[0m"
 
           GPU_ARGS=""
-          if [[ "${{ inputs.runner }}" == *"-gpu-"* ]]; then
+          if [[ "${RUNNER_LABEL}" == *"-gpu-"* ]]; then
             if [[ ! "${LAUNCH_ARGS}" =~ "--gpus" ]]; then
               echo "GPU runner detected; enabling '--gpus all'"
               GPU_ARGS="--gpus all"
@@ -284,7 +282,7 @@ jobs:
           job_name="${{ needs.generate-job-name.outputs.job-name }}"
           job_id=$(
             gh api --paginate \
-              repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs \
+              "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs" \
               --jq ".jobs[] | select(.name | endswith(\"${job_name}\")) | .id"
           ) || :
 
@@ -297,6 +295,8 @@ jobs:
           mkdir -p /tmp/shared
           rc=0
           set -x
+          # These strings intentionally contain multiple launch arguments.
+          # shellcheck disable=SC2086
           .devcontainer/launch.sh -d ${LAUNCH_ARGS} ${GPU_ARGS} \
             --env "AWS_ROLE_ARN=" \
             --env "AWS_REGION=${AWS_REGION}" \

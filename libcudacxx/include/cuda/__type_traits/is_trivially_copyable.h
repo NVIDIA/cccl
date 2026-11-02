@@ -28,7 +28,6 @@
 #include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__type_traits/aggregate_members_all_of.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_aggregate.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
@@ -37,12 +36,11 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-template <typename _Tp, typename = void>
-inline constexpr bool __is_aggregate_trivially_copyable_v = false;
+template <typename _Tp>
+[[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL bool __is_trivially_copyable_impl() noexcept;
 
 template <typename _Tp>
-inline constexpr bool __is_trivially_copyable_v =
-  ::cuda::std::is_trivially_copyable_v<_Tp> || __is_aggregate_trivially_copyable_v<_Tp>;
+inline constexpr bool __is_trivially_copyable_v = ::cuda::__is_trivially_copyable_impl<_Tp>();
 
 #if _CCCL_HAS_NVFP16()
 
@@ -90,10 +88,21 @@ template <typename _Tp>
 using __is_trivially_copyable_callable = ::cuda::std::bool_constant<__is_trivially_copyable_v<_Tp>>;
 
 template <typename _Tp>
-inline constexpr bool __is_aggregate_trivially_copyable_v<
-  _Tp,
-  ::cuda::std::enable_if_t<::cuda::std::is_aggregate_v<_Tp> && !::cuda::std::is_trivially_copyable_v<_Tp>>> =
-  ::cuda::std::__aggregate_all_of_v<__is_trivially_copyable_callable, _Tp>;
+[[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL bool __is_trivially_copyable_impl() noexcept
+{
+  if constexpr (::cuda::std::is_trivially_copyable_v<_Tp>) // NOLINT(cccl-prefer-cuda-traits)
+  {
+    return true;
+  }
+  else if constexpr (::cuda::std::is_aggregate_v<_Tp>)
+  {
+    return ::cuda::std::__aggregate_all_of_v<__is_trivially_copyable_callable, _Tp>;
+  }
+  else
+  {
+    return false;
+  }
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // public traits

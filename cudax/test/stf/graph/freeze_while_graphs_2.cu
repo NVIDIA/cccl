@@ -59,7 +59,7 @@ int main()
   cuda_safe_call(cudaGraphCreate(&graph, 0));
 
   cudaGraphConditionalHandle handle;
-  cudaGraphConditionalHandleCreate(&handle, graph, 1, cudaGraphCondAssignDefault);
+  cuda_safe_call(cudaGraphConditionalHandleCreate(&handle, graph, 1, cudaGraphCondAssignDefault));
 
   // Create a graph that will later be inserted as a child graph once all input
   // dependencies are known

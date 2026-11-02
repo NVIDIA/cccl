@@ -23,7 +23,6 @@
 #endif // no system header
 
 #include <cuda/__memory/is_valid_alignment.h>
-#include <cuda/std/__memory/assume_aligned.h>
 #include <cuda/std/__memory/runtime_assume_aligned.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>

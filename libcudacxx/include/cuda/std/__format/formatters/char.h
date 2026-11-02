@@ -20,11 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h> // IWYU pragma: keep
 #include <cuda/std/__format/format_integral.h>
 #include <cuda/std/__format/format_spec_parser.h>
 #include <cuda/std/__format/formatter.h>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_same.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/make_unsigned.h>
 
 #include <cuda/std/__cccl/prologue.h>

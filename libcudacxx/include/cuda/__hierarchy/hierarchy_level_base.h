@@ -212,15 +212,6 @@ struct hierarchy_level_base
   {
     return _Level::rank(__group) == 0;
   }
-
-  _CCCL_TEMPLATE(class _Group)
-  _CCCL_REQUIRES(::cuda::experimental::coop::group<_Group>)
-  [[nodiscard]] _CCCL_DEVICE_API static bool is_part_of(const _Group& __group) noexcept
-  {
-    static_assert(__unit_same_as_or_below_v<_Level, typename _Group::unit_type>,
-                  "Only levels below or same as _Group::unit_type can be queried for participation");
-    return ::cuda::experimental::coop::__is_part_of_group<_Level>(__group);
-  }
 #    endif // _CCCL_CUDA_COMPILATION()
 #  endif // _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
 

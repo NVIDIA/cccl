@@ -26,6 +26,7 @@
 
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__container/buffer.h>
+#include <cuda/__container/simple_vector.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__numeric/accumulate.h>
@@ -36,8 +37,6 @@
 
 #include <cuda/experimental/mgmn/__algorithm/common.h>
 #include <cuda/experimental/mgmn/__algorithm/sort/hss/sorter.h>
-
-#include <vector>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -57,9 +56,8 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
 {
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
-  ::std::vector<__resizable_buffer_type<::cuda::std::uint64_t>> __all_local_sizes;
-
-  __all_local_sizes.reserve(__num_local_inputs);
+  ::cuda::__simple_vector<__resizable_buffer_type<::cuda::std::uint64_t>> __all_local_sizes{
+    __num_local_inputs, ::cuda::no_init};
 
   {
     auto __env_it       = ::cuda::std::ranges::begin(__envs);
@@ -94,11 +92,11 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
   }
 
   // TODO (jfaibussowit): maybe can combine this with all_local_sizes
-  ::std::vector<__resizable_buffer_type<::cuda::std::uint64_t>> __all_local_offsets;
+  ::cuda::__simple_vector<__resizable_buffer_type<::cuda::std::uint64_t>> __all_local_offsets{
+    __num_local_inputs, ::cuda::no_init};
 
-  __all_local_offsets.reserve(__num_local_inputs);
-
-  ::std::vector<::cuda::std::uint64_t> __h_sizes(static_cast<::cuda::std::size_t>(__comm_size));
+  ::cuda::__simple_vector<::cuda::std::uint64_t> __h_sizes{
+    static_cast<::cuda::std::size_t>(__comm_size), ::cuda::no_init};
 
   {
     auto __comm_it = ::cuda::std::ranges::begin(__comms);
@@ -124,6 +122,11 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
 
       if (__idx == 0)
       {
+        for (::cuda::std::size_t __i = 0; __i < __h_sizes.max_size(); ++__i)
+        {
+          __h_sizes.emplace_back();
+        }
+
         ::cuda::copy_bytes(
           __all_local_sizes[__idx].stream(),
           __all_local_sizes[__idx],
@@ -135,7 +138,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
     }
   }
 
-  __all_local_sizes.front().stream().sync();
+  __all_local_sizes[0].stream().sync();
 
   const auto __N = ::cuda::std::accumulate(__h_sizes.begin(), __h_sizes.end(), ::cuda::std::uint64_t{0});
 

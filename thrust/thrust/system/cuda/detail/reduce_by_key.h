@@ -68,13 +68,6 @@ namespace cuda_cub
 {
 namespace __reduce_by_key
 {
-template <bool>
-struct is_true : thrust::detail::false_type
-{};
-template <>
-struct is_true<true> : thrust::detail::true_type
-{};
-
 template <int BlockThreads,
           int ItemsPerThread                    = 1,
           cub::BlockLoadAlgorithm LoadAlgorithm = cub::BLOCK_LOAD_DIRECT,
@@ -109,7 +102,7 @@ struct Tuning<core::detail::sm52, Key, Value>
                                                   / combined_input_bytes));
 
   using type =
-    PtxPolicy<256, items_per_thread, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_LDG, cub::BLOCK_SCAN_WARP_SCANS>;
+    PtxPolicy<256, items_per_thread, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
 }; // Tuning sm52
 
 // a helper metaprogram that returns type of a block loader

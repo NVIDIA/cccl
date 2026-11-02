@@ -14,11 +14,17 @@
 #endif // no system header
 
 #include <cub/block/block_merge_sort.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/non_void_value.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_namespace.cuh>
-#include <cub/util_type.cuh>
 
+#include <cuda/std/__algorithm/is_sorted.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__utility/forward.h>
 
 CUB_NAMESPACE_BEGIN
@@ -109,7 +115,7 @@ struct agent_t
   CompareOp compare_op;
 
   template <bool IsFullTile>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void consume_tile(int tile_idx, Offset diag0, int total_in_tile)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void consume_tile(Offset tile_idx, Offset diag0, int total_in_tile)
   {
     const Offset range_beg = range_beg_offsets[tile_idx];
     const Offset range_end = range_beg_offsets[tile_idx + 1];
@@ -149,14 +155,22 @@ struct agent_t
     __syncthreads();
 
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int item = 0; item < ItemsPerThread; ++item)
+    // The algorithm only requires comp(haystack, needle) and comp(needle, haystack), so we can only check the
+    // sortedness of the needles if the comparator also accepts two needles. Note that is_invocable cannot see into the
+    // body of an unconstrained templated operator(), so such a comparator on heterogeneous types fails to compile here
+    // and needs to constrain its overloads.
+    if constexpr (::cuda::std::is_invocable_v<CompareOp&, const needles_type&, const needles_type&>)
     {
-      const int idx = ThreadsPerBlock * item + threadIdx.x;
-      if (idx < needles_count && (values_beg + idx) > 0)
+      if (threadIdx.x == 0)
       {
-        const needles_type prev = (idx == 0) ? d_values[values_beg - 1] : storage.needles[idx - 1];
-        _CCCL_ASSERT(!compare_op(storage.needles[idx], prev), "d_values must be sorted consistently with comp");
+        const needles_type* const needles_begin = storage.needles;
+        _CCCL_ASSERT(::cuda::std::is_sorted(needles_begin, needles_begin + needles_count, compare_op),
+                     "d_values must be sorted consistently with comp");
+        if (values_beg > 0 && needles_count > 0)
+        {
+          const needles_type prev = d_values[values_beg - 1];
+          _CCCL_ASSERT(!compare_op(storage.needles[0], prev), "d_values must be sorted consistently with comp");
+        }
       }
     }
 #endif // CCCL_ENABLE_DEVICE_ASSERTIONS
@@ -192,20 +206,24 @@ struct agent_t
       }
       else
       {
-        using output_value_t     = cub::detail::non_void_value_t<OutputIt, Offset>;
-        d_output[values_beg + j] = static_cast<output_value_t>(range_beg + i);
+        // Match LowerBound/UpperBound when the output iterator has a void value_type.
+        using output_value_t     = cub::detail::non_void_value_t<OutputIt, ::cuda::std::ptrdiff_t>;
+        const Offset bound       = range_beg + i;
+        d_output[values_beg + j] = static_cast<output_value_t>(bound);
         ++j;
         --needles_remaining;
       }
     }
   }
 
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()(Offset tile_idx)
   {
-    const int tile_idx      = static_cast<int>(blockIdx.x);
-    const Offset diag0      = static_cast<Offset>(tile_size) * tile_idx;
-    const Offset diag1      = ::cuda::std::min(diag0 + static_cast<Offset>(tile_size), range_count + values_count);
-    const int total_in_tile = static_cast<int>(diag1 - diag0);
+    const Offset diag0 = static_cast<Offset>(tile_size) * tile_idx;
+    // The following expression is equivalent to
+    // cuda::std::min(static_cast<Offset>(tile_size) + diag0, range_count + values_count)
+    // but avoid overflow of the offset type
+    const int total_in_tile =
+      static_cast<int>(::cuda::std::min(static_cast<Offset>(tile_size), range_count + values_count - diag0));
 
     if (total_in_tile == tile_size)
     {

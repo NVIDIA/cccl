@@ -21,18 +21,19 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/make_tuple_types.h>
 #include <cuda/std/__tuple_dir/tie.h>
 #include <cuda/std/__tuple_dir/tuple.h>
-#include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_indices.h>
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/integer_sequence.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -92,7 +93,7 @@ template <class _Result, class _Tuple1, class _Tuple2, size_t... _Indices1, size
   if constexpr (sizeof...(_Tuples) != 0)
   {
     using _TupleSize0 = __make_tuple_indices_t<sizeof...(_Indices1) + sizeof...(_Indices2)>;
-    using _TupleSize1 = __make_tuple_indices_t<tuple_size<remove_reference_t<__type_index_c<0, _Tuples...>>>::value>;
+    using _TupleSize1 = __make_tuple_indices_t<tuple_size_v<remove_reference_t<__type_index_c<0, _Tuples...>>>>;
     return ::cuda::std::__tuple_cat_impl<_Result>(
       _TupleSize0{},
       _TupleSize1{},
@@ -123,13 +124,13 @@ _CCCL_REQUIRES(__all_tuple_like<_Tuples...>)
   else if constexpr (sizeof...(_Tuples) <= 2)
   {
     return ::cuda::std::__tuple_cat_impl<_Result>(
-      __make_tuple_indices_t<tuple_size<remove_reference_t<_Tuples>>::value>{}...,
+      __make_tuple_indices_t<tuple_size_v<remove_reference_t<_Tuples>>>{}...,
       ::cuda::std::forward<_Tuples>(__tuples)...);
   }
   else
   {
-    using _TupleSize0 = __make_tuple_indices_t<tuple_size<remove_reference_t<__type_index_c<0, _Tuples...>>>::value>;
-    using _TupleSize1 = __make_tuple_indices_t<tuple_size<remove_reference_t<__type_index_c<1, _Tuples...>>>::value>;
+    using _TupleSize0 = __make_tuple_indices_t<tuple_size_v<remove_reference_t<__type_index_c<0, _Tuples...>>>>;
+    using _TupleSize1 = __make_tuple_indices_t<tuple_size_v<remove_reference_t<__type_index_c<1, _Tuples...>>>>;
     return ::cuda::std::__tuple_cat_impl<_Result>(
       _TupleSize0{}, _TupleSize1{}, ::cuda::std::forward<_Tuples>(__tuples)...);
   }

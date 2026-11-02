@@ -57,7 +57,7 @@ using __select_uses_allocator_last =
 
 template <class _Tp, class _Alloc, class... _Args>
 inline constexpr __select_uses_allocator __select_uses_allocator_v =
-  !uses_allocator<_Tp, remove_cvref_t<_Alloc>>::value ? __select_uses_allocator::__none
+  !uses_allocator_v<_Tp, remove_cvref_t<_Alloc>> ? __select_uses_allocator::__none
   : is_constructible_v<_Tp, allocator_arg_t, _Alloc, _Args...>
     ? __select_uses_allocator::__allocator_arg
     : __select_uses_allocator::__allocator_last;

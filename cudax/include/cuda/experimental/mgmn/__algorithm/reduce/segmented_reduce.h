@@ -25,6 +25,7 @@
 #include <cub/device/device_segmented_reduce.cuh>
 #include <cub/device/device_transform.cuh>
 
+#include <cuda/__container/simple_vector.h>
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/__stream/get_stream.h>
@@ -51,8 +52,6 @@
 #include <cuda/experimental/mgmn/__concepts/common.h>
 #include <cuda/experimental/mgmn/__concepts/communicator.h>
 #include <cuda/experimental/mgmn/__concepts/has_all_reduce.h>
-
-#include <vector>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -110,7 +109,7 @@ template <bool __has_direct_reduction,
 
 template <class _CommRange, class _OutputItRange, class _BinaryOp, class _Buffer>
 _CCCL_HOST_API void __direct_reduction(
-  _CommRange&& __comms, _OutputItRange&& __outputs, const _BinaryOp& __op, ::std::vector<_Buffer>* __partials)
+  _CommRange&& __comms, _OutputItRange&& __outputs, const _BinaryOp& __op, ::cuda::__simple_vector<_Buffer>* __partials)
 {
   auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
 
@@ -132,7 +131,7 @@ _CCCL_HOST_API void __exchange_and_fold(
   const _BinaryOp& __op,
   _Pred __participates,
   ::cuda::std::int32_t __peer_mask,
-  ::std::vector<_Buffer>* __local_buffers)
+  ::cuda::__simple_vector<_Buffer>* __local_buffers)
 {
   {
     auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
@@ -175,7 +174,7 @@ template <class _CommRange, class _Buffer>
 _CCCL_HOST_API void __broadcast_to_excess(
   _CommRange&& __comms,
   ::cuda::std::size_t __num_segments,
-  ::std::vector<_Buffer>* __partials,
+  ::cuda::__simple_vector<_Buffer>* __partials,
   ::cuda::std::int32_t __excess,
   ::cuda::std::int32_t __pow2)
 {
@@ -216,7 +215,7 @@ _CCCL_HOST_API void __butterfly_reduction(
   ::cuda::std::size_t __num_segments,
   _OutputItRange&& __outputs,
   const _BinaryOp& __op,
-  ::std::vector<_Buffer>* __partials)
+  ::cuda::__simple_vector<_Buffer>* __partials)
 {
   // k: comm size (__comm_size)
   // n: local size (__num_segments)
@@ -447,11 +446,10 @@ _CCCL_HOST_API void segmented_reduce(
 
   _CCCL_NVTX_RANGE_SCOPE("cuda::experimental::mgmn::segmented_reduce");
 
-  auto __partials                      = ::std::vector<typename __properties::__buffer_type>{};
+  auto __partials = ::cuda::__simple_vector<typename __properties::__buffer_type>{__num_local, ::cuda::no_init};
   constexpr bool __comm_has_all_reduce = ::cuda::experimental::mgmn::
     __has_all_reduce<::cuda::std::ranges::range_value_t<_CommRange>, typename __properties::__output_type*, _BinaryOp>;
 
-  __partials.reserve(__num_local);
   for (auto&& [__comm, __env, __input_it, __offsets_begin_it, __offsets_end_it] :
        ::cuda::std::ranges::views::zip(__comms, __envs, __input_iters, __offset_begin_iters, __offset_end_iters))
   {

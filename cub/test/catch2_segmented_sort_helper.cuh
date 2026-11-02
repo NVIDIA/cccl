@@ -566,7 +566,7 @@ void generate_random_unsorted_inputs(c2h::seed_t seed, //
 
   c2h::gen(make_key_seed(seed), d_keys);
 
-  if constexpr (!::cuda::std::is_same<ValueT, cub::NullType>::value)
+  if constexpr (!::cuda::std::is_same_v<ValueT, cub::NullType>)
   {
     c2h::gen(make_value_seed(seed), d_values);
   }
@@ -723,7 +723,7 @@ void validate_sorted_random_outputs(
   REQUIRE((d_ref_keys == d_sorted_keys) == true);
 
   // Verify segment-by-segment that the values are appropriately sorted for an unstable key-value sort:
-  if constexpr (!::cuda::std::is_same<ValueT, cub::NullType>::value)
+  if constexpr (!::cuda::std::is_same_v<ValueT, cub::NullType>)
   {
     if constexpr (STABLE)
     {
@@ -1226,14 +1226,14 @@ void call_cub_segmented_sort_api(
 ///////////////////////////////////////////////////////////////////////////////
 // Testing implementations
 
-constexpr bool ascending  = false;
-constexpr bool descending = true;
+inline constexpr bool ascending  = false;
+inline constexpr bool descending = true;
 
-constexpr bool pointers      = false;
-constexpr bool double_buffer = true;
+inline constexpr bool pointers      = false;
+inline constexpr bool double_buffer = true;
 
-constexpr bool unstable = false;
-constexpr bool stable   = true;
+inline constexpr bool unstable = false;
+inline constexpr bool stable   = true;
 
 // Uses analytically derived key/value pairs for generation and validation.
 // Much faster that test_segments_random, as this avoids H<->D copies and host reference sorting.

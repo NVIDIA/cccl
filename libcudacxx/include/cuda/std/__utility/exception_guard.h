@@ -22,7 +22,6 @@
 
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__utility/ctad_support.h>
-#include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>

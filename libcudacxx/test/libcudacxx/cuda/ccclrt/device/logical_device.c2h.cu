@@ -271,8 +271,12 @@ C2H_CCCLRT_TEST("logical_device_ref locality domain", "[device][logical_device]"
       {
         const auto result = domains[i].locality_domain();
 
-        // Every cached domain comes from a split by locality domain id, so it is always localized.
-        REQUIRE(result.localized);
+        // A single-domain request may be returned as a whole-device context without a locality
+        // flag. Multiple domains must retain their localization metadata.
+        if (domains.size() > 1)
+        {
+          REQUIRE(result.localized);
+        }
         REQUIRE(result.domain_id == i);
       }
     }

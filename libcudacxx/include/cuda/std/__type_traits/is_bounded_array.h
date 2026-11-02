@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__cstddef/types.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/integral_constant.h>
 
 #include <cuda/std/__cccl/prologue.h>

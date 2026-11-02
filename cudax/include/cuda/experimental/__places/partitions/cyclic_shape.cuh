@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -34,6 +34,9 @@ using ::cuda::experimental::stf::dim4;
 using ::cuda::experimental::stf::each;
 using ::cuda::experimental::stf::pos4;
 
+// Naming the tuple outside the class template avoids an NVCC 12.0 frontend crash.
+using __cyclic_shape_bounds = ::std::tuple<size_t, size_t, size_t>;
+
 /**
  * @brief An cyclic shape is a shape or rank 'dimensions' where the bounds are
  * explicit in each dimension, and where we jump between elements with a
@@ -48,7 +51,7 @@ public:
   ///@{ @name Constructors
 
   /// Construct and explicit shape from a list of lower and upper bounds
-  _CCCL_HOST_DEVICE explicit cyclic_shape(const ::std::array<::std::tuple<size_t, size_t, size_t>, dimensions>& list)
+  _CCCL_API explicit cyclic_shape(const ::std::array<__cyclic_shape_bounds, dimensions>& list)
   {
     size_t i = 0;
     for (auto& e : list)

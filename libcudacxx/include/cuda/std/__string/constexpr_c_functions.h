@@ -26,6 +26,8 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/climits>
 
+#include <nv/target>
+
 #if _CCCL_HOSTED()
 #  include <cstring>
 #elif _CCCL_HOSTJIT()

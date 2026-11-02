@@ -25,7 +25,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/double_buffer.cuh>
 #include <cub/detail/env_dispatch.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_segmented_radix_sort.cuh>
 
 #include <cuda/std/__execution/env.h>

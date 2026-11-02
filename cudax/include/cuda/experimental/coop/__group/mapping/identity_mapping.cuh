@@ -40,6 +40,16 @@ public:
   {
     return __prev_mapping_result;
   }
+
+  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API auto
+  map(const non_exhaustive_t&,
+      const _Unit&,
+      const _ParentGroup&,
+      const _PrevMappingResult& __prev_mapping_result) const noexcept
+  {
+    return __prev_mapping_result;
+  }
 };
 } // namespace cuda::experimental::coop
 
