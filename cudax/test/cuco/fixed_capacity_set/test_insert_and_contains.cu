@@ -41,7 +41,7 @@ struct duplicate_key
 template <class Key>
 struct record_visit
 {
-  int* visits;
+  int* visits{};
   int stride = 1;
   int calls  = 0;
 
