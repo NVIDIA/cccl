@@ -52,13 +52,13 @@ struct __get_tuning_t
 
 _CCCL_GLOBAL_CONSTANT auto __get_tuning = __get_tuning_t{};
 
-struct converts_to_anything
+struct __converts_to_anything
 {
-  template <typename T>
-  operator T() const
+  template <typename _Tp>
+  _CCCL_API operator _Tp() const
   {
     return {};
-  };
+  }
 };
 
 template <class _PolicySelector>
@@ -70,11 +70,11 @@ _CCCL_NODEBUG_API constexpr auto __detect_policy_return_type()
   }
   else
   {
-    static_assert(::cuda::std::is_invocable_v<_PolicySelector, ::cuda::compute_capability, converts_to_anything>,
+    static_assert(::cuda::std::is_invocable_v<_PolicySelector, ::cuda::compute_capability, __converts_to_anything>,
                   "Policy selectors must be invocable with cuda::compute_capability and an optional policy");
 
-    using ret_t = decltype(_PolicySelector{}(::cuda::compute_capability{}, converts_to_anything{}));
-    static_assert(!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<ret_t>, converts_to_anything>,
+    using ret_t = decltype(_PolicySelector{}(::cuda::compute_capability{}, __converts_to_anything{}));
+    static_assert(!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<ret_t>, __converts_to_anything>,
                   "Policy selectors must return a concrete policy type");
     static_assert(::cuda::std::is_invocable_v<_PolicySelector, ::cuda::compute_capability, ret_t>,
                   "Policy selectors with more than one argument must accept the returned policy type as second "
