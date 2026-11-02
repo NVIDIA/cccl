@@ -1023,20 +1023,6 @@ public:
     return __res;
   }
 
-  //! @brief Tells the compiler that a slot address is not in local memory.
-  //!
-  //! Slots never live in local memory. Stating it lets the compiler drop the local-memory fallback of
-  //! `atomic_ref` early, so the expected value of a CAS stays in registers instead of spilling.
-  //!
-  //! @param __address Address of a slot
-  _CCCL_DEVICE_API static void __assume_not_local([[maybe_unused]] const void* __address) noexcept
-  {
-    // nvcc and NVRTC before 13.1 miscompile `__isLocal`.
-#  if !_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && !_CCCL_CUDA_COMPILER(NVRTC, <, 13, 1)
-    _CCCL_ASSUME(!::__isLocal(__address));
-#  endif // !_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && !_CCCL_CUDA_COMPILER(NVRTC, <, 13, 1)
-  }
-
   //!
   //! @brief Gets a pointer to the slot at the given probing index and intra-bucket index.
   //!
@@ -1174,7 +1160,6 @@ public:
     using packed_type =
       ::cuda::std::__make_nbit_uint_t<sizeof(__value_type) * ::cuda::std::numeric_limits<unsigned char>::digits>;
 
-    __assume_not_local(__address);
     auto __slot_ref             = ::cuda::atomic_ref<packed_type, _Scope>{*reinterpret_cast<packed_type*>(__address)};
     auto __expected_packed      = ::cuda::std::bit_cast<packed_type>(__expected);
     const auto __desired_packed = ::cuda::std::bit_cast<packed_type>(__native_value(__desired));
@@ -1214,7 +1199,6 @@ public:
   {
     using mapped_type = ::cuda::std::decay_t<decltype(empty_value_sentinel())>;
 
-    __assume_not_local(__address);
     auto __expected_key     = __expected.first;
     auto __expected_payload = empty_value_sentinel();
 
@@ -1268,7 +1252,6 @@ public:
   {
     using mapped_type = ::cuda::std::decay_t<decltype(empty_value_sentinel())>;
 
-    __assume_not_local(__address);
     ::cuda::atomic_ref<__key_type, _Scope> key_ref(__address->first);
     auto __expected_key = __expected.first;
     const auto success =
