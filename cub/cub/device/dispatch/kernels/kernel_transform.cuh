@@ -18,19 +18,15 @@
 #include <cub/detail/type_size.cuh>
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/util_arch.cuh>
-#include <cub/util_vsmem.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
-#include <thrust/system/cuda/detail/core/util.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_up.h>
-#include <cuda/__device/compute_capability.h>
 #include <cuda/__functional/always_true_false.h>
 #include <cuda/__memcpy_async/elect_one.h>
 #include <cuda/__memory/align_down.h>
-#include <cuda/__memory/aligned_size.h>
 #include <cuda/__memory/uninitialized_array.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/elect_sync.h>
@@ -39,24 +35,26 @@
 #include <cuda/__ptx/instructions/mbarrier_init.h>
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__algorithm/copy.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__algorithm/transform.h>
 #include <cuda/std/__cstring/memcpy.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__tuple_dir/apply.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_trivial.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
-#include <cuda/std/expected>
-#include <cuda/std/tuple>
+
+#include <nv/target>
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
@@ -598,6 +596,11 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   // SMEM is 16-byte aligned by default
   extern __shared__ char smem[];
   static_assert(ldgsts_size_and_align <= 16);
+  // the code assumes tile_size (in elements) is a multiple of ldgsts_size_and_align, so tile offsets stay aligned for
+  // any input type
+  static_assert(ThreadsPerBlock % ldgsts_size_and_align == 0,
+                "TransformPolicy: async_copy.threads_per_block must be a multiple of 16 when algorithm is "
+                "TransformAlgorithm::ldgsts");
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(smem), "");
 
   // constexpr int ThreadsPerBlock = Policy.async_copy.ThreadsPerBlock;
@@ -1301,6 +1304,11 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
   }
   else if constexpr (policy.algorithm == TransformAlgorithm::ldgsts)
   { // NOLINT(bugprone-branch-clone)
+    // we cannot static_assert on nvc++, but custom tunings are unlikely there
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
+    static_assert(::cuda::std::__always_false_v<Offset>,
+                  "TransformPolicy: algorithm must not be TransformAlgorithm::ldgsts when compiling for < sm_80");
+#endif
     NV_IF_TARGET(
       NV_PROVIDES_SM_80,
       (transform_kernel_ldgsts</*policy*/ policy.async_copy.threads_per_block, policy.async_copy.unroll_factor>(
@@ -1313,6 +1321,11 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
   }
   else if constexpr (policy.algorithm == TransformAlgorithm::ublkcp)
   {
+    // we cannot static_assert on nvc++, but custom tunings are unlikely there
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 900
+    static_assert(::cuda::std::__always_false_v<Offset>,
+                  "TransformPolicy: algorithm must not be TransformAlgorithm::ublkcp when compiling for < sm_90");
+#endif
     NV_IF_TARGET(
       NV_PROVIDES_SM_90,
       (transform_kernel_ublkcp<policy.async_copy.threads_per_block,

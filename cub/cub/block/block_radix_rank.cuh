@@ -936,6 +936,12 @@ struct BlockRadixRankMatchEarlyCounts
   // Guard against declaring zero-sized array:
   static constexpr int MATCH_MASKS_ALLOC_SIZE = NUM_MATCH_MASKS < 1 ? 1 : NUM_MATCH_MASKS;
 
+  // TODO: handle RADIX_DIGITS % WARP_THREADS != 0 if it becomes necessary
+  static_assert(NumParts == 1 || RADIX_DIGITS % WARP_THREADS == 0,
+                "BlockRadixRankMatchEarlyCounts: 2^RadixBits must be a multiple of the warp size (32) if NumParts > 1 "
+                "(e.g., RadixSortPolicy: onesweep.radix_bits must be at least 5 if onesweep.rank_private_partitions > "
+                "1)");
+
   // types
   using BlockScan = cub::BlockScan<int, BLOCK_THREADS, InnerScanAlgorithm>;
 
@@ -1017,7 +1023,6 @@ struct BlockRadixRankMatchEarlyCounts
       if constexpr (NumParts > 1)
       {
         __syncwarp(WARP_MASK);
-        // TODO: handle RADIX_DIGITS % WARP_THREADS != 0 if it becomes necessary
         constexpr int WARP_BINS_PER_THREAD = RADIX_DIGITS / WARP_THREADS;
         int bins[WARP_BINS_PER_THREAD];
 

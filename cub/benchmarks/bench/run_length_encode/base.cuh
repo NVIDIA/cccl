@@ -33,7 +33,7 @@ void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT>)
   // Run once to get num_runs for memory accounting
   (void) cub::DeviceRunLengthEncode::Encode(
     d_in_keys, d_out_keys, d_out_counts, d_num_runs_out, static_cast<OffsetT>(elements));
-  cudaDeviceSynchronize();
+  _CCCL_TRY_RUNTIME_API(cudaDeviceSynchronize, "Sync failed");
   const offset_t num_runs = num_runs_out[0];
 
   state.add_element_count(elements);

@@ -119,7 +119,7 @@ static bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocation
 {
   size_t handle              = 0;
   const ::cudaError_t status = ::cudaMemPoolExportToShareableHandle(&handle, pool, allocation_handle, 0);
-  ::cudaGetLastError(); // Clear CUDA error state
+  static_cast<void>(::cudaGetLastError()); // Clear CUDA error state
 
   // If no export was defined we need to query cudaErrorInvalidValue
   return allocation_handle == ::cudaMemHandleTypeNone ? status == ::cudaErrorInvalidValue : status == ::cudaSuccess;

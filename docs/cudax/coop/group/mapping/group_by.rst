@@ -19,7 +19,7 @@
   };
 
   template <typename T>
-  group_by(T) -> group_by</*maybe-static-extent*/<T>, true>;
+  group_by(T) -> group_by</*maybe-static-extent*/<T>>;
 
   } // namespace cuda::experimental::coop
 
@@ -53,7 +53,7 @@ Examples
     cudax::coop::group_by m2{cuda::std::cw<4>};
 
     // Creates a mapping that splits units from the previous mapping into subgroups that consist of 64 units. The unit count
-    // will be statically known. If the number of units from the previous mapping is not divisible by 64 without a remainder,
-    // those units will be excluded and will return an invalid mapping result.
-    cudax::coop::group_by m3{cudax::coop::non_exhaustive, cuda::std::cw<64>};
+    // will be statically known. During non-exhaustive mapping, units that do not form a full group of 64 are excluded and
+    // receive an empty optional.
+    cudax::coop::group_by m3{cuda::std::cw<64>};
   }

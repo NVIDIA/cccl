@@ -154,6 +154,26 @@ struct scan_tuning
   }
 };
 
+// Lookback delays are only slept (via __nanosleep) if the grid has at least 500 blocks, and are replaced by a thread
+// fence otherwise. __nanosleep sleeps at most 1 ms per call, so delays above INT_MAX (the largest an int can hold) are
+// cheap to run, but they cannot be asserted to have elapsed (the sleep is only guaranteed to be in [0, 2 * t]).
+template <cub::LookbackDelayAlgorithm DelayAlgorithm>
+struct large_delay_scan_tuning
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::ScanPolicy
+  {
+    return {cub::ScanAlgorithm::lookback,
+            {32,
+             1,
+             cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
+             cub::CacheLoadModifier::LOAD_DEFAULT,
+             cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE,
+             cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING,
+             cub::LookbackDelayPolicy{DelayAlgorithm, 3'000'000'000u, 3'000'000'000u}},
+            {}};
+  }
+};
+
 struct unrelated_policy
 {};
 
@@ -170,6 +190,27 @@ using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 32>, cuda::std::integral_constant<unsigned int, 64>>;
 
 #if TEST_LAUNCH != 1
+
+using large_delay_algorithms = c2h::type_list<
+  cuda::std::integral_constant<cub::LookbackDelayAlgorithm, cub::LookbackDelayAlgorithm::fixed_delay>,
+  cuda::std::integral_constant<cub::LookbackDelayAlgorithm, cub::LookbackDelayAlgorithm::exponential_backoff>>;
+
+CUB_TEST("Device scan works with lookback delays above INT_MAX", "[scan][device]", CUB_SMALL, large_delay_algorithms)
+{
+  constexpr auto delay_algorithm = c2h::get<0, TestType>::value;
+
+  // 32 items per tile, so that we get at least 500 tiles and the delays are actually slept
+  constexpr int tile_size = 32;
+  constexpr int num_items = 600 * tile_size;
+
+  auto d_in  = cuda::constant_iterator(1);
+  auto d_out = c2h::device_vector<int>(num_items);
+
+  auto env = cuda::execution::tune(large_delay_scan_tuning<delay_algorithm>{});
+
+  REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveSum(d_in, d_out.begin(), num_items, env));
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(1)));
+}
 
 CUB_TEST("Device scan exclusive-scan can be tuned", "[scan][device]", CUB_SMALL, block_sizes)
 {
@@ -855,57 +896,8 @@ CUB_TEST_CASE("Device scan inclusive-scan-init with deferred init two-phase work
   });
 }
 
-#endif // TEST_LAUNCH == 0
-
-// The graph launch (TEST_LAUNCH == 2) appends its own stream argument, so it cannot be combined with an environment.
-#if TEST_LAUNCH != 2
-
-// Before the environment parameter, the two-phase overloads took `cudaStream_t stream = nullptr`, so callers passing
-// nullptr or a literal 0 for the stream exist. Both must keep compiling and keep running on the default stream.
-CUB_TEST_CASE("Device scan two-phase overloads accept legacy null stream arguments", "[scan][device]", CUB_SMALL)
-{
-  const auto d_in = c2h::device_vector<int>{1, 2, 3, 4};
-  auto d_out      = c2h::device_vector<int>(d_in.size(), thrust::no_init);
-  const int num_items{static_cast<int>(d_in.size())};
-
-  const stream_scope scope{cudaStream_t{}};
-
-  SECTION("exclusive-sum with nullptr")
-  {
-    device_scan_exclusive_sum_two_phase(d_in.begin(), d_out.begin(), num_items, nullptr);
-  }
-
-  SECTION("exclusive-sum with literal 0")
-  {
-    device_scan_exclusive_sum_two_phase(d_in.begin(), d_out.begin(), num_items, 0);
-  }
-
-  SECTION("exclusive-scan with nullptr")
-  {
-    device_scan_exclusive_two_phase(d_in.begin(), d_out.begin(), cuda::std::plus<>{}, 0, num_items, nullptr);
-  }
-
-  SECTION("exclusive-scan with literal 0")
-  {
-    device_scan_exclusive_two_phase(d_in.begin(), d_out.begin(), cuda::std::plus<>{}, 0, num_items, 0);
-  }
-
-  const auto expected = c2h::device_vector<int>{0, 1, 3, 6};
-  REQUIRE(d_out == expected);
-}
-
-CUB_TEST_CASE("Device scan in-place two-phase overloads accept a legacy nullptr stream", "[scan][device]", CUB_SMALL)
-{
-  auto d_data = c2h::device_vector<int>{1, 2, 3, 4};
-  const int num_items{static_cast<int>(d_data.size())};
-
-  const stream_scope scope{cudaStream_t{}};
-  device_scan_inclusive_sum_two_phase(d_data.begin(), num_items, nullptr);
-
-  const auto expected = c2h::device_vector<int>{1, 3, 6, 10};
-  REQUIRE(d_data == expected);
-}
-
+// The tuning and determinism environments are empty classes, which CTK 12.x cannot pass as kernel parameters, so these
+// tests cannot use the device launch (TEST_LAUNCH == 1).
 CUB_TEST("Device scan exclusive-scan two-phase can be tuned", "[scan][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
@@ -1002,6 +994,57 @@ CUB_TEST_CASE("Device scan exclusive-scan two-phase honors determinism requireme
   device_scan_exclusive_two_phase(d_in.begin(), d_out.begin(), op, 0.0f, num_items, env);
 
   REQUIRE_THAT(detail::to_vec(d_reference), detail::BitwiseEqualsRange(detail::to_vec(d_out)));
+}
+
+#endif // TEST_LAUNCH == 0
+
+// The graph launch (TEST_LAUNCH == 2) appends its own stream argument, so it cannot be combined with an environment.
+#if TEST_LAUNCH != 2
+
+// Before the environment parameter, the two-phase overloads took `cudaStream_t stream = nullptr`, so callers passing
+// nullptr or a literal 0 for the stream exist. Both must keep compiling and keep running on the default stream.
+CUB_TEST_CASE("Device scan two-phase overloads accept legacy null stream arguments", "[scan][device]", CUB_SMALL)
+{
+  const auto d_in = c2h::device_vector<int>{1, 2, 3, 4};
+  auto d_out      = c2h::device_vector<int>(d_in.size(), thrust::no_init);
+  const int num_items{static_cast<int>(d_in.size())};
+
+  const stream_scope scope{cudaStream_t{}};
+
+  SECTION("exclusive-sum with nullptr")
+  {
+    device_scan_exclusive_sum_two_phase(d_in.begin(), d_out.begin(), num_items, nullptr);
+  }
+
+  SECTION("exclusive-sum with literal 0")
+  {
+    device_scan_exclusive_sum_two_phase(d_in.begin(), d_out.begin(), num_items, 0);
+  }
+
+  SECTION("exclusive-scan with nullptr")
+  {
+    device_scan_exclusive_two_phase(d_in.begin(), d_out.begin(), cuda::std::plus<>{}, 0, num_items, nullptr);
+  }
+
+  SECTION("exclusive-scan with literal 0")
+  {
+    device_scan_exclusive_two_phase(d_in.begin(), d_out.begin(), cuda::std::plus<>{}, 0, num_items, 0);
+  }
+
+  const auto expected = c2h::device_vector<int>{0, 1, 3, 6};
+  REQUIRE(d_out == expected);
+}
+
+CUB_TEST_CASE("Device scan in-place two-phase overloads accept a legacy nullptr stream", "[scan][device]", CUB_SMALL)
+{
+  auto d_data = c2h::device_vector<int>{1, 2, 3, 4};
+  const int num_items{static_cast<int>(d_data.size())};
+
+  const stream_scope scope{cudaStream_t{}};
+  device_scan_inclusive_sum_two_phase(d_data.begin(), num_items, nullptr);
+
+  const auto expected = c2h::device_vector<int>{1, 3, 6, 10};
+  REQUIRE(d_data == expected);
 }
 
 #endif // TEST_LAUNCH != 2

@@ -12,7 +12,9 @@ CUB_TEST("cub::DeviceMergeSort::SortPairs non-env overload is not ambiguous", "[
   thrust::device_vector<int> keys(1);
   thrust::device_vector<int> values(1);
   size_t temp_storage_bytes = 0;
-  cub::DeviceMergeSort::SortPairs(nullptr, temp_storage_bytes, keys.begin(), values.begin(), 1, cuda::std::less<>{});
+  REQUIRE(cudaSuccess
+          == cub::DeviceMergeSort::SortPairs(
+            nullptr, temp_storage_bytes, keys.begin(), values.begin(), 1, cuda::std::less<>{}));
 }
 
 CUB_TEST("cub::DeviceMergeSort::SortPairsCopy non-env overload is not ambiguous", "[merge_sort][device]", CUB_SMALL)
@@ -22,22 +24,25 @@ CUB_TEST("cub::DeviceMergeSort::SortPairsCopy non-env overload is not ambiguous"
   thrust::device_vector<int> keys_out(1);
   thrust::device_vector<int> values_out(1);
   size_t temp_storage_bytes = 0;
-  cub::DeviceMergeSort::SortPairsCopy(
-    nullptr,
-    temp_storage_bytes,
-    keys_in.begin(),
-    values_in.begin(),
-    keys_out.begin(),
-    values_out.begin(),
-    1,
-    cuda::std::less<>{});
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceMergeSort::SortPairsCopy(
+      nullptr,
+      temp_storage_bytes,
+      keys_in.begin(),
+      values_in.begin(),
+      keys_out.begin(),
+      values_out.begin(),
+      1,
+      cuda::std::less<>{}));
 }
 
 CUB_TEST("cub::DeviceMergeSort::SortKeys non-env overload is not ambiguous", "[merge_sort][device]", CUB_SMALL)
 {
   thrust::device_vector<int> keys(1);
   size_t temp_storage_bytes = 0;
-  cub::DeviceMergeSort::SortKeys(nullptr, temp_storage_bytes, keys.begin(), 1, cuda::std::less<>{});
+  REQUIRE(
+    cudaSuccess == cub::DeviceMergeSort::SortKeys(nullptr, temp_storage_bytes, keys.begin(), 1, cuda::std::less<>{}));
 }
 
 CUB_TEST("cub::DeviceMergeSort::SortKeysCopy non-env overload is not ambiguous", "[merge_sort][device]", CUB_SMALL)
@@ -45,8 +50,9 @@ CUB_TEST("cub::DeviceMergeSort::SortKeysCopy non-env overload is not ambiguous",
   thrust::device_vector<int> keys_in(1);
   thrust::device_vector<int> keys_out(1);
   size_t temp_storage_bytes = 0;
-  cub::DeviceMergeSort::SortKeysCopy(
-    nullptr, temp_storage_bytes, keys_in.begin(), keys_out.begin(), 1, cuda::std::less<>{});
+  REQUIRE(cudaSuccess
+          == cub::DeviceMergeSort::SortKeysCopy(
+            nullptr, temp_storage_bytes, keys_in.begin(), keys_out.begin(), 1, cuda::std::less<>{}));
 }
 
 CUB_TEST("cub::DeviceMergeSort::StableSortPairs non-env overload is not ambiguous", "[merge_sort][device]", CUB_SMALL)
@@ -54,15 +60,17 @@ CUB_TEST("cub::DeviceMergeSort::StableSortPairs non-env overload is not ambiguou
   thrust::device_vector<int> keys(1);
   thrust::device_vector<int> values(1);
   size_t temp_storage_bytes = 0;
-  cub::DeviceMergeSort::StableSortPairs(
-    nullptr, temp_storage_bytes, keys.begin(), values.begin(), 1, cuda::std::less<>{});
+  REQUIRE(cudaSuccess
+          == cub::DeviceMergeSort::StableSortPairs(
+            nullptr, temp_storage_bytes, keys.begin(), values.begin(), 1, cuda::std::less<>{}));
 }
 
 CUB_TEST("cub::DeviceMergeSort::StableSortKeys non-env overload is not ambiguous", "[merge_sort][device]", CUB_SMALL)
 {
   thrust::device_vector<int> keys(1);
   size_t temp_storage_bytes = 0;
-  cub::DeviceMergeSort::StableSortKeys(nullptr, temp_storage_bytes, keys.begin(), 1, cuda::std::less<>{});
+  REQUIRE(cudaSuccess
+          == cub::DeviceMergeSort::StableSortKeys(nullptr, temp_storage_bytes, keys.begin(), 1, cuda::std::less<>{}));
 }
 
 CUB_TEST("cub::DeviceMergeSort::StableSortKeysCopy non-env overload is not ambiguous", "[merge_sort][device]", CUB_SMALL)
@@ -70,6 +78,7 @@ CUB_TEST("cub::DeviceMergeSort::StableSortKeysCopy non-env overload is not ambig
   thrust::device_vector<int> keys_in(1);
   thrust::device_vector<int> keys_out(1);
   size_t temp_storage_bytes = 0;
-  cub::DeviceMergeSort::StableSortKeysCopy(
-    nullptr, temp_storage_bytes, keys_in.begin(), keys_out.begin(), 1, cuda::std::less<>{});
+  REQUIRE(cudaSuccess
+          == cub::DeviceMergeSort::StableSortKeysCopy(
+            nullptr, temp_storage_bytes, keys_in.begin(), keys_out.begin(), 1, cuda::std::less<>{}));
 }
