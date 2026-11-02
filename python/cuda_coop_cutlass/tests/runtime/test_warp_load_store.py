@@ -12,12 +12,12 @@ divergence, and the instructions in the final linked kernel.
 
 import importlib.util
 import re
-import shutil
 import subprocess
 
 import cutlass
 import numpy as np
 import pytest
+from cuda.pathfinder import find_nvidia_binary_utility
 from cutlass import cute
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 
@@ -413,7 +413,7 @@ def test_final_warp_cubin_has_no_block_barrier(tmp_path, algorithm):
     warp synchronization without requiring a particular instruction or mask.
     """
 
-    cuobjdump = shutil.which("cuobjdump")
+    cuobjdump = find_nvidia_binary_utility("cuobjdump")
     if cuobjdump is None:
         pytest.skip(
             "cuobjdump is required to inspect final linked instructions"

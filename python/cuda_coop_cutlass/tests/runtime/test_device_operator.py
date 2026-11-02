@@ -5,12 +5,12 @@
 """Run scalar CuTe callbacks through CUB and inspect final linked kernels."""
 
 import re
-import shutil
 import subprocess
 
 import cutlass
 import numpy as np
 import pytest
+from cuda.pathfinder import find_nvidia_binary_utility
 from cutlass import cute
 from cutlass.base_dsl.common import get_current_env_manager
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
@@ -268,7 +268,7 @@ def test_failed_trace_after_callback_registration_can_retry():
 
 @pytest.mark.parametrize("operation", ("reduce", "inclusive"))
 def test_final_cubin_inlines_provider_and_callback(tmp_path, operation):
-    cuobjdump = shutil.which("cuobjdump")
+    cuobjdump = find_nvidia_binary_utility("cuobjdump")
     if cuobjdump is None:
         pytest.skip(
             "cuobjdump is required to inspect final linked instructions"

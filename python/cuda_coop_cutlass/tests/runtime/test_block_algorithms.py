@@ -13,12 +13,12 @@ and resource metadata.
 
 import importlib.util
 import re
-import shutil
 import subprocess
 
 import cutlass
 import numpy as np
 import pytest
+from cuda.pathfinder import find_nvidia_binary_utility
 from cutlass import cute
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 from cutlass.memory import SmemAllocator
@@ -559,7 +559,7 @@ def test_final_cubin_storage_contract(tmp_path, algorithm):
     require a particular shared-memory instruction or exact allocation size.
     """
 
-    cuobjdump = shutil.which("cuobjdump")
+    cuobjdump = find_nvidia_binary_utility("cuobjdump")
     if cuobjdump is None:
         pytest.skip(
             "cuobjdump is required to inspect final linked instructions"

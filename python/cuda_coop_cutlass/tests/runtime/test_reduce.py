@@ -11,13 +11,13 @@ traps, and call elimination in the final linked kernel.
 
 import importlib.util
 import re
-import shutil
 import subprocess
 import sys
 
 import cutlass
 import numpy as np
 import pytest
+from cuda.pathfinder import find_nvidia_binary_utility
 from cutlass import cute
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 
@@ -529,7 +529,7 @@ def test_final_cubin(tmp_path, algorithm):
     does not measure shared allocation, register use, or barrier counts.
     """
 
-    cuobjdump = shutil.which("cuobjdump")
+    cuobjdump = find_nvidia_binary_utility("cuobjdump")
     if cuobjdump is None:
         pytest.skip(
             "cuobjdump is required to inspect final linked instructions"

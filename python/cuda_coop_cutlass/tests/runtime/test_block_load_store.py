@@ -14,12 +14,12 @@ calls, local or shared memory accesses, and barriers in this kernel.
 import importlib.util
 import math
 import re
-import shutil
 import subprocess
 
 import cutlass
 import numpy as np
 import pytest
+from cuda.pathfinder import find_nvidia_binary_utility
 from cutlass import cute
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 
@@ -446,7 +446,7 @@ def test_final_cubin_eliminates_direct_providers_and_scratch(tmp_path):
     movement case.
     """
 
-    cuobjdump = shutil.which("cuobjdump")
+    cuobjdump = find_nvidia_binary_utility("cuobjdump")
     if cuobjdump is None:
         pytest.skip(
             "cuobjdump is required to inspect final linked instructions"

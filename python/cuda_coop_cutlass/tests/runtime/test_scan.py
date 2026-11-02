@@ -12,13 +12,13 @@ remain available to all group members and exclude the exclusive seed.
 
 import importlib.util
 import re
-import shutil
 import subprocess
 import sys
 
 import cutlass
 import numpy as np
 import pytest
+from cuda.pathfinder import find_nvidia_binary_utility
 from cutlass import cute
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 
@@ -758,7 +758,7 @@ def test_final_cubin(tmp_path, warp):
     Resource reports are saved for inspection but have no assertions here.
     """
 
-    cuobjdump = shutil.which("cuobjdump")
+    cuobjdump = find_nvidia_binary_utility("cuobjdump")
     if cuobjdump is None:
         pytest.skip(
             "cuobjdump is required to inspect final linked instructions"

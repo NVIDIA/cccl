@@ -86,7 +86,12 @@ case "$stage" in
     fi
     ;;
   runtime)
-    command -v cuobjdump >/dev/null || { echo "cuobjdump is required for final-cubin checks" >&2; exit 1; }
+    python -I - <<'PY'
+from cuda.pathfinder import find_nvidia_binary_utility
+
+if find_nvidia_binary_utility("cuobjdump") is None:
+    raise SystemExit("cuobjdump is required for final-cubin checks")
+PY
     nvidia-smi --query-gpu=name,compute_cap,driver_version --format=csv,noheader
     for route in 0 1; do
       CUTE_DSL_USE_EXTENSION_COMPILER="$route" python -I -m pytest -v -m gpu compile/ runtime/

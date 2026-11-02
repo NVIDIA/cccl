@@ -11,11 +11,11 @@ Compute-sanitizer coverage is opt-in and limited to two reuse profiles.
 
 import os
 import re
-import shutil
 import subprocess
 import sys
 
 import pytest
+from cuda.pathfinder import find_nvidia_binary_utility
 from cutlass.base_dsl.common import DSLRuntimeError
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 
@@ -97,7 +97,7 @@ def test_final_cubin(tmp_path, bulk):
     Run Length Decode wrapper symbol and no CALL instruction.
     """
 
-    tool = shutil.which("cuobjdump")
+    tool = find_nvidia_binary_utility("cuobjdump")
     if tool is None:
         pytest.skip("cuobjdump is required for final linked code inspection")
     _run(bulk=bulk, compile_options=(KeepCUBIN(True), DumpDir(str(tmp_path))))
@@ -121,7 +121,7 @@ def test_scratch_reuse_racecheck():
 
     if os.environ.get("CUDA_COOP_RUN_RACECHECK") != "1":
         pytest.skip("set CUDA_COOP_RUN_RACECHECK=1 to run compute-sanitizer")
-    tool = shutil.which("compute-sanitizer")
+    tool = find_nvidia_binary_utility("compute-sanitizer")
     if tool is None:
         pytest.skip("compute-sanitizer is required")
     script = (

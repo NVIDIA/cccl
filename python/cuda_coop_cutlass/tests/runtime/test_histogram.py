@@ -10,12 +10,12 @@ original samples, including Sort, which uses a private mutable copy.
 """
 
 import re
-import shutil
 import subprocess
 
 import cutlass
 import numpy as np
 import pytest
+from cuda.pathfinder import find_nvidia_binary_utility
 from cutlass import cute
 from cutlass.base_dsl.common import DSLRuntimeError
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
@@ -300,7 +300,7 @@ def test_final_cubin(tmp_path, algorithm):
     shared-memory usage are not checked here.
     """
 
-    tool = shutil.which("cuobjdump")
+    tool = find_nvidia_binary_utility("cuobjdump")
     if tool is None:
         pytest.skip("cuobjdump is required for final linked code inspection")
     _run(
