@@ -122,9 +122,11 @@ inline constexpr bool has_as_type<Buf, U, cuda::std::void_t<decltype(cuda::std::
 
 C2H_CCCLRT_TEST("cuda::buffer release, acquire and byte conversion", "[container][buffer]", test_types)
 {
-  using Buffer     = c2h::get<0, TestType>;
-  using T          = typename Buffer::value_type;
-  using ByteBuffer = decltype(cuda::std::declval<Buffer>().template as_bytes<cuda::std::byte>());
+  using Buffer               = c2h::get<0, TestType>;
+  using BufferProperties     = Buffer::properties_list;
+  using T                    = typename Buffer::value_type;
+  using ByteBuffer           = decltype(cuda::std::declval<Buffer>().template as_bytes<cuda::std::byte>());
+  using ByteBufferProperties = Buffer::properties_list;
 
   static_assert(has_release<Buffer>);
   static_assert(!has_release<Buffer&>);
@@ -141,7 +143,7 @@ C2H_CCCLRT_TEST("cuda::buffer release, acquire and byte conversion", "[container
   static_assert(!has_as_type<Buffer, float>);
   static_assert(has_as_type<ByteBuffer, T>);
   static_assert(!has_as_type<ByteBuffer&, T>);
-  static_assert(cuda::std::is_same_v<typename ByteBuffer::properties_list, typename Buffer::properties_list>);
+  static_assert(cuda::std::is_same_v<ByteBufferProperties, BufferProperties>);
 
   if (!extract_properties<Buffer>::is_resource_supported())
   {
