@@ -433,8 +433,8 @@ struct lookahead_scan_closure
 
       if (!is_first_tile)
       {
-        int batch_tile_idx = static_cast<int>(global_tile_idx);
-        bool has_prefix    = false;
+        int batch_tile_idx               = static_cast<int>(global_tile_idx);
+        [[maybe_unused]] bool has_prefix = false;
         if constexpr (IsDeferred)
         {
           const auto batch = global_tile_idx / policy.tiles_per_batch;
@@ -1016,9 +1016,9 @@ struct lookahead_scan_closure
     // Cache lookahead progress within a batch, readiness acquired for each squad, and unpublished reader completions.
     int idxTilePrev = 0;
     AccumT AggrExclusiveCtaPrev; // only valid in squadLookahead lane_0
-    ::cuda::std::uint64_t previous_batch     = ~::cuda::std::uint64_t{};
-    ::cuda::std::uint64_t ready_batch        = ~::cuda::std::uint64_t{};
-    ::cuda::std::uint32_t pending_lookaheads = 0;
+    ::cuda::std::uint64_t previous_batch                      = ~::cuda::std::uint64_t{};
+    [[maybe_unused]] ::cuda::std::uint64_t ready_batch        = ~::cuda::std::uint64_t{};
+    [[maybe_unused]] ::cuda::std::uint32_t pending_lookaheads = 0;
 
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
