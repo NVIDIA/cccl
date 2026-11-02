@@ -33,6 +33,7 @@
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/coop/__group/concepts.cuh>
@@ -92,7 +93,8 @@ public:
                                 const _Hierarchy& __hier,
                                 [[maybe_unused]] arrival_token&& __tok) const noexcept
   {
-    _CCCL_ASSERT(__tok.__valid(), "invalid arrival token passed to do_wait function");
+    // Construct a temporary object, so we set __tok to moved-from state.
+    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__valid(), "invalid arrival token passed to do_wait function");
     do_sync(__mapping_result, __hier);
   }
 
@@ -101,7 +103,9 @@ public:
                                         const _Hierarchy& __hier,
                                         [[maybe_unused]] arrival_token&& __tok) const noexcept
   {
-    _CCCL_ASSERT(__tok.__valid(), "invalid arrival token passed to do_wait_aligned function");
+    // Construct a temporary object, so we set __tok to moved-from state.
+    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__valid(),
+                 "invalid arrival token passed to do_wait_aligned function");
     do_sync_aligned(__mapping_result, __hier);
   }
 
