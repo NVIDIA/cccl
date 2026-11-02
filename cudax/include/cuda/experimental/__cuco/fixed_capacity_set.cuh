@@ -232,6 +232,54 @@ public:
     __impl_->insert_async(__stream, __first, __last, ref());
   }
 
+  //! @brief Inserts keys and writes each stored key and whether it was inserted.
+  //!
+  //! For each input key, writes the stored key and `true` when the key is inserted. If an
+  //! equivalent key is already present, writes that stored key, which may differ from the input
+  //! key, and `false`. If no slot is available, writes the empty sentinel and `false`.
+  //! @pre No input key equals the empty sentinel.
+  //! @note If multiple input keys are equivalent, it is unspecified which one is inserted.
+  //! @note Synchronizes the supplied stream. For asynchronous execution use `insert_and_find_async`.
+  //! @throws cuda_error if the operation or stream synchronization fails
+  //! @tparam _InputIt Device-accessible random-access iterator with compatible key values
+  //! @tparam _FoundIt Device-accessible random-access iterator assignable from `key_type`
+  //! @tparam _InsertedIt Device-accessible random-access iterator assignable from `bool`
+  //! @param[in] __stream Stream used for insertion
+  //! @param[in] __first Beginning of the input range
+  //! @param[in] __last End of the input range
+  //! @param[out] __found_begin Beginning of the stored-key output range
+  //! @param[out] __inserted_begin Beginning of the insertion-status output range
+  template <class _InputIt, class _FoundIt, class _InsertedIt>
+  _CCCL_HOST_API void insert_and_find(
+    ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _FoundIt __found_begin, _InsertedIt __inserted_begin)
+  {
+    insert_and_find_async(__stream, __first, __last, __found_begin, __inserted_begin);
+    __stream.sync();
+  }
+
+  //! @brief Asynchronously inserts keys and writes each stored key and whether it was inserted.
+  //!
+  //! For each input key, writes the stored key and `true` when the key is inserted. If an
+  //! equivalent key is already present, writes that stored key, which may differ from the input
+  //! key, and `false`. If no slot is available, writes the empty sentinel and `false`.
+  //! @pre No input key equals the empty sentinel.
+  //! @note If multiple input keys are equivalent, it is unspecified which one is inserted.
+  //! @throws cuda_error if insertion fails to launch
+  //! @tparam _InputIt Device-accessible random-access iterator with compatible key values
+  //! @tparam _FoundIt Device-accessible random-access iterator assignable from `key_type`
+  //! @tparam _InsertedIt Device-accessible random-access iterator assignable from `bool`
+  //! @param[in] __stream Stream used for insertion
+  //! @param[in] __first Beginning of the input range
+  //! @param[in] __last End of the input range
+  //! @param[out] __found_begin Beginning of the stored-key output range
+  //! @param[out] __inserted_begin Beginning of the insertion-status output range
+  template <class _InputIt, class _FoundIt, class _InsertedIt>
+  _CCCL_HOST_API void insert_and_find_async(
+    ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _FoundIt __found_begin, _InsertedIt __inserted_begin)
+  {
+    __impl_->insert_and_find_async(__stream, __first, __last, __found_begin, __inserted_begin, ref());
+  }
+
   //! @brief Writes whether each query key is present.
   //!
   //! @pre No query key equals the empty sentinel.

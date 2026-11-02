@@ -13,6 +13,7 @@
 #include <cuda/std/functional>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 #include <cuda/type_traits>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
@@ -78,6 +79,17 @@ struct constant_hash
   }
 };
 
+// Whether `insert_and_find` returned the expected insertion status and an iterator to a stored key equivalent to
+// `key`.
+template <class Ref, class Result>
+[[nodiscard]] _CCCL_DEVICE_API bool
+found_stored_key(const Ref& ref, Result result, typename Ref::key_type key, bool expected_inserted)
+{
+  static_assert(cuda::std::is_same_v<Result, cuda::std::pair<typename Ref::const_iterator, bool>>);
+  const auto [found, inserted] = result;
+  return inserted == expected_inserted && found >= ref.begin() && found < ref.end() && ref.key_eq()(key, *found);
+}
+
 struct exercise_ref
 {
   template <class Ref>
@@ -90,32 +102,43 @@ struct exercise_ref
     for (int i = 0; i < capacity; ++i)
     {
       const auto key = make_ref_key<key_type>(i);
+      // Odd keys are inserted by insert_and_find, even keys by insert.
+      const bool use_insert_and_find = i % 2 != 0;
       bool inserted;
       if constexpr (Ref::cg_size == 1)
       {
         success  = !ref.contains(key) && success;
-        inserted = ref.insert(key);
+        inserted = use_insert_and_find ? found_stored_key(ref, ref.insert_and_find(key), key, true) : ref.insert(key);
       }
       else
       {
         success  = !ref.contains(group, key) && success;
-        inserted = ref.insert(group, key);
+        inserted = use_insert_and_find ? found_stored_key(ref, ref.insert_and_find(group, key), key, true)
+                                       : ref.insert(group, key);
       }
       group.sync();
       success = inserted && success;
       // Also exercise the cooperative overload when cg_size is one.
       success = ref.contains(group, key) && success;
       success = !ref.insert(group, key) && success;
+      success = found_stored_key(ref, ref.insert_and_find(group, key), key, false) && success;
+      if constexpr (Ref::cg_size == 1)
+      {
+        success = found_stored_key(ref, ref.insert_and_find(key), key, false) && success;
+      }
       group.sync();
     }
 
     const auto absent = make_ref_key<key_type>(capacity);
+    const auto full   = cuda::std::pair{typename Ref::const_iterator{ref.end()}, false};
     success           = !ref.insert(group, absent) && success;
     success           = !ref.contains(group, absent) && success;
+    success           = ref.insert_and_find(group, absent) == full && success;
     if constexpr (Ref::cg_size == 1)
     {
       success = !ref.insert(absent) && success;
       success = !ref.contains(absent) && success;
+      success = ref.insert_and_find(absent) == full && success;
     }
     group.sync();
     if (group.thread_rank() == 0)
