@@ -126,7 +126,7 @@ _CCCL_CONCEPT_FRAGMENT(__subrange_from_iter_sent_,
 
 template <class _Iter, class _It, bool _StoreSize>
 _CCCL_CONCEPT __subrange_from_iter_sent =
-  _CCCL_FRAGMENT(__subrange_from_iter_sent_, _Iter, _It, integral_constant<bool, _StoreSize>);
+  _CCCL_FRAGMENT(__subrange_from_iter_sent_, _Iter, _It, bool_constant<_StoreSize>);
 
 template <class _Iter, class _Kind, class _It>
 _CCCL_CONCEPT_FRAGMENT(
@@ -148,12 +148,7 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _Iter, class _Sent, subrange_kind _Kind, class _Range, bool _StoreSize>
 _CCCL_CONCEPT __subrange_from_range = _CCCL_FRAGMENT(
-  __subrange_from_range_,
-  _Iter,
-  _Sent,
-  integral_constant<subrange_kind, _Kind>,
-  _Range,
-  integral_constant<bool, _StoreSize>);
+  __subrange_from_range_, _Iter, _Sent, integral_constant<subrange_kind, _Kind>, _Range, bool_constant<_StoreSize>);
 
 template <class _Iter, class _Sent, class _Kind, class _Range>
 _CCCL_CONCEPT_FRAGMENT(

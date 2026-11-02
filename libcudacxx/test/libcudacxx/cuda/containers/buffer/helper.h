@@ -30,7 +30,7 @@
 
 inline constexpr ::cuda::std::initializer_list<int> compare_data_initializer_list{1, 42, 1337, 0, 12, -1};
 TEST_GLOBAL_VARIABLE constexpr int device_data[] = {1, 42, 1337, 0, 12, -1};
-constexpr int host_data[]                        = {1, 42, 1337, 0, 12, -1};
+inline constexpr int host_data[]                 = {1, 42, 1337, 0, 12, -1};
 
 template <typename Iter>
 __global__ void check_equal_kernel(Iter ptr)
@@ -72,7 +72,7 @@ bool equal_range(const Buffer& buf)
     }
     const cuda::__ensure_current_context guard{buf.stream()};
     check_equal_kernel<<<1, 1, 0, buf.stream().get()>>>(buf.begin());
-    CCCLRT_CHECK(cudaGetLastError() == cudaSuccess);
+    CHECK(cudaGetLastError() == cudaSuccess);
     buf.stream().sync();
     return true;
   }
@@ -158,7 +158,7 @@ bool equal_size_value(const Buffer& buf, const size_t size, const typename Buffe
     }
     const cuda::__ensure_current_context guard{buf.stream()};
     check_equal_value_kernel<<<1, 1, 0, buf.stream().get()>>>(buf.begin(), size, value);
-    CCCLRT_CHECK(cudaGetLastError() == cudaSuccess);
+    CHECK(cudaGetLastError() == cudaSuccess);
     buf.stream().sync();
     return true;
   }
@@ -185,8 +185,8 @@ template <class Buffer>
 void check_allocation_device(const Buffer& buf, cuda::device_ref device)
 {
   ::cudaPointerAttributes attributes{};
-  CCCLRT_REQUIRE(::cudaPointerGetAttributes(&attributes, buf.data()) == ::cudaSuccess);
-  CCCLRT_CHECK(attributes.device == device.get());
+  REQUIRE(::cudaPointerGetAttributes(&attributes, buf.data()) == ::cudaSuccess);
+  CHECK(attributes.device == device.get());
 }
 
 // helper class as we need to pass the properties in a tuple to the catch tests
@@ -269,12 +269,12 @@ static_assert(::cuda::is_trivially_copyable_v<custom_char3>, "cuda::buffer will 
 
 #if _CCCL_CTK_AT_LEAST(12, 9)
 using test_types =
-  c2h::type_list<cuda::buffer<int, cuda::mr::host_accessible>,
-                 cuda::buffer<unsigned long long, cuda::mr::device_accessible>,
-                 cuda::buffer<short, cuda::mr::device_accessible>,
-                 cuda::buffer<float, cuda::mr::device_accessible>,
+  c2h::type_list<cuda::host_buffer<int>,
+                 cuda::device_buffer<unsigned long long>,
+                 cuda::device_buffer<short>,
+                 cuda::device_buffer<float>,
                  cuda::buffer<int, cuda::mr::host_accessible, cuda::mr::device_accessible>,
-                 cuda::buffer<::custom_char3, cuda::mr::device_accessible>>;
+                 cuda::device_buffer<::custom_char3>>;
 #else // ^^^ _CCCL_CTK_AT_LEAST(12, 9) ^^^ / vvv _CCCL_CTK_BELOW(12, 9) vvv
 using test_types =
   c2h::type_list<cuda::buffer<int, cuda::mr::device_accessible>,

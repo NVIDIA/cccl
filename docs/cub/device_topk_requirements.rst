@@ -86,8 +86,10 @@ requires ``determinism::gpu_to_gpu``. See :ref:`cub-topk-set-membership` for the
        -- and segments larger than a single thread block are also supported.
 
    * :cpp:struct:`cub::DeviceTopK` implements only the fully opted-out configuration
-     (``cuda::execution::determinism::not_guaranteed`` with unsorted output) and has no tie-break
-     dimension yet, so it omits the ``tie_break`` token. Its sorted output remains unimplemented.
+     (``cuda::execution::determinism::not_guaranteed`` with unsorted output). It accepts
+     ``tie_break::unspecified`` (the recommended, forward-compatible spelling) and, in CCCL 3.x, also
+     the omission of ``tie_break``; ``prefer_smaller_index`` / ``prefer_larger_index`` are rejected
+     because they remain unimplemented as does its sorted output.
 
    The remaining deterministic, tie-broken, and stable-sorted modes documented here define the
    committed long-term contract and will become available (including as the no-requirement default) as
@@ -226,10 +228,15 @@ Reading the table:
 
 .. note::
 
-   This determinism and tie_break pairing rule is currently enforced only by
-   :cpp:struct:`cub::DeviceBatchedTopK`. :cpp:struct:`cub::DeviceTopK` does not yet inspect
-   ``tie_break``, so it still accepts requirement combinations that ``cub::DeviceBatchedTopK`` rejects.
-   The same enforcement will be added to ``cub::DeviceTopK`` in the next major release of CCCL (4.0).
+   :cpp:struct:`cub::DeviceBatchedTopK` rejects an explicit ``prefer_smaller_index`` /
+   ``prefer_larger_index`` that is not paired with ``gpu_to_gpu``; :cpp:struct:`cub::DeviceTopK` rejects
+   them altogether because it does not implement tie-breaking yet. The determinism and tie_break
+   *pairing* rule (both specified or both omitted) is currently enforced only by
+   :cpp:struct:`cub::DeviceBatchedTopK`. ``cub::DeviceTopK`` still accepts
+   ``require(determinism::not_guaranteed, output_ordering::unsorted)`` without a ``tie_break`` and will
+   enforce the pairing in the next major release of CCCL (4.0). To be forward-compatible, spell the
+   tie-break out today: ``require(determinism::not_guaranteed, tie_break::unspecified,
+   output_ordering::unsorted)``.
 
 Worked example: set membership x output ordering
 -------------------------------------------------

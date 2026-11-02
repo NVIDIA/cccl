@@ -55,7 +55,7 @@ int main()
   auto fX = ctx.freeze(lX, access_mode::rw, data_place::current_device());
 
   cudaGraphConditionalHandle handle;
-  cudaGraphConditionalHandleCreate(&handle, ctx.get_graph(), 1, cudaGraphCondAssignDefault);
+  cuda_safe_call(cudaGraphConditionalHandleCreate(&handle, ctx.get_graph(), 1, cudaGraphCondAssignDefault));
 
   // Create a graph that will later be inserted as a child graph once all input
   // dependencies are known
@@ -99,7 +99,8 @@ int main()
 #  if _CCCL_CTK_AT_LEAST(13, 0)
   cudaGraphAddNode(&conditionalNode, ctx.get_graph(), fX_ready_nodes.data(), nullptr, fX_ready_nodes.size(), &cParams);
 #  else
-  cudaGraphAddNode(&conditionalNode, ctx.get_graph(), fX_ready_nodes.data(), fX_ready_nodes.size(), &cParams);
+  cuda_safe_call(
+    cudaGraphAddNode(&conditionalNode, ctx.get_graph(), fX_ready_nodes.data(), fX_ready_nodes.size(), &cParams));
 #  endif
 
   cudaGraph_t bodyGraph = cParams.conditional.phGraph_out[0];

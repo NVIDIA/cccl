@@ -62,10 +62,15 @@ CUB_TEST("Device ForEachInExtents", "[ForEachInExtents][device]", CUB_SMALL)
   // d_output1 is now filled with the expected values
 
   thrust::fill(d_output2.begin(), d_output2.end(), data_t{});
-  cub::DeviceFor::ForEachInExtents(extents, linear_store_3D{d_output2_raw});
+  const auto error = cub::DeviceFor::ForEachInExtents(extents, linear_store_3D{d_output2_raw});
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceFor::ForEachInExtents failed with status: " << error << '\n';
+  }
   // d_output2 is now filled with the expected values
 
   // example-end for-each-in-extents-example
+  REQUIRE(error == cudaSuccess);
   thrust::host_vector<data_t> h_output1(cub::detail::size(extents), thrust::no_init);
   thrust::host_vector<data_t> h_output2(cub::detail::size(extents), thrust::no_init);
   h_output1 = d_output1;

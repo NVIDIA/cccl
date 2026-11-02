@@ -77,6 +77,14 @@ TEST_HOST_DEVICE_FUNC constexpr bool relax_nan_payload()
 // float -> fp64emu -> double (widening, exact).
 TEST_HOST_DEVICE_FUNC bool f2d_ok(float v)
 {
+  // Fast math: the native cast flushes subnormals and canonicalizes NaNs.
+  bool fast_math_reference = false;
+  NV_IF_TARGET(NV_IS_DEVICE, (fast_math_reference = TEST_HAS_CUDA_FAST_MATH;))
+  const uint32_t bits = f_bits(v);
+  if (fast_math_reference && (bits & 0x7F800000u) == 0 && (bits & 0x007FFFFFu) != 0)
+  {
+    return true;
+  }
   cuda::fp64emu e(v);
   const uint64_t be = d_bits((double) e);
   const uint64_t br = d_bits((double) v);
@@ -84,12 +92,19 @@ TEST_HOST_DEVICE_FUNC bool f2d_ok(float v)
   {
     return true;
   }
-  return relax_nan_payload() && is_nan_d(be) && is_nan_d(br);
+  return (relax_nan_payload() || fast_math_reference) && is_nan_d(be) && is_nan_d(br);
 }
 
 // double -> fp64emu -> float (narrowing, round-to-nearest-even).
 TEST_HOST_DEVICE_FUNC bool d2f_ok(double v)
 {
+  // Fast math: the native cast flushes subnormal results.
+  bool fast_math_reference = false;
+  NV_IF_TARGET(NV_IS_DEVICE, (fast_math_reference = TEST_HAS_CUDA_FAST_MATH;))
+  if (fast_math_reference && (d_bits(v) & 0x7FFFFFFFFFFFFFFFull) < 0x3810000000000000ull)
+  {
+    return true;
+  }
   cuda::fp64emu e(v);
   const uint32_t be = f_bits((float) e);
   const uint32_t br = f_bits((float) v);

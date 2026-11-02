@@ -90,7 +90,7 @@ using __is_trivially_copyable_callable = ::cuda::std::bool_constant<__is_trivial
 template <typename _Tp>
 [[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL bool __is_trivially_copyable_impl() noexcept
 {
-  if constexpr (::cuda::std::is_trivially_copyable_v<_Tp>)
+  if constexpr (::cuda::std::is_trivially_copyable_v<_Tp>) // NOLINT(cccl-prefer-cuda-traits)
   {
     return true;
   }

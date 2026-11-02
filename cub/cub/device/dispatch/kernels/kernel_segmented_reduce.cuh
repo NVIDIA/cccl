@@ -15,12 +15,16 @@
 
 #include <cub/agent/agent_reduce.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh> // finalize_and_store_aggregate
+#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_reduce.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/util_arch.cuh>
 
-#include <cuda/__device/compute_capability.h>
 #include <cuda/__utility/in_range.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 

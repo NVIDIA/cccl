@@ -14,6 +14,7 @@ import atomic
 import buffer
 import complex
 import event
+import expected
 import hierarchy
 import inplace_vector
 import mdspan
@@ -45,6 +46,7 @@ _FORMATTERS = (
     memory_pool,
     span,
     optional,
+    expected,
     shared_resource,
 )
 

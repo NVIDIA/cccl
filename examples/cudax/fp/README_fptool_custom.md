@@ -304,3 +304,11 @@ Use cases
 - **Separating the two axes** — `fp64_custom<11, 23>` reduces the mantissa while keeping FP64
   range, which distinguishes an algorithm that needs precision from one that needs dynamic
   range
+
+Optimization guide
+------------------
+
+The sizing question `fp64_custom` answers is the second step of choosing a type. The [FP
+optimization guide](README_fp_optimization_guide.md#using-fptool) says how to run the sweep so
+that it measures the loop rather than the summation, and how to read the result against the
+component types in [Choosing the type](README_fp_optimization_guide.md#choosing-the-type).

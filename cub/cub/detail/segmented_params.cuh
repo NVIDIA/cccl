@@ -15,8 +15,11 @@
 
 #include <cub/detail/choose_offset.cuh>
 
-#include <cuda/argument>
+#include <cuda/__argument/argument.h>
+#include <cuda/__argument/argument_bounds.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/concepts.h> // indirectly_readable, random_access_iterator
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -28,7 +31,6 @@
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/cmp.h> // cmp_greater_equal, cmp_less_equal
 #include <cuda/std/__utility/forward.h>
-#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN

@@ -26,11 +26,11 @@ Test Platforms
 =================== =========== === =========
 GPU                 Clock (MHz) SMs FP64:FP32
 =================== =========== === =========
-NVIDIA B300 SXM6 AC 2032        148 1:32
+NVIDIA B300 SXM6 AC 2032        148 1:64
 NVIDIA B200         1965        148 1:2
 =================== =========== === =========
 
-FP64:FP32 is the rate at which the part runs double precision against single, measured here and rounded to the nearest power of two. It is the single number that decides which of these types is worth using: ``fp32mp2`` is built on FP32 and ``fp64mp2`` on FP64, so each one wins on the hardware where the other's arithmetic is the scarce resource.
+FP64:FP32 is the rate at which the part runs double precision against single, as NVIDIA specifies it: results per clock per SM, from the throughput table in the CUDA C++ Best Practices Guide. A benchmark that times the two side by side can read a narrower gap, since its FP32 baseline runs below peak. It is the single number that decides which of these types is worth using: ``fp32mp2`` is built on FP32 and ``fp64mp2`` on FP64, so each one wins on the hardware where the other's arithmetic is the scarce resource.
 
 .. _libcudacxx-extended-api-fp-fpmp-spec-supported-data-types:
 

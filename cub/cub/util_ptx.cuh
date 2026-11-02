@@ -21,9 +21,9 @@
 
 #include <cub/detail/constant.cuh>
 #include <cub/detail/unit_word.cuh>
-#include <cub/util_debug.cuh>
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 

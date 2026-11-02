@@ -494,3 +494,13 @@ That is what "compare the same workload across types" produces: the operation co
 are measuring the same thing, and the event counters show what changed — here, that the same
 algorithm crosses into lossy territory forty iterations early when the pair is built from
 ``float``.
+
+Optimization guide
+------------------
+
+Several of the recommendations for the ``fpmp`` types — whether ``low`` is safe and where to
+renormalize, where ``high`` pays, whether the pair is earning its cost — are decided from this
+record. The :ref:`FP optimization guide <libcudacxx-extended-api-fp-optimization-guide-fptool>`
+gives the order to read it in for that purpose, and its
+:ref:`Using fpmp efficiently <libcudacxx-extended-api-fp-optimization-guide-fpmp>` section the
+recommendations themselves.

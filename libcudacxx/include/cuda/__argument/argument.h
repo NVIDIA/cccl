@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__argument/argument_bounds.h>
+#include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/std/__algorithm/max_element.h>
 #include <cuda/std/__algorithm/min_element.h>
 #include <cuda/std/__cccl/assert.h>
@@ -467,6 +468,9 @@ class deferred : public __deferred_base<_Arg, _StaticBounds>
 public:
   using __deferred_base<_Arg, _StaticBounds>::__deferred_base;
 };
+
+template <class _Tp>
+inline constexpr bool __is_deferred_v = ::cuda::__is_specialization_of_v<_Tp, deferred>;
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <class _Arg>
