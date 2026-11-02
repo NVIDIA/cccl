@@ -338,7 +338,11 @@ struct agent_batched_topk_cluster
   static_assert(tie_break_items_per_thread_clamped >= 1, "tie_break_items_per_thread_clamped must be positive");
   static_assert(copy_items_per_thread_clamped >= 1, "copy_items_per_thread_clamped must be positive");
 
-  static constexpr int num_buckets     = 1 << policy.bits_per_pass;
+  static constexpr int num_buckets = 1 << policy.bits_per_pass;
+  // `max_cluster_blocks()` would otherwise narrow a too-wide explicit cap silently.
+  static_assert(policy.max_blocks_per_cluster <= policy.max_cluster_blocks(),
+                "cluster_topk_policy: max_blocks_per_cluster must not exceed max_cluster_blocks(), since the leader's "
+                "per-pass histogram fold must fit one mbarrier transaction count");
   using smem_layout_t                  = smem_block_tile_layout<key_t, policy.chunk_bytes, policy.load_align_bytes>;
   static constexpr int max_chunk_items = smem_layout_t::max_chunk_items;
   static constexpr int num_load_align_items = smem_layout_t::num_load_align_items;

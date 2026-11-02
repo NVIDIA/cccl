@@ -575,7 +575,7 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
   using key_it_t = it_value_t<KeyInputItItT>;
   using key_t    = it_value_t<key_it_t>;
   using layout_t = batched_topk_cluster::smem_block_tile_layout<key_t, chunk_bytes, load_align_bytes>;
-  static_assert(is_valid_cluster_policy(policy), "the cluster policy violates is_valid_cluster_policy");
+  static_assert(is_valid_cluster_policy(policy));
   static_assert(load_align_bytes % int{sizeof(key_t)} == 0);
 
   // Tightest upper bound the segment-size argument carries -- for a static-bounded per-segment sequence a loose type
