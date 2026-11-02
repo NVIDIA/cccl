@@ -597,7 +597,7 @@ private:
   //! @param __value New value
   _CCCL_DEVICE_API constexpr void __update_max(int __i, __register_type __value) noexcept
   {
-    (void) ::cuda::experimental::cuco::detail::__atomic_fetch_max<_Scope>(&__sketch[__i], __value);
+    (void) detail::__atomic_fetch_max<_Scope>(&__sketch[__i], __value);
   }
 
   //! @brief Try expanding the shmem partition for a given kernel beyond 48KB if necessary.

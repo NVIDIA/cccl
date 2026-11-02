@@ -1167,8 +1167,7 @@ public:
     auto __expected_packed      = ::cuda::std::bit_cast<packed_type>(__expected);
     const auto __desired_packed = ::cuda::std::bit_cast<packed_type>(__native_value(__desired));
 
-    const auto success = ::cuda::experimental::cuco::detail::__atomic_compare_exchange<_Scope>(
-      __slot_ptr, __expected_packed, __desired_packed);
+    const auto success = detail::__atomic_compare_exchange<_Scope>(__slot_ptr, __expected_packed, __desired_packed);
 
     if (success)
     {
@@ -1205,10 +1204,10 @@ public:
     auto __expected_key     = __expected.first;
     auto __expected_payload = empty_value_sentinel();
 
-    const auto key_cas_success = ::cuda::experimental::cuco::detail::__atomic_compare_exchange<_Scope>(
-      &__address->first, __expected_key, __key_type{__desired.first});
-    auto payload_cas_success = ::cuda::experimental::cuco::detail::__atomic_compare_exchange<_Scope>(
-      &__address->second, __expected_payload, mapped_type{__desired.second});
+    const auto key_cas_success =
+      detail::__atomic_compare_exchange<_Scope>(&__address->first, __expected_key, __key_type{__desired.first});
+    auto payload_cas_success =
+      detail::__atomic_compare_exchange<_Scope>(&__address->second, __expected_payload, mapped_type{__desired.second});
 
     // if __key success
     if (key_cas_success)
@@ -1216,7 +1215,7 @@ public:
       while (!payload_cas_success)
       {
         __expected_payload  = empty_value_sentinel();
-        payload_cas_success = ::cuda::experimental::cuco::detail::__atomic_compare_exchange<_Scope>(
+        payload_cas_success = detail::__atomic_compare_exchange<_Scope>(
           &__address->second, __expected_payload, mapped_type{__desired.second});
       }
       return __insert_result::__success;
@@ -1224,7 +1223,7 @@ public:
     else if (payload_cas_success)
     {
       // This is insert-specific, cannot for `erase` operations
-      ::cuda::experimental::cuco::detail::__atomic_store<_Scope>(&__address->second, empty_value_sentinel());
+      detail::__atomic_store(&__address->second, empty_value_sentinel());
     }
 
     // Our __key was already present in the slot, so our __key is a duplicate
@@ -1254,13 +1253,13 @@ public:
     using mapped_type = ::cuda::std::decay_t<decltype(empty_value_sentinel())>;
 
     auto __expected_key = __expected.first;
-    const auto success  = ::cuda::experimental::cuco::detail::__atomic_compare_exchange<_Scope>(
-      &__address->first, __expected_key, __key_type{__desired.first});
+    const auto success =
+      detail::__atomic_compare_exchange<_Scope>(&__address->first, __expected_key, __key_type{__desired.first});
 
     // if __key success
     if (success)
     {
-      ::cuda::experimental::cuco::detail::__atomic_store<_Scope>(&__address->second, mapped_type{__desired.second});
+      detail::__atomic_store(&__address->second, mapped_type{__desired.second});
       return __insert_result::__success;
     }
 
@@ -1366,7 +1365,7 @@ public:
     // TODO exponential backoff strategy
     do
     {
-      __current = ::cuda::experimental::cuco::detail::__atomic_load<_Scope>(&__slot);
+      __current = detail::__atomic_load(&__slot);
     } while (detail::__bitwise_compare(__current, __sentinel));
   }
 
