@@ -14,6 +14,7 @@
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
+#include <cuda/std/cstring>
 #include <cuda/warp>
 
 #include "test_macros.h"
@@ -82,6 +83,56 @@ TEST_DEVICE_FUNC void test_bool()
   }
 }
 
+template <typename T>
+TEST_DEVICE_FUNC void test_array()
+{
+  for (unsigned i = 1; i <= 32; ++i)
+  {
+    if (threadIdx.x < i)
+    {
+      auto mask = cuda::device::lane_mask{make_low_mask(i)};
+      T value{};
+      assert(cuda::device::warp_match_any(value, mask) == mask);
+
+      // only the last element
+      const auto byte                                         = static_cast<unsigned char>(threadIdx.x % 2);
+      reinterpret_cast<unsigned char*>(&value)[sizeof(T) - 1] = byte;
+      auto expected = cuda::device::lane_mask{make_stride_mask(i, 2, threadIdx.x % 2)};
+      assert(cuda::device::warp_match_any(value, mask) == expected);
+    }
+  }
+}
+
+struct WithPadding
+{
+  int a;
+  char b;
+};
+
+#if defined(_CCCL_BUILTIN_CLEAR_PADDING)
+TEST_DEVICE_FUNC void test_padded_array()
+{
+  WithPadding value[2][2];
+  cuda::std::memset(value, static_cast<int>(threadIdx.x), sizeof(value));
+  for (auto& row : value)
+  {
+    for (auto& element : row)
+    {
+      element.a = 42;
+      element.b = 3;
+    }
+  }
+  unsigned char original[sizeof(value)];
+  cuda::std::memcpy(original, value, sizeof(value));
+  assert(cuda::device::warp_match_any(value) == cuda::device::lane_mask::all());
+  assert(cuda::std::memcmp(original, value, sizeof(value)) == 0);
+
+  value[1][1].b = static_cast<char>(threadIdx.x % 2);
+  auto expected = cuda::device::lane_mask{make_stride_mask(32, 2, threadIdx.x % 2)};
+  assert(cuda::device::warp_match_any(value) == expected);
+}
+#endif // _CCCL_BUILTIN_CLEAR_PADDING
+
 template <int NumBits>
 TEST_DEVICE_FUNC void test_match_any_bits()
 {
@@ -107,6 +158,11 @@ TEST_DEVICE_FUNC void test()
 {
   using array_t = cuda::std::array<char, 6>;
   test_bool();
+  test_array<unsigned char[3]>();
+  test_array<uint32_t[2][3]>();
+#if defined(_CCCL_BUILTIN_CLEAR_PADDING)
+  test_padded_array();
+#endif // _CCCL_BUILTIN_CLEAR_PADDING
   test_match_any_bits<1>();
   test_match_any_bits<4>();
   test_match_any_bits<8>();
