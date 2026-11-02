@@ -144,7 +144,9 @@ template <::cuda::thread_scope _Scope, class _Tp>
 
   if constexpr (sizeof(_Tp) <= 2)
   {
-    // There is no 8-bit or 16-bit atomicCAS, so swap the enclosing aligned 32-bit word as `cuda::atomic_ref` does
+    // Swap the enclosing aligned 32-bit word as `cuda::atomic_ref` does: there is no 8-bit atomicCAS and the 16-bit one
+    // has no block or system scope variant. The other bytes are compared and written back unchanged, so a concurrent
+    // update to them fails the swap instead of being lost, but the whole word must be addressable.
     _CCCL_ASSERT(::cuda::is_aligned(__address, sizeof(_Tp)), "cuCO atomics require a naturally aligned address");
     constexpr ::cuda::std::uintptr_t __align_mask = sizeof(unsigned int) - 1;
     constexpr unsigned int __size_mask            = (1u << (sizeof(_Tp) * 8)) - 1;
