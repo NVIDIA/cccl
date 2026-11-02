@@ -269,7 +269,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRight tuning can be modified", "[adj
 
   device_adjacent_difference_subtract_right(data.begin(), data.size(), op, env);
 
-  c2h::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
+  const c2h::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
   REQUIRE(data == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
