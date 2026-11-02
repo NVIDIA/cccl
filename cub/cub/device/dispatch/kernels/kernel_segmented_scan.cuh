@@ -31,6 +31,8 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__functional/minimum.h>
+#include <cuda/__iterator/counting_iterator.h>
+#include <cuda/__iterator/strided_iterator.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cstddef/types.h>
