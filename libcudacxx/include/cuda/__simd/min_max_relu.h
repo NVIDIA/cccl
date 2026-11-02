@@ -45,11 +45,18 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 
 // Before CUDA 13.4, ptxas can generate incorrect SM90 and SM103 code for dependent VIMNMX.RELU instructions.
 // The workaround consists in adding an identity LOP3 to break the dependency. CTK 13.4 fixes the issue.
+// SM100 code needs it too: compute_100 PTX still becomes SM103 machine code through ptxas
+// (e.g. -gencode arch=compute_100,code=sm_103) or through the driver JIT on an SM103 GPU.
 template <typename _Tp>
 [[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline _Tp __workaround_vimnmx_relu_dep(_Tp __value) noexcept
 {
 #  if _CCCL_CTK_BELOW(13, 4)
   NV_IF_TARGET(NV_IS_EXACTLY_SM_90, ({
+                 _Tp __result;
+                 asm volatile("lop3.b32 %0, %1, 0, 0, 0xF0;" : "=r"(__result) : "r"(__value));
+                 return __result;
+               }))
+  NV_IF_TARGET(NV_IS_EXACTLY_SM_100, ({
                  _Tp __result;
                  asm volatile("lop3.b32 %0, %1, 0, 0, 0xF0;" : "=r"(__result) : "r"(__value));
                  return __result;
