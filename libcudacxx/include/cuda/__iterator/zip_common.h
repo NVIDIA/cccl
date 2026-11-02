@@ -137,7 +137,7 @@ struct __zip_op_decrement
 struct __zip_iter_move
 {
   template <class... _Iterators>
-  using __iter_move_ret = ::cuda::std::tuple<::cuda::std::iter_rvalue_reference_t<_Iterators>...>;
+  using __iter_move_ret _CCCL_NODEBUG = ::cuda::std::tuple<::cuda::std::iter_rvalue_reference_t<_Iterators>...>;
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Iterators>
@@ -274,9 +274,9 @@ struct __zip_maybe_proxy_helper<_Iter, ::cuda::std::void_t<::cuda::std::iter_val
 };
 
 template <class _Iter>
-using __zip_maybe_proxy_reference_t = typename __zip_maybe_proxy_helper<_Iter>::reference;
+using __zip_maybe_proxy_reference_t _CCCL_NODEBUG = typename __zip_maybe_proxy_helper<_Iter>::reference;
 template <class _Iter>
-using __zip_maybe_proxy_value_type_t = typename __zip_maybe_proxy_helper<_Iter>::value_type;
+using __zip_maybe_proxy_value_type_t _CCCL_NODEBUG = typename __zip_maybe_proxy_helper<_Iter>::value_type;
 
 _CCCL_END_NAMESPACE_CUDA
 

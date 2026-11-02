@@ -739,7 +739,7 @@ __host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
 template <typename T>
 struct get_active_policy
 {
-  using type = typename T::ActivePolicy;
+  using type _CCCL_NODEBUG = typename T::ActivePolicy;
 };
 
 /// Helper for dispatching into a policy chain

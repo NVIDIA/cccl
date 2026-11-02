@@ -68,55 +68,55 @@ struct delay_constructor_for;
 template <unsigned int Delay, unsigned int L2WriteLatency>
 struct delay_constructor_for<LookbackDelayAlgorithm::no_delay, Delay, L2WriteLatency>
 {
-  using type = no_delay_constructor_t<L2WriteLatency>;
+  using type _CCCL_NODEBUG = no_delay_constructor_t<L2WriteLatency>;
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
 struct delay_constructor_for<LookbackDelayAlgorithm::fixed_delay, Delay, L2WriteLatency>
 {
-  using type = fixed_delay_constructor_t<Delay, L2WriteLatency>;
+  using type _CCCL_NODEBUG = fixed_delay_constructor_t<Delay, L2WriteLatency>;
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
 struct delay_constructor_for<LookbackDelayAlgorithm::exponential_backoff, Delay, L2WriteLatency>
 {
-  using type = exponential_backoff_constructor_t<Delay, L2WriteLatency>;
+  using type _CCCL_NODEBUG = exponential_backoff_constructor_t<Delay, L2WriteLatency>;
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
 struct delay_constructor_for<LookbackDelayAlgorithm::exponential_backoff_jitter, Delay, L2WriteLatency>
 {
-  using type = exponential_backoff_jitter_constructor_t<Delay, L2WriteLatency>;
+  using type _CCCL_NODEBUG = exponential_backoff_jitter_constructor_t<Delay, L2WriteLatency>;
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
 struct delay_constructor_for<LookbackDelayAlgorithm::exponential_backoff_jitter_window, Delay, L2WriteLatency>
 {
-  using type = exponential_backoff_jitter_window_constructor_t<Delay, L2WriteLatency>;
+  using type _CCCL_NODEBUG = exponential_backoff_jitter_window_constructor_t<Delay, L2WriteLatency>;
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
 struct delay_constructor_for<LookbackDelayAlgorithm::exponential_backon_jitter_window, Delay, L2WriteLatency>
 {
-  using type = exponential_backon_jitter_window_constructor_t<Delay, L2WriteLatency>;
+  using type _CCCL_NODEBUG = exponential_backon_jitter_window_constructor_t<Delay, L2WriteLatency>;
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
 struct delay_constructor_for<LookbackDelayAlgorithm::exponential_backon_jitter, Delay, L2WriteLatency>
 {
-  using type = exponential_backon_jitter_constructor_t<Delay, L2WriteLatency>;
+  using type _CCCL_NODEBUG = exponential_backon_jitter_constructor_t<Delay, L2WriteLatency>;
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
 struct delay_constructor_for<LookbackDelayAlgorithm::exponential_backon, Delay, L2WriteLatency>
 {
-  using type = exponential_backon_constructor_t<Delay, L2WriteLatency>;
+  using type _CCCL_NODEBUG = exponential_backon_constructor_t<Delay, L2WriteLatency>;
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
 struct delay_constructor_for<LookbackDelayAlgorithm::__reduce_by_key, Delay, L2WriteLatency>
 {
-  using type = reduce_by_key_delay_constructor_t<Delay, L2WriteLatency>;
+  using type _CCCL_NODEBUG = reduce_by_key_delay_constructor_t<Delay, L2WriteLatency>;
 };
 
 template <LookbackDelayAlgorithm Kind, unsigned int Delay, unsigned int L2WriteLatency>

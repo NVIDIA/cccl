@@ -643,23 +643,23 @@ struct __cccl_complex_overload_traits
 template <class _Tp>
 struct __cccl_complex_overload_traits<_Tp, true, false>
 {
-  using _ValueType   = double;
-  using _ComplexType = complex<double>;
+  using _ValueType _CCCL_NODEBUG   = double;
+  using _ComplexType _CCCL_NODEBUG = complex<double>;
 };
 
 // Floating point types
 template <class _Tp>
 struct __cccl_complex_overload_traits<_Tp, false, true>
 {
-  using _ValueType   = _Tp;
-  using _ComplexType = complex<_Tp>;
+  using _ValueType _CCCL_NODEBUG   = _Tp;
+  using _ComplexType _CCCL_NODEBUG = complex<_Tp>;
 };
 
 template <class _Tp>
-using __cccl_complex_value_type = typename __cccl_complex_overload_traits<_Tp>::_ValueType;
+using __cccl_complex_value_type _CCCL_NODEBUG = typename __cccl_complex_overload_traits<_Tp>::_ValueType;
 
 template <class _Tp>
-using __cccl_complex_complex_type = typename __cccl_complex_overload_traits<_Tp>::_ComplexType;
+using __cccl_complex_complex_type _CCCL_NODEBUG = typename __cccl_complex_overload_traits<_Tp>::_ComplexType;
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
