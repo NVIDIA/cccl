@@ -150,6 +150,16 @@ public:
   {}
 
   //! \cond
+  // Returns a copy of this iterator with the base iterator replaced by out, keeping the functor. Lets CCCL rebase
+  // iterators onto other storage.
+  _CCCL_HOST_DEVICE transform_output_iterator
+  __rebase(OutputIterator const& out) const // NOLINT(readability-identifier-naming)
+  {
+    return transform_output_iterator(out, fun);
+  }
+  //! \endcond
+
+  //! \cond
 
 private:
   _CCCL_HOST_DEVICE typename super_t::reference dereference() const

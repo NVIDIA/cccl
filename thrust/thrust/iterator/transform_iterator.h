@@ -285,6 +285,12 @@ public:
   }
 
   //! \cond
+  // Returns a copy of this iterator with the base iterator replaced by x, keeping the functor. Lets CCCL rebase
+  // iterators onto other storage.
+  _CCCL_HOST_DEVICE transform_iterator __rebase(Iterator const& x) const // NOLINT(readability-identifier-naming)
+  {
+    return transform_iterator(x, m_f);
+  }
 
 private:
   // MSVC 2013 and 2015 incorrectly warning about returning a reference to
