@@ -793,6 +793,7 @@ public:
     ::cuda::stream_ref stream;
     __resource_t mr;
     pointer ptr;
+    size_type capacity;
     size_type size;
     size_type alignment;
   };
@@ -806,10 +807,11 @@ public:
   [[nodiscard]] _CCCL_HOST_API released_allocation release() && noexcept
   {
     const pointer __ptr               = __buf_.data();
+    const size_type __capacity        = __buf_.size();
     const size_type __size            = __buf_.size();
     const size_type __alignment       = __buf_.alignment();
     const ::cuda::stream_ref __stream = __buf_.stream();
-    return {__stream, __buf_.__release_allocation(), __ptr, __size, __alignment};
+    return {__stream, __buf_.__release_allocation(), __ptr, __capacity, __size, __alignment};
   }
 
   //! @brief Creates a buffer that takes ownership of an existing allocation.
