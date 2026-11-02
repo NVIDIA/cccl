@@ -657,7 +657,7 @@ def _make_hashable(value, keep_alive: list):
         # A captured host array is frozen into the compiled operator as a
         # constant, so arrays with different contents are different operators.
         digest = hashlib.sha256(np.ascontiguousarray(value).tobytes()).digest()
-        return ("numpy.ndarray", value.dtype.str, value.shape, digest)
+        return ("numpy.ndarray", value.dtype, value.shape, digest)
     elif isinstance(value, (np.number, np.bool_)):
         return ("numpy.scalar", value.dtype.str, value.tobytes())
     elif isinstance(value, (bool, int, float, str, bytes)):
