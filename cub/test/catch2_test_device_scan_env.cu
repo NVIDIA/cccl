@@ -1073,6 +1073,9 @@ CUB_TEST("Test ScanPolicy properties", "[scan][device]", CUB_SMALL)
   constexpr auto p1_la = cub::ScanLookaheadPolicy{3, 8, 4, 2};
   constexpr auto p1    = cub::ScanPolicy{cub::ScanAlgorithm::lookback, p1_lb, p1_la};
   STATIC_REQUIRE(p1_lb.tiles_per_batch == 65536);
+  STATIC_REQUIRE(p1_la.tiles_per_batch == 65536);
+  STATIC_REQUIRE(p1_la.num_buffers == 2);
+  STATIC_REQUIRE(p1_la.completed_tiles_per_flush == 8);
   constexpr auto custom_batch = [](auto p) {
     p.tiles_per_batch = 17;
     return p;
@@ -1109,6 +1112,16 @@ CUB_TEST("Test ScanPolicy properties", "[scan][device]", CUB_SMALL)
   STATIC_REQUIRE(p1_la == p2_la);
   STATIC_REQUIRE_FALSE(p1_la != p2_la);
 
+  for (auto field : {&cub::ScanLookaheadPolicy::tiles_per_batch,
+                     &cub::ScanLookaheadPolicy::num_buffers,
+                     &cub::ScanLookaheadPolicy::completed_tiles_per_flush})
+  {
+    auto custom = p1_la;
+    ++(custom.*field);
+    REQUIRE(custom != p1_la);
+    REQUIRE_FALSE(custom == p1_la);
+  }
+
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
 
@@ -1125,7 +1138,8 @@ CUB_TEST("Test ScanPolicy properties", "[scan][device]", CUB_SMALL)
              ", .delay = 832, .l2_write_latency = 1165 }, .tiles_per_batch = 65536 }");
   REQUIRE(to_string(p1_la)
           == "ScanLookaheadPolicy { .reduce_and_scan_warps = 3, .items_per_thread = 8"
-             ", .lookahead_items_per_thread = 4, .lookahead_stages = 2, .block_idx_stages = -1 }");
+             ", .lookahead_items_per_thread = 4, .lookahead_stages = 2, .block_idx_stages = -1"
+             ", .tiles_per_batch = 65536, .num_buffers = 2, .completed_tiles_per_flush = 8 }");
   REQUIRE(
     to_string(p1)
     == "ScanPolicy { .algorithm = ScanAlgorithm::lookback"
@@ -1135,6 +1149,7 @@ CUB_TEST("Test ScanPolicy properties", "[scan][device]", CUB_SMALL)
        ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
        ", .delay = 832, .l2_write_latency = 1165 }, .tiles_per_batch = 65536 }"
        ", .lookahead = ScanLookaheadPolicy { .reduce_and_scan_warps = 3, .items_per_thread = 8"
-       ", .lookahead_items_per_thread = 4, .lookahead_stages = 2, .block_idx_stages = -1 } }");
+       ", .lookahead_items_per_thread = 4, .lookahead_stages = 2, .block_idx_stages = -1"
+       ", .tiles_per_batch = 65536, .num_buffers = 2, .completed_tiles_per_flush = 8 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

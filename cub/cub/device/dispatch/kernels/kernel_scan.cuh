@@ -166,6 +166,20 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
   }
 }
 
+template <typename PolicySelector, typename AccumT>
+_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanLookaheadBatchInitKernel(
+  warpspeed::tile_state_t<AccumT>* tile_states, void* batch_storage)
+{
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+
+#if _CCCL_CUDACC_AT_LEAST(12, 8)
+  constexpr auto policy = current_policy<PolicySelector>().lookahead;
+  auto* batch_state     = static_cast<warpspeed::lookahead_batch_state<AccumT, policy.num_buffers>*>(batch_storage);
+  device_scan_init_batch_lookahead_body<PolicySelector>(tile_states, batch_state);
+#endif // _CCCL_CUDACC_AT_LEAST(12, 8)
+}
+
 //! @brief Initializes reusable tile status and batch state.
 //! @param[in,out] tile_state Tile descriptors shared by successive batches.
 //! @param[out] batch_state Batched look-back state.
@@ -316,6 +330,10 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   static constexpr ScanPolicy active_policy = current_policy<PolicySelector>();
   if constexpr (active_policy.algorithm == ScanAlgorithm::lookahead)
   {
+    if constexpr (IsDeferred)
+    {
+      _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+    }
     const OffsetT num_items = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
     // the lookahead implementation copies tiles from and to raw pointers (the dispatch unwraps contiguous iterators)
     constexpr bool contiguous_iterators = THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>
@@ -333,7 +351,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
       NV_PROVIDES_SM_90, ({
         auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
           d_in, d_out, tile_state.lookahead.tile_states, tile_state.lookahead.atomic_counter, num_items, num_stages};
-        device_scan_lookahead_body<PolicySelector, ForceInclusive, RealInitValueT, StableReductionOrder>(
+        device_scan_lookahead_body<PolicySelector, ForceInclusive, RealInitValueT, StableReductionOrder, IsDeferred>(
           scan_params, scan_op, init_value);
       }));
 #else
@@ -394,6 +412,51 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
     AgentScanT(temp_storage, d_in, d_out, scan_op, real_init_value)
       .ConsumeRange(num_items, tile_state.lookback, start_tile);
   }
+}
+
+template <typename PolicySelector,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename ScanOpT,
+          typename InitValueT,
+          typename OffsetT,
+          typename KernelNumItemsT,
+          typename AccumT,
+          bool ForceInclusive,
+          bool StableReductionOrder = false,
+          typename RealInitValueT   = typename InitValueT::value_type>
+__launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1)
+  _CCCL_KERNEL_ATTRIBUTES void DeviceScanLookaheadBatchKernel(
+    const InputIteratorT d_in,
+    const OutputIteratorT d_out,
+    warpspeed::tile_state_t<AccumT>* tile_states,
+    void* batch_storage,
+    const ScanOpT scan_op,
+    const InitValueT init_value,
+    const KernelNumItemsT kernel_num_items,
+    const int num_stages)
+{
+#if _CCCL_CUDACC_AT_LEAST(12, 8)
+  static constexpr ScanPolicy active_policy = current_policy<PolicySelector>();
+  if constexpr (active_policy.algorithm == ScanAlgorithm::lookahead)
+  {
+    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+    const OffsetT num_items = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
+    NV_IF_TARGET(
+      NV_PROVIDES_SM_90, ({
+        auto* batch_state =
+          static_cast<warpspeed::lookahead_batch_state<AccumT, active_policy.lookahead.num_buffers>*>(batch_storage);
+        auto scan_params =
+          scan_batch_kernel_params<it_value_t<InputIteratorT>,
+                                   it_value_t<OutputIteratorT>,
+                                   AccumT,
+                                   active_policy.lookahead.num_buffers>{
+            d_in, d_out, tile_states, batch_state, static_cast<::cuda::std::size_t>(num_items), num_stages};
+        device_scan_batch_lookahead_body<PolicySelector, ForceInclusive, RealInitValueT, StableReductionOrder>(
+          scan_params, scan_op, init_value);
+      }));
+  }
+#endif // _CCCL_CUDACC_AT_LEAST(12, 8)
 }
 
 //! Claims the next tile and waits until its batch owns the tile state.

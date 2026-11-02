@@ -133,9 +133,9 @@ inline constexpr bool is_num_items_v = ::cuda::std::is_integral_v<NumItemsT> || 
 //! Scans with deferred problem sizes are CUDA Graph capturable. The pointed-to count may change between graph
 //! replays without updating or recapturing the graph.
 //!
-//! A deferred problem size currently needs to run the decoupled look-back algorithm. Default tuning selects look-back
-//! automatically. A custom tuning policy must select look-back and provide valid look-back tuning parameters;
-//! selecting lookahead with a deferred problem size is rejected.
+//! On SM90 and newer GPUs, eligible scans with deferred problem sizes use the WarpSpeed look-ahead algorithm.
+//! Older GPUs and policies that select decoupled look-back continue to use the look-back implementation. A custom
+//! tuning policy selects the algorithm and must provide valid tuning parameters for that algorithm.
 //!
 //! The :ref:`determinism guarantees <cccl-determinism>` below apply unchanged to a deferred problem size. Note that
 //! reproducibility is promised across launches of the *same* configuration: for a non-associative operator such as
@@ -143,11 +143,12 @@ inline constexpr bool is_num_items_v = ::cuda::std::is_integral_v<NumItemsT> || 
 //! immediate problem size over the same values, because the two group the reduction differently.
 //!
 //! Since the problem size is not available to the host, temporary storage and grid dimensions are derived from the
-//! upper bound of the deferred argument. Compile-time and runtime bounds are accepted as caller preconditions; a
-//! bound tight enough to keep the worst case within a single batch of tiles lets CUB size the launch exactly, which
-//! makes a scan with a deferred problem size as cheap as one with an immediate problem size. Without such a bound,
-//! CUB falls back to a reusable-batch look-back that claims tiles from a persistent grid, which keeps temporary storage
-//! at a fixed size and costs a small constant overhead over a launch with an immediate problem size.
+//! upper bound of the deferred argument. Compile-time and runtime bounds are accepted as caller preconditions. When
+//! the bound fits the algorithm's fixed tile-state window, CUB sizes the ordinary launch from that bound. Larger or
+//! unbounded problems use a persistent grid with a monotonically increasing tile allocator and reuse the same state
+//! windows in a fixed-size ring, keeping temporary storage fixed. Load and reduce squads may enter the next batch
+//! before its incoming prefix is ready. Lookahead publishes the next batch's prefix, and the last lookahead reader
+//! resets its buffer and release-publishes the next batch index while output stores continue.
 //!
 //! Determinism
 //! +++++++++++++++++++++++++++++++++++++++++++++

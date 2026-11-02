@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/detail/iket_support.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/uninitialized.cuh>
@@ -37,10 +38,12 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/__ptx/instructions/clusterlaunchcontrol.h> // IWYU pragma: keep
+#include <cuda/atomic>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cccl/cuda_capabilities.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/array>
@@ -93,6 +96,18 @@ struct scanKernelParams
   ::cuda::std::uint32_t* atomicCounter;
   ::cuda::std::size_t numElem;
   int numStages;
+};
+
+template <typename InputT, typename OutputT, typename AccumT, int NumBuffers>
+struct scan_batch_kernel_params
+{
+  const InputT* ptrIn;
+  OutputT* ptrOut;
+  warpspeed::tile_state_t<AccumT>* ptrTileStates;
+  warpspeed::lookahead_batch_state<AccumT, NumBuffers>* batchState;
+  ::cuda::std::size_t numElem;
+  int numStages;
+  ::cuda::std::uint64_t firstTile = 0; // claimed by device_scan_batch_lookahead_body before squad dispatch
 };
 
 // holds all scan kernel resources
@@ -287,7 +302,10 @@ template <typename PolicySelector,
           typename ScanOpT,
           typename RealInitValueT,
           bool ForceInclusive,
-          bool StableReductionOrder = false>
+          bool IsDeferred,
+          typename ParamsT,
+          bool StableReductionOrder = false,
+          bool CheckTileBounds      = false>
 struct lookahead_scan_closure
 {
   static constexpr ScanLookaheadPolicy policy               = current_policy<PolicySelector>().lookahead;
@@ -325,18 +343,68 @@ struct lookahead_scan_closure
   using thread_and_warp_aggr_t = typename scan_resources_t::thread_and_warp_aggr_t;
 
   const warpspeed::SpecialRegisters specialRegisters;
-  const scanKernelParams<InputT, OutputT, AccumT> params;
+  const ParamsT params;
   mutable ScanOpT scan_op; // mutable, so we can support non-const operator()
   const RealInitValueT real_init_value;
   scan_resources_t res; // this is the only shared mutable state
+
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::uint64_t claim_batch_tile() const
+  {
+    // Assign a unique global tile; the batch gate separately protects access to its reusable state buffer.
+    return ::cuda::atomic_ref<::cuda::std::uint64_t, ::cuda::thread_scope_device>{params.batchState->next_tile_idx}
+      .fetch_add(1, ::cuda::std::memory_order_relaxed);
+  }
+
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  wait_for_batch(const warpspeed::Squad& squad, ::cuda::std::uint64_t global_tile_idx) const
+  {
+    // Scan waits for lookahead's tile prefix in shared memory; store waits for scan's output tile.
+    // These per-tile waits already enforce readiness, so they don't need to wait at the global batch gate.
+    if (squad == squadScan || squad == squadStore) // NOLINT(cppcoreguidelines-slicing)
+    {
+      return;
+    }
+    // Load, reduce, and lookahead wait until this ring slot belongs to the required batch.
+    const auto required_batch = global_tile_idx / policy.tiles_per_batch;
+    auto& buffer              = params.batchState->buffers[required_batch % policy.num_buffers];
+    auto batch_idx = ::cuda::atomic_ref<::cuda::std::uint64_t, ::cuda::thread_scope_device>{buffer.batch_idx};
+    constexpr int batch_wait_delay_ns = 64; // TODO: make this tuning parameter
+    while (batch_idx.load(::cuda::std::memory_order_acquire) != required_batch)
+    {
+      __cub_detail::always_delay<batch_wait_delay_ns>();
+    }
+    // Only lookahead needs the preceding batches' prefix; load and reduce can start before it is published.
+    if (squad == squadLookahead && required_batch != 0)
+    {
+      auto incoming_prefix_ready =
+        ::cuda::atomic_ref<::cuda::std::uint32_t, ::cuda::thread_scope_device>{buffer.incoming_prefix_ready};
+      while (incoming_prefix_ready.load(::cuda::std::memory_order_acquire) == 0)
+      {
+        __cub_detail::always_delay<batch_wait_delay_ns>();
+      }
+    }
+  }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   load_next_tile_index(const warpspeed::Squad& squad, warpspeed::SmemPhase<uint4>& phaseNextBlockIdxW) const
   {
     warpspeed::SmemRef refNextBlockIdxW = phaseNextBlockIdxW.acquireRef();
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
-                      (squadGetNextBlockIdx(squad, refNextBlockIdxW);),
-                      (squadGetNextBlockIdxAtomic(squad, refNextBlockIdxW, params.atomicCounter);));
+    if constexpr (IsDeferred)
+    {
+      if (squad.isLeaderThread())
+      {
+        // Reuse the CLC result slot by packing the 64-bit ticket into its low and high 32-bit fields.
+        const auto next_tile      = claim_batch_tile();
+        refNextBlockIdxW.data().x = static_cast<::cuda::std::uint32_t>(next_tile);
+        refNextBlockIdxW.data().y = static_cast<::cuda::std::uint32_t>(next_tile >> 32);
+      }
+    }
+    else
+    {
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
+                        (squadGetNextBlockIdx(squad, refNextBlockIdxW);),
+                        (squadGetNextBlockIdxAtomic(squad, refNextBlockIdxW, params.atomicCounter);));
+    }
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_current_tile(
@@ -354,33 +422,129 @@ struct lookahead_scan_closure
     bool is_first_tile,
     int& idxTilePrev,
     AccumT& AggrExclusiveCtaPrev,
-    int idxTile,
+    ::cuda::std::uint64_t& previous_batch,
+    ::cuda::std::uint64_t global_tile_idx,
+    warpspeed::tile_state_t<AccumT>* tile_states,
     int num_tiles) /*const*/ // FIXME(bgruber): this const causes a large SASS diff
   {
-    warpspeed::SmemRef refAggrExclusiveCtaW = phaseAggrExclusiveCtaW.acquireRef();
-
-    if (!is_first_tile)
+    AccumT regAggrExclusiveCta;
     {
-      if constexpr (StableReductionOrder)
+      warpspeed::SmemRef refAggrExclusiveCtaW = phaseAggrExclusiveCtaW.acquireRef();
+
+      if (!is_first_tile)
       {
-        // The stable-order version updates idxTilePrev/AggrExclusiveCtaPrev itself
-        AccumT regAggrExclusiveCta = warpspeed::warpIncrementalLookaheadStable<lookahead_items_per_thread>(
-          specialRegisters, params.ptrTileStates, idxTilePrev, AggrExclusiveCtaPrev, idxTile, scan_op, num_tiles);
+        int batch_tile_idx = static_cast<int>(global_tile_idx);
+        bool has_prefix    = false;
+        if constexpr (IsDeferred)
+        {
+          const auto batch = global_tile_idx / policy.tiles_per_batch;
+          batch_tile_idx   = static_cast<int>(global_tile_idx % policy.tiles_per_batch);
+          // On this CTA's first lookahead in a new batch, reset local progress and load any incoming prefix.
+          // Later tiles in the same batch reuse the cached position and prefix.
+          if (previous_batch != batch)
+          {
+            idxTilePrev    = 0;
+            previous_batch = batch;
+            if (batch != 0)
+            {
+              AggrExclusiveCtaPrev = params.batchState->buffers[batch % policy.num_buffers].incoming_prefix;
+            }
+          }
+          // Batch 0 starts from tile aggregates; later batches must preserve their incoming prefix when accumulating.
+          has_prefix = batch != 0;
+        }
+
+        if constexpr (StableReductionOrder)
+        {
+          // The stable-order version updates idxTilePrev/AggrExclusiveCtaPrev itself
+          if constexpr (IsDeferred)
+          {
+            if (has_prefix)
+            {
+              regAggrExclusiveCta = warpspeed::warpIncrementalLookaheadStable<lookahead_items_per_thread, true>(
+                specialRegisters, tile_states, idxTilePrev, AggrExclusiveCtaPrev, batch_tile_idx, scan_op, num_tiles);
+            }
+            else
+            {
+              regAggrExclusiveCta = warpspeed::warpIncrementalLookaheadStable<lookahead_items_per_thread>(
+                specialRegisters, tile_states, idxTilePrev, AggrExclusiveCtaPrev, batch_tile_idx, scan_op, num_tiles);
+            }
+          }
+          else
+          {
+            regAggrExclusiveCta = warpspeed::warpIncrementalLookaheadStable<lookahead_items_per_thread>(
+              specialRegisters, tile_states, idxTilePrev, AggrExclusiveCtaPrev, batch_tile_idx, scan_op, num_tiles);
+          }
+        }
+        else
+        {
+          if constexpr (IsDeferred)
+          {
+            if (has_prefix)
+            {
+              regAggrExclusiveCta = warpspeed::warpIncrementalLookahead<lookahead_items_per_thread, true>(
+                specialRegisters, tile_states, idxTilePrev, AggrExclusiveCtaPrev, batch_tile_idx, scan_op, num_tiles);
+            }
+            else
+            {
+              regAggrExclusiveCta = warpspeed::warpIncrementalLookahead<lookahead_items_per_thread>(
+                specialRegisters, tile_states, idxTilePrev, AggrExclusiveCtaPrev, batch_tile_idx, scan_op, num_tiles);
+            }
+          }
+          else
+          {
+            regAggrExclusiveCta = warpspeed::warpIncrementalLookahead<lookahead_items_per_thread>(
+              specialRegisters, tile_states, idxTilePrev, AggrExclusiveCtaPrev, batch_tile_idx, scan_op, num_tiles);
+          }
+          AggrExclusiveCtaPrev = regAggrExclusiveCta;
+          idxTilePrev          = batch_tile_idx;
+        }
+
         if (squad.isLeaderThread())
         {
           refAggrExclusiveCtaW.data() = regAggrExclusiveCta;
         }
       }
-      else
+    }
+
+    if constexpr (IsDeferred)
+    {
+      // The batch tail publishes the next batch's prefix in input order, independently of reader completion order.
+      const auto batch_tile_idx = global_tile_idx % policy.tiles_per_batch;
+      const auto total_tiles    = ::cuda::ceil_div(params.numElem, static_cast<::cuda::std::size_t>(tile_size));
+      const bool is_batch_tail  = batch_tile_idx + 1 == static_cast<::cuda::std::uint64_t>(num_tiles);
+      if (is_batch_tail && global_tile_idx + 1 < total_tiles && squad.isLeaderThread())
       {
-        AccumT regAggrExclusiveCta = warpspeed::warpIncrementalLookahead<lookahead_items_per_thread>(
-          specialRegisters, params.ptrTileStates, idxTilePrev, AggrExclusiveCtaPrev, idxTile, scan_op, num_tiles);
-        if (squad.isLeaderThread())
+        // The batch tail's lookahead only consumes preceding aggregates. Wait for its own reduction as well.
+        warpspeed::tile_state_t<AccumT> aggregate;
+        while (true)
         {
-          refAggrExclusiveCtaW.data() = regAggrExclusiveCta;
+          aggregate = warpspeed::loadTileAggregate(tile_states, static_cast<int>(batch_tile_idx), num_tiles);
+          if (aggregate.state == warpspeed::scan_state::tile_aggregate)
+          {
+            break;
+          }
+          __cub_detail::always_delay<64>();
         }
-        AggrExclusiveCtaPrev = regAggrExclusiveCta;
-        idxTilePrev          = idxTile;
+        // Wait for the next slot's reuse cleanup before writing its prefix, then publish readiness with release.
+        const auto next_batch = global_tile_idx / policy.tiles_per_batch + 1;
+        auto& next_buffer     = params.batchState->buffers[next_batch % policy.num_buffers];
+        auto batch_idx = ::cuda::atomic_ref<::cuda::std::uint64_t, ::cuda::thread_scope_device>{next_buffer.batch_idx};
+        while (batch_idx.load(::cuda::std::memory_order_acquire) != next_batch)
+        {
+          __cub_detail::always_delay<64>();
+        }
+        if constexpr (policy.tiles_per_batch == 1)
+        {
+          // The first tile has no preceding prefix; its aggregate already includes the initial value.
+          next_buffer.incoming_prefix = is_first_tile ? aggregate.value : scan_op(regAggrExclusiveCta, aggregate.value);
+        }
+        else
+        {
+          next_buffer.incoming_prefix = scan_op(regAggrExclusiveCta, aggregate.value);
+        }
+        ::cuda::atomic_ref<::cuda::std::uint32_t, ::cuda::thread_scope_device>{next_buffer.incoming_prefix_ready}.store(
+          1, ::cuda::std::memory_order_release);
       }
     }
   }
@@ -393,6 +557,7 @@ struct lookahead_scan_closure
     bool is_first_tile,
     bool is_last_tile, // TODO(bgruber): should we dispatch on is_last_tile outside this function and compile it twice?
     const warpspeed::CpAsyncOobInfo<InputT>& loadInfo,
+    warpspeed::tile_state_t<AccumT>* tile_states,
     int idxTile,
     int num_tiles) const
   {
@@ -485,12 +650,77 @@ struct lookahead_scan_closure
     if (squad.isLeaderThread())
     {
       warpspeed::storeTileAggregate(
-        params.ptrTileStates, warpspeed::scan_state::tile_aggregate, regSquadAggr, idxTile, num_tiles);
+        tile_states, warpspeed::scan_state::tile_aggregate, regSquadAggr, idxTile, num_tiles);
     }
     _CCCL_IKET_RANGE_POP();
 
     // Store thread aggregate
     refThreadAndWarpAggrW.data()[squad.threadRank()] = regThreadAggr;
+  }
+
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void complete_batch_lookahead(
+    const warpspeed::Squad& squad,
+    ::cuda::std::uint64_t global_tile_idx,
+    int batch_tiles,
+    ::cuda::std::uint32_t& pending_lookaheads,
+    bool flush_completions) const
+  {
+    static_assert(squadLookahead.warpCount() == 1);
+    const auto batch          = global_tile_idx / policy.tiles_per_batch;
+    const auto num_tiles      = ::cuda::ceil_div(params.numElem, static_cast<::cuda::std::size_t>(tile_size));
+    const auto next_batch_idx = batch + policy.num_buffers;
+    // Batch completion cleanup is only needed when another batch will reuse this buffer.
+    if (next_batch_idx * policy.tiles_per_batch >= num_tiles)
+    {
+      return;
+    }
+
+    // Combine this squad's completed lookaheads into one global update; flush before leaving the batch or kernel.
+    ++pending_lookaheads;
+    if (pending_lookaheads < static_cast<::cuda::std::uint32_t>(policy.completed_tiles_per_flush) && !flush_completions)
+    {
+      return;
+    }
+
+    // Cover every pending tile's reads and checkpoint publication before reporting completion.
+    squad.syncThreads();
+
+    const auto completed_tiles = pending_lookaheads;
+    pending_lookaheads         = 0;
+    const auto slot            = batch % policy.num_buffers;
+    auto& buffer               = params.batchState->buffers[slot];
+    auto completed =
+      ::cuda::atomic_ref<::cuda::std::uint32_t, ::cuda::thread_scope_device>{buffer.lookaheads_completed};
+    // The update that accounts for all batch tiles elects the final reader group to recycle this slot.
+    // Scan and store may still be running, but no longer need these global tile states.
+    bool is_last_reader = false;
+    if (squad.isLeaderThread())
+    {
+      is_last_reader = completed.fetch_add(completed_tiles, ::cuda::std::memory_order_acq_rel) + completed_tiles
+                    == static_cast<::cuda::std::uint32_t>(batch_tiles);
+    }
+    // All lanes in the final reader squad continue to clear the buffer; all other squads return.
+    if (!__any_sync(0xffffffffu, is_last_reader))
+    {
+      return;
+    }
+
+    // Share the leader's acquire with the clearing lanes, then gather their stores before release-publication.
+    __syncwarp();
+    for (auto tile = static_cast<::cuda::std::uint32_t>(squad.threadRank()); tile < policy.tiles_per_batch;
+         tile += static_cast<::cuda::std::uint32_t>(squadLookahead.threadCount()))
+    {
+      params.ptrTileStates[slot * policy.tiles_per_batch + tile] = warpspeed::tile_state_t<AccumT>{};
+    }
+    __syncwarp();
+    if (squad.isLeaderThread())
+    {
+      completed.store(0, ::cuda::std::memory_order_relaxed);
+      ::cuda::atomic_ref<::cuda::std::uint32_t, ::cuda::thread_scope_device>{buffer.incoming_prefix_ready}.store(
+        0, ::cuda::std::memory_order_relaxed);
+      ::cuda::atomic_ref<::cuda::std::uint64_t, ::cuda::thread_scope_device>{buffer.batch_idx}.store(
+        next_batch_idx, ::cuda::std::memory_order_release);
+    }
   }
 
   template <bool IsLastTile>
@@ -779,39 +1009,69 @@ struct lookahead_scan_closure
   // hot loops (even if that may seem the case from a first glance at the code).
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void dispatch_squad(warpspeed::Squad squad) // const // TODO(bgruber): enable const
   {
-    const int numTiles = static_cast<int>(::cuda::ceil_div(params.numElem, ::cuda::std::size_t(tile_size)));
+    using tile_index_t = ::cuda::std::conditional_t<IsDeferred, ::cuda::std::uint64_t, int>;
+    const tile_index_t numTiles =
+      static_cast<tile_index_t>(::cuda::ceil_div(params.numElem, ::cuda::std::size_t(tile_size)));
 
-    // Lookahead-specific variables:
+    // Cache lookahead progress within a batch, readiness acquired for each squad, and unpublished reader completions.
     int idxTilePrev = 0;
     AccumT AggrExclusiveCtaPrev; // only valid in squadLookahead lane_0
+    ::cuda::std::uint64_t previous_batch     = ~::cuda::std::uint64_t{};
+    ::cuda::std::uint64_t ready_batch        = ~::cuda::std::uint64_t{};
+    ::cuda::std::uint32_t pending_lookaheads = 0;
 
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
-    // Start with the tile indicated by blockIdx.x for sm100, but for sm90+, we use an atomic counter to determine the
-    // first tile
-    int idxTile = [&] {
-      int first_tile;
-      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100, (first_tile = specialRegisters.blockIdxX;), ({
-                          __shared__ int s_first_tile;
-                          if (specialRegisters.threadIdxX == 0)
-                          {
-                            s_first_tile = static_cast<int>(::atomicAdd(params.atomicCounter, 1u));
-                          }
-                          __syncthreads();
-                          first_tile = s_first_tile;
-                        }));
+    // Persistent deferred CTAs receive their first tile from device_scan_batch_lookahead_body, which claims it before
+    // squad dispatch. Ordinary SM100 starts at blockIdx.x; ordinary SM90 uses an atomic counter.
+    tile_index_t idxTile = [&] {
+      tile_index_t first_tile;
+      if constexpr (IsDeferred)
+      {
+        first_tile = params.firstTile;
+      }
+      else
+      {
+        NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100, (first_tile = specialRegisters.blockIdxX;), ({
+                            __shared__ int s_first_tile;
+                            if (specialRegisters.threadIdxX == 0)
+                            {
+                              s_first_tile = static_cast<int>(::atomicAdd(params.atomicCounter, 1u));
+                            }
+                            __syncthreads();
+                            first_tile = s_first_tile;
+                          }));
+      }
       return first_tile;
     }();
 
     _CCCL_IKET_RANGE_POP();
 
 #  pragma unroll 1
-    // SM90 produces bad codegen and deadlocks with a `while (true)`, so it exits via the bound check.
-    // SM100 uses a explicit true condition and relies on the clusterlaunchcontrol exit below instead.
+    // Deferred launches check initial and stolen tile IDs against the actual count. Ordinary SM100 launches retain
+    // their CLC-only exit; SM90 needs the bound check to avoid bad code generation and deadlocks.
     while ([&] {
-      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100, (return true;), (return idxTile < numTiles;));
+      if constexpr (IsDeferred || CheckTileBounds)
+      {
+        return idxTile < numTiles;
+      }
+      else
+      {
+        NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100, (return true;), (return idxTile < numTiles;));
+      }
     }())
     {
+      if constexpr (IsDeferred)
+      {
+        const auto batch = static_cast<::cuda::std::uint64_t>(idxTile) / policy.tiles_per_batch;
+        if (batch != ready_batch)
+        {
+          // Each squad acquires readiness once per batch. Buffer reuse waits for all lookahead readers.
+          wait_for_batch(squad, static_cast<::cuda::std::uint64_t>(idxTile));
+          ready_batch = batch;
+        }
+      }
+
       // Get stages. When these objects go out of scope, the stage of the resource is automatically incremented.
       warpspeed::SmemStage stageNextBlockIdx      = res.smemNextBlockIdx.nextStage();
       warpspeed::SmemStage stageInOut             = res.smemInOut.nextStage();
@@ -827,9 +1087,23 @@ struct lookahead_scan_closure
       auto [phaseAggrExclusiveCtaW, phaseAggrExclusiveCtaR]   = warpspeed::bindPhases<2>(stageAggrExclusiveCta);
 
       // We need to handle the first and the last -partial- tile differently
-      const bool is_first_tile = idxTile == 0;
+      const bool is_first_tile   = idxTile == 0;
+      const auto global_tile_idx = static_cast<::cuda::std::uint64_t>(idxTile);
+      int batch_tile_idx         = static_cast<int>(idxTile);
+      int batch_tiles            = static_cast<int>(numTiles);
+      auto* tile_states          = params.ptrTileStates;
+      if constexpr (IsDeferred)
+      {
+        // Map the global input tile to its batch-local state and ring slot; the final batch may contain fewer tiles.
+        const auto batch_begin = global_tile_idx / policy.tiles_per_batch * policy.tiles_per_batch;
+        batch_tile_idx         = static_cast<int>(global_tile_idx - batch_begin);
+        const auto slot        = global_tile_idx / policy.tiles_per_batch % policy.num_buffers;
+        tile_states += slot * policy.tiles_per_batch;
+        batch_tiles = static_cast<int>((::cuda::std::min) (static_cast<::cuda::std::uint64_t>(policy.tiles_per_batch),
+                                                           static_cast<::cuda::std::uint64_t>(numTiles) - batch_begin));
+      }
 
-      const ::cuda::std::size_t idxTileBase = idxTile * ::cuda::std::size_t(tile_size);
+      const ::cuda::std::size_t idxTileBase = global_tile_idx * ::cuda::std::size_t(tile_size);
       _CCCL_ASSERT(idxTileBase < params.numElem, "");
       const int valid_items =
         static_cast<int>(cuda::std::min(params.numElem - idxTileBase, ::cuda::std::size_t(tile_size)));
@@ -862,10 +1136,28 @@ struct lookahead_scan_closure
         regNextBlockIdx                     = refNextBlockIdxR.data();
         refNextBlockIdxR.setFenceLdsToAsyncProxy();
       }
+      const auto next_tile = [&] {
+        if constexpr (IsDeferred)
+        {
+          return static_cast<tile_index_t>(static_cast<::cuda::std::uint64_t>(regNextBlockIdx.x)
+                                           | (static_cast<::cuda::std::uint64_t>(regNextBlockIdx.y) << 32));
+        }
+        else
+        {
+          return static_cast<tile_index_t>(regNextBlockIdx.x);
+        }
+      }();
       const bool nextIdxTileValid = [&] {
-        NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
-                          (return ::cuda::ptx::clusterlaunchcontrol_query_cancel_is_canceled(regNextBlockIdx);),
-                          (return static_cast<int>(regNextBlockIdx.x) < numTiles;));
+        if constexpr (IsDeferred)
+        {
+          return next_tile < numTiles;
+        }
+        else
+        {
+          NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
+                            (return ::cuda::ptx::clusterlaunchcontrol_query_cancel_is_canceled(regNextBlockIdx);),
+                            (return static_cast<int>(regNextBlockIdx.x) < numTiles;));
+        }
       }();
       _CCCL_IKET_RANGE_POP();
 
@@ -881,8 +1173,9 @@ struct lookahead_scan_closure
           is_first_tile,
           is_last_tile,
           loadInfo,
-          idxTile,
-          numTiles);
+          tile_states,
+          batch_tile_idx,
+          batch_tiles);
         _CCCL_IKET_RANGE_END(SquadReduce);
       }
 
@@ -890,7 +1183,25 @@ struct lookahead_scan_closure
       if (squad == squadLookahead) // NOLINT(cppcoreguidelines-slicing)
       {
         _CCCL_IKET_RANGE_START(SquadLookahead);
-        lookahead(squad, phaseAggrExclusiveCtaW, is_first_tile, idxTilePrev, AggrExclusiveCtaPrev, idxTile, numTiles);
+        lookahead(
+          squad,
+          phaseAggrExclusiveCtaW,
+          is_first_tile,
+          idxTilePrev,
+          AggrExclusiveCtaPrev,
+          previous_batch,
+          global_tile_idx,
+          tile_states,
+          batch_tiles);
+        if constexpr (IsDeferred)
+        {
+          // Flush before a batch transition or exit, so readiness waits cannot hold unpublished completions.
+          const bool flush_completions =
+            !nextIdxTileValid
+            || static_cast<::cuda::std::uint64_t>(next_tile) / policy.tiles_per_batch
+                 != global_tile_idx / policy.tiles_per_batch;
+          complete_batch_lookahead(squad, global_tile_idx, batch_tiles, pending_lookaheads, flush_completions);
+        }
         _CCCL_IKET_RANGE_END(SquadLookahead);
       }
 
@@ -939,10 +1250,17 @@ struct lookahead_scan_closure
       {
         break;
       }
-      NV_IF_ELSE_TARGET(
-        NV_PROVIDES_SM_100,
-        (idxTile = ::cuda::ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_x<int>(regNextBlockIdx);),
-        (idxTile = static_cast<int>(regNextBlockIdx.x);));
+      if constexpr (IsDeferred)
+      {
+        idxTile = next_tile;
+      }
+      else
+      {
+        NV_IF_ELSE_TARGET(
+          NV_PROVIDES_SM_100,
+          (idxTile = ::cuda::ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_x<int>(regNextBlockIdx);),
+          (idxTile = static_cast<int>(regNextBlockIdx.x);));
+      }
     }
 
     // epilogue: after the load squad finished, we can start ramping up the next kernel
@@ -960,6 +1278,7 @@ template <typename PolicySelector,
           bool ForceInclusive,
           typename RealInitValueT,
           bool StableReductionOrder,
+          bool CheckTileBounds,
           typename InputT,
           typename OutputT,
           typename AccumT,
@@ -994,13 +1313,110 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
     ScanOpT,
     RealInitValueT,
     ForceInclusive,
-    StableReductionOrder>;
+    false,
+    scanKernelParams<InputT, OutputT, AccumT>,
+    StableReductionOrder,
+    CheckTileBounds>;
   warpspeed::squadDispatch(
     specialRegisters, closure_t::scanSquads, [&](warpspeed::Squad squad) _CCCL_FORCEINLINE_LAMBDA {
       // we load the initial value after the squad dispatch, so only the squads needing it emit an LDG
       closure_t{specialRegisters, params, scan_op, static_cast<RealInitValueT>(init_value), res}.dispatch_squad(squad);
     });
 #endif // __cccl_ptx_isa >= 860
+}
+
+template <typename PolicySelector,
+          bool ForceInclusive,
+          typename RealInitValueT,
+          bool StableReductionOrder,
+          typename InputT,
+          typename OutputT,
+          typename AccumT,
+          int NumBuffers,
+          typename ScanOpT,
+          typename InitValueT>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_batch_lookahead_body(
+  const scan_batch_kernel_params<InputT, OutputT, AccumT, NumBuffers>& params,
+  const ScanOpT& scan_op,
+  const InitValueT& init_value)
+{
+#if __cccl_ptx_isa >= 860
+  _CCCL_IKET_RANGE_PUSH(Prologue);
+
+  warpspeed::SpecialRegisters specialRegisters = warpspeed::getSpecialRegisters();
+  static constexpr ScanLookaheadPolicy policy  = current_policy<PolicySelector>().lookahead;
+
+  auto res = [&] {
+    warpspeed::SyncHandler syncHandler{};
+    warpspeed::SmemAllocator smemAllocator{};
+    auto resources =
+      allocResources<PolicySelector, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params.numStages);
+    syncHandler.clusterInitSync<num_total_threads(policy)>(specialRegisters);
+    return resources;
+  }();
+
+  using closure_t = lookahead_scan_closure<
+    PolicySelector,
+    InputT,
+    OutputT,
+    AccumT,
+    ScanOpT,
+    RealInitValueT,
+    ForceInclusive,
+    true,
+    scan_batch_kernel_params<InputT, OutputT, AccumT, NumBuffers>,
+    StableReductionOrder>;
+
+  // Claim the first tile before squadDispatch. Each squad runs its own copy of the squad code, so a __syncthreads()
+  // inside it would not be a single barrier for the whole block.
+  auto local_params = params;
+  {
+    __shared__ ::cuda::std::uint64_t s_first_tile;
+    if (specialRegisters.threadIdxX == 0)
+    {
+      s_first_tile =
+        ::cuda::atomic_ref<::cuda::std::uint64_t, ::cuda::thread_scope_device>{params.batchState->next_tile_idx}
+          .fetch_add(1, ::cuda::std::memory_order_relaxed);
+    }
+    __syncthreads();
+    local_params.firstTile = s_first_tile;
+  }
+
+  warpspeed::squadDispatch(
+    specialRegisters, closure_t::scanSquads, [&](warpspeed::Squad squad) _CCCL_FORCEINLINE_LAMBDA {
+      closure_t{specialRegisters, local_params, scan_op, static_cast<RealInitValueT>(init_value), res}.dispatch_squad(
+        squad);
+    });
+#endif // __cccl_ptx_isa >= 860
+}
+
+// we strive to initialize the padding bits to avoid compute-sanitizer's initcheck to report reading uninitialized
+// data when reading the tile state. We use a single atomic load/store up until 16 bytes.
+// Zero initialization requires the empty state to have value zero.
+template <typename AccumT>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void zero_tile_state(warpspeed::tile_state_t<AccumT>* tile_state)
+{
+  static_assert(::cuda::std::to_underlying(warpspeed::scan_state::empty) == 0);
+  if constexpr (sizeof(warpspeed::tile_state_t<AccumT>) == 2)
+  {
+    *reinterpret_cast<::cuda::std::uint16_t*>(tile_state) = 0;
+  }
+  else if constexpr (sizeof(warpspeed::tile_state_t<AccumT>) == 4)
+  {
+    *reinterpret_cast<::cuda::std::uint32_t*>(tile_state) = 0;
+  }
+  else if constexpr (sizeof(warpspeed::tile_state_t<AccumT>) == 8)
+  {
+    *reinterpret_cast<::cuda::std::uint64_t*>(tile_state) = 0;
+  }
+  else if constexpr (sizeof(warpspeed::tile_state_t<AccumT>) == 16)
+  {
+    *reinterpret_cast<uint4*>(tile_state) = {};
+  }
+  else
+  {
+    *tile_state = warpspeed::tile_state_t<AccumT>{};
+  }
 }
 
 template <typename AccumT>
@@ -1023,29 +1439,30 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_init_lookahead_body(
   {
     return;
   }
-  // we strive to initialize the padding bits to avoid compute-sanitizer's initcheck to report reading uninitialized
-  // data when reading the tile state. We use a single atomic load/store up until 16 bytes.
-  // Zero initialization requires the empty state to have value zero.
-  static_assert(::cuda::std::to_underlying(warpspeed::scan_state::empty) == 0);
-  if constexpr (sizeof(warpspeed::tile_state_t<AccumT>) == 2)
+  zero_tile_state(tile_states + tile_id);
+}
+
+template <typename PolicySelector, typename AccumT, int NumBuffers>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_init_batch_lookahead_body(
+  warpspeed::tile_state_t<AccumT>* tile_states, warpspeed::lookahead_batch_state<AccumT, NumBuffers>* batch_state)
+{
+  constexpr auto policy = current_policy<PolicySelector>().lookahead;
+  const auto index      = static_cast<::cuda::std::uint32_t>(blockDim.x * blockIdx.x + threadIdx.x);
+  if (index == 0)
   {
-    *reinterpret_cast<::cuda::std::uint16_t*>(tile_states + tile_id) = 0;
+    batch_state->next_tile_idx = 0;
   }
-  else if constexpr (sizeof(warpspeed::tile_state_t<AccumT>) == 4)
+  if (index < policy.num_buffers)
   {
-    *reinterpret_cast<::cuda::std::uint32_t*>(tile_states + tile_id) = 0;
+    // Each slot initially belongs to its matching batch; only batch 0 can start lookahead without an incoming prefix.
+    auto& buffer                 = batch_state->buffers[index];
+    buffer.batch_idx             = index;
+    buffer.lookaheads_completed  = 0;
+    buffer.incoming_prefix_ready = index == 0 ? 1 : 0;
   }
-  else if constexpr (sizeof(warpspeed::tile_state_t<AccumT>) == 8)
+  if (index < policy.num_buffers * policy.tiles_per_batch)
   {
-    *reinterpret_cast<::cuda::std::uint64_t*>(tile_states + tile_id) = 0;
-  }
-  else if constexpr (sizeof(warpspeed::tile_state_t<AccumT>) == 16)
-  {
-    *reinterpret_cast<uint4*>(tile_states + tile_id) = {};
-  }
-  else
-  {
-    tile_states[tile_id] = warpspeed::tile_state_t<AccumT>{};
+    zero_tile_state(tile_states + index);
   }
 }
 

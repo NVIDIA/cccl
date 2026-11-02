@@ -101,7 +101,8 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
-inline constexpr int lookback_default_tiles_per_batch = 65536;
+inline constexpr int lookback_default_tiles_per_batch  = 65536;
+inline constexpr int lookahead_default_tiles_per_batch = 65536;
 } // namespace detail::scan
 
 //! The tuning policy for the lookback scan algorithm in @ref DeviceScan.
@@ -167,6 +168,10 @@ struct ScanLookaheadPolicy
   CCCL_DEPRECATED_BECAUSE("block_idx_stages no longer has any effect and will be removed in CCCL 4.0") //
   int block_idx_stages = -1;
 
+  int tiles_per_batch = detail::scan::lookahead_default_tiles_per_batch; //!< Number of tiles in a deferred scan batch
+  int num_buffers     = 2; //!< Number of reusable deferred scan buffers (at least two)
+  int completed_tiles_per_flush = 8; //!< Number of tiles a block finishes before updating the batch completion count
+
   _CCCL_HOST_DEVICE_API constexpr int tile_size() const noexcept
   {
     return items_per_thread * reduce_and_scan_warps * cub::detail::warp_threads;
@@ -177,7 +182,9 @@ struct ScanLookaheadPolicy
   {
     return lhs.reduce_and_scan_warps == rhs.reduce_and_scan_warps && lhs.items_per_thread == rhs.items_per_thread
         && lhs.lookahead_items_per_thread == rhs.lookahead_items_per_thread
-        && lhs.lookahead_stages == rhs.lookahead_stages && lhs.block_idx_stages == rhs.block_idx_stages;
+        && lhs.lookahead_stages == rhs.lookahead_stages && lhs.block_idx_stages == rhs.block_idx_stages
+        && lhs.tiles_per_batch == rhs.tiles_per_batch && lhs.num_buffers == rhs.num_buffers
+        && lhs.completed_tiles_per_flush == rhs.completed_tiles_per_flush;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -192,7 +199,9 @@ struct ScanLookaheadPolicy
     return os
         << "ScanLookaheadPolicy { .reduce_and_scan_warps = " << p.reduce_and_scan_warps << ", .items_per_thread = "
         << p.items_per_thread << ", .lookahead_items_per_thread = " << p.lookahead_items_per_thread
-        << ", .lookahead_stages = " << p.lookahead_stages << ", .block_idx_stages = " << p.block_idx_stages << " }";
+        << ", .lookahead_stages = " << p.lookahead_stages << ", .block_idx_stages = " << p.block_idx_stages
+        << ", .tiles_per_batch = " << p.tiles_per_batch << ", .num_buffers = " << p.num_buffers
+        << ", .completed_tiles_per_flush = " << p.completed_tiles_per_flush << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -1074,7 +1083,7 @@ struct policy_selector
 
       return get_sm100_fallback_lookahead_policy();
     }
-    if (cc >= ::cuda::compute_capability{9, 0} && require_stable_reduction_order)
+    if (cc >= ::cuda::compute_capability{9, 0} && (require_stable_reduction_order || is_deferred))
     {
       // TODO(srinivasyadav18): tune for Hopper, using Blackwell default tunings for now.
       return get_sm100_fallback_lookahead_policy();
@@ -1563,10 +1572,10 @@ struct policy_selector
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanPolicy
   {
-    // Deferred counts require lookback. For immediate counts, try lookahead first and fall back to lookback.
+    // Try lookahead first for eligible immediate and deferred counts, then fall back to lookback.
     // For stable reduction order (fp + plus), lookahead can only be used on sm_90+. Older arches fall back to classic
     // lookback stable reduction order implementation below.
-    if (!is_deferred && (!require_stable_reduction_order || cc >= ::cuda::compute_capability{9, 0}))
+    if (!require_stable_reduction_order || cc >= ::cuda::compute_capability{9, 0})
     {
       auto lookahead_policy_opt = get_lookahead_policy(cc);
       if (lookahead_policy_opt && can_use_lookahead(cc, *lookahead_policy_opt))
