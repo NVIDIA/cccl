@@ -11,7 +11,6 @@ also checks that one allocation can serve four provider call sites.
 """
 
 import re
-import shutil
 import subprocess
 import sys
 from dataclasses import replace
@@ -19,6 +18,7 @@ from dataclasses import replace
 import cutlass
 import numpy as np
 import pytest
+from cuda.pathfinder import find_nvidia_binary_utility
 from cutlass import cute
 from cutlass.base_dsl.common import DSLRuntimeError, get_current_env_manager
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
@@ -135,7 +135,7 @@ def test_final_cubin(tmp_path, pairs, mode):
     These checks make no claim about resource use or barrier counts.
     """
 
-    tool = shutil.which("cuobjdump")
+    tool = find_nvidia_binary_utility("cuobjdump")
     if tool is None:
         pytest.skip("cuobjdump is required for final linked code inspection")
     _run(

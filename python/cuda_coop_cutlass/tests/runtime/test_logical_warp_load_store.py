@@ -12,12 +12,12 @@ groups inactive to exercise scratch reuse and synchronization scope.
 
 import importlib.util
 import re
-import shutil
 import subprocess
 
 import cutlass
 import numpy as np
 import pytest
+from cuda.pathfinder import find_nvidia_binary_utility
 from cutlass import cute
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 
@@ -373,7 +373,7 @@ def test_final_cubin(tmp_path, width, algorithm):
     test does not check a specific warp synchronization mask.
     """
 
-    cuobjdump = shutil.which("cuobjdump")
+    cuobjdump = find_nvidia_binary_utility("cuobjdump")
     if cuobjdump is None:
         pytest.skip(
             "cuobjdump is required to inspect final linked instructions"
