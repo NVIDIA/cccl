@@ -37,7 +37,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp, size_t _Size>
 _CCCL_HOST_DEVICE_API inline void __clear_padding_array(_Tp (&__value)[_Size]) noexcept
 {
-  // Clang 23 miss padding in an array type named by a template parameter
+  // Clang 23 misses padding in an array type named by a template parameter
   _CCCL_PRAGMA_UNROLL_FULL()
   for (auto& __element : __value)
   {
