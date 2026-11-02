@@ -246,7 +246,7 @@ CUB_TEST("Device scan exclusive-scan can be tuned", "[scan][device]", CUB_SMALL,
 
 CUB_TEST("Device scan exclusive-scan tuning can be modified", "[scan][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
   c2h::device_vector<unsigned int> d_block_size(1);
   const block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 

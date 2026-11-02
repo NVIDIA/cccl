@@ -376,7 +376,7 @@ CUB_TEST("DevicePartition::Flagged can be tuned", "[partition][device]", CUB_SMA
 
 CUB_TEST_CASE("DevicePartition::If tuning can be modified", "[partition][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
   auto d_in                                = c2h::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
   auto d_out                               = c2h::device_vector<int>(8);
   auto d_num_selected                      = c2h::device_vector<unsigned int>(1);
@@ -438,7 +438,7 @@ CUB_TEST("DevicePartition::If three-way can be tuned", "[partition][device]", CU
 
 CUB_TEST_CASE("DevicePartition::If three-way tuning can be modified", "[partition][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
   auto d_in                                = c2h::device_vector<int>{0, 2, 3, 9, 5, 2, 81, 8};
   auto d_small_out                         = c2h::device_vector<int>(8);
   auto d_large_out                         = c2h::device_vector<int>(8);

@@ -368,7 +368,7 @@ struct set_ops_tuning_transform
 CUB_TEST("DeviceSetOps pairs tuning can be modified", "[set_ops][device]", CUB_SMALL, key_ops)
 {
   using op                                 = c2h::get<0, TestType>;
-  constexpr unsigned int target_block_size = 384;
+  constexpr unsigned int target_block_size = 384; // must be different from any value we use in production
 
   auto keys1        = c2h::device_vector<int>{0, 2, 2, 5};
   auto keys2        = c2h::device_vector<int>{0, 3, 3, 4};

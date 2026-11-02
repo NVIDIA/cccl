@@ -169,7 +169,7 @@ CUB_TEST("Device reduce can be tuned", "[reduce][device]", CUB_SMALL, block_size
 
 CUB_TEST_CASE("Device reduce tuning can be modified", "[reduce][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
   c2h::device_vector<unsigned int> d_block_size(1);
 
   auto d_in  = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
@@ -494,7 +494,7 @@ CUB_TEST("Device ReduceByKey can be tuned", "[reduce][device]", CUB_SMALL, reduc
 
 CUB_TEST_CASE("Device ReduceByKey tuning can be modified", "[reduce][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
   auto d_keys_in                           = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
   auto d_values_in                         = c2h::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
   auto d_unique_out                        = c2h::device_vector<int>(8);

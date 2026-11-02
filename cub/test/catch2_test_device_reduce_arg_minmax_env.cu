@@ -252,7 +252,7 @@ CUB_TEST("Device ArgMin[Last]Max can be tuned", "[reduce][device]", CUB_SMALL, b
 CUB_TEST_CASE("Device ArgMin[Last]Max tuning can be modified", "[reduce][device]", CUB_SMALL)
 {
   const bool last_max                      = GENERATE(false, true);
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
 
   c2h::device_vector<unsigned int> d_block_size(1);
   using compare_t = block_size_extracting_op<cuda::std::less<>>;

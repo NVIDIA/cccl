@@ -1308,7 +1308,7 @@ struct unique_by_key_tuning_transform
 
 CUB_TEST("DeviceSelect::If tuning can be modified", "[select][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
   auto d_in                                = c2h::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
   auto d_out                               = c2h::device_vector<int>(8);
   auto d_num_selected                      = c2h::device_vector<unsigned int>(1);
@@ -1332,7 +1332,7 @@ CUB_TEST("DeviceSelect::If tuning can be modified", "[select][device]", CUB_SMAL
 
 CUB_TEST("DeviceSelect::UniqueByKey tuning can be modified", "[select][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 96;
+  constexpr unsigned int target_block_size = 96; // must be different from any value we use in production
   auto d_keys_in                           = c2h::device_vector<int>{0, 0, 1, 1, 2, 2, 3, 3};
   auto d_values_in                         = c2h::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
   auto d_keys_out                          = c2h::device_vector<int>(8);

@@ -179,7 +179,7 @@ CUB_TEST("DeviceScan::ExclusiveSumByKey can be tuned", "[scan][by_key][device]",
 
 CUB_TEST("DeviceScan::ExclusiveScanByKey tuning can be modified", "[scan][by_key][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
   c2h::device_vector<int> d_keys{0, 0, 1, 1, 1, 2, 2};
   c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
   c2h::device_vector<int> d_out(7);

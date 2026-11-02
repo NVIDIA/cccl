@@ -154,7 +154,8 @@ struct AdjacentDifferencePolicyTransformer
   __host__ __device__ constexpr auto operator()(cuda::compute_capability, cub::AdjacentDifferencePolicy policy) const
     -> cub::AdjacentDifferencePolicy
   {
-    policy.threads_per_block = 64; // keep all other values of CUB's default tuning
+    // tweak block size, but keep all other values of CUB's default tuning
+    policy.threads_per_block = 64;
     return policy;
   }
 };

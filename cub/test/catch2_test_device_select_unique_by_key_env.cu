@@ -308,7 +308,7 @@ unsigned int unique_by_key_block_size(
 
 CUB_TEST("DeviceSelect::UniqueByKey tuning can be modified", "[device][select_unique_by_key]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 96;
+  constexpr unsigned int target_block_size = 96; // must be different from any value we use in production
 
   auto d_keys_in      = c2h::device_vector<int>{0, 0, 1, 1, 2, 2, 3, 3};
   auto d_values_in    = c2h::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};

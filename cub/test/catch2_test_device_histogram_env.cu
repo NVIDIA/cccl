@@ -1508,7 +1508,7 @@ CUB_TEST("DeviceHistogram::HistogramEven can be tuned", "[histogram][device]", C
 
 CUB_TEST("DeviceHistogram::HistogramEven tuning can be modified", "[histogram][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
   c2h::device_vector<unsigned int> d_block_size(1);
   const block_size_extracting_constant_iterator d_samples(0, thrust::raw_pointer_cast(d_block_size.data()));
   const int num_samples = 256;

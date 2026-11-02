@@ -435,7 +435,7 @@ CUB_TEST("Device FindIf can be tuned", "[find][device]", CUB_SMALL, block_sizes)
 
 CUB_TEST("Device FindIf tuning can be modified", "[find][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 96;
+  constexpr unsigned int target_block_size = 96; // must be different from any value we use in production
 
   constexpr int num_items = 1024;
   auto d_in               = c2h::device_vector<int>(num_items, 0);

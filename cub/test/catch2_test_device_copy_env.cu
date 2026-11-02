@@ -196,7 +196,7 @@ CUB_TEST("DeviceCopy::Batched can be tuned", "[copy][device]", CUB_SMALL, block_
 
 CUB_TEST("DeviceCopy::Batched tuning can be modified", "[copy][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
 
   // 3 ranges of 2 ints each
   auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};

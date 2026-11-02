@@ -3246,7 +3246,7 @@ struct block_size_policy_transformer
 
 CUB_TEST_CASE("DeviceRadixSort::SortKeys tuning can be modified", "[radix_sort][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
   constexpr int num_items                  = 10'000; // must be larger than the single tile path
 
   auto keys_in      = c2h::device_vector<custom_key_t>(num_items);

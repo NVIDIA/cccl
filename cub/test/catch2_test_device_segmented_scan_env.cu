@@ -665,7 +665,7 @@ CUB_TEST("Device segmented inclusive scan can be tuned", "[segmented_scan][devic
 
 CUB_TEST("Device segmented inclusive scan tuning can be modified", "[segmented_scan][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
   ::cuda::std::int64_t num_segments        = 3;
   thrust::device_vector<int> d_offsets     = {0, 4, 7, 9};
   auto d_offsets_it                        = thrust::raw_pointer_cast(d_offsets.data());

@@ -894,7 +894,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortPairs can be tuned", "[segmented_radix_s
 
 CUB_TEST("DeviceSegmentedRadixSort::SortPairs tuning can be modified", "[segmented_radix_sort][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
 
   auto keys_in    = c2h::device_vector<int>(10'000);
   auto keys_out   = c2h::device_vector<int>(10'000);

@@ -992,7 +992,7 @@ CUB_TEST("DeviceFor::ForEachInLayout two-phase API propagates tuning", "[for][de
 
 CUB_TEST("DeviceFor::Bulk tuning can be modified", "[for][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
   c2h::device_vector<unsigned int> d_block_size(1);
   const block_size_check_t op{thrust::raw_pointer_cast(d_block_size.data())};
 

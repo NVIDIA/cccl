@@ -200,7 +200,7 @@ CUB_TEST("DeviceMemcpy::Batched can be tuned", "[memcpy][device]", CUB_SMALL, bl
 
 CUB_TEST("DeviceMemcpy::Batched tuning can be modified", "[memcpy][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
 
   // 3 buffers of 2 ints each (8 bytes)
   auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};

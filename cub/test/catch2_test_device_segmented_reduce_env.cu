@@ -442,7 +442,7 @@ CUB_TEST("DeviceSegmentedReduce::Reduce can be tuned", "[segmented_reduce][devic
 
 CUB_TEST("DeviceSegmentedReduce::Reduce tuning can be modified", "[segmented_reduce][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
 
   const int num_segments            = 3;
   c2h::device_vector<int> d_offsets = {0, 4, 7, 9};

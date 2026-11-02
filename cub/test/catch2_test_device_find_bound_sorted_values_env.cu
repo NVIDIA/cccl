@@ -170,7 +170,7 @@ unsigned int lower_bound_block_size(
 
 CUB_TEST("Device LowerBoundSortedValues tuning can be modified", "[find][device][binary-search]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
 
   auto d_range      = c2h::device_vector<int>{0, 2, 4, 6, 8};
   auto d_values     = c2h::device_vector<int>{0, 3, 4, 7};

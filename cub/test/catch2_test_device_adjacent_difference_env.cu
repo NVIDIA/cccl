@@ -253,7 +253,7 @@ struct adj_diff_tuning_tranform
 
 CUB_TEST("DeviceAdjacentDifference::SubtractRight tuning can be modified", "[adjacent_difference][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
   auto data                                = c2h::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
   auto d_block_size                        = c2h::device_vector<unsigned int>{0};
   auto op = block_size_extracting_minus_t{thrust::raw_pointer_cast(d_block_size.data())};

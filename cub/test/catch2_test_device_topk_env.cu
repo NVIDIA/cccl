@@ -110,7 +110,7 @@ void max_keys_observing_block_size(Env env, c2h::device_vector<unsigned int>& d_
 
 CUB_TEST("DeviceTopK::MaxKeys tuning can be modified", "[topk][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
   c2h::device_vector<unsigned int> d_block_size{0};
 
   // the default tuning must not already use the target block size, otherwise the test passes vacuously

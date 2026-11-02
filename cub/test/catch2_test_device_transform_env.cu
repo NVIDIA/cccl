@@ -201,7 +201,7 @@ struct my_policy_transformer
     -> cub::TransformPolicy
   {
     policy.algorithm                  = cub::TransformAlgorithm::prefetch;
-    policy.prefetch.threads_per_block = 8;
+    policy.prefetch.threads_per_block = 8; // must be different from any value we use in production
     return policy;
   }
 };

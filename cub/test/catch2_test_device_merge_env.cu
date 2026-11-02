@@ -136,7 +136,7 @@ CUB_TEST("DeviceMerge::MergeKeys can be tuned", "[merge][device]", CUB_SMALL, bl
 
 CUB_TEST("DeviceMerge::MergeKeys tuning can be modified", "[merge][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
   auto keys1                               = c2h::device_vector<int>{0, 2, 5};
   auto keys2                               = c2h::device_vector<int>{0, 3, 3, 4};
   auto result                              = c2h::device_vector<int>(7, thrust::no_init);

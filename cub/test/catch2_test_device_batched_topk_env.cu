@@ -76,7 +76,7 @@ unsigned int batched_topk_block_size(
 CUB_TEST("cub::DeviceBatchedTopK::MaxKeys tuning can be modified", "[batched_topk][device][env]", CUB_SMALL)
 {
   constexpr int k                          = 3;
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
 
   auto keys_out     = thrust::device_vector<int>(2 * k, thrust::no_init);
   auto d_block_size = thrust::device_vector<unsigned int>(1, 0);

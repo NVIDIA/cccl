@@ -315,7 +315,7 @@ CUB_TEST("DeviceRunLengthEncode::Encode can be tuned", "[run_length_encode][devi
 
 CUB_TEST_CASE("DeviceRunLengthEncode::Encode tuning can be modified", "[run_length_encode][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
   constexpr int num_items                  = 256;
 
   auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
@@ -402,7 +402,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can be tuned", "[run_length_enco
 
 CUB_TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns tuning can be modified", "[run_length_encode][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 64;
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
   constexpr int num_items                  = 256;
 
   auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
