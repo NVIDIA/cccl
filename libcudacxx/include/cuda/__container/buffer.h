@@ -811,7 +811,7 @@ public:
     const size_type __size            = __buf_.size();
     const size_type __alignment       = __buf_.alignment();
     const ::cuda::stream_ref __stream = __buf_.stream();
-    return {__stream, __buf_.__release_allocation(), __ptr, __capacity, __size, __alignment};
+    return {__stream, std::move(__buf_).__release_allocation(), __ptr, __capacity, __size, __alignment};
   }
 
   //! @brief Creates a buffer that takes ownership of an existing allocation.
@@ -848,7 +848,7 @@ public:
   _CCCL_REQUIRES(__is_buffer_byte_type_v<_Byte>)
   [[nodiscard]] _CCCL_HOST_API buffer<_Byte, _Properties...> as_bytes() && noexcept
   {
-    return __as_type<_Byte, _Properties...>();
+    return std::move(*this).template __as_type<_Byte, _Properties...>();
   }
 
   //! @brief Converts a buffer of bytes into a buffer of \p _Up that owns the
@@ -869,7 +869,7 @@ public:
     {
       _CCCL_THROW(::std::invalid_argument, "cuda::buffer::as_type: size or alignment is incompatible with _Up");
     }
-    return __as_type<_Up, _Properties...>();
+    return std::move(*this).template __as_type<_Up, _Properties...>();
   }
 
   //! @brief Destroys the buffer, deallocates the buffer and destroys the memory
