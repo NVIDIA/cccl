@@ -848,7 +848,7 @@ public:
   _CCCL_REQUIRES(__is_buffer_byte_type_v<_Byte>)
   [[nodiscard]] _CCCL_HOST_API buffer<_Byte, _Properties...> as_bytes() && noexcept
   {
-    return std::move(*this).template __as_type<_Byte, _Properties...>();
+    return std::move(*this).template __as_type<_Byte>();
   }
 
   //! @brief Converts a buffer of bytes into a buffer of \p _Up that owns the
@@ -869,7 +869,7 @@ public:
     {
       _CCCL_THROW(::std::invalid_argument, "cuda::buffer::as_type: size or alignment is incompatible with _Up");
     }
-    return std::move(*this).template __as_type<_Up, _Properties...>();
+    return std::move(*this).template __as_type<_Up>();
   }
 
   //! @brief Destroys the buffer, deallocates the buffer and destroys the memory
