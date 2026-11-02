@@ -92,7 +92,7 @@ private:
   template <__detail::__param_kind _Kind>
   class __action //: private __detail::__immovable
   {
-    using __cv_vector = ::cuda::std::__maybe_const<_Kind == __detail::__param_kind::_in, vector>;
+    using __cv_vector _CCCL_NODEBUG = ::cuda::std::__maybe_const<_Kind == __detail::__param_kind::_in, vector>;
 
   public:
     explicit __action(::cuda::stream_ref __str, __cv_vector& __v)

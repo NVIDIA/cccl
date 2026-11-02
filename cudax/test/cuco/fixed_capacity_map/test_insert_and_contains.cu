@@ -129,7 +129,7 @@ C2H_TEST("fixed_capacity_map insert and contains", "[container]", key_types, cg_
 }
 
 template <class _Key, class _Tp>
-using __map_of = cudax::cuco::fixed_capacity_map<
+using __map_of _CCCL_NODEBUG = cudax::cuco::fixed_capacity_map<
   _Key,
   _Tp,
   ::cuda::std::dynamic_extent,

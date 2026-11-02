@@ -117,7 +117,7 @@ class WarpBitonicSort
   // The sorting network exchanges items between lanes "lane" and "lane ^ stride", which only stays inside the
   // logical warp when its size is a power of two.
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
-  using _TempStorage = cub::NullType;
+  using _TempStorage _CCCL_NODEBUG = cub::NullType;
 
   // to simplify internal recursive call
   WarpBitonicSort() = default;
@@ -444,7 +444,7 @@ class WarpBitonicSort<KeyT, 1, LogicalWarpThreads, ValueT>
   // The sorting network exchanges items between lanes "lane" and "lane ^ stride", which only stays inside the
   // logical warp when its size is a power of two.
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
-  using _TempStorage = cub::NullType;
+  using _TempStorage _CCCL_NODEBUG = cub::NullType;
 
   // to simplify internal recursive call
   WarpBitonicSort() = default;

@@ -69,7 +69,7 @@ struct WarpScanSmem
   static constexpr int WARP_SMEM_ELEMENTS = LogicalWarpThreads + HALF_WARP_THREADS;
 
   /// Shared memory storage layout type (1.5 warps-worth of elements for each warp)
-  using _TempStorage = T[WARP_SMEM_ELEMENTS];
+  using _TempStorage _CCCL_NODEBUG = T[WARP_SMEM_ELEMENTS];
 
   // Alias wrapper allowing storage to be unioned
   using TempStorage = Uninitialized<_TempStorage>;
