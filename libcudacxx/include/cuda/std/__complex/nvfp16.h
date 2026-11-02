@@ -90,7 +90,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__half2)) __complex_f
   __half x;
   __half y;
 };
-using __complex_half_repr_t = __complex_fake_half2;
+using __complex_half_repr_t _CCCL_NODEBUG = __complex_fake_half2;
 #  else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION()
 template <>
 struct __type_to_vector<__half>

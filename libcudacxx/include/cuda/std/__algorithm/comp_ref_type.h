@@ -72,7 +72,7 @@ struct __debug_less
 // debugging wrapper that stores a reference.
 #ifdef _CCCL_ENABLE_DEBUG_MODE
 template <class _Comp>
-using __comp_ref_type = __debug_less<_Comp>;
+using __comp_ref_type _CCCL_NODEBUG = __debug_less<_Comp>;
 #else // ^^^ _LIBCUDACXX_ENABLE_DEBUG_MODE ^^^ / vvv !_LIBCUDACXX_ENABLE_DEBUG_MODE vvv
 template <class _Comp>
 using __comp_ref_type _CCCL_NODEBUG = _Comp&;

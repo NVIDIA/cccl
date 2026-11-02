@@ -65,11 +65,11 @@ private:
   // MSVC crashes when the disambiguation functions are called directly inside an enable_if while synthesizing
   // the implicit deduction guides, so go through a variable template wrapped into a bool_constant
   template <class... _UTypes>
-  using _DisambiguateVariadic =
+  using _DisambiguateVariadic _CCCL_NODEBUG =
     bool_constant<__tuple_constraints<_Tp...>::template __disambiguate_variadic_v<_UTypes...>>;
 
   template <class _UTuple>
-  using _DisambiguateTupleLike =
+  using _DisambiguateTupleLike _CCCL_NODEBUG =
     bool_constant<__tuple_constraints<_Tp...>::template __disambiguate_tuple_like_v<_UTuple>>;
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
   template <class... _UTypes>

@@ -54,7 +54,7 @@ template <int _Error>
 #if _CCCL_HAS_CTK()
 using __cuda_error_t _CCCL_NODEBUG = ::cudaError_t;
 #else
-using __cuda_error_t = int;
+using __cuda_error_t _CCCL_NODEBUG = int;
 #endif
 
 #if _CCCL_HOSTED()

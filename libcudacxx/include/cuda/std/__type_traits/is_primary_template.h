@@ -67,7 +67,8 @@ struct __is_primary_std_template : true_type
 {};
 
 template <class _Iter, class _OtherTraits>
-using __select_traits = conditional_t<__is_primary_cccl_template<_Iter>::value, _OtherTraits, iterator_traits<_Iter>>;
+using __select_traits _CCCL_NODEBUG =
+  conditional_t<__is_primary_cccl_template<_Iter>::value, _OtherTraits, iterator_traits<_Iter>>;
 
 #else // ^^^ _CCCL_FREESTANDING() ^^^ / vvv _CCCL_HOSTED() vvv
 

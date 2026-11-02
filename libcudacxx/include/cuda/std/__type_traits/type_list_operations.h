@@ -154,7 +154,7 @@ _CCCL_API inline auto __as_type_list_fn(__undefined<_Ret(_Args...)>*) //
 //! \li `R(As...)`, for any function type `R(As...)`. The resulting type is
 //!     `_Fn<R, As...>`.
 template <class _List>
-using __as_type_list = decltype(__detail::__as_type_list_fn(static_cast<__undefined<_List>*>(nullptr)));
+using __as_type_list _CCCL_NODEBUG = decltype(__detail::__as_type_list_fn(static_cast<__undefined<_List>*>(nullptr)));
 
 #  else // ^^^ if _CCCL_CUDA_COMPILER(NVCC, <, 12, 9) / vvv if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 9) vvv
 

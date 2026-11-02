@@ -184,7 +184,7 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT vector_type<long, 4>
 {
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-  using type = ::long4_32a;
+  using type _CCCL_NODEBUG = ::long4_32a;
 #  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
   using type _CCCL_NODEBUG = ::long4;
 #  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
@@ -209,7 +209,7 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT vector_type<unsigned long, 4>
 {
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-  using type = ::ulong4_32a;
+  using type _CCCL_NODEBUG = ::ulong4_32a;
 #  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
   using type _CCCL_NODEBUG = ::ulong4;
 #  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
@@ -234,7 +234,7 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT vector_type<long long, 4>
 {
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-  using type = ::longlong4_32a;
+  using type _CCCL_NODEBUG = ::longlong4_32a;
 #  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
   using type _CCCL_NODEBUG = ::longlong4;
 #  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
@@ -259,7 +259,7 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT vector_type<unsigned long long, 4>
 {
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-  using type = ::ulonglong4_32a;
+  using type _CCCL_NODEBUG = ::ulonglong4_32a;
 #  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
   using type _CCCL_NODEBUG = ::ulonglong4;
 #  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
@@ -305,7 +305,7 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT vector_type<double, 4>
 {
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-  using type = ::double4_32a;
+  using type _CCCL_NODEBUG = ::double4_32a;
 #  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
   using type _CCCL_NODEBUG = ::double4;
 #  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^

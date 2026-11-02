@@ -252,7 +252,7 @@ private:
   }
 
   template <size_t _Index, class _UPair>
-  using __get_t = decltype(pair::__get_type<_Index>(::cuda::std::declval<_UPair>()));
+  using __get_t _CCCL_NODEBUG = decltype(pair::__get_type<_Index>(::cuda::std::declval<_UPair>()));
 #else // ^^^ _CCCL_COMPILER(GCC, <, 11) ^^^ / vvv !_CCCL_COMPILER(GCC, <, 11) vvv
   template <size_t _Index, class _UPair>
   using __get_t _CCCL_NODEBUG = decltype(::cuda::std::get<_Index>(::cuda::std::declval<_UPair>()));

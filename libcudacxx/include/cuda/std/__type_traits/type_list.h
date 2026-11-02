@@ -136,7 +136,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_index_fn
 } // namespace __detail
 
 template <size_t _Ip, class... _Ts>
-using __type_index_c = __type_call<__detail::__type_index_fn<_Ip>, _Ts...>;
+using __type_index_c _CCCL_NODEBUG = __type_call<__detail::__type_index_fn<_Ip>, _Ts...>;
 
 #  else // ^^^ _CCCL_BUILTIN_TYPE_PACK_ELEMENT ^^^ / vvv !_CCCL_BUILTIN_TYPE_PACK_ELEMENT vvv
 
@@ -205,14 +205,15 @@ struct __type_index_select_fn<true> // Fast implementation for smaller indices
 #    if !_CCCL_COMPILER(MSVC)
 
 template <size_t _Ip, class... _Ts>
-using __type_index_c =
+using __type_index_c _CCCL_NODEBUG =
   __type_call<__detail::__type_index_select_fn<(_Ip < _CCCL_META_UNROLL_LIMIT)>, integral_constant<size_t, _Ip>, _Ts...>;
 
 #    else // ^^^ !_CCCL_COMPILER(MSVC) ^^^ / vvv _CCCL_COMPILER(MSVC) vvv
 
 // Simplify the implementation for MSVC, which has trouble with the above
 template <size_t _Ip, class... _Ts>
-using __type_index_c = __detail::__type_index_large_size_fn::__call<integral_constant<size_t, _Ip>, _Ts...>;
+using __type_index_c _CCCL_NODEBUG =
+  __detail::__type_index_large_size_fn::__call<integral_constant<size_t, _Ip>, _Ts...>;
 
 #    endif // !_CCCL_COMPILER(MSVC)
 

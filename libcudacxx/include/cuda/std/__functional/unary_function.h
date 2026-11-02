@@ -48,7 +48,7 @@ struct __unary_function_keep_layout_base
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 template <class _Arg, class _Result>
-using __unary_function = unary_function<_Arg, _Result>;
+using __unary_function _CCCL_NODEBUG = unary_function<_Arg, _Result>;
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 #else

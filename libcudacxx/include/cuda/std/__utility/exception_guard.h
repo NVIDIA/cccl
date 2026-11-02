@@ -142,7 +142,7 @@ _CCCL_CTAD_SUPPORTED_FOR_TYPE(__exception_guard_noexceptions);
 
 #if !_CCCL_HAS_EXCEPTIONS()
 template <class _Rollback>
-using __exception_guard = __exception_guard_noexceptions<_Rollback>;
+using __exception_guard _CCCL_NODEBUG = __exception_guard_noexceptions<_Rollback>;
 #else // ^^^ !_CCCL_HAS_EXCEPTIONS() ^^^ / vvv _CCCL_HAS_EXCEPTIONS() vvv
 template <class _Rollback>
 using __exception_guard _CCCL_NODEBUG = __exception_guard_exceptions<_Rollback>;
