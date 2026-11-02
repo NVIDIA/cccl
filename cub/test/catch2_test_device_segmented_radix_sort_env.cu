@@ -1358,7 +1358,7 @@ CUB_TEST(
 
   auto keys     = c2h::device_vector<int>(10'000);
   auto alt_keys = c2h::device_vector<int>(10'000, thrust::no_init);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
   int* d_keys_buf = thrust::raw_pointer_cast(keys.data());
   int* d_keys_alt = thrust::raw_pointer_cast(alt_keys.data());
 
@@ -1457,8 +1457,8 @@ CUB_TEST_CASE("DeviceSegmentedRadixSort pairs two-phase accepts legacy null stre
   // the launch wrappers copy the DoubleBuffer, so its selector is not observable here
   const auto expected_keys   = sorted_keys(descending);
   const auto expected_values = sorted_values(descending);
-  REQUIRE((keys == expected_keys || alt_keys == expected_keys));
-  REQUIRE((values == expected_values || alt_values == expected_values));
+  REQUIRE(((keys == expected_keys && values == expected_values)
+           || (alt_keys == expected_keys && alt_values == expected_values)));
 }
 
 CUB_TEST(
@@ -1471,7 +1471,7 @@ CUB_TEST(
   auto values     = c2h::device_vector<int>(10'000);
   auto alt_keys   = c2h::device_vector<int>(10'000, thrust::no_init);
   auto alt_values = c2h::device_vector<int>(10'000, thrust::no_init);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
   int* d_keys_buf   = thrust::raw_pointer_cast(keys.data());
   int* d_values_buf = thrust::raw_pointer_cast(values.data());
   int* d_keys_alt   = thrust::raw_pointer_cast(alt_keys.data());
