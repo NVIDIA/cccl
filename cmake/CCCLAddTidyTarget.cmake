@@ -54,6 +54,13 @@ function(cccl_tidy_init)
         # This option is what allows us to "link" against the executable
         ENABLE_EXPORTS TRUE
     )
+    if (APPLE)
+      # Resolve symbols from clang-tidy and its loaded libraries without duplicating registries.
+      target_link_options(
+        cccl_clang_tidy
+        INTERFACE "LINKER:-undefined,dynamic_lookup"
+      )
+    endif()
     add_executable(cccl::clang-tidy ALIAS cccl_clang_tidy)
   endif()
 
