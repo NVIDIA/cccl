@@ -290,7 +290,7 @@ public:
     }
 
     int dev = -1;
-    cudaGetDevice(&dev);
+    static_cast<void>(cudaGetDevice(&dev));
 
     format("%s(%u) [device %d] CUDA error in %s: ", loc.file_name(), loc.line(), dev, loc.function_name());
     // The name for T only, not a visit over every alternative: that would instantiate every

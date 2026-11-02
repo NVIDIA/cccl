@@ -639,11 +639,15 @@ C2H_TEST("MergeSort works with C++ source operations using custom headers", "[me
 
   // Verify results
   std::vector<key_t> output_keys(num_items);
-  cudaMemcpy(
-    output_keys.data(), static_cast<void*>(output_keys_ptr.ptr), sizeof(key_t) * num_items, cudaMemcpyDeviceToHost);
+  REQUIRE(
+    cudaSuccess
+    == cudaMemcpy(
+      output_keys.data(), static_cast<void*>(output_keys_ptr.ptr), sizeof(key_t) * num_items, cudaMemcpyDeviceToHost));
   std::vector<key_t> expected_keys(num_items);
-  cudaMemcpy(
-    expected_keys.data(), static_cast<void*>(input_keys_ptr.ptr), sizeof(key_t) * num_items, cudaMemcpyDeviceToHost);
+  REQUIRE(
+    cudaSuccess
+    == cudaMemcpy(
+      expected_keys.data(), static_cast<void*>(input_keys_ptr.ptr), sizeof(key_t) * num_items, cudaMemcpyDeviceToHost));
   std::sort(expected_keys.begin(), expected_keys.end());
   std::sort(expected_keys.begin(), expected_keys.end());
   REQUIRE(output_keys == expected_keys);
