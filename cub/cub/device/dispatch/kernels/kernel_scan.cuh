@@ -25,6 +25,10 @@
 #include <cub/util_arch.cuh>
 #include <cub/util_macro.cuh>
 
+#include <thrust/type_traits/is_contiguous_iterator.h>
+
+#include <cuda/std/__type_traits/always_false.h>
+
 #include <nv/target>
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
@@ -313,7 +317,18 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   if constexpr (active_policy.algorithm == ScanAlgorithm::lookahead)
   {
     const OffsetT num_items = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
+    // the lookahead implementation copies tiles from and to raw pointers (the dispatch unwraps contiguous iterators)
+    constexpr bool contiguous_iterators = THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>
+                                       && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
+    static_assert(contiguous_iterators,
+                  "ScanPolicy: algorithm must not be ScanAlgorithm::lookahead unless the input and output iterators "
+                  "are contiguous");
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
+    // we cannot static_assert on nvc++, but custom tunings are unlikely there
+#  if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 900
+    static_assert(::cuda::std::__always_false_v<InputIteratorT>,
+                  "ScanPolicy: algorithm must not be ScanAlgorithm::lookahead when compiling for < sm_90");
+#  endif
     NV_IF_TARGET(
       NV_PROVIDES_SM_90, ({
         auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
