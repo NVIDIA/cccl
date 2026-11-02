@@ -104,14 +104,92 @@ __global__ void load_kernel(It it, int num_threads)
   }
 }
 
-constexpr int num_threads = 3 * 128 + 5;
-constexpr int max_items   = num_threads * 7;
+// Returns a distinct shared memory buffer of N elements of type T for each Index
+template <typename T, int N, cuda::std::size_t Index>
+__device__ T* shared_buffer()
+{
+  __shared__ T buffer[N];
+  return buffer;
+}
+
+template <int N, typename... Ts, cuda::std::size_t... Is>
+__device__ auto make_shared_buffers(const cuda::std::tuple<Ts*...>&, cuda::std::index_sequence<Is...>)
+{
+  return cuda::std::tuple<cuda::std::remove_const_t<Ts>*...>{shared_buffer<cuda::std::remove_const_t<Ts>, N, Is>()...};
+}
+
+template <int N, typename Ptrs, typename Buffers, cuda::std::size_t... Is>
+__device__ void load_to_shared(const Ptrs& ptrs, const Buffers& buffers, cuda::std::index_sequence<Is...>)
+{
+  (
+    [&] {
+      for (int i = static_cast<int>(threadIdx.x); i < N; i += static_cast<int>(blockDim.x))
+      {
+        cuda::std::get<Is>(buffers)[i] = cuda::std::get<Is>(ptrs)[i];
+      }
+    }(),
+    ...);
+}
+
+// Each block loads a tile of BlockThreads * ItemsPerThread consecutive items, and each thread reads its ItemsPerThread
+// items of the tile twice: once directly through the iterator, and once through the block's iterator rebased onto
+// shared memory, into which the block copied the data behind the iterator's raw pointers.
+template <int BlockThreads, int ItemsPerThread, typename It>
+__global__ void load_shared_kernel(It it)
+{
+  using value_t            = cuda::std::iter_value_t<It>;
+  constexpr int tile_items = BlockThreads * ItemsPerThread;
+  const It block_it        = it + static_cast<int>(blockIdx.x) * tile_items;
+  const int thread_offset  = static_cast<int>(threadIdx.x) * ItemsPerThread;
+
+  // load directly through the iterator
+  value_t direct_items[ItemsPerThread];
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < ItemsPerThread; ++i)
+    {
+      direct_items[i] = block_it[thread_offset + i];
+    }
+  }
+
+  // load through the rebased iterator
+  value_t rebased_items[ItemsPerThread];
+  {
+    // load the raw pointers' data into shared memory and rebase the iterator onto it
+    const auto ptrs        = cub::detail::extract_raw_pointers(block_it);
+    constexpr auto indices = cuda::std::make_index_sequence<cuda::std::tuple_size_v<decltype(ptrs)>>{};
+    const auto buffers     = make_shared_buffers<tile_items>(ptrs, indices);
+    load_to_shared<tile_items>(ptrs, buffers, indices);
+    __syncthreads();
+    const It rebased_it = cub::detail::rebase_iterator(block_it, buffers);
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < ItemsPerThread; ++i)
+    {
+      rebased_items[i] = rebased_it[thread_offset + i];
+    }
+  }
+
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int i = 0; i < ItemsPerThread; ++i)
+  {
+    REQUIRE(direct_items[i] == rebased_items[i]);
+  }
+}
+
+constexpr int block_threads = 128;
+constexpr int num_threads   = 3 * block_threads + 5;
+constexpr int max_items     = num_threads * 7;
 
 template <int ItemsPerThread, typename It>
 void check_rebase(It it)
 {
-  constexpr int block_threads = 128;
   load_kernel<ItemsPerThread><<<cuda::ceil_div(num_threads, block_threads), block_threads>>>(it, num_threads);
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  // only launch full tiles
+  load_shared_kernel<block_threads, ItemsPerThread><<<num_threads / block_threads, block_threads>>>(it);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 }
@@ -176,7 +254,6 @@ __global__ void store_kernel(It it, Gen gen, int num_threads)
 template <int ItemsPerThread, typename It, typename Gen>
 void check_store(It it, Gen gen)
 {
-  constexpr int block_threads = 128;
   store_kernel<ItemsPerThread><<<cuda::ceil_div(num_threads, block_threads), block_threads>>>(it, gen, num_threads);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
