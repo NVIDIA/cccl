@@ -27,11 +27,11 @@
 #include <cuda/stream>
 
 #include <cstdint>
-#include <numeric>
 
 #include <cuda_runtime_api.h>
 
 #include "catch2_test_launch_helper.h"
+#include "catch2_test_scan_reference.cuh"
 #include "cub_test_macros.h"
 #include <c2h/generators.h>
 
@@ -253,19 +253,6 @@ struct select_then_scan_t
   }
 };
 
-static c2h::host_vector<scan_value_t>
-reference_exclusive_sum(const c2h::host_vector<scan_value_t>& values, count_t num_items)
-{
-  c2h::host_vector<scan_value_t> result(static_cast<size_t>(num_items));
-  scan_value_t running{};
-  for (count_t i = 0; i < num_items; ++i)
-  {
-    result[i] = running;
-    running += values[i];
-  }
-  return result;
-}
-
 CUB_TEST("DeviceScan::ExclusiveSum consumes a count produced by DeviceSelect::If", "[device][scan][deferred]", CUB_SMALL)
 {
   constexpr count_t num_items = 100'000;
@@ -289,18 +276,14 @@ CUB_TEST("DeviceScan::ExclusiveSum consumes a count produced by DeviceSelect::If
   REQUIRE(selected_count <= num_items);
 
   const c2h::host_vector<scan_value_t> host_selected = selected_items;
-  const c2h::host_vector<scan_value_t> host_output   = output;
-  const auto expected                                = reference_exclusive_sum(host_selected, selected_count);
-
-  for (count_t i = 0; i < selected_count; ++i)
-  {
-    REQUIRE(host_output[i] == expected[i]);
-  }
-
-  if (selected_count < num_items)
-  {
-    REQUIRE(host_output[selected_count] == scan_value_t{-1});
-  }
+  c2h::host_vector<scan_value_t> expected(num_items, scan_value_t{-1});
+  compute_exclusive_scan_reference(
+    host_selected.begin(),
+    host_selected.begin() + selected_count,
+    expected.begin(),
+    scan_value_t{0},
+    cuda::std::plus<>{});
+  REQUIRE_THAT_QUIET(output, Equals(expected));
 }
 
 CUB_TEST("DeviceScan entry points accept deferred num_items", "[device][scan][deferred]", CUB_SMALL)
@@ -315,32 +298,40 @@ CUB_TEST("DeviceScan entry points accept deferred num_items", "[device][scan][de
 
   const auto count = cuda::args::deferred{thrust::raw_pointer_cast(device_num_items.data())};
 
+  const auto check = [&](auto expected_at) {
+    const c2h::host_vector<scan_value_t> host_output = output;
+    for (count_t i = 0; i < num_items; ++i)
+    {
+      REQUIRE(host_output[i] == expected_at(i));
+    }
+    if (num_items < capacity)
+    {
+      REQUIRE(host_output[num_items] == scan_value_t{-1});
+    }
+  };
+
   device_exclusive_sum(input.begin(), output.begin(), count);
-  for (count_t i = 0; i < num_items; ++i)
-  {
-    REQUIRE(output[i] == scan_value_t{2} * i);
-  }
+  check([](count_t i) {
+    return scan_value_t{2} * i;
+  });
 
-  thrust::fill(output.begin(), output.end(), scan_value_t{-1});
+  thrust::fill(c2h::device_policy, output.begin(), output.end(), scan_value_t{-1});
   device_inclusive_sum(input.begin(), output.begin(), count);
-  for (count_t i = 0; i < num_items; ++i)
-  {
-    REQUIRE(output[i] == scan_value_t{2} * (i + 1));
-  }
+  check([](count_t i) {
+    return scan_value_t{2} * (i + 1);
+  });
 
-  thrust::fill(output.begin(), output.end(), scan_value_t{-1});
+  thrust::fill(c2h::device_policy, output.begin(), output.end(), scan_value_t{-1});
   device_exclusive_scan(input.begin(), output.begin(), cuda::std::plus<>{}, scan_value_t{7}, count);
-  for (count_t i = 0; i < num_items; ++i)
-  {
-    REQUIRE(output[i] == scan_value_t{7} + scan_value_t{2} * i);
-  }
+  check([](count_t i) {
+    return scan_value_t{7} + scan_value_t{2} * i;
+  });
 
-  thrust::fill(output.begin(), output.end(), scan_value_t{-1});
+  thrust::fill(c2h::device_policy, output.begin(), output.end(), scan_value_t{-1});
   device_inclusive_scan(input.begin(), output.begin(), cuda::std::plus<>{}, count);
-  for (count_t i = 0; i < num_items; ++i)
-  {
-    REQUIRE(output[i] == scan_value_t{2} * (i + 1));
-  }
+  check([](count_t i) {
+    return scan_value_t{2} * (i + 1);
+  });
 }
 
 // The in-place entry points take num_items where the out-of-place ones take an output iterator, so they are
@@ -374,19 +365,19 @@ CUB_TEST("DeviceScan in-place entry points accept deferred num_items", "[device]
     return scan_value_t{2} * i;
   });
 
-  thrust::fill(data.begin(), data.end(), scan_value_t{2});
+  thrust::fill(c2h::device_policy, data.begin(), data.end(), scan_value_t{2});
   REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveSum(data.begin(), count));
   check(data, [](count_t i) {
     return scan_value_t{2} * (i + 1);
   });
 
-  thrust::fill(data.begin(), data.end(), scan_value_t{2});
+  thrust::fill(c2h::device_policy, data.begin(), data.end(), scan_value_t{2});
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveScan(data.begin(), cuda::std::plus<>{}, scan_value_t{7}, count));
   check(data, [](count_t i) {
     return scan_value_t{7} + scan_value_t{2} * i;
   });
 
-  thrust::fill(data.begin(), data.end(), scan_value_t{2});
+  thrust::fill(c2h::device_policy, data.begin(), data.end(), scan_value_t{2});
   REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveScan(data.begin(), cuda::std::plus<>{}, count));
   check(data, [](count_t i) {
     return scan_value_t{2} * (i + 1);
@@ -425,7 +416,7 @@ CUB_TEST("DeviceScan::InclusiveScanInit accepts a deferred num_items", "[device]
     cudaSuccess == cub::DeviceScan::InclusiveScanInit(input.begin(), output.begin(), cuda::std::plus<>{}, init, count));
   check();
 
-  thrust::fill(output.begin(), output.end(), scan_value_t{-1});
+  thrust::fill(c2h::device_policy, output.begin(), output.end(), scan_value_t{-1});
   REQUIRE(cudaSuccess
           == cub::DeviceScan::InclusiveScanInit(
             input.begin(),
@@ -450,9 +441,10 @@ CUB_TEST("DeviceScan with a deferred size accepts a custom lookback policy", "[d
     cuda::execution::tune(small_batch_policy_selector<scan_value_t, scan_value_t, scan_value_t, cuda::std::plus<>>{});
 
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), output.begin(), count, env));
+  const c2h::host_vector<scan_value_t> host_output = output;
   for (count_t i = 0; i < num_items; ++i)
   {
-    REQUIRE(output[i] == i);
+    REQUIRE(host_output[i] == i);
   }
 }
 
@@ -519,7 +511,8 @@ CUB_TEST("DeviceScan honors lookahead batch tuning across buffer reuse",
   c2h::device_vector<scan_value_t> output(num_items + 1, scan_value_t{-1});
   const c2h::host_vector<scan_value_t> host_input = input;
   c2h::host_vector<scan_value_t> expected(num_items + 1, scan_value_t{-1});
-  std::exclusive_scan(host_input.begin(), host_input.begin() + num_items, expected.begin(), scan_value_t{7});
+  compute_exclusive_scan_reference(
+    host_input.begin(), host_input.begin() + num_items, expected.begin(), scan_value_t{7}, cuda::std::plus<>{});
 
   const auto count_ptr = thrust::raw_pointer_cast(device_num_items.data());
   const auto count     = cuda::args::deferred{count_ptr};
@@ -527,6 +520,7 @@ CUB_TEST("DeviceScan honors lookahead batch tuning across buffer reuse",
   REQUIRE(output == expected);
 
   const auto bounded_count = cuda::args::deferred{count_ptr, cuda::args::bounds(large_count_t{0}, max_items)};
+  thrust::fill(c2h::device_policy, output.begin(), output.end(), scan_value_t{-1});
   launch(tuned_exclusive_scan_t{}, input.begin(), output.begin(), bounded_count, policy_selector_t{});
   REQUIRE(output == expected);
 }
@@ -549,9 +543,10 @@ CUB_TEST("DeviceScan with a deferred size preserves a lookahead policy", "[devic
   const auto env   = cuda::execution::tune(lookahead_preferred_int_policy{});
 
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), output.begin(), count, env));
+  const c2h::host_vector<scan_value_t> host_output = output;
   for (count_t i = 0; i < num_items; ++i)
   {
-    REQUIRE(output[i] == i);
+    REQUIRE(host_output[i] == i);
   }
 }
 
@@ -570,7 +565,7 @@ CUB_TEST("DeviceScan lookahead reads deferred counts after PDL producers complet
          "[device][scan][deferred][lookahead_pdl]",
          CUB_SMALL)
 {
-  cub::detail::TripleChevronFactory launcher;
+  const cub::detail::TripleChevronFactory launcher{};
   using policy_selector_t =
     lookahead_preferred_policy_selector<scan_value_t, scan_value_t, scan_value_t, cuda::std::plus<>, 17>;
   // Lookahead only runs on SM90+, which PDL needs as well.
@@ -679,13 +674,14 @@ CUB_TEST("DeviceScan lookahead ring buffers preserve noncommutative order",
   const auto count = cuda::args::deferred{thrust::raw_pointer_cast(device_num_items.data())};
   const auto env   = cuda::execution::tune(policy_selector_t{});
 
-  std::inclusive_scan(host_input.begin(), host_input.end(), expected.begin(), compose_affine_t{});
+  compute_inclusive_scan_reference(
+    host_input.begin(), host_input.end(), expected.begin(), compose_affine_t{}, value_t{1, 0});
   REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveScan(input.begin(), output.begin(), compose_affine_t{}, count, env));
   REQUIRE(expected == c2h::host_vector<value_t>(output));
 
   // The even initial scale makes every output differ from the scan above, so stale outputs cannot pass.
   const value_t init{2, 3};
-  std::inclusive_scan(host_input.begin(), host_input.end(), expected.begin(), compose_affine_t{}, init);
+  compute_inclusive_scan_reference(host_input.begin(), host_input.end(), expected.begin(), compose_affine_t{}, init);
   REQUIRE(cudaSuccess
           == cub::DeviceScan::InclusiveScanInit(input.begin(), output.begin(), compose_affine_t{}, init, count, env));
   REQUIRE(expected == c2h::host_vector<value_t>(output));
@@ -709,7 +705,8 @@ CUB_TEST("DeviceScan lookahead ring buffers make progress on concurrent streams"
   c2h::device_vector<scan_value_t> input(num_items, thrust::no_init);
   c2h::gen(c2h::modulo_t{7}, input);
   c2h::host_vector<scan_value_t> expected = input;
-  std::exclusive_scan(expected.begin(), expected.end(), expected.begin(), scan_value_t{0});
+  compute_exclusive_scan_reference(
+    expected.begin(), expected.end(), expected.begin(), scan_value_t{0}, cuda::std::plus<>{});
   const c2h::device_vector<large_count_t> device_num_items(1, num_items);
   c2h::device_vector<scan_value_t> first(num_items, scan_value_t{-1});
   c2h::device_vector<scan_value_t> second(num_items, scan_value_t{-1});
@@ -757,7 +754,7 @@ CUB_TEST("DeviceScan lookahead ring buffers are bitwise reproducible under run_t
   // Small integers keep every partial sum exact, so the stable order must match the host reference exactly.
   c2h::gen(c2h::modulo_t{7}, input);
   c2h::host_vector<float> expected = input;
-  std::exclusive_scan(expected.begin(), expected.end(), expected.begin(), 0.0f);
+  compute_exclusive_scan_reference(expected.begin(), expected.end(), expected.begin(), 0.0f, cuda::std::plus<>{});
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), first.begin(), count, env));
   REQUIRE(first == expected);
 
@@ -767,7 +764,7 @@ CUB_TEST("DeviceScan lookahead ring buffers are bitwise reproducible under run_t
   for (int iteration = 0; iteration < 3; ++iteration)
   {
     REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), repeat.begin(), count, env));
-    REQUIRE(repeat == first);
+    REQUIRE_THAT(detail::to_vec(repeat), detail::BitwiseEqualsRange(detail::to_vec(first)));
   }
 }
 
@@ -785,7 +782,7 @@ CUB_TEST("DeviceScan immediate and constant counts select the correct overloads"
     REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(data.begin(), count));
     REQUIRE(data == expected);
 
-    thrust::fill(output.begin(), output.end(), scan_value_t{-1});
+    thrust::fill(c2h::device_policy, output.begin(), output.end(), scan_value_t{-1});
     device_exclusive_sum(input.begin(), output.begin(), count);
     REQUIRE(output == expected);
   };
@@ -974,11 +971,12 @@ CUB_TEST("DeviceScan batched lookback preserves noncommutative order",
   c2h::host_vector<affine_value_t> host_input(static_cast<size_t>(num_items));
   for (large_count_t i = 0; i < num_items; ++i)
   {
-    host_input[static_cast<size_t>(i)] = affine_value_t{static_cast<uint32_t>(i % 3 + 1), static_cast<uint32_t>(i % 5)};
+    host_input[static_cast<size_t>(i)] =
+      affine_value_t{static_cast<uint32_t>(2 * (i % 3) + 1), static_cast<uint32_t>(i % 5)};
   }
   const c2h::device_vector<affine_value_t> input = host_input;
   const c2h::device_vector<large_count_t> device_num_items(1, num_items);
-  c2h::device_vector<affine_value_t> expected(static_cast<size_t>(num_items));
+  c2h::host_vector<affine_value_t> expected(static_cast<size_t>(num_items));
   c2h::device_vector<affine_value_t> output(static_cast<size_t>(num_items));
   const auto env = cuda::execution::tune(
     small_batch_policy_selector<affine_value_t,
@@ -987,8 +985,8 @@ CUB_TEST("DeviceScan batched lookback preserves noncommutative order",
                                 compose_affine_t,
                                 configured_batch_tiles>{});
 
-  REQUIRE(
-    cudaSuccess == cub::DeviceScan::InclusiveScan(input.begin(), expected.begin(), compose_affine_t{}, num_items, env));
+  compute_inclusive_scan_reference(
+    host_input.begin(), host_input.end(), expected.begin(), compose_affine_t{}, affine_value_t{1, 0});
   REQUIRE(cudaSuccess
           == cub::DeviceScan::InclusiveScan(
             input.begin(),
@@ -997,22 +995,7 @@ CUB_TEST("DeviceScan batched lookback preserves noncommutative order",
             cuda::args::deferred{thrust::raw_pointer_cast(device_num_items.data())},
             env));
 
-  const c2h::host_vector<affine_value_t> host_expected = expected;
-  const c2h::host_vector<affine_value_t> host_output   = output;
-  bool equal                                           = true;
-  for (large_count_t i = 0; i < num_items; ++i)
-  {
-    const auto index = static_cast<size_t>(i);
-    if (host_expected[index].scale != host_output[index].scale
-        || host_expected[index].shift != host_output[index].shift)
-    {
-      CAPTURE(
-        i, host_expected[index].scale, host_output[index].scale, host_expected[index].shift, host_output[index].shift);
-      equal = false;
-      break;
-    }
-  }
-  REQUIRE(equal);
+  REQUIRE(expected == c2h::host_vector<affine_value_t>(output));
 }
 
 // Two persistent grids share the device while each spans several batches, so CTAs of one scan wait for a batch
@@ -1124,11 +1107,12 @@ CUB_TEST("DeviceScan::ExclusiveSum consumes a deferred count produced in another
   REQUIRE(cudaSuccess == cudaStreamSynchronize(consumer));
 
   REQUIRE(device_num_selected[0] == selected_count);
+  const c2h::host_vector<scan_value_t> host_output = output;
   for (count_t i = 0; i < selected_count; ++i)
   {
-    REQUIRE(output[i] == i * (i - 1) / 2);
+    REQUIRE(host_output[i] == i * (i - 1) / 2);
   }
-  REQUIRE(output[selected_count] == scan_value_t{-1});
+  REQUIRE(host_output[selected_count] == scan_value_t{-1});
 
   REQUIRE(cudaSuccess == cudaEventDestroy(count_ready));
   REQUIRE(cudaSuccess == cudaStreamDestroy(producer));
@@ -1186,12 +1170,12 @@ CUB_TEST("DeviceScan::ExclusiveSum accepts deferred span, iterator and bounded s
   device_exclusive_sum(input.begin(), output.begin(), cuda::args::deferred{const_count_span});
   check();
 
-  thrust::fill(output.begin(), output.end(), scan_value_t{-1});
+  thrust::fill(c2h::device_policy, output.begin(), output.end(), scan_value_t{-1});
   const auto count_transform = cuda::transform_iterator(d_num_items, cuda::std::identity{});
   device_exclusive_sum(input.begin(), output.begin(), cuda::args::deferred{count_transform});
   check();
 
-  thrust::fill(output.begin(), output.end(), scan_value_t{-1});
+  thrust::fill(c2h::device_policy, output.begin(), output.end(), scan_value_t{-1});
   const auto bounded_count = cuda::args::deferred{
     d_num_items, cuda::args::bounds<count_t{0}, capacity>(), cuda::args::bounds(count_t{0}, capacity)};
   device_exclusive_sum(input.begin(), output.begin(), bounded_count);
@@ -1282,7 +1266,7 @@ CUB_TEST("DeviceScan::ExclusiveSum with a deferred size accepts run_to_run and g
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), output.begin(), count, run_to_run));
   REQUIRE(check_exact());
 
-  thrust::fill(output.begin(), output.end(), scan_value_t{-1});
+  thrust::fill(c2h::device_policy, output.begin(), output.end(), scan_value_t{-1});
   const auto gpu_to_gpu = cuda::std::execution::env{
     cuda::execution::require(cuda::execution::determinism::gpu_to_gpu), cuda::execution::tune(tuning)};
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), output.begin(), count, gpu_to_gpu));
@@ -1317,7 +1301,7 @@ CUB_TEST("DeviceScan::ExclusiveSum with a deferred size is bitwise reproducible 
   for (int i = 0; i < 3; ++i)
   {
     REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), repeat.begin(), count, env));
-    REQUIRE(repeat == first);
+    REQUIRE_THAT(detail::to_vec(repeat), detail::BitwiseEqualsRange(detail::to_vec(first)));
   }
 }
 
