@@ -7,7 +7,7 @@
 
   namespace cuda::experimental::coop {
 
-  using /*interwarp-barrier-id-type*/ = int;
+  using /*interwarp-barrier-id-type*/ = cuda::std::uint32_t;
 
   template <typename RangeView>
   class interwarp_synchronizer

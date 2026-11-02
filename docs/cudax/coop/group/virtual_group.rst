@@ -32,7 +32,7 @@
 
   template </*hierarchy-level-type*/ Unit, group ParentGroup, typename Mapping>
     requires /*unit-same-as-or-below*/<Unit, typename ParentGroup::unit_type>
-  virtual_group(const Unit&, const ParentGroup&, const Mapping&)
+  virtual_group(const Unit&, const ParentGroup&, Mapping&&)
     -> virtual_group<Unit,
                       ParentGroup,
                       /*mapping-result-of*/<Unit, ParentGroup, Mapping>>;
@@ -45,6 +45,8 @@ Overview
 ``cuda::experimental::coop::virtual_group`` is a group type that provides an abstraction layer over a group. It allows you to take an existing group and split it into subgroups while still using the parent group's synchronization mechanism. This means that the created subgroups are not truly independent of each other and are required to share synchronization points.
 
 Because of this limitation, a virtual group doesn't support optional participation in the group. If the input mapping outputs a unit without a valid mapping result, the behaviour is undefined.
+
+The parent group and its synchronization resources must outlive all uses of the virtual group.
 
 The type can be constructed by specifying what is being grouped (``unit``) within what (``parent_group``) and how (``mapping``). The type is not copyable, movable, or assignable. The user should always use deduction guides to deduce the template parameters.
 

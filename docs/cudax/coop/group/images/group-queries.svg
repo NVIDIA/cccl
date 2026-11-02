@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1440" height="620" viewBox="0 0 1440 620" role="img" aria-labelledby="title description">
 <title id="title">Thread and warp rank queries within a block</title>
-<desc id="description">Two panels each show one block containing four 32-thread warps. The group contains the first three warps; the fourth warp is outside the group. Thread 75, in the third warp, is highlighted in green. CTK Cooperative Groups group threads within the block level and expose the thread rank within the three-warp group. CCCL Cooperative Groups group warps within the block level and expose both thread rank 75 and warp rank 2 within the same group. Ranks start at zero.</desc>
+<desc id="description">Two panels each show one block containing four 32-thread warps. The group contains the first three warps; the fourth warp is outside the group. Thread 75, in the third warp, is highlighted in green. Original Cooperative Groups group threads within the block level and expose the thread rank within the three-warp group. CCCL Cooperative Groups group warps within the block level and expose both thread rank 75 and warp rank 2 within the same group. Ranks start at zero.</desc>
 <style>
   text { font-family: Arial, Helvetica, sans-serif; fill: #172b3a; }
   .heading { font-size: 24px; font-weight: 700; }
@@ -321,7 +321,7 @@
 <path d="M 1054 448 H 1116" class="callout"/>
 <text x="1130" y="454" class="note" text-anchor="start">Warp rank: 2</text>
 </g>
-<text x="360" y="525" class="heading" text-anchor="middle">CTK Cooperative Groups</text>
+<text x="360" y="525" class="heading" text-anchor="middle">Original Cooperative Groups</text>
 <text x="360" y="559" class="subtitle" text-anchor="middle">Groups threads within the block level</text>
 <text x="1080" y="525" class="heading" text-anchor="middle">CCCL Cooperative Groups</text>
 <text x="1080" y="559" class="subtitle" text-anchor="middle">Groups warps within the block level</text>
