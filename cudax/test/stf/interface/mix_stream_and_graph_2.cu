@@ -111,7 +111,7 @@ int main()
     auto exec_graph = gctx.instantiate();
     for (size_t iter = 0; iter < K; iter++)
     {
-      cudaGraphLaunch(*exec_graph, stream);
+      cuda_safe_call(cudaGraphLaunch(*exec_graph, stream));
     }
   };
 

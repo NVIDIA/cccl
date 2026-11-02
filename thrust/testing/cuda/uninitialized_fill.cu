@@ -82,15 +82,15 @@ TEST_CASE("TestUninitializedFillCudaStreams", "[uninitialized_fill]")
   const T sub(7);
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::uninitialized_fill(thrust::cuda::par.on(s), v.begin(), v.end(), sub);
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   const Vector ref(v.size(), sub);
   REQUIRE(v == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -187,13 +187,13 @@ TEST_CASE("TestUninitializedFillNCudaStreams", "[uninitialized_fill]")
   const T sub(7);
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::uninitialized_fill_n(thrust::cuda::par.on(s), v.begin(), v.size(), sub);
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   const Vector ref(5, sub);
   REQUIRE(v == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }

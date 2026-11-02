@@ -67,7 +67,7 @@ Group Mapping Process
 The group mapping process has 3 steps:
 
 1. The initial mapping result describes the parent group as one group: the static and runtime group counts are ``1``, the group rank is ``0``, and the unit count and rank are queried for the requested unit level. The exhaustive property is ``true`` relative to the parent group, and the contiguous property and lane mask are copied from the parent.
-2. The mapping's ``.map(...)`` member function is invoked with the initial mapping result. When a non-exhaustve mapping is done, the ``cuda::experimental::coop::non_exhaustive`` tag is passed as the first parameter to the ``.map(...)`` method.
+2. The mapping's ``.map(...)`` member function is invoked with the initial mapping result. When a non-exhaustive mapping is done, the ``cuda::experimental::coop::non_exhaustive`` tag is passed as the first parameter to the ``.map(...)`` method.
 3. The transformed mapping result is used to initialize the newly created group.
 
 Only units that belong to the parent group may create a child group. For a unit larger than a thread, all threads in that unit must agree on its assignment and participation.

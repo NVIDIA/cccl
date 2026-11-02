@@ -81,7 +81,7 @@ void histogram_even(
   int num_output_levels_val,
   cccl_value_t lower_level,
   cccl_value_t upper_level,
-  int64_t num_row_pixels,
+  int64_t num_row_items,
   int64_t num_rows,
   int64_t row_stride_samples)
 {
@@ -101,7 +101,7 @@ void histogram_even(
       num_output_levels,
       lower_level,
       upper_level,
-      num_row_pixels,
+      num_row_items,
       num_rows,
       row_stride_samples,
       nullptr));
@@ -119,7 +119,7 @@ void histogram_even(
       num_output_levels,
       lower_level,
       upper_level,
-      num_row_pixels,
+      num_row_items,
       num_rows,
       row_stride_samples,
       nullptr));
@@ -187,11 +187,11 @@ auto compute_reference_result(
   }
   for (OffsetT row = 0; row < height; ++row)
   {
-    for (OffsetT pixel = 0; pixel < width; ++pixel)
+    for (OffsetT item = 0; item < width; ++item)
     {
       for (size_t c = 0; c < ActiveChannels; ++c)
       {
-        const auto offset = row * (row_pitch / sizeof(SampleT)) + pixel * Channels + c;
+        const auto offset = row * (row_pitch / sizeof(SampleT)) + item * Channels + c;
         const int bin     = sample_to_bin_index(static_cast<int>(c), h_samples[offset]);
         if (bin >= 0 && bin < static_cast<int>(h_histogram[c].size())) // if bin is valid
         {
@@ -510,7 +510,7 @@ C2H_TEST("Histogram compile/load round-trip", "[histogram][device][serialization
       num_levels_val,
       lower_level_val,
       upper_level_val,
-      /*num_row_pixels=*/static_cast<int64_t>(n_samples),
+      /*num_row_items=*/static_cast<int64_t>(n_samples),
       /*num_rows=*/1,
       /*row_stride_samples=*/static_cast<int64_t>(n_samples),
       null_stream));
@@ -526,7 +526,7 @@ C2H_TEST("Histogram compile/load round-trip", "[histogram][device][serialization
       num_levels_val,
       lower_level_val,
       upper_level_val,
-      /*num_row_pixels=*/static_cast<int64_t>(n_samples),
+      /*num_row_items=*/static_cast<int64_t>(n_samples),
       /*num_rows=*/1,
       /*row_stride_samples=*/static_cast<int64_t>(n_samples),
       null_stream));

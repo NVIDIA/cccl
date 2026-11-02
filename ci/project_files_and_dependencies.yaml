@@ -277,7 +277,6 @@ ignore_regexes:
   - '^cudax/LICENSE\.TXT$'
   - '^libcudacxx/test/LICENSE\.TXT$'
   - '.+\.md$'
-  - '\.branch_notes/'
   - '^\.agent/'
   - '^\.claude/'
   - '\.coderabbit\.yaml'
