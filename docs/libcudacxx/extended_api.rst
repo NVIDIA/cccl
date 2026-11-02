@@ -25,6 +25,7 @@ Extended API
    extended_api/memory
    extended_api/memory_resource
    extended_api/math
+   extended_api/fp
    extended_api/mdspan
    extended_api/tma
    extended_api/warp

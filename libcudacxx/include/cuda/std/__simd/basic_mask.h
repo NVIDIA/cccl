@@ -27,8 +27,10 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/simd.h>
 #include <cuda/std/__iterator/default_sentinel.h>
+#include <cuda/std/__simd/abi.h>
+#include <cuda/std/__simd/exposition.h>
 #include <cuda/std/__simd/iterator.h>
-#include <cuda/std/__simd/specializations/fixed_size_mask.h>
+#include <cuda/std/__simd/specializations/fixed_size_mask.h> // IWYU pragma: keep
 #include <cuda/std/__simd/utility.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -145,11 +147,14 @@ public:
     }
   }
 
+  // The generator constraint excludes copy and move construction.
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_TEMPLATE(typename _Generator)
   _CCCL_REQUIRES(__can_generate_v<bool, _Generator, __size>)
   _CCCL_HOST_DEVICE_API constexpr explicit basic_mask(_Generator&& __g)
       : __s_{_Impl::__generate(__g)}
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   _CCCL_TEMPLATE(typename _Tp)
   _CCCL_REQUIRES(same_as<_Tp, bitset<__usize>>)

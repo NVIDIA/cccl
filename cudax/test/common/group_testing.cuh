@@ -26,6 +26,21 @@
 // NOLINTNEXTLINE(misc-anonymous-namespace-in-header)
 namespace
 {
+template <class Level>
+inline constexpr auto minimum_thread_scope_for_v = cuda::thread_scope{};
+template <>
+inline constexpr auto minimum_thread_scope_for_v<cuda::thread_level> = cuda::thread_scope_thread;
+template <>
+inline constexpr auto minimum_thread_scope_for_v<cuda::warp_level> = cuda::thread_scope_block;
+template <>
+inline constexpr auto minimum_thread_scope_for_v<cuda::block_level> = cuda::thread_scope_block;
+// todo(dabayer): Set the minimum thread scope for cluster level to thread_scope_cluster once it's supported with
+// cuda::barrier.
+template <>
+inline constexpr auto minimum_thread_scope_for_v<cuda::cluster_level> = cuda::thread_scope_device;
+template <>
+inline constexpr auto minimum_thread_scope_for_v<cuda::grid_level> = cuda::thread_scope_device;
+
 template <class T, cuda::std::size_t Id>
 __device__ T global_barriers_storage;
 
@@ -34,12 +49,13 @@ __device__ T global_barriers_storage;
 template <cuda::std::size_t N, cuda::std::size_t Id = 0, class Level>
 __device__ auto& get_barriers(const Level& level) noexcept
 {
-  constexpr auto scope = cudax::coop::__minimum_required_scope_for<Level>();
+  constexpr auto scope = minimum_thread_scope_for_v<Level>;
 
   using Barrier         = cuda::barrier<scope>;
   using BarriersStorage = cuda::std::aligned_storage_t<N * sizeof(Barrier), alignof(Barrier)>;
 
-  if constexpr (scope >= cuda::thread_scope_block)
+  if constexpr (cuda::std::is_same_v<Level, cuda::thread_level> || cuda::std::is_same_v<Level, cuda::warp_level>
+                || cuda::std::is_same_v<Level, cuda::block_level>)
   {
     __shared__ BarriersStorage shared_barriers_storage;
     return reinterpret_cast<Barrier(&)[N]>(shared_barriers_storage);

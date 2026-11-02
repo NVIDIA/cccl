@@ -13,15 +13,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_scan.cuh>
 #include <cub/detail/iket_support.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/detail/warpspeed/allocators/smem_allocator.cuh>
 #include <cub/detail/warpspeed/look_ahead.cuh>
+#include <cub/detail/warpspeed/resource/smem_phase.cuh>
 #include <cub/detail/warpspeed/resource/smem_ref.cuh>
 #include <cub/detail/warpspeed/resource/smem_resource.cuh>
+#include <cub/detail/warpspeed/resource/smem_stage.cuh>
 #include <cub/detail/warpspeed/special_registers.cuh>
 #include <cub/detail/warpspeed/squad/load_store.cuh>
 #include <cub/detail/warpspeed/squad/squad.cuh>
+#include <cub/detail/warpspeed/sync_handler.cuh>
 #include <cub/detail/warpspeed/values.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/thread/thread_reduce.cuh>
@@ -31,16 +35,23 @@
 #include <cub/warp/warp_scan.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/__device/compute_capability.h>
-#include <cuda/__ptx/instructions/clusterlaunchcontrol.h>
+#include <cuda/__functional/operator_properties.h>
+#include <cuda/__ptx/instructions/clusterlaunchcontrol.h> // IWYU pragma: keep
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/array>
+#include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 
 #include <nv/target>
+
+#if defined(_CCCL_ENABLE_IKET)
+#  include <cub/agent/agent_scan.cuh>
+#endif // defined(_CCCL_ENABLE_IKET)
 
 CUB_NAMESPACE_BEGIN
 
@@ -219,7 +230,7 @@ warpScanExclusivePartial(Tp regInput, ScanOpT& scan_op, const int num_items, boo
   }
 }
 
-template <typename ScanOpT, typename Tp, size_t ElemPerThread>
+template <typename ScanOpT, typename Tp, ::cuda::std::size_t ElemPerThread>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void fillWithIdentity(Tp (&regAggrInclusive)[ElemPerThread], int valid_items)
 {
   // if we are in the last tile and have an identity, fill the invalid array items with it
@@ -235,7 +246,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void fillWithIdentity(Tp (&regAggrInclusive)[
   }
 }
 
-template <bool IsInclusive, bool IsLastTile, typename Tp, size_t ElemPerThread, typename ScanOpT>
+template <bool IsInclusive, bool IsLastTile, typename Tp, ::cuda::std::size_t ElemPerThread, typename ScanOpT>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 threadScanPartial(Tp (&regAggrInclusive)[ElemPerThread], ScanOpT& scan_op, Tp prefix, bool use_prefix, int valid_items)
 {
@@ -330,11 +341,11 @@ struct lookahead_scan_closure
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_current_tile(
     const warpspeed::Squad& squad,
-    warpspeed::SmemPhase<in_out_t>& phaseInOutW,
+    warpspeed::SmemPhase<in_out_t>& phaseInOutL,
     const warpspeed::CpAsyncOobInfo<InputT>& loadInfo) const
   {
-    warpspeed::SmemRef refInOutW = phaseInOutW.acquireRef();
-    warpspeed::squadLoadBulk(squad, refInOutW, loadInfo);
+    warpspeed::SmemRef refInOutL = phaseInOutL.acquireRef();
+    warpspeed::squadLoadBulk(squad, refInOutL, loadInfo);
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void lookahead(
@@ -811,7 +822,7 @@ struct lookahead_scan_closure
       // readable by a set of threads. To acquire and release a phase, we need to arrive and wait on certain barriers.
       // The selection of the barriers is handled under the hood.
       auto [phaseNextBlockIdxW, phaseNextBlockIdxR]           = warpspeed::bindPhases<2>(stageNextBlockIdx);
-      auto [phaseInOutW, phaseInOutRW, phaseInOutS]           = warpspeed::bindPhases<3>(stageInOut);
+      auto [phaseInOutL, phaseInOutRW, phaseInOutS]           = warpspeed::bindPhases<3>(stageInOut);
       auto [phaseThreadAndWarpAggrW, phaseThreadAndWarpAggrR] = warpspeed::bindPhases<2>(stageThreadAndWarpAggr);
       auto [phaseAggrExclusiveCtaW, phaseAggrExclusiveCtaR]   = warpspeed::bindPhases<2>(stageAggrExclusiveCta);
 
@@ -833,7 +844,7 @@ struct lookahead_scan_closure
         _CCCL_IKET_RANGE_START(SquadLoadAndNextIdx);
 
         _CCCL_IKET_RANGE_PUSH(Load);
-        load_current_tile(squad, phaseInOutW, loadInfo);
+        load_current_tile(squad, phaseInOutL, loadInfo);
         _CCCL_IKET_RANGE_POP();
 
         _CCCL_IKET_RANGE_PUSH(NextIdx);

@@ -20,13 +20,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/variant.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/__utility/unreachable.h>
+#include <cuda/std/__utility/unreachable.h> // IWYU pragma: keep
 #include <cuda/std/__variant/bad_variant_access.h>
 #include <cuda/std/__variant/get.h>
 #include <cuda/std/__variant/variant.h>
@@ -115,7 +116,7 @@ template <class... _Types>
 template <class... _Vs>
 _CCCL_API constexpr void __throw_if_valueless(_Vs&&... __vs)
 {
-  [[maybe_unused]] int __unused[] = {
+  [[maybe_unused]] int __unused_var[] = {
     (::cuda::std::__as_variant(__vs).valueless_by_exception() ? ::cuda::std::__throw_bad_variant_access() : void(),
      0)...,
     0};

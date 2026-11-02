@@ -93,8 +93,8 @@ TEST_CASE("TestCountingIteratorCopyConstructor", "[counting_iterator]")
   const thrust::counting_iterator<int, thrust::device_system_tag> d_iter = iter0;
   REQUIRE(*iter0 == *d_iter);
 }
-static_assert(cuda::std::is_trivially_copy_constructible<thrust::counting_iterator<int>>::value);
-static_assert(cuda::std::is_trivially_copyable<thrust::counting_iterator<int>>::value);
+static_assert(cuda::std::is_trivially_copy_constructible_v<thrust::counting_iterator<int>>);
+static_assert(cuda::std::is_trivially_copyable_v<thrust::counting_iterator<int>>);
 
 template <typename TargetSystem,
           typename Incrementable,

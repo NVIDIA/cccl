@@ -13,4 +13,4 @@
 #  pragma system_header
 #endif // no system header
 
-// this system has no special version of this algorithm
+// cpp system has no special version of the mismatch algorithm

@@ -21,10 +21,10 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_array.h>
-#include <cuda/std/__type_traits/is_class.h>
-#include <cuda/std/__type_traits/is_scalar.h>
-#include <cuda/std/__type_traits/is_union.h>
+#include <cuda/std/__type_traits/is_array.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_class.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_scalar.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_union.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

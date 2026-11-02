@@ -27,6 +27,7 @@
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__cmath/isnormal.h>
 #include <cuda/std/__cmath/signbit.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__simd/math/common.h>
 
 #include <cuda/std/__cccl/prologue.h>

@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__floating_point/conversion_rank_order.h>
-#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>

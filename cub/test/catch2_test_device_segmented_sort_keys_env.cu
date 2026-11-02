@@ -12,16 +12,24 @@ struct stream_registry_factory_t;
 #include <thrust/device_vector.h>
 
 #include <cuda/__execution/tune.h>
+#include <cuda/__functional/call_or.h>
+#include <cuda/std/cstdint>
 
 #include <sstream>
 
 #include "block_size_extracting_helpers.h"
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedSort::SortKeys, sort_keys);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedSort::SortKeysDescending, sort_keys_descending);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedSort::StableSortKeys, stable_sort_keys);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedSort::StableSortKeysDescending, stable_sort_keys_descending);
+
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::SortKeys, sort_keys_two_phase);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::SortKeysDescending, sort_keys_descending_two_phase);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortKeys, stable_sort_keys_two_phase);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortKeysDescending, stable_sort_keys_descending_two_phase);
 
 // %PARAM% TEST_LAUNCH lid 0:1
 
@@ -493,6 +501,188 @@ CUB_TEST("DeviceSegmentedSort::StableSortKeysDescending DoubleBuffer uses enviro
   REQUIRE(result == expected);
 }
 
+struct sort_keys_api
+{
+  using launch_t                   = sort_keys_two_phase_t;
+  static constexpr bool descending = false;
+
+  template <class... Ts>
+  static cudaError_t call(Ts&&... args)
+  {
+    return cub::DeviceSegmentedSort::SortKeys(cuda::std::forward<Ts>(args)...);
+  }
+};
+
+struct sort_keys_descending_api
+{
+  using launch_t                   = sort_keys_descending_two_phase_t;
+  static constexpr bool descending = true;
+
+  template <class... Ts>
+  static cudaError_t call(Ts&&... args)
+  {
+    return cub::DeviceSegmentedSort::SortKeysDescending(cuda::std::forward<Ts>(args)...);
+  }
+};
+
+struct stable_sort_keys_api
+{
+  using launch_t                   = stable_sort_keys_two_phase_t;
+  static constexpr bool descending = false;
+
+  template <class... Ts>
+  static cudaError_t call(Ts&&... args)
+  {
+    return cub::DeviceSegmentedSort::StableSortKeys(cuda::std::forward<Ts>(args)...);
+  }
+};
+
+struct stable_sort_keys_descending_api
+{
+  using launch_t                   = stable_sort_keys_descending_two_phase_t;
+  static constexpr bool descending = true;
+
+  template <class... Ts>
+  static cudaError_t call(Ts&&... args)
+  {
+    return cub::DeviceSegmentedSort::StableSortKeysDescending(cuda::std::forward<Ts>(args)...);
+  }
+};
+
+using two_phase_apis =
+  c2h::type_list<sort_keys_api, sort_keys_descending_api, stable_sort_keys_api, stable_sort_keys_descending_api>;
+
+template <class Api>
+[[nodiscard]] c2h::device_vector<int> expected_two_segments()
+{
+  return Api::descending ? c2h::device_vector<int>{8, 7, 6, 9, 5, 3, 0} : c2h::device_vector<int>{6, 7, 8, 0, 3, 5, 9};
+}
+
+template <class Api, class EnvT, class... Args>
+void run_two_phase(const EnvT& env, Args&&... args)
+{
+  const stream_scope scope{cuda::__call_or(cuda::get_stream, cuda::stream_ref{cudaStream_t{}}, env).get()};
+
+  size_t temp_storage_bytes = 0;
+  REQUIRE(cudaSuccess == Api::call(nullptr, temp_storage_bytes, args..., env));
+
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  REQUIRE(cudaSuccess == Api::call(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, args..., env));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+}
+
+#if TEST_LAUNCH == 0
+
+// The launch wrappers copy their arguments, which non-copyable streams and DoubleBuffer do not allow
+template <class Api>
+void test_two_phase_with_custom_streams()
+{
+  auto keys_buf0       = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_buf1       = c2h::device_vector<int>(keys_buf0.size(), thrust::no_init);
+  const auto offsets   = c2h::device_vector<int>{0, 3, 7};
+  const int* d_offsets = thrust::raw_pointer_cast(offsets.data());
+  const int num_items  = static_cast<int>(keys_buf0.size());
+  const auto expected  = expected_two_segments<Api>();
+
+  SECTION("pointers")
+  {
+    test_with_custom_streams([&](const auto& env) {
+      run_two_phase<Api>(
+        env,
+        thrust::raw_pointer_cast(keys_buf0.data()),
+        thrust::raw_pointer_cast(keys_buf1.data()),
+        num_items,
+        2,
+        d_offsets,
+        d_offsets + 1);
+      REQUIRE(keys_buf1 == expected);
+    });
+  }
+
+  SECTION("DoubleBuffer")
+  {
+    test_with_custom_streams([&](const auto& env) {
+      cub::DoubleBuffer<int> d_keys(
+        thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
+      run_two_phase<Api>(env, d_keys, num_items, 2, d_offsets, d_offsets + 1);
+      auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
+      REQUIRE(keys == expected);
+    });
+  }
+}
+
+CUB_TEST("DeviceSegmentedSort keys two-phase overloads work with custom streams",
+         "[segmented_sort][keys][device]",
+         CUB_SMALL,
+         two_phase_apis)
+{
+  test_two_phase_with_custom_streams<c2h::get<0, TestType>>();
+}
+
+#endif // TEST_LAUNCH == 0
+
+// The two-phase overloads used to take `cudaStream_t stream = nullptr`
+template <class Api, class StreamT>
+void check_legacy_null_stream(StreamT stream)
+{
+  auto keys_buf0       = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_buf1       = c2h::device_vector<int>(keys_buf0.size(), thrust::no_init);
+  const auto offsets   = c2h::device_vector<int>{0, 3, 7};
+  const int* d_offsets = thrust::raw_pointer_cast(offsets.data());
+  const int num_items  = static_cast<int>(keys_buf0.size());
+  const auto expected  = expected_two_segments<Api>();
+
+  SECTION("pointers")
+  {
+    const stream_scope scope{cudaStream_t{}};
+    typename Api::launch_t{}(
+      thrust::raw_pointer_cast(keys_buf0.data()),
+      thrust::raw_pointer_cast(keys_buf1.data()),
+      num_items,
+      2,
+      d_offsets,
+      d_offsets + 1,
+      stream);
+    REQUIRE(keys_buf1 == expected);
+  }
+
+#if TEST_LAUNCH == 0
+  // The launch wrappers copy the DoubleBuffer, so call the overload directly
+  SECTION("DoubleBuffer")
+  {
+    cub::DoubleBuffer<int> d_keys(
+      thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
+    run_two_phase<Api>(stream, d_keys, num_items, 2, d_offsets, d_offsets + 1);
+    auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
+    REQUIRE(keys == expected);
+  }
+#endif // TEST_LAUNCH == 0
+}
+
+CUB_TEST("DeviceSegmentedSort keys two-phase overloads accept legacy null stream arguments",
+         "[segmented_sort][keys][device]",
+         CUB_SMALL,
+         two_phase_apis)
+{
+  using api_t = c2h::get<0, TestType>;
+
+  SECTION("nullptr")
+  {
+    check_legacy_null_stream<api_t>(nullptr);
+  }
+
+  SECTION("literal 0")
+  {
+    check_legacy_null_stream<api_t>(0);
+  }
+
+  SECTION("cudaStream_t{}")
+  {
+    check_legacy_null_stream<api_t>(cudaStream_t{});
+  }
+}
+
 template <int BlockThreads>
 struct segmented_sort_tuning
 {
@@ -618,6 +808,50 @@ CUB_TEST("DeviceSegmentedSort::StableSortKeysDescending can be tuned",
 
   const c2h::device_vector<int> expected{9, 8, 7, 6, 5, 3, 0};
   REQUIRE(keys_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceSegmentedSort keys two-phase overloads can be tuned",
+         "[segmented_sort][keys][device]",
+         CUB_SMALL,
+         two_phase_apis,
+         block_sizes)
+{
+  using api_t                              = c2h::get<0, TestType>;
+  constexpr unsigned int target_block_size = c2h::get<1, TestType>::value;
+  auto keys_buf0                           = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_buf1                           = c2h::device_vector<int>(7, thrust::no_init);
+  const auto begin_offsets                 = c2h::device_vector<int>{0};
+  const int* d_begin_offsets               = thrust::raw_pointer_cast(begin_offsets.data());
+  c2h::device_vector<unsigned int> d_block_size(1);
+
+  const block_size_extracting_constant_iterator end_offsets(7, thrust::raw_pointer_cast(d_block_size.data()));
+  const auto env = cuda::execution::tune(segmented_sort_tuning<target_block_size>{});
+  const auto expected =
+    api_t::descending ? c2h::device_vector<int>{9, 8, 7, 6, 5, 3, 0} : c2h::device_vector<int>{0, 3, 5, 6, 7, 8, 9};
+
+  SECTION("pointers")
+  {
+    typename api_t::launch_t{}(
+      thrust::raw_pointer_cast(keys_buf0.data()),
+      thrust::raw_pointer_cast(keys_buf1.data()),
+      7,
+      1,
+      d_begin_offsets,
+      end_offsets,
+      env);
+    REQUIRE(keys_buf1 == expected);
+  }
+
+  SECTION("DoubleBuffer")
+  {
+    cub::DoubleBuffer<int> d_keys(
+      thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
+    run_two_phase<api_t>(env, d_keys, 7, 1, d_begin_offsets, end_offsets);
+    auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
+    REQUIRE(keys == expected);
+  }
+
   REQUIRE(d_block_size[0] == target_block_size);
 }
 

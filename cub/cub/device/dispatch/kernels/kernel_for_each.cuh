@@ -19,6 +19,8 @@
 #include <cub/device/dispatch/tuning/tuning_for.cuh>
 #include <cub/util_arch.cuh>
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
@@ -29,7 +31,6 @@
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__utility/integer_sequence.h>
-#include <cuda/std/cstddef> // size_t
 
 CUB_NAMESPACE_BEGIN
 
@@ -77,9 +78,7 @@ struct has_unique_value_overload<
 // The trait below checks if the freedom to copy trivial types can be regained.
 template <typename Value, typename Fn>
 using can_regain_copy_freedom =
-  ::cuda::std::integral_constant<
-    bool,
-    ::cuda::std::is_trivially_constructible_v<Value> &&
+  ::cuda::std::bool_constant<::cuda::std::is_trivially_constructible_v<Value> &&
     ::cuda::std::is_trivially_copy_assignable_v<Value> &&
     ::cuda::std::is_trivially_move_assignable_v<Value> &&
     ::cuda::std::is_trivially_destructible_v<Value> &&

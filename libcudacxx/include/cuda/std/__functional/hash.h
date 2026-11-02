@@ -20,26 +20,27 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__functional/unary_function.h>
-#include <cuda/std/__fwd/hash.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/fold.h>
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_copy_constructible.h>
-#include <cuda/std/__type_traits/is_default_constructible.h>
-#include <cuda/std/__type_traits/is_enum.h>
-#include <cuda/std/__type_traits/is_move_constructible.h>
-#include <cuda/std/__type_traits/underlying_type.h>
-#include <cuda/std/__utility/forward.h>
-#include <cuda/std/__utility/move.h>
-#include <cuda/std/__utility/pair.h>
-#include <cuda/std/__utility/swap.h>
-#include <cuda/std/climits>
-#include <cuda/std/cstdint>
-#include <cuda/std/cstring>
+#include <cuda/std/__fwd/hash.h> // IWYU pragma: export
 
 #ifndef __cuda_std__
+
+#  include <cuda/std/__functional/invoke.h>
+#  include <cuda/std/__functional/unary_function.h>
+#  include <cuda/std/__type_traits/enable_if.h>
+#  include <cuda/std/__type_traits/fold.h>
+#  include <cuda/std/__type_traits/integral_constant.h>
+#  include <cuda/std/__type_traits/is_copy_constructible.h>
+#  include <cuda/std/__type_traits/is_default_constructible.h>
+#  include <cuda/std/__type_traits/is_enum.h>
+#  include <cuda/std/__type_traits/is_move_constructible.h>
+#  include <cuda/std/__type_traits/underlying_type.h>
+#  include <cuda/std/__utility/forward.h>
+#  include <cuda/std/__utility/move.h>
+#  include <cuda/std/__utility/pair.h>
+#  include <cuda/std/__utility/swap.h>
+#  include <cuda/std/climits>
+#  include <cuda/std/cstdint>
+#  include <cuda/std/cstring>
 
 #  include <cuda/std/__cccl/prologue.h>
 

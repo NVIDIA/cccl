@@ -99,7 +99,7 @@ TEST_CASE("TestEqualCudaStreams", "[equal]")
   thrust::device_vector<int> v2 = {5, 2, 0, 6, 1};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   REQUIRE(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.end(), v1.begin()));
   REQUIRE_FALSE(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.end(), v2.begin()));
@@ -113,5 +113,5 @@ TEST_CASE("TestEqualCudaStreams", "[equal]")
   REQUIRE(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.end(), v2.begin(), ::cuda::std::less_equal<int>()));
   REQUIRE_FALSE(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.end(), v2.begin(), ::cuda::std::greater<int>()));
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }

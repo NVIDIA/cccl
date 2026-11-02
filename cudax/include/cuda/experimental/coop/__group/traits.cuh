@@ -45,13 +45,6 @@ using _SpanElementType _CCCL_NODEBUG = typename _Span::element_type;
 template <class _Span>
 using _SpanValueType _CCCL_NODEBUG = typename _Span::value_type;
 
-template <class _Unit, class _Level>
-inline constexpr bool __unit_same_as_or_below_v = __is_natively_reachable_hierarchy_level_v<_Unit, _Level>;
-template <class _Level>
-inline constexpr bool __unit_same_as_or_below_v<_Level, _Level> = true;
-template <>
-inline constexpr bool __unit_same_as_or_below_v<thread_level, warp_level> = true;
-
 template <class _HierarchyLike>
 using __hierarchy_type_of _CCCL_NODEBUG =
   ::cuda::std::remove_cvref_t<decltype(::cuda::__unpack_hierarchy_if_needed(::cuda::std::declval<_HierarchyLike>()))>;

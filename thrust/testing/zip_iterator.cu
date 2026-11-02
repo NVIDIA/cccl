@@ -240,7 +240,7 @@ struct TestZipIteratorManipulation
   }
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipIteratorManipulation, unittest::type_list<int>);
-static_assert(cuda::std::is_trivially_copy_constructible<thrust::zip_iterator<cuda::std::tuple<int*, int*>>>::value);
+static_assert(cuda::std::is_trivially_copy_constructible_v<thrust::zip_iterator<cuda::std::tuple<int*, int*>>>);
 
 template <typename T>
 struct TestZipIteratorReference

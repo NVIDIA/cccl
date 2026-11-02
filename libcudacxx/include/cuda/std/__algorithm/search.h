@@ -21,13 +21,8 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/comp.h>
-#include <cuda/std/__functional/identity.h>
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__iterator/advance.h>
-#include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__utility/pair.h>
 
 #include <cuda/std/__cccl/prologue.h>

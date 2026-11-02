@@ -21,12 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__cmath/abs.h> // IWYU pragma: keep
 #include <cuda/std/__cmath/fpclassify.h>
-#include <cuda/std/__cmath/isinf.h>
-#include <cuda/std/__cmath/isnan.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__host_stdlib/math.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_extended_arithmetic.h>
 #include <cuda/std/__type_traits/is_integral.h>

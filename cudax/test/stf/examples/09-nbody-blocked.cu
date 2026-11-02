@@ -276,6 +276,8 @@ int main(int argc, char** argv)
   ctx.finalize();
 
   float elapsed;
+  // finalize() does not wait for work recorded in a stream returned by fence().
+  cuda_safe_call(cudaEventSynchronize(stop));
   cuda_safe_call(cudaEventElapsedTime(&elapsed, start, stop));
 
   // rough approximation !

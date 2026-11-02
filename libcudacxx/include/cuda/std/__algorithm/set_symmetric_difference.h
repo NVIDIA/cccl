@@ -24,9 +24,7 @@
 #include <cuda/std/__algorithm/comp_ref_type.h>
 #include <cuda/std/__algorithm/copy.h>
 #include <cuda/std/__algorithm/iterator_operations.h>
-#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/__utility/pair.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

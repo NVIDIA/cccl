@@ -22,9 +22,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__bit/bit_cast.h> // IWYU pragma: keep
 #include <cuda/std/__floating_point/storage.h>
 #include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/cfloat>
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 

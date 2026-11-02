@@ -16,6 +16,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_reduce.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/util_debug.cuh>
 
 #include <cstdio>
 #include <iostream>
@@ -118,9 +119,9 @@ void Test()
   int* d_in          = nullptr;
   int* d_out         = nullptr;
   clock_t* d_elapsed = nullptr;
-  cudaMalloc(reinterpret_cast<void**>(&d_in), sizeof(int) * TILE_SIZE);
-  cudaMalloc(reinterpret_cast<void**>(&d_out), sizeof(int) * 1);
-  cudaMalloc(reinterpret_cast<void**>(&d_elapsed), sizeof(clock_t));
+  CubDebugExit(cudaMalloc(reinterpret_cast<void**>(&d_in), sizeof(int) * TILE_SIZE));
+  CubDebugExit(cudaMalloc(reinterpret_cast<void**>(&d_out), sizeof(int) * 1));
+  CubDebugExit(cudaMalloc(reinterpret_cast<void**>(&d_elapsed), sizeof(clock_t)));
 
   // Display input problem data
   if (g_verbose)
@@ -139,7 +140,7 @@ void Test()
     MaxSmOccupancy(max_sm_occupancy, BlockReduceKernel<BlockThreads, ItemsPerThread, ALGORITHM>, BlockThreads));
 
   // Copy problem to device
-  cudaMemcpy(d_in, h_in, sizeof(int) * TILE_SIZE, cudaMemcpyHostToDevice);
+  CubDebugExit(cudaMemcpy(d_in, h_in, sizeof(int) * TILE_SIZE, cudaMemcpyHostToDevice));
 
   printf("BlockReduce algorithm %s on %d items (%d timing iterations, %d blocks, %d threads, %d items per thread, %d "
          "SM occupancy):\n",
@@ -168,7 +169,7 @@ void Test()
   for (int i = 0; i < g_timing_iterations; ++i)
   {
     // Copy problem to device
-    cudaMemcpy(d_in, h_in, sizeof(int) * TILE_SIZE, cudaMemcpyHostToDevice);
+    CubDebugExit(cudaMemcpy(d_in, h_in, sizeof(int) * TILE_SIZE, cudaMemcpyHostToDevice));
 
     timer.Start();
 
@@ -210,15 +211,15 @@ void Test()
   }
   if (d_in)
   {
-    cudaFree(d_in);
+    CubDebugExit(cudaFree(d_in));
   }
   if (d_out)
   {
-    cudaFree(d_out);
+    CubDebugExit(cudaFree(d_out));
   }
   if (d_elapsed)
   {
-    cudaFree(d_elapsed);
+    CubDebugExit(cudaFree(d_elapsed));
   }
 }
 

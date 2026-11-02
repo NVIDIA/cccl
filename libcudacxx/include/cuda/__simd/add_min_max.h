@@ -47,7 +47,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 
 // CUDA [13.2, 13.3] ptxas generates incorrect SM103 code for dependent VIADDMNMX instructions.
 // The workaround consists in adding an identity LOP3 to break the dependency. CTK 13.4 fixes the issue.
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::cuda::std::uint32_t
 __workaround_sm103_viaddmnmx(::cuda::std::uint32_t __value) noexcept
 {
 #  if _CCCL_CTK_AT_LEAST(13, 2) && _CCCL_CTK_BELOW(13, 4)

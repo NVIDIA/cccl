@@ -13,5 +13,5 @@
 #  pragma system_header
 #endif // no system header
 
-// this system inherits equal
+// omp system inherits equal
 #include <thrust/system/cpp/detail/equal.h>

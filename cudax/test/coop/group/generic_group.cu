@@ -34,6 +34,12 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
   static_assert(cuda::std::is_same_v<Unit, typename Group::unit_type>);
   static_assert(cuda::std::is_same_v<Level, typename Group::level_type>);
 
+  // Test Group::arrival_token.
+  using ArrivalToken = typename Group::arrival_token;
+  static_assert(cuda::std::is_nothrow_move_constructible_v<ArrivalToken>);
+  static_assert(cuda::std::is_nothrow_move_assignable_v<ArrivalToken>);
+  static_assert(cuda::std::is_destructible_v<ArrivalToken>);
+
   // Test that the group can be queried for it's hierarchy.
   {
     decltype(auto) hierarchy = cuda::std::as_const(group).hierarchy();
@@ -62,6 +68,32 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
     }
   }
 
+  // Test that the group can be synchronized using .arrive() + .wait() methods.
+  {
+    static_assert(cuda::std::is_same_v<ArrivalToken, decltype(group.arrive())>);
+    static_assert(cuda::std::is_same_v<void, decltype(group.wait(cuda::std::declval<ArrivalToken&&>()))>);
+    static_assert(noexcept(group.arrive()));
+    static_assert(noexcept(group.wait(cuda::std::declval<ArrivalToken&&>())));
+
+    // Unaligned variants method must support calls from different branches. Add some dummy work to make sure the
+    // branches are not collided.
+    const cuda::atomic_ref<unsigned, cuda::thread_scope_device> atomic{global_var};
+    if ((threadIdx.x + threadIdx.y + threadIdx.z) % 2 == 0)
+    {
+      atomic++;
+      auto arrival_token = group.arrive();
+      atomic--;
+      group.wait(cuda::std::move(arrival_token));
+    }
+    else
+    {
+      atomic--;
+      auto arrival_token = group.arrive();
+      atomic++;
+      group.wait(cuda::std::move(arrival_token));
+    }
+  }
+
   // Test that the group can be synchronized using .sync_aligned() method.
   {
     static_assert(cuda::std::is_same_v<void, decltype(group.sync_aligned())>);
@@ -69,6 +101,16 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
 
     // .sync_aligned() method must be called by all threads in the group uniformly in one place.
     group.sync_aligned();
+  }
+
+  // Test that the group can be synchronized using .arrive_aligned() + .wait_aligned() methods.
+  {
+    static_assert(cuda::std::is_same_v<ArrivalToken, decltype(group.arrive_aligned())>);
+    static_assert(cuda::std::is_same_v<void, decltype(group.wait_aligned(cuda::std::declval<ArrivalToken&&>()))>);
+    static_assert(noexcept(group.arrive_aligned()));
+    static_assert(noexcept(group.wait_aligned(cuda::std::declval<ArrivalToken&&>())));
+
+    group.wait_aligned(group.arrive_aligned());
   }
 }
 
@@ -90,7 +132,6 @@ test_queries(const cudax::coop::generic_group<cuda::thread_level, ParentGroup, M
   REQUIRE(cuda::gpu_thread.count(group) == count_ref);
   REQUIRE(cuda::gpu_thread.rank(group) == rank_ref);
   REQUIRE(cuda::gpu_thread.is_root_rank(group) == (rank_ref == 0));
-  REQUIRE(cuda::gpu_thread.is_part_of(group));
 
   const auto static_group_count_ref = group.__mapping_result().static_group_count();
   const auto group_count_ref        = group.__mapping_result().group_count();
@@ -111,7 +152,7 @@ __device__ void test_group_by_group(Unit unit, Level level, Config config)
   {
     auto& barriers = get_barriers<nbarriers, 0>(level);
 
-    const cudax::coop::group_by mapping{cuda::std::integral_constant<cuda::std::size_t, N>{}};
+    const cudax::coop::group_by mapping{cuda::std::cw<N>};
     const cudax::coop::barrier_synchronizer synchronizer{barriers};
     cudax::coop::generic_group group{unit, parent_group, mapping, synchronizer};
 

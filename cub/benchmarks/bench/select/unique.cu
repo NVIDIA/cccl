@@ -10,7 +10,7 @@
 #include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
 
-// %RANGE% TUNE_TRANSPOSE trp 0:1:1
+// %RANGE% TUNE_TRANSPOSE trp 0:2:1
 // %RANGE% TUNE_LOAD ld 0:1:1
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
@@ -27,7 +27,8 @@ struct bench_policy_selector
     return {cub::SelectAlgorithm::lookback,
             {TUNE_THREADS_PER_BLOCK,
              TUNE_ITEMS_PER_THREAD,
-             (TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE),
+             (TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT
+                                  : (TUNE_TRANSPOSE == 1 ? cub::BLOCK_LOAD_WARP_TRANSPOSE : cub::BLOCK_LOAD_VECTORIZE)),
              (TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA),
              cub::BLOCK_SCAN_WARP_SCANS,
              lookback_delay_policy}};
@@ -61,7 +62,7 @@ static void unique(nvbench::state& state, nvbench::type_list<T, InPlace>)
     d_num_unique,
     static_cast<offset_t>(elements),
     ::cuda::std::equal_to<>{});
-  cudaDeviceSynchronize();
+  _CCCL_TRY_RUNTIME_API(cudaDeviceSynchronize, "Sync failed");
   const offset_t num_unique = num_unique_out[0];
 
   state.add_element_count(elements);

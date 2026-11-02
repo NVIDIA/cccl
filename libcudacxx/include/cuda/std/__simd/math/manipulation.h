@@ -25,7 +25,9 @@
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/rounding_functions.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__simd/math/common.h>
+#include <cuda/std/__simd/type_traits.h>
 #include <cuda/std/array>
 
 #include <cuda/std/__cccl/prologue.h>
