@@ -23,7 +23,6 @@
 
 #include <cub/block/block_reduce.cuh>
 
-#include <cuda/__atomic/atomic.h>
 #include <cuda/__memory/uninitialized_array.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/construct_at.h>
@@ -176,8 +175,7 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __insert_if_n(
   const auto __block_num_successes = __block_reduce(__temp_storage).Sum(__thread_num_successes);
   if (threadIdx.x == 0)
   {
-    (void) ::cuda::experimental::cuco::detail::__atomic_fetch_add<_Ref::thread_scope>(
-      __num_successes, __block_num_successes);
+    (void) detail::__atomic_fetch_add<_Ref::thread_scope>(__num_successes, __block_num_successes);
   }
 }
 
@@ -477,8 +475,7 @@ __rehash(_StorageRef __old_storage, _ContainerRef __container_ref, _Predicate __
       if (__is_filled(__slot))
       {
         const auto __buffer_idx =
-          ::cuda::atomic_ref<::cuda::std::uint32_t, ::cuda::thread_scope_block>{__buffer_size}.fetch_add(
-            1, ::cuda::std::memory_order_relaxed);
+          detail::__atomic_fetch_add<::cuda::thread_scope_block>(&__buffer_size, ::cuda::std::uint32_t{1});
         __buffer[__buffer_idx] = __slot;
       }
     }
