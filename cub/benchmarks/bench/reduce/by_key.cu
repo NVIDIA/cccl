@@ -68,7 +68,7 @@ static void reduce_by_key(nvbench::state& state, nvbench::type_list<KeyT, ValueT
     d_num_runs_out,
     reduction_op_t{},
     static_cast<OffsetT>(elements),
-    cuda::mr::resource_ref<>{alloc});
+    cuda::std::execution::env{cuda::stream_ref{state.get_cuda_stream().get_stream()}, cuda::mr::resource_ref<>{alloc}});
   _CCCL_TRY_RUNTIME_API(cudaDeviceSynchronize, "Sync failed");
   const OffsetT num_runs = num_runs_out[0];
 

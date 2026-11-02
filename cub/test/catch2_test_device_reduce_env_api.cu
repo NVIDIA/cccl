@@ -30,7 +30,7 @@ struct custom_stream_env
   }
 };
 
-struct other_query_t
+struct other_query_t : cuda::std::execution::__basic_query<other_query_t>
 {};
 
 struct custom_resource_env
@@ -81,7 +81,7 @@ CUB_TEST("DeviceReduce dispatch preserves unadvertised streams", "[reduce][env]"
   check(cuda::checked_env<>(raw));
 
   const auto fallback =
-    cub::detail::query_or<true>(cuda::get_stream, cuda::stream_ref{cudaStream_t{}}, cuda::std::execution::env<>{});
+    cuda::__call_or(cuda::get_stream, cuda::stream_ref{cudaStream_t{}}, cuda::std::execution::env<>{});
   REQUIRE(fallback.get() == cudaStream_t{});
 }
 
@@ -91,8 +91,7 @@ CUB_TEST("DeviceReduce dispatch preserves unadvertised resources", "[reduce][env
   size_t bytes_deallocated{};
   const device_memory_resource expected{cudaStreamPerThread, &bytes_allocated, &bytes_deallocated};
   const auto check = [&](const auto& env) {
-    const auto resource =
-      cub::detail::query_or<true>(cuda::mr::get_memory_resource, cub::detail::device_memory_resource{}, env);
+    const auto resource = cuda::__call_or(cuda::mr::get_memory_resource, cub::detail::device_memory_resource{}, env);
     static_assert(cuda::std::is_same_v<cuda::std::remove_cvref_t<decltype(resource)>, device_memory_resource>);
     REQUIRE(resource == expected);
   };
@@ -112,13 +111,13 @@ CUB_TEST("DeviceReduce dispatch preserves unadvertised resources", "[reduce][env
 CUB_TEST("DeviceReduce preserves unadvertised determinism requirements", "[reduce][env]", CUB_SMALL)
 {
   const auto check = [](const auto& env) {
-    using env_type     = cuda::std::remove_cvref_t<decltype(env)>;
-    using requirements = cuda::std::execution::__detail::
-      __advertised_query_result_or_t<env_type, cuda::execution::__get_requirements_t, cuda::std::execution::env<>>;
+    using env_type = cuda::std::remove_cvref_t<decltype(env)>;
+    using requirements =
+      cuda::__call_result_or_t<cuda::execution::__get_requirements_t, cuda::std::execution::env<>, const env_type&>;
     using determinism =
-      cuda::std::execution::__query_result_or_t<requirements,
-                                                cuda::execution::determinism::__get_determinism_t,
-                                                cuda::execution::determinism::run_to_run_t>;
+      cuda::__call_result_or_t<cuda::execution::determinism::__get_determinism_t,
+                               cuda::execution::determinism::run_to_run_t,
+                               const requirements&>;
     static_assert(cuda::std::is_same_v<determinism, cuda::execution::determinism::gpu_to_gpu_t>);
   };
 

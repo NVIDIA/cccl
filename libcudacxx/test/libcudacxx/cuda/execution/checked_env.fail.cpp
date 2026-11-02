@@ -9,7 +9,7 @@
 
 #include <cuda/execution>
 
-struct query_t
+struct query_t : cuda::std::execution::__basic_query<query_t>
 {};
 
 struct invalid_env
@@ -23,6 +23,7 @@ struct invalid_env
 int main(int, char**)
 {
   // A checked environment must answer each advertised query on a const object.
+  // expected-error@* {{The requested query expression is not valid for a const environment.}}
   auto env = cuda::checked_env<query_t>(invalid_env{});
   (void) env;
 

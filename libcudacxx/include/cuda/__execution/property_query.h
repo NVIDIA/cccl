@@ -29,15 +29,17 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION
 
-//! @brief Describes a query expression with a key and zero or more additional argument types.
+//! @brief Describes an invocation of a query customization point object with zero or more additional arguments.
 //!
-//! @tparam _Query The query key type.
+//! The query object is default constructed and invoked with a const environment followed by the specified arguments.
+//!
+//! @tparam _Query The query customization point object type.
 //! @tparam _Args The types of the additional arguments passed to the query.
 template <class _Query, class... _Args>
 struct property_query
 {};
 
-//! @brief A list of query expressions advertised by an environment or query-providing object.
+//! @brief A list of query customizations advertised by an environment or query-providing object.
 //!
 //! A bare query key is shorthand for @c property_query<Query>. Entries with additional
 //! argument types are represented with @c property_query<Query,Args...>.

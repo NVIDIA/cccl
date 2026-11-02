@@ -28,6 +28,7 @@
 #include <cuda/std/__fwd/reference_wrapper.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_one_of.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
@@ -101,6 +102,9 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
+
+template <class... _Envs>
+struct env;
 
 namespace __detail
 {
@@ -197,18 +201,41 @@ _CCCL_CONCEPT __queryable_with = _IsValidExpansion<__query_result_t, _Env, _Quer
 
 namespace __detail
 {
+_CCCL_EXEC_CHECK_DISABLE
+_CCCL_TEMPLATE(class _Query, class _Env, class... _Args)
+_CCCL_REQUIRES(::cuda::std::__is_callable_v<_Query, const _Env&, _Args...>)
+_CCCL_API constexpr decltype(auto) __invoke_property(const _Env& __env, _Args&&... __args) noexcept(
+  noexcept(_Query{}(__env, static_cast<_Args&&>(__args)...)))
+{
+  // Deducing this return type also instantiates the CPO body, including its assertions.
+  return _Query{}(__env, static_cast<_Args&&>(__args)...);
+}
+
 template <class _Env, class _PropertyQuery>
 inline constexpr bool __is_valid_property_query_v = false;
 
 template <class _Env, class _Query, class... _Args>
 inline constexpr bool __is_valid_property_query_v<_Env, ::cuda::execution::property_query<_Query, _Args...>> =
-  __queryable_with<const remove_cvref_t<_Env>&, _Query, _Args...>;
+  __queryable_with<const remove_cvref_t<_Env>&, _Query, _Args...>
+  && ::cuda::std::__is_callable_v<_Query, const remove_cvref_t<_Env>&, _Args...>;
+
+template <class _Env,
+          class _Query,
+          class... _Args,
+          class = decltype(::cuda::std::execution::__detail::__invoke_property<_Query>(
+            ::cuda::std::declval<const remove_cvref_t<_Env>&>(), ::cuda::std::declval<_Args>()...))>
+_CCCL_API constexpr void __validate_property_query_body(::cuda::execution::property_query<_Query, _Args...>) noexcept
+{}
 
 template <class _Env, class _Query>
 _CCCL_API constexpr void __validate_property_query() noexcept
 {
   static_assert(__is_valid_property_query_v<_Env, __as_property_query_t<_Query>>,
                 "The environment advertises a query expression that is not valid for a const environment.");
+  if constexpr (__is_valid_property_query_v<_Env, __as_property_query_t<_Query>>)
+  {
+    ::cuda::std::execution::__detail::__validate_property_query_body<_Env>(__as_property_query_t<_Query>{});
+  }
 }
 
 template <class _Env, class... _Queries>
@@ -220,11 +247,38 @@ _CCCL_API constexpr void __validate_property_keys(::cuda::execution::property_ke
   (::cuda::std::execution::__detail::__validate_property_query<_Env, _Queries>(), ...);
 }
 
+// Keep the fallback less preferred than a conversion to an inherited env base.
+_CCCL_API constexpr void __validate_env_components(__ignore_t) noexcept {}
+
+template <class... _Envs>
+_CCCL_API constexpr void __validate_env_components(env<_Envs...>*) noexcept;
+
+template <class _Component>
+_CCCL_API constexpr void __validate_env_component() noexcept
+{
+  if constexpr (__has_property_keys<_Component>)
+  {
+    // A single-component env preserves the member lookup and reference semantics of
+    // composition. A CPO must not bypass that lookup through a leaf's getters or conversions.
+    using __view _CCCL_NODEBUG = env<_Component>;
+    ::cuda::std::execution::__detail::__validate_property_keys<__view>(__property_keys_t<_Component>{});
+  }
+  ::cuda::std::execution::__detail::__validate_env_components(static_cast<remove_cvref_t<_Component>*>(nullptr));
+}
+
+template <class... _Envs>
+_CCCL_API constexpr void __validate_env_components(env<_Envs...>*) noexcept
+{
+  // Check each contribution even when an earlier provider answers the same query.
+  (::cuda::std::execution::__detail::__validate_env_component<_Envs>(), ...);
+}
+
 template <class _Env>
 _CCCL_API constexpr void __validate_env() noexcept
 {
   static_assert(__has_property_keys<_Env>,
                 "The type is not an environment because it has no valid property_keys list.");
+  ::cuda::std::execution::__detail::__validate_env_components(static_cast<remove_cvref_t<_Env>*>(nullptr));
   using __property_keys _CCCL_NODEBUG = __property_keys_or_empty_t<_Env>;
   ::cuda::std::execution::__detail::__validate_property_keys<_Env>(__property_keys{});
 }
@@ -234,28 +288,6 @@ inline constexpr bool __advertises_query_v =
   __has_property_keys<_Env>
   && __property_key_list_contains_v<__property_keys_or_empty_t<_Env>,
                                     ::cuda::execution::property_query<_Query, _Args...>>;
-
-template <class _Env, class _PropertyQuery, class _Default, bool>
-struct __advertised_query_result_or
-{
-  using type _CCCL_NODEBUG = _Default;
-};
-
-template <class _Env, class _Query, class... _Args, class _Default>
-struct __advertised_query_result_or<_Env, ::cuda::execution::property_query<_Query, _Args...>, _Default, true>
-{
-  static_assert(__queryable_with<const remove_cvref_t<_Env>&, _Query, _Args...>,
-                "The environment advertises a query expression that is not valid for a const environment.");
-  using type _CCCL_NODEBUG = __query_result_t<const remove_cvref_t<_Env>&, _Query, _Args...>;
-};
-
-template <class _Env, class _Query, class _Default, class... _Args>
-using __advertised_query_result_or_t _CCCL_NODEBUG =
-  typename __advertised_query_result_or<_Env,
-                                        ::cuda::execution::property_query<_Query, _Args...>,
-                                        _Default,
-                                        (__advertises_query_v<_Env, _Query, _Args...>
-                                         || __queryable_with<const remove_cvref_t<_Env>&, _Query, _Args...>)>::type;
 } // namespace __detail
 
 #if _CCCL_HAS_EXCEPTIONS()

@@ -306,12 +306,12 @@ private:
   {
     static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                   "Determinism should be used inside requires to have an effect.");
-    using requirements_t = ::cuda::std::execution::__detail::
-      __advertised_query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using requirements_t =
+      ::cuda::__call_result_or_t<::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>, const EnvT&>;
     using default_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t,
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
+      ::cuda::__call_result_or_t<::cuda::execution::determinism::__get_determinism_t,
+                                 ::cuda::execution::determinism::run_to_run_t,
+                                 const requirements_t&>;
 
     constexpr auto gpu_gpu_determinism =
       ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>;
@@ -391,12 +391,12 @@ private:
   {
     static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                   "Determinism should be used inside requires to have an effect.");
-    using requirements_t = ::cuda::std::execution::__detail::
-      __advertised_query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using requirements_t =
+      ::cuda::__call_result_or_t<::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>, const EnvT&>;
     using requested_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t,
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
+      ::cuda::__call_result_or_t<::cuda::execution::determinism::__get_determinism_t,
+                                 ::cuda::execution::determinism::run_to_run_t,
+                                 const requirements_t&>;
 
     // Static assert to reject gpu_to_gpu determinism since it's not properly implemented
     static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
@@ -1004,12 +1004,12 @@ private:
   {
     static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                   "Determinism should be used inside requires to have an effect.");
-    using requirements_t = ::cuda::std::execution::__detail::
-      __advertised_query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using requirements_t =
+      ::cuda::__call_result_or_t<::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>, const EnvT&>;
     using requested_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t, //
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
+      ::cuda::__call_result_or_t<::cuda::execution::determinism::__get_determinism_t,
+                                 ::cuda::execution::determinism::run_to_run_t,
+                                 const requirements_t&>;
     // Reject gpu_to_gpu determinism since it's not properly implemented
     return !::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>;
   }
@@ -1019,12 +1019,12 @@ private:
   template <class EnvT>
   [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL bool __streaming_reduce_nondeterminism_fell_back() noexcept
   {
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using requirements_t =
+      ::cuda::__call_result_or_t<::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>, const EnvT&>;
     using requested_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t, //
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
+      ::cuda::__call_result_or_t<::cuda::execution::determinism::__get_determinism_t,
+                                 ::cuda::execution::determinism::run_to_run_t,
+                                 const requirements_t&>;
     return detail::is_non_deterministic_v<requested_determinism_t>;
   }
 

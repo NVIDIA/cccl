@@ -7,19 +7,20 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/__functional/call_or.h>
 #include <cuda/execution>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
-struct query1_t
+struct query1_t : cuda::std::execution::__basic_query<query1_t>
 {};
 
-struct query2_t
+struct query2_t : cuda::std::execution::__basic_query<query2_t>
 {};
 
-struct query3_t
+struct query3_t : cuda::std::execution::__basic_query<query3_t>
 {};
 
 struct custom_env
@@ -55,7 +56,7 @@ struct partial_metadata_env : legacy_env
 };
 
 template <class Env, class Query, class... Args>
-using query_result_or = cuda::std::execution::__detail::__advertised_query_result_or_t<Env, Query, char, Args...>;
+using query_result_or = cuda::__call_result_or_t<Query, char, const cuda::std::remove_cvref_t<Env>&, Args...>;
 
 template <class... Queries>
 struct advertised_env

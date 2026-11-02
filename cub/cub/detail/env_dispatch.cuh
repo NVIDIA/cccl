@@ -34,37 +34,11 @@ namespace detail
 {
 //! @cond
 
-//! @brief Invokes a property query or returns a fallback value.
-//!
-//! When @c UseAdvertisedQueries is @c true, a query advertised without additional arguments is
-//! invoked directly. Otherwise, the query is invoked if it is callable with @p env, whether or not
-//! it is advertised. The fallback is used only when the query is unavailable.
-//!
-//! @tparam UseAdvertisedQueries Whether to require advertised queries to be callable.
-//! @tparam QueryT The query callable type.
-//! @tparam FallbackT The fallback value type.
-//! @tparam EnvT The queried environment or object type.
-//! @param[in] query The property query to invoke.
-//! @param[in] fallback The value returned when the query is not selected.
-//! @param[in] env The environment or object to query.
-//! @return The query result when selected; otherwise @p fallback.
-template <bool UseAdvertisedQueries, typename QueryT, typename FallbackT, typename EnvT>
-[[nodiscard]] CUB_RUNTIME_FUNCTION auto query_or([[maybe_unused]] QueryT query, FallbackT&& fallback, const EnvT& env)
-{
-  if constexpr (UseAdvertisedQueries && ::cuda::std::execution::__detail::__advertises_query_v<EnvT, QueryT>)
-  {
-    return query(env);
-  }
-  else
-  {
-    return ::cuda::__call_or(query, static_cast<FallbackT&&>(fallback), env);
-  }
-}
-
 //! @brief Validates an advertised environment or a query-providing object.
 //!
 //! An environment with property-key metadata discoverable through
-//! @c cuda::execution::property_keys_t must accept every advertised query expression on a const object.
+//! @c cuda::execution::property_keys_t must provide every advertised member customization and support
+//! invocation of its query customization point object on a const object.
 //! An object without advertised metadata must provide at least a stream or a memory resource.
 //!
 //! @tparam EnvT The environment or object type to validate.
@@ -87,30 +61,26 @@ CUB_RUNTIME_FUNCTION void validate_env_or_object()
 //!
 //! This function resolves the stream, memory resource, and tuning environment; queries the
 //! required temporary-storage size; allocates the storage; invokes the algorithm; and then
-//! releases the storage. When @c UseAdvertisedQueries is @c true, advertised queries are invoked
-//! directly. Unadvertised queries are used when callable with @p env, and unavailable queries use
+//! releases the storage. Queries are used when callable with @p env, and unavailable queries use
 //! their defaults. This function does not validate @p env.
 //!
-//! @tparam UseAdvertisedQueries Whether to require advertised queries to be callable. Defaults to @c false.
 //! @tparam EnvT The execution environment or query-providing object type.
 //! @tparam AlgorithmCallable The algorithm implementation callable type.
 //! @param[in] env The execution environment or query-providing object.
 //! @param[in] algorithm_callable The algorithm implementation callable.
 //! @return The temporary-storage sizing or allocation error, if any; otherwise the execution error, if any;
 //! otherwise the deallocation status.
-template <bool UseAdvertisedQueries = false, typename EnvT, typename AlgorithmCallable>
+template <typename EnvT, typename AlgorithmCallable>
 [[nodiscard]] CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env(const EnvT& env, AlgorithmCallable&& algorithm_callable)
 {
   // Query stream from environment
-  auto stream = detail::query_or<UseAdvertisedQueries>(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
+  auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
 
   // Query memory resource from environment
-  auto mr =
-    detail::query_or<UseAdvertisedQueries>(::cuda::mr::get_memory_resource, detail::device_memory_resource{}, env);
+  auto mr = ::cuda::__call_or(::cuda::mr::get_memory_resource, detail::device_memory_resource{}, env);
 
   // Query tuning from environment
-  const auto tuning =
-    detail::query_or<UseAdvertisedQueries>(::cuda::execution::__get_tuning, ::cuda::std::execution::env<>{}, env);
+  const auto tuning = ::cuda::__call_or(::cuda::execution::__get_tuning, ::cuda::std::execution::env<>{}, env);
 
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -181,7 +151,7 @@ template <typename EnvT, typename AlgorithmCallable>
 dispatch_with_env_validation(const EnvT& env, AlgorithmCallable&& algorithm_callable)
 {
   detail::validate_env_or_object<EnvT>();
-  return detail::dispatch_with_env<true>(env, ::cuda::std::forward<AlgorithmCallable>(algorithm_callable));
+  return detail::dispatch_with_env(env, ::cuda::std::forward<AlgorithmCallable>(algorithm_callable));
 }
 
 //! @brief Dispatches with automatic storage and selects a tuning policy from the environment.
@@ -242,11 +212,9 @@ dispatch_with_env_validation_and_tuning(const EnvT& env, AlgorithmCallable&& alg
 //! @brief Dispatches an algorithm with user-provided temporary storage.
 //!
 //! This function resolves the stream and tuning environment and invokes the algorithm once with
-//! the supplied temporary storage. When @c UseAdvertisedQueries is @c true, advertised queries are
-//! invoked directly. Unadvertised queries are used when callable with @p env, and unavailable queries
+//! the supplied temporary storage. Queries are used when callable with @p env, and unavailable queries
 //! use their defaults. This function does not validate @p env.
 //!
-//! @tparam UseAdvertisedQueries Whether to require advertised queries to be callable. Defaults to @c false.
 //! @tparam EnvT The execution environment or query-providing object type.
 //! @tparam AlgorithmCallable The algorithm implementation callable type.
 //! @param[in] d_temp_storage @devicestorage
@@ -254,16 +222,15 @@ dispatch_with_env_validation_and_tuning(const EnvT& env, AlgorithmCallable&& alg
 //! @param[in] env The execution environment or query-providing object.
 //! @param[in] algorithm_callable The algorithm implementation callable.
 //! @return The status returned by @p algorithm_callable.
-template <bool UseAdvertisedQueries = false, typename EnvT, typename AlgorithmCallable>
+template <typename EnvT, typename AlgorithmCallable>
 [[nodiscard]] CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env(
   void* d_temp_storage, size_t& temp_storage_bytes, const EnvT& env, AlgorithmCallable&& algorithm_callable)
 {
   // Query stream from environment
-  auto stream = detail::query_or<UseAdvertisedQueries>(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
+  auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
 
   // Query tuning from environment
-  const auto tuning =
-    detail::query_or<UseAdvertisedQueries>(::cuda::execution::__get_tuning, ::cuda::std::execution::env<>{}, env);
+  const auto tuning = ::cuda::__call_or(::cuda::execution::__get_tuning, ::cuda::std::execution::env<>{}, env);
 
   return algorithm_callable(tuning, d_temp_storage, temp_storage_bytes, stream.get());
 }
@@ -315,7 +282,7 @@ template <typename EnvT, typename AlgorithmCallable>
   void* d_temp_storage, size_t& temp_storage_bytes, const EnvT& env, AlgorithmCallable&& algorithm_callable)
 {
   detail::validate_env_or_object<EnvT>();
-  return detail::dispatch_with_env<true>(
+  return detail::dispatch_with_env(
     d_temp_storage, temp_storage_bytes, env, ::cuda::std::forward<AlgorithmCallable>(algorithm_callable));
 }
 
