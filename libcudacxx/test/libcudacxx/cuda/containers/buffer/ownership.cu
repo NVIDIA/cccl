@@ -161,6 +161,7 @@ C2H_CCCLRT_TEST("cuda::buffer release, acquire and byte conversion", "[container
 
       auto released = cuda::std::move(buf).release();
       CCCLRT_CHECK(released.ptr == allocation);
+      CCCLRT_CHECK(released.capacity == 6);
       CCCLRT_CHECK(released.size == 6);
       CCCLRT_CHECK(released.alignment == alignment);
       CCCLRT_CHECK(released.stream == cuda::stream_ref{stream});

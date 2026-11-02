@@ -799,7 +799,7 @@ public:
   };
 
   //! @brief Releases ownership of the allocation without deallocating it.
-  //! @return The stream, memory resource, pointer, element count and alignment
+  //! @return The stream, memory resource, pointer, capacity, element count and alignment
   //! of the allocation. The caller becomes responsible for deallocating `ptr`
   //! with `mr.deallocate(stream, ptr, bytes, alignment)`, where `bytes` is
   //! `size * sizeof(T)` rounded up to a multiple of `alignment`.
