@@ -198,7 +198,7 @@ private:
   //! pointer, memory resource, stream and alignment.
   //! @warning After a successful call, the buffer can only be assigned to or
   //! destroyed.
-  _CCCL_TEMPLATE(class _Up)
+  template <class _Up>
   [[nodiscard]] _CCCL_HOST_API buffer<_Up, _Properties...> __as_type() &&
   {
     auto __alloc = ::cuda::std::move(*this).release();
