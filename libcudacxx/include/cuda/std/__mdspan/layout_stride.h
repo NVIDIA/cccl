@@ -34,6 +34,7 @@
 #include <cuda/std/__mdspan/concepts.h>
 #include <cuda/std/__mdspan/empty_base.h>
 #include <cuda/std/__mdspan/extents.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constructible.h>
@@ -163,11 +164,12 @@ private:
         }
 
         index_type __prod = (__ext.extent(__r) - 1);
-        if (::cuda::std::__mdspan_detail::__mul_overflow(__prod, static_cast<index_type>(__strides[__r]), &__prod))
+        if (::cuda::std::__mdspan_detail::__mul_overflow(
+              __prod, static_cast<index_type>(__strides[__r]), ::cuda::std::addressof(__prod)))
         {
           return false;
         }
-        if (__add_overflow(__size, __prod, &__size))
+        if (__add_overflow(__size, __prod, ::cuda::std::addressof(__size)))
         {
           return false;
         }

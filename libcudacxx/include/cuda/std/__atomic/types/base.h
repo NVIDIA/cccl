@@ -30,6 +30,7 @@
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__atomic/types/common.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/is_same.h>
 
 #include <nv/target>
@@ -62,19 +63,19 @@ struct __atomic_storage
 
   _CCCL_HOST_DEVICE_API auto get() noexcept -> __underlying_t*
   {
-    return &__a_value;
+    return ::cuda::std::addressof(__a_value);
   }
   _CCCL_HOST_DEVICE_API auto get() const noexcept -> const __underlying_t*
   {
-    return &__a_value;
+    return ::cuda::std::addressof(__a_value);
   }
   _CCCL_HOST_DEVICE_API auto get() volatile noexcept -> volatile __underlying_t*
   {
-    return &__a_value;
+    return ::cuda::std::addressof(__a_value);
   }
   _CCCL_HOST_DEVICE_API auto get() const volatile noexcept -> const volatile __underlying_t*
   {
-    return &__a_value;
+    return ::cuda::std::addressof(__a_value);
   }
 };
 
