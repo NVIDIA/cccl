@@ -11,13 +11,13 @@ that skip the sort, invalid counts, and inlining in the final machine code.
 """
 
 import re
-import shutil
 import subprocess
 import sys
 
 import cutlass
 import numpy as np
 import pytest
+from cuda.pathfinder import find_nvidia_binary_utility
 from cutlass import cute
 from cutlass.base_dsl.common import DSLRuntimeError
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
@@ -436,7 +436,7 @@ def test_final_cubin(tmp_path, width):
     particular warp instruction sequence is required.
     """
 
-    tool = shutil.which("cuobjdump")
+    tool = find_nvidia_binary_utility("cuobjdump")
     if tool is None:
         pytest.skip("cuobjdump is required for final linked code inspection")
     _run(

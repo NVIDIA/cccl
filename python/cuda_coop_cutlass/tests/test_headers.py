@@ -159,6 +159,24 @@ def test_cuda_header_fallback_respects_platform(
     assert calls[-1] == ((include,) if configured else ()) + fallback
 
 
+def test_pathfinder_error_does_not_select_another_toolkit(
+    tmp_path, monkeypatch
+):
+    import cuda.pathfinder
+
+    include = tmp_path / "toolkit" / "include"
+    include.mkdir(parents=True)
+    (include / "cuda_runtime.h").touch()
+    monkeypatch.setenv("CUDA_PATH", str(include.parent))
+
+    def fail(libname):
+        raise RuntimeError("Pathfinder discovery failed")
+
+    monkeypatch.setattr(cuda.pathfinder, "find_nvidia_header_directory", fail)
+    with pytest.raises(RuntimeError, match="Pathfinder discovery failed"):
+        headers._cuda_include_paths()
+
+
 def test_required_header_diagnostic_never_falls_back_to_toolkit() -> None:
     with pytest.raises(
         headers.HeaderResolutionError, match="does not fall back"

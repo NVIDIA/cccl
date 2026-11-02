@@ -12,13 +12,13 @@ runtime distances without imposing block-wide uniformity.
 
 import importlib.util
 import re
-import shutil
 import subprocess
 import sys
 
 import cutlass
 import numpy as np
 import pytest
+from cuda.pathfinder import find_nvidia_binary_utility
 from cutlass import cute
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 
@@ -399,7 +399,7 @@ def test_final_cubin(tmp_path, scalar):
     for inspection but do not impose allocation or barrier requirements.
     """
 
-    cuobjdump = shutil.which("cuobjdump")
+    cuobjdump = find_nvidia_binary_utility("cuobjdump")
     if cuobjdump is None:
         pytest.skip(
             "cuobjdump is required to inspect final linked instructions"

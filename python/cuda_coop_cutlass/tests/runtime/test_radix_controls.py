@@ -10,12 +10,12 @@ final linked calls, and retry after provider compilation or linking fails.
 """
 
 import re
-import shutil
 import subprocess
 import sys
 from dataclasses import replace
 
 import pytest
+from cuda.pathfinder import find_nvidia_binary_utility
 from cutlass.base_dsl.common import DSLRuntimeError, get_current_env_manager
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 
@@ -144,7 +144,7 @@ def test_final_cubin(tmp_path, operation):
     CALL instructions. No resource or barrier counts are asserted here.
     """
 
-    tool = shutil.which("cuobjdump")
+    tool = find_nvidia_binary_utility("cuobjdump")
     if tool is None:
         pytest.skip("cuobjdump is required for final linked code inspection")
     options = (KeepCUBIN(True), DumpDir(str(tmp_path)))

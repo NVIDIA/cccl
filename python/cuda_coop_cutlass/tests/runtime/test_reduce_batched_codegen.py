@@ -12,10 +12,10 @@ kernel, including Load and Store; other resource usage is not measured.
 """
 
 import re
-import shutil
 import subprocess
 
 import pytest
+from cuda.pathfinder import find_nvidia_binary_utility
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 
 from tests.runtime.test_reduce_batched import _run
@@ -32,7 +32,7 @@ def test_final_cubin(tmp_path, width):
     LDS, STS, or BAR instruction.
     """
 
-    tool = shutil.which("cuobjdump")
+    tool = find_nvidia_binary_utility("cuobjdump")
     if tool is None:
         pytest.skip("cuobjdump is required for final linked code inspection")
     _run(width=width, compile_options=(KeepCUBIN(True), DumpDir(str(tmp_path))))
