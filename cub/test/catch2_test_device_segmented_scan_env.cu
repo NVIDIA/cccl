@@ -928,7 +928,7 @@ struct check_two_phase_tuning
   {
     const auto offsets = scan_offsets();
     auto out           = c2h::device_vector<int>(9, thrust::no_init);
-    c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+    c2h::device_vector<unsigned int> d_block_size(1, 0u);
     const auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
 
     invoke_scan(
