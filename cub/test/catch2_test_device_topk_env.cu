@@ -26,6 +26,8 @@ struct stream_registry_factory_t;
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_launch_helper.h"
 
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceTopK::MaxKeys, device_topk_max_keys);
+
 // %PARAM% TEST_LAUNCH lid 0:2
 
 #include "cub_test_macros.h"
@@ -97,32 +99,30 @@ CUB_TEST("DeviceTopK::MaxKeys can be tuned", "[topk][device]", CUB_SMALL, block_
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+template <typename Env>
+void max_keys_observing_block_size(Env env, c2h::device_vector<unsigned int>& d_block_size)
+{
+  const block_size_extracting_constant_iterator input(42, thrust::raw_pointer_cast(d_block_size.data()));
+  c2h::device_vector<int> d_keys_out(3);
+
+  device_topk_max_keys(input, d_keys_out.begin(), /* elements */ 1024, d_keys_out.size(), env);
+}
+
 CUB_TEST("DeviceTopK::MaxKeys tuning can be modified", "[topk][device]", CUB_SMALL)
 {
   constexpr unsigned int target_block_size = 64;
   c2h::device_vector<unsigned int> d_block_size{0};
 
-  const block_size_extracting_constant_iterator input(42, thrust::raw_pointer_cast(d_block_size.data()));
-  c2h::device_vector<int> d_keys_out(3);
+  // the default tuning must not already use the target block size, otherwise the test passes vacuously
+  {
+    max_keys_observing_block_size(stdexec::env{topk_requirements()}, d_block_size);
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
 
-  auto env = stdexec::env{topk_requirements(), cuda::execution::tune(topk_tuning_transform<target_block_size>{})};
-
-  size_t temp_size{};
-  REQUIRE(cudaSuccess
-          == cub::DeviceTopK::MaxKeys(
-            nullptr, temp_size, input, d_keys_out.begin(), /* elements */ 1024, d_keys_out.size(), env));
-
-  c2h::device_vector<char> temp(temp_size, thrust::no_init);
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceTopK::MaxKeys(
-      thrust::raw_pointer_cast(temp.data()),
-      temp_size,
-      input,
-      d_keys_out.begin(),
-      /* elements */ 1024,
-      d_keys_out.size(),
-      env));
+  max_keys_observing_block_size(
+    stdexec::env{topk_requirements(), cuda::execution::tune(topk_tuning_transform<target_block_size>{})}, d_block_size);
   REQUIRE(d_block_size[0] == target_block_size);
 }
 

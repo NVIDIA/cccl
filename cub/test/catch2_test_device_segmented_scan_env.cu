@@ -663,9 +663,9 @@ CUB_TEST("Device segmented inclusive scan can be tuned", "[segmented_scan][devic
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-CUB_TEST("Device segmented inclusive scan tuning can be modified", "[segmented_scan][device]", CUB_SMALL, block_sizes)
+CUB_TEST("Device segmented inclusive scan tuning can be modified", "[segmented_scan][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr unsigned int target_block_size = 64;
   ::cuda::std::int64_t num_segments        = 3;
   thrust::device_vector<int> d_offsets     = {0, 4, 7, 9};
   auto d_offsets_it                        = thrust::raw_pointer_cast(d_offsets.data());
@@ -673,6 +673,15 @@ CUB_TEST("Device segmented inclusive scan tuning can be modified", "[segmented_s
   thrust::device_vector<int> d_out(d_in.size());
   c2h::device_vector<unsigned int> d_block_size(1);
   const block_size_extracting_op<::cuda::std::plus<>> scan_op{thrust::raw_pointer_cast(d_block_size.data())};
+
+  {
+    device_segmented_inclusive_scan(
+      d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, scan_op, stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
   auto env = cuda::execution::tune(segmented_scan_tuning_transform<target_block_size>{});
 
   device_segmented_inclusive_scan(

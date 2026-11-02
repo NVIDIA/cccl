@@ -440,18 +440,26 @@ CUB_TEST("DeviceSegmentedReduce::Reduce can be tuned", "[segmented_reduce][devic
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-CUB_TEST("DeviceSegmentedReduce::Reduce tuning can be modified", "[segmented_reduce][device]", CUB_SMALL, block_sizes)
+CUB_TEST("DeviceSegmentedReduce::Reduce tuning can be modified", "[segmented_reduce][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr unsigned int target_block_size = 64;
 
   const int num_segments            = 3;
   c2h::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
   c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
   c2h::device_vector<int> d_out(3, thrust::no_init);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0);
 
   const block_size_extracting_op<::cuda::std::plus<>> reduce_op{thrust::raw_pointer_cast(d_block_size.data())};
+
+  {
+    device_segmented_reduce(
+      d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, reduce_op, 0, stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
 
   auto env = cuda::execution::tune(segmented_reduce_tuning_transform<target_block_size>{});
 

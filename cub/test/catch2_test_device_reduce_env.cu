@@ -167,15 +167,22 @@ CUB_TEST("Device reduce can be tuned", "[reduce][device]", CUB_SMALL, block_size
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-CUB_TEST("Device reduce tuning can be modified", "[reduce][device]", CUB_SMALL, block_sizes)
+CUB_TEST_CASE("Device reduce tuning can be modified", "[reduce][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr unsigned int target_block_size = 64;
   c2h::device_vector<unsigned int> d_block_size(1);
 
   auto d_in  = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
   auto d_out = thrust::device_vector<int>(1);
 
   auto env = cuda::execution::tune(reduce_tuning_transform<target_block_size>{});
+
+  {
+    device_reduce(d_in, d_out.begin(), 1, cuda::std::plus<>{}, 0, stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
 
   device_reduce(d_in, d_out.begin(), 1, cuda::std::plus<>{}, 0, env);
   REQUIRE(d_out[0] == 1);
@@ -485,9 +492,9 @@ CUB_TEST("Device ReduceByKey can be tuned", "[reduce][device]", CUB_SMALL, reduc
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-CUB_TEST("Device ReduceByKey tuning can be modified", "[reduce][device]", CUB_SMALL, reduce_by_key_block_sizes)
+CUB_TEST_CASE("Device ReduceByKey tuning can be modified", "[reduce][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr unsigned int target_block_size = 64;
   auto d_keys_in                           = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
   auto d_values_in                         = c2h::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
   auto d_unique_out                        = c2h::device_vector<int>(8);
@@ -498,6 +505,21 @@ CUB_TEST("Device ReduceByKey tuning can be modified", "[reduce][device]", CUB_SM
   const block_size_extracting_minimum_t reduction_op{thrust::raw_pointer_cast(d_block_size.data())};
   auto env = cuda::execution::tune(reduce_by_key_tuning_transform<target_block_size>{});
 
+  {
+    device_reduce_by_key(
+      d_keys_in.begin(),
+      d_unique_out.begin(),
+      d_values_in.begin(),
+      d_aggregates_out.begin(),
+      d_num_runs_out.begin(),
+      reduction_op,
+      static_cast<int>(d_keys_in.size()),
+      stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
   device_reduce_by_key(
     d_keys_in.begin(),
     d_unique_out.begin(),
@@ -507,7 +529,6 @@ CUB_TEST("Device ReduceByKey tuning can be modified", "[reduce][device]", CUB_SM
     reduction_op,
     static_cast<int>(d_keys_in.size()),
     env);
-
   REQUIRE(d_num_runs_out[0] == 5);
   REQUIRE(d_block_size[0] == target_block_size);
 }

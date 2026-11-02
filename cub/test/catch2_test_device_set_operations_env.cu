@@ -299,6 +299,8 @@ CUB_TEST("DeviceSetOps keys can be tuned", "[set_ops][device]", CUB_SMALL, key_o
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+#if TEST_LAUNCH != 1
+
 template <int ThreadsPerBlock>
 struct set_ops_tuning_transform
 {
@@ -311,10 +313,10 @@ struct set_ops_tuning_transform
   }
 };
 
-CUB_TEST("DeviceSetOps keys tuning can be modified", "[set_ops][device]", CUB_SMALL, key_ops, tuned_block_sizes)
+CUB_TEST("DeviceSetOps keys tuning can be modified", "[set_ops][device]", CUB_SMALL, key_ops)
 {
   using op                                 = c2h::get<0, TestType>;
-  constexpr unsigned int target_block_size = c2h::get<1, TestType>::value;
+  constexpr unsigned int target_block_size = 384;
 
   auto keys1        = c2h::device_vector<int>{0, 2, 2, 5};
   auto keys2        = c2h::device_vector<int>{0, 3, 3, 4};
@@ -323,6 +325,22 @@ CUB_TEST("DeviceSetOps keys tuning can be modified", "[set_ops][device]", CUB_SM
   auto d_block_size = c2h::device_vector<unsigned int>{0u};
 
   const block_size_extracting_op<::cuda::std::less<>> block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+  {
+    REQUIRE(
+      cudaSuccess
+      == op::api(keys1.begin(),
+                 static_cast<int>(keys1.size()),
+                 keys2.begin(),
+                 static_cast<int>(keys2.size()),
+                 result.begin(),
+                 num.begin(),
+                 block_size_check,
+                 ::cuda::std::execution::env<>{}));
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0u;
+  }
+
   auto env = ::cuda::execution::tune(set_ops_tuning_transform<target_block_size>{});
 
   REQUIRE(
@@ -339,3 +357,5 @@ CUB_TEST("DeviceSetOps keys tuning can be modified", "[set_ops][device]", CUB_SM
   check_keys<op>(keys1, keys2, result, num, ::cuda::std::less<int>{});
   REQUIRE(d_block_size[0] == target_block_size);
 }
+
+#endif // TEST_LAUNCH != 1

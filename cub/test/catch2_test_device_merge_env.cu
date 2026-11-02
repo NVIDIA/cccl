@@ -132,9 +132,11 @@ CUB_TEST("DeviceMerge::MergeKeys can be tuned", "[merge][device]", CUB_SMALL, bl
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+#if TEST_LAUNCH != 1
+
 CUB_TEST("DeviceMerge::MergeKeys tuning can be modified", "[merge][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 96;
+  constexpr unsigned int target_block_size = 64;
   auto keys1                               = c2h::device_vector<int>{0, 2, 5};
   auto keys2                               = c2h::device_vector<int>{0, 3, 3, 4};
   auto result                              = c2h::device_vector<int>(7, thrust::no_init);
@@ -142,23 +144,35 @@ CUB_TEST("DeviceMerge::MergeKeys tuning can be modified", "[merge][device]", CUB
 
   const block_size_extracting_less_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
+  {
+    merge_keys(keys1.begin(),
+               static_cast<int>(keys1.size()),
+               keys2.begin(),
+               static_cast<int>(keys2.size()),
+               result.begin(),
+               block_size_check,
+               stdexec::env{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
   auto env = cuda::execution::tune(merge_tuning_transformer<target_block_size>{});
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceMerge::MergeKeys(
-      keys1.begin(),
-      static_cast<int>(keys1.size()),
-      keys2.begin(),
-      static_cast<int>(keys2.size()),
-      result.begin(),
-      block_size_check,
-      env));
+  merge_keys(keys1.begin(),
+             static_cast<int>(keys1.size()),
+             keys2.begin(),
+             static_cast<int>(keys2.size()),
+             result.begin(),
+             block_size_check,
+             env);
 
   const c2h::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
   REQUIRE(result == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
+
+#endif // TEST_LAUNCH != 1
 
 CUB_TEST("DeviceMerge::MergePairs can be tuned", "[merge][device]", CUB_SMALL, block_sizes)
 {

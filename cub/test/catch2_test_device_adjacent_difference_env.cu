@@ -260,12 +260,20 @@ struct adj_diff_tuning_tranform
   }
 };
 
-C2H_TEST("DeviceAdjacentDifference::SubtractRight tuning can be modified", "[adjacent_difference][device]", block_sizes)
+CUB_TEST("DeviceAdjacentDifference::SubtractRight tuning can be modified", "[adjacent_difference][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr unsigned int target_block_size = 64;
   auto data                                = c2h::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
   auto d_block_size                        = c2h::device_vector<unsigned int>{0};
-  auto op  = block_size_extracting_minus_t{thrust::raw_pointer_cast(d_block_size.data())};
+  auto op = block_size_extracting_minus_t{thrust::raw_pointer_cast(d_block_size.data())};
+  {
+    auto data_default = data;
+    device_adjacent_difference_subtract_right(data_default.begin(), data_default.size(), op, stdexec::env{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
   auto env = cuda::execution::tune(adj_diff_tuning_tranform<target_block_size>{});
 
   device_adjacent_difference_subtract_right(data.begin(), data.size(), op, env);

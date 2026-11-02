@@ -177,16 +177,25 @@ CUB_TEST("DeviceScan::ExclusiveSumByKey can be tuned", "[scan][by_key][device]",
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-CUB_TEST("DeviceScan::ExclusiveScanByKey tuning can be modified", "[scan][by_key][device]", CUB_SMALL, block_sizes)
+CUB_TEST("DeviceScan::ExclusiveScanByKey tuning can be modified", "[scan][by_key][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr unsigned int target_block_size = 64;
   c2h::device_vector<int> d_keys{0, 0, 1, 1, 1, 2, 2};
   c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
   c2h::device_vector<int> d_out(7);
   c2h::device_vector<unsigned int> d_block_size(1);
 
   auto scan_op = block_size_extracting_scan_op_t{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env     = cuda::execution::tune(scan_by_key_tuning_transform<target_block_size>{});
+
+  {
+    device_scan_exclusive_scan_by_key(
+      d_keys.begin(), d_in.begin(), d_out.begin(), scan_op, 0, 7, cuda::std::equal_to<>{}, stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
+  auto env = cuda::execution::tune(scan_by_key_tuning_transform<target_block_size>{});
 
   device_scan_exclusive_scan_by_key(
     d_keys.begin(), d_in.begin(), d_out.begin(), scan_op, 0, 7, cuda::std::equal_to<>{}, env);

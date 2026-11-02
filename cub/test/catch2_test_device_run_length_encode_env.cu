@@ -313,9 +313,9 @@ CUB_TEST("DeviceRunLengthEncode::Encode can be tuned", "[run_length_encode][devi
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-CUB_TEST("DeviceRunLengthEncode::Encode tuning can be modified", "[run_length_encode][device]", CUB_SMALL, block_sizes)
+CUB_TEST_CASE("DeviceRunLengthEncode::Encode tuning can be modified", "[run_length_encode][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr unsigned int target_block_size = 64;
   constexpr int num_items                  = 256;
 
   auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
@@ -327,8 +327,15 @@ CUB_TEST("DeviceRunLengthEncode::Encode tuning can be modified", "[run_length_en
 
   auto env = cuda::execution::tune(rle_encode_tuning_transform<target_block_size>{});
 
-  run_length_encode_env(d_in, d_unique_out.begin(), d_counts_out.begin(), d_num_runs_out.begin(), num_items, env);
+  {
+    run_length_encode_env(
+      d_in, d_unique_out.begin(), d_counts_out.begin(), d_num_runs_out.begin(), num_items, stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
 
+  run_length_encode_env(d_in, d_unique_out.begin(), d_counts_out.begin(), d_num_runs_out.begin(), num_items, env);
   REQUIRE(d_num_runs_out[0] == 1);
   REQUIRE(d_unique_out[0] == 42);
   REQUIRE(d_counts_out[0] == num_items);
@@ -393,10 +400,9 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can be tuned", "[run_length_enco
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-CUB_TEST(
-  "DeviceRunLengthEncode::NonTrivialRuns tuning can be modified", "[run_length_encode][device]", CUB_SMALL, block_sizes)
+CUB_TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns tuning can be modified", "[run_length_encode][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr unsigned int target_block_size = 64;
   constexpr int num_items                  = 256;
 
   auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
@@ -408,8 +414,15 @@ CUB_TEST(
 
   auto env = cuda::execution::tune(rle_non_trivial_runs_tuning_transform<target_block_size>{});
 
-  non_trivial_runs_env(d_in, d_offsets_out.begin(), d_lengths_out.begin(), d_num_runs_out.begin(), num_items, env);
+  {
+    non_trivial_runs_env(
+      d_in, d_offsets_out.begin(), d_lengths_out.begin(), d_num_runs_out.begin(), num_items, stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
 
+  non_trivial_runs_env(d_in, d_offsets_out.begin(), d_lengths_out.begin(), d_num_runs_out.begin(), num_items, env);
   REQUIRE(d_num_runs_out[0] == 1);
   REQUIRE(d_offsets_out[0] == 0);
   REQUIRE(d_lengths_out[0] == num_items);

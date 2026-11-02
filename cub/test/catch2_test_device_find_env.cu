@@ -444,6 +444,13 @@ CUB_TEST("Device FindIf tuning can be modified", "[find][device]", CUB_SMALL)
 
   const block_size_extracting_predicate_t predicate{thrust::raw_pointer_cast(d_block_size.data())};
 
+  {
+    device_find_if(d_in.begin(), d_out.begin(), predicate, num_items, stdexec::env{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
   auto env = cuda::execution::tune(find_tuning_transformer<static_cast<int>(target_block_size)>{});
 
   device_find_if(d_in.begin(), d_out.begin(), predicate, num_items, env);

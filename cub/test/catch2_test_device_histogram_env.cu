@@ -1508,7 +1508,7 @@ CUB_TEST("DeviceHistogram::HistogramEven can be tuned", "[histogram][device]", C
 
 CUB_TEST("DeviceHistogram::HistogramEven tuning can be modified", "[histogram][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = 96;
+  constexpr unsigned int target_block_size = 64;
   c2h::device_vector<unsigned int> d_block_size(1);
   const block_size_extracting_constant_iterator d_samples(0, thrust::raw_pointer_cast(d_block_size.data()));
   const int num_samples = 256;
@@ -1516,6 +1516,20 @@ CUB_TEST("DeviceHistogram::HistogramEven tuning can be modified", "[histogram][d
   const int lower_level = 0;
   const int upper_level = 256;
   auto d_histogram      = c2h::device_vector<int>(num_levels - 1, 0);
+
+  {
+    histogram_even(
+      d_samples,
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      lower_level,
+      upper_level,
+      num_samples,
+      stdexec::env{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
 
   auto env = cuda::execution::tune(histogram_tuning_transformer<target_block_size>{});
 

@@ -244,9 +244,9 @@ CUB_TEST("Device scan exclusive-scan can be tuned", "[scan][device]", CUB_SMALL,
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-CUB_TEST("Device scan exclusive-scan tuning can be modified", "[scan][device]", CUB_SMALL, block_sizes)
+CUB_TEST("Device scan exclusive-scan tuning can be modified", "[scan][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr unsigned int target_block_size = 64;
   c2h::device_vector<unsigned int> d_block_size(1);
   const block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
@@ -255,9 +255,16 @@ CUB_TEST("Device scan exclusive-scan tuning can be modified", "[scan][device]", 
   auto d_out     = c2h::device_vector<int>(num_items);
   auto init      = int{42};
 
+  {
+    device_scan_exclusive(d_in, d_out.begin(), block_size_check, init, num_items, stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
   auto env = cuda::execution::tune(scan_tuning_transform<target_block_size>{});
 
-  REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveScan(d_in, d_out.begin(), block_size_check, init, num_items, env));
+  device_scan_exclusive(d_in, d_out.begin(), block_size_check, init, num_items, env);
 
   REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init)));
   REQUIRE(d_block_size[0] == target_block_size);

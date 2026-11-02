@@ -215,6 +215,14 @@ CUB_TEST("DeviceCopy::Batched tuning can be modified", "[copy][device]", CUB_SMA
   c2h::device_vector<unsigned int> d_block_size(1);
   const block_size_extracting_constant_iterator sizes(items_per_range, thrust::raw_pointer_cast(d_block_size.data()));
 
+  // the default tuning must not already use the target block size, otherwise the test passes vacuously
+  {
+    device_copy_batched(input_it, output_it, sizes, num_ranges, stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
   auto env = cuda::execution::tune(batch_copy_tuning_transform<target_block_size>{});
 
   device_copy_batched(input_it, output_it, sizes, num_ranges, env);

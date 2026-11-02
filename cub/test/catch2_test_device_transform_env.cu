@@ -208,14 +208,25 @@ struct my_policy_transformer
 
 CUB_TEST("DeviceTransform::Transform tuning can be modified", "[reduce][device]", CUB_SMALL)
 {
-  c2h::device_vector<unsigned> result(3 * 8, thrust::no_init);
+  const c2h::device_vector<unsigned> expected{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7};
 
+  // the default tuning must not already produce the thread id pattern of the transformed policy (blocks of 8 threads),
+  // otherwise the test passes vacuously
+  {
+    c2h::device_vector<unsigned> default_result(expected.size(), thrust::no_init);
+    REQUIRE(cudaSuccess
+            == cub::DeviceTransform::Transform(
+              cuda::std::tuple{}, default_result.data(), default_result.size(), get_thread_id{}));
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE(default_result != expected);
+  }
+
+  c2h::device_vector<unsigned> result(expected.size(), thrust::no_init);
   auto env = cuda::execution::tune(my_policy_transformer{});
   REQUIRE(cudaSuccess
           == cub::DeviceTransform::Transform(cuda::std::tuple{}, result.data(), result.size(), get_thread_id{}, env));
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
-  const c2h::device_vector<unsigned> expected{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7};
   REQUIRE(result == expected);
 }
 

@@ -374,9 +374,9 @@ CUB_TEST("DevicePartition::Flagged can be tuned", "[partition][device]", CUB_SMA
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-CUB_TEST("DevicePartition::If tuning can be modified", "[partition][device]", CUB_SMALL, block_sizes)
+CUB_TEST_CASE("DevicePartition::If tuning can be modified", "[partition][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr unsigned int target_block_size = 64;
   auto d_in                                = c2h::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
   auto d_out                               = c2h::device_vector<int>(8);
   auto d_num_selected                      = c2h::device_vector<unsigned int>(1);
@@ -385,6 +385,13 @@ CUB_TEST("DevicePartition::If tuning can be modified", "[partition][device]", CU
   const block_size_extracting_op<less_than_5_t> select_op{thrust::raw_pointer_cast(d_block_size.data())};
 
   auto env = cuda::execution::tune(partition_policy_transformer<target_block_size>{});
+
+  {
+    device_partition_if(d_in.begin(), d_out.begin(), d_num_selected.begin(), 8, select_op, stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
 
   device_partition_if(d_in.begin(), d_out.begin(), d_num_selected.begin(), 8, select_op, env);
   REQUIRE(d_num_selected[0] == 4);
@@ -429,9 +436,9 @@ CUB_TEST("DevicePartition::If three-way can be tuned", "[partition][device]", CU
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-CUB_TEST("DevicePartition::If three-way tuning can be modified", "[partition][device]", CUB_SMALL, block_sizes)
+CUB_TEST_CASE("DevicePartition::If three-way tuning can be modified", "[partition][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr unsigned int target_block_size = 64;
   auto d_in                                = c2h::device_vector<int>{0, 2, 3, 9, 5, 2, 81, 8};
   auto d_small_out                         = c2h::device_vector<int>(8);
   auto d_large_out                         = c2h::device_vector<int>(8);
@@ -443,6 +450,22 @@ CUB_TEST("DevicePartition::If three-way tuning can be modified", "[partition][de
   const greater_than_t<int> large_selector{50};
 
   auto env = cuda::execution::tune(three_way_partition_policy_transformer<target_block_size>{});
+
+  {
+    device_partition_if(
+      d_in.begin(),
+      d_small_out.begin(),
+      d_large_out.begin(),
+      d_unselected_out.begin(),
+      d_num_selected.begin(),
+      static_cast<int>(d_in.size()),
+      small_selector,
+      large_selector,
+      stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
 
   device_partition_if(
     d_in.begin(),

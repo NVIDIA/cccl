@@ -892,12 +892,9 @@ CUB_TEST("DeviceSegmentedRadixSort::SortPairs can be tuned", "[segmented_radix_s
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-CUB_TEST("DeviceSegmentedRadixSort::SortPairs tuning can be modified",
-         "[segmented_radix_sort][device]",
-         CUB_SMALL,
-         block_sizes)
+CUB_TEST("DeviceSegmentedRadixSort::SortPairs tuning can be modified", "[segmented_radix_sort][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr unsigned int target_block_size = 64;
 
   auto keys_in    = c2h::device_vector<int>(10'000);
   auto keys_out   = c2h::device_vector<int>(10'000);
@@ -907,6 +904,24 @@ CUB_TEST("DeviceSegmentedRadixSort::SortPairs tuning can be modified",
 
   auto d_begin_offsets = block_size_extracting_constant_iterator(0, thrust::raw_pointer_cast(d_block_size.data()));
   auto d_end_offsets   = block_size_extracting_constant_iterator(10'000, thrust::raw_pointer_cast(d_block_size.data()));
+
+  {
+    sort_pairs(
+      thrust::raw_pointer_cast(keys_in.data()),
+      thrust::raw_pointer_cast(keys_out.data()),
+      thrust::raw_pointer_cast(values_in.data()),
+      thrust::raw_pointer_cast(values_out.data()),
+      static_cast<cuda::std::int64_t>(keys_in.size()),
+      cuda::std::int64_t{1},
+      d_begin_offsets,
+      d_end_offsets,
+      0,
+      static_cast<int>(sizeof(int) * 8),
+      stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
 
   auto env = cuda::execution::tune(segmented_radix_sort_tuning_transform<target_block_size>{});
 

@@ -855,6 +855,10 @@ CUB_TEST("DeviceSegmentedSort keys two-phase overloads can be tuned",
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+#endif // TEST_LAUNCH != 1
+
+#if TEST_LAUNCH != 1
+
 template <int BlockThreads>
 struct segmented_sort_tuning_transform
 {
@@ -868,16 +872,28 @@ struct segmented_sort_tuning_transform
   }
 };
 
-CUB_TEST(
-  "DeviceSegmentedSort::SortKeys tuning can be modified", "[segmented_sort][keys][device]", CUB_SMALL, block_sizes)
+CUB_TEST("DeviceSegmentedSort::SortKeys tuning can be modified", "[segmented_sort][keys][device]", CUB_SMALL)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr unsigned int target_block_size = 64;
   auto keys_in                             = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out                            = c2h::device_vector<int>(7);
   auto begin_offsets                       = c2h::device_vector<int>{0};
   c2h::device_vector<unsigned int> d_block_size(1);
 
   const block_size_extracting_constant_iterator end_offsets(7, thrust::raw_pointer_cast(d_block_size.data()));
+
+  {
+    sort_keys(thrust::raw_pointer_cast(keys_in.data()),
+              thrust::raw_pointer_cast(keys_out.data()),
+              static_cast<int>(keys_in.size()),
+              1,
+              thrust::raw_pointer_cast(begin_offsets.data()),
+              end_offsets,
+              cuda::std::execution::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0u;
+  }
 
   auto env = cuda::execution::tune(segmented_sort_tuning_transform<target_block_size>{});
 

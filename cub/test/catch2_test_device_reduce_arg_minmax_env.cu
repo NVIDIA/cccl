@@ -249,10 +249,10 @@ CUB_TEST("Device ArgMin[Last]Max can be tuned", "[reduce][device]", CUB_SMALL, b
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-CUB_TEST("Device ArgMin[Last]Max tuning can be modified", "[reduce][device]", CUB_SMALL, block_sizes)
+CUB_TEST_CASE("Device ArgMin[Last]Max tuning can be modified", "[reduce][device]", CUB_SMALL)
 {
   const bool last_max                      = GENERATE(false, true);
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr unsigned int target_block_size = 64;
 
   c2h::device_vector<unsigned int> d_block_size(1);
   using compare_t = block_size_extracting_op<cuda::std::less<>>;
@@ -268,9 +268,24 @@ CUB_TEST("Device ArgMin[Last]Max tuning can be modified", "[reduce][device]", CU
 
   auto env = cuda::execution::tune(reduce_tuning_transform<target_block_size>{});
 
+  {
+    call_argminmax_launch_wrapper(
+      last_max,
+      input.begin(),
+      min_out.begin(),
+      min_index.begin(),
+      max_out.begin(),
+      max_index.begin(),
+      n,
+      compare_op,
+      stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
   call_argminmax_launch_wrapper(
     last_max, input.begin(), min_out.begin(), min_index.begin(), max_out.begin(), max_index.begin(), n, compare_op, env);
-
   REQUIRE(max_out[0] == 4);
   REQUIRE(d_block_size[0] == target_block_size);
 }
