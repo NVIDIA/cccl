@@ -26,9 +26,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
+
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <algorithm>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace cuda::experimental::stf
@@ -66,14 +71,50 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
   // If there are any extra dependencies to fulfill
   auto result = get_input_events();
 
+  auto& task_deps = pimpl->deps;
+
+  // Validate every dependency before the task touches any of them: a rejected task leaves no
+  // activated place and no reference count behind, so the caller can still use the context.
+  reserved::ensure_task_deps_initialized(task_deps);
+  for (const auto& dep : task_deps)
+  {
+    logical_data_untyped d = dep.get_data();
+    const access_mode mode = dep.get_access_mode();
+
+    // Frozen data can only be accessed read-only, and only if it was frozen read-only: anything
+    // else would modify data possibly being used outside the task.
+    auto [frozen, frozen_mode] = d.is_frozen();
+    if (frozen && !(frozen_mode == access_mode::read && mode == access_mode::read))
+    {
+      _CCCL_THROW(
+        ::std::logic_error,
+        ::std::string("illegal access on frozen logical data '")
+          .append(d.get_symbol())
+          .append("': frozen with mode ")
+          .append(access_mode_string(frozen_mode))
+          .append(", requested ")
+          .append(access_mode_string(mode)));
+    }
+
+    // The logical data and the task must belong to the same context (compared by the addresses
+    // of their context states).
+    if (ctx != d.get_ctx())
+    {
+      _CCCL_THROW(
+        ::std::invalid_argument,
+        ::std::string("logical data '").append(d.get_symbol()).append("' does not belong to the context of the task"));
+    }
+  }
+
+  // The task is counted once it is admitted: a rejected task never reaches release(), where the
+  // matching finished-task count is kept.
+  ctx.increment_task_count();
+
   // Automatically set the appropriate context (device, SM affinity, ...)
   pimpl->saved_place_ctx = exec_place_scope(eplace);
 
-  auto& task_deps = pimpl->deps;
-
   for (auto index : each(task_deps.size()))
   {
-    assert(task_deps[index].get_data().is_initialized());
     // Save index before reordering
     task_deps[index].dependency_index = static_cast<int>(index);
     // Mark up data to avoid them being reclaimed while they are going to be used anyway
@@ -90,28 +131,6 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
   {
     logical_data_untyped d = it->get_data();
     access_mode mode       = it->get_access_mode();
-
-    auto [frozen, frozen_mode] = d.is_frozen();
-    if (frozen)
-    {
-      // If we have a frozen data, we can only access it if we are making
-      // a read only access, and if the data was frozen in read only mode.
-      // Otherwise it's a mistake as we would modify some data possibly
-      // being used outside the task
-      if (!(frozen_mode == access_mode::read && mode == access_mode::read))
-      {
-        fprintf(stderr, "Error: illegal access on frozen logical data\n");
-        abort();
-      }
-    }
-
-    // Make sure the context of the logical data and the context of the task match
-    // This is done by comparing the addresses of the context states
-    if (ctx != d.get_ctx())
-    {
-      fprintf(stderr, "Error: mismatch between task context and logical data context\n");
-      abort();
-    }
 
     // We possibly "merge" multiple dependencies. If they have different modes, those are combined.
     // Since logical data are ordered by addresses, "mergeable" deps will be
@@ -137,14 +156,16 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
       {
         if (mode != access_mode::read)
         {
-          throw ::std::invalid_argument(
+          _CCCL_THROW(
+            ::std::invalid_argument,
             "replicated data places only support read access (another dependency on the same logical data upgrades "
             "the merged access mode)");
         }
         if (!(it->get_dplace() == gdp))
         {
-          throw ::std::invalid_argument("conflicting data places for merged dependencies on the same logical data (one "
-                                        "of them is replicated)");
+          _CCCL_THROW(::std::invalid_argument,
+                      "conflicting data places for merged dependencies on the same logical data (one "
+                      "of them is replicated)");
         }
       }
       if (g == it)
@@ -335,7 +356,7 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
  * @warning The task must have completed all its work before calling this function.
  * Failure to follow the task's lifecycle correctly may lead to undefined behavior.
  */
-inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
+inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs) noexcept
 {
   // After release(), the task is over
   assert(get_task_phase() == task::phase::running);
@@ -343,65 +364,86 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
 
   auto& task_deps = pimpl->deps;
 
-  // We copy the list of prereqs into the task
-  merge_event_list(done_prereqs);
-
-  // Get the indices of logical data which were not skipped (redundant
-  // dependencies are merged).
-  for (auto& [ind, mode] : pimpl->unskipped_indexes)
+  // Everything from here to leaves.add() below updates shared dependency state. Aborting on
+  // failure is the standing ruling -- and it is also what keeps this function safe, since a
+  // throw partway through would leave the dependency graph half updated AND every logical-data
+  // mutex still locked (they are taken in acquire() and released in the loop below), which
+  // deadlocks the next task touching that data.
+  //
+  // Two failure kinds are anticipated, and the policy names both rather than absorbing
+  // everything. Allocation failures come from the event-list merges, the prereq containers and
+  // the dot tracing structures. CUDA failures come from add_write_prereq -> event_list::optimize
+  // -> factorize, which in the graph backend adds an empty node through cuda_try; the stream
+  // backend's factorize is pure computation, so this arm only fires for graph contexts.
+  //
+  // if_monomorphic for bad_alloc on purpose: std::bad_array_new_length derives from it but means
+  // a size computation went wrong, not that memory ran out, and should not be quietly treated
+  // as memory pressure. Anything else we did not anticipate escapes into terminate rather than
+  // being silently absorbed here.
+  ON_THROW(if_monomorphic<::std::bad_alloc>(abort) | if_isa<cuda_exception>(abort))
   {
-    auto& e                = task_deps[ind];
-    logical_data_untyped d = e.get_data();
+    // We copy the list of prereqs into the task
+    merge_event_list(done_prereqs);
 
-    auto&& data_instance = d.get_data_instance(e.get_instance_id());
-
-    if (mode == access_mode::read)
+    // Get the indices of logical data which were not skipped (redundant
+    // dependencies are merged).
+    for (auto& [ind, mode] : pimpl->unskipped_indexes)
     {
-      // If we have a read-only task, we only need to make sure that write accesses waits for this task
-      data_instance.add_write_prereq(ctx, done_prereqs);
+      auto& e                = task_deps[ind];
+      logical_data_untyped d = e.get_data();
 
-      // A dep at a replicated place read one instance PER member place:
-      // protect the others the same way (writes elsewhere must wait)
-      const data_place& rel_dplace = e.get_dplace().is_affine() ? get_affine_data_place() : e.get_dplace();
-      if (rel_dplace.instance_count() > 1)
+      auto&& data_instance = d.get_data_instance(e.get_instance_id());
+
+      if (mode == access_mode::read)
       {
-        ::std::vector<instance_id_t> protected_ids{e.get_instance_id()};
-        protected_ids.reserve(rel_dplace.instance_count());
-        for (size_t r = 1; r < rel_dplace.instance_count(); r++)
+        // If we have a read-only task, we only need to make sure that write accesses waits for this task
+        data_instance.add_write_prereq(ctx, done_prereqs);
+
+        // A dep at a replicated place read one instance PER member place:
+        // protect the others the same way (writes elsewhere must wait)
+        const data_place& rel_dplace = e.get_dplace().is_affine() ? get_affine_data_place() : e.get_dplace();
+        if (rel_dplace.instance_count() > 1)
         {
-          const instance_id_t im = d.find_instance_id(rel_dplace.member(r));
-          if (::std::find(protected_ids.begin(), protected_ids.end(), im) == protected_ids.end())
+          ::std::vector<instance_id_t> protected_ids{e.get_instance_id()};
+          protected_ids.reserve(rel_dplace.instance_count());
+          for (size_t r = 1; r < rel_dplace.instance_count(); r++)
           {
-            protected_ids.push_back(im);
-            d.get_data_instance(im).add_write_prereq(ctx, done_prereqs);
+            const instance_id_t im = d.find_instance_id(rel_dplace.member(r));
+            if (::std::find(protected_ids.begin(), protected_ids.end(), im) == protected_ids.end())
+            {
+              protected_ids.push_back(im);
+              d.get_data_instance(im).add_write_prereq(ctx, done_prereqs);
+            }
           }
         }
       }
+      else
+      {
+        data_instance.set_read_prereq(done_prereqs);
+        data_instance.clear_write_prereq();
+      }
+
+      // Update last reader/writer tasks
+      reserved::enforce_stf_deps_after(ctx, d, *this, mode);
     }
-    else
+
+    // Automatically reset the context to its original configuration (device, SM affinity, ...)
+    pimpl->saved_place_ctx = exec_place_scope();
+
+    auto& dot = *ctx.get_dot();
+    if (dot.is_tracing())
     {
-      data_instance.set_read_prereq(done_prereqs);
-      data_instance.clear_write_prereq();
+      // These prereqs depend on the task identified by unique_id
+      auto& done_prereqs_ = get_done_prereqs();
+      done_prereqs_.dot_declare_prereqs_from(dot, get_unique_id(), reserved::edge_type::prereqs);
     }
 
-    // Update last reader/writer tasks
-    reserved::enforce_stf_deps_after(ctx, d, *this, mode);
-  }
+    // This task becomes a new "leaf task" until another task depends on it
+    ctx.get_state().leaves.add(*this);
+  };
 
-  // Automatically reset the context to its original configuration (device, SM affinity, ...)
-  pimpl->saved_place_ctx = exec_place_scope();
-
-  auto& dot = *ctx.get_dot();
-  if (dot.is_tracing())
-  {
-    // These prereqs depend on the task identified by unique_id
-    auto& done_prereqs_ = get_done_prereqs();
-    done_prereqs_.dot_declare_prereqs_from(dot, get_unique_id(), reserved::edge_type::prereqs);
-  }
-
-  // This task becomes a new "leaf task" until another task depends on it
-  ctx.get_state().leaves.add(*this);
-
+  // From here on nothing throws: the phase flip, the unlocks (shared_ptr copies plus a noexcept
+  // unlock) and the resets are all allocation-free.
   pimpl->phase = task::phase::finished;
 
   /* We unlock the mutex which were locked. We only locked each logical data

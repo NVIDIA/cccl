@@ -14,11 +14,16 @@
 #endif // no system header
 
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_type.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/warp/warp_load.cuh>
 #include <cub/warp/warp_merge_sort.cuh>
 #include <cub/warp/warp_store.cuh>
+
+#include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 #include <nv/target>
 
@@ -74,7 +79,7 @@ namespace detail::sub_warp_merge_sort
  * `PolicyT::LOAD_ALGORITHM`, sort it using `WarpMergeSort`, and store it back
  * using `PolicyT::STORE_ALGORITHM`.
  *
- * @tparam IS_DESCENDING
+ * @tparam IsDescending
  *   Whether or not the sorted-order is high-to-low
  *
  * @tparam PolicyT
@@ -89,7 +94,7 @@ namespace detail::sub_warp_merge_sort
  * @tparam OffsetT
  *   Signed integer type for global offsets
  */
-template <bool IS_DESCENDING, typename PolicyT, typename KeyT, typename ValueT, typename OffsetT>
+template <bool IsDescending, typename PolicyT, typename KeyT, typename ValueT, typename OffsetT>
 class AgentSubWarpSort
 {
   using traits           = detail::radix::traits_t<KeyT>;
@@ -100,7 +105,7 @@ class AgentSubWarpSort
     template <typename T>
     _CCCL_DEVICE bool operator()(T lhs, T rhs) const noexcept
     {
-      if constexpr (IS_DESCENDING)
+      if constexpr (IsDescending)
       {
         return lhs > rhs;
       }
@@ -115,7 +120,7 @@ class AgentSubWarpSort
     _CCCL_DEVICE bool operator()(__half lhs, __half rhs) const noexcept
     {
       // Need to explicitly cast to float for SM <= 52.
-      if constexpr (IS_DESCENDING)
+      if constexpr (IsDescending)
       {
         NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (return __hgt(lhs, rhs);), (return __half2float(lhs) > __half2float(rhs);));
       }
@@ -131,7 +136,7 @@ class AgentSubWarpSort
     _CCCL_DEVICE bool operator()(__nv_bfloat16 lhs, __nv_bfloat16 rhs) const noexcept
     {
       // Need to explicitly cast to float for SM < 80.
-      if constexpr (IS_DESCENDING)
+      if constexpr (IsDescending)
       {
         NV_IF_ELSE_TARGET(
           NV_PROVIDES_SM_80, (return __hgt(lhs, rhs);), (return __bfloat162float(lhs) > __bfloat162float(rhs);));
@@ -172,6 +177,16 @@ class AgentSubWarpSort
 public:
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, cub::NullType>;
 
+  static_assert(PolicyT::WARP_THREADS <= detail::warp_threads,
+                "SegmentedSortSubWarpMergeSortPolicy: threads_per_warp must not exceed the warp size (32)");
+  // WarpMergeSort expects and produces a blocked arrangement of items
+  static_assert(PolicyT::LOAD_ALGORITHM != WARP_LOAD_STRIPED,
+                "SegmentedSortSubWarpMergeSortPolicy: load_algorithm must not be WARP_LOAD_STRIPED, since the "
+                "sub-warp merge sort requires a blocked arrangement");
+  static_assert(PolicyT::STORE_ALGORITHM != WARP_STORE_STRIPED,
+                "SegmentedSortSubWarpMergeSortPolicy: store_algorithm must not be WARP_STORE_STRIPED, since the "
+                "sub-warp merge sort produces a blocked arrangement");
+
   using WarpMergeSortT = WarpMergeSort<KeyT, PolicyT::ITEMS_PER_THREAD, PolicyT::WARP_THREADS, ValueT>;
 
   using KeysLoadItT  = try_make_cache_modified_iterator_t<PolicyT::LOAD_MODIFIER, const KeyT*>;
@@ -196,8 +211,7 @@ public:
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   _TempStorage& storage;
 
@@ -231,7 +245,7 @@ public:
         {
           // Traits<KeyT>::MAX_KEY for `bool` is 0xFF which is different from `true` and makes
           // comparison with oob unreliable.
-          return !IS_DESCENDING;
+          return !IsDescending;
         }
         else
         {
@@ -240,8 +254,8 @@ public:
           // LOWEST   -> -nan          = 11...11b -> TwiddleIn ->  0 = 00...00b
 
           // Segmented sort doesn't support custom types at the moment.
-          bit_ordered_type default_key_bits = IS_DESCENDING ? traits::min_raw_binary_key(identity_decomposer_t{})
-                                                            : traits::max_raw_binary_key(identity_decomposer_t{});
+          bit_ordered_type default_key_bits = IsDescending ? traits::min_raw_binary_key(identity_decomposer_t{})
+                                                           : traits::max_raw_binary_key(identity_decomposer_t{});
           return reinterpret_cast<KeyT&>(default_key_bits);
         }
       }();

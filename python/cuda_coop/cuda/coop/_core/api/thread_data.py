@@ -1,0 +1,77 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""Define the common constructor for per-thread values in a GPU kernel.
+
+A compiler replaces this call with storage for the calling thread. The Python
+body rejects host execution because it cannot provide that device storage.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from ..thread_group import CoopCompilerContextRequiredError
+from ._payload import ThreadDataLike
+
+
+def ThreadData(
+    items_per_thread: int,
+    dtype: object | None = None,
+    *,
+    alignment: int | None = None,
+) -> ThreadDataLike[Any]:
+    """Construct a fixed-size payload owned by the calling thread.
+
+    Each thread has its own slots. See :ref:`per-thread payloads
+    <coop-thread-data>` for their relationship to a group tile and the
+    :ref:`blocked and striped layouts <coop-data-layouts>`.
+
+    Parameters
+    ----------
+    items_per_thread : int
+        Positive compile-time number of items owned by each thread.
+        This extent is fixed for the lifetime of the payload and is available
+        inside the kernel as ``items.items_per_thread``. Pass it as a
+        compile-time kernel argument using the backend's supported
+        specialization mechanism.
+    dtype : dtype-like, optional
+        Optional numeric element type. Leave unspecified for normal use:
+        a supported producer such as :func:`cuda.coop.load` supplies it.
+        Backend-supported typed assignments can also establish the type.
+        Supply it explicitly when the available type information cannot
+        identify the intended representation. All items have the same type;
+        conflicting typed values are an error.
+    alignment : int, optional
+        Compile-time minimum storage alignment in bytes, expressed as a
+        positive power of two. ``None`` lets the compiler choose. The request
+        applies when payload storage is materialized; it does not assert
+        alignment of a Load source or Store destination.
+
+    Returns
+    -------
+    cuda.coop.ThreadDataLike
+        Writable per-thread payload with indexed reads and writes. Its
+        contents are uninitialized; write every item before reading it.
+        Construction does not synchronize threads.
+
+    Examples
+    --------
+    Construct a payload from the kernel's item-count argument, fill its
+    items with squared indices, and store the resulting blocked tiles:
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_storage_examples.py
+        :language: python
+        :start-after: # thread-data-example-begin
+        :end-before: # thread-data-example-end
+        :dedent: 4
+    """
+
+    raise CoopCompilerContextRequiredError(
+        "cuda.coop.ThreadData must be called from a supported GPU kernel."
+    )
+
+
+__all__ = ["ThreadData", "ThreadDataLike"]

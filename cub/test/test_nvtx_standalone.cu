@@ -7,6 +7,7 @@
 //   (nsys profile -o nvtx_standalone.nsys-rep -f true ./nvtx_standalone || true) && nsys-ui nvtx_standalone.nsys-rep
 
 #include <cub/device/device_for.cuh>
+#include <cub/util_debug.cuh>
 
 #include <cuda/iterator>
 #include <cuda/std/functional>
@@ -19,7 +20,7 @@ int main()
 {
   _CCCL_NVTX_RANGE_SCOPE("main");
 
-  cuda::counting_iterator<int> it{0};
-  cub::DeviceFor::ForEach(it, it + 16, ::cuda::std::negate<int>{});
-  cudaDeviceSynchronize();
+  const cuda::counting_iterator<int> it{0};
+  CubDebugExit(cub::DeviceFor::ForEach(it, it + 16, ::cuda::std::negate<int>{}));
+  CubDebugExit(cudaDeviceSynchronize());
 }

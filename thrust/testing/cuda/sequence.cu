@@ -30,71 +30,68 @@ void TestSequenceDevice(ExecutionPolicy exec)
   sequence_kernel<<<1, 1>>>(exec, v.begin(), v.end());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   thrust::device_vector<int> ref{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   sequence_kernel<<<1, 1>>>(exec, v.begin(), v.end(), 10);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   ref = {10, 11, 12, 13, 14};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   sequence_kernel<<<1, 1>>>(exec, v.begin(), v.end(), 10, 2);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   ref = {10, 12, 14, 16, 18};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 }
 
-void TestSequenceDeviceSeq()
+TEST_CASE("TestSequenceDeviceSeq", "[sequence]")
 {
   TestSequenceDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestSequenceDeviceSeq);
 
-void TestSequenceDeviceDevice()
+TEST_CASE("TestSequenceDeviceDevice", "[sequence]")
 {
   TestSequenceDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestSequenceDeviceDevice);
 #endif
 
-void TestSequenceCudaStreams()
+TEST_CASE("TestSequenceCudaStreams", "[sequence]")
 {
   using Vector = thrust::device_vector<int>;
 
   Vector v(5);
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::sequence(thrust::cuda::par.on(s), v.begin(), v.end());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   Vector ref{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   thrust::sequence(thrust::cuda::par.on(s), v.begin(), v.end(), 10);
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   ref = {10, 11, 12, 13, 14};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   thrust::sequence(thrust::cuda::par.on(s), v.begin(), v.end(), 10, 2);
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   ref = {10, 12, 14, 16, 18};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
-DECLARE_UNITTEST(TestSequenceCudaStreams);

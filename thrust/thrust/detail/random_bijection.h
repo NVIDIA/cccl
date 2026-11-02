@@ -26,21 +26,15 @@ class feistel_bijection
 public:
   using index_type = std::uint64_t;
 
+  // The constructor loop initializes every key.
   template <class URBG>
-  _CCCL_HOST_DEVICE feistel_bijection(std::uint64_t m, URBG&& g)
+  _CCCL_HOST_DEVICE feistel_bijection(std::uint64_t m, URBG&& g) // NOLINT(cppcoreguidelines-pro-type-member-init)
+      : r_bits((total_bits(m) + 1) / 2)
+      , l_bits(total_bits(m) / 2)
+      , r_mask((std::uint64_t{1} << r_bits) - 1)
+      , l_mask((std::uint64_t{1} << l_bits) - 1)
   {
-    // Calculate number of bits needed to represent num_elements - 1
-    // Prevent zero
-    const uint64_t max_index  = (::cuda::std::max) (static_cast<uint64_t>(1), m) - 1;
-    const uint64_t total_bits = static_cast<uint64_t>((::cuda::std::max) (8, ::cuda::std::bit_width(max_index)));
-    // Half bits rounded down
-    L_bits = total_bits / 2;
-    L_mask = (1ull << L_bits) - 1;
-    // Half the bits rounded up
-    R_bits = total_bits - L_bits;
-    R_mask = (1ull << R_bits) - 1;
-
-    thrust::uniform_int_distribution<std::uint32_t> dist;
+    thrust::uniform_int_distribution<std::uint32_t> dist; // NOLINT(misc-const-correctness)
     for (auto& k : key)
     {
       k = dist(g);
@@ -49,7 +43,7 @@ public:
 
   _CCCL_HOST_DEVICE std::uint64_t size() const
   {
-    return 1ull << (L_bits + R_bits);
+    return 1ull << (l_bits + r_bits);
   }
 
   _CCCL_HOST_DEVICE std::uint64_t operator()(const std::uint64_t val) const
@@ -58,30 +52,37 @@ public:
     // We cannot use the above because thrust PRNG generators incorrectly implement URBG requirements.
     // Mitchell, Rory, et al. "Bandwidth-optimal random shuffling for GPUs." ACM Transactions on Parallel Computing 9.1
     // (2022): 1-20.
-    uint32_t L = static_cast<uint32_t>(val >> R_bits);
-    uint32_t R = static_cast<uint32_t>(val & R_mask);
+    uint32_t L = static_cast<uint32_t>(val >> r_bits);
+    uint32_t R = static_cast<uint32_t>(val & r_mask);
     for (const auto k : key)
     {
       constexpr uint64_t m0  = 0xD2B74407B1CE6E93;
       const uint64_t product = m0 * L;
-      uint32_t F_k           = (product >> 32) ^ k;
-      uint32_t B_k           = static_cast<uint32_t>(product);
-      uint32_t L_prime       = F_k ^ R;
+      const uint32_t F_k     = (product >> 32) ^ k;
+      const uint32_t B_k     = static_cast<uint32_t>(product);
+      const uint32_t L_prime = F_k ^ R;
 
-      uint32_t R_prime = (B_k << (R_bits - L_bits)) | R >> L_bits;
-      L                = L_prime & L_mask;
-      R                = R_prime & R_mask;
+      const uint32_t R_prime = (B_k << (r_bits - l_bits)) | R >> l_bits;
+      L                      = L_prime & l_mask;
+      R                      = R_prime & r_mask;
     }
     // Combine the left and right sides together to get result
-    return (static_cast<uint64_t>(L) << R_bits) | static_cast<uint64_t>(R);
+    return (static_cast<uint64_t>(L) << r_bits) | static_cast<uint64_t>(R);
   }
 
 private:
+  _CCCL_HOST_DEVICE static constexpr std::uint64_t total_bits(std::uint64_t m)
+  {
+    // Clamp empty ranges to avoid unsigned underflow.
+    const auto max_index = (::cuda::std::max) (std::uint64_t{1}, m) - 1;
+    return static_cast<std::uint64_t>((::cuda::std::max) (8, ::cuda::std::bit_width(max_index)));
+  }
+
   static constexpr std::uint32_t num_rounds = 24;
-  std::uint64_t R_bits;
-  std::uint64_t L_bits;
-  std::uint64_t R_mask;
-  std::uint64_t L_mask;
+  std::uint64_t r_bits;
+  std::uint64_t l_bits;
+  std::uint64_t r_mask;
+  std::uint64_t l_mask;
   std::uint32_t key[num_rounds];
 };
 

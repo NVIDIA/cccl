@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -54,6 +54,11 @@
 //!
 //! The API supports both host and device code through appropriate decorators and
 //! can utilize different computational backends based on template parameters.
+//!
+//! ## Example
+//!
+//! - Code:        https://github.com/NVIDIA/cccl/blob/main/examples/cudax/fp/fpemu.cu
+//! - Walkthrough: https://github.com/NVIDIA/cccl/blob/main/examples/cudax/fp/README_fpemu.md
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -75,8 +80,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 // The public accuracy selector fpemu_accuracy is defined in
 // <cuda/__fp/fpemu_common.h> (the public API header); the internal vocabulary
 // types (__fpbits64 / __fpbits64_unpacked) and helpers come from
@@ -98,9 +102,9 @@ template <typename _Tp>
 inline constexpr bool __fpemu_is_supported_fp_v =
   ::cuda::std::is_same_v<_Tp, double>
 // nvcc currently doesn't support _Float64 in device code.
-#if __STDCPP_FLOAT64_T__ == 1 && !_CCCL_CUDA_COMPILER(NVCC)
+#if _CCCL_HAS_FLOAT64()
   || ::cuda::std::is_same_v<_Tp, _Float64>
-#endif // __STDCPP_FLOAT64_T__ == 1  && !_CCCL_CUDA_COMPILER(NVCC)
+#endif // _CCCL_HAS_FLOAT64()
   ;
 
 //! @brief Primary emulated double-precision floating-point class template
@@ -133,7 +137,7 @@ public:
   // extension. _Float64 is accepted as a bit-identical alias for double (see
   // __fpemu_is_supported_fp_v).
   static_assert(__fpemu_is_supported_fp_v<_FpType>,
-                "cuda::experimental::fpemu currently supports only _FpType == double (or the bit-identical _Float64), "
+                "cuda::fpemu currently supports only _FpType == double (or the bit-identical _Float64), "
                 "possible future extension to other types emulation");
 
 private:
@@ -481,6 +485,19 @@ public:
 //! It trades the compact packed layout of fpemu for direct field access, which the
 //! emulation builtins use to avoid repeated pack/unpack work in chained operations.
 //!
+//! Precision note: the mantissa field carries 9 guard bits below the 53-bit binary64
+//! significand (_CCCL_FPEMU_EXTRA_BITS in fpemu_impl.h, which places the significand at bits 61..9),
+//! so arithmetic on values that stay unpacked runs on 62 significand bits and rounds to
+//! the storage format once, when the value is packed, rather than after every operation.
+//! Two consequences follow, and both are intentional:
+//!   - A chain of operations is typically *more* accurate than the same chain in double
+//!     or in packed fpemu, since the per-operation rounding error is not incurred.
+//!   - For that same reason the result of a chain is not bit-identical to double, even at
+//!     fpemu_accuracy::high, whose individual operations are. Code that must reproduce
+//!     double bit-for-bit should use fpemu (packed) or double itself.
+//! The behaviour is analogous to computing in x87 extended precision and storing the
+//! result at the end.
+//!
 //! @tparam met Accuracy level (fpemu_accuracy::high, mid, low; def == high)
 //!              - high: Correctly rounded with full IEEE-754 range
 //!              - mid: 1-2 LSB error with normal range
@@ -505,7 +522,7 @@ public:
   // extension. _Float64 is accepted as a bit-identical alias for double (see
   // __fpemu_is_supported_fp_v).
   static_assert(__fpemu_is_supported_fp_v<_FpType>,
-                "cuda::experimental::fpemu_unpacked currently supports only _FpType == double (or the bit-identical "
+                "cuda::fpemu_unpacked currently supports only _FpType == double (or the bit-identical "
                 "_Float64)");
 
 private:
@@ -893,7 +910,7 @@ using __fpemu_pick_t = typename __fpemu_pick<_Ts...>::type;
 // include guard, and API code (operators, class methods) under this guard.
 // This ensures API code is only compiled after class definitions are complete.
 #define _CCCL_FPEMU_API_CLASSES_DEFINED
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

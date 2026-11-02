@@ -2,6 +2,7 @@
 #define CCCL_DISABLE_NVTX
 
 #include <cub/device/device_for.cuh>
+#include <cub/util_debug.cuh>
 
 #include <cuda/iterator>
 #include <cuda/std/functional>
@@ -16,7 +17,7 @@ CUB_TEST_MEMORY_CLASS(CUB_SMALL);
 
 int main()
 {
-  cuda::counting_iterator<int> it{0};
-  cub::DeviceFor::ForEach(it, it + 16, ::cuda::std::negate<int>{});
-  cudaDeviceSynchronize();
+  const cuda::counting_iterator<int> it{0};
+  CubDebugExit(cub::DeviceFor::ForEach(it, it + 16, ::cuda::std::negate<int>{}));
+  CubDebugExit(cudaDeviceSynchronize());
 }

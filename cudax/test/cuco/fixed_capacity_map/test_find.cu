@@ -124,7 +124,7 @@ C2H_TEST("fixed_capacity_map find", "[container]", key_types, cg_sizes, bucket_s
   constexpr int num_keys      = 400;
   constexpr key_type sentinel = key_type{-1};
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   map_type map{stream,

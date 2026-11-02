@@ -49,7 +49,7 @@ _CCCL_HOST_DEVICE ForwardIterator2 swap_ranges(
   using IteratorTuple = ::cuda::std::tuple<ForwardIterator1, ForwardIterator2>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-  ZipIterator result = thrust::for_each(
+  const ZipIterator result = thrust::for_each(
     exec,
     thrust::make_zip_iterator(first1, first2),
     thrust::make_zip_iterator(last1, first2),

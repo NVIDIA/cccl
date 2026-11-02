@@ -54,6 +54,8 @@ if not _BINDINGS_AVAILABLE:
         )
 else:
     from ._caching import clear_all_caches
+    from ._pch import cache_dir as pch_cache_dir
+    from ._pch import clear_cache as clear_pch_cache
     from ._proxy import ProxyArray, ProxyValue
     from .algorithms import (
         DoubleBuffer,
@@ -115,6 +117,8 @@ else:
         "ProxyValue",
         "binary_transform",
         "clear_all_caches",
+        "clear_pch_cache",
+        "pch_cache_dir",
         "CacheModifiedInputIterator",
         "ConstantIterator",
         "CountingIterator",

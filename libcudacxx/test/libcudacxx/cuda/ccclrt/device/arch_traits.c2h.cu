@@ -42,7 +42,7 @@ __global__ void arch_specific_kernel_mock_do_not_launch()
   }
   if (cuda::device::current_arch_traits().redux_intrinisic)
   {
-    [[maybe_unused]] int dummy1 = 0, dummy2 = 0;
+    [[maybe_unused]] int dummy1 = 0, dummy2 = 0; // NOLINT(misc-const-correctness)
     asm volatile("redux.sync.add.s32 %0, %1, 0xffffffff;" : "=r"(dummy1) : "r"(dummy2));
   }
   if (cuda::device::current_arch_traits().cp_async_supported)
@@ -65,12 +65,14 @@ template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_90>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_100>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_103>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_107>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_110>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_120>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_121>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_90a>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_100a>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_103a>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_107a>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_110a>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_120a>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_121a>();
@@ -81,6 +83,11 @@ void constexpr compare_static_and_dynamic()
   constexpr cuda::compute_capability cc{ComputeCapability};
   constexpr cuda::arch_traits_t static_traits  = cuda::arch_traits<cuda::to_arch_id(cc)>();
   constexpr cuda::arch_traits_t dynamic_traits = cuda::arch_traits_for(cuda::to_arch_id(cc));
+
+  static_assert(cuda::compute_capability{static_traits.arch_id} == cc);
+  static_assert(static_traits.compute_capability == cc);
+  static_assert(static_traits.compute_capability_major == cc.major_cap());
+  static_assert(static_traits.compute_capability_minor == cc.minor_cap());
 
   static_assert(static_traits.arch_id == dynamic_traits.arch_id);
   static_assert(static_traits.max_threads_per_block == dynamic_traits.max_threads_per_block);
@@ -132,6 +139,7 @@ C2H_CCCLRT_TEST("Traits", "[device]")
   compare_static_and_dynamic<90>();
   compare_static_and_dynamic<100>();
   compare_static_and_dynamic<103>();
+  compare_static_and_dynamic<107>();
   compare_static_and_dynamic<110>();
   compare_static_and_dynamic<120>();
 
@@ -142,41 +150,38 @@ C2H_CCCLRT_TEST("Traits", "[device]")
 
     const auto traits = cuda::arch_traits_for(cc);
 
-    CCCLRT_REQUIRE(traits.max_threads_per_block == dev.attribute(cuda::device_attributes::max_threads_per_block));
-    CCCLRT_REQUIRE(traits.max_block_dim_x == dev.attribute(cuda::device_attributes::max_block_dim_x));
-    CCCLRT_REQUIRE(traits.max_block_dim_y == dev.attribute(cuda::device_attributes::max_block_dim_y));
-    CCCLRT_REQUIRE(traits.max_block_dim_z == dev.attribute(cuda::device_attributes::max_block_dim_z));
-    CCCLRT_REQUIRE(traits.max_grid_dim_x == dev.attribute(cuda::device_attributes::max_grid_dim_x));
-    CCCLRT_REQUIRE(traits.max_grid_dim_y == dev.attribute(cuda::device_attributes::max_grid_dim_y));
-    CCCLRT_REQUIRE(traits.max_grid_dim_z == dev.attribute(cuda::device_attributes::max_grid_dim_z));
+    REQUIRE(traits.max_threads_per_block == dev.attribute(cuda::device_attributes::max_threads_per_block));
+    REQUIRE(traits.max_block_dim_x == dev.attribute(cuda::device_attributes::max_block_dim_x));
+    REQUIRE(traits.max_block_dim_y == dev.attribute(cuda::device_attributes::max_block_dim_y));
+    REQUIRE(traits.max_block_dim_z == dev.attribute(cuda::device_attributes::max_block_dim_z));
+    REQUIRE(traits.max_grid_dim_x == dev.attribute(cuda::device_attributes::max_grid_dim_x));
+    REQUIRE(traits.max_grid_dim_y == dev.attribute(cuda::device_attributes::max_grid_dim_y));
+    REQUIRE(traits.max_grid_dim_z == dev.attribute(cuda::device_attributes::max_grid_dim_z));
 
-    CCCLRT_REQUIRE(traits.warp_size == dev.attribute(cuda::device_attributes::warp_size));
-    CCCLRT_REQUIRE(traits.total_constant_memory == dev.attribute(cuda::device_attributes::total_constant_memory));
-    CCCLRT_REQUIRE(
-      traits.max_shared_memory_per_block == dev.attribute(cuda::device_attributes::max_shared_memory_per_block));
-    CCCLRT_REQUIRE(traits.gpu_overlap == dev.attribute(cuda::device_attributes::gpu_overlap));
-    CCCLRT_REQUIRE(traits.can_map_host_memory == dev.attribute(cuda::device_attributes::can_map_host_memory));
-    CCCLRT_REQUIRE(traits.concurrent_kernels == dev.attribute(cuda::device_attributes::concurrent_kernels));
-    CCCLRT_REQUIRE(
-      traits.stream_priorities_supported == dev.attribute(cuda::device_attributes::stream_priorities_supported));
-    CCCLRT_REQUIRE(
-      traits.global_l1_cache_supported == dev.attribute(cuda::device_attributes::global_l1_cache_supported));
-    CCCLRT_REQUIRE(traits.local_l1_cache_supported == dev.attribute(cuda::device_attributes::local_l1_cache_supported));
-    CCCLRT_REQUIRE(traits.max_registers_per_block == dev.attribute(cuda::device_attributes::max_registers_per_block));
-    CCCLRT_REQUIRE(traits.max_registers_per_multiprocessor
-                   == dev.attribute(cuda::device_attributes::max_registers_per_multiprocessor));
-    CCCLRT_REQUIRE(traits.compute_capability_major == dev.attribute(cuda::device_attributes::compute_capability_major));
-    CCCLRT_REQUIRE(traits.compute_capability_minor == dev.attribute(cuda::device_attributes::compute_capability_minor));
-    CCCLRT_REQUIRE(traits.compute_capability == dev.attribute(cuda::device_attributes::compute_capability));
-    CCCLRT_REQUIRE(traits.max_shared_memory_per_multiprocessor
-                   == dev.attribute(cuda::device_attributes::max_shared_memory_per_multiprocessor));
-    CCCLRT_REQUIRE(
+    REQUIRE(traits.warp_size == dev.attribute(cuda::device_attributes::warp_size));
+    REQUIRE(traits.total_constant_memory == dev.attribute(cuda::device_attributes::total_constant_memory));
+    REQUIRE(traits.max_shared_memory_per_block == dev.attribute(cuda::device_attributes::max_shared_memory_per_block));
+    REQUIRE(traits.gpu_overlap == dev.attribute(cuda::device_attributes::gpu_overlap));
+    REQUIRE(traits.can_map_host_memory == dev.attribute(cuda::device_attributes::can_map_host_memory));
+    REQUIRE(traits.concurrent_kernels == dev.attribute(cuda::device_attributes::concurrent_kernels));
+    REQUIRE(traits.stream_priorities_supported == dev.attribute(cuda::device_attributes::stream_priorities_supported));
+    REQUIRE(traits.global_l1_cache_supported == dev.attribute(cuda::device_attributes::global_l1_cache_supported));
+    REQUIRE(traits.local_l1_cache_supported == dev.attribute(cuda::device_attributes::local_l1_cache_supported));
+    REQUIRE(traits.max_registers_per_block == dev.attribute(cuda::device_attributes::max_registers_per_block));
+    REQUIRE(traits.max_registers_per_multiprocessor
+            == dev.attribute(cuda::device_attributes::max_registers_per_multiprocessor));
+    REQUIRE(traits.compute_capability_major == dev.attribute(cuda::device_attributes::compute_capability_major));
+    REQUIRE(traits.compute_capability_minor == dev.attribute(cuda::device_attributes::compute_capability_minor));
+    REQUIRE(traits.compute_capability == dev.attribute(cuda::device_attributes::compute_capability));
+    REQUIRE(traits.max_shared_memory_per_multiprocessor
+            == dev.attribute(cuda::device_attributes::max_shared_memory_per_multiprocessor));
+    REQUIRE(
       traits.max_blocks_per_multiprocessor == dev.attribute(cuda::device_attributes::max_blocks_per_multiprocessor));
-    CCCLRT_REQUIRE(
+    REQUIRE(
       traits.max_threads_per_multiprocessor == dev.attribute(cuda::device_attributes::max_threads_per_multiprocessor));
-    CCCLRT_REQUIRE(traits.reserved_shared_memory_per_block
-                   == dev.attribute(cuda::device_attributes::reserved_shared_memory_per_block));
-    CCCLRT_REQUIRE(traits.max_shared_memory_per_block_optin
-                   == dev.attribute(cuda::device_attributes::max_shared_memory_per_block_optin));
+    REQUIRE(traits.reserved_shared_memory_per_block
+            == dev.attribute(cuda::device_attributes::reserved_shared_memory_per_block));
+    REQUIRE(traits.max_shared_memory_per_block_optin
+            == dev.attribute(cuda::device_attributes::max_shared_memory_per_block_optin));
   }
 }

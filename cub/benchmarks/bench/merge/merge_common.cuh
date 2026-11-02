@@ -79,7 +79,7 @@ generate_lhs_rhs(std::size_t num_items_lhs, std::size_t num_items_rhs, bit_entro
   // We generate data distributions in the range [0, 255], which, with lower entropy, get skewed towards 0.
   // We use this to generate increasingly large *consecutive* segments of data that are getting selected from the lhs
   thrust::device_vector<uint8_t> rnd_selector_val = generate(elements, entropy);
-  uint8_t threshold                               = 128;
+  const uint8_t threshold                         = 128;
   select_if_less_than_t select_lhs_op{false, threshold};
   select_if_less_than_t select_rhs_op{true, threshold};
 
@@ -115,8 +115,8 @@ generate_lhs_rhs(std::size_t num_items_lhs, std::size_t num_items_rhs, bit_entro
   thrust::device_vector<KeyT> increasing_input = generate(elements);
   thrust::sort(increasing_input.begin(), increasing_input.end());
 
-  offset_t pivot_point_val = pivot_point[0];
-  auto const end_lhs       = thrust::copy_if(
+  const offset_t pivot_point_val = pivot_point[0];
+  auto const end_lhs             = thrust::copy_if(
     increasing_input.cbegin(),
     increasing_input.cbegin() + pivot_point_val,
     rnd_selector_val.cbegin(),

@@ -65,9 +65,7 @@ using counting_iterator_difference_type =
 template <typename Incrementable, typename System, typename Traversal, typename Difference, typename StrideHolder>
 struct make_counting_iterator_base
 {
-  using system = typename eval_if<::cuda::std::is_same_v<System, use_default>,
-                                  ::cuda::std::type_identity<any_system_tag>,
-                                  ::cuda::std::type_identity<System>>::type;
+  using system = ::cuda::std::conditional_t<::cuda::std::is_same_v<System, use_default>, any_system_tag, System>;
 
   using traversal = replace_if_use_default<Traversal, ::cuda::std::type_identity<random_access_traversal_tag>>;
   using difference =
@@ -177,6 +175,8 @@ class _CCCL_DECLSPEC_EMPTY_BASES counting_iterator
   using super_t =
     typename detail::make_counting_iterator_base<Incrementable, System, Traversal, Difference, StrideHolder>::type;
   friend class iterator_core_access;
+  template <typename, typename, typename, typename, typename>
+  friend class counting_iterator;
 
 public:
   using reference       = typename super_t::reference;
@@ -199,6 +199,7 @@ public:
   _CCCL_HOST_DEVICE
   counting_iterator(counting_iterator<Incrementable, OtherSystem, Traversal, Difference, StrideHolder> const& rhs)
       : super_t(rhs.base())
+      , StrideHolder(static_cast<const StrideHolder&>(rhs))
   {}
 
   //! This \c explicit constructor copies the value of an \c Incrementable into a new \p counting_iterator's \c

@@ -47,7 +47,7 @@ def filter_by_type(df):
 
 def alg_dfs(files, alg_regex):
     pattern = re.compile(alg_regex)
-    result = {}
+    result: dict[str, pd.DataFrame] = {}
     for file in files:
         storage = cccl.bench.SQLiteStorage(file)
         for algname in storage.algnames():
@@ -83,14 +83,14 @@ def alg_dfs(files, alg_regex):
 
 
 def alg_bws(dfs, verbose):
-    medians = None
+    # Concat once at the end: the old per-iteration concat relied on
+    # pd.concat silently dropping a None accumulator (see #11096).
+    frames = []
     for algname in dfs:
         df = dfs[algname]
         df["alg"] = algname
-        if df is None:
-            medians = df
-        else:
-            medians = pd.concat([medians, df])
+        frames.append(df)
+    medians = pd.concat(frames)
     # print more information if it's not unique across all runs or when requested (verbose)
     medians["hue"] = ""
     if verbose or medians["cccl"].unique().size > 1:

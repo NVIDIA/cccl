@@ -38,8 +38,8 @@ CUB_TEST("cub::DeviceCopy::Batched accepts env with stream", "[copy][env]", CUB_
   thrust::device_vector<int*> d_output_ptrs{dst_base, dst_base + range_size, dst_base + 2 * range_size};
   thrust::device_vector<int> d_sizes{range_size, range_size, range_size};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceCopy::Batched(
     thrust::raw_pointer_cast(d_input_ptrs.data()),
@@ -143,11 +143,11 @@ CUB_TEST("cub::DeviceCopy::Copy mdspan accepts env with stream", "[copy][env]", 
   using extents_t = cuda::std::extents<int, N, M>;
   using mdspan_t  = cuda::std::mdspan<float, extents_t, cuda::std::layout_right>; // row-major
 
-  mdspan_t mdspan_in(thrust::raw_pointer_cast(d_input.data()), extents_t{});
-  mdspan_t mdspan_out(thrust::raw_pointer_cast(d_output.data()), extents_t{});
+  const mdspan_t mdspan_in(thrust::raw_pointer_cast(d_input.data()), extents_t{});
+  const mdspan_t mdspan_out(thrust::raw_pointer_cast(d_output.data()), extents_t{});
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceCopy::Copy(mdspan_in, mdspan_out, stream_ref);
   if (error != cudaSuccess)

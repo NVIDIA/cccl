@@ -271,7 +271,7 @@ template <class _Sndr, class... _Env>
   }
   // else if constexpr (__is_awaitable<_Sndr, __env_promise<_Env>...>)
   // {
-  //   using Result _CCCL_NODEBUG_ALIAS = __await_result_t<_Sndr, __env_promise<_Env>...>;
+  //   using Result _CCCL_NODEBUG = __await_result_t<_Sndr, __env_promise<_Env>...>;
   //   return completion_signatures{__set_value_v<Result>, __set_error_v<>, __set_stopped_v};
   // }
   else if constexpr (sizeof...(_Env) == 0)
@@ -334,7 +334,7 @@ catch (...)
 template <class _Sndr>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __is_dependent_sender() noexcept -> bool
 {
-  using _Completions _CCCL_NODEBUG_ALIAS = decltype(get_completion_signatures<_Sndr>());
+  using _Completions _CCCL_NODEBUG = decltype(get_completion_signatures<_Sndr>());
   return ::cuda::std::is_base_of_v<dependent_sender_error, _Completions>;
 }
 #endif // ^^^ !_CCCL_HAS_CONSTEXPR_EXCEPTIONS() ^^^

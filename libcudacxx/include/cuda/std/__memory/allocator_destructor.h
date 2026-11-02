@@ -31,11 +31,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Alloc>
 class __allocator_destructor
 {
-  using __alloc_traits _CCCL_NODEBUG_ALIAS = allocator_traits<_Alloc>;
+  using __alloc_traits _CCCL_NODEBUG = allocator_traits<_Alloc>;
 
 public:
-  using pointer _CCCL_NODEBUG_ALIAS   = typename __alloc_traits::pointer;
-  using size_type _CCCL_NODEBUG_ALIAS = typename __alloc_traits::size_type;
+  using pointer _CCCL_NODEBUG   = typename __alloc_traits::pointer;
+  using size_type _CCCL_NODEBUG = typename __alloc_traits::size_type;
 
 private:
   _Alloc& __alloc_;

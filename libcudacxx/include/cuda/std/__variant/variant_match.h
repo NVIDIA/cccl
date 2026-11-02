@@ -20,8 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__tuple_dir/tuple_indices.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
@@ -39,7 +39,7 @@ namespace __variant_detail
 struct __no_narrowing_check
 {
   template <class _Dest, class _Source>
-  using _Apply = type_identity<_Dest>;
+  using _Apply _CCCL_NODEBUG = type_identity<_Dest>;
 };
 
 struct __narrowing_check
@@ -51,15 +51,15 @@ struct __narrowing_check
   template <class _Dest, class _Source>
   struct __narrowing_check_impl<_Dest, _Source, true>
   {
-    using type = type_identity<_Dest>;
+    using type _CCCL_NODEBUG = type_identity<_Dest>;
   };
 
   template <class _Dest, class _Source>
-  using _Apply _CCCL_NODEBUG_ALIAS = typename __narrowing_check_impl<_Dest, _Source>::type;
+  using _Apply _CCCL_NODEBUG = typename __narrowing_check_impl<_Dest, _Source>::type;
 };
 
 template <class _Dest, class _Source>
-using __check_for_narrowing _CCCL_NODEBUG_ALIAS = typename conditional_t<
+using __check_for_narrowing _CCCL_NODEBUG = typename conditional_t<
 #ifdef _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
   false &&
 #endif // _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
@@ -102,22 +102,22 @@ struct __all_overloads : _Bases...
   using _Bases::operator()...;
 };
 
-template <class IdxSeq>
+template <class _IdxSeq>
 struct __make_overloads_imp;
 
 template <size_t... _Idx>
 struct __make_overloads_imp<__tuple_indices<_Idx...>>
 {
   template <class... _Types>
-  using _Apply _CCCL_NODEBUG_ALIAS = __all_overloads<__overload<_Types, _Idx>...>;
+  using _Apply _CCCL_NODEBUG = __all_overloads<__overload<_Types, _Idx>...>;
 };
 
 template <class... _Types>
-using _MakeOverloads _CCCL_NODEBUG_ALIAS =
+using _MakeOverloads _CCCL_NODEBUG =
   typename __make_overloads_imp<__make_indices_imp<sizeof...(_Types), 0>>::template _Apply<_Types...>;
 
 template <class _Tp, class... _Types>
-using __best_match_t = typename invoke_result_t<_MakeOverloads<_Types...>, _Tp, _Tp>::type;
+using __best_match_t _CCCL_NODEBUG = typename invoke_result_t<_MakeOverloads<_Types...>, _Tp, _Tp>::type;
 } // namespace __variant_detail
 
 _CCCL_END_NAMESPACE_CUDA_STD

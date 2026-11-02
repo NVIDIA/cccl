@@ -24,6 +24,7 @@
 #include <cuda/std/__concepts/arithmetic.h>
 #include <cuda/std/__concepts/assignable.h>
 #include <cuda/std/__concepts/common_reference_with.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/copyable.h>
@@ -32,6 +33,7 @@
 #include <cuda/std/__concepts/invocable.h>
 #include <cuda/std/__concepts/movable.h>
 #include <cuda/std/__concepts/predicate.h>
+#include <cuda/std/__concepts/referenceable.h>
 #include <cuda/std/__concepts/regular.h>
 #include <cuda/std/__concepts/relation.h>
 #include <cuda/std/__concepts/same_as.h>
@@ -45,13 +47,11 @@
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/add_pointer.h>
 #include <cuda/std/__type_traits/common_reference.h>
-#include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/__type_traits/void_t.h>
-#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__type_traits/void_t.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -116,7 +116,7 @@ concept incrementable = regular<_Ip> && weakly_incrementable<_Ip> && requires(_I
 // [iterator.concept.iterator]
 template <class _Ip>
 concept input_or_output_iterator = requires(_Ip __i) {
-  { *__i } -> __can_reference;
+  { *__i } -> __referenceable;
 } && weakly_incrementable<_Ip>;
 
 // [iterator.concept.sentinel]
@@ -386,7 +386,7 @@ _CCCL_CONCEPT incrementable = _CCCL_REQUIRES_EXPR((_Ip), _Ip __i)(
 template <class _Ip>
 _CCCL_CONCEPT_FRAGMENT(
   __input_or_output_iterator_,
-  requires(_Ip __i)(requires(weakly_incrementable<_Ip>), requires(__can_reference<decltype(*__i)>)));
+  requires(_Ip __i)(requires(weakly_incrementable<_Ip>), requires(__referenceable<decltype(*__i)>)));
 
 template <class _Ip>
 _CCCL_CONCEPT input_or_output_iterator = _CCCL_FRAGMENT(__input_or_output_iterator_, _Ip);

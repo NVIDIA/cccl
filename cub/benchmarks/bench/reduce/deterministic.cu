@@ -60,7 +60,7 @@ try
       cuda::execution::tune(policy_selector_t{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceReduce::Reduce, "Reduce failed", d_in, d_out, elements, cuda::std::plus<>{}, init_value_t{}, env);
   });
 }

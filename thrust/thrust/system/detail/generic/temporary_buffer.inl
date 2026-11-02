@@ -27,7 +27,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<thrust::pointer<T, DerivedPolicy>,
 get_temporary_buffer(thrust::execution_policy<DerivedPolicy>& exec,
                      typename thrust::pointer<T, DerivedPolicy>::difference_type n)
 {
-  thrust::pointer<T, DerivedPolicy> ptr = thrust::malloc<T>(exec, n);
+  const thrust::pointer<T, DerivedPolicy> ptr = thrust::malloc<T>(exec, n);
 
   // check for a failed malloc
   if (!ptr.get())

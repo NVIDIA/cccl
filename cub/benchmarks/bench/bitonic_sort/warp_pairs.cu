@@ -27,10 +27,11 @@ struct full_op_t
   }
 };
 
-template <Mode mode, typename KeyT, typename ValueT, int Len>
-void full(nvbench::state& state, nvbench::type_list<nvbench::enum_type<mode>, KeyT, ValueT, nvbench::enum_type<Len>>)
+template <Mode ModeValue, typename KeyT, typename ValueT, int Len>
+void full(nvbench::state& state,
+          nvbench::type_list<nvbench::enum_type<ModeValue>, KeyT, ValueT, nvbench::enum_type<Len>>)
 {
-  run_bench<full_op_t<Len / warp_threads>, mode, KeyT, ValueT, Len>(state);
+  run_bench<full_op_t<Len / warp_threads>, ModeValue, KeyT, ValueT, Len>(state);
 }
 
 NVBENCH_BENCH_TYPES(full, NVBENCH_TYPE_AXES(modes, key_types, value_types, len_values))
@@ -51,11 +52,11 @@ struct partial_oob_op_t
   }
 };
 
-template <Mode mode, typename KeyT, typename ValueT, int Len>
+template <Mode ModeValue, typename KeyT, typename ValueT, int Len>
 void partial_oob(nvbench::state& state,
-                 nvbench::type_list<nvbench::enum_type<mode>, KeyT, ValueT, nvbench::enum_type<Len>>)
+                 nvbench::type_list<nvbench::enum_type<ModeValue>, KeyT, ValueT, nvbench::enum_type<Len>>)
 {
-  run_bench<partial_oob_op_t<Len / warp_threads>, mode, KeyT, ValueT, Len>(state);
+  run_bench<partial_oob_op_t<Len / warp_threads>, ModeValue, KeyT, ValueT, Len>(state);
 }
 
 NVBENCH_BENCH_TYPES(partial_oob, NVBENCH_TYPE_AXES(modes, key_types, value_types, len_values))
@@ -76,10 +77,11 @@ struct partial_op_t
   }
 };
 
-template <Mode mode, typename KeyT, typename ValueT, int Len>
-void partial(nvbench::state& state, nvbench::type_list<nvbench::enum_type<mode>, KeyT, ValueT, nvbench::enum_type<Len>>)
+template <Mode ModeValue, typename KeyT, typename ValueT, int Len>
+void partial(nvbench::state& state,
+             nvbench::type_list<nvbench::enum_type<ModeValue>, KeyT, ValueT, nvbench::enum_type<Len>>)
 {
-  run_bench<partial_op_t<Len / warp_threads>, mode, KeyT, ValueT, Len>(state);
+  run_bench<partial_op_t<Len / warp_threads>, ModeValue, KeyT, ValueT, Len>(state);
 }
 
 NVBENCH_BENCH_TYPES(partial, NVBENCH_TYPE_AXES(modes, key_types, value_types, len_values))

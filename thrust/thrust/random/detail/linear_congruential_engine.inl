@@ -21,43 +21,43 @@ THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
-template <typename UIntType, UIntType a, UIntType c, UIntType m>
-_CCCL_HOST_DEVICE linear_congruential_engine<UIntType, a, c, m>::linear_congruential_engine(result_type s)
+template <typename UIntType, UIntType A, UIntType C, UIntType M>
+_CCCL_HOST_DEVICE linear_congruential_engine<UIntType, A, C, M>::linear_congruential_engine(result_type s)
 {
   seed(s);
 } // end linear_congruential_engine::linear_congruential_engine()
 
-template <typename UIntType, UIntType a, UIntType c, UIntType m>
-_CCCL_HOST_DEVICE void linear_congruential_engine<UIntType, a, c, m>::seed(result_type s)
+template <typename UIntType, UIntType A, UIntType C, UIntType M>
+_CCCL_HOST_DEVICE void linear_congruential_engine<UIntType, A, C, M>::seed(result_type s)
 {
-  if ((detail::mod<UIntType, 1, 0, m>(c) == 0) && (detail::mod<UIntType, 1, 0, m>(s) == 0))
+  if ((detail::mod<UIntType, 1, 0, M>(C) == 0) && (detail::mod<UIntType, 1, 0, M>(s) == 0))
   {
-    m_x = detail::mod<UIntType, 1, 0, m>(1);
+    m_x = detail::mod<UIntType, 1, 0, M>(1);
   }
   else
   {
-    m_x = detail::mod<UIntType, 1, 0, m>(s);
+    m_x = detail::mod<UIntType, 1, 0, M>(s);
   }
 } // end linear_congruential_engine::seed()
 
-template <typename UIntType, UIntType a, UIntType c, UIntType m>
-_CCCL_HOST_DEVICE typename linear_congruential_engine<UIntType, a, c, m>::result_type
-linear_congruential_engine<UIntType, a, c, m>::operator()()
+template <typename UIntType, UIntType A, UIntType C, UIntType M>
+_CCCL_HOST_DEVICE typename linear_congruential_engine<UIntType, A, C, M>::result_type
+linear_congruential_engine<UIntType, A, C, M>::operator()()
 {
-  m_x = detail::mod<UIntType, a, c, m>(m_x);
+  m_x = detail::mod<UIntType, A, C, M>(m_x);
   return m_x;
 } // end linear_congruential_engine::operator()()
 
-template <typename UIntType, UIntType a, UIntType c, UIntType m>
-_CCCL_HOST_DEVICE void linear_congruential_engine<UIntType, a, c, m>::discard(unsigned long long z)
+template <typename UIntType, UIntType A, UIntType C, UIntType M>
+_CCCL_HOST_DEVICE void linear_congruential_engine<UIntType, A, C, M>::discard(unsigned long long z)
 {
   thrust::random::detail::linear_congruential_engine_discard::discard(*this, z);
 } // end linear_congruential_engine::discard()
 
-template <typename UIntType, UIntType a, UIntType c, UIntType m>
+template <typename UIntType, UIntType A, UIntType C, UIntType M>
 template <typename CharT, typename Traits>
 std::basic_ostream<CharT, Traits>&
-linear_congruential_engine<UIntType, a, c, m>::stream_out(std::basic_ostream<CharT, Traits>& os) const
+linear_congruential_engine<UIntType, A, C, M>::stream_out(std::basic_ostream<CharT, Traits>& os) const
 {
   using ostream_type = std::basic_ostream<CharT, Traits>;
   using ios_base     = typename ostream_type::ios_base;
@@ -79,10 +79,10 @@ linear_congruential_engine<UIntType, a, c, m>::stream_out(std::basic_ostream<Cha
   return os;
 }
 
-template <typename UIntType, UIntType a, UIntType c, UIntType m>
+template <typename UIntType, UIntType A, UIntType C, UIntType M>
 template <typename CharT, typename Traits>
 std::basic_istream<CharT, Traits>&
-linear_congruential_engine<UIntType, a, c, m>::stream_in(std::basic_istream<CharT, Traits>& is)
+linear_congruential_engine<UIntType, A, C, M>::stream_in(std::basic_istream<CharT, Traits>& is)
 {
   using istream_type = std::basic_istream<CharT, Traits>;
   using ios_base     = typename istream_type::ios_base;
@@ -101,37 +101,37 @@ linear_congruential_engine<UIntType, a, c, m>::stream_in(std::basic_istream<Char
   return is;
 }
 
-template <typename UIntType, UIntType a, UIntType c, UIntType m>
+template <typename UIntType, UIntType A, UIntType C, UIntType M>
 _CCCL_HOST_DEVICE bool
-linear_congruential_engine<UIntType, a, c, m>::equal(const linear_congruential_engine<UIntType, a, c, m>& rhs) const
+linear_congruential_engine<UIntType, A, C, M>::equal(const linear_congruential_engine<UIntType, A, C, M>& rhs) const
 {
   return m_x == rhs.m_x;
 }
 
-template <typename UIntType_, UIntType_ a_, UIntType_ c_, UIntType_ m_>
-_CCCL_HOST_DEVICE bool operator==(const linear_congruential_engine<UIntType_, a_, c_, m_>& lhs,
-                                  const linear_congruential_engine<UIntType_, a_, c_, m_>& rhs)
+template <typename UIntType, UIntType A, UIntType C, UIntType M>
+_CCCL_HOST_DEVICE bool operator==(const linear_congruential_engine<UIntType, A, C, M>& lhs,
+                                  const linear_congruential_engine<UIntType, A, C, M>& rhs)
 {
   return detail::random_core_access::equal(lhs, rhs);
 }
 
-template <typename UIntType, UIntType a, UIntType c, UIntType m>
-_CCCL_HOST_DEVICE bool operator!=(const linear_congruential_engine<UIntType, a, c, m>& lhs,
-                                  const linear_congruential_engine<UIntType, a, c, m>& rhs)
+template <typename UIntType, UIntType A, UIntType C, UIntType M>
+_CCCL_HOST_DEVICE bool operator!=(const linear_congruential_engine<UIntType, A, C, M>& lhs,
+                                  const linear_congruential_engine<UIntType, A, C, M>& rhs)
 {
   return !(lhs == rhs);
 }
 
-template <typename UIntType_, UIntType_ a_, UIntType_ c_, UIntType_ m_, typename CharT, typename Traits>
+template <typename UIntType, UIntType A, UIntType C, UIntType M, typename CharT, typename Traits>
 std::basic_ostream<CharT, Traits>&
-operator<<(std::basic_ostream<CharT, Traits>& os, const linear_congruential_engine<UIntType_, a_, c_, m_>& e)
+operator<<(std::basic_ostream<CharT, Traits>& os, const linear_congruential_engine<UIntType, A, C, M>& e)
 {
   return detail::random_core_access::stream_out(os, e);
 }
 
-template <typename UIntType_, UIntType_ a_, UIntType_ c_, UIntType_ m_, typename CharT, typename Traits>
+template <typename UIntType, UIntType A, UIntType C, UIntType M, typename CharT, typename Traits>
 std::basic_istream<CharT, Traits>&
-operator>>(std::basic_istream<CharT, Traits>& is, linear_congruential_engine<UIntType_, a_, c_, m_>& e)
+operator>>(std::basic_istream<CharT, Traits>& is, linear_congruential_engine<UIntType, A, C, M>& e)
 {
   return detail::random_core_access::stream_in(is, e);
 }

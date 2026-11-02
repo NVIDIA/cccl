@@ -12,32 +12,30 @@
 // With cudaMemcpyDefault, CUDA determines the correct direction at runtime,
 // which is necessary when device-accessible pointers may point to host memory.
 
-void TestTrivialCopyFromDevice_HostSource()
+TEST_CASE("TestTrivialCopyFromDevice_HostSource", "[trivial_copy_memcpy_default]")
 {
   int src[]  = {0, 10, 20, 30, 40};
   int dst[5] = {};
 
-  cudaError_t status = thrust::cuda_cub::trivial_copy_from_device(dst, src, 5, cudaStreamDefault);
+  const cudaError_t status = thrust::cuda_cub::trivial_copy_from_device(dst, src, 5, cudaStreamDefault);
 
-  ASSERT_EQUAL(status, cudaSuccess);
+  REQUIRE(status == cudaSuccess);
   for (int i = 0; i < 5; i++)
   {
-    ASSERT_EQUAL(dst[i], i * 10);
+    REQUIRE(dst[i] == i * 10);
   }
 }
-DECLARE_UNITTEST(TestTrivialCopyFromDevice_HostSource);
 
-void TestTrivialCopyToDevice_HostDest()
+TEST_CASE("TestTrivialCopyToDevice_HostDest", "[trivial_copy_memcpy_default]")
 {
   int src[]  = {0, 100, 200, 300, 400};
   int dst[5] = {};
 
-  cudaError_t status = thrust::cuda_cub::trivial_copy_to_device(dst, src, 5, cudaStreamDefault);
+  const cudaError_t status = thrust::cuda_cub::trivial_copy_to_device(dst, src, 5, cudaStreamDefault);
 
-  ASSERT_EQUAL(status, cudaSuccess);
+  REQUIRE(status == cudaSuccess);
   for (int i = 0; i < 5; i++)
   {
-    ASSERT_EQUAL(dst[i], i * 100);
+    REQUIRE(dst[i] == i * 100);
   }
 }
-DECLARE_UNITTEST(TestTrivialCopyToDevice_HostDest);

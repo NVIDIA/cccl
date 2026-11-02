@@ -15,8 +15,9 @@
 #include "host_device_types.h"
 #include "test_macros.h"
 
-TEST_TILE_FUNC void test()
+__tile__ void test()
 {
+#if _CCCL_TILE_COMPILATION()
   using variant = cuda::std::variant<tile_only_type>;
   { // default construction
     variant default_constructed{};
@@ -113,6 +114,7 @@ TEST_TILE_FUNC void test()
     assert(cuda::std::get<0>(lhs) == 42);
     assert(cuda::std::get<0>(rhs) == 1337);
   }
+#endif // _CCCL_TILE_COMPILATION()
 }
 
 __tile_global__ void test_kernel()

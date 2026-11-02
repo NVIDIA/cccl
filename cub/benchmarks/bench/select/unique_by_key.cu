@@ -8,7 +8,7 @@
 
 // %RANGE% TUNE_ITEMS ipt 7:24:1
 // %RANGE% TUNE_THREADS tpb 128:1024:32
-// %RANGE% TUNE_TRANSPOSE trp 0:1:1
+// %RANGE% TUNE_TRANSPOSE trp 0:2:1
 // %RANGE% TUNE_LOAD ld 0:1:1
 // %RANGE% TUNE_MAGIC_NS ns 0:2048:4
 // %RANGE% TUNE_DELAY_CONSTRUCTOR_ID dcid 0:7:1
@@ -17,8 +17,10 @@
 #if !TUNE_BASE
 #  if TUNE_TRANSPOSE == 0
 #    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
-#  else // TUNE_TRANSPOSE == 1
+#  elif TUNE_TRANSPOSE == 1
 #    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_WARP_TRANSPOSE
+#  else // TUNE_TRANSPOSE == 2
+#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_VECTORIZE
 #  endif // TUNE_TRANSPOSE
 
 #  if TUNE_LOAD == 0
@@ -65,7 +67,7 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
   const auto num_items = static_cast<OffsetT>(elements);
 
   // Pre-computation to get num_runs for statistics
-  _CCCL_TRY_CUDA_API(
+  _CCCL_TRY_RUNTIME_API(
     cub::DeviceSelect::UniqueByKey,
     "UniqueByKey failed",
     d_in_keys,
@@ -75,7 +77,7 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
     d_num_runs_out,
     num_items,
     equality_op_t{});
-  _CCCL_TRY_CUDA_API(cudaDeviceSynchronize, "Sync failed");
+  _CCCL_TRY_RUNTIME_API(cudaDeviceSynchronize, "Sync failed");
   const OffsetT num_runs = num_runs_out[0];
 
   state.add_element_count(elements);
@@ -95,7 +97,7 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
       cuda::execution::tune(bench_unique_by_key_policy_selector{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceSelect::UniqueByKey,
       "UniqueByKey failed",
       d_in_keys,

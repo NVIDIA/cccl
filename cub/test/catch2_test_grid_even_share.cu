@@ -67,7 +67,7 @@ CUB_TEST("GridEvenShare works with num_items > 0", "[grid][even_share]", CUB_SMA
 
   grid_share.DispatchInit(num_items, max_grid_size, tile_items);
 
-  int expected_grid_size = cuda::std::min(
+  const int expected_grid_size = cuda::std::min(
     max_grid_size,
     static_cast<int>(
       cuda::std::min(static_cast<offset_t>(INT_MAX), static_cast<offset_t>(cuda::ceil_div(num_items, tile_items)))));

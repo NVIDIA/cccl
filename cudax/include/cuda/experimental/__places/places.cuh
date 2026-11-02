@@ -20,6 +20,10 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/limits>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -28,6 +32,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/__exception/exception_macros.h>
 
 #include <cuda/experimental/__places/data_place_impl.cuh>
 #include <cuda/experimental/__places/exec/green_ctx_view.cuh>
@@ -45,7 +51,7 @@
 #endif
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 // Sync only will not move data....
 // Data place none?
@@ -110,7 +116,7 @@ class data_place
     // doing it on every call would race across host threads. The guarded
     // function-local static performs that write once; later calls only copy
     // the handle (atomic refcount bump).
-    static ::std::shared_ptr<data_place_interface> handle{&instance, [](data_place_interface*) {}};
+    static const ::std::shared_ptr<data_place_interface> handle{&instance, [](data_place_interface*) {}};
     return handle;
   }
 
@@ -197,11 +203,15 @@ public:
     return device(cuda_try<cudaGetDevice>());
   }
 
-  // User-visible API when using a different partitioner than the one of the grid
-  template <typename partitioner_t /*, typename scalar_exec_place_t */>
+  // User-visible API when using a different partitioner than the one of the grid.
+  // Constrained to partitioner objects so a raw partition function still picks
+  // the partition_mapper overload below rather than being deduced here.
+  template <
+    typename partitioner_t,
+    typename = ::cuda::std::enable_if_t<::cuda::std::is_class_v<partitioner_t>> /*, typename scalar_exec_place_t */>
   static data_place composite(partitioner_t p, const exec_place& g);
 
-  static data_place composite(partition_fn_t f, const exec_place& grid);
+  static data_place composite(partition_mapper f, const exec_place& grid);
 
   /**
    * @brief Replicated data place: one full copy of the data in the affine
@@ -352,7 +362,7 @@ public:
    */
   friend inline size_t to_index(const data_place& p)
   {
-    int devid = p.pimpl_->get_device_ordinal();
+    const int devid = p.pimpl_->get_device_ordinal();
     EXPECT(devid >= -2, "Data place with device id ", devid, " does not refer to a device.");
     _CCCL_ASSERT(devid < cuda_try<cudaGetDeviceCount>(), "Invalid device id");
     return devid + 2;
@@ -384,7 +394,7 @@ public:
     return p.pimpl_->get_device_ordinal();
   }
 
-  const partition_fn_t& get_partitioner() const
+  const partition_mapper& get_partitioner() const
   {
     return pimpl_->get_partitioner();
   }
@@ -458,17 +468,18 @@ public:
     // tensor, and a composite place would feed the degenerate size to its
     // partitioner. Reject any geometry whose byte count is not representable.
     size_t total_bytes = elemsize;
-    for (size_t extent : {data_dims.x, data_dims.y, data_dims.z, data_dims.t})
+    for (const size_t extent : {data_dims.x, data_dims.y, data_dims.z, data_dims.t})
     {
-      if (extent != 0 && total_bytes > ::std::numeric_limits<size_t>::max() / extent)
+      if (extent != 0 && total_bytes > ::cuda::std::numeric_limits<size_t>::max() / extent)
       {
-        throw ::std::invalid_argument("allocate_nd: extents and element size overflow the addressable byte count");
+        _CCCL_THROW(::std::invalid_argument,
+                    "allocate_nd: extents and element size overflow the addressable byte count");
       }
       total_bytes *= extent;
     }
-    if (total_bytes > static_cast<size_t>(::std::numeric_limits<::std::ptrdiff_t>::max()))
+    if (total_bytes > static_cast<size_t>(::cuda::std::numeric_limits<::std::ptrdiff_t>::max()))
     {
-      throw ::std::invalid_argument("allocate_nd: allocation size exceeds PTRDIFF_MAX");
+      _CCCL_THROW(::std::invalid_argument, "allocate_nd: allocation size exceeds PTRDIFF_MAX");
     }
     return pimpl_->allocate_nd(data_dims, elemsize, stream);
   }
@@ -570,7 +581,7 @@ public:
     /**
      * @brief Deactivate the sub-place at the given index, restoring previous state
      */
-    virtual void deactivate(const exec_place& prev, size_t idx = 0) const = 0;
+    virtual void deactivate(const exec_place& prev, size_t idx) const = 0;
 
     // ===== Properties =====
 
@@ -653,7 +664,7 @@ public:
     static constexpr size_t pool_size      = exec_place_default_pool_size;
     static constexpr size_t data_pool_size = exec_place_default_data_pool_size;
 
-  protected:
+  private:
     friend class exec_place;
     data_place affine = data_place::invalid();
   };
@@ -669,7 +680,7 @@ public:
     // same singleton (e.g. concurrent parallel_for -> exec_place::current_device()).
     // The guarded function-local static performs that write once; later calls
     // only copy the handle (atomic refcount bump).
-    static ::std::shared_ptr<impl> handle{&instance, [](impl*) {}};
+    static const ::std::shared_ptr<impl> handle{&instance, [](impl*) {}};
     return handle;
   }
 
@@ -962,6 +973,34 @@ public:
 
   static exec_place all_devices();
 
+  /**
+   * @brief Returns a grid of execution places over all locality domains of a device
+   *
+   * Single-device sugar over `make_locality_domain_grid(dev_id, split)`, the
+   * counterpart of `all_devices()` one level down the hierarchy: one place per
+   * locality domain of `dev_id` (a single whole-device place on devices without
+   * locality-domain support). Defined in `exec/locality_domain.cuh`.
+   *
+   * @param[in] dev_id The CUDA device ordinal
+   * @param[in] split SM split method applied to every place of the grid; see
+   *        `locality_domain_sm_split`
+   * @return exec_place grid with one place per locality domain
+   */
+  static exec_place locality_domains(int dev_id, locality_domain_sm_split split = locality_domain_sm_split::backfill);
+
+  //! @brief Returns a grid of execution places over every locality domain of every visible device
+  //!
+  //! The counterpart of @c all_devices() one level down the hierarchy (as
+  //! @c locality_domains(dev_id) is to @c device(dev_id)): one place per
+  //! locality domain per device, in device-major order (devices without
+  //! locality-domain support contribute a single whole-device place).
+  //! Defined in @c exec/locality_domain.cuh.
+  //!
+  //! @param[in] split SM split method applied to every place of the grid; see
+  //!        @c locality_domain_sm_split
+  //! @return exec_place grid with one place per locality domain per device
+  static exec_place all_locality_domains(locality_domain_sm_split split = locality_domain_sm_split::backfill);
+
   static exec_place n_devices(size_t n, dim4 dims);
 
   static exec_place n_devices(size_t n);
@@ -1058,7 +1097,7 @@ public:
   template <typename T = void>
   exec_place_scope(const data_place&)
   {
-    static_assert(!::std::is_same_v<T, T>,
+    static_assert(!::cuda::std::is_same_v<T, T>,
                   "exec_place_scope cannot be constructed from data_place; "
                   "use data_place::affine_exec_place() to get the exec_place first");
   }
@@ -1066,11 +1105,19 @@ public:
   /**
    * @brief Destructor that restores the previous execution place (if not moved-from).
    */
+  //! \brief Restores the previous execution place. Never throws.
+  //!
+  //! Returning to the device we came from must always succeed; if it does not, continuing would
+  //! run every subsequent launch on the wrong device. deactivate() reaches cuda_try and can also
+  //! allocate, so report and abort rather than propagate out of a destructor.
   ~exec_place_scope()
   {
     if (place_.get_impl())
     {
-      place_.get_impl()->deactivate(prev_, idx_);
+      ON_THROW(abort)
+      {
+        place_.get_impl()->deactivate(prev_, idx_);
+      };
     }
   }
 
@@ -1094,7 +1141,11 @@ public:
     {
       if (place_.get_impl())
       {
-        place_.get_impl()->deactivate(prev_, idx_);
+        // This operator is noexcept, so a throwing deactivate() would terminate without a report.
+        ON_THROW(abort)
+        {
+          place_.get_impl()->deactivate(prev_, idx_);
+        };
       }
       place_       = mv(other.place_);
       idx_         = other.idx_;
@@ -1139,7 +1190,10 @@ public:
   {
     if (place_.get_impl())
     {
-      place_.get_impl()->deactivate(prev_, idx_);
+      ON_THROW(abort)
+      {
+        place_.get_impl()->deactivate(prev_, idx_);
+      };
       place_ = exec_place(); // Mark as inactive
     }
   }
@@ -1160,21 +1214,21 @@ template <typename Fun>
 auto exec_place::operator->*(Fun&& fun) const
 {
   auto active = activate();
-  return ::std::forward<Fun>(fun)();
+  return ::cuda::std::forward<Fun>(fun)();
 }
 
 inline augmented_stream stream_pool::next(const exec_place& place)
 {
   _CCCL_ASSERT(pimpl, "stream_pool::next called on empty pool");
-  ::std::scoped_lock locker(pimpl->mtx);
+  const ::std::scoped_lock locker(pimpl->mtx);
   _CCCL_ASSERT(pimpl->index < pimpl->payload.size(), "stream_pool::next index out of range");
 
   auto& result = pimpl->payload.at(pimpl->index);
 
   if (result.stream != nullptr)
   {
-    CUcontext ctx       = nullptr;
-    CUresult stream_err = cuStreamGetCtx(CUstream(result.stream), &ctx);
+    CUcontext ctx             = nullptr;
+    const CUresult stream_err = cuStreamGetCtx(CUstream(result.stream), &ctx);
 
     // External runtime users (Numba / PyTorch / raw CUDA) may call
     // cudaDeviceReset(), which destroys the primary context and all streams
@@ -1262,7 +1316,7 @@ public:
     return exec_place();
   }
 
-  void deactivate(const exec_place& prev, size_t idx = 0) const override
+  void deactivate(const exec_place& prev, size_t idx) const override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for host exec_place");
     _CCCL_ASSERT(!prev.get_impl(), "Host deactivate expects empty prev");
@@ -1307,12 +1361,12 @@ public:
 
   exec_place activate(size_t) const override
   {
-    throw ::std::logic_error("activate() called on device_auto exec_place - should be resolved first");
+    _CCCL_THROW(::std::logic_error, "activate() called on device_auto exec_place - should be resolved first");
   }
 
   void deactivate(const exec_place&, size_t) const override
   {
-    throw ::std::logic_error("deactivate() called on device_auto exec_place - should be resolved first");
+    _CCCL_THROW(::std::logic_error, "deactivate() called on device_auto exec_place - should be resolved first");
   }
 
   bool is_device() const override
@@ -1386,7 +1440,7 @@ public:
       return exec_place::device(old_dev_id);
     }
 
-    void deactivate(const exec_place& prev, size_t idx = 0) const override
+    void deactivate(const exec_place& prev, size_t idx) const override
     {
       _CCCL_ASSERT(idx == 0, "Index out of bounds for device exec_place");
       auto current_dev_id  = cuda_try<cudaGetDevice>();
@@ -1431,9 +1485,9 @@ inline exec_place exec_place::device(int devid)
   // concurrent calls would race on that member (and on the freshly created
   // control blocks). Copying an existing ``shared_ptr`` only touches the atomic
   // reference count, which is thread-safe.
-  static ::std::shared_ptr<exec_place::impl>* impls = [] {
+  static const ::std::shared_ptr<exec_place::impl>* impls = [] {
     auto result = new ::std::shared_ptr<exec_place::impl>[ndevices];
-    for (int i : each(ndevices))
+    for (const int i : each(ndevices))
     {
       // no-op deleter: these device places are process-global singletons
       result[i] = ::std::shared_ptr<exec_place::impl>(new exec_place_device::impl(i), [](exec_place::impl*) {});
@@ -1448,16 +1502,16 @@ inline exec_place exec_place::device(int devid)
 #ifdef UNITTESTED_FILE
 UNITTEST("exec_place ->* operator")
 {
-  exec_place e = exec_place::device(0);
+  const exec_place e = exec_place::device(0);
   e->*[]() {
-    int current_dev = cuda_try<cudaGetDevice>();
+    const int current_dev = cuda_try<cudaGetDevice>();
     EXPECT(current_dev == 0);
   };
 
   // Ensure the ->* operator works with a const exec place
   const exec_place ce = exec_place::device(0);
   ce->*[]() {
-    int current_dev = cuda_try<cudaGetDevice>();
+    const int current_dev = cuda_try<cudaGetDevice>();
     EXPECT(current_dev == 0);
   };
 };
@@ -1466,7 +1520,7 @@ UNITTEST("exec_place assignments")
 {
   // Make sure we can use exec_place by values, replace it, etc...
   exec_place e;
-  int ndevices = cuda_try<cudaGetDeviceCount>();
+  const int ndevices = cuda_try<cudaGetDeviceCount>();
   if (ndevices >= 1)
   {
     e = exec_place::device(0);
@@ -1480,19 +1534,22 @@ UNITTEST("exec_place assignments")
 
 UNITTEST("exec_place movable")
 {
-  exec_place e  = exec_place::device(0);
-  exec_place e2 = mv(e);
+  exec_place e        = exec_place::device(0);
+  const exec_place e2 = mv(e);
 };
 
 UNITTEST("exec_place copyable")
 {
-  exec_place e  = exec_place::device(0);
-  exec_place e2 = e;
+  const exec_place e = exec_place::device(0);
+  exec_place e2      = e;
+  EXPECT(e2 == e);
+  e2 = exec_place::host();
+  EXPECT(!(e2 == e));
 };
 
 UNITTEST("exec_place_scope reset")
 {
-  int original_dev = cuda_try<cudaGetDevice>();
+  const int original_dev = cuda_try<cudaGetDevice>();
 
   // Activate device 0
   {
@@ -1537,15 +1594,15 @@ public:
   {
     if (places_.empty())
     {
-      throw ::std::invalid_argument("make_grid: places must not be empty");
+      _CCCL_THROW(::std::invalid_argument, "make_grid: places must not be empty");
     }
     if (dims_.x == 0 || dims_.y == 0 || dims_.z == 0 || dims_.t == 0)
     {
-      throw ::std::invalid_argument("make_grid: grid dimensions must be positive");
+      _CCCL_THROW(::std::invalid_argument, "make_grid: grid dimensions must be positive");
     }
     if (dims_.size() != places_.size())
     {
-      throw ::std::invalid_argument("make_grid: grid dimensions must contain exactly one entry per place");
+      _CCCL_THROW(::std::invalid_argument, "make_grid: grid dimensions must contain exactly one entry per place");
     }
   }
 
@@ -1575,7 +1632,7 @@ public:
     return places_[idx].get_impl()->activate(0);
   }
 
-  void deactivate(const exec_place& prev, size_t idx = 0) const override
+  void deactivate(const exec_place& prev, size_t idx) const override
   {
     EXPECT(idx < places_.size(), "Index out of bounds");
     places_[idx].get_impl()->deactivate(prev, 0);
@@ -1597,11 +1654,12 @@ public:
     {
       return typeid(*this).before(typeid(rhs)) ? -1 : 1;
     }
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- typeid checked just above
     const auto& other = static_cast<const exec_place_grid_impl&>(rhs);
     // Compare dims first
     auto this_dims  = ::std::tie(dims_.x, dims_.y, dims_.z, dims_.t);
     auto other_dims = ::std::tie(other.dims_.x, other.dims_.y, other.dims_.z, other.dims_.t);
-    if (int c = (other_dims < this_dims) - (this_dims < other_dims); c != 0)
+    if (const int c = (other_dims < this_dims) - (this_dims < other_dims); c != 0)
     {
       return c;
     }
@@ -1642,15 +1700,15 @@ inline exec_place make_grid(::std::vector<exec_place> places, const dim4& dims)
 {
   if (places.empty())
   {
-    throw ::std::invalid_argument("make_grid: places must not be empty");
+    _CCCL_THROW(::std::invalid_argument, "make_grid: places must not be empty");
   }
   if (dims.x == 0 || dims.y == 0 || dims.z == 0 || dims.t == 0)
   {
-    throw ::std::invalid_argument("make_grid: grid dimensions must be positive");
+    _CCCL_THROW(::std::invalid_argument, "make_grid: grid dimensions must be positive");
   }
   if (dims.size() != places.size())
   {
-    throw ::std::invalid_argument("make_grid: grid dimensions must contain exactly one entry per place");
+    _CCCL_THROW(::std::invalid_argument, "make_grid: grid dimensions must contain exactly one entry per place");
   }
   if (places.size() == 1)
   {
@@ -1683,7 +1741,7 @@ _CCCL_HOST_API inline exec_place exec_place::collapse_axes(const size_t first_ax
 {
   if (first_axis > last_axis || last_axis > 3)
   {
-    throw ::std::invalid_argument("exec_place::collapse_axes: expected 0 <= first_axis <= last_axis < 4");
+    _CCCL_THROW(::std::invalid_argument, "exec_place::collapse_axes: expected 0 <= first_axis <= last_axis < 4");
   }
 
   const dim4 old_dims         = get_dims();
@@ -1740,8 +1798,9 @@ inline exec_place data_place::affine_exec_place() const
   }
 
   // For invalid, affine, device_auto - throw
-  throw ::std::logic_error("affine_exec_place() not meaningful for data_place type with ordinal "
-                           + ::std::to_string(pimpl_->get_device_ordinal()));
+  _CCCL_THROW(::std::logic_error,
+              "affine_exec_place() not meaningful for data_place type with ordinal "
+                + ::std::to_string(pimpl_->get_device_ordinal()));
 }
 
 // === Deferred implementations for get_place() ===
@@ -1857,15 +1916,16 @@ inline exec_place partition_cyclic(exec_place e_place, dim4 strides, pos4 tile_i
 //! auto sub_g = partition_tile(g, dim4(2,2), dim4(0,1))
 inline exec_place partition_tile(exec_place e_place, dim4 tile_sizes, pos4 tile_id)
 {
-  dim4 g_dims = e_place.get_dims();
+  const dim4 g_dims = e_place.get_dims();
 
-  dim4 begin_coords(
+  const dim4 begin_coords(
     tile_id.x * tile_sizes.x, tile_id.y * tile_sizes.y, tile_id.z * tile_sizes.z, tile_id.t * tile_sizes.t);
 
-  dim4 end_coords(::std::min((tile_id.x + 1) * tile_sizes.x, g_dims.x),
-                  ::std::min((tile_id.y + 1) * tile_sizes.y, g_dims.y),
-                  ::std::min((tile_id.z + 1) * tile_sizes.z, g_dims.z),
-                  ::std::min((tile_id.t + 1) * tile_sizes.t, g_dims.t));
+  const dim4 end_coords(
+    ::cuda::std::min((tile_id.x + 1) * tile_sizes.x, g_dims.x),
+    ::cuda::std::min((tile_id.y + 1) * tile_sizes.y, g_dims.y),
+    ::cuda::std::min((tile_id.z + 1) * tile_sizes.z, g_dims.z),
+    ::cuda::std::min((tile_id.t + 1) * tile_sizes.t, g_dims.t));
 
   //    fprintf(stderr, "G DIM %d TILE SIZE %d ID %d\n", g_dims.x, tile_sizes.x, tile_id.x);
   //    fprintf(stderr, "G DIM %d TILE SIZE %d ID %d\n", g_dims.y, tile_sizes.y, tile_id.y);
@@ -1878,10 +1938,10 @@ inline exec_place partition_tile(exec_place e_place, dim4 tile_sizes, pos4 tile_
   //    fprintf(stderr, "BEGIN %d END %d\n", begin_coords.z, end_coords.z);
   //    fprintf(stderr, "BEGIN %d END %d\n", begin_coords.t, end_coords.t);
 
-  dim4 size = dim4(end_coords.x - begin_coords.x,
-                   end_coords.y - begin_coords.y,
-                   end_coords.z - begin_coords.z,
-                   end_coords.t - begin_coords.t);
+  const dim4 size(end_coords.x - begin_coords.x,
+                  end_coords.y - begin_coords.y,
+                  end_coords.z - begin_coords.z,
+                  end_coords.t - begin_coords.t);
 
   ::std::vector<exec_place> places;
   places.reserve(size.x * size.y * size.z * size.t);
@@ -1916,7 +1976,7 @@ inline exec_place partition_tile(exec_place e_place, dim4 tile_sizes, pos4 tile_
 class data_place_composite final : public data_place_interface
 {
 public:
-  data_place_composite(exec_place grid, partition_fn_t partitioner_func)
+  data_place_composite(exec_place grid, partition_mapper partitioner_func)
       : grid_(mv(grid))
       , partitioner_func_(mv(partitioner_func))
   {}
@@ -1944,7 +2004,7 @@ public:
   size_t hash() const override
   {
     // Composite places don't support hashing
-    throw ::std::logic_error("hash() not supported for composite data_place");
+    _CCCL_THROW(::std::logic_error, "hash() not supported for composite data_place");
   }
 
   int cmp(const data_place_interface& other) const override
@@ -1953,10 +2013,11 @@ public:
     {
       return typeid(*this).before(typeid(other)) ? -1 : 1;
     }
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- typeid checked just above
     const auto& o = static_cast<const data_place_composite&>(other);
     if (get_partitioner() != o.get_partitioner())
     {
-      return ::std::less<partition_fn_t>{}(o.get_partitioner(), get_partitioner()) ? 1 : -1;
+      return (o.get_partitioner() < get_partitioner()) ? 1 : -1;
     }
     if (grid_ == o.grid_)
     {
@@ -1971,9 +2032,9 @@ public:
     // A byte count alone does not carry the tensor geometry the partitioner
     // needs (it maps element coordinates to places), so there is no meaningful
     // way to service this request.
-    throw ::std::runtime_error(
-      "composite data_place cannot allocate from a byte count alone: use allocate_nd(data_dims, elemsize) or "
-      "allocate through a logical data");
+    _CCCL_THROW(::std::runtime_error,
+                "composite data_place cannot allocate from a byte count alone: use allocate_nd(data_dims, elemsize) or "
+                "allocate through a logical data");
   }
 
   void* allocate_nd(dim4 data_dims, size_t elemsize, cudaStream_t) const override
@@ -1996,7 +2057,7 @@ public:
     return grid_.get_impl();
   }
 
-  const partition_fn_t& get_partitioner() const override
+  const partition_mapper& get_partitioner() const override
   {
     return partitioner_func_;
   }
@@ -2008,7 +2069,7 @@ public:
 
 private:
   exec_place grid_;
-  partition_fn_t partitioner_func_;
+  partition_mapper partitioner_func_;
 };
 
 /**
@@ -2053,7 +2114,7 @@ public:
   {
     if (deferred_)
     {
-      throw ::std::logic_error("deferred replicated data_place: materialized at task acquisition");
+      _CCCL_THROW(::std::logic_error, "deferred replicated data_place: materialized at task acquisition");
     }
     const dim4 dims = grid_.get_dims();
     size_t n        = 1;
@@ -2073,7 +2134,7 @@ public:
   {
     if (deferred_)
     {
-      throw ::std::logic_error("deferred replicated data_place: materialized at task acquisition");
+      _CCCL_THROW(::std::logic_error, "deferred replicated data_place: materialized at task acquisition");
     }
     const dim4 dims = grid_.get_dims();
     const pos4 pos  = dims.index_to_pos(place_index);
@@ -2094,7 +2155,7 @@ public:
   {
     if (deferred_)
     {
-      throw ::std::logic_error("deferred replicated data_place: materialized at task acquisition");
+      _CCCL_THROW(::std::logic_error, "deferred replicated data_place: materialized at task acquisition");
     }
     const dim4 dims = grid_.get_dims();
     ssize_t c[4]    = {0, 0, 0, 0};
@@ -2123,9 +2184,9 @@ public:
       }
       if (!(grid_.get_place(p).affine_data_place() == grid_.get_place(rep).affine_data_place()))
       {
-        throw ::std::invalid_argument(
-          "replicated data place: shared axes require co-located fiber members (equal affine data places); "
-          "replicate over that axis too, or build the grid from members with coarser data affinity");
+        _CCCL_THROW(::std::invalid_argument,
+                    "replicated data place: shared axes require co-located fiber members (equal affine data places); "
+                    "replicate over that axis too, or build the grid from members with coarser data affinity");
       }
     }
   }
@@ -2147,7 +2208,7 @@ public:
 
   size_t hash() const override
   {
-    throw ::std::logic_error("hash() not supported for replicated data_place");
+    _CCCL_THROW(::std::logic_error, "hash() not supported for replicated data_place");
   }
 
   int cmp(const data_place_interface& other) const override
@@ -2156,6 +2217,7 @@ public:
     {
       return typeid(*this).before(typeid(other)) ? -1 : 1;
     }
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- typeid checked just above
     const auto& o = static_cast<const data_place_replicated&>(other);
     // Deferred places carry no grid: order them before concrete ones and
     // never dereference grid_ (it has no impl in the deferred form)
@@ -2172,12 +2234,12 @@ public:
 
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
   {
-    throw ::std::runtime_error("replicated data_place: allocate through a logical data");
+    _CCCL_THROW(::std::runtime_error, "replicated data_place: allocate through a logical data");
   }
 
   void deallocate(void*, size_t, cudaStream_t) const override
   {
-    throw ::std::runtime_error("replicated data_place: instances deallocate through their member places");
+    _CCCL_THROW(::std::runtime_error, "replicated data_place: instances deallocate through their member places");
   }
 
   bool allocation_is_stream_ordered() const override
@@ -2216,13 +2278,17 @@ private:
 //! Whether this replicated data place still needs its grid bound
 inline bool replicated_is_deferred(const data_place& dp)
 {
-  return static_cast<const data_place_replicated*>(dp.get_impl().get())->is_deferred();
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- the caller checked the kind
+  const auto* rep = static_cast<const data_place_replicated*>(dp.get_impl().get());
+  return rep->is_deferred();
 }
 
 //! Grid of a replicated data place
 inline const exec_place& replicated_grid(const data_place& dp)
 {
-  return static_cast<const data_place_replicated*>(dp.get_impl().get())->get_grid();
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- the caller checked the kind
+  const auto* rep = static_cast<const data_place_replicated*>(dp.get_impl().get());
+  return rep->get_grid();
 }
 
 inline bool data_place::is_composite() const
@@ -2247,6 +2313,7 @@ inline data_place data_place::member(size_t r) const
   {
     return *this;
   }
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- the caller checked the kind
   const auto* rep = static_cast<const data_place_replicated*>(get_impl().get());
   return rep->get_grid().get_place(rep->representative_place(r)).affine_data_place();
 }
@@ -2257,19 +2324,21 @@ inline size_t data_place::instance_of(size_t place_index) const
   {
     return 0;
   }
-  return static_cast<const data_place_replicated*>(get_impl().get())->instance_of(place_index);
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- the caller checked the kind
+  const auto* rep = static_cast<const data_place_replicated*>(get_impl().get());
+  return rep->instance_of(place_index);
 }
 
-inline data_place data_place::composite(partition_fn_t f, const exec_place& grid)
+inline data_place data_place::composite(partition_mapper f, const exec_place& grid)
 {
-  return data_place(::std::make_shared<data_place_composite>(grid, f));
+  return data_place(::std::make_shared<data_place_composite>(grid, mv(f)));
 }
 
 inline data_place data_place::replicated(const exec_place& grid)
 {
   if (!grid.get_impl())
   {
-    throw ::std::invalid_argument("replicated data_place requires a valid execution place");
+    _CCCL_THROW(::std::invalid_argument, "replicated data_place requires a valid execution place");
   }
   // A live replicated place always has >= 2 instances: everything downstream
   // (acquire, member(), shard rebase) relies on it. One instance is a plain
@@ -2294,7 +2363,7 @@ data_place data_place::replicated(const exec_place& grid, replicate_over_t<axes.
   static_assert(((axes < 4) && ...), "grid axes are 0..3");
   if (!grid.get_impl())
   {
-    throw ::std::invalid_argument("replicated data_place requires a valid execution place");
+    _CCCL_THROW(::std::invalid_argument, "replicated data_place requires a valid execution place");
   }
   constexpr unsigned mask = ((1u << axes) | ...);
   auto impl               = ::std::make_shared<data_place_replicated>(grid, mask);
@@ -2310,10 +2379,10 @@ data_place data_place::replicated(const exec_place& grid, replicate_over_t<axes.
 }
 
 // User-visible API when the same partitioner as the one of the grid
-template <typename partitioner_t>
+template <typename partitioner_t, typename>
 data_place data_place::composite(partitioner_t, const exec_place& g)
 {
-  return data_place::composite(&partitioner_t::get_executor, g);
+  return data_place::composite(partition_mapper(&partitioner_t::get_executor), g);
 }
 
 inline augmented_stream data_place::getDataStream(exec_place_resources& res) const
@@ -2335,7 +2404,7 @@ UNITTEST("Data place equality")
   EXPECT(data_place::host() != data_place::device(0));
 
   // Different devices should not be equal
-  int ndevices = cuda_try<cudaGetDeviceCount>();
+  const int ndevices = cuda_try<cudaGetDeviceCount>();
   if (ndevices >= 2)
   {
     EXPECT(data_place::device(0) != data_place::device(1));
@@ -2384,6 +2453,7 @@ UNITTEST("grid exec place equality")
 UNITTEST("exec place grid reshape preserves linear place order")
 {
   ::std::vector<exec_place> places;
+  places.reserve(24);
   for (size_t i = 0; i < 24; i++)
   {
     places.push_back(exec_place::repeat(exec_place::host(), i + 2));
@@ -2405,6 +2475,7 @@ UNITTEST("exec place grid reshape preserves linear place order")
 UNITTEST("exec place grid collapse axes preserves linear place order")
 {
   ::std::vector<exec_place> places;
+  places.reserve(24);
   for (size_t i = 0; i < 24; i++)
   {
     places.push_back(exec_place::repeat(exec_place::host(), i + 2));
@@ -2500,7 +2571,7 @@ UNITTEST("pos4 dim4 handle large values beyond 32bit")
   dim4 dims(size_t(100000), size_t(100000)); // 100k x 100k = 10 billion elements
   pos4 pos(ssize_t(50000), ssize_t(50000)); // Middle position
 
-  size_t index = dims.get_index(pos);
+  const size_t index = dims.get_index(pos);
   // Should be: 50000 + 100000 * 50000 = 5,000,050,000 (> 2^32)
   const size_t expected_index = 50000ULL + 100000ULL * 50000ULL;
   EXPECT(index == expected_index);
@@ -2572,7 +2643,7 @@ UNITTEST("Data place as unordered_map key")
   EXPECT(map[data_place::host()] == 10);
 
   // Test with multiple devices
-  int ndevices = cuda_try<cudaGetDeviceCount>();
+  const int ndevices = cuda_try<cudaGetDeviceCount>();
   if (ndevices >= 2)
   {
     map[data_place::device(1)] = 4;
@@ -2603,7 +2674,7 @@ UNITTEST("Exec place as unordered_map key")
   EXPECT(map[exec_place::host()] == 10);
 
   // Test with multiple devices
-  int ndevices = cuda_try<cudaGetDeviceCount>();
+  const int ndevices = cuda_try<cudaGetDeviceCount>();
   if (ndevices >= 2)
   {
     map[exec_place::device(1)] = 3;
@@ -2636,7 +2707,7 @@ UNITTEST("Data place as std::map key")
   EXPECT(map[data_place::host()] == 10);
 
   // Test with multiple devices
-  int ndevices = cuda_try<cudaGetDeviceCount>();
+  const int ndevices = cuda_try<cudaGetDeviceCount>();
   if (ndevices >= 2)
   {
     map[data_place::device(1)] = 4;
@@ -2667,7 +2738,7 @@ UNITTEST("Exec place as std::map key")
   EXPECT(map[exec_place::host()] == 10);
 
   // Test with multiple devices
-  int ndevices = cuda_try<cudaGetDeviceCount>();
+  const int ndevices = cuda_try<cudaGetDeviceCount>();
   if (ndevices >= 2)
   {
     map[exec_place::device(1)] = 3;

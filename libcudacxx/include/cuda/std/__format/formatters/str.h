@@ -20,12 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__format/format_spec_parser.h>
 #include <cuda/std/__format/formatter.h>
 #include <cuda/std/__format/output_utils.h>
-#include <cuda/std/__string/char_traits.h>
-#include <cuda/std/__type_traits/is_null_pointer.h>
-#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__fwd/char_traits.h>
+#include <cuda/std/__string/char_traits.h> // IWYU pragma: keep
 #include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/string_view>
 

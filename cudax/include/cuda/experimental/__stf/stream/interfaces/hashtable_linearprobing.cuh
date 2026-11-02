@@ -29,7 +29,7 @@
 
 #include <cuda/experimental/__stf/internal/hashtable_linearprobing.cuh>
 #include <cuda/experimental/__stf/stream/stream_data_interface.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 namespace cuda::experimental::stf
 {
@@ -112,7 +112,10 @@ public:
       // Free the buffer if the initialization below throws.
       SCOPE(fail)
       {
-        cuda_safe_call(cudaFreeAsync(base_ptr, stream));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaFreeAsync>(base_ptr, stream);
+        };
       };
 
       // We also need to initialize the hashtable

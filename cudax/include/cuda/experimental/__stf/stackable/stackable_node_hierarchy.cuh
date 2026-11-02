@@ -14,6 +14,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/max.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -59,7 +60,7 @@ public:
   {
     int old_size = static_cast<int>(parent.size());
     int new_size =
-      ::std::max(old_size + 1, static_cast<int>(old_size * growth_factor_numerator / growth_factor_denominator));
+      ::cuda::std::max(old_size + 1, static_cast<int>(old_size * growth_factor_numerator / growth_factor_denominator));
     parent.resize(new_size);
     children.resize(new_size);
     for (int i = new_size - 1; i >= old_size; i--)

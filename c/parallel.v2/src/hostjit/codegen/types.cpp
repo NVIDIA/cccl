@@ -36,6 +36,8 @@ std::string get_type_name(cccl_type_enum type)
       return "unsigned long long";
     case CCCL_FLOAT16:
       return "__half";
+    case CCCL_BFLOAT16:
+      return "__nv_bfloat16";
     case CCCL_FLOAT32:
       return "float";
     case CCCL_FLOAT64:

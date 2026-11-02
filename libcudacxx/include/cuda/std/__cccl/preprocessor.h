@@ -34,9 +34,9 @@ CCCL_IGNORE_MSVC_TRADITIONAL_PREPROCESSOR_WARNING to suppress this warning.
 #define _CCCL_TO_STRING2(_STR) #_STR
 #define _CCCL_TO_STRING(_STR)  _CCCL_TO_STRING2(_STR)
 
-#define _CCCL_PP_FIRST(_FIRST, ...)      _FIRST
-#define _CCCL_PP_SECOND(_, _SECOND, ...) _SECOND
-#define _CCCL_PP_THIRD(_1, _2, _THIRD)   _THIRD
+#define _CCCL_PP_FIRST(_FIRST, ...)         _FIRST
+#define _CCCL_PP_SECOND(_, _SECOND, ...)    _SECOND
+#define _CCCL_PP_THIRD(_1, _2, _THIRD, ...) _THIRD
 
 #define _CCCL_PP_EXPAND(...) __VA_ARGS__
 #define _CCCL_PP_EAT(...)
@@ -130,6 +130,10 @@ CCCL_IGNORE_MSVC_TRADITIONAL_PREPROCESSOR_WARNING to suppress this warning.
 #define _CCCL_PP_FOR_EACH_19(_Mp, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19) \
   _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5) _Mp(_6) _Mp(_7) _Mp(_8) _Mp(_9) _Mp(_10) _Mp(_11) _Mp(_12) _Mp(_13) _Mp(_14)  \
     _Mp(_15) _Mp(_16) _Mp(_17) _Mp(_18) _Mp(_19)
+#define _CCCL_PP_FOR_EACH_20(                                                                                          \
+  _Mp, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20)                      \
+  _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5) _Mp(_6) _Mp(_7) _Mp(_8) _Mp(_9) _Mp(_10) _Mp(_11) _Mp(_12) _Mp(_13) _Mp(_14) \
+    _Mp(_15) _Mp(_16) _Mp(_17) _Mp(_18) _Mp(_19) _Mp(_20)
 
 #define _CCCL_PP_PROBE_EMPTY_PROBE__CCCL_PP_PROBE_EMPTY _CCCL_PP_PROBE(~)
 

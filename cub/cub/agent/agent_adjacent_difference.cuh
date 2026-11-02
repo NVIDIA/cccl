@@ -16,11 +16,10 @@
 #include <cub/block/block_adjacent_difference.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_namespace.cuh>
-#include <cub/util_type.cuh>
-
-#include <thrust/system/cuda/detail/core/util.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -67,6 +66,14 @@ struct AgentDifference
 {
   using LoadIt = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, InputIteratorT>;
 
+  // BlockAdjacentDifference requires the items in a blocked arrangement
+  static_assert(Policy::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,
+                "AdjacentDifferencePolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since the difference "
+                "computation requires a blocked arrangement");
+  static_assert(Policy::STORE_ALGORITHM != BLOCK_STORE_STRIPED,
+                "AdjacentDifferencePolicy: store_algorithm must not be BLOCK_STORE_STRIPED, since the difference "
+                "computation produces a blocked arrangement");
+
   using BlockLoad  = typename cub::BlockLoadType<Policy, LoadIt>::type;
   using BlockStore = typename cub::BlockStoreType<Policy, OutputIteratorT, OutputT>::type;
 
@@ -80,8 +87,7 @@ struct AgentDifference
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   static constexpr int BLOCK_THREADS      = Policy::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD   = Policy::ITEMS_PER_THREAD;
@@ -112,13 +118,13 @@ struct AgentDifference
       , num_items(num_items)
   {}
 
-  template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
+  template <bool IsLastTile, bool IsFirstTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile_impl(int num_remaining, int tile_idx, OffsetT tile_base)
   {
     InputT input[ITEMS_PER_THREAD];
     OutputT output[ITEMS_PER_THREAD];
 
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       // Fill last elements with the first element
       // because collectives are not suffix guarded
@@ -133,9 +139,9 @@ struct AgentDifference
 
     if (ReadLeft)
     {
-      if (IS_FIRST_TILE)
+      if (IsFirstTile)
       {
-        if (IS_LAST_TILE)
+        if (IsLastTile)
         {
           BlockAdjacentDifferenceT(temp_storage.adjacent_difference)
             .SubtractLeftPartialTile(input, output, difference_op, num_remaining);
@@ -147,9 +153,10 @@ struct AgentDifference
       }
       else
       {
-        InputT tile_prev_input = MayAlias ? first_tile_previous[tile_idx] : *(input_it + tile_base - 1);
+        InputT tile_prev_input =
+          MayAlias ? first_tile_previous[tile_idx] : static_cast<InputT>(*(input_it + tile_base - 1));
 
-        if (IS_LAST_TILE)
+        if (IsLastTile)
         {
           BlockAdjacentDifferenceT(temp_storage.adjacent_difference)
             .SubtractLeftPartialTile(input, output, difference_op, num_remaining, tile_prev_input);
@@ -163,14 +170,15 @@ struct AgentDifference
     }
     else
     {
-      if (IS_LAST_TILE)
+      if (IsLastTile)
       {
         BlockAdjacentDifferenceT(temp_storage.adjacent_difference)
           .SubtractRightPartialTile(input, output, difference_op, num_remaining);
       }
       else
       {
-        InputT tile_next_input = MayAlias ? first_tile_previous[tile_idx] : *(input_it + tile_base + ITEMS_PER_TILE);
+        InputT tile_next_input =
+          MayAlias ? first_tile_previous[tile_idx] : static_cast<InputT>(*(input_it + tile_base + ITEMS_PER_TILE));
 
         BlockAdjacentDifferenceT(temp_storage.adjacent_difference)
           .SubtractRight(input, output, difference_op, tile_next_input);
@@ -179,7 +187,7 @@ struct AgentDifference
 
     __syncthreads();
 
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       BlockStore(temp_storage.store).Store(result + tile_base, output, num_remaining);
     }
@@ -189,16 +197,16 @@ struct AgentDifference
     }
   }
 
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(int num_remaining, int tile_idx, OffsetT tile_base)
   {
     if (tile_idx == 0)
     {
-      consume_tile_impl<IS_LAST_TILE, true>(num_remaining, tile_idx, tile_base);
+      consume_tile_impl<IsLastTile, true>(num_remaining, tile_idx, tile_base);
     }
     else
     {
-      consume_tile_impl<IS_LAST_TILE, false>(num_remaining, tile_idx, tile_base);
+      consume_tile_impl<IsLastTile, false>(num_remaining, tile_idx, tile_base);
     }
   }
 

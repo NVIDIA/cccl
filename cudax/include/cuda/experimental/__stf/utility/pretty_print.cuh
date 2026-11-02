@@ -25,7 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <cmath>
 #include <iomanip>
@@ -102,9 +102,10 @@ void mdspan_to_vtk(mdspan_like s, const ::std::string& filename)
 {
   fprintf(stderr, "Writing slice of size to file %s\n", filename.c_str());
   FILE* f = EXPECT(fopen(filename.c_str(), "w+") != nullptr);
-  SCOPE(exit)
+  // One guard, both outcomes: checked close on the normal path, best effort while unwinding.
+  SCOPE(exit, failing)
   {
-    EXPECT(fclose(f) != -1);
+    failing ? (void) fclose(f) : (void) EXPECT(fclose(f) == 0);
   };
 
   EXPECT(fprintf(f, "# vtk DataFile Version 2.0\noutput\nASCII\n") != -1);

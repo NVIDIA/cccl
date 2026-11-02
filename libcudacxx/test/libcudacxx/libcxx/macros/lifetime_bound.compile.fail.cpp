@@ -7,6 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 // FORCE_ALL_WARNINGS.
+// TREAT_WARNINGS_AS_ERRORS.
 
 #include <cuda/std/__cccl/attributes.h>
 

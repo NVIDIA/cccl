@@ -53,18 +53,21 @@ template <typename _Up, typename _Tp>
 template <typename _Up, typename _Tp>
 [[nodiscard]] _CCCL_HOST_DEVICE_API const _Up* ptr_rebind(const _Tp* __ptr) noexcept
 {
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
   return ::cuda::ptr_rebind<const _Up>(const_cast<_Tp*>(__ptr));
 }
 
 template <typename _Up, typename _Tp>
 [[nodiscard]] _CCCL_HOST_DEVICE_API volatile _Up* ptr_rebind(volatile _Tp* __ptr) noexcept
 {
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
   return ::cuda::ptr_rebind<volatile _Up>(const_cast<_Tp*>(__ptr));
 }
 
 template <typename _Up, typename _Tp>
 [[nodiscard]] _CCCL_HOST_DEVICE_API const volatile _Up* ptr_rebind(const volatile _Tp* __ptr) noexcept
 {
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
   return ::cuda::ptr_rebind<const volatile _Up>(const_cast<_Tp*>(__ptr));
 }
 

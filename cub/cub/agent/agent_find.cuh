@@ -4,19 +4,25 @@
 #pragma once
 #include <cub/config.cuh>
 
+#include <cub/detail/cub_vector.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
-#include <cub/util_arch.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
+#include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__atomic/order.h>
+#include <cuda/std/__atomic/scopes.h>
+#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_pointer.h>
+
 #if !_CCCL_HAS_NV_ATOMIC_BUILTINS()
 #  include <cuda/atomic>
 #endif // !_CCCL_HAS_NV_ATOMIC_BUILTINS()
-#include <cuda/std/__type_traits/integral_constant.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::find
@@ -33,6 +39,9 @@ struct agent_t
   // The input value type
   using InputT = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
 
+  // vectorized loads require a power-of-two vector size supported by CubVector
+  static_assert(VecSize == 1 || VecSize == 2 || VecSize == 4, "FindIfPolicy: vec_size must be 1, 2 or 4");
+
   // Vector type of InputT for data movement
   using VectorT = typename CubVector<InputT, VecSize>::Type;
 
@@ -40,7 +49,7 @@ struct agent_t
 
   // Can vectorize according to the policy if the input iterator is a native pointer to a primitive type
   static constexpr bool attempt_vectorization =
-    (VecSize > 1) && (ItemsPerThread % VecSize == 0) && (::cuda::std::contiguous_iterator<InputIteratorT>)
+    (VecSize > 1) && (ItemsPerThread % VecSize == 0) && (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>)
     && ::cuda::is_trivially_copyable_v<InputT>;
 
   static constexpr CacheLoadModifier load_modifier = LoadModifier;
@@ -83,17 +92,16 @@ struct agent_t
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE bool
-  ConsumeTile(OffsetT tile_offset, ::cuda::std::integral_constant<bool, true> /*CAN_VECTORIZE*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE bool ConsumeTile(OffsetT tile_offset, ::cuda::std::true_type /*CAN_VECTORIZE*/)
   {
     using InputT  = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
     using VectorT = typename CubVector<InputT, VecSize>::Type;
 
     // vectorized loads begin
     auto load_ptr = reinterpret_cast<const VectorT*>(d_in + tile_offset + (threadIdx.x * VecSize));
-    CacheModifiedInputIterator<LoadModifier, VectorT> d_vec_in(load_ptr);
+    const CacheModifiedInputIterator<LoadModifier, VectorT> d_vec_in(load_ptr);
 
-    alignas(InputT) unsigned char input_bytes[ItemsPerThread * sizeof(InputT)];
+    alignas(VectorT) unsigned char input_bytes[ItemsPerThread * sizeof(InputT)];
     auto* vec_items = reinterpret_cast<VectorT*>(input_bytes);
 
     constexpr int number_of_vectors = ItemsPerThread / VecSize;
@@ -124,8 +132,7 @@ struct agent_t
     return false;
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE bool
-  ConsumeTile(OffsetT tile_offset, ::cuda::std::integral_constant<bool, false> /*CAN_VECTORIZE*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE bool ConsumeTile(OffsetT tile_offset, ::cuda::std::false_type /*CAN_VECTORIZE*/)
   {
     for (int i = 0; i < ItemsPerThread; ++i)
     {

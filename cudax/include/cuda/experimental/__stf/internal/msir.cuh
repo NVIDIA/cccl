@@ -11,6 +11,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -158,14 +160,14 @@ public:
   int max_prereq_id() const
   {
     int res = read_prereq.max_prereq_id();
-    res     = ::std::max(res, write_prereq.max_prereq_id());
+    res     = ::cuda::std::max(res, write_prereq.max_prereq_id());
     return res;
   }
 
   template <typename T>
   void add_read_prereq(backend_ctx_untyped& bctx, T&& prereq)
   {
-    read_prereq.merge(::std::forward<T>(prereq));
+    read_prereq.merge(::cuda::std::forward<T>(prereq));
 
     if (read_prereq.size() > 16)
     {
@@ -175,7 +177,7 @@ public:
   template <typename T>
   void add_write_prereq(backend_ctx_untyped& bctx, T&& prereq)
   {
-    write_prereq.merge(::std::forward<T>(prereq));
+    write_prereq.merge(::cuda::std::forward<T>(prereq));
 
     if (write_prereq.size() > 16)
     {

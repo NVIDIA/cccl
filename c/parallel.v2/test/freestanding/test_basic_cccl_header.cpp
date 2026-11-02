@@ -30,6 +30,7 @@ __global__ void device_kernel(int* ptr)
 
 extern "C" _CCCL_VISIBILITY_EXPORT void host_entry(int* ptr)
 {
+  _CCCL_VERIFY(ptr != nullptr, "HostJIT requires a device output pointer");
   device_kernel<<<1, 1>>>(ptr);
 }
 )";

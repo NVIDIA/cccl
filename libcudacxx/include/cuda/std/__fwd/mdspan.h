@@ -28,7 +28,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__fwd/extents.h>
 #include <cuda/std/__type_traits/void_t.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -56,7 +55,7 @@ struct layout_right
 // Layout policy with a unique mapping where strides are arbitrary
 struct layout_stride
 {
-  template <class Extents>
+  template <class _Extents>
   class mapping;
 };
 

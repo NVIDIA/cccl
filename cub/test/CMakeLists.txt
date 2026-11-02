@@ -214,6 +214,7 @@ function(
       # gersemi: on
       GPUS 1
       PERCENT ${CCCL_TEST_GPU_PERCENT_SMALL}
+      INSTALL_TARGET "${test_target}"
     )
     set_tests_properties(
       ${test_target}
@@ -235,6 +236,7 @@ function(
         # gersemi: on
         GPUS 1
         PERCENT ${CCCL_TEST_GPU_PERCENT_LARGE}
+        INSTALL_TARGET "${test_target}"
       )
       set_tests_properties(
         ${test_target}.large
@@ -251,6 +253,13 @@ function(
         ${test_target}
         PRIVATE "${CMAKE_CURRENT_BINARY_DIR}"
       )
+      # NVRTC's frontend recurses deeply while parsing the block-level primitives compiled by this
+      # test and overflows MSVC's 1 MiB default stack, see NVIDIA/cccl#9612. Give the main thread the
+      # 8 MiB that Linux provides by default, which is the size libnvcc's frontend worker uses for the
+      # same reason, see c/parallel.v2/src/hostjit/libnvcc/compiler.cpp.
+      if (MSVC)
+        target_link_options(${test_target} PRIVATE "/STACK:8388608") # 8 MiB
+      endif()
     endif()
 
     if ("${test_src}" MATCHES "test_iterator\\.cu$")
@@ -329,7 +338,6 @@ function(
         cccl.c2h
     )
     target_include_directories(${test_target} PRIVATE "${CUB_SOURCE_DIR}/test")
-    target_compile_definitions(${test_target} PRIVATE CUB_DEBUG_SYNC)
 
     if ("${test_target}" MATCHES "nvtx_in_usercode")
       target_link_libraries(${test_target} PRIVATE nvtx3-cpp)
@@ -377,6 +385,7 @@ function(
         # gersemi: on
         GPUS 1
         PERCENT ${_cub_gpu_percent}
+        INSTALL_TARGET "${test_target}"
       )
       set_tests_properties(
         ${test_target}
@@ -568,3 +577,4 @@ endforeach() # Source file
 
 add_subdirectory(cmake)
 add_subdirectory(cubin-check)
+add_subdirectory(logging)

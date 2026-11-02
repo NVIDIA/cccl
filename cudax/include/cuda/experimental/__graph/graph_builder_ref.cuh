@@ -34,8 +34,6 @@
 #include <cuda/experimental/__graph/graph.cuh>
 #include <cuda/experimental/__graph/graph_node_ref.cuh>
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/std/__cccl/prologue.h>
 
 // work around breathe "_CUDAX_CONSTEXPR_FRIEND friend" bug.
@@ -235,7 +233,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder_ref
   _CCCL_HOST_API constexpr auto add(_Node __node, ::cuda::std::span<cudaGraphNode_t, _Extent> __deps) -> graph_node_ref
   {
     // assert that the node descriptor returns a graph_node_ref object:
-    static_assert(::cuda::std::_IsSame<decltype(__node.__add_to_graph(__graph_, __deps)), graph_node_ref>::value,
+    static_assert(::cuda::std::is_same_v<decltype(__node.__add_to_graph(__graph_, __deps)), graph_node_ref>,
                   "node descriptors must return a graph_node_ref");
     return __node.__add_to_graph(__graph_, __deps);
   }

@@ -80,7 +80,7 @@ void merge_sort(execution_policy<DerivedPolicy>& exec,
 {
   using difference_type = thrust::detail::it_difference_t<Iterator1>;
 
-  difference_type n = ::cuda::std::distance(first1, last1);
+  const difference_type n = ::cuda::std::distance(first1, last1);
 
   if (n < threshold)
   {
@@ -196,7 +196,7 @@ void merge_sort_by_key(
 {
   using difference_type = thrust::detail::it_difference_t<Iterator1>;
 
-  difference_type n = ::cuda::std::distance(first1, last1);
+  const difference_type n = ::cuda::std::distance(first1, last1);
 
   Iterator1 mid1  = first1 + (n / 2);
   Iterator2 mid2  = first2 + (n / 2);

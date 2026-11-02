@@ -79,7 +79,7 @@ bool validation(const thrust::device_vector<TupleT>& input,
                 ScanOpT op,
                 cudaStream_t stream)
 {
-  cudaStreamSynchronize(stream);
+  _CCCL_TRY_RUNTIME_API(cudaStreamSynchronize, "Sync failed", stream);
 
   using tuple_t = TupleT;
   thrust::host_vector<tuple_t> h_input(input);
@@ -139,7 +139,7 @@ void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       cuda::execution::tune(policy_selector<accum_t>{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceScan::InclusiveScan,
       "InclusiveScan failed",
       d_input,

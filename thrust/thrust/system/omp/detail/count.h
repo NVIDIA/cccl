@@ -13,5 +13,5 @@
 #  pragma system_header
 #endif // no system header
 
-// this system inherits count
+// omp system inherits count
 #include <thrust/system/cpp/detail/count.h>

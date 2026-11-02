@@ -11,7 +11,7 @@
 
 #include <cuda_fp16.h>
 
-#include <cub/util_type.cuh>
+#include <cub/detail/numeric_traits.cuh>
 
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -40,9 +40,8 @@ struct half_t
 
   /// Constructor from __half
   __host__ __device__ __forceinline__ explicit half_t(const __half& other)
-  {
-    __x = reinterpret_cast<const uint16_t&>(other);
-  }
+      : __x(reinterpret_cast<const uint16_t&>(other))
+  {}
 
   /// Constructor from integer
   __host__ __device__ __forceinline__ explicit half_t(int a)
@@ -64,9 +63,8 @@ struct half_t
 
   /// Constructor from unsigned long long int
   template <typename T,
-            typename = typename ::cuda::std::enable_if<
-              ::cuda::std::is_same<T, unsigned long long int>::value
-              && (!::cuda::std::is_same<std::size_t, unsigned long long int>::value)>::type>
+            typename = ::cuda::std::enable_if_t<::cuda::std::is_same_v<T, unsigned long long int>
+                                                && (!::cuda::std::is_same_v<std::size_t, unsigned long long int>)>>
   __host__ __device__ __forceinline__ explicit half_t(T a)
   {
     *this = half_t(static_cast<float>(a));
@@ -80,9 +78,7 @@ struct half_t
   {
     // Stolen from Norbert Juffa
     uint32_t ia = *reinterpret_cast<uint32_t*>(&a);
-    uint16_t ir;
-
-    ir = (ia >> 16) & 0x8000;
+    uint16_t ir = (ia >> 16) & 0x8000;
 
     if ((ia & 0x7f800000) == 0x7f800000)
     {
@@ -97,7 +93,7 @@ struct half_t
     }
     else if ((ia & 0x7f800000) >= 0x33000000)
     {
-      int32_t shift = static_cast<int32_t>((ia >> 23) & 0xff) - 127;
+      const int32_t shift = static_cast<int32_t>((ia >> 23) & 0xff) - 127;
       if (shift > 15)
       {
         ir |= 0x7c00; /* infinity */
@@ -138,7 +134,7 @@ struct half_t
   {
     // Stolen from Andrew Kerr
 
-    int sign        = ((this->__x >> 15) & 1);
+    const int sign  = ((this->__x >> 15) & 1);
     int exp         = ((this->__x >> 10) & 0x1f);
     int mantissa    = (this->__x & 0x3ff);
     std::uint32_t f = 0;

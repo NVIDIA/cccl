@@ -1,0 +1,51 @@
+=============== memory_pool_managed.owning begin ===============
+(const cuda::managed_memory_pool &) <address> handle=<address>: {
+  release_threshold = 1048576
+  reserved_mem_current = 0
+  reserved_mem_high = 0
+  used_mem_current = 0
+  used_mem_high = 0
+}
+=============== memory_pool_managed.owning end ===============
+=============== memory_pool_managed.ref begin ===============
+(const cuda::managed_memory_pool_ref &) <address> handle=<address>: {
+  release_threshold = 3145728
+  reserved_mem_current = 0
+  reserved_mem_high = 0
+  used_mem_current = 0
+  used_mem_high = 0
+}
+=============== memory_pool_managed.ref end ===============
+=============== memory_pool_managed.no_init begin ===============
+(const cuda::managed_memory_pool &) <address> handle=0x0
+=============== memory_pool_managed.no_init end ===============
+=============== memory_pool_managed.shared begin ===============
+(const cuda::shared_managed_memory_pool &) <address> handle=<address>, use_count=1: {
+  release_threshold = 2097152
+  reserved_mem_current = 0
+  reserved_mem_high = 0
+  used_mem_current = 0
+  used_mem_high = 0
+}
+=============== memory_pool_managed.shared end ===============
+=============== memory_pool_managed.shared_no_init begin ===============
+(const cuda::shared_managed_memory_pool &) <address> handle=0x0, use_count=0
+=============== memory_pool_managed.shared_no_init end ===============
+=============== memory_pool_managed.in_use begin ===============
+(const cuda::managed_memory_pool &) <address> handle=<address>: {
+  release_threshold = 4194304
+  reserved_mem_current = <nonzero>
+  reserved_mem_high = <nonzero>
+  used_mem_current = 1048576
+  used_mem_high = 1048576
+}
+=============== memory_pool_managed.in_use end ===============
+=============== memory_pool_managed.shared_in_use begin ===============
+(const cuda::shared_managed_memory_pool &) <address> handle=<address>, use_count=1: {
+  release_threshold = 5242880
+  reserved_mem_current = <nonzero>
+  reserved_mem_high = <nonzero>
+  used_mem_current = 1048576
+  used_mem_high = 1048576
+}
+=============== memory_pool_managed.shared_in_use end ===============

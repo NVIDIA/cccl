@@ -21,17 +21,20 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/iterator.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__concepts/semiregular.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__iterator/unreachable_sentinel.h>
 #include <cuda/std/__memory/addressof.h>
-#include <cuda/std/__ranges/iota_view.h>
 #include <cuda/std/__ranges/movable_box.h>
 #include <cuda/std/__ranges/view_interface.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_object.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/remove_cv.h>
@@ -61,7 +64,7 @@ _CCCL_CONCEPT __integer_like_with_usable_difference_type =
   __signed_integer_like<_Tp> || (__integer_like<_Tp> && weakly_incrementable<_Tp>);
 
 template <class _Tp>
-using __repeat_view_iterator_difference_t _CCCL_NODEBUG_ALIAS = _If<__signed_integer_like<_Tp>, _Tp, _IotaDiffT<_Tp>>;
+using __repeat_view_iterator_difference_t _CCCL_NODEBUG = _If<__signed_integer_like<_Tp>, _Tp, _IotaDiffT<_Tp>>;
 
 #if _CCCL_HAS_CONCEPTS()
 template <move_constructible _Tp, semiregular _Bound = unreachable_sentinel_t>
@@ -86,7 +89,7 @@ public:
   {
     friend class repeat_view;
 
-    using _IndexT _CCCL_NODEBUG_ALIAS = conditional_t<same_as<_Bound, unreachable_sentinel_t>, ptrdiff_t, _Bound>;
+    using _IndexT _CCCL_NODEBUG = conditional_t<same_as<_Bound, unreachable_sentinel_t>, ptrdiff_t, _Bound>;
 
     _CCCL_API constexpr explicit __iterator(const _Tp* __value, _IndexT __bound_sentinel = _IndexT()) noexcept(
       is_nothrow_copy_constructible_v<_IndexT>)

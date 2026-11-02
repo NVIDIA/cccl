@@ -32,6 +32,7 @@
 #endif // no system header
 
 #include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/std/__exception/exception_macros.h>
 
 #include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
@@ -105,7 +106,7 @@ public:
     return result;
   }
 
-  void deactivate(const exec_place& prev, size_t idx = 0) const override
+  void deactivate(const exec_place& prev, size_t idx) const override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for cuda_ctx exec_place");
 
@@ -140,6 +141,7 @@ public:
     {
       return typeid(*this).before(typeid(rhs)) ? -1 : 1;
     }
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- typeid checked just above
     const auto& other = static_cast<const exec_place_cuda_ctx_impl&>(rhs);
     return ::std::less<CUcontext>{}(other.driver_context_, driver_context_)
          - ::std::less<CUcontext>{}(driver_context_, other.driver_context_);
@@ -171,15 +173,16 @@ protected:
 
   static int resolve_devid(CUcontext ctx, int devid)
   {
-    ::cuda::__ensure_current_context guard{ctx};
+    const ::cuda::__ensure_current_context guard{ctx};
     const int context_devid = static_cast<int>(cuda_try<cuCtxGetDevice>());
     if (devid >= 0 && devid != context_devid)
     {
-      throw ::std::invalid_argument("CUcontext device ordinal does not match devid");
+      _CCCL_THROW(::std::invalid_argument, "CUcontext device ordinal does not match devid");
     }
     return context_devid;
   }
 
+private:
   int devid_                = -1;
   CUcontext driver_context_ = {};
   mutable stream_pool pool_;
@@ -192,23 +195,22 @@ inline exec_place exec_place::cuda_context(CUcontext ctx, int devid, size_t pool
     // Reject eagerly: with an explicit devid a null context would construct a
     // place that only fails (or silently unbinds the current context) at
     // activation time.
-    throw ::std::invalid_argument("exec_place::cuda_context requires a valid CUcontext");
+    _CCCL_THROW(::std::invalid_argument, "exec_place::cuda_context requires a valid CUcontext");
   }
   return exec_place(::std::make_shared<exec_place_cuda_ctx_impl>(ctx, devid, pool_size));
 }
 
 #ifdef UNITTESTED_FILE
-namespace
-{
 //! RAII holder for the primary context of device 0, used by the unittests below.
 struct primary_ctx_guard
 {
   primary_ctx_guard()
-  {
-    cuda_try<cuInit>(0);
-    dev = cuda_try<cuDeviceGet>(0);
-    ctx = cuda_try<cuDevicePrimaryCtxRetain>(dev);
-  }
+      : dev([] {
+        cuda_try<cuInit>(0);
+        return cuda_try<cuDeviceGet>(0);
+      }())
+      , ctx(cuda_try<cuDevicePrimaryCtxRetain>(dev))
+  {}
 
   ~primary_ctx_guard()
   {
@@ -218,11 +220,10 @@ struct primary_ctx_guard
   CUdevice dev  = -1;
   CUcontext ctx = nullptr;
 };
-} // namespace
 
 UNITTEST("cuda_context exec_place equality")
 {
-  primary_ctx_guard guard;
+  const primary_ctx_guard guard;
 
   auto p0a = exec_place::cuda_context(guard.ctx, 0);
   auto p0b = exec_place::cuda_context(guard.ctx, 0);
@@ -239,7 +240,7 @@ UNITTEST("cuda_context exec_place equality")
 
 UNITTEST("cuda_context exec_place derives the device ordinal")
 {
-  primary_ctx_guard guard;
+  const primary_ctx_guard guard;
 
   // devid intentionally omitted: derived from the context via cuCtxGetDevice
   auto p = exec_place::cuda_context(guard.ctx);
@@ -264,7 +265,7 @@ UNITTEST("cuda_context exec_place rejects a null context")
 
 UNITTEST("cuda_context exec_place rejects a mismatched device ordinal")
 {
-  primary_ctx_guard guard;
+  const primary_ctx_guard guard;
 
   bool thrown = false;
   try
@@ -280,13 +281,13 @@ UNITTEST("cuda_context exec_place rejects a mismatched device ordinal")
 
 UNITTEST("cuda_context exec_place activate/deactivate round trip")
 {
-  primary_ctx_guard guard;
+  const primary_ctx_guard guard;
 
   auto p = exec_place::cuda_context(guard.ctx, 0);
 
   CUcontext before = cuda_try<cuCtxGetCurrent>();
   {
-    exec_place_scope scope(p);
+    const exec_place_scope scope(p);
     EXPECT(cuda_try<cuCtxGetCurrent>() == guard.ctx);
   }
   EXPECT(cuda_try<cuCtxGetCurrent>() == before);

@@ -508,10 +508,10 @@ public:
 
 protected:
   // Our storage
-  storage_type m_storage;
+  storage_type m_storage; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   // The size of this vector_base, in number of elements.
-  size_type m_size;
+  size_type m_size; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
 private:
   template <typename InputIterator>

@@ -23,8 +23,10 @@
 
 #include <cuda/__cmath/mul_hi.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__host_stdlib/istream>
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/is_seed_sequence.h>
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
@@ -265,9 +267,9 @@ public:
       {
         break;
       }
-      result_type __new_x_j = (__x_[__j] + (__increment & max()) + __carry) & max();
-      __carry               = (__new_x_j < __x_[__j]) ? 1 : 0;
-      __x_[__j]             = __new_x_j;
+      const result_type __new_x_j = (__x_[__j] + (__increment & max()) + __carry) & max();
+      __carry                     = (__new_x_j < __x_[__j]) ? 1 : 0;
+      __x_[__j]                   = __new_x_j;
       if constexpr (word_size < 64)
       {
         __increment >>= word_size;

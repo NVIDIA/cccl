@@ -20,7 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/arithmetic.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__format/concepts.h>
 #include <cuda/std/__format/format_parse_context.h>
@@ -32,7 +31,6 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/monostate.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/string_view>
 
@@ -88,7 +86,7 @@ inline constexpr unsigned __fmt_packed_types_max          = __fmt_packed_types_s
 template <class _Context>
 class __basic_format_arg_value
 {
-  using _CharT _CCCL_NODEBUG_ALIAS = typename _Context::char_type;
+  using _CharT _CCCL_NODEBUG = typename _Context::char_type;
 
   template <class _Tp>
   _CCCL_HOST_DEVICE_API static void

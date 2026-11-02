@@ -21,18 +21,20 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/movable.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
-#include <cuda/std/__tuple_dir/sfinae_helpers.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__utility/delegate_constructors.h>
+#include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/optional>
 
@@ -386,7 +388,7 @@ struct __mb_base : __mb_move_assign<_Tp>
 };
 
 template <class _Tp>
-using __movable_box_base = _If<__doesnt_need_empty_state<_Tp>(), __mb_base<_Tp>, __mb_optional_base<_Tp>>;
+using __movable_box_base _CCCL_NODEBUG = _If<__doesnt_need_empty_state<_Tp>(), __mb_base<_Tp>, __mb_optional_base<_Tp>>;
 
 // Primary template - uses ::cuda::std::optional and introduces an empty state in case assignment fails.
 template <class _Tp, bool = __movable_box_object<_Tp>>
@@ -395,7 +397,7 @@ struct __movable_box;
 template <class _Tp>
 struct __movable_box<_Tp, true> : __movable_box_base<_Tp>
 {
-  using __base = __movable_box_base<_Tp>;
+  using __base _CCCL_NODEBUG = __movable_box_base<_Tp>;
 
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)

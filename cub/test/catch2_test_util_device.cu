@@ -49,20 +49,20 @@ CUB_TEST("CUB correctly identifies the ptx version the kernel was compiled for",
   c2h::device_vector<int> cuda_cc(single_item);
 
   // Query the arch the kernel was actually compiled for
-  int ptx_version = [&]() -> int {
+  const int ptx_version = [&]() -> int {
     int* buffer{};
-    cudaMallocHost(&buffer, sizeof(*buffer));
+    REQUIRE(cudaSuccess == cudaMallocHost(&buffer, sizeof(*buffer)));
     get_cuda_cc_from_kernel(thrust::raw_pointer_cast(cuda_cc.data()), buffer);
-    int result = *buffer;
-    cudaFreeHost(buffer);
+    const int result = *buffer;
+    REQUIRE(cudaSuccess == cudaFreeHost(buffer));
     return result;
   }();
 
-  int kernel_cuda_cc = cuda_cc[0];
+  const int kernel_cuda_cc = cuda_cc[0];
 
   // Host cub::PtxVersion
   int host_ptx_version{};
-  cub::PtxVersion(host_ptx_version);
+  REQUIRE(cudaSuccess == cub::PtxVersion(host_ptx_version));
 
   // Ensure variable was properly populated
   REQUIRE(0 != kernel_cuda_cc);
@@ -140,7 +140,7 @@ template <int SelectedPolicyCc, int... CcList>
 struct check
 {
   static_assert(((SelectedPolicyCc == CcList * CUDA_SM_LIST_SCALE) || ...));
-  using type = cudaError_t;
+  using type _CCCL_NODEBUG = cudaError_t;
 };
 
 struct closure_all
@@ -168,7 +168,10 @@ check_chained_policy_prunes_to_cc_list(void* d_temp_storage, size_t& temp_storag
     return cudaSuccess;
   }
   int ptx_version = 0;
-  cub::PtxVersion(ptx_version);
+  if (const auto status = cub::PtxVersion(ptx_version); status != cudaSuccess)
+  {
+    return status;
+  }
   closure_all c{ptx_version};
   return policy_hub_all::max_policy::Invoke(ptx_version, c);
 }
@@ -232,7 +235,10 @@ CUB_RUNTIME_FUNCTION cudaError_t check_chained_policy_selects_correct_policy(
     return cudaSuccess;
   }
   int ptx_version = 0;
-  cub::PtxVersion(ptx_version);
+  if (const auto status = cub::PtxVersion(ptx_version); status != cudaSuccess)
+  {
+    return status;
+  }
   check_policy_closure<NumPolicies> c{ptx_version, std::move(policies)};
   return PolicyHub::max_policy::Invoke(ptx_version, c);
 }
@@ -292,13 +298,13 @@ __global__ void test_max_potential_dynamic_smem_bytes_kernel()
 __global__ void test_max_potential_dynamic_smem_bytes_device(int* result)
 {
   // Just compile on device.
-  cub::MaxPotentialDynamicSmemBytes(*result, test_max_potential_dynamic_smem_bytes_kernel);
+  static_cast<void>(cub::MaxPotentialDynamicSmemBytes(*result, test_max_potential_dynamic_smem_bytes_kernel));
 }
 #endif // CUB_RDC_ENABLED
 
 CUB_TEST("MaxPotentialDynamicSmemBytes", "[util][launch]", CUB_SMALL)
 {
-  cuda::device_ref device{0};
+  const cuda::device_ref device{0};
 
   // Calculate the expected max potential dynamic shared memory size.
   const auto max_smem_per_block_optin = device.attribute(cuda::device_attributes::max_shared_memory_per_block_optin);

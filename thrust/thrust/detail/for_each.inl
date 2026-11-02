@@ -54,7 +54,7 @@ InputIterator for_each(InputIterator first, InputIterator last, UnaryFunction f)
   _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<System>(), "thrust::for_each");
   using thrust::system::detail::generic::select_system;
 
-  System system;
+  System system; // NOLINT(misc-const-correctness): select_system requires a mutable lvalue
   return thrust::for_each(select_system(system), first, last, f);
 } // end for_each()
 
@@ -76,7 +76,7 @@ InputIterator for_each_n(InputIterator first, Size n, UnaryFunction f)
   _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<System>(), "thrust::for_each_n");
   using thrust::system::detail::generic::select_system;
 
-  System system;
+  System system; // NOLINT(misc-const-correctness): select_system requires a mutable lvalue
   return thrust::for_each_n(select_system(system), first, n, f);
 } // end for_each_n()
 

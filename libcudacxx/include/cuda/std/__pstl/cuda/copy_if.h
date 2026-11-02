@@ -31,19 +31,20 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 #  include <cub/device/device_select.cuh>
+#  include <cub/util_namespace.cuh>
 
 _CCCL_DIAG_POP
 
-#  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/call_or.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__algorithm/copy_if.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__execution/env.h>
-#  include <cuda/std/__execution/policy.h>
+#  include <cuda/std/__fwd/execution_policy.h>
 #  include <cuda/std/__iterator/incrementable_traits.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__iterator/next.h>
@@ -78,7 +79,7 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_if, __execution_backend::__cuda>
 
     // Determine temporary device storage requirements
     size_t __num_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceSelect::If,
       "__pstl_cuda_select_if: determination of device storage for cub::DeviceSelect::If failed",
       static_cast<void*>(nullptr),
@@ -94,7 +95,7 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_if, __execution_backend::__cuda>
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
 
       // Run the kernel
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DeviceSelect::If,
         "__pstl_cuda_select_if: kernel launch of cub::DeviceSelect::If failed",
         __storage.__get_temp_storage(),
@@ -107,7 +108,7 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_if, __execution_backend::__cuda>
         __policy);
 
       // Copy the result back from storage
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_select_if: copy of result from device to host failed",
         ::cuda::std::addressof(__ret),

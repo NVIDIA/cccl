@@ -954,6 +954,96 @@ def test_reduce_with_not_guaranteed_determinism(floating_array):
     )
 
 
+def test_reduce_no_init_value():
+    num_items = 1024
+    dtype = np.dtype("int32")
+
+    h_input = random_int(num_items, dtype)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, dtype)
+
+    cuda.compute.reduce_into(
+        d_in=d_input,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=None,
+    )
+
+    h_output = d_output.copy_to_host()
+    assert h_output[0] == sum(h_input)
+
+
+def test_reduce_no_init_value_iterator():
+    num_items = 1024
+    dtype = np.dtype("float64")
+
+    d_input = CountingIterator(np.float64(0))
+    d_output = DeviceArray.empty(1, dtype)
+
+    cuda.compute.reduce_into(
+        d_in=d_input,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=None,
+    )
+
+    h_output = d_output.copy_to_host()
+    assert h_output[0] == sum(range(num_items))
+
+
+def test_reduce_no_init_value_empty_input_leaves_output_unmodified():
+    dtype = np.dtype("int32")
+    sentinel = np.array([42], dtype=dtype)
+
+    d_input = DeviceArray.from_numpy(np.ones(1, dtype=dtype))
+    d_output = DeviceArray.from_numpy(sentinel)
+
+    cuda.compute.reduce_into(
+        d_in=d_input,
+        d_out=d_output,
+        num_items=0,
+        op=OpKind.PLUS,
+        h_init=None,
+    )
+
+    h_output = d_output.copy_to_host()
+    assert h_output[0] == sentinel[0]
+
+
+def test_reduce_no_init_value_with_not_guaranteed_determinism_raises():
+    dtype = np.dtype("float32")
+    d_input = DeviceArray.from_numpy(np.ones(16, dtype=dtype))
+    d_output = DeviceArray.empty(1, dtype)
+
+    with pytest.raises(ValueError, match="NOT_GUARANTEED"):
+        cuda.compute.reduce_into(
+            d_in=d_input,
+            d_out=d_output,
+            num_items=16,
+            op=OpKind.PLUS,
+            h_init=None,
+            determinism=Determinism.NOT_GUARANTEED,
+        )
+
+
+def test_reduce_device_array_init_value_raises():
+    dtype = np.dtype("int32")
+    d_input = DeviceArray.from_numpy(np.ones(16, dtype=dtype))
+    d_output = DeviceArray.empty(1, dtype)
+    d_init = DeviceArray.from_numpy(np.array([0], dtype=dtype))
+
+    with pytest.raises(ValueError, match="device array"):
+        cuda.compute.reduce_into(
+            d_in=d_input,
+            d_out=d_output,
+            num_items=16,
+            op=OpKind.PLUS,
+            h_init=d_init,
+        )
+
+
 def test_reduce_bool():
     h_init = np.array([False])
     h_input = np.array([True, False, True])
@@ -1052,6 +1142,29 @@ def test_serialize_deserialize_well_known_op_round_trip():
 
 
 @pytest.mark.serialization
+def test_serialize_deserialize_no_init_value_round_trip():
+    h_in = np.arange(1024, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.from_numpy(np.zeros(1, dtype=np.int32))
+
+    reducer = make_reduce_into(d_in=d_in, d_out=d_out, op=OpKind.PLUS, h_init=None)
+    blob = serialize(reducer)
+    assert len(blob) > 0
+
+    loaded = deserialize(blob)
+    _run_loaded_reducer(
+        loaded,
+        d_in=d_in,
+        d_out=d_out,
+        num_items=h_in.size,
+        op=OpKind.PLUS,
+        h_init=None,
+    )
+
+    assert int(d_out.copy_to_host()[0]) == int(h_in.sum())
+
+
+@pytest.mark.serialization
 def test_serialize_deserialize_jit_op_round_trip():
     h_in = np.arange(1024, dtype=np.int32)
     d_in = DeviceArray.from_numpy(h_in)
@@ -1098,7 +1211,7 @@ def test_serialize_deserialize_counting_iterator_input():
     # rebuilt purely from the blob — no iterator object was passed to deserialize,
     # so a regression to caller-supplied descriptors would fail here, not silently
     # pass via the object reconstructed for the call.
-    assert loaded.d_in_cccl.is_kind_iterator()
+    assert not loaded.d_in_cccl.is_ptr_kind
     _run_loaded_reducer(
         loaded,
         d_in=CountingIterator(np.int32(0)),
@@ -1130,7 +1243,7 @@ def test_serialize_deserialize_transform_iterator_input():
     loaded = deserialize(blob)
     # Iterator descriptor (incl. the transform op's embedded LTOIR) rebuilt from
     # the blob alone — deserialize took no objects.
-    assert loaded.d_in_cccl.is_kind_iterator()
+    assert not loaded.d_in_cccl.is_ptr_kind
     _run_loaded_reducer(
         loaded, d_in=make_it(), d_out=d_out, num_items=n, op=OpKind.PLUS, h_init=h_init
     )
@@ -1167,3 +1280,83 @@ def test_serialize_deserialize_preserves_determinism():
 def test_deserialize_garbage_raises():
     with pytest.raises((ValueError, RuntimeError)):
         deserialize(b"not a real serialization blob" + b"\0" * 64)
+
+
+def _cross_process_deserialize_worker(blob, n, result_queue):
+    # Runs in a freshly-spawned child process (see
+    # test_serialize_deserialize_cross_process below) -- re-imports
+    # everything from scratch, so this exercises a genuine fresh dlopen (v2)
+    # / fresh driver load (v1) in a brand-new address space, not just a new
+    # Python object in the same process. Must be a module-level function so
+    # multiprocessing's spawn context can pickle it by reference.
+    try:
+        import numpy as np
+        from _utils.device_array import DeviceArray
+
+        from cuda.compute import OpKind, deserialize
+
+        d_in = DeviceArray.from_numpy(np.arange(n, dtype=np.int32))
+        d_out = DeviceArray.from_numpy(np.zeros(1, dtype=np.int32))
+        h_init = np.zeros(1, dtype=np.int32)
+
+        # The child process never called make_reduce_into/serialize -- it
+        # only has the blob bytes handed to it over the process boundary.
+        loaded = deserialize(blob)
+        _run_loaded_reducer(
+            loaded,
+            d_in=d_in,
+            d_out=d_out,
+            num_items=n,
+            op=OpKind.PLUS,
+            h_init=h_init,
+        )
+        result_queue.put(("ok", int(d_out.copy_to_host()[0])))
+    except Exception as exc:  # noqa: BLE001 -- report to parent, don't crash silently
+        result_queue.put(("error", f"{type(exc).__name__}: {exc}"))
+
+
+@pytest.mark.serialization
+def test_serialize_deserialize_cross_process():
+    # The AoT claim in one sentence: a blob produced by serialize() must be
+    # loadable and runnable in a process that never called make_reduce_into
+    # or serialize() itself. Same-process deserialize() (the tests above)
+    # only proves a *fresh Python object* works; it doesn't prove the
+    # compiled artifact survives a real process boundary. On v2 (HostJIT)
+    # this specifically exercises dlopen()-ing the persisted .so from a
+    # process with no prior JIT/compiler state at all -- mirrors the
+    # cccl.c.parallel.v2.test.aot_reduce C++ ctest
+    # (c/parallel.v2/test/aot/test_aot_reduce.cpp).
+    #
+    # Uses the "spawn" start method deliberately, not "fork": fork() would
+    # inherit the parent's already-initialized CUDA context / already-loaded
+    # libraries, which defeats the point (masking exactly the fresh-process
+    # behavior we're trying to prove).
+    import multiprocessing
+
+    n = 1024
+    h_in = np.arange(n, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.from_numpy(np.zeros(1, dtype=np.int32))
+    h_init = np.zeros(1, dtype=np.int32)
+
+    reducer = make_reduce_into(d_in=d_in, d_out=d_out, op=OpKind.PLUS, h_init=h_init)
+    blob = serialize(reducer)
+    assert len(blob) > 0
+
+    ctx = multiprocessing.get_context("spawn")
+    result_queue = ctx.Queue()
+    proc = ctx.Process(
+        target=_cross_process_deserialize_worker, args=(blob, n, result_queue)
+    )
+    proc.start()
+    try:
+        status, payload = result_queue.get(timeout=120)
+    finally:
+        proc.join(timeout=30)
+        if proc.is_alive():
+            proc.terminate()
+            proc.join()
+
+    assert status == "ok", f"child process failed: {payload}"
+    assert payload == int(h_in.sum())
+    assert proc.exitcode == 0

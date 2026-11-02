@@ -1,0 +1,891 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""Choose and prepare the implementation of a group ``load()`` or ``store()``.
+
+The group planner delegates these two operations here after resolving which
+threads participate. Recover the per-thread item count and element type, check
+memory and payload compatibility, and classify optional controls as omitted,
+static, or runtime values. Pass those facts to the compiler-neutral planner,
+then translate its decision into a call to the matching private CUB factory.
+
+The returned IR carries both the runtime operands and the complete lowering
+plan. Later in the same whole-function planner, call rewriting specializes the
+factory and supplies payload arrays and any shared scratch it needs. Warp
+operations may also need an offset for their particular warp within the block;
+this module emits that arithmetic because it depends on runtime thread
+indices. It builds replacement statements without installing them, so the
+caller can check every group descriptor use before it changes any block.
+"""
+
+import inspect
+import operator
+from typing import Any, cast
+
+import numba_cuda_mlir.numba_cuda.types as numba_types
+from numba_cuda_mlir import cuda as _cuda_module
+
+from cuda.coop._core import (
+    ArgumentBinding,
+    BindingKind,
+    GroupLoadStoreAlgorithm,
+    GroupLoadStoreKind,
+    GroupLoadStoreSemantics,
+    GroupLoweringPlan,
+    GroupLoweringTarget,
+    StorageOwnership,
+    ThreadGroup,
+    make_group_primitive_call,
+    plan_group_primitive,
+)
+
+from ._group_errors import (
+    CommonLoadPayloadError,
+    CommonStorePayloadError,
+    DefaultDtypeMismatchError,
+    InvalidLoadStoreAlgorithmError,
+    MemoryDtypeMismatchError,
+    NonConstantTempStorageError,
+    UnknownBlockDimensionError,
+    UnknownLoadStoreDtypeError,
+    UnknownLoadStoreExtentError,
+    UnknownLoadStoreProviderError,
+    UnsupportedLoadStoreGroupError,
+    UnsupportedLoadStoreTargetError,
+)
+from ._group_planner_support import GroupRewriteError, ir
+from ._group_planning import GroupPlanningContext
+from ._load_store_algorithms import (
+    _BLOCK_LOAD_STORE_ALGORITHMS,
+    _WARP_LOAD_STORE_ALGORITHMS,
+    _resolve_algorithm,
+)
+from ._operations import (
+    RewriteOperationSpecification,
+    register_group_primitive,
+    register_rewrite_operation,
+)
+from ._parameters import _validate_common_numeric_dtype, coerce_static_scalar
+from ._rewrite_load_store import (
+    analyze_load_store_match,
+    infer_load_store_payload,
+    prepare_load_store_runtime_args,
+    validate_load_store_runtime_controls,
+)
+
+_SUPPORTED_WARP_WIDTHS = frozenset({1, 2, 4, 8, 16, 32})
+
+
+def _load_store_algorithm(
+    value: object,
+    *,
+    operation: str,
+    group_kind: str,
+) -> str:
+    """Resolve an algorithm from the choices for the selected group kind.
+
+    Physical and logical warps use the warp choices; block groups use the
+    block choices. Keep the group kind in an invalid-choice diagnostic so
+    callers can see why an algorithm is unavailable for this request.
+    """
+
+    algorithm_scope = (
+        "warp" if group_kind in {"warp", "threads_within_warp"} else group_kind
+    )
+    allowed = (
+        _WARP_LOAD_STORE_ALGORITHMS
+        if algorithm_scope == "warp"
+        else _BLOCK_LOAD_STORE_ALGORITHMS
+    )
+    try:
+        return _resolve_algorithm(
+            value, allowed, f"cuda.coop.numba_mlir.{operation}"
+        )
+    except ValueError:
+        choices = ", ".join(sorted(allowed))
+        raise InvalidLoadStoreAlgorithmError(
+            operation, choices, group_kind
+        ) from None
+
+
+# Match the selected implementation to a provider operation. Each key contains
+# the library, include path, C++ type, and method recorded by shared planning.
+_CUB_PLAN_ROUTES = {
+    (
+        "CUB",
+        "cub/block/block_load.cuh",
+        "cub::BlockLoad",
+        "Load",
+    ): "load",
+    (
+        "CUB",
+        "cub/block/block_store.cuh",
+        "cub::BlockStore",
+        "Store",
+    ): "store",
+    (
+        "CUB",
+        "cub/warp/warp_load.cuh",
+        "cub::WarpLoad",
+        "Load",
+    ): "load",
+    (
+        "CUB",
+        "cub/warp/warp_store.cuh",
+        "cub::WarpStore",
+        "Store",
+    ): "store",
+}
+
+
+class _LoadStorePlanning:
+    """Plan registered Load and Store operations with shared rules.
+
+    A compiler family is a module supplying planning and rewrite hooks for one
+    or more operation names. Load and store share this implementation because
+    they share payload, dtype, and tile rules; each has its own registration.
+    """
+
+    def __init__(self, context: GroupPlanningContext) -> None:
+        self._context = context
+
+    def _validate_common_arguments(
+        self, operation: str, bound: inspect.BoundArguments
+    ) -> None:
+        """Normalize selectors in the bound arguments of a common API call.
+
+        Update ``algorithm`` in place. Rewriting bypasses the Python wrapper,
+        so compiled calls must apply its selector restrictions here.
+        """
+
+        bound.arguments["algorithm"] = self._context.validate_common_selector(
+            operation,
+            "algorithm",
+            bound.arguments["algorithm"],
+            _BLOCK_LOAD_STORE_ALGORITHMS,
+        )
+
+    def _scope_factory(
+        self,
+        plan: GroupLoweringPlan,
+        operation: str,
+    ) -> tuple[Any, dict[str, Any]]:
+        """Choose the registered factory and its group-dimension arguments.
+
+        Use the plan's block/warp target and storage ownership to select the
+        matching private factory. Warp factories also need the logical group
+        width. Both forms need exact enclosing block dimensions, including
+        when the selected algorithm uses no scratch.
+
+        Return ``(factory, kwargs)`` without invoking the factory. Reject
+        missing block dimensions, unsupported warp topology, or an unknown
+        target before building provider-call IR.
+        """
+
+        group = plan.resolved_group
+        assert group.hierarchy is not None
+        block_dim = group.hierarchy.block_dim
+        if block_dim is None:
+            raise UnknownBlockDimensionError(operation)
+
+        from .._lowering import _load_store
+
+        assert plan.temp_storage is not None
+        storage_free = plan.temp_storage.ownership is StorageOwnership.NONE
+        if plan.target is GroupLoweringTarget.CUB_BLOCK:
+            factory_name = (
+                operation if storage_free else f"_{operation}_with_storage"
+            )
+            factory_kwargs = {"threads_per_block": block_dim}
+        elif plan.target is GroupLoweringTarget.CUB_WARP:
+            if (
+                plan.topology is None
+                or plan.topology.group_kind
+                not in {"warp", "threads_within_warp"}
+                or plan.topology.logical_width not in _SUPPORTED_WARP_WIDTHS
+            ):
+                raise GroupRewriteError(
+                    "cuda.coop.numba_mlir Warp Load/Store requires a "
+                    "power-of-two lowering width in [1, 32]"
+                )
+            factory_name = (
+                f"warp_{operation}"
+                if storage_free
+                else f"_warp_{operation}_with_storage"
+            )
+            factory_kwargs = {
+                "threads_per_block": block_dim,
+                "threads_in_warp": plan.topology.logical_width,
+            }
+        else:
+            raise UnsupportedLoadStoreTargetError(plan.target.value)
+        return (
+            getattr(_load_store, factory_name),
+            factory_kwargs,
+        )
+
+    def _planning_oob_default(
+        self,
+        value: Any,
+        *,
+        payload_dtype: numba_types.Type,
+    ) -> ArgumentBinding:
+        """Validate the ``load()`` operation's out-of-bounds fill value.
+
+        Classify ``oob_default`` as omitted, static, or runtime. A runtime
+        value with a known dtype must match the payload exactly; an unknown
+        dtype is left for later validation. Static values retain their
+        original dtype information during coercion, preserving the distinction
+        between Python literals whose type is determined by the operation and
+        values whose numeric width is already established.
+
+        Parameters
+        ----------
+        value : ir.Var or object
+            Bound ``oob_default`` argument, including ``None`` for omission.
+        payload_dtype : numba_types.Type
+            Normalized element dtype selected for the load.
+
+        Returns
+        -------
+        ArgumentBinding
+            Omitted or runtime binding, or a static binding containing the
+            validated, coerced default.
+
+        Raises
+        ------
+        DefaultDtypeMismatchError
+            A runtime default has a known dtype different from the payload.
+        TypeError
+            A known scalar dtype is unsupported or incompatible with the
+            payload.
+        ValueError
+            A static default is nonfinite or outside the payload dtype range.
+        """
+
+        binding = self._context.planning_binding(value)
+        if binding.kind is BindingKind.OMITTED:
+            return binding
+        if binding.kind is BindingKind.RUNTIME:
+            value_dtype = self._context.dtype(value)
+            if value_dtype is None:
+                return binding
+            value_dtype = _validate_common_numeric_dtype(
+                value_dtype,
+                operation="load",
+                parameter="oob_default",
+            )
+            if value_dtype != payload_dtype:
+                raise DefaultDtypeMismatchError(value_dtype, payload_dtype)
+            return binding
+
+        scalar = binding.value
+        resolved, provenance = self._context.try_static_scalar_provenance(value)
+        assert resolved and provenance is not None
+        scalar = coerce_static_scalar(
+            scalar,
+            payload_dtype,
+            operation="load",
+            parameter="oob_default",
+            source_dtype=provenance.dtype,
+        )
+        return ArgumentBinding.static(scalar)
+
+    def _planning_items_per_thread(self, operation: str, payload: Any) -> int:
+        """Recover a fixed payload extent for provider specialization.
+
+        A scalar store uses one item per thread. Array payloads must have a
+        known extent, and a load always needs an array destination. This
+        determines the item count; dtype and common API payload rules are
+        checked separately.
+        """
+
+        is_array = self._context.is_array(operation, payload)
+        if not is_array:
+            if operation == "load":
+                raise TypeError(
+                    "cuda.coop.numba_mlir.load output "
+                    "must be a fixed-size local array"
+                )
+            return 1
+        extent = self._context.array_extent(payload)
+        if extent is None:
+            raise UnknownLoadStoreExtentError(operation)
+        return extent
+
+    def _plan_load_store(
+        self,
+        *,
+        operation: str,
+        group: ThreadGroup,
+        bound: inspect.BoundArguments,
+    ) -> GroupLoweringPlan:
+        """Build a supported core plan from a bound group memory call.
+
+        Recover payload shape and element type before selecting a provider.
+        Memory dtype takes precedence when known, but a known payload dtype
+        must match it. For a ``store()`` operation with an untyped array
+        payload, inspect values written to its elements first; for a static
+        scalar payload, check whether its value and original dtype can be used
+        with the destination dtype. A ``load()`` operation records the
+        inferred output dtype in the planning context for later group calls.
+
+        Classify optional scalar controls by provenance, parse caller storage,
+        and pass compiler-neutral load/store semantics plus exact launch facts
+        to the core planner. Warp groups reject explicit storage here. The
+        result selects topology, storage, synchronization, and implementation
+        metadata; it does not yet construct provider-call IR. The dtype cache
+        may already be updated if a later validation fails.
+
+        Parameters
+        ----------
+        operation : {"load", "store"}
+            Public operation being planned.
+        group : ThreadGroup
+            Group already resolved against this kernel's launch facts.
+        bound : inspect.BoundArguments
+            Public call arguments with defaults applied; values may be IR
+            variables or host constants. The mapping is read without
+            modification.
+
+        Returns
+        -------
+        GroupLoweringPlan
+            Supported core plan containing the inferred semantic operation and
+            the selected provider implementation.
+
+        Raises
+        ------
+        GroupRewriteError
+            Payload extent or dtype is unknown, or storage provenance is
+            invalid.
+        TypeError
+            A payload or scalar control has an unsupported type, or known
+            payload and memory dtypes disagree.
+        ValueError
+            A scalar or algorithm is invalid, or explicit storage is supplied
+            for a warp group.
+        ForceLiteralArg
+            A shape, selector, or storage option needs literal specialization.
+        NotImplementedError
+            The core planner cannot lower the requested group operation.
+        """
+
+        from .._lowering._core import NumbaMlirCoreAdapter
+
+        payload_name = "output" if operation == "load" else "value"
+        memory_name = "source" if operation == "load" else "destination"
+        payload = bound.arguments[payload_name]
+        payload_is_array = self._context.is_array(operation, payload)
+        items_per_thread = self._planning_items_per_thread(operation, payload)
+        payload_dtype = self._context.dtype(payload)
+        if operation == "store" and payload_dtype is None:
+            payload_dtype = self._context.payload_write_dtype(payload)
+        memory_dtype = self._context.dtype(bound.arguments[memory_name])
+        dtype = memory_dtype if memory_dtype is not None else payload_dtype
+        if dtype is None:
+            raise UnknownLoadStoreDtypeError(operation)
+        dtype = _validate_common_numeric_dtype(dtype, operation=operation)
+        if operation == "store" and not payload_is_array:
+            resolved, provenance = self._context.try_static_scalar_provenance(
+                payload
+            )
+            if resolved:
+                assert provenance is not None
+                coerce_static_scalar(
+                    provenance.value,
+                    dtype,
+                    operation="store",
+                    parameter="value",
+                    source_dtype=provenance.dtype,
+                )
+                payload_dtype = dtype
+        if payload_dtype is not None:
+            _validate_common_numeric_dtype(payload_dtype, operation=operation)
+        if (
+            payload_dtype is not None
+            and memory_dtype is not None
+            and payload_dtype != memory_dtype
+        ):
+            raise MemoryDtypeMismatchError(
+                operation, memory_dtype, payload_dtype
+            )
+        if operation == "load":
+            self._context.record_thread_data_dtype(payload, dtype)
+
+        oob_default = (
+            self._planning_oob_default(
+                bound.arguments["oob_default"],
+                payload_dtype=dtype,
+            )
+            if operation == "load"
+            else ArgumentBinding.omitted()
+        )
+
+        algorithm = _load_store_algorithm(
+            self._context.constant(bound.arguments["algorithm"]),
+            operation=operation,
+            group_kind=group.kind,
+        )
+        temp_storage_value = bound.arguments["temp_storage"]
+        if group.kind in {"warp", "threads_within_warp"} and not (
+            self._context.is_none(temp_storage_value)
+        ):
+            raise ValueError(
+                f"cuda.coop.numba_mlir.{operation} temp_storage is not "
+                "supported for Warp groups; omit it so the implementation "
+                "can provide per-group storage"
+            )
+        storage_options: dict[str, Any] = {}
+        if not self._context.is_none(temp_storage_value):
+            descriptor = self._context.temp_storage(temp_storage_value)
+            if descriptor is None:
+                raise NonConstantTempStorageError(operation)
+            size_in_bytes, alignment, auto_sync, sharing = descriptor
+            storage_options = {
+                "storage_ownership": StorageOwnership.CALLER,
+                "storage_sharing": sharing,
+                "storage_size_in_bytes": size_in_bytes,
+                "storage_alignment": alignment,
+                "storage_auto_sync": auto_sync,
+            }
+
+        semantics = GroupLoadStoreSemantics(
+            kind=GroupLoadStoreKind(operation),
+            dtype=NumbaMlirCoreAdapter().core_dtype(dtype),
+            items_per_thread=items_per_thread,
+            algorithm=GroupLoadStoreAlgorithm(algorithm),
+            valid_items=self._context.planning_binding(
+                bound.arguments["valid_items"]
+            ),
+            oob_default=oob_default,
+            offset=self._context.planning_binding(bound.arguments["offset"]),
+            **storage_options,
+        )
+        plan = plan_group_primitive(
+            make_group_primitive_call(group, semantics),
+            self._context.launch,
+        )
+        try:
+            return plan.require_supported()
+        except NotImplementedError as exc:
+            raise UnsupportedLoadStoreGroupError(operation, exc) from exc
+
+    @staticmethod
+    def _plan_provider_operation(plan: GroupLoweringPlan) -> str:
+        """Route the selected CUB implementation to its provider operation.
+
+        Match the plan's library, header, C++ type, and method against the
+        known routes. This checks the implementation the core actually
+        selected. The caller then verifies that it matches the requested load
+        or store.
+        """
+
+        if plan.target not in {
+            GroupLoweringTarget.CUB_BLOCK,
+            GroupLoweringTarget.CUB_WARP,
+        }:
+            raise UnsupportedLoadStoreTargetError(plan.target.value)
+        assert plan.provenance is not None
+        try:
+            return _CUB_PLAN_ROUTES[plan.provenance.semantic_key]
+        except KeyError as exc:
+            raise UnknownLoadStoreProviderError(
+                plan.provenance.semantic_key
+            ) from exc
+
+    @staticmethod
+    def _planned_argument(
+        binding: ArgumentBinding,
+        runtime_value: Any,
+    ) -> Any:
+        """Forward runtime operands and keep static binding descriptors.
+
+        Factories read any plain non-None value as a runtime operand. Keep a
+        static control wrapped in its ArgumentBinding so the factory embeds
+        it as a constant.
+        """
+
+        return runtime_value if binding.kind is BindingKind.RUNTIME else binding
+
+    def _warp_group_effective_offset(
+        self,
+        statements: list[ir.Assign],
+        *,
+        inst: ir.Assign,
+        plan: GroupLoweringPlan,
+        binding: ArgumentBinding,
+        runtime_value: Any,
+        items_per_thread: int,
+    ) -> ir.Var:
+        """Build IR that computes the starting element for this warp's tile.
+
+        Each physical or logical warp must access its own tile within the
+        block's data. Compute the current thread's x-fastest linear rank as
+        ``x + block_x * (y + block_y * z)``. Divide by the logical group
+        width, then multiply by ``width * items_per_thread``. Add the user's
+        base offset to that tile origin. The arithmetic remains runtime IR
+        because the warp's position in the block depends on ``threadIdx``,
+        even when the user's base offset is static. For a one-dimensional
+        block, the linear rank is simply ``threadIdx.x``.
+
+        Parameters
+        ----------
+        statements : list of ir.Assign
+            Output list extended in place with constants, CUDA attribute
+            reads, and arithmetic assignments in dependency order.
+        inst : ir.Assign
+            Original public call; supplies scope and source locations.
+        plan : GroupLoweringPlan
+            Plan with a physical or logical warp topology, supported
+            power-of-two width, and exact enclosing block dimensions.
+        binding : ArgumentBinding
+            Planned user offset. Omission supplies zero; a static binding
+            supplies its value; a runtime binding selects ``runtime_value``.
+        runtime_value : object
+            Original offset operand, used only for a runtime binding.
+        items_per_thread : int
+            Planned payload extent used to determine the group's tile size.
+
+        Returns
+        -------
+        ir.Var
+            Variable holding the provider call's effective element offset.
+
+        Raises
+        ------
+        GroupRewriteError
+            The plan lacks exact warp topology or block dimensions.
+        """
+
+        topology = plan.topology
+        participation = plan.participation
+        if (
+            topology is None
+            or topology.group_kind not in {"warp", "threads_within_warp"}
+            or topology.logical_width not in _SUPPORTED_WARP_WIDTHS
+            or participation is None
+            or participation.exact_block_dim is None
+        ):
+            raise GroupRewriteError(
+                "Warp Load/Store requires exact power-of-two topology"
+            )
+        scope = inst.target.scope
+        loc = inst.loc
+
+        def new_var(stem: str) -> ir.Var:
+            return self._context.new_var(scope, loc, f"warp_tile_{stem}")
+
+        def value_var(value: Any, stem: str) -> ir.Var:
+            return self._context.value_var(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem=f"warp_tile_{stem}",
+                value=value,
+            )
+
+        def binary(
+            function: Any, lhs: ir.Var, rhs: ir.Var, stem: str
+        ) -> ir.Var:
+            result = new_var(stem)
+            statements.append(
+                ir.Assign(ir.Expr.binop(function, lhs, rhs, loc), result, loc)
+            )
+            return result
+
+        module = value_var(_cuda_module, "cuda")
+        thread_idx = new_var("thread_idx")
+        statements.append(
+            ir.Assign(
+                ir.Expr.getattr(module, "threadIdx", loc), thread_idx, loc
+            )
+        )
+
+        def component(axis: str) -> ir.Var:
+            result = new_var(f"thread_idx_{axis}")
+            statements.append(
+                ir.Assign(ir.Expr.getattr(thread_idx, axis, loc), result, loc)
+            )
+            return result
+
+        block_dim = participation.exact_block_dim
+        linear_rank = component("x")
+        if block_dim[1] > 1 or block_dim[2] > 1:
+            y = component("y")
+            z = component("z")
+            yz = binary(
+                operator.mul,
+                value_var(block_dim[1], "block_y"),
+                z,
+                "linear_yz",
+            )
+            yz = binary(operator.add, y, yz, "linear_y")
+            yz = binary(
+                operator.mul,
+                value_var(block_dim[0], "block_x"),
+                yz,
+                "linear_x_stride",
+            )
+            linear_rank = binary(operator.add, linear_rank, yz, "linear_rank")
+        group_index = binary(
+            operator.floordiv,
+            linear_rank,
+            value_var(topology.logical_width, "group_width"),
+            "group_index",
+        )
+        tile_origin = binary(
+            operator.mul,
+            group_index,
+            value_var(
+                topology.logical_width * items_per_thread,
+                "group_tile_items",
+            ),
+            "origin",
+        )
+        if binding.kind is BindingKind.OMITTED:
+            base_offset = 0
+        elif binding.kind is BindingKind.STATIC:
+            base_offset = binding.value
+        else:
+            base_offset = runtime_value
+        return binary(
+            operator.add,
+            tile_origin,
+            value_var(base_offset, "base_offset"),
+            "effective_offset",
+        )
+
+    def _lower_load_store(
+        self,
+        inst: ir.Assign,
+        *,
+        operation: str,
+        group: ThreadGroup,
+        bound: inspect.BoundArguments,
+        is_common_root: bool,
+    ) -> list[Any]:
+        """Build replacement IR for a public ``load()`` or ``store()`` call.
+
+        Validate common-API payload restrictions, obtain a semantic lowering
+        plan, and select the matching private factory by provider provenance
+        and scope. Translate planned dtype, shape, algorithm, and scalar
+        bindings into the provider's arguments. Warp plans that require a tile
+        origin first emit the effective-offset arithmetic. Other static
+        controls retain their ``ArgumentBinding`` objects; runtime controls
+        retain their original IR operands.
+
+        The final provider call carries the complete plan for the subsequent
+        provider rewrite. Planning may record inferred payload dtypes, but
+        this method only returns replacement statements; the whole-function
+        planner installs them after validating all descriptor uses.
+
+        Parameters
+        ----------
+        inst : ir.Assign
+            Public call assignment whose result target and location are
+            preserved.
+        operation : {"load", "store"}
+            Registered public operation to lower.
+        group : ThreadGroup
+            Group resolved against the current kernel launch.
+        bound : inspect.BoundArguments
+            Public call arguments with defaults applied. Runtime operands are
+            forwarded; the argument mapping is not modified.
+        is_common_root : bool
+            Whether the call uses the common API. Enforce its payload
+            contract and retain its operation marker on the provider call.
+
+        Returns
+        -------
+        list of object
+            Ordered IR statements computing any warp offset, materializing
+            factory arguments, and calling the selected provider with the
+            original target.
+
+        Raises
+        ------
+        GroupRewriteError
+            The payload is unresolved, provenance selects the wrong
+            operation, or the provider contract conflicts with the plan.
+        TypeError
+            A common-API payload is unsupported or known dtypes disagree.
+        ValueError
+            A scalar, algorithm, or explicit storage argument is invalid.
+        ForceLiteralArg
+            A planning argument needs literal specialization.
+        NotImplementedError
+            The requested group operation has no supported lowering.
+        """
+
+        from .._lowering._core import NumbaMlirCoreAdapter
+
+        if is_common_root:
+            if operation == "load":
+                if not self._context.is_thread_data(
+                    operation, "output", bound.arguments["output"]
+                ):
+                    raise CommonLoadPayloadError()
+            else:
+                value = bound.arguments["value"]
+                if self._context.is_array(operation, value) and (
+                    not self._context.is_thread_data(operation, "value", value)
+                ):
+                    raise CommonStorePayloadError()
+        plan = self._plan_load_store(
+            operation=operation,
+            group=group,
+            bound=bound,
+        )
+        planned_operation = self._plan_provider_operation(plan)
+        if planned_operation != operation:
+            raise GroupRewriteError(
+                f"cuda.coop.numba_mlir.{operation} selected the "
+                f"{planned_operation!r} provider"
+            )
+        factory, factory_kwargs = self._scope_factory(plan, planned_operation)
+        assert plan.implementation is not None
+        factory_kwargs.update(
+            {
+                "algorithm": plan.implementation.metadata["algorithm"],
+                "dtype": NumbaMlirCoreAdapter().normalize_dtype(
+                    plan.implementation.template_arguments["T"]
+                ),
+                "items_per_thread": plan.implementation.template_arguments[
+                    "ITEMS_PER_THREAD"
+                ],
+            }
+        )
+        if is_common_root:
+            factory_kwargs["_common_root_operation"] = operation
+        semantics = cast(GroupLoadStoreSemantics, plan.call.operation)
+        requires_runtime_effective_offset = bool(
+            plan.implementation.metadata.get(
+                "requires_runtime_effective_offset", False
+            )
+        )
+        statements: list[Any] = []
+        for public_name, factory_name in (
+            ("valid_items", "num_valid_items"),
+            ("oob_default", "oob_default"),
+            ("offset", "offset"),
+        ):
+            binding = getattr(semantics, public_name)
+            if public_name == "offset" and requires_runtime_effective_offset:
+                continue
+            if binding.kind is BindingKind.OMITTED:
+                continue
+            factory_kwargs[factory_name] = self._planned_argument(
+                binding,
+                bound.arguments[public_name],
+            )
+        if requires_runtime_effective_offset:
+            factory_kwargs["offset"] = self._warp_group_effective_offset(
+                statements,
+                inst=inst,
+                plan=plan,
+                binding=semantics.offset,
+                runtime_value=bound.arguments["offset"],
+                items_per_thread=semantics.items_per_thread,
+            )
+        if operation == "store":
+            factory_kwargs["_group_root_store"] = True
+        if not self._context.is_none(bound.arguments["temp_storage"]):
+            factory_kwargs["temp_storage"] = bound.arguments["temp_storage"]
+        if operation == "load":
+            runtime_args = [
+                bound.arguments["source"],
+                bound.arguments["output"],
+            ]
+        else:
+            value = bound.arguments["value"]
+            runtime_args = [bound.arguments["destination"], value]
+        statements.extend(
+            self._context.rewrite_call(
+                inst,
+                lowering_plan=plan,
+                factory=factory,
+                args=runtime_args,
+                kwargs=factory_kwargs,
+            )
+        )
+        return statements
+
+
+def _lower_registered_load_store(
+    context: GroupPlanningContext, *args: Any, **kwargs: Any
+) -> list[Any]:
+    return _LoadStorePlanning(context)._lower_load_store(*args, **kwargs)
+
+
+def _validate_registered_common_arguments(
+    context: GroupPlanningContext,
+    operation: str,
+    bound: inspect.BoundArguments,
+) -> None:
+    _LoadStorePlanning(context)._validate_common_arguments(operation, bound)
+
+
+for _operation in ("load", "store"):
+    register_group_primitive(
+        _operation,
+        lower=_lower_registered_load_store,
+        validate_common_arguments=_validate_registered_common_arguments,
+    )
+del _operation
+
+_COMMON_REWRITE_KWARGS = frozenset(
+    {
+        "algorithm",
+        "dim",
+        "dtype",
+        "items_per_thread",
+        "num_valid_items",
+        "offset",
+        "threads_per_block",
+        "threads_in_warp",
+        "_common_root_operation",
+    }
+)
+register_rewrite_operation(
+    "load",
+    RewriteOperationSpecification(
+        factory_namespaces=frozenset({"block", "warp"}),
+        dtype_factory_kwargs=frozenset({"dtype"}),
+        runtime_arg_counts=frozenset({2, 3, 4}),
+        runtime_factory_kwargs=("num_valid_items", "oob_default"),
+        runtime_factory_kw_prerequisites=(("oob_default", "num_valid_items"),),
+        allowed_factory_kwargs=_COMMON_REWRITE_KWARGS | {"oob_default"},
+        required_factory_kwargs=frozenset({"threads_per_block", "dtype"}),
+        accepts_temp_storage=True,
+        scalar_binding_kwargs=frozenset({"num_valid_items", "oob_default"}),
+        runtime_offset_kwarg="offset",
+        infer_payload=infer_load_store_payload,
+        analyze_match=analyze_load_store_match,
+        prepare_runtime_args=prepare_load_store_runtime_args,
+        validate_runtime_controls=validate_load_store_runtime_controls,
+    ),
+)
+register_rewrite_operation(
+    "store",
+    RewriteOperationSpecification(
+        factory_namespaces=frozenset({"block", "warp"}),
+        dtype_factory_kwargs=frozenset({"dtype"}),
+        runtime_arg_counts=frozenset({2, 3}),
+        runtime_factory_kwargs=("num_valid_items",),
+        runtime_factory_kw_prerequisites=(),
+        allowed_factory_kwargs=_COMMON_REWRITE_KWARGS | {"_group_root_store"},
+        required_factory_kwargs=frozenset({"threads_per_block", "dtype"}),
+        accepts_temp_storage=True,
+        scalar_binding_kwargs=frozenset({"num_valid_items"}),
+        runtime_offset_kwarg="offset",
+        infer_payload=infer_load_store_payload,
+        analyze_match=analyze_load_store_match,
+        prepare_runtime_args=prepare_load_store_runtime_args,
+        validate_runtime_controls=validate_load_store_runtime_controls,
+    ),
+)
+
+
+__all__: tuple[str, ...] = ()

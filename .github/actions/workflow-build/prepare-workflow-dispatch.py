@@ -19,6 +19,10 @@ def write_json_file(filename, json_object):
 
 
 def is_windows(job):
+    # Prefer the explicit 'os' field when available; fall back to the runner
+    # label prefix for backward compatibility with older workflow artifacts.
+    if "os" in job:
+        return job["os"] == "windows"
     return job["runner"].startswith("windows")
 
 

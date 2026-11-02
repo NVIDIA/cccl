@@ -21,7 +21,7 @@
 #endif // no system header
 
 #include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_signed.h>

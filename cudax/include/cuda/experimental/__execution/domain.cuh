@@ -30,6 +30,7 @@
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/type_list_operations.h>
 #include <cuda/std/__utility/undefined.h>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
@@ -44,7 +45,7 @@
 namespace cuda::experimental::execution
 {
 template <class _DomainOrTag, class... _Args>
-using __apply_sender_result_t _CCCL_NODEBUG_ALIAS = decltype(_DomainOrTag{}.apply_sender(declval<_Args>()...));
+using __apply_sender_result_t _CCCL_NODEBUG = decltype(_DomainOrTag{}.apply_sender(declval<_Args>()...));
 
 // _DomainOrTag: eg, default_domain or then_t
 // _OpTag: either start_t or set_value_t
@@ -217,7 +218,7 @@ template <class _Env>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES __hide_scheduler(_Env&&) -> __hide_scheduler<_Env>;
 
 template <class _Sch, class... _Env>
-using __scheduler_domain_t _CCCL_NODEBUG_ALIAS = __call_result_t<get_completion_domain_t<set_value_t>, _Sch, _Env...>;
+using __scheduler_domain_t _CCCL_NODEBUG = __call_result_t<get_completion_domain_t<set_value_t>, _Sch, _Env...>;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //! @brief A query type for asking a receiver's environment for its domain, which is an

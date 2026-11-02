@@ -41,10 +41,14 @@
 #include <cuda/std/__type_traits/copy_cv.h>
 #include <cuda/std/__atomic/api/reference.h>
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_volatile.h>
+#include <cuda/std/__type_traits/remove_cv.h>
 
 // clang-format on
 
@@ -62,6 +66,8 @@ _CCCL_HOST_DEVICE_API inline _Tp kill_dependency(_Tp __y) noexcept
 template <class _Tp>
 struct atomic : public __atomic_impl<_Tp>
 {
+  static_assert(is_same_v<_Tp, remove_cv_t<_Tp>>, "std::atomic<T> requires T to be cv-unqualified (P3323R1)");
+
   using value_type = _Tp;
 
   _CCCL_HOST_DEVICE_API constexpr atomic() noexcept
@@ -92,17 +98,24 @@ struct atomic : public __atomic_impl<_Tp>
 template <class _Tp>
 struct atomic_ref : public __atomic_ref_impl<_Tp>
 {
-  using value_type = _Tp;
+  using value_type = remove_cv_t<_Tp>;
 
   static constexpr size_t required_alignment = sizeof(_Tp);
 
   static constexpr bool is_always_lock_free = __atomic_ref_impl<_Tp>::is_always_lock_free;
 
+  // P3323R1 requires is_always_lock_free for volatile T, but we intentionally keep
+  // atomic_ref<volatile __int128> well-formed as an extension.
+  static_assert(!is_volatile_v<_Tp> || is_always_lock_free || __atomic_ref_is_volatile_int128_v<_Tp>,
+                "std::atomic_ref<volatile T> requires T to be always lock-free (P3323R1)");
+
   _CCCL_HOST_DEVICE_API inline explicit atomic_ref(_Tp& __ref)
       : __atomic_ref_impl<_Tp>(__ref)
   {}
 
-  _CCCL_HOST_DEVICE_API inline _Tp operator=(_Tp __v) const noexcept
+  _CCCL_TEMPLATE(class _T2 = _Tp)
+  _CCCL_REQUIRES((!is_const_v<_T2>) )
+  _CCCL_HOST_DEVICE_API inline value_type operator=(value_type __v) const noexcept
   {
     this->store(__v);
     return __v;

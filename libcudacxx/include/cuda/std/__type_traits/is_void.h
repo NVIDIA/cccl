@@ -21,8 +21,8 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/is_same.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/remove_cv.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

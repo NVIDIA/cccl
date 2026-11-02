@@ -13,25 +13,26 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_reduce_by_key.cuh>
 #include <cub/agent/agent_rle.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/numeric_traits.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
-#include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/concepts>
 
 CUB_NAMESPACE_BEGIN
 
 //! The lookback tuning policy for @ref DeviceRunLengthEncode::NonTrivialRuns.
+// Tuning selectors provide every policy field.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct RleNonTrivialRunsLookbackPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block
@@ -98,6 +99,8 @@ inline ::std::ostream& operator<<(::std::ostream& os, RleNonTrivialRunsAlgorithm
 #endif // _CCCL_HOSTED()
 
 //! The tuning policy for @ref DeviceRunLengthEncode::NonTrivialRuns.
+// Tuning selectors provide every policy field.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct RleNonTrivialRunsPolicy
 {
   RleNonTrivialRunsAlgorithm algorithm; //!< The non-trivial-runs algorithm to use
@@ -423,9 +426,6 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 
-using rle_non_trivial_runs_policy
-  CCCL_DEPRECATED_BECAUSE("Use RleNonTrivialRunsPolicy instead") = RleNonTrivialRunsPolicy;
-
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
 concept rle_non_trivial_runs_policy_selector = detail::policy_selector<T, RleNonTrivialRunsPolicy>;
@@ -462,6 +462,54 @@ private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookback_policy(::cuda::compute_capability cc) const
     -> RleNonTrivialRunsLookbackPolicy
   {
+    // tunings from cub/benchmarks/bench/run_length_encode/non_trivial_runs.cu; raw measured values
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
+    {
+      if (length_is_primitive && length_size == 4
+          && (key_is_primitive || key_type == type_t::int128 || key_type == type_t::uint128))
+      {
+        // 1-byte and 2-byte keys: the search winners regressed during verification, left untuned
+        if (key_size == 4 && key_type == type_t::float32)
+        {
+          // ipt_20.tpb_224.trp_1.ts_0.ld_0.ns_244.dcid_0.l2w_600  0.925  1.048  1.296  1.456
+          return RleNonTrivialRunsLookbackPolicy{
+            224,
+            20,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            false,
+            BLOCK_SCAN_WARP_SCANS,
+            {LookbackDelayAlgorithm::no_delay, 244, 600}};
+        }
+        if (key_size == 4)
+        {
+          // ipt_20.tpb_224.trp_1.ts_0.ld_0.ns_1272.dcid_0.l2w_775  0.965  1.148  1.308  1.420
+          return RleNonTrivialRunsLookbackPolicy{
+            224,
+            20,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            false,
+            BLOCK_SCAN_WARP_SCANS,
+            {LookbackDelayAlgorithm::no_delay, 1272, 775}};
+        }
+        // 8-byte keys: no sm107 win (float64's search winner regressed during verification), fall through
+        if (key_size == 16)
+        {
+          // ipt_13.tpb_224.trp_1.ts_0.ld_1.ns_652.dcid_0.l2w_530  0.989  1.008  1.341  1.396
+          return RleNonTrivialRunsLookbackPolicy{
+            224,
+            13,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_CA,
+            false,
+            BLOCK_SCAN_WARP_SCANS,
+            {LookbackDelayAlgorithm::no_delay, 652, 530}};
+        }
+      }
+      // no tuning found, fall through to the SM100 tunings
+    }
+
     if (cc >= ::cuda::compute_capability{10, 0})
     {
       if (length_is_primitive && key_is_primitive && length_size == 4)

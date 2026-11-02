@@ -120,9 +120,9 @@ template <class _A1, class _A2, class _A3>
 class __promote_imp<_A1, _A2, _A3, true>
 {
 private:
-  using __type1 = typename __promote_imp<_A1>::type;
-  using __type2 = typename __promote_imp<_A2>::type;
-  using __type3 = typename __promote_imp<_A3>::type;
+  using __type1 _CCCL_NODEBUG = typename __promote_imp<_A1>::type;
+  using __type2 _CCCL_NODEBUG = typename __promote_imp<_A2>::type;
+  using __type3 _CCCL_NODEBUG = typename __promote_imp<_A3>::type;
 
 public:
   using type              = decltype(__type1() + __type2() + __type3());
@@ -133,8 +133,8 @@ template <class _A1, class _A2>
 class __promote_imp<_A1, _A2, void, true>
 {
 private:
-  using __type1 = typename __promote_imp<_A1>::type;
-  using __type2 = typename __promote_imp<_A2>::type;
+  using __type1 _CCCL_NODEBUG = typename __promote_imp<_A1>::type;
+  using __type2 _CCCL_NODEBUG = typename __promote_imp<_A2>::type;
 
 public:
   using type              = decltype(__type1() + __type2());
@@ -154,7 +154,7 @@ class __promote : public __promote_imp<_A1, _A2, _A3>
 {};
 
 template <class _A1, class _A2 = void, class _A3 = void>
-using __promote_t _CCCL_NODEBUG_ALIAS = typename __promote<_A1, _A2, _A3>::type;
+using __promote_t _CCCL_NODEBUG = typename __promote<_A1, _A2, _A3>::type;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

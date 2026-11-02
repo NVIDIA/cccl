@@ -24,9 +24,9 @@ CUB_TEST("The vectorized copy used by DeviceMemcpy works", "[memcpy]", CUB_SMALL
   constexpr std::uint32_t threads_per_block = 8;
 
   // Test the vectorized_copy for various aligned and misaligned input and output pointers.
-  std::size_t in_offset  = GENERATE(0, 1, sizeof(uint32_t) - 1);
-  std::size_t out_offset = GENERATE(0, 1, sizeof(vector_t) - 1);
-  std::size_t copy_size =
+  const std::size_t in_offset  = GENERATE(0, 1, sizeof(uint32_t) - 1);
+  const std::size_t out_offset = GENERATE(0, 1, sizeof(vector_t) - 1);
+  const std::size_t copy_size =
     GENERATE_COPY(0, 1, sizeof(uint32_t), sizeof(vector_t), 2 * threads_per_block * sizeof(vector_t));
   CAPTURE(in_offset, out_offset, copy_size);
 

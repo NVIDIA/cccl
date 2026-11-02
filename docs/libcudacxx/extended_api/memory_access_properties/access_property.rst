@@ -186,7 +186,7 @@ Conversion operators
    __host__ __device__ constexpr access_property::streaming::operator  cudaAccessProperty() const noexcept;
    __host__ __device__ constexpr access_property::persisting::operator cudaAccessProperty() const noexcept;
 
-Allows ``constexpr cuda::access_property::normal{}``, ``cuda::access_property::streaming{}``, and ``cuda::access_property::persisting{}`` to be used in lieu of the corresponding CUDA Runtime `cudaAccessProperty <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html#group__CUDART__TYPES_1g4991a8bc9c2356a8da28d093a1da6758>`_. See also `L2 Policy for Persisting Accesses <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#l2-policy-for-persisting-accesses>`_.
+Allows ``constexpr cuda::access_property::normal{}``, ``cuda::access_property::streaming{}``, and ``cuda::access_property::persisting{}`` to be used in lieu of the corresponding CUDA Runtime `cudaAccessProperty <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html#group__CUDART__TYPES_1g4991a8bc9c2356a8da28d093a1da6758>`_. See also `L2 Policy for Persisting Accesses <https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/l2-cache-control.html#l2-policy-for-persisting-accesses>`_.
 
 Example
 -------

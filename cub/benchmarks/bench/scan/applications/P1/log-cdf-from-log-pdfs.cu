@@ -84,7 +84,7 @@ struct log_pdf_builder
 template <typename T>
 [[nodiscard]] bool validate(const thrust::device_vector<T>& output, cudaStream_t stream)
 {
-  cudaStreamSynchronize(stream);
+  _CCCL_TRY_RUNTIME_API(cudaStreamSynchronize, "Sync failed", stream);
 
   thrust::host_vector<T> h_output(output);
   auto elements = h_output.size();
@@ -143,7 +143,7 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<FloatingPoi
       cuda::execution::tune(policy_selector<accum_t>{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceScan::InclusiveScan,
       "InclusiveScan failed",
       d_input,

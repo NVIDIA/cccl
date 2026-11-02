@@ -128,7 +128,7 @@ public:
     {
       return __pr.__t_;
     }
-    uniform_real_distribution<double> __gen;
+    uniform_real_distribution<double> __gen; // NOLINT(misc-const-correctness)
     double __u = __gen(__g) - __pr.__pr_;
     if (__u < 0)
     {

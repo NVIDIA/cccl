@@ -29,8 +29,6 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
 // Pi rounded to binary64. The Gauss-Legendre result is compared to this, so the
 // reference costs no precision the test could measure.
 constexpr double kPi = 3.14159265358979323846;
@@ -137,15 +135,15 @@ TEST_FUNC void test()
 
   check_pi<double>(one, iters, tol); // control
 
-  check_pi<cudax::fp64emu>(one, iters, tol);
-  check_pi<cudax::fp64emu_high>(one, iters, tol);
-  check_pi<cudax::fp64emu_mid>(one, iters, tol);
-  check_pi<cudax::fp64emu_low>(one, iters, tol_low);
+  check_pi<cuda::fp64emu>(one, iters, tol);
+  check_pi<cuda::fp64emu_high>(one, iters, tol);
+  check_pi<cuda::fp64emu_mid>(one, iters, tol);
+  check_pi<cuda::fp64emu_low>(one, iters, tol_low);
 
-  check_pi<cudax::fp64emu_unpacked>(one, iters, tol);
-  check_pi<cudax::fp64emu_unpacked_high>(one, iters, tol);
-  check_pi<cudax::fp64emu_unpacked_mid>(one, iters, tol);
-  check_pi<cudax::fp64emu_unpacked_low>(one, iters, tol_low);
+  check_pi<cuda::fp64emu_unpacked>(one, iters, tol);
+  check_pi<cuda::fp64emu_unpacked_high>(one, iters, tol);
+  check_pi<cuda::fp64emu_unpacked_mid>(one, iters, tol);
+  check_pi<cuda::fp64emu_unpacked_low>(one, iters, tol_low);
 }
 
 int main(int, char**)

@@ -26,7 +26,7 @@
 #include <cuda/__utility/__basic_any/rtti.h>
 #include <cuda/__utility/__basic_any/tagged_ptr.h>
 #include <cuda/__utility/__basic_any/virtual_tables.h>
-#include <cuda/std/__type_traits/type_list.h>
+#include <cuda/std/__type_traits/type_list_operations.h>
 #include <cuda/std/__type_traits/type_set.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -50,14 +50,14 @@ struct __iset_ : __iset__<_Interfaces...>::template __interface_<>
 
 // flatten any nested sets
 template <class _Interface>
-using __iset_flatten _CCCL_NODEBUG_ALIAS = ::cuda::std::__as_type_list<
+using __iset_flatten _CCCL_NODEBUG = ::cuda::std::__as_type_list<
   ::cuda::std::
     conditional_t<__is_specialization_of_v<_Interface, __iset_>, _Interface, ::cuda::std::__type_list<_Interface>>>;
 
 // flatten all sets into one, remove duplicates, and sort the elements.
 // TODO: sort!
 // template <class... _Interfaces>
-// using __iset _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_call<
+// using __iset _CCCL_NODEBUG = ::cuda::std::__type_call<
 //   ::cuda::std::__type_unique<::cuda::std::__type_sort<::cuda::std::__type_concat<__iset_flatten<_Interfaces>...>>>,
 //   ::cuda::std::__type_quote<__iset_>>;
 // GCC 7 had a problem with the original implementation, so we use a workaround.
@@ -95,11 +95,12 @@ struct __iset_flatten_all<_Interface, _Rest...>
 };
 
 template <class... _Interfaces>
-using __iset = ::cuda::std::__type_call<::cuda::std::__type_unique<typename __iset_flatten_all<_Interfaces...>::type>,
-                                        ::cuda::std::__type_quote<__iset_>>;
+using __iset _CCCL_NODEBUG =
+  ::cuda::std::__type_call<::cuda::std::__type_unique<typename __iset_flatten_all<_Interfaces...>::type>,
+                           ::cuda::std::__type_quote<__iset_>>;
 #else // ^^^ _CCCL_COMPILER(GCC, <, 10) ^^^ / vvv _CCCL_COMPILER(GCC, >=, 10) vvv
 template <class... _Interfaces>
-using __iset =
+using __iset _CCCL_NODEBUG =
   ::cuda::std::__type_call<::cuda::std::__type_unique<::cuda::std::__type_concat<__iset_flatten<_Interfaces>...>>,
                            ::cuda::std::__type_quote<__iset_>>;
 #endif // _CCCL_COMPILER(GCC, >=, 10)
@@ -110,7 +111,7 @@ using __iset =
 template <class... _Interfaces>
 struct __iset_vptr : __base_vptr
 {
-  using __iset_vtable _CCCL_NODEBUG_ALIAS = __vtable_for<__iset_<_Interfaces...>>;
+  using __iset_vtable _CCCL_NODEBUG = __vtable_for<__iset_<_Interfaces...>>;
 
   __iset_vptr() = default;
 

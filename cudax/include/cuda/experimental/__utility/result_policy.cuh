@@ -30,7 +30,7 @@ namespace cuda::experimental
 template <class _Derived>
 struct __result_policy_base // NOLINT(bugprone-crtp-constructor-accessibility)
 {
-  using __derived_type _CCCL_NODEBUG_ALIAS = _Derived;
+  using __derived_type _CCCL_NODEBUG = _Derived;
 };
 
 //! @brief Result specifier requesting that only a single rank receives the result.

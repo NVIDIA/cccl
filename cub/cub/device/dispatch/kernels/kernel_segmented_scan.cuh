@@ -21,20 +21,31 @@
 #include <cub/block/block_reduce.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/segmented_scan_helpers.cuh>
-#include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_macro.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/iterator>
-#include <cuda/std/__functional/invoke.h>
+#include <cuda/__functional/minimum.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/span>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 
@@ -108,6 +119,14 @@ private:
   static constexpr auto store_algorithm = agent_policy.store_algorithm;
   static constexpr auto scan_algorithm  = agent_policy.scan_algorithm;
 
+  // The block-wide scan requires the items in a blocked arrangement
+  static_assert(load_algorithm != BLOCK_LOAD_STRIPED,
+                "SegmentedScanBlockPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since the scan requires a "
+                "blocked arrangement");
+  static_assert(store_algorithm != BLOCK_STORE_STRIPED,
+                "SegmentedScanBlockPolicy: store_algorithm must not be BLOCK_STORE_STRIPED, since the scan produces a "
+                "blocked arrangement");
+
   using block_load_t  = BlockLoad<AccumT, threads_per_block, items_per_thread, load_algorithm>;
   using block_store_t = BlockStore<AccumT, threads_per_block, items_per_thread, store_algorithm>;
   using block_scan_t  = BlockScan<AccumT, threads_per_block, scan_algorithm>;
@@ -151,7 +170,7 @@ private:
     _multiple_segment_algorithms_storage_t reused;
   };
 
-  using _TempStorage =
+  using _TempStorage _CCCL_NODEBUG =
     ::cuda::std::conditional_t<multi_segment_enabled, _multi_segment_temp_storage_t, _single_segment_temp_storage_t>;
 
   _TempStorage& temp_storage; ///< Reference to temp_storage
@@ -291,7 +310,7 @@ public:
       }
 
       n_segments               = ::cuda::std::min(n_segments, static_cast<int>(NumSegments));
-      unsigned n_chunks        = ::cuda::ceil_div(n_segments, threads_per_block);
+      const unsigned n_chunks  = ::cuda::ceil_div(n_segments, threads_per_block);
       OffsetT exclusive_prefix = 0;
       using plus_t             = ::cuda::std::plus<>;
       const plus_t offsets_scan_op{};
@@ -428,7 +447,7 @@ private:
         if constexpr (has_init)
         {
           const packer_iv<ScanOpT, AccumT> packer_op{scan_op, initial_value};
-          multi_segmented_input_iterator it_in{d_in, chunk_begin, searcher, input_begin_idx_it, packer_op};
+          const multi_segmented_input_iterator it_in{d_in, chunk_begin, searcher, input_begin_idx_it, packer_op};
 
           if (chunk_size == tile_items)
           {
@@ -442,7 +461,7 @@ private:
         else
         {
           constexpr packer<AccumT> packer_op{};
-          multi_segmented_input_iterator it_in{d_in, chunk_begin, searcher, input_begin_idx_it, packer_op};
+          const multi_segmented_input_iterator it_in{d_in, chunk_begin, searcher, input_begin_idx_it, packer_op};
 
           if (chunk_size == tile_items)
           {
@@ -488,7 +507,7 @@ private:
         if constexpr (is_inclusive)
         {
           constexpr projector<AccumT> projector_op{};
-          multi_segmented_output_iterator it_out{d_out, out_offset, searcher, output_begin_idx_it, projector_op};
+          const multi_segmented_output_iterator it_out{d_out, out_offset, searcher, output_begin_idx_it, projector_op};
 
           if (chunk_size == tile_items)
           {
@@ -502,7 +521,7 @@ private:
         else
         {
           const projector_iv<AccumT> projector_op{initial_value};
-          multi_segmented_output_iterator it_out{d_out, out_offset, searcher, output_begin_idx_it, projector_op};
+          const multi_segmented_output_iterator it_out{d_out, out_offset, searcher, output_begin_idx_it, projector_op};
           if (chunk_size == tile_items)
           {
             storer.Store(it_out, thread_flag_values);
@@ -654,7 +673,7 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
 
     using IdT             = decltype(work_id);
     const auto end_offset = ::cuda::std::min<IdT>(suggested_end_offset, n_segments);
-    int size              = end_offset - start_offset;
+    const int size        = end_offset - start_offset;
 
     auto worker_input_begin_idx_it  = begin_offset_d_in + start_offset;
     auto worker_input_end_idx_it    = end_offset_d_in + start_offset;

@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/std/memory>
+
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
@@ -38,7 +40,7 @@ public:
   scalar(Ctx* ctx, bool is_tmp = false)
       : ctx(ctx)
   {
-    size_t s = sizeof(double);
+    const size_t s = sizeof(double);
 
     if (is_tmp)
     {
@@ -47,8 +49,9 @@ public:
     }
     else
     {
-      h_addr = (double*) malloc(s);
-      cuda_safe_call(cudaHostRegister(h_addr, s, cudaHostRegisterPortable));
+      auto owner = cuda::std::make_unique<double>();
+      cuda_safe_call(cudaHostRegister(owner.get(), s, cudaHostRegisterPortable));
+      h_addr = owner.release();
     }
 
     data_place d = is_tmp ? data_place::invalid() : data_place::host();
@@ -58,10 +61,8 @@ public:
   // Copy constructor
   scalar(const scalar& a)
       : ctx(a.ctx)
+      , handle(ctx->logical_data(make_slice((double*) nullptr)))
   {
-    h_addr = NULL;
-    handle = ctx->logical_data(make_slice((double*) nullptr));
-
     ctx->task(handle.write(), a.handle.read())->*[](cudaStream_t stream, auto dst, auto src) {
       // There are likely much more efficient ways.
       cuda_safe_call(
@@ -95,20 +96,20 @@ public:
 
   Ctx* ctx;
   mutable logical_data<slice<double, 0>> handle;
-  double* h_addr;
+  double* h_addr = nullptr;
 };
 
 template <typename Ctx>
 void run()
 {
   Ctx ctx;
-  scalar a(&ctx);
-  scalar b(&ctx);
+  const scalar a(&ctx);
+  const scalar b(&ctx);
 
   *a.h_addr = 42.0;
   *b.h_addr = 12.3;
 
-  scalar c = (-a) / b;
+  const scalar c = (-a) / b;
 
   ctx.host_launch(c.handle.read())->*[](auto x) {
     EXPECT(fabs(*x.data_handle() - (-42.0) / 12.3) < 0.001);

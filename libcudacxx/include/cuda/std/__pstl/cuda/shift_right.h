@@ -31,24 +31,25 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 #  include <cub/device/device_transform.cuh>
+#  include <cub/util_namespace.cuh>
 
 _CCCL_DIAG_POP
 
-#  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/call_or.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__algorithm/shift_right.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__execution/env.h>
-#  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__functional/identity.h>
+#  include <cuda/std/__fwd/execution_policy.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/incrementable_traits.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
-#  include <cuda/std/__memory/pointer_traits.h>
+#  include <cuda/std/__iterator/readable_traits.h>
 #  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
@@ -84,7 +85,7 @@ struct __pstl_dispatch<__pstl_algorithm::__shift_right, __execution_backend::__c
 
     if (2 * __num_shifted > __count)
     { // There is no overlap between the source and destination, so we can just copy
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DeviceTransform::Transform,
         "__pstl_cuda_shift_right: first kernel launch of cub::DeviceTransform::Transform failed",
         tuple<_InputIterator>{__first},
@@ -97,7 +98,7 @@ struct __pstl_dispatch<__pstl_algorithm::__shift_right, __execution_backend::__c
     { // We do need two copies, but we can avoid temporary storage
       const auto __count_second_batch = static_cast<_OffsetType>(__count_remaining - __num_shifted);
       // The first batch is __num_shifted elements, starting at the end of the second batch
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DeviceTransform::Transform,
         "__pstl_cuda_shift_right: first kernel launch of cub::DeviceTransform::Transform failed",
         tuple<_InputIterator>{__first + __count_second_batch},
@@ -106,7 +107,7 @@ struct __pstl_dispatch<__pstl_algorithm::__shift_right, __execution_backend::__c
         identity{},
         __stream.get());
 
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DeviceTransform::Transform,
         "__pstl_cuda_shift_right: second kernel launch of cub::DeviceTransform::Transform failed",
         tuple<_InputIterator>{__first},
@@ -121,7 +122,7 @@ struct __pstl_dispatch<__pstl_algorithm::__shift_right, __execution_backend::__c
       __temporary_storage<value_type> __storage{__policy, __num_bytes, static_cast<size_t>(__count - __num_shifted)};
 
       // Run the kernel to copy to temporary storage
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DeviceTransform::Transform,
         "__pstl_cuda_shift_right: first kernel launch of cub::DeviceTransform::Transform failed",
         __storage.__get_temp_storage(),
@@ -133,7 +134,7 @@ struct __pstl_dispatch<__pstl_algorithm::__shift_right, __execution_backend::__c
         __stream.get());
 
       // Run the kernel to copy back from temporary storage
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DeviceTransform::Transform,
         "__pstl_cuda_shift_right: second kernel launch of cub::DeviceTransform::Transform failed",
         __storage.__get_temp_storage(),

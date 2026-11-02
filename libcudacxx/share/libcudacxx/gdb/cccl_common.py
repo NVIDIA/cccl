@@ -12,11 +12,15 @@ import gdb
 
 _ABI_NAMESPACE_PATTERN = re.compile(r"::__(?:\d+|version_bump_ver\d+_)(?=::)")
 _REFERENCE_CODES = (gdb.TYPE_CODE_REF, gdb.TYPE_CODE_RVALUE_REF)
+# GDB writes non-type template arguments as C literals, so extents<int, 3ul, 4ul>
+# breaks anything that parses the name.
+_INTEGER_SUFFIX_PATTERN = re.compile(r"\b(\d+)[uUlL]+\b")
 
 
 def public_type_name(value_type: gdb.Type) -> str:
-    """Return a type name without CUDA ABI inline namespaces."""
-    return _ABI_NAMESPACE_PATTERN.sub("", str(value_type))
+    """Return a type name without CUDA ABI inline namespaces or integer suffixes."""
+    name = _ABI_NAMESPACE_PATTERN.sub("", str(value_type))
+    return _INTEGER_SUFFIX_PATTERN.sub(r"\1", name)
 
 
 def template_name(value_type: gdb.Type | str) -> str:

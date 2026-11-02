@@ -43,7 +43,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<thrust::pointer<T, DerivedPolicy>,
 down_cast_pair(Pair p)
 {
   // XXX should use a hypothetical thrust::static_pointer_cast here
-  thrust::pointer<T, DerivedPolicy> ptr =
+  const thrust::pointer<T, DerivedPolicy> ptr =
     thrust::pointer<T, DerivedPolicy>(static_cast<T*>(thrust::raw_pointer_cast(p.first)));
 
   using result_type =

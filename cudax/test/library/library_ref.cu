@@ -125,7 +125,7 @@ C2H_CCCLRT_TEST("Library reference", "[library_ref]")
     STATIC_REQUIRE(cuda::std::is_constructible_v<cudax::library_ref, CUlibrary>);
     STATIC_REQUIRE(cuda::std::is_convertible_v<CUlibrary, cudax::library_ref>);
 
-    cudax::library_ref lib_ref{lib1};
+    const cudax::library_ref lib_ref{lib1};
     REQUIRE(lib1 == lib_ref.get());
   }
 
@@ -133,10 +133,10 @@ C2H_CCCLRT_TEST("Library reference", "[library_ref]")
   {
     STATIC_REQUIRE(cuda::std::is_trivially_copy_constructible_v<cudax::library_ref>);
 
-    cudax::library_ref lib_ref1{lib1};
+    const cudax::library_ref lib_ref1{lib1};
     REQUIRE(lib1 == lib_ref1.get());
 
-    cudax::library_ref lib_ref2{lib1};
+    const cudax::library_ref lib_ref2{lib1};
     REQUIRE(lib1 == lib_ref2.get());
     REQUIRE(lib_ref1.get() == lib_ref2.get());
   }
@@ -146,7 +146,7 @@ C2H_CCCLRT_TEST("Library reference", "[library_ref]")
     STATIC_REQUIRE(
       cuda::std::is_same_v<decltype(cuda::std::declval<cudax::library_ref>().has_kernel(kernel_name)), bool>);
 
-    cudax::library_ref lib_ref{lib1};
+    const cudax::library_ref lib_ref{lib1};
     REQUIRE(lib_ref.has_kernel(kernel_name));
     REQUIRE(!lib_ref.has_kernel("non_existent_kernel"));
   }
@@ -157,7 +157,7 @@ C2H_CCCLRT_TEST("Library reference", "[library_ref]")
       cuda::std::is_same_v<decltype(cuda::std::declval<cudax::library_ref>().kernel<void(int*, int)>(kernel_name)),
                            cudax::kernel_ref<void(int*, int)>>);
 
-    cudax::library_ref lib_ref{lib1};
+    const cudax::library_ref lib_ref{lib1};
     auto kernel = lib_ref.kernel<void(int*, int)>(kernel_name);
 
     CUkernel kernel_handle;
@@ -171,7 +171,7 @@ C2H_CCCLRT_TEST("Library reference", "[library_ref]")
       cuda::std::is_same_v<decltype(cuda::std::declval<cudax::library_ref>().has_global(global_symbol_name, device)),
                            bool>);
 
-    cudax::library_ref lib_ref{lib1};
+    const cudax::library_ref lib_ref{lib1};
     REQUIRE(lib_ref.has_global(global_symbol_name, device));
     REQUIRE(lib_ref.has_global(const_symbol_name, device));
     REQUIRE(!lib_ref.has_global("non_existent_global", device));
@@ -183,13 +183,13 @@ C2H_CCCLRT_TEST("Library reference", "[library_ref]")
       cuda::std::is_same_v<decltype(cuda::std::declval<cudax::library_ref>().global(global_symbol_name, device)),
                            cudax::library_symbol_info>);
 
-    cudax::library_ref lib_ref{lib1};
+    const cudax::library_ref lib_ref{lib1};
 
     // Test global_symbol_name
     {
       auto global_sym = lib_ref.global(global_symbol_name, device);
 
-      cuda::__ensure_current_context context_guard{device};
+      const cuda::__ensure_current_context context_guard{device};
 
       CUdeviceptr global_symbol_ptr;
       cuda::std::size_t global_symbol_size;
@@ -205,7 +205,7 @@ C2H_CCCLRT_TEST("Library reference", "[library_ref]")
     {
       auto const_sym = lib_ref.global(const_symbol_name, device);
 
-      cuda::__ensure_current_context context_guard{device};
+      const cuda::__ensure_current_context context_guard{device};
 
       CUdeviceptr const_symbol_ptr;
       cuda::std::size_t const_symbol_size;
@@ -223,7 +223,7 @@ C2H_CCCLRT_TEST("Library reference", "[library_ref]")
     STATIC_REQUIRE(
       cuda::std::is_same_v<decltype(cuda::std::declval<cudax::library_ref>().has_managed(managed_symbol_name)), bool>);
 
-    cudax::library_ref lib_ref{lib1};
+    const cudax::library_ref lib_ref{lib1};
     REQUIRE(lib_ref.has_managed(managed_symbol_name));
     REQUIRE(!lib_ref.has_managed("non_existent_managed"));
   }
@@ -233,7 +233,7 @@ C2H_CCCLRT_TEST("Library reference", "[library_ref]")
     STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<cudax::library_ref>().managed(managed_symbol_name)),
                                         cudax::library_symbol_info>);
 
-    cudax::library_ref lib_ref{lib1};
+    const cudax::library_ref lib_ref{lib1};
     auto managed_sym = lib_ref.managed(managed_symbol_name);
 
     CUdeviceptr managed_symbol_ptr;
@@ -250,14 +250,14 @@ C2H_CCCLRT_TEST("Library reference", "[library_ref]")
   {
     STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<cudax::library_ref>().get()), CUlibrary>);
 
-    cudax::library_ref lib_ref{lib1};
+    const cudax::library_ref lib_ref{lib1};
     REQUIRE(lib1 == lib_ref.get());
   }
 
   // Equality/Inequality comparison
   {
-    cudax::library_ref lib_ref1{lib1};
-    cudax::library_ref lib_ref2{lib2};
+    const cudax::library_ref lib_ref1{lib1};
+    const cudax::library_ref lib_ref2{lib2};
 
     REQUIRE(lib_ref1 == lib_ref1);
     REQUIRE(lib_ref1 != lib_ref2);

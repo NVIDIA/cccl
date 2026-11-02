@@ -196,7 +196,7 @@ void copy(nvbench::state& state,
                  cuda::execution::tune(policy_selector_t{})
 #endif
                );
-               _CCCL_TRY_CUDA_API(
+               _CCCL_TRY_RUNTIME_API(
                  cub::DeviceMemcpy::Batched,
                  "Batched failed",
                  d_input_buffers,

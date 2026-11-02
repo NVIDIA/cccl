@@ -22,11 +22,14 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
+
+#include <nv/target>
 
 #if _CCCL_COMPILER(MSVC)
 #  include <intrin.h>
@@ -208,10 +211,14 @@ _CCCL_REQUIRES(is_integral_v<_Integer>)
   if constexpr (sizeof(_Integer) > 1)
   {
 #if defined(_CCCL_BUILTIN_BSWAPG)
-    return static_cast<_Integer>(_CCCL_BUILTIN_BSWAPG(__val));
-#else // ^^^ _CCCL_BUILTIN_BSWAPG ^^^ / vvv !_CCCL_BUILTIN_BSWAPG vvv
+#  if _CCCL_CUDA_COMPILER(NVCC)
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+#  endif // _CCCL_CUDA_COMPILER(NVCC)
+    {
+      NV_IF_TARGET(NV_IS_HOST, ({ return static_cast<_Integer>(_CCCL_BUILTIN_BSWAPG(__val)); }))
+    }
+#endif // _CCCL_BUILTIN_BSWAPG
     return static_cast<_Integer>(::cuda::std::__byteswap_impl(::cuda::std::__to_unsigned_like(__val)));
-#endif // !_CCCL_BUILTIN_BSWAPG
   }
   else
   {

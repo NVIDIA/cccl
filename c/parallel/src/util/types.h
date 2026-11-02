@@ -111,6 +111,13 @@ std::string cccl_type_enum_to_name(cccl_type_enum type, bool is_pointer = false)
 #else
       throw std::runtime_error("float16 is not supported");
 #endif
+    case cccl_type_enum::CCCL_BFLOAT16:
+#if _CCCL_HAS_NVBF16()
+      result = "__nv_bfloat16";
+      break;
+#else
+      throw std::runtime_error("bfloat16 is not supported");
+#endif
     case cccl_type_enum::CCCL_FLOAT32:
       result = "float";
       break;
@@ -160,6 +167,7 @@ inline constexpr cub::detail::type_t cccl_type_enum_to_cub_type(cccl_type_enum t
     case CCCL_FLOAT64:
       return cub::detail::type_t::float64;
     case CCCL_FLOAT16:
+    case CCCL_BFLOAT16:
     case CCCL_STORAGE:
     default:
       return cub::detail::type_t::other;

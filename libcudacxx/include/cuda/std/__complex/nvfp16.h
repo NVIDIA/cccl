@@ -26,10 +26,11 @@
 #  include <cuda/std/__complex/complex.h>
 #  include <cuda/std/__complex/tuple.h>
 #  include <cuda/std/__complex/vector_support.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__floating_point/cuda_fp_types.h>
-#  include <cuda/std/__fwd/get.h>
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/is_constructible.h>
+#  include <cuda/std/__utility/move.h>
 
 // todo: find a way to get rid of this include
 #  if _CCCL_HOSTED()
@@ -74,8 +75,8 @@ inline constexpr size_t __complex_alignment_v<__half> = alignof(__half2);
 template <>
 struct __cccl_complex_overload_traits<__half, false, false>
 {
-  using _ValueType   = __half;
-  using _ComplexType = complex<__half>;
+  using _ValueType _CCCL_NODEBUG   = __half;
+  using _ComplexType _CCCL_NODEBUG = complex<__half>;
 };
 
 #  if _CCCL_TILE_COMPILATION()
@@ -89,15 +90,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__half2)) __complex_f
   __half x;
   __half y;
 };
-using __complex_half_repr_t = __complex_fake_half2;
+using __complex_half_repr_t _CCCL_NODEBUG = __complex_fake_half2;
 #  else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION()
 template <>
 struct __type_to_vector<__half>
 {
-  using __type = __half2;
+  using __type _CCCL_NODEBUG = __half2;
 };
 
-using __complex_half_repr_t = __half2;
+using __complex_half_repr_t _CCCL_NODEBUG = __half2;
 #  endif // !_CCCL_TILE_COMPILATION()
 
 template <>

@@ -24,7 +24,7 @@ logical_data<slice<int>> AND(context& ctx, logical_data<slice<int>> x, logical_d
 
   auto z = ctx.logical_data(x.shape());
 
-  std::string symbol = "(" + x.get_symbol() + " & " + y.get_symbol() + ")";
+  const std::string symbol = "(" + x.get_symbol() + " & " + y.get_symbol() + ")";
   z.set_symbol(symbol);
 
   ctx.parallel_for(z.shape(), x.read(), y.read(), z.write()).set_symbol("AND")->*
@@ -40,7 +40,7 @@ logical_data<slice<int>> NOT(context& ctx, logical_data<slice<int>> x)
 {
   auto y = ctx.logical_data(x.shape());
 
-  std::string symbol = "( !" + x.get_symbol() + ")";
+  const std::string symbol = "( !" + x.get_symbol() + ")";
   y.set_symbol(symbol);
 
   ctx.parallel_for(y.shape(), x.read(), y.write()).set_symbol("NOT")->*[] __device__(size_t i, auto dx, auto dy) {

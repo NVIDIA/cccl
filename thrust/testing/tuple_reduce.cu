@@ -5,8 +5,6 @@
 
 #include <unittest/unittest.h>
 
-using namespace unittest;
-
 struct SumTupleFunctor
 {
   template <typename Tuple>
@@ -32,8 +30,8 @@ struct TestTupleReduce
 {
   void operator()(const size_t n)
   {
-    thrust::host_vector<T> h_t1 = random_integers<T>(n);
-    thrust::host_vector<T> h_t2 = random_integers<T>(n);
+    thrust::host_vector<T> h_t1 = unittest::random_integers<T>(n);
+    thrust::host_vector<T> h_t2 = unittest::random_integers<T>(n);
 
     // zip up the data
     thrust::host_vector<cuda::std::tuple<T, T>> h_tuples(n);
@@ -45,12 +43,12 @@ struct TestTupleReduce
     cuda::std::tuple<T, T> zero(0, 0);
 
     // sum on host
-    cuda::std::tuple<T, T> h_result = thrust::reduce(h_tuples.begin(), h_tuples.end(), zero, SumTupleFunctor());
+    const cuda::std::tuple<T, T> h_result = thrust::reduce(h_tuples.begin(), h_tuples.end(), zero, SumTupleFunctor());
 
     // sum on device
-    cuda::std::tuple<T, T> d_result = thrust::reduce(d_tuples.begin(), d_tuples.end(), zero, SumTupleFunctor());
+    const cuda::std::tuple<T, T> d_result = thrust::reduce(d_tuples.begin(), d_tuples.end(), zero, SumTupleFunctor());
 
-    ASSERT_EQUAL_QUIET(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 };
-VariableUnitTest<TestTupleReduce, IntegralTypes> TestTupleReduceInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTupleReduce, IntegralTypes);

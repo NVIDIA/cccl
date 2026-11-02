@@ -61,7 +61,7 @@ inline void device_free(thrust::device_ptr<void> ptr)
   using system = thrust::iterator_system<thrust::device_ptr<void>>::type;
 
   // XXX lower to select_system(system) here
-  system s;
+  const system s;
 
   thrust::free(s, ptr);
 }

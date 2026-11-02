@@ -146,6 +146,16 @@
       }
     },
     {
+      "name": "libcudacxx-codegen-filecheck",
+      "displayName": "libcu++: Codegen FileCheck",
+      "inherits": "libcudacxx",
+      "cacheVariables": {
+        "CMAKE_CUDA_ARCHITECTURES": "80",
+        "LIBCUDACXX_CODEGEN_FILECHECK_TESTS": "all",
+        "LIBCUDACXX_REQUIRE_CODEGEN_TEST_TOOLS": true
+      }
+    },
+    {
       "name": "libcudacxx-cpp17",
       "displayName": "libcu++: C++17",
       "inherits": "libcudacxx",
@@ -458,21 +468,30 @@
       }
     },
     {
-      "name": "cub-benchmark",
-      "displayName": "CUB benchmarking",
+      "name": "benchmark-base",
+      "hidden": true,
       "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/$env{CCCL_BUILD_INFIX}/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_CUDA_ARCHITECTURES": "native",
         "CCCL_ENABLE_BENCHMARKS": true,
-        "CCCL_ENABLE_CUB": true,
+        "CCCL_ENABLE_CUB": false,
         "CCCL_ENABLE_THRUST": false,
         "CCCL_ENABLE_LIBCUDACXX": false,
         "CCCL_ENABLE_CUDAX": false,
         "CCCL_ENABLE_C_PARALLEL": false,
         "CCCL_ENABLE_C_EXPERIMENTAL_STF": false,
         "CCCL_ENABLE_TESTING": false,
-        "CCCL_ENABLE_EXAMPLES": false,
+        "CCCL_ENABLE_EXAMPLES": false
+      }
+    },
+    {
+      "name": "cub-benchmark",
+      "displayName": "CUB benchmarking",
+      "inherits": "benchmark-base",
+      "cacheVariables": {
+        "CCCL_ENABLE_CUB": true,
         "CUB_ENABLE_EXAMPLES": false,
         "CUB_ENABLE_TESTING": false,
         "CUB_ENABLE_HEADER_TESTING": false
@@ -487,16 +506,37 @@
       }
     },
     {
-      "name": "benchmark",
-      "displayName": "CCCL benchmarking",
-      "inherits": "cub-benchmark",
+      "name": "thrust-benchmark",
+      "displayName": "Thrust benchmarking",
+      "inherits": "benchmark-base",
       "cacheVariables": {
         "CCCL_ENABLE_THRUST": true,
-        "CCCL_ENABLE_LIBCUDACXX": true,
         "THRUST_ENABLE_EXAMPLES": false,
         "THRUST_ENABLE_TESTING": false,
-        "THRUST_ENABLE_HEADER_TESTING": false,
+        "THRUST_ENABLE_HEADER_TESTING": false
+      }
+    },
+    {
+      "name": "libcudacxx-benchmark",
+      "displayName": "libcu++: benchmarking",
+      "inherits": "benchmark-base",
+      "cacheVariables": {
+        "CCCL_ENABLE_LIBCUDACXX": true,
         "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": false
+      }
+    },
+    {
+      "name": "benchmark",
+      "displayName": "CCCL benchmarking",
+      "inherits": [
+        "cub-benchmark",
+        "thrust-benchmark",
+        "libcudacxx-benchmark"
+      ],
+      "cacheVariables": {
+        "CCCL_ENABLE_CUB": true,
+        "CCCL_ENABLE_THRUST": true,
+        "CCCL_ENABLE_LIBCUDACXX": true
       }
     }
   ],
@@ -530,10 +570,19 @@
         "libcudacxx.test.public_headers_host_only",
         "libcudacxx.test.lit.precompile",
         "libcudacxx.test.nvtarget",
-        "libcudacxx.test.atomics.ptx",
-        "libcudacxx.test.simd.ptx",
         "libcudacxx.test.c2h_all",
         "libcudacxx.test.debugging"
+      ]
+    },
+    {
+      "name": "libcudacxx-codegen-filecheck",
+      "configurePreset": "libcudacxx-codegen-filecheck",
+      "targets": [
+        "libcudacxx.test.atomics.ptx",
+        "libcudacxx.test.atomics.sass",
+        "libcudacxx.test.simd.ptx",
+        "libcudacxx.test.warp.sass",
+        "libcudacxx.test.simd.sass"
       ]
     },
     {
@@ -638,6 +687,18 @@
       "configurePreset": "cub-lid2-cpp20"
     },
     {
+      "name": "cub-benchmark",
+      "configurePreset": "cub-benchmark"
+    },
+    {
+      "name": "thrust-benchmark",
+      "configurePreset": "thrust-benchmark"
+    },
+    {
+      "name": "libcudacxx-benchmark",
+      "configurePreset": "libcudacxx-benchmark"
+    },
+    {
       "name": "thrust",
       "configurePreset": "thrust"
     },
@@ -703,6 +764,16 @@
       "name": "all-dev-debug",
       "configurePreset": "all-dev-debug",
       "inherits": "all-dev"
+    },
+    {
+      "name": "all-tidy",
+      "configurePreset": "all-tidy",
+      "inherits": "base",
+      "filter": {
+        "include": {
+          "name": "^cccl\\.test\\.tidy.*$"
+        }
+      }
     },
     {
       "name": "libcudacxx-codegen",

@@ -22,11 +22,8 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/binary_function.h>
-#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/unary_function.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -97,7 +94,7 @@ struct __weak_result_type_imp // bool is true
     , public __maybe_derive_from_binary_function<_Tp>
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using result_type _CCCL_NODEBUG_ALIAS CCCL_DEPRECATED = typename _Tp::result_type;
+  using result_type _CCCL_NODEBUG CCCL_DEPRECATED = typename _Tp::result_type;
 #endif
 };
 
@@ -117,7 +114,7 @@ template <class _Rp>
 struct __weak_result_type<_Rp()>
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using result_type _CCCL_NODEBUG_ALIAS CCCL_DEPRECATED = _Rp;
+  using result_type _CCCL_NODEBUG CCCL_DEPRECATED = _Rp;
 #endif
 };
 
@@ -125,7 +122,7 @@ template <class _Rp>
 struct __weak_result_type<_Rp (&)()>
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using result_type _CCCL_NODEBUG_ALIAS CCCL_DEPRECATED = _Rp;
+  using result_type _CCCL_NODEBUG CCCL_DEPRECATED = _Rp;
 #endif
 };
 
@@ -133,7 +130,7 @@ template <class _Rp>
 struct __weak_result_type<_Rp (*)()>
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using result_type _CCCL_NODEBUG_ALIAS CCCL_DEPRECATED = _Rp;
+  using result_type _CCCL_NODEBUG CCCL_DEPRECATED = _Rp;
 #endif
 };
 
@@ -203,7 +200,7 @@ template <class _Rp, class _A1, class _A2, class _A3, class... _A4>
 struct __weak_result_type<_Rp(_A1, _A2, _A3, _A4...)>
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using result_type _CCCL_NODEBUG_ALIAS CCCL_DEPRECATED = _Rp;
+  using result_type _CCCL_NODEBUG CCCL_DEPRECATED = _Rp;
 #endif
 };
 
@@ -211,7 +208,7 @@ template <class _Rp, class _A1, class _A2, class _A3, class... _A4>
 struct __weak_result_type<_Rp (&)(_A1, _A2, _A3, _A4...)>
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using result_type _CCCL_NODEBUG_ALIAS CCCL_DEPRECATED = _Rp;
+  using result_type _CCCL_NODEBUG CCCL_DEPRECATED = _Rp;
 #endif
 };
 
@@ -219,7 +216,7 @@ template <class _Rp, class _A1, class _A2, class _A3, class... _A4>
 struct __weak_result_type<_Rp (*)(_A1, _A2, _A3, _A4...)>
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using result_type _CCCL_NODEBUG_ALIAS CCCL_DEPRECATED = _Rp;
+  using result_type _CCCL_NODEBUG CCCL_DEPRECATED = _Rp;
 #endif
 };
 
@@ -227,7 +224,7 @@ template <class _Rp, class _Cp, class _A1, class _A2, class... _A3>
 struct __weak_result_type<_Rp (_Cp::*)(_A1, _A2, _A3...)>
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using result_type _CCCL_NODEBUG_ALIAS CCCL_DEPRECATED = _Rp;
+  using result_type _CCCL_NODEBUG CCCL_DEPRECATED = _Rp;
 #endif
 };
 
@@ -235,7 +232,7 @@ template <class _Rp, class _Cp, class _A1, class _A2, class... _A3>
 struct __weak_result_type<_Rp (_Cp::*)(_A1, _A2, _A3...) const>
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using result_type _CCCL_NODEBUG_ALIAS CCCL_DEPRECATED = _Rp;
+  using result_type _CCCL_NODEBUG CCCL_DEPRECATED = _Rp;
 #endif
 };
 
@@ -243,7 +240,7 @@ template <class _Rp, class _Cp, class _A1, class _A2, class... _A3>
 struct __weak_result_type<_Rp (_Cp::*)(_A1, _A2, _A3...) volatile>
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using result_type _CCCL_NODEBUG_ALIAS CCCL_DEPRECATED = _Rp;
+  using result_type _CCCL_NODEBUG CCCL_DEPRECATED = _Rp;
 #endif
 };
 
@@ -251,7 +248,7 @@ template <class _Rp, class _Cp, class _A1, class _A2, class... _A3>
 struct __weak_result_type<_Rp (_Cp::*)(_A1, _A2, _A3...) const volatile>
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using result_type _CCCL_NODEBUG_ALIAS CCCL_DEPRECATED = _Rp;
+  using result_type _CCCL_NODEBUG CCCL_DEPRECATED = _Rp;
 #endif
 };
 

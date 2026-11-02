@@ -76,12 +76,12 @@ void submit_set_kernel(stf_ctx_handle ctx, int* d_arr, int n, int value, int ite
   stf_cuda_kernel_add_dep(k, lD, STF_RW);
   stf_cuda_kernel_start(k);
 
-  int* arg_ptr = static_cast<int*>(stf_cuda_kernel_get_arg(k, 0));
+  const int* arg_ptr = static_cast<int*>(stf_cuda_kernel_get_arg(k, 0));
   REQUIRE(arg_ptr == d_arr);
   const int threads   = 128;
   const int blocks    = (n + threads - 1) / threads;
   const void* args[4] = {&arg_ptr, &n, &value, &iters};
-  cudaError_t err =
+  const cudaError_t err =
     stf_cuda_kernel_add_desc(k, reinterpret_cast<void*>(slow_set_kernel), dim3(blocks), dim3(threads), 0, 4, args);
   REQUIRE(err == cudaSuccess);
   stf_cuda_kernel_end(k);

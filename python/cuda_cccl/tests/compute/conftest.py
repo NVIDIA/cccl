@@ -5,11 +5,6 @@ import numpy as np
 import pytest
 from cuda.core import Device, Stream
 
-try:
-    from cuda.compute._build_info import USING_V2
-except ImportError:
-    USING_V2 = False
-
 check_ldl_stl_in_sass = False
 
 
@@ -111,13 +106,18 @@ def verify_sass(request):
     )
 
 
+# Import root that pulls in the JIT backend; a test marked no_numba must not
+# reach it.
+_JIT_BACKEND_MODULES = ("numba_cuda_mlir",)
+
+
 @pytest.fixture
 def raise_on_numba_import(monkeypatch):
-    """This fixture will raise if a test attempts to import numba"""
+    """This fixture will raise if a test attempts to import a JIT backend"""
     real_import = builtins.__import__
 
     def guarded_import(name, *args, **kwargs):
-        if name == "numba" or name.startswith("numba."):
+        if name.split(".")[0] in _JIT_BACKEND_MODULES:
             raise ModuleNotFoundError(
                 "This test is marked 'no_numba' but attempted to import it"
             )
@@ -128,15 +128,17 @@ def raise_on_numba_import(monkeypatch):
 
 def pytest_collection_modifyitems(config, items):
     """Runs after pytest collects the tests. Makes a test marked no_numba fail
-    if it imports numba, and skips a test marked serialization when running on
-    the v2 (HostJIT) backend."""
-    serialization_skip = pytest.mark.skip(
-        reason="serialization not supported on v2 (HostJIT) backend"
-    )
-
-    # Tests marked no_numba must not import numba. We enforce that by attaching
-    # the raise_on_numba_import fixture defined above to each one; it raises if
-    # numba is imported.
+    if it imports a JIT backend."""
+    # NOTE: serialization (AoT compile/load/serialize/deserialize) is
+    # supported on v2 (HostJIT), so tests marked @pytest.mark.serialization
+    # are no longer blanket-skipped here under USING_V2. If a specific
+    # serialization test relies on v1-only behavior, mark THAT test with a
+    # targeted xfail/skipif(USING_V2, ...) instead of reintroducing a blanket
+    # marker-based skip here.
+    #
+    # Tests marked no_numba must not import a JIT backend. We enforce that by
+    # attaching the raise_on_numba_import fixture defined above to each one; it
+    # raises if one is imported.
     #
     # We skip attaching it during a real pytest-run-parallel sweep of more than
     # one thread: the fixture uses monkeypatch, which pytest-run-parallel
@@ -163,6 +165,3 @@ def pytest_collection_modifyitems(config, items):
         if item.get_closest_marker("no_numba") and not running_parallel:
             if "raise_on_numba_import" not in item.fixturenames:
                 item.fixturenames.append("raise_on_numba_import")
-        # serialization is unsupported on v2 (HostJIT); skip those tests there
-        if USING_V2 and item.get_closest_marker("serialization"):
-            item.add_marker(serialization_skip)

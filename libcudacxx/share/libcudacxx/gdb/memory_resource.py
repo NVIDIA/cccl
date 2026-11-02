@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from types import ModuleType
 
 import cccl_common
@@ -27,6 +28,20 @@ def _is_memory_resource(value_type: gdb.Type) -> bool:
     )
 
 
+def _resource_state(value: gdb.Value) -> tuple[str, gdb.Value | None]:
+    tagged_vptr = int(value["__vptr_"]["__ptr_"])
+    if tagged_vptr == 0:
+        return "empty", None
+
+    buffer = value["__buffer_"]
+    void_pointer = gdb.lookup_type("void").pointer()
+    if tagged_vptr & 1:
+        return "in-situ", buffer.address.cast(void_pointer)
+
+    resource = buffer.address.cast(void_pointer.pointer()).dereference()
+    return "heap", resource
+
+
 def memory_resource_description(value: gdb.Value) -> str:
     value = cccl_common.strip_reference_value(value)
     type_name = cccl_common.canonical_type_name(value.type)
@@ -38,20 +53,34 @@ def memory_resource_description(value: gdb.Value) -> str:
 
 
 class MemoryResourcePrinter:
-    """Summarize a CUDA type-erased memory resource."""
+    """Summarize a CUDA type-erased memory resource and expose its object pointer."""
 
     def __init__(self, value: gdb.Value) -> None:
-        self.value = value
+        value = cccl_common.strip_reference_value(value)
+        value_type = cccl_common.canonical_type(value.type)
+        self.type_name = cccl_common.public_type_name(value_type)
+        try:
+            self.storage, self.resource = _resource_state(value)
+        except (gdb.error, KeyError, TypeError):
+            self.storage, self.resource = "unavailable", None
+
+    def children(self) -> Iterator[tuple[str, gdb.Value]]:
+        if self.resource is not None:
+            yield "resource", self.resource
 
     def to_string(self) -> str:
-        return memory_resource_description(self.value)
+        if self.storage == "unavailable":
+            return f"{self.type_name} storage=unavailable"
+        if self.resource is None:
+            return f"{self.type_name} storage=0x0"
+        return f"{self.type_name} storage={int(self.resource):#x} ({self.storage})"
 
 
 class MemoryResourcePrinterLookup(gdb.printing.PrettyPrinter):
     """Select printers for public CUDA type-erased resource types."""
 
     def __init__(self) -> None:
-        super().__init__("cuda::mr::any_resource")
+        super().__init__("cuda::mr::memory_resource")
 
     def __call__(self, value: gdb.Value) -> MemoryResourcePrinter | None:
         if _is_memory_resource(value.type):

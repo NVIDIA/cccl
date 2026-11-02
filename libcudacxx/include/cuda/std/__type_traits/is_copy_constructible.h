@@ -22,7 +22,8 @@
 
 #include <cuda/std/__type_traits/add_const.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
-#include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_constructible.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -47,7 +48,7 @@ is_copy_constructible : public is_constructible<_Tp, add_lvalue_reference_t<add_
 {};
 
 template <class _Tp>
-inline constexpr bool is_copy_constructible_v = is_constructible<_Tp, add_lvalue_reference_t<add_const_t<_Tp>>>::value;
+inline constexpr bool is_copy_constructible_v = is_constructible_v<_Tp, add_lvalue_reference_t<add_const_t<_Tp>>>;
 
 #endif // No builtin
 

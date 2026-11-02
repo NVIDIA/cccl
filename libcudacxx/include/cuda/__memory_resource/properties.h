@@ -23,9 +23,9 @@
 
 #if _CCCL_HAS_CTK()
 
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__type_traits/decay.h>
 #  include <cuda/std/__type_traits/type_set.h>
-#  include <cuda/std/cstddef>
 
 #  include <cuda/std/__cccl/prologue.h>
 

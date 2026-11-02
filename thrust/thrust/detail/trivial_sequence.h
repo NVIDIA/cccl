@@ -30,7 +30,7 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 // never instantiated
-template <typename Iterator, typename DerivedPolicy, bool is_trivial>
+template <typename Iterator, typename DerivedPolicy, bool IsTrivial>
 struct _trivial_sequence
 {};
 

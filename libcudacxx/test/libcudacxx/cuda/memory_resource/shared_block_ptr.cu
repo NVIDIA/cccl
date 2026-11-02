@@ -56,17 +56,17 @@ int counting_payload::__destruct_count  = 0;
 
 // --- static assertions ---
 
-static_assert(!cuda::std::is_trivially_destructible<cuda::mr::__shared_block_ptr<trivial_payload>>::value);
-static_assert(cuda::std::is_copy_constructible<cuda::mr::__shared_block_ptr<trivial_payload>>::value);
-static_assert(cuda::std::is_move_constructible<cuda::mr::__shared_block_ptr<trivial_payload>>::value);
-static_assert(cuda::std::is_copy_assignable<cuda::mr::__shared_block_ptr<trivial_payload>>::value);
-static_assert(cuda::std::is_move_assignable<cuda::mr::__shared_block_ptr<trivial_payload>>::value);
+static_assert(!cuda::std::is_trivially_destructible_v<cuda::mr::__shared_block_ptr<trivial_payload>>);
+static_assert(cuda::std::is_copy_constructible_v<cuda::mr::__shared_block_ptr<trivial_payload>>);
+static_assert(cuda::std::is_move_constructible_v<cuda::mr::__shared_block_ptr<trivial_payload>>);
+static_assert(cuda::std::is_copy_assignable_v<cuda::mr::__shared_block_ptr<trivial_payload>>);
+static_assert(cuda::std::is_move_assignable_v<cuda::mr::__shared_block_ptr<trivial_payload>>);
 
 // --- construction ---
 
 C2H_CCCLRT_TEST("__shared_block_ptr default construction", "[memory_resource]")
 {
-  cuda::mr::__shared_block_ptr<trivial_payload> ptr;
+  const cuda::mr::__shared_block_ptr<trivial_payload> ptr;
   CHECK(!ptr);
 }
 
@@ -158,10 +158,12 @@ C2H_CCCLRT_TEST("__shared_block_ptr move assignment", "[memory_resource]")
 
 C2H_CCCLRT_TEST("__shared_block_ptr equality", "[memory_resource]")
 {
+  // NOLINTBEGIN(misc-const-correctness)
   cuda::mr::__shared_block_ptr<trivial_payload> a(1);
   cuda::mr::__shared_block_ptr<trivial_payload> b(2);
   cuda::mr::__shared_block_ptr<trivial_payload> a_copy(a); // NOLINT(performance-unnecessary-copy-initialization)
   cuda::mr::__shared_block_ptr<trivial_payload> null;
+  // NOLINTEND(misc-const-correctness)
 
   CHECK(a == a);
   CHECK(a == a_copy);
@@ -191,11 +193,13 @@ C2H_CCCLRT_TEST("__shared_block_ptr refcount multiple copies", "[memory_resource
 {
   counting_payload::__reset();
   {
-    cuda::mr::__shared_block_ptr<counting_payload> p1(42);
+    const cuda::mr::__shared_block_ptr<counting_payload> p1(42);
     {
-      cuda::mr::__shared_block_ptr<counting_payload> p2(p1); // NOLINT(performance-unnecessary-copy-initialization)
+      // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
+      const cuda::mr::__shared_block_ptr<counting_payload> p2(p1);
       {
-        cuda::mr::__shared_block_ptr<counting_payload> p3(p2); // NOLINT(performance-unnecessary-copy-initialization)
+        // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
+        const cuda::mr::__shared_block_ptr<counting_payload> p3(p2);
         CHECK(counting_payload::__destruct_count == 0);
       }
       CHECK(counting_payload::__destruct_count == 0);
@@ -211,8 +215,9 @@ C2H_CCCLRT_TEST("__shared_block_ptr refcount multiple copies", "[memory_resource
 C2H_CCCLRT_TEST("__shared_block_ptr null copy and move", "[memory_resource]")
 {
   cuda::mr::__shared_block_ptr<trivial_payload> null;
-  cuda::mr::__shared_block_ptr<trivial_payload> null_copy(null); // NOLINT(performance-unnecessary-copy-initialization)
-  cuda::mr::__shared_block_ptr<trivial_payload> null_moved(cuda::std::move(null));
+  // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
+  const cuda::mr::__shared_block_ptr<trivial_payload> null_copy(null);
+  const cuda::mr::__shared_block_ptr<trivial_payload> null_moved(cuda::std::move(null));
 
   CHECK(!null_copy);
   CHECK(!null_moved);

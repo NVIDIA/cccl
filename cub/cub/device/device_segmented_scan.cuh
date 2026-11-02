@@ -25,6 +25,9 @@
 #endif // no system header
 
 #include <cub/detail/env_dispatch.cuh>
+#include <cub/detail/input_value.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_segmented_scan.cuh>
 
@@ -216,10 +219,10 @@ public:
     check_common_iterator_value_is_integral<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>();
 
     using scan_op_t = ::cuda::std::plus<>;
-    scan_op_t scan_op{};
+    const scan_op_t scan_op{};
 
     using init_value_t = detail::it_value_t<InputIteratorT>;
-    init_value_t init_value{};
+    const init_value_t init_value{};
 
     return detail::segmented_scan::dispatch(
       d_temp_storage,
@@ -471,10 +474,10 @@ public:
                                             BeginOffsetIteratorOutputT>();
 
     using scan_op_t = ::cuda::std::plus<>;
-    scan_op_t scan_op{};
+    const scan_op_t scan_op{};
 
     using init_value_t = cub::detail::it_value_t<InputIteratorT>;
-    init_value_t init_value{};
+    const init_value_t init_value{};
 
     return cub::detail::segmented_scan::dispatch(
       d_temp_storage,
@@ -1259,7 +1262,7 @@ public:
     check_common_iterator_value_is_integral<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>();
 
     using scan_op_t = ::cuda::std::plus<>;
-    scan_op_t scan_op{};
+    const scan_op_t scan_op{};
 
     return cub::detail::segmented_scan::dispatch(
       d_temp_storage,
@@ -1502,7 +1505,7 @@ public:
                                             BeginOffsetIteratorOutputT>();
 
     using scan_op_t = ::cuda::std::plus<>;
-    scan_op_t scan_op{};
+    const scan_op_t scan_op{};
 
     return cub::detail::segmented_scan::dispatch(
       d_temp_storage,

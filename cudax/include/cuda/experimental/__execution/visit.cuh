@@ -197,7 +197,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT visit_t
 _CCCL_GLOBAL_CONSTANT visit_t visit{};
 
 template <class _Visitor, class _CvSndr, class _Context>
-using __visit_result_t _CCCL_NODEBUG_ALIAS =
+using __visit_result_t _CCCL_NODEBUG =
   decltype(execution::visit(declval<_Visitor&>(), declval<_CvSndr>(), declval<_Context&>()));
 } // namespace cuda::experimental::execution
 

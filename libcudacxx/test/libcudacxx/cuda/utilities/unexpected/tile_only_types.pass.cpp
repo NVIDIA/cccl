@@ -15,8 +15,9 @@
 #include "host_device_types.h"
 #include "test_macros.h"
 
-TEST_TILE_FUNC void test()
+__tile__ void test()
 {
+#if _CCCL_TILE_COMPILATION()
   using unexpected = cuda::std::unexpected<tile_only_type>;
   { // in_place zero initialization
     unexpected in_place_zero_initialization{cuda::std::in_place};
@@ -75,6 +76,7 @@ TEST_TILE_FUNC void test()
     assert(lhs.error() == 42);
     assert(rhs.error() == 1337);
   }
+#endif // _CCCL_TILE_COMPILATION()
 }
 
 __tile_global__ void test_kernel()

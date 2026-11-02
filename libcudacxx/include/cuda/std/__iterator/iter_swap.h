@@ -21,12 +21,15 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/class_or_enum.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/referenceable.h>
 #include <cuda/std/__concepts/swappable.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iter_move.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__iterator/readable_traits.h>
-#include <cuda/std/__type_traits/add_lvalue_reference.h>
+#include <cuda/std/__type_traits/add_lvalue_reference.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
@@ -63,8 +66,8 @@ _CCCL_CONCEPT __readable_swappable = _CCCL_REQUIRES_EXPR((_T1, _T2))(
   requires(!__unqualified_iter_swap<_T1, _T2>),
   requires(indirectly_readable<_T1>),
   requires(indirectly_readable<_T2>),
-  requires(__can_reference<iter_reference_t<_T1>>),
-  requires(__can_reference<iter_reference_t<_T2>>),
+  requires(__referenceable<iter_reference_t<_T1>>),
+  requires(__referenceable<iter_reference_t<_T2>>),
   requires(swappable_with<iter_reference_t<_T1>, iter_reference_t<_T2>>));
 
 #if _CCCL_HAS_NOEXCEPT_MANGLING() // older GCC cannot use noexcept inside a requires clause

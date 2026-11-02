@@ -18,8 +18,6 @@ _EBCO_PATTERN = re.compile(r"__mdspan_ebco<")
 _EBCO_IMPL_PATTERN = re.compile(r"__mdspan_ebco_impl<\s*(\d+)\s*,")
 _EXTENTS_PATTERN = re.compile(r"extents<\s*([^>]*)>$")
 _LAYOUT_KINDS = ("layout_left", "layout_right", "layout_stride")
-# cudaMemcpyDefault: infer host/device direction from the pointers themselves.
-_CUDA_MEMCPY_DEFAULT = 4
 # cuda:: accessibility wrappers around cuda::std::mdspan.
 _WRAPPER_MDSPAN_NAMES = frozenset(
     {
@@ -216,49 +214,6 @@ def _required_span_size(
     return size
 
 
-def _stage_host_copy(
-    frame: lldb.SBFrame, data_address: int, byte_count: int
-) -> lldb.SBValue | None:
-    """Copy byte_count bytes from data_address into inferior-heap memory
-    (mirrors cuda::buffer's printer), since it may be device memory LLDB
-    would silently read as zeros. Returns a void* SBValue, or None on failure.
-    """
-    if not frame.IsValid():
-        return None
-    options = lldb.SBExpressionOptions()
-    options.SetIgnoreBreakpoints(True)
-    options.SetUnwindOnError(True)
-    host_copy = frame.EvaluateExpression(f"(void*)malloc({byte_count})", options)
-    if not host_copy.IsValid() or host_copy.GetError().Fail():
-        return None
-    host_address = host_copy.GetValueAsUnsigned(0)
-    if not host_address:
-        return None
-    result = frame.EvaluateExpression(
-        "(int)cudaMemcpy((void*)"
-        f"{host_address:#x}, (const void*){data_address:#x}, {byte_count}, "
-        f"{_CUDA_MEMCPY_DEFAULT})",
-        options,
-    )
-    if (
-        not result.IsValid()
-        or result.GetError().Fail()
-        or result.GetValueAsSigned(-1) != 0
-    ):
-        _release_host_copy(frame, host_address)
-        return None
-    return host_copy
-
-
-def _release_host_copy(frame: lldb.SBFrame, address: int) -> None:
-    if not frame.IsValid() or not address:
-        return
-    options = lldb.SBExpressionOptions()
-    options.SetIgnoreBreakpoints(True)
-    options.SetUnwindOnError(True)
-    frame.EvaluateExpression(f"(void)free((void*){address:#x})", options)
-
-
 def _offset(
     kind: str, extents: list[int], strides: list[int] | None, indices: tuple[int, ...]
 ) -> int:
@@ -373,6 +328,7 @@ class MdspanSyntheticProvider:
     """Expose cuda::std::mdspan elements as LLDB synthetic children."""
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
+        self.declared_type = value.GetType()
         value = cccl_common.strip_reference_value(value)
         self.value = value.GetNonSyntheticValue()
         self.info: MdspanInfo | None = None
@@ -380,24 +336,12 @@ class MdspanSyntheticProvider:
         self.stop_id: int | None = None
         self.update()
 
-    def __del__(self) -> None:
-        self._clear_copy()
-
-    def _clear_copy(self) -> None:
-        if self.host_copy.IsValid():
-            _release_host_copy(
-                self.value.GetFrame(), self.host_copy.GetValueAsUnsigned(0)
-            )
-        self.host_copy = lldb.SBValue()
-
     def _current_stop_id(self) -> int | None:
         process = self.value.GetProcess()
         return process.GetStopID() if process.IsValid() else None
 
     def _copy_to_host(self) -> None:
-        """Stage the mapping's addressed elements into debugger-owned host
-        memory via an inferior cudaMemcpy call. See _stage_host_copy for the
-        rationale (real device memory reads as zeros, not an error)."""
+        """Stage the addressed elements, which LLDB reads as zeros in device memory."""
         if (
             self.info is None
             or self.info.data is None
@@ -411,20 +355,28 @@ class MdspanSyntheticProvider:
         if span == 0:
             return
         element_type = self.info.data.GetType().GetPointeeType()
-        byte_count = span * element_type.GetByteSize()
-        host_copy = _stage_host_copy(
-            self.value.GetFrame(), self.info.data.GetValueAsUnsigned(0), byte_count
-        )
-        if host_copy is None:
+        pointer_type = element_type.GetPointerType()
+        # A formatter must not raise into the debugger; report no elements.
+        try:
+            address = cccl_common.stage_device_memory(
+                self.value,
+                self.info.data.GetValueAsUnsigned(0),
+                span * element_type.GetByteSize(),
+            )
+        except cccl_common.StagingError:
             return
-        self.host_copy = host_copy.Cast(element_type.GetPointerType())
+        self.host_copy = self.value.CreateValueFromData(
+            "__cccl_host_copy",
+            lldb.SBData.CreateDataFromInt(address, pointer_type.GetByteSize()),
+            pointer_type,
+        )
 
     def update(self) -> bool:
-        # Recopy only when the process has stopped again since the last
-        # copy: update() runs before every read (mirrors BufferSyntheticProvider).
+        # update() runs before every read of a synthetic child; see
+        # BufferSyntheticProvider.update.
         if self.stop_id is not None and self._current_stop_id() == self.stop_id:
             return True
-        self._clear_copy()
+        self.host_copy = lldb.SBValue()
         self.info = _mdspan_info(self.value)
         self._copy_to_host()
         self.stop_id = self._current_stop_id()
@@ -453,7 +405,9 @@ class MdspanSyntheticProvider:
         return self.num_children() != 0
 
     def get_type_name(self) -> str:
-        name = cccl_common.canonical_type_name(self.value.GetType())
+        # Report the declared type, so a reference parameter keeps its "const &".
+        # canonical_type_name() strips the reference, which hides it from the user.
+        name = self.declared_type.GetDisplayTypeName() or ""
         dynamic_extent = _dynamic_extent(self.value.GetTarget())
         return _readable_type_name(name, dynamic_extent)
 

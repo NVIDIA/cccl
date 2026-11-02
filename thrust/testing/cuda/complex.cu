@@ -7,7 +7,7 @@
 #include <unittest/unittest.h>
 
 template <typename T, typename VectorT>
-void TestComplexAlignment()
+void test_complex_alignment()
 {
   static_assert(sizeof(thrust::complex<T>) == sizeof(VectorT));
   static_assert(alignof(thrust::complex<T>) == alignof(VectorT));
@@ -15,10 +15,31 @@ void TestComplexAlignment()
   static_assert(sizeof(thrust::complex<T const>) == sizeof(VectorT));
   static_assert(alignof(thrust::complex<T const>) == alignof(VectorT));
 }
-DECLARE_UNITTEST_WITH_NAME(THRUST_PP_EXPAND_ARGS(TestComplexAlignment<char, char2>), TestComplexCharAlignment);
-DECLARE_UNITTEST_WITH_NAME(THRUST_PP_EXPAND_ARGS(TestComplexAlignment<short, short2>), TestComplexShortAlignment);
-DECLARE_UNITTEST_WITH_NAME(THRUST_PP_EXPAND_ARGS(TestComplexAlignment<int, int2>), TestComplexIntAlignment);
-DECLARE_UNITTEST_WITH_NAME(THRUST_PP_EXPAND_ARGS(TestComplexAlignment<long, long2>), TestComplexLongAlignment);
-DECLARE_UNITTEST_WITH_NAME(THRUST_PP_EXPAND_ARGS(TestComplexAlignment<__half, __half2>), TestComplexHalfAlignment);
-DECLARE_UNITTEST_WITH_NAME(THRUST_PP_EXPAND_ARGS(TestComplexAlignment<float, float2>), TestComplexFloatAlignment);
-DECLARE_UNITTEST_WITH_NAME(THRUST_PP_EXPAND_ARGS(TestComplexAlignment<double, double2>), TestComplexDoubleAlignment);
+TEST_CASE("TestComplexCharAlignment", "[complex]")
+{
+  test_complex_alignment<char, char2>();
+}
+TEST_CASE("TestComplexShortAlignment", "[complex]")
+{
+  test_complex_alignment<short, short2>();
+}
+TEST_CASE("TestComplexIntAlignment", "[complex]")
+{
+  test_complex_alignment<int, int2>();
+}
+TEST_CASE("TestComplexLongAlignment", "[complex]")
+{
+  test_complex_alignment<long, long2>();
+}
+TEST_CASE("TestComplexHalfAlignment", "[complex]")
+{
+  test_complex_alignment<__half, __half2>();
+}
+TEST_CASE("TestComplexFloatAlignment", "[complex]")
+{
+  test_complex_alignment<float, float2>();
+}
+TEST_CASE("TestComplexDoubleAlignment", "[complex]")
+{
+  test_complex_alignment<double, double2>();
+}

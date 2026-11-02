@@ -3,13 +3,6 @@
 
 #pragma once
 
-#ifdef THRUST_DEBUG_SYNC
-#  define THRUST_DEBUG_SYNC_FLAG true
-#  define CUB_DEBUG_SYNC
-#else
-#  define THRUST_DEBUG_SYNC_FLAG false
-#endif
-
 #include <thrust/detail/config.h> // IWYU pragma: export
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -19,6 +12,30 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+// A host translation unit is fine with just the CTK headers: the CUDA backend's algorithms are guarded by
+// _CCCL_CUDA_COMPILATION(), so only the types and execution policies remain, and those need the CTK and nothing more.
+#if !_CCCL_CUDA_COMPILATION() && !_CCCL_HAS_CTK() && !defined(THRUST_IGNORE_CUDA_COMPILER_CHECK)
+#  error \
+    "The Thrust CUDA device system requires a CUDA compiler or the CUDA toolkit headers. Either compile as CUDA, \
+make the CUDA toolkit headers available, or set THRUST_DEVICE_SYSTEM to THRUST_DEVICE_SYSTEM_CPP, \
+THRUST_DEVICE_SYSTEM_OMP, or THRUST_DEVICE_SYSTEM_TBB. Define THRUST_IGNORE_CUDA_COMPILER_CHECK to ignore this."
+#endif
+
+#ifdef THRUST_DEBUG_SYNC
+
+#  if _CCCL_COMPILER(MSVC)
+#    pragma message( \
+      "warning: THRUST_DEBUG_SYNC is deprecated. Please just run your executable with CUDA_LAUNCH_BLOCKING=1")
+#  else
+#    warning THRUST_DEBUG_SYNC is deprecated. Please just run your executable with CUDA_LAUNCH_BLOCKING=1
+#  endif
+
+#  define THRUST_DEBUG_SYNC_FLAG true
+#  define CUB_DEBUG_SYNC
+#else
+#  define THRUST_DEBUG_SYNC_FLAG false
+#endif
 
 // We don't directly include <cub/version.cuh> since it doesn't exist in
 // older releases. This header will always pull in version info:

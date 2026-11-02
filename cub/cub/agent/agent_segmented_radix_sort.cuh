@@ -15,9 +15,17 @@
 
 #include <cub/agent/agent_radix_sort_downsweep.cuh>
 #include <cub/agent/agent_radix_sort_upsweep.cuh>
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_radix_rank.cuh>
 #include <cub/block/block_radix_sort.cuh>
+#include <cub/block/block_scan.cuh>
+#include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_namespace.cuh>
-#include <cub/util_type.cuh>
+
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -79,6 +87,10 @@ struct AgentSegmentedRadixSort
                    (SegmentedPolicyT::RANK_ALGORITHM == RADIX_RANK_MEMOIZE),
                    SegmentedPolicyT::SCAN_ALGORITHM>;
 
+  // BlockRadixSort::SortBlockedToStriped in ProcessSinglePass requires a blocked arrangement for a stable sort
+  static_assert(SegmentedPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,
+                "SegmentedSortRadixSortPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since the block radix "
+                "sort requires a blocked arrangement");
   using BlockKeyLoadT = BlockLoad<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, SegmentedPolicyT::LOAD_ALGORITHM>;
 
   using BlockValueLoadT = BlockLoad<ValueT, BLOCK_THREADS, ITEMS_PER_THREAD, SegmentedPolicyT::LOAD_ALGORITHM>;
@@ -185,7 +197,7 @@ struct AgentSegmentedRadixSort
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
       {
-        int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
+        const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
 
         if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
         {
@@ -198,7 +210,7 @@ struct AgentSegmentedRadixSort
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
       {
-        int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
+        const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
 
         if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
         {
@@ -219,11 +231,11 @@ struct AgentSegmentedRadixSort
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
       {
-        int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
+        const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
 
         if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
         {
-          temp_storage.unbound_sort.reverse_counts_out[threadIdx.x] = bin_offset[track];
+          temp_storage.unbound_sort.reverse_counts_out[bin_idx] = bin_offset[track];
         }
       }
 
@@ -232,7 +244,7 @@ struct AgentSegmentedRadixSort
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
       {
-        int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
+        const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
 
         if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
         {

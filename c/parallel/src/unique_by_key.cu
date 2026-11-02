@@ -175,7 +175,7 @@ CUresult cccl_device_unique_by_key_compile(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 try
 {
   const char* name = "test";
@@ -230,7 +230,9 @@ try
     static_cast<int>(input_keys_it.value_type.size),
     static_cast<int>(input_values_it.value_type.size),
     input_keys_it.value_type.type != CCCL_STORAGE && input_keys_it.value_type.size <= 8,
-    input_values_it.value_type.type != CCCL_STORAGE && input_values_it.value_type.size <= 8};
+    input_values_it.value_type.type != CCCL_STORAGE && input_values_it.value_type.size <= 8,
+    cccl_type_enum_to_cub_type(input_keys_it.value_type.type),
+    cccl_type_enum_to_cub_type(input_values_it.value_type.type)};
 
   const auto active_policy = policy_sel(cc);
 
@@ -473,7 +475,7 @@ CUresult cccl_device_unique_by_key_build_ex(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 {
   CUresult result = cccl_device_unique_by_key_compile(
     build_ptr,

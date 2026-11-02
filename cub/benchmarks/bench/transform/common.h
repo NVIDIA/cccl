@@ -65,6 +65,7 @@ struct policy_selector
     auto policy              = cub::TransformAsyncCopyPolicy{};
     policy.threads_per_block = TUNE_THREADS;
     policy.unroll_factor     = TUNE_UNROLL_FACTOR;
+    policy.store_vec_size    = 1 << TUNE_STORE_VEC_SIZE_POW2;
     return {min_bytes_in_flight, algorithm, {}, {}, policy};
 #  else // TUNE_ALGORITHM
 #    error Policy hub does not yet implement the specified value for algorithm

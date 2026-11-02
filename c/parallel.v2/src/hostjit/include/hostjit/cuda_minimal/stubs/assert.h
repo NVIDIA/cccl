@@ -24,6 +24,21 @@ extern "C" {
 #undef assert
 #define assert(expr) ((void) 0)
 
+#if defined(__CUDA__) && defined(__clang__) && defined(__cplusplus)
+// Keep host verification independent of libc in the freestanding environment.
+// Clang compiles HostJIT code on every platform and provides the trap builtin.
+// This is the host counterpart of the __device__ __assert_fail shim in
+// __clang_cuda_runtime_wrapper.h. Hidden visibility binds the JIT library's
+// calls to this definition at link time; with default visibility the dynamic
+// linker would let the host process's glibc __assert_fail interpose it on
+// Linux, and the library would depend on libc after all.
+__attribute__((host, noreturn, visibility("hidden"))) inline void
+__assert_fail(const char*, const char*, unsigned, const char*) noexcept
+{
+  __builtin_trap();
+}
+#endif
+
 #ifdef __cplusplus
 }
 #endif

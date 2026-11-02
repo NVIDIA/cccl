@@ -65,6 +65,8 @@ TEST_DEVICE_FUNC void test_current()
     (assert(cc == cuda::compute_capability{100}); return;),
     NV_IS_EXACTLY_SM_103,
     (assert(cc == cuda::compute_capability{103}); return;),
+    NV_IS_EXACTLY_SM_107,
+    (assert(cc == cuda::compute_capability{107}); return;),
     NV_IS_EXACTLY_SM_110,
     (assert(cc == cuda::compute_capability{110}); return;),
     NV_IS_EXACTLY_SM_120,

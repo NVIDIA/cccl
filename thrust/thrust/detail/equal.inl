@@ -68,8 +68,9 @@ bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
   using System2 = typename thrust::iterator_system<InputIterator2>::type;
 
-  System1 system1;
-  System2 system2;
+  // thrust systems must be mutable
+  System1 system1; // NOLINT(misc-const-correctness)
+  System2 system2; // NOLINT(misc-const-correctness)
 
   return thrust::equal(select_system(system1, system2), first1, last1, first2);
 }

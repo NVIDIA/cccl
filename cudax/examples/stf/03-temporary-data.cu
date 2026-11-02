@@ -26,8 +26,8 @@ int main()
 
   for (size_t i = 0; i < n; i++)
   {
-    X[i] = 3 * i;
-    Y[i] = 2 * i - 3;
+    X[i] = static_cast<int>(3 * i);
+    Y[i] = static_cast<int>(2 * i - 3);
   }
 
   context ctx;
@@ -36,7 +36,7 @@ int main()
   auto lY = ctx.logical_data(Y);
 
   // Select an odd number
-  int niter = 19;
+  const int niter = 19;
   assert(niter % 2 == 1);
 
   for (int iter = 0; iter < niter; iter++)

@@ -18,6 +18,7 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include "thrust/detail/raw_pointer_cast.h"
+#include <c2h/catch2_allocation_failure.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -209,7 +210,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortPairs: unspecified ranges",
   begin_offsets.pop_back();
 
   {
-    std::size_t num_empty_segments = num_segments / 16;
+    const std::size_t num_empty_segments = num_segments / 16;
     c2h::device_vector<std::size_t> indices(num_empty_segments);
     c2h::gen(C2H_SEED(1), indices, std::size_t{0}, num_segments - 1);
     auto begin = cuda::constant_iterator(key_t{0});
@@ -284,7 +285,7 @@ try
   c2h::device_vector<key_t> in_keys(num_items);
   c2h::device_vector<value_t> in_values(num_items);
   constexpr auto max_histo_size = 250;
-  segmented_verification_helper<key_t> verification_helper{max_histo_size};
+  const segmented_verification_helper<key_t> verification_helper{max_histo_size};
   verification_helper.prepare_input_data(in_keys);
   thrust::copy(in_keys.cbegin(), in_keys.cend(), in_values.begin());
 
@@ -315,9 +316,9 @@ try
   // Verify values were sorted along with the keys
   REQUIRE(thrust::equal(out_keys.cbegin(), out_keys.cend(), out_values.cbegin()));
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
+  c2h::skip_if_allocation_failure();
 }
 
 // Currently, size of a single segment in DeviceRadixSort is limited to INT_MAX
@@ -372,8 +373,8 @@ try
   // Verify values were sorted along with the keys
   REQUIRE(thrust::equal(out_keys.cbegin(), out_keys.cend(), out_values.cbegin()));
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
+  c2h::skip_if_allocation_failure();
 }
 #endif // defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)

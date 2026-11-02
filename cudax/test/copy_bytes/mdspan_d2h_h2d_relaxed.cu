@@ -33,8 +33,8 @@ void test_impl_relaxed(
   thrust::device_vector<T> device_data(expected.size(), 0);
   {
     // host to device
-    cuda::host_mdspan<const T, extents_t, cuda::layout_stride_relaxed> host_md(input.data(), src_mapping);
-    cuda::device_mdspan<T, extents_t> device_md(thrust::raw_pointer_cast(device_data.data()), dst_mapping);
+    const cuda::host_mdspan<const T, extents_t, cuda::layout_stride_relaxed> host_md(input.data(), src_mapping);
+    const cuda::device_mdspan<T, extents_t> device_md(thrust::raw_pointer_cast(device_data.data()), dst_mapping);
     cuda::experimental::copy_bytes(host_md, device_md, stream);
     stream.sync();
     REQUIRE(thrust::host_vector<T>(device_data) == expected);
@@ -43,9 +43,9 @@ void test_impl_relaxed(
     // device to host
     thrust::host_vector<T> host_output(expected.size(), 0);
     thrust::device_vector<T> device_input(input.begin(), input.end());
-    cuda::device_mdspan<const T, extents_t, cuda::layout_stride_relaxed> device_md(
+    const cuda::device_mdspan<const T, extents_t, cuda::layout_stride_relaxed> device_md(
       thrust::raw_pointer_cast(device_input.data()), src_mapping);
-    cuda::host_mdspan<T, extents_t> host_md(host_output.data(), dst_mapping);
+    const cuda::host_mdspan<T, extents_t> host_md(host_output.data(), dst_mapping);
     cuda::experimental::copy_bytes(device_md, host_md, stream);
     stream.sync();
     REQUIRE(host_output == expected);
@@ -143,7 +143,7 @@ TEST_CASE("copy_bytes layout_stride_relaxed, offset subarray", "[copy_bytes][rel
   // src(0,0) = input[2]  = 2,  src(0,1) = input[3]  = 3
   // src(1,0) = input[6]  = 6,  src(1,1) = input[7]  = 7
   // src(2,0) = input[10] = 10, src(2,1) = input[11] = 11
-  thrust::host_vector<int> expected = {2, 3, 6, 7, 10, 11};
+  const thrust::host_vector<int> expected = {2, 3, 6, 7, 10, 11};
 
   using extents_t = cuda::std::extents<int, Rows, Cols>;
   using mapping_t = cuda::layout_stride_relaxed::mapping<extents_t>;

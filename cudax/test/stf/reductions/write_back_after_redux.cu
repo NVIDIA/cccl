@@ -62,6 +62,6 @@ int main()
 
   ctx.finalize();
 
-  int expected = 42 + (N * (N - 1)) / 2 * (ndevs + 1);
+  const int expected = 42 + (N * (N - 1)) / 2 * (ndevs + 1);
   EXPECT(var == expected);
 }

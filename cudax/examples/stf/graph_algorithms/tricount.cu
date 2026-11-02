@@ -26,7 +26,7 @@ __device__ int binary_search(slice<const int> arr, int start, int end, int looku
 {
   while (start <= end)
   {
-    int mid = start + (end - start) / 2;
+    const int mid = start + (end - start) / 2;
     if (arr[mid] == lookup)
     {
       return mid;
@@ -56,10 +56,10 @@ __device__ unsigned long long int triangle_count(int idx, slice<const int> loffs
   int lcount = 0;
   for (int i = loffsets[idx]; i < loffsets[idx + 1]; i++)
   {
-    int v = lnonzeros[i];
+    const int v = lnonzeros[i];
     for (int j = loffsets[idx]; j < loffsets[idx + 1]; j++)
     {
-      int w = lnonzeros[j];
+      const int w = lnonzeros[j];
       if (binary_search(lnonzeros, loffsets[v], loffsets[v + 1] - 1, w) != -1)
       {
         lcount++;
@@ -78,7 +78,7 @@ int main()
   // edges in CSR format
   std::vector<int> nonzeros = {0, 0, 0, 1, 1, 1, 0, 1, 1, 1};
 
-  int num_vertices = offsets.size() - 1;
+  const int num_vertices = static_cast<int>(offsets.size() - 1);
 
   auto loffsets     = ctx.logical_data(&offsets[0], offsets.size());
   auto lnonzeros    = ctx.logical_data(&nonzeros[0], nonzeros.size());

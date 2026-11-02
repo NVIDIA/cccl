@@ -27,6 +27,8 @@
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/cstdint>
 
+#include <nv/target>
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
@@ -37,7 +39,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_CUDA_COMPILATION()
 _CCCL_TEMPLATE(class _To, class _From)
 _CCCL_REQUIRES((sizeof(_To) == sizeof(int8_t)))
-[[nodiscard]] _CCCL_DEVICE_API _To __saturating_cast_impl_device(_From __x, int) noexcept
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API _To __saturating_cast_impl_device(_From __x, int) noexcept
 {
   [[maybe_unused]] int __ret;
 
@@ -135,7 +137,7 @@ _CCCL_REQUIRES((sizeof(_To) == sizeof(int8_t)))
 
 _CCCL_TEMPLATE(class _To, class _From)
 _CCCL_REQUIRES((sizeof(_To) == sizeof(int16_t)))
-[[nodiscard]] _CCCL_DEVICE_API _To __saturating_cast_impl_device(_From __x, int) noexcept
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API _To __saturating_cast_impl_device(_From __x, int) noexcept
 {
   [[maybe_unused]] _To __ret;
 
@@ -172,12 +174,10 @@ _CCCL_REQUIRES((sizeof(_To) == sizeof(int16_t)))
   {
     if constexpr (is_signed_v<_To> && is_signed_v<_From>)
     {
-      // There is a bug on Blackwell this PTX instruction giving invalid result for negative inputs. Enable this once
-      // nvbug 6423103 is resolved.
-      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100, ({ return ::cuda::saturating_overflow_cast<_To>(__x).value; }), ({
-                          asm("cvt.sat.s16.s32 %0, %1;" : "=h"(__ret) : "r"(__x));
-                          return __ret;
-                        }))
+      // There is a bug on Blackwell this PTX instruction giving invalid result for negative inputs (nvbug 6423103).
+      // Converting to the same 32-bit register and then casting to short is a workaround for this bug.
+      asm("cvt.sat.s16.s32 %0, %0;" : "+r"(__x));
+      return static_cast<_To>(__x);
     }
     else if constexpr (is_signed_v<_To> && is_unsigned_v<_From>)
     {
@@ -199,12 +199,10 @@ _CCCL_REQUIRES((sizeof(_To) == sizeof(int16_t)))
   {
     if constexpr (is_signed_v<_To> && is_signed_v<_From>)
     {
-      // There is a bug on Blackwell this PTX instruction giving invalid result for negative inputs. Enable this once
-      // nvbug 6423103 is resolved.
-      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100, ({ return ::cuda::saturating_overflow_cast<_To>(__x).value; }), ({
-                          asm("cvt.sat.s16.s64 %0, %1;" : "=h"(__ret) : "l"(__x));
-                          return __ret;
-                        }))
+      // There is a bug on Blackwell this PTX instruction giving invalid result for negative inputs (nvbug 6423103).
+      // Converting to the same 64-bit register and then casting to short is a workaround for this bug.
+      asm("cvt.sat.s16.s64 %0, %0;" : "+l"(__x));
+      return static_cast<_To>(__x);
     }
     else if constexpr (is_signed_v<_To> && is_unsigned_v<_From>)
     {
@@ -230,7 +228,7 @@ _CCCL_REQUIRES((sizeof(_To) == sizeof(int16_t)))
 
 _CCCL_TEMPLATE(class _To, class _From)
 _CCCL_REQUIRES((sizeof(_To) == sizeof(int32_t)))
-[[nodiscard]] _CCCL_DEVICE_API _To __saturating_cast_impl_device(_From __x, int) noexcept
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API _To __saturating_cast_impl_device(_From __x, int) noexcept
 {
   [[maybe_unused]] _To __ret;
 
@@ -306,7 +304,7 @@ _CCCL_REQUIRES((sizeof(_To) == sizeof(int32_t)))
 
 _CCCL_TEMPLATE(class _To, class _From)
 _CCCL_REQUIRES((sizeof(_To) == sizeof(int64_t)))
-[[nodiscard]] _CCCL_DEVICE_API _To __saturating_cast_impl_device(_From __x, int) noexcept
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API _To __saturating_cast_impl_device(_From __x, int) noexcept
 {
   [[maybe_unused]] _To __ret;
 

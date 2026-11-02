@@ -60,7 +60,6 @@
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/rotl.h>
 #include <cuda/std/array>
-#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 
@@ -125,8 +124,7 @@ public:
   //! @return The resulting hash value for `__key`
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t operator()(const _Key& __key) const noexcept
   {
-    using _Holder _CCCL_NODEBUG_ALIAS =
-      __byte_holder<sizeof(_Key), __chunk_size, __block_size, true, ::cuda::std::uint32_t>;
+    using _Holder _CCCL_NODEBUG = __byte_holder<sizeof(_Key), __chunk_size, __block_size, true, ::cuda::std::uint32_t>;
     // Materialize a copy so the device compiler can use wide loads.
     const _Key __copy{__key};
     return __compute_hash(::cuda::std::bit_cast<_Holder>(__copy));
@@ -158,11 +156,8 @@ private:
     // process data in 16-byte chunks
     if constexpr (_Holder::__num_chunks > 0)
     {
-      ::cuda::std::array<::cuda::std::uint32_t, 4> __v;
-      __v[0] = __seed_ + __prime1 + __prime2;
-      __v[1] = __seed_ + __prime2;
-      __v[2] = __seed_;
-      __v[3] = __seed_ - __prime1;
+      ::cuda::std::array<::cuda::std::uint32_t, 4> __v{
+        __seed_ + __prime1 + __prime2, __seed_ + __prime2, __seed_, __seed_ - __prime1};
 
       for (::cuda::std::uint32_t __chunk = 0; __chunk < _Holder::__num_chunks; ++__chunk)
       {
@@ -218,12 +213,8 @@ private:
     if (__size >= 16)
     {
       const auto __limit = __size - 16;
-      ::cuda::std::array<::cuda::std::uint32_t, 4> __v;
-
-      __v[0] = __seed_ + __prime1 + __prime2;
-      __v[1] = __seed_ + __prime2;
-      __v[2] = __seed_;
-      __v[3] = __seed_ - __prime1;
+      ::cuda::std::array<::cuda::std::uint32_t, 4> __v{
+        __seed_ + __prime1 + __prime2, __seed_ + __prime2, __seed_, __seed_ - __prime1};
 
       for (; __offset <= __limit; __offset += 16)
       {
@@ -378,12 +369,8 @@ private:
     if (__size >= 32)
     {
       const auto __limit = __size - 32;
-      ::cuda::std::array<::cuda::std::uint64_t, 4> __v;
-
-      __v[0] = __seed_ + __prime1 + __prime2;
-      __v[1] = __seed_ + __prime2;
-      __v[2] = __seed_;
-      __v[3] = __seed_ - __prime1;
+      ::cuda::std::array<::cuda::std::uint64_t, 4> __v{
+        __seed_ + __prime1 + __prime2, __seed_ + __prime2, __seed_, __seed_ - __prime1};
 
       for (; __offset <= __limit; __offset += 32)
       {

@@ -33,7 +33,7 @@ C2H_TEST("DeviceTransform::Transform cuda::device_buffer", "[device][launch_tran
   using type          = int;
   const int num_items = 1 << 24;
 
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   cuda::device_memory_pool_ref resource = cuda::device_default_memory_pool(cuda::device_ref{0});
 
   cuda::device_buffer<type> a{stream, resource, num_items, cuda::no_init};
@@ -43,8 +43,9 @@ C2H_TEST("DeviceTransform::Transform cuda::device_buffer", "[device][launch_tran
 
   cuda::device_buffer<type> result{stream, resource, num_items, cuda::no_init};
 
-  cub::DeviceTransform::Transform(
-    ::cuda::std::make_tuple(a.begin(), b.begin()), result.begin(), num_items, ::cuda::std::plus<type>{});
+  REQUIRE(cudaSuccess
+          == cub::DeviceTransform::Transform(
+            ::cuda::std::make_tuple(a.begin(), b.begin()), result.begin(), num_items, ::cuda::std::plus<type>{}));
 
   // copy back to host
   thrust::host_vector<type> a_h(num_items);
@@ -80,7 +81,7 @@ struct add_kernel
 
 C2H_CCCLRT_TEST("cuda::buffer launch transform", "[container][buffer]")
 {
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   cuda::device_memory_pool_ref resource = cuda::device_default_memory_pool(cuda::device_ref{0});
 
   const cuda::std::array array = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};

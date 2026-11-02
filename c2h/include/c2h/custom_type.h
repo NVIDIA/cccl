@@ -3,8 +3,10 @@
 
 #pragma once
 
+#include <cuda/__cmath/round_up.h>
 #include <cuda/std/limits>
 
+#include <cstdint>
 #include <memory>
 #include <ostream>
 
@@ -15,6 +17,22 @@ struct custom_type_state_t
   std::size_t key{};
   std::size_t val{};
 };
+
+template <template <typename> class... Policies>
+class custom_type_t;
+
+namespace detail
+{
+//! Number of policies \p CustomType was instantiated with.
+template <class CustomType>
+struct policy_count_t;
+
+template <template <typename> class... Policies>
+struct policy_count_t<custom_type_t<Policies...>>
+{
+  static constexpr std::size_t value = sizeof...(Policies);
+};
+} // namespace detail
 
 template <template <typename> class... Policies>
 class custom_type_t
@@ -28,14 +46,32 @@ public:
   }
 };
 
+//! Inflates a custom type to exactly \p TotalSize bytes, so that algorithms have to fall back to
+//! temporary storage backed by global memory (vsmem).
 template <std::size_t TotalSize>
 struct huge_data
 {
   template <class CustomType>
   class type
   {
-    static constexpr auto extra_member_bytes = (TotalSize - sizeof(custom_type_state_t));
-    std::uint8_t data[extra_member_bytes];
+    // because custom types are 8-byte aligned we can only increase size in multiples of 8 bytes
+    static_assert(TotalSize % sizeof(std::uint64_t) == 0, "huge_data<TotalSize>: TotalSize must be a multiple of 8");
+
+    // Every other policy contributes exactly one byte (their MSVC workaround member), so counting
+    // them is enough, and their order does not matter as they are all byte-aligned. The filler is 8-byte aligned, so
+    // those bytes occupy a whole word, regardless of whether the filler comes before or after them.
+    static constexpr std::size_t other_policy_bytes = detail::policy_count_t<CustomType>::value - 1;
+    static constexpr std::size_t bytes_before_filler =
+      sizeof(custom_type_state_t) + ::cuda::round_up(other_policy_bytes, sizeof(std::uint64_t));
+
+    // A second huge_data policy, or any policy contributing more than its one-byte MSVC workaround
+    // member, breaks the one-byte-per-policy assumption above and underflows the filler size below.
+    static_assert(bytes_before_filler < TotalSize,
+                  "huge_data expects to be the only size-contributing policy in the pack, and TotalSize to be "
+                  "larger than custom_type_state_t plus one word for the remaining policies");
+
+    // Whatever the other bases leave over becomes the filler. Use large words to minimize register allocation.
+    std::uint64_t data[(TotalSize - bytes_before_filler) / sizeof(std::uint64_t)]{};
   };
 };
 
@@ -165,7 +201,7 @@ public:
   template <class SizeT = std::size_t>
   static __host__ __device__ c2h::custom_type_t<Policies...> max()
   {
-    c2h::custom_type_t<Policies...> val;
+    c2h::custom_type_t<Policies...> val{};
     val.key = numeric_limits<SizeT>::max();
     val.val = numeric_limits<SizeT>::max();
     return val;
@@ -174,7 +210,7 @@ public:
   template <class SizeT = std::size_t>
   static __host__ __device__ c2h::custom_type_t<Policies...> min()
   {
-    c2h::custom_type_t<Policies...> val;
+    c2h::custom_type_t<Policies...> val{};
     val.key = numeric_limits<SizeT>::min();
     val.val = numeric_limits<SizeT>::min();
     return val;
@@ -183,7 +219,7 @@ public:
   template <class SizeT = std::size_t>
   static __host__ __device__ c2h::custom_type_t<Policies...> lowest()
   {
-    c2h::custom_type_t<Policies...> val;
+    c2h::custom_type_t<Policies...> val{};
     val.key = numeric_limits<SizeT>::lowest();
     val.val = numeric_limits<SizeT>::lowest();
     return val;

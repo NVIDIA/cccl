@@ -24,8 +24,8 @@
 #include <cuda/__annotated_ptr/access_property.h>
 #include <cuda/__annotated_ptr/annotated_ptr_base.h>
 #include <cuda/__memcpy_async/memcpy_async.h>
-#include <cuda/__memory/address_space.h>
-#include <cuda/std/cstddef>
+#include <cuda/__memory/address_space.h> // IWYU pragma: keep
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>

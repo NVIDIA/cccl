@@ -17,26 +17,25 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/round_down.h>
-#include <cuda/__cmath/round_up.h>
 #include <cuda/__memory/address_space.h>
 #include <cuda/__memory/align_up.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/__memory/ptr_rebind.h>
-#include <cuda/__ptx/instructions/cp_async_bulk.h>
-#include <cuda/__ptx/instructions/elect_sync.h>
-#include <cuda/__ptx/instructions/mbarrier_arrive.h>
-#include <cuda/__ptx/instructions/mbarrier_init.h>
-#include <cuda/__ptx/instructions/mbarrier_inval.h>
-#include <cuda/__ptx/instructions/mbarrier_wait.h>
+#include <cuda/__ptx/instructions/cp_async_bulk.h> // IWYU pragma: keep
+#include <cuda/__ptx/instructions/elect_sync.h> // IWYU pragma: keep
+#include <cuda/__ptx/instructions/mbarrier_arrive.h> // IWYU pragma: keep
+#include <cuda/__ptx/instructions/mbarrier_init.h> // IWYU pragma: keep
+#include <cuda/__ptx/instructions/mbarrier_inval.h> // IWYU pragma: keep
+#include <cuda/__ptx/instructions/mbarrier_wait.h> // IWYU pragma: keep
 #include <cuda/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/data.h>
 #include <cuda/std/__iterator/size.h>
 #include <cuda/std/cstdint>
@@ -305,7 +304,7 @@ public:
   //!   Guaranteed alignment in bytes of the source range (both begin and end) in global memory
   //! @param[in] smem_dst
   //!   Destination buffer in shared memory that is aligned to `SharedBufferAlignBytes<T>()` and at least
-  //!   `SharedBufferSizeBytes<T, GmemAlign>(size(gmem_src))` big.
+  //!   `SharedBufferSizeBytes<T, GmemAlign>(::cuda::std::size(gmem_src))` big.
   //! @param[in] gmem_src
   //!   Source range in global memory, determines the size of the transaction
   //! @return
@@ -322,9 +321,9 @@ public:
     static_assert(::cuda::__is_valid_alignment<T>(GmemAlign));
     constexpr bool bulk_aligned = GmemAlign >= static_cast<::cuda::std::size_t>(detail::bulk_copy_min_align);
     // Avoid 64b multiplication in span::size_bytes()
-    const int num_bytes = static_cast<int>(sizeof(T)) * static_cast<int>(size(gmem_src));
-    const auto dst_ptr  = data(smem_dst);
-    const auto src_ptr  = ::cuda::ptr_rebind<char>(data(gmem_src));
+    const int num_bytes = static_cast<int>(sizeof(T)) * static_cast<int>(::cuda::std::size(gmem_src));
+    const auto dst_ptr  = ::cuda::std::data(smem_dst);
+    const auto src_ptr  = ::cuda::ptr_rebind<char>(::cuda::std::data(gmem_src));
     _CCCL_ASSERT(dst_ptr == nullptr || ::cuda::device::is_address_from(dst_ptr, ::cuda::device::address_space::shared),
                  "Destination address needs to point to shared memory");
     _CCCL_ASSERT(src_ptr == nullptr || ::cuda::device::is_address_from(src_ptr, ::cuda::device::address_space::global),
@@ -337,9 +336,9 @@ public:
                  "End of global memory range needs to be aligned according to GmemAlign.");
     _CCCL_ASSERT(::cuda::is_aligned(dst_ptr, cub::detail::LoadToSharedBufferAlignBytes<T>()),
                  "Shared memory needs to be 16 byte aligned.");
-    _CCCL_ASSERT(
-      (static_cast<int>(size(smem_dst)) >= cub::detail::LoadToSharedBufferSizeBytes<T, GmemAlign>(size(gmem_src))),
-      "Shared memory destination buffer must have enough space");
+    _CCCL_ASSERT((static_cast<int>(::cuda::std::size(smem_dst))
+                  >= cub::detail::LoadToSharedBufferSizeBytes<T, GmemAlign>(::cuda::std::size(gmem_src))),
+                 "Shared memory destination buffer must have enough space");
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     _CCCL_ASSERT(state == State::ready_to_copy || state == State::ready_to_copy_or_commit,
                  "Wait() must be called before another CopyAsync()");
@@ -413,7 +412,8 @@ public:
 
   //! @brief Wait for previously committed copies to arrive. Prepare for next
   //! calls to @c CopyAsync() .
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Wait(CommitToken&&)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  Wait(CommitToken&&) // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
   {
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     _CCCL_ASSERT(state == State::committed, "Commit() must be called before Wait()");
@@ -421,7 +421,8 @@ public:
 #endif // CCCL_ENABLE_DEVICE_ASSERTIONS
 
     while (!__try_wait())
-      ;
+    {
+    }
     phase_parity ^= 1u;
   }
 

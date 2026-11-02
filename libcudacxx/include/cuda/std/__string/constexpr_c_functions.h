@@ -26,6 +26,8 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/climits>
 
+#include <nv/target>
+
 #if _CCCL_HOSTED()
 #  include <cstring>
 #elif _CCCL_HOSTJIT()
@@ -42,7 +44,7 @@ template <class _CharT>
 _CCCL_API constexpr _CharT*
 __cccl_strcpy_impl_constexpr(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src) noexcept
 {
-  _CharT* __dst_it = __dst;
+  _CharT* __dst_it = __dst; // NOLINT(misc-const-correctness)
   while ((*__dst_it++ = *__src++) != _CharT('\0'))
   {
   }
@@ -80,7 +82,7 @@ template <class _CharT>
 _CCCL_API constexpr _CharT*
 __cccl_strncpy_impl_constexpr(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src, size_t __n) noexcept
 {
-  _CharT* __dst_it = __dst;
+  _CharT* __dst_it = __dst; // NOLINT(misc-const-correctness)
   while (__n--)
   {
     if ((*__dst_it++ = *__src++) == _CharT('\0')) // NOLINT(bugprone-assignment-in-if-condition)

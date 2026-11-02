@@ -10,21 +10,28 @@ struct stream_registry_factory_t;
 #include <cub/device/device_reduce.cuh>
 
 #include <thrust/device_vector.h>
+#include <thrust/functional.h>
+#include <thrust/sequence.h>
+#include <thrust/tabulate.h>
 
 #include <cuda/devices>
+#include <cuda/functional>
 #include <cuda/iterator>
+#include <cuda/std/limits>
 #include <cuda/stream>
 
-#include "catch2_test_env_launch_helper.h"
+#include "block_size_extracting_helpers.h"
+#include "catch2_test_launch_helper.h"
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_reduce_sum);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Min, device_reduce_min);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Max, device_reduce_max);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::TransformReduce, device_transform_reduce);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ReduceByKey, device_reduce_by_key);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::Reduce, device_reduce);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::Sum, device_reduce_sum);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::Min, device_reduce_min);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::Max, device_reduce_max);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::TransformReduce, device_transform_reduce);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::ReduceByKey, device_reduce_by_key);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::ArgMin, device_arg_min);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::ArgMax, device_arg_max);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::ArgMinMax, device_arg_minmax);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -46,6 +53,28 @@ struct reduce_tuning
     const auto policy =
       cub::ReducePassPolicy{ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
     return {policy, policy};
+  }
+};
+
+// Selects a non-deterministic block reduce. This is only valid if the reduction is not required to be run-to-run
+// deterministic, which includes a determinism::not_guaranteed request that falls back to a run-to-run deterministic
+// dispatch (e.g., for min/max or arg-min/arg-max).
+struct nondeterministic_reduce_tuning
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::ReducePolicy
+  {
+    const auto policy =
+      cub::ReducePassPolicy{128, 4, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC, cub::LOAD_DEFAULT};
+    return {policy, policy};
+  }
+};
+
+// not a known operator, so the reduction is not considered stable
+struct custom_max_op
+{
+  __host__ __device__ int operator()(int a, int b) const
+  {
+    return a < b ? b : a;
   }
 };
 
@@ -76,19 +105,16 @@ CUB_TEST_CASE("Device reduce works with default environment", "[reduce][device]"
   using value_t     = int;
   using offset_t    = cub::detail::choose_offset_t<num_items_t>;
 
-  int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
-
   cuda::compute_capability cc{};
-  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc, current_device));
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
 
-  unsigned int target_block_size =
+  const unsigned int target_block_size =
     cub::detail::reduce::policy_selector_from_types<value_t, offset_t, block_size_check_plus_t>{}(cc)
       .single_tile.threads_per_block;
 
-  num_items_t num_items = 1;
+  const num_items_t num_items = 1;
   c2h::device_vector<unsigned int> d_block_size(1);
-  block_size_check_plus_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_check_plus_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
   auto d_in  = cuda::constant_iterator(value_t{1});
   auto d_out = thrust::device_vector<value_t>(1);
 
@@ -101,9 +127,9 @@ CUB_TEST_CASE("Device reduce works with default environment", "[reduce][device]"
 
 CUB_TEST_CASE("Device Sum works with default environment", "[reduce][device]", CUB_SMALL)
 {
-  using num_items_t     = int;
-  using value_t         = int;
-  num_items_t num_items = 1;
+  using num_items_t           = int;
+  using value_t               = int;
+  const num_items_t num_items = 1;
 
   auto d_in  = cuda::constant_iterator(value_t{1});
   auto d_out = thrust::device_vector<value_t>(1);
@@ -241,7 +267,7 @@ CUB_TEST("Device ArgMin can be tuned", "[reduce][device]", CUB_SMALL, block_size
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
   using compare_t = block_size_extracting_op<cuda::std::less<>>;
-  compare_t compare_op{thrust::raw_pointer_cast(d_block_size.data())};
+  const compare_t compare_op{thrust::raw_pointer_cast(d_block_size.data())};
 
   auto input        = c2h::device_vector<int>{3, 1, 4, 0, 2};
   auto min_output   = c2h::device_vector<int>(1);
@@ -261,7 +287,7 @@ CUB_TEST("Device ArgMax can be tuned", "[reduce][device]", CUB_SMALL, block_size
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
   using compare_t = block_size_extracting_op<cuda::std::less<>>;
-  compare_t compare_op{thrust::raw_pointer_cast(d_block_size.data())};
+  const compare_t compare_op{thrust::raw_pointer_cast(d_block_size.data())};
 
   auto input        = c2h::device_vector<int>{3, 1, 4, 0, 2};
   auto max_output   = c2h::device_vector<int>(1);
@@ -276,15 +302,108 @@ CUB_TEST("Device ArgMax can be tuned", "[reduce][device]", CUB_SMALL, block_size
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+CUB_TEST_CASE("Device reduce not_guaranteed accepts a nondeterministic tuning when falling back to run_to_run",
+              "[reduce][device]",
+              CUB_SMALL)
+{
+  auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
+                          cuda::execution::tune(nondeterministic_reduce_tuning{})};
+
+  SECTION("non-plus operator on floats")
+  {
+    auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+    auto output = c2h::device_vector<float>(1);
+    device_reduce(
+      input.begin(),
+      output.begin(),
+      static_cast<int>(input.size()),
+      cuda::maximum<>{},
+      cuda::std::numeric_limits<float>::lowest(),
+      env);
+    REQUIRE(output[0] == 4.0f);
+  }
+  SECTION("custom operator on ints")
+  {
+    auto input  = c2h::device_vector<int>{3, 1, 4, 0, 2};
+    auto output = c2h::device_vector<int>(1);
+    device_reduce(input.begin(), output.begin(), static_cast<int>(input.size()), custom_max_op{}, 0, env);
+    REQUIRE(output[0] == 4);
+  }
+  SECTION("output type differs from the accumulator type")
+  {
+    auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+    auto output = c2h::device_vector<double>(1);
+    device_reduce(input.begin(), output.begin(), static_cast<int>(input.size()), cuda::std::plus<>{}, 0.0f, env);
+    REQUIRE(output[0] == 10.0);
+  }
+}
+
+CUB_TEST_CASE("Device Min and Max not_guaranteed accept a nondeterministic tuning", "[reduce][device]", CUB_SMALL)
+{
+  auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
+                          cuda::execution::tune(nondeterministic_reduce_tuning{})};
+
+  auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+  auto output = c2h::device_vector<float>(1);
+
+  SECTION("Min")
+  {
+    device_reduce_min(input.begin(), output.begin(), static_cast<int>(input.size()), env);
+    REQUIRE(output[0] == 0.0f);
+  }
+  SECTION("Max")
+  {
+    device_reduce_max(input.begin(), output.begin(), static_cast<int>(input.size()), env);
+    REQUIRE(output[0] == 4.0f);
+  }
+}
+
+CUB_TEST_CASE("Device ArgMin, ArgMax and ArgMinMax not_guaranteed accept a nondeterministic tuning",
+              "[reduce][device]",
+              CUB_SMALL)
+{
+  auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
+                          cuda::execution::tune(nondeterministic_reduce_tuning{})};
+
+  auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+  const auto n      = static_cast<int>(input.size());
+  auto extremum_out = c2h::device_vector<float>(1);
+  auto index_out    = c2h::device_vector<cuda::std::int64_t>(1);
+
+  SECTION("ArgMin")
+  {
+    device_arg_min(input.begin(), extremum_out.begin(), index_out.begin(), n, env);
+    REQUIRE(extremum_out[0] == 0.0f);
+    REQUIRE(index_out[0] == 3);
+  }
+  SECTION("ArgMax")
+  {
+    device_arg_max(input.begin(), extremum_out.begin(), index_out.begin(), n, env);
+    REQUIRE(extremum_out[0] == 4.0f);
+    REQUIRE(index_out[0] == 2);
+  }
+  SECTION("ArgMinMax")
+  {
+    auto max_extremum_out = c2h::device_vector<float>(1);
+    auto max_index_out    = c2h::device_vector<cuda::std::int64_t>(1);
+    device_arg_minmax(
+      input.begin(), extremum_out.begin(), index_out.begin(), max_extremum_out.begin(), max_index_out.begin(), n, env);
+    REQUIRE(extremum_out[0] == 0.0f);
+    REQUIRE(index_out[0] == 3);
+    REQUIRE(max_extremum_out[0] == 4.0f);
+    REQUIRE(max_index_out[0] == 2);
+  }
+}
+
 #endif // TEST_LAUNCH != 1
 
-template <int BlockThreads>
+template <int BlockThreads, int ItemsPerThread = 1>
 struct reduce_by_key_tuning
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::ReduceByKeyPolicy
   {
     return {cub::ReduceByKeyAlgorithm::lookback,
-            {BlockThreads, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}}};
+            {BlockThreads, ItemsPerThread, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}}};
   }
 };
 
@@ -305,7 +424,7 @@ CUB_TEST("Device ReduceByKey can be tuned", "[reduce][device]", CUB_SMALL, reduc
   auto d_num_runs_out                      = c2h::device_vector<int>(1);
   auto d_block_size                        = c2h::device_vector<unsigned int>(1);
 
-  block_size_extracting_minimum_t reduction_op{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_extracting_minimum_t reduction_op{thrust::raw_pointer_cast(d_block_size.data())};
   auto env = cuda::execution::tune(reduce_by_key_tuning<target_block_size>{});
 
   device_reduce_by_key(
@@ -319,13 +438,52 @@ CUB_TEST("Device ReduceByKey can be tuned", "[reduce][device]", CUB_SMALL, reduc
     env);
 
   REQUIRE(d_num_runs_out[0] == 5);
-  c2h::device_vector<int> expected_keys{0, 2, 9, 5, 8};
-  c2h::device_vector<int> expected_aggregates{0, 1, 6, 2, 4};
+  const c2h::device_vector<int> expected_keys{0, 2, 9, 5, 8};
+  const c2h::device_vector<int> expected_aggregates{0, 1, 6, 2, 4};
   d_unique_out.resize(5);
   d_aggregates_out.resize(5);
   REQUIRE(d_unique_out == expected_keys);
   REQUIRE(d_aggregates_out == expected_aggregates);
   REQUIRE(d_block_size[0] == target_block_size);
+}
+
+// The agent's temporary storage for 32 threads x 100 items exceeds the static shared memory limit, so the kernel falls
+// back to a larger block of 64 threads, which its launch bounds must allow
+CUB_TEST_CASE("Device ReduceByKey can be tuned with a small block size that needs the fallback policy",
+              "[reduce][device]",
+              CUB_SMALL)
+{
+  constexpr int num_items = 10000;
+  constexpr int run_size  = 7;
+  constexpr int num_runs  = cuda::ceil_div(num_items, run_size);
+
+  // runs of run_size equal keys 0, 0, ..., 1, 1, ..., 2, ...; all values are 1
+  auto d_keys_in = c2h::device_vector<long long>(num_items, thrust::no_init);
+  thrust::tabulate(d_keys_in.begin(), d_keys_in.end(), thrust::placeholders::_1 / run_size);
+  auto d_values_in      = c2h::device_vector<double>(num_items, 1.0);
+  auto d_unique_out     = c2h::device_vector<long long>(num_runs, thrust::no_init);
+  auto d_aggregates_out = c2h::device_vector<double>(num_runs, thrust::no_init);
+  auto d_num_runs_out   = c2h::device_vector<int>(1, thrust::no_init);
+
+  auto env = cuda::execution::tune(reduce_by_key_tuning<32, 100>{});
+
+  device_reduce_by_key(
+    d_keys_in.begin(),
+    d_unique_out.begin(),
+    d_values_in.begin(),
+    d_aggregates_out.begin(),
+    d_num_runs_out.begin(),
+    cuda::std::plus<>{},
+    num_items,
+    env);
+
+  REQUIRE(d_num_runs_out[0] == num_runs);
+  auto expected_keys = c2h::device_vector<long long>(num_runs, thrust::no_init);
+  thrust::sequence(expected_keys.begin(), expected_keys.end());
+  auto expected_aggregates   = c2h::device_vector<double>(num_runs, run_size);
+  expected_aggregates.back() = num_items - (num_runs - 1) * run_size; // the last run is shorter
+  REQUIRE(d_unique_out == expected_keys);
+  REQUIRE(d_aggregates_out == expected_aggregates);
 }
 
 #endif // TEST_LAUNCH != 1
@@ -352,6 +510,12 @@ CUB_TEST("Device reduce uses environment", "[reduce][device]", CUB_SMALL, requir
   init_value_t init = 0;
   size_t expected_bytes_allocated{};
 
+  // MSVC yields a reference type for `decltype(d_in)`/`decltype(d_out.begin())` when `d_in`/`d_out` are ODR-used inside
+  // the by-reference-capturing lambda, which would select different kernel instantiations than the ones dispatched
+  // below. Hoisting the decltypes and decay-ing them to make the aliases position independent.
+  using input_it_t  = ::cuda::std::decay_t<decltype(d_in)>;
+  using output_it_t = ::cuda::std::decay_t<decltype(d_out.begin())>;
+
   // To check if a given algorithm implementation is used, we check if associated kernels are invoked.
   auto kernels = [&]() {
     if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>)
@@ -365,8 +529,8 @@ CUB_TEST("Device reduce uses environment", "[reduce][device]", CUB_SMALL, requir
         reinterpret_cast<void*>(
           cub::detail::reduce::DeviceReduceSingleTileKernel<
             policy_t,
-            decltype(d_in),
-            decltype(d_out.begin()),
+            input_it_t,
+            output_it_t,
             offset_t,
             op_t,
             init_value_t,
@@ -376,7 +540,7 @@ CUB_TEST("Device reduce uses environment", "[reduce][device]", CUB_SMALL, requir
           cub::detail::reduce::DeviceReduceKernel<
             policy_t,
             /* StableReductionOrder */ true,
-            decltype(d_in),
+            input_it_t,
             accumulator_t*,
             offset_t,
             offset_t,
@@ -388,7 +552,7 @@ CUB_TEST("Device reduce uses environment", "[reduce][device]", CUB_SMALL, requir
           cub::detail::reduce::DeviceReduceSingleTileKernel<
             policy_t,
             accumulator_t*,
-            decltype(d_out.begin()),
+            output_it_t,
             int, // always used with int offset
             op_t,
             init_value_t,
@@ -417,7 +581,7 @@ CUB_TEST("Device reduce uses environment", "[reduce][device]", CUB_SMALL, requir
         cub::detail::reduce::DeviceReduceKernel<
           policy_t,
           /* StableReductionOrder */ false,
-          decltype(d_in),
+          input_it_t,
           decltype(raw_ptr),
           offset_t,
           offset_t,
@@ -433,23 +597,22 @@ CUB_TEST("Device reduce uses environment", "[reduce][device]", CUB_SMALL, requir
       using policy_t            = cub::detail::reduce::
         policy_selector_from_types<accumulator_t, offset_t, reduction_op_t, __determinism_t::__gpu_to_gpu>;
       using deterministic_accum_t = deterministic_add_t::DeterministicAcc;
-      using output_it_t           = decltype(d_out.begin());
 
-      REQUIRE(cudaSuccess
-              == cub::detail::rfa::
-                dispatch<decltype(d_in), decltype(d_out.begin()), offset_t, init_value_t, transform_t, accumulator_t>(
-                  nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
+      REQUIRE(
+        cudaSuccess
+        == cub::detail::rfa::dispatch<input_it_t, output_it_t, offset_t, init_value_t, transform_t, accumulator_t>(
+          nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
 
       auto k1 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
         policy_t,
-        decltype(d_in),
+        input_it_t,
         output_it_t,
         reduction_op_t,
         init_value_t,
         deterministic_accum_t,
         transform_t>;
       auto k2 = cub::detail::reduce::
-        DeterministicDeviceReduceKernel<policy_t, decltype(d_in), int, reduction_op_t, deterministic_accum_t, transform_t>;
+        DeterministicDeviceReduceKernel<policy_t, input_it_t, int, reduction_op_t, deterministic_accum_t, transform_t>;
       auto k3 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
         policy_t,
         deterministic_accum_t*,
@@ -491,7 +654,13 @@ CUB_TEST("Device sum uses environment", "[reduce][device]", CUB_SMALL, requireme
   auto d_in             = cuda::constant_iterator(1.0f);
   auto d_out            = thrust::device_vector<accumulator_t>(1);
 
-  [[maybe_unused]] init_value_t init = 0;
+  // MSVC yields a reference type for `decltype(d_in)`/`decltype(d_out.begin())` when `d_in`/`d_out` are ODR-used inside
+  // the by-reference-capturing lambda, which would select different kernel instantiations than the ones dispatched
+  // below. Hoisting the decltypes and decay-ing them to make the aliases position independent.
+  using input_it_t  = ::cuda::std::decay_t<decltype(d_in)>;
+  using output_it_t = ::cuda::std::decay_t<decltype(d_out.begin())>;
+
+  [[maybe_unused]] const init_value_t init = 0;
   size_t expected_bytes_allocated{};
 
   // To check if a given algorithm implementation is used, we check if associated kernels are invoked.
@@ -505,8 +674,8 @@ CUB_TEST("Device sum uses environment", "[reduce][device]", CUB_SMALL, requireme
         reinterpret_cast<void*>(
           cub::detail::reduce::DeviceReduceSingleTileKernel<
             policy_t,
-            decltype(d_in),
-            decltype(d_out.begin()),
+            input_it_t,
+            output_it_t,
             offset_t,
             op_t,
             init_value_t,
@@ -516,7 +685,7 @@ CUB_TEST("Device sum uses environment", "[reduce][device]", CUB_SMALL, requireme
           cub::detail::reduce::DeviceReduceKernel<
             policy_t,
             /* StableReductionOrder */ true,
-            decltype(d_in),
+            input_it_t,
             accumulator_t*,
             offset_t,
             offset_t,
@@ -528,7 +697,7 @@ CUB_TEST("Device sum uses environment", "[reduce][device]", CUB_SMALL, requireme
           cub::detail::reduce::DeviceReduceSingleTileKernel<
             policy_t,
             accumulator_t*,
-            decltype(d_out.begin()),
+            output_it_t,
             int, // always used with int offset
             op_t,
             init_value_t,
@@ -557,7 +726,7 @@ CUB_TEST("Device sum uses environment", "[reduce][device]", CUB_SMALL, requireme
         cub::detail::reduce::DeviceReduceKernel<
           policy_t,
           /* StableReductionOrder */ false,
-          decltype(d_in),
+          input_it_t,
           decltype(raw_ptr),
           offset_t,
           offset_t,
@@ -573,23 +742,22 @@ CUB_TEST("Device sum uses environment", "[reduce][device]", CUB_SMALL, requireme
       using policy_t            = cub::detail::reduce::
         policy_selector_from_types<accumulator_t, offset_t, reduction_op_t, __determinism_t::__gpu_to_gpu>;
       using deterministic_accum_t = deterministic_add_t::DeterministicAcc;
-      using output_it_t           = decltype(d_out.begin());
 
-      REQUIRE(cudaSuccess
-              == cub::detail::rfa::
-                dispatch<decltype(d_in), decltype(d_out.begin()), offset_t, init_value_t, transform_t, accumulator_t>(
-                  nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
+      REQUIRE(
+        cudaSuccess
+        == cub::detail::rfa::dispatch<input_it_t, output_it_t, offset_t, init_value_t, transform_t, accumulator_t>(
+          nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
 
       auto k1 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
         policy_t,
-        decltype(d_in),
+        input_it_t,
         output_it_t,
         reduction_op_t,
         init_value_t,
         deterministic_accum_t,
         transform_t>;
       auto k2 = cub::detail::reduce::
-        DeterministicDeviceReduceKernel<policy_t, decltype(d_in), int, reduction_op_t, deterministic_accum_t, transform_t>;
+        DeterministicDeviceReduceKernel<policy_t, input_it_t, int, reduction_op_t, deterministic_accum_t, transform_t>;
       auto k3 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
         policy_t,
         deterministic_accum_t*,
@@ -630,10 +798,10 @@ CUB_TEST("Device reduce not_guaranteed falls back when output type differs from 
   using offset_t      = cub::detail::choose_offset_t<num_items_t>;
   using transform_t   = cuda::std::identity;
 
-  auto d_in             = thrust::device_vector<input_t>{0, 1, 2, 3};
-  auto d_out            = thrust::device_vector<output_t>(1);
-  num_items_t num_items = static_cast<num_items_t>(d_in.size());
-  init_value_t init{};
+  const auto d_in             = thrust::device_vector<input_t>{0, 1, 2, 3};
+  auto d_out                  = thrust::device_vector<output_t>(1);
+  const num_items_t num_items = static_cast<num_items_t>(d_in.size());
+  const init_value_t init{};
   size_t expected_bytes_allocated{};
 
   REQUIRE(cudaSuccess
@@ -694,9 +862,9 @@ CUB_TEST("Device sum not_guaranteed falls back when output type differs from acc
   using offset_t      = cub::detail::choose_offset_t<num_items_t>;
   using transform_t   = cuda::std::identity;
 
-  auto d_in             = thrust::device_vector<input_t>{0, 1, 2, 3};
-  auto d_out            = thrust::device_vector<output_t>(1);
-  num_items_t num_items = static_cast<num_items_t>(d_in.size());
+  auto d_in                   = thrust::device_vector<input_t>{0, 1, 2, 3};
+  auto d_out                  = thrust::device_vector<output_t>(1);
+  const num_items_t num_items = static_cast<num_items_t>(d_in.size());
   size_t expected_bytes_allocated{};
 
   REQUIRE(
@@ -801,8 +969,8 @@ CUB_TEST_CASE("Device ReduceByKey works with default environment", "[reduce][dev
       static_cast<int>(d_keys_in.size())));
 
   REQUIRE(d_num_runs_out[0] == 5);
-  c2h::device_vector<int> expected_keys{0, 2, 9, 5, 8};
-  c2h::device_vector<int> expected_aggregates{0, 1, 6, 2, 4};
+  const c2h::device_vector<int> expected_keys{0, 2, 9, 5, 8};
+  const c2h::device_vector<int> expected_aggregates{0, 1, 6, 2, 4};
   d_unique_out.resize(5);
   d_aggregates_out.resize(5);
   REQUIRE(d_unique_out == expected_keys);
@@ -960,8 +1128,8 @@ CUB_TEST("Device ReduceByKey uses environment", "[reduce][device]", CUB_SMALL)
     env);
 
   REQUIRE(d_num_runs_out[0] == 5);
-  c2h::device_vector<int> expected_keys{0, 2, 9, 5, 8};
-  c2h::device_vector<int> expected_aggregates{0, 1, 6, 2, 4};
+  const c2h::device_vector<int> expected_keys{0, 2, 9, 5, 8};
+  const c2h::device_vector<int> expected_aggregates{0, 1, 6, 2, 4};
   d_unique_out.resize(5);
   d_aggregates_out.resize(5);
   REQUIRE(d_unique_out == expected_keys);

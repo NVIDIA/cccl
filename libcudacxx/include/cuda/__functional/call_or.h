@@ -58,7 +58,7 @@ struct __call_or_t
 _CCCL_GLOBAL_CONSTANT auto __call_or = __call_or_t{};
 
 template <class _Fn, class _Fallback, class... _Args>
-using __call_result_or_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__call_result_t<__call_or_t, _Fn, _Fallback, _Args...>;
+using __call_result_or_t _CCCL_NODEBUG = ::cuda::std::__call_result_t<__call_or_t, _Fn, _Fallback, _Args...>;
 
 _CCCL_END_NAMESPACE_CUDA
 

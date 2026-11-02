@@ -6,10 +6,15 @@
  * Test evaluation for caching allocator of device memory
  ******************************************************************************/
 
+// TODO: remove this test in CCCL 4.0
+// This test intentionally exercises the deprecated caching allocator.
+#define CCCL_IGNORE_DEPRECATED_API
+
 // Ensure printing of CUDA runtime errors to console
 #define CUB_STDERR
 
 #include <cub/util_allocator.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 
 #include <cuda/std/cstdint>
@@ -50,7 +55,7 @@ struct blocking_kernel
 
   void block()
   {
-    _CubLog("Blocking Stream %lld\n", (long long) m_stream);
+    _CubLog("Blocking Stream %lld\n", reinterpret_cast<long long>(m_stream));
     m_host_flag = 0;
     block_stream<<<1, 1, 0, m_stream>>>(m_device_flag);
   }
@@ -59,7 +64,7 @@ struct blocking_kernel
   {
     volatile cuda::std::int32_t& flag = m_host_flag;
     flag                              = 1;
-    _CubLog("Unblocking Stream %lld\n", (long long) m_stream);
+    _CubLog("Unblocking Stream %lld\n", reinterpret_cast<long long>(m_stream));
   }
 
 private:
@@ -130,7 +135,7 @@ int main(int argc, char** argv)
   // Allocate 999 bytes on the current gpu in stream0
   char* d_999B_stream0_a;
   char* d_999B_stream0_b;
-  CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_a, 999, nullptr));
+  CubDebugExit(allocator.DeviceAllocate(reinterpret_cast<void**>(&d_999B_stream0_a), 999, nullptr));
 
   // Run a kernel on stream 0
   blocking_kernel block_0_a(nullptr);
@@ -140,7 +145,7 @@ int main(int argc, char** argv)
   CubDebugExit(allocator.DeviceFree(d_999B_stream0_a));
 
   // Allocate another 999 bytes in stream 0
-  CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_b, 999, nullptr));
+  CubDebugExit(allocator.DeviceAllocate(reinterpret_cast<void**>(&d_999B_stream0_b), 999, nullptr));
 
   // Check that that we have 1 live block on the initial GPU
   AssertEquals(allocator.live_blocks.size(), 1);
@@ -158,7 +163,7 @@ int main(int argc, char** argv)
   // Allocate 999 bytes on the current gpu in other_stream
   char* d_999B_stream_other_a;
   char* d_999B_stream_other_b;
-  allocator.DeviceAllocate((void**) &d_999B_stream_other_a, 999, other_stream);
+  CubDebugExit(allocator.DeviceAllocate(reinterpret_cast<void**>(&d_999B_stream_other_a), 999, other_stream));
 
   // Check that that we have 1 live blocks on the initial GPU (that we allocated a new one because d_999B_stream0_b is
   // only available for stream 0 until it becomes idle)
@@ -179,8 +184,8 @@ int main(int argc, char** argv)
   block_0_b.unblock();
   block_other.unblock();
   CubDebugExit(cudaDeviceSynchronize());
-  CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_a, 999, nullptr));
-  CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_b, 999, nullptr));
+  CubDebugExit(allocator.DeviceAllocate(reinterpret_cast<void**>(&d_999B_stream0_a), 999, nullptr));
+  CubDebugExit(allocator.DeviceAllocate(reinterpret_cast<void**>(&d_999B_stream0_b), 999, nullptr));
 
   // Check that that we have 2 live blocks on the initial GPU
   AssertEquals(allocator.live_blocks.size(), 2);
@@ -194,8 +199,8 @@ int main(int argc, char** argv)
 
   // Check that we can now use both allocations in other_stream
   CubDebugExit(cudaDeviceSynchronize());
-  CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream_other_a, 999, other_stream));
-  CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream_other_b, 999, other_stream));
+  CubDebugExit(allocator.DeviceAllocate(reinterpret_cast<void**>(&d_999B_stream_other_a), 999, other_stream));
+  CubDebugExit(allocator.DeviceAllocate(reinterpret_cast<void**>(&d_999B_stream_other_b), 999, other_stream));
 
   // Check that that we have 2 live blocks on the initial GPU
   AssertEquals(allocator.live_blocks.size(), 2);
@@ -215,8 +220,8 @@ int main(int argc, char** argv)
   block_other.unblock();
   CubDebugExit(cudaDeviceSynchronize());
   CubDebugExit(cudaStreamDestroy(other_stream));
-  CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_a, 999, nullptr));
-  CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_b, 999, nullptr));
+  CubDebugExit(allocator.DeviceAllocate(reinterpret_cast<void**>(&d_999B_stream0_a), 999, nullptr));
+  CubDebugExit(allocator.DeviceAllocate(reinterpret_cast<void**>(&d_999B_stream0_b), 999, nullptr));
 
   // Check that that we have 2 live blocks on the initial GPU
   AssertEquals(allocator.live_blocks.size(), 2);
@@ -237,7 +242,7 @@ int main(int argc, char** argv)
 
   // Allocate 5 bytes on the current gpu
   char* d_5B;
-  CubDebugExit(allocator.DeviceAllocate((void**) &d_5B, 5));
+  CubDebugExit(allocator.DeviceAllocate(reinterpret_cast<void**>(&d_5B), 5));
 
   // Check that that we have zero free bytes cached on the initial GPU
   AssertEquals(allocator.cached_bytes[initial_gpu].free, 0);
@@ -251,7 +256,7 @@ int main(int argc, char** argv)
 
   // Allocate 4096 bytes on the current gpu
   char* d_4096B;
-  CubDebugExit(allocator.DeviceAllocate((void**) &d_4096B, 4096));
+  CubDebugExit(allocator.DeviceAllocate(reinterpret_cast<void**>(&d_4096B), 4096));
 
   // Check that that we have 2 live blocks on the initial GPU
   AssertEquals(allocator.live_blocks.size(), 2);
@@ -294,7 +299,7 @@ int main(int argc, char** argv)
 
   // Allocate 768 bytes on the current gpu
   char* d_768B;
-  CubDebugExit(allocator.DeviceAllocate((void**) &d_768B, 768));
+  CubDebugExit(allocator.DeviceAllocate(reinterpret_cast<void**>(&d_768B), 768));
 
   // Check that that we have the min_bin free bytes cached on the initial gpu (4096 was reused)
   AssertEquals(allocator.cached_bytes[initial_gpu].free, allocator.min_bin_bytes);
@@ -311,7 +316,7 @@ int main(int argc, char** argv)
 
   // Allocate max_cached_bytes on the current gpu
   char* d_max_cached;
-  CubDebugExit(allocator.DeviceAllocate((void**) &d_max_cached, allocator.max_cached_bytes));
+  CubDebugExit(allocator.DeviceAllocate(reinterpret_cast<void**>(&d_max_cached), allocator.max_cached_bytes));
 
   // DeviceFree d_max_cached
   CubDebugExit(allocator.DeviceFree(d_max_cached));
@@ -348,7 +353,7 @@ int main(int argc, char** argv)
 
   // Allocate max cached bytes + 1 on the current gpu
   char* d_max_cached_plus;
-  CubDebugExit(allocator.DeviceAllocate((void**) &d_max_cached_plus, allocator.max_cached_bytes + 1));
+  CubDebugExit(allocator.DeviceAllocate(reinterpret_cast<void**>(&d_max_cached_plus), allocator.max_cached_bytes + 1));
 
   // DeviceFree max cached bytes
   CubDebugExit(allocator.DeviceFree(d_max_cached_plus));
@@ -381,15 +386,15 @@ int main(int argc, char** argv)
     //
 
     // Allocate 768 bytes on the next gpu
-    int next_gpu = (initial_gpu + 1) % num_gpus;
+    const int next_gpu = (initial_gpu + 1) % num_gpus;
     char* d_768B_2;
-    CubDebugExit(allocator.DeviceAllocate(next_gpu, (void**) &d_768B_2, 768));
+    CubDebugExit(allocator.DeviceAllocate(next_gpu, reinterpret_cast<void**>(&d_768B_2), 768));
 
     // DeviceFree d_768B on the next gpu
     CubDebugExit(allocator.DeviceFree(next_gpu, d_768B_2));
 
     // Re-allocate 768 bytes on the next gpu
-    CubDebugExit(allocator.DeviceAllocate(next_gpu, (void**) &d_768B_2, 768));
+    CubDebugExit(allocator.DeviceAllocate(next_gpu, reinterpret_cast<void**>(&d_768B_2), 768));
 
     // Re-free d_768B on the next gpu
     CubDebugExit(allocator.DeviceFree(next_gpu, d_768B_2));
@@ -416,12 +421,12 @@ int main(int argc, char** argv)
   fflush(stderr);
 
   // CPU performance comparisons vs cached.  Allocate and free a 1MB block 2000 times
-  CpuTimer cpu_timer;
+  CpuTimer cpu_timer{};
   char* d_1024MB  = nullptr;
   allocator.debug = false;
 
   // Prime the caching allocator and the kernel
-  CubDebugExit(allocator.DeviceAllocate((void**) &d_1024MB, timing_bytes));
+  CubDebugExit(allocator.DeviceAllocate(reinterpret_cast<void**>(&d_1024MB), timing_bytes));
   CubDebugExit(allocator.DeviceFree(d_1024MB));
   cub::detail::EmptyKernel<void><<<1, 32>>>();
 
@@ -429,7 +434,7 @@ int main(int argc, char** argv)
   cpu_timer.Start();
   for (int i = 0; i < timing_iterations; ++i)
   {
-    CubDebugExit(cudaMalloc((void**) &d_1024MB, timing_bytes));
+    CubDebugExit(cudaMalloc(reinterpret_cast<void**>(&d_1024MB), timing_bytes));
     CubDebugExit(cudaFree(d_1024MB));
   }
   cpu_timer.Stop();
@@ -439,7 +444,7 @@ int main(int argc, char** argv)
   cpu_timer.Start();
   for (int i = 0; i < timing_iterations; ++i)
   {
-    CubDebugExit(allocator.DeviceAllocate((void**) &d_1024MB, timing_bytes));
+    CubDebugExit(allocator.DeviceAllocate(reinterpret_cast<void**>(&d_1024MB), timing_bytes));
     CubDebugExit(allocator.DeviceFree(d_1024MB));
   }
   cpu_timer.Stop();
@@ -465,13 +470,13 @@ int main(int argc, char** argv)
     cub::detail::EmptyKernel<void><<<1, 32>>>();
   }
   gpu_timer.Stop();
-  float cuda_empty_elapsed_millis = gpu_timer.ElapsedMillis();
+  const float cuda_empty_elapsed_millis = gpu_timer.ElapsedMillis();
 
   // CUDA
   gpu_timer.Start();
   for (int i = 0; i < timing_iterations; ++i)
   {
-    CubDebugExit(cudaMalloc((void**) &d_1024MB, timing_bytes));
+    CubDebugExit(cudaMalloc(reinterpret_cast<void**>(&d_1024MB), timing_bytes));
     cub::detail::EmptyKernel<void><<<1, 32>>>();
     CubDebugExit(cudaFree(d_1024MB));
   }
@@ -482,7 +487,7 @@ int main(int argc, char** argv)
   gpu_timer.Start();
   for (int i = 0; i < timing_iterations; ++i)
   {
-    CubDebugExit(allocator.DeviceAllocate((void**) &d_1024MB, timing_bytes));
+    CubDebugExit(allocator.DeviceAllocate(reinterpret_cast<void**>(&d_1024MB), timing_bytes));
     cub::detail::EmptyKernel<void><<<1, 32>>>();
     CubDebugExit(allocator.DeviceFree(d_1024MB));
   }

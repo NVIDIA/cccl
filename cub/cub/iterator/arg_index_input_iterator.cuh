@@ -19,10 +19,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_type.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/key_value_pair.cuh>
 
-#include <thrust/iterator/iterator_facade.h>
+#include <thrust/iterator/detail/any_system_tag.h>
+#include <thrust/iterator/detail/iterator_facade_category.h> // IWYU pragma: keep
+#include <thrust/iterator/iterator_traversal_tags.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
@@ -193,7 +197,7 @@ public:
   template <typename Distance>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
   {
-    self_type offset = (*this) + n;
+    const self_type offset = (*this) + n;
     return *offset;
   }
 

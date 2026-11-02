@@ -13,18 +13,24 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_merge_sort.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/logging.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/kernels/kernel_merge_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_namespace.cuh>
+#include <cub/util_temporary_storage.cuh>
 #include <cub/util_vsmem.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/ilog.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
@@ -248,8 +254,8 @@ public:
       num_tiles * detail::vsmem_helper_impl<typename merge_sort_vsmem_t::merge_agent_t>::vsmem_per_block;
     const ::cuda::std::size_t virtual_shared_memory_size = (::cuda::std::max) (block_sort_smem_size, merge_smem_size);
 
-    void* allocations[4]       = {nullptr, nullptr, nullptr, nullptr};
-    size_t allocation_sizes[4] = {
+    void* allocations[4]             = {nullptr, nullptr, nullptr, nullptr};
+    const size_t allocation_sizes[4] = {
       merge_partitions_size, temporary_keys_storage_size, temporary_values_storage_size, virtual_shared_memory_size};
 
     if (const auto error =
@@ -286,19 +292,23 @@ public:
     const int threads_per_block = policy.threads_per_block;
 
     // Invoke DeviceMergeSortBlockSortKernel
-    launcher_factory(
-      static_cast<int>(num_tiles), threads_per_block, 0, stream, /* dependent launch */ ptx_version >= 900)
-      .doit(kernel_source.MergeSortBlockSortKernel(),
-            ping,
-            d_input_keys,
-            d_input_items,
-            d_output_keys,
-            d_output_items,
-            num_items,
-            keys_buffer,
-            items_buffer,
-            compare_op,
-            cub::detail::vsmem_t{allocations[3]});
+    if (const auto error = CubDebug(
+          launcher_factory(
+            static_cast<int>(num_tiles), threads_per_block, 0, stream, /* dependent launch */ ptx_version >= 900)
+            .doit(kernel_source.MergeSortBlockSortKernel(),
+                  ping,
+                  d_input_keys,
+                  d_input_items,
+                  d_output_keys,
+                  d_output_items,
+                  num_items,
+                  keys_buffer,
+                  items_buffer,
+                  compare_op,
+                  cub::detail::vsmem_t{allocations[3]})))
+    {
+      return error;
+    }
 
     if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
     {
@@ -331,18 +341,22 @@ public:
       const OffsetT target_merged_tiles_number = OffsetT(2) << pass;
 
       // Partition
-      launcher_factory(
-        partition_grid_size, threads_per_partition_block, 0, stream, /* dependent launch */ ptx_version >= 900)
-        .doit(kernel_source.MergeSortPartitionKernel(),
-              ping,
-              d_output_keys,
-              keys_buffer,
-              num_items,
-              num_partitions,
-              merge_partitions,
-              compare_op,
-              target_merged_tiles_number,
-              tile_size);
+      if (const auto error = CubDebug(
+            launcher_factory(
+              partition_grid_size, threads_per_partition_block, 0, stream, /* dependent launch */ ptx_version >= 900)
+              .doit(kernel_source.MergeSortPartitionKernel(),
+                    ping,
+                    d_output_keys,
+                    keys_buffer,
+                    num_items,
+                    num_partitions,
+                    merge_partitions,
+                    compare_op,
+                    target_merged_tiles_number,
+                    tile_size)))
+      {
+        return error;
+      }
 
       if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
       {
@@ -356,19 +370,23 @@ public:
       }
 
       // Merge
-      launcher_factory(
-        static_cast<int>(num_tiles), threads_per_block, 0, stream, /* dependent launch */ ptx_version >= 900)
-        .doit(kernel_source.MergeSortMergeKernel(),
-              ping,
-              d_output_keys,
-              d_output_items,
-              num_items,
-              keys_buffer,
-              items_buffer,
-              compare_op,
-              merge_partitions,
-              target_merged_tiles_number,
-              cub::detail::vsmem_t{allocations[3]});
+      if (const auto error = CubDebug(
+            launcher_factory(
+              static_cast<int>(num_tiles), threads_per_block, 0, stream, /* dependent launch */ ptx_version >= 900)
+              .doit(kernel_source.MergeSortMergeKernel(),
+                    ping,
+                    d_output_keys,
+                    d_output_items,
+                    num_items,
+                    keys_buffer,
+                    items_buffer,
+                    compare_op,
+                    merge_partitions,
+                    target_merged_tiles_number,
+                    cub::detail::vsmem_t{allocations[3]})))
+      {
+        return error;
+      }
 
       if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
       {
@@ -504,16 +522,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   constexpr MergeSortPolicy active_policy = vsmem_adapted_agents::policy;
 #endif // CUB_DEFINE_RUNTIME_POLICIES
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   std::stringstream ss;
-                   ss << active_policy;
-                   _CubLog("Dispatching DeviceMergeSort to compute capability %d.%d with tuning: %s\n",
-                           cc.major_cap(),
-                           cc.minor_cap(),
-                           ss.str().c_str());
-                 }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    detail::log_dispatch("DeviceMergeSort", cc, active_policy);
 
     _CCCL_ASSERT(1 <= active_policy.threads_per_block && active_policy.threads_per_block <= 1024,
                  "Number of threads per block need to be inside [1;1024]");
@@ -535,8 +544,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 #endif // CUB_DEFINE_RUNTIME_POLICIES
     const ::cuda::std::size_t virtual_shared_memory_size = (::cuda::std::max) (block_sort_smem_size, merge_smem_size);
 
-    void* allocations[4]       = {nullptr, nullptr, nullptr, nullptr};
-    size_t allocation_sizes[4] = {
+    void* allocations[4]             = {nullptr, nullptr, nullptr, nullptr};
+    const size_t allocation_sizes[4] = {
       merge_partitions_size, temporary_keys_storage_size, temporary_values_storage_size, virtual_shared_memory_size};
 
     if (const auto error =

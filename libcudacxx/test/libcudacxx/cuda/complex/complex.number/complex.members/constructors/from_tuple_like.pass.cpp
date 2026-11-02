@@ -207,27 +207,27 @@ void test_host_types()
 #  if _CCCL_HAS_LONG_DOUBLE()
   test_constructor_from_host_tuple_like<long double>();
 #  endif // _CCCL_HAS_LONG_DOUBLE()
-#  if _CCCL_HAS_FLOAT128()
+#  if _CCCL_HAS_FLOAT128() && !defined(__CUDACC_TILE__)
   test_constructor_from_host_tuple_like<__float128>();
-#  endif // _CCCL_HAS_FLOAT128()
+#  endif // _CCCL_HAS_FLOAT128() && !defined(__CUDACC_TILE__)
 
   test_constructor_from_host_tuple_like<signed char>();
   test_constructor_from_host_tuple_like<signed short>();
   test_constructor_from_host_tuple_like<signed int>();
   test_constructor_from_host_tuple_like<signed long>();
   test_constructor_from_host_tuple_like<signed long long>();
-#  if _CCCL_HAS_INT128()
+#  if _CCCL_HAS_INT128() && !defined(__CUDACC_TILE__)
   test_constructor_from_host_tuple_like<__int128_t>();
-#  endif // _CCCL_HAS_INT128()
+#  endif // _CCCL_HAS_INT128() && !defined(__CUDACC_TILE__)
 
   test_constructor_from_host_tuple_like<unsigned char>();
   test_constructor_from_host_tuple_like<unsigned short>();
   test_constructor_from_host_tuple_like<unsigned int>();
   test_constructor_from_host_tuple_like<unsigned long>();
   test_constructor_from_host_tuple_like<unsigned long long>();
-#  if _CCCL_HAS_INT128()
+#  if _CCCL_HAS_INT128() && !defined(__CUDACC_TILE__)
   test_constructor_from_host_tuple_like<__uint128_t>();
-#  endif // _CCCL_HAS_INT128()
+#  endif // _CCCL_HAS_INT128() && !defined(__CUDACC_TILE__)
 }
 
 #endif // _CCCL_HOSTED()

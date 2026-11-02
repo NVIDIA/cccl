@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3
 
 #include <cub/device/device_radix_sort.cuh>
+#include <cub/util_debug.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
@@ -54,7 +55,7 @@ int main()
   std::cout << "The `custom_t{65535, -4.2f}` has the following binary representation:\n\n";
 
   auto print_segment = [](std::string msg, std::size_t segment_size, char filler = '-') {
-    std::string spaces((segment_size - msg.size()) / 2 - 1, filler);
+    const std::string spaces((segment_size - msg.size()) / 2 - 1, filler);
     std::cout << '<' << spaces << msg << spaces << '>';
   };
 
@@ -71,7 +72,7 @@ int main()
   print_segment(" short -", 16);
   std::cout << '\n';
 
-  custom_t the_answer{65535, -4.2f};
+  const custom_t the_answer{65535, -4.2f};
   std::cout << '\t' << to_binary_representation(the_answer);
   std::cout << "\n\t";
   print_segment(" <----  higher bits  /  lower bits  ----> ", 64, ' ');
@@ -185,7 +186,7 @@ int main()
   thrust::device_vector<custom_t> in = {{4, +2.5f}, {0, -2.5f}, {3, +1.1f}, {1, +0.0f}, {2, -0.0f}, {5, +3.7f}};
 
   std::cout << "in:\n";
-  for (custom_t key : in)
+  for (const custom_t key : in)
   {
     std::cout << "\t{.i = " << key.i << ", .f = " << key.f << "},\n";
   }
@@ -199,15 +200,17 @@ int main()
   std::uint8_t* d_temp_storage{};
   std::size_t temp_storage_bytes{};
 
-  cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, decomposer_t{});
+  CubDebugExit(
+    cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, decomposer_t{}));
 
   // 2) Allocate temp storage
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // 3) Sort keys
-  cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, decomposer_t{});
-  cudaDeviceSynchronize();
+  CubDebugExit(
+    cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, decomposer_t{}));
+  CubDebugExit(cudaDeviceSynchronize());
 
   std::cout << "\n";
   std::cout << "sort:\n";
@@ -221,7 +224,7 @@ int main()
   std::cout << "\t                               decomposer_t{});\n\n";
 
   std::cout << "out:\n";
-  for (custom_t key : out)
+  for (const custom_t key : out)
   {
     std::cout << "\t{.i = " << key.i << ", .f = " << key.f << "},\n";
   }

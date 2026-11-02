@@ -31,7 +31,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp, bool = is_enum_v<_Tp>>
 struct __cccl_underlying_type_impl
 {
-  using type = _CCCL_BUILTIN_UNDERLYING_TYPE(_Tp);
+  using type _CCCL_NODEBUG = _CCCL_BUILTIN_UNDERLYING_TYPE(_Tp);
 };
 
 template <class _Tp>
@@ -43,7 +43,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT underlying_type : __cccl_underlying_type_im
 {};
 
 template <class _Tp>
-using underlying_type_t _CCCL_NODEBUG_ALIAS = typename underlying_type<_Tp>::type;
+using underlying_type_t _CCCL_NODEBUG = typename underlying_type<_Tp>::type;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -46,6 +46,18 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_floating_point_v<_Tp>)
 [[nodiscard]] _CCCL_API _Tp __with_builtin_fmax(_Tp __x, _Tp __y) noexcept
 {
+#  if _CCCL_COMPILER(CLANG) && _CCCL_HOST_ARCH(ARM64) && _CCCL_HOST_COMPILATION()
+  // Clang lowers fmax to AArch64 fmaxnm, which returns quite NaN for signaling NaNs,
+  // See https://github.com/llvm/llvm-project/issues/176624
+  if (::cuda::std::isnan(__x))
+  {
+    return __y;
+  }
+  if (::cuda::std::isnan(__y))
+  {
+    return __x;
+  }
+#  endif // _CCCL_COMPILER(CLANG) && _CCCL_HOST_ARCH(ARM64) && _CCCL_HOST_COMPILATION()
   if constexpr (is_same_v<_Tp, float>)
   {
     return __builtin_fmaxf(__x, __y);
@@ -172,6 +184,18 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_floating_point_v<_Tp>)
 [[nodiscard]] _CCCL_API _Tp __with_builtin_fmin(_Tp __x, _Tp __y) noexcept
 {
+#  if _CCCL_COMPILER(CLANG) && _CCCL_HOST_ARCH(ARM64) && _CCCL_HOST_COMPILATION()
+  // Clang lowers fmin to AArch64 fminnm, which returns quite NaN for signaling NaNs,
+  // See https://github.com/llvm/llvm-project/issues/176624
+  if (::cuda::std::isnan(__x))
+  {
+    return __y;
+  }
+  if (::cuda::std::isnan(__y))
+  {
+    return __x;
+  }
+#  endif // _CCCL_COMPILER(CLANG) && _CCCL_HOST_ARCH(ARM64) && _CCCL_HOST_COMPILATION()
   if constexpr (is_same_v<_Tp, float>)
   {
     return __builtin_fminf(__x, __y);
@@ -240,17 +264,17 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
           NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fmin(__x, __y);))
         }
 #endif // _CCCL_HAS_FLOAT128()
-#if _CCCL_USE_BUILTIN_FMAX()
+#if _CCCL_USE_BUILTIN_FMIN()
         if constexpr (is_floating_point_v<_Tp>)
         {
-// GCC builtins do not treat NaN properly
+          // GCC builtins do not treat NaN properly
 #  if _CCCL_COMPILER(GCC)
           NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::std::__with_builtin_fmin(__x, __y);))
 #  else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC)
           return ::cuda::std::__with_builtin_fmin(__x, __y);
 #  endif // !_CCCL_COMPILER(GCC)
         }
-#endif // _CCCL_USE_BUILTIN_FMAX
+#endif // _CCCL_USE_BUILTIN_FMIN
       }
       if (::cuda::std::isnan(__x))
       {

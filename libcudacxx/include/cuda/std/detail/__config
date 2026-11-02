@@ -11,6 +11,10 @@
 #ifndef __cuda_std__
 #define __cuda_std__
 
+// IWYU pragma: always_keep
+
+// IWYU pragma: begin_exports
+#include <cuda/__cccl_config>
 #include <cuda/std/__internal/atomic.h>
 #include <cuda/std/__internal/cpp_dialect.h>
 #include <cuda/std/__internal/features.h>
@@ -18,5 +22,6 @@
 #include <cuda/std/__internal/pstl_config.h>
 #include <cuda/std/__internal/thread_api.h>
 #include <cuda/std/__internal/version.h>
+// IWYU pragma: end_exports
 
 #endif //__cuda_std__

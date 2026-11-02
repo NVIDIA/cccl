@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -33,8 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 #if !(defined _CCCL_FPMP_USE_LIB)
 
 /*
@@ -102,7 +101,7 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_exp2_kernel(fp32mp2_low __r) no
   };
 
   /* G(r) = a1 + a2*r + a3*r^2 + ... + a13*r^12 ~= (2^r - 1)/r */
-  __ffloat __p = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 6>(__r, __exp2_c);
+  __ffloat __p = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 6>(__r, __exp2_c);
 
   /* Close with the implicit a0 = 1 constant:
    *   2^r = 1 + r * G(r) */
@@ -165,7 +164,7 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_exp10_kernel(fp32mp2_low __r) n
   };
 
   /* G(r) = b1 + b2*r + b3*r^2 + ... + b13*r^12 ~= (10^r - 1)/r */
-  __ffloat __p = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 7>(__r, __exp10_c);
+  __ffloat __p = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 7>(__r, __exp10_c);
 
   /* Close with the implicit b0 = 1:  10^r = 1 + r * G(r) */
   __p = __p * __r + __ffloat(1.0f, 0.0f);
@@ -329,7 +328,7 @@ __internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, fl
   // the c8->c7 boundary. The numerical difference is below 1 ULP
   // at the polynomial value, well inside the Taylor truncation
   // noise floor.
-  __ffloat __p = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 6>(__r, __exp_c);
+  __ffloat __p = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 6>(__r, __exp_c);
 
   // Fold in the low-degree float coefficients c1, c2 outside the
   // dispatcher (they live at the wrong end of the polynomial for
@@ -466,7 +465,7 @@ __internal_fpmp2_log(const float __x_hi, const float __x_lo, float* __res_hi, fl
    * bit-for-bit, so this refactor is numerically identical to
    * the previous implementation.
    */
-  __ffloat __q = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 5>(__v, __atanh_c);
+  __ffloat __q = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 5>(__v, __atanh_c);
 
   /* log(m) = u + u*v*q(v) */
   __q              = __q * __v;
@@ -602,7 +601,7 @@ __internal_fpmp2_log1p(const float __x_hi, const float __x_lo, float* __res_hi, 
 
     __ffloat __x(__x_hi, __x_lo);
     __ffloat __x2     = __x * __x;
-    __ffloat __t      = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 4>(__x, __log1p_poly_c);
+    __ffloat __t      = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 4>(__x, __log1p_poly_c);
     __ffloat __result = renormalize(__x + __x2 * __t);
     *__res_hi         = __result.hi();
     *__res_lo         = __result.lo();
@@ -647,7 +646,7 @@ __internal_fpmp2_log1p(const float __x_hi, const float __x_lo, float* __res_hi, 
   }
 
   /* Forward to dedicated fp32mp2 log. */
-  __fpmp2_log<float>(__sum.hi(), __sum.lo(), __res_hi, __res_lo);
+  ::cuda::__fpmp2_log<float>(__sum.hi(), __sum.lo(), __res_hi, __res_lo);
 } // __internal_fpmp2_log1p
 
 /*
@@ -695,7 +694,7 @@ __internal_fpmp2_log2(const float __x_hi, const float __x_lo, float* __res_hi, f
 
   float __l_hi;
   float __l_lo;
-  __fpmp2_log<float>(__x_hi, __x_lo, &__l_hi, &__l_lo);
+  ::cuda::__fpmp2_log<float>(__x_hi, __x_lo, &__l_hi, &__l_lo);
 
   /* Propagate non-finite outputs (NaN, +-inf) unchanged: a multiply
    * by a finite constant would still yield the same kind for +-inf,
@@ -753,7 +752,7 @@ __internal_fpmp2_log10(const float __x_hi, const float __x_lo, float* __res_hi, 
 
   float __l_hi;
   float __l_lo;
-  __fpmp2_log<float>(__x_hi, __x_lo, &__l_hi, &__l_lo);
+  ::cuda::__fpmp2_log<float>(__x_hi, __x_lo, &__l_hi, &__l_lo);
 
   if (__l_hi != __l_hi || __l_hi == ::cuda::std::__fp_inf<float>() || __l_hi == -::cuda::std::__fp_inf<float>())
   {
@@ -852,8 +851,8 @@ __internal_fpmp2_exp2(const float __x_hi, const float __x_lo, float* __res_hi, f
   }
 
   /* Step 1: integer/fractional split directly in base-2 units. */
-  const int __n        = __fpmp_fp2int_rn(__x_hi);
-  const __ffloat __n_f = __fpmp_int2fp_rn<float>(__n);
+  const int __n        = ::cuda::__fpmp_fp2int_rn(__x_hi);
+  const __ffloat __n_f = ::cuda::__fpmp_int2fp_rn<float>(__n);
 
   /* Step 2: r = x - n.  __ffloat subtraction by an integer is exact
    * (n_f is representable in float for |n| <= 2^23, which our
@@ -862,10 +861,10 @@ __internal_fpmp2_exp2(const float __x_hi, const float __x_lo, float* __res_hi, f
 
   /* Step 3: 2^r via the dedicated base-2 Taylor kernel (no r * ln 2
    * detour, no internal natural-log reduction). */
-  const __ffloat __u = __internal_fpmp2_exp2_kernel(__r);
+  const __ffloat __u = ::cuda::__internal_fpmp2_exp2_kernel(__r);
 
   /* Step 4: multiply by 2^n via the split-exponent helper. */
-  const __ffloat __result = __internal_fpmp2_ldexp2(__u, __n);
+  const __ffloat __result = ::cuda::__internal_fpmp2_ldexp2(__u, __n);
 
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
@@ -971,8 +970,8 @@ __internal_fpmp2_exp10(const float __x_hi, const float __x_lo, float* __res_hi, 
    * Uses an ordinary ff multiplication -- we only need the integer
    * part, so the lo limb of the product is discarded. */
   const __ffloat __t_approx = __ffloat(__x_hi, __x_lo) * __log2_10;
-  const int __n             = __fpmp_fp2int_rn(__t_approx.hi());
-  const float __n_f         = __fpmp_int2fp_rn<float>(__n);
+  const int __n             = ::cuda::__fpmp_fp2int_rn(__t_approx.hi());
+  const float __n_f         = ::cuda::__fpmp_int2fp_rn<float>(__n);
 
   /* Step 2: Cody-Waite reduction  r' = x - n * log10(2)
    *   r' = (x_hi + x_lo) - n_f * (C1 + C2 + C3)
@@ -984,11 +983,11 @@ __internal_fpmp2_exp10(const float __x_hi, const float __x_lo, float* __res_hi, 
 
   /* n_f * C1 = ph + pl  (exact pair) */
   float __pl;
-  const float __ph = __fpmp_two_mult_fma(__n_f, __c1, &__pl);
+  const float __ph = ::cuda::__fpmp_two_mult_fma(__n_f, __c1, &__pl);
 
   /* x_hi - ph = s + e  (exact pair) */
   float __e;
-  const float __s = __fpmp_two_sum(__x_hi, -__ph, &__e);
+  const float __s = ::cuda::__fpmp_two_sum(__x_hi, -__ph, &__e);
 
   __afloat __r_acc(__s, __e);
   __r_acc = __r_acc + __afloat(-__pl);
@@ -996,22 +995,22 @@ __internal_fpmp2_exp10(const float __x_hi, const float __x_lo, float* __res_hi, 
 
   /* n_f * C2 = nC2_hi + nC2_lo  (exact pair) */
   float __n_c2_lo;
-  const float __n_c2_hi = __fpmp_two_mult_fma(__n_f, __c2, &__n_c2_lo);
+  const float __n_c2_hi = ::cuda::__fpmp_two_mult_fma(__n_f, __c2, &__n_c2_lo);
   __r_acc               = __r_acc - __afloat(__n_c2_hi, __n_c2_lo);
 
   /* n_f * C3 is tiny (~10^-14 at the largest n we hit);
    * single-precision product is below the polynomial noise
    * floor but cheap to include for completeness. */
-  __r_acc = __r_acc + __afloat(__fpmp_mul_rn(__n_f, -__c3));
+  __r_acc = __r_acc + __afloat(::cuda::__fpmp_mul_rn(__n_f, -__c3));
 
   /* Step 3: 10^r' via the dedicated base-10 Taylor kernel.
    * Hand off the accurate accumulator as fast __ffloat -- the
    * polynomial cannot consume more than ff precision anyway. */
   const __ffloat __r = __ffloat(__r_acc.hi(), __r_acc.lo());
-  const __ffloat __u = __internal_fpmp2_exp10_kernel(__r);
+  const __ffloat __u = ::cuda::__internal_fpmp2_exp10_kernel(__r);
 
   /* Step 4: scale by 2^n via the split-exponent helper. */
-  const __ffloat __result = __internal_fpmp2_ldexp2(__u, __n);
+  const __ffloat __result = ::cuda::__internal_fpmp2_ldexp2(__u, __n);
 
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
@@ -1032,10 +1031,10 @@ __internal_fpmp2_exp10(const double __x_hi, const double __x_lo, double* __res_h
 #  else
   /* fp64 fallback: libm has no portable `exp10`; synthesize via
    * pow(10, x).  CUDA device has the intrinsic, prefer it. */
-  double __xd = __fpmp2_to_double(__x_hi, __x_lo);
+  double __xd = ::cuda::__fpmp2_to_double(__x_hi, __x_lo);
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                    (__fpmp2_from_double(::exp10(__xd), __res_hi, __res_lo);),
-                    (__fpmp2_from_double(::cuda::std::pow(10.0, __xd), __res_hi, __res_lo);))
+                    (::cuda::__fpmp2_from_double(::exp10(__xd), __res_hi, __res_lo);),
+                    (::cuda::__fpmp2_from_double(::cuda::std::pow(10.0, __xd), __res_hi, __res_lo);))
 #  endif
 }
 
@@ -1140,7 +1139,7 @@ __internal_fpmp2_expm1(const float __x_hi, const float __x_lo, float* __res_hi, 
 
     __ffloat __x(__x_hi, __x_lo);
     __ffloat __x2     = __x * __x;
-    __ffloat __pval   = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 4>(__x, __expm1_poly_c);
+    __ffloat __pval   = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 4>(__x, __expm1_poly_c);
     __ffloat __result = renormalize(__x + __x2 * __pval);
     *__res_hi         = __result.hi();
     *__res_lo         = __result.lo();
@@ -1155,7 +1154,7 @@ __internal_fpmp2_expm1(const float __x_hi, const float __x_lo, float* __res_hi, 
    * subtraction never loses more than ~1 bit. */
   float __e_hi;
   float __e_lo;
-  __fpmp2_exp<float>(__x_hi, __x_lo, &__e_hi, &__e_lo);
+  ::cuda::__fpmp2_exp<float>(__x_hi, __x_lo, &__e_hi, &__e_lo);
 
   /* exp() may already produce +inf for very large x; pass that
    * through without quietly turning it into NaN via inf - 1. */
@@ -1185,7 +1184,7 @@ __internal_fpmp2_expm1(const double __x_hi, const double __x_lo, double* __res_h
 _CCCL_FPMP_MATH_DISPATCH_1A(expm1)
 
 #endif // _CCCL_FPMP_USE_LIB
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

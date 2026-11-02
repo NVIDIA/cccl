@@ -6,7 +6,7 @@ The ``cuda::mr::resource`` and ``cuda::mr::synchronous_resource`` concepts
 
 The `std::pmr::memory_resource <https://en.cppreference.com/w/cpp/header/memory_resource>`__ feature provides only a
 single ``allocate`` interface, which is sufficient for homogeneous memory systems. However, CUDA provides both
-synchronous and `stream-ordered allocation <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#stream-ordered-memory-allocator>`__.
+synchronous and `stream-ordered allocation <https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/stream-ordered-memory-allocation.html#stream-ordered-memory-allocator>`__.
 
 With `std::pmr::memory_resource <https://en.cppreference.com/w/cpp/header/memory_resource>`__ there is no way to tell
 whether a memory resource can utilize stream-ordered allocations. Even if the application knows it can, there is no way

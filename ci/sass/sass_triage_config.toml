@@ -1,0 +1,23 @@
+# Sandbox for the SASS triage model. The model reads the comparison result and
+# nothing else: the disassembly is the whole evidence, and the source tree says
+# nothing about it that the diffs do not.
+[permissions.sass_triage.filesystem]
+":minimal" = "read"
+# codex-action installs the CLI under the runner's Node toolcache.
+"/opt/hostedtoolcache/node" = "read"
+"/home/runner/_work/_tool/node" = "read"
+
+[permissions.sass_triage.filesystem.":workspace_roots"]
+# Keep checkout files, including build credentials, outside the model's read roots.
+"sass-artifacts" = "read"
+
+[permissions.sass_triage.network]
+enabled = false
+
+[shell_environment_policy]
+inherit = "all"
+include_only = [
+  "HOME",
+  "PATH",
+  "SASS_RESULT_DIR",
+]

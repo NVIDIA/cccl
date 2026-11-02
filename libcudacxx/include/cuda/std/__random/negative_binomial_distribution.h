@@ -108,7 +108,7 @@ public:
     // overflow __f below to use this technique.
     if (__k <= 21 * __p && sizeof(_IntType) > 1)
     {
-      bernoulli_distribution __gen(__p);
+      bernoulli_distribution __gen(__p); // NOLINT(misc-const-correctness)
       result_type __f = 0;
       result_type __s = 0;
       while (__s < __k)

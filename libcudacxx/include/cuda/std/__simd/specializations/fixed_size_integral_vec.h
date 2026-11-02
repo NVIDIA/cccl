@@ -26,6 +26,9 @@
 // TODO(fbusato): extend to other GPU archs in the future
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__fwd/simd.h>
+#include <cuda/std/__simd/abi.h>
+#include <cuda/std/__simd/specializations/fixed_size_storage.h>
 #include <cuda/std/__simd/specializations/fixed_size_vec.h>
 #include <cuda/std/__simd/specializations/simd_intrinsics_array.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -199,14 +202,20 @@ struct __simd_operations<_Tp, __fixed_size<_Np>, __simd_operations_small_integra
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
+      [[maybe_unused]] const auto __lhs_u = ::cuda::std::simd::__to_unsigned_storage(__lhs);
+      [[maybe_unused]] const auto __rhs_u = ::cuda::std::simd::__to_unsigned_storage(__rhs);
       if constexpr (sizeof(_Tp) == 2)
       {
-        NV_IF_TARGET(NV_PROVIDES_SM_90, (return __plus(__lhs, __unary_minus(__rhs));))
+        NV_IF_TARGET(NV_PROVIDES_SM_90,
+                     (return ::cuda::std::simd::__copy_from_unsigned_storage<__simd_storage_t>(
+                               ::cuda::std::simd::__vsub_16bit_x2(__lhs_u, __rhs_u));))
       }
 #  if _CCCL_HAS_SIMD_8BIT()
       else if constexpr (sizeof(_Tp) == 1)
       {
-        NV_IF_TARGET(NV_HAS_FEATURE_SM_120f, (return __plus(__lhs, __unary_minus(__rhs));))
+        NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
+                     (return ::cuda::std::simd::__copy_from_unsigned_storage<__simd_storage_t>(
+                               ::cuda::std::simd::__vsub_8bit_x4(__lhs_u, __rhs_u));))
       }
 #  endif // _CCCL_HAS_SIMD_8BIT()
     }

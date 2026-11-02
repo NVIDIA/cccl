@@ -52,7 +52,7 @@ void left(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       cuda::execution::tune(policy_selector_t{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceAdjacentDifference::SubtractLeftCopy,
       "SubtractLeftCopy failed",
       d_in,

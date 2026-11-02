@@ -21,16 +21,12 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/copy_cvref.h>
-#include <cuda/std/__type_traits/is_enum.h>
-#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/copy_cvref.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/integral_constant.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_enum.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_integral.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_unsigned.h>
-#include <cuda/std/__type_traits/nat.h>
-#include <cuda/std/__type_traits/remove_cv.h>
-#include <cuda/std/__type_traits/type_list.h>
-#include <cuda/std/cstddef>
-
-#include <cuda/std/__cccl/prologue.h>
+#include <cuda/std/__type_traits/remove_cv.h> // IWYU pragma: keep
 
 #if _CCCL_CHECK_BUILTIN(make_unsigned)
 #  define _CCCL_BUILTIN_MAKE_UNSIGNED(...) __make_unsigned(__VA_ARGS__)
@@ -46,16 +42,22 @@
 #  undef _CCCL_BUILTIN_MAKE_UNSIGNED
 #endif // _CCCL_COMPILER(NVRTC, <, 13, 3)
 
+#if !defined(_CCCL_BUILTIN_MAKE_UNSIGNED)
+#  include <cuda/std/__type_traits/type_list.h>
+#endif // !_CCCL_BUILTIN_MAKE_UNSIGNED
+
+#include <cuda/std/__cccl/prologue.h>
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_MAKE_UNSIGNED)
 
 template <class _Tp>
-using make_unsigned_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_MAKE_UNSIGNED(_Tp);
+using make_unsigned_t _CCCL_NODEBUG = _CCCL_BUILTIN_MAKE_UNSIGNED(_Tp);
 
 #else // ^^^ _CCCL_BUILTIN_MAKE_UNSIGNED ^^^ / vvv !_CCCL_BUILTIN_MAKE_UNSIGNED vvv
 
-using __unsigned_types =
+using __unsigned_types _CCCL_NODEBUG =
   __type_list<unsigned char,
               unsigned short,
               unsigned int,
@@ -77,7 +79,7 @@ struct __make_unsigned_impl<_Tp, true>
   struct __size_greater_equal_fn
   {
     template <class _Up>
-    using __call = bool_constant<(sizeof(_Tp) <= sizeof(_Up))>;
+    using __call _CCCL_NODEBUG = bool_constant<(sizeof(_Tp) <= sizeof(_Up))>;
   };
 
   using type = __type_front<__type_find_if<__unsigned_types, __size_greater_equal_fn>>;
@@ -89,65 +91,65 @@ struct __make_unsigned_impl<bool, true>
 template <>
 struct __make_unsigned_impl<signed short, true>
 {
-  using type = unsigned short;
+  using type _CCCL_NODEBUG = unsigned short;
 };
 template <>
 struct __make_unsigned_impl<unsigned short, true>
 {
-  using type = unsigned short;
+  using type _CCCL_NODEBUG = unsigned short;
 };
 template <>
 struct __make_unsigned_impl<signed int, true>
 {
-  using type = unsigned int;
+  using type _CCCL_NODEBUG = unsigned int;
 };
 template <>
 struct __make_unsigned_impl<unsigned int, true>
 {
-  using type = unsigned int;
+  using type _CCCL_NODEBUG = unsigned int;
 };
 template <>
 struct __make_unsigned_impl<signed long, true>
 {
-  using type = unsigned long;
+  using type _CCCL_NODEBUG = unsigned long;
 };
 template <>
 struct __make_unsigned_impl<unsigned long, true>
 {
-  using type = unsigned long;
+  using type _CCCL_NODEBUG = unsigned long;
 };
 template <>
 struct __make_unsigned_impl<signed long long, true>
 {
-  using type = unsigned long long;
+  using type _CCCL_NODEBUG = unsigned long long;
 };
 template <>
 struct __make_unsigned_impl<unsigned long long, true>
 {
-  using type = unsigned long long;
+  using type _CCCL_NODEBUG = unsigned long long;
 };
 #  if _CCCL_HAS_INT128()
 template <>
 struct __make_unsigned_impl<__int128_t, true>
 {
-  using type = __uint128_t;
+  using type _CCCL_NODEBUG = __uint128_t;
 };
 template <>
 struct __make_unsigned_impl<__uint128_t, true>
 {
-  using type = __uint128_t;
+  using type _CCCL_NODEBUG = __uint128_t;
 };
 #  endif // _CCCL_HAS_INT128()
 
 template <class _Tp>
-using make_unsigned_t _CCCL_NODEBUG_ALIAS = __copy_cvref_t<_Tp, typename __make_unsigned_impl<remove_cv_t<_Tp>>::type>;
+using make_unsigned_t _CCCL_NODEBUG = __copy_cvref_t<_Tp, typename __make_unsigned_impl<remove_cv_t<_Tp>>::type>;
 
 #endif // ^^^ !_CCCL_BUILTIN_MAKE_UNSIGNED ^^^
 
 template <class _Tp>
 struct make_unsigned
 {
-  using type _CCCL_NODEBUG_ALIAS = make_unsigned_t<_Tp>;
+  using type _CCCL_NODEBUG = make_unsigned_t<_Tp>;
 };
 
 template <class _Tp>
@@ -157,7 +159,7 @@ template <class _Tp>
 }
 
 template <class _Tp, class _Up>
-using __copy_unsigned_t _CCCL_NODEBUG_ALIAS = conditional_t<is_unsigned_v<_Tp>, make_unsigned_t<_Up>, _Up>;
+using __copy_unsigned_t _CCCL_NODEBUG = conditional_t<is_unsigned_v<_Tp>, make_unsigned_t<_Up>, _Up>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

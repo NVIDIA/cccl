@@ -13,27 +13,42 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/config.h>
+
+#include <cub/block/block_load.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/choose_offset.cuh>
 #include <cub/detail/device_double_buffer.cuh>
+#include <cub/detail/double_buffer.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/logging.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/temporary_storage.cuh>
-#include <cub/device/device_partition.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
+#include <cub/device/dispatch/dispatch_three_way_partition.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_sort.cuh>
+#include <cub/device/dispatch/kernels/kernel_three_way_partition.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
+#include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
+#include <cub/warp/warp_load.cuh>
+#include <cub/warp/warp_store.cuh>
 
 #include <thrust/iterator/counting_iterator.h>
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/reverse_iterator.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/climits>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 #include <nv/target>
 
@@ -80,13 +95,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t device_segmented_sort_c
     // One CTA per segment
     const local_segment_index_t blocks_in_grid = large_segments;
 
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking "
-            "DeviceSegmentedSortKernelLarge<<<%d, %d, 0, %lld>>>()\n",
-            static_cast<int>(blocks_in_grid),
-            large_threads_per_block,
-            (long long) stream);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH(
+      "DeviceSegmentedSortKernelLarge", static_cast<int>(blocks_in_grid), 1, 1, large_threads_per_block, 0, stream, "");
 
     if (const auto error = CubDebug(
           launcher_factory(blocks_in_grid, large_threads_per_block, 0, stream)
@@ -129,27 +139,33 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t device_segmented_sort_c
 
   if (small_and_medium_blocks_in_grid)
   {
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking "
-            "DeviceSegmentedSortKernelSmall<<<%d, %d, 0, %lld>>>()\n",
-            static_cast<int>(small_and_medium_blocks_in_grid),
-            small_threads_per_block,
-            (long long) stream);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH(
+      "DeviceSegmentedSortKernelSmall",
+      static_cast<int>(small_and_medium_blocks_in_grid),
+      1,
+      1,
+      small_threads_per_block,
+      0,
+      stream,
+      "");
 
-    launcher_factory(small_and_medium_blocks_in_grid, small_threads_per_block, 0, stream)
-      .doit(small_kernel,
-            small_segments,
-            medium_segments,
-            medium_blocks,
-            small_segments_indices,
-            large_and_medium_segments_indices + num_segments - medium_segments,
-            d_current_keys,
-            d_final_keys,
-            d_current_values,
-            d_final_values,
-            d_begin_offsets,
-            d_end_offsets);
+    if (const auto error = CubDebug(
+          launcher_factory(small_and_medium_blocks_in_grid, small_threads_per_block, 0, stream)
+            .doit(small_kernel,
+                  small_segments,
+                  medium_segments,
+                  medium_blocks,
+                  small_segments_indices,
+                  large_and_medium_segments_indices + num_segments - medium_segments,
+                  d_current_keys,
+                  d_final_keys,
+                  d_current_values,
+                  d_final_values,
+                  d_begin_offsets,
+                  d_end_offsets)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -332,7 +348,7 @@ struct policy_selector_from_hub
 };
 
 // Partition selects large and small groups. The middle group is not selected.
-static constexpr size_t num_selected_groups = 2;
+inline constexpr size_t num_selected_groups = 2;
 } // namespace detail::segmented_sort
 
 // TODO(bgruber): remove in CCCL 4.0
@@ -938,28 +954,33 @@ private:
     const auto blocks_in_grid   = static_cast<local_segment_index_t>(num_segments);
     const auto threads_in_block = static_cast<unsigned int>(wrapped_policy.LargeSegmentThreadsPerBlock());
 
-// Log kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking DeviceSegmentedSortFallbackKernel<<<%d, %d, "
-            "0, %lld>>>(), %d items per thread, bit_grain %d\n",
-            blocks_in_grid,
-            threads_in_block,
-            (long long) stream,
-            wrapped_policy.LargeSegmentItemsPerThread(),
-            wrapped_policy.LargeSegmentRadixBits());
-#endif // CUB_DEBUG_LOG
+    // Log kernel configuration
+    _CUB_LOG_KERNEL_LAUNCH(
+      "DeviceSegmentedSortFallbackKernel",
+      blocks_in_grid,
+      1,
+      1,
+      threads_in_block,
+      0,
+      stream,
+      ", bit_grain: %d",
+      wrapped_policy.LargeSegmentRadixBits());
 
     // Invoke fallback kernel
-    launcher_factory(blocks_in_grid, threads_in_block, 0, stream)
-      .doit(fallback_kernel,
-            d_keys.Current(),
-            GetFinalOutput(wrapped_policy.LargeSegmentRadixBits(), d_keys),
-            d_keys_double_buffer,
-            d_values.Current(),
-            GetFinalOutput(wrapped_policy.LargeSegmentRadixBits(), d_values),
-            d_values_double_buffer,
-            d_begin_offsets,
-            d_end_offsets);
+    if (const auto error = CubDebug(
+          launcher_factory(blocks_in_grid, threads_in_block, 0, stream)
+            .doit(fallback_kernel,
+                  d_keys.Current(),
+                  GetFinalOutput(wrapped_policy.LargeSegmentRadixBits(), d_keys),
+                  d_keys_double_buffer,
+                  d_values.Current(),
+                  GetFinalOutput(wrapped_policy.LargeSegmentRadixBits(), d_values),
+                  d_values_double_buffer,
+                  d_begin_offsets,
+                  d_end_offsets)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -1173,6 +1194,9 @@ CUB_RUNTIME_FUNCTION void check_policy(PolicyGetter policy_getter)
   CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.medium_segment.store_algorithm != WARP_STORE_STRIPED
                                  || active_policy.small_segment.store_algorithm != WARP_STORE_STRIPED,
                                "Striped stores will produce unsorted results");
+  // get_num_passes divides by radix_bits and each pass must make progress through the key bits
+  CUB_DETAIL_STATIC_ISH_ASSERT(
+    active_policy.large_segment.radix_bits > 0, "SegmentedSortPolicy: large_segment.radix_bits must be positive");
 }
 
 template <typename KeyT,
@@ -1198,14 +1222,16 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_
 {
   const auto blocks_in_grid   = static_cast<local_segment_index_t>(num_segments);
   const auto threads_in_block = static_cast<unsigned int>(active_policy.large_segment.threads_per_block);
-#ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking DeviceSegmentedSortFallbackKernel<<<%d, %d, 0, %lld>>>(), %d items per thread, bit_grain %d\n",
-          blocks_in_grid,
-          threads_in_block,
-          (long long) stream,
-          active_policy.large_segment.items_per_thread,
-          active_policy.large_segment.radix_bits);
-#endif // CUB_DEBUG_LOG
+  _CUB_LOG_KERNEL_LAUNCH(
+    "DeviceSegmentedSortFallbackKernel",
+    blocks_in_grid,
+    1,
+    1,
+    threads_in_block,
+    0,
+    stream,
+    ", bit_grain: %d",
+    active_policy.large_segment.radix_bits);
 
   if (const auto error = CubDebug(
         launcher_factory(blocks_in_grid, threads_in_block, 0, stream)
@@ -1314,16 +1340,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                                             // a function
     CUB_DETAIL_CONSTEXPR_ISH const SegmentedSortPolicy active_policy = policy_getter();
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   ::std::stringstream ss;
-                   ss << active_policy;
-                   _CubLog("Dispatching DeviceSegmentedSort to compute capability %d.%d with tuning: %s\n",
-                           cc.major_cap(),
-                           cc.minor_cap(),
-                           ss.str().c_str());
-                 }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    detail::log_dispatch("DeviceSegmentedSort", cc, active_policy);
 
     const int radix_bits = active_policy.large_segment.radix_bits;
 

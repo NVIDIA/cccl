@@ -10,7 +10,7 @@
 
 An alias type to create an accessor with the *restrict aliasing policy* starting from an existing accessor.
 
-More information related to the *restrict aliasing policy* can be found in the CUDA programming guide: `__restrict__ keyword <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#restrict>`_.
+More information related to the *restrict aliasing policy* can be found in the CUDA programming guide: `__restrict__ keyword <https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#restrict-pointers>`_.
 
 ----
 

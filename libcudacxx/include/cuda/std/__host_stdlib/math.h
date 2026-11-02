@@ -22,7 +22,9 @@
 #endif // no system header
 
 #if _CCCL_HOSTED()
+// IWYU pragma: begin_exports
 #  include <math.h>
+// IWYU pragma: end_exports
 
 // Standard C++ library comes with it's own <math.h> C++ compatible header. However, if the include paths are jumbled,
 // it might happen that the original C <math.h> is found first. This is a problem because C headers define many of the

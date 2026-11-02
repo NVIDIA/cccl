@@ -31,10 +31,10 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 
-// Wrapping half-word/byte add produces bit-identical results for signed and unsigned operands (no saturation, no
-// cross-lane carry), so a single intrinsic is used for both signednesses.
+// Wrapping half-word/byte addition and subtraction produce bit-identical results for signed and unsigned operands
+// (no saturation or cross-lane carry), so a single intrinsic is used for both signednesses.
 
-[[nodiscard]] _CCCL_DEVICE_API inline uint32_t
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline uint32_t
 __vadd_16x2([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32_t __rhs) noexcept
 {
   NV_IF_TARGET(NV_PROVIDES_SM_90,
@@ -42,9 +42,17 @@ __vadd_16x2([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32
                (_CCCL_VERIFY(false, "cuda::std::simd::__vadd_16x2: Unsupported architecture"); return uint32_t{};));
 }
 
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline uint32_t
+__vsub_16x2([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32_t __rhs) noexcept
+{
+  NV_IF_TARGET(NV_PROVIDES_SM_90,
+               (return ::__vsub2(__lhs, __rhs);), //
+               (_CCCL_VERIFY(false, "cuda::std::simd::__vsub_16x2: Unsupported architecture"); return uint32_t{};));
+}
+
 #  if _CCCL_HAS_SIMD_8BIT()
 
-[[nodiscard]] _CCCL_DEVICE_API inline uint32_t
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline uint32_t
 __vadd_8x4([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32_t __rhs) noexcept
 {
 #    if _CCCL_HAS_SIMD_8BIT_INTRINSICS()
@@ -59,6 +67,24 @@ __vadd_8x4([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32_
                  return __result;
                }),
                (_CCCL_VERIFY(false, "cuda::std::simd::__vadd_8x4: Unsupported architecture"); return uint32_t{};));
+#    endif // _CCCL_HAS_SIMD_8BIT_INTRINSICS()
+}
+
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline uint32_t
+__vsub_8x4([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32_t __rhs) noexcept
+{
+#    if _CCCL_HAS_SIMD_8BIT_INTRINSICS()
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
+               (return ::__vsub4(__lhs, __rhs);), //
+               (_CCCL_VERIFY(false, "cuda::std::simd::__vsub_8x4: Unsupported architecture"); return uint32_t{};));
+#    else // ^^^ _CCCL_HAS_SIMD_8BIT_INTRINSICS() ^^^ / vvv !_CCCL_HAS_SIMD_8BIT_INTRINSICS() vvv
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_120f,
+               ({
+                 uint32_t __result{};
+                 asm("sub.u8x4 %0, %1, %2;" : "=r"(__result) : "r"(__lhs), "r"(__rhs));
+                 return __result;
+               }),
+               (_CCCL_VERIFY(false, "cuda::std::simd::__vsub_8x4: Unsupported architecture"); return uint32_t{};));
 #    endif // _CCCL_HAS_SIMD_8BIT_INTRINSICS()
 }
 
@@ -101,7 +127,7 @@ __vmax_s16x2([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint3
 
 #  if _CCCL_HAS_SIMD_8BIT()
 
-[[nodiscard]] _CCCL_DEVICE_API inline uint32_t
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline uint32_t
 __vmin_u8x4([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32_t __rhs) noexcept
 {
 #    if _CCCL_HAS_SIMD_8BIT_INTRINSICS()
@@ -119,7 +145,7 @@ __vmin_u8x4([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32
 #    endif // _CCCL_HAS_SIMD_8BIT_INTRINSICS()
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline uint32_t
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline uint32_t
 __vmin_s8x4([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32_t __rhs) noexcept
 {
 #    if _CCCL_HAS_SIMD_8BIT_INTRINSICS()
@@ -137,7 +163,7 @@ __vmin_s8x4([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32
 #    endif // _CCCL_HAS_SIMD_8BIT_INTRINSICS()
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline uint32_t
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline uint32_t
 __vmax_u8x4([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32_t __rhs) noexcept
 {
 #    if _CCCL_HAS_SIMD_8BIT_INTRINSICS()
@@ -155,7 +181,7 @@ __vmax_u8x4([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32
 #    endif // _CCCL_HAS_SIMD_8BIT_INTRINSICS()
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline uint32_t
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline uint32_t
 __vmax_s8x4([[maybe_unused]] const uint32_t __lhs, [[maybe_unused]] const uint32_t __rhs) noexcept
 {
 #    if _CCCL_HAS_SIMD_8BIT_INTRINSICS()

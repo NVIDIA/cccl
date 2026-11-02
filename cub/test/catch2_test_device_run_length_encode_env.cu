@@ -11,18 +11,22 @@ struct stream_registry_factory_t;
 
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
+#include <thrust/functional.h>
+#include <thrust/sequence.h>
+#include <thrust/tabulate.h>
 
 #include <cuda/__execution/tune.h>
-#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/stream>
 
 #include <sstream>
 
-#include "catch2_test_env_launch_helper.h"
+#include "block_size_extracting_helpers.h"
+#include "catch2_test_launch_helper.h"
+#include <c2h/device_and_stream.h>
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::Encode, run_length_encode_env);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::NonTrivialRuns, non_trivial_runs_env);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceRunLengthEncode::Encode, run_length_encode_env);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceRunLengthEncode::NonTrivialRuns, non_trivial_runs_env);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -30,13 +34,15 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::NonTrivialRuns, non_trivial_r
 
 namespace stdexec = cuda::std::execution;
 
-template <int ThreadsPerBlock>
+template <int ThreadsPerBlock, int ItemsPerThread = 1>
 struct rle_encode_tuning
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::RleEncodePolicy
   {
-    return {cub::RleAlgorithm::lookback,
-            {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}}};
+    return {
+      cub::RleAlgorithm::lookback,
+      {ThreadsPerBlock, ItemsPerThread, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}},
+      {}};
   }
 };
 
@@ -66,9 +72,9 @@ CUB_TEST_CASE("DeviceRunLengthEncode::Encode works with default environment", "[
           == cub::DeviceRunLengthEncode::Encode(
             d_in.begin(), d_unique_out.begin(), d_counts_out.begin(), d_num_runs_out.begin(), (int) d_in.size()));
 
-  c2h::device_vector<int> expected_unique{0, 2, 9, 5, 8};
-  c2h::device_vector<int> expected_counts{1, 2, 1, 3, 1};
-  c2h::device_vector<int> expected_num_runs{5};
+  const c2h::device_vector<int> expected_unique{0, 2, 9, 5, 8};
+  const c2h::device_vector<int> expected_counts{1, 2, 1, 3, 1};
+  const c2h::device_vector<int> expected_num_runs{5};
 
   REQUIRE(d_num_runs_out == expected_num_runs);
   d_unique_out.resize(d_num_runs_out[0]);
@@ -90,9 +96,9 @@ CUB_TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns works with default environm
           == cub::DeviceRunLengthEncode::NonTrivialRuns(
             d_in.begin(), d_offsets_out.begin(), d_lengths_out.begin(), d_num_runs_out.begin(), (int) d_in.size()));
 
-  c2h::device_vector<int> expected_offsets{1, 4};
-  c2h::device_vector<int> expected_lengths{2, 3};
-  c2h::device_vector<int> expected_num_runs{2};
+  const c2h::device_vector<int> expected_offsets{1, 4};
+  const c2h::device_vector<int> expected_lengths{2, 3};
+  const c2h::device_vector<int> expected_num_runs{2};
 
   REQUIRE(d_num_runs_out == expected_num_runs);
   d_offsets_out.resize(d_num_runs_out[0]);
@@ -109,7 +115,7 @@ CUB_TEST("DeviceRunLengthEncode::Encode uses environment", "[run_length_encode][
   auto d_unique_out   = c2h::device_vector<int>(10);
   auto d_counts_out   = c2h::device_vector<int>(10);
   auto d_num_runs_out = c2h::device_vector<int>(1);
-  int num_items       = static_cast<int>(d_in.size());
+  const int num_items = static_cast<int>(d_in.size());
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -128,9 +134,9 @@ CUB_TEST("DeviceRunLengthEncode::Encode uses environment", "[run_length_encode][
   run_length_encode_env(
     d_in.begin(), d_unique_out.begin(), d_counts_out.begin(), d_num_runs_out.begin(), num_items, env);
 
-  c2h::device_vector<int> expected_unique{1, 2, 3, 4};
-  c2h::device_vector<int> expected_counts{3, 2, 1, 4};
-  c2h::device_vector<int> expected_num_runs{4};
+  const c2h::device_vector<int> expected_unique{1, 2, 3, 4};
+  const c2h::device_vector<int> expected_counts{3, 2, 1, 4};
+  const c2h::device_vector<int> expected_num_runs{4};
 
   REQUIRE(d_num_runs_out == expected_num_runs);
   d_unique_out.resize(d_num_runs_out[0]);
@@ -145,7 +151,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns uses environment", "[run_length_
   auto d_offsets_out  = c2h::device_vector<int>(10);
   auto d_lengths_out  = c2h::device_vector<int>(10);
   auto d_num_runs_out = c2h::device_vector<int>(1);
-  int num_items       = static_cast<int>(d_in.size());
+  const int num_items = static_cast<int>(d_in.size());
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -164,9 +170,9 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns uses environment", "[run_length_
   non_trivial_runs_env(
     d_in.begin(), d_offsets_out.begin(), d_lengths_out.begin(), d_num_runs_out.begin(), num_items, env);
 
-  c2h::device_vector<int> expected_offsets{0, 3, 6};
-  c2h::device_vector<int> expected_lengths{3, 2, 4};
-  c2h::device_vector<int> expected_num_runs{3};
+  const c2h::device_vector<int> expected_offsets{0, 3, 6};
+  const c2h::device_vector<int> expected_lengths{3, 2, 4};
+  const c2h::device_vector<int> expected_num_runs{3};
 
   REQUIRE(d_num_runs_out == expected_num_runs);
   d_offsets_out.resize(d_num_runs_out[0]);
@@ -181,9 +187,9 @@ CUB_TEST_CASE("DeviceRunLengthEncode::Encode uses custom stream", "[run_length_e
   auto d_unique_out   = c2h::device_vector<int>(8);
   auto d_counts_out   = c2h::device_vector<int>(8);
   auto d_num_runs_out = c2h::device_vector<int>(1);
-  int num_items       = static_cast<int>(d_in.size());
+  const int num_items = static_cast<int>(d_in.size());
 
-  cuda::stream custom_stream{cuda::devices[0]};
+  const cuda::stream custom_stream = c2h::make_current_device_stream();
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -197,7 +203,7 @@ CUB_TEST_CASE("DeviceRunLengthEncode::Encode uses custom stream", "[run_length_e
       d_num_runs_out.begin(),
       num_items));
 
-  cuda::stream_ref stream_ref{custom_stream};
+  const cuda::stream_ref stream_ref{custom_stream};
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, stream_ref};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
 
@@ -206,9 +212,9 @@ CUB_TEST_CASE("DeviceRunLengthEncode::Encode uses custom stream", "[run_length_e
 
   custom_stream.sync();
 
-  c2h::device_vector<int> expected_unique{0, 2, 9, 5, 8};
-  c2h::device_vector<int> expected_counts{1, 2, 1, 3, 1};
-  c2h::device_vector<int> expected_num_runs{5};
+  const c2h::device_vector<int> expected_unique{0, 2, 9, 5, 8};
+  const c2h::device_vector<int> expected_counts{1, 2, 1, 3, 1};
+  const c2h::device_vector<int> expected_num_runs{5};
 
   REQUIRE(d_num_runs_out == expected_num_runs);
   d_unique_out.resize(d_num_runs_out[0]);
@@ -223,9 +229,9 @@ CUB_TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns uses custom stream", "[run_
   auto d_offsets_out  = c2h::device_vector<int>(8);
   auto d_lengths_out  = c2h::device_vector<int>(8);
   auto d_num_runs_out = c2h::device_vector<int>(1);
-  int num_items       = static_cast<int>(d_in.size());
+  const int num_items = static_cast<int>(d_in.size());
 
-  cuda::stream custom_stream{cuda::devices[0]};
+  const cuda::stream custom_stream = c2h::make_current_device_stream();
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -239,7 +245,7 @@ CUB_TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns uses custom stream", "[run_
       d_num_runs_out.begin(),
       num_items));
 
-  cuda::stream_ref stream_ref{custom_stream};
+  const cuda::stream_ref stream_ref{custom_stream};
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, stream_ref};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
 
@@ -248,9 +254,9 @@ CUB_TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns uses custom stream", "[run_
 
   custom_stream.sync();
 
-  c2h::device_vector<int> expected_offsets{1, 4};
-  c2h::device_vector<int> expected_lengths{2, 3};
-  c2h::device_vector<int> expected_num_runs{2};
+  const c2h::device_vector<int> expected_offsets{1, 4};
+  const c2h::device_vector<int> expected_lengths{2, 3};
+  const c2h::device_vector<int> expected_num_runs{2};
 
   REQUIRE(d_num_runs_out == expected_num_runs);
   d_offsets_out.resize(d_num_runs_out[0]);
@@ -267,7 +273,7 @@ CUB_TEST("DeviceRunLengthEncode::Encode can be tuned", "[run_length_encode][devi
   constexpr int num_items                  = 256;
 
   auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
-  block_size_extracting_constant_iterator d_in(42, thrust::raw_pointer_cast(d_block_size.data()));
+  const block_size_extracting_constant_iterator d_in(42, thrust::raw_pointer_cast(d_block_size.data()));
 
   auto d_unique_out   = c2h::device_vector<int>(1);
   auto d_counts_out   = c2h::device_vector<int>(1);
@@ -283,13 +289,49 @@ CUB_TEST("DeviceRunLengthEncode::Encode can be tuned", "[run_length_encode][devi
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+// The agent's temporary storage for 32 threads x 256 items exceeds the static shared memory limit, so the kernel falls
+// back to a larger block of 64 threads, which its launch bounds must allow
+CUB_TEST_CASE("DeviceRunLengthEncode::Encode can be tuned with a small block size that needs the fallback policy",
+              "[run_length_encode][device]",
+              CUB_SMALL)
+{
+  constexpr int num_items = 10000;
+  constexpr int run_size  = 7;
+  constexpr int num_runs  = cuda::ceil_div(num_items, run_size);
+
+  // runs of run_size equal keys 0, 0, ..., 1, 1, ..., 2, ...
+  auto d_in = c2h::device_vector<int>(num_items, thrust::no_init);
+  thrust::tabulate(d_in.begin(), d_in.end(), thrust::placeholders::_1 / run_size);
+  auto d_unique_out   = c2h::device_vector<int>(num_runs, thrust::no_init);
+  auto d_counts_out   = c2h::device_vector<int>(num_runs, thrust::no_init);
+  auto d_num_runs_out = c2h::device_vector<int>(1, thrust::no_init);
+
+  auto env = cuda::execution::tune(rle_encode_tuning<32, 256>{});
+
+  run_length_encode_env(
+    thrust::raw_pointer_cast(d_in.data()),
+    thrust::raw_pointer_cast(d_unique_out.data()),
+    thrust::raw_pointer_cast(d_counts_out.data()),
+    thrust::raw_pointer_cast(d_num_runs_out.data()),
+    num_items,
+    env);
+
+  REQUIRE(d_num_runs_out[0] == num_runs);
+  auto expected_keys = c2h::device_vector<int>(num_runs, thrust::no_init);
+  thrust::sequence(expected_keys.begin(), expected_keys.end());
+  auto expected_counts   = c2h::device_vector<int>(num_runs, run_size);
+  expected_counts.back() = num_items - (num_runs - 1) * run_size; // the last run is shorter
+  REQUIRE(d_unique_out == expected_keys);
+  REQUIRE(d_counts_out == expected_counts);
+}
+
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can be tuned", "[run_length_encode][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   constexpr int num_items                  = 256;
 
   auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
-  block_size_extracting_constant_iterator d_in(42, thrust::raw_pointer_cast(d_block_size.data()));
+  const block_size_extracting_constant_iterator d_in(42, thrust::raw_pointer_cast(d_block_size.data()));
 
   auto d_offsets_out  = c2h::device_vector<int>(1);
   auto d_lengths_out  = c2h::device_vector<int>(1);
@@ -321,20 +363,32 @@ CUB_TEST("Test RleEncodePolicy properties", "[run_length_encode][device]", CUB_S
      cub::BLOCK_LOAD_DIRECT,
      cub::LOAD_DEFAULT,
      cub::BLOCK_SCAN_WARP_SCANS,
-     {cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}}};
+     {cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}},
+    {32, 8, 5, 3, 5, 3, 128, 32}};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
   constexpr auto p2 = cub::RleEncodePolicy{
     .algorithm = cub::RleAlgorithm::lookback,
-    .lookback  = cub::RleLookbackPolicy{
-      .threads_per_block = 128,
-      .items_per_thread  = 7,
-      .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
-      .load_modifier     = cub::LOAD_DEFAULT,
-      .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-      .lookback_delay    = cub::LookbackDelayPolicy{
-        .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}}};
+    .lookback =
+      cub::RleLookbackPolicy{
+        .threads_per_block = 128,
+        .items_per_thread  = 7,
+        .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+        .load_modifier     = cub::LOAD_DEFAULT,
+        .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+        .lookback_delay =
+          cub::LookbackDelayPolicy{
+            .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}},
+    .lookahead = cub::RleLookaheadPolicy{
+      .items_per_thread            = 32,
+      .compute_warps               = 8,
+      .key_ring_stages             = 5,
+      .pos_ring_stages             = 3,
+      .poll_items_per_thread       = 5,
+      .dense_poll_items_per_thread = 3,
+      .dense_mode_runs_per_tile    = 128,
+      .flag_staging_threshold      = 32}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
@@ -348,13 +402,18 @@ CUB_TEST("Test RleEncodePolicy properties", "[run_length_encode][device]", CUB_S
     os << p;
     return os.str();
   };
-  REQUIRE(to_string(p1)
-          == "RleEncodePolicy { .algorithm = RleAlgorithm::lookback"
-             ", .lookback = RleLookbackPolicy { .threads_per_block = 128, .items_per_thread = 7"
-             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
-             ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
-             ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
-             ", .delay = 832, .l2_write_latency = 1165 } } }");
+  REQUIRE(
+    to_string(p1)
+    == "RleEncodePolicy { .algorithm = RleAlgorithm::lookback"
+       ", .lookback = RleLookbackPolicy { .threads_per_block = 128, .items_per_thread = 7"
+       ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
+       ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+       ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
+       ", .delay = 832, .l2_write_latency = 1165 } }"
+       ", .lookahead = RleLookaheadPolicy { .items_per_thread = 32, .compute_warps = 8"
+       ", .key_ring_stages = 5, .pos_ring_stages = 3"
+       ", .poll_items_per_thread = 5, .dense_poll_items_per_thread = 3"
+       ", .dense_mode_runs_per_tile = 128, .flag_staging_threshold = 32 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
 

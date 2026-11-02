@@ -21,22 +21,25 @@
 #endif // no system header
 
 #include <cub/agent/agent_scan_by_key.cuh>
-#include <cub/device/dispatch/dispatch_scan.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
+#include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/logging.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan_by_key.cuh>
-#include <cub/thread/thread_operators.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
-
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+#include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 
@@ -137,6 +140,10 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
     const OffsetT num_items)
 {
   static constexpr ScanByKeyPolicy policy = current_policy<PolicySelector>();
+  static_assert(
+    policy.lookback.load_modifier != CacheLoadModifier::LOAD_LDG,
+    "ScanByKeyLookbackPolicy: load_modifier must not be LOAD_LDG, since the memory consistency model does not apply "
+    "to texture accesses");
 
   using scan_by_key_policy_t = agent_scan_by_key_policy<
     policy.lookback.threads_per_block,
@@ -413,7 +420,7 @@ struct dispatch_scan_by_key
       return cudaSuccess;
     }
 
-    KeyT* d_keys_prev_in = static_cast<KeyT*>(allocations[1]);
+    KeyT* d_keys_prev_in = static_cast<KeyT*>(allocations[1]); // NOLINT(misc-const-correctness)
 
     // Construct the tile status interface
     if (const auto error = CubDebug(tile_state.Init(num_tiles, allocations[0], allocation_sizes[0])))
@@ -423,9 +430,7 @@ struct dispatch_scan_by_key
 
     // Log init_kernel configuration
     const int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
 
     // Invoke init_kernel to initialize tile descriptors
     if (const auto error = CubDebug(
@@ -463,15 +468,16 @@ struct dispatch_scan_by_key
     for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
     {
       // Log scan_kernel configuration
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
-              "per thread\n",
-              start_tile,
-              scan_grid_size,
-              active_policy.lookback.threads_per_block,
-              (long long) stream,
-              active_policy.lookback.items_per_thread);
-#endif // CUB_DEBUG_LOG
+      _CUB_LOG_KERNEL_LAUNCH(
+        "scan_kernel",
+        scan_grid_size,
+        1,
+        1,
+        active_policy.lookback.threads_per_block,
+        0,
+        stream,
+        ", epoch: %d",
+        start_tile);
 
       // Invoke scan_kernel
       if (const auto error = CubDebug(
@@ -607,18 +613,9 @@ struct dispatch_scan_by_key
       return error;
     }
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   ::std::stringstream ss;
-                   ss << policy_selector(cc);
-                   _CubLog("Dispatching DeviceScanByKey to compute capability %d.%d with tuning: %s\n",
-                           cc.major_cap(),
-                           cc.minor_cap(),
-                           ss.str().c_str());
-                 }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-
     const ScanByKeyPolicy active_policy = policy_selector(cc);
+
+    detail::log_dispatch("DeviceScanByKey", cc, active_policy);
 
     return dispatch_scan_by_key<
              KeysInputIteratorT,
@@ -713,18 +710,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 ::std::stringstream ss;
-                 ss << policy_selector(cc);
-                 _CubLog("Dispatching DeviceScanByKey to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
-               }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-
   const ScanByKeyPolicy active_policy = policy_selector(cc);
+
+  detail::log_dispatch("DeviceScanByKey", cc, active_policy);
 
   // Get device ordinal
   int device_ordinal;
@@ -763,7 +751,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return cudaSuccess;
   }
 
-  KeyT* d_keys_prev_in = static_cast<KeyT*>(allocations[1]);
+  KeyT* d_keys_prev_in = static_cast<KeyT*>(allocations[1]); // NOLINT(misc-const-correctness)
 
   // Construct the tile status interface
   if (const auto error = CubDebug(tile_state.Init(num_tiles, allocations[0], allocation_sizes[0])))
@@ -773,9 +761,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   // Log init_kernel configuration
   const int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
-#ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#endif // CUB_DEBUG_LOG
+  _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
 
   // Invoke init_kernel to initialize tile descriptors
   if (const auto error = CubDebug(
@@ -813,15 +799,16 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
   {
     // Log scan_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
-            "per thread\n",
-            start_tile,
-            scan_grid_size,
-            active_policy.lookback.threads_per_block,
-            (long long) stream,
-            active_policy.lookback.items_per_thread);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH(
+      "scan_kernel",
+      scan_grid_size,
+      1,
+      1,
+      active_policy.lookback.threads_per_block,
+      0,
+      stream,
+      ", epoch: %d",
+      start_tile);
 
     // Invoke scan_kernel
     if (const auto error = CubDebug(

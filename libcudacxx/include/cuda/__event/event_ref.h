@@ -24,10 +24,10 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__driver/driver_api.h>
+#  include <cuda/std/__cccl/assert.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/cassert>
-#  include <cuda/std/cstddef>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -91,7 +91,7 @@ public:
   [[nodiscard]] _CCCL_HOST_API bool is_done() const
   {
     _CCCL_ASSERT(__event_ != nullptr, "cuda::event_ref::sync no event set");
-    ::cudaError_t __status = ::cuda::__driver::__eventQueryNoThrow(__event_);
+    const ::cudaError_t __status = ::cuda::__driver::__eventQueryNoThrow(__event_);
     if (__status == ::cudaSuccess)
     {
       return true;

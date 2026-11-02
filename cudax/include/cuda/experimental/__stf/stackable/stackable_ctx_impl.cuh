@@ -14,6 +14,10 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/optional>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -23,11 +27,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
+
 #include <algorithm>
 #include <atomic>
 #include <iostream>
 #include <shared_mutex>
 #include <stack>
+#include <stdexcept>
 #include <thread>
 
 #include "cuda/experimental/__stf/allocators/adapters.cuh"
@@ -36,8 +43,8 @@
 #include "cuda/experimental/__stf/stackable/conditional_nodes.cuh"
 #include "cuda/experimental/__stf/stackable/stackable_node_hierarchy.cuh"
 #include "cuda/experimental/__stf/stackable/stackable_task_dep.cuh"
+#include "cuda/experimental/__stf/utility/exception_policy.cuh"
 #include "cuda/experimental/__stf/utility/hash.cuh"
-#include "cuda/experimental/__stf/utility/scope_guard.cuh"
 #include "cuda/experimental/__stf/utility/source_location.cuh"
 
 namespace cuda::experimental::stf
@@ -139,19 +146,19 @@ public:
     ::std::vector<additional_dep_info> additional_deps_;
 
     // Store the concrete task (base class), set by concretize_deferred_task
-    ::std::optional<::cuda::experimental::stf::task> concrete_task_;
+    ::cuda::std::optional<::cuda::experimental::stf::task> concrete_task_;
 
     // Optional symbol to be applied to the underlying task when concretized
-    ::std::optional<::std::string> symbol_;
+    ::cuda::std::optional<::std::string> symbol_;
 
     template <typename ExecPlace>
     deferred_task_builder(stackable_ctx& sctx, int offset, ExecPlace&& exec_place, Deps&&... deps)
         : sctx_(sctx)
         , offset_(offset)
-        , exec_place_(::std::move(exec_place))
-        , task_deps_tuple_(::std::forward<Deps>(deps)...)
+        , exec_place_(::cuda::std::move(exec_place))
+        , task_deps_tuple_(::cuda::std::forward<Deps>(deps)...)
     {
-      static_assert((reserved::is_stackable_task_dep_v<::std::decay_t<Deps>> && ...),
+      static_assert((reserved::is_stackable_task_dep_v<::cuda::std::decay_t<Deps>> && ...),
                     "All dependency arguments must be stackable task dependencies");
     }
 
@@ -160,7 +167,7 @@ public:
     auto& add_deps(MoreDeps&&... deps)
     {
       auto store_dep = [this](const auto& dep) {
-        static_assert(reserved::is_stackable_task_dep_v<::std::decay_t<decltype(dep)>>,
+        static_assert(reserved::is_stackable_task_dep_v<::cuda::std::decay_t<decltype(dep)>>,
                       "add_deps in stackable context only accepts stackable task dependencies");
 
         additional_dep_info info;
@@ -179,7 +186,7 @@ public:
           return task_dep_untyped(ld, mode);
         };
 
-        additional_deps_.push_back(::std::move(info));
+        additional_deps_.push_back(::cuda::std::move(info));
       };
       (store_dep(deps), ...);
       return *this;
@@ -263,7 +270,7 @@ public:
     auto operator->*(F&& f)
     {
       return concretize_deferred_task([&f](auto& task) {
-        return task->*::std::forward<F>(f);
+        return task->*::cuda::std::forward<F>(f);
       });
     }
 
@@ -280,29 +287,29 @@ public:
     // Set symbol for the task - store for later application when concretized
     auto& set_symbol(::std::string s) &
     {
-      symbol_ = ::std::move(s);
+      symbol_ = ::cuda::std::move(s);
       return *this;
     }
 
     auto&& set_symbol(::std::string s) &&
     {
-      symbol_ = ::std::move(s);
-      return ::std::move(*this);
+      symbol_ = ::cuda::std::move(s);
+      return ::cuda::std::move(*this);
     }
 
     // Set exec_place for the task
     template <typename ExecPlace>
     auto& set_exec_place(ExecPlace&& ep) &
     {
-      exec_place_ = ::std::forward<ExecPlace>(ep);
+      exec_place_ = ::cuda::std::forward<ExecPlace>(ep);
       return *this;
     }
 
     template <typename ExecPlace>
     auto&& set_exec_place(ExecPlace&& ep) &&
     {
-      exec_place_ = ::std::forward<ExecPlace>(ep);
-      return ::std::move(*this);
+      exec_place_ = ::cuda::std::forward<ExecPlace>(ep);
+      return ::cuda::std::move(*this);
     }
 
     // Add get method for compatibility with test code
@@ -384,7 +391,7 @@ public:
       ::cuda::std::source_location callsite;
 
       // The async resource handle used in this context
-      ::std::optional<async_resources_handle> async_handle;
+      ::cuda::std::optional<async_resources_handle> async_handle;
 
       // Collection of events to start the context (based on the freeze
       // operations to get data imported into the context)
@@ -466,7 +473,10 @@ public:
             {
               if (dummy_graph != nullptr)
               {
-                cuda_safe_call(cudaGraphDestroy(dummy_graph));
+                ON_THROW(notify)
+                {
+                  cuda_try<cudaGraphDestroy>(dummy_graph);
+                };
               }
             };
 
@@ -508,7 +518,10 @@ public:
         {
           if (graph_owned_by_us)
           {
-            cuda_safe_call(cudaGraphDestroy(graph));
+            ON_THROW(notify)
+            {
+              cuda_try<cudaGraphDestroy>(graph);
+            };
           }
         };
 
@@ -770,6 +783,16 @@ public:
         return graph;
       }
 
+      // The parent's dependency on this nested node, built from host objects only. When
+      // finalize_nested() fails part-way the child node is already in the parent graph, so the
+      // parent can still be ordered behind it, whatever else went wrong.
+      event_list nested_output_event() const
+      {
+        _CCCL_ASSERT(nested_graph, "nested_output_event is for nested graph nodes");
+        auto& parent_ctx = parent_ctx_node->ctx;
+        return event_list(reserved::graph_event(output_node, parent_ctx.stage(), parent_ctx.graph()));
+      }
+
     private:
       // Nested graph finalization path - kept separate from the split
       // prologue/launch/epilogue helpers to keep the non-nested path clean.
@@ -863,7 +886,7 @@ public:
         return;
       }
 
-      size_t new_size = ::std::max(
+      size_t new_size = ::cuda::std::max(
         static_cast<size_t>(target_size),
         nodes.size() * node_hierarchy::default_growth_numerator / node_hierarchy::default_growth_denominator);
       nodes.resize(new_size);
@@ -1027,7 +1050,11 @@ public:
     // This method assumes that the mutex is already acquired in exclusive mode
     // The event_list correspond to the prereqs after we have finalized (eg.
     // launch a graph in a stream, or the child node)
-    void _pop_epilogue(event_list& finalize_prereqs)
+    // The second half of every pop. Completes the transition whatever its steps report, so the
+    // parent context is left consistent (data unfrozen, node gone, head moved); a failure along the
+    // way lands in `err` for the caller to act on. See the error-handling contract on
+    // stackable_ctx::pop().
+    void _pop_epilogue(event_list& finalize_prereqs, ::std::exception_ptr& err)
     {
       int head_offset = get_head_offset();
 
@@ -1061,7 +1088,10 @@ public:
       for (auto& d_impl : current_node->pushed_data)
       {
         _CCCL_ASSERT(d_impl, "invalid value");
-        d_impl->pop_after_finalize(parent_offset, finalize_prereqs);
+        // Every pushed data gets unfrozen even if one of them fails to.
+        err |= [&] {
+          d_impl->pop_after_finalize(parent_offset, finalize_prereqs);
+        };
       }
 
       // Composite (localized) allocations cached by the popped context must
@@ -1072,8 +1102,10 @@ public:
       // reused or released once the parent has synchronized with the nested
       // work (the dangling-event registration below guarantees the parent's
       // fence/finalize waits on the body graph).
-      parent_ctx.get_backend().get_composite_cache().import_from(
-        mv(current_ctx.get_backend().get_composite_cache()), finalize_prereqs);
+      err |= [&] {
+        parent_ctx.get_backend().get_composite_cache().import_from(
+          mv(current_ctx.get_backend().get_composite_cache()), finalize_prereqs);
+      };
 
       // Forward the body graph's completion event into the parent context.
       //
@@ -1099,14 +1131,20 @@ public:
       // Destroy the resources used in the wrapper allocator (if any)
       if (current_node->clear_adapters)
       {
+        // clear() completes and then reports, like this function; a failing adapter is cleared
+        // (its unfreed buffers leak) and does not stop the others.
         if (current_node->alloc_adapters)
         {
-          current_node->alloc_adapters->clear();
+          err |= [&] {
+            current_node->alloc_adapters->clear();
+          };
         }
 
         for (auto& a : current_node->retained_adapters)
         {
-          a->clear();
+          err |= [&] {
+            a->clear();
+          };
         }
       }
       else
@@ -1137,7 +1175,8 @@ public:
     /**
      * @brief Terminate the current nested level and get back to the previous one
      */
-    void pop()
+    template <typename Policy>
+    void pop(Policy policy)
     {
       auto lock = acquire_exclusive_lock();
 
@@ -1147,15 +1186,47 @@ public:
 
       _pop_prologue();
 
-      // Polymorphic finalization - no conditionals needed!
       int head_offset    = get_head_offset();
       auto& current_node = *nodes[head_offset];
 
-      // Use polymorphic dispatch for context-specific finalization
-      event_list finalize_prereqs = current_node.finalize();
-
-      // Release all resources acquired for the push now that we have executed the graph
-      _pop_epilogue(finalize_prereqs);
+      // The node's finalize() is where asynchronous errors from the nested work surface (at its
+      // synchronize). The pop completes regardless, and the policy decides at the end, so the
+      // caller gets the error together with a consistent context rather than a half-popped one.
+      ::std::exception_ptr err;
+      event_list finalize_prereqs;
+      err |= [&] {
+        finalize_prereqs = current_node.finalize();
+      };
+      if (err)
+      {
+        // Without the finalize events the parent cannot be ordered behind the nested work. For a
+        // nested node the child is already in the parent graph, so its output event can still be
+        // built from host objects; for a top-level node replace ordering by completion and wait
+        // for the support stream. If that fails too, the device is gone and nothing is left to
+        // race with.
+        if (auto* gnode = dynamic_cast<graph_ctx_node*>(&current_node))
+        {
+          if (gnode->is_nested())
+          {
+            err |= [&] {
+              finalize_prereqs = gnode->nested_output_event();
+            };
+          }
+          else
+          {
+            err |= [&] {
+              cuda_try<cudaStreamSynchronize>(gnode->support_stream);
+            };
+          }
+        }
+      }
+      _pop_epilogue(finalize_prereqs, err);
+      if (err)
+      {
+        sump::sink(policy)->*[&] {
+          ::std::rethrow_exception(err);
+        };
+      }
     }
 
     // Result of pop_prologue_impl() used by stackable_ctx::pop_prologue() to
@@ -1211,24 +1282,50 @@ public:
      * launchable_graph_handle that was produced by the matching
      * pop_prologue().
      */
-    void pop_epilogue_impl()
+    template <typename Policy>
+    void pop_epilogue_impl(Policy policy)
     {
       auto lock = acquire_exclusive_lock();
 
-      int node_offset             = pending_epilogue_node_offset_;
-      graph_ctx_node* gnode       = pending_graph_node_();
-      event_list finalize_prereqs = gnode->finalize_after_launch();
+      int node_offset       = pending_epilogue_node_offset_;
+      graph_ctx_node* gnode = pending_graph_node_();
+
+      // finalize_after_launch() synchronizes the support stream, releases the nested resources and
+      // records the completion event. It is where asynchronous errors from the launched graph
+      // surface. The epilogue completes regardless: the node is destroyed, the data unfrozen,
+      // every handle invalidated, and only then does the policy act on the first failure.
+      ::std::exception_ptr err;
+      event_list finalize_prereqs;
+      err |= [&] {
+        finalize_prereqs = gnode->finalize_after_launch();
+      };
+      if (err)
+      {
+        // The failure may have been the event record after a successful synchronize, in which
+        // case the launched graph may still be running. Replace ordering by completion: wait for
+        // the support stream before the parent unfreezes anything. If that fails too, the device
+        // is gone and there is nothing left to race with.
+        err |= [&] {
+          cuda_try<cudaStreamSynchronize>(gnode->support_stream);
+        };
+      }
 
       // Head must still be the prepared node for _pop_epilogue to find the
       // right children / parent.
       _CCCL_ASSERT(get_head_offset() == node_offset, "pop_epilogue called from wrong thread or head was changed");
 
-      _pop_epilogue(finalize_prereqs);
+      _pop_epilogue(finalize_prereqs, err);
 
       // Drop the shared token - every outstanding launchable_graph_handle
       // holds only a weak_ptr, so this invalidates them atomically.
       pending_epilogue_token_.reset();
       pending_epilogue_node_offset_ = -1;
+      if (err)
+      {
+        sump::sink(policy)->*[&] {
+          ::std::rethrow_exception(err);
+        };
+      }
     }
 
     /**
@@ -1348,8 +1445,7 @@ public:
       auto it = head_map.find(::std::this_thread::get_id());
       if (it == head_map.end())
       {
-        fprintf(stderr, "Error: context offset isn't set in this thread\n");
-        abort();
+        _CCCL_THROW(::std::logic_error, "the calling thread has no active stackable context (no head offset is set)");
       }
       return it->second;
     }
@@ -1573,9 +1669,24 @@ public:
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
-  void pop()
+  //! \brief Terminate the current nested level and get back to the previous one.
+  //!
+  //! Error-handling contract, shared by pop(), pop_epilogue() and the RAII scopes: a function that
+  //! *begins* a level (push(), pop_prologue()) may throw and leaves nothing behind; a function that
+  //! *ends* one completes the transition whatever its steps report (data is unfrozen, the node is
+  //! destroyed, the head moves back to the parent) and then rethrows the first failure, so the
+  //! caller receives the error together with a consistent context. Asynchronous device errors
+  //! surface here, at the synchronize inside the nested finalize, which is why this is the
+  //! function most worth catching around.
+  //!
+  //! `policy` decides what happens to that first failure once the level is gone: the default,
+  //! `fwd`, propagates it with its type intact; `abort` reports and ends the program, which
+  //! is what the RAII scopes pass since they call pop() from a destructor; `notify` reports and
+  //! lets the program continue. See exception_policy.cuh for the full set.
+  template <typename Policy = sump::fwd_t>
+  void pop(Policy policy = {})
   {
-    pimpl->pop();
+    pimpl->pop(policy);
   }
 
   //! \brief First phase of a re-launchable pop.
@@ -1600,10 +1711,12 @@ public:
   //!
   //! Releases resources, unfreezes any data that was pushed into the nested
   //! context, and destroys the node. Invalidates every launchable_graph_handle
-  //! that was produced by the matching pop_prologue().
-  void pop_epilogue()
+  //! that was produced by the matching pop_prologue(). Completes even if a step
+  //! fails, then hands the first failure to `policy`; see the contract on pop().
+  template <typename Policy = sump::fwd_t>
+  void pop_epilogue(Policy policy = {})
   {
-    pimpl->pop_epilogue_impl();
+    pimpl->pop_epilogue_impl(policy);
   }
 
 private:
@@ -1714,7 +1827,7 @@ public:
     auto lock = pimpl->acquire_shared_lock();
 
     int head           = pimpl->get_head_offset();
-    auto underlying_ld = get_ctx(head).logical_data(::std::forward<Pack>(pack)...);
+    auto underlying_ld = get_ctx(head).logical_data(::cuda::std::forward<Pack>(pack)...);
     using T            = typename decltype(underlying_ld)::element_type;
     return stackable_logical_data<T>(*this, head, false, mv(underlying_ld), true);
   }
@@ -1729,14 +1842,14 @@ public:
     ::std::vector<::std::pair<int, access_mode>> combined_accesses;
 
     [[maybe_unused]] auto combine = [&combined_accesses](const auto& arg) {
-      if constexpr (reserved::is_stackable_task_dep_v<::std::decay_t<decltype(arg)>>)
+      if constexpr (reserved::is_stackable_task_dep_v<::cuda::std::decay_t<decltype(arg)>>)
       {
         combine_access_mode(combined_accesses, arg.get_d().get_unique_id(), arg.get_access_mode());
       }
     };
 
     [[maybe_unused]] auto validate = [&combined_accesses, offset, this](const auto& arg) {
-      if constexpr (reserved::is_stackable_task_dep_v<::std::decay_t<decltype(arg)>>)
+      if constexpr (reserved::is_stackable_task_dep_v<::cuda::std::decay_t<decltype(arg)>>)
       {
         arg.get_d().validate_access(
           offset, *this, lookup_combined_mode(combined_accesses, arg.get_d().get_unique_id()), arg.get_dplace());
@@ -1750,12 +1863,12 @@ public:
 public:
   template <typename ExecPlace,
             typename... Deps,
-            ::std::enable_if_t<::std::is_base_of_v<exec_place, ::std::decay_t<ExecPlace>>, int> = 0>
+            ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<exec_place, ::cuda::std::decay_t<ExecPlace>>, int> = 0>
   auto task(ExecPlace&& e_place, Deps&&... deps)
   {
     auto lock  = pimpl->acquire_shared_lock();
     int offset = get_head_offset();
-    return deferred_task_builder{*this, offset, ::std::move(e_place), ::std::forward<Deps>(deps)...};
+    return deferred_task_builder{*this, offset, ::cuda::std::move(e_place), ::cuda::std::forward<Deps>(deps)...};
   }
 
   // Note we here duplicate the code above to avoid locking issues (and not create a 3 line common impl)
@@ -1765,7 +1878,7 @@ public:
     auto lock    = pimpl->acquire_shared_lock();
     int offset   = get_head_offset();
     auto e_place = get_ctx(offset).default_exec_place();
-    return deferred_task_builder{*this, offset, ::std::move(e_place), ::std::forward<Deps>(deps)...};
+    return deferred_task_builder{*this, offset, ::cuda::std::move(e_place), ::cuda::std::forward<Deps>(deps)...};
   }
 
 #if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
@@ -1775,7 +1888,7 @@ public:
     auto lock  = pimpl->acquire_shared_lock();
     int offset = get_head_offset();
     validate_and_push(offset, pack...);
-    return get_ctx(offset).parallel_for(reserved::resolve_dep(offset, ::std::forward<Pack>(pack))...);
+    return get_ctx(offset).parallel_for(reserved::resolve_dep(offset, ::cuda::std::forward<Pack>(pack))...);
   }
 
   template <typename... Pack>
@@ -1784,7 +1897,7 @@ public:
     auto lock  = pimpl->acquire_shared_lock();
     int offset = get_head_offset();
     validate_and_push(offset, pack...);
-    return get_ctx(offset).launch(reserved::resolve_dep(offset, ::std::forward<Pack>(pack))...);
+    return get_ctx(offset).launch(reserved::resolve_dep(offset, ::cuda::std::forward<Pack>(pack))...);
   }
 
   template <typename... Pack>
@@ -1793,7 +1906,7 @@ public:
     auto lock  = pimpl->acquire_shared_lock();
     int offset = get_head_offset();
     validate_and_push(offset, pack...);
-    return get_ctx(offset).cuda_kernel(reserved::resolve_dep(offset, ::std::forward<Pack>(pack))...);
+    return get_ctx(offset).cuda_kernel(reserved::resolve_dep(offset, ::cuda::std::forward<Pack>(pack))...);
   }
 
   template <typename... Pack>
@@ -1802,7 +1915,7 @@ public:
     auto lock  = pimpl->acquire_shared_lock();
     int offset = get_head_offset();
     validate_and_push(offset, pack...);
-    return get_ctx(offset).cuda_kernel_chain(reserved::resolve_dep(offset, ::std::forward<Pack>(pack))...);
+    return get_ctx(offset).cuda_kernel_chain(reserved::resolve_dep(offset, ::cuda::std::forward<Pack>(pack))...);
   }
 #endif
 
@@ -1812,7 +1925,7 @@ public:
     auto lock  = pimpl->acquire_shared_lock();
     int offset = get_head_offset();
     validate_and_push(offset, pack...);
-    return get_ctx(offset).host_launch(reserved::resolve_dep(offset, ::std::forward<Pack>(pack))...);
+    return get_ctx(offset).host_launch(reserved::resolve_dep(offset, ::cuda::std::forward<Pack>(pack))...);
   }
 
   auto fence()
@@ -1822,8 +1935,7 @@ public:
     int offset = get_head_offset();
     if (offset != get_root_offset())
     {
-      fprintf(stderr, "Error: fence() not supported in nested contexts.\n");
-      abort();
+      _CCCL_THROW(::std::logic_error, "fence() is not supported in nested contexts");
     }
 
     return get_ctx(offset).fence();
@@ -1837,8 +1949,7 @@ public:
     int offset = get_head_offset();
     if (offset != get_root_offset())
     {
-      fprintf(stderr, "Error: wait() not supported in nested contexts.\n");
-      abort();
+      _CCCL_THROW(::std::logic_error, "wait() is not supported in nested contexts");
     }
 
     // get_ld() returns a logical_data handle by value (a copy), so bind it to a
@@ -1862,7 +1973,7 @@ public:
     auto lock  = pimpl->acquire_shared_lock();
     int offset = get_head_offset();
     validate_and_push(offset, pack...);
-    get_ctx(offset).push_affinity(reserved::resolve_dep(offset, ::std::forward<Pack>(pack))...);
+    get_ctx(offset).push_affinity(reserved::resolve_dep(offset, ::cuda::std::forward<Pack>(pack))...);
   }
 
   void pop_affinity() const

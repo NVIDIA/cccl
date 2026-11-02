@@ -1,0 +1,89 @@
+<!-- Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+
+SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+-->
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 1460" role="img" aria-labelledby="title desc">
+  <title id="title">Compilation swimlanes: Numba-CUDA-MLIR, cuda.coop, NVRTC, and nvJitLink</title>
+  <desc id="desc">Ordered handoffs between Numba, cuda.coop, NVRTC and nvJitLink. Successful provider bundling on a cache miss and the default kernel LTO path are shown. Group planning computes Load/Store payload dtype and item count. PayloadInference reuses the carried GroupLoweringPlan, checks explicit inputs and constructor extent, and records constructor state. prepare_calls_and_storage analyzes all original calls, retains _RewriteMatch records, validates descriptor ownership, prepares providers, and collects scratch requirements from their compiled layouts. Later consumers can supply facts needed by earlier constructors. begin_rewrite stages shared backing in the entry block so it dominates every scratch view. match selects each block; apply reuses or materializes invocables and emits statements in source order. ThreadData holds each thread&#x27;s payload; TempStorage describes cooperative scratch. Standalone payload-write dtype inference remains in apply. finish_rewrite cleans unused bindings after all replacement blocks are installed, preserving original definitions throughout emission. These steps belong to one planner, not separate compiler passes. Facts belong to the current IR and compilation attempt. Provider artifact caches and pipeline placement are unchanged.</desc>
+  <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#44556b" /></marker></defs>
+  <rect width="1040" height="1460" rx="12" fill="#ffffff" />
+  <text x="28" y="36" text-anchor="start" font-family="sans-serif" font-size="22" fill="#172b3a" font-weight="600">COMPILATION HANDOFFS</text>
+  <text x="28" y="65" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Time runs down. Shown: successful provider bundle, cache miss, default kernel LTO path.</text>
+  <rect x="15" y="85" width="270" height="1240" fill="#e9f2fb" fill-opacity="0.34" stroke="#d2dbe5" />
+  <rect x="15" y="85" width="270" height="44" fill="#e9f2fb" />
+  <text x="150.0" y="113" text-anchor="middle" font-family="sans-serif" font-size="19" fill="#172b3a" font-weight="600">Numba-CUDA-MLIR</text>
+  <rect x="285" y="85" width="280" height="1240" fill="#e5f1d7" fill-opacity="0.34" stroke="#d2dbe5" />
+  <rect x="285" y="85" width="280" height="44" fill="#e5f1d7" />
+  <text x="425.0" y="113" text-anchor="middle" font-family="sans-serif" font-size="19" fill="#172b3a" font-weight="600">cuda.coop</text>
+  <rect x="565" y="85" width="230" height="1240" fill="#fff0c9" fill-opacity="0.34" stroke="#d2dbe5" />
+  <rect x="565" y="85" width="230" height="44" fill="#fff0c9" />
+  <text x="680.0" y="113" text-anchor="middle" font-family="sans-serif" font-size="19" fill="#172b3a" font-weight="600">NVRTC</text>
+  <rect x="795" y="85" width="230" height="1240" fill="#e7dff4" fill-opacity="0.34" stroke="#d2dbe5" />
+  <rect x="795" y="85" width="230" height="44" fill="#e7dff4" />
+  <text x="910.0" y="113" text-anchor="middle" font-family="sans-serif" font-size="19" fill="#172b3a" font-weight="600">nvJitLink</text>
+  <rect x="35" y="150" width="230" height="86" rx="8" fill="#e9f2fb" stroke="#68798b" />
+  <text x="150.0" y="174.0" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#172b3a">Build untyped IR.</text>
+  <text x="150.0" y="199.0" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#172b3a">Run early rewrites.</text>
+  <text x="150.0" y="224.0" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#172b3a">Inline device helpers.</text>
+  <path d="M 150 236 V 259 H 425 V 282" fill="none" stroke="#44556b" stroke-width="2" marker-end="url(#arrow)" />
+  <text x="170" y="250" text-anchor="start" font-family="sans-serif" font-size="16" fill="#172b3a">Inlined, untyped IR</text>
+  <rect x="305" y="282" width="240" height="65" rx="8" fill="#e5f1d7" stroke="#68798b" />
+  <text x="425.0" y="308.0" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Resolve groups; plan</text>
+  <text x="425.0" y="333.0" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Load/Store dtype and count.</text>
+  <path d="M 425 347 V 376" fill="none" stroke="#44556b" stroke-width="2" marker-end="url(#arrow)" />
+  <rect x="305" y="376" width="240" height="85" rx="8" fill="#e5f1d7" stroke="#68798b" />
+  <text x="425.0" y="399.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">prepare_calls_and_storage():</text>
+  <text x="425.0" y="424.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Reuse facts; retain calls.</text>
+  <text x="425.0" y="449.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Bundle providers as C++.</text>
+  <path d="M 545 418 H 585" fill="none" stroke="#44556b" stroke-width="2" marker-end="url(#arrow)" />
+  <rect x="585" y="376" width="190" height="85" rx="8" fill="#fff0c9" stroke="#68798b" />
+  <text x="680.0" y="399.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Compile C++</text>
+  <text x="680.0" y="424.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">with -dlto.</text>
+  <text x="680.0" y="449.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Read scratch layouts.</text>
+  <path d="M 680 461 V 500 H 425 V 539" fill="none" stroke="#44556b" stroke-width="2" marker-end="url(#arrow)" stroke-dasharray="7 5" />
+  <text x="455" y="490" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Provider LTO-IR</text>
+  <text x="455" y="523" text-anchor="start" font-family="sans-serif" font-size="16" fill="#172b3a">+ scratch sizes and alignments</text>
+  <rect x="305" y="539" width="240" height="85" rx="8" fill="#e5f1d7" stroke="#68798b" />
+  <text x="425.0" y="562.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Keep shared link file.</text>
+  <text x="425.0" y="587.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Use retained call matches.</text>
+  <text x="425.0" y="612.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Read scratch requirements.</text>
+  <path d="M 425 624 V 654" fill="none" stroke="#44556b" stroke-width="2" marker-end="url(#arrow)" />
+  <rect x="305" y="654" width="240" height="85" rx="8" fill="#e5f1d7" stroke="#68798b" />
+  <text x="425.0" y="677.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">begin_rewrite(): backing</text>
+  <text x="425.0" y="702.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">match()/apply(): emit</text>
+  <text x="425.0" y="727.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">finish_rewrite(): cleanup</text>
+  <path d="M 305 695 H 295 V 764 H 150 V 780" fill="none" stroke="#44556b" stroke-width="2" marker-end="url(#arrow)" stroke-dasharray="7 5" />
+  <text x="37" y="750" text-anchor="start" font-family="sans-serif" font-size="16" fill="#172b3a">Rewritten IR + link inputs</text>
+  <rect x="35" y="780" width="230" height="85" rx="8" fill="#e9f2fb" stroke="#68798b" />
+  <text x="150.0" y="803.5" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#172b3a">Finish untyped passes.</text>
+  <text x="150.0" y="828.5" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#172b3a">Infer types.</text>
+  <text x="150.0" y="853.5" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#172b3a">Run typed rewrites.</text>
+  <path d="M 150 865 V 908" fill="none" stroke="#44556b" stroke-width="2" marker-end="url(#arrow)" />
+  <rect x="35" y="908" width="230" height="85" rx="8" fill="#e9f2fb" stroke="#68798b" />
+  <text x="150.0" y="931.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Lower to MLIR.</text>
+  <text x="150.0" y="956.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Collect ExternFunction</text>
+  <text x="150.0" y="981.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">symbols and link inputs.</text>
+  <path d="M 150 993 V 1031" fill="none" stroke="#44556b" stroke-width="2" marker-end="url(#arrow)" />
+  <rect x="35" y="1031" width="230" height="65" rx="8" fill="#e9f2fb" stroke="#68798b" />
+  <text x="150.0" y="1057.0" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#172b3a">Optimize and compile</text>
+  <text x="150.0" y="1082.0" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#172b3a">kernel LTO-IR.</text>
+  <path d="M 265 1063 H 810" fill="none" stroke="#44556b" stroke-width="2" marker-end="url(#arrow)" />
+  <text x="526" y="1035" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Kernel LTO-IR + provider LTO-IR</text>
+  <text x="526" y="1088" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#172b3a">(plus any extra link inputs)</text>
+  <rect x="810" y="1020" width="200" height="86" rx="8" fill="#e7dff4" stroke="#68798b" />
+  <text x="910.0" y="1044.0" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#172b3a">Resolve device symbols.</text>
+  <text x="910.0" y="1069.0" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#172b3a">Optimize across inputs.</text>
+  <text x="910.0" y="1094.0" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#172b3a">Produce cubin.</text>
+  <path d="M 910 1106 V 1160 H 150 V 1220" fill="none" stroke="#44556b" stroke-width="2" marker-end="url(#arrow)" stroke-dasharray="7 5" />
+  <text x="530" y="1148" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#172b3a">Linked cubin</text>
+  <rect x="35" y="1220" width="230" height="85" rx="8" fill="#e9f2fb" stroke="#68798b" />
+  <text x="150.0" y="1243.5" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#172b3a">Load with CUDA driver.</text>
+  <text x="150.0" y="1268.5" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#172b3a">Launch the kernel.</text>
+  <text x="150.0" y="1293.5" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#172b3a">Reuse compiled kernel.</text>
+  <text x="309" y="818" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a" font-weight="600">Numba infers types here.</text>
+  <text x="309" y="849" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Providers are already</text>
+  <text x="309" y="874" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">compiled.</text>
+  <text x="36" y="1380" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Solid arrows: requests and inputs. Dashed arrows: returned results.</text>
+  <text x="36" y="1410" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">A provider-cache hit supplies the saved LTO-IR and layouts without an NVRTC call.</text>
+</svg>

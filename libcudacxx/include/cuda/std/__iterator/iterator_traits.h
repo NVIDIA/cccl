@@ -27,17 +27,22 @@
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/equality_comparable.h>
+#include <cuda/std/__concepts/referenceable.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__concepts/totally_ordered.h>
 #include <cuda/std/__fwd/iterator.h>
-#include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__iterator/readable_traits.h>
-#include <cuda/std/__type_traits/add_const.h>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/add_lvalue_reference.h>
+#include <cuda/std/__type_traits/common_reference.h>
+#include <cuda/std/__type_traits/conditional.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_complete.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_primary_template.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/priority_tag.h>
 #include <cuda/std/cstddef>
@@ -55,19 +60,11 @@
 
 #  if _CCCL_STD_VER >= 2020
 #    include <cuda/std/__cccl/prologue.h>
-template <class _Tp, class = void>
-struct __cccl_type_is_defined : ::cuda::std::false_type
-{};
-
-template <class _Tp>
-struct __cccl_type_is_defined<_Tp, ::cuda::std::void_t<decltype(sizeof(_Tp))>> : ::cuda::std::true_type
-{};
-
 // detect whether the used STL has contiguous_iterator_tag defined
 namespace std
 {
-struct __cccl_std_contiguous_iterator_tag_exists : __cccl_type_is_defined<struct contiguous_iterator_tag>
-{};
+inline constexpr bool __cccl_std_contiguous_iterator_tag_exists_v =
+  ::cuda::std::__is_complete_v<struct contiguous_iterator_tag>;
 } // namespace std
 
 #    include <cuda/std/__cccl/epilogue.h>
@@ -79,17 +76,11 @@ struct __cccl_std_contiguous_iterator_tag_exists : __cccl_type_is_defined<struct
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Tp>
-using __with_reference = _Tp&;
-
-template <class _Tp>
-_CCCL_CONCEPT __can_reference = _CCCL_REQUIRES_EXPR((_Tp))(typename(__with_reference<_Tp>));
-
 // [iterator.traits]
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
 concept __dereferenceable = requires(_Tp& __t) {
-  { *__t } -> __can_reference; // not required to be equality-preserving
+  { *__t } -> __referenceable; // not required to be equality-preserving
 };
 
 template <__dereferenceable _Tp>
@@ -101,7 +92,7 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wvoid-ptr-dereference")
 
 template <class _Tp>
-_CCCL_CONCEPT __dereferenceable = _CCCL_REQUIRES_EXPR((_Tp), _Tp& __t)(requires(__can_reference<decltype(*__t)>));
+_CCCL_CONCEPT __dereferenceable = _CCCL_REQUIRES_EXPR((_Tp), _Tp& __t)(requires(__referenceable<decltype(*__t)>));
 
 _CCCL_DIAG_POP
 
@@ -136,7 +127,7 @@ using random_access_iterator_tag = ::std::random_access_iterator_tag;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __contiguous_iterator_tag_backfill : public ::std::random_access_iterator_tag
 {};
 using contiguous_iterator_tag =
-  _If<::std::__cccl_std_contiguous_iterator_tag_exists::value,
+  _If<::std::__cccl_std_contiguous_iterator_tag_exists_v,
       ::std::contiguous_iterator_tag,
       __contiguous_iterator_tag_backfill>;
 #  else // ^^^ C++20 ^^^ / vvv C++17 vvv
@@ -149,58 +140,58 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT contiguous_iterator_tag : public random_acc
 template <class _Iter>
 struct __iter_traits_cache
 {
-  using type = __select_traits<remove_cvref_t<_Iter>, remove_cvref_t<_Iter>>;
+  using type _CCCL_NODEBUG = __select_traits<remove_cvref_t<_Iter>, remove_cvref_t<_Iter>>;
 };
 template <class _Iter>
-using _ITER_TRAITS = typename __iter_traits_cache<_Iter>::type;
+using _ITER_TRAITS _CCCL_NODEBUG = typename __iter_traits_cache<_Iter>::type;
 
 #if _CCCL_HOSTED()
 #  if defined(_GLIBCXX_DEBUG)
 _CCCL_TEMPLATE(class _Iter, class _Ty, class _Range)
-_CCCL_REQUIRES(_IsSame<_Iter, ::__gnu_debug::_Safe_iterator<_Ty*, _Range>>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, ::__gnu_debug::_Safe_iterator<_Ty*, _Range>>)
 _CCCL_API inline auto __iter_concept_fn(::__gnu_debug::_Safe_iterator<_Ty*, _Range>, __priority_tag<3>)
   -> contiguous_iterator_tag;
 #  endif // _GLIBCXX_DEBUG
 #  if _CCCL_HOST_STD_LIB(LIBSTDCXX)
 _CCCL_TEMPLATE(class _Iter, class _Ty, class _Range)
-_CCCL_REQUIRES(_IsSame<_Iter, ::__gnu_cxx::__normal_iterator<_Ty*, _Range>>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, ::__gnu_cxx::__normal_iterator<_Ty*, _Range>>)
 _CCCL_API inline auto __iter_concept_fn(::__gnu_cxx::__normal_iterator<_Ty*, _Range>, __priority_tag<3>)
   -> contiguous_iterator_tag;
 #  endif // _CCCL_HOST_STD_LIB(LIBSTDCXX)
 #  if _CCCL_HOST_STD_LIB(LIBCXX)
 _CCCL_TEMPLATE(class _Iter, class _Ty)
-_CCCL_REQUIRES(_IsSame<_Iter, ::std::__wrap_iter<_Ty*>>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, ::std::__wrap_iter<_Ty*>>)
 _CCCL_API inline auto __iter_concept_fn(::std::__wrap_iter<_Ty*>, __priority_tag<3>) -> contiguous_iterator_tag;
 #  elif _CCCL_HOST_STD_LIB(STL)
 _CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Array_iterator>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, class _Iter::_Array_iterator>)
 _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 _CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Array_const_iterator>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, class _Iter::_Array_const_iterator>)
 _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 _CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Vector_iterator>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, class _Iter::_Vector_iterator>)
 _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 _CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Vector_const_iterator>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, class _Iter::_Vector_const_iterator>)
 _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 _CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_String_iterator>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, class _Iter::_String_iterator>)
 _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 _CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_String_const_iterator>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, class _Iter::_String_const_iterator>)
 _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 _CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_String_view_iterator>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, class _Iter::_String_view_iterator>)
 _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 _CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Span_iterator>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, class _Iter::_Span_iterator>)
 _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
 #  endif // _CCCL_HOST_STD_LIB(STL)
 #endif // _CCCL_HOSTED()
 
 _CCCL_TEMPLATE(class _Iter, class _Ty)
-_CCCL_REQUIRES(_IsSame<_Iter, _Ty*>::value)
+_CCCL_REQUIRES(is_same_v<_Iter, _Ty*>)
 _CCCL_API inline auto __iter_concept_fn(_Ty*, __priority_tag<3>) -> contiguous_iterator_tag;
 
 template <class _Iter>
@@ -213,7 +204,7 @@ _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<0>)
                  random_access_iterator_tag>;
 
 template <class _Iter>
-using __iter_concept_t =
+using __iter_concept_t _CCCL_NODEBUG =
   decltype(::cuda::std::__iter_concept_fn<_Iter>(::cuda::std::declval<_Iter>(), __priority_tag<3>{}));
 
 template <class _Iter, class = void>
@@ -223,11 +214,11 @@ struct __iter_concept_cache
 template <class _Iter>
 struct __iter_concept_cache<_Iter, void_t<__iter_concept_t<_Iter>>>
 {
-  using type = __iter_concept_t<_Iter>;
+  using type _CCCL_NODEBUG = __iter_concept_t<_Iter>;
 };
 
 template <class _Iter>
-using _ITER_CONCEPT = typename __iter_concept_cache<_Iter>::type;
+using _ITER_CONCEPT _CCCL_NODEBUG = typename __iter_concept_cache<_Iter>::type;
 
 template <class _Tp>
 _CCCL_CONCEPT __has_member_reference = _CCCL_REQUIRES_EXPR((_Tp))(typename(typename _Tp::reference));
@@ -250,9 +241,9 @@ namespace __iterator_traits_detail
 template <class _Iter>
 _CCCL_CONCEPT __cpp17_iterator = _CCCL_REQUIRES_EXPR((_Iter), _Iter __i)(
   requires(copyable<_Iter>),
-  _Satisfies(__can_reference)(*__i),
+  _Satisfies(__referenceable)(*__i),
   _Same_as(_Iter&)(++__i),
-  _Satisfies(__can_reference)(*__i++));
+  _Satisfies(__referenceable)(*__i++));
 
 // [iterator.traits#concept:cpp17-input-iterator]
 template <class _Iter>
@@ -312,7 +303,7 @@ template <class _Iter>
 _CCCL_API auto __iterator_traits_deduce_member_pointer_or_void(...) -> void;
 
 template <class _Iter>
-using __iterator_traits_member_pointer_or_void =
+using __iterator_traits_member_pointer_or_void _CCCL_NODEBUG =
   decltype(::cuda::std::__iterator_traits_deduce_member_pointer_or_void<_Iter>(0));
 
 // [iterator.traits]#3.2
@@ -332,7 +323,7 @@ template <class _Iter>
 _CCCL_API auto __iterator_traits_deduce_member_pointer_or_arrow_or_void(...) -> void;
 
 template <class _Iter>
-using __iterator_traits_member_pointer_or_arrow_or_void =
+using __iterator_traits_member_pointer_or_arrow_or_void _CCCL_NODEBUG =
   decltype(::cuda::std::__iterator_traits_deduce_member_pointer_or_arrow_or_void<_Iter>(0, __priority_tag<1>{}));
 
 // [iterator.traits]#3.2.2
@@ -344,7 +335,8 @@ template <class _Iter>
 _CCCL_API auto __iterator_traits_deduce_member_reference(...) -> iter_reference_t<_Iter>;
 
 template <class _Iter>
-using __iterator_traits_member_reference = decltype(::cuda::std::__iterator_traits_deduce_member_reference<_Iter>(0));
+using __iterator_traits_member_reference _CCCL_NODEBUG =
+  decltype(::cuda::std::__iterator_traits_deduce_member_reference<_Iter>(0));
 
 // [iterator.traits]#3.2.3
 template <class _Iter>
@@ -373,7 +365,8 @@ template <class _Iter>
 }
 
 template <class _Iter>
-using __iterator_traits_iterator_category = decltype(::cuda::std::__iterator_traits_deduce_iterator_category<_Iter>());
+using __iterator_traits_iterator_category _CCCL_NODEBUG =
+  decltype(::cuda::std::__iterator_traits_deduce_iterator_category<_Iter>());
 
 // [iterator.traits]#3.3
 // If the qualified-id `incrementable_traits<I>::difference_type` is valid and denotes a type, then
@@ -385,7 +378,8 @@ template <class _Iter>
 _CCCL_API auto __iterator_traits_deduce_member_difference(...) -> void;
 
 template <class _Iter>
-using __iterator_traits_difference_type = decltype(::cuda::std::__iterator_traits_deduce_member_difference<_Iter>(0));
+using __iterator_traits_difference_type _CCCL_NODEBUG =
+  decltype(::cuda::std::__iterator_traits_deduce_member_difference<_Iter>(0));
 
 enum class __iterator_traits_selection
 {
@@ -494,7 +488,7 @@ struct __iterator_traits<_Iter, __iterator_traits_selection::__no_members>
 template <class _Iter, class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Iter>
 {
-  using __cccl_primary_template = iterator_traits;
+  using __cccl_primary_template _CCCL_NODEBUG = iterator_traits;
 };
 
 // [iterator.traits]#5
@@ -558,19 +552,19 @@ template <class _Tp>
 inline constexpr bool __has_contiguous_traversal<_Tp*> = true;
 
 template <class _Iter>
-using __iter_value_type = typename iterator_traits<_Iter>::value_type;
+using __iter_value_type _CCCL_NODEBUG = typename iterator_traits<_Iter>::value_type;
 
 template <class _Iter>
-using __iterator_category_type = typename iterator_traits<_Iter>::iterator_category;
+using __iterator_category_type _CCCL_NODEBUG = typename iterator_traits<_Iter>::iterator_category;
 
 template <class _Iter>
-using __iterator_pointer_type = typename iterator_traits<_Iter>::pointer;
+using __iterator_pointer_type _CCCL_NODEBUG = typename iterator_traits<_Iter>::pointer;
 
 template <class _Iter>
-using __iter_diff_t = typename iterator_traits<_Iter>::difference_type;
+using __iter_diff_t _CCCL_NODEBUG = typename iterator_traits<_Iter>::difference_type;
 
 template <class _Iter>
-using __iter_value_type = typename iterator_traits<_Iter>::value_type;
+using __iter_value_type _CCCL_NODEBUG = typename iterator_traits<_Iter>::value_type;
 
 // C++20 iterators do not play nicely with C++17 interfaces, because they commmonly use `iterator_concept` to
 // communicate their iterator category. Deduce the actual iterator category from the maximum of `iterator_concept` and
@@ -609,7 +603,8 @@ template <class _Iter>
 }
 
 template <class _Iter>
-using __iterator_traits_category_or_concept_t = decltype(::cuda::std::__iterator_traits_category_or_concept<_Iter>());
+using __iterator_traits_category_or_concept_t _CCCL_NODEBUG =
+  decltype(::cuda::std::__iterator_traits_category_or_concept<_Iter>());
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

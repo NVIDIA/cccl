@@ -11,6 +11,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -28,7 +30,7 @@
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh> // graph_launch_impl() uses SCOPE
+#include <cuda/experimental/__stf/utility/exception_policy.cuh> // graph_launch_impl() uses SCOPE
 
 namespace cuda::experimental::stf
 {
@@ -56,7 +58,8 @@ template <typename _Prefix, typename... _Ts>
 {
   return ::std::apply(
     [&](auto&&... __elements) {
-      return ::cuda::std::tuple<_Prefix, _Ts...>(mv(__prefix), ::std::forward<decltype(__elements)>(__elements)...);
+      return ::cuda::std::tuple<_Prefix, _Ts...>(
+        mv(__prefix), ::cuda::std::forward<decltype(__elements)>(__elements)...);
     },
     mv(__tuple));
 }
@@ -125,15 +128,18 @@ void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg 
 
     void* th_dev_tmp_ptr = nullptr;
 
-    // Free the temporary device memory on the way out, even if set_device_tmp
-    // or the launch throws. Installed before the malloc so a throw from
-    // set_device_tmp cannot skip the free. cuda_safe_call (not cuda_try)
-    // because SCOPE(exit) is noexcept.
+    // Free the temporary device memory on the way out, even if set_device_tmp or the launch
+    // throws. Installed before the malloc so a throw from set_device_tmp cannot skip the free.
+    // A failing free leaks the buffer and is reported; the guard is noexcept, so it cannot become
+    // a second exception, and nothing here is worth ending the program over.
     SCOPE(exit)
     {
       if (th_dev_tmp_ptr)
       {
-        cuda_safe_call(cudaFreeAsync(th_dev_tmp_ptr, stream));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaFreeAsync>(th_dev_tmp_ptr, stream);
+        };
       }
     };
 
@@ -246,7 +252,7 @@ public:
         deallocateManagedMemory(sys_mem, th_mem_config[0], streams[0]);
       }
 
-      unsigned char* hostMemoryArrivedList = interpreted_policy.cg_system.get_arrived_list();
+      unsigned char* hostMemoryArrivedList = interpreted_policy.get_cg_system().get_arrived_list();
       if (hostMemoryArrivedList)
       {
         deallocateManagedMemory(hostMemoryArrivedList, grid_size - 1, streams[0]);
@@ -261,15 +267,18 @@ public:
       {
         const size_t arrived_bytes  = grid_size - 1;
         auto* hostMemoryArrivedList = static_cast<unsigned char*>(allocateManagedMemory(arrived_bytes));
-        // Own the buffer until cg_system adopts it; if the assignment below
-        // throws, free immediately so we do not leak. cuda_safe_call because
-        // SCOPE(fail) is noexcept (pool insert can throw).
+        // Own the buffer until cg_system adopts it; if the assignment below throws (pool insert
+        // can), free immediately so we do not leak. The guard runs with that exception in flight,
+        // so a failing free is reported and the buffer leaks.
         SCOPE(fail)
         {
-          cuda_safe_call(cudaFree(hostMemoryArrivedList));
+          ON_THROW(notify)
+          {
+            cuda_try<cudaFree>(hostMemoryArrivedList);
+          };
         };
         memset(hostMemoryArrivedList, 0, arrived_bytes);
-        interpreted_policy.cg_system = reserved::cooperative_group_system(hostMemoryArrivedList);
+        interpreted_policy.get_cg_system() = reserved::cooperative_group_system(hostMemoryArrivedList);
       }
     }
 
@@ -323,8 +332,17 @@ public:
   launch_scope(const launch_scope&)            = delete;
   launch_scope& operator=(const launch_scope&) = delete;
 
+  // nvcc infers __host__ __device__ for special members that are defaulted on their first
+  // declaration, and neither an explicit annotation nor defaulting out of class overrides that.
+  // A launch_scope holds host-only state (a std::string, host containers) and only ever lives on
+  // the host, so the members below are exempted from the execution space check.
+
   /// Move constructor
+  _CCCL_EXEC_CHECK_DISABLE
   launch_scope(launch_scope&&) = default;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  ~launch_scope() = default;
 
   /**
    * @brief Set the symbol for the task.
@@ -397,15 +415,24 @@ public:
     int device              = -1;
     cudaEvent_t start_event = nullptr, end_event = nullptr;
 
+    // The timing events are released on every path. A failing destroy leaks that event and is
+    // reported; the guard is noexcept, so it cannot become a second exception. One policy per
+    // release, so a failure on the first does not skip the second.
     SCOPE(exit)
     {
       if (start_event)
       {
-        cuda_safe_call(cudaEventDestroy(start_event));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(start_event);
+        };
       }
       if (end_event)
       {
-        cuda_safe_call(cudaEventDestroy(end_event));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(end_event);
+        };
       }
     };
 
@@ -421,7 +448,7 @@ public:
 
     // Free launch-scoped managed temps between end_uncleared and clear on both paths.
     auto free_launch_temps = [&] {
-      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+      if constexpr (::cuda::std::is_same_v<Ctx, stream_ctx>)
       {
         void* sys_mem = interpreted_policy.get_system_mem();
         if (sys_mem)
@@ -430,7 +457,7 @@ public:
           deallocateManagedMemory(sys_mem, th_mem_config[0], t.get_stream());
         }
 
-        unsigned char* hostMemoryArrivedList = interpreted_policy.cg_system.get_arrived_list();
+        unsigned char* hostMemoryArrivedList = interpreted_policy.get_cg_system().get_arrived_list();
         if (hostMemoryArrivedList)
         {
           deallocateManagedMemory(hostMemoryArrivedList, grid_size - 1, t.get_stream());
@@ -446,27 +473,11 @@ public:
       t.end_uncleared();
       free_launch_temps();
 
-      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+      if constexpr (::cuda::std::is_same_v<Ctx, stream_ctx>)
       {
         if (start_event && end_event)
         {
-          // Inside the SCOPE body; keep cuda_safe_call so a CUDA error aborts
-          // rather than throwing through a fail/exit guard (std::terminate).
-          cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
-          cuda_safe_call(cudaEventSynchronize(end_event));
-
-          float milliseconds = 0;
-          cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
-
-          if (dot.is_tracing())
-          {
-            dot.template add_vertex_timing<stream_task<>>(t, milliseconds, device);
-          }
-
-          if (statistics.is_calibrating())
-          {
-            statistics.log_task_time(t, milliseconds);
-          }
+          statistics.record_task_timing(t, start_event, end_event, t.get_stream(), dot, device);
         }
       }
 
@@ -484,7 +495,7 @@ public:
     // Put all data instances in a tuple (requires a started task).
     auto args = data2inst<decltype(t), Deps...>(t);
 
-    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    if constexpr (::cuda::std::is_same_v<Ctx, stream_ctx>)
     {
       if (record_time)
       {
@@ -507,22 +518,25 @@ public:
       {
         const size_t arrived_bytes  = grid_size - 1;
         auto* hostMemoryArrivedList = static_cast<unsigned char*>(allocateManagedMemory(arrived_bytes));
-        // Own the buffer until cg_system adopts it; if the assignment below
-        // throws, free immediately so we do not leak. cuda_safe_call because
-        // SCOPE(fail) is noexcept (pool insert can throw).
+        // Own the buffer until cg_system adopts it; if the assignment below throws (pool insert
+        // can), free immediately so we do not leak. The guard runs with that exception in flight,
+        // so a failing free is reported and the buffer leaks.
         SCOPE(fail)
         {
-          cuda_safe_call(cudaFree(hostMemoryArrivedList));
+          ON_THROW(notify)
+          {
+            cuda_try<cudaFree>(hostMemoryArrivedList);
+          };
         };
         memset(hostMemoryArrivedList, 0, arrived_bytes);
-        interpreted_policy.cg_system = reserved::cooperative_group_system(hostMemoryArrivedList);
+        interpreted_policy.get_cg_system() = reserved::cooperative_group_system(hostMemoryArrivedList);
       }
     }
 
     for (size_t p_rank = 0; p_rank < e_place.size(); ++p_rank)
     {
       auto p = e_place.get_place(p_rank);
-      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+      if constexpr (::cuda::std::is_same_v<Ctx, stream_ctx>)
       {
         reserved::launch_impl(interpreted_policy, p, f, args, t.get_stream(p_rank), p_rank);
       }

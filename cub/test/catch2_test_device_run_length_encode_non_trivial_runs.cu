@@ -17,6 +17,7 @@
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::NonTrivialRuns, run_length_encode);
 
@@ -315,7 +316,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns does not run out of memory",
 
   int expected_non_trivial_runs = 0;
   int value                     = tile_size;
-  int large_group_size          = 3;
+  const int large_group_size    = 3;
   for (int i = 0; i < tile_size; i++)
   {
     int j = 0;
@@ -402,9 +403,9 @@ try
   check_offset_out_helper.check_all_results_correct();
   check_run_length_out_helper.check_all_results_correct();
 }
-catch (const std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
+  c2h::skip_if_allocation_failure();
 }
 
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns works for large runs of equal items",
@@ -447,15 +448,15 @@ try
     static_cast<offset_type>(num_items));
 
   // Expected results
-  c2h::device_vector<offset_type> expected_uniques{offset_type{0}, first_run_size};
-  c2h::device_vector<run_length_type> expected_run_lengths{first_run_size, second_run_size};
+  const c2h::device_vector<offset_type> expected_uniques{offset_type{0}, first_run_size};
+  const c2h::device_vector<run_length_type> expected_run_lengths{first_run_size, second_run_size};
 
   // Verify result
   CHECK(out_num_runs[0] == num_uniques);
   CHECK(expected_uniques == offsets_out);
   CHECK(expected_run_lengths == run_lengths_out);
 }
-catch (const std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
+  c2h::skip_if_allocation_failure();
 }

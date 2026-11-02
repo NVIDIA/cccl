@@ -31,8 +31,8 @@
 
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/cstddef>
 
 CUB_NAMESPACE_BEGIN
 
@@ -256,8 +256,8 @@ template <int SlotsCount>
 class layout
 {
   slot m_slots[SlotsCount];
-  size_t m_sizes[SlotsCount];
-  void* m_pointers[SlotsCount];
+  size_t m_sizes[SlotsCount]{};
+  void* m_pointers[SlotsCount]{};
   bool m_layout_was_mapped{};
 
 public:
@@ -314,7 +314,7 @@ public:
 
     this->prepare_interface();
 
-    if (cudaError_t error = detail::alias_temporaries(d_temp_storage, temp_storage_bytes, m_pointers, m_sizes))
+    if (const cudaError_t error = detail::alias_temporaries(d_temp_storage, temp_storage_bytes, m_pointers, m_sizes))
     {
       return error;
     }

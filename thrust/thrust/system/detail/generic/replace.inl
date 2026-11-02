@@ -79,7 +79,7 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
 {
   using OutputType = thrust::detail::it_value_t<OutputIterator>;
 
-  detail::new_value_if<Predicate, T, OutputType> op(pred, new_value);
+  const detail::new_value_if<Predicate, T, OutputType> op(pred, new_value);
   return thrust::transform(exec, first, last, result, op);
 } // end replace_copy_if()
 
@@ -100,7 +100,7 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
 {
   using OutputType = thrust::detail::it_value_t<OutputIterator>;
 
-  detail::new_value_if<Predicate, T, OutputType> op(pred, new_value);
+  const detail::new_value_if<Predicate, T, OutputType> op(pred, new_value);
   return thrust::transform(exec, first, last, stencil, result, op);
 } // end replace_copy_if()
 
@@ -126,7 +126,7 @@ _CCCL_HOST_DEVICE void replace_if(
   Predicate pred,
   const T& new_value)
 {
-  detail::constant_unary<T> f(new_value);
+  const detail::constant_unary<T> f(new_value);
   thrust::transform_if(exec, first, last, first, first, f, pred);
 } // end replace_if()
 
@@ -139,7 +139,7 @@ _CCCL_HOST_DEVICE void replace_if(
   Predicate pred,
   const T& new_value)
 {
-  detail::constant_unary<T> f(new_value);
+  const detail::constant_unary<T> f(new_value);
   thrust::transform_if(exec, first, last, stencil, first, f, pred);
 } // end replace_if()
 

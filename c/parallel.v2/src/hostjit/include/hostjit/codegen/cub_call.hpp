@@ -85,6 +85,18 @@ inline future_val_t future_val(cccl_type_info t)
   return {t};
 }
 
+// no_init_t: reduce without an initial value.  Generates the stateless
+// cub::detail::reduce::no_init tag in the CUB call with no wrapper parameter.
+// Carries type info so find_accum_type can resolve accum_t correctly.
+struct no_init_t
+{
+  cccl_type_info type;
+};
+inline no_init_t no_init(cccl_type_info t)
+{
+  return {t};
+}
+
 // unary_op_t: wraps a cccl_op_t used as a unary transform operator (T -> U).
 // Carries the input/output type info so the functor can be typed correctly.
 struct unary_op_t
@@ -199,6 +211,7 @@ using Arg = std::variant<
   double_buffer_t,
   selector_out_t,
   future_val_t,
+  no_init_t,
   cccl_value_t,
   force_accum_type_t,
   typed_scalar_t>;
@@ -211,12 +224,34 @@ struct CubCallResult
   std::vector<char> cubin; // for SASS inspection
 };
 
+// Result of a successful compile-only (no dlopen/LoadLibrary) compilation —
+// the AoT compile/load split. library_bytes is the full linked shared
+// library (.so/.dll), ready to be persisted (serialize()) or handed to
+// JITCompiler::loadFromBytes() (possibly in a different process/machine).
+struct CubCallCompileOnlyResult
+{
+  std::vector<char> library_bytes; // the compiled .so/.dll, byte-for-byte
+  std::vector<char> cubin; // for SASS inspection, same as CubCallResult
+};
+
 // Result of a successful multi-function compilation (one TU, N functions).
 struct MultiCubCallResult
 {
   JITCompiler* compiler; // caller takes ownership; one compiler for the whole TU
   std::vector<char> cubin; // single cubin for the whole TU
   std::vector<void*> fn_ptrs; // exported functions in the same order as the input CubCalls
+};
+
+// Result of a successful multi-function compile-only (no dlopen/LoadLibrary)
+// compilation — the AoT compile/load split for multi-function algorithms
+// (radix_sort, segmented_sort). library_bytes is the full linked shared
+// library containing all N functions; symbol names are the input CubCalls'
+// .name(...) values, in the same order, for the caller to persist alongside
+// the bytes and dlsym after reload.
+struct MultiCubCallCompileOnlyResult
+{
+  std::vector<char> library_bytes;
+  std::vector<char> cubin;
 };
 
 class CubCall
@@ -258,6 +293,17 @@ public:
     const char* ctk_path          = nullptr,
     const char* cccl_include_path = nullptr) const;
 
+  // Compile the generated source WITHOUT loading it (no dlopen/LoadLibrary)
+  // — the AoT compile/load split. Shares all codegen/config logic with
+  // compile(); only the final compile-vs-compileOnly JITCompiler call
+  // differs.
+  CubCallCompileOnlyResult compileOnly(
+    int cc_major,
+    int cc_minor,
+    cccl_build_config* config     = nullptr,
+    const char* ctk_path          = nullptr,
+    const char* cccl_include_path = nullptr) const;
+
   // Compile multiple CubCalls into a single translation unit. One Clang
   // invocation, one cubin, one JITCompiler; each function is dlsym'd by its
   // .name(...) and returned in the input order. All CubCalls must share the
@@ -265,6 +311,27 @@ public:
   // inside `namespace fn_<i> { ... }` blocks; extern "C" symbols escape the
   // namespace and stay globally dlsym-able.
   static MultiCubCallResult compile(
+    std::initializer_list<CubCall> calls,
+    int cc_major,
+    int cc_minor,
+    cccl_build_config* config     = nullptr,
+    const char* ctk_path          = nullptr,
+    const char* cccl_include_path = nullptr);
+
+  // Builds a hostjit::CompilerConfig from the standard cc + paths +
+  // build_config inputs every compile entry point takes, so flag/path handling
+  // lives in one place. Shared by the single-fn and multi-fn compile overloads.
+  static hostjit::CompilerConfig make_jit_config(
+    int cc_major,
+    int cc_minor,
+    cccl_build_config* config,
+    const char* ctk_path,
+    const char* cccl_include_path,
+    const std::string& entry_point_name);
+
+  // Compile-only variant of the above (no dlopen/LoadLibrary) — the AoT
+  // compile/load split for multi-function algorithms.
+  static MultiCubCallCompileOnlyResult compileOnly(
     std::initializer_list<CubCall> calls,
     int cc_major,
     int cc_minor,
@@ -289,16 +356,7 @@ private:
   // one collector across several CubCalls.
   void collect_bitcode(class BitcodeCollector& bitcode, int& op_idx, int& in_idx, int& out_idx) const;
 
-  // Internal: builds a hostjit::CompilerConfig from the standard cc + paths +
-  // build_config inputs every compile entry point takes. Shared between the
-  // single-fn and multi-fn compile overloads so flag/path handling lives in
-  // one place.
-  static hostjit::CompilerConfig make_jit_config(
-    int cc_major,
-    int cc_minor,
-    cccl_build_config* config,
-    const char* ctk_path,
-    const char* cccl_include_path,
-    const std::string& entry_point_name);
+  // Validates and assembles the merged source of a multi-function compile.
+  static std::string merged_source(std::initializer_list<CubCall> calls, const char* who);
 };
 } // namespace hostjit::codegen

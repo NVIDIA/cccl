@@ -25,7 +25,7 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_same.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
@@ -38,11 +38,11 @@ template <class... _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT common_type;
 
 template <class... _Tp>
-using common_type_t _CCCL_NODEBUG_ALIAS = typename common_type<_Tp...>::type;
+using common_type_t _CCCL_NODEBUG = typename common_type<_Tp...>::type;
 
 // Let COND_RES(X, Y) be:
 template <class _Tp, class _Up>
-using __cond_type = decltype(false ? declval<_Tp>() : declval<_Up>());
+using __cond_type _CCCL_NODEBUG = decltype(false ? declval<_Tp>() : declval<_Up>());
 
 // We need to ensure that extended floating point types like __half and __nv bfloat16 have a common type with real
 // floating point types
@@ -58,7 +58,7 @@ struct __common_type_extended_floating_point<
   _Up,
   enable_if_t<__is_extended_floating_point_v<remove_cvref_t<_Tp>> && is_arithmetic_v<remove_cvref_t<_Up>>>>
 {
-  using type = common_type_t<__copy_cvref_t<_Tp, float>, _Up>;
+  using type _CCCL_NODEBUG = common_type_t<__copy_cvref_t<_Tp, float>, _Up>;
 };
 
 template <class _Tp, class _Up>
@@ -67,7 +67,7 @@ struct __common_type_extended_floating_point<
   _Up,
   enable_if_t<is_arithmetic_v<remove_cvref_t<_Tp>> && __is_extended_floating_point_v<remove_cvref_t<_Up>>>>
 {
-  using type = common_type_t<_Tp, __copy_cvref_t<_Up, float>>;
+  using type _CCCL_NODEBUG = common_type_t<_Tp, __copy_cvref_t<_Up, float>>;
 };
 #endif // extended floating point as arithmetic type
 
@@ -80,7 +80,7 @@ struct __common_type3 : __common_type_extended_floating_point<_Tp, _Up>
 template <class _Tp, class _Up>
 struct __common_type3<_Tp, _Up, void_t<__cond_type<const _Tp&, const _Up&>>>
 {
-  using type = remove_cvref_t<__cond_type<const _Tp&, const _Up&>>;
+  using type _CCCL_NODEBUG = remove_cvref_t<__cond_type<const _Tp&, const _Up&>>;
 };
 #endif // _CCCL_STD_VER >= 2020
 
@@ -91,7 +91,7 @@ struct __common_type2_imp : __common_type3<_Tp, _Up>
 // MSVC has a bug in its declval handling, where it happily accepts __cond_type<_Tp, _Up>, even though both
 // branches have diverging return types, this happens for extended floating point types
 template <class _Tp, class _Up>
-using __msvc_declval_workaround =
+using __msvc_declval_workaround _CCCL_NODEBUG =
 #if _CCCL_COMPILER(MSVC)
   enable_if_t<is_same_v<__cond_type<_Tp, _Up>, __cond_type<_Up, _Tp>>>;
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
@@ -102,7 +102,7 @@ using __msvc_declval_workaround =
 template <class _Tp, class _Up>
 struct __common_type2_imp<_Tp, _Up, void_t<__cond_type<_Tp, _Up>, __msvc_declval_workaround<_Tp, _Up>>>
 {
-  using type _CCCL_NODEBUG_ALIAS = decay_t<__cond_type<_Tp, _Up>>;
+  using type _CCCL_NODEBUG = decay_t<__cond_type<_Tp, _Up>>;
 };
 
 template <class, class = void>
@@ -115,7 +115,7 @@ struct __common_types;
 template <class _Tp, class _Up>
 struct __common_type_impl<__common_types<_Tp, _Up>, void_t<common_type_t<_Tp, _Up>>>
 {
-  using type = common_type_t<_Tp, _Up>;
+  using type _CCCL_NODEBUG = common_type_t<_Tp, _Up>;
 };
 
 template <class _Tp, class _Up, class _Vp, class... _Rest>
@@ -158,7 +158,7 @@ common_type<_Tp, _Up, _Vp, _Rest...> : __common_type_impl<__common_types<_Tp, _U
 {};
 
 template <class... _Tp>
-using common_type_t _CCCL_NODEBUG_ALIAS = typename common_type<_Tp...>::type;
+using common_type_t _CCCL_NODEBUG = typename common_type<_Tp...>::type;
 
 template <class, class, class = void>
 inline constexpr bool __has_common_type = false;

@@ -20,10 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__iterator/zip_common.h>
 #include <cuda/__iterator/zip_iterator.h>
 #include <cuda/std/__algorithm/ranges_min.h>
-#include <cuda/std/__algorithm/ranges_min_element.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__ranges/access.h>
@@ -34,15 +36,11 @@
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__tuple_dir/apply.h>
-#include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple.h>
-#include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/maybe_const.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
-#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -162,10 +160,10 @@ class zip_view : public view_interface<zip_view<_Views...>>
   tuple<_Views...> __views_;
 
   template <bool _OtherConst>
-  using __iterator = ::cuda::zip_iterator<iterator_t<__maybe_const<_OtherConst, _Views>>...>;
+  using __iterator _CCCL_NODEBUG = ::cuda::zip_iterator<iterator_t<__maybe_const<_OtherConst, _Views>>...>;
 
   template <bool _OtherConst>
-  using __sentinel = __zip_sentinel<_OtherConst, _Views...>;
+  using __sentinel _CCCL_NODEBUG = __zip_sentinel<_OtherConst, _Views...>;
 
 public:
   _CCCL_HIDE_FROM_ABI zip_view() = default;
@@ -199,7 +197,7 @@ public:
     else if constexpr (__zip_all_random_access</*const*/ false, _Views...>)
     {
       // MSVC cannot deal with iter_difference_t here
-      using __diff_t _CCCL_NODEBUG_ALIAS = common_type_t<range_difference_t<_Views>...>;
+      using __diff_t _CCCL_NODEBUG = common_type_t<range_difference_t<_Views>...>;
 
       return begin() + static_cast<__diff_t>(size());
     }
@@ -253,7 +251,7 @@ template <bool _Const, class... _Views>
 class __zip_sentinel
 {
   template <class... _Iters>
-  using __iterator = ::cuda::zip_iterator<_Iters...>;
+  using __iterator _CCCL_NODEBUG = ::cuda::zip_iterator<_Iters...>;
 
   template <bool, class...>
   friend class __zip_sentinel;

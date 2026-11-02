@@ -22,7 +22,7 @@ struct const_ref_t
 template <class T>
 struct rref_t
 {
-  __device__ void operator()(T&&) {}
+  __device__ void operator()(T&&) {} // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
 };
 
 template <class T>

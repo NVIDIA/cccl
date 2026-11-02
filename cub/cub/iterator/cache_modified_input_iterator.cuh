@@ -19,16 +19,23 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/it_traits.cuh>
 #include <cub/thread/thread_load.cuh>
-#include <cub/thread/thread_store.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/iterator/iterator_facade.h>
+#include <thrust/iterator/detail/device_system_tag.h>
+#include <thrust/iterator/detail/iterator_facade_category.h> // IWYU pragma: keep
+#include <thrust/iterator/iterator_traversal_tags.h>
+#include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__utility/declval.h>
+
+#if _CCCL_FREESTANDING()
+#  include <cuda/std/__iterator/iterator_traits.h>
+#endif // _CCCL_FREESTANDING()
 
 CUB_NAMESPACE_BEGIN
 
@@ -226,10 +233,10 @@ inline constexpr bool is_CacheModifiedInputIterator<CacheModifiedInputIterator<M
 template <CacheLoadModifier LoadModifier, typename Iterator>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto try_make_cache_modified_iterator(Iterator it)
 {
-  if constexpr (::cuda::std::contiguous_iterator<Iterator>)
+  if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<Iterator>)
   {
     return CacheModifiedInputIterator<LoadModifier, it_value_t<Iterator>, it_difference_t<Iterator>>{
-      THRUST_NS_QUALIFIER::raw_pointer_cast(&*it)};
+      ::cuda::std::to_address(it)};
   }
   else
   {

@@ -45,14 +45,14 @@ CUB_TEST("Device ForEachInExtents", "[ForEachInExtents][device]", CUB_SMALL)
 {
   // example-begin for-each-in-extents-example
   using                            data_t = cuda::std::array<int, 3>;
-  cuda::std::extents<int, 3, 2, 2> extents{};
+  const cuda::std::extents<int, 3, 2, 2> extents{};
   thrust::device_vector<data_t>    d_output1(cub::detail::size(extents), thrust::no_init);
   thrust::device_vector<data_t>    d_output2(cub::detail::size(extents), thrust::no_init);
   auto                             d_output1_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output1.data()),
                                                                           3 * 2 * 2};
   auto                             d_output2_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output2.data()),
                                                                           3 * 2 * 2};
-  thrust::host_vector<data_t>      expected = {{0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1},
+  const thrust::host_vector<data_t>      expected = {{0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1},
                                                {1, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1},
                                                {2, 0, 0}, {2, 0, 1}, {2, 1, 0}, {2, 1, 1}};
 
@@ -62,10 +62,15 @@ CUB_TEST("Device ForEachInExtents", "[ForEachInExtents][device]", CUB_SMALL)
   // d_output1 is now filled with the expected values
 
   thrust::fill(d_output2.begin(), d_output2.end(), data_t{});
-  cub::DeviceFor::ForEachInExtents(extents, linear_store_3D{d_output2_raw});
+  const auto error = cub::DeviceFor::ForEachInExtents(extents, linear_store_3D{d_output2_raw});
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceFor::ForEachInExtents failed with status: " << error << '\n';
+  }
   // d_output2 is now filled with the expected values
 
   // example-end for-each-in-extents-example
+  REQUIRE(error == cudaSuccess);
   thrust::host_vector<data_t> h_output1(cub::detail::size(extents), thrust::no_init);
   thrust::host_vector<data_t> h_output2(cub::detail::size(extents), thrust::no_init);
   h_output1 = d_output1;

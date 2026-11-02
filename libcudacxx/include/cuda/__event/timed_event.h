@@ -28,8 +28,8 @@
 #  include <cuda/__event/event.h>
 #  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__chrono/duration.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__utility/to_underlying.h>
-#  include <cuda/std/cstddef>
 
 #  include <cuda/std/__cccl/prologue.h>
 

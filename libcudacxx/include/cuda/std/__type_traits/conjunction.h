@@ -29,7 +29,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class...>
-using __expand_to_true = true_type;
+using __expand_to_true _CCCL_NODEBUG = true_type;
 
 template <class... _Pred>
 _CCCL_HOST_DEVICE __expand_to_true<enable_if_t<_Pred::value>...> __and_helper(int);
@@ -43,7 +43,7 @@ _CCCL_HOST_DEVICE false_type __and_helper(...);
 // be instantiated) since it is an alias, unlike `conjunction<_Pred...>`, which is a struct.
 // If you want to defer the evaluation of `_And<_Pred...>` itself, use `_Lazy<_And, _Pred...>`.
 template <class... _Pred>
-using _And _CCCL_NODEBUG_ALIAS = decltype(__and_helper<_Pred...>(0));
+using _And _CCCL_NODEBUG = decltype(__and_helper<_Pred...>(0));
 
 template <class...>
 struct conjunction : true_type

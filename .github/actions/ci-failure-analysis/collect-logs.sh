@@ -41,19 +41,56 @@ gh api --paginate --slurp \
               or .conclusion == "startup_failure"
               or .conclusion == "action_required"
             ))
+          | map({id, name, conclusion, check_run_url, annotations: [], log_path: ""})
         end
     ' \
     > "${output_dir}/jobs.json"
 
-mapfile -t failed_job_ids < <(jq -r '.[].id' "${output_dir}/jobs.json")
+mapfile -t failed_jobs < <(jq -r '.[] | [.id, .check_run_url] | @tsv' "${output_dir}/jobs.json")
 
-for job_id in "${failed_job_ids[@]}"; do
+for failed_job in "${failed_jobs[@]}"; do
+  IFS=$'\t' read -r job_id check_run_url <<< "${failed_job}"
+
+  annotations_path="${output_dir}/job-${job_id}.annotations.json"
+  if gh api --paginate --slurp \
+    "${check_run_url}/annotations?per_page=100" \
+    | jq '[.[][] | select(.annotation_level == "failure") | {
+        annotation_level,
+        message,
+        title,
+        path,
+        start_line,
+        end_line
+      }]' > "${annotations_path}"; then
+    jq \
+      --argjson job_id "${job_id}" \
+      --slurpfile annotations "${annotations_path}" \
+      'map(if .id == $job_id then .annotations = $annotations[0] else . end)' \
+      "${output_dir}/jobs.json" > "${output_dir}/jobs.json.tmp"
+    mv "${output_dir}/jobs.json.tmp" "${output_dir}/jobs.json"
+  else
+    echo "::warning::Unable to collect annotations for job ${job_id}; continuing without them."
+  fi
+  rm -f "${annotations_path}"
+
   log_path="${output_dir}/job-${job_id}.log"
-  if ! gh api "repos/${repository}/actions/jobs/${job_id}/logs" > "${log_path}"; then
+  if ! gh api --allow-escape-sequences \
+    "repos/${repository}/actions/jobs/${job_id}/logs" > "${log_path}"; then
     echo "::warning::Unable to collect logs for job ${job_id}; continuing with job metadata."
     rm -f "${log_path}"
   elif [[ ! -s "${log_path}" ]]; then
     echo "::warning::GitHub returned an empty log for job ${job_id}; continuing with job metadata."
     rm -f "${log_path}"
+  else
+    jq \
+      --argjson job_id "${job_id}" \
+      --arg log_path "${log_path}" \
+      'map(if .id == $job_id then .log_path = $log_path else . end)' \
+      "${output_dir}/jobs.json" > "${output_dir}/jobs.json.tmp"
+    mv "${output_dir}/jobs.json.tmp" "${output_dir}/jobs.json"
   fi
 done
+
+jq 'map(del(.check_run_url))' \
+  "${output_dir}/jobs.json" > "${output_dir}/jobs.json.tmp"
+mv "${output_dir}/jobs.json.tmp" "${output_dir}/jobs.json"

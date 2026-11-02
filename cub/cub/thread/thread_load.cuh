@@ -19,16 +19,22 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/numeric_traits.cuh>
+#include <cub/detail/unit_word.cuh>
 
-#include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__fwd/format.h>
+#include <thrust/type_traits/is_contiguous_iterator.h>
+
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__utility/integer_sequence.h>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
 
 CUB_NAMESPACE_BEGIN
 
@@ -37,7 +43,7 @@ CUB_NAMESPACE_BEGIN
 //-----------------------------------------------------------------------------
 
 //! @brief Enumeration of cache modifiers for memory load operations.
-enum CacheLoadModifier
+enum CacheLoadModifier // NOLINT(cppcoreguidelines-use-enum-class)
 {
   LOAD_DEFAULT, ///< Default (no modifier)
   LOAD_CA, ///< Cache at all levels
@@ -348,7 +354,7 @@ template <CacheLoadModifier MODIFIER, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE detail::it_value_t<RandomAccessIterator> ThreadLoad(RandomAccessIterator itr)
 {
   using T = detail::it_value_t<RandomAccessIterator>;
-  if constexpr (!::cuda::std::__4::contiguous_iterator<RandomAccessIterator> || MODIFIER == LOAD_DEFAULT)
+  if constexpr (!THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIterator> || MODIFIER == LOAD_DEFAULT)
   {
     return *itr;
   }
@@ -360,10 +366,10 @@ _CCCL_DEVICE _CCCL_FORCEINLINE detail::it_value_t<RandomAccessIterator> ThreadLo
   {
     using LoadWord              = typename UnitWord<T>::VolatileWord;
     constexpr int LOAD_MULTIPLE = sizeof(T) / sizeof(LoadWord);
-    T retval;
-    auto* words = reinterpret_cast<LoadWord*>(&retval);
+    alignas(T) LoadWord words[LOAD_MULTIPLE]; // avoid default constructing a T
     UnrolledCopy<LOAD_MULTIPLE>(reinterpret_cast<const volatile LoadWord*>(::cuda::std::to_address(itr)), words);
-    return retval;
+    // TODO(bgruber): start the lifetime of T here once cuda::std::start_lifetime_as is available
+    return *reinterpret_cast<T*>(words);
   }
   else
   {

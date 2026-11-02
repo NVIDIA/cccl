@@ -5,81 +5,81 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestVectorManipulation(size_t n)
+void test_vector_manipulation(size_t n)
 {
   using Iterator = typename Vector::iterator;
   using T        = typename Vector::value_type;
 
   thrust::host_vector<T> src = unittest::random_samples<T>(n);
-  ASSERT_EQUAL(src.size(), n);
+  REQUIRE(src.size() == n);
 
   // basic initialization
   Vector test0(n);
   Vector test1(n, T(3));
-  ASSERT_EQUAL(test0.size(), n);
-  ASSERT_EQUAL(test1.size(), n);
-  ASSERT_EQUAL((test1 == std::vector<T>(n, T(3))), true);
+  REQUIRE(test0.size() == n);
+  REQUIRE(test1.size() == n);
+  REQUIRE(test1 == std::vector<T>(n, T(3)));
 
   // initializing from other vector
   std::vector<T> stl_vector(src.begin(), src.end());
   Vector cpy0 = src;
   Vector cpy1(stl_vector);
   Vector cpy2(stl_vector.begin(), stl_vector.end());
-  ASSERT_EQUAL(cpy0, src);
-  ASSERT_EQUAL(cpy1, src);
-  ASSERT_EQUAL(cpy2, src);
+  REQUIRE(cpy0 == src);
+  REQUIRE(cpy1 == src);
+  REQUIRE(cpy2 == src);
 
   // resizing
   Vector vec1(src);
   vec1.resize(n + 3);
-  ASSERT_EQUAL(vec1.size(), n + 3);
+  REQUIRE(vec1.size() == n + 3);
   vec1.resize(n);
-  ASSERT_EQUAL(vec1.size(), n);
-  ASSERT_EQUAL(vec1, src);
+  REQUIRE(vec1.size() == n);
+  REQUIRE(vec1 == src);
 
   vec1.resize(n + 20, T(11));
   Vector tail(vec1.begin() + n, vec1.end());
-  ASSERT_EQUAL((tail == std::vector<T>(20, T(11))), true);
+  REQUIRE(tail == std::vector<T>(20, T(11)));
 
   // shrinking a vector should not invalidate iterators
-  Iterator first = vec1.begin();
+  const Iterator first = vec1.begin();
   vec1.resize(10);
-  ASSERT_EQUAL_QUIET(first, vec1.begin());
+  REQUIRE(first == vec1.begin());
 
   vec1.resize(0);
-  ASSERT_EQUAL(vec1.size(), 0lu);
-  ASSERT_EQUAL(vec1.empty(), true);
+  REQUIRE(vec1.size() == 0lu);
+  REQUIRE(vec1.empty());
   vec1.resize(10);
-  ASSERT_EQUAL(vec1.size(), 10lu);
+  REQUIRE(vec1.size() == 10lu);
   vec1.clear();
-  ASSERT_EQUAL(vec1.size(), 0lu);
+  REQUIRE(vec1.size() == 0lu);
   vec1.resize(5);
-  ASSERT_EQUAL(vec1.size(), 5lu);
+  REQUIRE(vec1.size() == 5lu);
 
   // push_back
   Vector vec2;
   for (size_t i = 0; i < 10; ++i)
   {
-    ASSERT_EQUAL(vec2.size(), i);
+    REQUIRE(vec2.size() == i);
     vec2.push_back(T(i));
-    ASSERT_EQUAL(vec2.size(), i + 1);
+    REQUIRE(vec2.size() == i + 1);
     for (size_t j = 0; j <= i; j++)
     {
-      ASSERT_EQUAL(vec2[j], T(j));
+      REQUIRE(vec2[j] == T(j));
     }
-    ASSERT_EQUAL(vec2.back(), T(i));
+    REQUIRE(vec2.back() == T(i));
   }
 
   // pop_back
   for (size_t i = 10; i > 0; --i)
   {
-    ASSERT_EQUAL(vec2.size(), i);
-    ASSERT_EQUAL(vec2.back(), T(i - 1));
+    REQUIRE(vec2.size() == i);
+    REQUIRE(vec2.back() == T(i - 1));
     vec2.pop_back();
-    ASSERT_EQUAL(vec2.size(), i - 1);
+    REQUIRE(vec2.size() == i - 1);
     for (size_t j = 0; j < i; j++)
     {
-      ASSERT_EQUAL(vec2[j], T(j));
+      REQUIRE(vec2[j] == T(j));
     }
   }
 
@@ -87,15 +87,15 @@ void TestVectorManipulation(size_t n)
 }
 
 template <typename T>
-void TestVectorManipulationHost(size_t n)
+void test_vector_manipulation_host(size_t n)
 {
-  TestVectorManipulation<thrust::host_vector<T>>(n);
+  test_vector_manipulation<thrust::host_vector<T>>(n);
 }
-DECLARE_VARIABLE_UNITTEST(TestVectorManipulationHost);
+DECLARE_VARIABLE_UNITTEST(test_vector_manipulation_host);
 
 template <typename T>
-void TestVectorManipulationDevice(size_t n)
+void test_vector_manipulation_device(size_t n)
 {
-  TestVectorManipulation<thrust::device_vector<T>>(n);
+  test_vector_manipulation<thrust::device_vector<T>>(n);
 }
-DECLARE_VARIABLE_UNITTEST(TestVectorManipulationDevice);
+DECLARE_VARIABLE_UNITTEST(test_vector_manipulation_device);

@@ -19,14 +19,26 @@
  * lands in the requested domain) as well as the VMM `mem_create` path.
  */
 
+#include <cuda/__driver/driver_api.h>
+
 #include <cuda/experimental/stf.cuh>
 
+#include <cstdio>
 #include <cstdlib>
 
 using namespace cuda::experimental::stf;
 
 int main()
 {
+#if _CCCL_CTK_AT_LEAST(13, 4)
+  // The locality-domain driver APIs exercised below need a CUDA 13.4+ driver
+  if (::cuda::__driver::__version_below(13, 4))
+  {
+    fprintf(stderr, "Driver is too old for locality domain tests (requires CUDA 13.4 / R615 or later): test waived.\n");
+    return 0;
+  }
+#endif // _CCCL_CTK_AT_LEAST(13, 4)
+
   const int dev               = 0;
   const unsigned int ndomains = locality_domain_count(dev);
 
@@ -58,12 +70,14 @@ int main()
     // With the native backend, the allocation must report the requested
     // domain ordinal (unless localization is disabled, or the fake topology
     // override is active, in which case it must report "not localized",
-    // i.e. -1).
+    // i.e. -1). On a single-domain device the driver documents that a
+    // localized allocation on domain 0 is a plain device allocation, which
+    // also reports -1.
     int ordinal = -2;
     cuda_safe_call(cuPointerGetAttribute(
       &ordinal, CU_POINTER_ATTRIBUTE_LOCALITY_DOMAIN_ORDINAL, reinterpret_cast<CUdeviceptr>(ptr)));
     if (std::getenv("CUDASTF_DISABLE_LOCALIZED_MEMORY") != nullptr
-        || std::getenv("CUDASTF_FAKE_LOCALITY_DOMAINS") != nullptr)
+        || std::getenv("CUDASTF_FAKE_LOCALITY_DOMAINS") != nullptr || ndomains == 1)
     {
       EXPECT(ordinal == -1);
     }

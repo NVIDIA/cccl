@@ -21,14 +21,21 @@
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_discontinuity.cuh>
 #include <cub/block/block_load.cuh>
+#include <cub/block/block_raking_layout.cuh>
 #include <cub/block/block_scan.cuh>
-#include <cub/block/block_store.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/key_value_pair.cuh>
+#include <cub/detail/non_void_value.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/thread/thread_operators.cuh>
 
-#include <cuda/__functional/operator_properties.h>
-#include <cuda/std/__functional/operations.h>
+#include <thrust/type_traits/is_contiguous_iterator.h>
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
+
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 CUB_NAMESPACE_BEGIN
 
@@ -149,17 +156,16 @@ struct AgentReduceByKey
   using ScanTileStateT = ReduceByKeyScanTileState<AccumT, OffsetT>;
 
   // Guarded inequality functor
-  template <typename _EqualityOpT>
   struct GuardedInequalityWrapper
   {
     /// Wrapped equality operator
-    _EqualityOpT op;
+    EqualityOpT op;
 
     /// Items remaining
     int num_remaining;
 
     /// Constructor
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GuardedInequalityWrapper(_EqualityOpT op, int num_remaining)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GuardedInequalityWrapper(EqualityOpT op, int num_remaining)
         : op(op)
         , num_remaining(num_remaining)
     {}
@@ -184,30 +190,41 @@ struct AgentReduceByKey
   static constexpr int TILE_ITEMS        = BLOCK_THREADS * ITEMS_PER_THREAD;
   static constexpr int TWO_PHASE_SCATTER = (ITEMS_PER_THREAD > 1);
 
+  // The head flagging, scan and scatter require the items in a blocked arrangement
+  static_assert(AgentReduceByKeyPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,
+                "ReduceByKeyLookbackPolicy/RleLookbackPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since "
+                "the reduction requires a blocked arrangement");
+  static_assert(
+    (AgentReduceByKeyPolicyT::SCAN_ALGORITHM == BLOCK_SCAN_WARP_SCANS && BLOCK_THREADS % detail::warp_threads == 0)
+      || BlockRakingLayout<int, BLOCK_THREADS>::RAKING_THREADS == detail::warp_threads,
+    "ReduceByKeyLookbackPolicy/RleLookbackPolicy: the decoupled look-back needs a full warp to enter the block-scan "
+    "prefix callback: with warp scans threads_per_block must be a multiple of 32, otherwise the raking layout must "
+    "yield 32 raking threads");
+
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
-  // for keys Wrap the native input pointer with
+  // for keys Wrap the native input pointer or contiguous iterator with
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedKeysInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer_v<KeysInputIteratorT>,
+    ::cuda::std::_If<THRUST_NS_QUALIFIER::is_contiguous_iterator_v<KeysInputIteratorT>,
                      CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, KeyInputT, OffsetT>,
                      KeysInputIteratorT>;
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
-  // for values Wrap the native input pointer with
+  // for values Wrap the native input pointer or contiguous iterator with
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedValuesInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer_v<ValuesInputIteratorT>,
+    ::cuda::std::_If<THRUST_NS_QUALIFIER::is_contiguous_iterator_v<ValuesInputIteratorT>,
                      CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
                      ValuesInputIteratorT>;
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
-  // for fixup values Wrap the native input pointer with
+  // for fixup values Wrap the native input pointer or contiguous iterator with
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedFixupInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer_v<AggregatesOutputIteratorT>,
+    ::cuda::std::_If<THRUST_NS_QUALIFIER::is_contiguous_iterator_v<AggregatesOutputIteratorT>,
                      CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
                      AggregatesOutputIteratorT>;
 
@@ -215,14 +232,13 @@ struct AgentReduceByKey
   using ReduceBySegmentOpT = ReduceBySegmentOp<ReductionOpT>;
 
   // Parameterized BlockLoad type for keys
-  using BlockLoadKeysT =
-    BlockLoad<KeyOutputT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentReduceByKeyPolicyT::LOAD_ALGORITHM>;
+  using BlockLoadKeysT = BlockLoad<KeyInputT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentReduceByKeyPolicyT::LOAD_ALGORITHM>;
 
   // Parameterized BlockLoad type for values
   using BlockLoadValuesT = BlockLoad<AccumT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentReduceByKeyPolicyT::LOAD_ALGORITHM>;
 
   // Parameterized BlockDiscontinuity type for keys
-  using BlockDiscontinuityKeys = BlockDiscontinuity<KeyOutputT, BLOCK_THREADS>;
+  using BlockDiscontinuityKeys = BlockDiscontinuity<KeyInputT, BLOCK_THREADS>;
 
   // Parameterized BlockScan type
   using BlockScanT = BlockScan<OffsetValuePairT, BLOCK_THREADS, AgentReduceByKeyPolicyT::SCAN_ALGORITHM>;
@@ -263,8 +279,7 @@ struct AgentReduceByKey
   };
 
   // Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per-thread fields
@@ -344,9 +359,9 @@ struct AgentReduceByKey
     ReductionOpT reduction_op,
     StreamingContext streaming_context)
       : temp_storage(temp_storage.Alias())
-      , d_keys_in(d_keys_in)
+      , d_keys_in(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_keys_in))
       , d_unique_out(d_unique_out + streaming_context.num_uniques())
-      , d_values_in(d_values_in)
+      , d_values_in(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_values_in))
       , d_aggregates_out(d_aggregates_out + streaming_context.num_uniques())
       , d_num_runs_out(d_num_runs_out)
       , equality_op(equality_op)
@@ -366,9 +381,9 @@ struct AgentReduceByKey
     ReductionOpT reduction_op,
     NullType streaming_context)
       : temp_storage(temp_storage.Alias())
-      , d_keys_in(d_keys_in)
+      , d_keys_in(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_keys_in))
       , d_unique_out(d_unique_out)
-      , d_values_in(d_values_in)
+      , d_values_in(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_values_in))
       , d_aggregates_out(d_aggregates_out)
       , d_num_runs_out(d_num_runs_out)
       , equality_op(equality_op)
@@ -431,7 +446,7 @@ struct AgentReduceByKey
 
     for (int item = static_cast<int>(threadIdx.x); item < num_tile_segments; item += BLOCK_THREADS)
     {
-      KeyValuePairT pair                                = temp_storage.raw_exchange.Alias()[item];
+      const KeyValuePairT pair                          = temp_storage.raw_exchange.Alias()[item];
       d_unique_out[num_tile_segments_prefix + item]     = pair.key; // NOLINT(bugprone-misplaced-widening-cast)
       d_aggregates_out[num_tile_segments_prefix + item] = pair.value; // NOLINT(bugprone-misplaced-widening-cast)
     }
@@ -466,7 +481,7 @@ struct AgentReduceByKey
   /**
    * @brief Process a tile of input (dynamic chained scan)
    *
-   * @tparam IS_LAST_TILE
+   * @tparam IsLastTile
    *   Whether the current tile is the last tile
    *
    * @param num_remaining
@@ -481,15 +496,15 @@ struct AgentReduceByKey
    * @param tile_state
    *   Global tile state descriptor
    */
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   ConsumeTile(OffsetT num_remaining, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state)
   {
     // Tile keys
-    KeyOutputT keys[ITEMS_PER_THREAD];
+    KeyInputT keys[ITEMS_PER_THREAD];
 
     // Tile keys shuffled up
-    KeyOutputT prev_keys[ITEMS_PER_THREAD];
+    KeyInputT prev_keys[ITEMS_PER_THREAD];
 
     // Tile values
     AccumT values[ITEMS_PER_THREAD];
@@ -507,7 +522,7 @@ struct AgentReduceByKey
     KeyValuePairT scatter_items[ITEMS_PER_THREAD];
 
     // Load keys
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + tile_offset, keys, num_remaining);
     }
@@ -517,7 +532,7 @@ struct AgentReduceByKey
     }
 
     // Load tile predecessor key in first thread
-    KeyOutputT tile_predecessor;
+    KeyInputT tile_predecessor;
     if (threadIdx.x == 0)
     {
       // if (tile_idx == 0)
@@ -538,7 +553,7 @@ struct AgentReduceByKey
     __syncthreads();
 
     // Load values
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + tile_offset, values, num_remaining);
     }
@@ -550,16 +565,16 @@ struct AgentReduceByKey
     __syncthreads();
 
     // Initialize head-flags and shuffle up the previous keys
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       // Use custom flag operator to additionally flag the first out-of-bounds item
-      GuardedInequalityWrapper<EqualityOpT> flag_op(equality_op, num_remaining);
+      const GuardedInequalityWrapper flag_op(equality_op, num_remaining);
       BlockDiscontinuityKeys(temp_storage.scan_storage.discontinuity)
         .FlagHeads(head_flags, keys, prev_keys, flag_op, tile_predecessor);
     }
     else
     {
-      InequalityWrapper<EqualityOpT> flag_op(equality_op);
+      const InequalityWrapper<EqualityOpT> flag_op(equality_op);
       BlockDiscontinuityKeys(temp_storage.scan_storage.discontinuity)
         .FlagHeads(head_flags, keys, prev_keys, flag_op, tile_predecessor);
     }
@@ -631,7 +646,7 @@ struct AgentReduceByKey
       }
 
       // Update tile status if there are successor tiles
-      if ((!IS_LAST_TILE) && (threadIdx.x == 0))
+      if ((!IsLastTile) && (threadIdx.x == 0))
       {
         tile_state.SetInclusive(0, block_aggregate);
       }
@@ -651,7 +666,7 @@ struct AgentReduceByKey
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
-      scatter_items[ITEM].key   = prev_keys[ITEM];
+      scatter_items[ITEM].key   = static_cast<KeyOutputT>(prev_keys[ITEM]);
       scatter_items[ITEM].value = scan_items[ITEM].value;
       segment_indices[ITEM]     = scan_items[ITEM].key;
     }
@@ -666,7 +681,7 @@ struct AgentReduceByKey
     Scatter(scatter_items, head_flags, segment_indices, num_tile_segments, num_segments_prefix);
 
     // Last thread in last tile will output final count (and last pair, if necessary)
-    if ((IS_LAST_TILE) && (threadIdx.x == BLOCK_THREADS - 1))
+    if ((IsLastTile) && (threadIdx.x == BLOCK_THREADS - 1))
     {
       OffsetT num_segments = num_segments_prefix + num_tile_segments;
 
@@ -678,7 +693,7 @@ struct AgentReduceByKey
         {
           if (streaming_context.is_last_partition())
           {
-            d_unique_out[num_segments]     = keys[ITEMS_PER_THREAD - 1];
+            d_unique_out[num_segments]     = static_cast<KeyOutputT>(keys[ITEMS_PER_THREAD - 1]);
             d_aggregates_out[num_segments] = total_aggregate.value;
             num_segments++;
           }
@@ -690,7 +705,7 @@ struct AgentReduceByKey
         }
         else
         {
-          d_unique_out[num_segments]     = keys[ITEMS_PER_THREAD - 1];
+          d_unique_out[num_segments]     = static_cast<KeyOutputT>(keys[ITEMS_PER_THREAD - 1]);
           d_aggregates_out[num_segments] = total_aggregate.value;
           num_segments++;
         }
@@ -732,7 +747,7 @@ struct AgentReduceByKey
     // block
 
     // Current tile index
-    int tile_idx = static_cast<int>(start_tile + blockIdx.x);
+    const int tile_idx = static_cast<int>(start_tile + blockIdx.x);
 
     // Global offset for the current tile
     OffsetT tile_offset = OffsetT(TILE_ITEMS) * tile_idx;

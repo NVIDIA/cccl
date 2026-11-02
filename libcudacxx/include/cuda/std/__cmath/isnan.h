@@ -27,6 +27,8 @@
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
+#include <nv/target>
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
@@ -49,6 +51,8 @@ template <class _Tp>
     return ::isnan(__x);
   }
 #endif // !_CCCL_TILE_COMPILATION()
+  // x != x is the canonical NaN test: it is true only when x is NaN.
+  // NOLINTNEXTLINE(misc-redundant-expression)
   return __x != __x;
 }
 
@@ -61,8 +65,27 @@ template <class _Tp>
 #endif // ^^^ !_CCCL_BUILTIN_ISNAN ^^^
 }
 
+[[nodiscard]] _CCCL_API constexpr bool __isnan_storage(double __x) noexcept
+{
+  const auto __storage = ::cuda::std::__fp_get_storage(__x);
+  // On SM100+ (new NVVM), the compiler recognizes the pattern (storage & 0xFF...FF) as fabs(), reintroducing double
+  // instructions. The workaround is to shift both operands by 1. This generates the same number of instructions on all
+  // gpu archs with 64-bit integer ops (roughly SM107+)
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
+                    (return (__storage << 1) > (__fp_exp_mask_of_v<double> << 1);),
+                    (return (__storage & __fp_exp_mant_mask_of_v<double>) > __fp_exp_mask_of_v<double>;))
+}
+
 [[nodiscard]] _CCCL_API constexpr bool isnan(double __x) noexcept
 {
+  // isnan() for fp64 maps to DSETP instruction, which is generally very slow on desktop GPUs, e.g. 64:1 fp32:fp64
+  // throughput. We can optimize isnan() on desktop GPUs by using integer comparison instead
+  // note: we cannot understand if the code will run on desktop or datacenter GPUs for some SM versions, e.g. SM80 is
+  //       binary compatible with SM86
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  {
+    _CCCL_DISPATCH_SLOW_FP64_TARGET(return ::cuda::std::__isnan_storage(__x);)
+  }
 #if defined(_CCCL_BUILTIN_ISNAN)
   return _CCCL_BUILTIN_ISNAN(__x);
 #else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv

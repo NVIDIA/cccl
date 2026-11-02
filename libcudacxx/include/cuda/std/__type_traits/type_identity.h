@@ -27,11 +27,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 struct type_identity
 {
-  using type = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 template <class _Tp>
-using type_identity_t _CCCL_NODEBUG_ALIAS = typename type_identity<_Tp>::type;
+using type_identity_t _CCCL_NODEBUG = typename type_identity<_Tp>::type;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

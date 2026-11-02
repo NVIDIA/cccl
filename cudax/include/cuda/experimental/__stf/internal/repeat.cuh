@@ -11,6 +11,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/variant>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -56,7 +58,7 @@ public:
     {
       size_t before_cnt = ctx.task_count();
 
-      static_assert(::std::is_invocable_v<Fun, context_t, size_t>, "Incorrect lambda function signature.");
+      static_assert(::cuda::std::is_invocable_v<Fun, context_t, size_t>, "Incorrect lambda function signature.");
 
       f(ctx, iter);
 
@@ -77,12 +79,12 @@ private:
   bool next()
   {
     return condition.index() == 0
-           ? ::std::get<size_t>(condition)-- > 0
-           : ::std::get<::std::function<bool()>>(condition)();
+           ? ::cuda::std::get<size_t>(condition)-- > 0
+           : ::cuda::std::get<::std::function<bool()>>(condition)();
   }
 
   // Number of iterations, or a function which evaluates if we continue
-  ::std::variant<size_t, ::std::function<bool()>> condition;
+  ::cuda::std::variant<size_t, ::std::function<bool()>> condition;
   // The supporting context for this construct
   context_t& ctx;
 };

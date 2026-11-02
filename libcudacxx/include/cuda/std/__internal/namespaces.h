@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===---------------------------------------------------------------------===//
 
@@ -66,6 +66,8 @@
 // cuda specific namespaces
 #define _CCCL_BEGIN_NAMESPACE_CUDA                     _CCCL_BEGIN_NAMESPACE(cuda)
 #define _CCCL_END_NAMESPACE_CUDA                       _CCCL_END_NAMESPACE(cuda)
+#define _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC              _CCCL_BEGIN_NAMESPACE(cuda::fabric)
+#define _CCCL_END_NAMESPACE_CUDA_FABRIC                _CCCL_END_NAMESPACE(cuda::fabric)
 #define _CCCL_BEGIN_NAMESPACE_CUDA_MR                  _CCCL_BEGIN_NAMESPACE(cuda::mr)
 #define _CCCL_END_NAMESPACE_CUDA_MR                    _CCCL_END_NAMESPACE(cuda::mr)
 #define _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE              _CCCL_BEGIN_NAMESPACE(cuda::device)
@@ -80,6 +82,8 @@
 // Namespaces related to <simd>
 #define _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD _CCCL_BEGIN_NAMESPACE(cuda::std::simd)
 #define _CCCL_END_NAMESPACE_CUDA_STD_SIMD   _CCCL_END_NAMESPACE(cuda::std::simd)
+#define _CCCL_BEGIN_NAMESPACE_CUDA_SIMD     _CCCL_BEGIN_NAMESPACE(cuda::simd)
+#define _CCCL_END_NAMESPACE_CUDA_SIMD       _CCCL_END_NAMESPACE(cuda::simd)
 
 // Namespaces related to <ranges>
 #define _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES _CCCL_BEGIN_NAMESPACE(cuda::std::ranges)
@@ -117,6 +121,9 @@
 
 #define _CCCL_BEGIN_NAMESPACE_CUDA_ARGUMENT _CCCL_BEGIN_NAMESPACE(cuda::args)
 #define _CCCL_END_NAMESPACE_CUDA_ARGUMENT   _CCCL_END_NAMESPACE(cuda::args)
+
+#define _CCCL_BEGIN_NAMESPACE_CUDA_MGMN _CCCL_BEGIN_NAMESPACE(cuda::experimental::mgmn)
+#define _CCCL_END_NAMESPACE_CUDA_MGMN   _CCCL_END_NAMESPACE(cuda::experimental::mgmn)
 
 // Namespace to avoid name collisions with CPOs on clang-16 (see
 // https://godbolt.org/z/9TadonrdM for example). MSVC's ancient parser also gets confused with

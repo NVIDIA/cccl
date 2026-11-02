@@ -23,7 +23,7 @@
 
 __global__ void scale_inplace(int n, float* data, float factor)
 {
-  int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   if (i < n)
   {
     data[i] *= factor;
@@ -32,7 +32,7 @@ __global__ void scale_inplace(int n, float* data, float factor)
 
 C2H_TEST("stf_logical_data_with_place - host place (malloc)", "[logical_data_with_place]")
 {
-  size_t N = 1024;
+  const size_t N = 1024;
 
   stf_ctx_handle ctx = stf_ctx_create();
   REQUIRE(ctx != nullptr);
@@ -66,13 +66,13 @@ C2H_TEST("stf_logical_data_with_place - host place (malloc)", "[logical_data_wit
 
 C2H_TEST("stf_logical_data_with_place - host place (pinned memory)", "[logical_data_with_place]")
 {
-  size_t N = 1024;
+  const size_t N = 1024;
 
   stf_ctx_handle ctx = stf_ctx_create();
   REQUIRE(ctx != nullptr);
 
-  float* A        = nullptr;
-  cudaError_t err = cudaMallocHost(&A, N * sizeof(float));
+  float* A              = nullptr;
+  const cudaError_t err = cudaMallocHost(&A, N * sizeof(float));
   REQUIRE(err == cudaSuccess);
   for (size_t i = 0; i < N; ++i)
   {
@@ -104,7 +104,7 @@ C2H_TEST("stf_logical_data_with_place - host place (pinned memory)", "[logical_d
 
 C2H_TEST("stf_logical_data_with_place - device place (data on current device)", "[logical_data_with_place]")
 {
-  size_t N           = 1024;
+  const size_t N     = 1024;
   const float factor = 2.0f;
 
   stf_ctx_handle ctx = stf_ctx_create();
@@ -113,7 +113,7 @@ C2H_TEST("stf_logical_data_with_place - device place (data on current device)", 
   float* d_raw    = nullptr;
   cudaError_t err = cudaMalloc(&d_raw, N * sizeof(float));
   REQUIRE(err == cudaSuccess);
-  std::unique_ptr<void, decltype(&cudaFree)> d_data_owner(d_raw, cudaFree);
+  const std::unique_ptr<void, decltype(&cudaFree)> d_data_owner(d_raw, cudaFree);
   float* d_data = static_cast<float*>(d_data_owner.get());
 
   std::vector<float> h_init(N);
@@ -135,12 +135,12 @@ C2H_TEST("stf_logical_data_with_place - device place (data on current device)", 
   stf_cuda_kernel_set_symbol(k, "scale_inplace");
   stf_cuda_kernel_add_dep(k, lD, STF_RW);
   stf_cuda_kernel_start(k);
-  float* arg_ptr = static_cast<float*>(stf_cuda_kernel_get_arg(k, 0));
+  const float* arg_ptr = static_cast<float*>(stf_cuda_kernel_get_arg(k, 0));
   REQUIRE(arg_ptr == d_data);
   int n               = static_cast<int>(N);
   const void* args[3] = {&n, &arg_ptr, &factor};
-  dim3 grid(4);
-  dim3 block(256);
+  const dim3 grid(4);
+  const dim3 block(256);
   err = stf_cuda_kernel_add_desc(k, reinterpret_cast<void*>(scale_inplace), grid, block, 0, 3, args);
   REQUIRE(err == cudaSuccess);
   stf_cuda_kernel_end(k);

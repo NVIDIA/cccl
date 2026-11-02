@@ -24,10 +24,10 @@ struct estimate_pi
 {
   __host__ __device__ float operator()(unsigned int thread_id)
   {
-    float sum      = 0;
-    unsigned int N = 10000; // samples per thread
+    float sum            = 0;
+    const unsigned int N = 10000; // samples per thread
 
-    unsigned int seed = hash(thread_id);
+    const unsigned int seed = hash(thread_id);
 
     // seed a random number generator
     thrust::default_random_engine rng(seed);
@@ -39,11 +39,11 @@ struct estimate_pi
     for (unsigned int i = 0; i < N; ++i)
     {
       // draw a sample from the unit square
-      float x = u01(rng);
-      float y = u01(rng);
+      const float x = u01(rng);
+      const float y = u01(rng);
 
       // measure distance from the origin
-      float dist = sqrtf(x * x + y * y);
+      const float dist = sqrtf(x * x + y * y);
 
       // add 1.0f if (u0,u1) is inside the quarter circle
       if (dist <= 1.0f)
@@ -63,7 +63,7 @@ struct estimate_pi
 int main()
 {
   // use 30K independent seeds
-  int M = 30000;
+  const int M = 30000;
 
   float estimate = thrust::transform_reduce(
     thrust::counting_iterator<int>(0), thrust::counting_iterator<int>(M), estimate_pi(), 0.0f, cuda::std::plus<float>());
