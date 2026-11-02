@@ -177,6 +177,20 @@ struct smem_block_tile_layout
   return ::cuda::std::clamp(num_blocks, ::cuda::std::uint32_t{1}, max_cluster_blocks);
 }
 
+// Widest cluster a policy allows before the hardware ceiling: the leader's per-pass histogram fold (one 32-bit count
+// per bucket from every other CTA) must fit one mbarrier transaction count, and a non-zero `max_blocks_per_cluster`
+// narrows that further. Used by the dispatch to clamp the launch and by the agent to reject a too-wide explicit cap.
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr int
+effective_max_cluster_blocks(int bits_per_pass, int max_blocks_per_cluster) noexcept
+{
+  const int histogram_bytes = (1 << bits_per_pass) * int{sizeof(::cuda::std::uint32_t)};
+  // The leader does not send its own histogram, hence the extra CTA.
+  const int max_fold_blocks = 1 + mbarrier_max_tx_count / histogram_bytes;
+  return (max_blocks_per_cluster > 0 && max_blocks_per_cluster < max_fold_blocks)
+         ? max_blocks_per_cluster
+         : max_fold_blocks;
+}
+
 // `Determinism` / `TieBreak` carry the requested `cuda::execution` requirements down from the dispatch layer. Any
 // deterministic guarantee selects the cluster-wide, index-ordered tie-break scan (and the blocked chunk partition it
 // depends on) over the nondeterministic racing atomics; `not_guaranteed` keeps the atomics. On the deterministic path
@@ -339,9 +353,10 @@ struct agent_batched_topk_cluster
   static_assert(copy_items_per_thread_clamped >= 1, "copy_items_per_thread_clamped must be positive");
 
   static constexpr int num_buckets = 1 << policy.bits_per_pass;
-  // `max_cluster_blocks()` would otherwise narrow a too-wide explicit cap silently.
-  static_assert(policy.max_blocks_per_cluster <= policy.max_cluster_blocks(),
-                "cluster_topk_policy: max_blocks_per_cluster must not exceed max_cluster_blocks(), since the leader's "
+  // `effective_max_cluster_blocks` would otherwise narrow a too-wide explicit cap silently.
+  static_assert(policy.max_blocks_per_cluster
+                  <= effective_max_cluster_blocks(policy.bits_per_pass, policy.max_blocks_per_cluster),
+                "cluster_topk_policy: max_blocks_per_cluster is too wide for bits_per_pass, since the leader's "
                 "per-pass histogram fold must fit one mbarrier transaction count");
   using smem_layout_t                  = smem_block_tile_layout<key_t, policy.chunk_bytes, policy.load_align_bytes>;
   static constexpr int max_chunk_items = smem_layout_t::max_chunk_items;
@@ -1414,7 +1429,8 @@ private:
   {
     constexpr auto num_hist_bytes = static_cast<::cuda::std::uint32_t>(num_buckets * int{sizeof(offset_t)});
     const ::cuda::std::uint32_t num_fold_bytes = (layout.num_logical_cluster_blocks - 1u) * num_hist_bytes;
-    _CCCL_ASSERT(layout.num_logical_cluster_blocks <= static_cast<unsigned>(policy.max_cluster_blocks())
+    _CCCL_ASSERT(layout.num_logical_cluster_blocks <= static_cast<unsigned>(
+                   effective_max_cluster_blocks(policy.bits_per_pass, policy.max_blocks_per_cluster))
                    && num_fold_bytes <= static_cast<::cuda::std::uint32_t>(mbarrier_max_tx_count),
                  "the histogram fold exceeds the mbarrier tx-count range (cluster wider than the dispatch allows)");
     if (is_block_leader)

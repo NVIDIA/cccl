@@ -46,8 +46,8 @@
 //     (not integral), a per-segment sequence (not a single value), and a single deferred device-resident value (a
 //     single value, but not host-known, so caught by a separate check) are each rejected
 //   * tuning (variant 25): a `tune` override whose explicit `max_blocks_per_cluster` is wider than the leader's
-//     per-pass histogram fold can track (`cluster_topk_policy::max_cluster_blocks()`: 33 CTAs at 13 bits per pass,
-//     where only 32 fit) is rejected by the cluster agent instead of being narrowed silently
+//     per-pass histogram fold can track (`batched_topk_cluster::effective_max_cluster_blocks`: 33 CTAs at 13 bits per
+//     pass, where only 32 fit) is rejected by the cluster agent instead of being narrowed silently
 //
 // Rejecting range/container arguments (span, variants 11/12/15/16) is a deliberate narrowing of CUB's API surface,
 // not a framework limitation -- the argument-annotation framework accepts ranges by design. No CUB device API takes a
@@ -193,7 +193,7 @@ int main()
   auto env = cuda::std::execution::env{};
 #elif TEST_ERR == 25
   auto env = cuda::std::execution::env{requirements, ex::tune(too_wide_cluster_selector{})};
-  // expected-error-25 {{"max_blocks_per_cluster must not exceed max_cluster_blocks\(\)"}}
+  // expected-error-25 {{"max_blocks_per_cluster is too wide for bits_per_pass"}}
 #else
   auto env = cuda::std::execution::env{requirements};
 #endif
