@@ -12,7 +12,7 @@
 #include "common.cuh"
 
 template <typename T, typename OffsetT>
-static void fixed_size_segmented_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+void fixed_size_segmented_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
 #if !TUNE_BASE
   using policy_t = policy_selector_t<TUNE_THREADS, TUNE_ITEMS, TUNE_MAX_SEGMENTS_PER_BLOCK>;
