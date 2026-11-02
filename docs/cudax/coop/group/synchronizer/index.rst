@@ -34,8 +34,6 @@ Where:
 #. Runs the synchronization. It doesn't require the units to be contextually aligned.
 #. Runs the synchronization. The caller guarantees that all of the units are contextually aligned (execute the exact same statement in the code).
 
-.. note:: Calling either synchronization operation when the mapping result is invalid (``.is_valid() == false``) is undefined behavior. For an optional participant, check ``cuda::gpu_thread.is_part_of(group)`` before synchronizing.
-
 Group Synchronizer Instantiation Process
 ----------------------------------------
 

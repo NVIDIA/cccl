@@ -128,8 +128,7 @@ The requirements on groups are formally specified by the ``cuda::experimental::c
     { t.sync_aligned() } noexcept -> cuda::std::same_as<void>;          // (6)
 
     // Properties.
-    { T::is_always_exhaustive() } noexcept -> cuda::std::same_as<bool>; // (7), must be constexpr
-    { T::is_always_contiguous() } noexcept -> cuda::std::same_as<bool>; // (8), must be constexpr
+    { T::is_always_contiguous() } noexcept -> cuda::std::same_as<bool>; // (7), must be constexpr
   };
 
   } // namespace cuda::experimental::coop
@@ -142,7 +141,6 @@ Where:
 #. Returns a ``const hierarchy_type&`` to the hierarchy stored by the group.
 #. Synchronizes all units that are part of the group.
 #. Same as ``sync()``, but all of the units are contextually aligned (execute the same statement).
-#. A property known at compile time that specifies whether all units are always part of a group.
 #. A property known at compile time that specifies whether each group occupies a contiguous range of physical units, numbered in ascending physical order from zero.
 
 
@@ -247,7 +245,8 @@ CCCL Cooperative Groups can be constructed 2 ways -- using their constructor or 
 
   template <template <typename...> typename GroupTempl, typename... Args>
   [[nodiscard]] __device__
-  auto make_group(Args&&... args) noexcept
+  auto make_group(Args&&... args)
+    noexcept(/*is-nothrow-constructible-from-args*/)
     -> /*GroupTempl-instantiated-with-args*/;                                                   // (1)
 
   template <template <typename...> typename GroupTempl, typename... Args>
