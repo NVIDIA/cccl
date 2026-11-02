@@ -162,32 +162,32 @@ C2H_CCCLRT_TEST("cuda::buffer release, acquire and byte conversion", "[container
       const auto alignment   = buf.alignment();
 
       auto released = cuda::std::move(buf).release();
-      CCCLRT_CHECK(released.ptr == allocation);
-      CCCLRT_CHECK(released.capacity == 6);
-      CCCLRT_CHECK(released.size == 6);
-      CCCLRT_CHECK(released.alignment == alignment);
-      CCCLRT_CHECK(released.stream == cuda::stream_ref{stream});
-      CCCLRT_CHECK(buf.empty());
-      CCCLRT_CHECK(buf.data() == nullptr);
-      CCCLRT_CHECK(log.live.size() == 1);
+      CHECK(released.ptr == allocation);
+      CHECK(released.capacity == 6);
+      CHECK(released.size == 6);
+      CHECK(released.alignment == alignment);
+      CHECK(released.stream == cuda::stream_ref{stream});
+      CHECK(buf.empty());
+      CHECK(buf.data() == nullptr);
+      CHECK(log.live.size() == 1);
 
       Buffer acquired =
         Buffer::acquire(released.stream, cuda::std::move(released.mr), released.ptr, released.size, released.alignment);
-      CCCLRT_CHECK(acquired.data() == allocation);
-      CCCLRT_CHECK(acquired.alignment() == alignment);
-      CCCLRT_CHECK(acquired.stream() == cuda::stream_ref{stream});
-      CCCLRT_CHECK(equal_range(acquired));
+      CHECK(acquired.data() == allocation);
+      CHECK(acquired.alignment() == alignment);
+      CHECK(acquired.stream() == cuda::stream_ref{stream});
+      CHECK(equal_range(acquired));
     }
 
     SECTION("release of an empty buffer")
     {
       Buffer buf{stream, resource, 0, cuda::no_init};
       auto released = cuda::std::move(buf).release();
-      CCCLRT_CHECK(released.ptr == nullptr);
-      CCCLRT_CHECK(released.size == 0);
+      CHECK(released.ptr == nullptr);
+      CHECK(released.size == 0);
 
       Buffer acquired = Buffer::acquire(released.stream, cuda::std::move(released.mr), released.ptr, released.size);
-      CCCLRT_CHECK(acquired.empty());
+      CHECK(acquired.empty());
     }
 
     SECTION("acquire rejects invalid allocations")
@@ -211,18 +211,18 @@ C2H_CCCLRT_TEST("cuda::buffer release, acquire and byte conversion", "[container
 
         auto bytes = cuda::std::move(buf).template as_bytes<Byte>();
         static_assert(cuda::std::is_same_v<typename decltype(bytes)::value_type, Byte>);
-        CCCLRT_CHECK(static_cast<const void*>(bytes.data()) == allocation);
-        CCCLRT_CHECK(bytes.size() == 6 * sizeof(T));
-        CCCLRT_CHECK(bytes.alignment() == alignment);
-        CCCLRT_CHECK(bytes.stream() == cuda::stream_ref{stream});
-        CCCLRT_CHECK(buf.empty());
+        CHECK(static_cast<const void*>(bytes.data()) == allocation);
+        CHECK(bytes.size() == 6 * sizeof(T));
+        CHECK(bytes.alignment() == alignment);
+        CHECK(bytes.stream() == cuda::stream_ref{stream});
+        CHECK(buf.empty());
 
         Buffer typed = cuda::std::move(bytes).template as_type<T>();
-        CCCLRT_CHECK(static_cast<const void*>(typed.data()) == allocation);
-        CCCLRT_CHECK(typed.size() == 6);
-        CCCLRT_CHECK(typed.alignment() == alignment);
-        CCCLRT_CHECK(bytes.empty());
-        CCCLRT_CHECK(equal_range(typed));
+        CHECK(static_cast<const void*>(typed.data()) == allocation);
+        CHECK(typed.size() == 6);
+        CHECK(typed.alignment() == alignment);
+        CHECK(bytes.empty());
+        CHECK(equal_range(typed));
       };
       check(cuda::std::type_identity<cuda::std::byte>{});
       check(cuda::std::type_identity<std::byte>{});
@@ -234,8 +234,8 @@ C2H_CCCLRT_TEST("cuda::buffer release, acquire and byte conversion", "[container
     {
       Buffer buf{stream, resource, 0, cuda::no_init};
       auto bytes = cuda::std::move(buf).template as_bytes<cuda::std::byte>();
-      CCCLRT_CHECK(bytes.empty());
-      CCCLRT_CHECK(bytes.data() == nullptr);
+      CHECK(bytes.empty());
+      CHECK(bytes.data() == nullptr);
     }
 
     SECTION("as_type rejects incompatible size or alignment and leaves the buffer unchanged")
@@ -247,23 +247,23 @@ C2H_CCCLRT_TEST("cuda::buffer release, acquire and byte conversion", "[container
         ByteBuffer bytes{stream, resource, 5, cuda::no_init, env};
         const auto* allocation = bytes.data();
         CHECK_THROWS_AS((void) cuda::std::move(bytes).template as_type<Int4>(), std::invalid_argument);
-        CCCLRT_CHECK(bytes.data() == allocation);
-        CCCLRT_CHECK(bytes.size() == 5);
+        CHECK(bytes.data() == allocation);
+        CHECK(bytes.size() == 5);
       }
 
       { // alignment is less than alignof(U)
         ByteBuffer bytes{stream, resource, 8, cuda::no_init};
-        CCCLRT_CHECK(bytes.alignment() < alignof(Int4));
+        CHECK(bytes.alignment() < alignof(Int4));
         const auto* allocation = bytes.data();
         CHECK_THROWS_AS((void) cuda::std::move(bytes).template as_type<Int4>(), std::invalid_argument);
-        CCCLRT_CHECK(bytes.data() == allocation);
-        CCCLRT_CHECK(bytes.size() == 8);
+        CHECK(bytes.data() == allocation);
+        CHECK(bytes.size() == 8);
       }
     }
   }
   stream.sync();
-  CCCLRT_CHECK(log.live.empty());
-  CCCLRT_CHECK(log.mismatched_deallocations == 0);
+  CHECK(log.live.empty());
+  CHECK(log.mismatched_deallocations == 0);
 }
 
 C2H_CCCLRT_TEST("cuda::__resizable_buffer disallows release and byte conversion", "[container][buffer]")
