@@ -118,12 +118,12 @@ template <template <typename> class Implementation, typename PolicySelector>
 struct sort_kernel_t
 {
   using policy_selector = PolicySelector;
-  template <typename ComputeCapabilityGetter>
-  using implementation_t = Implementation<policy_getter<PolicySelector, ComputeCapabilityGetter{}().get()>>;
-  template <typename ComputeCapabilityGetter>
-  using expansion_t = typename implementation_t<ComputeCapabilityGetter>::expansion;
-  template <typename ComputeCapabilityGetter>
-  using capacities_t = typename expansion_t<ComputeCapabilityGetter>::capacities;
+  template <typename PolicyGetter>
+  using implementation_t = Implementation<PolicyGetter>;
+  template <typename PolicyGetter>
+  using expansion_t = typename implementation_t<PolicyGetter>::expansion;
+  template <typename PolicyGetter>
+  using capacities_t = typename expansion_t<PolicyGetter>::capacities;
 };
 
 // Compose an ordered kernel list; resolve capacities for host setup or device compilation.
@@ -135,16 +135,17 @@ struct sort_kernel_list_t
   using kernels_t = ::cuda::std::tuple<Kernels...>;
   template <::cuda::std::size_t KernelIndex>
   using kernel_t = ::cuda::std::tuple_element_t<KernelIndex, kernels_t>;
-  template <typename ComputeCapabilityGetter>
-  using capacities_t =
-    typename concatenate_capacities<typename Kernels::template capacities_t<ComputeCapabilityGetter>...>::type;
+  template <template <typename, int> class PolicyGetter, int CC>
+  using capacities_t = typename concatenate_capacities<
+    typename Kernels::template capacities_t<PolicyGetter<typename Kernels::policy_selector, CC>>...>::type;
 
   // First global bin index for the selected kernel; local bin indices start at zero.
-  template <typename ComputeCapabilityGetter>
+  template <int CC>
   _CCCL_HOST_DEVICE_API static constexpr int kernel_bin_begin_idx(int kernel_idx)
   {
-    constexpr int kernel_bin_counts[] = {Kernels::template capacities_t<ComputeCapabilityGetter>::size...};
-    int first_bin_idx                 = 0;
+    constexpr int kernel_bin_counts[] = {
+      Kernels::template capacities_t<policy_getter<typename Kernels::policy_selector, CC>>::size...};
+    int first_bin_idx = 0;
     for (int i = 0; i < kernel_idx; ++i)
     {
       first_bin_idx += kernel_bin_counts[i];
@@ -157,17 +158,8 @@ struct sort_kernel_list_t
 template <typename Capacities>
 struct fixed_capacity_selector_t
 {
-  template <typename>
+  template <template <typename, int> class, int>
   using capacities_t = Capacities;
-};
-
-// Query the architecture being compiled without carrying it in a kernel template argument.
-struct device_compute_capability_getter_t
-{
-  _CCCL_DEVICE_API constexpr auto operator()() const
-  {
-    return current_tuning_cc();
-  }
 };
 
 // Non-owning views into temporary storage; all bins share one segment-ID queue.

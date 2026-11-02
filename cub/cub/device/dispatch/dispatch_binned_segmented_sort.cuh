@@ -42,7 +42,7 @@ using group_merge_sort_kernels_t =
 // every operation queued on the stream has completed, as with other CUB algorithms.
 // Empty ranges are skipped; singletons use the same sorting path as other ranges.
 template <typename CapacitySelector,
-          typename ComputeCapabilityGetter,
+          int CC,
           typename BeginIterator,
           typename EndIterator,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
@@ -56,7 +56,7 @@ _CCCL_HOST_API cudaError_t dispatch_partition(
   cudaStream_t stream                    = 0,
   KernelLauncherFactory launcher_factory = {})
 {
-  using capacities_t       = typename CapacitySelector::template capacities_t<ComputeCapabilityGetter>;
+  using capacities_t       = typename CapacitySelector::template capacities_t<policy_getter, CC>;
   constexpr int total_bins = capacities_t::size + 1;
   // One allocation holds counts, offsets (with an end sentinel), and cursors; the other holds IDs.
   const size_t sizes[] = {sizeof(unsigned) * (3 * total_bins + 1), sizeof(unsigned) * size_t{num_segments}};
@@ -119,12 +119,7 @@ _CCCL_HOST_API cudaError_t dispatch_partition(
 }
 
 // Configure shared scratch, validate occupancy, and launch one sorting kernel with a policy-sized grid.
-template <typename Kernel,
-          typename ComputeCapabilityGetter,
-          typename Key,
-          typename BeginIterator,
-          typename EndIterator,
-          typename KernelLauncherFactory>
+template <typename Kernel, int CC, typename Key, typename BeginIterator, typename EndIterator, typename KernelLauncherFactory>
 _CCCL_HOST_API cudaError_t launch_sort_kernel(
   partition_result bins,
   BeginIterator begins,
@@ -135,8 +130,9 @@ _CCCL_HOST_API cudaError_t launch_sort_kernel(
   cudaStream_t stream,
   KernelLauncherFactory launcher_factory)
 {
-  constexpr auto kernel               = sort_kernel<Kernel, Key, BeginIterator, EndIterator>;
-  using implementation_t              = typename Kernel::template implementation_t<ComputeCapabilityGetter>;
+  constexpr auto kernel = sort_kernel<Kernel, Key, BeginIterator, EndIterator>;
+  using implementation_t =
+    typename Kernel::template implementation_t<policy_getter<typename Kernel::policy_selector, CC>>;
   constexpr auto tuning               = implementation_t::policy;
   constexpr size_t dynamic_smem_bytes = implementation_t::template scratch_bytes<Key>();
   // Explicit opt-in is required by the larger merge kernels. Infeasible tunings fail.
@@ -173,7 +169,7 @@ _CCCL_HOST_API cudaError_t launch_sort_kernel(
 // Launch each kernel in order, shifting its offset view while retaining the shared ID queue.
 // The index sequence enumerates kernel types at compile time.
 template <typename Kernels,
-          typename ComputeCapabilityGetter,
+          int CC,
           typename Key,
           typename BeginIterator,
           typename EndIterator,
@@ -196,9 +192,8 @@ _CCCL_HOST_API cudaError_t launch_sort_kernel_list(
   }
   cudaError_t error = cudaSuccess;
   ((error = error == cudaSuccess
-            ? launch_sort_kernel<typename Kernels::template kernel_t<KernelIndices>, ComputeCapabilityGetter>(
-                {bins.bin_offsets + Kernels::template kernel_bin_begin_idx<ComputeCapabilityGetter>(KernelIndices),
-                 bins.segment_ids},
+            ? launch_sort_kernel<typename Kernels::template kernel_t<KernelIndices>, CC>(
+                {bins.bin_offsets + Kernels::template kernel_bin_begin_idx<CC>(KernelIndices), bins.segment_ids},
                 begins,
                 ends,
                 in,
@@ -237,15 +232,15 @@ _CCCL_HOST_API cudaError_t dispatch(
     return error;
   }
   return dispatch_compute_cap(group_merge_tuning_arch_selector{}, cc, [&](auto arch) -> cudaError_t {
-    using compute_capability_getter_t = decltype(arch);
-    if constexpr (compute_capability_getter_t{}() < ::cuda::compute_capability{9, 0})
+    constexpr auto selected_cc = decltype(arch){}();
+    if constexpr (selected_cc < ::cuda::compute_capability{9, 0})
     {
       return cudaErrorNotSupported;
     }
     else
     {
       using kernels_t = group_merge_sort_kernels_t<Key>;
-      if (const auto error = dispatch_partition<kernels_t, compute_capability_getter_t>(
+      if (const auto error = dispatch_partition<kernels_t, selected_cc.get()>(
             temp_storage, temp_storage_bytes, begins, ends, num_segments, result, stream, launcher_factory))
       {
         return error;
@@ -254,7 +249,7 @@ _CCCL_HOST_API cudaError_t dispatch(
       {
         return cudaSuccess;
       }
-      return launch_sort_kernel_list<kernels_t, compute_capability_getter_t>(
+      return launch_sort_kernel_list<kernels_t, selected_cc.get()>(
         result, begins, ends, in, out, stream, launcher_factory, ::cuda::std::make_index_sequence<kernels_t::size>{});
     }
   });
