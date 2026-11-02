@@ -87,7 +87,7 @@ template <typename T, cuda::std::size_t Extent>
   REQUIRE(device_items.size() == 1);
 
   using value_t = cuda::std::remove_cv_t<T>;
-  alignas(value_t) cuda::std::byte storage[sizeof(value_t)];
+  alignas(value_t) unsigned char storage[sizeof(value_t)];
   auto host_items = cuda::std::span<value_t>{reinterpret_cast<value_t*>(storage), 1};
 
   c2h::copy_to_host(stream, device_items, host_items);
@@ -121,7 +121,8 @@ struct device_buffer_equals_matcher : Catch::Matchers::MatcherGenericBase
     c2h::copy_to_host(stream, actual, actual_host);
 
     comparison_result = detail::compare_host_ranges(actual_host, expected);
-    return comparison_result.actual_size == comparison_result.expected_size && comparison_result.total_mismatches == 0;
+    return (comparison_result.actual_size == comparison_result.expected_size)
+        && (comparison_result.total_mismatches == 0);
   }
 
 protected:
