@@ -16,8 +16,8 @@
 #include <c2h/catch2_test_helper.h>
 #include <c2h/device_and_stream.h>
 
-namespace capacity                = cub::detail::segmented_sort_capacity;
-using compute_capability_getter_t = cub::detail::policy_getter<capacity::group_merge_tuning_arch_selector, 90>;
+namespace capacity                     = cub::detail::segmented_sort_capacity;
+using sm90_compute_capability_getter_t = cub::detail::policy_getter<capacity::group_merge_tuning_arch_selector, 90>;
 
 // Irregular capacities exercise bin selection independently of rectangular tuning.
 struct irregular_expansion
@@ -53,7 +53,8 @@ CUB_TEST("Capacity partition accepts arbitrary bounds without sort tuning", "[se
   capacity::partition_result result;
   size_t bytes   = 0;
   const auto run = [&](void* storage, unsigned count) {
-    return capacity::dispatch_partition<capacity::fixed_capacity_selector_t<capacities>, compute_capability_getter_t>(
+    return capacity::dispatch_partition<capacity::fixed_capacity_selector_t<capacities>,
+                                        sm90_compute_capability_getter_t>(
       storage, bytes, thrust::raw_pointer_cast(d_begins.data()), thrust::raw_pointer_cast(d_ends.data()), count, result);
   };
   REQUIRE(run(nullptr, static_cast<unsigned>(begins.size())) == cudaSuccess);
@@ -88,12 +89,13 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
          CUB_SMALL,
          c2h::type_list<int, double>)
 {
-  using key_type       = c2h::get<0, TestType>;
-  using kernels_t      = capacity::group_merge_sort_kernels_t<key_type>;
-  using capacities     = typename kernels_t::template capacities_t<compute_capability_getter_t>;
-  using warp_expansion = typename kernels_t::template kernel_t<0>::template expansion_t<compute_capability_getter_t>;
-  const int bin_idx    = warp_expansion::capacities::first_fit(37);
-  const auto config    = capacity::lookup_bin_config<warp_expansion>(bin_idx);
+  using key_type   = c2h::get<0, TestType>;
+  using kernels_t  = capacity::group_merge_sort_kernels_t<key_type>;
+  using capacities = typename kernels_t::template capacities_t<sm90_compute_capability_getter_t>;
+  using warp_expansion =
+    typename kernels_t::template kernel_t<0>::template expansion_t<sm90_compute_capability_getter_t>;
+  const int bin_idx = warp_expansion::capacities::first_fit(37);
+  const auto config = capacity::lookup_bin_config<warp_expansion>(bin_idx);
   REQUIRE(config.threads_per_segment == 4);
   REQUIRE(config.items_per_thread == 10);
   std::vector<int> lengths{0, 1};
@@ -106,7 +108,8 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   }
   // A partially filled final group, many work iterations, and absent bins.
   lengths.insert(lengths.end(), 4097, warp_expansion::capacities::bounds.back());
-  using small_capacities = typename kernels_t::template kernel_t<1>::template capacities_t<compute_capability_getter_t>;
+  using small_capacities =
+    typename kernels_t::template kernel_t<1>::template capacities_t<sm90_compute_capability_getter_t>;
   lengths.insert(lengths.end(), 1000, small_capacities::bounds.back());
   lengths.insert(lengths.end(), 7, capacities::bounds.back() - 1);
   c2h::host_vector<long long> begins, ends;
@@ -179,8 +182,8 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   const auto retry_kernel = [&](auto index) {
     constexpr int i           = decltype(index)::value;
     using kernel_t            = typename kernels_t::template kernel_t<i>;
-    using kernel_capacities_t = typename kernel_t::template capacities_t<compute_capability_getter_t>;
-    constexpr int first_bin   = kernels_t::template kernel_bin_begin_idx<compute_capability_getter_t>(i);
+    using kernel_capacities_t = typename kernel_t::template capacities_t<sm90_compute_capability_getter_t>;
+    constexpr int first_bin   = kernels_t::template kernel_bin_begin_idx<sm90_compute_capability_getter_t>(i);
     constexpr int lower_bound = first_bin ? capacities::bounds[static_cast<size_t>(first_bin - 1)] : 0;
     auto retry                = expected;
     for (size_t segment = 0; segment < lengths.size(); ++segment)
@@ -192,7 +195,7 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
     }
     d_out = retry;
     REQUIRE(
-      capacity::launch_sort_kernel<kernel_t, compute_capability_getter_t>(
+      capacity::launch_sort_kernel<kernel_t, sm90_compute_capability_getter_t>(
         {result.bin_offsets + first_bin, result.segment_ids},
         thrust::raw_pointer_cast(d_begins.data()),
         thrust::raw_pointer_cast(d_ends.data()),
