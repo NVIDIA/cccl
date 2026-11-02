@@ -28,7 +28,8 @@ template <typename CapacitySelector, bool Scatter, typename BeginIterator, typen
 __launch_bounds__(256) _CCCL_KERNEL_ATTRIBUTES void partition_kernel(
   BeginIterator begins, EndIterator ends, unsigned num_segments, unsigned* counts_or_cursors, unsigned* ids)
 {
-  using capacities_t            = typename CapacitySelector::template capacities_t<device_compute_capability_getter_t>;
+  using capacities_t =
+    typename CapacitySelector::template capacities_t<device_policy_getter, current_tuning_cc().get()>;
   constexpr unsigned total_bins = capacities_t::size + 1;
   __shared__ unsigned bin_counts_shared[total_bins];
   [[maybe_unused]] __shared__ unsigned bin_starts_shared[total_bins];
@@ -72,8 +73,9 @@ __launch_bounds__(256) _CCCL_KERNEL_ATTRIBUTES void partition_kernel(
 template <typename CapacitySelector>
 _CCCL_KERNEL_ATTRIBUTES void segment_prefix_kernel(const unsigned* counts, unsigned* offsets, unsigned* cursors)
 {
-  using capacities_t = typename CapacitySelector::template capacities_t<device_compute_capability_getter_t>;
-  unsigned prefix    = 0;
+  using capacities_t =
+    typename CapacitySelector::template capacities_t<device_policy_getter, current_tuning_cc().get()>;
+  unsigned prefix = 0;
   for (int bin_idx = 0; bin_idx <= capacities_t::size; ++bin_idx)
   {
     offsets[bin_idx] = cursors[bin_idx] = prefix;
@@ -90,10 +92,11 @@ __launch_bounds__(current_policy<typename Kernel::policy_selector>().block_threa
   _CCCL_KERNEL_ATTRIBUTES void sort_kernel(
     partition_result partition, BeginIterator begins, EndIterator ends, const Key* in, Key* out)
 {
-  using implementation_t        = typename Kernel::template implementation_t<device_compute_capability_getter_t>;
-  using capacities_t            = typename implementation_t::expansion::capacities;
-  constexpr auto tuning         = current_policy<typename Kernel::policy_selector>();
-  constexpr int num_kernel_bins = capacities_t::size;
+  using implementation_t = typename Kernel::template implementation_t<
+    device_policy_getter<typename Kernel::policy_selector, current_tuning_cc().get()>>;
+  using capacities_t                    = typename implementation_t::expansion::capacities;
+  constexpr auto tuning                 = current_policy<typename Kernel::policy_selector>();
+  constexpr int num_kernel_bins         = capacities_t::size;
   constexpr unsigned threads_per_worker = implementation_t::threads_per_worker;
   constexpr unsigned workers_per_block  = tuning.block_threads / threads_per_worker;
   if (static_cast<unsigned long long>(blockIdx.x) * workers_per_block

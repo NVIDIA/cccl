@@ -1241,9 +1241,8 @@ void call_cub_segmented_sort_api(
       SKIP("CCCL_SKIP_TEST: The internal LRB backend requires a compiled SM90-or-newer target.");
     }
     using kernels_t = cub::detail::segmented_sort_capacity::group_merge_sort_kernels_t<unwrap_value_t<KeyT>>;
-    using compute_capability_getter_t =
-      cub::detail::policy_getter<cub::detail::segmented_sort_capacity::group_merge_tuning_arch_selector, 90>;
-    using capacities_t = typename kernels_t::template capacities_t<compute_capability_getter_t>;
+    using capacities_t =
+      typename kernels_t::template capacities_t<cub::detail::policy_getter, cuda::compute_capability{9, 0}.get()>;
     c2h::host_vector<int> begins(num_segments), ends(num_segments);
     if (num_segments)
     {
