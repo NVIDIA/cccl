@@ -9,7 +9,6 @@ struct stream_registry_factory_t;
 #include <cub/device/device_segmented_sort.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
 
 #include <cuda/__execution/tune.h>
@@ -502,7 +501,6 @@ CUB_TEST("DeviceSegmentedSort::StableSortKeysDescending DoubleBuffer uses enviro
   REQUIRE(result == expected);
 }
 
-// The keys-only two-phase overloads, with their launch wrappers and sort order
 struct sort_keys_api
 {
   using launch_t                   = sort_keys_two_phase_t;
@@ -554,15 +552,12 @@ struct stable_sort_keys_descending_api
 using two_phase_apis =
   c2h::type_list<sort_keys_api, sort_keys_descending_api, stable_sort_keys_api, stable_sort_keys_descending_api>;
 
-// Expected result of sorting the keys {8, 6, 7, 5, 3, 0, 9} in the segments [0, 3) and [3, 7) with Api
 template <class Api>
 [[nodiscard]] c2h::device_vector<int> expected_two_segments()
 {
   return Api::descending ? c2h::device_vector<int>{8, 7, 6, 9, 5, 3, 0} : c2h::device_vector<int>{6, 7, 8, 0, 3, 5, 9};
 }
 
-// Calls the two-phase overload of Api with args and env: queries the temporary storage size, executes with the
-// allocated storage, and checks that all kernels are launched on the stream of env.
 template <class Api, class EnvT, class... Args>
 void run_two_phase(const EnvT& env, Args&&... args)
 {
@@ -577,18 +572,9 @@ void run_two_phase(const EnvT& env, Args&&... args)
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 }
 
-// Copies the current buffer of a DoubleBuffer back after sorting
-[[nodiscard]] c2h::device_vector<int> current_keys(cub::DoubleBuffer<int> d_keys, int num_items)
-{
-  const auto current = thrust::device_pointer_cast(d_keys.Current());
-  return c2h::device_vector<int>(current, current + num_items);
-}
-
 #if TEST_LAUNCH == 0
 
-// The launch wrappers copy their arguments, which neither the non-copyable stream types of test_with_custom_streams nor
-// a DoubleBuffer, whose selector is updated by the algorithm, allow. So the two-phase overloads are called directly
-// with custom streams. Test them with host launch only.
+// The launch wrappers copy their arguments, which non-copyable streams and DoubleBuffer do not allow
 template <class Api>
 void test_two_phase_with_custom_streams()
 {
@@ -620,7 +606,8 @@ void test_two_phase_with_custom_streams()
       cub::DoubleBuffer<int> d_keys(
         thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
       run_two_phase<Api>(env, d_keys, num_items, 2, d_offsets, d_offsets + 1);
-      REQUIRE(current_keys(d_keys, num_items) == expected);
+      auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
+      REQUIRE(keys == expected);
     });
   }
 }
@@ -635,9 +622,7 @@ CUB_TEST("DeviceSegmentedSort keys two-phase overloads work with custom streams"
 
 #endif // TEST_LAUNCH == 0
 
-// Before the environment parameter, the two-phase overloads took `cudaStream_t stream = nullptr`, so callers passing
-// nullptr, a literal 0 or a default constructed cudaStream_t for the stream exist. All must keep compiling and keep
-// running on the default stream.
+// The two-phase overloads used to take `cudaStream_t stream = nullptr`
 template <class Api, class StreamT>
 void check_legacy_null_stream(StreamT stream)
 {
@@ -669,7 +654,8 @@ void check_legacy_null_stream(StreamT stream)
     cub::DoubleBuffer<int> d_keys(
       thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
     run_two_phase<Api>(stream, d_keys, num_items, 2, d_offsets, d_offsets + 1);
-    REQUIRE(current_keys(d_keys, num_items) == expected);
+    auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
+    REQUIRE(keys == expected);
   }
 #endif // TEST_LAUNCH == 0
 }
@@ -862,7 +848,8 @@ CUB_TEST("DeviceSegmentedSort keys two-phase overloads can be tuned",
     cub::DoubleBuffer<int> d_keys(
       thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
     run_two_phase<api_t>(env, d_keys, 7, 1, d_begin_offsets, end_offsets);
-    REQUIRE(current_keys(d_keys, 7) == expected);
+    auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
+    REQUIRE(keys == expected);
   }
 
   REQUIRE(d_block_size[0] == target_block_size);
