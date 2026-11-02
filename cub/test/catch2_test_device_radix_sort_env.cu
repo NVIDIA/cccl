@@ -3219,18 +3219,8 @@ CUB_TEST_CASE("Device radix sort can be tuned with user provided memory", "[radi
 
 #if TEST_LAUNCH != 1
 
-// Records the block size of the kernels that invoke the decomposer. The radix sort has no user-provided operator that
-// could be used to observe the block size otherwise.
-struct block_size_extracting_decomposer_t
-{
-  unsigned int* d_block_size;
-
-  _CCCL_API auto operator()(custom_key_t& k) const -> ::cuda::std::tuple<int&>
-  {
-    NV_IF_TARGET(NV_IS_DEVICE, (atomicMax(d_block_size, blockDim.x);))
-    return {k.key};
-  }
-};
+// the radix sort has no user-provided operator that could be used to observe the block size, except for a decomposer
+using block_size_extracting_decomposer_t = block_size_extracting_op<keys_decomposer_t>;
 
 template <int BlockThreads>
 struct block_size_policy_transformer

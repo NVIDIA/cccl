@@ -16,6 +16,7 @@ struct stream_registry_factory_t;
 
 #include <sstream>
 
+#include "block_size_extracting_helpers.h"
 #include "catch2_test_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceAdjacentDifference::SubtractLeftCopy,
@@ -161,17 +162,7 @@ CUB_TEST("Device adjacent difference subtract right uses environment", "[adjacen
 
 #if TEST_LAUNCH != 1
 
-struct block_size_extracting_minus_t
-{
-  unsigned int* d_block_size;
-
-  __device__ int operator()(int lhs, int rhs) const
-  {
-    // not every thread calls into this operator, so update the block size from all threads
-    atomicMax(d_block_size, blockDim.x);
-    return lhs - rhs;
-  }
-};
+using block_size_extracting_minus_t = block_size_extracting_op<cuda::std::minus<>>;
 
 template <int ThreadsPerBlock>
 struct adj_diff_tuning

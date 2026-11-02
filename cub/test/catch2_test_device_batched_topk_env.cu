@@ -11,7 +11,6 @@ struct stream_registry_factory_t;
 
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
-#include <thrust/sort.h>
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>
@@ -22,6 +21,7 @@ struct stream_registry_factory_t;
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/functional>
 
+#include "block_size_extracting_helpers.h"
 #include "catch2_test_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceBatchedTopK::MaxKeys, device_batched_topk_max_keys);
@@ -48,43 +48,18 @@ struct batched_topk_tuning_transformer
   }
 };
 
-// records the block size of the kernel reading the keys
-struct block_size_recording_identity
-{
-  unsigned int* d_block_size;
-
-  _CCCL_DEVICE_API int operator()(int key) const
-  {
-    atomicMax(d_block_size, blockDim.x);
-    return key;
-  }
-};
-
-struct block_size_recording_segment_iterator
-{
-  unsigned int* d_block_size;
-
-  _CCCL_HOST_DEVICE_API auto operator()(int* segment) const
-  {
-    return cuda::make_transform_iterator(segment, block_size_recording_identity{d_block_size});
-  }
-};
-
 template <typename EnvT>
 unsigned int batched_topk_block_size(
-  thrust::device_vector<int>& keys_in,
-  thrust::device_vector<int>& keys_out,
-  thrust::device_vector<unsigned int>& d_block_size,
-  EnvT env)
+  thrust::device_vector<int>& keys_out, thrust::device_vector<unsigned int>& d_block_size, EnvT env)
 {
   constexpr int num_segments = 2;
   constexpr int segment_size = 8;
   constexpr int k            = 3;
 
   d_block_size[0] = 0;
-  auto d_keys_in  = cuda::make_transform_iterator(
-    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_in.data())), segment_size),
-    block_size_recording_segment_iterator{thrust::raw_pointer_cast(d_block_size.data())});
+  // all segments read the same keys, which record the block size of the kernel reading them
+  auto d_keys_in = cuda::make_constant_iterator(
+    block_size_extracting_constant_iterator{42, thrust::raw_pointer_cast(d_block_size.data())});
   auto d_keys_out =
     cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_out.data())), k);
 
@@ -103,7 +78,6 @@ CUB_TEST("cub::DeviceBatchedTopK::MaxKeys tuning can be modified", "[batched_top
   constexpr int k                          = 3;
   constexpr unsigned int target_block_size = 64;
 
-  auto keys_in      = thrust::device_vector<int>{5, -3, 1, 7, 8, 2, 4, 6, /**/ 0, 9, 3, 2, 1, 8, 7, 4};
   auto keys_out     = thrust::device_vector<int>(2 * k, thrust::no_init);
   auto d_block_size = thrust::device_vector<unsigned int>(1, 0);
 
@@ -112,28 +86,20 @@ CUB_TEST("cub::DeviceBatchedTopK::MaxKeys tuning can be modified", "[batched_top
     cuda::execution::tie_break::unspecified,
     cuda::execution::output_ordering::unsorted);
 
-  const auto check_result = [&] {
-    thrust::sort(keys_out.begin(), keys_out.begin() + k, cuda::std::greater<int>{});
-    thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k, cuda::std::greater<int>{});
-    REQUIRE(keys_out == thrust::device_vector<int>{8, 7, 6, /* segment 0 */ 9, 8, 7 /* segment 1 */});
-  };
-
   {
     // CUB's default tuning must not use the block size we are going to request
     const unsigned int default_block_size =
-      batched_topk_block_size(keys_in, keys_out, d_block_size, cuda::std::execution::env{requirements});
-    check_result();
+      batched_topk_block_size(keys_out, d_block_size, cuda::std::execution::env{requirements});
     REQUIRE(default_block_size != 0);
     REQUIRE(default_block_size != target_block_size);
   }
 
   REQUIRE(batched_topk_block_size(
-            keys_in,
             keys_out,
             d_block_size,
             cuda::std::execution::env{requirements, cuda::execution::tune(batched_topk_tuning_transformer{})})
           == target_block_size);
-  check_result();
+  REQUIRE(keys_out == thrust::device_vector<int>(2 * k, 42));
 }
 
 #endif // TEST_LAUNCH != 1
