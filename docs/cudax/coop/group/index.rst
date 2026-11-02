@@ -20,16 +20,16 @@ CCCL Cooperative Groups are available through the ``<cuda/experimental/coop/grou
 Introduction
 ------------
 
-This section describes the fundamental ideas and features of CCCL Cooperative Groups and how they compare to CTK's Cooperative Groups.
+This section describes the fundamental ideas and features of CCCL Cooperative Groups and how they compare to the original cooperative groups (``<cooperative_groups.h>``).
 
 Concerning Groups
 ^^^^^^^^^^^^^^^^^
 
 Let's start with a quick introduction to groups regarding the CUDA programming model. A group could be simply defined as a collection of threads that must be able to synchronize, so they cooperate on solving algorithmic problems. However, such a generic group isn't too suitable for the CUDA programming model, because the definition doesn't allow an efficient implementation of synchronization in hardware.
 
-CTK's Cooperative Groups solve this issue by adding an upper boundary within which the threads are grouped to the definition. It means that you can't simply group arbitrary threads, but you can only group threads within a given CUDA hierarchy level. This information is used by the implementation to select the right synchronization mechanism for a given group.
+The original cooperative groups solve this issue by adding an upper boundary within which the threads are grouped to the definition. It means that you can't simply group arbitrary threads, but you can only group threads within a given CUDA hierarchy level. This information is used by the implementation to select the right synchronization mechanism for a given group.
 
-Even though this design solves the synchronization efficiency issue, the design could be improved even further. When writing a collective algorithm, often you can do an operation more efficiently when you know how the threads are actually grouped within the upper boundary. For example, when you have a group of threads within a block and you know that the threads always form a full warp, you could use this information to implement the algorithm more efficiently. However, CTK's Cooperative Groups don't store this information inside the group.
+Even though this design solves the synchronization efficiency issue, the design could be improved even further. When writing a collective algorithm, often you can do an operation more efficiently when you know how the threads are actually grouped within the upper boundary. For example, when you have a group of threads within a block and you know that the threads always form a full warp, you could use this information to implement the algorithm more efficiently. However, the original cooperative groups don't store this information inside the group.
 
 CCCL Cooperative Groups address this problem by changing the group definition again. In this new design, a group is a collection of units within an upper boundary that can synchronize, where the unit can be any CUDA hierarchy level below or the same as the upper boundary. This means that when writing a cooperative algorithm, you know what the biggest building block of the group is and can optimize the algorithm accordingly.
 
@@ -44,7 +44,7 @@ CCCL Cooperative Groups address this problem by changing the group definition ag
 Hierarchy-Aware Groups
 ^^^^^^^^^^^^^^^^^^^^^^
 
-One of the limitations of CTK's Cooperative Groups is that they lack static information about the hierarchy of the launched kernel. For instance, with CTK's Cooperative Groups, the computation of a 1D thread rank within a block is always done as:
+One of the limitations of the original cooperative groups is that they lack static information about the hierarchy of the launched kernel. For instance, with the original cooperative groups, the computation of a 1D thread rank within a block is always done as:
 
 .. code:: cuda
 
@@ -67,20 +67,20 @@ Having statically known information about the launched hierarchy has another gre
 Group Queries
 ^^^^^^^^^^^^^
 
-CTK's Cooperative Groups provide ``cg_group.thread_rank()`` and ``cg_group.num_threads()`` methods to query the thread rank/count in a group. CCCL Cooperative Groups could do the same thing; however, these queries would be good enough only for groups with a thread-level unit type. When the unit type of a group is, for example, warp-level, we'd like to query the warp rank/count of the current warp within the group.
+The original cooperative groups provide ``cg_group.thread_rank()`` and ``cg_group.num_threads()`` methods to query the thread rank/count in a group. CCCL Cooperative Groups could do the same thing; however, these queries would be good enough only for groups with a thread-level unit type. When the unit type of a group is, for example, warp-level, we'd like to query the warp rank/count of the current warp within the group.
 
 For this reason, CCCL Cooperative Groups implement group queries in a similar fashion to hierarchy queries that allow querying information about any level below the group's unit type. We call them *sub-unit* queries. Similarly, a group might be queried for its rank/count within the parent group or a hierarchy level, when the group is an implicit group. These are called *super-level* queries.
 
 .. figure:: images/group-queries.svg
    :width: 100%
-   :alt: Comparison of available queries for a group of 3 warps within a block of 128 threads between CTK's Cooperative Groups and CCCL Cooperative Groups. CTK's Cooperative Groups allow only thread rank query, while CCCL Cooperative Groups allow both thread and warp rank queries.
+   :alt: Comparison of available queries for a group of 3 warps within a block of 128 threads between the original cooperative groups and CCCL Cooperative Groups. The original cooperative groups allow only thread rank query, while CCCL Cooperative Groups allow both thread and warp rank queries.
 
 Separation of Partition and Synchronization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 When creating a group, it is necessary to define *how the units are grouped* and *how the units are synchronized*.
 
-CTK's Cooperative Groups fuse these 2 properties together, providing free functions that partition the group and select a suitable synchronization mechanism for the group.
+The original cooperative groups fuse these 2 properties together, providing free functions that partition the group and select a suitable synchronization mechanism for the group.
 
 CCCL Cooperative Groups instead try to give the user control over both properties by separating them. This is implemented by a family of types that implement a well-defined interface. The information about *how the units are grouped* is passed by :ref:`cudax-coop-group-mapping` and *how the units are synchronized* is passed by :ref:`cudax-coop-group-synchronizer`. The design can be likened to ``std::mdspan``'s layout mappings and accessors.
 
@@ -267,6 +267,6 @@ The overload (1) is equivalent to  ``GroupTempl{args...}``.
 
 The overload (2) takes the ``cuda::experimental::coop::non_exhaustive`` tag as the first argument, which makes allows the group mapping to be non-exhaustive. This means that some of the units may not be assigned to a group, getting an empty ``cuda::std::optional``.
 
-The overload (3) takes a CTK's Cooperative Groups group and converts it to a CCCL Cooperative Groups equivalent group.
+The overload (3) takes an original cooperative groups group and converts it to a CCCL Cooperative Groups equivalent group.
 
 .. note:: The group returned by ``cuda::experimental::coop::make_cg_equivalent_group(...)`` doesn't take ownership of the resources owned by ``cg_group``, so ``cg_group`` should outlive the returned group.
