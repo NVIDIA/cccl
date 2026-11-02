@@ -323,6 +323,9 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -356,11 +359,14 @@ public:
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the i-th segment is considered empty.
   //!   @endrst
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  template <typename KeyT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -370,19 +376,14 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return sort_keys<SortOrder::Ascending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      num_items,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
+        return sort_keys<SortOrder::Ascending>(
+          storage, bytes, d_keys_in, d_keys_out, num_items, num_segments, d_begin_offsets, d_end_offsets, stream, tuning);
+      });
   }
 
   //! @rst
@@ -568,6 +569,9 @@ public:
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -601,11 +605,14 @@ public:
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the ``i``-th segment is considered empty.
   //!   @endrst
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  template <typename KeyT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -615,19 +622,14 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return sort_keys<SortOrder::Descending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      num_items,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
+        return sort_keys<SortOrder::Descending>(
+          storage, bytes, d_keys_in, d_keys_out, num_items, num_segments, d_begin_offsets, d_end_offsets, stream, tuning);
+      });
   }
 
   //! @rst
@@ -825,6 +827,9 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -857,11 +862,14 @@ public:
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the ``i``-th segment is considered empty.
   //!   @endrst
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  template <typename KeyT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -870,11 +878,14 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return sort_keys<SortOrder::Ascending>(
-      d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
+        return sort_keys<SortOrder::Ascending>(
+          storage, bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream, true, tuning);
+      });
   }
 
   //! @rst
@@ -1079,6 +1090,9 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -1111,11 +1125,14 @@ public:
   //!   If ``d_end_offsets[i] - 1<= d_begin_offsets[i]``, the ``i``-th segment is considered empty.
   //!   @endrst
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  template <typename KeyT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1124,11 +1141,14 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return sort_keys<SortOrder::Descending>(
-      d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
+        return sort_keys<SortOrder::Descending>(
+          storage, bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream, true, tuning);
+      });
   }
 
   //! @rst
@@ -1323,6 +1343,9 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -1356,11 +1379,14 @@ public:
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the ``i``-th segment is considered empty.
   //!   @endrst
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  template <typename KeyT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1370,19 +1396,14 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return sort_keys<SortOrder::Ascending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      num_items,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
+        return sort_keys<SortOrder::Ascending>(
+          storage, bytes, d_keys_in, d_keys_out, num_items, num_segments, d_begin_offsets, d_end_offsets, stream, tuning);
+      });
   }
 
   //! @rst
@@ -1570,6 +1591,9 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -1605,11 +1629,14 @@ public:
   //!   considered empty.
   //!   @endrst
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  template <typename KeyT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeysDescending(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1619,19 +1646,14 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return sort_keys<SortOrder::Descending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      num_items,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
+        return sort_keys<SortOrder::Descending>(
+          storage, bytes, d_keys_in, d_keys_out, num_items, num_segments, d_begin_offsets, d_end_offsets, stream, tuning);
+      });
   }
 
   //! @rst
@@ -1833,6 +1855,9 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -1866,11 +1891,14 @@ public:
   //!   considered empty.
   //!   @endrst
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  template <typename KeyT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1879,11 +1907,14 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return sort_keys<SortOrder::Ascending>(
-      d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
+        return sort_keys<SortOrder::Ascending>(
+          storage, bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream, true, tuning);
+      });
   }
 
   //! @rst
@@ -2090,6 +2121,9 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2123,11 +2157,14 @@ public:
   //!   ``i``-th segment is considered empty.
   //!   @endrst
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  template <typename KeyT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeysDescending(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -2136,11 +2173,14 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return sort_keys<SortOrder::Descending>(
-      d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
+        return sort_keys<SortOrder::Descending>(
+          storage, bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream, true, tuning);
+      });
   }
 
   //! @rst
