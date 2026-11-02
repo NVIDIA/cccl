@@ -117,6 +117,13 @@ public:
     return __i_;
   }
 
+  // Returns a copy of this iterator pointing to __x. Lets CCCL rebase contiguous iterators onto other storage, since
+  // the constructor from iterator_type is private.
+  [[nodiscard]] _CCCL_API constexpr __wrap_iter __rebase(iterator_type __x) const noexcept
+  {
+    return __wrap_iter(__x);
+  }
+
 private:
   _CCCL_API constexpr __wrap_iter(iterator_type __x) noexcept
       : __i_(__x)
