@@ -43,7 +43,6 @@ and algorithm against NumPy, and against a single-call CUB executable
 | `check_warp_reduce.py` | correctness check vs NumPy and the CUB checker |
 | `audit_sass.py` | SASS, register and memory comparison against the C++ binaries |
 | `launch_overhead.py`, `cpp/launch_overhead.cu` | host launch cost per call |
-| `compare.py` | Python/C++ ratio table from repeated nvbench JSON runs |
 | `cpp/check_warp_reduce.cu` | single-call CUB checker |
 
 `Algorithm=sum` is `coop.sum(coop.this_warp(), x)`, which lowers to
@@ -69,7 +68,13 @@ cmake --preset cub-benchmark -DCMAKE_CUDA_ARCHITECTURES=120 -DCPM_nvbench_SOURCE
 ninja -C build/cub-benchmark cub.bench.reduce.warp_reduce_sum.base cub.bench.reduce.warp_reduce_sum_method.base
 build/cub-benchmark/bin/cub.bench.reduce.warp_reduce_sum_method.base -a UnrollFactor=128 --json cpp-sum.json
 build/cub-benchmark/bin/cub.bench.reduce.warp_reduce_sum.base --json cpp-reduce.json
-python compare.py --python python.json --cpp-sum cpp-sum.json --cpp-reduce cpp-reduce.json
+```
+
+Compare the JSON results with nvbench's comparison script, installed with
+`cuda-bench[compare]`. It pairs rows by benchmark name and axis values:
+
+```bash
+nvbench-compare-robust cpp-sum.json python.json
 ```
 
 ## Limitations
