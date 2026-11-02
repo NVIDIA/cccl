@@ -389,7 +389,10 @@ pass any type supported by ``cuda::get_stream`` as the wrapper's trailing argume
 
     cub_reduce_sum(d_in, d_out, n, stream);
 
-Host and graph launches pass that stream to the wrapped API.
+Host launches pass the supplied stream to the wrapped API. Graph launches capture on the supplied
+non-default stream, or on a temporary stream when the default stream is requested, then execute
+the graph on the requested stream.
+
 A device-side launch synchronizes it as a dependency boundary and invokes the wrapped API
 with its default stream because device code cannot consume a host stream handle.
 
