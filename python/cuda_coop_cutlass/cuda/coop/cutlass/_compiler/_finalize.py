@@ -96,6 +96,14 @@ def _trace_finalize_hook(dsl, module, function_name):
     arch = _target.resolve_nvrtc_arch(
         ROOT_SCOPE, lambda: _target.configured_gpu_arch(lambda: dsl)
     )
+    operators = _rendering.bundle_device_operators(requests)
+    for operator in operators:
+        if operator.arch != arch:
+            raise DSLRuntimeError(
+                f"{ROOT_SCOPE} device operator targets {operator.arch}, "
+                f"but this kernel targets {arch}; compile the operator "
+                "for the kernel's architecture."
+            )
     headers = tuple(_rendering.registered_bundle_headers().values())
     probes = _rendering.bundle_scratch_layout_probes(requests)
     if probes:
@@ -118,6 +126,8 @@ def _trace_finalize_hook(dsl, module, function_name):
     _storage.materialize_deferred_temp_storage_plans(plans)
     _lifetime.erase_temp_storage_lifetime_markers(session)
     _bundle.append_link_library_attr(module, path)
+    for operator in operators:
+        _bundle.append_link_library_attr(module, operator._materialize())
 
 
 _state.register_bundle_finalizer(_trace_finalize_hook)

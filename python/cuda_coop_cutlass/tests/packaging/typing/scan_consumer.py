@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import operator
+from collections.abc import Callable
 from typing import Any
 
 import numpy as np
@@ -19,6 +20,26 @@ from cutlass import (
 from typing_extensions import assert_type
 
 import cuda.coop.cutlass as coop
+
+
+def check_compiled_operator(
+    function: Callable[[Uint32, Uint32], Uint32], scalar: Uint32
+) -> None:
+    """Accept prepared callbacks with the required exclusive initial value."""
+    compiled = coop.compile_operator(function, Uint32, arch="sm_80")
+    assert_type(compiled, coop.DeviceOperator)
+    block = coop.this_block()
+    assert_type(coop.inclusive_scan(block, scalar, scan_op=compiled), Uint32)
+    assert_type(
+        coop.exclusive_scan(block, scalar, scan_op=compiled, initial_value=0),
+        Uint32,
+    )
+    assert_type(
+        coop.scan(
+            coop.this_warp(), scalar, scan_op=compiled, initial_value=Uint32(0)
+        ),
+        Uint32,
+    )
 
 
 def check_cutlass_scan_surface(scalar: Uint32) -> None:
