@@ -13,10 +13,9 @@
 
 // UNSUPPORTED: libcpp-has-no-threads
 
-// <cuda/ptx>
+// <cuda/ptxs/cp_reduce_async_bulk.h>
 
-#include <cuda/ptx>
-#include <cuda/std/utility>
+#include <cuda/ptxs/cp_reduce_async_bulk.h>
 
 #include "generated/cp_reduce_async_bulk.h"
 

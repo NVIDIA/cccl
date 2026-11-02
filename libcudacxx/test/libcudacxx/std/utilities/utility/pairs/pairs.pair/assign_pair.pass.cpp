@@ -20,6 +20,9 @@
 #include "test_macros.h"
 
 TEST_DIAG_SUPPRESS_MSVC(4244) // 'initializing': conversion from '_Tp' to '_T2', possible loss of data
+#if TEST_COMPILER(GCC, >=, 16)
+TEST_DIAG_SUPPRESS_GCC("-Wsfinae-incomplete") // defining X, which previously failed to be complete in a SFINAE context
+#endif // TEST_COMPILER(GCC, >=, 16)
 
 struct CountAssign
 {

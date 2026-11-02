@@ -105,7 +105,7 @@ struct GroupsKernel
     const cudax::coop::generic_group half_warp{
       cuda::gpu_thread,
       cudax::coop::this_warp{config},
-      cudax::coop::group_by{cuda::std::integral_constant<cuda::std::size_t, 16>{}},
+      cudax::coop::group_by{cuda::std::cw<16>},
       cudax::coop::lane_synchronizer{}};
 
     // This offset allows each group to have its own unique area in the scratch

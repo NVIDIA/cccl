@@ -20,15 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/copy_cvref.h>
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_enum.h>
-#include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/nat.h>
-#include <cuda/std/__type_traits/remove_cv.h>
-#include <cuda/std/__type_traits/type_list.h>
-
-#include <cuda/std/__cccl/prologue.h>
+#include <cuda/std/__type_traits/copy_cvref.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/integral_constant.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_enum.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_integral.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/remove_cv.h> // IWYU pragma: keep
 
 #if _CCCL_CHECK_BUILTIN(make_signed)
 #  define _CCCL_BUILTIN_MAKE_SIGNED(...) __make_signed(__VA_ARGS__)
@@ -43,6 +39,12 @@
 #if _CCCL_COMPILER(NVRTC, <, 13, 3)
 #  undef _CCCL_BUILTIN_MAKE_SIGNED
 #endif // _CCCL_COMPILER(NVRTC, <, 13, 3)
+
+#if !defined(_CCCL_BUILTIN_MAKE_SIGNED)
+#  include <cuda/std/__type_traits/type_list.h>
+#endif // !_CCCL_BUILTIN_MAKE_SIGNED
+
+#include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 

@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__complex/arg.h>
 #include <cuda/std/__complex/complex.h>
 #include <cuda/std/__complex/exponential_functions.h>
 #include <cuda/std/__complex/hyperbolic_functions.h>
@@ -31,6 +32,7 @@
 #include <cuda/std/__complex/roots.h>
 #include <cuda/std/__complex/trigonometric_functions.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__simd/abi.h>
 #include <cuda/std/__simd/basic_vec.h>
 #include <cuda/std/__simd/exposition.h>
 #include <cuda/std/__simd/type_traits.h>

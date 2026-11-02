@@ -2,17 +2,10 @@
 #include <thrust/execution_policy.h>
 #include <thrust/sequence.h>
 
+#include <cuda/functional>
+
 #include "thrust/iterator/transform_iterator.h"
 #include <unittest/unittest.h>
-
-template <typename T>
-struct is_even
-{
-  _CCCL_HOST_DEVICE bool operator()(T x)
-  {
-    return (static_cast<unsigned int>(x) & 1) == 0;
-  }
-};
 
 template <typename T>
 struct mod_3
@@ -68,10 +61,10 @@ void TestCopyIfDevice(ExecutionPolicy exec)
     thrust::host_vector<int> h_result(n);
     thrust::device_vector<int> d_result(n);
 
-    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), is_even<int>());
+    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), cuda::__is_even{});
 
     copy_if_kernel<<<1, 1>>>(
-      exec, d_data.begin(), d_data.end(), d_result.begin(), is_even<int>(), d_new_end_vec.begin());
+      exec, d_data.begin(), d_data.end(), d_result.begin(), cuda::__is_even{}, d_new_end_vec.begin());
     cudaError_t const err = cudaDeviceSynchronize();
     REQUIRE(cudaSuccess == err);
 
@@ -128,16 +121,17 @@ void test_copy_if_cuda_streams(ExecutionPolicy policy)
   Vector result(data.size());
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
-  const Vector::iterator end = thrust::copy_if(policy.on(s), data.begin(), data.end(), result.begin(), is_even<int>());
+  const Vector::iterator end =
+    thrust::copy_if(policy.on(s), data.begin(), data.end(), result.begin(), cuda::__is_even{});
 
   REQUIRE(end - result.begin() == 2);
   result.resize(end - result.begin());
   const Vector ref{2, 2};
   REQUIRE(result == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestCopyIfCudaStreamsSync", "[copy_if]")
@@ -191,10 +185,10 @@ void TestCopyIfStencilDevice(ExecutionPolicy exec)
     thrust::host_vector<int> h_result(n);
     thrust::device_vector<int> d_result(n);
 
-    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), is_even<int>());
+    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), cuda::__is_even{});
 
     copy_if_kernel<<<1, 1>>>(
-      exec, d_data.begin(), d_data.end(), d_result.begin(), is_even<int>(), d_new_end_vec.begin());
+      exec, d_data.begin(), d_data.end(), d_result.begin(), cuda::__is_even{}, d_new_end_vec.begin());
     cudaError_t const err = cudaDeviceSynchronize();
     REQUIRE(cudaSuccess == err);
 
@@ -255,7 +249,7 @@ void test_copy_if_stencil_cuda_streams(ExecutionPolicy policy)
   Vector stencil{0, 1, 0, 0, 1};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   const Vector::iterator end =
     thrust::copy_if(policy.on(s), data.begin(), data.end(), stencil.begin(), result.begin(), ::cuda::std::identity{});
@@ -266,7 +260,7 @@ void test_copy_if_stencil_cuda_streams(ExecutionPolicy policy)
   const Vector ref{2, 2};
   REQUIRE(result == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestCopyIfStencilCudaStreamsSync", "[copy_if]")

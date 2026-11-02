@@ -24,6 +24,7 @@
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::If, select_if);
 
@@ -432,10 +433,9 @@ try
   const bool all_results_correct = thrust::equal(out.cbegin(), out.cend(), expected_out_it);
   REQUIRE(all_results_correct == true);
 }
-catch (std::bad_alloc&)
+catch (...)
 {
-  // Exceeding memory is not a failure.
-  SUCCEED("exceeding memory is not a failure");
+  c2h::skip_if_allocation_failure();
 }
 
 CUB_TEST("DeviceSelect::If works for very large number of output items",
@@ -482,10 +482,9 @@ try
   const bool all_results_correct = thrust::equal(out.cbegin(), out.cend(), in);
   REQUIRE(all_results_correct == true);
 }
-catch (std::bad_alloc&)
+catch (...)
 {
-  // Exceeding memory is not a failure.
-  SUCCEED("exceeding memory is not a failure");
+  c2h::skip_if_allocation_failure();
 }
 
 CUB_TEST("DeviceSelect::If works with iterators", "[device][select_if]", CUB_SMALL)

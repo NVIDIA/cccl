@@ -16,12 +16,15 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_merge_sort.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_namespace.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::merge_sort
@@ -47,6 +50,14 @@ struct AgentBlockSort
   static constexpr int BLOCK_THREADS      = policy.threads_per_block;
   static constexpr int ITEMS_PER_THREAD   = policy.items_per_thread;
   static constexpr int ITEMS_PER_TILE     = BLOCK_THREADS * ITEMS_PER_THREAD;
+
+  // BlockMergeSort requires and produces the items in a blocked arrangement
+  static_assert(policy.load_algorithm != BLOCK_LOAD_STRIPED,
+                "MergeSortPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since the block sort requires a "
+                "blocked arrangement");
+  static_assert(policy.store_algorithm != BLOCK_STORE_STRIPED,
+                "MergeSortPolicy: store_algorithm must not be BLOCK_STORE_STRIPED, since the block sort produces a "
+                "blocked arrangement");
 
   using BlockMergeSortT = BlockMergeSort<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, ValueT, 1, 1, policy.unroll>;
 
@@ -384,6 +395,11 @@ struct AgentMerge
   static constexpr int BLOCK_THREADS      = policy.threads_per_block;
   static constexpr int ITEMS_PER_THREAD   = policy.items_per_thread;
   static constexpr int ITEMS_PER_TILE     = BLOCK_THREADS * ITEMS_PER_THREAD;
+
+  // The serial merge produces the items in a blocked arrangement
+  static_assert(policy.store_algorithm != BLOCK_STORE_STRIPED,
+                "MergeSortPolicy: store_algorithm must not be BLOCK_STORE_STRIPED, since the merge produces a blocked "
+                "arrangement");
 
   using KeysLoadPingIt  = try_make_cache_modified_iterator_t<policy.load_modifier, KeyIteratorT>;
   using ItemsLoadPingIt = try_make_cache_modified_iterator_t<policy.load_modifier, ValueIteratorT>;

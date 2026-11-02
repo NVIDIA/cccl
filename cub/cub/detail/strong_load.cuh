@@ -18,8 +18,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 
@@ -27,7 +26,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-static _CCCL_DEVICE _CCCL_FORCEINLINE uint4 load_relaxed(uint4 const* ptr)
+_CCCL_DEVICE _CCCL_FORCEINLINE uint4 load_relaxed(uint4 const* ptr)
 {
   uint4 retval;
   NV_IF_ELSE_TARGET(
@@ -43,7 +42,7 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE uint4 load_relaxed(uint4 const* ptr)
   return retval;
 }
 
-static _CCCL_DEVICE _CCCL_FORCEINLINE ulonglong2 load_relaxed(ulonglong2 const* ptr)
+_CCCL_DEVICE _CCCL_FORCEINLINE ulonglong2 load_relaxed(ulonglong2 const* ptr)
 {
   ulonglong2 retval;
   NV_IF_ELSE_TARGET(
@@ -53,7 +52,7 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE ulonglong2 load_relaxed(ulonglong2 const* 
   return retval;
 }
 
-static _CCCL_DEVICE _CCCL_FORCEINLINE ushort4 load_relaxed(ushort4 const* ptr)
+_CCCL_DEVICE _CCCL_FORCEINLINE ushort4 load_relaxed(ushort4 const* ptr)
 {
   ushort4 retval;
   NV_IF_ELSE_TARGET(
@@ -69,7 +68,7 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE ushort4 load_relaxed(ushort4 const* ptr)
   return retval;
 }
 
-static _CCCL_DEVICE _CCCL_FORCEINLINE uint2 load_relaxed(uint2 const* ptr)
+_CCCL_DEVICE _CCCL_FORCEINLINE uint2 load_relaxed(uint2 const* ptr)
 {
   uint2 retval;
   NV_IF_ELSE_TARGET(
@@ -79,7 +78,7 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE uint2 load_relaxed(uint2 const* ptr)
   return retval;
 }
 
-static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned long long load_relaxed(unsigned long long const* ptr)
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned long long load_relaxed(unsigned long long const* ptr)
 {
   unsigned long long retval;
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
@@ -88,7 +87,7 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned long long load_relaxed(unsigned l
   return retval;
 }
 
-static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int load_relaxed(unsigned int const* ptr)
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int load_relaxed(unsigned int const* ptr)
 {
   unsigned int retval;
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
@@ -98,7 +97,7 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int load_relaxed(unsigned int con
   return retval;
 }
 
-static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned short load_relaxed(unsigned short const* ptr)
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned short load_relaxed(unsigned short const* ptr)
 {
   unsigned short retval;
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
@@ -107,7 +106,7 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned short load_relaxed(unsigned short
   return retval;
 }
 
-static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned char load_relaxed(unsigned char const* ptr)
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned char load_relaxed(unsigned char const* ptr)
 {
   unsigned short retval;
   NV_IF_ELSE_TARGET(
@@ -125,7 +124,7 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned char load_relaxed(unsigned char c
   return (unsigned char) retval;
 }
 
-static _CCCL_DEVICE _CCCL_FORCEINLINE ulonglong2 load_acquire(ulonglong2 const* ptr)
+_CCCL_DEVICE _CCCL_FORCEINLINE ulonglong2 load_acquire(ulonglong2 const* ptr)
 {
   ulonglong2 retval;
   NV_IF_ELSE_TARGET(
@@ -138,7 +137,7 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE ulonglong2 load_acquire(ulonglong2 const* 
   return retval;
 }
 
-static _CCCL_DEVICE _CCCL_FORCEINLINE uint2 load_acquire(uint2 const* ptr)
+_CCCL_DEVICE _CCCL_FORCEINLINE uint2 load_acquire(uint2 const* ptr)
 {
   uint2 retval;
   NV_IF_ELSE_TARGET(
@@ -151,7 +150,7 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE uint2 load_acquire(uint2 const* ptr)
   return retval;
 }
 
-static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int load_acquire(unsigned int const* ptr)
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int load_acquire(unsigned int const* ptr)
 {
   unsigned int retval;
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,

@@ -21,10 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__atomic/types/base.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/is_const.h>
-#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__atomic/order.h>
+#include <cuda/std/__atomic/platform.h>
+#include <cuda/std/__atomic/types/base.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/remove_cv.h> // IWYU pragma: keep
 
 // API definitions for the base atomic implementation.
 // The consumer supplies _LIBCUDACXX_ATOMIC_MUTATING_CONSTRAINT() while expanding these macros.

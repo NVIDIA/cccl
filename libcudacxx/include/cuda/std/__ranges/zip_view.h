@@ -20,10 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__iterator/zip_common.h>
 #include <cuda/__iterator/zip_iterator.h>
 #include <cuda/std/__algorithm/ranges_min.h>
-#include <cuda/std/__algorithm/ranges_min_element.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__ranges/access.h>
@@ -34,15 +36,11 @@
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__tuple_dir/apply.h>
-#include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple.h>
-#include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/maybe_const.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
-#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>

@@ -31,8 +31,6 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
 #if _CCCL_CUDA_COMPILATION()
 #  include <cooperative_groups.h>
 
@@ -75,10 +73,10 @@ void run_reduce()
   const auto narrow_config = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<4>());
   const auto wide_config   = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<64>());
 
-  cuda::launch(stream, narrow_config, test_reduce_kernel<4, cudax::fp32mp2>, seed);
-  cuda::launch(stream, wide_config, test_reduce_kernel<32, cudax::fp32mp2>, seed);
-  cuda::launch(stream, narrow_config, test_reduce_kernel<4, cudax::fp64mp2>, seed);
-  cuda::launch(stream, wide_config, test_reduce_kernel<32, cudax::fp64mp2>, seed);
+  cuda::launch(stream, narrow_config, test_reduce_kernel<4, cuda::fp32mp2>, seed);
+  cuda::launch(stream, wide_config, test_reduce_kernel<32, cuda::fp32mp2>, seed);
+  cuda::launch(stream, narrow_config, test_reduce_kernel<4, cuda::fp64mp2>, seed);
+  cuda::launch(stream, wide_config, test_reduce_kernel<32, cuda::fp64mp2>, seed);
   stream.sync();
 }
 #endif // _CCCL_CUDA_COMPILATION()

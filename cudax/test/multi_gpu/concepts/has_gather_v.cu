@@ -12,7 +12,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/cstdint>
 
-#include <cuda/experimental/__multi_gpu/concepts.h>
+#include <cuda/experimental/mgmn/concepts>
 
 #include <testing.cuh>
 

@@ -20,9 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_reference.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__cstddef/types.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

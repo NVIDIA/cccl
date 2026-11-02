@@ -20,14 +20,16 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/counted_iterator.h>
 #include <cuda/std/__iterator/default_sentinel.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
-#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__ranges/subrange.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/span>

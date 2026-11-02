@@ -13,10 +13,9 @@
 
 // UNSUPPORTED: libcpp-has-no-threads
 
-// <cuda/ptx>
+// <cuda/ptxs/mbarrier_wait.h>
 
-#include <cuda/ptx>
-#include <cuda/std/utility>
+#include <cuda/ptxs/mbarrier_wait.h>
 
 #include "generated/mbarrier_test_wait.h"
 #include "generated/mbarrier_test_wait_parity.h"

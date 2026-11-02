@@ -80,7 +80,7 @@ jobs:
             pr_id=$(jq -r '.data.organization.repository.issueOrPullRequest.projectItems.edges[] |
                            select(.node.project.id == "${{ env.PROJECT_ID }}") |
                            .node.id' project_data.json)
-            echo "PR_ID=$pr_id" >> $GITHUB_ENV
+            echo "PR_ID=$pr_id" >> "$GITHUB_ENV"
         continue-on-error: true
 
       - name: Get Status, Start Sprint, and Working Sprint Fields from the PR
@@ -103,7 +103,7 @@ jobs:
                 }
               }' > status_field_data.json
             status_option_id=$(jq -r '.data.node.fieldValueByName.optionId' status_field_data.json)
-            echo "STATUS_OPTION_ID=$status_option_id" >> $GITHUB_ENV
+            echo "STATUS_OPTION_ID=$status_option_id" >> "$GITHUB_ENV"
 
             # Query the PR's start sprint from the project
             gh api graphql -f query='
@@ -120,7 +120,7 @@ jobs:
                 }
               }' > start_sprint_data.json
             start_sprint_iteration_id=$(jq -r '.data.node.fieldValueByName.iterationId' start_sprint_data.json)
-            echo "START_SPRINT_ITERATION_ID=$start_sprint_iteration_id" >> $GITHUB_ENV
+            echo "START_SPRINT_ITERATION_ID=$start_sprint_iteration_id" >> "$GITHUB_ENV"
 
             # Query the PR's working sprint from the project
             gh api graphql -f query='
@@ -137,7 +137,7 @@ jobs:
                 }
               }' > working_sprint_data.json
             working_sprint_iteration_id=$(jq -r '.data.node.fieldValueByName.iterationId' working_sprint_data.json)
-            echo "WORKING_SPRINT_ITERATION_ID=$working_sprint_iteration_id" >> $GITHUB_ENV
+            echo "WORKING_SPRINT_ITERATION_ID=$working_sprint_iteration_id" >> "$GITHUB_ENV"
 
         continue-on-error: true
 

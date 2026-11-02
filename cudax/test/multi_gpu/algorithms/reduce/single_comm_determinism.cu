@@ -19,7 +19,7 @@
 #include <cuda/std/functional>
 #include <cuda/std/type_traits>
 
-#include <cuda/experimental/__multi_gpu/algorithm/reduce/reduce.h>
+#include <cuda/experimental/mgmn/reduce>
 
 #include <numeric>
 #include <vector>

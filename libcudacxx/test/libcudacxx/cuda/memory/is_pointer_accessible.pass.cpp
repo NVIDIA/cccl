@@ -76,6 +76,19 @@ __global__ void free_kernel()
   cuda::std::free(kernel_malloced_buffer);
 }
 
+bool cuda_malloc_host_is_managed()
+{
+  void* ptr = nullptr;
+  assert(cudaMallocHost(&ptr, nbytes) == cudaSuccess);
+  assert(ptr != nullptr);
+
+  cudaPointerAttributes attributes{};
+  assert(cudaPointerGetAttributes(&attributes, ptr) == cudaSuccess);
+  assert(cudaFreeHost(ptr) == cudaSuccess);
+  assert(attributes.type == cudaMemoryTypeHost || attributes.type == cudaMemoryTypeManaged);
+  return attributes.type == cudaMemoryTypeManaged;
+}
+
 void test_basic()
 {
   cuda::device_ref dev{0};
@@ -85,6 +98,9 @@ void test_basic()
   cuda::stream stream{dev};
 
   cuda::__ensure_current_context{dev};
+
+  // Confidential Computing can emulate pinned host allocations with managed memory.
+  const bool pinned_is_managed = cuda_malloc_host_is_managed();
 
   // Test nullptr is not accessible from anywhere.
   {
@@ -161,8 +177,8 @@ void test_basic()
   {
     T* buffer;
     assert(cudaHostAlloc(&buffer, nbytes, cudaHostAllocDefault) == cudaSuccess);
-    test_accessible_pointer(buffer, true, always_ua, false, dev);
-    test_device_or_managed_memory(buffer, false);
+    test_accessible_pointer(buffer, true, always_ua, pinned_is_managed, dev);
+    test_device_or_managed_memory(buffer, pinned_is_managed);
     assert(cudaFreeHost(buffer) == cudaSuccess);
   }
 
@@ -170,8 +186,8 @@ void test_basic()
   {
     T* buffer;
     assert(cudaHostAlloc(&buffer, nbytes, cudaHostAllocPortable) == cudaSuccess);
-    test_accessible_pointer(buffer, true, always_ua, false, dev);
-    test_device_or_managed_memory(buffer, false);
+    test_accessible_pointer(buffer, true, always_ua, pinned_is_managed, dev);
+    test_device_or_managed_memory(buffer, pinned_is_managed);
     assert(cudaFreeHost(buffer) == cudaSuccess);
   }
 
@@ -179,8 +195,8 @@ void test_basic()
   {
     T* buffer;
     assert(cudaHostAlloc(&buffer, nbytes, cudaHostAllocMapped) == cudaSuccess);
-    test_accessible_pointer(buffer, true, true, false, dev);
-    test_device_or_managed_memory(buffer, false);
+    test_accessible_pointer(buffer, true, true, pinned_is_managed, dev);
+    test_device_or_managed_memory(buffer, pinned_is_managed);
     assert(cudaFreeHost(buffer) == cudaSuccess);
   }
 
@@ -188,8 +204,8 @@ void test_basic()
   {
     T* buffer;
     assert(cudaHostAlloc(&buffer, nbytes, cudaHostAllocPortable | cudaHostAllocMapped) == cudaSuccess);
-    test_accessible_pointer(buffer, true, true, false, dev);
-    test_device_or_managed_memory(buffer, false);
+    test_accessible_pointer(buffer, true, true, pinned_is_managed, dev);
+    test_device_or_managed_memory(buffer, pinned_is_managed);
     assert(cudaFreeHost(buffer) == cudaSuccess);
   }
 

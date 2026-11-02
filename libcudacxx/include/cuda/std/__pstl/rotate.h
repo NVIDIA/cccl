@@ -26,7 +26,6 @@
 #  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/rotate.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -34,7 +33,7 @@
 #  include <cuda/std/__utility/move.h>
 
 #  if _CCCL_HAS_BACKEND_CUDA()
-#    include <cuda/std/__pstl/cuda/rotate.h>
+#    include <cuda/std/__pstl/cuda/rotate.h> // IWYU pragma: keep
 #  endif // _CCCL_HAS_BACKEND_CUDA()
 
 #  include <cuda/std/__cccl/prologue.h>

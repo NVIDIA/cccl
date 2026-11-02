@@ -20,6 +20,9 @@
 #include <cub/util_arch.cuh>
 #include <cub/util_vsmem.cuh>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__type_traits/conditional.h>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::merge_sort

@@ -13,5 +13,5 @@
 #  pragma system_header
 #endif // no system header
 
-// this system inherits set_operations
+// omp system inherits set_operations
 #include <thrust/system/cpp/detail/set_operations.h>

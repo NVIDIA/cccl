@@ -21,8 +21,10 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/assignable.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/semiregular.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>

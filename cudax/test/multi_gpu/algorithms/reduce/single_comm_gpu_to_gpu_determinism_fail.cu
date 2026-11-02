@@ -13,8 +13,8 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/execution>
 
-#include <cuda/experimental/__multi_gpu/algorithm/reduce/reduce.h>
-#include <cuda/experimental/__multi_gpu/nccl_communicator_ref.h>
+#include <cuda/experimental/mgmn/nccl_communicators>
+#include <cuda/experimental/mgmn/reduce>
 
 int main()
 {

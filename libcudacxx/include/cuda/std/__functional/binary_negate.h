@@ -21,13 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__functional/binary_function.h>
+#if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS)
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__functional/binary_function.h>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-#if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS)
 
 template <class _Predicate>
 class _CCCL_TYPE_VISIBILITY_DEFAULT CCCL_DEPRECATED binary_negate
@@ -57,10 +57,10 @@ CCCL_DEPRECATED _CCCL_API constexpr binary_negate<_Predicate> not2(const _Predic
 }
 _CCCL_SUPPRESS_DEPRECATED_POP
 
-#endif // _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS)
-
 _CCCL_END_NAMESPACE_CUDA_STD
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS)
 
 #endif // _CUDA_STD___FUNCTIONAL_BINARY_NEGATE_H

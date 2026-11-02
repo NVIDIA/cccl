@@ -21,9 +21,9 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__fwd/array.h>
-#include <cuda/std/__fwd/complex.h>
-#include <cuda/std/__fwd/pair.h>
+#include <cuda/std/__fwd/array.h> // IWYU pragma: keep
+#include <cuda/std/__fwd/complex.h> // IWYU pragma: keep
+#include <cuda/std/__fwd/pair.h> // IWYU pragma: keep
 #include <cuda/std/__fwd/tuple.h>
 
 #include <cuda/std/__cccl/prologue.h>

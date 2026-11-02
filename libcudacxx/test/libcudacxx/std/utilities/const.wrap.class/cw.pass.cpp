@@ -42,8 +42,8 @@ TEST_FUNC constexpr bool test()
 {
   {
     // int constant
-    decltype(auto) cw_val = cuda::std::__cw<42>;
-    static_assert(cuda::std::same_as<const cuda::std::__constant_wrapper<42>, decltype(cw_val)>);
+    decltype(auto) cw_val = cuda::std::cw<42>;
+    static_assert(cuda::std::same_as<const cuda::std::constant_wrapper<42>, decltype(cw_val)>);
     static_assert(cw_val == 42);
   }
 
@@ -54,7 +54,7 @@ TEST_FUNC constexpr bool test()
 #  if !_CCCL_COMPILER(GCC, <, 13)
     // struct constant
     constexpr S s{13};
-    cuda::std::same_as<const cuda::std::__constant_wrapper<s>> decltype(auto) cw_val = cuda::std::__cw<s>;
+    cuda::std::same_as<const cuda::std::constant_wrapper<s>> decltype(auto) cw_val = cuda::std::cw<s>;
     static_assert(cw_val == s);
 #  endif // !_CCCL_COMPILER(GCC, <, 13)
   }
@@ -63,8 +63,8 @@ TEST_FUNC constexpr bool test()
   {
     // array constant
     // gcc complains that cw_val is unused
-    [[maybe_unused]] decltype(auto) cw_val = cuda::std::__cw<arr>;
-    static_assert(cuda::std::same_as<const cuda::std::__constant_wrapper<arr>, decltype(cw_val)>);
+    [[maybe_unused]] decltype(auto) cw_val = cuda::std::cw<arr>;
+    static_assert(cuda::std::same_as<const cuda::std::constant_wrapper<arr>, decltype(cw_val)>);
     static_assert(cw_val[0] == 1);
     static_assert(cw_val[1] == 2);
     static_assert(cw_val[2] == 3);

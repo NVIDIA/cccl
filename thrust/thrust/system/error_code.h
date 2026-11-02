@@ -17,11 +17,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/type_traits.h>
 #include <thrust/system/detail/errno.h>
 
 #include <cuda/std/__host_stdlib/istream>
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -37,13 +38,13 @@ class error_code;
 /*! A metafunction returning whether or not the parameter is an \p error_code enum.
  */
 template <typename T>
-struct is_error_code_enum : public thrust::detail::false_type
+struct is_error_code_enum : public ::cuda::std::false_type
 {};
 
 /*! A metafunction returning whether or not the parameter is an \p error_condition enum.
  */
 template <typename T>
-struct is_error_condition_enum : public thrust::detail::false_type
+struct is_error_condition_enum : public ::cuda::std::false_type
 {};
 
 // XXX N3092 prefers enum class errc { ... }
@@ -137,7 +138,7 @@ enum errc_t // NOLINT(cppcoreguidelines-use-enum-class)
 /*! Specialization of \p is_error_condition_enum for \p errc::errc_t
  */
 template <>
-struct is_error_condition_enum<errc::errc_t> : public thrust::detail::true_type
+struct is_error_condition_enum<errc::errc_t> : public ::cuda::std::true_type
 {};
 
 // [19.5.1.1] class error_category

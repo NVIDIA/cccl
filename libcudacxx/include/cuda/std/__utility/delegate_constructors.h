@@ -20,11 +20,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_constructible.h>
-#include <cuda/std/__type_traits/is_default_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
-#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h> // IWYU pragma: keep
+
+#if _CCCL_COMPILER(NVRTC, <, 12, 6)
+#  include <cuda/std/__type_traits/is_constructible.h>
+#  include <cuda/std/__type_traits/is_nothrow_constructible.h>
+#  include <cuda/std/__utility/forward.h>
+#endif // _CCCL_COMPILER(NVRTC, <, 12, 6)
 
 #include <cuda/std/__cccl/prologue.h>
 

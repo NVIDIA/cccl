@@ -12,7 +12,7 @@ die() {
 usage() {
   cat <<EOF
 Usage: $0 <base-path> <test-path> \
-  [--cub-filter "<regex>"] \
+  [--cpp-filter "<regex>"] \
   [--python-filter "<regex>"] \
   [--arch "<arch>"] \
   [--nvbench-args "<args>"] \
@@ -21,8 +21,9 @@ Usage: $0 <base-path> <test-path> \
 
 Compare benchmark performance between two checked-out CCCL trees.
 
-At least one --cub-filter or --python-filter must be provided.
-CUB filters are regex patterns matched against CUB benchmark Ninja target names.
+At least one --cpp-filter or --python-filter must be provided.
+C++ filters are regex patterns matched against CUB, Thrust, and libcu++ benchmark
+Ninja target names.
 Matching targets are built; only matching runnable binaries are launched.
 Python filters are regex patterns matched against benchmark script paths
 under python/cuda_cccl/benchmarks/ (e.g. compute/reduce/sum.py).
@@ -32,7 +33,7 @@ Arguments:
   <test-path>  Path to comparison CCCL source tree.
 
 Options:
-  --cub-filter <regex>      CUB benchmark regex filter (repeatable).
+  --cpp-filter <regex>      C++ benchmark regex filter (repeatable).
   --python-filter <regex>   Python benchmark regex filter (repeatable).
   --arch <arch>             CMAKE_CUDA_ARCHITECTURES for CUB builds.
   --nvbench-args <args>     Extra args passed to benchmark binaries/scripts.
@@ -144,7 +145,7 @@ configure_build_tree() {
   local -a cmake_cmd
   cmake_cmd=(
     cmake
-    --preset "cub-benchmark"
+    --preset "benchmark"
     -S "${src_path}"
     -B "${build_path}"
     "-DCCCL_NVBENCH_SHA=${nvbench_sha}"
@@ -521,7 +522,6 @@ run_python_compare_target() {
     compare_log="$(compare_log_path_for_display "${target_name}" "${display}")"
     compare_cmd=(
       "${compare_bin}"
-      --no-color
       "${NVBENCH_COMPARE_ARGS[@]}"
       --display
       "${display}"
@@ -545,7 +545,6 @@ run_python_compare_target() {
   if [[ -n "${legacy_compare_bin}" ]]; then
     compare_cmd=(
       "${legacy_compare_bin}"
-      --no-color
       "${NVBENCH_COMPARE_LEGACY_ARGS[@]}"
       "${base_json}"
       "${test_json}"
@@ -869,7 +868,6 @@ run_compare_target() {
     compare_cmd=(
       "${compare_python}"
       "${robust_compare_script}"
-      --no-color
       "${NVBENCH_COMPARE_ARGS[@]}"
       --display
       "${display}"
@@ -894,7 +892,6 @@ run_compare_target() {
     compare_cmd=(
       "${compare_python}"
       "${legacy_compare_script}"
-      --no-color
       "${NVBENCH_COMPARE_LEGACY_ARGS[@]}"
       "${base_json}"
       "${test_json}"
@@ -1045,7 +1042,7 @@ write_summary() {
     echo
 
     if [[ "${#FILTERS[@]}" -gt 0 ]]; then
-      echo "## CUB Filters"
+      echo "## C++ Filters"
       for filter in "${FILTERS[@]}"; do
         echo "- \`${filter}\`"
       done
@@ -1183,9 +1180,9 @@ parse_cli_args() {
         NVBENCH_COMPARE_LEGACY_ARGS_STRING="$2"
         shift 2
         ;;
-      --cub-filter)
+      --cpp-filter)
         if [[ "$#" -lt 2 ]]; then
-          die "Missing value for --cub-filter"
+          die "Missing value for --cpp-filter"
         fi
         FILTERS+=("$2")
         shift 2
@@ -1264,12 +1261,12 @@ echo "Base source: ${BASE_PATH}"
 echo "Test source: ${TEST_PATH}"
 if [[ "${#FILTERS[@]}" -gt 0 ]]; then
   echo "NVBench SHA/tag: ${nvbench_sha}"
-  echo "CUB filters:"
+  echo "C++ filters:"
   for filter in "${FILTERS[@]}"; do
     echo "  - ${filter}"
   done
 else
-  echo "CUB filters: (none)"
+  echo "C++ filters: (none)"
 fi
 if [[ "${#PYTHON_FILTERS[@]}" -gt 0 ]]; then
   echo "Python filters:"

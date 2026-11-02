@@ -29,15 +29,14 @@
 #include <cuda/std/__optional/bad_optional_access.h>
 #include <cuda/std/__optional/nullopt.h>
 #include <cuda/std/__optional/optional_base.h>
-#include <cuda/std/__type_traits/disjunction.h>
+#include <cuda/std/__type_traits/add_pointer.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_object.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
-#include <cuda/std/__type_traits/reference_converts_from_temporary.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/declval.h>

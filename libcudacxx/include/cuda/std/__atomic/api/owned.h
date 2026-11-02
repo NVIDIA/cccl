@@ -22,12 +22,14 @@
 #endif // no system header
 
 #include <cuda/std/__atomic/api/common.h>
-#include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__atomic/types.h>
-#include <cuda/std/__atomic/wait/notify_wait.h>
-#include <cuda/std/__atomic/wait/polling.h>
+#include <cuda/std/__atomic/wait/notify_wait.h> // IWYU pragma: keep
+#include <cuda/std/__atomic/wait/polling.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_pointer.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

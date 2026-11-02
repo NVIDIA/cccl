@@ -14,6 +14,8 @@
 
 #include <cuda/std/cstdint>
 
+#include <nv/target>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::warpspeed

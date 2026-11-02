@@ -195,11 +195,12 @@ offset the locality benefit the partitioning was meant to capture. Prefer
 whole-device coverage.
 
 The split method only affects the execution side: data places take no
-method, and places built with different methods for the same
-``(device, domain)`` are distinct places sharing the same (equal) affine
-data place. Backends without native locality-domain support (pre-13.4
-toolkits, the whole-device degrade, the fake-topology override) accept and
-ignore the method.
+method, and on a device with several domains, places built with different
+methods for the same ``(device, domain)`` are distinct places sharing the
+same (equal) affine data place. Single-domain devices and backends without
+native locality-domain support (pre-13.4 toolkits, the whole-device degrade,
+the fake-topology override) accept and ignore the method: the domain is the
+device.
 
 All three methods rest on the CUDA 13.4 driver surface that locality-domain
 places already require (splitting by locality domain with

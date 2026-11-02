@@ -41,7 +41,7 @@ jobs:
 
   build-rapids:
     name: Build RAPIDS
-    if: ${{ github.repository == 'NVIDIA/cccl' }}
+    if: ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) }}
     secrets: inherit
     permissions:
       actions: read
@@ -55,7 +55,7 @@ jobs:
 
   build-matx:
     name: Build MatX
-    if: ${{ github.repository == 'NVIDIA/cccl' }}
+    if: ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) }}
     secrets: inherit
     permissions:
       id-token: write
@@ -66,7 +66,7 @@ jobs:
 
   build-pytorch:
     name: Build PyTorch
-    if: ${{ github.repository == 'NVIDIA/cccl' }}
+    if: ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) }}
     secrets: inherit
     permissions:
       id-token: write
@@ -81,8 +81,9 @@ jobs:
       ${{
         always() &&
         !cancelled() &&
-        github.repository == 'NVIDIA/cccl' &&
-        github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+        contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) &&
+        github.ref_type == 'branch' &&
+        github.ref_name == github.event.repository.default_branch &&
         (
           needs.matrix-build.result == 'failure' ||
           needs.build-rapids.result == 'failure' ||
@@ -146,8 +147,9 @@ jobs:
       ${{
         always() &&
         !cancelled() &&
-        github.repository == 'NVIDIA/cccl' &&
-        github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+        contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) &&
+        github.ref_type == 'branch' &&
+        github.ref_name == github.event.repository.default_branch &&
         (
           needs.matrix-build.outputs.failure_message != '' ||
           needs.analyze-failures.outputs.slack_thread != ''
@@ -158,7 +160,7 @@ jobs:
       - matrix-build
     permissions:
       contents: read
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     timeout-minutes: 10
     steps:
       - name: Check out Slack publisher

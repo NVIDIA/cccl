@@ -21,6 +21,7 @@
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 #include <c2h/custom_type.h>
 #include <c2h/test_util_vec.h>
 
@@ -138,10 +139,9 @@ try
   std::transform(input_h.begin(), input_h.end(), reference_h.begin(), times_seven{});
   REQUIRE((reference_h == result));
 }
-catch (const std::bad_alloc&)
+catch (...)
 {
-  // allocation failure is not a test failure, so we can run tests on smaller GPUs
-  SUCCEED("allocation failure is not a test failure");
+  c2h::skip_if_allocation_failure();
 }
 
 template <int Alignment>
@@ -177,7 +177,7 @@ struct overaligned_addable_and_equal_comparable_policy
 template <int Alignment>
 using overaligned_t = c2h::custom_type_t<overaligned_addable_and_equal_comparable_policy<Alignment>::template type>;
 
-using huge_t = c2h::custom_type_t<c2h::equal_comparable_t, c2h::accumulateable_t, c2h::huge_data<666>::type>;
+using huge_t = c2h::custom_type_t<c2h::equal_comparable_t, c2h::accumulateable_t, c2h::huge_data<672>::type>;
 static_assert(alignof(huge_t) == 8, "Need a large type with alignment < 16");
 
 using uncommon_types = c2h::type_list<
@@ -970,8 +970,11 @@ CUB_TEST("DeviceTransform::Transform PDL overlap check", "[device][transform]", 
   // completely async work of filling, 2x transforming and 1x reduction. we also avoid using the launch wrapper, since
   // it would synchronize
   fill_pdl(thrust::raw_pointer_cast(data.data()), num_items, 42);
-  cub::DeviceTransform::Transform(cuda::std::make_tuple(data.begin()), data.begin(), num_items, cuda::std::negate{});
-  cub::DeviceTransform::Transform(cuda::std::make_tuple(data.begin()), flags.begin(), num_items, _1 == -42);
+  REQUIRE(cudaSuccess
+          == cub::DeviceTransform::Transform(
+            cuda::std::make_tuple(data.begin()), data.begin(), num_items, cuda::std::negate{}));
+  REQUIRE(cudaSuccess
+          == cub::DeviceTransform::Transform(cuda::std::make_tuple(data.begin()), flags.begin(), num_items, _1 == -42));
   thrust::reduce_into(
     thrust::cuda::par_nosync, flags.begin(), flags.end(), result.begin(), true, cuda::std::logical_and{});
   REQUIRE(result[0]); // access finally synchronize

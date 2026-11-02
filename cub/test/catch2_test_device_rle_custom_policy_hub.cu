@@ -55,27 +55,31 @@ CUB_TEST("DeviceRleDispatch::Dispatch: custom policy hub", "[device][run_length_
   using dispatch_t   = DeviceRleDispatch<input_t*, offset_t*, length_t*, offset_t*, equal_t, offset_t, policy_hub_t>;
 
   size_t temp_size = 0;
-  dispatch_t::Dispatch(
-    nullptr,
-    temp_size,
-    thrust::raw_pointer_cast(d_in.data()),
-    thrust::raw_pointer_cast(d_offsets.data()),
-    thrust::raw_pointer_cast(d_lengths.data()),
-    thrust::raw_pointer_cast(d_num_runs.data()),
-    equal_t{},
-    num_items,
-    /* stream */ nullptr);
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::Dispatch(
+      nullptr,
+      temp_size,
+      thrust::raw_pointer_cast(d_in.data()),
+      thrust::raw_pointer_cast(d_offsets.data()),
+      thrust::raw_pointer_cast(d_lengths.data()),
+      thrust::raw_pointer_cast(d_num_runs.data()),
+      equal_t{},
+      num_items,
+      /* stream */ nullptr));
   c2h::device_vector<unsigned char> temp_storage(temp_size, thrust::no_init);
-  dispatch_t::Dispatch(
-    thrust::raw_pointer_cast(temp_storage.data()),
-    temp_size,
-    thrust::raw_pointer_cast(d_in.data()),
-    thrust::raw_pointer_cast(d_offsets.data()),
-    thrust::raw_pointer_cast(d_lengths.data()),
-    thrust::raw_pointer_cast(d_num_runs.data()),
-    equal_t{},
-    num_items,
-    /* stream */ nullptr);
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::Dispatch(
+      thrust::raw_pointer_cast(temp_storage.data()),
+      temp_size,
+      thrust::raw_pointer_cast(d_in.data()),
+      thrust::raw_pointer_cast(d_offsets.data()),
+      thrust::raw_pointer_cast(d_lengths.data()),
+      thrust::raw_pointer_cast(d_num_runs.data()),
+      equal_t{},
+      num_items,
+      /* stream */ nullptr));
 
   const offset_t num_runs = d_num_runs[0];
   CHECK(num_runs == static_cast<offset_t>(expected_offsets.size()));

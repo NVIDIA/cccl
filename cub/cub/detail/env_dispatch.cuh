@@ -14,11 +14,17 @@
 
 #include <cub/detail/device_memory_resource.cuh>
 #include <cub/detail/temporary_storage.cuh>
+#include <cub/util_debug.cuh>
+#include <cub/util_runs_on.cuh>
 
+#include <cuda/__device/compute_capability.h>
+#include <cuda/__execution/guarantee.h>
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/call_or.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__stream/get_stream.h>
+#include <cuda/__stream/stream_ref.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__utility/forward.h>
 
@@ -132,6 +138,32 @@ template <bool UseAdvertisedQueries = false, typename EnvT, typename AlgorithmCa
   return (error != cudaSuccess) ? error : deallocate_error;
 }
 
+//! @brief Dispatches with automatic storage and passes the runs_on guarantee to the algorithm.
+//!
+//! Queries the bundled guarantees using callability-based lookup and appends the resolved
+//! @c runs_on value to the arguments passed to @p algorithm_callable. This function does not
+//! validate advertised query metadata.
+//!
+//! @tparam EnvT The execution environment or query-providing object type.
+//! @tparam AlgorithmCallable The algorithm implementation callable type.
+//! @param[in] env The execution environment or query-providing object.
+//! @param[in] algorithm_callable The algorithm implementation callable that receives the runs_on guarantee.
+//! @return The status returned by automatic-storage dispatch.
+template <typename EnvT, typename AlgorithmCallable>
+[[nodiscard]] CUB_RUNTIME_FUNCTION cudaError_t
+dispatch_with_env_and_runs_on(const EnvT& env, const AlgorithmCallable& algorithm_callable)
+{
+  static_assert(!::cuda::std::execution::__queryable_with<EnvT, experimental::__get_runs_on_t>,
+                "runs_on should be used inside guarantee to have an effect.");
+  auto guarantees = ::cuda::__call_or(::cuda::execution::__get_guarantees, ::cuda::std::execution::env<>{}, env);
+  auto runs_on    = ::cuda::__call_or(experimental::__get_runs_on, experimental::RunsOn{}, guarantees);
+
+  return detail::dispatch_with_env(
+    env, [&](auto&& tuning, void* d_temp_storage, size_t& temp_storage_bytes, ::cudaStream_t stream) {
+      return algorithm_callable(tuning, d_temp_storage, temp_storage_bytes, stream, runs_on);
+    });
+}
+
 //! @brief Validates an environment or object and dispatches with automatically managed temporary storage.
 //!
 //! Advertised query expressions are validated before dispatch. Stream, memory-resource, and tuning
@@ -234,6 +266,35 @@ template <bool UseAdvertisedQueries = false, typename EnvT, typename AlgorithmCa
     detail::query_or<UseAdvertisedQueries>(::cuda::execution::__get_tuning, ::cuda::std::execution::env<>{}, env);
 
   return algorithm_callable(tuning, d_temp_storage, temp_storage_bytes, stream.get());
+}
+
+//! @brief Dispatches with user-provided storage and passes the runs_on guarantee to the algorithm.
+//!
+//! Queries the bundled guarantees using callability-based lookup and appends the resolved
+//! @c runs_on value to the arguments passed to @p algorithm_callable. This function does not
+//! validate advertised query metadata.
+//!
+//! @tparam EnvT The execution environment or query-providing object type.
+//! @tparam AlgorithmCallable The algorithm implementation callable type.
+//! @param[in] d_temp_storage @devicestorage
+//! @param[in,out] temp_storage_bytes Reference to size in bytes of @p d_temp_storage.
+//! @param[in] env The execution environment or query-providing object.
+//! @param[in] algorithm_callable The algorithm implementation callable that receives the runs_on guarantee.
+//! @return The status returned by @p algorithm_callable.
+template <typename EnvT, typename AlgorithmCallable>
+[[nodiscard]] CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_and_runs_on(
+  void* d_temp_storage, size_t& temp_storage_bytes, const EnvT& env, const AlgorithmCallable& algorithm_callable)
+{
+  static_assert(!::cuda::std::execution::__queryable_with<EnvT, experimental::__get_runs_on_t>,
+                "runs_on should be used inside guarantee to have an effect.");
+  auto guarantees = ::cuda::__call_or(::cuda::execution::__get_guarantees, ::cuda::std::execution::env<>{}, env);
+  auto runs_on    = ::cuda::__call_or(experimental::__get_runs_on, experimental::RunsOn{}, guarantees);
+
+  // Preserve the separate storage query so callers can size storage without a device.
+  return detail::dispatch_with_env(
+    d_temp_storage, temp_storage_bytes, env, [&](auto&& tuning, void* storage, size_t& bytes, ::cudaStream_t stream) {
+      return algorithm_callable(tuning, storage, bytes, stream, runs_on);
+    });
 }
 
 //! @brief Validates an environment or object and dispatches with user-provided temporary storage.

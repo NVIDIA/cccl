@@ -22,10 +22,9 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/unwrap_iter.h>
-#include <cuda/std/__concepts/constructible.h>
-#include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__iterator/next.h>
-#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__iterator/concepts.h> // IWYU pragma: keep
+#include <cuda/std/__iterator/next.h> // IWYU pragma: keep
+#include <cuda/std/__utility/declval.h> // IWYU pragma: keep
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 

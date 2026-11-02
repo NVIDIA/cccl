@@ -21,9 +21,9 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_destructible.h>
-#include <cuda/std/__type_traits/is_nothrow_destructible.h>
+#include <cuda/std/__type_traits/is_destructible.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_object.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>

@@ -29,7 +29,6 @@
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/cstddef>
 
@@ -115,7 +114,8 @@ _CCCL_CONCEPT __tuple_like = __tuple_like_ext<remove_cvref_t<_Tp>>;
 
 // Not on line 74 because of __COUNTER__ missing in NVRTC
 template <class _Tp>
-_CCCL_CONCEPT __pair_like = _CCCL_REQUIRES_EXPR((_Tp)) //
+_CCCL_CONCEPT __pair_like = _CCCL_REQUIRES_EXPR((_Tp))
+  // NOLINTNEXTLINE(cccl-modernize-type-traits): Preserve substitution failure for types without tuple_size.
   (requires(__tuple_like<_Tp>), requires(tuple_size<remove_cvref_t<_Tp>>::value == 2));
 
 _CCCL_END_NAMESPACE_CUDA_STD

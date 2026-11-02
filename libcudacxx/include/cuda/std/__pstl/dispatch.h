@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__execution/policy.h>
-#include <cuda/std/__type_traits/always_false.h>
+#include <cuda/std/__fwd/execution_policy.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/cstdint>
 
