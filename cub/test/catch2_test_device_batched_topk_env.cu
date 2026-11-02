@@ -52,9 +52,9 @@ template <typename EnvT>
 unsigned int batched_topk_block_size(
   thrust::device_vector<int>& keys_out, thrust::device_vector<unsigned int>& d_block_size, EnvT env)
 {
-  constexpr int num_segments = 2;
-  constexpr int segment_size = 8;
-  constexpr int k            = 3;
+  constexpr int num_segments                  = 2;
+  [[maybe_unused]] constexpr int segment_size = 8; // MSVC does not count template arguments as uses
+  constexpr int k                             = 3;
 
   d_block_size[0] = 0;
   // all segments read the same keys, which record the block size of the kernel reading them
