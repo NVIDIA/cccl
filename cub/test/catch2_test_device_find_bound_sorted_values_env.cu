@@ -174,7 +174,7 @@ CUB_TEST("Device LowerBoundSortedValues tuning can be modified", "[find][device]
 
   auto d_range      = c2h::device_vector<int>{0, 2, 4, 6, 8};
   auto d_values     = c2h::device_vector<int>{0, 3, 4, 7};
-  auto d_output     = c2h::device_vector<int>(4);
+  auto d_output     = c2h::device_vector<int>(4, thrust::no_init);
   auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
 
   const block_size_extracting_op<cuda::std::less<>> comp{thrust::raw_pointer_cast(d_block_size.data())};

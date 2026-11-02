@@ -103,7 +103,7 @@ template <typename Env>
 void max_keys_observing_block_size(Env env, c2h::device_vector<unsigned int>& d_block_size)
 {
   const block_size_extracting_constant_iterator input(42, thrust::raw_pointer_cast(d_block_size.data()));
-  c2h::device_vector<int> d_keys_out(3);
+  c2h::device_vector<int> d_keys_out(3, thrust::no_init);
 
   device_topk_max_keys(input, d_keys_out.begin(), /* elements */ 1024, d_keys_out.size(), env);
 }

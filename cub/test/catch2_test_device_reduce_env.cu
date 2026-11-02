@@ -173,7 +173,7 @@ CUB_TEST_CASE("Device reduce tuning can be modified", "[reduce][device]", CUB_SM
   c2h::device_vector<unsigned int> d_block_size(1);
 
   auto d_in  = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
-  auto d_out = thrust::device_vector<int>(1);
+  auto d_out = thrust::device_vector<int>(1, thrust::no_init);
 
   auto env = cuda::execution::tune(reduce_tuning_transform<target_block_size>{});
 
@@ -499,7 +499,7 @@ CUB_TEST_CASE("Device ReduceByKey tuning can be modified", "[reduce][device]", C
   auto d_values_in                         = c2h::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
   auto d_unique_out                        = c2h::device_vector<int>(8);
   auto d_aggregates_out                    = c2h::device_vector<int>(8);
-  auto d_num_runs_out                      = c2h::device_vector<int>(1);
+  auto d_num_runs_out                      = c2h::device_vector<int>(1, thrust::no_init);
   auto d_block_size                        = c2h::device_vector<unsigned int>(1);
 
   const block_size_extracting_minimum_t reduction_op{thrust::raw_pointer_cast(d_block_size.data())};

@@ -1515,7 +1515,7 @@ CUB_TEST("DeviceHistogram::HistogramEven tuning can be modified", "[histogram][d
   const int num_levels  = 257;
   const int lower_level = 0;
   const int upper_level = 256;
-  auto d_histogram      = c2h::device_vector<int>(num_levels - 1, 0);
+  auto d_histogram      = c2h::device_vector<int>(num_levels - 1, thrust::no_init);
 
   {
     histogram_even(

@@ -670,7 +670,7 @@ CUB_TEST("Device segmented inclusive scan tuning can be modified", "[segmented_s
   thrust::device_vector<int> d_offsets     = {0, 4, 7, 9};
   auto d_offsets_it                        = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
-  thrust::device_vector<int> d_out(d_in.size());
+  thrust::device_vector<int> d_out(d_in.size(), thrust::no_init);
   c2h::device_vector<unsigned int> d_block_size(1);
   const block_size_extracting_op<::cuda::std::plus<>> scan_op{thrust::raw_pointer_cast(d_block_size.data())};
 

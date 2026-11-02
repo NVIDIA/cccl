@@ -944,9 +944,9 @@ CUB_TEST("DeviceSegmentedSort::SortPairs tuning can be modified", "[segmented_so
 {
   constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
   auto keys_in                             = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
-  auto keys_out                            = c2h::device_vector<int>(7);
+  auto keys_out                            = c2h::device_vector<int>(7, thrust::no_init);
   auto values_in                           = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
-  auto values_out                          = c2h::device_vector<int>(7);
+  auto values_out                          = c2h::device_vector<int>(7, thrust::no_init);
   auto begin_offsets                       = c2h::device_vector<int>{0};
   c2h::device_vector<unsigned int> d_block_size(1);
 

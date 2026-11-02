@@ -3250,7 +3250,7 @@ CUB_TEST_CASE("DeviceRadixSort::SortKeys tuning can be modified", "[radix_sort][
   constexpr int num_items                  = 10'000; // must be larger than the single tile path
 
   auto keys_in      = c2h::device_vector<custom_key_t>(num_items);
-  auto keys_out     = c2h::device_vector<custom_key_t>(num_items);
+  auto keys_out     = c2h::device_vector<custom_key_t>(num_items, thrust::no_init);
   auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
 
   const block_size_extracting_decomposer_t decomposer{thrust::raw_pointer_cast(d_block_size.data())};

@@ -259,10 +259,10 @@ CUB_TEST_CASE("Device ArgMin[Last]Max tuning can be modified", "[reduce][device]
   const compare_t compare_op{thrust::raw_pointer_cast(d_block_size.data())};
 
   auto input     = c2h::device_vector<int>{3, 4, 4, 0, 2};
-  auto min_out   = c2h::device_vector<int>(1);
-  auto min_index = c2h::device_vector<cuda::std::int64_t>(1);
-  auto max_out   = c2h::device_vector<int>(1);
-  auto max_index = c2h::device_vector<cuda::std::int64_t>(1);
+  auto min_out   = c2h::device_vector<int>(1, thrust::no_init);
+  auto min_index = c2h::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = c2h::device_vector<int>(1, thrust::no_init);
+  auto max_index = c2h::device_vector<cuda::std::int64_t>(1, thrust::no_init);
 
   const auto n = static_cast<int>(input.size());
 

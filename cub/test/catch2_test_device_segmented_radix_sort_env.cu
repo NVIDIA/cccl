@@ -897,9 +897,9 @@ CUB_TEST("DeviceSegmentedRadixSort::SortPairs tuning can be modified", "[segment
   constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
 
   auto keys_in    = c2h::device_vector<int>(10'000);
-  auto keys_out   = c2h::device_vector<int>(10'000);
+  auto keys_out   = c2h::device_vector<int>(10'000, thrust::no_init);
   auto values_in  = c2h::device_vector<int>(10'000);
-  auto values_out = c2h::device_vector<int>(10'000);
+  auto values_out = c2h::device_vector<int>(10'000, thrust::no_init);
   c2h::device_vector<unsigned int> d_block_size(1, 0);
 
   auto d_begin_offsets = block_size_extracting_constant_iterator(0, thrust::raw_pointer_cast(d_block_size.data()));

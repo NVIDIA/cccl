@@ -1311,7 +1311,7 @@ CUB_TEST("DeviceSelect::If tuning can be modified", "[select][device]", CUB_SMAL
   constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
   auto d_in                                = c2h::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
   auto d_out                               = c2h::device_vector<int>(8);
-  auto d_num_selected                      = c2h::device_vector<unsigned int>(1);
+  auto d_num_selected                      = c2h::device_vector<unsigned int>(1, thrust::no_init);
   auto d_block_size                        = c2h::device_vector<unsigned int>(1);
 
   const block_size_extracting_op<less_than_5_t> select_op{thrust::raw_pointer_cast(d_block_size.data())};
@@ -1337,7 +1337,7 @@ CUB_TEST("DeviceSelect::UniqueByKey tuning can be modified", "[select][device]",
   auto d_values_in                         = c2h::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
   auto d_keys_out                          = c2h::device_vector<int>(8);
   auto d_values_out                        = c2h::device_vector<int>(8);
-  auto d_num_selected                      = c2h::device_vector<unsigned int>(1);
+  auto d_num_selected                      = c2h::device_vector<unsigned int>(1, thrust::no_init);
   auto d_block_size                        = c2h::device_vector<unsigned int>(1);
 
   using eq_op_t = block_size_extracting_op<cuda::std::equal_to<>>;

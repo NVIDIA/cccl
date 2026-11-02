@@ -378,8 +378,8 @@ CUB_TEST_CASE("DevicePartition::If tuning can be modified", "[partition][device]
 {
   constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
   auto d_in                                = c2h::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
-  auto d_out                               = c2h::device_vector<int>(8);
-  auto d_num_selected                      = c2h::device_vector<unsigned int>(1);
+  auto d_out                               = c2h::device_vector<int>(8, thrust::no_init);
+  auto d_num_selected                      = c2h::device_vector<unsigned int>(1, thrust::no_init);
   auto d_block_size                        = c2h::device_vector<unsigned int>(1);
 
   const block_size_extracting_op<less_than_5_t> select_op{thrust::raw_pointer_cast(d_block_size.data())};
@@ -443,7 +443,7 @@ CUB_TEST_CASE("DevicePartition::If three-way tuning can be modified", "[partitio
   auto d_small_out                         = c2h::device_vector<int>(8);
   auto d_large_out                         = c2h::device_vector<int>(8);
   auto d_unselected_out                    = c2h::device_vector<int>(8);
-  auto d_num_selected                      = c2h::device_vector<int>(2);
+  auto d_num_selected                      = c2h::device_vector<int>(2, thrust::no_init);
   auto d_block_size                        = c2h::device_vector<unsigned int>(1);
 
   const block_size_extracting_op<less_than_7_t> small_selector{thrust::raw_pointer_cast(d_block_size.data())};

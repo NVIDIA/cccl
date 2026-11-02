@@ -200,7 +200,7 @@ CUB_TEST("DeviceCopy::Batched tuning can be modified", "[copy][device]", CUB_SMA
 
   // 3 ranges of 2 ints each
   auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};
-  auto d_dst     = c2h::device_vector<int>(6, 0);
+  auto d_dst     = c2h::device_vector<int>(6, thrust::no_init);
   auto d_offsets = c2h::device_vector<int>{0, 2, 4, 6};
 
   const int num_ranges          = 3;

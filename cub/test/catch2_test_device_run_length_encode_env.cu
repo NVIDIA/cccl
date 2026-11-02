@@ -321,9 +321,9 @@ CUB_TEST_CASE("DeviceRunLengthEncode::Encode tuning can be modified", "[run_leng
   auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
   const block_size_extracting_constant_iterator d_in(42, thrust::raw_pointer_cast(d_block_size.data()));
 
-  auto d_unique_out   = c2h::device_vector<int>(1);
-  auto d_counts_out   = c2h::device_vector<int>(1);
-  auto d_num_runs_out = c2h::device_vector<int>(1);
+  auto d_unique_out   = c2h::device_vector<int>(1, thrust::no_init);
+  auto d_counts_out   = c2h::device_vector<int>(1, thrust::no_init);
+  auto d_num_runs_out = c2h::device_vector<int>(1, thrust::no_init);
 
   auto env = cuda::execution::tune(rle_encode_tuning_transform<target_block_size>{});
 
@@ -408,9 +408,9 @@ CUB_TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns tuning can be modified", "[
   auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
   const block_size_extracting_constant_iterator d_in(42, thrust::raw_pointer_cast(d_block_size.data()));
 
-  auto d_offsets_out  = c2h::device_vector<int>(1);
-  auto d_lengths_out  = c2h::device_vector<int>(1);
-  auto d_num_runs_out = c2h::device_vector<int>(1);
+  auto d_offsets_out  = c2h::device_vector<int>(1, thrust::no_init);
+  auto d_lengths_out  = c2h::device_vector<int>(1, thrust::no_init);
+  auto d_num_runs_out = c2h::device_vector<int>(1, thrust::no_init);
 
   auto env = cuda::execution::tune(rle_non_trivial_runs_tuning_transform<target_block_size>{});
 
