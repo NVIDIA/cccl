@@ -124,7 +124,7 @@ C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_
   set.clear(context.stream);
   set.insert_and_find(context.stream, duplicates, duplicates + num_queries, found_keys.begin(), found.begin());
   REQUIRE(cuda::std::equal(context.policy(), found_keys.begin(), found_keys.end(), duplicates));
-  REQUIRE(cuda::std::count(context.policy(), found.begin(), found.end(), 1) == 17);
+  REQUIRE(cuda::std::count(context.policy(), found.data(), found.data() + num_queries, 1) == 17);
 
   // The 17 stored keys are found without insertion; the remaining keys are new.
   set.insert_and_find_async(context.stream, first, first + num_queries, found_keys.begin(), found.begin());
