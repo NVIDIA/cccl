@@ -925,8 +925,7 @@ CUB_TEST("DeviceSegmentedSort::StableSortPairsDescending can be tuned",
 
 #endif // TEST_LAUNCH != 1
 
-// The two-phase overloads exercised by the tests below. The keys of all test inputs are unique, so stable and unstable
-// sorts produce the same result.
+// Keys are unique, so stable and unstable sorts give the same results
 enum class two_phase_api
 {
   sort_pairs,
@@ -940,7 +939,6 @@ bool is_descending(two_phase_api api)
   return api == two_phase_api::sort_pairs_descending || api == two_phase_api::stable_sort_pairs_descending;
 }
 
-// Calls the two-phase overload of api directly
 template <class... Args>
 cudaError_t call_two_phase(two_phase_api api, Args&&... args)
 {
@@ -958,7 +956,6 @@ cudaError_t call_two_phase(two_phase_api api, Args&&... args)
   return cudaErrorInvalidValue;
 }
 
-// Calls the two-phase overload of api through its launch wrapper
 template <class... Args>
 void launch_two_phase(two_phase_api api, Args... args)
 {
@@ -979,8 +976,6 @@ void launch_two_phase(two_phase_api api, Args... args)
   }
 }
 
-// Runs the two-phase overload wrapped by two_phase: queries the temporary storage size, executes with the allocated
-// storage, and checks that all kernels are launched on the stream of env.
 template <class EnvT, class TwoPhaseFn>
 void run_two_phase(const EnvT& env, TwoPhaseFn two_phase)
 {
@@ -995,7 +990,6 @@ void run_two_phase(const EnvT& env, TwoPhaseFn two_phase)
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 }
 
-// Expected results of sorting the keys {8, 6, 7, 5, 3, 0, 9} and values {0, 1, 2, 3, 4, 5, 6} in segments {0, 3, 7}
 c2h::device_vector<int> expected_two_segment_keys(two_phase_api api)
 {
   return is_descending(api)
@@ -1012,19 +1006,13 @@ c2h::device_vector<int> expected_two_segment_values(two_phase_api api)
 
 #if TEST_LAUNCH == 0
 
-// The launch wrappers copy their arguments, which the non-copyable stream types of test_with_custom_streams and the
-// DoubleBuffer outputs do not allow, so these tests call the two-phase overloads directly. Test them with host launch
-// only.
+// The launch wrappers copy their arguments, which non-copyable streams and DoubleBuffer do not allow
 
 CUB_TEST_CASE("DeviceSegmentedSort pairs two-phase works with custom streams",
               "[segmented_sort][pairs][device]",
               CUB_SMALL)
 {
-  const auto api = GENERATE(
-    two_phase_api::sort_pairs,
-    two_phase_api::sort_pairs_descending,
-    two_phase_api::stable_sort_pairs,
-    two_phase_api::stable_sort_pairs_descending);
+  const auto api = static_cast<two_phase_api>(GENERATE(range(0, 4)));
 
   const auto offsets         = c2h::device_vector<int>{0, 3, 7};
   const int* d_offsets       = thrust::raw_pointer_cast(offsets.data());
@@ -1078,24 +1066,18 @@ CUB_TEST_CASE("DeviceSegmentedSort pairs two-phase works with custom streams",
           api, d_temp_storage, temp_storage_bytes, d_keys, d_values, 7, 2, d_offsets, d_offsets + 1, env);
       });
 
-      REQUIRE(c2h::device_vector<int>(d_keys.Current(), d_keys.Current() + 7) == expected_keys);
-      REQUIRE(c2h::device_vector<int>(d_values.Current(), d_values.Current() + 7) == expected_values);
+      REQUIRE((d_keys.selector == 0 ? keys_buf0 : keys_buf1) == expected_keys);
+      REQUIRE((d_values.selector == 0 ? values_buf0 : values_buf1) == expected_values);
     });
   }
 }
 
-// Before the environment parameter, the two-phase overloads took `cudaStream_t stream = nullptr`, so callers passing
-// nullptr, a literal 0 or a null cudaStream_t for the stream exist. All must keep compiling and keep running on the
-// default stream.
+// The two-phase overloads used to take `cudaStream_t stream = nullptr`
 CUB_TEST_CASE("DeviceSegmentedSort pairs DoubleBuffer two-phase overloads accept legacy null stream arguments",
               "[segmented_sort][pairs][device]",
               CUB_SMALL)
 {
-  const auto api = GENERATE(
-    two_phase_api::sort_pairs,
-    two_phase_api::sort_pairs_descending,
-    two_phase_api::stable_sort_pairs,
-    two_phase_api::stable_sort_pairs_descending);
+  const auto api = static_cast<two_phase_api>(GENERATE(range(0, 4)));
 
   const auto offsets   = c2h::device_vector<int>{0, 3, 7};
   const int* d_offsets = thrust::raw_pointer_cast(offsets.data());
@@ -1132,8 +1114,8 @@ CUB_TEST_CASE("DeviceSegmentedSort pairs DoubleBuffer two-phase overloads accept
     });
   }
 
-  REQUIRE(c2h::device_vector<int>(d_keys.Current(), d_keys.Current() + 7) == expected_two_segment_keys(api));
-  REQUIRE(c2h::device_vector<int>(d_values.Current(), d_values.Current() + 7) == expected_two_segment_values(api));
+  REQUIRE((d_keys.selector == 0 ? keys_buf0 : keys_buf1) == expected_two_segment_keys(api));
+  REQUIRE((d_values.selector == 0 ? values_buf0 : values_buf1) == expected_two_segment_values(api));
 }
 
 #endif // TEST_LAUNCH == 0
@@ -1142,11 +1124,7 @@ CUB_TEST_CASE("DeviceSegmentedSort pairs two-phase overloads accept legacy null 
               "[segmented_sort][pairs][device]",
               CUB_SMALL)
 {
-  const auto api = GENERATE(
-    two_phase_api::sort_pairs,
-    two_phase_api::sort_pairs_descending,
-    two_phase_api::stable_sort_pairs,
-    two_phase_api::stable_sort_pairs_descending);
+  const auto api = static_cast<two_phase_api>(GENERATE(range(0, 4)));
 
   const auto offsets   = c2h::device_vector<int>{0, 3, 7};
   const int* d_offsets = thrust::raw_pointer_cast(offsets.data());
@@ -1188,11 +1166,7 @@ CUB_TEST("DeviceSegmentedSort pairs two-phase can be tuned", "[segmented_sort][p
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
-  const auto api = GENERATE(
-    two_phase_api::sort_pairs,
-    two_phase_api::sort_pairs_descending,
-    two_phase_api::stable_sort_pairs,
-    two_phase_api::stable_sort_pairs_descending);
+  const auto api = static_cast<two_phase_api>(GENERATE(range(0, 4)));
 
   const auto begin_offsets = c2h::device_vector<int>{0};
   c2h::device_vector<unsigned int> d_block_size(1);
@@ -1229,7 +1203,7 @@ CUB_TEST("DeviceSegmentedSort pairs two-phase can be tuned", "[segmented_sort][p
     REQUIRE(values_out == expected_values);
   }
 
-  // The launch wrappers copy their arguments, which loses the DoubleBuffer outputs, so call the overload directly
+  // The launch wrappers copy the DoubleBuffers, so call the overload directly
   SECTION("DoubleBuffer")
   {
     auto keys_buf0   = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -1247,8 +1221,8 @@ CUB_TEST("DeviceSegmentedSort pairs two-phase can be tuned", "[segmented_sort][p
         api, d_temp_storage, temp_storage_bytes, d_keys, d_values, 7, 1, d_begin_offsets, end_offsets, env);
     });
 
-    REQUIRE(c2h::device_vector<int>(d_keys.Current(), d_keys.Current() + 7) == expected_keys);
-    REQUIRE(c2h::device_vector<int>(d_values.Current(), d_values.Current() + 7) == expected_values);
+    REQUIRE((d_keys.selector == 0 ? keys_buf0 : keys_buf1) == expected_keys);
+    REQUIRE((d_values.selector == 0 ? values_buf0 : values_buf1) == expected_values);
   }
 
   REQUIRE(d_block_size[0] == target_block_size);
