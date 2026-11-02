@@ -965,108 +965,8 @@ CUB_TEST_CASE("Device fixed-size segmented argmax two-phase works with custom st
   });
 }
 
-#endif // TEST_LAUNCH == 0
-
-// The graph launch (TEST_LAUNCH == 2) appends its own stream argument, so it cannot be combined with an environment.
-#if TEST_LAUNCH != 2
-
-// Runs every two-phase overload with the given legacy stream argument
-template <class StreamT>
-void check_two_phase_overloads_with_legacy_stream(StreamT stream)
-{
-  // variable-size segments: {8,6,7,5, 3,0,9, 1,2}
-  {
-    const int num_segments            = 3;
-    c2h::device_vector<int> d_offsets = {0, 4, 7, 9};
-    auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
-    c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
-    c2h::device_vector<int> d_reduce_out(3, thrust::no_init), d_sum_out(3, thrust::no_init),
-      d_min_out(3, thrust::no_init), d_max_out(3, thrust::no_init);
-    c2h::device_vector<cub::KeyValuePair<int, int>> d_argmin_out(3), d_argmax_out(3);
-
-    {
-      const stream_scope scope{cudaStream_t{}};
-      device_segmented_reduce_two_phase(
-        d_in.begin(),
-        d_reduce_out.begin(),
-        num_segments,
-        d_offsets_it,
-        d_offsets_it + 1,
-        ::cuda::std::plus<>{},
-        0,
-        stream);
-      device_segmented_reduce_sum_two_phase(
-        d_in.begin(), d_sum_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, stream);
-      device_segmented_reduce_min_two_phase(
-        d_in.begin(), d_min_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, stream);
-      device_segmented_reduce_max_two_phase(
-        d_in.begin(), d_max_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, stream);
-      device_segmented_reduce_argmin_two_phase(
-        d_in.begin(), d_argmin_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, stream);
-      device_segmented_reduce_argmax_two_phase(
-        d_in.begin(), d_argmax_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, stream);
-    }
-
-    REQUIRE(d_reduce_out == c2h::device_vector<int>{26, 12, 3});
-    REQUIRE(d_sum_out == c2h::device_vector<int>{26, 12, 3});
-    REQUIRE(d_min_out == c2h::device_vector<int>{5, 0, 1});
-    REQUIRE(d_max_out == c2h::device_vector<int>{8, 9, 2});
-    REQUIRE(d_argmin_out == c2h::device_vector<cub::KeyValuePair<int, int>>{{3, 5}, {1, 0}, {0, 1}});
-    REQUIRE(d_argmax_out == c2h::device_vector<cub::KeyValuePair<int, int>>{{0, 8}, {2, 9}, {1, 2}});
-  }
-
-  // fixed-size segments: {8,6,7, 5,3,0}
-  {
-    const int num_segments = 2;
-    const int segment_size = 3;
-    c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
-    c2h::device_vector<int> d_reduce_out(2, thrust::no_init), d_sum_out(2, thrust::no_init),
-      d_min_out(2, thrust::no_init), d_max_out(2, thrust::no_init);
-    c2h::device_vector<cuda::std::pair<int, int>> d_argmin_out(2), d_argmax_out(2);
-
-    {
-      const stream_scope scope{cudaStream_t{}};
-      device_segmented_reduce_two_phase(
-        d_in.begin(), d_reduce_out.begin(), num_segments, segment_size, ::cuda::std::plus<>{}, 0, stream);
-      device_segmented_reduce_sum_two_phase(d_in.begin(), d_sum_out.begin(), num_segments, segment_size, stream);
-      device_segmented_reduce_min_two_phase(d_in.begin(), d_min_out.begin(), num_segments, segment_size, stream);
-      device_segmented_reduce_max_two_phase(d_in.begin(), d_max_out.begin(), num_segments, segment_size, stream);
-      device_segmented_reduce_argmin_two_phase(d_in.begin(), d_argmin_out.begin(), num_segments, segment_size, stream);
-      device_segmented_reduce_argmax_two_phase(d_in.begin(), d_argmax_out.begin(), num_segments, segment_size, stream);
-    }
-
-    REQUIRE(d_reduce_out == c2h::device_vector<int>{21, 8});
-    REQUIRE(d_sum_out == c2h::device_vector<int>{21, 8});
-    REQUIRE(d_min_out == c2h::device_vector<int>{6, 0});
-    REQUIRE(d_max_out == c2h::device_vector<int>{8, 5});
-    REQUIRE(d_argmin_out == c2h::device_vector<cuda::std::pair<int, int>>{{1, 6}, {2, 0}});
-    REQUIRE(d_argmax_out == c2h::device_vector<cuda::std::pair<int, int>>{{0, 8}, {0, 5}});
-  }
-}
-
-// Before the environment parameter, the two-phase overloads took `cudaStream_t stream = nullptr`, so callers passing
-// nullptr, a literal 0 or a null cudaStream_t for the stream exist. They must keep compiling and keep running on the
-// default stream.
-CUB_TEST_CASE("Device segmented reduce two-phase overloads accept legacy null stream arguments",
-              "[segmented_reduce][device]",
-              CUB_SMALL)
-{
-  SECTION("nullptr")
-  {
-    check_two_phase_overloads_with_legacy_stream(nullptr);
-  }
-
-  SECTION("literal 0")
-  {
-    check_two_phase_overloads_with_legacy_stream(0);
-  }
-
-  SECTION("null cudaStream_t")
-  {
-    check_two_phase_overloads_with_legacy_stream(cudaStream_t{});
-  }
-}
-
+// The tuning and determinism environments are empty classes, which older CTKs (at least 12.9 and 13.0) cannot pass as
+// kernel parameters, so these tests cannot use the device launch (TEST_LAUNCH == 1).
 CUB_TEST("DeviceSegmentedReduce::Reduce two-phase can be tuned", "[segmented_reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
@@ -1374,6 +1274,108 @@ CUB_TEST_CASE("Device segmented reduce two-phase honors determinism requirements
 
     device_segmented_reduce_sum_two_phase(d_int_in.begin(), d_int_out.begin(), num_segments, segment_size, env);
     REQUIRE(d_int_out == expected);
+  }
+}
+
+#endif // TEST_LAUNCH == 0
+
+// The graph launch (TEST_LAUNCH == 2) appends its own stream argument, so it cannot be combined with an environment.
+#if TEST_LAUNCH != 2
+
+// Runs every two-phase overload with the given legacy stream argument
+template <class StreamT>
+void check_two_phase_overloads_with_legacy_stream(StreamT stream)
+{
+  // variable-size segments: {8,6,7,5, 3,0,9, 1,2}
+  {
+    const int num_segments            = 3;
+    c2h::device_vector<int> d_offsets = {0, 4, 7, 9};
+    auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
+    c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+    c2h::device_vector<int> d_reduce_out(3, thrust::no_init), d_sum_out(3, thrust::no_init),
+      d_min_out(3, thrust::no_init), d_max_out(3, thrust::no_init);
+    c2h::device_vector<cub::KeyValuePair<int, int>> d_argmin_out(3), d_argmax_out(3);
+
+    {
+      const stream_scope scope{cudaStream_t{}};
+      device_segmented_reduce_two_phase(
+        d_in.begin(),
+        d_reduce_out.begin(),
+        num_segments,
+        d_offsets_it,
+        d_offsets_it + 1,
+        ::cuda::std::plus<>{},
+        0,
+        stream);
+      device_segmented_reduce_sum_two_phase(
+        d_in.begin(), d_sum_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, stream);
+      device_segmented_reduce_min_two_phase(
+        d_in.begin(), d_min_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, stream);
+      device_segmented_reduce_max_two_phase(
+        d_in.begin(), d_max_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, stream);
+      device_segmented_reduce_argmin_two_phase(
+        d_in.begin(), d_argmin_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, stream);
+      device_segmented_reduce_argmax_two_phase(
+        d_in.begin(), d_argmax_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, stream);
+    }
+
+    REQUIRE(d_reduce_out == c2h::device_vector<int>{26, 12, 3});
+    REQUIRE(d_sum_out == c2h::device_vector<int>{26, 12, 3});
+    REQUIRE(d_min_out == c2h::device_vector<int>{5, 0, 1});
+    REQUIRE(d_max_out == c2h::device_vector<int>{8, 9, 2});
+    REQUIRE(d_argmin_out == c2h::device_vector<cub::KeyValuePair<int, int>>{{3, 5}, {1, 0}, {0, 1}});
+    REQUIRE(d_argmax_out == c2h::device_vector<cub::KeyValuePair<int, int>>{{0, 8}, {2, 9}, {1, 2}});
+  }
+
+  // fixed-size segments: {8,6,7, 5,3,0}
+  {
+    const int num_segments = 2;
+    const int segment_size = 3;
+    c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+    c2h::device_vector<int> d_reduce_out(2, thrust::no_init), d_sum_out(2, thrust::no_init),
+      d_min_out(2, thrust::no_init), d_max_out(2, thrust::no_init);
+    c2h::device_vector<cuda::std::pair<int, int>> d_argmin_out(2), d_argmax_out(2);
+
+    {
+      const stream_scope scope{cudaStream_t{}};
+      device_segmented_reduce_two_phase(
+        d_in.begin(), d_reduce_out.begin(), num_segments, segment_size, ::cuda::std::plus<>{}, 0, stream);
+      device_segmented_reduce_sum_two_phase(d_in.begin(), d_sum_out.begin(), num_segments, segment_size, stream);
+      device_segmented_reduce_min_two_phase(d_in.begin(), d_min_out.begin(), num_segments, segment_size, stream);
+      device_segmented_reduce_max_two_phase(d_in.begin(), d_max_out.begin(), num_segments, segment_size, stream);
+      device_segmented_reduce_argmin_two_phase(d_in.begin(), d_argmin_out.begin(), num_segments, segment_size, stream);
+      device_segmented_reduce_argmax_two_phase(d_in.begin(), d_argmax_out.begin(), num_segments, segment_size, stream);
+    }
+
+    REQUIRE(d_reduce_out == c2h::device_vector<int>{21, 8});
+    REQUIRE(d_sum_out == c2h::device_vector<int>{21, 8});
+    REQUIRE(d_min_out == c2h::device_vector<int>{6, 0});
+    REQUIRE(d_max_out == c2h::device_vector<int>{8, 5});
+    REQUIRE(d_argmin_out == c2h::device_vector<cuda::std::pair<int, int>>{{1, 6}, {2, 0}});
+    REQUIRE(d_argmax_out == c2h::device_vector<cuda::std::pair<int, int>>{{0, 8}, {0, 5}});
+  }
+}
+
+// Before the environment parameter, the two-phase overloads took `cudaStream_t stream = nullptr`, so callers passing
+// nullptr, a literal 0 or a null cudaStream_t for the stream exist. They must keep compiling and keep running on the
+// default stream.
+CUB_TEST_CASE("Device segmented reduce two-phase overloads accept legacy null stream arguments",
+              "[segmented_reduce][device]",
+              CUB_SMALL)
+{
+  SECTION("nullptr")
+  {
+    check_two_phase_overloads_with_legacy_stream(nullptr);
+  }
+
+  SECTION("literal 0")
+  {
+    check_two_phase_overloads_with_legacy_stream(0);
+  }
+
+  SECTION("null cudaStream_t")
+  {
+    check_two_phase_overloads_with_legacy_stream(cudaStream_t{});
   }
 }
 
