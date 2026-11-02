@@ -222,16 +222,14 @@ def _select_cuda_include_path(
 def _cuda_include_paths() -> tuple[Path, ...]:
     """Find one CUDA include directory without mixing toolkit installations.
 
-    Prefer Pathfinder's result, then the configured toolkit roots, then the
-    conventional Unix installation. Return an empty tuple if none is usable.
+    Prefer Pathfinder's result. Retain configured roots and the conventional
+    Unix installation for older supported Pathfinder versions and CUDA_ROOT.
+    Return an empty tuple if none is usable.
     """
 
-    try:
-        from cuda.pathfinder import find_nvidia_header_directory
+    from cuda.pathfinder import find_nvidia_header_directory
 
-        cuda_include = find_nvidia_header_directory("cudart")
-    except (ImportError, RuntimeError):
-        cuda_include = None
+    cuda_include = find_nvidia_header_directory("cudart")
 
     # Pathfinder applies its own search order. Use its result alone so headers
     # from another toolkit cannot enter the same provider compilation.
