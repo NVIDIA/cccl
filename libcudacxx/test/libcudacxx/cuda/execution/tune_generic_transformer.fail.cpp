@@ -29,6 +29,9 @@ struct generic_transformer
 
 TEST_FUNC void test()
 {
+  // the error is raised by a static_assert in the header, notes only point at the instantiation
+  // expected-error@*:* {{Policy selectors must return a concrete policy type}}
+  // expected-note@*:* 0+ {{}}
   [[maybe_unused]] auto env = cuda::execution::tune(generic_transformer{});
 }
 

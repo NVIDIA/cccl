@@ -28,6 +28,9 @@ struct missing_compute_capability
 
 TEST_FUNC void test()
 {
+  // the error is raised by a static_assert in the header, notes only point at the instantiation
+  // expected-error@*:* {{Policy selectors must be invocable with cuda::compute_capability and an optional policy}}
+  // expected-note@*:* 0+ {{}}
   [[maybe_unused]] auto env = cuda::execution::tune(missing_compute_capability{});
 }
 

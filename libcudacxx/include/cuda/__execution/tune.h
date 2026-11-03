@@ -78,16 +78,25 @@ _CCCL_NODEBUG_API constexpr auto __detect_policy_return_type()
   }
   else
   {
-    static_assert(::cuda::std::is_invocable_v<_PolicySelector, ::cuda::compute_capability, __converts_to_anything>,
+    constexpr bool __is_transformer =
+      ::cuda::std::is_invocable_v<_PolicySelector, ::cuda::compute_capability, __converts_to_anything>;
+    static_assert(__is_transformer,
                   "Policy selectors must be invocable with cuda::compute_capability and an optional policy");
-
-    using ret_t = decltype(_PolicySelector{}(::cuda::compute_capability{}, __converts_to_anything{}));
-    static_assert(!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<ret_t>, __converts_to_anything>,
-                  "Policy selectors must return a concrete policy type");
-    static_assert(::cuda::std::is_invocable_v<_PolicySelector, ::cuda::compute_capability, ret_t>,
-                  "Policy selectors with more than one argument must accept the returned policy type as second "
-                  "argument");
-    return ret_t{};
+    // only look at the return type if the call operator is usable, to not follow up with more errors
+    if constexpr (__is_transformer)
+    {
+      using ret_t = decltype(_PolicySelector{}(::cuda::compute_capability{}, __converts_to_anything{}));
+      static_assert(!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<ret_t>, __converts_to_anything>,
+                    "Policy selectors must return a concrete policy type");
+      static_assert(::cuda::std::is_invocable_v<_PolicySelector, ::cuda::compute_capability, ret_t>,
+                    "Policy selectors with more than one argument must accept the returned policy type as second "
+                    "argument");
+      return ret_t{};
+    }
+    else
+    {
+      return int{}; // already diagnosed
+    }
   }
 }
 

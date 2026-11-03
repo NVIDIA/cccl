@@ -33,6 +33,9 @@ struct selector_and_transformer
 
 TEST_FUNC void test()
 {
+  // the error is raised by a static_assert in the header, notes only point at the instantiation
+  // expected-error@*:* {{A callable passed to tune must either be a policy selector}}
+  // expected-note@*:* 0+ {{}}
   [[maybe_unused]] auto env = cuda::execution::tune(selector_and_transformer{});
 }
 
