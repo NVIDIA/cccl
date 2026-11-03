@@ -827,8 +827,8 @@ public:
   //! `__size * sizeof(T)` rounded up to a multiple of \p __alignment.
   //! @throw std::invalid_argument if \p __alignment is not a power of two that
   //! is at least `alignof(T)`, if \p __ptr is not aligned to \p __alignment,
-  //! if \p __ptr is null and \p __size is not zero, or if the allocation size
-  //! overflows.
+  //! if \p __ptr is null and \p __size is not zero, if \p __capacity does not
+  //! equal \p __size, or if the allocation size overflows.
   [[nodiscard]] _CCCL_HOST_API static buffer acquire(
     ::cuda::stream_ref __stream,
     __resource_t __mr,
