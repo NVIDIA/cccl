@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#include <cub/util_device.cuh>
 #include <cub/util_macro.cuh>
 #include <cub/warp/warp_reduce.cuh>
 #include <cub/warp/warp_reduce_batched.cuh>
@@ -9,6 +10,8 @@
 #include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/ptx>
+#include <cuda/std/array>
+#include <cuda/std/cstddef>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/mdspan>
@@ -39,6 +42,82 @@ enum class WarpReduceBatchedMode
   ToStriped,
   ToBlocked
 };
+
+#if TEST_TYPES == 1
+struct assignment_counter_reference
+{
+  int* count;
+
+  // Binding the source by reference observes the copy without reading an uninitialized scalar.
+  _CCCL_DEVICE_API void operator=(const int&) const noexcept
+  {
+    ++*count;
+  }
+};
+
+struct assignment_counter_accessor
+{
+  using offset_policy    = assignment_counter_accessor;
+  using element_type     = int;
+  using reference        = assignment_counter_reference;
+  using data_handle_type = int*;
+
+  [[nodiscard]] _CCCL_DEVICE_API reference access(data_handle_type counts, cuda::std::size_t index) const noexcept
+  {
+    return {counts + index};
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API data_handle_type offset(data_handle_type counts, cuda::std::size_t index) const noexcept
+  {
+    return counts + index;
+  }
+};
+
+__global__ void warp_reduce_batched_copy_count_kernel(int* counts, bool to_blocked)
+{
+  using warp_reduce_batched_t = cub::WarpReduceBatched<int, 3, warp_size, false>;
+  __shared__ warp_reduce_batched_t::TempStorage temp_storage[block_size / warp_size];
+  const int tid             = static_cast<int>(threadIdx.x);
+  const int logical_warp_id = tid / warp_size;
+  const cuda::std::array<int, 3> inputs{tid, tid + 1, tid + 2};
+  int assignments = 0;
+  cuda::std::mdspan<int, cuda::std::extents<int, 1>, cuda::std::layout_right, assignment_counter_accessor> outputs{
+    &assignments};
+  if (to_blocked)
+  {
+    warp_reduce_batched_t{temp_storage[logical_warp_id]}.ReduceToBlocked(inputs, outputs, cuda::std::plus<>{});
+  }
+  else
+  {
+    warp_reduce_batched_t{temp_storage[logical_warp_id]}.ReduceToStriped(inputs, outputs, cuda::std::plus<>{});
+  }
+  counts[tid] = assignments;
+}
+
+CUB_TEST("WarpReduceBatched Redux copies only initialized intermediate outputs", "[warp][reduce][batched]", CUB_SMALL)
+{
+  int ptx_version = 0;
+  REQUIRE(cudaSuccess == cub::PtxVersion(ptx_version));
+  if (ptx_version < 800)
+  {
+    SKIP("The Redux copy path requires SM80+; the fallback initializes every intermediate output.");
+  }
+
+  const bool to_blocked = GENERATE(false, true);
+  CAPTURE(to_blocked);
+  c2h::device_vector<int> counts(block_size);
+  warp_reduce_batched_copy_count_kernel<<<1, block_size>>>(thrust::raw_pointer_cast(counts.data()), to_blocked);
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  c2h::host_vector<int> expected(block_size);
+  for (int tid = 0; tid < block_size; ++tid)
+  {
+    expected[tid] = tid % warp_size < 3 ? 1 : 0;
+  }
+  REQUIRE(expected == counts);
+}
+#endif // TEST_TYPES == 1
 
 template <WarpReduceBatchedMode Mode,
           bool SyncPhysicalWarp,
