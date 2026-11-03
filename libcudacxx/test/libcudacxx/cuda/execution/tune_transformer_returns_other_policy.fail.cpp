@@ -33,7 +33,6 @@ struct transformer_returns_other_policy
 
 TEST_FUNC void test()
 {
-  // the error is raised by a static_assert in the header, notes only point at the instantiation
   // expected-error@*:* {{must accept the returned policy type as second argument}}
   // expected-note@*:* 0+ {{}}
   [[maybe_unused]] auto env = cuda::execution::tune(transformer_returns_other_policy{});
