@@ -30,7 +30,7 @@ from cuda.coop.cutlass._compiler import (
     _state,
 )
 from cuda.coop.cutlass._lowering._load_store import _CubLoadStoreRequest
-from cuda.coop.cutlass._planning import ArgumentBinding, this_block
+from cuda.coop.cutlass._planning import ArgumentBinding, this_block, this_warp
 from tests._group_planning import _load_store, _plan
 
 pytestmark = [pytest.mark.unit, pytest.mark.backend_cutlass]
@@ -143,6 +143,33 @@ def test_direct_provider_has_no_storage_abi_or_barriers():
     assert "__shared__" not in source
     assert "__syncthreads" not in source
     assert "valid_items < 0 || valid_items > 128" in source
+
+
+@pytest.mark.parametrize(
+    "load_scope, store_scope",
+    (("block", "block"), ("warp", "warp"), ("block", "warp")),
+)
+def test_bundle_includes_only_requested_load_store_headers(
+    load_scope, store_scope
+):
+    groups = {"block": this_block, "warp": this_warp}
+    requests = [
+        _CubLoadStoreRequest(
+            _plan(groups[scope](), _load_store(kind, dtype=Int32)), Int32
+        )
+        for scope, kind in ((load_scope, "load"), (store_scope, "store"))
+    ]
+    source = _rendering.render_bundle_source([*requests, requests[0]])
+    includes = [
+        line for line in source.splitlines() if line.startswith("#include")
+    ]
+    assert includes == sorted(
+        (
+            f"#include <cub/{load_scope}/{load_scope}_load.cuh>",
+            f"#include <cub/{store_scope}/{store_scope}_store.cuh>",
+            "#include <cuda/std/cstdint>",
+        )
+    )
 
 
 def test_storage_free_request_identity_ignores_storage_controls():
