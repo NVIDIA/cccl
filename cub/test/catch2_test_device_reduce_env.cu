@@ -1601,6 +1601,10 @@ CUB_TEST_CASE("Device ReduceByKey two-phase accepts legacy null streams", "[redu
   REQUIRE(d_aggregates_out == c2h::device_vector<int>{0, 1, 6, 2, 4});
 }
 
+// The tuning environments are empty classes, which older CTKs (at least 12.9 and 13.0) cannot pass as kernel
+// parameters, so these tests cannot use the device launch (TEST_LAUNCH == 1).
+#  if TEST_LAUNCH == 0
+
 CUB_TEST("Device Reduce two-phase can be tuned", "[reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
@@ -1698,6 +1702,8 @@ CUB_TEST("Device ReduceByKey two-phase can be tuned", "[reduce][device]", CUB_SM
   REQUIRE(d_aggregates_out == c2h::device_vector<int>{0, 1, 6, 2, 4});
   REQUIRE(d_block_size[0] == target_block_size);
 }
+
+#  endif // TEST_LAUNCH == 0
 
 #endif // TEST_LAUNCH != 2
 
