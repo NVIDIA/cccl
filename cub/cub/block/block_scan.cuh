@@ -288,7 +288,7 @@ public:
   //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockScan()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**
@@ -304,7 +304,7 @@ public:
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockScan(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}

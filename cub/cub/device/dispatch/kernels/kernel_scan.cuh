@@ -67,7 +67,7 @@ struct batch_delay_constructor_t<fixed_delay_constructor_t<Delay, L2WriteLatency
     {
       if constexpr (Delay > 0)
       {
-        always_delay_or_prevent_hoisting<Delay>();
+        _CUB::detail::always_delay_or_prevent_hoisting<Delay>();
       }
       else
       {
@@ -80,7 +80,7 @@ struct batch_delay_constructor_t<fixed_delay_constructor_t<Delay, L2WriteLatency
   {
     if constexpr (L2WriteLatency > 0)
     {
-      always_delay<L2WriteLatency>();
+      _CUB::detail::always_delay<L2WriteLatency>();
     }
   }
 
@@ -172,7 +172,7 @@ template <typename PolicySelector, typename ScanTileState, typename AccumT>
 _CCCL_KERNEL_ATTRIBUTES
 __launch_bounds__(128) void DeviceScanBatchInitKernel(ScanTileState tile_state, scan_batch_state<AccumT>* batch_state)
 {
-  constexpr int tiles_per_batch = current_policy<PolicySelector>().lookback.tiles_per_batch;
+  constexpr int tiles_per_batch = _CUB::detail::current_policy<PolicySelector>().lookback.tiles_per_batch;
   static_assert(tiles_per_batch > 0, "Lookback scan batch size must be positive");
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
@@ -502,7 +502,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   const InitValueT init_value,
   const KernelNumItemsT kernel_num_items)
 {
-  constexpr ScanLookbackPolicy policy = current_policy<PolicySelector>().lookback;
+  constexpr ScanLookbackPolicy policy = _CUB::detail::current_policy<PolicySelector>().lookback;
   constexpr int tiles_per_batch       = policy.tiles_per_batch;
   static_assert(tiles_per_batch > 0, "Lookback scan batch size must be positive");
   // Occupancy-based grids caused sharp regressions when the delay helper switched to fences below 500 CTAs.
@@ -551,7 +551,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   {
     if (threadIdx.x == 0)
     {
-      tile_idx = claim_batch_tile<tiles_per_batch>(batch_state, num_tiles, current_batch_idx);
+      tile_idx = _CUB::detail::scan::claim_batch_tile<tiles_per_batch>(batch_state, num_tiles, current_batch_idx);
     }
     // Separate consecutive uses of the shared tile index.
     __syncthreads();

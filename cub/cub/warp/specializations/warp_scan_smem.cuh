@@ -99,14 +99,14 @@ struct WarpScanSmem
     constexpr int OFFSET = 1 << STEP;
 
     // Share partial into buffer
-    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], partial);
+    _CUB::ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], partial);
 
     __syncwarp(member_mask);
 
     // Update partial if addend is in range
     if (HasIdentity || (lane_id >= OFFSET))
     {
-      T addend = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - OFFSET]);
+      T addend = (T) _CUB::ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - OFFSET]);
       partial  = scan_op(addend, partial);
     }
     __syncwarp(member_mask);
@@ -140,12 +140,12 @@ struct WarpScanSmem
   {
     if (lane_id == src_lane)
     {
-      ThreadStore<STORE_VOLATILE>(temp_storage, input);
+      _CUB::ThreadStore<STORE_VOLATILE>(temp_storage, input);
     }
 
     __syncwarp(member_mask);
 
-    return (T) ThreadLoad<LOAD_VOLATILE>(temp_storage);
+    return (T) _CUB::ThreadLoad<LOAD_VOLATILE>(temp_storage);
   }
 
   //---------------------------------------------------------------------
@@ -170,7 +170,7 @@ struct WarpScanSmem
     if constexpr (::cuda::has_identity_element_v<ScanOp, T>)
     {
       constexpr T identity = ::cuda::identity_element<ScanOp, T>();
-      ThreadStore<STORE_VOLATILE>(&temp_storage[lane_id], identity);
+      _CUB::ThreadStore<STORE_VOLATILE>(&temp_storage[lane_id], identity);
       __syncwarp(member_mask);
     }
 
@@ -200,11 +200,11 @@ struct WarpScanSmem
     InclusiveScan(input, inclusive_output, scan_op);
 
     // Retrieve aggregate
-    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive_output);
+    _CUB::ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive_output);
 
     __syncwarp(member_mask);
 
-    warp_aggregate = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
+    warp_aggregate = (T) _CUB::ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
 
     __syncwarp(member_mask);
   }
@@ -319,11 +319,11 @@ struct WarpScanSmem
   Update(T /*input*/, T& inclusive, T& exclusive, ScanOpT /*scan_op*/, IsIntegerT /*is_integer*/)
   {
     // initial value unknown
-    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive);
+    _CUB::ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive);
 
     __syncwarp(member_mask);
 
-    exclusive = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
+    exclusive = (T) _CUB::ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
   }
 
   /**
@@ -346,11 +346,11 @@ struct WarpScanSmem
   Update(T /*input*/, T& inclusive, T& exclusive, ScanOpT scan_op, T initial_value, IsIntegerT /*is_integer*/)
   {
     inclusive = scan_op(initial_value, inclusive);
-    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive);
+    _CUB::ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive);
 
     __syncwarp(member_mask);
 
-    exclusive = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
+    exclusive = (T) _CUB::ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
     if (lane_id == 0)
     {
       exclusive = initial_value;
@@ -381,12 +381,12 @@ struct WarpScanSmem
   Update(T /*input*/, T& inclusive, T& exclusive, T& warp_aggregate, ScanOpT /*scan_op*/, IsIntegerT /*is_integer*/)
   {
     // Initial value presumed to be unknown or identity (either way our padding is correct)
-    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive);
+    _CUB::ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive);
 
     __syncwarp(member_mask);
 
-    exclusive      = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
-    warp_aggregate = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
+    exclusive      = (T) _CUB::ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
+    warp_aggregate = (T) _CUB::ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
   }
 
   /**
@@ -402,11 +402,11 @@ struct WarpScanSmem
     ::cuda::std::true_type /*is_integer*/)
   {
     // Initial value presumed to be unknown or identity (either way our padding is correct)
-    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive);
+    _CUB::ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive);
 
     __syncwarp(member_mask);
 
-    warp_aggregate = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
+    warp_aggregate = (T) _CUB::ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
     exclusive      = inclusive - input;
   }
 
@@ -425,11 +425,11 @@ struct WarpScanSmem
     IsIntegerT /*is_integer*/)
   {
     // Broadcast warp aggregate
-    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive);
+    _CUB::ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive);
 
     __syncwarp(member_mask);
 
-    warp_aggregate = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
+    warp_aggregate = (T) _CUB::ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
 
     __syncwarp(member_mask);
 
@@ -437,11 +437,11 @@ struct WarpScanSmem
     inclusive = scan_op(initial_value, inclusive);
 
     // Get exclusive from exclusive
-    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1], inclusive);
+    _CUB::ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1], inclusive);
 
     __syncwarp(member_mask);
 
-    exclusive = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 2]);
+    exclusive = (T) _CUB::ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 2]);
 
     if (lane_id == 0)
     {

@@ -114,8 +114,9 @@ struct segment_size_to_tile_count_op
   template <typename SegmentIndexT>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr TotalNumItemsValueType operator()(SegmentIndexT segment_id) const
   {
-    return static_cast<TotalNumItemsValueType>(::cuda::ceil_div(
-      params::__get_and_clamp_param_to_nonnegative(segment_sizes, segment_id), large_segment_agent_tile_size));
+    return static_cast<TotalNumItemsValueType>(
+      ::cuda::ceil_div(_CUB::detail::params::__get_and_clamp_param_to_nonnegative(segment_sizes, segment_id),
+                       large_segment_agent_tile_size));
   }
 };
 
@@ -216,12 +217,12 @@ struct policy_selector_from_types
     const bool has_sm103_keys_tuning = !deterministic && ::cuda::std::is_same_v<ValueT, NullType> && sizeof(KeyT) == 4
                                     && cc == ::cuda::compute_capability{10, 3};
     const auto cluster =
-      has_sm100_pairs_tuning   ? make_sm100_pairs_cluster_policy(StaticMaxSegSize, MaxK)
-      : has_sm100_keys_tuning  ? make_sm100_keys_cluster_policy(StaticMaxSegSize, MaxK)
-      : has_sm103_pairs_tuning ? make_sm103_pairs_cluster_policy(StaticMaxSegSize, MaxK)
+      has_sm100_pairs_tuning   ? _CUB::detail::batched_topk::make_sm100_pairs_cluster_policy(StaticMaxSegSize, MaxK)
+      : has_sm100_keys_tuning  ? _CUB::detail::batched_topk::make_sm100_keys_cluster_policy(StaticMaxSegSize, MaxK)
+      : has_sm103_pairs_tuning ? _CUB::detail::batched_topk::make_sm103_pairs_cluster_policy(StaticMaxSegSize, MaxK)
       : has_sm103_keys_tuning
-        ? make_sm103_keys_cluster_policy(StaticMaxSegSize, MaxK)
-        : make_cluster_policy();
+        ? _CUB::detail::batched_topk::make_sm103_keys_cluster_policy(StaticMaxSegSize, MaxK)
+        : _CUB::detail::batched_topk::make_cluster_policy();
     return topk_policy{backend, baseline_policy, cluster};
   }
 };
@@ -791,7 +792,7 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
     using num_segments_val_t         = typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type;
     using counters_t                 = batched_topk_counters<num_segments_val_t>;
     using segment_size_scan_offset_t = detail::choose_offset_t<num_segments_val_t>;
-    const auto num_segments_val      = params::get_param(num_segments, num_segments_val_t{0});
+    const auto num_segments_val      = _CUB::detail::params::get_param(num_segments, num_segments_val_t{0});
     using segment_size_scan_input_op_t =
       segment_size_to_tile_count_op<SegmentSizeParameterT, large_segment_tile_offset_t>;
     static constexpr auto multi_worker_per_segment_tile_size =
@@ -1043,7 +1044,7 @@ _CCCL_HOST_API cudaError_t dispatch_select(
   // `cudaErrorNotSupported` on unsupported devices); CUB's own tests and benchmarks do this so they can compile the
   // full configuration space across all target architectures and skip at runtime where unsupported.
   static_assert(
-    !any_target_cc_unsupported<policy_selector_t>(),
+    !_CUB::detail::batched_topk::any_target_cc_unsupported<policy_selector_t>(),
     "cub::DeviceBatchedTopK: the requested top-k configuration cannot be served on at least one architecture this "
     "translation unit targets. The deterministic / large-segment path requires the cluster backend (SM90+), which is "
     "unavailable either because a pre-SM90 architecture is targeted or because _CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH is "
@@ -1231,16 +1232,18 @@ _CCCL_HOST_API cudaError_t dispatch(
   // parameters and their types take part in a kernel's identity. Types are derived through declval rather than from
   // the variables so they can feed the constant initializers below (GCC 7, see the select-direction note in
   // `dispatch_select`).
-  using SegmentSizeParameterT = decltype(detail::params::normalize_param(::cuda::std::declval<SegmentSizeArgT>()));
-  using KParameterT           = decltype(detail::params::normalize_param(::cuda::std::declval<KArgT>()));
-  using NumSegmentsParameterT = decltype(detail::params::normalize_param(::cuda::std::declval<NumSegmentsArgT>()));
+  using SegmentSizeParameterT =
+    decltype(_CUB::detail::params::normalize_param(::cuda::std::declval<SegmentSizeArgT>()));
+  using KParameterT = decltype(_CUB::detail::params::normalize_param(::cuda::std::declval<KArgT>()));
+  using NumSegmentsParameterT =
+    decltype(_CUB::detail::params::normalize_param(::cuda::std::declval<NumSegmentsArgT>()));
   using TotalNumItemsGuaranteeT =
-    decltype(detail::params::normalize_param(::cuda::std::declval<TotalNumItemsGuaranteeArgT>()));
-  const SegmentSizeParameterT segment_sizes = detail::params::normalize_param(segment_sizes_arg);
-  const KParameterT k                       = detail::params::normalize_param(k_arg);
-  const NumSegmentsParameterT num_segments  = detail::params::normalize_param(num_segments_arg);
+    decltype(_CUB::detail::params::normalize_param(::cuda::std::declval<TotalNumItemsGuaranteeArgT>()));
+  const SegmentSizeParameterT segment_sizes = _CUB::detail::params::normalize_param(segment_sizes_arg);
+  const KParameterT k                       = _CUB::detail::params::normalize_param(k_arg);
+  const NumSegmentsParameterT num_segments  = _CUB::detail::params::normalize_param(num_segments_arg);
   const TotalNumItemsGuaranteeT total_num_items_guarantee =
-    detail::params::normalize_param(total_num_items_guarantee_arg);
+    _CUB::detail::params::normalize_param(total_num_items_guarantee_arg);
 
   // Both selection arms and the sort grid resolve `num_segments` on the host.
   static_assert(::cuda::args::__traits<NumSegmentsParameterT>::is_single_value

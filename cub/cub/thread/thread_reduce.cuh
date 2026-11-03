@@ -358,22 +358,22 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, Reducti
   static_assert(simd_ratio == 2, "Only SIMD size == 2 is supported");
   T local_array[length_rounded];
   _CUB::UnrolledCopy<length_rounded>(input, local_array);
-  auto simd_input      = unsafe_bitcast<SimdArray>(local_array);
+  auto simd_input      = _CUB::detail::unsafe_bitcast<SimdArray>(local_array);
   auto simd_reduction  = _CUB::ThreadReduce(simd_input, SimdReduceOp{});
-  auto unpacked_values = unsafe_bitcast<UnpackedType>(simd_reduction);
+  auto unpacked_values = _CUB::detail::unsafe_bitcast<UnpackedType>(simd_reduction);
   // Create a reversed copy of the SIMD reduction result and apply the SIMD operator.
   // This avoids redundant instructions for converting to and from 32-bit registers
   const T unpacked_values_rev[] = {unpacked_values[1], unpacked_values[0]};
-  auto simd_reduction_rev       = unsafe_bitcast<SimdType>(unpacked_values_rev);
+  auto simd_reduction_rev       = _CUB::detail::unsafe_bitcast<SimdType>(unpacked_values_rev);
   SimdType result               = SimdReduceOp{}(simd_reduction, simd_reduction_rev); // NOLINT(misc-const-correctness)
   // repeat the same optimization for the last element
   if constexpr (length % simd_ratio == 1)
   {
     const T tail[] = {input[length - 1], T{}};
-    auto tail_simd = unsafe_bitcast<SimdType>(tail);
+    auto tail_simd = _CUB::detail::unsafe_bitcast<SimdType>(tail);
     result         = SimdReduceOp{}(result, tail_simd);
   }
-  return unsafe_bitcast<UnpackedType>(result)[0];
+  return _CUB::detail::unsafe_bitcast<UnpackedType>(result)[0];
 }
 
 template <typename ReductionOp, typename T>

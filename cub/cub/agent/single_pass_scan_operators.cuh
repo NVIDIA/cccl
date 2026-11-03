@@ -215,7 +215,7 @@ struct no_delay_constructor_t
 
   _CCCL_DEVICE _CCCL_FORCEINLINE no_delay_constructor_t(unsigned int /* seed */)
   {
-    delay<L2WriteLatency>();
+    _CUB::detail::delay<L2WriteLatency>();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
@@ -233,9 +233,9 @@ struct reduce_by_key_delay_constructor_t
     {
       NV_DISPATCH_TARGET(
         NV_IS_EXACTLY_SM_80,
-        (delay<Delay, GridThreshold>();),
+        (_CUB::detail::delay<Delay, GridThreshold>();),
         NV_PROVIDES_SM_70,
-        (delay<0, GridThreshold>();),
+        (_CUB::detail::delay<0, GridThreshold>();),
         NV_IS_DEVICE,
         (__threadfence_block();));
     }
@@ -243,7 +243,7 @@ struct reduce_by_key_delay_constructor_t
 
   _CCCL_DEVICE _CCCL_FORCEINLINE reduce_by_key_delay_constructor_t(unsigned int /* seed */)
   {
-    delay<L2WriteLatency>();
+    _CUB::detail::delay<L2WriteLatency>();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
@@ -259,13 +259,13 @@ struct fixed_delay_constructor_t
   {
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
-      delay_or_prevent_hoisting<Delay>();
+      _CUB::detail::delay_or_prevent_hoisting<Delay>();
     }
   };
 
   _CCCL_DEVICE _CCCL_FORCEINLINE fixed_delay_constructor_t(unsigned int /* seed */)
   {
-    delay<L2WriteLatency>();
+    _CUB::detail::delay<L2WriteLatency>();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
@@ -290,7 +290,7 @@ struct exponential_backoff_constructor_t
 
   _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backoff_constructor_t(unsigned int /* seed */)
   {
-    always_delay<L2WriteLatency>();
+    _CUB::detail::always_delay<L2WriteLatency>();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
@@ -328,7 +328,7 @@ struct exponential_backoff_jitter_constructor_t
   _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backoff_jitter_constructor_t(unsigned int seed)
       : seed(seed)
   {
-    always_delay<L2WriteLatency>();
+    _CUB::detail::always_delay<L2WriteLatency>();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
@@ -366,7 +366,7 @@ struct exponential_backoff_jitter_window_constructor_t
   _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backoff_jitter_window_constructor_t(unsigned int seed)
       : seed(seed)
   {
-    always_delay<L2WriteLatency>();
+    _CUB::detail::always_delay<L2WriteLatency>();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
@@ -395,7 +395,7 @@ struct exponential_backon_jitter_window_constructor_t
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
       const int prev_delay = max_delay >> 1;
-      always_delay_or_prevent_hoisting(next(prev_delay, max_delay));
+      _CUB::detail::always_delay_or_prevent_hoisting(next(prev_delay, max_delay));
       max_delay = prev_delay;
     }
   };
@@ -406,7 +406,7 @@ struct exponential_backon_jitter_window_constructor_t
   _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backon_jitter_window_constructor_t(unsigned int seed)
       : seed(seed)
   {
-    always_delay<L2WriteLatency>();
+    _CUB::detail::always_delay<L2WriteLatency>();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
@@ -446,7 +446,7 @@ struct exponential_backon_jitter_constructor_t
   _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backon_jitter_constructor_t(unsigned int seed)
       : seed(seed)
   {
-    always_delay<L2WriteLatency>();
+    _CUB::detail::always_delay<L2WriteLatency>();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
@@ -474,7 +474,7 @@ struct exponential_backon_constructor_t
 
   _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backon_constructor_t(unsigned int /* seed */)
   {
-    always_delay<L2WriteLatency>();
+    _CUB::detail::always_delay<L2WriteLatency>();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
@@ -770,7 +770,7 @@ public:
     TxnWord value{};
     auto* const descriptor = reinterpret_cast<TileDescriptor*>(&value);
     descriptor->status     = StatusWord(SCAN_TILE_INVALID);
-    detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, value);
+    _CUB::detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, value);
   }
 
   /**
@@ -933,7 +933,7 @@ struct ScanTileState<T, false>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
   {
     // Update tile inclusive value
-    ThreadStore<STORE_CG>(d_tile_inclusive + TILE_STATUS_PADDING + tile_idx, tile_inclusive);
+    _CUB::ThreadStore<STORE_CG>(d_tile_inclusive + TILE_STATUS_PADDING + tile_idx, tile_inclusive);
     _CUB::detail::store_release(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_INCLUSIVE));
   }
 
@@ -944,14 +944,14 @@ struct ScanTileState<T, false>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
   {
     // Update tile partial value
-    ThreadStore<STORE_CG>(d_tile_partial + TILE_STATUS_PADDING + tile_idx, tile_partial);
+    _CUB::ThreadStore<STORE_CG>(d_tile_partial + TILE_STATUS_PADDING + tile_idx, tile_partial);
     _CUB::detail::store_release(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_PARTIAL));
   }
 
   //! Reset the specified tile to not-yet-set.
   _CCCL_DEVICE_API void __set_invalid(int tile_idx)
   {
-    detail::store_relaxed(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_INVALID));
+    _CUB::detail::store_relaxed(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_INVALID));
   }
 
   /**
@@ -972,11 +972,11 @@ struct ScanTileState<T, false>
     //_CCCL_IKET_RANGE_PUSH(LoadTileAggr);
     if (status == StatusWord(SCAN_TILE_PARTIAL))
     {
-      value = ThreadLoad<LOAD_CG>(d_tile_partial + TILE_STATUS_PADDING + tile_idx);
+      value = _CUB::ThreadLoad<LOAD_CG>(d_tile_partial + TILE_STATUS_PADDING + tile_idx);
     }
     else if (status == StatusWord(SCAN_TILE_INCLUSIVE))
     {
-      value = ThreadLoad<LOAD_CG>(d_tile_inclusive + TILE_STATUS_PADDING + tile_idx);
+      value = _CUB::ThreadLoad<LOAD_CG>(d_tile_inclusive + TILE_STATUS_PADDING + tile_idx);
     }
     //_CCCL_IKET_RANGE_POP();
   }

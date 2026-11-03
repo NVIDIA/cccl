@@ -327,9 +327,9 @@ template <class ValueT,
           class AccumT,
           class OffsetT,
           op_kind_t OpTypeT,
-          primitive_accum PrimitiveAccumulator = is_primitive_accum<AccumT>(),
-          offset_size OffsetSize               = classify_offset_size<OffsetT>(),
-          value_size ValueSize                 = classify_value_size<ValueT>()>
+          primitive_accum PrimitiveAccumulator = _CUB::detail::scan::is_primitive_accum<AccumT>(),
+          offset_size OffsetSize               = _CUB::detail::scan::classify_offset_size<OffsetT>(),
+          value_size ValueSize                 = _CUB::detail::scan::classify_value_size<ValueT>()>
 struct sm75_tuning;
 
 template <class ValueT, class AccumT, class OffsetT>
@@ -430,8 +430,8 @@ struct sm80_tuning<type_t::uint128, primitive_op::yes, primitive_accum::no, accu
 // TODO(griwes): remove for CCCL 4.0 when we drop the public scan dispatcher
 template <class AccumT,
           primitive_op PrimitiveOp,
-          primitive_accum PrimitiveAccumulator = is_primitive_accum<AccumT>(),
-          accum_size AccumSize                 = classify_accum_size<AccumT>()>
+          primitive_accum PrimitiveAccumulator = _CUB::detail::scan::is_primitive_accum<AccumT>(),
+          accum_size AccumSize                 = _CUB::detail::scan::classify_accum_size<AccumT>()>
 struct sm90_tuning;
 
 // TODO(bgruber): remove this in CCCL 4.0 when we remove the public scan dispatcher
@@ -472,9 +472,9 @@ template <class ValueT,
           class AccumT,
           class OffsetT,
           op_kind_t OpTypeT,
-          primitive_accum PrimitiveAccumulator = is_primitive_accum<AccumT>(),
-          offset_size OffsetSize               = classify_offset_size<OffsetT>(),
-          value_size ValueSize                 = classify_value_size<ValueT>()>
+          primitive_accum PrimitiveAccumulator = _CUB::detail::scan::is_primitive_accum<AccumT>(),
+          offset_size OffsetSize               = _CUB::detail::scan::classify_offset_size<OffsetT>(),
+          value_size ValueSize                 = _CUB::detail::scan::classify_value_size<ValueT>()>
 struct sm100_tuning;
 
 // sum
@@ -684,8 +684,8 @@ struct policy_hub
     using ScanPolicyT =
       decltype(select_agent_policy<sm80_tuning<classify_type<AccumT>,
                                                _CUB::detail::scan::is_primitive_op<ScanOpT>(),
-                                               is_primitive_accum<AccumT>(),
-                                               classify_accum_size<AccumT>()>>(0));
+                                               _CUB::detail::scan::is_primitive_accum<AccumT>(),
+                                               _CUB::detail::scan::classify_accum_size<AccumT>()>>(0));
   };
 
   struct Policy860
@@ -834,25 +834,26 @@ _CCCL_HOST_DEVICE_API constexpr void setup_scan_resources(
   SmemSumThreadAndWarpT& smemSumThreadAndWarp)
 {
   const warpspeed::SquadDesc scanSquads[] = {
-    squad_reduce(policy),
-    squad_scan(policy),
-    squad_load_and_next_idx(policy),
-    squad_lookahead(policy),
-    squad_store(policy),
+    _CUB::detail::scan::squad_reduce(policy),
+    _CUB::detail::scan::squad_scan(policy),
+    _CUB::detail::scan::squad_load_and_next_idx(policy),
+    _CUB::detail::scan::squad_lookahead(policy),
+    _CUB::detail::scan::squad_store(policy),
   };
 
-  smemInOut.addPhase(syncHandler, smemAllocator, squad_load_and_next_idx(policy));
-  smemInOut.addPhase(syncHandler, smemAllocator, {squad_reduce(policy), squad_scan(policy)});
-  smemInOut.addPhase(syncHandler, smemAllocator, squad_store(policy));
+  smemInOut.addPhase(syncHandler, smemAllocator, _CUB::detail::scan::squad_load_and_next_idx(policy));
+  smemInOut.addPhase(
+    syncHandler, smemAllocator, {_CUB::detail::scan::squad_reduce(policy), _CUB::detail::scan::squad_scan(policy)});
+  smemInOut.addPhase(syncHandler, smemAllocator, _CUB::detail::scan::squad_store(policy));
 
   smemNextBlockIdx.addPhase(syncHandler, smemAllocator, _CUB::detail::scan::squad_load_and_next_idx(policy));
   smemNextBlockIdx.addPhase(syncHandler, smemAllocator, scanSquads);
 
-  smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squad_lookahead(policy));
-  smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squad_scan(policy));
+  smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, _CUB::detail::scan::squad_lookahead(policy));
+  smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, _CUB::detail::scan::squad_scan(policy));
 
-  smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, squad_reduce(policy));
-  smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, squad_scan(policy));
+  smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, _CUB::detail::scan::squad_reduce(policy));
+  smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, _CUB::detail::scan::squad_scan(policy));
 }
 
 _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(

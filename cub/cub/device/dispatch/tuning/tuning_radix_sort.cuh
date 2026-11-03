@@ -1116,7 +1116,7 @@ template <typename LegacyActivePolicy>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr auto convert_policy(RadixSortPolicyWrapper<LegacyActivePolicy> policy)
   -> RadixSortPolicy
 {
-  return convert_policy<LegacyActivePolicy>();
+  return _CUB::detail::radix_sort::convert_policy<LegacyActivePolicy>();
 }
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
@@ -1125,7 +1125,7 @@ struct policy_selector_from_hub
 {
   _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> RadixSortPolicy
   {
-    return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
+    return _CUB::detail::radix_sort::convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
   }
 };
 
@@ -1872,7 +1872,8 @@ struct policy_selector
     const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
     const int onesweep_radix_bits    = 8;
 
-    const auto histogram = RadixSortHistogramPolicy{128, 16, __scale_num_parts(1, key_size), onesweep_radix_bits};
+    const auto histogram =
+      RadixSortHistogramPolicy{128, 16, _CUB::detail::radix_sort::__scale_num_parts(1, key_size), onesweep_radix_bits};
 
     const auto exclusive_sum = RadixSortExclusiveSumPolicy{256, onesweep_radix_bits};
 
@@ -1996,7 +1997,8 @@ struct policy_selector
       const bool use_tuning_for_large_keys =
         cc < ::cuda::compute_capability{10, 1} && key_type == type_t::int64 && value_size == 8 && offset_size == 8;
       return make_onesweep_small_key_policy(
-        get_sm100_tuning(key_size, value_size, offset_size, key_type), use_tuning_for_large_keys);
+        _CUB::detail::radix_sort::get_sm100_tuning(key_size, value_size, offset_size, key_type),
+        use_tuning_for_large_keys);
     }
 
     if (cc >= ::cuda::compute_capability{9, 0})
@@ -2014,7 +2016,8 @@ struct policy_selector
       const int onesweep_radix_bits = 8;
       const bool offset_64bit       = offset_size == 8;
 
-      const auto histogram = RadixSortHistogramPolicy{128, 16, __scale_num_parts(1, key_size), onesweep_radix_bits};
+      const auto histogram = RadixSortHistogramPolicy{
+        128, 16, _CUB::detail::radix_sort::__scale_num_parts(1, key_size), onesweep_radix_bits};
 
       const auto exclusive_sum = RadixSortExclusiveSumPolicy{256, onesweep_radix_bits};
 
@@ -2096,7 +2099,8 @@ struct policy_selector
       const int onesweep_radix_bits = 8;
       const bool offset_64bit       = offset_size == 8;
 
-      const auto histogram = RadixSortHistogramPolicy{256, 8, __scale_num_parts(8, key_size), onesweep_radix_bits};
+      const auto histogram =
+        RadixSortHistogramPolicy{256, 8, _CUB::detail::radix_sort::__scale_num_parts(8, key_size), onesweep_radix_bits};
 
       const auto exclusive_sum = RadixSortExclusiveSumPolicy{256, onesweep_radix_bits};
 
@@ -2176,7 +2180,8 @@ struct policy_selector
         key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
       const int onesweep_radix_bits = 8;
 
-      const auto histogram = RadixSortHistogramPolicy{256, 8, __scale_num_parts(8, key_size), onesweep_radix_bits};
+      const auto histogram =
+        RadixSortHistogramPolicy{256, 8, _CUB::detail::radix_sort::__scale_num_parts(8, key_size), onesweep_radix_bits};
 
       const auto exclusive_sum = RadixSortExclusiveSumPolicy{256, onesweep_radix_bits};
 
@@ -2260,7 +2265,8 @@ struct policy_selector
         key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
       const int onesweep_radix_bits = 8;
 
-      const auto histogram = RadixSortHistogramPolicy{256, 8, __scale_num_parts(8, key_size), onesweep_radix_bits};
+      const auto histogram =
+        RadixSortHistogramPolicy{256, 8, _CUB::detail::radix_sort::__scale_num_parts(8, key_size), onesweep_radix_bits};
 
       const auto exclusive_sum = RadixSortExclusiveSumPolicy{256, onesweep_radix_bits};
 
@@ -2342,7 +2348,8 @@ struct policy_selector
       const int onesweep_radix_bits = 8;
       const bool offset_64bit       = (offset_size == 8);
 
-      const auto histogram = RadixSortHistogramPolicy{256, 8, __scale_num_parts(8, key_size), onesweep_radix_bits};
+      const auto histogram =
+        RadixSortHistogramPolicy{256, 8, _CUB::detail::radix_sort::__scale_num_parts(8, key_size), onesweep_radix_bits};
 
       const auto exclusive_sum = RadixSortExclusiveSumPolicy{256, onesweep_radix_bits};
 
@@ -2423,7 +2430,8 @@ struct policy_selector
     const auto use_onesweep          = RadixSortAlgorithm::multi_pass;
     const int onesweep_radix_bits    = 8;
 
-    const auto histogram = RadixSortHistogramPolicy{256, 8, __scale_num_parts(1, key_size), onesweep_radix_bits};
+    const auto histogram =
+      RadixSortHistogramPolicy{256, 8, _CUB::detail::radix_sort::__scale_num_parts(1, key_size), onesweep_radix_bits};
 
     const auto exclusive_sum = RadixSortExclusiveSumPolicy{256, onesweep_radix_bits};
 

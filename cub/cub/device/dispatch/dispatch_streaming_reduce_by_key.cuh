@@ -104,21 +104,22 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
   int threads_per_block{};
   int items_per_thread{};
   size_t vsmem_per_block{};
-  if (const auto error = CubDebug(dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
-        ::cuda::std::tie(threads_per_block, items_per_thread, vsmem_per_block) = determine_threads_items_vsmem<
-          decltype(policy_getter),
-          KeysInputIteratorT,
-          UniqueOutputIteratorT,
-          ValuesInputIteratorT,
-          AggregatesOutputIteratorT,
-          NumRunsOutputIteratorT,
-          EqualityOpT,
-          ReductionOpT,
-          local_offset_t,
-          AccumT,
-          streaming_context_t>(policy_getter);
-        return cudaSuccess;
-      })))
+  if (const auto error =
+        CubDebug(_CUB::detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
+          ::cuda::std::tie(threads_per_block, items_per_thread, vsmem_per_block) = determine_threads_items_vsmem<
+            decltype(policy_getter),
+            KeysInputIteratorT,
+            UniqueOutputIteratorT,
+            ValuesInputIteratorT,
+            AggregatesOutputIteratorT,
+            NumRunsOutputIteratorT,
+            EqualityOpT,
+            ReductionOpT,
+            local_offset_t,
+            AccumT,
+            streaming_context_t>(policy_getter);
+          return cudaSuccess;
+        })))
   {
     return error;
   }

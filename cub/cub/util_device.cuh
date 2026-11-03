@@ -136,7 +136,7 @@ CUB_RUNTIME_FUNCTION inline int device_count_uncached()
 // TODO(bgruber): remove in CCCL 4.0
 _CCCL_HOST inline int device_count_cached_value()
 {
-  static const int count = device_count_uncached();
+  static const int count = _CUB::detail::device_count_uncached();
   return count;
 }
 
@@ -145,8 +145,9 @@ CUB_RUNTIME_FUNCTION inline int device_count()
 {
   int result = -1;
 
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST, ({ result = detail::device_count_cached_value(); }), ({ result = detail::device_count_uncached(); }));
+  NV_IF_ELSE_TARGET(NV_IS_HOST, ({ result = _CUB::detail::device_count_cached_value(); }), ({
+                      result = _CUB::detail::device_count_uncached();
+                    }));
 
   return result;
 }

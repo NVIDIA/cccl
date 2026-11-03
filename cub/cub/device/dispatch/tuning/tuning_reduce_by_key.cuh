@@ -1065,7 +1065,7 @@ private:
       prefer_thrust_tuning ? thrust_load_algorithm : BLOCK_LOAD_DIRECT,
       load_mod,
       BLOCK_SCAN_WARP_SCANS,
-      default_reduce_by_key_delay_constructor_policy(accum_size, sizeof(int), true, true)};
+      _CUB::detail::default_reduce_by_key_delay_constructor_policy(accum_size, sizeof(int), true, true)};
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookback_policy(::cuda::compute_capability cc) const

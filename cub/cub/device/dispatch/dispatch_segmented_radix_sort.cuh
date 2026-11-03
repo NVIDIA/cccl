@@ -124,7 +124,7 @@ struct policy_selector_from_hub
 {
   _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> SegmentedRadixSortPolicy
   {
-    return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
+    return _CUB::detail::segmented_radix_sort::convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
   }
 };
 } // namespace detail::segmented_radix_sort
@@ -365,7 +365,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
       }
 
       // Sync the stream if specified to flush runtime errors
-      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }

@@ -191,6 +191,8 @@ struct agent_t
       }
     }();
 
+    using ::cuda::std::data;
+
     key_type keys_loc[ItemsPerThread];
     key_type* keys1_shared;
     key_type* keys2_shared;

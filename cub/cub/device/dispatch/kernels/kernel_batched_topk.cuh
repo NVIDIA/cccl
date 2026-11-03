@@ -114,7 +114,7 @@ template <typename KeyT, typename ValueT, int Index = 0>
     constexpr bool fits_smem =
       sizeof(sort_temp_storage<KeyT, ValueT, candidate.threads_per_block, candidate.items_per_thread>)
       <= max_smem_per_block;
-    constexpr ::cuda::std::int64_t next = sort_covered_max<KeyT, ValueT, Index + 1>();
+    constexpr ::cuda::std::int64_t next = _CUB::detail::batched_topk::sort_covered_max<KeyT, ValueT, Index + 1>();
     return fits_smem && tile_size > next ? tile_size : next;
   }
 }
@@ -125,11 +125,11 @@ struct sixteen_byte_value
   ::cuda::std::int64_t second;
 };
 
-static_assert(sort_covered_max<::cuda::std::int32_t, ::cuda::std::int32_t>() >= 2048);
-static_assert(sort_covered_max<::cuda::std::int64_t, ::cuda::std::int32_t>() >= 2048);
-static_assert(sort_covered_max<::cuda::std::int64_t, ::cuda::std::int64_t>() >= 2048);
-static_assert(sort_covered_max<float, ::cuda::std::int32_t>() >= 2048);
-static_assert(sort_covered_max<::cuda::std::int64_t, sixteen_byte_value>() >= 2048);
+static_assert(_CUB::detail::batched_topk::sort_covered_max<::cuda::std::int32_t, ::cuda::std::int32_t>() >= 2048);
+static_assert(_CUB::detail::batched_topk::sort_covered_max<::cuda::std::int64_t, ::cuda::std::int32_t>() >= 2048);
+static_assert(_CUB::detail::batched_topk::sort_covered_max<::cuda::std::int64_t, ::cuda::std::int64_t>() >= 2048);
+static_assert(_CUB::detail::batched_topk::sort_covered_max<float, ::cuda::std::int32_t>() >= 2048);
+static_assert(_CUB::detail::batched_topk::sort_covered_max<::cuda::std::int64_t, sixteen_byte_value>() >= 2048);
 
 // Assert-free search shared by `find_smallest_covering_policy_device` and the backend coverage predicate. Returns the
 // index of the smallest worker policy whose tile size still covers the upper bound on segment size AND whose
@@ -247,7 +247,7 @@ private:
   {
     _CCCL_HOST_DEVICE_API constexpr auto operator()() const
     {
-      return current_policy<PolicySelector>();
+      return _CUB::detail::current_policy<PolicySelector>();
     }
   };
   using impl_t =
@@ -294,7 +294,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector, typename SegmentSizeParameterT, typename... AgentParamsT>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int topk_threads_per_block_helper() noexcept
 {
-  constexpr auto policy = current_policy<PolicySelector>();
+  constexpr auto policy = _CUB::detail::current_policy<PolicySelector>();
   if constexpr (policy.backend == topk_algorithm::baseline)
   {
     return find_smallest_covering_policy_device<PolicySelector, SegmentSizeParameterT, AgentParamsT...>::policy
@@ -315,7 +315,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int topk_min_blocks_per_sm_helper() noexcept
 {
-  constexpr auto policy = current_policy<PolicySelector>();
+  constexpr auto policy = _CUB::detail::current_policy<PolicySelector>();
   if constexpr (policy.backend == topk_algorithm::cluster)
   {
     return policy.cluster.min_blocks_per_sm;
@@ -334,7 +334,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int topk_max_blocks_per_cluster_helper() noexcept
 {
-  constexpr auto policy = current_policy<PolicySelector>();
+  constexpr auto policy = _CUB::detail::current_policy<PolicySelector>();
   if constexpr (policy.backend == topk_algorithm::cluster)
   {
     return policy.cluster.max_blocks_per_cluster;
@@ -367,7 +367,7 @@ struct cluster_policy_getter
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()() const
   {
-    return current_policy<PolicySelector>().cluster;
+    return _CUB::detail::current_policy<PolicySelector>().cluster;
   }
 };
 
@@ -415,7 +415,7 @@ device_batched_topk_kernel(
     base_args,
   [[maybe_unused]] cluster_kernel_args clus_args)
 {
-  constexpr auto policy = current_policy<PolicySelector>();
+  constexpr auto policy = _CUB::detail::current_policy<PolicySelector>();
 
   if constexpr (policy.backend == topk_algorithm::baseline)
   {
@@ -545,15 +545,15 @@ _CCCL_LAUNCH_BOUNDS(ThreadsPerBlock) _CCCL_KERNEL_ATTRIBUTES void device_batched
   using bit_ordered_type      = typename traits::bit_ordered_type;
 
   const int segment_id = static_cast<int>(blockIdx.x);
-  if (segment_id >= params::get_param(num_segments, 0))
+  if (segment_id >= _CUB::detail::params::get_param(num_segments, 0))
   {
     return;
   }
 
-  const auto segment_size = params::__get_and_clamp_param_to_nonnegative(segment_sizes, segment_id);
+  const auto segment_size = _CUB::detail::params::__get_and_clamp_param_to_nonnegative(segment_sizes, segment_id);
   const auto k_eff        = static_cast<decltype(segment_size)>(
     (::cuda::std::min) (static_cast<::cuda::std::uint64_t>(
-                          params::__get_and_clamp_param_to_nonnegative(k_param, segment_id)),
+                          _CUB::detail::params::__get_and_clamp_param_to_nonnegative(k_param, segment_id)),
                         static_cast<::cuda::std::uint64_t>(segment_size)));
   if (k_eff == 0)
   {
@@ -569,42 +569,43 @@ _CCCL_LAUNCH_BOUNDS(ThreadsPerBlock) _CCCL_KERNEL_ATTRIBUTES void device_batched
   KeyT keys[ItemsPerThread];
   ValueT values[ItemsPerThread];
 
-  const bool is_successful_dispatch = params::dispatch_discrete(select_directions, segment_id, [&](auto direction_tag) {
-    constexpr bool descending         = decltype(direction_tag)::value == detail::topk::select::max;
-    bit_ordered_type default_key_bits = descending ? traits::min_raw_binary_key(detail::identity_decomposer_t{})
-                                                   : traits::max_raw_binary_key(detail::identity_decomposer_t{});
-    KeyT default_key                  = reinterpret_cast<KeyT&>(default_key_bits);
+  const bool is_successful_dispatch =
+    _CUB::detail::params::dispatch_discrete(select_directions, segment_id, [&](auto direction_tag) {
+      constexpr bool descending         = decltype(direction_tag)::value == detail::topk::select::max;
+      bit_ordered_type default_key_bits = descending ? traits::min_raw_binary_key(detail::identity_decomposer_t{})
+                                                     : traits::max_raw_binary_key(detail::identity_decomposer_t{});
+      KeyT default_key                  = reinterpret_cast<KeyT&>(default_key_bits);
 
-    // Unstable sorting permits this register-only striped load, avoiding a shared-memory transpose.
-    if constexpr (is_keys_only)
-    {
-      LoadDirectStriped<ThreadsPerBlock>(threadIdx.x, d_keys, keys, valid_items, default_key);
-    }
-    else
-    {
-      const ValueT* const d_values = d_value_scratch + scratch_offset;
-      block_load_keys_t(temp_storage.load_keys).Load(d_keys, keys, valid_items, default_key);
-      __syncthreads();
-      block_load_values_t(temp_storage.load_values).Load(d_values, values, valid_items, ValueT{});
-      __syncthreads();
-    }
+      // Unstable sorting permits this register-only striped load, avoiding a shared-memory transpose.
+      if constexpr (is_keys_only)
+      {
+        _CUB::LoadDirectStriped<ThreadsPerBlock>(threadIdx.x, d_keys, keys, valid_items, default_key);
+      }
+      else
+      {
+        const ValueT* const d_values = d_value_scratch + scratch_offset;
+        block_load_keys_t(temp_storage.load_keys).Load(d_keys, keys, valid_items, default_key);
+        __syncthreads();
+        block_load_values_t(temp_storage.load_values).Load(d_values, values, valid_items, ValueT{});
+        __syncthreads();
+      }
 
-    // `NullType` selects BlockRadixSort's keys-only internal path, so this works for both keys and pairs.
-    if constexpr (descending)
-    {
-      block_radix_sort_t(temp_storage.sort).SortDescendingBlockedToStriped(keys, values);
-    }
-    else
-    {
-      block_radix_sort_t(temp_storage.sort).SortBlockedToStriped(keys, values);
-    }
+      // `NullType` selects BlockRadixSort's keys-only internal path, so this works for both keys and pairs.
+      if constexpr (descending)
+      {
+        block_radix_sort_t(temp_storage.sort).SortDescendingBlockedToStriped(keys, values);
+      }
+      else
+      {
+        block_radix_sort_t(temp_storage.sort).SortBlockedToStriped(keys, values);
+      }
 
-    StoreDirectStriped<ThreadsPerBlock>(threadIdx.x, d_key_segments_out_it[segment_id], keys, valid_items);
-    if constexpr (!is_keys_only)
-    {
-      StoreDirectStriped<ThreadsPerBlock>(threadIdx.x, d_value_segments_out_it[segment_id], values, valid_items);
-    }
-  });
+      _CUB::StoreDirectStriped<ThreadsPerBlock>(threadIdx.x, d_key_segments_out_it[segment_id], keys, valid_items);
+      if constexpr (!is_keys_only)
+      {
+        _CUB::StoreDirectStriped<ThreadsPerBlock>(threadIdx.x, d_value_segments_out_it[segment_id], values, valid_items);
+      }
+    });
   _CCCL_ASSERT(is_successful_dispatch, "Error: Unsupported select direction");
 }
 } // namespace detail::batched_topk

@@ -267,20 +267,20 @@ private:
     {
       using default_policy_selector =
         detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT, Determinism>;
-      return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
-        env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
-          return detail::reduce::dispatch<accum_t, /* StableReductionOrder */ true, NondeterminismFellBackToRunToRun>(
-            storage,
-            bytes,
-            d_in,
-            d_out,
-            _CUB::detail::make_num_items_dispatch_arg(num_items),
-            reduction_op,
-            init,
-            stream,
-            transform_op,
-            policy_selector);
-        });
+      return _CUB::detail::dispatch_with_env_and_tuning<
+        default_policy_selector>(env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+        return _CUB::detail::reduce::dispatch<accum_t, /* StableReductionOrder */ true, NondeterminismFellBackToRunToRun>(
+          storage,
+          bytes,
+          d_in,
+          d_out,
+          _CUB::detail::make_num_items_dispatch_arg(num_items),
+          reduction_op,
+          init,
+          stream,
+          transform_op,
+          policy_selector);
+      });
     }
   }
 
@@ -1084,7 +1084,7 @@ private:
     using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
     using reduce_op_t         = detail::arg_reduce_op<CompareOpT>;
 
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT,
                                                            __streaming_reduce_nondeterminism_fell_back<EnvT>()>(
         storage,

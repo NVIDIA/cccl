@@ -364,7 +364,7 @@ struct AgentRadixSortDownsweep
     {
       if constexpr (LOAD_WARP_STRIPED)
       {
-        LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values);
+        _CUB::LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values);
       }
       else
       {
@@ -379,7 +379,7 @@ struct AgentRadixSortDownsweep
       const OffsetT load_valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
       if constexpr (LOAD_WARP_STRIPED)
       {
-        LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values, load_valid_items);
+        _CUB::LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values, load_valid_items);
       }
       else
       {
@@ -410,7 +410,7 @@ struct AgentRadixSortDownsweep
     {
       if constexpr (LOAD_WARP_STRIPED)
       {
-        LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys);
+        _CUB::LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys);
       }
       else
       {
@@ -425,7 +425,7 @@ struct AgentRadixSortDownsweep
       const OffsetT load_valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
       if constexpr (LOAD_WARP_STRIPED)
       {
-        LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys, load_valid_items, default_key);
+        _CUB::LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys, load_valid_items, default_key);
       }
       else
       {

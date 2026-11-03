@@ -225,14 +225,14 @@ private:
     cudaStream_t stream,
     PolicySelectorT policy_selector)
   {
-    return detail::scan::dispatch<EnforceInclusive, StableReductionOrder>(
+    return _CUB::detail::scan::dispatch<EnforceInclusive, StableReductionOrder>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       scan_op,
       init,
-      detail::make_num_items_dispatch_arg(num_items),
+      _CUB::detail::make_num_items_dispatch_arg(num_items),
       stream,
       policy_selector);
   }
@@ -308,7 +308,7 @@ private:
   {
     using traits_t = scan_env_traits<InputIteratorT, OutputIteratorT, ScanOpT, InitValueT, NumItemsT, EnvT>;
 
-    return detail::dispatch_with_env_and_tuning<typename traits_t::default_policy_selector_t>(
+    return _CUB::detail::dispatch_with_env_and_tuning<typename traits_t::default_policy_selector_t>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
         return scan_impl_determinism<EnforceInclusive, traits_t::stable_reduction_order>(
           storage, bytes, d_in, d_out, scan_op, init, num_items, stream, policy_selector);
@@ -334,7 +334,7 @@ private:
   {
     using traits_t = scan_env_traits<InputIteratorT, OutputIteratorT, ScanOpT, InitValueT, NumItemsT, EnvT>;
 
-    return detail::dispatch_with_env_and_tuning<typename traits_t::default_policy_selector_t>(
+    return _CUB::detail::dispatch_with_env_and_tuning<typename traits_t::default_policy_selector_t>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
         return scan_impl_determinism<EnforceInclusive, traits_t::stable_reduction_order>(
           storage, bytes, d_in, d_out, scan_op, init, num_items, stream, policy_selector);

@@ -92,7 +92,7 @@ dispatch_with_env_and_runs_on(const EnvT& env, const AlgorithmCallable& algorith
   auto guarantees = ::cuda::__call_or(::cuda::execution::__get_guarantees, ::cuda::std::execution::env<>{}, env);
   auto runs_on    = ::cuda::__call_or(experimental::__get_runs_on, experimental::RunsOn{}, guarantees);
 
-  return detail::dispatch_with_env(
+  return _CUB::detail::dispatch_with_env(
     env, [&](auto&& tuning, void* d_temp_storage, size_t& temp_storage_bytes, ::cudaStream_t stream) {
       return algorithm_callable(tuning, d_temp_storage, temp_storage_bytes, stream, runs_on);
     });
@@ -147,7 +147,7 @@ template <typename EnvT, typename AlgorithmCallable>
   auto runs_on    = ::cuda::__call_or(experimental::__get_runs_on, experimental::RunsOn{}, guarantees);
 
   // Preserve the separate storage query so callers can size storage without a device.
-  return detail::dispatch_with_env(
+  return _CUB::detail::dispatch_with_env(
     d_temp_storage, temp_storage_bytes, env, [&](auto&& tuning, void* storage, size_t& bytes, ::cudaStream_t stream) {
       return algorithm_callable(tuning, storage, bytes, stream, runs_on);
     });

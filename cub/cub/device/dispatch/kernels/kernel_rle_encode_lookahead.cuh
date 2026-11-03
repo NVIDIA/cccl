@@ -504,7 +504,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
   int lane_id,
   int& dense_mode)
 {
-  constexpr int poll_items_per_thread = current_policy<PolicySelector>().lookahead.poll_items_per_thread;
+  constexpr int poll_items_per_thread = _CUB::detail::current_policy<PolicySelector>().lookahead.poll_items_per_thread;
   static_assert(WindowSizeCap >= 1 && WindowSizeCap <= detail::warp_threads * poll_items_per_thread,
                 "the fold window must be covered by the lanes");
   while (first_unseen_tile_id < tile_id)
@@ -536,7 +536,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
       }
     } while (__any_sync(full_mask, !ready));
 
-    constexpr int tile_size = current_policy<PolicySelector>().lookahead.tile_size();
+    constexpr int tile_size = _CUB::detail::current_policy<PolicySelector>().lookahead.tile_size();
     int lane_run_count = 0, lane_last_packed = -1;
     // now, we fold the window
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -563,7 +563,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
         ? window_size * tile_size
         : (last_packed & 0xffff) + (window_size - 1 - (last_packed >> 16)) * tile_size;
     // dense_mode is true if the window has more than dense_mode_runs_per_tile runs per tile
-    dense_mode = window_run_count > window_size * current_policy<PolicySelector>().lookahead.dense_mode_runs_per_tile;
+    dense_mode = window_run_count
+               > window_size * _CUB::detail::current_policy<PolicySelector>().lookahead.dense_mode_runs_per_tile;
     // combine last_seen_prefix with the window_size aggregate
     const OffT new_run_count     = last_seen_prefix_run_count + window_run_count;
     const OffT new_open_length   = (window_run_count > 0) ? static_cast<OffT>(window_open_length)
@@ -596,7 +597,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_and_fold(
     // fold it. as we fold the small window, more tiles in the next window are becoming ready, so we get some
     // overlapping
     _CUB::detail::rle::encode::poll_fold_windows<
-      detail::warp_threads * current_policy<PolicySelector>().lookahead.dense_poll_items_per_thread,
+      detail::warp_threads * _CUB::detail::current_policy<PolicySelector>().lookahead.dense_poll_items_per_thread,
       PolicySelector>(
       tile_partial_states,
       tile_id,
@@ -610,7 +611,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_and_fold(
   {
     // when it is sparse, compute has a high rate of publishing tile states. so we just poll the big window at once
     _CUB::detail::rle::encode::poll_fold_windows<
-      detail::warp_threads * current_policy<PolicySelector>().lookahead.poll_items_per_thread,
+      detail::warp_threads * _CUB::detail::current_policy<PolicySelector>().lookahead.poll_items_per_thread,
       PolicySelector>(
       tile_partial_states,
       tile_id,
@@ -638,7 +639,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   int pos_ring_stages,
   bool keys_staged)
 {
-  static constexpr RleLookaheadPolicy policy = current_policy<PolicySelector>().lookahead;
+  static constexpr RleLookaheadPolicy policy = _CUB::detail::current_policy<PolicySelector>().lookahead;
   static_assert(16 % sizeof(KeyT) == 0, "KeyT size must be a power of two <= 16");
   static_assert(alignof(KeyT) <= 16, "Alignment <= 16");
 
@@ -1276,7 +1277,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceRleEncodeLookaheadInitKernel(StateT* states, 
 template <typename PolicySelector>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int get_device_rle_encode_lookahead_launch_bounds() noexcept
 {
-  return _CUB::detail::rle::encode::num_total_threads(current_policy<PolicySelector>().lookahead);
+  return _CUB::detail::rle::encode::num_total_threads(_CUB::detail::current_policy<PolicySelector>().lookahead);
 }
 
 // need a variable template for clang in CUDA mode to avoid:
@@ -1299,7 +1300,7 @@ __launch_bounds__(device_rle_encode_lookahead_launch_bounds<PolicySelector>, 1)
     int pos_ring_stages,
     bool keys_staged)
 {
-  static constexpr RleEncodePolicy active_policy = current_policy<PolicySelector>();
+  static constexpr RleEncodePolicy active_policy = _CUB::detail::current_policy<PolicySelector>();
   if constexpr (active_policy.algorithm == RleAlgorithm::lookahead)
   {
     NV_IF_TARGET(

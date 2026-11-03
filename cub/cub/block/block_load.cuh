@@ -231,7 +231,7 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < vectors_per_thread; i++)
     {
-      vec_items[i] = ThreadLoad<MODIFIER>(vec_ptr + i);
+      vec_items[i] = _CUB::ThreadLoad<MODIFIER>(vec_ptr + i);
     }
 
     // Copy to destination

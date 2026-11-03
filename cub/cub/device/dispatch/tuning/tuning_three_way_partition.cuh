@@ -437,7 +437,7 @@ struct policy_hub
   {
     using ThreeWayPartitionPolicy = agent_three_way_partition_policy<
       256,
-      Nominal4BItemsToItems<InputT>(9),
+      _CUB::Nominal4BItemsToItems<InputT>(9),
       BLOCK_LOAD_DIRECT,
       LOAD_DEFAULT,
       BLOCK_SCAN_WARP_SCANS,

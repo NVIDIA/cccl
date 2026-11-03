@@ -354,7 +354,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedReduce") D
       }
 
       // Sync the stream if specified to flush runtime errors
-      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -514,7 +514,8 @@ template <
   typename ReductionOpT,
   typename InitValueT = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
   typename AccumT =
-    decltype(select_segmented_accum_t<InputIteratorT, InitValueT, ReductionOpT>(static_cast<OverrideAccumT*>(nullptr))),
+    decltype(_CUB::detail::segmented_reduce::select_segmented_accum_t<InputIteratorT, InitValueT, ReductionOpT>(
+      static_cast<OverrideAccumT*>(nullptr))),
   typename PolicySelector = policy_selector_from_types<AccumT, OffsetT, ReductionOpT>,
   typename KernelSource   = DeviceSegmentedReduceKernelSource<
     PolicySelector,
@@ -717,9 +718,10 @@ template <typename OverrideAccumT = use_default,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitValueT     = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
-          typename AccumT         = decltype(select_segmented_accum_t<InputIteratorT, InitValueT, ReductionOpT>(
-            static_cast<OverrideAccumT*>(nullptr))),
+          typename InitValueT = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
+          typename AccumT =
+            decltype(_CUB::detail::segmented_reduce::select_segmented_accum_t<InputIteratorT, InitValueT, ReductionOpT>(
+              static_cast<OverrideAccumT*>(nullptr))),
           typename PolicySelector = policy_selector_from_types<AccumT, OffsetT, ReductionOpT>,
           typename KernelSource   = DeviceFixedSizeSegmentedReduceKernelSource<
             PolicySelector,

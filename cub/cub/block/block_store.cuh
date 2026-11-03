@@ -197,7 +197,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
     }
 
     // Direct-store using vector types
-    StoreDirectBlocked(linear_tid, reinterpret_cast<vector_t*>(block_ptr), vec_items);
+    _CUB::StoreDirectBlocked(linear_tid, reinterpret_cast<vector_t*>(block_ptr), vec_items);
   }
   else
   {
