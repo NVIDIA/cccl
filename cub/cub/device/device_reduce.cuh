@@ -193,9 +193,36 @@ inline constexpr bool is_non_deterministic_v =
 struct DeviceReduce
 {
 private:
+  // Temporary storage allocated from the memory resource of the environment by the single-phase overloads
+  struct env_temp_storage
+  {};
+
+  // Temporary storage provided by the caller of the two-phase overloads
+  struct user_temp_storage
+  {
+    void* d_temp_storage;
+    size_t& temp_storage_bytes;
+  };
+
+  template <typename DefaultPolicySelector, typename EnvT, typename AlgorithmCallable>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  dispatch_with_env_and_tuning(env_temp_storage, const EnvT& env, const AlgorithmCallable& algorithm_callable)
+  {
+    return detail::dispatch_with_env_and_tuning<DefaultPolicySelector>(env, algorithm_callable);
+  }
+
+  template <typename DefaultPolicySelector, typename EnvT, typename AlgorithmCallable>
+  CUB_RUNTIME_FUNCTION static cudaError_t dispatch_with_env_and_tuning(
+    user_temp_storage temp_storage, const EnvT& env, const AlgorithmCallable& algorithm_callable)
+  {
+    return detail::dispatch_with_env_and_tuning<DefaultPolicySelector>(
+      temp_storage.d_temp_storage, temp_storage.temp_storage_bytes, env, algorithm_callable);
+  }
+
   // NondeterminismFellBackToRunToRun is true if the user requested determinism::not_guaranteed, but we fell back to
   // run_to_run
   template <bool NondeterminismFellBackToRunToRun = false,
+            typename TempStorageT,
             typename EnvT,
             typename InputIteratorT,
             typename OutputIteratorT,
@@ -205,6 +232,7 @@ private:
             typename NumItemsT,
             ::cuda::execution::determinism::__determinism_t Determinism>
   CUB_RUNTIME_FUNCTION static cudaError_t reduce_impl(
+    TempStorageT temp_storage,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     NumItemsT num_items,
@@ -225,8 +253,8 @@ private:
       (void) reduction_op;
       using default_policy_selector = detail::reduce::
         policy_selector_from_types<accum_t, offset_t, detail::rfa::deterministic_sum_t<accum_t>, Determinism>;
-      return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-        env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+      return dispatch_with_env_and_tuning<default_policy_selector>(
+        temp_storage, env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
           return detail::rfa::dispatch<InputIteratorT,
                                        OutputIteratorT,
                                        decltype(detail::make_num_items_dispatch_arg(num_items)),
@@ -248,8 +276,8 @@ private:
     {
       using default_policy_selector =
         detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT, Determinism>;
-      return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-        env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+      return dispatch_with_env_and_tuning<default_policy_selector>(
+        temp_storage, env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
           return detail::reduce::dispatch<accum_t, /* StableReductionOrder */ false>(
             storage,
             bytes,
@@ -267,8 +295,8 @@ private:
     {
       using default_policy_selector =
         detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT, Determinism>;
-      return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-        env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+      return dispatch_with_env_and_tuning<default_policy_selector>(
+        temp_storage, env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
           return detail::reduce::dispatch<accum_t, /* StableReductionOrder */ true, NondeterminismFellBackToRunToRun>(
             storage,
             bytes,
@@ -285,7 +313,8 @@ private:
   }
 
   //! @brief Internal implementation shared by Reduce and TransformReduce env overloads
-  template <typename InputIteratorT,
+  template <typename TempStorageT,
+            typename InputIteratorT,
             typename OutputIteratorT,
             typename ReductionOpT,
             typename TransformOpT,
@@ -295,6 +324,7 @@ private:
             typename AccumT = decltype(detail::reduce::select_accum_t<InputIteratorT, T, ReductionOpT, TransformOpT>(
               static_cast<detail::use_default*>(nullptr)))>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __transform_reduce(
+    TempStorageT temp_storage,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     NumItemsT num_items,
@@ -370,17 +400,19 @@ private:
       constexpr bool fell_back_to_run_to_run =
         no_determinism && ::cuda::std::is_same_v<determinism_t, ::cuda::execution::determinism::run_to_run_t>;
       return reduce_impl<fell_back_to_run_to_run>(
-        d_in, d_out, num_items, reduction_op, transform_op, init, determinism_t{}, env);
+        temp_storage, d_in, d_out, num_items, reduction_op, transform_op, init, determinism_t{}, env);
     }
   }
 
-  template <typename InputIteratorT,
+  template <typename TempStorageT,
+            typename InputIteratorT,
             typename OutputIteratorT,
             typename ReductionOpT,
             typename InitValueT,
             typename NumItemsT,
             typename EnvT>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __minmax_reduce(
+    TempStorageT temp_storage,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     NumItemsT num_items,
@@ -407,7 +439,50 @@ private:
     // we forced run_to_run above, so a request for not_guaranteed fell back to it
     constexpr bool fell_back_to_run_to_run = detail::is_non_deterministic_v<requested_determinism_t>;
     return reduce_impl<fell_back_to_run_to_run>(
-      d_in, d_out, num_items, reduction_op, ::cuda::std::identity{}, init, determinism_t{}, env);
+      temp_storage, d_in, d_out, num_items, reduction_op, ::cuda::std::identity{}, init, determinism_t{}, env);
+  }
+
+  template <typename TempStorageT,
+            typename KeysInputIteratorT,
+            typename UniqueOutputIteratorT,
+            typename ValuesInputIteratorT,
+            typename AggregatesOutputIteratorT,
+            typename NumRunsOutputIteratorT,
+            typename ReductionOpT,
+            typename NumItemsT,
+            typename EnvT>
+  CUB_RUNTIME_FUNCTION static cudaError_t reduce_by_key_impl(
+    TempStorageT temp_storage,
+    KeysInputIteratorT d_keys_in,
+    UniqueOutputIteratorT d_unique_out,
+    ValuesInputIteratorT d_values_in,
+    AggregatesOutputIteratorT d_aggregates_out,
+    NumRunsOutputIteratorT d_num_runs_out,
+    ReductionOpT reduction_op,
+    NumItemsT num_items,
+    const EnvT& env)
+  {
+    using OffsetT                 = detail::choose_offset_t<NumItemsT>;
+    using EqualityOp              = ::cuda::std::equal_to<>;
+    using default_policy_selector = detail::reduce_by_key::policy_selector_from_types<
+      ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<ValuesInputIteratorT>>,
+      detail::non_void_value_t<UniqueOutputIteratorT, detail::it_value_t<KeysInputIteratorT>>>;
+    return dispatch_with_env_and_tuning<default_policy_selector>(
+      temp_storage, env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+        return detail::reduce_by_key::dispatch(
+          storage,
+          bytes,
+          d_keys_in,
+          d_unique_out,
+          d_values_in,
+          d_aggregates_out,
+          d_num_runs_out,
+          EqualityOp{},
+          reduction_op,
+          static_cast<OffsetT>(num_items),
+          stream,
+          policy_selector);
+      });
   }
 
 public:
@@ -490,6 +565,9 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -511,11 +589,16 @@ public:
   //! @param[in] init
   //!   Initial value of the reduction
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename ReductionOpT, typename T, typename NumItemsT>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ReductionOpT,
+            typename T,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t Reduce(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -524,19 +607,19 @@ public:
     NumItemsT num_items,
     ReductionOpT reduction_op,
     T init,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Reduce");
 
-    return detail::reduce::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
+    return __transform_reduce(
+      user_temp_storage{d_temp_storage, temp_storage_bytes},
       d_in,
       d_out,
-      detail::make_num_items_dispatch_arg(num_items),
+      num_items,
       reduction_op,
+      ::cuda::std::identity{},
       init,
-      stream);
+      env);
   }
 
   //! @rst
@@ -628,7 +711,8 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Reduce");
-    return __transform_reduce(d_in, d_out, num_items, reduction_op, ::cuda::std::identity{}, init, env);
+    return __transform_reduce(
+      env_temp_storage{}, d_in, d_out, num_items, reduction_op, ::cuda::std::identity{}, init, env);
   }
 
   //! @rst
@@ -704,7 +788,8 @@ public:
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Sum");
     using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
 
-    return __transform_reduce(d_in, d_out, num_items, ::cuda::std::plus<>{}, ::cuda::std::identity{}, OutputT{}, env);
+    return __transform_reduce(
+      env_temp_storage{}, d_in, d_out, num_items, ::cuda::std::plus<>{}, ::cuda::std::identity{}, OutputT{}, env);
   }
 
   //! @rst
@@ -765,6 +850,9 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -780,18 +868,21 @@ public:
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of `d_in`)
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Sum(void* d_temp_storage,
       size_t& temp_storage_bytes,
       InputIteratorT d_in,
       OutputIteratorT d_out,
       NumItemsT num_items,
-      cudaStream_t stream = nullptr)
+      const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Sum");
 
@@ -800,15 +891,15 @@ public:
 
     using init_value_t = OutputT;
 
-    return detail::reduce::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
+    return __transform_reduce(
+      user_temp_storage{d_temp_storage, temp_storage_bytes},
       d_in,
       d_out,
-      detail::make_num_items_dispatch_arg(num_items),
+      num_items,
       ::cuda::std::plus<>{},
-      init_value_t{}, // zero-initialize
-      stream);
+      ::cuda::std::identity{},
+      init_value_t{},
+      env);
   }
 
   //! @rst
@@ -872,6 +963,9 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -887,18 +981,21 @@ public:
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of ``d_in``)
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Min(void* d_temp_storage,
       size_t& temp_storage_bytes,
       InputIteratorT d_in,
       OutputIteratorT d_out,
       NumItemsT num_items,
-      cudaStream_t stream = nullptr)
+      const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Min");
 
@@ -913,15 +1010,14 @@ public:
                   "CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX to suppress this check.");
 #endif // CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
 
-    return detail::reduce::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
+    return __minmax_reduce(
+      user_temp_storage{d_temp_storage, temp_storage_bytes},
       d_in,
       d_out,
-      detail::make_num_items_dispatch_arg(num_items),
+      num_items,
       ::cuda::minimum<>{},
       limits_t::max(),
-      stream);
+      env);
   }
 
   //! @rst
@@ -994,7 +1090,7 @@ public:
                   "probably a bug and you should specialize cuda::std::numeric_limits. Define "
                   "CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX to suppress this check.");
 #endif // CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
-    return __minmax_reduce(d_in, d_out, num_items, ::cuda::minimum<>{}, limits_t::max(), env);
+    return __minmax_reduce(env_temp_storage{}, d_in, d_out, num_items, ::cuda::minimum<>{}, limits_t::max(), env);
   }
 
 private:
@@ -1533,6 +1629,9 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -1548,18 +1647,21 @@ public:
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of ``d_in``)
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Max(void* d_temp_storage,
       size_t& temp_storage_bytes,
       InputIteratorT d_in,
       OutputIteratorT d_out,
       NumItemsT num_items,
-      cudaStream_t stream = nullptr)
+      const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Max");
 
@@ -1574,15 +1676,14 @@ public:
                   "CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX to suppress this check.");
 #endif // CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
 
-    return detail::reduce::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
+    return __minmax_reduce(
+      user_temp_storage{d_temp_storage, temp_storage_bytes},
       d_in,
       d_out,
-      detail::make_num_items_dispatch_arg(num_items),
+      num_items,
       ::cuda::maximum<>{},
       limits_t::lowest(),
-      stream);
+      env);
   }
 
   //! @rst
@@ -1656,7 +1757,7 @@ public:
       "should specialize cuda::std::numeric_limits. Define "
       "CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX to suppress this check.");
 #endif // CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
-    return __minmax_reduce(d_in, d_out, num_items, ::cuda::maximum<>{}, limits_t::lowest(), env);
+    return __minmax_reduce(env_temp_storage{}, d_in, d_out, num_items, ::cuda::maximum<>{}, limits_t::lowest(), env);
   }
 
   //! @rst
@@ -2589,6 +2690,9 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2613,16 +2717,17 @@ public:
   //! @param[in] init
   //!   Initial value of the reduction
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename ReductionOpT,
             typename TransformOpT,
             typename T,
-            typename NumItemsT>
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t TransformReduce(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -2632,20 +2737,19 @@ public:
     ReductionOpT reduction_op,
     TransformOpT transform_op,
     T init,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::TransformReduce");
 
-    return detail::reduce::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
+    return __transform_reduce(
+      user_temp_storage{d_temp_storage, temp_storage_bytes},
       d_in,
       d_out,
-      detail::make_num_items_dispatch_arg(num_items),
+      num_items,
       reduction_op,
+      transform_op,
       init,
-      stream,
-      transform_op);
+      env);
   }
 
   //! @rst
@@ -2748,7 +2852,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::TransformReduce");
-    return __transform_reduce(d_in, d_out, num_items, reduction_op, transform_op, init, env);
+    return __transform_reduce(env_temp_storage{}, d_in, d_out, num_items, reduction_op, transform_op, init, env);
   }
 
   //! @rst
@@ -2859,28 +2963,16 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ReduceByKey");
-
-    using OffsetT                 = detail::choose_offset_t<NumItemsT>;
-    using EqualityOp              = ::cuda::std::equal_to<>;
-    using default_policy_selector = detail::reduce_by_key::policy_selector_from_types<
-      ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<ValuesInputIteratorT>>,
-      detail::non_void_value_t<UniqueOutputIteratorT, detail::it_value_t<KeysInputIteratorT>>>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::reduce_by_key::dispatch(
-          storage,
-          bytes,
-          d_keys_in,
-          d_unique_out,
-          d_values_in,
-          d_aggregates_out,
-          d_num_runs_out,
-          EqualityOp{},
-          reduction_op,
-          static_cast<OffsetT>(num_items),
-          stream,
-          policy_selector);
-      });
+    return reduce_by_key_impl(
+      env_temp_storage{},
+      d_keys_in,
+      d_unique_out,
+      d_values_in,
+      d_aggregates_out,
+      d_num_runs_out,
+      reduction_op,
+      num_items,
+      env);
   }
 
   //! @rst
@@ -2985,6 +3077,9 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -3015,9 +3110,9 @@ public:
   //!   Total number of associated key+value pairs
   //!   (i.e., the length of ``d_in_keys`` and ``d_in_values``)
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename KeysInputIteratorT,
             typename UniqueOutputIteratorT,
@@ -3025,7 +3120,8 @@ public:
             typename AggregatesOutputIteratorT,
             typename NumRunsOutputIteratorT,
             typename ReductionOpT,
-            typename NumItemsT>
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t ReduceByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -3036,25 +3132,20 @@ public:
     NumRunsOutputIteratorT d_num_runs_out,
     ReductionOpT reduction_op,
     NumItemsT num_items,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ReduceByKey");
 
-    using OffsetT    = detail::choose_offset_t<NumItemsT>;
-    using EqualityOp = ::cuda::std::equal_to<>;
-
-    return detail::reduce_by_key::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
+    return reduce_by_key_impl(
+      user_temp_storage{d_temp_storage, temp_storage_bytes},
       d_keys_in,
       d_unique_out,
       d_values_in,
       d_aggregates_out,
       d_num_runs_out,
-      EqualityOp{},
       reduction_op,
-      static_cast<OffsetT>(num_items),
-      stream);
+      num_items,
+      env);
   }
 };
 CUB_NAMESPACE_END
