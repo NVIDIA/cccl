@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
+
 // UNSUPPORTED: force-tile
 // error calling a __host__ __device__ function from a __host__ __device__ __tile__ function is not allowed
 
