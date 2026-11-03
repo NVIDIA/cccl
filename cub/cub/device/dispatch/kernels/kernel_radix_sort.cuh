@@ -543,9 +543,9 @@ _CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(_CUB::detail::current_policy<Poli
     const int num_bits,
     const DecomposerT decomposer = {})
 {
-  static constexpr RadixSortOnesweepPolicy policy = current_policy<PolicySelector>().onesweep;
+  static constexpr RadixSortOnesweepPolicy policy = _CUB::detail::current_policy<PolicySelector>().onesweep;
   // The digit offsets computed by the histogram and exclusive sum kernels must use the same digits as this kernel
-  static_assert(policy.radix_bits == current_policy<PolicySelector>().histogram.radix_bits,
+  static_assert(policy.radix_bits == _CUB::detail::current_policy<PolicySelector>().histogram.radix_bits,
                 "RadixSortPolicy: onesweep.radix_bits must equal histogram.radix_bits");
   using OnesweepPolicyT = detail::agent_radix_sort_onesweep_policy<
     0,
@@ -591,9 +591,9 @@ _CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(_CUB::detail::current_policy<Poli
 template <typename PolicySelector, typename OffsetT>
 _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* const d_bins)
 {
-  static constexpr RadixSortExclusiveSumPolicy policy = current_policy<PolicySelector>().exclusive_sum;
+  static constexpr RadixSortExclusiveSumPolicy policy = _CUB::detail::current_policy<PolicySelector>().exclusive_sum;
   // The bins written by the histogram kernel must use the same digits as this kernel
-  static_assert(policy.radix_bits == current_policy<PolicySelector>().histogram.radix_bits,
+  static_assert(policy.radix_bits == _CUB::detail::current_policy<PolicySelector>().histogram.radix_bits,
                 "RadixSortPolicy: exclusive_sum.radix_bits must equal histogram.radix_bits");
   constexpr int RADIX_BITS      = policy.radix_bits;
   constexpr int RADIX_DIGITS    = 1 << RADIX_BITS;

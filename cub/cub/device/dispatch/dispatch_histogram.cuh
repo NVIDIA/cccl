@@ -748,7 +748,7 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> HistogramPolicy
     ap::IS_RLE_COMPRESS,
     ap::MEM_PREFERENCE,
     ap::IS_WORK_STEALING,
-    convert_pdl_trigger<ActivePolicy>(0)};
+    _CUB::detail::histogram::convert_pdl_trigger<ActivePolicy>(0)};
 }
 
 // TODO(bgruber): drop in CCCL 4.0
@@ -763,7 +763,7 @@ private:
     template <typename ActivePolicyT>
     _CCCL_HOST_DEVICE_API constexpr cudaError_t Invoke()
     {
-      policy = convert_policy<ActivePolicyT>();
+      policy = _CUB::detail::histogram::convert_policy<ActivePolicyT>();
       return cudaSuccess;
     }
   };
@@ -778,7 +778,7 @@ public:
                         _CCCL_VERIFY(MaxPolicy::Invoke(cc.get() * 10, dispatch) == cudaSuccess, "");
                         return policy;
                       }),
-                      ({ return convert_policy<typename MaxPolicy::ActivePolicy>(); }));
+                      ({ return _CUB::detail::histogram::convert_policy<typename MaxPolicy::ActivePolicy>(); }));
   }
 };
 

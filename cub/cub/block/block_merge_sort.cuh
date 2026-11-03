@@ -110,7 +110,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
   int (&indices)[ItemsPerThread],
   CompareOp compare_op)
 {
-  serial_merge<Unroll>(
+  _CUB::detail::serial_merge<Unroll>(
     keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, output[0]);
 }
 } // namespace detail

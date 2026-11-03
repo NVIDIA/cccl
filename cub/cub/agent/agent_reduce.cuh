@@ -278,7 +278,7 @@ struct AgentReduceImpl
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduceImpl(
     TempStorage& temp_storage, InputIteratorT d_in, ReductionOp reduction_op, TransformOp transform_op, int lane_id)
       : temp_storage(temp_storage.Alias())
-      , d_in(try_make_cache_modified_iterator<AgentReducePolicy::LOAD_MODIFIER>(d_in))
+      , d_in(_CUB::detail::try_make_cache_modified_iterator<AgentReducePolicy::LOAD_MODIFIER>(d_in))
       , reduction_op(reduction_op)
       , transform_op(transform_op)
       , lane_id(lane_id)

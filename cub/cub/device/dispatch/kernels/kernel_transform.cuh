@@ -153,10 +153,10 @@ _CCCL_DEVICE void transform_kernel_prefetch(
   }
 
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-  (..., prefetch_tile<ThreadsPerBlock, PrefetchByteStride>(ins, valid_items));
+  (..., _CUB::detail::transform::prefetch_tile<ThreadsPerBlock, PrefetchByteStride>(ins, valid_items));
 
   auto process_tile = [&](auto full_tile, auto... ins2 /* nvcc fails to compile when just using the captured ins */) {
-    unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
+    _CUB::detail::transform::unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
       const int idx = j * ThreadsPerBlock + threadIdx.x;
       if (full_tile || idx < valid_items)
       {
@@ -484,7 +484,8 @@ _CCCL_DEVICE void memcpy_async_maybe_unaligned(void* dst, const void* src, unsig
     _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(dst_ptr + head_bytes), "");
     _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(src_ptr + head_bytes), "");
     _CCCL_ASSERT(aligned_bytes_to_copy % ldgsts_size_and_align == 0, "");
-    memcpy_async_aligned<ThreadsPerBlock>(dst_ptr + head_bytes, src_ptr + head_bytes, aligned_bytes_to_copy);
+    _CUB::detail::transform::memcpy_async_aligned<ThreadsPerBlock>(
+      dst_ptr + head_bytes, src_ptr + head_bytes, aligned_bytes_to_copy);
   }
 
   // TODO(bgruber): ahendriksen suggested to copy elements instead of bytes, but it generates about 20 instructions more
@@ -540,7 +541,7 @@ copy_and_return_smem_dst(AlignedPtr aligned_ptr, int& smem_offset, Offset offset
   }
 
   smem_offset += bytes_to_copy; // leaves aligned address for follow-up copy
-  memcpy_async_aligned<ThreadsPerBlock>(dst, src, bytes_to_copy);
+  _CUB::detail::transform::memcpy_async_aligned<ThreadsPerBlock>(dst, src, bytes_to_copy);
   const char* const dst_start_of_data = dst + (alignof(T) < ldgsts_size_and_align ? aligned_ptr.head_padding : 0);
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(dst_start_of_data), "");
   return reinterpret_cast<const T*>(dst_start_of_data);
@@ -569,7 +570,7 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(src), "");
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(dst), "");
   const int bytes_to_copy = int{sizeof(T)} * valid_items;
-  memcpy_async_maybe_unaligned<ThreadsPerBlock>(dst, src, bytes_to_copy, head_padding);
+  _CUB::detail::transform::memcpy_async_maybe_unaligned<ThreadsPerBlock>(dst, src, bytes_to_copy, head_padding);
 
   // add ldgsts_size_and_align to account for this tile's head padding
   smem_offset += ldgsts_size_and_align + int{sizeof(T)} * tile_size;
@@ -629,7 +630,7 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   // TODO(bgruber): fbusato suggests to move the valid_items and smem_base_ptrs by threadIdx.x before the loop below
 
   auto process_tile = [&](auto full_tile) {
-    unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
+    _CUB::detail::transform::unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
       const int idx = j * ThreadsPerBlock + threadIdx.x;
       if (full_tile || idx < valid_items)
       {
@@ -977,7 +978,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
         _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(src), "");
         _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(dst), "");
         const int bytes_to_copy = int{sizeof(T)} * valid_items;
-        bulk_copy_maybe_unaligned<bulk_copy_alignment>(
+        _CUB::detail::transform::bulk_copy_maybe_unaligned<bulk_copy_alignment>(
           dst, src, bytes_to_copy, aligned_ptr.head_padding, bar, total_copied, elected);
 
         // add padding to account for this tile's head padding
@@ -1149,7 +1150,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   // fallback when we can't vectorize
 
   auto process_tile = [&](auto full_tile) {
-    unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
+    _CUB::detail::transform::unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
       // TODO(bgruber): fbusato suggests to hoist threadIdx.x out of the loop below
       const int idx = j * ThreadsPerBlock + threadIdx.x;
       if (full_tile || idx < valid_items)

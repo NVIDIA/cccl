@@ -157,12 +157,12 @@ _CCCL_FORCEINLINE _CCCL_DEVICE void LoadVector(const char* ptr, VectorT& data_ou
   // If `ptr` is aligned to four bytes, we can perform a simple uint32_t-aliased load
   if (offset == 0)
   {
-    LoadVectorAndFunnelShiftR<true>(aligned_ptr, bit_shift, data_out);
+    _CUB::detail::batch_memcpy::LoadVectorAndFunnelShiftR<true>(aligned_ptr, bit_shift, data_out);
   }
   // Otherwise, we need to load extra bytes and perform funnel-shifting
   else
   {
-    LoadVectorAndFunnelShiftR<false>(aligned_ptr, bit_shift, data_out);
+    _CUB::detail::batch_memcpy::LoadVectorAndFunnelShiftR<false>(aligned_ptr, bit_shift, data_out);
   }
 }
 
@@ -869,7 +869,7 @@ private:
     for (BlockBufferOffsetT buffer_offset = warp_id; buffer_offset < num_wlev_buffers; buffer_offset += warps_per_block)
     {
       const auto buffer_id = buffers_by_size_class[buffer_offset].buffer_id;
-      copy_items<IsMemcpy, warp_threads, InputBufferT, OutputBufferT, BufferSizeT>(
+      _CUB::detail::batch_memcpy::copy_items<IsMemcpy, warp_threads, InputBufferT, OutputBufferT, BufferSizeT>(
         tile_buffer_srcs[buffer_id], tile_buffer_dsts[buffer_id], tile_buffer_sizes[buffer_id]);
     }
   }
@@ -960,7 +960,7 @@ private:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int32_t i = 0; i < TLEV_BYTES_PER_THREAD; i++)
         {
-          src_byte[i] = read_item<IsMemcpy, AliasT, InputBufferT>(
+          src_byte[i] = _CUB::detail::batch_memcpy::read_item<IsMemcpy, AliasT, InputBufferT>(
             tile_buffer_srcs[zipped_byte_assignment[i].tile_buffer_id], zipped_byte_assignment[i].buffer_byte_offset);
           absolute_tlev_byte_offset += BLOCK_THREADS;
         }
@@ -968,7 +968,7 @@ private:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int32_t i = 0; i < TLEV_BYTES_PER_THREAD; i++)
         {
-          write_item<IsMemcpy, AliasT, OutputBufferT>(
+          _CUB::detail::batch_memcpy::write_item<IsMemcpy, AliasT, OutputBufferT>(
             tile_buffer_dsts[zipped_byte_assignment[i].tile_buffer_id],
             zipped_byte_assignment[i].buffer_byte_offset,
             src_byte[i]);
@@ -983,9 +983,9 @@ private:
         {
           if (absolute_tlev_byte_offset < num_total_tlev_bytes)
           {
-            const AliasT src_byte = read_item<IsMemcpy, AliasT, InputBufferT>(
+            const AliasT src_byte = _CUB::detail::batch_memcpy::read_item<IsMemcpy, AliasT, InputBufferT>(
               tile_buffer_srcs[zipped_byte_assignment[i].tile_buffer_id], zipped_byte_assignment[i].buffer_byte_offset);
-            write_item<IsMemcpy, AliasT, OutputBufferT>(
+            _CUB::detail::batch_memcpy::write_item<IsMemcpy, AliasT, OutputBufferT>(
               tile_buffer_dsts[zipped_byte_assignment[i].tile_buffer_id],
               zipped_byte_assignment[i].buffer_byte_offset,
               src_byte);

@@ -321,7 +321,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     constexpr int tile_size                                   = threads_per_block * items_per_thread;
     const auto num_tiles      = static_cast<unsigned int>(::cuda::ceil_div(num_items, tile_size));
     const int total_bits      = detail::radix::traits_t<key_in_t>::default_end_bit(decomposer);
-    const int num_passes      = calc_num_passes<bits_per_pass>(total_bits);
+    const int num_passes      = _CUB::detail::topk::calc_num_passes<bits_per_pass>(total_bits);
     constexpr int num_buckets = 1 << bits_per_pass;
 
     // Define operators

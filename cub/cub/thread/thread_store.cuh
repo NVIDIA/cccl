@@ -102,7 +102,7 @@ struct iterate_thread_store
   template <CacheStoreModifier MODIFIER, typename T>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void Store(T* ptr, T* vals)
   {
-    ThreadStore<MODIFIER>(ptr + COUNT, vals[COUNT]);
+    _CUB::ThreadStore<MODIFIER>(ptr + COUNT, vals[COUNT]);
     iterate_thread_store<COUNT + 1, MAX>::template Store<MODIFIER>(ptr, vals);
   }
 
@@ -130,7 +130,7 @@ struct iterate_thread_store<MAX, MAX>
 template <CacheStoreModifier MODIFIER, typename T, size_t... Is>
 _CCCL_DEVICE _CCCL_FORCEINLINE void store_helper(T* ptr, T* vals, ::cuda::std::index_sequence<Is...>)
 {
-  (ThreadStore<MODIFIER>(ptr + Is, vals[Is]), ...);
+  (_CUB::ThreadStore<MODIFIER>(ptr + Is, vals[Is]), ...);
 }
 
 template <typename T, size_t... Is>

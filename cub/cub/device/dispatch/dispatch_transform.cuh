@@ -621,9 +621,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                 && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
                 && tile::tile_dispatch_eligible_v<TransformOp, RandomAccessIteratorOut, RandomAccessIteratorsIn...>)
   {
-    if (tile::device_supports_tile() && tile::runtime_preconditions_valid(in, out, num_items))
+    if (_CUB::detail::transform::tile::device_supports_tile()
+        && _CUB::detail::transform::tile::runtime_preconditions_valid(in, out, num_items))
     {
-      return tile::dispatch<TransformOp>(in, out, num_items, stream);
+      return _CUB::detail::transform::tile::dispatch<TransformOp>(in, out, num_items, stream);
     }
   }
 #endif // _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
@@ -634,7 +635,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  return dispatch_compute_cap(
+  return _CUB::detail::dispatch_compute_cap(
     policy_selector,
     cc,
     invoke_for_cc<RequiresStableAddress,

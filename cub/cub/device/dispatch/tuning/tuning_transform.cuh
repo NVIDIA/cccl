@@ -435,7 +435,8 @@ struct policy_selector
       // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
       // then runs on the next architecture after that, which may have a smaller available SMEM, we get a crash.
       const bool exhaust_smem =
-        bulk_copy_dyn_smem_for_tile_size<InputCount>(inputs, async_block_size * async.min_items_per_thread, alignment)
+        _CUB::detail::transform::bulk_copy_dyn_smem_for_tile_size<InputCount>(
+          inputs, async_block_size * async.min_items_per_thread, alignment)
         > int{max_smem_per_block};
 
       // if each tile size is a multiple of the bulk copy and maximum value type alignments, the alignment is retained
@@ -492,7 +493,7 @@ struct policy_selector
       // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
       // then runs on the next architecture after that, which may have a smaller available SMEM, we get a crash.
       const bool exhaust_smem =
-        memcpy_async_dyn_smem_for_tile_size<InputCount>(
+        _CUB::detail::transform::memcpy_async_dyn_smem_for_tile_size<InputCount>(
           inputs, threads_per_block * async.min_items_per_thread, ldgsts_size_and_align)
         > int{max_smem_per_block};
 

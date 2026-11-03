@@ -991,7 +991,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_batched_loo
   // Compute allocation pointers into the single storage blob
   void* allocations[2]{};
   if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -1044,13 +1044,13 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_batched_loo
                 batch_state,
                 ::cuda::std::move(scan_op),
                 init_value,
-                detail::make_num_items_kernel_arg(num_items))))
+                _CUB::detail::make_num_items_kernel_arg(num_items))))
   {
     return error;
   }
 
   // Sync the stream if specified to flush runtime errors
-  return CubDebug(detail::DebugSyncStream(stream));
+  return CubDebug(_CUB::detail::DebugSyncStream(stream));
 }
 
 template <typename PolicyGetter,
@@ -1090,14 +1090,15 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
     "Lookback scan batch size must leave room for tile-state padding");
 
   // Number of input tiles
-  const int tile_size  = active_policy.threads_per_block * active_policy.items_per_thread;
-  const auto max_tiles = ::cuda::ceil_div(static_cast<::cuda::std::uint64_t>(detail::num_items_upper_bound(num_items)),
-                                          static_cast<::cuda::std::uint64_t>(tile_size));
+  const int tile_size = active_policy.threads_per_block * active_policy.items_per_thread;
+  const auto max_tiles =
+    ::cuda::ceil_div(static_cast<::cuda::std::uint64_t>(_CUB::detail::num_items_upper_bound(num_items)),
+                     static_cast<::cuda::std::uint64_t>(tile_size));
   if constexpr (::cuda::args::__is_deferred_v<NumItemsT>)
   {
     if (max_tiles > static_cast<::cuda::std::uint64_t>(active_policy.tiles_per_batch))
     {
-      return invoke_batched_lookback(
+      return _CUB::detail::scan::invoke_batched_lookback(
         policy_getter,
         d_temp_storage,
         temp_storage_bytes,
@@ -1217,7 +1218,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
                   start_tile,
                   scan_op,
                   init_value,
-                  detail::make_num_items_kernel_arg(num_items),
+                  _CUB::detail::make_num_items_kernel_arg(num_items),
                   /* num_stages, unused */ 1)))
     {
       return error;
@@ -1468,7 +1469,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke(
     if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == ScanAlgorithm::lookahead)
     {
       const bool atomic_scheduling = cc == ::cuda::compute_capability{9, 0};
-      return invoke_lookahead(
+      return _CUB::detail::scan::invoke_lookahead(
         policy_getter,
         d_temp_storage,
         temp_storage_bytes,
@@ -1485,7 +1486,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke(
     }
     else
     {
-      return invoke_lookback(
+      return _CUB::detail::scan::invoke_lookback(
         policy_getter,
         d_temp_storage,
         temp_storage_bytes,
@@ -1583,7 +1584,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       static_assert(policy_getter().algorithm == ScanAlgorithm::lookback,
                     "Deferred DeviceScan counts require a tuning policy selecting lookback.");
     }
-    detail::log_dispatch("DeviceScan", cc, policy_getter());
+    _CUB::detail::log_dispatch("DeviceScan", cc, policy_getter());
 
     return _CUB::detail::scan::invoke(
       policy_getter,
@@ -1600,7 +1601,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       launcher_factory);
   };
 
-  return dispatch_compute_cap(policy_selector, cc, invoke_with_policy);
+  return _CUB::detail::dispatch_compute_cap(policy_selector, cc, invoke_with_policy);
 }
 
 template <
@@ -1646,15 +1647,16 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_with_accum(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {}) -> cudaError_t
 {
-  return dispatch<EnforceInclusive,
-                  StableReductionOrder,
-                  InputIteratorT,
-                  OutputIteratorT,
-                  ScanOpT,
-                  InitValueT,
-                  NumItemsT,
-                  AccumT,
-                  OffsetT>(
+  return _CUB::detail::scan::dispatch<
+    EnforceInclusive,
+    StableReductionOrder,
+    InputIteratorT,
+    OutputIteratorT,
+    ScanOpT,
+    InitValueT,
+    NumItemsT,
+    AccumT,
+    OffsetT>(
     d_temp_storage,
     temp_storage_bytes,
     d_in,

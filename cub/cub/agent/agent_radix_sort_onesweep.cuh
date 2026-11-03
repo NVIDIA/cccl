@@ -19,6 +19,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/block/block_load.cuh>
 #include <cub/block/block_radix_rank.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
@@ -286,7 +287,7 @@ struct AgentRadixSortOnesweep
         // write the local sum into the bin
         AtomicOffsetT& loc   = d_lookback[block_idx * RADIX_DIGITS + bin];
         PortionOffsetT value = bins[u] | LOOKBACK_PARTIAL_MASK;
-        ThreadStore<STORE_VOLATILE>(&loc, value);
+        _CUB::ThreadStore<STORE_VOLATILE>(&loc, value);
       }
     }
   }
@@ -340,7 +341,7 @@ struct AgentRadixSortOnesweep
           do
           {
             __threadfence_block(); // prevent hoisting loads from loop
-            value_j = ThreadLoad<LOAD_VOLATILE>(&loc_j);
+            value_j = _CUB::ThreadLoad<LOAD_VOLATILE>(&loc_j);
           } while (value_j == 0);
 
           inc_sum += value_j & LOOKBACK_VALUE_MASK;
@@ -352,7 +353,7 @@ struct AgentRadixSortOnesweep
         }
         AtomicOffsetT& loc_i   = d_lookback[block_idx * RADIX_DIGITS + bin];
         PortionOffsetT value_i = inc_sum | LOOKBACK_GLOBAL_MASK;
-        ThreadStore<STORE_VOLATILE>(&loc_i, value_i);
+        _CUB::ThreadStore<STORE_VOLATILE>(&loc_i, value_i);
         s.global_offsets[bin] += inc_sum - bins[u];
       }
     }
@@ -601,7 +602,7 @@ struct AgentRadixSortOnesweep
       num_writes = __shfl_sync(WARP_MASK, num_writes, last_lane);
       if (lane < num_writes)
       {
-        ThreadStore<CACHE_MODIFIER>(&d_keys_out[global_idx], key_out);
+        _CUB::ThreadStore<CACHE_MODIFIER>(&d_keys_out[global_idx], key_out);
       }
       warp_offset += num_writes;
     }
@@ -612,7 +613,7 @@ struct AgentRadixSortOnesweep
         int idx              = warp_offset + lane;
         bit_ordered_type key = s.keys_out[idx];
         OffsetT global_idx   = idx + s.global_offsets[Digit(key)];
-        ThreadStore<CACHE_MODIFIER>(&d_keys_out[global_idx], Twiddle::Out(key, decomposer));
+        _CUB::ThreadStore<CACHE_MODIFIER>(&d_keys_out[global_idx], Twiddle::Out(key, decomposer));
       }
     }
   }

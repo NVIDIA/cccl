@@ -264,7 +264,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     const auto kernel_num_items = [=] {
       if constexpr (::cuda::args::__traits<OffsetT>::is_deferred)
       {
-        return detail::make_num_items_kernel_arg(num_items);
+        return _CUB::detail::make_num_items_kernel_arg(num_items);
       }
       else
       {
@@ -340,7 +340,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
                 DeterministicAccumT>,
               d_block_reductions,
               d_out,
-              detail::make_num_items_kernel_arg(num_items),
+              _CUB::detail::make_num_items_kernel_arg(num_items),
               reduce_grid_size,
               reduction_op,
               init,
@@ -427,14 +427,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
     if (num_items <= tile_items)
     {
-      return invoke_single_tile<PolicySelector,
-                                input_unwrapped_it_t,
-                                OutputIteratorT,
-                                OffsetT,
-                                deterministic_add_t,
-                                InitValueT,
-                                typename deterministic_add_t::DeterministicAcc,
-                                TransformOpT>(
+      return _CUB::detail::rfa::invoke_single_tile<
+        PolicySelector,
+        input_unwrapped_it_t,
+        OutputIteratorT,
+        OffsetT,
+        deterministic_add_t,
+        InitValueT,
+        typename deterministic_add_t::DeterministicAcc,
+        TransformOpT>(
         d_temp_storage,
         temp_storage_bytes,
         d_in_unwrapped,
@@ -449,14 +450,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     }
   }
 
-  return invoke_passes<PolicySelector,
-                       input_unwrapped_it_t,
-                       OutputIteratorT,
-                       OffsetT,
-                       deterministic_add_t,
-                       InitValueT,
-                       typename deterministic_add_t::DeterministicAcc,
-                       TransformOpT>(
+  return _CUB::detail::rfa::invoke_passes<
+    PolicySelector,
+    input_unwrapped_it_t,
+    OutputIteratorT,
+    OffsetT,
+    deterministic_add_t,
+    InitValueT,
+    typename deterministic_add_t::DeterministicAcc,
+    TransformOpT>(
     d_temp_storage,
     temp_storage_bytes,
     d_in_unwrapped,

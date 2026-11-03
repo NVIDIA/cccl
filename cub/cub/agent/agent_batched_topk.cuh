@@ -204,7 +204,7 @@ struct agent_batched_topk_worker_per_segment
 
     // Boundary check
     // TODO (elstehle): consider skipping boundary check if we can safely assume the right grid dimensions
-    if (segment_id >= params::get_param(num_segments, 0))
+    if (segment_id >= _CUB::detail::params::get_param(num_segments, 0))
     {
       return;
     }
@@ -213,7 +213,7 @@ struct agent_batched_topk_worker_per_segment
                                && ::cuda::args::__traits<SegmentSizeParameterT>::lowest == tile_size;
 
     // Resolve Segment Parameters
-    const auto segment_size = params::__get_and_clamp_param_to_nonnegative(segment_sizes, segment_id);
+    const auto segment_size = _CUB::detail::params::__get_and_clamp_param_to_nonnegative(segment_sizes, segment_id);
     if (!only_small_segments && segment_size > tile_size)
     {
       // Enqueue large segment
@@ -234,7 +234,7 @@ struct agent_batched_topk_worker_per_segment
       // so a `k` type narrower than the segment size cannot wrap; the result fits the segment-size type.
       const auto k = static_cast<decltype(segment_size)>(
         (::cuda::std::min) (static_cast<::cuda::std::uint64_t>(
-                              params::__get_and_clamp_param_to_nonnegative(k_param, segment_id)),
+                              _CUB::detail::params::__get_and_clamp_param_to_nonnegative(k_param, segment_id)),
                             static_cast<::cuda::std::uint64_t>(segment_size)));
       // Nothing to select for an empty segment (including a negative size or a negative `k`, both clamped to 0) or a
       // zero k: skip the block work, leaving its output untouched (also keeps the block primitive's `valid_items in

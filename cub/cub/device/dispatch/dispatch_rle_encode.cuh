@@ -94,7 +94,7 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(
   reduce_by_key::make_vsmem_helper<
-    device_policy_getter<policy_selector_adapter<PolicySelector>, current_tuning_cc().get()>,
+    device_policy_getter<policy_selector_adapter<PolicySelector>, _CUB::detail::current_tuning_cc().get()>,
     KeysInputIteratorT,
     UniqueOutputIteratorT,
     ValuesInputIteratorT,
@@ -129,7 +129,7 @@ __launch_bounds__(int(
   else
   {
     using vsmem_helper_t = typename reduce_by_key::make_vsmem_helper<
-      device_policy_getter<policy_selector_adapter<PolicySelector>, current_tuning_cc().get()>,
+      device_policy_getter<policy_selector_adapter<PolicySelector>, _CUB::detail::current_tuning_cc().get()>,
       KeysInputIteratorT,
       UniqueOutputIteratorT,
       ValuesInputIteratorT,

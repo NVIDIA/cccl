@@ -1336,8 +1336,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   return _CUB::detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
-    check_policy<keys_only>(policy_getter); // MSVC fails to evaluate static_asserts inside this lambda, so move them to
-                                            // a function
+    _CUB::detail::segmented_sort::check_policy<keys_only>(policy_getter); // MSVC fails to evaluate static_asserts
+                                                                          // inside this lambda, so move them to a
+                                                                          // function
     CUB_DETAIL_CONSTEXPR_ISH const SegmentedSortPolicy active_policy = policy_getter();
 
     _CUB::detail::log_dispatch("DeviceSegmentedSort", cc, active_policy);
@@ -1502,7 +1503,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
     if (partition_segments)
     {
-      if (const auto error = sort_with_partitioning(
+      if (const auto error = _CUB::detail::segmented_sort::sort_with_partitioning(
             segmented_sort_kernel_large,
             segmented_sort_kernel_small,
             num_segments,
@@ -1533,7 +1534,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     }
     else
     {
-      if (const auto error = sort_without_partitioning(
+      if (const auto error = _CUB::detail::segmented_sort::sort_without_partitioning(
             segmented_sort_fallback_kernel,
             num_segments,
             d_begin_offsets,

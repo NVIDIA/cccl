@@ -153,9 +153,9 @@ struct DeviceFind
 
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::find::dispatch(
+        return _CUB::detail::find::dispatch(
           storage, bytes, d_in, d_out, static_cast<OffsetT>(num_items), scan_op, stream, tuning_env);
       });
   }
@@ -495,8 +495,8 @@ struct DeviceFind
 
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-      return detail::find::dispatch(
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+      return _CUB::detail::find::dispatch(
         storage, bytes, d_in, d_out, static_cast<OffsetT>(num_items), scan_op, stream, tuning_env);
     });
   }

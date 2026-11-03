@@ -881,9 +881,9 @@ template <
   typename OutputIteratorT,
   typename OffsetT,
   typename ReductionOpT,
-  typename InitValueT     = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
-  typename TransformOpT   = ::cuda::std::identity,
-  typename AccumT         = decltype(select_accum_t<InputIteratorT, InitValueT, ReductionOpT, TransformOpT>(
+  typename InitValueT   = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
+  typename TransformOpT = ::cuda::std::identity,
+  typename AccumT = decltype(_CUB::detail::reduce::select_accum_t<InputIteratorT, InitValueT, ReductionOpT, TransformOpT>(
     static_cast<OverrideAccumT*>(nullptr))),
   typename PolicySelector = policy_selector_from_types<
     AccumT,

@@ -102,7 +102,7 @@ storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, Ac
   }
   else
   {
-    ThreadStore<STORE_CG>(&ptrTileStates[index].value, aggr);
+    _CUB::ThreadStore<STORE_CG>(&ptrTileStates[index].value, aggr);
     using state_int = ::cuda::std::underlying_type_t<scan_state>;
     _CUB::detail::store_release(
       reinterpret_cast<state_int*>(&ptrTileStates[index].state), static_cast<state_int>(scanState));
@@ -132,7 +132,7 @@ _CCCL_DEVICE_API tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* pt
     using state_int = ::cuda::std::underlying_type_t<scan_state>;
     res.state       = static_cast<scan_state>(
       _CUB::detail::load_acquire(reinterpret_cast<const state_int*>(&ptrTileStates[index].state)));
-    res.value = ThreadLoad<LOAD_CG>(&ptrTileStates[index].value);
+    res.value = _CUB::ThreadLoad<LOAD_CG>(&ptrTileStates[index].value);
   }
   return res;
 }

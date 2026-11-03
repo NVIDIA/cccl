@@ -294,19 +294,19 @@ template <typename PolicySelector,
           bool StableReductionOrder = false>
 struct lookahead_scan_closure
 {
-  static constexpr ScanLookaheadPolicy policy               = current_policy<PolicySelector>().lookahead;
-  static constexpr warpspeed::SquadDesc squadReduce         = squad_reduce(policy);
-  static constexpr warpspeed::SquadDesc squadScan           = squad_scan(policy);
-  static constexpr warpspeed::SquadDesc squadLoadAndNextIdx = squad_load_and_next_idx(policy);
-  static constexpr warpspeed::SquadDesc squadLookahead      = squad_lookahead(policy);
-  static constexpr warpspeed::SquadDesc squadStore          = squad_store(policy);
+  static constexpr ScanLookaheadPolicy policy               = _CUB::detail::current_policy<PolicySelector>().lookahead;
+  static constexpr warpspeed::SquadDesc squadReduce         = _CUB::detail::scan::squad_reduce(policy);
+  static constexpr warpspeed::SquadDesc squadScan           = _CUB::detail::scan::squad_scan(policy);
+  static constexpr warpspeed::SquadDesc squadLoadAndNextIdx = _CUB::detail::scan::squad_load_and_next_idx(policy);
+  static constexpr warpspeed::SquadDesc squadLookahead      = _CUB::detail::scan::squad_lookahead(policy);
+  static constexpr warpspeed::SquadDesc squadStore          = _CUB::detail::scan::squad_store(policy);
 
   static constexpr ::cuda::std::array<warpspeed::SquadDesc, 5> scanSquads = {
-    squad_reduce(policy),
-    squad_scan(policy),
-    squad_load_and_next_idx(policy),
-    squad_lookahead(policy),
-    squad_store(policy),
+    _CUB::detail::scan::squad_reduce(policy),
+    _CUB::detail::scan::squad_scan(policy),
+    _CUB::detail::scan::squad_load_and_next_idx(policy),
+    _CUB::detail::scan::squad_lookahead(policy),
+    _CUB::detail::scan::squad_store(policy),
   };
 
   // If the output elements are larger than the input elements, the output of a tile does not fit into the SMEM tile
@@ -349,7 +349,7 @@ struct lookahead_scan_closure
     const warpspeed::CpAsyncOobInfo<InputT>& loadInfo) const
   {
     warpspeed::SmemRef refInOutL = phaseInOutL.acquireRef();
-    warpspeed::squadLoadBulk(squad, refInOutL, loadInfo);
+    _CUB::detail::warpspeed::squadLoadBulk(squad, refInOutL, loadInfo);
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void lookahead(
@@ -770,9 +770,9 @@ struct lookahead_scan_closure
     if constexpr (!scanSquadStores)
     {
       const warpspeed::CpAsyncOobInfo storeInfo =
-        warpspeed::prepareCpAsyncOob(params.ptrOut + idxTileBase, valid_items);
+        _CUB::detail::warpspeed::prepareCpAsyncOob(params.ptrOut + idxTileBase, valid_items);
       // Blocks until the bulk store finished reading from shared memory, then refInOutS is released for the next load
-      warpspeed::squadStoreBulkSync(squad, storeInfo, refInOutS.data().inout);
+      _CUB::detail::warpspeed::squadStoreBulkSync(squad, storeInfo, refInOutS.data().inout);
     }
   }
 
@@ -827,10 +827,12 @@ struct lookahead_scan_closure
       // Split the stages into phases. Each resource goes through phases where it is writeable by a set of threads and
       // readable by a set of threads. To acquire and release a phase, we need to arrive and wait on certain barriers.
       // The selection of the barriers is handled under the hood.
-      auto [phaseNextBlockIdxW, phaseNextBlockIdxR]           = warpspeed::bindPhases<2>(stageNextBlockIdx);
-      auto [phaseInOutL, phaseInOutRW, phaseInOutS]           = warpspeed::bindPhases<3>(stageInOut);
-      auto [phaseThreadAndWarpAggrW, phaseThreadAndWarpAggrR] = warpspeed::bindPhases<2>(stageThreadAndWarpAggr);
-      auto [phaseAggrExclusiveCtaW, phaseAggrExclusiveCtaR]   = warpspeed::bindPhases<2>(stageAggrExclusiveCta);
+      auto [phaseNextBlockIdxW, phaseNextBlockIdxR] = _CUB::detail::warpspeed::bindPhases<2>(stageNextBlockIdx);
+      auto [phaseInOutL, phaseInOutRW, phaseInOutS] = _CUB::detail::warpspeed::bindPhases<3>(stageInOut);
+      auto [phaseThreadAndWarpAggrW,
+            phaseThreadAndWarpAggrR]                = _CUB::detail::warpspeed::bindPhases<2>(stageThreadAndWarpAggr);
+      auto [phaseAggrExclusiveCtaW,
+            phaseAggrExclusiveCtaR]                 = _CUB::detail::warpspeed::bindPhases<2>(stageAggrExclusiveCta);
 
       // We need to handle the first and the last -partial- tile differently
       const bool is_first_tile = idxTile == 0;

@@ -1072,7 +1072,7 @@ private:
       prefer_thrust_tuning ? thrust_load_algorithm : BLOCK_LOAD_DIRECT,
       load_mod,
       BLOCK_SCAN_WARP_SCANS,
-      default_reduce_by_key_delay_constructor_policy(accum_size, sizeof(int), true, true)};
+      _CUB::detail::default_reduce_by_key_delay_constructor_policy(accum_size, sizeof(int), true, true)};
   }
 
   // The policy of the former thrust::reduce_by_key implementation, optionally with a different tile size or load

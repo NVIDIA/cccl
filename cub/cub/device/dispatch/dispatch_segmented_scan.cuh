@@ -247,7 +247,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       output_begin_offsets += num_segments_per_invocation;
     }
 
-    if (const auto error = CubDebug(DebugSyncStream(stream)); cudaSuccess != error)
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)); cudaSuccess != error)
     {
       return error;
     }

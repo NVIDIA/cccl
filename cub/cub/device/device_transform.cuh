@@ -186,7 +186,7 @@ struct DeviceTransform
       static_assert(detail::transform::transform_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
-      return detail::transform::dispatch<RequiresStableAddress>(
+      return _CUB::detail::transform::dispatch<RequiresStableAddress>(
         ::cuda::std::move(inputs),
         ::cuda::std::move(output),
         static_cast<offset_t>(num_items),

@@ -238,8 +238,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  return dispatch_compute_cap(policy_selector_t{}, cc, [&](auto policy_getter) {
-    detail::log_dispatch("DeviceMerge", cc, policy_getter());
+  return _CUB::detail::dispatch_compute_cap(policy_selector_t{}, cc, [&](auto policy_getter) {
+    _CUB::detail::log_dispatch("DeviceMerge", cc, policy_getter());
 
     static_assert(::cuda::std::is_empty_v<decltype(policy_getter)>);
     using AgentT = typename choose_merge_agent<

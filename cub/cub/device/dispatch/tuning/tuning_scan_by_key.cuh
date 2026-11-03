@@ -213,9 +213,9 @@ constexpr key_size classify_key_size()
 template <class KeyT,
           class ValueT,
           primitive_op PrimitiveOp,
-          key_size KeySize                     = classify_key_size<KeyT>(),
-          val_size ValueSize                   = classify_val_size<ValueT>(),
-          primitive_accum PrimitiveAccumulator = is_primitive_accum<ValueT>()>
+          key_size KeySize                     = _CUB::detail::scan_by_key::classify_key_size<KeyT>(),
+          val_size ValueSize                   = _CUB::detail::scan_by_key::classify_val_size<ValueT>(),
+          primitive_accum PrimitiveAccumulator = _CUB::detail::scan_by_key::is_primitive_accum<ValueT>()>
 struct sm80_tuning;
 
 template <class KeyT, class ValueT>
@@ -506,9 +506,9 @@ struct sm80_tuning<KeyT, __uint128_t, primitive_op::yes, key_size::_16, val_size
 template <class KeyT,
           class ValueT,
           primitive_op PrimitiveOp,
-          key_size KeySize                     = classify_key_size<KeyT>(),
-          val_size ValueSize                   = classify_val_size<ValueT>(),
-          primitive_accum PrimitiveAccumulator = is_primitive_accum<ValueT>()>
+          key_size KeySize                     = _CUB::detail::scan_by_key::classify_key_size<KeyT>(),
+          val_size ValueSize                   = _CUB::detail::scan_by_key::classify_val_size<ValueT>(),
+          primitive_accum PrimitiveAccumulator = _CUB::detail::scan_by_key::is_primitive_accum<ValueT>()>
 struct sm90_tuning;
 
 template <class KeyT, class ValueT>
@@ -799,9 +799,9 @@ struct sm90_tuning<KeyT, __uint128_t, primitive_op::yes, key_size::_16, val_size
 template <class KeyT,
           class ValueT,
           primitive_op PrimitiveOp,
-          key_size KeySize                     = classify_key_size<KeyT>(),
-          val_size ValueSize                   = classify_val_size<ValueT>(),
-          primitive_accum PrimitiveAccumulator = is_primitive_accum<ValueT>()>
+          key_size KeySize                     = _CUB::detail::scan_by_key::classify_key_size<KeyT>(),
+          val_size ValueSize                   = _CUB::detail::scan_by_key::classify_val_size<ValueT>(),
+          primitive_accum PrimitiveAccumulator = _CUB::detail::scan_by_key::is_primitive_accum<ValueT>()>
 struct sm100_tuning;
 
 // key_size = 8 bits
@@ -1132,7 +1132,7 @@ struct policy_selector_from_hub
 {
   [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const -> ScanByKeyPolicy
   {
-    return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
+    return _CUB::detail::scan_by_key::convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
   }
 };
 

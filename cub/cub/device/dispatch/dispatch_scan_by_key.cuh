@@ -126,7 +126,7 @@ template <typename PolicySelector,
           typename OffsetT,
           typename AccumT,
           typename KeyT = cub::detail::it_value_t<KeysInputIteratorT>>
-__launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_block))
+__launch_bounds__(int(_CUB::detail::current_policy<PolicySelector>().lookback.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceScanByKeyKernel(
     const KeysInputIteratorT d_keys_in,
     KeyT* const d_keys_prev_in,
@@ -139,7 +139,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
     const InitValueT init_value,
     const OffsetT num_items)
 {
-  static constexpr ScanByKeyPolicy policy = current_policy<PolicySelector>();
+  static constexpr ScanByKeyPolicy policy = _CUB::detail::current_policy<PolicySelector>();
   static_assert(
     policy.lookback.load_modifier != CacheLoadModifier::LOAD_LDG,
     "ScanByKeyLookbackPolicy: load_modifier must not be LOAD_LDG, since the memory consistency model does not apply "

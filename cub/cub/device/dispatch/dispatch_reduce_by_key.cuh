@@ -218,7 +218,7 @@ template <typename PolicySelector,
   requires reduce_by_key_policy_selector<PolicySelector>
 #endif
 __launch_bounds__(int(
-  make_vsmem_helper<device_policy_getter<PolicySelector, current_tuning_cc().get()>,
+  make_vsmem_helper<device_policy_getter<PolicySelector, _CUB::detail::current_tuning_cc().get()>,
                     KeysInputIteratorT,
                     UniqueOutputIteratorT,
                     ValuesInputIteratorT,
@@ -244,7 +244,7 @@ __launch_bounds__(int(
     vsmem_t vsmem)
 {
   using vsmem_helper_t = typename make_vsmem_helper<
-    device_policy_getter<PolicySelector, current_tuning_cc().get()>,
+    device_policy_getter<PolicySelector, _CUB::detail::current_tuning_cc().get()>,
     KeysInputIteratorT,
     UniqueOutputIteratorT,
     ValuesInputIteratorT,
@@ -501,7 +501,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
       if (_CUB::detail::logging_enabled())
 #endif // CUB_DEBUG_LOG
       {
-        error = CubDebug(MaxSmOccupancy(reduce_by_key_sm_occupancy, reduce_by_key_kernel, threads_per_block));
+        error = CubDebug(_CUB::MaxSmOccupancy(reduce_by_key_sm_occupancy, reduce_by_key_kernel, threads_per_block));
 
         if (cudaSuccess != error)
         {
@@ -645,7 +645,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
     {
       // Get PTX version
       int ptx_version = 0;
-      error           = CubDebug(PtxVersion(ptx_version));
+      error           = CubDebug(_CUB::PtxVersion(ptx_version));
       if (cudaSuccess != error)
       {
         break;
@@ -721,7 +721,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   [[maybe_unused]] static constexpr int init_kernel_threads = 128;
 
   ::cuda::compute_capability cc{};
-  if (const auto error = CubDebug(ptx_compute_cap(cc)))
+  if (const auto error = CubDebug(_CUB::detail::ptx_compute_cap(cc)))
   {
     return error;
   }
@@ -812,11 +812,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     // Get SM occupancy for reduce_by_key_kernel (only needed for logging)
     int reduce_by_key_sm_occupancy{};
 #ifndef CUB_DEBUG_LOG
-    if (logging_enabled())
+    if (_CUB::detail::logging_enabled())
 #endif // CUB_DEBUG_LOG
     {
       if (const auto error =
-            CubDebug(MaxSmOccupancy(reduce_by_key_sm_occupancy, reduce_by_key_kernel, threads_per_block)))
+            CubDebug(_CUB::MaxSmOccupancy(reduce_by_key_sm_occupancy, reduce_by_key_kernel, threads_per_block)))
       {
         return error;
       }

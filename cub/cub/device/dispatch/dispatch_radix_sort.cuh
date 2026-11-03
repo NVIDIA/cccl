@@ -499,7 +499,7 @@ public:
       // FIXME(bgruber): we should actually convert upsweep_policy, scan_policy, and downsweep_policy, since they could
       // be different from those inside policy. But this is already so far out of any supported scenario that I am
       // willing to cut this corner.
-      const auto p = detail::radix_sort::convert_policy(policy);
+      const auto p = _CUB::detail::radix_sort::convert_policy(policy);
       return __init_pass_config(
         upsweep_kernel,
         scan_kernel,
@@ -2049,7 +2049,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   const auto cc = description.__compute_capability();
 
-  detail::log_dispatch("DeviceRadixSort", cc, policy_selector(cc));
+  _CUB::detail::log_dispatch("DeviceRadixSort", cc, policy_selector(cc));
 
   dispatch_impl<KeyT, ValueT, OffsetT, DecomposerT, KernelSource, KernelLauncherFactory> impl{
     d_temp_storage,
@@ -2066,7 +2066,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     launcher_factory,
     description};
 
-  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+  return _CUB::detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     return impl.invoke(policy_getter);
   });
 }
