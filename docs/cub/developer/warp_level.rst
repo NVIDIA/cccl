@@ -55,12 +55,14 @@ There is a vital difference in the behavior of warp-level algorithms that depend
 Temporary storage usage
 ====================================
 
-Warp-level algorithms require temporary storage for scratch space and inter-thread communication.
+Some warp-level algorithms require temporary storage for scratch space and inter-thread communication.
 The temporary storage needed for a given instantiation of an algorithm is known at compile time
 and is exposed through the ``TempStorage`` member type definition.
 It is the caller's responsibility to create this temporary storage and provide it to the constructor of the algorithm type.
-It is possible to reuse the same temporary storage for different algorithm invocations,
-but it is unsafe to do so without first synchronizing to ensure the first invocation is complete.
+For collectives that use shared scratch storage, reusing that storage requires synchronization
+to ensure the first invocation is complete. ``WarpReduce`` does not use shared scratch storage;
+its ``TempStorage`` argument is retained for interface compatibility, and consecutive reductions
+do not require a barrier solely for storage reuse.
 
 .. TODO: Add more explanation of the `TempStorage` type and the `Uninitialized` wrapper.
 .. TODO: Explain if `TempStorage` is required to be shared memory or not.
@@ -70,16 +72,14 @@ but it is unsafe to do so without first synchronizing to ensure the first invoca
 
     using WarpReduce = cub::WarpReduce<int>;
 
-    // Allocate WarpReduce shared memory for four warps
+    // WarpReduce accepts storage but does not use it as shared scratch
     __shared__ WarpReduce::TempStorage temp_storage[4];
 
     // Get this thread's warp id
     int warp_id = threadIdx.x / 32;
     int aggregate_1 = WarpReduce(temp_storage[warp_id]).Sum(thread_data_1);
-    // illegal, has to add `__syncwarp()` between the two
+    // No storage-reuse barrier is needed between these reductions
     int aggregate_2 = WarpReduce(temp_storage[warp_id]).Sum(thread_data_2);
-    // illegal, has to add `__syncwarp()` between the two
-    foo(temp_storage[warp_id]);
 
 
 Specialization
@@ -88,7 +88,7 @@ Specialization
 The goal of CUB is to provide users with algorithms that abstract the complexities of achieving speed-of-light performance across a variety of use cases and hardware.
 It is a CUB developer's job to abstract this complexity from the user by providing a uniform interface that statically dispatches to the optimal code path.
 This is usually accomplished via customizing the implementation based on compile time information like the logical warp size, the data type, and the target architecture.
-For example, :cpp:struct:`cub::WarpReduce` uses shuffle-based communication for every logical warp size:
+For logical warps larger than one, :cpp:struct:`cub::WarpReduce` selects the shuffle-based implementation:
 
 .. code-block:: c++
 
@@ -97,7 +97,9 @@ For example, :cpp:struct:`cub::WarpReduce` uses shuffle-based communication for 
 Power-of-two logical warps use the hardware shuffle segmentation mask.
 Other sizes use a full-warp shuffle width with an explicit last-lane clamp and a member mask naming only the
 participating prefix. This does not require padding inputs or an identity element for the reduction operator.
-Both cases perform ``ceil(log2(LOGICAL_WARP_THREADS))`` reduction steps.
+The shuffle routines perform ``ceil(log2(LOGICAL_WARP_THREADS))`` reduction steps.
+Supported full-warp reductions may instead use hardware ``redux`` instructions,
+and supported boolean reductions use warp-vote instructions. The single-lane specialization returns its input directly.
 
 Specializations provide different shared memory requirements,
 so the actual ``_TempStorage`` type is defined as:
