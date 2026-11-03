@@ -43,7 +43,7 @@
     - exp2(x)   : Base-2 exponential (2^x) - dedicated fp32mp2
     - exp10(x)  : Base-10 exponential (10^x) - dedicated fp32mp2
     - expm1(x)  : e^x - 1 - dedicated fp32mp2
-    - logb(x)   : Extract exponent - placeholder
+    - logb(x)   : Extract exponent - exact on the limb pair
 
     Power:
     - pow(x,y)  : Power function x^y - dedicated fp32mp2
@@ -110,23 +110,23 @@
     - floor(x)  : Round down to nearest integer - dedicated fp32mp2 optimization
     - trunc(x)  : Round toward zero - dedicated fp32mp2 optimization
     - round(x)  : Round to nearest integer - dedicated fp32mp2 optimization
-    - rint(x)   : Round using current rounding mode - placeholder
-    - nearbyint(x): Round using current rounding mode (no FE exception) - placeholder
-    - lrint(x)  : Round to long int - placeholder
-    - lround(x) : Round to long int (away from zero) - placeholder
-    - llrint(x) : Round to long long int - placeholder
-    - llround(x): Round to long long int (away from zero) - placeholder
+    - rint(x)   : Round to nearest, ties to even - exact on the limb pair
+    - nearbyint(x): Round to nearest, ties to even (no FE exception) - exact on the limb pair
+    - lrint(x)  : Round to long int - dedicated fp32mp2 (exact, over rint)
+    - lround(x) : Round to long int (away from zero) - dedicated fp32mp2 (exact, over round)
+    - llrint(x) : Round to long long int - dedicated fp32mp2 (exact, over rint)
+    - llround(x): Round to long long int (away from zero) - dedicated fp32mp2 (exact, over round)
 
     Floating-Point Manipulation:
     - fabs(x)   : Absolute value - dedicated fp32mp2 optimization (operates on (hi, lo) directly)
-    - copysign(x,y): Copy sign of y to x - placeholder
+    - copysign(x,y): Copy sign of y to x - exact on the limb pair
     - ldexp(x,n): x * 2^n - dedicated fp32mp2
     - scalbn(x,n): x * FLT_RADIX^n - dedicated fp32mp2 (forwards to ldexp)
-    - scalbln(x,n): x * FLT_RADIX^n (long exponent) - placeholder
-    - frexp(x,*n): Extract mantissa and exponent - placeholder
-    - modf(x,*i): Split into integer and fractional parts - placeholder
-    - logb(x)   : Extract exponent - placeholder
-    - ilogb(x)  : Extract exponent as int - placeholder
+    - scalbln(x,n): x * FLT_RADIX^n (long exponent) - exact (forwards to ldexp)
+    - frexp(x,*n): Extract mantissa and exponent - exact on the limb pair
+    - modf(x,*i): Split into integer and fractional parts - exact on the limb pair
+    - logb(x)   : Extract exponent - exact on the limb pair
+    - ilogb(x)  : Extract exponent as int - exact on the limb pair
     - nextafter(x,y): Next representable value - placeholder
 
     Min/Max/Difference:
@@ -134,12 +134,12 @@
     - fmin(x,y) : Minimum - dedicated fp32mp2 optimization (lexicographic compare on (hi, lo), NaN-aware)
     - max(x,y)  : Maximum - dedicated fp32mp2 optimization (std::max-like, first-arg tie/unordered behavior)
     - min(x,y)  : Minimum - dedicated fp32mp2 optimization (std::min-like, first-arg tie/unordered behavior)
-    - fdim(x,y) : Positive difference - placeholder
+    - fdim(x,y) : Positive difference - dedicated fp32mp2 (exact compare, accurate difference)
 
     Remainder:
     - fmod(x,y) : Floating-point remainder - dedicated fp32mp2
     - remainder(x,y): IEEE remainder - dedicated fp32mp2
-    - remquo(x,y,*q): Remainder with quotient bits - placeholder
+    - remquo(x,y,*q): Remainder with quotient bits - dedicated fp32mp2 (remainder's reduction)
 
     Distance:
     - hypot(x,y): Hypotenuse sqrt(x^2+y^2) - dedicated fp32mp2
@@ -455,6 +455,20 @@
     Placeholder functions:
     - Delegate to standard double-precision system functions
     - Intended as API stubs; they do not provide full multi-precision accuracy yet
+
+    fdim, remquo, lrint, lround, llrint, llround for fp32mp2:
+      Exact on the limb pair, no FP64.  fdim compares the pairs
+      lexicographically and takes the accurate difference (+0 when
+      x <= y, NaN propagated, +inf when the difference overflows).
+      remquo shares remainder's integer reduction and reports the low
+      bits of rint(x / y) with the sign of x / y, modulo what the
+      platform's own remquo uses (2^3 on the device as CUDA's, 2^31 on
+      the host as glibc's).  The four integer roundings convert the
+      exact rint / round of the pair limb by limb; NaN, infinities and
+      |x| >= 2^63 go to the platform's conversion of the high limb, as
+      the scalar functions do.  The classification predicates,
+      copysign, frexp, modf, ilogb and logb test the float limbs
+      directly instead of widening them to double.
 
     fp64mp2 implementations:
     - When _CCCL_FPMP_FP128_MATH_FALLBACK=1, route through __float128 (libquadmath

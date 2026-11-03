@@ -393,16 +393,16 @@ hardware where FP64 is rationed:
   accuracy level is a defaulted template parameter rather than a deduced one
 - **Special** — ``boys_f0``, the zeroth-order Boys function
 
-The remaining names are present with the same signatures, but implemented generically rather than
-through a dedicated float-float path: ``erfinv``, ``erfcinv``, ``erfcx``, ``normcdf``, ``tgamma``,
-``lgamma``, the Bessel family ``j0``, ``j1``, ``jn``, ``y0``, ``y1``, ``yn``, ``cyl_bessel_i0``
-and ``cyl_bessel_i1``, the vector norms ``norm3d``,
-``norm4d``, ``rnorm3d`` and ``rnorm4d``, ``rint``, ``nearbyint``, ``lrint``, ``lround``,
-``llrint``, ``llround``, ``copysign``, ``scalbln``, ``frexp``, ``modf``, ``logb``, ``ilogb``,
-``nextafter``, ``fdim``, ``remquo``, and the classification predicates. For the exact ones among
-these — the rounding, sign and decomposition family — that costs nothing, since an exact operation
-is exact however it is written; for the transcendentals it means evaluation through the backend
-covered in the next section.
+The exact operations — ``rint``, ``nearbyint``, ``lrint``, ``lround``, ``llrint``, ``llround``,
+``copysign``, ``scalbln``, ``frexp``, ``modf``, ``logb``, ``ilogb``, ``fdim``, ``remquo`` and the
+classification predicates — are written directly on the two float limbs, with no FP64 anywhere:
+an exact operation is exact however it is written, and the limb pair is the cheapest place to
+write it. The remaining names are present with the same signatures, but implemented generically
+rather than through a dedicated float-float path: ``erfinv``, ``erfcinv``, ``erfcx``, ``normcdf``,
+``tgamma``, ``lgamma``, the Bessel family ``j0``, ``j1``, ``jn``, ``y0``, ``y1``, ``yn``,
+``cyl_bessel_i0`` and ``cyl_bessel_i1``, the vector norms ``norm3d``, ``norm4d``, ``rnorm3d`` and
+``rnorm4d``, and ``nextafter``; for the transcendentals among them that means evaluation through
+the backend covered in the next section.
 
 The predicates come in two spellings. ``fpmp_isfinite``, ``fpmp_isinf``, ``fpmp_isnan`` and
 ``fpmp_signbit`` are always available, while the standard names ``isfinite``, ``isinf``, ``isnan``

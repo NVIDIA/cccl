@@ -213,10 +213,43 @@ _CCCL_FPMP_CORE_API void __fpmp2_min(
 
 /*
  * --------------------------------------------------------------------
- * Positive difference fdim(x, y) (fp32mp2) - double fallback
+ * Positive difference fdim(x, y) (fp32mp2) - exact on the limb pair
  * --------------------------------------------------------------------
+ * fdim(x, y) = x - y when x > y, +0 otherwise, NaN when either is NaN.
+ * The comparison is the lexicographic one on the renormalized pairs
+ * (exact), the difference the accurate pair subtraction; a difference
+ * that overflows (x = +inf or y = -inf) is +inf with a zero low limb,
+ * which the subtraction would turn into (inf, NaN).  No FP64.
  */
-_CCCL_FPMP_MATH_FALLBACK_2A(fdim)
+_CCCL_FPMP_CORE_API void __internal_fpmp2_fdim(
+  const float __x_hi,
+  const float __x_lo,
+  const float __y_hi,
+  const float __y_lo,
+  float* __res_hi,
+  float* __res_lo) noexcept
+{
+  if ((__x_hi != __x_hi) || (__y_hi != __y_hi))
+  {
+    *__res_hi = ::cuda::std::__fp_nan<float>();
+    *__res_lo = ::cuda::std::__fp_nan<float>();
+    return;
+  }
+  const bool __gt = (__x_hi > __y_hi) || ((__x_hi == __y_hi) && (__x_lo > __y_lo));
+  if (!__gt)
+  {
+    *__res_hi = 0.0f;
+    *__res_lo = 0.0f;
+    return;
+  }
+  if ((__x_hi == ::cuda::std::__fp_inf<float>()) || (__y_hi == -::cuda::std::__fp_inf<float>()))
+  {
+    *__res_hi = ::cuda::std::__fp_inf<float>();
+    *__res_lo = 0.0f;
+    return;
+  }
+  ::cuda::__fpmp2_high_sub<float>(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+}
 
 /*
  * --------------------------------------------------------------------
@@ -250,7 +283,7 @@ _CCCL_FPMP_MATH_DISPATCH_2A(fdim)
  */
 _CCCL_FPMP_CORE_API int __internal_fpmp2_isfinite(const float __x_hi, [[maybe_unused]] const float __x_lo) noexcept
 {
-  return ::cuda::std::isfinite(static_cast<double>(__x_hi));
+  return ::cuda::std::isfinite(__x_hi);
 }
 
 /*
@@ -272,7 +305,7 @@ _CCCL_FPMP_MATH_DISPATCH_1A_RETINT(isfinite)
  */
 _CCCL_FPMP_CORE_API int __internal_fpmp2_isinf(const float __x_hi, [[maybe_unused]] const float __x_lo) noexcept
 {
-  return ::cuda::std::isinf(static_cast<double>(__x_hi));
+  return ::cuda::std::isinf(__x_hi);
 }
 
 /*
@@ -294,7 +327,7 @@ _CCCL_FPMP_MATH_DISPATCH_1A_RETINT(isinf)
  */
 _CCCL_FPMP_CORE_API int __internal_fpmp2_isnan(const float __x_hi, [[maybe_unused]] const float __x_lo) noexcept
 {
-  return ::cuda::std::isnan(static_cast<double>(__x_hi));
+  return ::cuda::std::isnan(__x_hi);
 }
 
 /*
@@ -316,7 +349,7 @@ _CCCL_FPMP_MATH_DISPATCH_1A_RETINT(isnan)
  */
 _CCCL_FPMP_CORE_API int __internal_fpmp2_signbit(const float __x_hi, [[maybe_unused]] const float __x_lo) noexcept
 {
-  return ::cuda::std::signbit(static_cast<double>(__x_hi));
+  return ::cuda::std::signbit(__x_hi);
 }
 
 /*

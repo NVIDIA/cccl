@@ -109,7 +109,7 @@ __internal_fpmp2_modf_decompose(float __hi, float __lo, unsigned long long* __m,
 
   long long __mant = static_cast<long long>(static_cast<unsigned long long>(__shi))
                    + static_cast<long long>(::cuda::__fpmp_fp2int_rn(__slo));
-  int __exp        = __eh - 52;
+  int __exp = __eh - 52;
 
   /* lo > 0 may push m just past 2^53; bring it back. */
   if ((static_cast<unsigned long long>(__mant) >> 53) != 0ULL)
@@ -340,15 +340,17 @@ _CCCL_FPMP_MATH_DISPATCH_2A(fmod)
  * IEEE remainder remainder(x, y) (fp32mp2) - dedicated implementation
  * --------------------------------------------------------------------
  * remainder(x, y): IEEE remainder, |result| <= |y|/2, round-to-nearest
- * with ties to even quotient.
+ * with ties to even quotient.  The core also hands out the integer
+ * quotient rint(|x| / |y|) (its low 64 bits) for remquo.
  */
-_CCCL_FPMP_CORE_API void __internal_fpmp2_remainder(
+_CCCL_FPMP_CORE_API void __internal_fpmp2_remainder_core(
   const float __x_hi,
   const float __x_lo,
   const float __y_hi,
   const float __y_lo,
   float* __res_hi,
-  float* __res_lo) noexcept
+  float* __res_lo,
+  unsigned long long* __n) noexcept
 {
   using __ffloat = fp32mp2_low;
 
@@ -367,12 +369,14 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_remainder(
   {
     *__res_hi = ::cuda::std::__fp_nan<float>();
     *__res_lo = ::cuda::std::__fp_nan<float>();
+    *__n      = 0ULL;
     return;
   }
   if (__y_inf) /* remainder(finite, inf) = x */
   {
     *__res_hi = __x_hi;
     *__res_lo = __x_lo;
+    *__n      = 0ULL;
     return;
   }
 
@@ -393,10 +397,11 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_remainder(
     __c = 0;
   }
 
-  if (__c == 0) /* |x| == |y| -> remainder 0 (sign of x) */
+  if (__c == 0) /* |x| == |y| -> remainder 0 (sign of x), quotient 1 */
   {
     *__res_hi = __xneg ? -0.0f : 0.0f;
     *__res_lo = 0.0f;
+    *__n      = 1ULL;
     return;
   }
 
@@ -423,8 +428,9 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_remainder(
     {
       *__res_hi = __x_hi;
       *__res_lo = __x_lo;
+      *__n      = 0ULL;
       return;
-    } /* r = x */
+    } /* r = x, quotient 0 */
 
     /* 2|x| > |y|: r = |x| - |y|  (negative in the |x| frame) */
     const __ffloat __r = sub<fpmp2_accuracy::high>(__ffloat(__axh, __axl), __ffloat(__ayh, __ayl));
@@ -437,6 +443,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_remainder(
     }
     *__res_hi = __rh;
     *__res_lo = __rl;
+    *__n      = 1ULL;
     return;
   }
 
@@ -463,7 +470,20 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_remainder(
     __neg_xframe = false;
   }
 
+  *__n = __quo + (__round_up ? 1ULL : 0ULL); /* rint(|x| / |y|), low 64 bits */
   ::cuda::__internal_fpmp2_modf_reconstruct(__mag, __ey, static_cast<bool>(__neg_xframe ^ __xneg), __res_hi, __res_lo);
+}
+
+_CCCL_FPMP_CORE_API void __internal_fpmp2_remainder(
+  const float __x_hi,
+  const float __x_lo,
+  const float __y_hi,
+  const float __y_lo,
+  float* __res_hi,
+  float* __res_lo) noexcept
+{
+  unsigned long long __n;
+  ::cuda::__internal_fpmp2_remainder_core(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo, &__n);
 }
 
 /*
@@ -611,45 +631,6 @@ __fpmp2_ceil(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _FpT
 
 /*
  * ====================================================================
- * round(x) - round to nearest, ties away from zero
- * ====================================================================
- */
-
-/*
- * --------------------------------------------------------------------
- * Round to nearest round(x) (fp32mp2 and fp64mp2) - exact on the limb pair
- * --------------------------------------------------------------------
- */
-template <typename _FpType>
-_CCCL_FPMP_CORE_API void
-__fpmp2_round(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _FpType* __res_lo) noexcept
-{
-  // NaN check
-  if ((__x_hi != __x_hi) || (__x_lo != __x_lo))
-  {
-    _FpType __res = __x_hi + __x_lo;
-    *__res_hi     = __res;
-    *__res_lo     = __res;
-    return;
-  }
-
-  const bool __x_neg = (__x_hi < _FpType(0)) || (__x_hi == _FpType(0) && __x_lo < _FpType(0));
-
-  _FpType __t_hi = __x_hi, __t_lo = __x_lo;
-  ::cuda::__fpmp2_acc<_FpType>(__x_neg ? _FpType(-0.5) : _FpType(0.5), &__t_hi, &__t_lo);
-
-  if (__x_neg)
-  {
-    ::cuda::__fpmp2_ceil(__t_hi, __t_lo, __res_hi, __res_lo);
-  }
-  else
-  {
-    ::cuda::__fpmp2_floor(__t_hi, __t_lo, __res_hi, __res_lo);
-  }
-}
-
-/*
- * ====================================================================
  * trunc(x) - round toward zero
  * ====================================================================
  */
@@ -716,103 +697,100 @@ __fpmp2_trunc(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _Fp
 
 /*
  * ====================================================================
- * llrint(x) - round to nearest long long, ties to even
+ * round(x) - round to nearest, ties away from zero
  * ====================================================================
  */
 
 /*
  * --------------------------------------------------------------------
- * Round to long long llrint(x) (fp32mp2) - double fallback
+ * Round to nearest round(x) (fp32mp2 and fp64mp2) - exact on the limb pair
  * --------------------------------------------------------------------
+ * Two regimes, as in trunc and rint:
+ *
+ *   |hi| >= int_scale: hi is an integer and the fraction is lo's own,
+ *     fr = lo - trunc(lo), exact.  Where fr points away from zero (the
+ *     sign of hi), |x| = |hi + i| + |fr| and the result steps past
+ *     |fr| >= 1/2; where it points toward zero, |x| = |hi + i| - |fr|,
+ *     trunc(x) is hi + i - s and the step back is taken unless
+ *     |fr| > 1/2.  i + adj is exact: a nonzero fr means |lo| < 2^23
+ *     (fp32), and the pair is renormalized by an error-free sum.
+ *
+ *   |hi| <  int_scale: hi carries the fraction; |lo| <= ulp(hi)/2 <= 1/4
+ *     cannot reach a half on its own and only decides an exact half of
+ *     hi, in the direction of its sign.
+ *
+ * The former form added +-1/2 to the pair and floored: once |lo| reaches
+ * 2^23 the limb's ulp is already 1, the half was rounded away, and round(n)
+ * came back as n +- 1 on an integer-valued pair.  Taking x - trunc(x) limb
+ * by limb is not safe either: trunc may renormalize the same integer with
+ * hi one ulp away, and lo - trunc(x)_lo then rounds.
  */
-_CCCL_FPMP_MATH_FALLBACK_1A_RETLL(llrint)
-
-/*
- * --------------------------------------------------------------------
- * Round to long long llrint(x) (fp64mp2) - double fallback
- * --------------------------------------------------------------------
- */
-_CCCL_FPMP_CORE_API long long int __internal_fpmp2_llrint(const double __x_hi, const double __x_lo) noexcept
+template <typename _FpType>
+_CCCL_FPMP_CORE_API void
+__fpmp2_round(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
-  return ::cuda::std::llrint(::cuda::__fpmp2_to_double(__x_hi, __x_lo));
+  // NaN check
+  if ((__x_hi != __x_hi) || (__x_lo != __x_lo))
+  {
+    _FpType __res = __x_hi + __x_lo;
+    *__res_hi     = __res;
+    *__res_lo     = __res;
+    return;
+  }
+
+  const _FpType __zero      = _FpType(0);
+  const _FpType __half      = _FpType(0.5);
+  const _FpType __one       = _FpType(1);
+  const _FpType __abs_hi    = ::cuda::__fpmp_internal_fabs(__x_hi);
+  const _FpType __int_scale = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p23f) : _FpType(0x1.0p52);
+
+  if (__abs_hi >= __int_scale)
+  {
+    const _FpType __i   = ::cuda::__fpmp_internal_trunc<_FpType>(__x_lo);
+    const _FpType __fr  = __x_lo - __i; /* exact */
+    const _FpType __afr = ::cuda::__fpmp_internal_fabs(__fr);
+    const _FpType __s   = (__x_hi < __zero) ? -__one : __one;
+    _FpType __adj       = __zero;
+    if (__fr != __zero)
+    {
+      __adj = ((__fr < __zero) == (__x_hi < __zero))
+              ? ((__afr >= __half) ? __s : __zero)
+              : ((__afr > __half) ? -__s : __zero);
+    }
+    *__res_hi = ::cuda::__fpmp_two_sum(__x_hi, __i + __adj, __res_lo);
+    return;
+  }
+
+  if (__x_hi == __zero)
+  {
+    /* A renormalized pair has lo = 0 here (round(+-0) = +-0); a loose one is the scalar case. */
+    const _FpType __i  = ::cuda::__fpmp_internal_trunc<_FpType>(__x_lo);
+    const _FpType __fr = __x_lo - __i;
+    *__res_hi = __i + ((::cuda::__fpmp_internal_fabs(__fr) >= __half) ? ((__x_lo < __zero) ? -__one : __one) : __zero);
+    *__res_lo = __zero;
+    return;
+  }
+
+  const _FpType __th  = ::cuda::__fpmp_internal_trunc<_FpType>(__x_hi);
+  const _FpType __fh  = __x_hi - __th; /* exact */
+  const _FpType __afh = ::cuda::__fpmp_internal_fabs(__fh);
+  const _FpType __s   = (__x_hi < __zero) ? -__one : __one;
+  bool __away;
+  if (__afh > __half)
+  {
+    __away = true;
+  }
+  else if (__afh < __half)
+  {
+    __away = false; /* includes an integral hi with |lo| <= 1/4 */
+  }
+  else
+  {
+    __away = (__x_lo == __zero) || ((__x_lo < __zero) == (__x_hi < __zero));
+  }
+  *__res_hi = __away ? __th + __s : __th; /* exact: |th| < int_scale */
+  *__res_lo = __zero;
 }
-
-_CCCL_FPMP_MATH_DISPATCH_1A_RETLL(llrint)
-
-/*
- * ====================================================================
- * llround(x) - round to nearest long long, ties away from zero
- * ====================================================================
- */
-
-/*
- * --------------------------------------------------------------------
- * Round to long long llround(x) (fp32mp2) - double fallback
- * --------------------------------------------------------------------
- */
-_CCCL_FPMP_MATH_FALLBACK_1A_RETLL(llround)
-
-/*
- * --------------------------------------------------------------------
- * Round to long long llround(x) (fp64mp2) - double fallback
- * --------------------------------------------------------------------
- */
-_CCCL_FPMP_CORE_API long long int __internal_fpmp2_llround(const double __x_hi, const double __x_lo) noexcept
-{
-  return ::cuda::std::llround(::cuda::__fpmp2_to_double(__x_hi, __x_lo));
-}
-
-_CCCL_FPMP_MATH_DISPATCH_1A_RETLL(llround)
-
-/*
- * ====================================================================
- * lrint(x) - round to nearest long, ties to even
- * ====================================================================
- */
-
-/*
- * --------------------------------------------------------------------
- * Round to long lrint(x) (fp32mp2) - double fallback
- * --------------------------------------------------------------------
- */
-_CCCL_FPMP_MATH_FALLBACK_1A_RETL(lrint)
-
-/*
- * --------------------------------------------------------------------
- * Round to long lrint(x) (fp64mp2) - double fallback
- * --------------------------------------------------------------------
- */
-_CCCL_FPMP_CORE_API long int __internal_fpmp2_lrint(const double __x_hi, const double __x_lo) noexcept
-{
-  return ::cuda::std::lrint(::cuda::__fpmp2_to_double(__x_hi, __x_lo));
-}
-
-_CCCL_FPMP_MATH_DISPATCH_1A_RETL(lrint)
-
-/*
- * ====================================================================
- * lround(x) - round to nearest long, ties away from zero
- * ====================================================================
- */
-
-/*
- * --------------------------------------------------------------------
- * Round to long lround(x) (fp32mp2) - double fallback
- * --------------------------------------------------------------------
- */
-_CCCL_FPMP_MATH_FALLBACK_1A_RETL(lround)
-
-/*
- * --------------------------------------------------------------------
- * Round to long lround(x) (fp64mp2) - double fallback
- * --------------------------------------------------------------------
- */
-_CCCL_FPMP_CORE_API long int __internal_fpmp2_lround(const double __x_hi, const double __x_lo) noexcept
-{
-  return ::cuda::std::lround(::cuda::__fpmp2_to_double(__x_hi, __x_lo));
-}
-
-_CCCL_FPMP_MATH_DISPATCH_1A_RETL(lround)
 
 /* Internal helper: parity of an integral value, for the rint tie-break. */
 template <typename _FpType>
@@ -952,15 +930,153 @@ __fpmp2_nearbyint(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi,
 
 /*
  * ====================================================================
+ * llrint(x) - round to nearest long long, ties to even
+ * ====================================================================
+ */
+
+/*
+ * --------------------------------------------------------------------
+ * Round to long long llrint(x) (fp32mp2) - exact on the limb pair
+ * --------------------------------------------------------------------
+ * The exact rint of the pair, converted limb by limb (both limbs are
+ * integers then, and |lo| <= ulp(hi)/2 keeps the sum in range).  NaN,
+ * infinities and |x| >= 2^63 go to the platform's own scalar function on
+ * the high limb, so those inputs keep the sentinel it reports (the only
+ * path through a double, and it never computes).
+ */
+_CCCL_FPMP_CORE_API long long int __internal_fpmp2_llrint(const float __x_hi, const float __x_lo) noexcept
+{
+  if (!(::cuda::__fpmp_internal_fabs(__x_hi) < 0x1p63f))
+  {
+    return ::cuda::std::llrint(static_cast<double>(__x_hi));
+  }
+  float __r_hi, __r_lo;
+  ::cuda::__fpmp2_rint<float>(__x_hi, __x_lo, &__r_hi, &__r_lo);
+  return static_cast<long long int>(__r_hi) + static_cast<long long int>(__r_lo);
+}
+
+/*
+ * --------------------------------------------------------------------
+ * Round to long long llrint(x) (fp64mp2) - double fallback
+ * --------------------------------------------------------------------
+ */
+_CCCL_FPMP_CORE_API long long int __internal_fpmp2_llrint(const double __x_hi, const double __x_lo) noexcept
+{
+  return ::cuda::std::llrint(::cuda::__fpmp2_to_double(__x_hi, __x_lo));
+}
+
+_CCCL_FPMP_MATH_DISPATCH_1A_RETLL(llrint)
+
+/*
+ * ====================================================================
+ * llround(x) - round to nearest long long, ties away from zero
+ * ====================================================================
+ */
+
+/*
+ * --------------------------------------------------------------------
+ * Round to long long llround(x) (fp32mp2) - exact on the limb pair
+ * --------------------------------------------------------------------
+ * The exact round of the pair, converted limb by limb (both limbs are
+ * integers then, and |lo| <= ulp(hi)/2 keeps the sum in range).  NaN,
+ * infinities and |x| >= 2^63 go to the platform's own scalar function on
+ * the high limb, so those inputs keep the sentinel it reports (the only
+ * path through a double, and it never computes).
+ */
+_CCCL_FPMP_CORE_API long long int __internal_fpmp2_llround(const float __x_hi, const float __x_lo) noexcept
+{
+  if (!(::cuda::__fpmp_internal_fabs(__x_hi) < 0x1p63f))
+  {
+    return ::cuda::std::llround(static_cast<double>(__x_hi));
+  }
+  float __r_hi, __r_lo;
+  ::cuda::__fpmp2_round<float>(__x_hi, __x_lo, &__r_hi, &__r_lo);
+  return static_cast<long long int>(__r_hi) + static_cast<long long int>(__r_lo);
+}
+
+/*
+ * --------------------------------------------------------------------
+ * Round to long long llround(x) (fp64mp2) - double fallback
+ * --------------------------------------------------------------------
+ */
+_CCCL_FPMP_CORE_API long long int __internal_fpmp2_llround(const double __x_hi, const double __x_lo) noexcept
+{
+  return ::cuda::std::llround(::cuda::__fpmp2_to_double(__x_hi, __x_lo));
+}
+
+_CCCL_FPMP_MATH_DISPATCH_1A_RETLL(llround)
+
+/*
+ * ====================================================================
+ * lrint(x) - round to nearest long, ties to even
+ * ====================================================================
+ */
+
+/*
+ * --------------------------------------------------------------------
+ * Round to long lrint(x) (fp32mp2) - exact on the limb pair
+ * --------------------------------------------------------------------
+ */
+_CCCL_FPMP_CORE_API long int __internal_fpmp2_lrint(const float __x_hi, const float __x_lo) noexcept
+{
+  return static_cast<long int>(::cuda::__internal_fpmp2_llrint(__x_hi, __x_lo));
+}
+
+/*
+ * --------------------------------------------------------------------
+ * Round to long lrint(x) (fp64mp2) - double fallback
+ * --------------------------------------------------------------------
+ */
+_CCCL_FPMP_CORE_API long int __internal_fpmp2_lrint(const double __x_hi, const double __x_lo) noexcept
+{
+  return ::cuda::std::lrint(::cuda::__fpmp2_to_double(__x_hi, __x_lo));
+}
+
+_CCCL_FPMP_MATH_DISPATCH_1A_RETL(lrint)
+
+/*
+ * ====================================================================
+ * lround(x) - round to nearest long, ties away from zero
+ * ====================================================================
+ */
+
+/*
+ * --------------------------------------------------------------------
+ * Round to long lround(x) (fp32mp2) - exact on the limb pair
+ * --------------------------------------------------------------------
+ */
+_CCCL_FPMP_CORE_API long int __internal_fpmp2_lround(const float __x_hi, const float __x_lo) noexcept
+{
+  return static_cast<long int>(::cuda::__internal_fpmp2_llround(__x_hi, __x_lo));
+}
+
+/*
+ * --------------------------------------------------------------------
+ * Round to long lround(x) (fp64mp2) - double fallback
+ * --------------------------------------------------------------------
+ */
+_CCCL_FPMP_CORE_API long int __internal_fpmp2_lround(const double __x_hi, const double __x_lo) noexcept
+{
+  return ::cuda::std::lround(::cuda::__fpmp2_to_double(__x_hi, __x_lo));
+}
+
+_CCCL_FPMP_MATH_DISPATCH_1A_RETL(lround)
+
+/*
+ * ====================================================================
  * remquo(x, y, &q) - remainder and low bits of the quotient
  * ====================================================================
  */
 
 /*
  * --------------------------------------------------------------------
- * Remainder and quotient remquo(x, y, &q) (fp32mp2) - double fallback
+ * Remainder and quotient remquo(x, y, &q) (fp32mp2) - exact on the limb pair
  * --------------------------------------------------------------------
- * remquo: compute remainder and part of quotient
+ * The remainder is remainder's, bit for bit (same core); the quotient is
+ * the low bits of rint(x / y) with the sign of x / y, taken modulo the
+ * modulus the platform's own remquo uses (2^3 on the device, as CUDA's,
+ * 2^31 on the host, as glibc's; C requires at least 2^3), so that the
+ * fp32mp2 and the scalar / fp64mp2 results agree on each platform.
  */
 _CCCL_FPMP_CORE_API void __internal_fpmp2_remquo(
   const float __x_hi,
@@ -971,12 +1087,12 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_remquo(
   float* __res_lo,
   int* __quo) noexcept
 {
-  using __mp2_t = fpmp2<float>;
-  double __r    = ::cuda::std::remquo(
-    static_cast<double>(__mp2_t(__x_hi, __x_lo)), static_cast<double>(__mp2_t(__y_hi, __y_lo)), __quo);
-  __mp2_t __result(__r);
-  *__res_hi = __result.hi();
-  *__res_lo = __result.lo();
+  unsigned long long __n;
+  ::cuda::__internal_fpmp2_remainder_core(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo, &__n);
+  int __q;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__q = static_cast<int>(__n & 7ULL);), (__q = static_cast<int>(__n & 0x7FFFFFFFULL);))
+  const bool __neg = (__x_hi < 0.0f) != (__y_hi < 0.0f);
+  *__quo           = __neg ? -__q : __q;
 }
 
 /*
