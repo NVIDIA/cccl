@@ -3,7 +3,7 @@
 
 // Focused checks for capacity mapping, ID partitioning, and the internal bounded GroupMerge sorting path.
 
-#include <cub/device/dispatch/dispatch_binned_segmented_sort.cuh>
+#include <cub/device/dispatch/dispatch_segmented_sort_lrb.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
 
 #include <algorithm>
@@ -53,7 +53,7 @@ CUB_TEST("Capacity partition accepts arbitrary bounds without sort tuning", "[se
   capacity::partition_result result;
   size_t bytes   = 0;
   const auto run = [&](void* storage, unsigned count) {
-    return capacity::dispatch_partition<capacity::fixed_capacity_selector_t<capacities>, sm90_cc>(
+    return capacity::dispatch_partition<capacities>(
       storage, bytes, thrust::raw_pointer_cast(d_begins.data()), thrust::raw_pointer_cast(d_ends.data()), count, result);
   };
   REQUIRE(run(nullptr, static_cast<unsigned>(begins.size())) == cudaSuccess);
