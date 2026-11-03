@@ -160,7 +160,7 @@ public:
   struct TempStorage // Empty storage (unneeded)
   {};
 
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpShuffleSort() {}
+  WarpShuffleSort() = default;
 
   explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpShuffleSort(TempStorage&) {}
 

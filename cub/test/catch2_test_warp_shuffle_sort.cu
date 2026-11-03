@@ -165,12 +165,8 @@ CUB_TEST("Warp shuffle warp_sort preserves blocked keys and permutations",
     input_pattern::reversed,
     input_pattern::duplicate_heavy,
     input_pattern::alternating_zeros);
-  const bool descending = GENERATE(false, true);
-  bool skip_odd_warps   = false;
-  if constexpr (!all_lanes_active)
-  {
-    skip_odd_warps = GENERATE(false, true);
-  }
+  const bool descending     = GENERATE(false, true);
+  const bool skip_odd_warps = !all_lanes_active && GENERATE(false, true);
   CAPTURE(items, logical_warp_threads, all_lanes_active, pattern, descending, skip_odd_warps);
 
   c2h::host_vector<key_t> input(shuffle_sort_tiles * tile_size);
