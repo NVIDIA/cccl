@@ -16,10 +16,10 @@
 
 #include "cub_test_macros.h"
 
-inline constexpr int warp_threads    = 32;
-inline constexpr int num_blocks      = 3;
-inline constexpr int warps_per_block = 4;
-inline constexpr int num_tiles       = num_blocks * warps_per_block;
+inline constexpr int warp_threads       = 32;
+inline constexpr int num_blocks         = 3;
+inline constexpr int warps_per_block    = 4;
+inline constexpr int shuffle_sort_tiles = num_blocks * warps_per_block;
 
 enum class input_pattern
 {
@@ -159,8 +159,8 @@ CUB_TEST(
   const bool with_storage  = GENERATE(false, true);
   CAPTURE(items, pattern, descending, block_size, with_storage);
 
-  c2h::host_vector<key_t> input(num_tiles * tile_size);
-  for (int tile = 0; tile < num_tiles; ++tile)
+  c2h::host_vector<key_t> input(shuffle_sort_tiles * tile_size);
+  for (int tile = 0; tile < shuffle_sort_tiles; ++tile)
   {
     for (int rank = 0; rank < tile_size; ++rank)
     {
@@ -169,7 +169,7 @@ CUB_TEST(
   }
 
   auto reference = input;
-  for (int tile = 0; tile < num_tiles; ++tile)
+  for (int tile = 0; tile < shuffle_sort_tiles; ++tile)
   {
     auto tile_start = reference.begin() + tile * tile_size;
     auto tile_end   = reference.begin() + (tile + 1) * tile_size;
@@ -187,7 +187,7 @@ CUB_TEST(
   REQUIRE(cudaSuccess == cudaGetLastError());
   const c2h::host_vector<key_t> output(device_output);
 
-  for (int tile = 0; tile < num_tiles; ++tile)
+  for (int tile = 0; tile < shuffle_sort_tiles; ++tile)
   {
     const int tile_offset = tile * tile_size;
     const auto* actual    = thrust::raw_pointer_cast(output.data()) + tile_offset;
