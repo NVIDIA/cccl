@@ -29,7 +29,8 @@ void full(nvbench::state& state, nvbench::type_list<Key, nvbench::enum_type<Item
 
   const bool latency = state.get_int64("latency") != 0;
   const int threads  = latency ? 32 : 128;
-  const int blocks   = latency ? 1 : 32 * state.get_device().value().get_number_of_sms();
+  const int blocks =
+    latency ? 1 : 32 * state.get_device().value().get_number_of_sms(); // NOLINT(bugprone-unchecked-optional-access)
 
   state.add_element_count(static_cast<size_t>(blocks) * threads * Items * iterations);
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
