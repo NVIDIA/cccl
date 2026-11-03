@@ -1,0 +1,7 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+[env]
+# cuda-coop uses generic_const_exprs; cuda-device uses f16.
+# Enable these features in processes Cargo launches from this tree.
+RUSTC_BOOTSTRAP = "1"
