@@ -544,6 +544,11 @@ def provider_load(
             return_type=None,
         )(pointer, *runtime_args, *scratch_args, result_pointer)
         output.dtype = value_type
+        # The CuTe rmem tensor gives the C++ shim a pointer for array results.
+        # Read them into ThreadData's scalar expressions here. This loop
+        # runs while tracing; assigning output[i] only updates a Python list.
+        # After LTO inlines the shim, scalar replacement and promotion to
+        # registers can remove the temporary storage and its loads/stores.
         for i in range(output.items_per_thread):
             output[i] = result[i]
     except BaseException:
