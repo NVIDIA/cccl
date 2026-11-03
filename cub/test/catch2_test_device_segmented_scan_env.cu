@@ -566,6 +566,8 @@ CUB_TEST("Device segmented inclusive scan init with separate offsets uses enviro
   REQUIRE(d_out == expected);
 }
 
+#if TEST_LAUNCH != 1
+
 // A policy selector that forces a specific block size. We deliberately use direct block load/store so that the chosen
 // block size is valid for any of the values exercised below.
 template <unsigned int BlockThreads>
@@ -586,8 +588,6 @@ struct segmented_scan_tuning
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
-
-#if TEST_LAUNCH != 1
 
 // The "Sum" APIs do not take a user operator, so we extract the launched block size through a custom input iterator
 // (block_size_extracting_constant_iterator). The "Scan" APIs take a user scan operator, so we wrap a plus<> in
@@ -1173,6 +1173,10 @@ CUB_TEST_CASE("Device segmented inclusive scan init two-phase accepts legacy nul
   REQUIRE(d_out == expected);
 }
 
+// The tuning environments are empty classes, which older CTKs (at least 12.9 and 13.0) cannot pass as kernel
+// parameters, so these tests cannot use the device launch (TEST_LAUNCH == 1).
+#  if TEST_LAUNCH == 0
+
 CUB_TEST("Device segmented exclusive sum two-phase can be tuned", "[segmented_scan][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
@@ -1289,6 +1293,8 @@ CUB_TEST(
   }
   REQUIRE(d_block_size[0] == target_block_size);
 }
+
+#  endif // TEST_LAUNCH == 0
 
 #endif // TEST_LAUNCH != 2
 
