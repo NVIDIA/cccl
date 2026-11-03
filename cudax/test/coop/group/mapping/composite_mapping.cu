@@ -37,16 +37,12 @@ __device__ void test_composite_mapping(
     // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
     cudax::coop::composite_mapping mapping{mapping1, mapping2};
     static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
-    static_assert(cuda::std::is_nothrow_constructible_v<Mapping, Mapping1, Mapping2>
-                  == (cuda::std::is_nothrow_copy_constructible_v<Mapping1>
-                      && cuda::std::is_nothrow_copy_constructible_v<Mapping2>) );
   }
 
   // Test get().
   {
     const cudax::coop::composite_mapping mapping{mapping1, mapping2};
     static_assert(cuda::std::is_same_v<decltype(mapping.get()), const cuda::std::tuple<Mapping1, Mapping2>&>);
-    static_assert(noexcept(mapping.get()));
 
     decltype(auto) mapping1_ref = cuda::std::get<0>(mapping.get());
     decltype(auto) mapping2_ref = cuda::std::get<1>(mapping.get());
@@ -63,8 +59,6 @@ __device__ void test_composite_mapping(
 
     static_assert(cudax::coop::__group_mapping_result<decltype(mapping.map(
                     non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result))>);
-
-    static_assert(noexcept(mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result)));
 
     auto result  = mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result);
     using Result = decltype(result);
@@ -92,7 +86,6 @@ __device__ void test_composite_mapping(
     auto mapping = mapping1 | mapping2;
 
     static_assert(cuda::std::is_same_v<Mapping, decltype(mapping)>);
-    static_assert(noexcept(mapping1 | mapping2));
 
     decltype(auto) mapping1_ref = cuda::std::get<0>(mapping.get());
     decltype(auto) mapping2_ref = cuda::std::get<1>(mapping.get());
@@ -104,7 +97,6 @@ __device__ void test_composite_mapping(
     auto mapping = cudax::coop::composite_mapping{mapping1} | mapping2;
 
     static_assert(cuda::std::is_same_v<Mapping, decltype(mapping)>);
-    static_assert(noexcept(cudax::coop::composite_mapping{mapping1} | mapping2));
 
     decltype(auto) mapping1_ref = cuda::std::get<0>(mapping.get());
     decltype(auto) mapping2_ref = cuda::std::get<1>(mapping.get());
@@ -116,7 +108,6 @@ __device__ void test_composite_mapping(
     auto mapping = mapping1 | cudax::coop::composite_mapping{mapping2};
 
     static_assert(cuda::std::is_same_v<Mapping, decltype(mapping)>);
-    static_assert(noexcept(mapping1 | cudax::coop::composite_mapping{mapping2}));
 
     decltype(auto) mapping1_ref = cuda::std::get<0>(mapping.get());
     decltype(auto) mapping2_ref = cuda::std::get<1>(mapping.get());
@@ -128,7 +119,6 @@ __device__ void test_composite_mapping(
     auto mapping = cudax::coop::composite_mapping{mapping1} | cudax::coop::composite_mapping{mapping2};
 
     static_assert(cuda::std::is_same_v<Mapping, decltype(mapping)>);
-    static_assert(noexcept(cudax::coop::composite_mapping{mapping1} | cudax::coop::composite_mapping{mapping2}));
 
     decltype(auto) mapping1_ref = cuda::std::get<0>(mapping.get());
     decltype(auto) mapping2_ref = cuda::std::get<1>(mapping.get());
@@ -143,7 +133,6 @@ __device__ void test_identity_composite_mapping(Mapping& mapping, Config config,
 {
   const cudax::coop::this_warp parent_group{config};
   const ThreadsInWarpMappingResult prev_mapping_result;
-  static_assert(noexcept(mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result)));
 
   const auto result = mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result);
   static_assert(cuda::std::is_same_v<decltype(result), const ThreadsInWarpMappingResult>);
@@ -164,8 +153,6 @@ __device__ void test_non_exhaustive_composite_mapping(Config config)
   auto mapping = cudax::coop::group_by{cuda::std::cw<3>} | cudax::coop::take{cuda::std::cw<2>}
                | cudax::coop::identity_mapping{};
 
-  static_assert(
-    noexcept(mapping.map(cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, prev_mapping_result)));
   const auto result = mapping.map(cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, prev_mapping_result);
   using Result      = decltype(result);
 

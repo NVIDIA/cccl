@@ -63,7 +63,7 @@ __any_of_impl(::cuda::std::bool_constant<_Broadcasted>, const this_thread<_Hiera
 _CCCL_TEMPLATE(bool _Broadcasted, class _Group)
 _CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::level_type, warp_level>)
 [[nodiscard]] _CCCL_DEVICE_API auto
-__any_of_impl(::cuda::std::bool_constant<_Broadcasted>, const _Group& __group, bool __thread_data) noexcept
+__any_of_impl(::cuda::std::bool_constant<_Broadcasted>, const _Group& __group, bool __thread_data)
 {
   const auto& __mapping_result = __group.__mapping_result();
   const auto __result          = static_cast<bool>(::__any_sync(__mapping_result.lane_mask().value(), __thread_data));

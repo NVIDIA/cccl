@@ -28,22 +28,22 @@ Group Mapping Result Concept
     requires(cuda::std::is_copy_constructible_v<T>);
 
     // Group within the parent group info.
-    { T::static_group_count() } noexcept -> cuda::std::same_as<cuda::std::size_t>; // (1), must be constexpr
-    { t.group_count() } noexcept -> cuda::std::same_as<cuda::std::uint32_t>;       // (2)
-    { t.group_rank() } noexcept -> cuda::std::same_as<cuda::std::uint32_t>;        // (3)
+    { T::static_group_count() } -> cuda::std::same_as<cuda::std::size_t>; // (1), must be constexpr
+    { t.group_count() } -> cuda::std::same_as<cuda::std::uint32_t>;       // (2)
+    { t.group_rank() } -> cuda::std::same_as<cuda::std::uint32_t>;        // (3)
 
     // Unit within the group info.
-    { T::static_unit_count() } noexcept -> cuda::std::same_as<cuda::std::size_t>;  // (4), must be constexpr
-    { t.unit_count() } noexcept -> cuda::std::same_as<cuda::std::uint32_t>;        // (5)
-    { t.unit_rank() } noexcept -> cuda::std::same_as<cuda::std::uint32_t>;         // (6)
+    { T::static_unit_count() } -> cuda::std::same_as<cuda::std::size_t>;  // (4), must be constexpr
+    { t.unit_count() } -> cuda::std::same_as<cuda::std::uint32_t>;        // (5)
+    { t.unit_rank() } -> cuda::std::same_as<cuda::std::uint32_t>;         // (6)
 
     // Properties of the mapping result.
-    { T::is_always_exhaustive() } noexcept -> cuda::std::same_as<bool>;            // (7), must be constexpr
-    { T::is_always_contiguous() } noexcept -> cuda::std::same_as<bool>;            // (8), must be constexpr
-    { t.is_valid() } noexcept -> cuda::std::same_as<bool>;                         // (9)
+    { T::is_always_exhaustive() } -> cuda::std::same_as<bool>;            // (7), must be constexpr
+    { T::is_always_contiguous() } -> cuda::std::same_as<bool>;            // (8), must be constexpr
+    { t.is_valid() } -> cuda::std::same_as<bool>;                         // (9)
 
     // Other group-related info.
-    { t.lane_mask() } noexcept -> cuda::std::same_as<cuda::device::lane_mask>;     // (10)
+    { t.lane_mask() } -> cuda::std::same_as<cuda::device::lane_mask>;     // (10)
   };
 
 Where:

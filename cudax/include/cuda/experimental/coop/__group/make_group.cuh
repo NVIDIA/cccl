@@ -57,8 +57,7 @@ _CCCL_TEMPLATE(template <class...> class _GroupTempl,
                class... _Args,
                class _Group = decltype(_GroupTempl{::cuda::std::declval<_Args>()...}))
 _CCCL_REQUIRES(group<_Group>)
-[[nodiscard]] _CCCL_DEVICE_API _Group
-make_group(_Args&&... __args) noexcept(::cuda::std::is_nothrow_constructible_v<_Group, _Args...>)
+[[nodiscard]] _CCCL_DEVICE_API _Group make_group(_Args&&... __args)
 {
   return _Group{::cuda::std::forward<_Args>(__args)...};
 }
@@ -81,7 +80,7 @@ _CCCL_REQUIRES(__is_same_templ_v<generic_group, _GroupTempl> _CCCL_AND __is_hier
   const _Unit& __unit,
   const _ParentGroup& __parent,
   _Mapping&& __mapping,
-  _Synchronizer&& __synchronizer) noexcept
+  _Synchronizer&& __synchronizer)
 {
   const auto __mapping_result = ::cuda::experimental::coop::__do_group_mapping(
     __non_exhaustive, __unit, __parent, ::cuda::std::forward<_Mapping>(__mapping));
@@ -107,7 +106,7 @@ auto make_group(const non_exhaustive_t&, _Args&&... __args) = delete;
 _CCCL_TEMPLATE(class _HierarchyLike)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
 [[nodiscard]] _CCCL_DEVICE_API auto
-make_group(const ::cooperative_groups::grid_group&, const _HierarchyLike& __hier_like) noexcept
+make_group(const ::cooperative_groups::grid_group&, const _HierarchyLike& __hier_like)
 {
   return this_grid{__hier_like};
 }
@@ -116,7 +115,7 @@ make_group(const ::cooperative_groups::grid_group&, const _HierarchyLike& __hier
 _CCCL_TEMPLATE(class _HierarchyLike)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
 [[nodiscard]] _CCCL_DEVICE_API auto
-make_group(const ::cooperative_groups::cluster_group&, const _HierarchyLike& __hier_like) noexcept
+make_group(const ::cooperative_groups::cluster_group&, const _HierarchyLike& __hier_like)
 {
   return this_cluster{__hier_like};
 }
@@ -125,7 +124,7 @@ make_group(const ::cooperative_groups::cluster_group&, const _HierarchyLike& __h
 _CCCL_TEMPLATE(class _HierarchyLike)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
 [[nodiscard]] _CCCL_DEVICE_API auto
-make_group(const ::cooperative_groups::thread_block&, const _HierarchyLike& __hier_like) noexcept
+make_group(const ::cooperative_groups::thread_block&, const _HierarchyLike& __hier_like)
 {
   return this_block{__hier_like};
 }
@@ -133,7 +132,7 @@ make_group(const ::cooperative_groups::thread_block&, const _HierarchyLike& __hi
 _CCCL_TEMPLATE(class _HierarchyLike, class _CgGroup = ::cooperative_groups::coalesced_group)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
 [[nodiscard]] _CCCL_DEVICE_API auto
-make_group(const ::cuda::std::type_identity_t<_CgGroup>& __cg_group, const _HierarchyLike& __hier_like) noexcept
+make_group(const ::cuda::std::type_identity_t<_CgGroup>& __cg_group, const _HierarchyLike& __hier_like)
 {
   // todo(dabayer): CG's coalesced_group may be dynamically tiled, thus it's not exactly equivalent to CG's
   // coalesced_group. We should probably just return an ordinary generic_group that would be able to handle this.
@@ -145,7 +144,7 @@ make_group(const ::cuda::std::type_identity_t<_CgGroup>& __cg_group, const _Hier
 _CCCL_TEMPLATE(unsigned _Size, class _ParentT, class _HierarchyLike)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
 [[nodiscard]] _CCCL_DEVICE_API auto
-make_group(const ::cooperative_groups::thread_block_tile<_Size, _ParentT>&, const _HierarchyLike& __hier_like) noexcept
+make_group(const ::cooperative_groups::thread_block_tile<_Size, _ParentT>&, const _HierarchyLike& __hier_like)
 {
   if constexpr (_Size == 1 && ::cuda::std::is_same_v<_ParentT, void>)
   {

@@ -56,20 +56,20 @@ class __interwarp_synchronizer_instance
 public:
   using arrival_token _CCCL_NODEBUG = __dummy_arrival_token<__interwarp_synchronizer_instance>;
 
-  _CCCL_DEVICE_API __interwarp_synchronizer_instance(__interwarp_barrier_id __barrier_id) noexcept
+  _CCCL_DEVICE_API __interwarp_synchronizer_instance(__interwarp_barrier_id __barrier_id)
       : __barrier_id_{__barrier_id}
   {
     _CCCL_ASSERT(__barrier_id_ < 16u, "Invalid native warp barrier id");
   }
 
   template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_sync(const _MappingResult& __mapping_result, const _Hierarchy&) const noexcept
+  _CCCL_DEVICE_API void do_sync(const _MappingResult& __mapping_result, const _Hierarchy&) const
   {
     ::__barrier_sync_count(__barrier_id_, __mapping_result.unit_count() * 32);
   }
 
   template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_sync_aligned(const _MappingResult& __mapping_result, const _Hierarchy&) const noexcept
+  _CCCL_DEVICE_API void do_sync_aligned(const _MappingResult& __mapping_result, const _Hierarchy&) const
   {
     // The .aligned version of the barrier instruction requires whole CTA to execute the same instruction, which is not
     // usable with groups. That means that we need to always use the unaligned version.
@@ -77,21 +77,20 @@ public:
   }
 
   template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API arrival_token do_arrive(const _MappingResult&, const _Hierarchy&) const noexcept
+  _CCCL_DEVICE_API arrival_token do_arrive(const _MappingResult&, const _Hierarchy&) const
   {
     return arrival_token{};
   }
 
   template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API arrival_token do_arrive_aligned(const _MappingResult&, const _Hierarchy&) const noexcept
+  _CCCL_DEVICE_API arrival_token do_arrive_aligned(const _MappingResult&, const _Hierarchy&) const
   {
     return arrival_token{};
   }
 
   template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_wait(const _MappingResult& __mapping_result,
-                                const _Hierarchy& __hier,
-                                [[maybe_unused]] arrival_token&& __tok) const noexcept
+  _CCCL_DEVICE_API void do_wait(
+    const _MappingResult& __mapping_result, const _Hierarchy& __hier, [[maybe_unused]] arrival_token&& __tok) const
   {
     // Construct a temporary object, so we set __tok to moved-from state.
     _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__valid(), "invalid arrival token passed to do_wait function");
@@ -99,9 +98,8 @@ public:
   }
 
   template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_wait_aligned(const _MappingResult& __mapping_result,
-                                        const _Hierarchy& __hier,
-                                        [[maybe_unused]] arrival_token&& __tok) const noexcept
+  _CCCL_DEVICE_API void do_wait_aligned(
+    const _MappingResult& __mapping_result, const _Hierarchy& __hier, [[maybe_unused]] arrival_token&& __tok) const
   {
     // Construct a temporary object, so we set __tok to moved-from state.
     _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__valid(),
@@ -109,13 +107,13 @@ public:
     do_sync_aligned(__mapping_result, __hier);
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API __interwarp_synchronizer_instance view() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API __interwarp_synchronizer_instance view() const
   {
     return *this;
   }
 
   template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void deinit(const _MappingResult&, const _Hierarchy&) noexcept
+  _CCCL_DEVICE_API void deinit(const _MappingResult&, const _Hierarchy&)
   {}
 };
 
@@ -132,14 +130,13 @@ public:
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_RangeView, ::cuda::std::ranges::views::all_t<_Range>>)
-  _CCCL_DEVICE_API interwarp_synchronizer(_Range&& __barrier_ids) noexcept(
-    noexcept(::cuda::std::ranges::views::all(::cuda::std::forward<_Range>(__barrier_ids))))
+  _CCCL_DEVICE_API interwarp_synchronizer(_Range&& __barrier_ids)
       : __barrier_ids_{::cuda::std::ranges::views::all(::cuda::std::forward<_Range>(__barrier_ids))}
   {}
 
   template <class _Unit, class _ParentGroup, class _MappingResult>
   [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance
-  make_instance(const _Unit&, const _ParentGroup&, const _MappingResult& __mapping_result) const noexcept
+  make_instance(const _Unit&, const _ParentGroup&, const _MappingResult& __mapping_result) const
   {
     using _Level = typename _ParentGroup::level_type;
 

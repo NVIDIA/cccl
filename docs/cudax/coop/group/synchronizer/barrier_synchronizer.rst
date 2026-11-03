@@ -13,13 +13,13 @@
     cuda::std::span<Barrier, N> /*barriers_*/; // exposition-only
 
   public:
-    __device__ barrier_synchronizer(cuda::std::span<Barrier, N> barriers) noexcept
+    __device__ barrier_synchronizer(cuda::std::span<Barrier, N> barriers)
       : /*barriers_*/{barriers}
     {}
 
     template <typename Unit, typename ParentGroup, typename MappingResult>
     [[nodiscard]] __device__
-    auto make_instance(const Unit&, const ParentGroup&, const MappingResult&) const noexcept;
+    auto make_instance(const Unit&, const ParentGroup&, const MappingResult&) const;
   };
 
   template <typename Barrier, cuda::std::size_t N>

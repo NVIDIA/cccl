@@ -13,7 +13,7 @@
     cuda::std::uint32_t /*unit_count_*/; // exposition-only
 
   public:
-    __device__ explicit constexpr group_by(cuda::std::uint32_t unit_count) noexcept
+    __device__ explicit constexpr group_by(cuda::std::uint32_t unit_count)
       : /*unit_count_*/{unit_count}
     {}
   };

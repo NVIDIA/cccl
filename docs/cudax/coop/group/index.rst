@@ -115,20 +115,20 @@ The requirements on groups are formally specified by the ``cuda::experimental::c
   concept group = requires (T& t, const T& ct)
   {
     // Member types.
-    requires /*is-hierarchy-level*/<typename T::unit_type>;             // (1)
-    requires /*is-hierarchy-level*/<typename T::level_type>;            // (2)
-    requires /*is-hierarchy*/<typename T::hierarchy_type>;              // (3)
+    requires /*is-hierarchy-level*/<typename T::unit_type>;     // (1)
+    requires /*is-hierarchy-level*/<typename T::level_type>;    // (2)
+    requires /*is-hierarchy*/<typename T::hierarchy_type>;      // (3)
 
     // Getters.
-    { ct.hierarchy() } noexcept
-      -> cuda::std::same_as<const typename T::hierarchy_type&>;         // (4)
+    { ct.hierarchy() }
+      -> cuda::std::same_as<const typename T::hierarchy_type&>; // (4)
 
     // Synchronization.
-    { t.sync() } noexcept -> cuda::std::same_as<void>;                  // (5)
-    { t.sync_aligned() } noexcept -> cuda::std::same_as<void>;          // (6)
+    { t.sync() } -> cuda::std::same_as<void>;                   // (5)
+    { t.sync_aligned() } -> cuda::std::same_as<void>;           // (6)
 
     // Properties.
-    { T::is_always_contiguous() } noexcept -> cuda::std::same_as<bool>; // (7), must be constexpr
+    { T::is_always_contiguous() } -> cuda::std::same_as<bool>;  // (7), must be constexpr
   };
 
   } // namespace cuda::experimental::coop
@@ -246,17 +246,16 @@ CCCL Cooperative Groups can be constructed 2 ways -- using their constructor or 
   template <template <typename...> typename GroupTempl, typename... Args>
   [[nodiscard]] __device__
   auto make_group(Args&&... args)
-    noexcept(/*is-nothrow-constructible-from-args*/)
-    -> /*GroupTempl-instantiated-with-args*/;                                                   // (1)
+    -> /*GroupTempl-instantiated-with-args*/;                                          // (1)
 
   template <template <typename...> typename GroupTempl, typename... Args>
   [[nodiscard]] __device__
-  auto make_group(const non_exhaustive_t&, Args&&... args) noexcept
-    -> cuda::std::optional</*GroupTempl-instantiated-with-args*/>;                              // (2)
+  auto make_group(const non_exhaustive_t&, Args&&... args)
+    -> cuda::std::optional</*GroupTempl-instantiated-with-args*/>;                     // (2)
 
   template <typename CgGroup, /*hierarchy-like-type*/ HierarchyLike>
   [[nodiscard]] __device__
-  group auto make_group(const CgGroup& cg_group, const HierarchyLike& hierarchy_like) noexcept; // (3)
+  group auto make_group(const CgGroup& cg_group, const HierarchyLike& hierarchy_like); // (3)
 
   } // namespace cuda::experimental::coop
 

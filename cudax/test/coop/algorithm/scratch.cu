@@ -59,7 +59,7 @@ struct MyCoopAlg
 {
   template <class Group, MyCoopAlgScratch Kind, class Env = cuda::std::execution::env<>>
   [[nodiscard]] __device__ static constexpr auto
-  __get_scratch_requirements(const Group& group, MyCoopAlgScratchConstant<Kind>, Env = {}) noexcept
+  __get_scratch_requirements(const Group& group, MyCoopAlgScratchConstant<Kind>, Env = {})
   {
     if constexpr (Kind == MyCoopAlgScratch::none)
     {
