@@ -38,6 +38,11 @@ benchmarks:
       # - '^cub\.bench\.reduce\.(sum|min)\.'
       # - '^thrust\.bench\.reduce\.'
       # - '^libcudacxx\.bench\.'
+      - '^cub\.bench\.reduce\.sum\.base$'
+      - '^cub\.bench\.reduce\.deferred_sum\.base$'
+      - '^cub\.bench\.find_if\.base\.base$'
+      - '^cub\.bench\.segmented_reduce\.sum\.base$'
+      - '^cub\.bench\.segmented_reduce\.variable_sum\.base$'
 
     # Python benchmark filters (regex matched against paths under benchmarks/).
     python:
@@ -54,6 +59,11 @@ benchmarks:
     # - "rtx4090"    # sm_89, 24 GB
     # - "h100"       # sm_90, 80 GB
     # - "rtxpro6000" # sm_120
+    - "t4"
+    - "rtxa6000"
+    - "rtx4090"
+    - "h100"
+    - "rtxpro6000"
 
   # Extra .devcontainer/launch.sh -d args
   # launch_args: "--cuda 13.3 --host gcc14"
