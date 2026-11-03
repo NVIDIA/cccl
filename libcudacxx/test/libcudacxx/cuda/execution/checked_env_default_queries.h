@@ -52,12 +52,19 @@ struct get_stop_token_t
   }
 };
 
+// Explicit constructors avoid older Clang crashes on NVCC's output for empty aggregates.
 struct empty_a
-{};
+{
+  TEST_HOST_DEVICE_FUNC constexpr empty_a() noexcept {}
+};
 struct empty_b
-{};
+{
+  TEST_HOST_DEVICE_FUNC constexpr empty_b() noexcept {}
+};
 struct empty_c
-{};
+{
+  TEST_HOST_DEVICE_FUNC constexpr empty_c() noexcept {}
+};
 
 struct provider
 {

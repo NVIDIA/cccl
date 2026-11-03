@@ -46,7 +46,8 @@ TEST_HOST_DEVICE_FUNC constexpr void check_provided(const Env& env, int expected
 {
   static_assert(ex::__queryable_with<const Env&, get_stop_token_t>);
   static_assert(cuda::std::is_same_v<decltype(get_stop_token_t{}(env)), const provided_stop_token&>);
-  const auto& token = get_stop_token_t{}(env);
+  const get_stop_token_t get_stop_token{};
+  const auto& token = get_stop_token(env);
   assert(token.stop_possible());
   assert(token.id == expected_id);
   assert(token.stop_requested() == ((expected_id & 1) != 0));

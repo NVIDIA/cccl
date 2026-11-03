@@ -10,6 +10,9 @@ struct malformed_env
   {
     return cuda::stream_ref{cudaStream_t{}};
   }
+
+  // Keep rvalue queries ill-formed even with MSVC's reference-binding extension.
+  cuda::stream_ref query(cuda::get_stream_t&&) const = delete;
 };
 
 struct default_value

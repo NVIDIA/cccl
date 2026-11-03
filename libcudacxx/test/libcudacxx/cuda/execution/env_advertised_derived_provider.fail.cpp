@@ -22,6 +22,9 @@ struct invalid_provider
   {
     return 17;
   }
+
+  // Keep rvalue queries ill-formed even with MSVC's reference-binding extension.
+  int query(query_t&&) const = delete;
 };
 
 struct derived_env : cuda::std::execution::env<good_env, invalid_provider>

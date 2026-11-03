@@ -125,19 +125,13 @@ template <class _Tp>
 _CCCL_CONCEPT __has_property_keys = _CCCL_REQUIRES_EXPR((_Tp))(typename(__property_keys_t<_Tp>));
 
 template <class _Tp, bool = __has_property_keys<_Tp>>
-struct __property_keys_or_empty
-{
-  using type _CCCL_NODEBUG = ::cuda::execution::property_key_list<>;
-};
+extern ::cuda::execution::property_key_list<> __property_keys_or_empty;
 
 template <class _Tp>
-struct __property_keys_or_empty<_Tp, true>
-{
-  using type _CCCL_NODEBUG = ::cuda::execution::property_keys_t<_Tp>;
-};
+extern ::cuda::execution::property_keys_t<_Tp> __property_keys_or_empty<_Tp, true>;
 
 template <class _Tp>
-using __property_keys_or_empty_t _CCCL_NODEBUG = typename __property_keys_or_empty<_Tp>::type;
+using __property_keys_or_empty_t _CCCL_NODEBUG = decltype(__property_keys_or_empty<_Tp>);
 
 // Normalize shorthand keys before forming the union, so that _Query and
 // property_query<_Query> advertise the same expression.
