@@ -25,7 +25,7 @@
     __device__ explicit generic_group(const Unit& unit,
                                      const ParentGroup& parent_group,
                                      Mapping&& mapping,
-                                     Synchronizer&& synchronizer) noexcept;
+                                     Synchronizer&& synchronizer);
 
     generic_group(const generic_group&) = delete;
 

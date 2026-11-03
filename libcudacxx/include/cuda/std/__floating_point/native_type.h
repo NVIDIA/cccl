@@ -69,7 +69,7 @@ _CCCL_API constexpr auto __fp_native_type_impl()
 }
 
 template <__fp_format _Fmt>
-using __fp_native_type_t = decltype(__fp_native_type_impl<_Fmt>());
+using __fp_native_type_t _CCCL_NODEBUG = decltype(__fp_native_type_impl<_Fmt>());
 
 template <__fp_format _Fmt>
 inline constexpr bool __fp_has_native_type_v = !is_void_v<__fp_native_type_t<_Fmt>>;

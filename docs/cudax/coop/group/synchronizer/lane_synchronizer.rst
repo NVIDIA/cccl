@@ -14,7 +14,7 @@
 
     template <typename Unit, typename ParentGroup, typename MappingResult>
     [[nodiscard]] __device__
-    auto make_instance(const Unit&, const ParentGroup&, const MappingResult&) const noexcept;
+    auto make_instance(const Unit&, const ParentGroup&, const MappingResult&) const;
   };
 
   } // namespace cuda::experimental::coop

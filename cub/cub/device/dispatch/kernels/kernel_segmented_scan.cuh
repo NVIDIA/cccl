@@ -125,6 +125,14 @@ private:
   static constexpr auto store_algorithm = agent_policy.store_algorithm;
   static constexpr auto scan_algorithm  = agent_policy.scan_algorithm;
 
+  // The block-wide scan requires the items in a blocked arrangement
+  static_assert(load_algorithm != BLOCK_LOAD_STRIPED,
+                "SegmentedScanBlockPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since the scan requires a "
+                "blocked arrangement");
+  static_assert(store_algorithm != BLOCK_STORE_STRIPED,
+                "SegmentedScanBlockPolicy: store_algorithm must not be BLOCK_STORE_STRIPED, since the scan produces a "
+                "blocked arrangement");
+
   using block_load_t  = BlockLoad<AccumT, threads_per_block, items_per_thread, load_algorithm>;
   using block_store_t = BlockStore<AccumT, threads_per_block, items_per_thread, store_algorithm>;
   using block_scan_t  = BlockScan<AccumT, threads_per_block, scan_algorithm>;
@@ -173,7 +181,7 @@ private:
     _multiple_segment_algorithms_storage_t reused;
   };
 
-  using _TempStorage = ::cuda::std::conditional_t<
+  using _TempStorage _CCCL_NODEBUG = ::cuda::std::conditional_t<
     multi_segment_enabled,
     ::cuda::std::conditional_t<FixedSize, _fixed_size_multi_segment_temp_storage_t, _multi_segment_temp_storage_t>,
     _single_segment_temp_storage_t>;

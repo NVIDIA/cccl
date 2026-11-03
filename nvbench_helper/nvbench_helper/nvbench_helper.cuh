@@ -73,7 +73,7 @@ struct push_back
 template <class... As, class... Ts>
 struct push_back<nvbench::type_list<As...>, Ts...>
 {
-  using type = nvbench::type_list<As..., Ts...>;
+  using type _CCCL_NODEBUG = nvbench::type_list<As..., Ts...>;
 };
 } // namespace detail
 
@@ -713,7 +713,7 @@ private:
   void do_deallocate(value_type* ptr)
   {
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-    cudaFree(ptr);
+    static_cast<void>(cudaFree(ptr));
 #else
     delete[] ptr;
 #endif

@@ -72,7 +72,7 @@ using ::std::forward_like;
 #else // ^^^ _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() ^^^ / vvv !_CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() vvv
 
 template <class _Ap, class _Bp>
-using _ForwardLike = __copy_cvref_t<_Ap&&, remove_reference_t<_Bp>>;
+using _ForwardLike _CCCL_NODEBUG = __copy_cvref_t<_Ap&&, remove_reference_t<_Bp>>;
 
 template <class _Tp, class _Up>
 [[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr auto forward_like(_Up&& __ux) noexcept -> _ForwardLike<_Tp, _Up>

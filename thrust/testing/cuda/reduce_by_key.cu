@@ -308,7 +308,7 @@ void test_reduce_by_key_cuda_streams(ExecutionPolicy policy)
   Vector output_values(values.size());
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   auto streampolicy = policy.on(s);
 
@@ -380,7 +380,7 @@ void test_reduce_by_key_cuda_streams(ExecutionPolicy policy)
   REQUIRE(output_values[3] == 15);
   REQUIRE(output_values[4] == 15);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestReduceByKeyCudaStreamsSync", "[reduce_by_key]")

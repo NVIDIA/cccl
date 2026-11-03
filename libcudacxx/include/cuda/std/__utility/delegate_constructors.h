@@ -34,7 +34,7 @@
 // This creates a whole lot of boilerplate that we can avoid through a macro (see nvbug3961621)
 #if _CCCL_COMPILER(NVRTC, <, 12, 6)
 #  define _CCCL_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...)                                                       \
-    using __base = __baseclass<__VA_ARGS__>;                                                                           \
+    using __base _CCCL_NODEBUG = __baseclass<__VA_ARGS__>;                                                             \
     _CCCL_EXEC_CHECK_DISABLE                                                                                           \
     _CCCL_TEMPLATE(class... _Args)                                                                                     \
     _CCCL_REQUIRES(::cuda::std::is_constructible_v<__base, _Args...>)                                                  \
@@ -45,7 +45,7 @@
     _CCCL_HIDE_FROM_ABI constexpr __class() noexcept(::cuda::std::is_nothrow_default_constructible_v<__base>) = default;
 #else // ^^^ workaround ^^^ / vvv no workaround vvv
 #  define _CCCL_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...)          \
-    using __base = __baseclass<__VA_ARGS__>;                              \
+    using __base _CCCL_NODEBUG = __baseclass<__VA_ARGS__>;                \
     /* clang-tidy is off its rocker */                                    \
     /* NOLINTBEGIN(cppcoreguidelines-rvalue-reference-param-not-moved) */ \
     using __base::__base;                                                 \

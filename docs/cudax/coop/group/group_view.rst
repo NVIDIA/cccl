@@ -17,14 +17,14 @@
 
     group_view() = delete;
 
-    __device__ group_view(const Group& group) noexcept
+    __device__ group_view(const Group& group)
       requires cuda::std::same_as<Unit, typename Group::unit_type>;
 
-    __device__ explicit group_view(const Unit& unit, const Group& group) noexcept;
+    __device__ explicit group_view(const Unit& unit, const Group& group);
 
     template <typename OtherUnit>
       requires /*unit-same-as-or-below*/<Unit, OtherUnit>
-    __device__ explicit group_view(const Unit& unit, const group_view<OtherUnit, Group>& other) noexcept;
+    __device__ explicit group_view(const Unit& unit, const group_view<OtherUnit, Group>& other);
 
     group_view(const group_view&) = default;
 

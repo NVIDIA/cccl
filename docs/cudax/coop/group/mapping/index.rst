@@ -28,22 +28,22 @@ Group Mapping Result Concept
     requires(cuda::std::is_copy_constructible_v<T>);
 
     // Group within the parent group info.
-    { T::static_group_count() } noexcept -> cuda::std::same_as<cuda::std::size_t>; // (1), must be constexpr
-    { t.group_count() } noexcept -> cuda::std::same_as<cuda::std::uint32_t>;       // (2)
-    { t.group_rank() } noexcept -> cuda::std::same_as<cuda::std::uint32_t>;        // (3)
+    { T::static_group_count() } -> cuda::std::same_as<cuda::std::size_t>; // (1), must be constexpr
+    { t.group_count() } -> cuda::std::same_as<cuda::std::uint32_t>;       // (2)
+    { t.group_rank() } -> cuda::std::same_as<cuda::std::uint32_t>;        // (3)
 
     // Unit within the group info.
-    { T::static_unit_count() } noexcept -> cuda::std::same_as<cuda::std::size_t>;  // (4), must be constexpr
-    { t.unit_count() } noexcept -> cuda::std::same_as<cuda::std::uint32_t>;        // (5)
-    { t.unit_rank() } noexcept -> cuda::std::same_as<cuda::std::uint32_t>;         // (6)
+    { T::static_unit_count() } -> cuda::std::same_as<cuda::std::size_t>;  // (4), must be constexpr
+    { t.unit_count() } -> cuda::std::same_as<cuda::std::uint32_t>;        // (5)
+    { t.unit_rank() } -> cuda::std::same_as<cuda::std::uint32_t>;         // (6)
 
     // Properties of the mapping result.
-    { T::is_always_exhaustive() } noexcept -> cuda::std::same_as<bool>;            // (7), must be constexpr
-    { T::is_always_contiguous() } noexcept -> cuda::std::same_as<bool>;            // (8), must be constexpr
-    { t.is_valid() } noexcept -> cuda::std::same_as<bool>;                         // (9)
+    { T::is_always_exhaustive() } -> cuda::std::same_as<bool>;            // (7), must be constexpr
+    { T::is_always_contiguous() } -> cuda::std::same_as<bool>;            // (8), must be constexpr
+    { t.is_valid() } -> cuda::std::same_as<bool>;                         // (9)
 
     // Other group-related info.
-    { t.lane_mask() } noexcept -> cuda::std::same_as<cuda::device::lane_mask>;     // (10)
+    { t.lane_mask() } -> cuda::std::same_as<cuda::device::lane_mask>;     // (10)
   };
 
 Where:
@@ -67,7 +67,7 @@ Group Mapping Process
 The group mapping process has 3 steps:
 
 1. The initial mapping result describes the parent group as one group: the static and runtime group counts are ``1``, the group rank is ``0``, and the unit count and rank are queried for the requested unit level. The exhaustive property is ``true`` relative to the parent group, and the contiguous property and lane mask are copied from the parent.
-2. The mapping's ``.map(...)`` member function is invoked with the initial mapping result. When a non-exhaustve mapping is done, the ``cuda::experimental::coop::non_exhaustive`` tag is passed as the first parameter to the ``.map(...)`` method.
+2. The mapping's ``.map(...)`` member function is invoked with the initial mapping result. When a non-exhaustive mapping is done, the ``cuda::experimental::coop::non_exhaustive`` tag is passed as the first parameter to the ``.map(...)`` method.
 3. The transformed mapping result is used to initialize the newly created group.
 
 Only units that belong to the parent group may create a child group. For a unit larger than a thread, all threads in that unit must agree on its assignment and participation.

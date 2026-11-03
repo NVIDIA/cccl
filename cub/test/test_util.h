@@ -1418,31 +1418,31 @@ struct GpuTimer
 
   GpuTimer()
   {
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
+    CubDebugExit(cudaEventCreate(&start));
+    CubDebugExit(cudaEventCreate(&stop));
   }
 
   ~GpuTimer()
   {
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
+    CubDebugExit(cudaEventDestroy(start));
+    CubDebugExit(cudaEventDestroy(stop));
   }
 
   void Start()
   {
-    cudaEventRecord(start, nullptr);
+    CubDebugExit(cudaEventRecord(start, nullptr));
   }
 
   void Stop()
   {
-    cudaEventRecord(stop, nullptr);
+    CubDebugExit(cudaEventRecord(stop, nullptr));
   }
 
   float ElapsedMillis()
   {
     float elapsed;
-    cudaEventSynchronize(stop);
-    cudaEventElapsedTime(&elapsed, start, stop);
+    CubDebugExit(cudaEventSynchronize(stop));
+    CubDebugExit(cudaEventElapsedTime(&elapsed, start, stop));
     return elapsed;
   }
 };

@@ -87,6 +87,10 @@ struct AgentSegmentedRadixSort
                    (SegmentedPolicyT::RANK_ALGORITHM == RADIX_RANK_MEMOIZE),
                    SegmentedPolicyT::SCAN_ALGORITHM>;
 
+  // BlockRadixSort::SortBlockedToStriped in ProcessSinglePass requires a blocked arrangement for a stable sort
+  static_assert(SegmentedPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,
+                "SegmentedSortRadixSortPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since the block radix "
+                "sort requires a blocked arrangement");
   using BlockKeyLoadT = BlockLoad<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, SegmentedPolicyT::LOAD_ALGORITHM>;
 
   using BlockValueLoadT = BlockLoad<ValueT, BLOCK_THREADS, ITEMS_PER_THREAD, SegmentedPolicyT::LOAD_ALGORITHM>;
@@ -231,7 +235,7 @@ struct AgentSegmentedRadixSort
 
         if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
         {
-          temp_storage.unbound_sort.reverse_counts_out[threadIdx.x] = bin_offset[track];
+          temp_storage.unbound_sort.reverse_counts_out[bin_idx] = bin_offset[track];
         }
       }
 

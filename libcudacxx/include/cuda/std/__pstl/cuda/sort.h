@@ -74,7 +74,7 @@ template <>
 struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
 {
   template <class _Tp, class _Policy>
-  using _DeviceRadixSort =
+  using _DeviceRadixSort _CCCL_NODEBUG =
     cudaError_t (*)(void*, size_t&, CUB_NS_QUALIFIER::DoubleBuffer<_Tp>&, size_t, int, int, const _Policy&);
 
   template <class _Tp, class _Policy, class _BinaryPredicate>

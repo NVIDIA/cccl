@@ -174,7 +174,7 @@ struct __status_answer
 };
 
 template <class _Status>
-using __status_failed_of = decltype(status_traits<_Status>::failed(::cuda::std::declval<_Status>()));
+using __status_failed_of _CCCL_NODEBUG = decltype(status_traits<_Status>::failed(::cuda::std::declval<_Status>()));
 
 // Whether a status reports a failure: the trait's own `failed` when it has one, else a comparison
 // with its success value.
@@ -273,10 +273,10 @@ namespace detail
 template <class _Self>
 struct __sink_storage
 {
-  using type = _Self;
+  using type _CCCL_NODEBUG = _Self;
 };
 template <class _Self>
-using __sink_storage_t = typename __sink_storage<_Self>::type;
+using __sink_storage_t _CCCL_NODEBUG = typename __sink_storage<_Self>::type;
 
 // The left operand of a sink's `<<` and `->*`, built by implicit conversion from the sink.
 // Overloaded operators cannot take a defaulted `source_location`, so the converting constructor
@@ -305,7 +305,7 @@ struct __sink_at
 template <class _Self, class>
 struct __sink_at_for
 {
-  using type = __sink_at<_Self>;
+  using type _CCCL_NODEBUG = __sink_at<_Self>;
 };
 } // namespace detail
 
@@ -315,7 +315,7 @@ struct __sink_at_for
 // operators are hidden friends, so ADL finds them only for an operand of type `_Self`. The bodies
 // call helpers declared further down, found by ADL through `__sink_at` at instantiation.
 #  define _CUDAX_STF_SINK(_Self)                                                                        \
-    using __exception_sink_tag = void;                                                                  \
+    using __exception_sink_tag _CCCL_NODEBUG = void;                                                    \
     template <class _X>                                                                                 \
     friend auto operator<<(                                                                             \
       typename ::cuda::experimental::stf::sump::detail::__sink_at_for<_Self, _X>::type __s,             \
@@ -924,7 +924,7 @@ struct __expected_error;
 template <class _T, class _E>
 struct __expected_error<::cuda::std::expected<_T, _E>>
 {
-  using type = _E;
+  using type _CCCL_NODEBUG = _E;
 };
 } // namespace detail
 
@@ -1070,7 +1070,7 @@ struct translate_t
                 "translate: the target type must derive from std::exception");
 
   _CUDAX_STF_SINK(translate_t)
-  using __pure_claim_tag = void;
+  using __pure_claim_tag _CCCL_NODEBUG = void;
 
   // The funnel pointer decides the claim for std-derived exceptions; a non-std exception is
   // re-observed by the hook.
@@ -1715,13 +1715,13 @@ namespace detail
 // definition, both roles.
 
 template <class _P, class _Fn>
-using __named_hook_of = decltype(::cuda::std::declval<_P&>().on_thrown(
+using __named_hook_of _CCCL_NODEBUG = decltype(::cuda::std::declval<_P&>().on_thrown(
   ::cuda::std::declval<const ::std::exception*>(),
   ::cuda::std::declval<::cuda::std::source_location>(),
   ::cuda::std::declval<_Fn&>()));
 
 template <class _P, class _Fn>
-using __raw_hook_of = decltype(::cuda::std::declval<_P&>()(
+using __raw_hook_of _CCCL_NODEBUG = decltype(::cuda::std::declval<_P&>()(
   ::cuda::std::declval<const ::std::exception*>(),
   ::cuda::std::declval<::cuda::std::source_location>(),
   ::cuda::std::declval<_Fn&>()));
@@ -1735,7 +1735,7 @@ struct __exception_hook_impl
 template <class _P, class _Fn>
 struct __exception_hook_impl<_P, _Fn, ::cuda::std::enable_if_t<__has_named_hook<_P, _Fn>>>
 {
-  using type = __named_hook_of<_P, _Fn>;
+  using type _CCCL_NODEBUG = __named_hook_of<_P, _Fn>;
 };
 template <class _P, class _Fn>
 struct __exception_hook_impl<
@@ -1743,18 +1743,18 @@ struct __exception_hook_impl<
   _Fn,
   ::cuda::std::enable_if_t<!__has_named_hook<_P, _Fn> && ::cuda::std::_IsValidExpansion<__raw_hook_of, _P, _Fn>::value>>
 {
-  using type = __raw_hook_of<_P, _Fn>;
+  using type _CCCL_NODEBUG = __raw_hook_of<_P, _Fn>;
 };
 
 template <class _P, class _Fn>
-using __exception_hook_of = typename __exception_hook_impl<_P, _Fn>::type;
+using __exception_hook_of _CCCL_NODEBUG = typename __exception_hook_impl<_P, _Fn>::type;
 
 template <class _P, class _Fn = void (&)()>
 inline constexpr bool __has_exception_hook =
   ::cuda::std::_IsValidExpansion<__exception_hook_of, ::cuda::std::remove_reference_t<_P>, _Fn>::value;
 
 template <class _P, class _Fn = void (&)()>
-using __hook_answer_t = __exception_hook_of<::cuda::std::remove_reference_t<_P>, _Fn>;
+using __hook_answer_t _CCCL_NODEBUG = __exception_hook_of<::cuda::std::remove_reference_t<_P>, _Fn>;
 
 // Capability 1b: the claim protocol. A policy that selects on the active exception may expose
 // `__claims(const std::exception*)`, answering whether its hook would take the exception
@@ -1771,7 +1771,8 @@ using __hook_answer_t = __exception_hook_of<::cuda::std::remove_reference_t<_P>,
 // this namespace opens.
 
 template <class _P>
-using __claims_of = decltype(::cuda::std::declval<_P&>().__claims(::cuda::std::declval<const ::std::exception*>()));
+using __claims_of _CCCL_NODEBUG =
+  decltype(::cuda::std::declval<_P&>().__claims(::cuda::std::declval<const ::std::exception*>()));
 
 template <class _P>
 inline constexpr bool __has_claim =
@@ -1812,7 +1813,7 @@ __ask_claim(_P& __p, [[maybe_unused]] const ::std::exception* __exception) noexc
 }
 
 template <class _P>
-using __pure_claim_tag_of = typename _P::__pure_claim_tag;
+using __pure_claim_tag_of _CCCL_NODEBUG = typename _P::__pure_claim_tag;
 
 template <class _P>
 inline constexpr bool __has_pure_claim =
@@ -1835,7 +1836,7 @@ struct __claimed_view
 
 // Capability 2a: the success hook `p.on_success(R&&)` for a given result type.
 template <class _P, class _R>
-using __on_success_with_of = decltype(::cuda::std::declval<_P&>().on_success(::cuda::std::declval<_R>()));
+using __on_success_with_of _CCCL_NODEBUG = decltype(::cuda::std::declval<_P&>().on_success(::cuda::std::declval<_R>()));
 
 template <class _P, class _R>
 inline constexpr bool __has_on_success_with =
@@ -1843,7 +1844,7 @@ inline constexpr bool __has_on_success_with =
 
 // Capability 2b: the nullary success hook `p.on_success()` (the void-result channel).
 template <class _P>
-using __on_success_void_of = decltype(::cuda::std::declval<_P&>().on_success());
+using __on_success_void_of _CCCL_NODEBUG = decltype(::cuda::std::declval<_P&>().on_success());
 
 template <class _P>
 inline constexpr bool __has_on_success_void =
@@ -1853,7 +1854,7 @@ inline constexpr bool __has_on_success_void =
 // callable and outside the policy's own catch. It answers nothing: it either admits the
 // attempt or refuses it by throwing.
 template <class _P>
-using __on_enter_of = decltype(::cuda::std::declval<_P&>().on_enter());
+using __on_enter_of _CCCL_NODEBUG = decltype(::cuda::std::declval<_P&>().on_enter());
 
 template <class _P>
 inline constexpr bool __has_on_enter =
@@ -1876,7 +1877,7 @@ inline constexpr bool __has_any_capability = __has_exception_hook<_P> || __has_o
 // __exception_sink_tag member. This is what &/| require of at least one operand, so they do
 // not hijack unrelated types.
 template <class _P>
-using __exception_sink_tag_of = typename _P::__exception_sink_tag;
+using __exception_sink_tag_of _CCCL_NODEBUG = typename _P::__exception_sink_tag;
 
 template <class _P>
 inline constexpr bool __is_exception_sink_v =
@@ -1949,7 +1950,7 @@ inline constexpr bool __exception_path_nothrow_v = __never_passes_through_v<_P, 
 // exception hook is reached through the exception bridge below.
 
 template <class _Status>
-using __status_success_of = decltype(status_traits<_Status>::success());
+using __status_success_of _CCCL_NODEBUG = decltype(status_traits<_Status>::success());
 
 // Whether `_Status` is a status: `status_traits<_Status>::success` is well-formed.
 template <class _Status>
@@ -1974,7 +1975,7 @@ template <class _Status>
 inline constexpr bool __is_past_result_v<__past_result<_Status>> = true;
 
 template <class _P, class _Status, class _Fn>
-using __status_hook_of = decltype(::cuda::std::declval<_P&>().on_returned(
+using __status_hook_of _CCCL_NODEBUG = decltype(::cuda::std::declval<_P&>().on_returned(
   ::cuda::std::declval<_Status>(), ::cuda::std::declval<::cuda::std::source_location>(), ::cuda::std::declval<_Fn&>()));
 
 // Capability 3: the code-channel hook.
@@ -2071,7 +2072,7 @@ template <class _P, class... _Es>
 struct __if_isa_t : __forwards_success<_P>
 {
   _CUDAX_STF_SINK(__if_isa_t)
-  using __pure_claim_tag = void;
+  using __pure_claim_tag _CCCL_NODEBUG = void;
 
   // The claim is decided by the funnel pointer alone when every listed type is a class and the
   // active exception is std-derived; otherwise unknown, and the hook re-observes. A guard over a
@@ -2196,7 +2197,7 @@ template <class _P, class... _Es>
 struct __if_monomorphic_t : __forwards_success<_P>
 {
   _CUDAX_STF_SINK(__if_monomorphic_t)
-  using __pure_claim_tag = void;
+  using __pure_claim_tag _CCCL_NODEBUG = void;
 
   // Exact matching reads typeid through the funnel, so the claim is always decided: a null
   // funnel is a non-std exception, which this guard declines. Hookless guards have no claim.
@@ -2283,7 +2284,7 @@ auto __normalize(_R&& __r)
 // The type `__normalize` would produce for `_R`. After `__as_policy`, every normal form is
 // sink-tagged, so identity elimination fires for every operand (ADDENDUM-1 §A.5 superseded).
 template <class _R>
-using __normalized_t = decltype(__normalize(::cuda::std::declval<_R>()));
+using __normalized_t _CCCL_NODEBUG = decltype(__normalize(::cuda::std::declval<_R>()));
 
 template <class _R>
 inline constexpr bool __normalizes_to_exception_sink_v = __is_exception_sink_v<__normalized_t<_R>>;
@@ -2468,7 +2469,7 @@ _CCCL_FORCEINLINE _Expr __interpret_answer(
 // only at a real guard. Without this, `notify & (if_isa<E>(subst(1)) | subst(2))` and any
 // three-arm `a | b | subst(v)` fail to compile while the same alternation outermost compiles.
 template <class _Fn>
-using __composite_answer_t =
+using __composite_answer_t _CCCL_NODEBUG =
   ::cuda::std::conditional_t<::cuda::std::is_void_v<decltype(::cuda::std::declval<_Fn&>()())>,
                              decltype(::std::ignore),
                              decltype(::cuda::std::declval<_Fn&>()())>;
@@ -2879,12 +2880,12 @@ inline constexpr bool __has_pure_claim<__policy_pow<_P>> = __has_pure_claim<_P>;
 template <class _T, bool = ::cuda::std::is_enum_v<_T>>
 struct __integral_base
 {
-  using type = _T;
+  using type _CCCL_NODEBUG = _T;
 };
 template <class _T>
 struct __integral_base<_T, true>
 {
-  using type = ::cuda::std::underlying_type_t<_T>;
+  using type _CCCL_NODEBUG = ::cuda::std::underlying_type_t<_T>;
 };
 
 template <class _From, class _To>
@@ -3234,7 +3235,7 @@ __on_throw_policy(_R, ::cuda::std::source_location) -> __on_throw_policy<_R>;
 template <class _Reaction, class _Fn>
 struct __guarded_action
 {
-  using _Expr = decltype(::cuda::std::declval<_Fn&>()());
+  using _Expr _CCCL_NODEBUG = decltype(::cuda::std::declval<_Fn&>()());
 
   __on_throw_policy<_Reaction>& __policy_;
   _Fn& __fn_;
@@ -3861,7 +3862,7 @@ struct __dynamic_view; // the left operand of a named `dynamic`'s `<<` and `->*`
 template <>
 struct __sink_storage<dynamic>
 {
-  using type = __dynamic_view;
+  using type _CCCL_NODEBUG = __dynamic_view;
 };
 } // namespace detail
 #endif // !_CCCL_DOXYGEN_INVOKED
@@ -4519,7 +4520,7 @@ private:
   {
     _P __p_;
 
-    using __ans_t                        = detail::__hook_answer_t<_P, ::std::function<::std::any()>>;
+    using __ans_t _CCCL_NODEBUG          = detail::__hook_answer_t<_P, ::std::function<::std::any()>>;
     static constexpr answer_kind __skind = __kind_of<__ans_t>();
 
     explicit __model(_P __p)
@@ -5000,7 +5001,7 @@ namespace detail
 // Sink-tagged, with the same hooks as `dynamic`, so the carrier treats it as one.
 struct __dynamic_view
 {
-  using __exception_sink_tag = void;
+  using __exception_sink_tag _CCCL_NODEBUG = void;
 
   __dynamic_view(dynamic& __d) noexcept
       : __owned_(dynamic::__hollow_t{})
@@ -6319,8 +6320,8 @@ UNITTEST("policy inventory")
   EXPECT(noted.str().find("noted+deferred") != ::std::string::npos);
 
   // as_expected adapts to the callable's declared expected type on both paths.
-  using _Result   = ::cuda::std::expected<int, ::std::exception_ptr>;
-  const auto good = as_expected->*[]() -> _Result {
+  using _Result _CCCL_NODEBUG = ::cuda::std::expected<int, ::std::exception_ptr>;
+  const auto good             = as_expected->*[]() -> _Result {
     return 5; // expected's converting constructor keeps the happy path natural
   };
   static_assert(::cuda::std::is_same_v<decltype(good), const _Result>,
@@ -6468,9 +6469,9 @@ UNITTEST("re-running policies")
 
   // Re-attempt success preserves the callable's declared boundary type.
   {
-    using _Result = ::cuda::std::expected<int, ::std::exception_ptr>;
-    int calls     = 0;
-    const auto r  = (retry | as_expected)->*[&]() -> _Result {
+    using _Result _CCCL_NODEBUG = ::cuda::std::expected<int, ::std::exception_ptr>;
+    int calls                   = 0;
+    const auto r                = (retry | as_expected)->*[&]() -> _Result {
       if (++calls < 2)
       {
         throw ::std::runtime_error("once");
@@ -6566,8 +6567,8 @@ UNITTEST("as_expected and defer")
   using namespace cuda::experimental::stf::sump;
 
 #  if _CCCL_HAS_EXCEPTIONS()
-  using _PtrResult = ::cuda::std::expected<int, ::std::exception_ptr>;
-  using _RefResult = ::cuda::std::expected<int, __ut_error_from_exception>;
+  using _PtrResult _CCCL_NODEBUG = ::cuda::std::expected<int, ::std::exception_ptr>;
+  using _RefResult _CCCL_NODEBUG = ::cuda::std::expected<int, __ut_error_from_exception>;
   static_assert(detail::__is_expected<_PtrResult>);
   static_assert(detail::__is_expected<_RefResult>);
   static_assert(!detail::__is_expected<int>);
@@ -6995,9 +6996,9 @@ UNITTEST("repetition")
 
   // Success mid-repetition returns the callable's declared boundary type.
   {
-    using _Result = ::cuda::std::expected<int, ::std::exception_ptr>;
-    int calls     = 0;
-    const auto r  = (retry * 3 | as_expected)->*[&]() -> _Result {
+    using _Result _CCCL_NODEBUG = ::cuda::std::expected<int, ::std::exception_ptr>;
+    int calls                   = 0;
+    const auto r                = (retry * 3 | as_expected)->*[&]() -> _Result {
       if (++calls < 3)
       {
         throw ::std::runtime_error("transient");

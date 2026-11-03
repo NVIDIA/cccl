@@ -55,7 +55,7 @@ using make_signed_t _CCCL_NODEBUG = _CCCL_BUILTIN_MAKE_SIGNED(_Tp);
 
 #else // ^^^ _CCCL_BUILTIN_MAKE_SIGNED ^^^ / vvv !_CCCL_BUILTIN_MAKE_SIGNED vvv
 
-using __signed_types =
+using __signed_types _CCCL_NODEBUG =
   __type_list<signed char,
               signed short,
               signed int,
@@ -77,7 +77,7 @@ struct __make_signed_impl<_Tp, true>
   struct __size_greater_equal_fn
   {
     template <class _Up>
-    using __call = bool_constant<(sizeof(_Tp) <= sizeof(_Up))>;
+    using __call _CCCL_NODEBUG = bool_constant<(sizeof(_Tp) <= sizeof(_Up))>;
   };
 
   using type = __type_front<__type_find_if<__signed_types, __size_greater_equal_fn>>;
@@ -89,53 +89,53 @@ struct __make_signed_impl<bool, true>
 template <>
 struct __make_signed_impl<signed short, true>
 {
-  using type = short;
+  using type _CCCL_NODEBUG = short;
 };
 template <>
 struct __make_signed_impl<unsigned short, true>
 {
-  using type = short;
+  using type _CCCL_NODEBUG = short;
 };
 template <>
 struct __make_signed_impl<signed int, true>
 {
-  using type = int;
+  using type _CCCL_NODEBUG = int;
 };
 template <>
 struct __make_signed_impl<unsigned int, true>
 {
-  using type = int;
+  using type _CCCL_NODEBUG = int;
 };
 template <>
 struct __make_signed_impl<signed long, true>
 {
-  using type = long;
+  using type _CCCL_NODEBUG = long;
 };
 template <>
 struct __make_signed_impl<unsigned long, true>
 {
-  using type = long;
+  using type _CCCL_NODEBUG = long;
 };
 template <>
 struct __make_signed_impl<signed long long, true>
 {
-  using type = long long;
+  using type _CCCL_NODEBUG = long long;
 };
 template <>
 struct __make_signed_impl<unsigned long long, true>
 {
-  using type = long long;
+  using type _CCCL_NODEBUG = long long;
 };
 #  if _CCCL_HAS_INT128()
 template <>
 struct __make_signed_impl<__int128_t, true>
 {
-  using type = __int128_t;
+  using type _CCCL_NODEBUG = __int128_t;
 };
 template <>
 struct __make_signed_impl<__uint128_t, true>
 {
-  using type = __int128_t;
+  using type _CCCL_NODEBUG = __int128_t;
 };
 #  endif // _CCCL_HAS_INT128()
 
