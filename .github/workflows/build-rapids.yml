@@ -104,9 +104,28 @@ jobs:
 
           declare -a failures
 
+          _collect_compile_time_traces() {
+            local lib trace destination
+            for lib in ${RAPIDS_LIBS}; do
+              (
+                cd "${HOME}/${lib}" || exit 1
+                # Do not follow the latest symlinks, which alias the same build tree.
+                find . -type f -name '*.o.json' -print0 |
+                  while IFS= read -r -d '' trace; do
+                    destination="/compile-time-traces/${RAPIDS_ENABLE_TESTS}/${lib}/${trace#./}"
+                    mkdir -p "$(dirname "$destination")" || exit 1
+                    mv "$trace" "$destination" || exit 1
+                  done
+              ) || return 1
+            done
+          }
+
           _print_err_exit_msg() {
             local code=$?
             if test $code -ne 0; then
+              if test -n "${RAPIDS_ENABLE_TESTS:-}"; then
+                _collect_compile_time_traces || code=1
+              fi
               echo "::error:: Failures: ${failures[*]}"
               echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
               echo "::error:: To replicate this failure locally, follow the steps below:"
@@ -144,6 +163,8 @@ jobs:
               fi
               sccache --show-adv-stats
             done
+            # Move each pass's traces before the next pass can overwrite them.
+            _collect_compile_time_traces
           done
 
           EOF
@@ -170,6 +191,7 @@ jobs:
 
           # Trace actual NVCC compilations, with bounded local parallelism instead of sccache.
           # Serialize device images to avoid CUDA 13.3 time-trace temporary-file races.
+          mkdir -p "$RUNNER_TEMP/compile-time-traces"
           .devcontainer/launch.sh \
             --docker \
             --cuda ${{matrix.cuda}} \
@@ -198,14 +220,25 @@ jobs:
             --env "NVCC_APPEND_FLAGS=${NVCC_APPEND_FLAGS:+${NVCC_APPEND_FLAGS} }--fdevice-time-trace=- --threads=1" \
             --env "PARALLEL_LEVEL=$(nproc)" \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
+            --volume "$RUNNER_TEMP/compile-time-traces:/compile-time-traces" \
             -- ./ci/rapids/rapids-entrypoint.sh /ci.sh
 
-      - name: Upload compile-time traces
+      - name: Upload compile-time traces (tests OFF)
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: rapids-cuda${{ matrix.cuda }}-${{ strategy.job-index }}-compile-time-traces
-          path: ci/rapids/.repos/**/*.o.json
+          name: rapids-cuda${{ matrix.cuda }}-${{ strategy.job-index }}-tests-OFF-compile-time-traces
+          path: ${{ runner.temp }}/compile-time-traces/OFF
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Upload compile-time traces (tests ON)
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapids-cuda${{ matrix.cuda }}-${{ strategy.job-index }}-tests-ON-compile-time-traces
+          path: ${{ runner.temp }}/compile-time-traces/ON
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 90
