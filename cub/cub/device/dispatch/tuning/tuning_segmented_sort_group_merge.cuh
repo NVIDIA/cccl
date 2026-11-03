@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Private GroupMerge defaults: supported thread/IPT ranges and settings for each sorting launch.
+// Private partition launch settings and GroupMerge thread/IPT ranges and launch defaults.
 
 #pragma once
 
@@ -23,6 +23,12 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort_capacity
 {
+// Count and scatter use the same block size, with one input segment per thread.
+struct partition_policy
+{
+  static constexpr int block_threads = 256;
+};
+
 // Settings for one launch; min/max_threads describe cooperation per segment, not block size.
 struct group_merge_policy
 {
@@ -31,7 +37,7 @@ struct group_merge_policy
   int max_threads;
   int min_ipt;
   int max_ipt;
-  int blocks_per_sm; // Grid-size multiplier: launch SM count * blocks_per_sm blocks.
+  int grid_size_multiplier; // Grid-size multiplier: launch SM count * grid_size_multiplier blocks.
   int min_blocks_per_sm; // __launch_bounds__ target for compiler register allocation, not the grid size.
 };
 

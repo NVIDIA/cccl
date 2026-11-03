@@ -19,7 +19,7 @@
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/segmented_sort_entries.cuh>
-#include <cub/device/dispatch/kernels/kernel_binned_segmented_sort.cuh>
+#include <cub/device/dispatch/kernels/kernel_segmented_sort_lrb.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_temporary_storage.cuh>
@@ -30,6 +30,13 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort_capacity
 {
+// Shared architecture and key-width eligibility for internal dispatch and its tests.
+template <typename Key>
+_CCCL_HOST_DEVICE_API constexpr bool can_use_lrb(::cuda::compute_capability cc)
+{
+  return sizeof(Key) <= 8 && cc >= ::cuda::compute_capability{9, 0};
+}
+
 // Each launch stores its implementation and selector, independently of the selected architecture.
 template <typename Key>
 using group_merge_sort_kernels_t =
@@ -41,8 +48,7 @@ using group_merge_sort_kernels_t =
 // These pointers alias caller-provided global storage. It must remain valid until
 // every operation queued on the stream has completed, as with other CUB algorithms.
 // Empty ranges are skipped; singletons use the same sorting path as other ranges.
-template <typename CapacitySelector,
-          int CC,
+template <typename Capacities,
           typename BeginIterator,
           typename EndIterator,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
@@ -56,8 +62,7 @@ _CCCL_HOST_API cudaError_t dispatch_partition(
   cudaStream_t stream                    = 0,
   KernelLauncherFactory launcher_factory = {})
 {
-  using capacities_t       = typename CapacitySelector::template capacities_t<policy_getter, CC>;
-  constexpr int total_bins = capacities_t::size + 1;
+  constexpr int total_bins = Capacities::size + 1;
   // One allocation holds counts, offsets (with an end sentinel), and cursors; the other holds IDs.
   const size_t sizes[] = {sizeof(unsigned) * (3 * total_bins + 1), sizeof(unsigned) * size_t{num_segments}};
   void* allocations[2]{};
@@ -77,12 +82,13 @@ _CCCL_HOST_API cudaError_t dispatch_partition(
   {
     return error;
   }
-  const unsigned grid_size = num_segments / 256 + (num_segments % 256 != 0);
+  constexpr unsigned block_threads = partition_policy::block_threads;
+  const unsigned grid_size         = num_segments / block_threads + (num_segments % block_threads != 0);
   if (num_segments)
   {
     if (const auto error = CubDebug(
-          launcher_factory(grid_size, 256, 0, stream)
-            .doit(partition_kernel<CapacitySelector, false, BeginIterator, EndIterator>,
+          launcher_factory(grid_size, block_threads, 0, stream)
+            .doit(partition_kernel<Capacities, false, BeginIterator, EndIterator>,
                   begins,
                   ends,
                   num_segments,
@@ -92,16 +98,16 @@ _CCCL_HOST_API cudaError_t dispatch_partition(
       return error;
     }
   }
-  if (const auto error = CubDebug(
-        launcher_factory(1, 1, 0, stream).doit(segment_prefix_kernel<CapacitySelector>, counts, offsets, cursors)))
+  if (const auto error =
+        CubDebug(launcher_factory(1, 1, 0, stream).doit(segment_prefix_kernel<Capacities>, counts, offsets, cursors)))
   {
     return error;
   }
   if (num_segments)
   {
     if (const auto error = CubDebug(
-          launcher_factory(grid_size, 256, 0, stream)
-            .doit(partition_kernel<CapacitySelector, true, BeginIterator, EndIterator>,
+          launcher_factory(grid_size, block_threads, 0, stream)
+            .doit(partition_kernel<Capacities, true, BeginIterator, EndIterator>,
                   begins,
                   ends,
                   num_segments,
@@ -152,7 +158,7 @@ _CCCL_HOST_API cudaError_t launch_sort_kernel(
   {
     return cudaErrorInvalidConfiguration;
   }
-  const unsigned long long grid_size = static_cast<unsigned long long>(sm_count) * tuning.blocks_per_sm;
+  const unsigned long long grid_size = static_cast<unsigned long long>(sm_count) * tuning.grid_size_multiplier;
   if (const auto error = CubDebug(
         launcher_factory(static_cast<unsigned>(grid_size), tuning.block_threads, dynamic_smem_bytes, stream)
           .doit(kernel, bins, begins, ends, in, out)))
@@ -225,7 +231,6 @@ _CCCL_HOST_API cudaError_t dispatch(
   cudaStream_t stream                    = 0,
   KernelLauncherFactory launcher_factory = {})
 {
-  static_assert(sizeof(Key) <= 8, "Keys wider than 8 bytes require an architecture-specific GroupMerge policy");
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
@@ -233,14 +238,15 @@ _CCCL_HOST_API cudaError_t dispatch(
   }
   return dispatch_compute_cap(group_merge_tuning_arch_selector{}, cc, [&](auto arch) -> cudaError_t {
     constexpr auto selected_cc = decltype(arch){}();
-    if constexpr (selected_cc < ::cuda::compute_capability{9, 0})
+    if constexpr (!can_use_lrb<Key>(selected_cc))
     {
       return cudaErrorNotSupported;
     }
     else
     {
-      using kernels_t = group_merge_sort_kernels_t<Key>;
-      if (const auto error = dispatch_partition<kernels_t, selected_cc.get()>(
+      using kernels_t    = group_merge_sort_kernels_t<Key>;
+      using capacities_t = typename kernels_t::template capacities_t<policy_getter, selected_cc.get()>;
+      if (const auto error = dispatch_partition<capacities_t>(
             temp_storage, temp_storage_bytes, begins, ends, num_segments, result, stream, launcher_factory))
       {
         return error;

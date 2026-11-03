@@ -154,14 +154,6 @@ struct sort_kernel_list_t
   }
 };
 
-// Let partition-only callers supply fixed bounds through the same capacity-selector interface.
-template <typename Capacities>
-struct fixed_capacity_selector_t
-{
-  template <template <typename, int> class, int>
-  using capacities_t = Capacities;
-};
-
 // Non-owning views into temporary storage; all bins share one segment-ID queue.
 struct partition_result
 {
