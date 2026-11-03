@@ -87,7 +87,7 @@ CUB_NAMESPACE_END
 namespace cuda
 {
 template <typename T>
-struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::__return_constant<T>> : ::cuda::std::true_type
+struct proclaims_copyable_arguments<_CUB::detail::__return_constant<T>> : ::cuda::std::true_type
 {};
 } // namespace cuda
 
@@ -164,7 +164,7 @@ struct DeviceTransform
       // https://github.com/NVIDIA/cccl/issues/8805 for data. We use choose_signed_offset to just check if it can
       // hold the value passed by the user, but otherwise ignore the chosen signed offset type.
       using offset_t = ::cuda::std::int64_t;
-      if (const cudaError_t error = detail::choose_signed_offset<NumItemsT>::is_exceeding_offset_type(num_items))
+      if (const cudaError_t error = _CUB::detail::choose_signed_offset<NumItemsT>::is_exceeding_offset_type(num_items))
       {
         return error;
       }

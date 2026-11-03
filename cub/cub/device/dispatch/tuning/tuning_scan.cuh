@@ -78,7 +78,7 @@ namespace detail
 #if _CCCL_HOSTED()
 inline ::std::ostream& operator<<(::std::ostream& os, ScanAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED()
 
@@ -86,12 +86,12 @@ CUB_NAMESPACE_END
 
 #if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
 template <::cuda::std::same_as<char> CharT>
-struct std::formatter<CUB_NS_QUALIFIER::ScanAlgorithm, CharT> : formatter<const CharT*, CharT>
+struct std::formatter<_CUB::ScanAlgorithm, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const CUB_NS_QUALIFIER::ScanAlgorithm& algo, FmtCtx& ctx) const
+  auto format(const _CUB::ScanAlgorithm& algo, FmtCtx& ctx) const
   {
-    const auto str = CUB_NS_QUALIFIER::detail::to_string(algo);
+    const auto str = _CUB::detail::to_string(algo);
     return formatter<const CharT*, CharT>::format(str, ctx);
   }
 };
@@ -683,7 +683,7 @@ struct policy_hub
   {
     using ScanPolicyT =
       decltype(select_agent_policy<sm80_tuning<classify_type<AccumT>,
-                                               is_primitive_op<ScanOpT>(),
+                                               _CUB::detail::scan::is_primitive_op<ScanOpT>(),
                                                is_primitive_accum<AccumT>(),
                                                classify_accum_size<AccumT>()>>(0));
   };
@@ -695,7 +695,8 @@ struct policy_hub
 
   struct Policy900 : detail::chained_policy<900, Policy900, Policy860>
   {
-    using ScanPolicyT = decltype(select_agent_policy<sm90_tuning<AccumT, is_primitive_op<ScanOpT>()>>(0));
+    using ScanPolicyT =
+      decltype(select_agent_policy<sm90_tuning<AccumT, _CUB::detail::scan::is_primitive_op<ScanOpT>()>>(0));
   };
 
   struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
@@ -747,7 +748,8 @@ _CCCL_HOST_DEVICE_API constexpr auto make_mem_scaled_lookback_scan_policy(
   LookbackDelayPolicy delay_constructor = {LookbackDelayAlgorithm::fixed_delay, 350, 450},
   int tiles_per_batch                   = lookback_default_tiles_per_batch) -> ScanPolicy
 {
-  const auto scaled = scale_mem_bound(nominal_4b_threads_per_block, nominal_4b_items_per_thread, compute_t_size);
+  const auto scaled =
+    _CUB::detail::scale_mem_bound(nominal_4b_threads_per_block, nominal_4b_items_per_thread, compute_t_size);
   return ScanPolicy{
     ScanAlgorithm::lookback,
     ScanLookbackPolicy{
@@ -843,7 +845,7 @@ _CCCL_HOST_DEVICE_API constexpr void setup_scan_resources(
   smemInOut.addPhase(syncHandler, smemAllocator, {squad_reduce(policy), squad_scan(policy)});
   smemInOut.addPhase(syncHandler, smemAllocator, squad_store(policy));
 
-  smemNextBlockIdx.addPhase(syncHandler, smemAllocator, squad_load_and_next_idx(policy));
+  smemNextBlockIdx.addPhase(syncHandler, smemAllocator, _CUB::detail::scan::squad_load_and_next_idx(policy));
   smemNextBlockIdx.addPhase(syncHandler, smemAllocator, scanSquads);
 
   smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squad_lookahead(policy));
@@ -869,7 +871,7 @@ _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(
   const int inout_bytes = policy.tile_size() * input_size + 16;
   // Match sizeof(InOutT): round up to the alignment so each stage matches SmemResource<InOutT>.
   const int inout_stride    = (inout_bytes + align_inout - 1) & ~(align_inout - 1);
-  const auto reduce_squad   = squad_reduce(policy);
+  const auto reduce_squad   = _CUB::detail::scan::squad_reduce(policy);
   const int sum_thread_warp = (reduce_squad.threadCount() + reduce_squad.warpCount()) * accum_size;
 
   const int num_sum_exclusive_cta_stages =
@@ -891,7 +893,7 @@ _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(
     warpspeed::SmemResourceRaw{syncHandler, sum_thread_warp_base, sum_thread_warp, sum_thread_warp, num_stages},
   };
 
-  setup_scan_resources(
+  _CUB::detail::scan::setup_scan_resources(
     policy,
     syncHandler,
     smemAllocator,
@@ -957,7 +959,7 @@ struct policy_selector
   _CCCL_HOST_DEVICE_API constexpr auto get_sm120_fallback_lookahead_policy() const -> ScanLookaheadPolicy
   {
     auto policy = get_sm100_fallback_lookahead_policy();
-    if (operation_t == op_kind_t::other && is_arithmetic_type(input_type))
+    if (operation_t == op_kind_t::other && _CUB::detail::scan::is_arithmetic_type(input_type))
     {
       if (input_value_size == 4 || input_value_size == 8)
       {
@@ -1109,7 +1111,7 @@ struct policy_selector
       return false;
     }
 
-    if (smem_for_stages(
+    if (_CUB::detail::scan::smem_for_stages(
           lookahead_policy,
           /* num_stages */ 1,
           input_value_size,
@@ -1137,7 +1139,8 @@ struct policy_selector
       large_values ? BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED : BLOCK_LOAD_WARP_TRANSPOSE;
     const BlockStoreAlgorithm scan_transposed_store =
       large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
-    const auto default_delay = default_delay_constructor_policy(accum_is_primitive_or_trivially_copy_constructible);
+    const auto default_delay =
+      _CUB::detail::default_delay_constructor_policy(accum_is_primitive_or_trivially_copy_constructible);
 
     if (cc >= ::cuda::compute_capability{10, 0})
     {
@@ -1149,7 +1152,7 @@ struct policy_selector
           {
             case 1:
               // ipt_18.tpb_512.ns_768.dcid_7.l2w_820.trp_1.ld_0 1.188818  1.005682  1.173041  1.305288
-              return make_mem_scaled_lookback_scan_policy(
+              return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
                 512,
                 18,
                 accum_size,
@@ -1160,7 +1163,7 @@ struct policy_selector
                 LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 768, 820});
             case 2:
               // ipt_13.tpb_512.ns_1384.dcid_7.l2w_720.trp_1.ld_0 1.128443  1.002841  1.119688  1.307692
-              return make_mem_scaled_lookback_scan_policy(
+              return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
                 512,
                 13,
                 accum_size,
@@ -1171,7 +1174,7 @@ struct policy_selector
                 LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 1384, 720});
             case 4:
               // ipt_22.tpb_384.ns_1904.dcid_6.l2w_830.trp_1.ld_0 1.148442  0.997167  1.139902  1.462651
-              return make_mem_scaled_lookback_scan_policy(
+              return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
                 384,
                 22,
                 accum_size,
@@ -1182,7 +1185,7 @@ struct policy_selector
                 LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter, 1904, 830});
             case 8:
               // ipt_23.tpb_416.ns_772.dcid_5.l2w_710.trp_1.ld_0 1.089468  1.015581  1.085630  1.264583
-              return make_mem_scaled_lookback_scan_policy(
+              return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
                 416,
                 23,
                 accum_size,
@@ -1201,7 +1204,7 @@ struct policy_selector
           {
             case 1:
               // ipt_14.tpb_384.ns_228.dcid_7.l2w_775.trp_1.ld_1 1.107210  1.000000  1.100637  1.307692
-              return make_mem_scaled_lookback_scan_policy(
+              return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
                 384,
                 14,
                 accum_size,
@@ -1216,7 +1219,7 @@ struct policy_selector
               break;
             case 4:
               // ipt_19.tpb_416.ns_956.dcid_7.l2w_550.trp_1.ld_1 1.146142  0.994350  1.137459  1.455636
-              return make_mem_scaled_lookback_scan_policy(
+              return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
                 416,
                 19,
                 accum_size,
@@ -1231,7 +1234,7 @@ struct policy_selector
                 break;
               }
               // ipt_22.tpb_320.ns_328.dcid_2.l2w_965.trp_1.ld_0 1.080133  1.000000  1.075577  1.248963
-              return make_mem_scaled_lookback_scan_policy(
+              return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
                 320,
                 22,
                 accum_size,
@@ -1256,7 +1259,7 @@ struct policy_selector
           switch (accum_size)
           {
             case 1:
-              return make_mem_scaled_lookback_scan_policy(
+              return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
                 192,
                 22,
                 accum_size,
@@ -1266,7 +1269,7 @@ struct policy_selector
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 168, 1140});
             case 2:
-              return make_mem_scaled_lookback_scan_policy(
+              return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
                 512,
                 12,
                 accum_size,
@@ -1278,7 +1281,7 @@ struct policy_selector
             case 4:
               if (accum_type == type_t::float32)
               {
-                return make_mem_scaled_lookback_scan_policy(
+                return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
                   128,
                   24,
                   accum_size,
@@ -1288,7 +1291,7 @@ struct policy_selector
                   BLOCK_SCAN_WARP_SCANS,
                   LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 688, 1140});
               }
-              return make_mem_scaled_lookback_scan_policy(
+              return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
                 128,
                 24,
                 accum_size,
@@ -1300,7 +1303,7 @@ struct policy_selector
             case 8:
               if (accum_type == type_t::float64)
               {
-                return make_mem_scaled_lookback_scan_policy(
+                return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
                   224,
                   24,
                   accum_size,
@@ -1310,7 +1313,7 @@ struct policy_selector
                   BLOCK_SCAN_WARP_SCANS,
                   LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 576, 1215});
               }
-              return make_mem_scaled_lookback_scan_policy(
+              return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
                 224,
                 24,
                 accum_size,
@@ -1328,7 +1331,7 @@ struct policy_selector
         if (primitive_accum_t == primitive_accum::no && accum_size == 16
             && (accum_type == type_t::int128 || accum_type == type_t::uint128))
         {
-          return make_mem_scaled_lookback_scan_policy(
+          return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
             576,
             21,
             accum_size,
@@ -1345,7 +1348,7 @@ struct policy_selector
     // Keep sm_86 aligned with legacy policy_hub behavior: policy_hub resets to default policy for 86.
     if (cc >= ::cuda::compute_capability{8, 6})
     {
-      return make_mem_scaled_lookback_scan_policy(
+      return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
         128,
         15,
         accum_size,
@@ -1423,7 +1426,7 @@ struct policy_selector
           switch (accum_size)
           {
             case 1:
-              return make_mem_scaled_lookback_scan_policy(
+              return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
                 320,
                 14,
                 accum_size,
@@ -1433,7 +1436,7 @@ struct policy_selector
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 368, 725});
             case 2:
-              return make_mem_scaled_lookback_scan_policy(
+              return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
                 352,
                 16,
                 accum_size,
@@ -1445,7 +1448,7 @@ struct policy_selector
             case 4:
               if (accum_type == type_t::float32)
               {
-                return make_mem_scaled_lookback_scan_policy(
+                return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
                   288,
                   8,
                   accum_size,
@@ -1455,7 +1458,7 @@ struct policy_selector
                   BLOCK_SCAN_WARP_SCANS,
                   LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 724, 1050});
               }
-              return make_mem_scaled_lookback_scan_policy(
+              return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
                 320,
                 12,
                 accum_size,
@@ -1467,7 +1470,7 @@ struct policy_selector
             case 8:
               if (accum_type == type_t::float64)
               {
-                return make_mem_scaled_lookback_scan_policy(
+                return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
                   384,
                   12,
                   accum_size,
@@ -1477,7 +1480,7 @@ struct policy_selector
                   BLOCK_SCAN_WARP_SCANS,
                   LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 388, 1100});
               }
-              return make_mem_scaled_lookback_scan_policy(
+              return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
                 288,
                 22,
                 accum_size,
@@ -1495,7 +1498,7 @@ struct policy_selector
         if (primitive_accum_t == primitive_accum::no && accum_size == 16
             && (accum_type == type_t::int128 || accum_type == type_t::uint128))
         {
-          return make_mem_scaled_lookback_scan_policy(
+          return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
             640,
             24,
             accum_size,
@@ -1515,7 +1518,7 @@ struct policy_selector
           && offset_size == 8 && input_value_size == 4)
       {
         // ipt_7.tpb_128.ns_628.dcid_1.l2w_520.trp_1.ld_0
-        return make_mem_scaled_lookback_scan_policy(
+        return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
           128,
           7,
           accum_size,
@@ -1526,7 +1529,7 @@ struct policy_selector
           LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 628, 520});
       }
 
-      return make_mem_scaled_lookback_scan_policy(
+      return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
         128,
         15,
         accum_size,
@@ -1539,7 +1542,7 @@ struct policy_selector
 
     if (cc >= ::cuda::compute_capability{6, 0})
     {
-      return make_mem_scaled_lookback_scan_policy(
+      return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
         128,
         15,
         accum_size,
@@ -1550,7 +1553,7 @@ struct policy_selector
         default_delay);
     }
 
-    return make_mem_scaled_lookback_scan_policy(
+    return _CUB::detail::scan::make_mem_scaled_lookback_scan_policy(
       128,
       12,
       accum_size,

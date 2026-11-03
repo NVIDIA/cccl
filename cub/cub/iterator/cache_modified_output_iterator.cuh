@@ -99,7 +99,7 @@ private:
     /// Assignment
     _CCCL_DEVICE _CCCL_FORCEINLINE ValueType operator=(ValueType val)
     {
-      ThreadStore<MODIFIER>(ptr, val);
+      _CUB::ThreadStore<MODIFIER>(ptr, val);
       return val;
     }
   };

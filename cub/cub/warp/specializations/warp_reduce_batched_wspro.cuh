@@ -123,7 +123,7 @@ struct warp_reduce_batched_wspro
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < Batches; ++i)
       {
-        const auto result = cub::detail::warp_redux(inputs[i], reduce_mask, reduction_op);
+        const auto result = _CUB::detail::warp_redux(inputs[i], reduce_mask, reduction_op);
         if (!result)
         {
           return false;

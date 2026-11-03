@@ -187,7 +187,7 @@ template <typename DefaultAgentPolicyT,
           typename DefaultAgentT,
           typename FallbackAgentPolicyT = DefaultAgentPolicyT,
           typename FallbackAgentT       = DefaultAgentT,
-          bool UseFallbackPolicy        = use_fallback_agent<DefaultAgentT, FallbackAgentT>()>
+          bool UseFallbackPolicy        = _CUB::detail::use_fallback_agent<DefaultAgentT, FallbackAgentT>()>
 struct vsmem_helper_with_fallback_impl : public vsmem_helper_impl<DefaultAgentT>
 {
   using agent_t        = DefaultAgentT;

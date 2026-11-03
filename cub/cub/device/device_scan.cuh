@@ -378,7 +378,7 @@ private:
       detail::policy_selector_from_tuning_env_t<TuningEnvT, ScanByKeyPolicy, default_policy_selector_t>;
 
     // we would not need to override the accumulator type, but we must ensure it's the same as for the policy here
-    return detail::scan_by_key::dispatch</* OverrideAccumT = */ accum_t>(
+    return _CUB::detail::scan_by_key::dispatch</* OverrideAccumT = */ accum_t>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -3391,20 +3391,21 @@ public:
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveSumByKey");
 
     using init_value_t = cub::detail::it_value_t<ValuesInputIteratorT>;
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return scan_by_key_impl<tuning_t>(
-        storage,
-        bytes,
-        d_keys_in,
-        d_values_in,
-        d_values_out,
-        equality_op,
-        ::cuda::std::plus<>{},
-        init_value_t{},
-        num_items,
-        stream);
-    });
+    return _CUB::detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_values_in,
+          d_values_out,
+          equality_op,
+          ::cuda::std::plus<>{},
+          init_value_t{},
+          num_items,
+          stream);
+      });
   }
 
   //! @rst
@@ -3518,11 +3519,12 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveScanByKey");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return scan_by_key_impl<tuning_t>(
-        storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, init_value, num_items, stream);
-    });
+    return _CUB::detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, init_value, num_items, stream);
+      });
   }
 
   //! @rst
@@ -3616,20 +3618,21 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveSumByKey");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return scan_by_key_impl<tuning_t>(
-        storage,
-        bytes,
-        d_keys_in,
-        d_values_in,
-        d_values_out,
-        equality_op,
-        ::cuda::std::plus<>{},
-        NullType{},
-        num_items,
-        stream);
-    });
+    return _CUB::detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_values_in,
+          d_values_out,
+          equality_op,
+          ::cuda::std::plus<>{},
+          NullType{},
+          num_items,
+          stream);
+      });
   }
 
   //! @rst
@@ -3732,11 +3735,12 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveScanByKey");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return scan_by_key_impl<tuning_t>(
-        storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, NullType{}, num_items, stream);
-    });
+    return _CUB::detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, NullType{}, num_items, stream);
+      });
   }
 
   //! @}

@@ -267,7 +267,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   }
 
   // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
-  if (const auto error = CubDebug(alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+  if (const auto error =
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }

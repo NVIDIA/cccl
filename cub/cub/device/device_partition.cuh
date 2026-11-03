@@ -268,7 +268,7 @@ struct DevicePartition
     }
 
     // we can't use dispatch_with_env_and_tuning, since default_policy_selector uses SelectPolicy, not PartitionPolicy
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -391,7 +391,7 @@ struct DevicePartition
     }
 
     // we can't use dispatch_with_env_and_tuning, since default_policy_selector uses SelectPolicy, not PartitionPolicy
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
         using default_policy_selector = detail::select::
           policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, offset_t, SelectImpl::Partition>;
@@ -551,7 +551,7 @@ struct DevicePartition
       return error;
     }
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -671,7 +671,7 @@ struct DevicePartition
     }
 
     // we can't use dispatch_with_env_and_tuning, since default_policy_selector uses SelectPolicy, not PartitionPolicy
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
         using default_policy_selector = detail::select::
           policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, offset_t, SelectImpl::Partition>;
@@ -915,9 +915,9 @@ struct DevicePartition
       detail::three_way_partition::policy_selector_from_types<detail::it_value_t<InputIteratorT>,
                                                               detail::three_way_partition::per_partition_offset_t>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::three_way_partition::dispatch(
+        return _CUB::detail::three_way_partition::dispatch(
           storage,
           bytes,
           d_in,
@@ -1069,9 +1069,9 @@ struct DevicePartition
       detail::three_way_partition::policy_selector_from_types<detail::it_value_t<InputIteratorT>,
                                                               detail::three_way_partition::per_partition_offset_t>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::three_way_partition::dispatch(
+        return _CUB::detail::three_way_partition::dispatch(
           storage,
           bytes,
           d_in,
