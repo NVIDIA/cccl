@@ -21,17 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/pow2.h>
 #include <cuda/hierarchy>
 #include <cuda/std/__bit/popcount.h>
-#include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/experimental/coop/__group/concepts.cuh>
 #include <cuda/experimental/coop/__group/fwd.cuh>
-#include <cuda/experimental/coop/__group/mapping/group_by.cuh>
 #include <cuda/experimental/coop/__group/synchronizer/arrival_token.cuh>
 
 #include <cuda/std/__cccl/prologue.h>

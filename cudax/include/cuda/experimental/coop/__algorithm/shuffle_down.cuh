@@ -23,10 +23,12 @@
 
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__warp/warp_shuffle.h>
+#include <cuda/hierarchy>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/optional>
 
-#include <cuda/experimental/coop/group>
+#include <cuda/experimental/coop/__group/concepts.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 

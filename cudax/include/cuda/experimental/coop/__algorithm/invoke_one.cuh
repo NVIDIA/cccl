@@ -36,6 +36,8 @@
 #include <cuda/experimental/coop/__group/concepts.cuh>
 #include <cuda/experimental/coop/__group/fwd.cuh>
 
+#include <nv/target>
+
 #include <cuda/std/__cccl/prologue.h>
 
 #if !defined(_CCCL_DOXYGEN_INVOKED)
