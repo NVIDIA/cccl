@@ -54,7 +54,6 @@ Checks:
   - '-modernize-type-traits'
 
   - 'readability-*'
-  - 'readability-identifier-naming'
   - '-readability-function-cognitive-complexity'
   - '-readability-implicit-bool-conversion'
   - '-readability-braces-around-statements'
@@ -274,8 +273,6 @@ Checks:
   # Covered by modernize-avoid-c-style-cast, and also is buggier. It seems to fire on
   # `_v`-style constexpr bools as well sometimes.
   - '-google-readability-casting'
-  # readability-* as a whole is not enabled yet; only turn on the specific sub-checks we have
-  # vetted so far.
 
   - 'cppcoreguidelines-*'
   - '-cppcoreguidelines-pro-bounds-pointer-arithmetic'
