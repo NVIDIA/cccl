@@ -53,7 +53,7 @@ Checks:
   - '-modernize-avoid-variadic-functions'
   - '-modernize-type-traits'
 
-  # - 'readability-*'
+  - 'readability-*'
   - 'readability-identifier-naming'
   - '-readability-function-cognitive-complexity'
   - '-readability-implicit-bool-conversion'
