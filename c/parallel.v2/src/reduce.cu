@@ -169,6 +169,7 @@ catch (const std::exception& exc)
 CUresult cccl_device_reduce_load(cccl_device_reduce_build_result_t* build, const char* cudart_path)
 try
 {
+  cccl::serialization_v2::clear_last_error();
   if (cudart_path == nullptr || cudart_path[0] == '\0' || build == nullptr || build->payload == nullptr
       || build->payload_size == 0 || build->jit_compiler != nullptr)
   {
@@ -178,6 +179,7 @@ try
   if (auto error = cccl::detail::check_device_compute_capability(build->cc); !error.empty())
   {
     fprintf(stderr, "\nERROR in cccl_device_reduce_load(): %s\n", error.c_str());
+    cccl::serialization_v2::set_last_error(error.c_str());
     return CUDA_ERROR_NO_BINARY_FOR_GPU;
   }
 
@@ -187,6 +189,7 @@ try
   if (!compiler->loadFromBytes(library_bytes, cudart_path, build->cudart_version))
   {
     fprintf(stderr, "\nERROR in cccl_device_reduce_load(): %s\n", compiler->getLastError().c_str());
+    cccl::serialization_v2::set_last_error(compiler->getLastError().c_str());
     return CUDA_ERROR_UNKNOWN;
   }
 
@@ -194,6 +197,7 @@ try
   if (!fn)
   {
     fprintf(stderr, "\nERROR in cccl_device_reduce_load(): %s\n", compiler->getLastError().c_str());
+    cccl::serialization_v2::set_last_error(compiler->getLastError().c_str());
     return CUDA_ERROR_UNKNOWN;
   }
 
@@ -205,6 +209,7 @@ try
 catch (const std::exception& exc)
 {
   fprintf(stderr, "\nEXCEPTION in cccl_device_reduce_load(): %s\n", exc.what());
+  cccl::serialization_v2::set_last_error(exc.what());
   return CUDA_ERROR_UNKNOWN;
 }
 
@@ -367,6 +372,7 @@ catch (const std::exception& exc)
 CUresult cccl_device_reduce_deserialize(cccl_device_reduce_build_result_t* build_ptr, const void* buf, size_t size)
 try
 {
+  cccl::serialization_v2::clear_last_error();
   if (build_ptr == nullptr || buf == nullptr || size == 0)
   {
     return CUDA_ERROR_INVALID_VALUE;
@@ -407,5 +413,6 @@ try
 catch (const std::exception& exc)
 {
   fprintf(stderr, "\nEXCEPTION in cccl_device_reduce_deserialize(): %s\n", exc.what());
+  cccl::serialization_v2::set_last_error(exc.what());
   return CUDA_ERROR_UNKNOWN;
 }

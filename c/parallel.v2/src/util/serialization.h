@@ -49,6 +49,25 @@ constexpr os_arch_tag_t current_os_arch_tag()
 #endif
 }
 
+// Message for the most recent failure on this thread, read back through
+// cccl_serialization_v2_last_error(). Each deserialize/load entry point clears
+// it on entry, so a message is only ever the one from the call that just failed.
+inline std::string& last_error_storage()
+{
+  thread_local std::string message;
+  return message;
+}
+
+inline void set_last_error(const char* message)
+{
+  last_error_storage() = message;
+}
+
+inline void clear_last_error()
+{
+  last_error_storage().clear();
+}
+
 // Fixed-layout header at the start of every blob. Packed POD; layout is
 // part of the on-disk format, do not reorder. No version field is carried
 // here: blob compatibility is not handled at this layer and must be managed

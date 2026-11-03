@@ -27,15 +27,6 @@ try:
 except ImportError:
     USING_V2 = False
 
-# Whether the backend can serialize build results (the v2 HostJIT backend
-# cannot, today). Serialization is what lets same-cc devices share one default
-# build — a non-owner device loads by cloning the shared entry through
-# serialize -> deserialize -> load — so backends without it key default builds
-# per device ordinal and build independently per device instead.
-# TODO: delete this flag (and every branch on it) once v2 supports
-# build-result serialization.
-_BACKEND_SERIALIZES_BUILD_RESULTS = not USING_V2
-
 # Registry thet maps type -> key function for extracting cache key
 # from a value of that type.
 _KEY_FUNCTIONS: dict[type, Callable[[Any], Hashable]] = {}
@@ -163,16 +154,9 @@ class _DeviceBuildTarget(NamedTuple):
     """
     Target identity of a per-device wrapper or build entry.
 
-    Two roles. In the wrapper cache it keys every default-build wrapper:
-    wrappers hold device-bound state (their construction-time binding), so
-    each device gets its own. In the build-results cache it is used only when
-    the backend cannot serialize build results (the v2 HostJIT backend
-    today): sharing one entry across same-cc devices requires cloning it
-    through serialization, so such backends key default builds per device
-    ordinal instead.
-    TODO: once v2 supports build-result serialization, delete the build-cache
-    role (the _BACKEND_SERIALIZES_BUILD_RESULTS branch in
-    cache_build_results); the wrapper-cache role remains.
+    Keys every default-build wrapper in the wrapper cache: wrappers hold
+    device-bound state (their construction-time binding), so each device gets
+    its own.
 
     NamedTuples compare as plain tuples, so all target kinds must keep
     structurally disjoint layouts (arity or element types) to never compare
@@ -405,12 +389,8 @@ def cache_build_results(
     Current-device builds are keyed by compute capability alone and shared
     across same-cc device ordinals: the compiled payload only depends on the
     cc, and _PerCCBuildResults.resolve() gives each device its own loaded
-    state. When the backend cannot serialize build results (the v2 HostJIT
-    backend today), a non-owner device has no way to load the shared entry —
-    loading it clones through serialization — so default builds are keyed per
-    device ordinal instead and each device builds its own entry. Explicit AOT
-    builds have no current device and are keyed by their normalized target
-    compute capabilities. The key intentionally excludes the current Python
+    state. Explicit AOT builds have no current device and are keyed by their
+    normalized target compute capabilities. The key intentionally excludes the current Python
     thread so wrappers can share compiled results.
 
     Args:
@@ -442,13 +422,7 @@ def cache_build_results(
             device_info = _get_current_device_info()
         device_id, cc = device_info
         packed_cc = cc_to_key(cc)
-        # TODO: reduce to _DefaultBuildTarget(packed_cc) once v2 supports
-        # build-result serialization.
-        target_key = (
-            _DefaultBuildTarget(packed_cc)
-            if _BACKEND_SERIALIZES_BUILD_RESULTS
-            else _DeviceBuildTarget(device_id, cc)
-        )
+        target_key = _DefaultBuildTarget(packed_cc)
         user_cache_key = _make_cache_key_from_args(*key_args)
         cache_key = (build_result_type, target_key, user_cache_key)
         build_results = _cache_single_flight(
