@@ -152,10 +152,10 @@
     - rnorm4d(a,b,c,d) : Reciprocal 4D norm - placeholder
 
     Classification (portable prefixed API + conditional standard overloads):
-    - fpmp_isfinite(x): Test for finite value - placeholder
-    - fpmp_isinf(x)   : Test for infinity - placeholder
-    - fpmp_isnan(x)   : Test for NaN - placeholder
-    - fpmp_signbit(x) : Test sign bit - placeholder
+    - fpmp_isfinite(x): Test for finite value - exact on the limb pair (both limbs)
+    - fpmp_isinf(x)   : Test for infinity - exact on the limb pair (both limbs)
+    - fpmp_isnan(x)   : Test for NaN - exact on the limb pair (both limbs)
+    - fpmp_signbit(x) : Test sign bit - exact on the limb pair (both limbs)
       Standard names isfinite/isinf/isnan/signbit are exposed only when the
       corresponding macro is not defined.
 
@@ -468,7 +468,15 @@
       |x| >= 2^63 go to the platform's conversion of the high limb, as
       the scalar functions do.  The classification predicates,
       copysign, frexp, modf, ilogb and logb test the float limbs
-      directly instead of widening them to double.
+      directly instead of widening them to double, and the predicates
+      classify both limbs and combine the answers by logic alone (no
+      arithmetic): a loose pair out of a low-accuracy operation can
+      carry an infinity or a NaN in lo alone, or be (+inf, -inf), which
+      is a NaN.  isnan: a NaN limb or two infinities of opposite sign;
+      isinf: no NaN limb and one infinite limb or two of the same sign;
+      isfinite: both limbs finite; signbit: hi's sign when the limbs
+      agree or lo is zero (-0 is kept), else the sign of the larger
+      limb, +0 when they cancel.
 
     fp64mp2 implementations:
     - When _CCCL_FPMP_FP128_MATH_FALLBACK=1, route through __float128 (libquadmath
