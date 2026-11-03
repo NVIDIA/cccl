@@ -20,21 +20,19 @@
 #endif // no system header
 
 #include <cub/detail/numeric_traits.cuh>
-#include <cub/detail/type_traits.cuh>
-#include <cub/util_ptx.cuh>
 
 #include <cuda/__bit/bitfield.h>
 #include <cuda/__type_traits/is_floating_point.h>
-#include <cuda/__utility/static_for.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/__tuple_dir/tuple_size.h>
+#include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN
 

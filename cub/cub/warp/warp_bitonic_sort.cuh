@@ -27,7 +27,6 @@
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/swap.h>
 
 CUB_NAMESPACE_BEGIN
@@ -118,15 +117,21 @@ class WarpBitonicSort
   // The sorting network exchanges items between lanes "lane" and "lane ^ stride", which only stays inside the
   // logical warp when its size is a power of two.
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
-  using _TempStorage = cub::NullType;
+  using _TempStorage _CCCL_NODEBUG = cub::NullType;
 
   // to simplify internal recursive call
-  WarpBitonicSort() = default;
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort()
+  {
+    _CCCL_ASSUME(lane >= 0);
+  }
 
 public:
   using TempStorage = Uninitialized<_TempStorage>;
 
-  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&) {}
+  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&)
+  {
+    _CCCL_ASSUME(lane >= 0);
+  }
 
   //! @brief Sorts keys across a logical warp of threads using bitonic sorting network.
   //!
@@ -307,7 +312,7 @@ private:
 
   static constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
 
-  int lane = detail::logical_lane_id<LogicalWarpThreads>();
+  int lane = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
 
   static constexpr int first_half_len  = ::cuda::prev_power_of_two(ItemsPerThread - 1);
   static constexpr int second_half_len = ItemsPerThread - first_half_len;
@@ -445,15 +450,21 @@ class WarpBitonicSort<KeyT, 1, LogicalWarpThreads, ValueT>
   // The sorting network exchanges items between lanes "lane" and "lane ^ stride", which only stays inside the
   // logical warp when its size is a power of two.
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
-  using _TempStorage = cub::NullType;
+  using _TempStorage _CCCL_NODEBUG = cub::NullType;
 
   // to simplify internal recursive call
-  WarpBitonicSort() = default;
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort()
+  {
+    _CCCL_ASSUME(lane >= 0);
+  }
 
 public:
   using TempStorage = Uninitialized<_TempStorage>;
 
-  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&) {}
+  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&)
+  {
+    _CCCL_ASSUME(lane >= 0);
+  }
 
   template <typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void Sort(KeyT (&keys)[1], CompareOp compare_op) const
@@ -521,8 +532,8 @@ private:
   // A logical warp of 2^n lanes is sorted by a network of n stages.
   static constexpr int num_stages = ::cuda::std::countr_zero(static_cast<unsigned>(LogicalWarpThreads));
 
-  int lane                 = detail::logical_lane_id<LogicalWarpThreads>();
-  unsigned int member_mask = WarpMask<LogicalWarpThreads>(detail::logical_warp_id<LogicalWarpThreads>());
+  int lane                 = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
+  unsigned int member_mask = CUB_NS_QUALIFIER::detail::warp_mask<LogicalWarpThreads>();
 
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op) const

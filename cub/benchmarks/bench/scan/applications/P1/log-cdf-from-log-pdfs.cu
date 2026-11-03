@@ -84,7 +84,7 @@ struct log_pdf_builder
 template <typename T>
 [[nodiscard]] bool validate(const thrust::device_vector<T>& output, cudaStream_t stream)
 {
-  cudaStreamSynchronize(stream);
+  _CCCL_TRY_RUNTIME_API(cudaStreamSynchronize, "Sync failed", stream);
 
   thrust::host_vector<T> h_output(output);
   auto elements = h_output.size();

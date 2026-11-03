@@ -18,9 +18,10 @@
 #include <cub/detail/unit_word.cuh>
 
 #include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/std/__cstring/memcpy.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/cstring>
 #include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN

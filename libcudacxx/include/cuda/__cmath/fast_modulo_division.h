@@ -56,7 +56,7 @@ class fast_mod_div
 {
   static_assert(::cuda::std::__cccl_is_integer_v<_Tp>, "cuda::fast_mod_div: T is required to be an integer type");
 
-  using __unsigned_t = ::cuda::std::make_unsigned_t<_Tp>;
+  using __unsigned_t _CCCL_NODEBUG = ::cuda::std::make_unsigned_t<_Tp>;
 
 public:
   fast_mod_div() = delete;

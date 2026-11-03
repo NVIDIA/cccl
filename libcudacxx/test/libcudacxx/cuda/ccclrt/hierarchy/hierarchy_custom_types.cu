@@ -15,9 +15,9 @@
 
 struct custom_level : public cuda::hierarchy_level_base<custom_level>
 {
-  using __product_type  = unsigned int;
-  using __allowed_above = cuda::__allowed_levels<cuda::grid_level>;
-  using __allowed_below = cuda::__allowed_levels<cuda::block_level>;
+  using __product_type _CCCL_NODEBUG  = unsigned int;
+  using __allowed_above _CCCL_NODEBUG = cuda::__allowed_levels<cuda::grid_level>;
+  using __allowed_below _CCCL_NODEBUG = cuda::__allowed_levels<cuda::block_level>;
 };
 
 template <typename Level, typename Dims>

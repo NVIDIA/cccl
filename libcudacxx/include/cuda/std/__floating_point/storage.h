@@ -67,10 +67,10 @@ template <__fp_format _Fmt>
 }
 
 template <__fp_format _Fmt>
-using __fp_storage_t = decltype(__fp_storage_type_impl<_Fmt>());
+using __fp_storage_t _CCCL_NODEBUG = decltype(__fp_storage_type_impl<_Fmt>());
 
 template <class _Tp>
-using __fp_storage_of_t = __fp_storage_t<__fp_format_of_v<_Tp>>;
+using __fp_storage_of_t _CCCL_NODEBUG = __fp_storage_t<__fp_format_of_v<_Tp>>;
 
 #if !_CCCL_TILE_COMPILATION()
 template <class _Tp>

@@ -14,13 +14,17 @@
 
 #include <cub/detail/device_memory_resource.cuh>
 #include <cub/detail/temporary_storage.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_runs_on.cuh>
 
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/guarantee.h>
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/call_or.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__stream/get_stream.h>
+#include <cuda/__stream/stream_ref.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__execution/env.h>
 
 CUB_NAMESPACE_BEGIN

@@ -26,6 +26,9 @@ General
    the affected entity must be marked as ``[[deprecated("...")]]`` with rationale and workaround,
    adding a Doxygen comment ``//! Deprecated [Since X.Y]`` with the CCCL version introducing the deprecation,
    in at least one preceding release.
+#. Do not name entities after identifiers that compilers or system headers define as macros,
+   such as ``__in``, ``__out``, ``__inout``, ``__input``, ``__output``, ``__acquire``, or ``__release``.
+#. Remove any unused files, code, or entities like variables, functions, types, template parameters, etc.
 
 Header inclusion
 ~~~~~~~~~~~~~~~~
@@ -106,6 +109,10 @@ Functions
 #. Functions with a non-void return type should use `[[nodiscard]]`.
 #. Declare a function ``_CCCL_CONSTEVAL`` when it can only be evaluated at compile time.
 #. Prefer C++20 concept macros (``_CCCL_TEMPLATE(...)`` and ``_CCCL_REQUIRES(...)``) instead of SFINAE (``enable_if``).
+#. Avoid unconstrained deduced return types (``auto``, ``decltype(auto)``). Use an explicit return type or a
+   concept-constrained placeholder. If an unconstrained deduced return type is necessary, add a comment explaining why.
+#. Do not use extended lambda expressions (lambdas annotated with ``__host__``/``__device__`` etc.),
+   except in examples and API example tests (``*_api.cu``), since they require that users add an extra flag (``--extended-lambda``).
 
 Macros
 ~~~~~~
@@ -136,6 +143,8 @@ Comments
    explanatory comment, consider whether refactoring the code could allow the code to express the same.
    This avoids code and comments getting out of sync.
 #. Commented-out code without a justification is not allowed.
+#. Every entity in the public API must have Doxygen documentation, at least a ``@brief`` description.
+#. Documentation must accurately reflect the entity's current behavior.
 
 Using CUDA APIs
 ~~~~~~~~~~~~~~~
@@ -150,8 +159,9 @@ Using CUDA APIs
 Compiler Compatibility
 ~~~~~~~~~~~~~~~~~~~~~~
 
-#. Remove any unused files, code, or entities like variables, functions, types, template parameters, etc.
 #. Guard host-only code with ``#if !_CCCL_COMPILER(NVRTC)`` or ``#if _CCCL_HOSTED()``.
+#. In headers, do not rely on class template argument deduction (CTAD) or deduction guides;
+   spell out the template arguments. Older compilers have CTAD bugs. Examples and tests may use CTAD.
 
 libcu++
 -------
@@ -194,6 +204,9 @@ These rules also include cudax.
 #. The last included header before the start of the code must be ``<cuda/std/__cccl/prologue.h>``,
    and ``<cuda/std/__cccl/epilogue.h>`` must appear after the code at the end of the file.
 #. Functions that do not throw exceptions must use ``noexcept``.
+#. Functions that can be evaluated at compile time should be ``constexpr``.
+   If this requires a newer C++ standard, use ``_CCCL_CONSTEXPR_CXX20`` or ``_CCCL_CONSTEXPR_CXX23``.
+   Since ``constexpr`` is a commitment for public APIs, authors may decline to add it with a justification.
 
 CUB and Thrust
 --------------
@@ -231,9 +244,36 @@ Every source or header file requires a license header at the top of the file.
 CCCL uses a mix of different licenses for historical reasons.
 
 #. Any net new file should be licensed under Apache-2.0 WITH LLVM-exception.
-#. For files with license headers, strongly prefer a 2-line SPDX header like:
+#. For files with license headers, except in libcu++, strongly prefer a 2-line SPDX header like:
 
    .. code-block:: text
 
       // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
       // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+#. libcu++ source files ported from LLVM libc++ use the LLVM license header:
+
+   .. code-block:: text
+
+      //===----------------------------------------------------------------------===//
+      //
+      // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+      // See https://llvm.org/LICENSE.txt for license information.
+      // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+      // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+      //
+      //===----------------------------------------------------------------------===//
+
+#. All other libcu++ source files use the following license header:
+
+   .. code-block:: text
+
+      //===----------------------------------------------------------------------===//
+      //
+      // Part of libcu++, the C++ Standard Library for your entire system,
+      // under the Apache License v2.0 with LLVM Exceptions.
+      // See https://llvm.org/LICENSE.txt for license information.
+      // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+      // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+      //
+      //===----------------------------------------------------------------------===//

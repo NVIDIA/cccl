@@ -28,6 +28,7 @@
 
 #include <cuda/__execution/require.h>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__type_traits/decay.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -126,33 +127,70 @@ private:
     return "cub::DeviceMergeSort";
   }
 
+  // TODO(bgruber): I would ideally like to have the logic of extracting the policy selector from the tuning environment
+  // inside the dispatch function, but this will not work with CCCL.C, which needs to pass a stateful policy selector.
+  // Refactor this once we have a host code JIT compiler.
+  template <typename KeyInputIteratorT,
+            typename ValueInputIteratorT,
+            typename KeyIteratorT,
+            typename ValueIteratorT,
+            typename NumItemsT,
+            typename CompareOpT,
+            typename TuningEnvT>
+  CUB_RUNTIME_FUNCTION static auto select_tuning_and_dispatch(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    KeyInputIteratorT d_input_keys,
+    ValueInputIteratorT d_input_values,
+    KeyIteratorT d_output_keys,
+    ValueIteratorT d_output_values,
+    NumItemsT num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream,
+    TuningEnvT)
+  {
+    using default_policy_selector_t = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
+    using policy_selector_t         = ::cuda::std::decay_t<
+      ::cuda::std::execution::__query_result_or_t<TuningEnvT, MergeSortPolicy, default_policy_selector_t>>;
+    return detail::merge_sort::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_input_keys,
+      d_input_values,
+      d_output_keys,
+      d_output_values,
+      num_items,
+      compare_op,
+      stream,
+      policy_selector_t{});
+  }
+
   // Internal version without NVTX range
-  template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT, typename EnvT>
+  template <typename KeyIteratorT, typename ValueIteratorT, typename NumItemsT, typename CompareOpT, typename EnvT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsNoNVTX(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorT d_keys,
     ValueIteratorT d_values,
-    OffsetT num_items,
+    NumItemsT num_items,
     CompareOpT compare_op,
     const EnvT& env)
   {
-    using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
-    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return select_tuning_and_dispatch(
           storage,
           bytes,
           d_keys,
           d_values,
           d_keys,
           d_values,
-          static_cast<ChooseOffsetT>(num_items),
+          static_cast<offset_t>(num_items),
           compare_op,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
@@ -212,8 +250,8 @@ public:
    * @tparam ValueIteratorT
    *   is a model of [Random Access Iterator], and `ValueIteratorT` is mutable.
    *
-   * @tparam OffsetT
-   *   is an integer type for global offsets.
+   * @tparam NumItemsT
+   *   is an integer type for the number of items.
    *
    * @tparam CompareOpT
    *   is a type of callable object with the signature
@@ -258,7 +296,7 @@ public:
    */
   template <typename KeyIteratorT,
             typename ValueIteratorT,
-            typename OffsetT,
+            typename NumItemsT,
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
@@ -266,7 +304,7 @@ public:
     size_t& temp_storage_bytes,
     KeyIteratorT d_keys,
     ValueIteratorT d_values,
-    OffsetT num_items,
+    NumItemsT num_items,
     CompareOpT compare_op,
     const EnvT& env = {})
   {
@@ -304,8 +342,8 @@ public:
   //! @tparam ValueIteratorT
   //!   **[inferred]** Random-access iterator type for values @iterator
   //!
-  //! @tparam OffsetT
-  //!   **[inferred]** Integer type for offsets
+  //! @tparam NumItemsT
+  //!   **[inferred]** Integer type for the number of items
   //!
   //! @tparam CompareOpT
   //!   **[inferred]** Comparison function object type
@@ -331,31 +369,28 @@ public:
   //!   @endrst
   template <typename KeyIteratorT,
             typename ValueIteratorT,
-            typename OffsetT,
+            typename NumItemsT,
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairs(
-    KeyIteratorT d_keys, ValueIteratorT d_values, OffsetT num_items, CompareOpT compare_op, const EnvT& env = {})
+    KeyIteratorT d_keys, ValueIteratorT d_values, NumItemsT num_items, CompareOpT compare_op, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
-    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
-          storage,
-          bytes,
-          d_keys,
-          d_values,
-          d_keys,
-          d_values,
-          static_cast<ChooseOffsetT>(num_items),
-          compare_op,
-          stream,
-          policy_selector);
-      });
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return select_tuning_and_dispatch(
+        storage,
+        bytes,
+        d_keys,
+        d_values,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        compare_op,
+        stream,
+        tuning_env);
+    });
   }
 
   /**
@@ -426,8 +461,8 @@ public:
    * @tparam ValueIteratorT
    *   is a model of [Random Access Iterator], and `ValueIteratorT` is mutable.
    *
-   * @tparam OffsetT
-   *   is an integer type for global offsets.
+   * @tparam NumItemsT
+   *   is an integer type for the number of items.
    *
    * @tparam CompareOpT
    *   is a type of callable object with the signature
@@ -480,7 +515,7 @@ public:
             typename ValueInputIteratorT,
             typename KeyIteratorT,
             typename ValueIteratorT,
-            typename OffsetT,
+            typename NumItemsT,
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsCopy(
@@ -490,28 +525,27 @@ public:
     ValueInputIteratorT d_input_values,
     KeyIteratorT d_output_keys,
     ValueIteratorT d_output_values,
-    OffsetT num_items,
+    NumItemsT num_items,
     CompareOpT compare_op,
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
-    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return select_tuning_and_dispatch(
           storage,
           bytes,
           d_input_keys,
           d_input_values,
           d_output_keys,
           d_output_values,
-          static_cast<ChooseOffsetT>(num_items),
+          static_cast<offset_t>(num_items),
           compare_op,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
@@ -553,8 +587,8 @@ public:
   //! @tparam ValueIteratorT
   //!   **[inferred]** Random-access iterator type for output values @iterator
   //!
-  //! @tparam OffsetT
-  //!   **[inferred]** Integer type for offsets
+  //! @tparam NumItemsT
+  //!   **[inferred]** Integer type for the number of items
   //!
   //! @tparam CompareOpT
   //!   **[inferred]** Comparison function object type
@@ -588,7 +622,7 @@ public:
             typename ValueInputIteratorT,
             typename KeyIteratorT,
             typename ValueIteratorT,
-            typename OffsetT,
+            typename NumItemsT,
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairsCopy(
@@ -596,58 +630,54 @@ public:
     ValueInputIteratorT d_input_values,
     KeyIteratorT d_output_keys,
     ValueIteratorT d_output_values,
-    OffsetT num_items,
+    NumItemsT num_items,
     CompareOpT compare_op,
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
-    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
-          storage,
-          bytes,
-          d_input_keys,
-          d_input_values,
-          d_output_keys,
-          d_output_values,
-          static_cast<ChooseOffsetT>(num_items),
-          compare_op,
-          stream,
-          policy_selector);
-      });
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return select_tuning_and_dispatch(
+        storage,
+        bytes,
+        d_input_keys,
+        d_input_values,
+        d_output_keys,
+        d_output_values,
+        static_cast<offset_t>(num_items),
+        compare_op,
+        stream,
+        tuning_env);
+    });
   }
 
 private:
   // Internal version without NVTX range
-  template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename EnvT>
+  template <typename KeyIteratorT, typename NumItemsT, typename CompareOpT, typename EnvT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysNoNVTX(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorT d_keys,
-    OffsetT num_items,
+    NumItemsT num_items,
     CompareOpT compare_op,
     const EnvT& env)
   {
-    using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
-    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return select_tuning_and_dispatch(
           storage,
           bytes,
           d_keys,
           static_cast<NullType*>(nullptr),
           d_keys,
           static_cast<NullType*>(nullptr),
-          static_cast<ChooseOffsetT>(num_items),
+          static_cast<offset_t>(num_items),
           compare_op,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
@@ -701,8 +731,8 @@ public:
    *   ordering relation is a *strict weak ordering* as defined in
    *   the [LessThan Comparable] requirements.
    *
-   * @tparam OffsetT
-   *   is an integer type for global offsets.
+   * @tparam NumItemsT
+   *   is an integer type for the number of items.
    *
    * @tparam CompareOpT
    *   is a type of callable object with the signature
@@ -742,12 +772,12 @@ public:
    *    First appears in CUDA Toolkit 12.3.
    * @endrst
    */
-  template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename EnvT = ::cuda::std::execution::env<>>
+  template <typename KeyIteratorT, typename NumItemsT, typename CompareOpT, typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorT d_keys,
-    OffsetT num_items,
+    NumItemsT num_items,
     CompareOpT compare_op,
     const EnvT& env = {})
   {
@@ -782,8 +812,8 @@ public:
   //! @tparam KeyIteratorT
   //!   **[inferred]** Random-access iterator type for keys @iterator
   //!
-  //! @tparam OffsetT
-  //!   **[inferred]** Integer type for offsets
+  //! @tparam NumItemsT
+  //!   **[inferred]** Integer type for the number of items
   //!
   //! @tparam CompareOpT
   //!   **[inferred]** Comparison function object type
@@ -804,59 +834,55 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename EnvT = ::cuda::std::execution::env<>>
+  template <typename KeyIteratorT, typename NumItemsT, typename CompareOpT, typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  SortKeys(KeyIteratorT d_keys, OffsetT num_items, CompareOpT compare_op, const EnvT& env = {})
+  SortKeys(KeyIteratorT d_keys, NumItemsT num_items, CompareOpT compare_op, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
-    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
-          storage,
-          bytes,
-          d_keys,
-          static_cast<NullType*>(nullptr),
-          d_keys,
-          static_cast<NullType*>(nullptr),
-          static_cast<ChooseOffsetT>(num_items),
-          compare_op,
-          stream,
-          policy_selector);
-      });
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return select_tuning_and_dispatch(
+        storage,
+        bytes,
+        d_keys,
+        static_cast<NullType*>(nullptr),
+        d_keys,
+        static_cast<NullType*>(nullptr),
+        static_cast<offset_t>(num_items),
+        compare_op,
+        stream,
+        tuning_env);
+    });
   }
 
 private:
   // Internal version without NVTX range
-  template <typename KeyInputIteratorT, typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename EnvT>
+  template <typename KeyInputIteratorT, typename KeyIteratorT, typename NumItemsT, typename CompareOpT, typename EnvT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysCopyNoNVTX(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputIteratorT d_input_keys,
     KeyIteratorT d_output_keys,
-    OffsetT num_items,
+    NumItemsT num_items,
     CompareOpT compare_op,
     const EnvT& env)
   {
-    using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
-    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return select_tuning_and_dispatch(
           storage,
           bytes,
           d_input_keys,
           static_cast<NullType*>(nullptr),
           d_output_keys,
           static_cast<NullType*>(nullptr),
-          static_cast<ChooseOffsetT>(num_items),
+          static_cast<offset_t>(num_items),
           compare_op,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
@@ -921,8 +947,8 @@ public:
    *   ordering relation is a *strict weak ordering* as defined in
    *   the [LessThan Comparable] requirements.
    *
-   * @tparam OffsetT
-   *   is an integer type for global offsets.
+   * @tparam NumItemsT
+   *   is an integer type for the number of items.
    *
    * @tparam CompareOpT
    *   is a type of callable object with the signature
@@ -967,7 +993,7 @@ public:
    */
   template <typename KeyInputIteratorT,
             typename KeyIteratorT,
-            typename OffsetT,
+            typename NumItemsT,
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysCopy(
@@ -975,7 +1001,7 @@ public:
     size_t& temp_storage_bytes,
     KeyInputIteratorT d_input_keys,
     KeyIteratorT d_output_keys,
-    OffsetT num_items,
+    NumItemsT num_items,
     CompareOpT compare_op,
     const EnvT& env = {})
   {
@@ -1016,8 +1042,8 @@ public:
   //! @tparam KeyIteratorT
   //!   **[inferred]** Random-access iterator type for output keys @iterator
   //!
-  //! @tparam OffsetT
-  //!   **[inferred]** Integer type for offsets
+  //! @tparam NumItemsT
+  //!   **[inferred]** Integer type for the number of items
   //!
   //! @tparam CompareOpT
   //!   **[inferred]** Comparison function object type
@@ -1043,35 +1069,32 @@ public:
   //!   @endrst
   template <typename KeyInputIteratorT,
             typename KeyIteratorT,
-            typename OffsetT,
+            typename NumItemsT,
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeysCopy(
     KeyInputIteratorT d_input_keys,
     KeyIteratorT d_output_keys,
-    OffsetT num_items,
+    NumItemsT num_items,
     CompareOpT compare_op,
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
-    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
-          storage,
-          bytes,
-          d_input_keys,
-          static_cast<NullType*>(nullptr),
-          d_output_keys,
-          static_cast<NullType*>(nullptr),
-          static_cast<ChooseOffsetT>(num_items),
-          compare_op,
-          stream,
-          policy_selector);
-      });
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return select_tuning_and_dispatch(
+        storage,
+        bytes,
+        d_input_keys,
+        static_cast<NullType*>(nullptr),
+        d_output_keys,
+        static_cast<NullType*>(nullptr),
+        static_cast<offset_t>(num_items),
+        compare_op,
+        stream,
+        tuning_env);
+    });
   }
 
   /**
@@ -1129,8 +1152,8 @@ public:
    * @tparam ValueIteratorT
    *   is a model of [Random Access Iterator], and `ValueIteratorT` is mutable.
    *
-   * @tparam OffsetT
-   *   is an integer type for global offsets.
+   * @tparam NumItemsT
+   *   is an integer type for the number of items.
    *
    * @tparam CompareOpT
    *   is a type of callable object with the signature
@@ -1175,7 +1198,7 @@ public:
    */
   template <typename KeyIteratorT,
             typename ValueIteratorT,
-            typename OffsetT,
+            typename NumItemsT,
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairs(
@@ -1183,13 +1206,13 @@ public:
     size_t& temp_storage_bytes,
     KeyIteratorT d_keys,
     ValueIteratorT d_values,
-    OffsetT num_items,
+    NumItemsT num_items,
     CompareOpT compare_op,
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    return SortPairsNoNVTX<KeyIteratorT, ValueIteratorT, OffsetT, CompareOpT>(
+    return SortPairsNoNVTX<KeyIteratorT, ValueIteratorT, NumItemsT, CompareOpT>(
       d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, compare_op, env);
   }
 
@@ -1223,8 +1246,8 @@ public:
   //! @tparam ValueIteratorT
   //!   **[inferred]** Random-access iterator type for values @iterator
   //!
-  //! @tparam OffsetT
-  //!   **[inferred]** Integer type for offsets
+  //! @tparam NumItemsT
+  //!   **[inferred]** Integer type for the number of items
   //!
   //! @tparam CompareOpT
   //!   **[inferred]** Comparison function object type
@@ -1250,31 +1273,28 @@ public:
   //!   @endrst
   template <typename KeyIteratorT,
             typename ValueIteratorT,
-            typename OffsetT,
+            typename NumItemsT,
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t StableSortPairs(
-    KeyIteratorT d_keys, ValueIteratorT d_values, OffsetT num_items, CompareOpT compare_op, const EnvT& env = {})
+    KeyIteratorT d_keys, ValueIteratorT d_values, NumItemsT num_items, CompareOpT compare_op, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
-    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
-          storage,
-          bytes,
-          d_keys,
-          d_values,
-          d_keys,
-          d_values,
-          static_cast<ChooseOffsetT>(num_items),
-          compare_op,
-          stream,
-          policy_selector);
-      });
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return select_tuning_and_dispatch(
+        storage,
+        bytes,
+        d_keys,
+        d_values,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        compare_op,
+        stream,
+        tuning_env);
+    });
   }
 
   /**
@@ -1327,8 +1347,8 @@ public:
    *   ordering relation is a *strict weak ordering* as defined in
    *   the [LessThan Comparable] requirements.
    *
-   * @tparam OffsetT
-   *   is an integer type for global offsets.
+   * @tparam NumItemsT
+   *   is an integer type for the number of items.
    *
    * @tparam CompareOpT
    *   is a type of callable object with the signature
@@ -1368,18 +1388,18 @@ public:
    *    First appears in CUDA Toolkit 12.3.
    * @endrst
    */
-  template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename EnvT = ::cuda::std::execution::env<>>
+  template <typename KeyIteratorT, typename NumItemsT, typename CompareOpT, typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorT d_keys,
-    OffsetT num_items,
+    NumItemsT num_items,
     CompareOpT compare_op,
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    return SortKeysNoNVTX<KeyIteratorT, OffsetT, CompareOpT>(
+    return SortKeysNoNVTX<KeyIteratorT, NumItemsT, CompareOpT>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, env);
   }
 
@@ -1410,8 +1430,8 @@ public:
   //! @tparam KeyIteratorT
   //!   **[inferred]** Random-access iterator type for keys @iterator
   //!
-  //! @tparam OffsetT
-  //!   **[inferred]** Integer type for offsets
+  //! @tparam NumItemsT
+  //!   **[inferred]** Integer type for the number of items
   //!
   //! @tparam CompareOpT
   //!   **[inferred]** Comparison function object type
@@ -1432,29 +1452,26 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename EnvT = ::cuda::std::execution::env<>>
+  template <typename KeyIteratorT, typename NumItemsT, typename CompareOpT, typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  StableSortKeys(KeyIteratorT d_keys, OffsetT num_items, CompareOpT compare_op, const EnvT& env = {})
+  StableSortKeys(KeyIteratorT d_keys, NumItemsT num_items, CompareOpT compare_op, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
-    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
-          storage,
-          bytes,
-          d_keys,
-          static_cast<NullType*>(nullptr),
-          d_keys,
-          static_cast<NullType*>(nullptr),
-          static_cast<ChooseOffsetT>(num_items),
-          compare_op,
-          stream,
-          policy_selector);
-      });
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return select_tuning_and_dispatch(
+        storage,
+        bytes,
+        d_keys,
+        static_cast<NullType*>(nullptr),
+        d_keys,
+        static_cast<NullType*>(nullptr),
+        static_cast<offset_t>(num_items),
+        compare_op,
+        stream,
+        tuning_env);
+    });
   }
 
   /**
@@ -1517,8 +1534,8 @@ public:
    *   ordering relation is a *strict weak ordering* as defined in
    *   the [LessThan Comparable] requirements.
    *
-   * @tparam OffsetT
-   *   is an integer type for global offsets.
+   * @tparam NumItemsT
+   *   is an integer type for the number of items.
    *
    * @tparam CompareOpT
    *   is a type of callable object with the signature
@@ -1563,7 +1580,7 @@ public:
    */
   template <typename KeyInputIteratorT,
             typename KeyIteratorT,
-            typename OffsetT,
+            typename NumItemsT,
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeysCopy(
@@ -1571,12 +1588,12 @@ public:
     size_t& temp_storage_bytes,
     KeyInputIteratorT d_input_keys,
     KeyIteratorT d_output_keys,
-    OffsetT num_items,
+    NumItemsT num_items,
     CompareOpT compare_op,
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortKeysCopyNoNVTX<KeyInputIteratorT, KeyIteratorT, OffsetT, CompareOpT>(
+    return SortKeysCopyNoNVTX<KeyInputIteratorT, KeyIteratorT, NumItemsT, CompareOpT>(
       d_temp_storage, temp_storage_bytes, d_input_keys, d_output_keys, num_items, compare_op, env);
   }
 
@@ -1612,8 +1629,8 @@ public:
   //! @tparam KeyIteratorT
   //!   **[inferred]** Random-access iterator type for output keys @iterator
   //!
-  //! @tparam OffsetT
-  //!   **[inferred]** Integer type for offsets
+  //! @tparam NumItemsT
+  //!   **[inferred]** Integer type for the number of items
   //!
   //! @tparam CompareOpT
   //!   **[inferred]** Comparison function object type
@@ -1639,35 +1656,32 @@ public:
   //!   @endrst
   template <typename KeyInputIteratorT,
             typename KeyIteratorT,
-            typename OffsetT,
+            typename NumItemsT,
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t StableSortKeysCopy(
     KeyInputIteratorT d_input_keys,
     KeyIteratorT d_output_keys,
-    OffsetT num_items,
+    NumItemsT num_items,
     CompareOpT compare_op,
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
-    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
-          storage,
-          bytes,
-          d_input_keys,
-          static_cast<NullType*>(nullptr),
-          d_output_keys,
-          static_cast<NullType*>(nullptr),
-          static_cast<ChooseOffsetT>(num_items),
-          compare_op,
-          stream,
-          policy_selector);
-      });
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return select_tuning_and_dispatch(
+        storage,
+        bytes,
+        d_input_keys,
+        static_cast<NullType*>(nullptr),
+        d_output_keys,
+        static_cast<NullType*>(nullptr),
+        static_cast<offset_t>(num_items),
+        compare_op,
+        stream,
+        tuning_env);
+    });
   }
 };
 

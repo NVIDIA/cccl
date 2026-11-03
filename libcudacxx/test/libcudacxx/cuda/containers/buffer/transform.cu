@@ -43,8 +43,9 @@ C2H_TEST("DeviceTransform::Transform cuda::device_buffer", "[device][launch_tran
 
   cuda::device_buffer<type> result{stream, resource, num_items, cuda::no_init};
 
-  cub::DeviceTransform::Transform(
-    ::cuda::std::make_tuple(a.begin(), b.begin()), result.begin(), num_items, ::cuda::std::plus<type>{});
+  REQUIRE(cudaSuccess
+          == cub::DeviceTransform::Transform(
+            ::cuda::std::make_tuple(a.begin(), b.begin()), result.begin(), num_items, ::cuda::std::plus<type>{}));
 
   // copy back to host
   thrust::host_vector<type> a_h(num_items);

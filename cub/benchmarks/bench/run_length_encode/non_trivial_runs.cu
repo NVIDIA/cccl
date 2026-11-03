@@ -72,7 +72,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
       d_num_runs_out,
       static_cast<OffsetT>(elements),
       memory_env);
-    cudaDeviceSynchronize();
+    _CCCL_TRY_RUNTIME_API(cudaDeviceSynchronize, "Sync failed");
   }
   const OffsetT num_runs = num_runs_out[0];
 

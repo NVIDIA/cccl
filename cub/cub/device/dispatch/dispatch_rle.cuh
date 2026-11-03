@@ -378,7 +378,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
     constexpr int items_per_thread  = ActivePolicyT::RleSweepPolicyT::ITEMS_PER_THREAD;
     constexpr auto tile_size        = static_cast<global_offset_t>(threads_per_block * items_per_thread);
 
-    // The upper bound of for the number of items that a single kernel invocation will ever process
+    // The upper bound for the number of items that a single kernel invocation will ever process
     auto capped_num_items_per_invocation = num_items;
     if constexpr (use_streaming_invocation)
     {
@@ -394,9 +394,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
 
     // Number of invocations required to "iterate" over the total input (at least one iteration to process zero items)
     auto const num_partitions =
-      (capped_num_items_per_invocation == 0)
-        ? global_offset_t{1}
-        : ::cuda::ceil_div(num_items, capped_num_items_per_invocation);
+      (num_items == 0) ? global_offset_t{1} : ::cuda::ceil_div(num_items, capped_num_items_per_invocation);
 
     // Number of input tiles
     const int max_num_tiles = static_cast<int>(::cuda::ceil_div(max_num_items_per_invocation, tile_size));
@@ -694,9 +692,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   const auto max_num_items_per_invocation =
     use_streaming_invocation ? ::cuda::std::min(capped_num_items_per_invocation, num_items) : num_items;
   const auto num_partitions =
-    (capped_num_items_per_invocation == 0)
-      ? global_offset_t{1}
-      : ::cuda::ceil_div(num_items, capped_num_items_per_invocation);
+    (num_items == 0) ? global_offset_t{1} : ::cuda::ceil_div(num_items, capped_num_items_per_invocation);
 
   const int max_num_tiles = static_cast<int>(::cuda::ceil_div(max_num_items_per_invocation, tile_size));
 

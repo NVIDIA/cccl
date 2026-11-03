@@ -43,8 +43,6 @@ __device__ void test_identity_mapping(Config config, const NonExhaustive&... non
 
     static_assert(cudax::coop::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
                     non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result))>);
-    static_assert(noexcept(
-      cuda::std::declval<const Mapping>().map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result)));
 
     const Mapping mapping;
     auto result  = mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result);

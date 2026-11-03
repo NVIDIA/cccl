@@ -131,13 +131,13 @@ struct deduce_execution_policy;
 template <bool b, size_t s>
 struct deduce_execution_policy<b, s>
 {
-  using type = thread_hierarchy_spec<b, s>;
+  using type _CCCL_NODEBUG = thread_hierarchy_spec<b, s>;
 };
 
 template <bool b, size_t s, typename T, typename... Ts>
 struct deduce_execution_policy<b, s, T, Ts...>
 {
-  using type = typename deduce_execution_policy<b, s, Ts...>::type;
+  using type _CCCL_NODEBUG = typename deduce_execution_policy<b, s, Ts...>::type;
 };
 
 template <bool b, size_t s, auto... P, typename... Ts>
@@ -145,7 +145,7 @@ struct deduce_execution_policy<b, s, thread_hierarchy_spec<P...>, Ts...>
 {
   static_assert(::cuda::std::is_same_v<typename deduce_execution_policy<b, s, Ts...>::type, thread_hierarchy_spec<b, s>>,
                 "Only one argument of type deduce_execution_policy<...> is allowed.");
-  using type = thread_hierarchy_spec<b, s, P...>;
+  using type _CCCL_NODEBUG = thread_hierarchy_spec<b, s, P...>;
 };
 } // namespace reserved
 

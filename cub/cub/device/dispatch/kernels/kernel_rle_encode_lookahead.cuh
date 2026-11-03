@@ -13,26 +13,35 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/warpspeed/squad/squad.cuh>
-#include <cub/device/dispatch/tuning/tuning_rle_encode.cuh>
-#include <cub/util_arch.cuh>
-#include <cub/util_macro.cuh>
-#include <cub/warp/warp_scan.cuh>
+#if __cccl_ptx_isa >= 920
+#  include <cub/detail/warpspeed/special_registers.cuh>
+#  include <cub/detail/warpspeed/squad/squad.cuh>
+#  include <cub/detail/warpspeed/squad/squad_desc.cuh>
+#  include <cub/device/dispatch/tuning/tuning_rle_encode.cuh>
+#  include <cub/util_arch.cuh>
+#  include <cub/util_device.cuh>
+#  include <cub/util_macro.cuh>
+#  include <cub/warp/warp_scan.cuh>
 
-#include <cuda/__cmath/ceil_div.h>
-#include <cuda/__memory/ptr_rebind.h>
-#include <cuda/ptx>
-#include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__bit/countl.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/cstdint>
-#include <cuda/std/limits>
+#  include <cuda/__cmath/ceil_div.h>
+#  include <cuda/__memory/ptr_rebind.h>
+#  include <cuda/ptx>
+#  include <cuda/std/__algorithm/max.h>
+#  include <cuda/std/__algorithm/min.h>
+#  include <cuda/std/__atomic/order.h>
+#  include <cuda/std/__atomic/scopes.h>
+#  include <cuda/std/__bit/bit_cast.h>
+#  include <cuda/std/__bit/countl.h>
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__limits/numeric_limits.h>
+#  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/cstdint>
 
-#if !_CCCL_HAS_NV_ATOMIC_BUILTINS()
-#  include <cuda/atomic>
-#endif // !_CCCL_HAS_NV_ATOMIC_BUILTINS()
+#  include <nv/target>
+#  if !_CCCL_HAS_NV_ATOMIC_BUILTINS()
+#    include <cuda/__atomic/atomic.h>
+#  endif // !_CCCL_HAS_NV_ATOMIC_BUILTINS()
+#endif // __cccl_ptx_isa >= 920
 
 CUB_NAMESPACE_BEGIN
 

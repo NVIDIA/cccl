@@ -29,9 +29,9 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 
 // Legacy include; this functionality used to be defined in here.
-#include <cub/detail/detect_cuda_runtime.cuh>
 
 CUB_NAMESPACE_BEGIN
 

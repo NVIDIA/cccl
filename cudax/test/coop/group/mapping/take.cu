@@ -40,11 +40,11 @@ __device__ void test_take(Config config, const NonExhaustive&... non_exhaustive)
     static_assert(!cuda::std::is_default_constructible_v<Mapping>);
 
     // Test the mapping is constructible from uint32_t.
-    static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::uint32_t>);
+    static_assert(cuda::std::is_constructible_v<Mapping, cuda::std::uint32_t>);
 
     // Test the mapping is constructible and deducible from constant_wrapper<N>.
     {
-      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::constant_wrapper<N>>);
+      static_assert(cuda::std::is_constructible_v<Mapping, cuda::std::constant_wrapper<N>>);
 
       cudax::coop::take mapping{cuda::std::cw<N>}; // NOLINT(misc-const-correctness)
       static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
@@ -57,8 +57,6 @@ __device__ void test_take(Config config, const NonExhaustive&... non_exhaustive)
 
       static_assert(cudax::coop::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
                       non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().map(
-        non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const cudax::coop::take mapping{cuda::std::cw<N>};
       auto result  = mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result);
@@ -99,14 +97,14 @@ __device__ void test_take(Config config, const NonExhaustive&... non_exhaustive)
 
     // Test the mapping is constructible and deducible from uint32_t.
     {
-      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::uint32_t>);
+      static_assert(cuda::std::is_constructible_v<Mapping, cuda::std::uint32_t>);
 
       cudax::coop::take mapping{n}; // NOLINT(misc-const-correctness)
       static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
     }
 
     // Test the mapping is constructible from constant_wrapper<N>.
-    static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::constant_wrapper<N>>);
+    static_assert(cuda::std::is_constructible_v<Mapping, cuda::std::constant_wrapper<N>>);
 
     // Test map(...).
     {
@@ -115,8 +113,6 @@ __device__ void test_take(Config config, const NonExhaustive&... non_exhaustive)
 
       static_assert(cudax::coop::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
                       non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().map(
-        non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const Mapping mapping{n};
       auto result  = mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result);

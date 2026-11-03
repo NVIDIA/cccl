@@ -18,7 +18,6 @@
 #endif // no system header
 
 #include <cub/block/block_scan.cuh>
-#include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/detail/constant.cuh>
 #include <cub/detail/log2.cuh>
 #include <cub/detail/uninitialized.cuh>
@@ -29,17 +28,19 @@
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/countl.h>
-#include <cuda/std/__bit/integral.h>
 #include <cuda/std/__bit/popcount.h>
-#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 #include <cuda/std/span>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
 
 CUB_NAMESPACE_BEGIN
 
@@ -935,6 +936,12 @@ struct BlockRadixRankMatchEarlyCounts
   // Guard against declaring zero-sized array:
   static constexpr int MATCH_MASKS_ALLOC_SIZE = NUM_MATCH_MASKS < 1 ? 1 : NUM_MATCH_MASKS;
 
+  // TODO: handle RADIX_DIGITS % WARP_THREADS != 0 if it becomes necessary
+  static_assert(NumParts == 1 || RADIX_DIGITS % WARP_THREADS == 0,
+                "BlockRadixRankMatchEarlyCounts: 2^RadixBits must be a multiple of the warp size (32) if NumParts > 1 "
+                "(e.g., RadixSortPolicy: onesweep.radix_bits must be at least 5 if onesweep.rank_private_partitions > "
+                "1)");
+
   // types
   using BlockScan = cub::BlockScan<int, BLOCK_THREADS, InnerScanAlgorithm>;
 
@@ -1016,7 +1023,6 @@ struct BlockRadixRankMatchEarlyCounts
       if constexpr (NumParts > 1)
       {
         __syncwarp(WARP_MASK);
-        // TODO: handle RADIX_DIGITS % WARP_THREADS != 0 if it becomes necessary
         constexpr int WARP_BINS_PER_THREAD = RADIX_DIGITS / WARP_THREADS;
         int bins[WARP_BINS_PER_THREAD];
 
