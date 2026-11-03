@@ -18,6 +18,7 @@ In the following, we describe this process in more detail.
 .. warning::
 
    CUB's built-in tunings may change in every CCCL release, and so may the performance of algorithms using a custom tuning.
+   In some cases, compilation may fail as well.
    See :ref:`cub-tuning-stability` for what this means for custom tunings.
 
 
@@ -33,7 +34,6 @@ e.g. :code:`cub::ReducePolicy`, which must be returned by a policy selector pass
 
 CUB employs internal default policy selectors providing tunings for known compute capabilities and workloads,
 which are not publicly accessible to users.
-The policy structs themselves are public.
 Users can override CUB's policy selector for a given algorithm
 by passing a custom policy selector through the algorithm's environment parameter,
 or build upon CUB's default tuning by passing a :ref:`policy transformer <cub-policy-transformers>`.
@@ -111,8 +111,8 @@ Policy transformers
 --------------------------------------------------------------------------------
 
 Often, only a few values of CUB's default tuning need to change.
-For example, CUB's tuning for your GPU and workload is good, except for the choice of a block-level algorithm,
-which suits your operator better with a different algorithm.
+For example, CUB's tuning for your GPU and workload is good,
+except you want to choose a different block-level algorithm which suits your operator better.
 Instead of a policy selector, a *policy transformer* can be passed to :code:`cuda::execution::tune(...)`.
 A policy transformer is a stateless callable taking a :code:`cuda::compute_capability` and
 the policy returned by CUB's default policy selector for that compute capability and workload.
@@ -134,39 +134,6 @@ The same requirements as for policy selectors apply:
 a policy transformer must be stateless and semiregular.
 It must return the algorithm's policy struct by value, and accept it as its second parameter.
 A callable passed to :code:`cuda::execution::tune(...)` must be either a policy selector or a policy transformer.
-A callable that can be invoked both ways, e.g., because it has both call operators, is rejected.
-
-.. _cub-tuning-stability:
-
-Stability of tunings
---------------------------------------------------------------------------------
-
-CCCL reserves the right to change CUB's built-in tunings in every release, including minor and patch releases.
-This covers tuning values, e.g., the number of threads per block, as well as algorithmic choices.
-CUB validates such changes with its benchmarks, but even a minor change can regress individual workloads.
-Algorithmic changes in CUB also sometimes require tunings to change to retain performance.
-Since users can override or fix tunings, CUB is free to change its default tunings more aggressively.
-
-Custom tunings are no exception: the performance of an algorithm using a custom tuning can change with any update of CCCL.
-Re-evaluate your custom tunings when updating CCCL.
-
-The two ways of customizing a tuning keep different things fixed:
-
-* A **policy selector** specifies the complete tuning.
-  The tuning values stay the same across CCCL updates, and changes to CUB's tuning do not affect the algorithm.
-  But you do not benefit from tuning improvements for your hardware,
-  and you are responsible for tuning for all GPUs you want to support.
-  The performance can still change, e.g., because CCCL fixes bugs or changes how the algorithm is implemented.
-* A **policy transformer** modifies CUB's current tuning.
-  CUB picks the tuning for the GPU and workload, and you override only a subset, e.g., an algorithmic choice.
-  Improvements of CUB's tuning are picked up automatically.
-  But CUB does not validate your modification in combination with future tunings.
-  The result may perform worse than both CUB's tuning and your modification applied to an older tuning.
-  A policy transformer is therefore not a way to keep performance stable across CCCL updates.
-
-Prefer a policy transformer to deviate from CUB's tuning in a small and targeted way and to keep up with improvements.
-Prefer a policy selector if the tuning values must not change.
-In both cases, benchmark your workloads when updating CCCL.
 
 Passing a policy selector to CUB device-scope algorithms
 --------------------------------------------------------------------------------
@@ -213,3 +180,38 @@ Policy selectors can simply be added to those:
 
 CUB's benchmarks also make heavy use of policy selectors for tuning.
 For more details on authoring benchmarks and their policy selectors for automatic tuning, see :ref:`cub-tuning-infra`.
+
+.. _cub-tuning-stability:
+
+Stability of tunings
+--------------------------------------------------------------------------------
+
+CCCL reserves the right to change CUB's built-in tunings in every release, including minor and patch releases.
+Such changes are validated using CUB's benchmarks,
+but may still regress workloads outside our benchmark coverage.
+
+Algorithmic changes in CUB also sometimes require tunings to change to retain performance.
+For example, restructuring an algorithm to allow for higher load vectorization,
+may require different items processed per thread to be effective.
+A user-tuned value for the items per thread may now select a slower fallback path after updating CCCL,
+without any diagnostic.
+
+In extreme cases CUB may change tunings in a way where a custom override could lead to a compilation failure.
+Suppose that changes to CUB's tunings lead to a higher use of GPU resources like shared memory.
+A user-tuned value for the block size may now exceed the available shared memory and fail to compile.
+
+Therefore, a specific tuning overriding CUB's internal one may work for a given CCCL version,
+but may no longer be adequate or even fail to compile in a future CCCL version.
+We strongly advise users to regularly benchmark and reevaluate their custom tunings when upgrading.
+
+The two ways of customizing a tuning are affected differently by such changes:
+
+* A policy selector specifies all tuning values, so changes to CUB's tuning values do not affect it.
+  But it locks you out of any improvements CUB makes to its tunings in newer CCCL versions,
+  and it is still affected by changes to the algorithms themselves.
+* A policy transformer only modifies CUB's current tuning and thus picks up such improvements.
+  But the values it does not override can change underneath it, and CUB does not validate your modification
+  in combination with future tunings. The result may perform worse or no longer compile.
+
+Use a policy transformer for a small and targeted modification of CUB's tuning.
+Use a policy selector to freeze a good tuning you found over time.
