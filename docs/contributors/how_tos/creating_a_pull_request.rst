@@ -69,24 +69,18 @@ If the SASS changes are trivial, a follow-up benchmark may be waived.
 Manual SASS diffing
 --------------------------
 
-.. TODO(bgruber): I believe we have a script for this by now, we should refer to it in these instructions
+Run the same script CI uses, ``ci/sass/sass_diff.sh``, instead of comparing SASS by hand. It adds a
+worktree for each ref, builds the selected benchmark targets in both, dumps the disassembly of every
+built binary with ``cuobjdump -sass``, and compares the result:
 
-#. Identify the ``Device*`` algorithm(s) that may be affected by the change. This isn't always
-   straightforward, and you will need to confirm whether any of the CUB algorithms depend on components
-   modified by your changes. If your changes affect only certain GPU architectures, make sure those
-   architectures are included in the list of architectures used during compilation (for example, by
-   specifying them with the ``-arch`` flag when using the build scripts, or with
-   ``-DCMAKE_CUDA_ARCHITECTURES`` when building with CMake).
-#. Navigate to the build directory, compile the benchmarks for the specific ``Device*`` algorithm(s)
-   identified in step 1, and dump the SASS code. For example: ``ninja cub.bench.radix_sort.keys.base &&
-   cuobjdump -sass ./bin/cub.bench.radix_sort.keys.base |c++filt > ./radix_sort.keys_after.sass``.
-#. Check out the ``main`` branch to compare against the baseline SASS code:
-   ``git checkout $(git merge-base HEAD upstream/main)``
-#. Recompile and dump the SASS code emitted on the ``main`` branch. For example: ``ninja
-   cub.bench.radix_sort.keys.base && cuobjdump -sass ./bin/cub.bench.radix_sort.keys.base |c++filt >
-   ./radix_sort.keys_before.sass``.
-#. Check whether there are differences in the generated SASS output: ``git diff --text --no-index
-   --word-diff radix_sort.keys_before.sass radix_sort.keys_after.sass``
+.. code-block:: bash
+
+   ci/sass/sass_diff.sh origin/main HEAD -target-filter "^cub\.bench\.radix_sort\."
+
+Pass ``-arch`` to compare a specific architecture set; the ``cub-benchmark`` preset it uses otherwise
+defaults to ``native``. See ``ci/sass/sass_diff.sh -h`` for the full option list, including
+``-target-filter`` for narrowing which benchmarks to build, and the layout of the resulting
+``sass-artifacts/`` directory (raw dumps, normalized text, and per-architecture diffs).
 
 Benchmark
 --------------------------
