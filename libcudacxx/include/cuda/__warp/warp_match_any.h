@@ -120,8 +120,9 @@ warp_match_any(const _Tp& __data, const lane_mask __lane_mask = lane_mask::all()
     ::cuda::std::uint32_t __array[__ratio]{};
 
 #  if defined(_CCCL_BUILTIN_CLEAR_PADDING)
-    auto __data_copy      = ::cuda::std::__clear_padding(__data);
-    const auto __data_ptr = __data_copy.data();
+    auto __data_copy = ::cuda::std::__create_copy(__data);
+    ::cuda::std::__clear_padding(__data_copy);
+    const auto __data_ptr = ::cuda::std::addressof(__data_copy);
 #  else // ^^^ _CCCL_BUILTIN_CLEAR_PADDING ^^^ / vvv !_CCCL_BUILTIN_CLEAR_PADDING vvv
     static_assert(is_bitwise_comparable_v<_Tp>, "data must be bitwise comparable");
     const auto __data_ptr = ::cuda::std::addressof(__data);
