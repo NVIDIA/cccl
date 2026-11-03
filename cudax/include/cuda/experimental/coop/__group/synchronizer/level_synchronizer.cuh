@@ -178,7 +178,7 @@ struct __grid_workspace
   ::cuda::std::uint32_t __barrier_;
 };
 
-[[nodiscard]] _CCCL_CONST _CCCL_DEVICE inline __grid_workspace* __get_grid_workspace_ptr() noexcept
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE inline __grid_workspace* __get_grid_barrier_ptr() noexcept
 {
   __grid_workspace* __ret;
   asm("mov.b64 %0, {%%envreg2, %%envreg1};" : "=l"(__ret));
@@ -191,6 +191,15 @@ template <>
 struct level_synchronizer::__synchronizer_instance<grid_level>
 {
   using arrival_token _CCCL_NODEBUG = __int_arrival_token<::cuda::std::uint32_t, __synchronizer_instance<grid_level>>;
+
+  __grid_workspace* __grid_workspace_ptr_ = ::cuda::experimental::coop::__get_grid_barrier_ptr();
+
+  _CCCL_DEVICE_API ::cuda::std::uint32_t* __get_grid_barrier_ptr() const noexcept
+  {
+    _CCCL_ASSERT(__grid_workspace_ptr_ != nullptr,
+                 "Synchronizing grid requires the kernel to be launched using the cooperative launch.");
+    return &__grid_workspace_ptr_->__barrier_;
+  }
 
   template <class _MappingResult, class _Hierarchy>
   _CCCL_DEVICE_API void do_sync(const _MappingResult&, const _Hierarchy& __hier) const noexcept
@@ -207,11 +216,7 @@ struct level_synchronizer::__synchronizer_instance<grid_level>
   template <bool _Aligned, class _Hierarchy>
   _CCCL_DEVICE_API void __sync_impl(const _Hierarchy& __hier) const noexcept
   {
-    const auto __grid_workspace_ptr = ::cuda::experimental::coop::__get_grid_workspace_ptr();
-    _CCCL_ASSERT(__grid_workspace_ptr != nullptr,
-                 "Synchronizing grid requires the kernel to be launched using the cooperative launch.");
-
-    const auto __barrier_ptr = &__grid_workspace_ptr->__barrier_;
+    const auto __barrier_ptr = __get_grid_barrier_ptr();
 
     // Synchronize the block before synchronizing with the other blocks.
     ::cuda::experimental::coop::__block_sync<_Aligned>();
@@ -257,11 +262,7 @@ struct level_synchronizer::__synchronizer_instance<grid_level>
   template <bool _Aligned, class _Hierarchy>
   _CCCL_DEVICE_API arrival_token __arrive_impl(const _Hierarchy& __hier) const noexcept
   {
-    const auto __grid_workspace_ptr = ::cuda::experimental::coop::__get_grid_workspace_ptr();
-    _CCCL_ASSERT(__grid_workspace_ptr != nullptr,
-                 "Synchronizing grid requires the kernel to be launched using the cooperative launch.");
-
-    const auto __barrier_ptr = &__grid_workspace_ptr->__barrier_;
+    const auto __barrier_ptr = __get_grid_barrier_ptr();
 
     // Synchronize the block before synchronizing with the other blocks.
     ::cuda::experimental::coop::__block_sync<_Aligned>();
@@ -307,10 +308,9 @@ struct level_synchronizer::__synchronizer_instance<grid_level>
   }
 
   template <bool _Aligned, class _Hierarchy>
-  _CCCL_DEVICE_API void __wait_impl(const _Hierarchy& __hier, arrival_token&& __tok) const noexcept
+  _CCCL_DEVICE_API void __wait_impl(const _Hierarchy& __hier, ::cuda::std::uint32_t __old_barrier_value) const noexcept
   {
-    const auto __old_barrier_value = __tok.__value();
-    const auto __barrier_ptr       = &::cuda::experimental::coop::__get_grid_workspace_ptr()->__barrier_;
+    const auto __barrier_ptr = __get_grid_barrier_ptr();
 
     // Synchronize with other blocks using the thread 0 in block.
     const auto __thread_idx = gpu_thread.index(block, __hier);
@@ -334,14 +334,14 @@ struct level_synchronizer::__synchronizer_instance<grid_level>
   template <class _MappingResult, class _Hierarchy>
   _CCCL_DEVICE_API void do_wait(const _MappingResult&, const _Hierarchy& __hier, arrival_token&& __tok) const noexcept
   {
-    __wait_impl<false>(__hier, ::cuda::std::move(__tok));
+    __wait_impl<false>(__hier, __tok.__value());
   }
 
   template <class _MappingResult, class _Hierarchy>
   _CCCL_DEVICE_API void
   do_wait_aligned(const _MappingResult&, const _Hierarchy& __hier, arrival_token&& __tok) const noexcept
   {
-    __wait_impl<true>(__hier, ::cuda::std::move(__tok));
+    __wait_impl<true>(__hier, __tok.__value());
   }
 
   template <class _MappingResult, class _Hierarchy>
