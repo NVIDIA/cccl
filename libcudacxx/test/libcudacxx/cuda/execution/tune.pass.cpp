@@ -60,12 +60,37 @@ template <class Env, class Key>
 inline constexpr bool has_tuning_for_v =
   stdexec::__queryable_with<stdexec::__query_result_t<Env, cuda::execution::__get_tuning_t>, Key>;
 
+// a policy transformer taking the policy by const reference
+struct reduce_policy_transformer
+{
+  TEST_FUNC constexpr auto operator()(cuda::compute_capability, const reduce_policy& policy) const -> reduce_policy
+  {
+    return {policy.threads_per_block * 2};
+  }
+};
+
 TEST_FUNC void test_transformers()
 {
   // a transformer is registered for the policy it returns
   using env_t = decltype(cuda::execution::tune(scan_policy_transformer{}));
   static_assert(cuda::std::is_same_v<tuning_for_t<env_t, scan_policy>, scan_policy_transformer>);
   static_assert(!has_tuning_for_v<env_t, reduce_policy>);
+
+  // the registered transformer modifies the policy it receives
+  static_assert(
+    tuning_for_t<env_t, scan_policy>{}(cuda::compute_capability{7, 5}, scan_policy{}).threads_per_block == 7);
+
+  // a transformer can take the policy by const reference
+  using const_ref_env_t = decltype(cuda::execution::tune(reduce_policy_transformer{}));
+  static_assert(cuda::std::is_same_v<tuning_for_t<const_ref_env_t, reduce_policy>, reduce_policy_transformer>);
+  static_assert(
+    tuning_for_t<const_ref_env_t, reduce_policy>{}(cuda::compute_capability{7, 5}, reduce_policy{64}).threads_per_block
+    == 128);
+
+  // transformers for different policies can be combined
+  using two_env_t = decltype(cuda::execution::tune(scan_policy_transformer{}, reduce_policy_transformer{}));
+  static_assert(cuda::std::is_same_v<tuning_for_t<two_env_t, scan_policy>, scan_policy_transformer>);
+  static_assert(cuda::std::is_same_v<tuning_for_t<two_env_t, reduce_policy>, reduce_policy_transformer>);
 
   // a transformer can be combined with a selector
   using mixed_env_t = decltype(cuda::execution::tune(scan_policy_transformer{}, reduce_policy_selector<256, int>{}));
