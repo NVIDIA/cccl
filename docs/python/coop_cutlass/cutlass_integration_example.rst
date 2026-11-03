@@ -267,9 +267,7 @@ bookkeeping a library needs:
   Store passes each item as a scalar argument.
 * **Artifacts.** The LTO-IR is cached on disk under a key that includes the
   rendered source, header identity, compiler options, and architecture; a
-  cache hit skips NVRTC and still supplies the recorded layouts. Stale
-  provider paths are removed from the DSL's persistent ``LinkLibraries``
-  option before the current bundle is attached.
+  cache hit skips NVRTC and still supplies the recorded layouts.
 * **Toolkit binding.** The NVRTC and nvJitLink libraries are preloaded from
   the toolkit that owns the selected headers, and the NVRTC version is
   checked before compilation.
@@ -298,13 +296,10 @@ Questions for CUTLASS reviewers
    link. Should the ``func.func`` prototype or call carry attributes such as
    ``convergent`` or ``noinline``, and does ``cute.ffi(inline=...)`` express
    that?
-6. ``_merge_gpu_link_libraries`` appends to a compile option that persists
-   across traces. The package removes its own paths before each trace.
-   Would the DSL prefer to reset that option per trace itself?
-7. The probe template leaves a weak one-byte ``__device__`` symbol in the
+6. The probe template leaves a weak one-byte ``__device__`` symbol in the
    cubin. Is there a cleaner way to obtain ``sizeof`` and ``alignof`` from
    an NVRTC compilation that CuTe will consume?
-8. Are there constraints on the NVRTC version that produces the LTO-IR
+7. Are there constraints on the NVRTC version that produces the LTO-IR
    relative to the LLVM and nvJitLink used by the DSL? The package
    binds NVRTC to the toolkit that supplies the CUDA runtime headers and
    checks its version, but the compatibility rule itself is not documented.
