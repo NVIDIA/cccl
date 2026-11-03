@@ -32,6 +32,7 @@
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
+#  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__utility/pair.h>
@@ -182,23 +183,33 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> reduce_b
 
   size_type num_items = ::cuda::std::distance(keys_first, keys_last);
 
-  ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> result_end = ::cuda::std::make_pair(keys_output, values_output);
+  if (num_items == 0)
+  {
+    return ::cuda::std::make_pair(keys_output, values_output);
+  }
+
+  // Pass raw pointers for contiguous iterators, so we instantiate the same kernels as cub::DeviceReduce::ReduceByKey
+  auto keys_in_unwrap    = thrust::try_unwrap_contiguous_iterator(keys_first);
+  auto values_in_unwrap  = thrust::try_unwrap_contiguous_iterator(values_first);
+  auto keys_out_unwrap   = thrust::try_unwrap_contiguous_iterator(keys_output);
+  auto values_out_unwrap = thrust::try_unwrap_contiguous_iterator(values_output);
+  using keys_in_t        = decltype(keys_in_unwrap);
+  using values_in_t      = decltype(values_in_unwrap);
+  using keys_out_t       = decltype(keys_out_unwrap);
+  using values_out_t     = decltype(values_out_unwrap);
+
+  ::cuda::std::pair<keys_out_t, values_out_t> result_end = ::cuda::std::make_pair(keys_out_unwrap, values_out_unwrap);
 
   cudaError_t status                     = cudaSuccess;
   ::cuda::std::size_t temp_storage_bytes = 0;
 
-  if (num_items == 0)
-  {
-    return result_end;
-  }
-
   // 32-bit offset-type dispatch
   using dispatch32_t = dispatch_reduce_by_key<
     Derived,
-    KeysInputIt,
-    ValuesInputIt,
-    KeysOutputIt,
-    ValuesOutputIt,
+    keys_in_t,
+    values_in_t,
+    keys_out_t,
+    values_out_t,
     ::cuda::std::uint32_t,
     EqualityOp,
     ReductionOp>;
@@ -206,10 +217,10 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> reduce_b
   // 64-bit offset-type dispatch
   using dispatch64_t = dispatch_reduce_by_key<
     Derived,
-    KeysInputIt,
-    ValuesInputIt,
-    KeysOutputIt,
-    ValuesOutputIt,
+    keys_in_t,
+    values_in_t,
+    keys_out_t,
+    values_out_t,
     ::cuda::std::uint64_t,
     EqualityOp,
     ReductionOp>;
@@ -223,10 +234,10 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> reduce_b
     (policy,
      nullptr,
      temp_storage_bytes,
-     keys_first,
-     values_first,
-     keys_output,
-     values_output,
+     keys_in_unwrap,
+     values_in_unwrap,
+     keys_out_unwrap,
+     values_out_unwrap,
      num_items_fixed,
      equality_op,
      reduction_op,
@@ -246,17 +257,18 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> reduce_b
     (policy,
      temp_storage,
      temp_storage_bytes,
-     keys_first,
-     values_first,
-     keys_output,
-     values_output,
+     keys_in_unwrap,
+     values_in_unwrap,
+     keys_out_unwrap,
+     values_out_unwrap,
      num_items_fixed,
      equality_op,
      reduction_op,
      result_end));
   cuda_cub::throw_on_error(status, "reduce_by_key: failed on 2nd step");
 
-  return result_end;
+  return ::cuda::std::make_pair(
+    keys_output + (result_end.first - keys_out_unwrap), values_output + (result_end.second - values_out_unwrap));
 }
 } // namespace detail
 
