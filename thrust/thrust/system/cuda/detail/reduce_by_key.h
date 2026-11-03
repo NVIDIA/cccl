@@ -66,101 +66,97 @@ template <typename Derived,
           typename ValuesOutputIt,
           typename OffsetT,
           typename EqualityOp,
-          typename ReductionOp>
-struct dispatch_reduce_by_key
+          typename ReductionOp,
+          typename NumSelectedT>
+THRUST_RUNTIME_FUNCTION cudaError_t dispatch_reduce_by_key(
+  execution_policy<Derived>& policy,
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  KeysInputIt keys_first,
+  ValuesInputIt values_first,
+  KeysOutputIt keys_output,
+  ValuesOutputIt values_output,
+  OffsetT num_items,
+  EqualityOp equality_op,
+  ReductionOp reduction_op,
+  NumSelectedT& num_selected)
 {
-  static cudaError_t THRUST_RUNTIME_FUNCTION dispatch(
-    execution_policy<Derived>& policy,
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeysInputIt keys_first,
-    ValuesInputIt values_first,
-    KeysOutputIt keys_output,
-    ValuesOutputIt values_output,
-    OffsetT num_items,
-    EqualityOp equality_op,
-    ReductionOp reduction_op,
-    ::cuda::std::pair<KeysOutputIt, ValuesOutputIt>& result_end)
+  cudaError_t status         = cudaSuccess;
+  cudaStream_t stream        = cuda_cub::stream(policy);
+  size_t allocation_sizes[2] = {0, sizeof(OffsetT)};
+  void* allocations[2]{nullptr, nullptr};
+
+  // TODO(bgruber): remove the accum_t customization in CCCL 4.0
+  // Accumulator type for compatibility with old thrust::reduce_by_key behavior.
+  using accum_t              = thrust::detail::it_value_t<ValuesInputIt>;
+  using num_uniques_out_it_t = OffsetT*;
+
+  // Query algorithm memory requirements
+  status = cub::detail::reduce_by_key::dispatch<
+    KeysInputIt,
+    KeysOutputIt,
+    ValuesInputIt,
+    ValuesOutputIt,
+    num_uniques_out_it_t,
+    EqualityOp,
+    ReductionOp,
+    OffsetT,
+    accum_t>(
+    nullptr,
+    allocation_sizes[0],
+    keys_first,
+    keys_output,
+    values_first,
+    values_output,
+    static_cast<num_uniques_out_it_t>(nullptr),
+    equality_op,
+    reduction_op,
+    num_items,
+    stream);
+  _CUDA_CUB_RET_IF_FAIL(status);
+
+  status = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+  _CUDA_CUB_RET_IF_FAIL(status);
+
+  // Return if we're only querying temporary storage requirements
+  if (d_temp_storage == nullptr)
   {
-    cudaError_t status         = cudaSuccess;
-    cudaStream_t stream        = cuda_cub::stream(policy);
-    size_t allocation_sizes[2] = {0, sizeof(OffsetT)};
-    void* allocations[2]{nullptr, nullptr};
-
-    // TODO(bgruber): remove the accum_t customization in CCCL 4.0
-    // Accumulator type for compatibility with old thrust::reduce_by_key behavior.
-    using accum_t              = thrust::detail::it_value_t<ValuesInputIt>;
-    using num_uniques_out_it_t = OffsetT*;
-
-    // Query algorithm memory requirements
-    status = cub::detail::reduce_by_key::dispatch<
-      KeysInputIt,
-      KeysOutputIt,
-      ValuesInputIt,
-      ValuesOutputIt,
-      num_uniques_out_it_t,
-      EqualityOp,
-      ReductionOp,
-      OffsetT,
-      accum_t>(
-      nullptr,
-      allocation_sizes[0],
-      keys_first,
-      keys_output,
-      values_first,
-      values_output,
-      static_cast<num_uniques_out_it_t>(nullptr),
-      equality_op,
-      reduction_op,
-      num_items,
-      stream);
-    _CUDA_CUB_RET_IF_FAIL(status);
-
-    status = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-    _CUDA_CUB_RET_IF_FAIL(status);
-
-    // Return if we're only querying temporary storage requirements
-    if (d_temp_storage == nullptr)
-    {
-      return status;
-    }
-
-    // Memory allocation for the number of selected output items
-    auto d_num_unique_keys_out = thrust::detail::aligned_reinterpret_cast<num_uniques_out_it_t>(allocations[1]);
-
-    // Run algorithm
-    status = cub::detail::reduce_by_key::dispatch<
-      KeysInputIt,
-      KeysOutputIt,
-      ValuesInputIt,
-      ValuesOutputIt,
-      num_uniques_out_it_t,
-      EqualityOp,
-      ReductionOp,
-      OffsetT,
-      accum_t>(
-      allocations[0],
-      allocation_sizes[0],
-      keys_first,
-      keys_output,
-      values_first,
-      values_output,
-      d_num_unique_keys_out,
-      equality_op,
-      reduction_op,
-      num_items,
-      stream);
-    _CUDA_CUB_RET_IF_FAIL(status);
-
-    // Get number of selected items
-    status = cuda_cub::synchronize(policy);
-    _CUDA_CUB_RET_IF_FAIL(status);
-    OffsetT num_selected = get_value(policy, d_num_unique_keys_out);
-
-    result_end = ::cuda::std::make_pair(keys_output + num_selected, values_output + num_selected);
     return status;
   }
-};
+
+  // Memory allocation for the number of selected output items
+  auto d_num_unique_keys_out = thrust::detail::aligned_reinterpret_cast<num_uniques_out_it_t>(allocations[1]);
+
+  // Run algorithm
+  status = cub::detail::reduce_by_key::dispatch<
+    KeysInputIt,
+    KeysOutputIt,
+    ValuesInputIt,
+    ValuesOutputIt,
+    num_uniques_out_it_t,
+    EqualityOp,
+    ReductionOp,
+    OffsetT,
+    accum_t>(
+    allocations[0],
+    allocation_sizes[0],
+    keys_first,
+    keys_output,
+    values_first,
+    values_output,
+    d_num_unique_keys_out,
+    equality_op,
+    reduction_op,
+    num_items,
+    stream);
+  _CUDA_CUB_RET_IF_FAIL(status);
+
+  // Get number of selected items
+  status = cuda_cub::synchronize(policy);
+  _CUDA_CUB_RET_IF_FAIL(status);
+  num_selected = static_cast<NumSelectedT>(get_value(policy, d_num_unique_keys_out));
+  return status;
+}
 
 template <typename Derived,
           typename KeysInputIt,
@@ -179,57 +175,27 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> reduce_b
   EqualityOp equality_op,
   ReductionOp reduction_op)
 {
-  using size_type = thrust::detail::it_difference_t<KeysInputIt>;
-
+  using size_type     = thrust::detail::it_difference_t<KeysInputIt>;
   size_type num_items = ::cuda::std::distance(keys_first, keys_last);
-
   if (num_items == 0)
   {
     return ::cuda::std::make_pair(keys_output, values_output);
   }
 
-  // Pass raw pointers for contiguous iterators, so we instantiate the same kernels as cub::DeviceReduce::ReduceByKey
+  // Pass raw pointers for contiguous iterators, this saves some registers
   auto keys_in_unwrap    = thrust::try_unwrap_contiguous_iterator(keys_first);
   auto values_in_unwrap  = thrust::try_unwrap_contiguous_iterator(values_first);
   auto keys_out_unwrap   = thrust::try_unwrap_contiguous_iterator(keys_output);
   auto values_out_unwrap = thrust::try_unwrap_contiguous_iterator(values_output);
-  using keys_in_t        = decltype(keys_in_unwrap);
-  using values_in_t      = decltype(values_in_unwrap);
-  using keys_out_t       = decltype(keys_out_unwrap);
-  using values_out_t     = decltype(values_out_unwrap);
 
-  ::cuda::std::pair<keys_out_t, values_out_t> result_end = ::cuda::std::make_pair(keys_out_unwrap, values_out_unwrap);
-
+  size_type num_selected                 = 0;
   cudaError_t status                     = cudaSuccess;
   ::cuda::std::size_t temp_storage_bytes = 0;
 
-  // 32-bit offset-type dispatch
-  using dispatch32_t = dispatch_reduce_by_key<
-    Derived,
-    keys_in_t,
-    values_in_t,
-    keys_out_t,
-    values_out_t,
-    ::cuda::std::uint32_t,
-    EqualityOp,
-    ReductionOp>;
-
-  // 64-bit offset-type dispatch
-  using dispatch64_t = dispatch_reduce_by_key<
-    Derived,
-    keys_in_t,
-    values_in_t,
-    keys_out_t,
-    values_out_t,
-    ::cuda::std::uint64_t,
-    EqualityOp,
-    ReductionOp>;
-
   // Query temporary storage requirements
-  THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+  THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
     status,
-    dispatch32_t::dispatch,
-    dispatch64_t::dispatch,
+    dispatch_reduce_by_key,
     num_items,
     (policy,
      nullptr,
@@ -241,7 +207,7 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> reduce_b
      num_items_fixed,
      equality_op,
      reduction_op,
-     result_end));
+     num_selected));
   cuda_cub::throw_on_error(status, "reduce_by_key: failed on 1st step");
 
   // Allocate temporary storage.
@@ -249,10 +215,9 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> reduce_b
   void* temp_storage = static_cast<void*>(tmp.data().get());
 
   // Run algorithm
-  THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+  THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
     status,
-    dispatch32_t::dispatch,
-    dispatch64_t::dispatch,
+    dispatch_reduce_by_key,
     num_items,
     (policy,
      temp_storage,
@@ -264,11 +229,10 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> reduce_b
      num_items_fixed,
      equality_op,
      reduction_op,
-     result_end));
+     num_selected));
   cuda_cub::throw_on_error(status, "reduce_by_key: failed on 2nd step");
 
-  return ::cuda::std::make_pair(
-    keys_output + (result_end.first - keys_out_unwrap), values_output + (result_end.second - values_out_unwrap));
+  return ::cuda::std::make_pair(keys_output + num_selected, values_output + num_selected);
 }
 } // namespace detail
 
