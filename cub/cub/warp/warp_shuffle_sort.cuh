@@ -28,10 +28,13 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 //! @rst
-//! WarpShuffleSort sorts keys in a blocked arrangement across a warp.
+//! WarpShuffleSort sorts keys in a blocked arrangement across a logical warp.
 //!
-//! All 32 lanes must invoke the collective. Sorting is not stable: the order of equivalent keys is unspecified. The
-//! comparison must have strict weak ordering.
+//! Each warp is partitioned into aligned groups of LogicalWarpThreads consecutive lanes. All lanes in a
+//! logical warp must invoke the collective with the same strict weak ordering.
+//! When AllLanesActive == true, all 32 lanes of the warp must invoke the same collective.
+//! With AllLanesActive == false, each logical warp can execute the collective independently.
+//! Sorting is not stable: the order of equivalent keys is unspecified.
 //!
 //! The algorithm requires no shared-memory scratch or associated initialization. Larger per-thread arrays can incur
 //! compiler spills to local memory.
@@ -54,7 +57,8 @@ namespace detail
 //!    }
 //!
 //! Both input and output use a :ref:`blocked arrangement <flexible-data-arrangement>`:
-//! rank ``lane * ItemsPerThread + i`` belongs to that lane's ``keys[i]``.
+//! rank ``lane * ItemsPerThread + i`` belongs to that lane's ``keys[i]``, where ``lane`` is relative to the logical
+//! warp. For example, ``WarpShuffleSort<int, 2, 8>`` independently sorts 16 keys in each aligned group of eight lanes.
 //!
 //! @endrst
 //!
@@ -62,14 +66,23 @@ namespace detail
 //!   Key type. Must be default constructible and trivially copyable.
 //! @tparam ItemsPerThread
 //!   Number of keys per thread. Must be a power of two.
-template <typename KeyT, int ItemsPerThread>
+//! @tparam LogicalWarpThreads
+//!   Number of threads per logical warp. Must be 1, 2, 4, 8, 16, or 32. Defaults to 32.
+//! @tparam AllLanesActive
+//!   Whether all 32 hardware warp lanes participate. Defaults to true, using a full shuffle mask. Set to false to allow
+//!   independent participation by logical warps, using a logical warp mask.
+template <typename KeyT, int ItemsPerThread, int LogicalWarpThreads = warp_threads, bool AllLanesActive = true>
 class WarpShuffleSort
 {
-  // TODO(fbusato): Support power-of-two logical warp sizes.
+  static_assert(LogicalWarpThreads > 0 && LogicalWarpThreads <= warp_threads
+                  && ::cuda::is_power_of_two(LogicalWarpThreads),
+                "LogicalWarpThreads must be a power of two between 1 and 32");
   static_assert(ItemsPerThread > 0 && ::cuda::is_power_of_two(ItemsPerThread),
                 "ItemsPerThread must be a positive power of two");
   static_assert(::cuda::std::is_default_constructible_v<KeyT> && ::cuda::is_trivially_copyable_v<KeyT>,
                 "KeyT must be default constructible and trivially copyable");
+
+  const unsigned member_mask = AllLanesActive ? 0xFFFFFFFFu : CUB_NS_QUALIFIER::detail::warp_mask<LogicalWarpThreads>();
 
   // Select the earlier key for a lower position or the later key for an upper position
   template <typename CompareOp>
@@ -83,8 +96,8 @@ class WarpShuffleSort
   }
 
   template <int Distance, typename CompareOp>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE static void
-  merge_lanes(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, const int lane)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  merge_lanes(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, const int lane) const
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int distance = Distance; distance > 0; distance /= 2)
@@ -93,7 +106,7 @@ class WarpShuffleSort
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < ItemsPerThread; ++i)
       {
-        const KeyT other = ::cuda::device::warp_shuffle_xor(keys[i], distance);
+        const KeyT other = ::cuda::device::warp_shuffle_xor<LogicalWarpThreads>(keys[i], distance, member_mask);
         keys[i]          = choose(keys[i], other, lower, compare_op);
       }
     }
@@ -120,8 +133,7 @@ class WarpShuffleSort
   //   Group: size of the lanes that cooperate.
   //   Assumption: The input is already sorted
   template <int Group, typename CompareOp>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE static void
-  merge(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, const int lane)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void merge(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, const int lane) const
   {
     KeyT next[ItemsPerThread];
     const bool lower = (lane & (Group / 2)) == 0; // if a lane is in the lower or upper half of the group
@@ -129,8 +141,9 @@ class WarpShuffleSort
     for (int i = 0; i < ItemsPerThread; ++i)
     {
       const int reverse_index = ItemsPerThread - 1 - i; // opposite side of the array
-      const KeyT other_key    = ::cuda::device::warp_shuffle_xor(keys[reverse_index], Group - 1);
-      next[i]                 = choose(keys[i], other_key, lower, compare_op);
+      const KeyT other_key =
+        ::cuda::device::warp_shuffle_xor<LogicalWarpThreads>(keys[reverse_index], Group - 1, member_mask);
+      next[i] = choose(keys[i], other_key, lower, compare_op);
     }
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
@@ -147,23 +160,38 @@ public:
   struct TempStorage // Empty storage (unneeded)
   {};
 
-  WarpShuffleSort() = default;
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpShuffleSort() {}
 
   explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpShuffleSort(TempStorage&) {}
 
   // Each thread first sorts its registers using an unstable pairwise sorting network.
-  // Bitonic merges then combine groups of 2, 4, 8, 16, and 32 threads, communicating through warp shuffles.
+  // Bitonic merges then combine groups of 2, 4, ..., LogicalWarpThreads threads through warp shuffles.
   template <typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op) const
   {
     NullType values[ItemsPerThread];
     CUB_NS_QUALIFIER::UnstablePairwiseSort(keys, values, compare_op);
-    const int lane = CUB_NS_QUALIFIER::detail::logical_lane_id<warp_threads>();
-    merge<2>(keys, compare_op, lane);
-    merge<4>(keys, compare_op, lane);
-    merge<8>(keys, compare_op, lane);
-    merge<16>(keys, compare_op, lane);
-    merge<32>(keys, compare_op, lane);
+    if constexpr (LogicalWarpThreads > 1)
+    {
+      const int lane = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
+      merge<2>(keys, compare_op, lane);
+      if constexpr (LogicalWarpThreads >= 4)
+      {
+        merge<4>(keys, compare_op, lane);
+      }
+      if constexpr (LogicalWarpThreads >= 8)
+      {
+        merge<8>(keys, compare_op, lane);
+      }
+      if constexpr (LogicalWarpThreads >= 16)
+      {
+        merge<16>(keys, compare_op, lane);
+      }
+      if constexpr (LogicalWarpThreads == 32)
+      {
+        merge<32>(keys, compare_op, lane);
+      }
+    }
   }
 };
 } // namespace detail
