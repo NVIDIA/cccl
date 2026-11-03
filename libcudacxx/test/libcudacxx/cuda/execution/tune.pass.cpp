@@ -12,6 +12,8 @@
 
 #include "test_macros.h"
 
+namespace stdexec = cuda::std::execution;
+
 struct reduce_policy
 {
   int threads_per_block;
@@ -52,13 +54,11 @@ struct scan_policy_transformer
 // the tuning registered in the environment created by tune for the given key
 template <class Env, class Key>
 using tuning_for_t = cuda::std::remove_cvref_t<
-  cuda::std::execution::__query_result_t<cuda::std::execution::__query_result_t<Env, cuda::execution::__get_tuning_t>,
-                                         Key>>;
+  stdexec::__query_result_t<stdexec::__query_result_t<Env, cuda::execution::__get_tuning_t>, Key>>;
 
 template <class Env, class Key>
 inline constexpr bool has_tuning_for_v =
-  cuda::std::execution::__queryable_with<cuda::std::execution::__query_result_t<Env, cuda::execution::__get_tuning_t>,
-                                         Key>;
+  stdexec::__queryable_with<stdexec::__query_result_t<Env, cuda::execution::__get_tuning_t>, Key>;
 
 TEST_FUNC void test_transformers()
 {
@@ -80,9 +80,9 @@ TEST_FUNC void test()
 
   using env_t =
     decltype(cuda::execution::tune(reduce_policy_selector<nominal_threads_per_block, int>{}, scan_policy_selector{}));
-  using tuning_t        = cuda::std::execution::__query_result_t<env_t, cuda::execution::__get_tuning_t>;
-  using reduce_policy_t = cuda::std::execution::__query_result_t<tuning_t, reduce_policy>;
-  using scan_policy_t   = cuda::std::execution::__query_result_t<tuning_t, scan_policy>;
+  using tuning_t        = stdexec::__query_result_t<env_t, cuda::execution::__get_tuning_t>;
+  using reduce_policy_t = stdexec::__query_result_t<tuning_t, reduce_policy>;
+  using scan_policy_t   = stdexec::__query_result_t<tuning_t, scan_policy>;
 
   static_assert(reduce_policy_t{}(cuda::compute_capability{7, 5}).threads_per_block == threads_per_block);
   static_assert(scan_policy_t{}(cuda::compute_capability{7, 5}).threads_per_block == 1);
