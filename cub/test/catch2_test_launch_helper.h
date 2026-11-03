@@ -133,7 +133,7 @@ inline void execute_and_destroy_graph(cudaGraph_t graph, cuda::stream_ref stream
   REQUIRE(cudaSuccess == cudaGraphDestroy(graph));
 }
 
-template <bool HasStream, class ActionT, class... Args>
+template <bool /* HasStream */, class ActionT, class... Args>
 void launch_impl(cuda::stream_ref stream, ActionT action, Args... args)
 {
   cuda::stream owning_capture_stream{cuda::no_init};
@@ -143,19 +143,19 @@ void launch_impl(cuda::stream_ref stream, ActionT action, Args... args)
     owning_capture_stream = c2h::make_current_device_stream();
     capture_stream        = owning_capture_stream;
   }
+  const auto capture_sh = capture_stream.get();
 
   std::size_t temp_storage_bytes{};
-  cudaError_t error = action(nullptr, temp_storage_bytes, args..., capture_stream.get());
+  cudaError_t error = action(nullptr, temp_storage_bytes, args..., capture_sh);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == error);
 
-  auto temp_storage = c2h::make_device_buffer<cuda::std::uint8_t>(
-    capture_stream, c2h::current_device(), temp_storage_bytes, cuda::no_init);
+  auto temp_storage = c2h::make_device_buffer<cuda::std::uint8_t>(capture_stream, temp_storage_bytes, cuda::no_init);
 
   cudaGraph_t graph{};
-  REQUIRE(cudaSuccess == cudaStreamBeginCapture(capture_stream.get(), cudaStreamCaptureModeGlobal));
-  error = action(temp_storage.data(), temp_storage_bytes, args..., capture_stream.get());
-  REQUIRE(cudaSuccess == cudaStreamEndCapture(capture_stream.get(), &graph));
+  REQUIRE(cudaSuccess == cudaStreamBeginCapture(capture_sh, cudaStreamCaptureModeGlobal));
+  error = action(temp_storage.data(), temp_storage_bytes, args..., capture_sh);
+  REQUIRE(cudaSuccess == cudaStreamEndCapture(capture_sh, &graph));
   REQUIRE(cudaSuccess == error);
 
   // Launch on the requested stream, preserving ordering with the caller's preparation.
