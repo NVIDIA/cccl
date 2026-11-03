@@ -418,10 +418,9 @@ with the kernel's own LTO-IR. The link can inline the wrapper into the
 kernel; the runtime tests confirm with ``cuobjdump`` that no call or
 provider symbol remains in the final cubin.
 
-The DSL appends each path to a compile option that outlives one trace.
-``_compiler/_finalize.py`` therefore removes provider-managed paths from
-that option before attaching the current one, so a later kernel cannot link
-a stale bundle. The ``DeviceTarget`` compile mode, which compiles a
+The CUTLASS 4.9 candidate copies compile options for each invocation, so
+adding a module's link libraries does not mutate the reusable option
+template. The ``DeviceTarget`` compile mode, which compiles a
 ``@cute.jit`` function as a device function for export, rejects
 ``link-libraries``; ``cuda.coop.cutlass`` targets the default host-plus-kernel
 compilation.
