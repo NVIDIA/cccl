@@ -87,6 +87,6 @@ struct tuple_size<_CUB::detail::warpspeed::SmemPhaseStructuredBinding<Tp, NumPha
 template <typename Tp, size_t Index, ::cuda::std::size_t NumPhases>
 struct tuple_element<Index, _CUB::detail::warpspeed::SmemPhaseStructuredBinding<Tp, NumPhases>>
 {
-  using type _CCCL_NODEBUG = CUB_NS_QUALIFIER::detail::warpspeed::SmemPhase<Tp>;
+  using type _CCCL_NODEBUG = _CUB::detail::warpspeed::SmemPhase<Tp>;
 };
 } // namespace std

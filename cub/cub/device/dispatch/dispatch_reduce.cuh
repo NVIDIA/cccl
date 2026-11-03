@@ -669,7 +669,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
 {
   using offset_t = num_items_offset_t<OffsetT>;
 
-  const auto kernel_num_items = CUB_NS_QUALIFIER::detail::make_num_items_kernel_arg(num_items);
+  const auto kernel_num_items = _CUB::detail::make_num_items_kernel_arg(num_items);
 
   // Get SM count
   int sm_count = 0;
