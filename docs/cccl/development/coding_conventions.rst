@@ -219,40 +219,25 @@ CUB and Thrust
 #. Non-public entities, except macros, should be put inside a ``detail`` namespace (preferred)
    or prefixed with ``__``.
    Non-public macros should be prefixed with ``_``.
-#. Any full qualification of a CUB or Thrust entity must use ``THRUST_NS_QUALIFIER::`` instead of ``::thrust::``,
-   and ``CUB_NS_QUALIFIER::`` instead of ``::cub::``.
-   This avoids lookup failures when a user defines a wrapped namespace.
-   Inside CUB headers, ``_CUB::`` may be used as a shorthand for ``CUB_NS_QUALIFIER::``.
 
 CUB
 ----
 
 #. Entities in the public API, which are not macros, must be written in ``PascalCase``
    to stay consistent with existing practice.
-#. Always fully qualify calls to free functions in CUB headers, including functions in ``cub::detail``
-   and functions in the same namespace as the caller, to avoid ADL.
-   Use ``_CUB::`` as shorthand for ``CUB_NS_QUALIFIER::``,
-   e.g. ``_CUB::detail::dispatch(...)`` or ``_CUB::ThreadLoad<LOAD_CG>(ptr)``.
-   This also applies to calls inside templates and kernels, and to partially qualified calls such as ``detail::foo(...)``.
-   This does not apply to examples, tests, benchmarks, and documentation.
-   The following calls stay unqualified:
-
-   * Calls to member functions, including static ones, from within their class,
-     and calls through objects, e.g. lambdas, function objects, or callable parameters.
-   * Calls to macros and CUDA built-ins, e.g. ``CubDebug(...)``, ``__syncthreads()``, ``atomicAdd(...)``.
-   * Intentional ADL customization points, e.g. ``swap`` or ``get``,
-     which must follow a preceding using declaration, e.g. ``using ::cuda::std::swap;``.
-
-#. A qualified call is looked up where it is written, even inside a template.
-   The header declaring the called function must therefore be included before the call.
 #. Unit tests must use ``c2h::[host|device]_vector`` as containers over Thrust vectors,
    since they handle OOM conditions gracefully on some testing systems.
 #. Header files use ``.cuh`` as file extension
+#. Always fully qualify calls to free functions, even to functions in the same namespace. This avoids ADL.
+   Use ``_CUB::`` instead of ``::cub::`` for the top level CUB namespace.
+   This does not apply to examples, tests, benchmarks, and documentation.
 
 Thrust
 ------
 
 #. Header files use ``.h`` as file extension
+#. Any full qualification of a Thrust entity must use ``THRUST_NS_QUALIFIER::`` instead of ``::thrust::``.
+   This avoids lookup failures when a user defines a wrapped namespace.
 
 Licensing
 ---------
