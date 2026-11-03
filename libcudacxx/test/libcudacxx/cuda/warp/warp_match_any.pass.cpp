@@ -17,6 +17,7 @@
 #include <cuda/std/cstring>
 #include <cuda/warp>
 
+#include "clear_padding_test_helpers.h"
 #include "test_macros.h"
 
 TEST_DEVICE_FUNC uint32_t make_low_mask(unsigned count)
@@ -103,16 +104,11 @@ TEST_DEVICE_FUNC void test_array()
   }
 }
 
-struct WithPadding
-{
-  int a;
-  char b;
-};
-
 #if defined(_CCCL_BUILTIN_CLEAR_PADDING)
+template <class T>
 TEST_DEVICE_FUNC void test_padded_array()
 {
-  WithPadding value[2][2];
+  T value[2][2];
   cuda::std::memset(value, static_cast<int>(threadIdx.x), sizeof(value));
   for (auto& row : value)
   {
@@ -124,11 +120,13 @@ TEST_DEVICE_FUNC void test_padded_array()
   }
   unsigned char original[sizeof(value)];
   cuda::std::memcpy(original, value, sizeof(value));
+  assert(cuda::device::warp_match_any(value[0][0]) == cuda::device::lane_mask::all());
   assert(cuda::device::warp_match_any(value) == cuda::device::lane_mask::all());
   assert(cuda::std::memcmp(original, value, sizeof(value)) == 0);
 
   value[1][1].b = static_cast<char>(threadIdx.x % 2);
   auto expected = cuda::device::lane_mask{make_stride_mask(32, 2, threadIdx.x % 2)};
+  assert(cuda::device::warp_match_any(value[1][1]) == expected);
   assert(cuda::device::warp_match_any(value) == expected);
 }
 #endif // _CCCL_BUILTIN_CLEAR_PADDING
@@ -161,7 +159,8 @@ TEST_DEVICE_FUNC void test()
   test_array<unsigned char[3]>();
   test_array<uint32_t[2][3]>();
 #if defined(_CCCL_BUILTIN_CLEAR_PADDING)
-  test_padded_array();
+  test_padded_array<WithPadding>();
+  test_padded_array<RelaxedWithPadding>();
 #endif // _CCCL_BUILTIN_CLEAR_PADDING
   test_match_any_bits<1>();
   test_match_any_bits<4>();

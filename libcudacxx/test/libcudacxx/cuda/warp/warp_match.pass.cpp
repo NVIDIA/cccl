@@ -3,7 +3,7 @@
 // Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: pre-sm-70
@@ -18,6 +18,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/warp>
 
+#include "clear_padding_test_helpers.h"
 #include "test_macros.h"
 
 template <typename T>
@@ -55,12 +56,6 @@ TEST_DEVICE_FUNC void test_bool()
   }
 }
 
-struct WithPadding
-{
-  int a;
-  char b;
-};
-
 template <typename T>
 TEST_DEVICE_FUNC void test_array()
 {
@@ -81,9 +76,10 @@ TEST_DEVICE_FUNC void test_array()
 }
 
 #if defined(_CCCL_BUILTIN_CLEAR_PADDING)
+template <class T>
 TEST_DEVICE_FUNC void test_padded_array()
 {
-  WithPadding value[2][2];
+  T value[2][2];
   cuda::std::memset(value, static_cast<int>(threadIdx.x), sizeof(value));
   for (auto& row : value)
   {
@@ -95,10 +91,12 @@ TEST_DEVICE_FUNC void test_padded_array()
   }
   unsigned char original[sizeof(value)];
   cuda::std::memcpy(original, value, sizeof(value));
+  assert(cuda::device::warp_match_all(value[0][0]));
   assert(cuda::device::warp_match_all(value));
   assert(cuda::std::memcmp(original, value, sizeof(value)) == 0);
 
   value[1][1].b = static_cast<char>(threadIdx.x % 2);
+  assert(!cuda::device::warp_match_all(value[1][1]));
   assert(!cuda::device::warp_match_all(value));
 }
 #endif // _CCCL_BUILTIN_CLEAR_PADDING
@@ -119,7 +117,8 @@ __global__ void test_kernel()
   using array_t = cuda::std::array<char, 6>;
   test_types(array_t{0, 0, 0, 0, 0, 0}, array_t{1, 1, 1, 1, 1, 1});
 #if defined(_CCCL_BUILTIN_CLEAR_PADDING)
-  test_padded_array();
+  test_padded_array<WithPadding>();
+  test_padded_array<RelaxedWithPadding>();
 #endif
 }
 
