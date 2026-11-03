@@ -171,8 +171,13 @@ C2H_CCCLRT_TEST("cuda::buffer release, acquire and byte conversion", "[container
       CHECK(buf.data() == nullptr);
       CHECK(log.live.size() == 1);
 
-      Buffer acquired =
-        Buffer::acquire(released.stream, cuda::std::move(released.mr), released.ptr, released.size, released.alignment);
+      Buffer acquired = Buffer::acquire(
+        released.stream,
+        cuda::std::move(released.mr),
+        released.ptr,
+        released.capacity,
+        released.size,
+        released.alignment);
       CHECK(acquired.data() == allocation);
       CHECK(acquired.alignment() == alignment);
       CHECK(acquired.stream() == cuda::stream_ref{stream});
@@ -184,18 +189,21 @@ C2H_CCCLRT_TEST("cuda::buffer release, acquire and byte conversion", "[container
       Buffer buf{stream, resource, 0, cuda::no_init};
       auto released = cuda::std::move(buf).release();
       CHECK(released.ptr == nullptr);
+      CHECK(released.capacity == 0);
       CHECK(released.size == 0);
 
-      Buffer acquired = Buffer::acquire(released.stream, cuda::std::move(released.mr), released.ptr, released.size);
+      Buffer acquired =
+        Buffer::acquire(released.stream, cuda::std::move(released.mr), released.ptr, released.capacity, released.size);
       CHECK(acquired.empty());
     }
 
     SECTION("acquire rejects invalid allocations")
     {
-      CHECK_THROWS_AS((void) Buffer::acquire(stream, resource, nullptr, 1), std::invalid_argument);
-      CHECK_THROWS_AS((void) Buffer::acquire(stream, resource, reinterpret_cast<T*>(1), 1, 2 * alignof(T)),
+      CHECK_THROWS_AS((void) Buffer::acquire(stream, resource, nullptr, 1, 1), std::invalid_argument);
+      CHECK_THROWS_AS((void) Buffer::acquire(stream, resource, reinterpret_cast<T*>(1), 1, 1, 2 * alignof(T)),
                       std::invalid_argument);
-      CHECK_THROWS_AS((void) Buffer::acquire(stream, resource, nullptr, 0, 3), std::invalid_argument);
+      CHECK_THROWS_AS((void) Buffer::acquire(stream, resource, nullptr, 0, 0, 3), std::invalid_argument);
+      CHECK_THROWS_AS((void) Buffer::acquire(stream, resource, reinterpret_cast<T*>(1), 2, 1), std::invalid_argument);
     }
 
     SECTION("as_bytes and as_type round trip with every byte type")

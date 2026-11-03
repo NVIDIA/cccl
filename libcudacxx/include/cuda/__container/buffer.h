@@ -207,6 +207,7 @@ private:
       ::cuda::std::move(__alloc.mr),
       reinterpret_cast<_Up*>(__alloc.ptr),
       __alloc.size * sizeof(_Tp) / sizeof(_Up),
+      __alloc.size * sizeof(_Tp) / sizeof(_Up),
       __alloc.alignment);
   }
 
@@ -818,6 +819,7 @@ public:
   //! @param __stream The stream stored in the buffer.
   //! @param __mr The memory resource used to deallocate the allocation.
   //! @param __ptr The allocation. May only be null if \p __size is zero.
+  //! @param __size The maximum number of elements in the allocation.
   //! @param __size The number of elements in the allocation.
   //! @param __alignment The alignment of the allocation.
   //! @pre \p __ptr is not owned by anything else and can be deallocated with
@@ -831,9 +833,14 @@ public:
     ::cuda::stream_ref __stream,
     __resource_t __mr,
     pointer __ptr,
+    size_type __capacity,
     size_type __size,
     size_type __alignment = alignof(_Tp))
   {
+    if (__capacity != __size)
+    {
+      _CCCL_THROW(::std::invalid_argument, "cuda::buffer::acquire: capacity must match size");
+    }
     return buffer{__buffer_t::__adopt_allocation(__stream, ::cuda::std::move(__mr), __ptr, __size, __alignment)};
   }
 
