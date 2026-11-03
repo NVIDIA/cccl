@@ -35,6 +35,7 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
+#include <cuda/std/__memory/runtime_assume_aligned.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 
@@ -299,9 +300,13 @@ struct AgentReduceImpl
   {
     if constexpr (CanVectorize)
     {
+      // Full tiles start a whole number of tiles after the input checked by IsAligned, so they are aligned to VectorT
+      // as well
+      const auto tile_ptr = ::cuda::std::__runtime_assume_aligned(d_in.ptr + block_offset, alignof(VectorT));
+
       // Take the pointer from the cache modified iterator and rewrap it as a vector iterator
       const auto d_vec_in = CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, VectorT, OffsetT>(
-        reinterpret_cast<VectorT*>(d_in.ptr + block_offset + lane_id * vec_size));
+        reinterpret_cast<VectorT*>(tile_ptr + lane_id * vec_size));
 
       // Load items as vector items
       alignas(VectorT) InputT input_items[ITEMS_PER_THREAD];
