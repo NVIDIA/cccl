@@ -30,7 +30,7 @@ CUTLASS is NVIDIA's open-source C++ template library for GEMM and related
 kernels. Its lower layer, **CuTe**, is an algebra of layouts and tensors that
 describes how threads and data map onto each other. ``cuda.coop.cutlass``
 does not use the C++ library. CUB, the library that ``cuda.coop`` wraps, is
-a separate CCCL library; CUTLASS kernels do not use it.
+a separate CCCL library.
 
 Since CUTLASS 4, the same project ships a Python front end, the **CUTLASS
 DSL** or **CuTe DSL**, in the ``nvidia-cutlass-dsl`` wheel. You write GPU
@@ -105,8 +105,8 @@ is being compiled.
      - During tracing
      - In the MLIR module
    * - ``cutlass.Int32``, ``cutlass.Float32``, ...
-     - A Python object wrapping one ``ir.Value`` of the matching MLIR type.
-       Arithmetic on it emits ``arith`` operations.
+     - A Python object holding a constant or an ``ir.Value`` of the matching
+       MLIR type. Arithmetic on symbolic values emits ``arith`` operations.
      - ``i32``, ``f32``, ... SSA values.
    * - ``cute.Pointer``
      - A typed pointer with an address space and alignment.
@@ -114,7 +114,7 @@ is being compiled.
    * - ``cute.Tensor`` from ``make_tensor``
      - A pointer plus a static or dynamic layout.
      - ``!cute.memref<...>`` views and ``cute.memref.load`` or ``store``.
-   * - Python ``int``, ``tuple``, ``str``
+   * - Python literals and ``Constexpr`` values used inside the body
      - Ordinary Python values, folded at trace time.
      - Constants or nothing at all.
    * - ``cutlass.Constexpr`` parameter
@@ -125,6 +125,11 @@ is being compiled.
      - Python integers in a ``LaunchConfig``.
      - The ``cutlass_launch_facts`` and ``nvvm.reqntid`` kernel attributes
        and the ``cuda.launch_cfg.create`` operands.
+
+Ordinary function arguments can become dynamic DSL values: an unannotated
+Python ``int`` argument is adapted to ``Int32``, and tuple elements are
+adapted recursively. Use ``Constexpr`` for parameters that must specialize
+the function at trace time.
 
 How the DSL compiles a function
 -------------------------------
@@ -143,7 +148,7 @@ fetches its source with ``inspect``, parses it into a Python AST, and runs
 alone and rewrites control flow:
 
 * ``for i in range(...)`` and ``cutlass.range(...)`` become a staged loop
-  that emits ``scf.for`` when the bounds are DSL values. Variables assigned
+  that emits ``scf.for``, even with Python integer bounds. Variables assigned
   in the body become loop-carried values. ``cutlass.range_constexpr(...)``
   stays a Python loop, so the body is traced once per iteration and the
   result is unrolled code.
@@ -155,12 +160,13 @@ alone and rewrites control flow:
   so that Python's short-circuiting does not silently drop the dynamic
   operand.
 * ``return``, ``break``, ``continue``, and ``raise`` inside staged control
-  flow are rejected with a diagnostic, because the IR has no equivalent.
+  flow are rejected with a diagnostic by this preprocessing mode.
 
 The rewritten AST is compiled and swapped into the function object's
 ``__code__``. The rewrite happens once per function and preprocessing mode;
 it is not repeated on later calls. So yes, the DSL still analyzes the AST,
-but only to stage control flow. It does not type-check the function or
+primarily to stage control flow; it also rewrites selected Python calls and
+expressions. It does not type-check the function or
 decide which operations are legal; that happens in step 2.
 
 Step 2: execution with symbolic values
@@ -243,7 +249,7 @@ It does not, and the differences matter when deciding where to hook in.
        causes a graph break and falls back to eager Python.
      - Guards on argument properties; when they pass, the compiled graph
        runs without re-executing the Python.
-   * - Numba (``numba-cuda``, the other ``cuda.coop`` backend)
+   * - Numba CUDA (``numba-cuda``)
      - CPython bytecode, lifted to Numba IR and type-inferred.
      - Compiles the whole function per argument type signature; unsupported
        operations are typing errors. Extensions register typing templates
@@ -255,7 +261,7 @@ It does not, and the differences matter when deciding where to hook in.
        the body; ``tl.constexpr`` arguments specialize.
      - Cache keyed by signature, constexpr values, and options.
    * - CuTe DSL
-     - The AST, for control flow only; then the running program.
+     - The AST, primarily for control-flow staging; then the running program.
      - Rewrites staged control flow, then executes the Python body with
        symbolic values. Unsupported operations raise during execution.
        Everything in the body is captured; there are no graph breaks.
@@ -267,8 +273,8 @@ so a primitive can read any Python-level fact it wants at trace time and the
 DSL will not try to generalize over it; our planners use that to specialize
 on the exact block shape and dtype. There are no graph breaks, so a primitive
 must emit valid IR or raise; it cannot defer to the interpreter. And unlike
-Numba, which the ``numba_mlir`` backend extends through typing templates and
-lowering registrations, CuTe exposes no extension registry. ``coop.load`` is
+Numba extensions that use typing templates and lowering registrations, our
+CuTe integration needs no typing or lowering registration. ``coop.load`` is
 simply a function that is called during tracing.
 
 PyIR, an optional second preprocessing mode
@@ -282,9 +288,12 @@ lowers them with ``pyir-prelower`` and ``convert-pyir-to-scf``. The
 preprocessing mode is part of the cached rewrite's identity, so switching
 modes re-runs the rewrite.
 
-``cuda.coop.cutlass`` does not take part in control-flow staging, so it is
-independent of this choice. Its calls run in the body either way, and the
-values it receives and returns are ordinary DSL values in both modes.
+The primitive entry points do not perform control-flow staging, but that
+does not establish support for every preprocessing mode. In particular,
+the ``TempStorage.release()`` lifetime analysis recognizes ``scf`` and
+``cf`` operations at trace finalization, before PyIR is lowered. The
+integration described here uses the default preprocessing mode; PyIR needs
+separate qualification, including storage lifetimes across control flow.
 
 Where cuda.coop.cutlass plugs in
 --------------------------------
@@ -354,9 +363,11 @@ CUB block primitives are templates on the block shape, and warp primitives
 need to know how many complete warps a block holds. The planner therefore
 requires the exact dimensions, which ``_compiler/_launch.py`` reads through
 ``cute._get_launch_facts()`` and records with their provenance. The
-``nvvm.reqntid`` attribute, which the DSL also derives from the block size,
-and the ``maxntid`` upper bound are not substitutes: neither proves how many
-threads participate. See :ref:`coop-cutlass-exact-launch-facts`.
+``nvvm.reqntid`` attribute also specifies an exact block shape, whereas
+``maxntid`` supplies only an upper bound. This integration uses the launch
+facts API as its planning contract rather than inferring facts from those
+lower-level attributes. An exact shape alone does not establish uniform
+participation at a primitive call. See :ref:`coop-cutlass-exact-launch-facts`.
 
 Calls through the FFI
 ^^^^^^^^^^^^^^^^^^^^^
