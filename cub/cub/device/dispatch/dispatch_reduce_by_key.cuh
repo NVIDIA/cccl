@@ -217,18 +217,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_by_key_policy_selector<PolicySelector>
 #endif
-__launch_bounds__(
-  int(make_vsmem_helper<device_policy_getter<PolicySelector, current_tuning_cc().get()>,
-                        KeysInputIteratorT,
-                        UniqueOutputIteratorT,
-                        ValuesInputIteratorT,
-                        AggregatesOutputIteratorT,
-                        NumRunsOutputIteratorT,
-                        EqualityOpT,
-                        ReductionOpT,
-                        OffsetT,
-                        AccumT,
-                        StreamingContextT>::type::agent_policy_t::BLOCK_THREADS),
+__launch_bounds__(int(
   make_vsmem_helper<device_policy_getter<PolicySelector, current_tuning_cc().get()>,
                     KeysInputIteratorT,
                     UniqueOutputIteratorT,
@@ -239,7 +228,7 @@ __launch_bounds__(
                     ReductionOpT,
                     OffsetT,
                     AccumT,
-                    StreamingContextT>::policy.lookback.min_blocks_per_sm)
+                    StreamingContextT>::type::agent_policy_t::BLOCK_THREADS))
   _CCCL_KERNEL_ATTRIBUTES void DeviceReduceByKeyKernel(
     const KeysInputIteratorT d_keys_in,
     const UniqueOutputIteratorT d_unique_out,

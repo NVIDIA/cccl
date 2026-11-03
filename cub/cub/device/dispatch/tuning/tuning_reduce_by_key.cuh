@@ -40,16 +40,13 @@ struct ReduceByKeyLookbackPolicy
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for the prefix scan
   LookbackDelayPolicy lookback_delay; //!< The @ref LookbackDelayPolicy used for the lookback delay
-  int min_blocks_per_sm = 0; //!< Minimum number of resident blocks per SM requested from the compiler via
-                             //!< `__launch_bounds__`, limiting register usage. 0 means no request.
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const ReduceByKeyLookbackPolicy& lhs, const ReduceByKeyLookbackPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
-        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay
-        && lhs.min_blocks_per_sm == rhs.min_blocks_per_sm;
+        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -62,10 +59,9 @@ struct ReduceByKeyLookbackPolicy
   friend ::std::ostream& operator<<(::std::ostream& os, const ReduceByKeyLookbackPolicy& p)
   {
     return os
-        << "ReduceByKeyLookbackPolicy { .threads_per_block = " << p.threads_per_block
-        << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
-        << ", .load_modifier = " << p.load_modifier << ", .scan_algorithm = " << p.scan_algorithm
-        << ", .lookback_delay = " << p.lookback_delay << ", .min_blocks_per_sm = " << p.min_blocks_per_sm << " }";
+        << "ReduceByKeyLookbackPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
+        << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -1081,8 +1077,7 @@ private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __make_thrust_policy(
     int nominal_4B_items_per_thread   = 9,
     BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE,
-    CacheLoadModifier load_mod        = LOAD_DEFAULT,
-    int min_blocks_per_sm             = 0) const -> ReduceByKeyLookbackPolicy
+    CacheLoadModifier load_mod        = LOAD_DEFAULT) const -> ReduceByKeyLookbackPolicy
   {
     const int combined_input_bytes = key_size + accum_size;
     const int max_input_bytes      = (::cuda::std::max) (key_size, accum_size);
@@ -1097,8 +1092,7 @@ private:
       load_algorithm,
       load_mod,
       BLOCK_SCAN_WARP_SCANS,
-      {LookbackDelayAlgorithm::fixed_delay, 350, 450},
-      min_blocks_per_sm};
+      {LookbackDelayAlgorithm::fixed_delay, 350, 450}};
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookback_policy(::cuda::compute_capability cc) const
@@ -1464,11 +1458,6 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 {LookbackDelayAlgorithm::no_delay, 0, 1160}};
       }
-      if (key_size == 4 && accum_size == 4 && __value_size() == 4)
-      {
-        // The CUB kernel needs more registers than the former Thrust one, so we request enough occupancy to match it
-        return __make_thrust_policy(9, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_DEFAULT, 5);
-      }
       if (key_size == 4 && accum_size == 4)
       {
         return {256,
@@ -1590,17 +1579,15 @@ private:
     {
       if (key_size == 1 && accum_size == 1)
       {
-        return __make_thrust_policy(9, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, 4);
+        return __make_thrust_policy(9, BLOCK_LOAD_DIRECT);
       }
       if ((key_size == 1 && accum_size == 2) || (key_size == 2 && accum_size == 1))
       {
-        return __make_thrust_policy(11, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_DEFAULT, 4);
+        return __make_thrust_policy(11);
       }
-      // values smaller than the accumulator (e.g. promoted by plus<>) keep the former CUB default. The CUB kernel needs
-      // more registers than the former Thrust one, so we request enough occupancy to match it.
-      if (accum_size <= 2 || __value_size() == accum_size)
+      if (accum_size <= 2)
       {
-        return __make_thrust_policy(9, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_DEFAULT, 4);
+        return __make_thrust_policy();
       }
       const bool prefer_thrust_tuning = accum_size == 16;
       return __make_default_policy(LOAD_LDG, prefer_thrust_tuning);
@@ -1618,8 +1605,7 @@ private:
         {
           return __make_thrust_policy(9, BLOCK_LOAD_DIRECT, LOAD_LDG);
         }
-        if ((key_size == 2 && accum_size == 4) || (key_size == 4 && accum_size == 4)
-            || (key_size == 8 && accum_size == 8))
+        if ((key_size == 2 && accum_size == 4) || (key_size == 4 && accum_size == 4))
         {
           return __make_thrust_policy();
         }
