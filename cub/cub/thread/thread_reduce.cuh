@@ -25,11 +25,9 @@
 #include <cub/util_namespace.cuh>
 
 #include <cuda/__cmath/round_down.h>
-#include <cuda/__functional/maximum.h>
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -38,6 +36,8 @@
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
+
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 

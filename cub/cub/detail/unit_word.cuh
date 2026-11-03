@@ -15,7 +15,10 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/integral_constant.h>
+
+#if _CCCL_COMPILER(MSVC, <, 19, 39)
+#  include <cuda/std/__type_traits/integral_constant.h>
+#endif // _CCCL_COMPILER(MSVC, <, 19, 39)
 
 CUB_NAMESPACE_BEGIN
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document

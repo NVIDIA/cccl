@@ -23,7 +23,6 @@
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/detail/uninitialized.cuh>
-#include <cub/thread/thread_operators.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/warp/specializations/warp_reduce_shfl.cuh>
@@ -189,7 +188,7 @@ public:
 
 private:
   /// Shared memory storage layout type for WarpReduce
-  using _TempStorage = typename InternalWarpReduce::TempStorage;
+  using _TempStorage _CCCL_NODEBUG = typename InternalWarpReduce::TempStorage;
 
   /// Shared storage reference
   _TempStorage& temp_storage;
@@ -755,7 +754,7 @@ template <typename T>
 class WarpReduce<T, 1>
 {
 private:
-  using _TempStorage = cub::NullType;
+  using _TempStorage _CCCL_NODEBUG = cub::NullType;
 
 public:
   struct InternalWarpReduce

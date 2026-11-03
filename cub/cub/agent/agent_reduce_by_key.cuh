@@ -21,19 +21,21 @@
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_discontinuity.cuh>
 #include <cub/block/block_load.cuh>
+#include <cub/block/block_raking_layout.cuh>
 #include <cub/block/block_scan.cuh>
-#include <cub/block/block_store.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/key_value_pair.cuh>
 #include <cub/detail/non_void_value.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/thread/thread_operators.cuh>
 
-#include <cuda/__functional/operator_properties.h>
-#include <cuda/std/__functional/operations.h>
+#include <thrust/type_traits/is_contiguous_iterator.h>
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
+
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 CUB_NAMESPACE_BEGIN
 
@@ -188,30 +190,41 @@ struct AgentReduceByKey
   static constexpr int TILE_ITEMS        = BLOCK_THREADS * ITEMS_PER_THREAD;
   static constexpr int TWO_PHASE_SCATTER = (ITEMS_PER_THREAD > 1);
 
+  // The head flagging, scan and scatter require the items in a blocked arrangement
+  static_assert(AgentReduceByKeyPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,
+                "ReduceByKeyLookbackPolicy/RleLookbackPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since "
+                "the reduction requires a blocked arrangement");
+  static_assert(
+    (AgentReduceByKeyPolicyT::SCAN_ALGORITHM == BLOCK_SCAN_WARP_SCANS && BLOCK_THREADS % detail::warp_threads == 0)
+      || BlockRakingLayout<int, BLOCK_THREADS>::RAKING_THREADS == detail::warp_threads,
+    "ReduceByKeyLookbackPolicy/RleLookbackPolicy: the decoupled look-back needs a full warp to enter the block-scan "
+    "prefix callback: with warp scans threads_per_block must be a multiple of 32, otherwise the raking layout must "
+    "yield 32 raking threads");
+
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
-  // for keys Wrap the native input pointer with
+  // for keys Wrap the native input pointer or contiguous iterator with
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedKeysInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer_v<KeysInputIteratorT>,
+    ::cuda::std::_If<THRUST_NS_QUALIFIER::is_contiguous_iterator_v<KeysInputIteratorT>,
                      CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, KeyInputT, OffsetT>,
                      KeysInputIteratorT>;
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
-  // for values Wrap the native input pointer with
+  // for values Wrap the native input pointer or contiguous iterator with
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedValuesInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer_v<ValuesInputIteratorT>,
+    ::cuda::std::_If<THRUST_NS_QUALIFIER::is_contiguous_iterator_v<ValuesInputIteratorT>,
                      CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
                      ValuesInputIteratorT>;
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
-  // for fixup values Wrap the native input pointer with
+  // for fixup values Wrap the native input pointer or contiguous iterator with
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedFixupInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer_v<AggregatesOutputIteratorT>,
+    ::cuda::std::_If<THRUST_NS_QUALIFIER::is_contiguous_iterator_v<AggregatesOutputIteratorT>,
                      CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
                      AggregatesOutputIteratorT>;
 
@@ -346,9 +359,9 @@ struct AgentReduceByKey
     ReductionOpT reduction_op,
     StreamingContext streaming_context)
       : temp_storage(temp_storage.Alias())
-      , d_keys_in(d_keys_in)
+      , d_keys_in(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_keys_in))
       , d_unique_out(d_unique_out + streaming_context.num_uniques())
-      , d_values_in(d_values_in)
+      , d_values_in(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_values_in))
       , d_aggregates_out(d_aggregates_out + streaming_context.num_uniques())
       , d_num_runs_out(d_num_runs_out)
       , equality_op(equality_op)
@@ -368,9 +381,9 @@ struct AgentReduceByKey
     ReductionOpT reduction_op,
     NullType streaming_context)
       : temp_storage(temp_storage.Alias())
-      , d_keys_in(d_keys_in)
+      , d_keys_in(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_keys_in))
       , d_unique_out(d_unique_out)
-      , d_values_in(d_values_in)
+      , d_values_in(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_values_in))
       , d_aggregates_out(d_aggregates_out)
       , d_num_runs_out(d_num_runs_out)
       , equality_op(equality_op)

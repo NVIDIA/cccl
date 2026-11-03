@@ -99,6 +99,16 @@ code smell: the operation executes in the narrower type and can silently overflo
 result is widened. The author should either widen an operand before the operation
 or, if the narrow result is intended, narrow the destination type so no widening occurs.
 
+## build.unsigned-negative-check (important, templated C++/CUDA code, including tests)
+
+When a diff compares a value whose type is or depends on a template parameter against zero for
+negativity (`n < 0`, `n >= 0`, `!(n < 0)`), flag it unless the comparison is unreachable for
+unsigned types. CI only instantiates some types, but users instantiate with unsigned ones, where
+GCC (`-Wtype-limits`), MSVC (C4296), and NVCC ("pointless comparison of unsigned integer with
+zero") warn, which breaks `-Werror` builds. Guard it with
+`if constexpr (::cuda::std::is_signed_v<T>) { ... n < 0 ... }`, or, where a statement is needed,
+`::cuda::std::is_unsigned_v<T> ? false : (n < 0)`.
+
 ## correctness.pdl-restrict-aliasing (critical, CUDA kernels that call `_CCCL_PDL_GRID_DEPENDENCY_SYNC()` / `cudaGridDependencySynchronize()`)
 
 Flag a kernel parameter marked both `const` and `_CCCL_RESTRICT` (or raw `__restrict`/`__restrict__`)
@@ -161,6 +171,13 @@ Flag any entity added to a public namespace which can be recognized as intended 
 spelling (e.g. snake_case in CUB, or prefixed with `__` in libcu++/cudax) or usage pattern (e.g. used
 as utility for other functions, not documented, etc.). The entity should be marked internal as
 appropriate.
+
+## api.no-new-cub-runtime-function (important, new or changed code in CUB, Thrust, tests, benchmarks, and examples)
+
+When a diff adds a new entry point (a function that did not exist before) annotated with
+`CUB_RUNTIME_FUNCTION`, flag it and use `_CCCL_API` instead. Existing functions keeping the
+annotation are fine, including when they are moved, renamed, copied, or split without changing their
+role. Candidate for a pre-commit grep.
 
 ## abi.missing-hide-from-abi (critical, inline functions in public headers whose behavior depends on the build configuration)
 

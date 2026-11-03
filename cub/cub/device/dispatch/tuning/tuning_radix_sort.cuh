@@ -18,17 +18,31 @@
 #include <cub/agent/agent_radix_sort_onesweep.cuh>
 #include <cub/agent/agent_radix_sort_upsweep.cuh>
 #include <cub/agent/agent_scan.cuh>
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_radix_rank.cuh>
+#include <cub/block/block_scan.cuh>
+#include <cub/block/block_store.cuh>
 #include <cub/detail/delay_constructor.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 
 #include <cuda/__device/compute_capability.h>
-#include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__fwd/format.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/optional>
+#include <cuda/std/__optional/optional.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/cstdint>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
 
 CUB_NAMESPACE_BEGIN
 

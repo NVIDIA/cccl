@@ -23,6 +23,7 @@
 
 #include <cuda/std/__atomic/functions/cuda_nvvm_backend.h> // IWYU pragma: keep
 #include <cuda/std/__atomic/functions/generic.h> // IWYU pragma: keep
+#include <cuda/std/__atomic/scopes.h> // IWYU pragma: keep
 #include <cuda/std/__bit/bit_cast.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/always_false.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_integral.h> // IWYU pragma: keep

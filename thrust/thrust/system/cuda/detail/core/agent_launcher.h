@@ -149,7 +149,7 @@ struct AgentLauncher : Agent
 
   THRUST_RUNTIME_FUNCTION void sync() const
   {
-    CubDebug(cub::detail::DebugSyncStream(stream));
+    static_cast<void>(CubDebug(cub::detail::DebugSyncStream(stream)));
   }
 
   template <class K>

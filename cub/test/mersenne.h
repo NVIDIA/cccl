@@ -46,11 +46,11 @@
 namespace mersenne
 {
 /* Period parameters */
-constexpr unsigned int N          = 624;
-constexpr unsigned int M          = 397;
-constexpr unsigned int MATRIX_A   = 0x9908b0df; /* constant vector a */
-constexpr unsigned int UPPER_MASK = 0x80000000; /* most significant w-r bits */
-constexpr unsigned int LOWER_MASK = 0x7fffffff; /* least significant r bits */
+inline constexpr unsigned int N          = 624;
+inline constexpr unsigned int M          = 397;
+inline constexpr unsigned int MATRIX_A   = 0x9908b0df; /* constant vector a */
+inline constexpr unsigned int UPPER_MASK = 0x80000000; /* most significant w-r bits */
+inline constexpr unsigned int LOWER_MASK = 0x7fffffff; /* least significant r bits */
 
 static unsigned int mt[N]; /* the array for the state vector  */
 static int mti = N + 1; /* mti==N+1 means mt[N] is not initialized */

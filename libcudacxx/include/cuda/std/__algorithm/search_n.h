@@ -140,10 +140,12 @@ template <class _ForwardIterator, class _Size, class _Tp, class _BinaryPredicate
 [[nodiscard]] _CCCL_API constexpr _ForwardIterator
 search_n(_ForwardIterator __first, _ForwardIterator __last, _Size __count, const _Tp& __value_, _BinaryPredicate __pred)
 {
+  static_assert(__is_convertible_to_integral_v<_Size>, "_Size must be convertible to an integral");
+
   return ::cuda::std::__search_n<add_lvalue_reference_t<_BinaryPredicate>>(
     __first,
     __last,
-    __convert_to_integral(__count),
+    ::cuda::std::__convert_to_integral(__count),
     __value_,
     __pred,
     __iterator_traits_category_or_concept_t<_ForwardIterator>());
@@ -153,7 +155,9 @@ template <class _ForwardIterator, class _Size, class _Tp>
 [[nodiscard]] _CCCL_API constexpr _ForwardIterator
 search_n(_ForwardIterator __first, _ForwardIterator __last, _Size __count, const _Tp& __value_)
 {
-  return ::cuda::std::search_n(__first, __last, __convert_to_integral(__count), __value_, __equal_to{});
+  static_assert(__is_convertible_to_integral_v<_Size>, "_Size must be convertible to an integral");
+
+  return ::cuda::std::search_n(__first, __last, ::cuda::std::__convert_to_integral(__count), __value_, __equal_to{});
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

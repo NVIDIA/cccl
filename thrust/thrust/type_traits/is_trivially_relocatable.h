@@ -83,7 +83,7 @@ using is_trivially_relocatable
  * \see THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE
  */
 template <typename T>
-CCCL_DEPRECATED_BECAUSE("Use cuda::is_trivially_copyable_v instead") constexpr bool is_trivially_relocatable_v =
+CCCL_DEPRECATED_BECAUSE("Use cuda::is_trivially_copyable_v instead") inline constexpr bool is_trivially_relocatable_v =
   detail::is_trivially_relocatable_impl<T>::value;
 
 /*! \brief <a href="https://en.cppreference.com/w/cpp/named_req/BinaryTypeTrait"><i>BinaryTypeTrait</i></a>
@@ -117,7 +117,7 @@ using is_trivially_relocatable_to
  * \see THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE
  */
 template <typename From, typename To>
-CCCL_DEPRECATED_BECAUSE("Use cuda::is_trivially_copyable_v and cuda::std::is_same_v instead") constexpr bool
+CCCL_DEPRECATED_BECAUSE("Use cuda::is_trivially_copyable_v and cuda::std::is_same_v instead") inline constexpr bool
   is_trivially_relocatable_to_v = ::cuda::std::is_same_v<From, To> && detail::is_trivially_relocatable_impl<To>::value;
 
 /*! \brief <a href="https://en.cppreference.com/w/cpp/named_req/BinaryTypeTrait"><i>BinaryTypeTrait</i></a>
@@ -160,7 +160,7 @@ using is_indirectly_trivially_relocatable_to
  */
 template <typename FromIterator, typename ToIterator>
 CCCL_DEPRECATED_BECAUSE("Use cuda::is_trivially_copyable_v, cuda::std::is_same_v, and thrust::is_contiguous_iterator_v "
-                        "instead") constexpr bool is_indirectly_trivially_relocate_to_v =
+                        "instead") inline constexpr bool is_indirectly_trivially_relocate_to_v =
   is_contiguous_iterator_v<FromIterator> && is_contiguous_iterator_v<ToIterator>
   && ::cuda::std::is_same_v<detail::it_value_t<FromIterator>, detail::it_value_t<ToIterator>>
   && detail::is_trivially_relocatable_impl<detail::it_value_t<ToIterator>>::value;
@@ -168,7 +168,7 @@ CCCL_DEPRECATED_BECAUSE("Use cuda::is_trivially_copyable_v, cuda::std::is_same_v
 namespace detail
 {
 template <typename FromIterator, typename ToIterator>
-constexpr bool is_indirectly_trivially_copyable_to_v =
+inline constexpr bool is_indirectly_trivially_copyable_to_v =
   is_contiguous_iterator_v<FromIterator> && is_contiguous_iterator_v<ToIterator>
   && ::cuda::std::is_same_v<it_value_t<FromIterator>, it_value_t<ToIterator>>
   && ::cuda::is_trivially_copyable_v<it_value_t<ToIterator>>;

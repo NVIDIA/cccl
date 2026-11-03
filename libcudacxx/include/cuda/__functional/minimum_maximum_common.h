@@ -32,14 +32,14 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _Tp, typename _Up, typename _Common = ::cuda::std::common_type_t<_Tp, _Up>, typename _Enable = void>
-constexpr bool __is_maximum_minimum_noexcept_v =
+inline constexpr bool __is_maximum_minimum_noexcept_v =
   noexcept(::cuda::std::declval<_Tp>() < ::cuda::std::declval<_Up>())
   && ::cuda::std::is_nothrow_convertible_v<_Tp, _Common> && ::cuda::std::is_nothrow_convertible_v<_Up, _Common>;
 
 // Extended floating point types, such as __half and __nv bfloat16 cannot be compared with operator<. We need to
 // handle them separately with SFINAE.
 template <typename _Tp, typename _Up, typename _Common>
-constexpr bool __is_maximum_minimum_noexcept_v<
+inline constexpr bool __is_maximum_minimum_noexcept_v<
   _Tp,
   _Up,
   _Common,

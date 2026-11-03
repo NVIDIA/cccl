@@ -11,6 +11,9 @@ struct stream_registry_factory_t;
 
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
+#include <thrust/functional.h>
+#include <thrust/sequence.h>
+#include <thrust/tabulate.h>
 
 #include <cuda/__execution/tune.h>
 #include <cuda/iterator>
@@ -31,14 +34,15 @@ DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceRunLengthEncode::NonTrivialRuns, non_trivi
 
 namespace stdexec = cuda::std::execution;
 
-template <int ThreadsPerBlock>
+template <int ThreadsPerBlock, int ItemsPerThread = 1>
 struct rle_encode_tuning
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::RleEncodePolicy
   {
-    return {cub::RleAlgorithm::lookback,
-            {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}},
-            {}};
+    return {
+      cub::RleAlgorithm::lookback,
+      {ThreadsPerBlock, ItemsPerThread, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}},
+      {}};
   }
 };
 
@@ -283,6 +287,42 @@ CUB_TEST("DeviceRunLengthEncode::Encode can be tuned", "[run_length_encode][devi
   REQUIRE(d_unique_out[0] == 42);
   REQUIRE(d_counts_out[0] == num_items);
   REQUIRE(d_block_size[0] == target_block_size);
+}
+
+// The agent's temporary storage for 32 threads x 256 items exceeds the static shared memory limit, so the kernel falls
+// back to a larger block of 64 threads, which its launch bounds must allow
+CUB_TEST_CASE("DeviceRunLengthEncode::Encode can be tuned with a small block size that needs the fallback policy",
+              "[run_length_encode][device]",
+              CUB_SMALL)
+{
+  constexpr int num_items = 10000;
+  constexpr int run_size  = 7;
+  constexpr int num_runs  = cuda::ceil_div(num_items, run_size);
+
+  // runs of run_size equal keys 0, 0, ..., 1, 1, ..., 2, ...
+  auto d_in = c2h::device_vector<int>(num_items, thrust::no_init);
+  thrust::tabulate(d_in.begin(), d_in.end(), thrust::placeholders::_1 / run_size);
+  auto d_unique_out   = c2h::device_vector<int>(num_runs, thrust::no_init);
+  auto d_counts_out   = c2h::device_vector<int>(num_runs, thrust::no_init);
+  auto d_num_runs_out = c2h::device_vector<int>(1, thrust::no_init);
+
+  auto env = cuda::execution::tune(rle_encode_tuning<32, 256>{});
+
+  run_length_encode_env(
+    thrust::raw_pointer_cast(d_in.data()),
+    thrust::raw_pointer_cast(d_unique_out.data()),
+    thrust::raw_pointer_cast(d_counts_out.data()),
+    thrust::raw_pointer_cast(d_num_runs_out.data()),
+    num_items,
+    env);
+
+  REQUIRE(d_num_runs_out[0] == num_runs);
+  auto expected_keys = c2h::device_vector<int>(num_runs, thrust::no_init);
+  thrust::sequence(expected_keys.begin(), expected_keys.end());
+  auto expected_counts   = c2h::device_vector<int>(num_runs, run_size);
+  expected_counts.back() = num_items - (num_runs - 1) * run_size; // the last run is shorter
+  REQUIRE(d_unique_out == expected_keys);
+  REQUIRE(d_counts_out == expected_counts);
 }
 
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can be tuned", "[run_length_encode][device]", CUB_SMALL, block_sizes)

@@ -19,17 +19,23 @@
 
 #include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
-#include <cub/util_policy_wrapper_t.cuh>
+
+#include <cuda/__cmath/round_up.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/type_identity.h>
+
 // for backward compatibility
-#include <cub/util_temporary_storage.cuh>
+#include <cub/util_policy_wrapper_t.cuh> // IWYU pragma: export
+#include <cub/util_temporary_storage.cuh> // IWYU pragma: export
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/__algorithm/find.h>
-#include <cuda/std/__concepts/regular.h>
-#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -39,6 +45,11 @@
 #endif // _CCCL_HOSTED()
 
 #include <nv/target>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cuda/std/__concepts/regular.h>
+#  include <cuda/std/__concepts/same_as.h>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 
@@ -86,10 +97,10 @@ public:
       : target_device_(target_device)
       , original_device_(target_device)
   {
-    CubDebug(cudaGetDevice(&original_device_));
+    static_cast<void>(CubDebug(cudaGetDevice(&original_device_)));
     if (original_device_ != target_device_)
     {
-      CubDebug(cudaSetDevice(target_device_));
+      static_cast<void>(CubDebug(cudaSetDevice(target_device_)));
     }
   }
 
@@ -99,7 +110,7 @@ public:
   {
     if (original_device_ != target_device_)
     {
-      CubDebug(cudaSetDevice(original_device_));
+      static_cast<void>(CubDebug(cudaSetDevice(original_device_)));
     }
   }
 };
@@ -262,7 +273,7 @@ public:
           // Clear the global CUDA error state which may have been
           // set by the last call. Otherwise, errors may "leak" to
           // unrelated kernel launches.
-          cudaGetLastError();
+          static_cast<void>(cudaGetLastError());
         }
 
         // Release the lock by setting the state to `DeviceEntryReady`.
@@ -728,7 +739,7 @@ __host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
 template <typename T>
 struct get_active_policy
 {
-  using type = typename T::ActivePolicy;
+  using type _CCCL_NODEBUG = typename T::ActivePolicy;
 };
 
 /// Helper for dispatching into a policy chain

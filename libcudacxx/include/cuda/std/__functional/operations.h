@@ -35,7 +35,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT plus : __binary_function<_Tp, _Tp, _Tp>
 {
-  using __result_type = _Tp; // used by valarray
+  using __result_type _CCCL_NODEBUG = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
@@ -61,7 +61,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT plus<void>
 template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT minus : __binary_function<_Tp, _Tp, _Tp>
 {
-  using __result_type = _Tp; // used by valarray
+  using __result_type _CCCL_NODEBUG = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
@@ -87,7 +87,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minus<void>
 template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT multiplies : __binary_function<_Tp, _Tp, _Tp>
 {
-  using __result_type = _Tp; // used by valarray
+  using __result_type _CCCL_NODEBUG = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
@@ -113,7 +113,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT multiplies<void>
 template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT divides : __binary_function<_Tp, _Tp, _Tp>
 {
-  using __result_type = _Tp; // used by valarray
+  using __result_type _CCCL_NODEBUG = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
@@ -139,7 +139,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT divides<void>
 template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT modulus : __binary_function<_Tp, _Tp, _Tp>
 {
-  using __result_type = _Tp; // used by valarray
+  using __result_type _CCCL_NODEBUG = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
@@ -165,7 +165,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT modulus<void>
 template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT negate : __unary_function<_Tp, _Tp>
 {
-  using __result_type = _Tp; // used by valarray
+  using __result_type _CCCL_NODEBUG = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
   constexpr _CCCL_API inline _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x)
   {
@@ -193,7 +193,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT negate<void>
 template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_and : __binary_function<_Tp, _Tp, _Tp>
 {
-  using __result_type = _Tp; // used by valarray
+  using __result_type _CCCL_NODEBUG = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
@@ -244,7 +244,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_not<void>
 template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_or : __binary_function<_Tp, _Tp, _Tp>
 {
-  using __result_type = _Tp; // used by valarray
+  using __result_type _CCCL_NODEBUG = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
   constexpr _CCCL_API inline _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
@@ -270,7 +270,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_or<void>
 template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_xor : __binary_function<_Tp, _Tp, _Tp>
 {
-  using __result_type = _Tp; // used by valarray
+  using __result_type _CCCL_NODEBUG = _Tp; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
@@ -298,7 +298,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_xor<void>
 template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT equal_to : __binary_function<_Tp, _Tp, bool>
 {
-  using __result_type = bool; // used by valarray
+  using __result_type _CCCL_NODEBUG = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
@@ -324,7 +324,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT equal_to<void>
 template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT not_equal_to : __binary_function<_Tp, _Tp, bool>
 {
-  using __result_type = bool; // used by valarray
+  using __result_type _CCCL_NODEBUG = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
@@ -350,7 +350,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT not_equal_to<void>
 template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT less : __binary_function<_Tp, _Tp, bool>
 {
-  using __result_type = bool; // used by valarray
+  using __result_type _CCCL_NODEBUG = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
@@ -376,7 +376,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT less<void>
 template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT less_equal : __binary_function<_Tp, _Tp, bool>
 {
-  using __result_type = bool; // used by valarray
+  using __result_type _CCCL_NODEBUG = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
@@ -402,7 +402,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT less_equal<void>
 template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT greater_equal : __binary_function<_Tp, _Tp, bool>
 {
-  using __result_type = bool; // used by valarray
+  using __result_type _CCCL_NODEBUG = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
@@ -428,7 +428,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT greater_equal<void>
 template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT greater : __binary_function<_Tp, _Tp, bool>
 {
-  using __result_type = bool; // used by valarray
+  using __result_type _CCCL_NODEBUG = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
@@ -456,7 +456,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT greater<void>
 template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_and : __binary_function<_Tp, _Tp, bool>
 {
-  using __result_type = bool; // used by valarray
+  using __result_type _CCCL_NODEBUG = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
@@ -482,7 +482,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_and<void>
 template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_not : __unary_function<_Tp, bool>
 {
-  using __result_type = bool; // used by valarray
+  using __result_type _CCCL_NODEBUG = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x)
   {
@@ -508,7 +508,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_not<void>
 template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_or : __binary_function<_Tp, _Tp, bool>
 {
-  using __result_type = bool; // used by valarray
+  using __result_type _CCCL_NODEBUG = bool; // used by valarray
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {

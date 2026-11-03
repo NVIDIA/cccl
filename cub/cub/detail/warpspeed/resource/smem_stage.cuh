@@ -16,8 +16,9 @@
 #include <cub/detail/warpspeed/resource/smem_phase.cuh>
 #include <cub/detail/warpspeed/resource/smem_resource_raw.cuh>
 
-#include <cuda/std/__tuple_dir/tuple_element.h>
-#include <cuda/std/__tuple_dir/tuple_size.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__tuple_dir/tuple_element.h> // IWYU pragma: keep
+#include <cuda/std/__tuple_dir/tuple_size.h> // IWYU pragma: keep
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -86,6 +87,6 @@ struct tuple_size<CUB_NS_QUALIFIER::detail::warpspeed::SmemPhaseStructuredBindin
 template <typename Tp, size_t Index, ::cuda::std::size_t NumPhases>
 struct tuple_element<Index, CUB_NS_QUALIFIER::detail::warpspeed::SmemPhaseStructuredBinding<Tp, NumPhases>>
 {
-  using type = CUB_NS_QUALIFIER::detail::warpspeed::SmemPhase<Tp>;
+  using type _CCCL_NODEBUG = CUB_NS_QUALIFIER::detail::warpspeed::SmemPhase<Tp>;
 };
 } // namespace std
