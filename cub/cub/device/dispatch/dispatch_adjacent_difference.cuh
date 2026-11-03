@@ -62,7 +62,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
   const OffsetT num_items)
 {
   static_assert(::cuda::std::is_empty_v<PolicySelector>);
-  static constexpr AdjacentDifferencePolicy policy = current_policy<PolicySelector>();
+  static constexpr AdjacentDifferencePolicy policy = _CUB::detail::current_policy<PolicySelector>();
   using AdjacentDifferencePolicyT =
     agent_adjacent_difference_policy<policy.threads_per_block,
                                      policy.items_per_thread,
@@ -170,7 +170,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceAdjacentDifference"
       void* allocations[1]             = {nullptr};
       const size_t allocation_sizes[1] = {(AliasOpt == MayAlias::Yes) * first_tile_previous_size};
 
-      error = CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error =
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
 
       if (cudaSuccess != error)
       {
@@ -221,7 +222,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceAdjacentDifference"
           break;
         }
 
-        error = CubDebug(detail::DebugSyncStream(stream));
+        error = CubDebug(_CUB::detail::DebugSyncStream(stream));
 
         if (cudaSuccess != error)
         {
@@ -261,7 +262,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceAdjacentDifference"
         break;
       }
 
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(_CUB::detail::DebugSyncStream(stream));
 
       if (cudaSuccess != error)
       {
@@ -287,7 +288,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceAdjacentDifference"
     {
       // Get PTX version
       int ptx_version = 0;
-      error           = CubDebug(PtxVersion(ptx_version));
+      error           = CubDebug(_CUB::PtxVersion(ptx_version));
       if (cudaSuccess != error)
       {
         break;
@@ -359,7 +360,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   const size_t allocation_sizes[1] = {(AliasOpt == MayAlias::Yes) * first_tile_previous_size};
 
   if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -401,7 +402,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -430,7 +431,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+  if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
   {
     return error;
   }

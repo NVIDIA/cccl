@@ -107,7 +107,7 @@ struct SimdMin<__nv_bfloat162>
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
                       (return ::__hmin2(a, b);),
-                      (return simd_operation_is_not_supported_before_sm80<__nv_bfloat162>();))
+                      (return _CUB::detail::simd_operation_is_not_supported_before_sm80<__nv_bfloat162>();))
   }
 };
 
@@ -171,7 +171,7 @@ struct SimdMax<__nv_bfloat162>
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
                       (return ::__hmax2(a, b);), //
-                      (return simd_operation_is_not_supported_before_sm80<__nv_bfloat162>();))
+                      (return _CUB::detail::simd_operation_is_not_supported_before_sm80<__nv_bfloat162>();))
   }
 };
 
@@ -194,7 +194,7 @@ struct SimdSum<__half2>
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53,
                       (return ::__hadd2(a, b);), //
-                      (return simd_operation_is_not_supported_before_sm53<__half2>();))
+                      (return _CUB::detail::simd_operation_is_not_supported_before_sm53<__half2>();))
   }
 };
 
@@ -209,7 +209,7 @@ struct SimdSum<__nv_bfloat162>
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
                       (return ::__hadd2(a, b);), //
-                      (return simd_operation_is_not_supported_before_sm80<__nv_bfloat162>();))
+                      (return _CUB::detail::simd_operation_is_not_supported_before_sm80<__nv_bfloat162>();))
   }
 };
 
@@ -286,7 +286,7 @@ struct SimdMul<__half2>
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53,
                       (return ::__hmul2(a, b);), //
-                      (return simd_operation_is_not_supported_before_sm53<__half2>();))
+                      (return _CUB::detail::simd_operation_is_not_supported_before_sm53<__half2>();))
   }
 };
 
@@ -301,7 +301,7 @@ struct SimdMul<__nv_bfloat162>
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
                       (return ::__hmul2(a, b);),
-                      (return simd_operation_is_not_supported_before_sm80<__nv_bfloat162>();))
+                      (return _CUB::detail::simd_operation_is_not_supported_before_sm80<__nv_bfloat162>();))
   }
 };
 

@@ -528,9 +528,9 @@ struct AgentRadixSortDownsweep
     {
       T items[ITEMS_PER_THREAD];
 
-      LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items);
+      _CUB::LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items);
       __syncthreads();
-      StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items);
+      _CUB::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items);
 
       block_offset += TILE_ITEMS;
     }
@@ -542,9 +542,9 @@ struct AgentRadixSortDownsweep
 
       T items[ITEMS_PER_THREAD];
 
-      LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items, valid_items);
+      _CUB::LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items, valid_items);
       __syncthreads();
-      StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items, valid_items);
+      _CUB::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items, valid_items);
     }
   }
 
