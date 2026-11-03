@@ -46,7 +46,7 @@ _CCCL_TEMPLATE(class _Group, class _Tp)
 _CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::unit_type, thread_level>
                  _CCCL_AND ::cuda::std::is_same_v<typename _Group::level_type, warp_level>)
 [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::optional<_Tp>
-__shuffle_up_impl(const _Group& __group, const _Tp& __value, unsigned __offset) noexcept
+__shuffle_up_impl(const _Group& __group, const _Tp& __value, unsigned __offset)
 {
   using _MappingResult         = typename _Group::__mapping_result_type;
   const auto& __mapping_result = __group.__mapping_result();
@@ -79,7 +79,7 @@ __shuffle_up_impl(const _Group& __group, const _Tp& __value, unsigned __offset) 
 //! @return The source's value or empty optional if no such rank exists.
 template <class _Group, class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::optional<_Tp>
-shuffle_up(const _Group& __group, const _Tp& __value, unsigned __offset) noexcept
+shuffle_up(const _Group& __group, const _Tp& __value, unsigned __offset)
 {
   return ::cuda::experimental::coop::__shuffle_up_impl(__group, __value, __offset);
 }

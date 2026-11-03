@@ -16,7 +16,6 @@
     template <typename Range>
       requires cuda::std::is_same_v<RangeView, cuda::std::views::all_t<Range>>
     __device__ explicit group_as(Range&& unit_counts)
-      noexcept(noexcept(cuda::std::views::all(cuda::std::forward<Range>(unit_counts))))
       : /*unit_counts_*/{cuda::std::views::all(cuda::std::forward<Range>(unit_counts))}
     {}
   };
