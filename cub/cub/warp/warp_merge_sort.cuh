@@ -112,13 +112,13 @@ class WarpMergeSort
   using BlockMergeSortStrategyT =
     BlockMergeSortStrategy<KeyT, ValueT, LogicalWarpThreads, ItemsPerThread, WarpMergeSort>;
 
-  const unsigned int member_mask = CUB_NS_QUALIFIER::detail::warp_mask<LogicalWarpThreads>();
+  const unsigned int member_mask = _CUB::detail::warp_mask<LogicalWarpThreads>();
 
 public:
   WarpMergeSort() = delete;
 
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpMergeSort(typename BlockMergeSortStrategyT::TempStorage& temp_storage)
-      : BlockMergeSortStrategyT(temp_storage, CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>())
+      : BlockMergeSortStrategyT(temp_storage, _CUB::detail::logical_lane_id<LogicalWarpThreads>())
   {}
 
   _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int get_member_mask() const

@@ -82,10 +82,10 @@ struct WarpScanShfl
   //---------------------------------------------------------------------
 
   /// Lane index in logical warp
-  unsigned int lane_id = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
+  unsigned int lane_id = _CUB::detail::logical_lane_id<LogicalWarpThreads>();
 
   /// 32-thread physical warp member mask of logical warp
-  unsigned int member_mask = CUB_NS_QUALIFIER::detail::warp_mask<LogicalWarpThreads>();
+  unsigned int member_mask = _CUB::detail::warp_mask<LogicalWarpThreads>();
 
   //---------------------------------------------------------------------
   // Construction

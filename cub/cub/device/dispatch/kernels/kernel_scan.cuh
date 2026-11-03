@@ -315,7 +315,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   static constexpr ScanPolicy active_policy = _CUB::detail::current_policy<PolicySelector>();
   if constexpr (active_policy.algorithm == ScanAlgorithm::lookahead)
   {
-    const OffsetT num_items = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
+    const OffsetT num_items = _CUB::detail::parameter_from_device<OffsetT>(kernel_num_items);
     // the lookahead implementation copies tiles from and to raw pointers (the dispatch unwraps contiguous iterators)
     constexpr bool contiguous_iterators = THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>
                                        && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
@@ -378,7 +378,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
     // state). So the BlockLoad in this kernel could even overlap with the previous tile init kernel. To be save, we
     // retain it here before the first read.
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-    const OffsetT num_items        = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
+    const OffsetT num_items        = _CUB::detail::parameter_from_device<OffsetT>(kernel_num_items);
     RealInitValueT real_init_value = init_value;
 
     if constexpr (IsDeferred)
@@ -541,7 +541,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   ::cuda::std::uint64_t current_batch_idx = 0;
 
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-  const OffsetT num_items = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
+  const OffsetT num_items = _CUB::detail::parameter_from_device<OffsetT>(kernel_num_items);
   const auto num_tiles =
     static_cast<::cuda::std::uint64_t>(::cuda::ceil_div(num_items, static_cast<OffsetT>(agent_t::TILE_ITEMS)));
   RealInitValueT real_init_value = init_value;

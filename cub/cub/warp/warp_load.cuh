@@ -441,7 +441,7 @@ class WarpLoad
   _TempStorage& temp_storage;
 
   /// Linear thread-id
-  int linear_tid = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
+  int linear_tid = _CUB::detail::logical_lane_id<LogicalWarpThreads>();
 
 public:
   /// @smemstorage{WarpLoad}
