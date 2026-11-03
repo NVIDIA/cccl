@@ -21,28 +21,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__bit/bitmask.h>
-#include <cuda/__cmath/pow2.h>
-#include <cuda/__hierarchy/queries/count.h>
-#include <cuda/__hierarchy/queries/rank.h>
-#include <cuda/barrier>
 #include <cuda/hierarchy>
-#include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__limits/numeric_limits.h>
-#include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/span>
 
 #include <cuda/experimental/coop/__group/concepts.cuh>
 #include <cuda/experimental/coop/__group/fwd.cuh>
-#include <cuda/experimental/coop/__group/mapping/mapping_result.cuh>
-#include <cuda/experimental/coop/__group/this_group.cuh>
-#include <cuda/experimental/coop/__group/traits.cuh>
+#include <cuda/experimental/coop/__group/mapping/common.cuh>
 #include <cuda/experimental/coop/__group/virtual_group.cuh>
 
 #include <cuda/std/__cccl/prologue.h>

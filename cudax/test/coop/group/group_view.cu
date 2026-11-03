@@ -8,12 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/atomic>
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
 #include <cuda/std/type_traits>
-#include <cuda/std/utility>
 #include <cuda/stream>
 
 #include <cuda/experimental/coop/group>

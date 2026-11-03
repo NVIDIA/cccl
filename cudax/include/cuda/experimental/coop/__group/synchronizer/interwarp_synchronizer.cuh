@@ -28,9 +28,7 @@
 #include <cuda/std/__ranges/all.h>
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/size.h>
-#include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
-#include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>

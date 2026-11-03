@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__bit/bit_fns.h>
+#include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__warp/lane_mask.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__cstddef/types.h>

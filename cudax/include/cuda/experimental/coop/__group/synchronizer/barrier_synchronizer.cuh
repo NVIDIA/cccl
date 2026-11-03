@@ -21,8 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/barrier>
+#include <cuda/__fwd/barrier.h>
 #include <cuda/hierarchy>
+#include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/next.h>

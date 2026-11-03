@@ -25,6 +25,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/integral_constant_like.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/cstdint>
 
