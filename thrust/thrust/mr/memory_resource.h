@@ -19,8 +19,10 @@
 #endif // no system header
 
 #include <thrust/detail/config/memory_resource.h>
+
+#include <cuda/std/__cstddef/types.h>
 #ifdef THRUST_MR_STD_MR_HEADER
-#  include THRUST_MR_STD_MR_HEADER
+#  include THRUST_MR_STD_MR_HEADER // IWYU pragma: keep
 #endif
 
 THRUST_NAMESPACE_BEGIN
