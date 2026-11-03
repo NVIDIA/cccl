@@ -10,7 +10,6 @@ struct stream_registry_factory_t;
 #include <cub/device/device_batched_topk.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/device_vector.h>
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>
@@ -29,6 +28,7 @@ DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceBatchedTopK::MaxKeys, device_batched_topk_
 // %PARAM% TEST_LAUNCH lid 0:2
 
 #include "cub_test_macros.h"
+#include <c2h/vector.h>
 
 #if TEST_LAUNCH != 1
 
@@ -49,8 +49,8 @@ struct batched_topk_tuning_transformer
 };
 
 template <typename EnvT>
-unsigned int batched_topk_block_size(
-  thrust::device_vector<int>& keys_out, thrust::device_vector<unsigned int>& d_block_size, EnvT env)
+unsigned int
+batched_topk_block_size(c2h::device_vector<int>& keys_out, c2h::device_vector<unsigned int>& d_block_size, EnvT env)
 {
   constexpr int num_segments                  = 2;
   [[maybe_unused]] constexpr int segment_size = 8; // MSVC does not count template arguments as uses
@@ -78,8 +78,8 @@ CUB_TEST("cub::DeviceBatchedTopK::MaxKeys tuning can be modified", "[batched_top
   constexpr int k                          = 3;
   constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
 
-  auto keys_out     = thrust::device_vector<int>(2 * k, thrust::no_init);
-  auto d_block_size = thrust::device_vector<unsigned int>(1, 0);
+  auto keys_out     = c2h::device_vector<int>(2 * k, thrust::no_init);
+  auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
 
   auto requirements = cuda::execution::require(
     cuda::execution::determinism::not_guaranteed,
@@ -99,7 +99,7 @@ CUB_TEST("cub::DeviceBatchedTopK::MaxKeys tuning can be modified", "[batched_top
             d_block_size,
             cuda::std::execution::env{requirements, cuda::execution::tune(batched_topk_tuning_transformer{})})
           == target_block_size);
-  REQUIRE(keys_out == thrust::device_vector<int>(2 * k, 42));
+  REQUIRE(keys_out == c2h::device_vector<int>(2 * k, 42));
 }
 
 #endif // TEST_LAUNCH != 1

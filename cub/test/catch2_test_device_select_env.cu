@@ -1280,10 +1280,6 @@ CUB_TEST("DeviceSelect::UniqueByKey can be tuned", "[select][device]", CUB_SMALL
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-#endif // TEST_LAUNCH != 1
-
-#if TEST_LAUNCH != 1
-
 template <unsigned int BlockThreads>
 struct select_tuning_transform
 {

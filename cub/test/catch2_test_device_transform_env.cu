@@ -206,7 +206,7 @@ struct my_policy_transformer
   }
 };
 
-CUB_TEST("DeviceTransform::Transform tuning can be modified", "[reduce][device]", CUB_SMALL)
+CUB_TEST("DeviceTransform::Transform tuning can be modified", "[transform][device]", CUB_SMALL)
 {
   const c2h::device_vector<unsigned> expected{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7};
 

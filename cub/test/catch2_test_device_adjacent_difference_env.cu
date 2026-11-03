@@ -241,7 +241,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRight can be tuned", "[adjacent_diff
 }
 
 template <int ThreadsPerBlock>
-struct adj_diff_tuning_tranform
+struct adj_diff_tuning_transform
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::AdjacentDifferencePolicy policy) const
     -> cub::AdjacentDifferencePolicy
@@ -265,7 +265,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRight tuning can be modified", "[adj
     d_block_size[0] = 0;
   }
 
-  auto env = cuda::execution::tune(adj_diff_tuning_tranform<target_block_size>{});
+  auto env = cuda::execution::tune(adj_diff_tuning_transform<target_block_size>{});
 
   device_adjacent_difference_subtract_right(data.begin(), data.size(), op, env);
 

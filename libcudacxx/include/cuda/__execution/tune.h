@@ -27,6 +27,8 @@
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/is_empty.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

@@ -855,10 +855,6 @@ CUB_TEST("DeviceSegmentedSort keys two-phase overloads can be tuned",
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-#endif // TEST_LAUNCH != 1
-
-#if TEST_LAUNCH != 1
-
 template <int BlockThreads>
 struct segmented_sort_tuning_transform
 {

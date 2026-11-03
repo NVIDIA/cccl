@@ -25,7 +25,9 @@ namespace detail
 template <typename PolicyTransformer, typename DefaultPolicySelector>
 struct policy_selector_from_transformer
 {
-  _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const
+  // The return type is whatever the policy transformer returns, so we let the compiler deduce it. Spelling it out would
+  // only repeat the body inside decltype.
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const
   {
     return PolicyTransformer{}(cc, DefaultPolicySelector{}(cc));
   }
