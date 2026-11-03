@@ -819,7 +819,7 @@ public:
   //! @param __stream The stream stored in the buffer.
   //! @param __mr The memory resource used to deallocate the allocation.
   //! @param __ptr The allocation. May only be null if \p __size is zero.
-  //! @param __size The maximum number of elements in the allocation.
+  //! @param __capacity The maximum number of elements in the allocation.
   //! @param __size The number of elements in the allocation.
   //! @param __alignment The alignment of the allocation.
   //! @pre \p __ptr is not owned by anything else and can be deallocated with
