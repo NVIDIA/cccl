@@ -240,4 +240,4 @@ using random::normal_distribution;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/random/detail/normal_distribution.inl>
+#include <thrust/random/detail/normal_distribution.inl> // IWYU pragma: keep

@@ -26,7 +26,6 @@
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/trigonometric_functions.h>
-#include <cuda/std/limits>
 #include <cuda/std/numbers>
 
 THRUST_NAMESPACE_BEGIN

@@ -22,10 +22,10 @@
 #include <thrust/random/detail/random_core_access.h>
 #include <thrust/random/detail/xor_combine_engine_max.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/istream>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/cstddef> // for size_t
 
 THRUST_NAMESPACE_BEGIN
 
@@ -236,4 +236,4 @@ using random::xor_combine_engine;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/random/detail/xor_combine_engine.inl>
+#include <thrust/random/detail/xor_combine_engine.inl> // IWYU pragma: keep

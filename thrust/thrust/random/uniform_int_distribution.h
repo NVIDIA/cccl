@@ -20,8 +20,8 @@
 
 #include <cuda/std/__host_stdlib/istream>
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__utility/pair.h>
-#include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -243,4 +243,4 @@ using random::uniform_int_distribution;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/random/detail/uniform_int_distribution.inl>
+#include <thrust/random/detail/uniform_int_distribution.inl> // IWYU pragma: keep

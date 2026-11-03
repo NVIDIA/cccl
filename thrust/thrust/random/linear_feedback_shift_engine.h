@@ -28,9 +28,9 @@
 #include <thrust/random/detail/linear_feedback_shift_engine_wordmask.h>
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/istream>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/cstddef> // for size_t
 
 THRUST_NAMESPACE_BEGIN
 
@@ -199,4 +199,4 @@ using random::linear_feedback_shift_engine;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/random/detail/linear_feedback_shift_engine.inl>
+#include <thrust/random/detail/linear_feedback_shift_engine.inl> // IWYU pragma: keep
