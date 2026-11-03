@@ -22,8 +22,10 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/class_or_enum.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/referenceable.h>
 #include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/declval.h>
@@ -150,7 +152,7 @@ template <class _Tp>
 _CCCL_CONCEPT __can_iter_rvalue_reference_t = _CCCL_FRAGMENT(__can_iter_rvalue_reference_t_, _Tp);
 
 template <class _Tp>
-using __iter_rvalue_reference_t = decltype(::cuda::std::ranges::iter_move(::cuda::std::declval<_Tp&>()));
+using __iter_rvalue_reference_t _CCCL_NODEBUG = decltype(::cuda::std::ranges::iter_move(::cuda::std::declval<_Tp&>()));
 
 template <class _Tp>
 using iter_rvalue_reference_t = enable_if_t<__can_iter_rvalue_reference_t<_Tp>, __iter_rvalue_reference_t<_Tp>>;

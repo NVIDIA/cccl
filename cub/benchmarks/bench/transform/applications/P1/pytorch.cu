@@ -54,12 +54,12 @@
 template <typename T>
 struct opmath_type_impl
 {
-  using type = T;
+  using type _CCCL_NODEBUG = T;
 };
 template <>
 struct opmath_type_impl<BFloat16>
 {
-  using type = float;
+  using type _CCCL_NODEBUG = float;
 };
 template <typename T>
 using opmath_type = typename opmath_type_impl<T>::type;
@@ -85,7 +85,7 @@ __device__ __forceinline__ ScalarT div_floor_floating(ScalarT a, ScalarT b)
     div -= ScalarT(1);
   }
 
-  ScalarT floordiv;
+  ScalarT floordiv{};
   if (div != 0)
   {
     floordiv = std::floor(div);

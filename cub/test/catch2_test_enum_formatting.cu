@@ -11,6 +11,7 @@
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
+#include <cub/device/dispatch/tuning/tuning_scan_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/warp/warp_load.cuh>
@@ -162,6 +163,13 @@ void do_test(const Tester& tester)
     tester(cub::ScanAlgorithm::lookahead, "ScanAlgorithm::lookahead");
 
     tester(cub::ScanAlgorithm(100), "<unknown ScanAlgorithm>");
+  }
+
+  // ScanByKeyAlgorithm
+  {
+    tester(cub::ScanByKeyAlgorithm::lookback, "ScanByKeyAlgorithm::lookback");
+
+    tester(cub::ScanByKeyAlgorithm(100), "<unknown ScanByKeyAlgorithm>");
   }
 
   // TransformAlgorithm

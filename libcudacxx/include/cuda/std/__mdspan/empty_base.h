@@ -21,7 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_empty.h>
@@ -97,7 +98,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco;
 template <class _Elem1>
 struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1> : __mdspan_ebco_impl<0, _Elem1>
 {
-  using __base1 = __mdspan_ebco_impl<0, _Elem1>;
+  using __base1 _CCCL_NODEBUG = __mdspan_ebco_impl<0, _Elem1>;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem1_ = _Elem1)
@@ -139,8 +140,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
     : __mdspan_ebco_impl<0, _Elem1>
     , __mdspan_ebco_impl<1, _Elem2>
 {
-  using __base1 = __mdspan_ebco_impl<0, _Elem1>;
-  using __base2 = __mdspan_ebco_impl<1, _Elem2>;
+  using __base1 _CCCL_NODEBUG = __mdspan_ebco_impl<0, _Elem1>;
+  using __base2 _CCCL_NODEBUG = __mdspan_ebco_impl<1, _Elem2>;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem1_ = _Elem1, class _Elem2_ = _Elem2)
@@ -236,9 +237,9 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
     , __mdspan_ebco_impl<1, _Elem2>
     , __mdspan_ebco_impl<2, _Elem3>
 {
-  using __base1 = __mdspan_ebco_impl<0, _Elem1>;
-  using __base2 = __mdspan_ebco_impl<1, _Elem2>;
-  using __base3 = __mdspan_ebco_impl<2, _Elem3>;
+  using __base1 _CCCL_NODEBUG = __mdspan_ebco_impl<0, _Elem1>;
+  using __base2 _CCCL_NODEBUG = __mdspan_ebco_impl<1, _Elem2>;
+  using __base3 _CCCL_NODEBUG = __mdspan_ebco_impl<2, _Elem3>;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem1_ = _Elem1, class _Elem2_ = _Elem2, class _Elem3_ = _Elem3)

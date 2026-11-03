@@ -51,7 +51,7 @@ C2H_TEST("Mdspan Fill", "[data_manipulation]")
   {
     const cuda::std::dextents<size_t, 3> dynamic_extents{1, 2, 3};
     auto buffer = make_buffer_for_mdspan(dynamic_extents, 0);
-    cuda::std::mdspan<int, cuda::std::dextents<size_t, 3>> dynamic_mdspan(buffer.data(), dynamic_extents);
+    cuda::std::mdspan<int, cuda::std::dims<3>> dynamic_mdspan(buffer.data(), dynamic_extents);
 
     cuda::fill_bytes(stream, dynamic_mdspan, fill_byte);
     check_result_and_erase(stream, cuda::std::span(buffer.data(), buffer.size()));

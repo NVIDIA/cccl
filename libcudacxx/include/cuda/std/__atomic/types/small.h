@@ -22,14 +22,14 @@
 #endif // no system header
 
 #include <cuda/std/__atomic/order.h>
-#include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__atomic/types/base.h>
+#include <cuda/std/__atomic/types/common.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/cstring>
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -37,7 +37,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // manipulated by PTX without any performance overhead
 template <typename _Tp>
-using __atomic_small_proxy_t = _If<is_signed_v<_Tp>, int32_t, uint32_t>;
+using __atomic_small_proxy_t _CCCL_NODEBUG = _If<is_signed_v<_Tp>, int32_t, uint32_t>;
 
 // Arithmetic conversions to/from proxy types
 template <class _Tp, enable_if_t<is_arithmetic_v<_Tp>, int> = 0>
@@ -80,8 +80,8 @@ _CCCL_DIAG_POP
 template <typename _Tp>
 struct __atomic_small_storage
 {
-  using __underlying_t                = _Tp;
-  using __proxy_t                     = __atomic_small_proxy_t<_Tp>;
+  using __underlying_t _CCCL_NODEBUG  = _Tp;
+  using __proxy_t _CCCL_NODEBUG       = __atomic_small_proxy_t<_Tp>;
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_small_tag;
 
   _CCCL_HOST_DEVICE_API constexpr explicit __atomic_small_storage() noexcept

@@ -21,14 +21,14 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/convertible_to.h>
-#include <cuda/std/__functional/bind_back.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__fwd/string_view.h>
-#include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__fwd/subrange.h>
 #include <cuda/std/__iterator/distance.h>
-#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__iterator/next.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/all.h>
@@ -43,9 +43,11 @@
 #include <cuda/std/__ranges/subrange.h>
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/auto_cast.h>
@@ -70,7 +72,7 @@ class drop_view : public view_interface<drop_view<_View>>
   // Note: drop_view<input-range>::begin() is still trivially amortized O(1) because
   // one can't call begin() on it more than once.
   static constexpr bool _UseCache = forward_range<_View> && !(random_access_range<_View> && sized_range<_View>);
-  using _Cache                    = conditional_t<_UseCache, __non_propagating_cache<iterator_t<_View>>, __empty_cache>;
+  using _Cache _CCCL_NODEBUG      = conditional_t<_UseCache, __non_propagating_cache<iterator_t<_View>>, __empty_cache>;
   _CCCL_NO_UNIQUE_ADDRESS _Cache __cached_begin_ = _Cache();
   _View __base_                                  = _View();
   range_difference_t<_View> __count_             = 0;
@@ -88,7 +90,7 @@ public:
   {}
 #endif // !_CCCL_HAS_CONCEPTS()
 
-  _CCCL_API constexpr drop_view(_View __base, range_difference_t<_View> __count) //
+  _CCCL_API constexpr explicit drop_view(_View __base, range_difference_t<_View> __count) //
     noexcept(is_nothrow_move_constructible_v<_View>)
       : view_interface<drop_view<_View>>()
       , __base_(::cuda::std::move(__base))
@@ -225,29 +227,29 @@ struct __passthrough_type;
 template <class _Tp, size_t _Extent>
 struct __passthrough_type<span<_Tp, _Extent>>
 {
-  using type = span<_Tp>;
+  using type _CCCL_NODEBUG = span<_Tp>;
 };
 
 template <class _CharT, class _Traits>
 struct __passthrough_type<basic_string_view<_CharT, _Traits>>
 {
-  using type = basic_string_view<_CharT, _Traits>;
+  using type _CCCL_NODEBUG = basic_string_view<_CharT, _Traits>;
 };
 
 template <class _Np, class _Bound>
 struct __passthrough_type<iota_view<_Np, _Bound>>
 {
-  using type = iota_view<_Np, _Bound>;
+  using type _CCCL_NODEBUG = iota_view<_Np, _Bound>;
 };
 
 template <class _Iter, class _Sent, ::cuda::std::ranges::subrange_kind _Kind>
 struct __passthrough_type<::cuda::std::ranges::subrange<_Iter, _Sent, _Kind>>
 {
-  using type = ::cuda::std::ranges::subrange<_Iter, _Sent, _Kind>;
+  using type _CCCL_NODEBUG = ::cuda::std::ranges::subrange<_Iter, _Sent, _Kind>;
 };
 
 template <class _Tp>
-using __passthrough_type_t = typename __passthrough_type<_Tp>::type;
+using __passthrough_type_t _CCCL_NODEBUG = typename __passthrough_type<_Tp>::type;
 
 template <class _Range, class _Np>
 _CCCL_CONCEPT __use_empty = _CCCL_REQUIRES_EXPR((_Range, _Np))(
@@ -336,7 +338,11 @@ struct __fn
   _CCCL_STATIC_CALL_OPERATOR(_Range&& __range, _Np&& __n) noexcept(noexcept(::cuda::std::ranges::views::repeat(
     ::cuda::std::forward_like<_Range>(*__range.__value_),
     ::cuda::std::ranges::distance(__range)
-      - ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__range), ::cuda::std::forward<_Np>(__n))))) -> _RawRange
+      - ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__range), ::cuda::std::forward<_Np>(__n)))))
+    -> decltype(::cuda::std::ranges::views::repeat(
+      ::cuda::std::forward_like<_Range>(*__range.__value_),
+      ::cuda::std::ranges::distance(__range)
+        - ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__range), ::cuda::std::forward<_Np>(__n))))
   {
     return ::cuda::std::ranges::views::repeat(
       ::cuda::std::forward_like<_Range>(*__range.__value_),
@@ -370,7 +376,7 @@ struct __fn
   [[nodiscard]] _CCCL_API constexpr auto
   _CCCL_STATIC_CALL_OPERATOR(_Np&& __n) noexcept(is_nothrow_constructible_v<decay_t<_Np>, _Np>)
   {
-    return __pipeable(::cuda::std::__bind_back(__fn{}, ::cuda::std::forward<_Np>(__n)));
+    return ::cuda::std::ranges::__pipeable_bind_back(__fn{}, ::cuda::std::forward<_Np>(__n));
   }
 };
 

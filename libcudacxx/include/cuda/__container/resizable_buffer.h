@@ -24,7 +24,7 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/__container/buffer.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__utility/exchange.h>
 #  include <cuda/std/__utility/move.h>
@@ -45,7 +45,7 @@ _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 template <class _Tp, class... _Properties>
 class __resizable_buffer : public buffer<_Tp, _Properties...>
 {
-  using __base_t = buffer<_Tp, _Properties...>;
+  using __base_t _CCCL_NODEBUG = buffer<_Tp, _Properties...>;
 
 public:
   using size_type = typename __base_t::size_type;

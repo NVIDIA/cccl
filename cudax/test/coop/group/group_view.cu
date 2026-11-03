@@ -41,7 +41,6 @@ __device__ void test_group_view(Config config, Level level)
   {
     const cudax::coop::group_view gv{g};
 
-    REQUIRE(cuda::gpu_thread.is_part_of(gv));
     if constexpr (cuda::std::is_same_v<Level, cuda::thread_level>)
     {
       REQUIRE(cuda::gpu_thread.count(gv) == 1);
@@ -57,15 +56,16 @@ __device__ void test_group_view(Config config, Level level)
     REQUIRE(gv.count(level) == 1);
     REQUIRE(gv.rank(level) == 0);
 
-    static_assert(gv.is_always_exhaustive() == g.is_always_exhaustive());
     static_assert(gv.is_always_contiguous() == g.is_always_contiguous());
 
     gv.sync();
+    gv.wait(gv.arrive());
+    gv.sync_aligned();
+    gv.wait_aligned(gv.arrive_aligned());
 
     // Test that the view is copyable.
     const cudax::coop::group_view gv2{gv};
 
-    REQUIRE(cuda::gpu_thread.is_part_of(gv2));
     if constexpr (cuda::std::is_same_v<Level, cuda::thread_level>)
     {
       REQUIRE(cuda::gpu_thread.count(gv2) == 1);
@@ -82,13 +82,15 @@ __device__ void test_group_view(Config config, Level level)
     REQUIRE(gv2.rank(level) == 0);
 
     gv2.sync();
+    gv2.wait(gv2.arrive());
+    gv2.sync_aligned();
+    gv2.wait_aligned(gv2.arrive_aligned());
   }
 
   // Test view over the group with the unit changed.
   {
     const cudax::coop::group_view gv{cuda::gpu_thread, g};
 
-    REQUIRE(cuda::gpu_thread.is_part_of(gv));
     if constexpr (cuda::std::is_same_v<Level, cuda::thread_level>)
     {
       REQUIRE(cuda::gpu_thread.count(gv) == 1);
@@ -104,15 +106,16 @@ __device__ void test_group_view(Config config, Level level)
     REQUIRE(gv.count(level) == 1);
     REQUIRE(gv.rank(level) == 0);
 
-    static_assert(gv.is_always_exhaustive() == g.is_always_exhaustive());
     static_assert(gv.is_always_contiguous() == g.is_always_contiguous());
 
     gv.sync();
+    gv.wait(gv.arrive());
+    gv.sync_aligned();
+    gv.wait_aligned(gv.arrive_aligned());
 
     // Test that the view is copyable.
     const cudax::coop::group_view gv2{gv};
 
-    REQUIRE(cuda::gpu_thread.is_part_of(gv2));
     if constexpr (cuda::std::is_same_v<Level, cuda::thread_level>)
     {
       REQUIRE(cuda::gpu_thread.count(gv2) == 1);
@@ -129,6 +132,9 @@ __device__ void test_group_view(Config config, Level level)
     REQUIRE(gv2.rank(level) == 0);
 
     gv2.sync();
+    gv2.wait(gv2.arrive());
+    gv2.sync_aligned();
+    gv2.wait_aligned(gv2.arrive_aligned());
   }
 
   // Test view of the group view of the group with the unit changed.
@@ -137,7 +143,6 @@ __device__ void test_group_view(Config config, Level level)
 
     const cudax::coop::group_view gv2{cuda::gpu_thread, gv};
 
-    REQUIRE(cuda::gpu_thread.is_part_of(gv2));
     if constexpr (cuda::std::is_same_v<Level, cuda::thread_level>)
     {
       REQUIRE(cuda::gpu_thread.count(gv2) == 1);
@@ -153,10 +158,12 @@ __device__ void test_group_view(Config config, Level level)
     REQUIRE(gv2.count(level) == 1);
     REQUIRE(gv2.rank(level) == 0);
 
-    static_assert(gv2.is_always_exhaustive() == g.is_always_exhaustive());
     static_assert(gv2.is_always_contiguous() == g.is_always_contiguous());
 
     gv2.sync();
+    gv2.wait(gv2.arrive());
+    gv2.sync_aligned();
+    gv2.wait_aligned(gv2.arrive_aligned());
   }
 
   // Test view of a group view of a group with the unit changed twice.
@@ -166,7 +173,6 @@ __device__ void test_group_view(Config config, Level level)
 
     const cudax::coop::group_view gv2{cuda::gpu_thread, gv};
 
-    REQUIRE(cuda::gpu_thread.is_part_of(gv2));
     if constexpr (cuda::std::is_same_v<Level, cuda::thread_level>)
     {
       REQUIRE(cuda::gpu_thread.count(gv2) == 1);
@@ -182,10 +188,12 @@ __device__ void test_group_view(Config config, Level level)
     REQUIRE(gv2.count(level) == 1);
     REQUIRE(gv2.rank(level) == 0);
 
-    static_assert(gv2.is_always_exhaustive() == g.is_always_exhaustive());
     static_assert(gv2.is_always_contiguous() == g.is_always_contiguous());
 
     gv2.sync();
+    gv2.wait(gv2.arrive());
+    gv2.sync_aligned();
+    gv2.wait_aligned(gv2.arrive_aligned());
   }
 
   // Test a view of a generic group.
@@ -195,25 +203,27 @@ __device__ void test_group_view(Config config, Level level)
     auto& barriers   = get_barriers<cuda::warp.static_count(level, config) / n>(cuda::warp);
 
     const cudax::coop::generic_group g2{
-      cuda::warp, g, cudax::coop::group_by<n>{}, cudax::coop::barrier_synchronizer{barriers}};
+      cuda::warp, g, cudax::coop::group_by{cuda::std::cw<n>}, cudax::coop::barrier_synchronizer{barriers}};
     REQUIRE(cuda::warp.count(g2) == n);
     REQUIRE(g2.count(g) == cuda::warp.count(level) / n);
 
     const cudax::coop::group_view g2_view{g2};
-    REQUIRE(cuda::warp.is_part_of(g2_view));
     REQUIRE(cuda::warp.count(g2_view) == n);
     REQUIRE(g2_view.count(g2) == cuda::warp.count(level) / n);
-    static_assert(g2_view.is_always_exhaustive());
     static_assert(g2_view.is_always_contiguous());
     g2_view.sync();
+    g2_view.wait(g2_view.arrive());
+    g2_view.sync_aligned();
+    g2_view.wait_aligned(g2_view.arrive_aligned());
 
     const cudax::coop::group_view g2_view_threads{cuda::gpu_thread, g2_view};
-    REQUIRE(cuda::gpu_thread.is_part_of(g2_view_threads));
     REQUIRE(cuda::gpu_thread.count(g2_view_threads) == n * cuda::gpu_thread.count(cuda::warp));
     REQUIRE(g2_view_threads.count(g2) == n);
-    static_assert(g2_view_threads.is_always_exhaustive());
     static_assert(g2_view_threads.is_always_contiguous());
     g2_view_threads.sync();
+    g2_view_threads.wait(g2_view_threads.arrive());
+    g2_view_threads.sync_aligned();
+    g2_view_threads.wait_aligned(g2_view_threads.arrive_aligned());
   }
 }
 

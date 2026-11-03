@@ -22,10 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/__complex/vector_support.h>
-#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/complex.h>
-#include <cuda/std/__fwd/get.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -38,7 +36,6 @@
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -646,23 +643,23 @@ struct __cccl_complex_overload_traits
 template <class _Tp>
 struct __cccl_complex_overload_traits<_Tp, true, false>
 {
-  using _ValueType   = double;
-  using _ComplexType = complex<double>;
+  using _ValueType _CCCL_NODEBUG   = double;
+  using _ComplexType _CCCL_NODEBUG = complex<double>;
 };
 
 // Floating point types
 template <class _Tp>
 struct __cccl_complex_overload_traits<_Tp, false, true>
 {
-  using _ValueType   = _Tp;
-  using _ComplexType = complex<_Tp>;
+  using _ValueType _CCCL_NODEBUG   = _Tp;
+  using _ComplexType _CCCL_NODEBUG = complex<_Tp>;
 };
 
 template <class _Tp>
-using __cccl_complex_value_type = typename __cccl_complex_overload_traits<_Tp>::_ValueType;
+using __cccl_complex_value_type _CCCL_NODEBUG = typename __cccl_complex_overload_traits<_Tp>::_ValueType;
 
 template <class _Tp>
-using __cccl_complex_complex_type = typename __cccl_complex_overload_traits<_Tp>::_ComplexType;
+using __cccl_complex_complex_type _CCCL_NODEBUG = typename __cccl_complex_overload_traits<_Tp>::_ComplexType;
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
@@ -704,20 +701,7 @@ template <class _Tp, class _CharT, class _Traits>
 }
 #endif // _CCCL_HOSTED()
 
-// specialize cuda::std::tuple_size and cuda::std::tuple_element for both std::complex and cuda::std::complex
-
-#if _CCCL_HAS_HOST_STD_LIB()
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<::std::complex<_Tp>> : integral_constant<size_t, 2>
-{};
-
-template <size_t _Ip, class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::std::complex<_Tp>>
-{
-  static_assert(_Ip < 2, "Index out of bounds in cuda::std::tuple_element<std::complex<_Tp>>");
-  using type _CCCL_NODEBUG = _Tp;
-};
-#endif // _CCCL_HAS_HOST_STD_LIB()
+// specialize cuda::std::tuple_size and cuda::std::tuple_element for cuda::std::complex
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<complex<_Tp>> : integral_constant<size_t, 2>

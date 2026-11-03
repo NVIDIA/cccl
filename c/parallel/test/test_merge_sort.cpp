@@ -581,9 +581,9 @@ C2H_TEST("MergeSort works with C++ source operations using custom headers", "[me
   pointer_t<int> output_items_ptr;
 
   // Test _ex version with custom build configuration
-  const char* extra_flags[] = {"-DTEST_IDENTITY_ENABLED"};
-  const char* extra_dirs[]  = {TEST_INCLUDE_PATH};
-  cccl_build_config config  = make_build_config(extra_flags, 1, extra_dirs, 1);
+  const char* extra_flags[]      = {"-DTEST_IDENTITY_ENABLED"};
+  const char* extra_dirs[]       = {TEST_INCLUDE_PATH};
+  const cccl_build_config config = make_build_config(extra_flags, 1, extra_dirs, 1);
 
   // Build with _ex version
   cccl_device_merge_sort_build_result_t build{};
@@ -639,11 +639,15 @@ C2H_TEST("MergeSort works with C++ source operations using custom headers", "[me
 
   // Verify results
   std::vector<key_t> output_keys(num_items);
-  cudaMemcpy(
-    output_keys.data(), static_cast<void*>(output_keys_ptr.ptr), sizeof(key_t) * num_items, cudaMemcpyDeviceToHost);
+  REQUIRE(
+    cudaSuccess
+    == cudaMemcpy(
+      output_keys.data(), static_cast<void*>(output_keys_ptr.ptr), sizeof(key_t) * num_items, cudaMemcpyDeviceToHost));
   std::vector<key_t> expected_keys(num_items);
-  cudaMemcpy(
-    expected_keys.data(), static_cast<void*>(input_keys_ptr.ptr), sizeof(key_t) * num_items, cudaMemcpyDeviceToHost);
+  REQUIRE(
+    cudaSuccess
+    == cudaMemcpy(
+      expected_keys.data(), static_cast<void*>(input_keys_ptr.ptr), sizeof(key_t) * num_items, cudaMemcpyDeviceToHost));
   std::sort(expected_keys.begin(), expected_keys.end());
   std::sort(expected_keys.begin(), expected_keys.end());
   REQUIRE(output_keys == expected_keys);

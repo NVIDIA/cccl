@@ -33,12 +33,10 @@
 #include <cuda/std/__mdspan/concepts.h>
 #include <cuda/std/__mdspan/empty_base.h>
 #include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/__type_traits/fold.h>
+#include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
-#include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__utility/integer_sequence.h>
-#include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
 
@@ -53,12 +51,12 @@ public:
   static_assert(__is_cuda_std_extents_v<_Extents>,
                 "layout_right::mapping template argument must be a specialization of extents.");
 
-  using extents_type = _Extents;
-  using index_type   = typename extents_type::index_type;
-  using size_type    = typename extents_type::size_type;
-  using rank_type    = typename extents_type::rank_type;
-  using layout_type  = layout_right;
-  using __base       = __mdspan_ebco<_Extents>;
+  using extents_type         = _Extents;
+  using index_type           = typename extents_type::index_type;
+  using size_type            = typename extents_type::size_type;
+  using rank_type            = typename extents_type::rank_type;
+  using layout_type          = layout_right;
+  using __base _CCCL_NODEBUG = __mdspan_ebco<_Extents>;
 
   template <class, class, class, class>
   friend class mdspan;
@@ -218,7 +216,7 @@ public:
     // However, mdspan does check this on its own, so for now we avoid double checking in hardened mode
     _CCCL_ASSERT(__mdspan_detail::__is_multidimensional_index_in(extents(), __idx...),
                  "layout_right::mapping: out of bounds indexing");
-    return __op_index(make_index_sequence<sizeof...(_Indices)>(), __idx...);
+    return __op_index(index_sequence_for<_Indices...>(), __idx...);
   }
 
   [[nodiscard]] _CCCL_API static constexpr bool is_always_unique() noexcept

@@ -27,7 +27,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // REMEMBER CHANGES TO THESE ARE ABI BREAKING
 // TODO: Space values out for potential new scopes at an ABI break.
-enum thread_scope
+enum thread_scope // NOLINT(cppcoreguidelines-use-enum-class)
 {
   thread_scope_system  = 0,
   thread_scope_device  = 1,
@@ -59,31 +59,31 @@ Until then: */
 template <>
 struct __scope_enum_to_tag<(int) thread_scope_thread>
 {
-  using __tag = __thread_scope_block_tag;
+  using __tag _CCCL_NODEBUG = __thread_scope_block_tag;
 };
 template <>
 struct __scope_enum_to_tag<(int) thread_scope_block>
 {
-  using __tag = __thread_scope_block_tag;
+  using __tag _CCCL_NODEBUG = __thread_scope_block_tag;
 };
 template <>
 struct __scope_enum_to_tag<(int) thread_scope_cluster>
 {
-  using __tag = __thread_scope_cluster_tag;
+  using __tag _CCCL_NODEBUG = __thread_scope_cluster_tag;
 };
 template <>
 struct __scope_enum_to_tag<(int) thread_scope_device>
 {
-  using __tag = __thread_scope_device_tag;
+  using __tag _CCCL_NODEBUG = __thread_scope_device_tag;
 };
 template <>
 struct __scope_enum_to_tag<(int) thread_scope_system>
 {
-  using __tag = __thread_scope_system_tag;
+  using __tag _CCCL_NODEBUG = __thread_scope_system_tag;
 };
 
 template <int _Scope>
-using __scope_to_tag = typename __scope_enum_to_tag<_Scope>::__tag;
+using __scope_to_tag _CCCL_NODEBUG = typename __scope_enum_to_tag<_Scope>::__tag;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

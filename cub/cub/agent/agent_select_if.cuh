@@ -21,19 +21,24 @@
 
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_discontinuity.cuh>
-#include <cub/block/block_exchange.cuh>
 #include <cub/block/block_load.cuh>
+#include <cub/block/block_raking_layout.cuh>
 #include <cub/block/block_scan.cuh>
-#include <cub/block/block_store.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/prefetch.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_type.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/thread/thread_operators.cuh>
 
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -139,15 +144,6 @@ struct partition_distinct_output_t
   rejected_iterator_t rejected_it;
 };
 
-template <typename OutputIterator>
-struct is_partition_distinct_output_t : ::cuda::std::false_type
-{};
-
-template <typename SelectedOutputItT, typename RejectedOutputItT>
-struct is_partition_distinct_output_t<partition_distinct_output_t<SelectedOutputItT, RejectedOutputItT>>
-    : ::cuda::std::true_type
-{};
-
 /**
  * @brief AgentSelectIf implements a stateful abstraction of CUDA thread blocks for participating in
  * device-wide selection
@@ -235,7 +231,7 @@ struct AgentSelectIf
   using FlagT = it_value_t<FlagsInputIteratorT>;
 
   // Constants
-  enum
+  enum class selection_method
   {
     USE_SELECT_OP,
     USE_SELECT_FLAGS,
@@ -252,10 +248,10 @@ struct AgentSelectIf
   static constexpr bool has_flags_it        = (!::cuda::std::is_same_v<FlagT, NullType>);
   static constexpr bool use_stencil_with_op = has_select_op && has_flags_it;
   static constexpr auto SELECT_METHOD =
-    use_stencil_with_op ? USE_STENCIL_WITH_OP
-    : has_select_op     ? USE_SELECT_OP
-    : has_flags_it      ? USE_SELECT_FLAGS
-                        : USE_DISCONTINUITY;
+    use_stencil_with_op ? selection_method::USE_STENCIL_WITH_OP
+    : has_select_op     ? selection_method::USE_SELECT_OP
+    : has_flags_it      ? selection_method::USE_SELECT_FLAGS
+                        : selection_method::USE_DISCONTINUITY;
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for items
   // Wrap the native input pointer with CacheModifiedValuesInputIterator
@@ -272,6 +268,17 @@ struct AgentSelectIf
     ::cuda::std::_If<::cuda::std::is_pointer_v<FlagsInputIteratorT>,
                      CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER, FlagT, OffsetT>,
                      FlagsInputIteratorT>;
+
+  // The selection flagging, scan and scatter require the items in a blocked arrangement
+  static_assert(AgentSelectIfPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,
+                "SelectLookbackPolicy/PartitionLookbackPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since "
+                "the selection requires a blocked arrangement");
+  static_assert(
+    (AgentSelectIfPolicyT::SCAN_ALGORITHM == BLOCK_SCAN_WARP_SCANS && BLOCK_THREADS % detail::warp_threads == 0)
+      || BlockRakingLayout<int, BLOCK_THREADS>::RAKING_THREADS == detail::warp_threads,
+    "SelectLookbackPolicy/PartitionLookbackPolicy: the decoupled look-back needs a full warp to enter the block-scan "
+    "prefix callback: with warp scans threads_per_block must be a multiple of 32, otherwise the raking layout must "
+    "yield 32 raking threads");
 
   // Parameterized BlockLoad type for input data
   using BlockLoadT = BlockLoad<InputT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentSelectIfPolicyT::LOAD_ALGORITHM>;
@@ -429,7 +436,7 @@ struct AgentSelectIf
     OffsetT (&selection_flags)[ITEMS_PER_THREAD])
   {
     constexpr bool can_initialize_before_items =
-      SELECT_METHOD == USE_SELECT_FLAGS || SELECT_METHOD == USE_STENCIL_WITH_OP;
+      SELECT_METHOD == selection_method::USE_SELECT_FLAGS || SELECT_METHOD == selection_method::USE_STENCIL_WITH_OP;
     constexpr bool prefetch_before_items =
       can_initialize_before_items && AgentSelectIfPolicyT::LOAD_PREFETCH != LoadPrefetch::none;
 
@@ -472,7 +479,7 @@ struct AgentSelectIf
     OffsetT num_tile_items,
     InputT (&items)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    constant_t<USE_SELECT_OP> /*select_method*/)
+    constant_t<selection_method::USE_SELECT_OP> /*select_method*/)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
@@ -496,7 +503,7 @@ struct AgentSelectIf
     OffsetT num_tile_items,
     InputT (& /*items*/)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    constant_t<USE_STENCIL_WITH_OP> /*select_method*/)
+    constant_t<selection_method::USE_STENCIL_WITH_OP> /*select_method*/)
   {
     FlagT flags[ITEMS_PER_THREAD];
     if (IsLastTile)
@@ -536,7 +543,7 @@ struct AgentSelectIf
     OffsetT num_tile_items,
     InputT (& /*items*/)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    constant_t<USE_SELECT_FLAGS> /*select_method*/)
+    constant_t<selection_method::USE_SELECT_FLAGS> /*select_method*/)
   {
     FlagT flags[ITEMS_PER_THREAD];
 
@@ -568,7 +575,7 @@ struct AgentSelectIf
     OffsetT num_tile_items,
     InputT (&items)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    constant_t<USE_DISCONTINUITY> /*select_method*/)
+    constant_t<selection_method::USE_DISCONTINUITY> /*select_method*/)
   {
     // We previously invoked the equality operator on out-of-bounds items
     // While fixing that issue there were some performance regressions that we had to work around
@@ -1094,7 +1101,7 @@ struct AgentSelectIf
     // TODO (elstehle): replacing this term with just `blockIdx.x` degrades perf for partition. Once we get to re-tune
     // the algorithm, we want to replace this term with `blockIdx.x`
     int tile_idx{};
-    if constexpr (SELECT_METHOD != USE_DISCONTINUITY)
+    if constexpr (SELECT_METHOD != selection_method::USE_DISCONTINUITY)
     {
       tile_idx = static_cast<int>((blockIdx.x * gridDim.y) + blockIdx.y); // Current tile index
     }

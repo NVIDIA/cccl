@@ -225,15 +225,24 @@ public:
 
     cudaEvent_t start_event = nullptr, end_event = nullptr;
 
+    // The timing events are released on every path. A failing destroy leaks that event and is
+    // reported; the guard is noexcept, so it cannot become a second exception. One policy per
+    // release, so a failure on the first does not skip the second.
     SCOPE(exit)
     {
       if (start_event)
       {
-        cuda_safe_call(cudaEventDestroy(start_event));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(start_event);
+        };
       }
       if (end_event)
       {
-        cuda_safe_call(cudaEventDestroy(end_event));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(end_event);
+        };
       }
     };
 
@@ -249,23 +258,7 @@ public:
       {
         if (start_event && end_event)
         {
-          // Inside the noexcept SCOPE body; keep cuda_safe_call so a CUDA
-          // error aborts rather than throwing through the guard.
-          cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
-          cuda_safe_call(cudaEventSynchronize(end_event));
-
-          float milliseconds = 0;
-          cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
-
-          if (dot.is_tracing())
-          {
-            dot.template add_vertex_timing<typename Ctx::task_type>(t, milliseconds, -1);
-          }
-
-          if (statistics.is_calibrating())
-          {
-            statistics.log_task_time(t, milliseconds);
-          }
+          statistics.record_task_timing(t, start_event, end_event, t.get_stream(), dot);
         }
       }
       t.clear();

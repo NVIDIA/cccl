@@ -13,5 +13,5 @@
 #  pragma system_header
 #endif // no system header
 
-// this system inherits sequence
+// tbb system inherits sequence
 #include <thrust/system/cpp/detail/sequence.h>

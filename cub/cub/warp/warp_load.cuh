@@ -17,16 +17,20 @@
 #endif // no system header
 
 #include <cub/block/block_load.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/warp/warp_exchange.cuh>
+#include <cub/warp/warp_utils.cuh>
 
 #include <cuda/__cmath/pow2.h>
-#include <cuda/__ptx/instructions/get_sreg.h>
-#include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
 
 CUB_NAMESPACE_BEGIN
 
@@ -34,7 +38,7 @@ CUB_NAMESPACE_BEGIN
 //! ``cub::WarpLoadAlgorithm`` enumerates alternative algorithms for :cpp:struct:`cub::WarpLoad` to
 //! read a linear segment of data from memory into a CUDA warp.
 //! @endrst
-enum WarpLoadAlgorithm
+enum WarpLoadAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
   //! @rst
   //! Overview
@@ -246,8 +250,6 @@ template <typename InputT,
           int LogicalWarpThreads      = detail::warp_threads>
 class WarpLoad
 {
-  static constexpr bool IS_ARCH_WARP = LogicalWarpThreads == detail::warp_threads;
-
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
 
 private:
@@ -419,7 +421,7 @@ private:
   using InternalLoad = LoadInternal<ALGORITHM, 0>;
 
   /// Shared memory storage layout type
-  using _TempStorage = typename InternalLoad::TempStorage;
+  using _TempStorage _CCCL_NODEBUG = typename InternalLoad::TempStorage;
 
   /*****************************************************************************
    * Utility methods
@@ -440,7 +442,7 @@ private:
   _TempStorage& temp_storage;
 
   /// Linear thread-id
-  int linear_tid;
+  int linear_tid = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
 
 public:
   /// @smemstorage{WarpLoad}
@@ -453,16 +455,12 @@ public:
   //!        shared memory as temporary storage.
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpLoad()
       : temp_storage(PrivateStorage())
-      , linear_tid(
-          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads))
   {}
 
   //! @brief Collective constructor using the specified memory allocation as
   //!        temporary storage.
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpLoad(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(
-          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads))
   {}
 
   //! @}

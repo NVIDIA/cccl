@@ -72,7 +72,7 @@ public:
    */
   static pool_options get_default_options()
   {
-    pool_options ret;
+    pool_options ret{};
 
     ret.min_blocks_per_chunk = 16;
     ret.min_bytes_per_chunk  = 1024;
@@ -159,7 +159,8 @@ private:
     block_descriptor_ptr next;
   };
 
-  struct chunk_descriptor
+  // Preserve default construction of allocator metadata; allocation paths supply the fields.
+  struct chunk_descriptor // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     std::size_t size;
     chunk_descriptor_ptr next;
@@ -177,7 +178,8 @@ private:
   // I assume that it is better this way, but the additional pointer could
   // potentially hurt? these are supposed to be oversized and/or overaligned,
   // so they are kinda memory intensive already
-  struct oversized_block_descriptor
+  // Preserve default construction of allocator metadata; allocation paths supply the fields.
+  struct oversized_block_descriptor // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     std::size_t size;
     std::size_t alignment;

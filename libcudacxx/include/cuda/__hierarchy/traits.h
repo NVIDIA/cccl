@@ -24,12 +24,10 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/__fwd/hierarchy.h>
-#  include <cuda/std/__tuple_dir/get.h>
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__type_traits/remove_cvref.h>
 #  include <cuda/std/__type_traits/type_list.h>
 #  include <cuda/std/__type_traits/void_t.h>
-#  include <cuda/std/cstdint>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -64,7 +62,7 @@ inline constexpr bool __is_natively_reachable_hierarchy_level_v<
 // __level_type_of
 
 template <class _LevelDesc>
-using __level_type_of = typename _LevelDesc::level_type;
+using __level_type_of _CCCL_NODEBUG = typename _LevelDesc::level_type;
 
 // __has_bottom_unit_or_level_v
 
@@ -83,17 +81,18 @@ struct __next_hierarchy_level<_Level, hierarchy<_BottomUnit, _LevelDescs...>>
 {
   static constexpr ::cuda::std::size_t __level_idx =
     hierarchy<_BottomUnit, _LevelDescs...>::template __level_idx<_Level>;
-  using __type = ::cuda::std::__type_index_c<__level_idx - 1, typename _LevelDescs::level_type...>;
+  using __type _CCCL_NODEBUG = ::cuda::std::__type_index_c<__level_idx - 1, typename _LevelDescs::level_type...>;
 };
 
 template <class _Level, class... _LevelDescs>
 struct __next_hierarchy_level<_Level, hierarchy<_Level, _LevelDescs...>>
 {
-  using __type = ::cuda::std::__type_index_c<(sizeof...(_LevelDescs) - 1), typename _LevelDescs::level_type...>;
+  using __type _CCCL_NODEBUG =
+    ::cuda::std::__type_index_c<(sizeof...(_LevelDescs) - 1), typename _LevelDescs::level_type...>;
 };
 
 template <class _Level, class _Hierarchy>
-using __next_hierarchy_level_t = typename __next_hierarchy_level<_Level, _Hierarchy>::__type;
+using __next_hierarchy_level_t _CCCL_NODEBUG = typename __next_hierarchy_level<_Level, _Hierarchy>::__type;
 
 template <class _Type>
 _CCCL_CONCEPT_FRAGMENT(__has_hierarchy_member_,
@@ -104,6 +103,13 @@ _CCCL_CONCEPT __has_hierarchy_member = _CCCL_FRAGMENT(__has_hierarchy_member_, _
 
 template <class _Type>
 inline constexpr bool __is_or_has_hierarchy_member_v = __has_hierarchy_member<_Type> || __is_hierarchy_v<_Type>;
+
+template <class _Unit, class _Level>
+inline constexpr bool __unit_same_as_or_below_v = __is_natively_reachable_hierarchy_level_v<_Unit, _Level>;
+template <class _Level>
+inline constexpr bool __unit_same_as_or_below_v<_Level, _Level> = true;
+template <>
+inline constexpr bool __unit_same_as_or_below_v<thread_level, warp_level> = true;
 
 _CCCL_END_NAMESPACE_CUDA
 

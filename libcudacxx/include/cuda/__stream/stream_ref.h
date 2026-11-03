@@ -29,12 +29,8 @@
 #  include <cuda/__fwd/get_stream.h>
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/invalid_stream.h>
-#  include <cuda/__utility/no_init.h>
-#  include <cuda/std/__exception/cuda_error.h>
-#  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__fwd/hash.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__utility/to_underlying.h>
-#  include <cuda/std/cstddef>
 
 #  include <cuda/std/__cccl/prologue.h>
 

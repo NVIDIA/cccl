@@ -6,9 +6,11 @@
 #include <cub/util_macro.cuh>
 
 #include <cuda/functional>
+#include <cuda/std/array>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/mdspan>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 
 #include <cstring>
@@ -40,7 +42,8 @@ __global__ void thread_reduce_kernel(const T* __restrict__ d_in, T* __restrict__
 template <int NumItems, typename T, typename ReduceOperator>
 __global__ void thread_reduce_kernel_array(const T* d_in, T* d_out, ReduceOperator reduce_operator)
 {
-  cuda::std::array<T, NumItems> thread_data;
+  // The input loop fills every entry before reduction.
+  cuda::std::array<T, NumItems> thread_data; // NOLINT(cppcoreguidelines-pro-type-member-init)
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < NumItems; ++i)
@@ -79,6 +82,17 @@ __global__ void thread_reduce_kernel_mdspan(const T* d_in, T* d_out, ReduceOpera
   *d_out = cub::ThreadReduce(mdspan, reduce_operator);
 }
 
+__global__ void thread_reduce_empty_prefix_kernel(int* d_out, int prefix)
+{
+  int thread_data[1] = {};
+  const cuda::std::span<int, 0> span(thread_data, 0);
+  const cuda::std::mdspan<int, cuda::std::extents<int, 0>> mdspan(thread_data);
+  const cuda::std::array<int, 0> array{};
+  d_out[0] = cub::ThreadReduce(span, cuda::std::plus<>{}, prefix);
+  d_out[1] = cub::ThreadReduce(mdspan, cuda::std::plus<>{}, prefix);
+  d_out[2] = cub::ThreadReduce(array, cuda::std::plus<>{}, prefix);
+}
+
 /***********************************************************************************************************************
  * CUB operator to STD operator
  **********************************************************************************************************************/
@@ -89,43 +103,43 @@ struct cub_operator_to_std;
 template <typename T>
 struct cub_operator_to_std<T, cuda::std::plus<>>
 {
-  using type = ::std::plus<T>; // T: MSVC complains about possible loss of data
+  using type _CCCL_NODEBUG = ::std::plus<T>; // T: MSVC complains about possible loss of data
 };
 
 template <typename T>
 struct cub_operator_to_std<T, cuda::std::multiplies<>>
 {
-  using type = ::std::multiplies<T>; // T: MSVC complains about possible loss of data
+  using type _CCCL_NODEBUG = ::std::multiplies<T>; // T: MSVC complains about possible loss of data
 };
 
 template <typename T>
 struct cub_operator_to_std<T, cuda::std::bit_and<>>
 {
-  using type = ::std::bit_and<T>; // T: MSVC complains about possible loss of data
+  using type _CCCL_NODEBUG = ::std::bit_and<T>; // T: MSVC complains about possible loss of data
 };
 
 template <typename T>
 struct cub_operator_to_std<T, cuda::std::bit_or<>>
 {
-  using type = ::std::bit_or<T>; // T: MSVC complains about possible loss of data
+  using type _CCCL_NODEBUG = ::std::bit_or<T>; // T: MSVC complains about possible loss of data
 };
 
 template <typename T>
 struct cub_operator_to_std<T, cuda::std::bit_xor<>>
 {
-  using type = ::std::bit_xor<T>; // T: MSVC complains about possible loss of data
+  using type _CCCL_NODEBUG = ::std::bit_xor<T>; // T: MSVC complains about possible loss of data
 };
 
 template <typename T>
 struct cub_operator_to_std<T, cuda::minimum<>>
 {
-  using type = cuda::minimum<>;
+  using type _CCCL_NODEBUG = cuda::minimum<>;
 };
 
 template <typename T>
 struct cub_operator_to_std<T, cuda::maximum<>>
 {
-  using type = cuda::maximum<>;
+  using type _CCCL_NODEBUG = cuda::maximum<>;
 };
 
 template <typename T, typename Operator>
@@ -358,4 +372,15 @@ CUB_TEST("ThreadReduce Container Tests", "[reduce][thread]", CUB_SMALL)
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   verify_results(reference_result, c2h::host_vector<int>(d_out)[0]);
+}
+
+CUB_TEST("ThreadReduce with prefix returns the prefix for empty input", "[reduce][thread]", CUB_SMALL)
+{
+  constexpr int prefix = 42;
+  c2h::device_vector<int> d_out(3, 0);
+
+  thread_reduce_empty_prefix_kernel<<<1, 1>>>(thrust::raw_pointer_cast(d_out.data()), prefix);
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE(d_out == c2h::device_vector<int>(3, prefix));
 }

@@ -114,6 +114,37 @@ void skip_if_fabric_ptx_smoke_is_unsupported(cuda::device_ref device, Devices...
   }
 }
 
+template <class... Devices>
+void skip_if_logical_endpoint_fabric_ipc_is_unsupported(cuda::device_ref device, Devices... devices)
+{
+#  if _CCCL_CTK_AT_LEAST(13, 4)
+  if (const char* reason = logical_endpoint_test::runtime_unsupported_reason(static_cast<int>(1 + sizeof...(Devices))))
+  {
+    SKIP(reason);
+  }
+
+  if (cuda::__driver::__version_below(13, 4))
+  {
+    SKIP("logical endpoint fabric IPC tests require a CUDA 13.4 driver");
+  }
+
+  const cuda::device_ref checked_devices[] = {device, devices...};
+  for (const cuda::device_ref checked_device : checked_devices)
+  {
+    const auto supported_handle_types =
+      checked_device.attribute(cuda::device_attributes::logical_endpoint_supported_handle_types);
+    if ((supported_handle_types & cuda::std::to_underlying(cuda::logical_endpoint_ipc_handle_type::fabric)) == 0)
+    {
+      SKIP("fabric logical endpoint IPC handles are not supported by the selected device");
+    }
+  }
+#  else // ^^^ _CCCL_CTK_AT_LEAST(13, 4) ^^^ / vvv _CCCL_CTK_BELOW(13, 4) vvv
+  (void) device;
+  ((void) devices, ...);
+  SKIP("logical endpoint fabric IPC tests require CUDA Toolkit 13.4");
+#  endif // _CCCL_CTK_BELOW(13, 4)
+}
+
 void skip_if_vmm_allocations_are_unsupported(cuda::device_ref device)
 {
   const auto native_device = cuda::__driver::__deviceGet(device.get());
@@ -153,12 +184,12 @@ class generic_allocation
 public:
   generic_allocation(cuda::device_ref device, cuda::std::uint64_t requested_bytes)
   {
-    auto mem_get_allocation_granularity = reinterpret_cast<PFN_cuMemGetAllocationGranularity_v10020>(
-      cuda::__driver::__get_driver_entry_point("cuMemGetAllocationGranularity", 10, 2));
-    auto mem_create =
-      reinterpret_cast<PFN_cuMemCreate_v10020>(cuda::__driver::__get_driver_entry_point("cuMemCreate", 10, 2));
-    mem_release_ =
-      reinterpret_cast<PFN_cuMemRelease_v10020>(cuda::__driver::__get_driver_entry_point("cuMemRelease", 10, 2));
+    const auto mem_get_allocation_granularity = _CCCLRT_GET_DRIVER_FUNCTION_TYPED(
+      PFN_cuMemGetAllocationGranularity_v10020, "cuMemGetAllocationGranularity", 10, 2);
+    const auto mem_create  = _CCCLRT_GET_DRIVER_FUNCTION_TYPED(PFN_cuMemCreate_v10020, "cuMemCreate", 10, 2);
+    const auto mem_release = _CCCLRT_GET_DRIVER_FUNCTION_TYPED(PFN_cuMemRelease_v10020, "cuMemRelease", 10, 2);
+    cuda::__driver::__throw_if_failed(mem_release.__status_, "Failed to get memory release function");
+    mem_release_ = mem_release.__fn_;
 
     CUmemAllocationProp allocation_prop{};
     allocation_prop.type                 = CU_MEM_ALLOCATION_TYPE_PINNED;
@@ -167,11 +198,14 @@ public:
     allocation_prop.requestedHandleTypes = CU_MEM_HANDLE_TYPE_NONE;
 
     size_t allocation_granularity = 0;
-    REQUIRE(mem_get_allocation_granularity(&allocation_granularity, &allocation_prop, CU_MEM_ALLOC_GRANULARITY_MINIMUM)
-            == CUDA_SUCCESS);
+    REQUIRE(
+      _CCCLRT_CALL_DRIVER_FUNCTION(
+        mem_get_allocation_granularity, &allocation_granularity, &allocation_prop, CU_MEM_ALLOC_GRANULARITY_MINIMUM)
+      == cudaSuccess);
     bytes_ = logical_endpoint_test::align_up(requested_bytes, static_cast<cuda::std::uint64_t>(allocation_granularity));
 
-    REQUIRE(mem_create(&handle_, static_cast<size_t>(bytes_), &allocation_prop, 0) == CUDA_SUCCESS);
+    REQUIRE(_CCCLRT_CALL_DRIVER_FUNCTION(mem_create, &handle_, static_cast<size_t>(bytes_), &allocation_prop, 0)
+            == cudaSuccess);
     owns_handle_ = true;
   }
 
@@ -217,6 +251,14 @@ C2H_CCCLRT_TEST("logical endpoint validates host-only state without driver calls
   CHECK(multicast.size() == 0);
   CHECK(moved_unicast.size() == 0);
   CHECK(moved_multicast.size() == 0);
+
+  cuda::logical_endpoint_fabric_handle handle;
+  [[maybe_unused]] const auto native_handle = handle.native_handle();
+
+#  if TEST_HAS_EXCEPTIONS()
+  CHECK_THROWS_AS((cuda::unicast_logical_endpoint{cuda::logical_endpoint_id{13}, handle}), std::invalid_argument);
+  CHECK_THROWS_AS((cuda::multicast_logical_endpoint{cuda::logical_endpoint_id{17}, handle}), std::invalid_argument);
+#  endif // TEST_HAS_EXCEPTIONS()
 }
 
 C2H_CCCLRT_TEST("unicast logical endpoint lifecycle with caller-owned ID range", "[logical_endpoint]")
@@ -254,6 +296,10 @@ C2H_CCCLRT_TEST("unicast logical endpoint lifecycle with caller-owned ID range",
   CHECK(endpoint.id() == cuda::invalid_logical_endpoint_id);
   CHECK(moved.size() == bytes);
   CHECK(moved.id() == ids[0]);
+
+#  if TEST_HAS_EXCEPTIONS()
+  CHECK_THROWS_AS(moved.export_endpoint(cuda::fabric_handle), std::invalid_argument);
+#  endif // TEST_HAS_EXCEPTIONS()
 
   auto released = moved.release();
   CHECK(moved.size() == 0);
@@ -341,6 +387,33 @@ C2H_CCCLRT_TEST("unicast logical endpoint release from explicit ID has no retain
   CHECK(!released.second.has_value());
 
   destroy_released_endpoint(released.first);
+}
+
+C2H_CCCLRT_TEST("unicast logical endpoint exports and imports endpoint handles in one process", "[logical_endpoint]")
+{
+  cuda::device_ref device{0};
+  auto spec = cuda::unicast_logical_endpoint_spec{device};
+  skip_if_logical_endpoint_fabric_ipc_is_unsupported(device);
+
+  auto limits = validate_logical_endpoint_support(spec, device);
+  auto bytes  = smoke_size(limits);
+
+  cuda::logical_endpoint_id_range ids{2};
+  cuda::unicast_logical_endpoint local{ids, 0, spec, bytes};
+  REQUIRE(local.wait_ready_for(logical_endpoint_test::ready_timeout));
+
+  cuda::logical_endpoint_fabric_handle handle = local.export_endpoint(cuda::fabric_handle);
+  [[maybe_unused]] const auto native_handle   = handle.native_handle();
+
+#  if TEST_HAS_EXCEPTIONS()
+  CHECK_THROWS_AS((cuda::multicast_logical_endpoint{cuda::logical_endpoint_id{123}, handle}), std::invalid_argument);
+#  endif // TEST_HAS_EXCEPTIONS()
+
+  cuda::unicast_logical_endpoint imported{ids, 1, handle};
+  CHECK(imported.id() == ids[1]);
+  CHECK(imported.size() == local.size());
+  CHECK(imported.bind_alignment() == local.bind_alignment());
+  REQUIRE(imported.wait_ready_for(logical_endpoint_test::ready_timeout));
 }
 
 C2H_CCCLRT_TEST("unicast logical endpoint honors reported maximum size", "[logical_endpoint]")
@@ -892,6 +965,35 @@ C2H_CCCLRT_TEST("multicast logical endpoint release from explicit ID has no reta
   CHECK(!released.second.has_value());
 
   destroy_released_endpoint(released.first);
+}
+
+C2H_CCCLRT_TEST("multicast logical endpoint exports and imports endpoint handles in one process", "[logical_endpoint]")
+{
+  auto [device, peer_device] = multicast_test_devices();
+  auto spec                  = cuda::multicast_logical_endpoint_spec{2};
+  skip_if_logical_endpoint_fabric_ipc_is_unsupported(device, peer_device);
+
+  auto limits = validate_logical_endpoint_support(spec, device, peer_device);
+  auto bytes  = smoke_size(limits);
+
+  cuda::logical_endpoint_id_range ids{2};
+  cuda::multicast_logical_endpoint endpoint{ids, 0, spec, bytes};
+  CHECK(endpoint.size() == bytes);
+  endpoint.add_device(device);
+
+  cuda::logical_endpoint_fabric_handle handle = endpoint.export_endpoint(cuda::fabric_handle);
+
+#  if TEST_HAS_EXCEPTIONS()
+  CHECK_THROWS_AS((cuda::unicast_logical_endpoint{cuda::logical_endpoint_id{127}, handle}), std::invalid_argument);
+#  endif // TEST_HAS_EXCEPTIONS()
+
+  cuda::multicast_logical_endpoint imported{ids, 1, handle};
+  CHECK(imported.id() == ids[1]);
+  CHECK(imported.size() == endpoint.size());
+  CHECK(imported.bind_alignment() == endpoint.bind_alignment());
+  imported.add_device(peer_device);
+  REQUIRE(endpoint.wait_ready_for(logical_endpoint_test::ready_timeout));
+  REQUIRE(imported.wait_ready_for(logical_endpoint_test::ready_timeout));
 }
 
 C2H_CCCLRT_TEST("multicast logical endpoint binds memory pool allocation by address", "[logical_endpoint]")

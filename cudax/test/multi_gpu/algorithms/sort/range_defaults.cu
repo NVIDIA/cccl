@@ -14,7 +14,7 @@
 #include <cuda/std/ranges>
 #include <cuda/std/span>
 
-#include <cuda/experimental/__multi_gpu/algorithm/sort/sort.h>
+#include <cuda/experimental/mgmn/sort>
 
 #include <algorithm>
 #include <vector>

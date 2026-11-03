@@ -55,10 +55,7 @@ inline auto& managed_pool()
 }
 
 // maximum number of entries in the host-allocated pool
-enum : size_t
-{
-  maxPoolEntries = 16 * 1024
-};
+inline constexpr size_t maxPoolEntries = 16 * 1024;
 } // namespace reserved
 
 /**
@@ -172,7 +169,10 @@ inline void deallocateHostMemory(
   }
   catch (...)
   {
-    cuda_safe_call(cudaFreeHost(p));
+    ON_THROW(notify)
+    {
+      cuda_try<cudaFreeHost>(p);
+    };
   }
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
   reserved::host_pool().insert(::std::make_pair(sz, p));
@@ -212,7 +212,10 @@ inline void deallocateManagedMemory(
   }
   catch (...)
   {
-    cuda_safe_call(cudaFree(p));
+    ON_THROW(notify)
+    {
+      cuda_try<cudaFree>(p);
+    };
   }
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
   reserved::managed_pool().insert(::std::make_pair(sz, p));
@@ -231,8 +234,11 @@ inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
 {
   SCOPE(fail)
   {
-    // In case of failure make sure we don't leak.
-    cuda_safe_call(cudaFreeHost(p));
+    // In case of failure make sure we don't leak; a failing free is reported.
+    ON_THROW(notify)
+    {
+      cuda_try<cudaFreeHost>(p);
+    };
   };
   // Own the heap pair until the launch succeeds; release ownership to the
   // callback only after cuda_try returns without throwing, so a failed
@@ -266,8 +272,11 @@ inline void deallocateManagedMemory(void* p, size_t sz, cudaStream_t stream)
 {
   SCOPE(fail)
   {
-    // In case of failure make sure we don't leak.
-    cuda_safe_call(cudaFree(p));
+    // In case of failure make sure we don't leak; a failing free is reported.
+    ON_THROW(notify)
+    {
+      cuda_try<cudaFree>(p);
+    };
   };
   auto args = ::std::make_unique<::std::pair<size_t, void*>>(sz, p);
   cuda_try(cudaLaunchHostFunc(
@@ -354,7 +363,7 @@ cudaError_t pin_memory(T* p, size_t n)
   }
   // We cast to (void *) because T may be a const type : we are not going
   // to modify the content, so this is legit ...
-  using NonConstT = typename std::remove_const<T>::type;
+  using NonConstT = std::remove_const_t<T>;
   // Report the result of THIS call only. cudaGetLastError() would return the
   // sticky error of any earlier failed CUDA call on this thread (e.g. an
   // expected probe failure or a caught allocation error), misattributing it
@@ -363,7 +372,7 @@ cudaError_t pin_memory(T* p, size_t n)
   if (res != cudaSuccess)
   {
     // Consume the sticky error state so it is not re-reported elsewhere.
-    cudaGetLastError();
+    static_cast<void>(cudaGetLastError());
   }
   return res;
 }
@@ -381,14 +390,14 @@ void unpin_memory(T* p)
 
   // We cast to non const T * because T may be a const type : we are not going
   // to modify the content, so this is legit ...
-  using NonConstT = typename std::remove_const<T>::type;
+  using NonConstT = std::remove_const_t<T>;
   if (cudaHostUnregister(const_cast<NonConstT*>(p)) != cudaSuccess)
   {
     // Tolerate unregister failures (e.g. the matching registration was
     // skipped or failed) and consume the sticky error state so it is not
     // misattributed to a later, unrelated call. This runs on cleanup paths
     // (including destructors), so it must not throw.
-    cudaGetLastError();
+    static_cast<void>(cudaGetLastError());
   }
 }
 
@@ -427,7 +436,7 @@ UNITTEST("pin_memory")
   EXPECT(!address_is_pinned(&a[0]));
   EXPECT(!address_is_pinned(&a[1023]));
 
-  pin_memory(&a[0], 1024);
+  cuda_safe_call(pin_memory(&a[0], 1024));
   EXPECT(address_is_pinned(&a[0]));
   EXPECT(address_is_pinned(&a[1023]));
   unpin_memory(&a[0]);
@@ -444,7 +453,7 @@ UNITTEST("pin_memory const")
 
   EXPECT(!address_is_pinned(ca));
 
-  pin_memory(ca, 1024);
+  cuda_safe_call(pin_memory(ca, 1024));
   EXPECT(address_is_pinned(ca));
   unpin_memory(ca);
 
@@ -467,7 +476,7 @@ UNITTEST("pin_memory ignores stale sticky errors")
   EXPECT(!address_is_pinned(&a[0]));
 
   // Consume whatever is left so this test does not poison the next one.
-  cudaGetLastError();
+  static_cast<void>(cudaGetLastError());
 };
 
 #endif // UNITTESTED_FILE
@@ -1141,7 +1150,7 @@ private:
 
   union
   {
-    alignas(T) unsigned char small_[sizeof(T) * small_cap];
+    alignas(T) unsigned char small_[sizeof(T) * small_cap]{};
     alignas(::std::vector<T>) unsigned char big_[sizeof(::std::vector<T>)];
   };
   small_size_t small_length = 0;

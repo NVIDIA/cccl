@@ -19,44 +19,33 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/invocable.h>
 #include <cuda/std/__expected/bad_expected_access.h>
 #include <cuda/std/__expected/expected_base.h>
 #include <cuda/std/__expected/unexpect.h>
 #include <cuda/std/__expected/unexpected.h>
+#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__fwd/expected.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
-#include <cuda/std/__type_traits/conjunction.h>
-#include <cuda/std/__type_traits/disjunction.h>
 #include <cuda/std/__type_traits/is_assignable.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
-#include <cuda/std/__type_traits/is_copy_assignable.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_function.h>
-#include <cuda/std/__type_traits/is_move_assignable.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_copy_assignable.h>
-#include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_swappable.h>
-#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
-#include <cuda/std/__type_traits/is_trivially_destructible.h>
-#include <cuda/std/__type_traits/is_trivially_move_constructible.h>
 #include <cuda/std/__type_traits/is_void.h>
-#include <cuda/std/__type_traits/lazy.h>
-#include <cuda/std/__type_traits/negation.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/as_const.h>
-#include <cuda/std/__utility/exception_guard.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
@@ -87,7 +76,7 @@ inline constexpr bool __can_swap<void, _Err> = is_swappable_v<_Err> && is_move_c
 template <class _Tp, class _Err>
 class expected : private __expected_move_assign<_Tp, _Err>
 {
-  using __base = __expected_move_assign<_Tp, _Err>;
+  using __base _CCCL_NODEBUG = __expected_move_assign<_Tp, _Err>;
 
   static_assert(__expected::__valid_expected<_Tp, _Err>,
                 "[expected.object.general] A program that instantiates the definition of template expected<T, E> for a "
@@ -1208,7 +1197,7 @@ public:
 template <class _Err>
 class expected<void, _Err> : private __expected_move_assign<void, _Err>
 {
-  using __base = __expected_move_assign<void, _Err>;
+  using __base _CCCL_NODEBUG = __expected_move_assign<void, _Err>;
   static_assert(__unexpected::__valid_unexpected<_Err>,
                 "[expected.void.general] A program that instantiates expected<T, E> with a E that is not a "
                 "valid argument for unexpected<E> is ill-formed");

@@ -27,25 +27,20 @@
 #  include <cuda/std/__compare/compare_three_way_result.h>
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-#include <cuda/std/__concepts/convertible_to.h>
-#include <cuda/std/__iterator/advance.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__iterator/iter_move.h>
 #include <cuda/std/__iterator/iter_swap.h>
-#include <cuda/std/__iterator/iterator.h>
 #include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__iterator/next.h>
 #include <cuda/std/__iterator/prev.h>
 #include <cuda/std/__iterator/readable_traits.h>
-#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_assignable.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_assignable.h>
-#include <cuda/std/__type_traits/is_nothrow_convertible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -348,8 +343,8 @@ make_reverse_iterator(_Iter __i) noexcept(is_nothrow_copy_constructible_v<_Iter>
 template <template <class> class _RevIter1, template <class> class _RevIter2, class _Iter>
 struct __unwrap_reverse_iter_impl
 {
-  using _UnwrappedIter  = decltype(__unwrap_iter_impl<_Iter>::__unwrap(::cuda::std::declval<_Iter>()));
-  using _ReverseWrapper = _RevIter1<_RevIter2<_Iter>>;
+  using _UnwrappedIter _CCCL_NODEBUG  = decltype(__unwrap_iter_impl<_Iter>::__unwrap(::cuda::std::declval<_Iter>()));
+  using _ReverseWrapper _CCCL_NODEBUG = _RevIter1<_RevIter2<_Iter>>;
 
   _CCCL_API static constexpr _ReverseWrapper __rewrap(_ReverseWrapper __orig_iter, _UnwrappedIter __unwrapped_iter)
   {

@@ -74,7 +74,7 @@ result** — and **never on construction**:
 So a freshly constructed value still holds whatever `double` it was given:
 
 ```c++
-cudax::fp64_custom<8, 23> x{1.0 / 3.0};
+cuda::fp64_custom<8, 23> x{1.0 / 3.0};
 static_cast<double>(x);          // still the full double 1/3, unreduced
 static_cast<double>(x + zero);   // now rounded to 23 mantissa bits
 ```
@@ -117,8 +117,8 @@ Compile-time or run-time sizes
 The sizes can come from the template arguments or from a variable:
 
 ```c++
-using fp_dynamic = cudax::fp64_custom<cudax::fp_custom_dynamic_size,
-                                      cudax::fp_custom_dynamic_size>;
+using fp_dynamic = cuda::fp64_custom<cuda::fp_custom_dynamic_size,
+                                      cuda::fp_custom_dynamic_size>;
 ```
 
 `fp_custom_dynamic_size` can be used on either axis or both, so one axis can stay fixed
@@ -169,18 +169,26 @@ side.
 Using the type
 --------------
 
+The feature is opt-in. `fp_custom`'s runtime field sizes live in mutable variables at
+namespace scope, one copy shared by every translation unit, so an `#include` left behind
+after an experiment would put that state into a shipping binary. `<cuda/fptool>` therefore
+refuses to compile until the project asks for it:
+
+```bash
+nvcc -DCCCL_ENABLE_FPTOOL ...
+```
+
+Define it for the whole project rather than per file, since the state above is shared
+across translation units.
+
 ```c++
 #include <cuda/fptool>     // one header for the whole feature
 ```
 
-```c++
-namespace cudax = cuda::experimental;
-```
-
-Everything this feature names is specific to the component and carries the prefix. Unlike the
-`fpmp` and `fpemu` types, there is nothing here to find by argument-dependent lookup: the
-setters and getters take only an `int` and a stream, so there is no operand of a component
-type to look in.
+Everything this feature names is specific to the component and carries the `cuda::` prefix.
+Unlike the `fpmp` and `fpemu` types, there is nothing here to find by argument-dependent
+lookup: the setters and getters take only an `int` and a stream, so there is no operand of a
+component type to look in.
 
 ### Construction and conversion
 
@@ -238,7 +246,7 @@ copy into a non-volatile local first. The type stays trivially copyable, the sam
 alignment as a `double`, and `bit_cast` through `double` is the sanctioned route to the raw
 bits.
 
-### Two gaps worth knowing
+### The math-function gap
 
 Only **`sqrt` and `fma`** have reducing implementations. They are also redeclared in
 `cuda::std`, so the qualified spellings select the reducing version rather than narrowing
@@ -250,9 +258,6 @@ Every other math function does not. There is no `fabs`, `exp`, `log`, `sin` or `
 that is a real trap: the emulated format quietly stops applying for that part of the
 expression. Where an algorithm leans on transcendentals, check what is actually being reduced
 before trusting the answer.
-
-There is also no `numeric_limits` specialization, so generic code that queries limits will
-not see the emulated format's.
 
 The example
 -----------
@@ -299,3 +304,11 @@ Use cases
 - **Separating the two axes** — `fp64_custom<11, 23>` reduces the mantissa while keeping FP64
   range, which distinguishes an algorithm that needs precision from one that needs dynamic
   range
+
+Optimization guide
+------------------
+
+The sizing question `fp64_custom` answers is the second step of choosing a type. The [FP
+optimization guide](README_fp_optimization_guide.md#using-fptool) says how to run the sweep so
+that it measures the loop rather than the summation, and how to read the result against the
+component types in [Choosing the type](README_fp_optimization_guide.md#choosing-the-type).

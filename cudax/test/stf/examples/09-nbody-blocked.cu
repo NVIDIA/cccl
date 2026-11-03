@@ -86,7 +86,7 @@ void load_input_file(std::string filename, std::vector<body>& particles)
   // Loop until we reach the end of the file
   while (infile >> mass >> posX >> posY >> posZ >> velX >> velY >> velZ)
   {
-    body p;
+    body p{};
     p.mass = mass;
 
     p.pos[0] = posX;
@@ -276,6 +276,8 @@ int main(int argc, char** argv)
   ctx.finalize();
 
   float elapsed;
+  // finalize() does not wait for work recorded in a stream returned by fence().
+  cuda_safe_call(cudaEventSynchronize(stop));
   cuda_safe_call(cudaEventElapsedTime(&elapsed, start, stop));
 
   // rough approximation !

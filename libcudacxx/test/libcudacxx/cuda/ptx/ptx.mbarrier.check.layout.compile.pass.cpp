@@ -9,10 +9,9 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: libcpp-has-no-threads
 
-// <cuda/ptx>
+// <cuda/ptxs/mbarrier_check_layout.h>
 
-#include <cuda/ptx>
-#include <cuda/std/utility>
+#include <cuda/ptxs/mbarrier_check_layout.h>
 
 #include "generated/mbarrier_check_layout.h"
 

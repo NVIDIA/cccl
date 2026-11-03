@@ -20,10 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__fwd/allocator.h>
-#include <cuda/std/__fwd/char_traits.h>
-#include <cuda/std/__fwd/memory_resource.h>
-
 #include <cuda/std/__cccl/prologue.h>
 
 // std:: forward declarations

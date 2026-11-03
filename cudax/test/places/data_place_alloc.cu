@@ -123,7 +123,7 @@ void test_managed_allocation()
   // Check if concurrent managed access is supported
   int dev;
   cuda_try(cudaGetDevice(&dev));
-  cudaDeviceProp prop;
+  cudaDeviceProp prop{};
   cuda_try(cudaGetDeviceProperties(&prop, dev));
   if (!prop.concurrentManagedAccess)
   {

@@ -25,13 +25,11 @@
 
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
-#  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__memory/pointer_traits.h>
 #  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__type_traits/maybe_const.h>
 #  include <cuda/std/__type_traits/remove_const.h>
-#  include <cuda/std/cstdint>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -213,7 +211,7 @@ class heterogeneous_iterator
         ::cuda::std::is_const_v<_CvTp> ? __is_heterogeneous_const_iter::__yes : __is_heterogeneous_const_iter::__no,
         ::cuda::mr::__memory_accessibility_from_properties_v<_Properties...>>
 {
-  using __base = __heterogeneous_iterator_access<
+  using __base _CCCL_NODEBUG = __heterogeneous_iterator_access<
     ::cuda::std::remove_const_t<_CvTp>,
     ::cuda::std::is_const_v<_CvTp> ? __is_heterogeneous_const_iter::__yes : __is_heterogeneous_const_iter::__no,
     ::cuda::mr::__memory_accessibility_from_properties_v<_Properties...>>;

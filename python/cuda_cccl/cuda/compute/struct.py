@@ -43,9 +43,7 @@ def gpu_struct(
         if field_dict.type != np.void or field_dict.fields is None:
             field_dict = {}
         else:
-            field_dict = {
-                name: field_info[0] for name, field_info in field_dict.fields.items()
-            }
+            field_dict = {name: field_dict.fields[name][0] for name in field_dict.names}
 
     # Handle annotated class (decorator usage)
     if isinstance(field_dict, type) and hasattr(field_dict, "__annotations__"):

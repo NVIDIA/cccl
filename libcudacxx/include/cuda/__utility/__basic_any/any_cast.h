@@ -27,7 +27,6 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/is_void.h>
-#include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/typeid.h>
 
 #include <cuda/std/__cccl/prologue.h>

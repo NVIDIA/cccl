@@ -30,8 +30,8 @@ struct CopyFunctorWithManyRegisters
 TEST_CASE("TestForEachLargeRegisterFootprint", "[for_each]")
 {
   int current_device = -1;
-  cudaGetDevice(&current_device);
-  cudaDeviceProp prop;
+  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+  cudaDeviceProp prop{};
   cudaGetDeviceProperties(&prop, current_device);
 
   thrust::device_vector<int> data(NUM_REGISTERS, 12345);
@@ -44,8 +44,8 @@ TEST_CASE("TestForEachLargeRegisterFootprint", "[for_each]")
 TEST_CASE("TestForEachNLargeRegisterFootprint", "[for_each]")
 {
   int current_device = -1;
-  cudaGetDevice(&current_device);
-  cudaDeviceProp prop;
+  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+  cudaDeviceProp prop{};
   cudaGetDeviceProperties(&prop, current_device);
 
   thrust::device_vector<int> data(NUM_REGISTERS, 12345);
@@ -216,20 +216,19 @@ DECLARE_VARIABLE_UNITTEST(TestForEachNDeviceDevice);
 TEST_CASE("TestForEachCudaStreams", "[for_each]")
 {
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::device_vector<int> input{3, 2, 3, 4, 6};
   thrust::device_vector<int> output(7, 0);
 
-  mark_present_for_each<int> f;
-  f.ptr = thrust::raw_pointer_cast(output.data());
+  const mark_present_for_each<int> f{thrust::raw_pointer_cast(output.data())};
 
   thrust::for_each(thrust::cuda::par.on(s), input.begin(), input.end(), f);
 
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   const thrust::device_vector<int> ref{0, 0, 1, 1, 1, 0, 1};
   REQUIRE(output == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }

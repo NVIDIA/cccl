@@ -92,7 +92,9 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   ctx.finalize();
 
   float elapsedTime;
-  cudaEventElapsedTime(&elapsedTime, start, stop);
+  // finalize() does not wait for work recorded in a stream returned by fence().
+  cuda_safe_call(cudaEventSynchronize(stop));
+  cuda_safe_call(cudaEventElapsedTime(&elapsedTime, start, stop));
   printf("Elapsed time: %f ms\n", elapsedTime);
 #endif
 }

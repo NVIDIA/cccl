@@ -35,8 +35,6 @@
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__ranges/compressed_movable_box.h>
-#include <cuda/std/__ranges/concepts.h>
-#include <cuda/std/__ranges/movable_box.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
@@ -45,7 +43,6 @@
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/declval.h>
-#include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -64,7 +61,7 @@ struct __transform_iterator_category_base<_Fn,
                                           _Iter,
                                           ::cuda::std::enable_if_t<::cuda::std::__has_forward_traversal<_Iter>>>
 {
-  using _Cat = typename ::cuda::std::iterator_traits<_Iter>::iterator_category;
+  using _Cat _CCCL_NODEBUG = typename ::cuda::std::iterator_traits<_Iter>::iterator_category;
 
   using iterator_category = ::cuda::std::conditional_t<
     ::cuda::std::is_reference_v<::cuda::std::invoke_result_t<_Fn&, ::cuda::std::iter_reference_t<_Iter>>>,

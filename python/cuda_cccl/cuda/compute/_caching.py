@@ -605,15 +605,15 @@ cache_with_registered_key_functions = _CacheWithRegisteredKeyFunctions()
 
 
 def _make_hashable(value):
+    """Hash a global/closure variable for caching purposes."""
     # duck-type check for a JIT backend's dispatcher:
     if hasattr(value, "py_func") and callable(value.py_func):
         return CachableFunction(value.py_func)
     elif is_device_array(value):
-        # Ops with device arrays in globals/closures will be handled
-        # by stateful op machinery, which enables updating the state
-        # (pointers). Thus, we only cache on the dtype and shape of
-        # the referenced array, but not its pointer.
-        return (get_dtype(value), get_shape(value))
+        # The stateful op machinery threads the array's pointer and
+        # shape through the *runtime* state buffer.  Thus, the key
+        # includes only dtype and rank, not pointer or shape.
+        return (get_dtype(value), len(get_shape(value)))
     elif isinstance(value, (np.number, np.bool_)):
         return ("numpy.scalar", value.dtype.str, value.tobytes())
     elif isinstance(value, (bool, int, float)):

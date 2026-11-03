@@ -13,6 +13,7 @@
 #include <cuda/hierarchy>
 #include <cuda/launch>
 #include <cuda/std/cstddef>
+#include <cuda/std/ranges>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
 
@@ -29,100 +30,83 @@ __device__ void test_barrier_synchronizer(const Level& level, Config config)
 
   const auto& hierarchy = config.hierarchy();
 
-  // Test constructor from static span of barriers.
+  // Test constructor from a range of barriers.
   {
     auto& barriers = get_barriers<nbarriers, 0>(level);
-    using Barrier  = cuda::std::remove_all_extents_t<cuda::std::remove_reference_t<decltype(barriers)>>;
-
-    const cuda::std::span<Barrier, nbarriers> barriers_span{barriers, nbarriers};
-    // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
-    cudax::coop::barrier_synchronizer synchronizer{barriers_span};
-
-    static_assert(cuda::std::is_same_v<cudax::coop::barrier_synchronizer<Barrier, nbarriers>, decltype(synchronizer)>);
-    static_assert(cuda::std::is_nothrow_constructible_v<decltype(synchronizer), decltype(barriers_span)>);
-
-    CHECK(synchronizer.barriers().data() == barriers);
-    CHECK(synchronizer.barriers().size() == nbarriers);
-  }
-
-  // Test constructor from dynamic span of barriers.
-  {
-    auto& barriers = get_barriers<nbarriers, 1>(level);
-    using Barrier  = cuda::std::remove_all_extents_t<cuda::std::remove_reference_t<decltype(barriers)>>;
-
-    const cuda::std::span<Barrier> barriers_span{barriers, nbarriers};
-    // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
-    cudax::coop::barrier_synchronizer synchronizer{barriers_span};
-
-    static_assert(cuda::std::is_same_v<cudax::coop::barrier_synchronizer<Barrier, cuda::std::dynamic_extent>,
-                                       decltype(synchronizer)>);
-    static_assert(cuda::std::is_nothrow_constructible_v<decltype(synchronizer), decltype(barriers_span)>);
-
-    CHECK(synchronizer.barriers().data() == barriers);
-    CHECK(synchronizer.barriers().size() == nbarriers);
-  }
-
-  // Test constructor from array of barriers.
-  {
-    auto& barriers = get_barriers<nbarriers, 2>(level);
     using Barrier  = cuda::std::remove_all_extents_t<cuda::std::remove_reference_t<decltype(barriers)>>;
 
     // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
     cudax::coop::barrier_synchronizer synchronizer{barriers};
 
-    static_assert(cuda::std::is_same_v<cudax::coop::barrier_synchronizer<Barrier, nbarriers>, decltype(synchronizer)>);
-    static_assert(cuda::std::is_nothrow_constructible_v<decltype(synchronizer), decltype(barriers)>);
-
-    CHECK(synchronizer.barriers().data() == barriers);
-    CHECK(synchronizer.barriers().size() == nbarriers);
-  }
-
-  // Test barriers().
-  {
-    auto& barriers = get_barriers<nbarriers, 3>(level);
-    using Barrier  = cuda::std::remove_all_extents_t<cuda::std::remove_reference_t<decltype(barriers)>>;
-
-    const cudax::coop::barrier_synchronizer synchronizer{barriers};
-
-    static_assert(cuda::std::is_same_v<cuda::std::span<Barrier, nbarriers>, decltype(synchronizer.barriers())>);
-    static_assert(noexcept(synchronizer.barriers()));
-
-    CHECK(synchronizer.barriers().data() == barriers);
-    CHECK(synchronizer.barriers().size() == nbarriers);
+    static_assert(cuda::std::is_same_v<cudax::coop::barrier_synchronizer<cuda::std::views::all_t<decltype(barriers)>>,
+                                       decltype(synchronizer)>);
+    static_assert(cuda::std::is_constructible_v<decltype(synchronizer), decltype(barriers)>);
   }
 
   // Test make_instance(...).
   {
-    auto& barriers = get_barriers<nbarriers, 4>(level);
+    auto& barriers = get_barriers<nbarriers, 1>(level);
     using Barrier  = cuda::std::remove_all_extents_t<cuda::std::remove_reference_t<decltype(barriers)>>;
 
     const auto parent_group = cudax::coop::make_this_group(level, config);
     const ThreadsInWarpMappingResult prev_mapping_result;
 
     const cudax::coop::group_by mapping{4};
-    const cudax::coop::barrier_synchronizer synchronizer{barriers};
+    cudax::coop::barrier_synchronizer synchronizer{barriers};
 
     const auto mapping_result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
     auto synchronizer_instance = synchronizer.make_instance(cuda::gpu_thread, parent_group, mapping_result);
 
+    using SynchronizerInstance = decltype(synchronizer_instance);
+    using ArrivalToken         = typename SynchronizerInstance::arrival_token;
+
+    // Test arrival_token type.
+    static_assert(cuda::std::is_move_constructible_v<ArrivalToken>);
+    static_assert(cuda::std::is_move_assignable_v<ArrivalToken>);
+    static_assert(cuda::std::is_destructible_v<ArrivalToken>);
+
     // Test do_sync(...).
     static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync(mapping_result, hierarchy))>);
-    static_assert(noexcept(synchronizer_instance.do_sync(mapping_result, hierarchy)));
     synchronizer_instance.do_sync(mapping_result, hierarchy);
+
+    // Test do_arrive(...).
+    static_assert(
+      cuda::std::is_same_v<ArrivalToken, decltype(synchronizer_instance.do_arrive(mapping_result, hierarchy))>);
+    auto arrival_token = synchronizer_instance.do_arrive(mapping_result, hierarchy);
+
+    // Test do_wait(...).
+    static_assert(cuda::std::is_same_v<
+                  void,
+                  decltype(synchronizer_instance.do_wait(mapping_result, hierarchy, cuda::std::move(arrival_token)))>);
+    synchronizer_instance.do_wait(mapping_result, hierarchy, cuda::std::move(arrival_token));
 
     // Test do_sync_aligned(...).
     static_assert(
       cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync_aligned(mapping_result, hierarchy))>);
-    static_assert(noexcept(synchronizer_instance.do_sync_aligned(mapping_result, hierarchy)));
     synchronizer_instance.do_sync_aligned(mapping_result, hierarchy);
+
+    // Test do_arrive_aligned(...).
+    static_assert(
+      cuda::std::is_same_v<ArrivalToken, decltype(synchronizer_instance.do_arrive_aligned(mapping_result, hierarchy))>);
+    auto arrival_token_a = synchronizer_instance.do_arrive_aligned(mapping_result, hierarchy);
+
+    // Test do_wait_aligned(...).
+    static_assert(
+      cuda::std::is_same_v<
+        void,
+        decltype(synchronizer_instance.do_wait_aligned(mapping_result, hierarchy, cuda::std::move(arrival_token_a)))>);
+    synchronizer_instance.do_wait_aligned(mapping_result, hierarchy, cuda::std::move(arrival_token_a));
 
     // Test view().
     static_assert(cuda::std::is_same_v<cudax::coop::__barrier_synchronizer_instance_view<Barrier>,
                                        decltype(synchronizer_instance.view())>);
-    static_assert(noexcept(synchronizer_instance.view()));
     auto synchronizer_instance_view = synchronizer_instance.view();
     synchronizer_instance_view.do_sync(mapping_result, hierarchy);
     synchronizer_instance_view.do_sync_aligned(mapping_result, hierarchy);
+    synchronizer_instance_view.do_wait(
+      mapping_result, hierarchy, synchronizer_instance_view.do_arrive(mapping_result, hierarchy));
+    synchronizer_instance_view.do_wait_aligned(
+      mapping_result, hierarchy, synchronizer_instance_view.do_arrive_aligned(mapping_result, hierarchy));
     (void) synchronizer_instance_view.view();
     static_assert(cuda::std::is_same_v<cudax::coop::__barrier_synchronizer_instance_view<Barrier>,
                                        decltype(synchronizer_instance.view().view())>);
@@ -130,7 +114,6 @@ __device__ void test_barrier_synchronizer(const Level& level, Config config)
 
     // Test deinit(...);
     static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.deinit(mapping_result, hierarchy))>);
-    static_assert(noexcept(synchronizer_instance.deinit(mapping_result, hierarchy)));
     synchronizer_instance.deinit(mapping_result, hierarchy);
   }
 }

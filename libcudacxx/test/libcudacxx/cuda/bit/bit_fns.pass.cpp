@@ -16,7 +16,8 @@
 
 #include "test_macros.h"
 
-// bit_fns must only accept unsigned integer types, not bool, signed integers, floating point, or enums.
+// bit_fns must only accept unsigned integer types, not bool, character types, signed integers, floating point, or
+// enums.
 enum class Enum
 {
   value
@@ -29,6 +30,7 @@ static_assert(can_bit_fns<unsigned char>);
 static_assert(can_bit_fns<unsigned int>);
 static_assert(can_bit_fns<unsigned long long>);
 static_assert(!can_bit_fns<bool>);
+static_assert(!can_bit_fns<char16_t>);
 static_assert(!can_bit_fns<int>);
 static_assert(!can_bit_fns<float>);
 static_assert(!can_bit_fns<Enum>);
@@ -65,16 +67,33 @@ TEST_FUNC constexpr bool check(T value)
 }
 
 template <typename T>
+TEST_FUNC constexpr void test_rank_0(T value, int expected)
+{
+  assert(cuda::bit_fns(value, 0) == expected);
+  if (!cuda::std::__cccl_default_is_constant_evaluated())
+  {
+    // Volatile reads keep the value and the second rank unknown to the optimizer.
+    volatile T runtime_value = value;
+    volatile int rank        = 0;
+    assert(cuda::bit_fns(static_cast<T>(runtime_value), 0) == expected);
+    assert(cuda::bit_fns(static_cast<T>(runtime_value), rank) == expected);
+  }
+}
+
+template <typename T>
 TEST_FUNC constexpr void test()
 {
   constexpr int digits = cuda::std::numeric_limits<T>::digits;
   constexpr int half   = digits / 2;
   constexpr T all_ones = static_cast<T>(~T{0});
 
+  test_rank_0(T{0}, -1);
+  test_rank_0(static_cast<T>(0b10110100), 2);
   // a single set bit at any position has rank 0 and reports that position
   for (int bit = 0; bit < digits; ++bit)
   {
-    assert(cuda::bit_fns(static_cast<T>(T{1} << bit), 0) == bit);
+    test_rank_0(static_cast<T>(T{1} << bit), bit);
+    test_rank_0(static_cast<T>(all_ones << bit), bit);
   }
   // with every bit set, rank k is at position k
   for (int rank = 0; rank < digits; ++rank)

@@ -25,10 +25,13 @@
 #  include <cuda/std/__compare/ordering.h>
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/climits>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/ratio>
 
@@ -61,7 +64,7 @@ template <class _Rep1, class _Period1, class _Rep2, class _Period2>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
 common_type<::cuda::std::chrono::duration<_Rep1, _Period1>, ::cuda::std::chrono::duration<_Rep2, _Period2>>
 {
-  using type =
+  using type _CCCL_NODEBUG =
     ::cuda::std::chrono::duration<common_type_t<_Rep1, _Rep2>, typename __ratio_gcd<_Period1, _Period2>::type>;
 };
 

@@ -4,12 +4,14 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
 #ifndef _CUDA_STD___EXCEPTION_CUDA_ERROR_H
 #define _CUDA_STD___EXCEPTION_CUDA_ERROR_H
+
+// IWYU pragma: always_keep
 
 #include <cuda/std/detail/__config>
 
@@ -21,7 +23,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__driver/entry_point.h>
+#include <cuda/__driver/entry_point.h> // IWYU pragma: keep
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__exception/msg_storage.h>
 #include <cuda/std/__host_stdlib/cstdio>
@@ -33,10 +35,26 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+#if !_CCCL_COMPILER(NVRTC)
+// Bootstrap errors cannot depend on cuGetErrorString being available.
+template <int _Error>
+[[noreturn]] _CCCL_HOST_API void __throw_cuda_error(
+  const char* __msg,
+  const char* __api                         = nullptr,
+  const ::cuda::std::source_location& __loc = ::cuda::std::source_location::current());
+
+[[noreturn]] _CCCL_HOST_API void __throw_cuda_error(
+  const int __error,
+  const char* __msg,
+  const char* __api                         = nullptr,
+  const ::cuda::std::source_location& __loc = ::cuda::std::source_location::current());
+
+#endif // !_CCCL_COMPILER(NVRTC)
+
 #if _CCCL_HAS_CTK()
-using __cuda_error_t = ::cudaError_t;
+using __cuda_error_t _CCCL_NODEBUG = ::cudaError_t;
 #else
-using __cuda_error_t = int;
+using __cuda_error_t _CCCL_NODEBUG = int;
 #endif
 
 #if _CCCL_HOSTED()
@@ -91,7 +109,7 @@ public:
                             const ::cuda::std::source_location& __loc = ::cuda::std::source_location::current())
       : cuda_error{__status,
 #  if _CCCL_HAS_CTK()
-                   ::cuda::__driver::__getErrorString(static_cast<::cudaError_t>(__status)),
+                   ::cuda::__driver::__getErrorStringNoThrow(static_cast<::cudaError_t>(__status)),
 #  else // ^^^ _CCCL_HAS_CTK() ^^^ / vvv !_CCCL_HAS_CTK() vvv
                    "cudaError",
 #  endif // ^^^ !_CCCL_HAS_CTK() ^^^

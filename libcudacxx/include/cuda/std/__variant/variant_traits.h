@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/variant.h>
 #include <cuda/std/__type_traits/add_const.h>
 #include <cuda/std/__type_traits/add_cv.h>
@@ -77,7 +78,7 @@ template <size_t _Ip, class... _Types>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_alternative<_Ip, variant<_Types...>>
 {
   static_assert(_Ip < sizeof...(_Types), "Index out of bounds in cuda::std::variant_alternative<>");
-  using type = __type_index_c<_Ip, _Types...>;
+  using type _CCCL_NODEBUG = __type_index_c<_Ip, _Types...>;
 };
 
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL int __choose_index_type(unsigned int __num_elem) noexcept
@@ -96,7 +97,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_alternative<_Ip, variant<_Types...>
 }
 
 template <size_t _NumAlts>
-using __variant_index_t =
+using __variant_index_t _CCCL_NODEBUG =
   conditional_t<::cuda::std::__choose_index_type(_NumAlts) == 0,
                 unsigned char,
                 conditional_t<::cuda::std::__choose_index_type(_NumAlts) == 1, unsigned short, unsigned int>>;

@@ -34,7 +34,7 @@ struct AlwaysTruePredFn
 struct AlwaysFalsePredFn
 {
   template <class MappingResult>
-  __device__ bool operator()(MappingResult mapping_result) noexcept
+  __device__ bool operator()(MappingResult mapping_result)
   {
     return false;
   }
@@ -49,8 +49,8 @@ struct IsEvenPredFn
   }
 };
 
-template <class Config>
-__device__ void test_binary_partition(Config config)
+template <class Config, class... NonExhaustive>
+__device__ void test_binary_partition(Config config, const NonExhaustive&... non_exhaustive)
 {
   // Always true predicate.
   {
@@ -59,7 +59,7 @@ __device__ void test_binary_partition(Config config)
 
     // Test constructor from pred_fn.
     {
-      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, Pred>);
+      static_assert(cuda::std::is_constructible_v<Mapping, Pred>);
       const cudax::coop::binary_partition mapping{Pred{}};
     }
 
@@ -69,11 +69,10 @@ __device__ void test_binary_partition(Config config)
       const ThreadsInWarpMappingResult prev_mapping_result;
 
       static_assert(cudax::coop::__group_mapping_result<decltype(cuda::std::declval<Mapping>().map(
-                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
-      static_assert(!noexcept(cuda::std::declval<Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
+                      non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result))>);
 
       Mapping mapping{Pred{}};
-      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
+      auto result  = mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == 2);
@@ -99,7 +98,7 @@ __device__ void test_binary_partition(Config config)
 
     // Test constructor from pred_fn.
     {
-      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, Pred>);
+      static_assert(cuda::std::is_constructible_v<Mapping, Pred>);
       const cudax::coop::binary_partition mapping{Pred{}};
     }
 
@@ -109,11 +108,10 @@ __device__ void test_binary_partition(Config config)
       const ThreadsInWarpMappingResult prev_mapping_result;
 
       static_assert(cudax::coop::__group_mapping_result<decltype(cuda::std::declval<Mapping>().map(
-                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
-      static_assert(noexcept(cuda::std::declval<Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
+                      non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result))>);
 
       Mapping mapping{Pred{}};
-      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
+      auto result  = mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == 2);
@@ -139,7 +137,7 @@ __device__ void test_binary_partition(Config config)
 
     // Test constructor from pred_fn.
     {
-      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, Pred>);
+      static_assert(cuda::std::is_constructible_v<Mapping, Pred>);
       const cudax::coop::binary_partition mapping{Pred{}};
     }
 
@@ -149,11 +147,10 @@ __device__ void test_binary_partition(Config config)
       const ThreadsInWarpMappingResult prev_mapping_result;
 
       static_assert(cudax::coop::__group_mapping_result<decltype(cuda::std::declval<Mapping>().map(
-                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
-      static_assert(!noexcept(cuda::std::declval<Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
+                      non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result))>);
 
       Mapping mapping{Pred{}};
-      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
+      auto result  = mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == 2);
@@ -183,6 +180,7 @@ struct TestKernel
   __device__ void operator()(const Config& config)
   {
     test_binary_partition(config);
+    test_binary_partition(config, cudax::coop::non_exhaustive);
   }
 };
 } // namespace

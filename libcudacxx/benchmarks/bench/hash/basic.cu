@@ -33,7 +33,7 @@ struct large_key
   }
 
 private:
-  cuda::std::int32_t data_[Words];
+  cuda::std::int32_t data_[Words]{};
 };
 
 template <cuda::std::int32_t BlockSize, typename Key, typename Hasher, typename OutputIt>

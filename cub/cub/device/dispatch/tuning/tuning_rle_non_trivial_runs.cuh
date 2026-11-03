@@ -13,25 +13,26 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_reduce_by_key.cuh>
 #include <cub/agent/agent_rle.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/numeric_traits.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
-#include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/concepts>
 
 CUB_NAMESPACE_BEGIN
 
 //! The lookback tuning policy for @ref DeviceRunLengthEncode::NonTrivialRuns.
+// Tuning selectors provide every policy field.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct RleNonTrivialRunsLookbackPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block
@@ -98,6 +99,8 @@ inline ::std::ostream& operator<<(::std::ostream& os, RleNonTrivialRunsAlgorithm
 #endif // _CCCL_HOSTED()
 
 //! The tuning policy for @ref DeviceRunLengthEncode::NonTrivialRuns.
+// Tuning selectors provide every policy field.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct RleNonTrivialRunsPolicy
 {
   RleNonTrivialRunsAlgorithm algorithm; //!< The non-trivial-runs algorithm to use
@@ -422,9 +425,6 @@ struct policy_hub
 
   using MaxPolicy = Policy1000;
 };
-
-using rle_non_trivial_runs_policy
-  CCCL_DEPRECATED_BECAUSE("Use RleNonTrivialRunsPolicy instead") = RleNonTrivialRunsPolicy;
 
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>

@@ -24,9 +24,11 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_run_length_decode.cuh>
 #include <cub/block/block_scan.cuh>
-#include <cub/block/block_store.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/lazy_trait.cuh>
+#include <cub/detail/log2.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/round_up.h>
@@ -34,6 +36,7 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -302,6 +305,8 @@ vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const vo
     const char* in_aligned_begin = aligned_range.in_begin + thread_rank * sizeof(VectorT);
     while (aligned_range_begin < aligned_range.out_end)
     {
+      // LoadVector fills the output object before it is copied.
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
       VectorT data_in;
       LoadVector(in_aligned_begin, data_in);
       *aligned_range_begin = data_in;
@@ -527,11 +532,11 @@ private:
   static constexpr uint32_t BUFFER_STABLE_PARTITION = false;
 
   // Constants
-  enum : uint32_t
+  enum class size_class : uint32_t
   {
-    TLEV_SIZE_CLASS = 0,
-    WLEV_SIZE_CLASS,
-    BLEV_SIZE_CLASS,
+    TLEV = 0,
+    WLEV,
+    BLEV,
     NUM_SIZE_CLASSES,
   };
 
@@ -555,6 +560,11 @@ private:
 
   /// Internal type used to index into the bytes of and represent size of a TLEV buffer
   using TLevBufferSizeT = uint16_t;
+
+  // Buffers of up to WARP_LEVEL_THRESHOLD bytes are copied at thread level and their sizes are stored as
+  // TLevBufferSizeT
+  static_assert(WARP_LEVEL_THRESHOLD <= ::cuda::std::numeric_limits<TLevBufferSizeT>::max(),
+                "BatchedCopyPolicy: lookback.small_buffer.warp_level_threshold must be at most 65535");
 
   /**
    * @brief Helper struct to simplify BlockExchange within a single four-byte word
@@ -597,7 +607,8 @@ private:
   //-> (2) WLEV (warp-level collaboration), requiring a full warp to collaborate on a buffer
   //-> (3) BLEV (block-level collaboration), requiring one or multiple thread blocks to collaborate
   // on a buffer */
-  using VectorizedSizeClassCounterT = bit_packed_counter<NUM_SIZE_CLASSES, BUFFERS_PER_BLOCK, PREFER_POW2_BITS>;
+  using VectorizedSizeClassCounterT =
+    bit_packed_counter<static_cast<uint32_t>(size_class::NUM_SIZE_CLASSES), BUFFERS_PER_BLOCK, PREFER_POW2_BITS>;
 
   // Block-level scan used to compute the write offsets
   using BlockSizeClassScanT = cub::BlockScan<VectorizedSizeClassCounterT, static_cast<int32_t>(BLOCK_THREADS)>;
@@ -629,6 +640,14 @@ private:
                          ::cuda::std::plus<>,
                          BLevBlockOffsetTileState,
                          typename AgentMemcpySmallBuffersPolicyT::block_delay_constructor>;
+
+  // Both prefix callbacks must be invoked by a full warp: BLevBuffScanPrefixCallbackOpT by the first warp and
+  // BLevBlockScanPrefixCallbackOpT by BlockBLevTileCountScanT. Also, buffers requiring warp-level collaboration are
+  // processed by all warps of the block, so the block must not have a partial warp.
+  static_assert(BLOCK_THREADS % warp_threads == 0,
+                "BatchedCopyPolicy: lookback.small_buffer.threads_per_block must be a multiple of 32, since the "
+                "decoupled look-back needs a full warp to enter the block-scan prefix callback and buffers requiring "
+                "warp-level collaboration are processed by full warps");
 
   //-----------------------------------------------------------------------------
   // SHARED MEMORY DECLARATIONS
@@ -874,9 +893,8 @@ private:
     // Currently we do not go over the TLEV buffers in multiple iterations, so we need to make sure
     // we are able to be covered for the case that all our buffers are TLEV buffers
     static_assert(TLEV_BUFFERS_PER_THREAD >= BUFFERS_PER_THREAD,
-                  "Unsupported confiugraiton: The number of 'thread-level buffers' must be at "
-                  "least as large as the number of overall buffers being processed by each "
-                  "thread.");
+                  "Unsupported configuration: The number of 'thread-level buffers' must be at least as large as the "
+                  "number of overall buffers being processed by each thread.");
 
     // Read in the TLEV buffer partition (i.e., the buffers that require thread-level collaboration)
     uint32_t tlev_buffer_offset = threadIdx.x * TLEV_BUFFERS_PER_THREAD;
@@ -1029,7 +1047,7 @@ public:
     // That is, WLEV buffer offset has to be offset by the TLEV buffer count and BLEV buffer offset
     // has to be offset by the TLEV+WLEV buffer count
     uint32_t buffer_count = 0U;
-    for (uint32_t i = 0; i < NUM_SIZE_CLASSES; i++)
+    for (uint32_t i = 0; i < static_cast<uint32_t>(size_class::NUM_SIZE_CLASSES); i++)
     {
       size_class_histogram.add(i, buffer_count);
       buffer_count += size_class_agg.get(i);
@@ -1041,7 +1059,7 @@ public:
     {
       if (threadIdx.x == 0)
       {
-        blev_buffer_scan_state.SetInclusive(tile_id, size_class_agg.get(BLEV_SIZE_CLASS));
+        blev_buffer_scan_state.SetInclusive(tile_id, size_class_agg.get(static_cast<uint32_t>(size_class::BLEV)));
       }
       buffer_exclusive_prefix = 0;
     }
@@ -1053,7 +1071,7 @@ public:
       // Signal our partial prefix and wait for the inclusive prefix of previous tiles
       if (threadIdx.x < warp_threads)
       {
-        buffer_exclusive_prefix = blev_buffer_prefix_op(size_class_agg.get(BLEV_SIZE_CLASS));
+        buffer_exclusive_prefix = blev_buffer_prefix_op(size_class_agg.get(static_cast<uint32_t>(size_class::BLEV)));
       }
     }
     if (threadIdx.x == 0)
@@ -1080,12 +1098,12 @@ public:
 
     // Copy block-level buffers
     EnqueueBLEVBuffers(
-      &temp_storage.staged
-         .buffers_by_size_class[size_class_agg.get(TLEV_SIZE_CLASS) + size_class_agg.get(WLEV_SIZE_CLASS)],
+      &temp_storage.staged.buffers_by_size_class[size_class_agg.get(static_cast<uint32_t>(size_class::TLEV))
+                                                 + size_class_agg.get(static_cast<uint32_t>(size_class::WLEV))],
       tile_buffer_srcs,
       tile_buffer_dsts,
       tile_buffer_sizes,
-      size_class_agg.get(BLEV_SIZE_CLASS),
+      size_class_agg.get(static_cast<uint32_t>(size_class::BLEV)),
       temp_storage.blev_buffer_offset,
       tile_id);
 
@@ -1094,14 +1112,14 @@ public:
 
     // Copy warp-level buffers
     BatchMemcpyWLEVBuffers(
-      &temp_storage.staged.buffers_by_size_class[size_class_agg.get(TLEV_SIZE_CLASS)],
+      &temp_storage.staged.buffers_by_size_class[size_class_agg.get(static_cast<uint32_t>(size_class::TLEV))],
       tile_buffer_srcs,
       tile_buffer_dsts,
       tile_buffer_sizes,
-      size_class_agg.get(WLEV_SIZE_CLASS));
+      size_class_agg.get(static_cast<uint32_t>(size_class::WLEV)));
 
     // Perform batch memcpy for all the buffers that require thread-level collaboration
-    const uint32_t num_tlev_buffers = size_class_agg.get(TLEV_SIZE_CLASS);
+    const uint32_t num_tlev_buffers = size_class_agg.get(static_cast<uint32_t>(size_class::TLEV));
     BatchMemcpyTLEVBuffers(
       temp_storage.staged.buffers_by_size_class, tile_buffer_srcs, tile_buffer_dsts, num_tlev_buffers);
   }

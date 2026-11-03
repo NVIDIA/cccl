@@ -20,13 +20,16 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/constant.cuh>
+#include <cub/detail/log2.cuh>
+#include <cub/detail/uninitialized.cuh>
+#include <cub/detail/uninitialized_copy.cuh>
 #include <cub/thread/thread_load.cuh>
-#include <cub/thread/thread_operators.cuh>
 #include <cub/thread/thread_store.cuh>
-#include <cub/util_type.cuh>
+#include <cub/util_ptx.cuh>
+#include <cub/warp/warp_utils.cuh>
 
 #include <cuda/__functional/operator_properties.h>
-#include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__utility/static_for.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__functional/operations.h>
@@ -53,9 +56,6 @@ struct WarpScanSmem
    * Constants and type definitions
    ******************************************************************************/
 
-  /// Whether the logical warp size and the PTX warp size coincide
-  static constexpr bool IS_ARCH_WARP = (LogicalWarpThreads == warp_threads);
-
   /// The number of warp scan steps
   static constexpr int STEPS = Log2<LogicalWarpThreads>::VALUE;
 
@@ -66,7 +66,7 @@ struct WarpScanSmem
   static constexpr int WARP_SMEM_ELEMENTS = LogicalWarpThreads + HALF_WARP_THREADS;
 
   /// Shared memory storage layout type (1.5 warps-worth of elements for each warp)
-  using _TempStorage = T[WARP_SMEM_ELEMENTS];
+  using _TempStorage _CCCL_NODEBUG = T[WARP_SMEM_ELEMENTS];
 
   // Alias wrapper allowing storage to be unioned
   using TempStorage = Uninitialized<_TempStorage>;
@@ -76,8 +76,8 @@ struct WarpScanSmem
    ******************************************************************************/
 
   _TempStorage& temp_storage;
-  unsigned int lane_id;
-  unsigned int member_mask;
+  unsigned int lane_id     = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
+  unsigned int member_mask = CUB_NS_QUALIFIER::detail::warp_mask<LogicalWarpThreads>();
 
   /******************************************************************************
    * Construction
@@ -86,12 +86,6 @@ struct WarpScanSmem
   /// Constructor
   explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpScanSmem(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      ,
-
-      lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads)
-      ,
-
-      member_mask(WarpMask<LogicalWarpThreads>(::cuda::ptx::get_sreg_laneid() / LogicalWarpThreads))
   {}
 
   /******************************************************************************
@@ -477,7 +471,7 @@ struct WarpScanSmem
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   UpdatePartial([[maybe_unused]] T input, T& inclusive, T& exclusive, [[maybe_unused]] ScanOpT scan_op, int valid_items)
   {
-    if constexpr (::cuda::std::is_integral_v<T> && cub::detail::is_cuda_std_plus_v<ScanOpT, T>)
+    if constexpr (::cuda::std::is_integral_v<T> && ::cuda::__is_cuda_std_plus_v<ScanOpT, T>)
     {
       // initial value presumed 0
       if (static_cast<int>(lane_id) < valid_items)
@@ -533,7 +527,7 @@ struct WarpScanSmem
     }
     // Get exclusive
     UpdatePartial(input, inclusive, exclusive, scan_op, valid_items);
-    if constexpr (!(::cuda::std::is_integral_v<T> && cub::detail::is_cuda_std_plus_v<ScanOpT, T>) )
+    if constexpr (!(::cuda::std::is_integral_v<T> && ::cuda::__is_cuda_std_plus_v<ScanOpT, T>) )
     {
       if ((lane_id == 0u) && (valid_items > 0))
       {
@@ -581,7 +575,7 @@ struct WarpScanSmem
     const int last_valid_lane = ::cuda::std::clamp(valid_items - 1, 0, LogicalWarpThreads - 1);
     warp_aggregate            = temp_storage[HALF_WARP_THREADS + last_valid_lane];
     // Compute exclusive
-    if constexpr (::cuda::std::is_integral_v<T> && cub::detail::is_cuda_std_plus_v<ScanOpT, T>)
+    if constexpr (::cuda::std::is_integral_v<T> && ::cuda::__is_cuda_std_plus_v<ScanOpT, T>)
     {
       UpdatePartial(input, inclusive, exclusive, scan_op, valid_items);
     }

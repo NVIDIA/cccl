@@ -29,21 +29,23 @@
 #endif // no system header
 
 #include <cuda/__numeric/add_overflow.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__mdspan/concepts.h>
 #include <cuda/std/__mdspan/empty_base.h>
 #include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/as_const.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
+#include <cuda/std/span>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -54,14 +56,14 @@ namespace __layout_stride_detail
 template <class _Extents, class _StrideArray, bool = (_Extents::rank() == 0)>
 struct _CCCL_DECLSPEC_EMPTY_BASES __mapping_base : __mdspan_ebco<_Extents, _StrideArray>
 {
-  using __base = __mdspan_ebco<_Extents, _StrideArray>;
+  using __base _CCCL_NODEBUG = __mdspan_ebco<_Extents, _StrideArray>;
   using __base::__base;
 };
 
 template <class _Extents, class _StrideArray>
 struct _CCCL_DECLSPEC_EMPTY_BASES __mapping_base<_Extents, _StrideArray, true> : __mdspan_ebco<_Extents>
 {
-  using __base = __mdspan_ebco<_Extents>;
+  using __base _CCCL_NODEBUG = __mdspan_ebco<_Extents>;
   using __base::__base;
 
   _CCCL_API constexpr __mapping_base(const _Extents& __ext,
@@ -103,7 +105,7 @@ public:
   using size_type    = typename extents_type::size_type;
   using rank_type    = typename extents_type::rank_type;
   using layout_type  = layout_stride;
-  using __base =
+  using __base _CCCL_NODEBUG =
     __layout_stride_detail::__mapping_base<_Extents,
                                            __mdspan_detail::__possibly_empty_array<index_type, extents_type::rank()>>;
 
@@ -114,7 +116,7 @@ private:
   static constexpr rank_type __rank_    = extents_type::rank();
   static constexpr auto __rank_sequence = ::cuda::std::make_index_sequence<extents_type::rank()>();
 
-  using __stride_array = __mdspan_detail::__possibly_empty_array<index_type, extents_type::rank()>;
+  using __stride_array _CCCL_NODEBUG = __mdspan_detail::__possibly_empty_array<index_type, extents_type::rank()>;
 
   // Used for default construction check and mandates
   [[nodiscard]] _CCCL_API static constexpr bool
@@ -448,7 +450,7 @@ public:
     }
     else
     {
-      return __op_index(__strides(), ::cuda::std::make_index_sequence<sizeof...(_Indices)>(), __idx...);
+      return __op_index(__strides(), ::cuda::std::index_sequence_for<_Indices...>(), __idx...);
     }
   }
 

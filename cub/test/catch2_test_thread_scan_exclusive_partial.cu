@@ -52,7 +52,7 @@ template <int NumItems, typename T, typename ScanOperator>
 __global__ void thread_scan_exclusive_partial_kernel_array(
   const T* d_in, T* d_out, ScanOperator scan_operator, int valid_items, T prefix, bool apply_prefix)
 {
-  cuda::std::array<T, NumItems> thread_data;
+  cuda::std::array<T, NumItems> thread_data{};
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < NumItems; ++i)

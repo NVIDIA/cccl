@@ -243,7 +243,7 @@ struct BeginFunction
 };
 static_assert(cuda::std::is_invocable_v<RangeBeginT, BeginFunction const&>);
 static_assert(!cuda::std::is_invocable_v<RangeBeginT, BeginFunction&&>);
-static_assert(!cuda::std::is_invocable_v<RangeBeginT, BeginFunction&>);
+static_assert(cuda::std::is_invocable_v<RangeBeginT, BeginFunction&>);
 static_assert(cuda::std::is_invocable_v<RangeCBeginT, BeginFunction const&>);
 static_assert(cuda::std::is_invocable_v<RangeCBeginT, BeginFunction&>);
 
@@ -329,7 +329,7 @@ TEST_FUNC constexpr bool testBeginFunction()
 {
   BeginFunction a{};
   const BeginFunction aa{};
-  static_assert(!cuda::std::invocable<RangeBeginT, decltype((a))>);
+  assert(cuda::std::ranges::begin(a) == &a.x);
   assert(cuda::std::ranges::cbegin(a) == &a.x);
   assert(cuda::std::ranges::begin(aa) == &aa.x);
   assert(cuda::std::ranges::cbegin(aa) == &aa.x);
@@ -350,21 +350,21 @@ TEST_FUNC constexpr bool testBeginFunction()
 
   BeginFunctionReturnsEmptyPtr d{};
   const BeginFunctionReturnsEmptyPtr dd{};
-  static_assert(!cuda::std::invocable<RangeBeginT, decltype((d))>);
+  assert(cuda::std::ranges::begin(d) == &d.x);
   assert(cuda::std::ranges::cbegin(d) == &d.x);
   assert(cuda::std::ranges::begin(dd) == &dd.x);
   assert(cuda::std::ranges::cbegin(dd) == &dd.x);
 
   BeginFunctionWithDataMember e{};
   const BeginFunctionWithDataMember ee{};
-  static_assert(!cuda::std::invocable<RangeBeginT, decltype((e))>);
+  assert(cuda::std::ranges::begin(e) == &e.x);
   assert(cuda::std::ranges::begin(ee) == &ee.x);
   assert(cuda::std::ranges::cbegin(e) == &e.x);
   assert(cuda::std::ranges::cbegin(ee) == &ee.x);
 
   BeginFunctionWithPrivateBeginMember f{};
   const BeginFunctionWithPrivateBeginMember ff{};
-  static_assert(!cuda::std::invocable<RangeBeginT, decltype((f))>);
+  assert(cuda::std::ranges::begin(f) == &f.y);
   assert(cuda::std::ranges::cbegin(f) == &f.y);
   assert(cuda::std::ranges::begin(ff) == &ff.y);
   assert(cuda::std::ranges::cbegin(ff) == &ff.y);

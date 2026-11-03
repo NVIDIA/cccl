@@ -18,7 +18,7 @@
 
 using namespace cuda::experimental::stf;
 
-enum test_id
+enum class test_id
 {
   TRIVIAL = 0,
   STENCIL = 1,
@@ -32,17 +32,17 @@ std::string test_name(test_id id)
 {
   switch (id)
   {
-    case TRIVIAL:
+    case test_id::TRIVIAL:
       return "TRIVIAL";
-    case STENCIL:
+    case test_id::STENCIL:
       return "STENCIL";
-    case FFT:
+    case test_id::FFT:
       return "FFT";
-    case SWEEP:
+    case test_id::SWEEP:
       return "SWEEP";
-    case TREE:
+    case test_id::TREE:
       return "TREE";
-    case RANDOM:
+    case test_id::RANDOM:
       return "RANDOM";
     default:
       return "unknown";
@@ -67,15 +67,15 @@ bool skip_task(test_id id, int t, int i, int /*W*/)
 {
   switch (id)
   {
-    case TRIVIAL:
-    case STENCIL:
-    case FFT:
-    case RANDOM:
+    case test_id::TRIVIAL:
+    case test_id::STENCIL:
+    case test_id::FFT:
+    case test_id::RANDOM:
       return false;
-    case SWEEP:
+    case test_id::SWEEP:
       // return (i <= t) && (t - i < W);
       return (i <= t);
-    case TREE: {
+    case test_id::TREE: {
       if (t == 0)
       {
         return false;
@@ -107,10 +107,10 @@ std::vector<int> input_deps(test_id id, int t, int i, int W)
 
   switch (id)
   {
-    case TRIVIAL:
+    case test_id::TRIVIAL:
       // D(t,i) = NIL
       break;
-    case STENCIL:
+    case test_id::STENCIL:
       // D(t, i) = {i, i-1, i+1}
       res.push_back(i);
       if (i > 0)
@@ -122,7 +122,7 @@ std::vector<int> input_deps(test_id id, int t, int i, int W)
         res.push_back(i + 1);
       }
       break;
-    case FFT:
+    case test_id::FFT:
       // D(t,i) = {i, i - 2^t, i+2^t}
       res.push_back(i);
       {
@@ -141,7 +141,7 @@ std::vector<int> input_deps(test_id id, int t, int i, int W)
       }
 
       break;
-    case SWEEP:
+    case test_id::SWEEP:
       // D(t,i) = (i, i-1)
       res.push_back(i);
       if (i > 0)
@@ -149,7 +149,7 @@ std::vector<int> input_deps(test_id id, int t, int i, int W)
         res.push_back(i - 1);
       }
       break;
-    case TREE:
+    case test_id::TREE:
       // D(t,i) = (t <= log2(W)) {i - 2^(-t)W(i mod 2^(-t+1)W)} else {i, i + 2^(t-1)*W^-1}
       {
         const int stride = 1 << (t - 1);
@@ -160,7 +160,7 @@ std::vector<int> input_deps(test_id id, int t, int i, int W)
         }
       }
       break;
-    case RANDOM:
+    case test_id::RANDOM:
       // Differs from TaskBench ( D(t,i) = {i | 0 <= i < W && random() < 0.5))
       // TaskBench topology assumes there can be arbitrarily large numbers of deps
       // for (int j = 0; j < W; j++) {
@@ -306,12 +306,12 @@ int main(int argc, char** argv)
 
   if (id == -1)
   {
-    bench(ctx, TRIVIAL, width, nsteps, repeat_cnt);
-    bench(ctx, STENCIL, width, nsteps, repeat_cnt);
-    bench(ctx, FFT, width, nsteps, repeat_cnt);
-    bench(ctx, SWEEP, width, nsteps, repeat_cnt);
-    bench(ctx, TREE, width, nsteps, repeat_cnt);
-    bench(ctx, RANDOM, width, nsteps, repeat_cnt);
+    bench(ctx, test_id::TRIVIAL, width, nsteps, repeat_cnt);
+    bench(ctx, test_id::STENCIL, width, nsteps, repeat_cnt);
+    bench(ctx, test_id::FFT, width, nsteps, repeat_cnt);
+    bench(ctx, test_id::SWEEP, width, nsteps, repeat_cnt);
+    bench(ctx, test_id::TREE, width, nsteps, repeat_cnt);
+    bench(ctx, test_id::RANDOM, width, nsteps, repeat_cnt);
   }
   else
   {

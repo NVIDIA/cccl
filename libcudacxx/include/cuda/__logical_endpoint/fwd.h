@@ -29,6 +29,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 class logical_endpoint_id;
 class logical_endpoint_id_range;
+class logical_endpoint_fabric_handle;
 class multicast_logical_endpoint;
 class multicast_logical_endpoint_ref;
 class multicast_logical_endpoint_spec;

@@ -29,8 +29,8 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__mdspan/concepts.h>
-#include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
@@ -42,7 +42,6 @@
 #include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/integer_sequence.h>
-#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/array>
 #include <cuda/std/concepts>
 #include <cuda/std/cstddef>
@@ -193,11 +192,11 @@ private:
   // Static values member
   static constexpr size_t __size_         = sizeof...(_Values);
   static constexpr size_t __size_dynamic_ = __count_dynamic_v<_TStatic, _DynTag, _Values...>;
-  using _StaticValues                     = __static_array<_TStatic, _Values...>;
-  using _DynamicValues                    = __possibly_empty_array<_TDynamic, __size_dynamic_>;
+  using _StaticValues _CCCL_NODEBUG       = __static_array<_TStatic, _Values...>;
+  using _DynamicValues _CCCL_NODEBUG      = __possibly_empty_array<_TDynamic, __size_dynamic_>;
 
   // static mapping of indices to the position in the dynamic values array
-  using _DynamicIdxMap = __static_partial_sums<static_cast<size_t>(_Values == _DynTag)...>;
+  using _DynamicIdxMap _CCCL_NODEBUG = __static_partial_sums<static_cast<size_t>(_Values == _DynTag)...>;
 
   template <size_t... _Indices>
   [[nodiscard]] _CCCL_API static constexpr _DynamicValues __zeros(index_sequence<_Indices...>) noexcept
@@ -422,7 +421,7 @@ private:
     (rank_type(0) + ... + (static_cast<rank_type>(_Extents == dynamic_extent)));
 
   // internal storage type using __maybe_static_array
-  using _Values = __mdspan_detail::__maybe_static_array<_IndexType, size_t, dynamic_extent, _Extents...>;
+  using _Values _CCCL_NODEBUG = __mdspan_detail::__maybe_static_array<_IndexType, size_t, dynamic_extent, _Extents...>;
 
 public:
   // [mdspan.extents.obs], observers of multidimensional index space

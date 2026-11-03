@@ -33,7 +33,6 @@
 #  include <cuda/__launch/host_launch.h>
 #  include <cuda/__memory_resource/allocation_alignment.h>
 #  include <cuda/__memory_resource/any_resource.h>
-#  include <cuda/__memory_resource/get_memory_resource.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/synchronous_resource_adapter.h>
 #  include <cuda/__runtime/ensure_current_context.h>
@@ -107,9 +106,9 @@ public:
   using difference_type        = ::cuda::std::ptrdiff_t;
   using properties_list        = ::cuda::mr::properties_list<_Properties...>;
 
-  using __buffer_t       = ::cuda::__uninitialized_async_buffer<_Tp, _Properties...>;
-  using __resource_t     = ::cuda::mr::any_resource<_Properties...>;
-  using __resource_ref_t = ::cuda::mr::resource_ref<_Properties...>;
+  using __buffer_t _CCCL_NODEBUG       = ::cuda::__uninitialized_async_buffer<_Tp, _Properties...>;
+  using __resource_t _CCCL_NODEBUG     = ::cuda::mr::any_resource<_Properties...>;
+  using __resource_ref_t _CCCL_NODEBUG = ::cuda::mr::resource_ref<_Properties...>;
 
   template <class, class...>
   friend class buffer;
@@ -850,7 +849,8 @@ template <class _Tp>
 using host_buffer = buffer<_Tp, ::cuda::mr::host_accessible>;
 
 template <class _Tp, class _PropsList>
-using __buffer_type_for_props = typename ::cuda::std::remove_reference_t<_PropsList>::template rebind<buffer, _Tp>;
+using __buffer_type_for_props _CCCL_NODEBUG =
+  typename ::cuda::std::remove_reference_t<_PropsList>::template rebind<buffer, _Tp>;
 
 template <typename _BufferTo, typename _BufferFrom>
 _CCCL_HOST_API void __copy_cross_buffers(

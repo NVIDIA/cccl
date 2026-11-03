@@ -112,6 +112,10 @@ static bool runWithLargeStack(Fn&& fn)
 struct CompilerOptions
 {
   std::string cuda_toolkit_path;
+  std::string libdevice_path; // Full path to libdevice.10.bc; defaults to
+                              // <cuda_toolkit_path>/nvvm/libdevice/libdevice.10.bc if empty
+  std::string extra_ctk_include_path; // Extra -isystem dir for nvcc-provided headers (crt/...) that live outside
+                                      // cuda_toolkit_path on some CUDA 12.x pip installs; empty if not needed
   std::string hostjit_include_path;
   std::string clang_headers_path;
   std::string device_pch_path;
@@ -144,6 +148,33 @@ struct BitcodeResult
   bool success = false;
   std::string diagnostics;
 };
+
+// CompilerOptions::libdevice_path is populated from the --libdevice-path=
+// flag (see hostjit::CompilerConfig::appendCommandLineArguments /
+// util/build_utils.h find_libdevice_bc()) for pip-installed toolkits where
+// libdevice.10.bc may live outside cuda_toolkit_path. Falls back to the
+// historical derivation from cuda_toolkit_path when the flag wasn't passed.
+static std::string resolved_libdevice_path(const CompilerOptions& config)
+{
+  return config.libdevice_path.empty()
+         ? config.cuda_toolkit_path + "/nvvm/libdevice/libdevice.10.bc"
+         : config.libdevice_path;
+}
+
+// Appends the CUDA toolkit's system include dir(s) to arg_strings as
+// -internal-isystem entries: cuda_toolkit_path/include, plus
+// extra_ctk_include_path when the nvcc-provided crt/ headers live in a
+// separate package (see util/build_utils.h find_extra_ctk_include_dir()).
+static void appendCudaToolkitIncludePaths(std::vector<std::string>& arg_strings, const CompilerOptions& config)
+{
+  arg_strings.push_back("-internal-isystem");
+  arg_strings.push_back(config.cuda_toolkit_path + "/include");
+  if (!config.extra_ctk_include_path.empty())
+  {
+    arg_strings.push_back("-internal-isystem");
+    arg_strings.push_back(config.extra_ctk_include_path);
+  }
+}
 
 struct LinkResult
 {
@@ -210,6 +241,75 @@ static void setDefaultOptions(CompilerOptions& options)
     options.clang_headers_path = CLANG_HEADERS_DIR;
   }
 #endif
+}
+
+// Highest PTX ISA version LLVM's NVPTX backend knows about (see NVPTX.td). Asking for a newer
+// `+ptxNN` feature is not an error, but it is silently ignored.
+static constexpr int llvm_max_ptx_version = 90;
+
+// Highest PTX ISA version (major * 10 + minor) that the nvJitLink we are running against can
+// assemble, derived from its version, or 0 if it cannot be determined.
+//
+// This is the same thing nvcc and NVRTC do implicitly: they target the PTX ISA of their own
+// toolkit. CUB/libcu++ are compiled against that toolkit's CUDA version macros and use PTX
+// features accordingly (e.g. cp.async.bulk to .shared::cta needs PTX 8.6 even on sm_90), so
+// the PTX we emit must be at least as new as what the headers assume -- and no newer than
+// what ptxas, inside nvJitLink, accepts.
+static int jitLinkMaxPtxVersion()
+{
+  static const int cached = [] {
+    unsigned int major = 0;
+    unsigned int minor = 0;
+    if (nvJitLinkVersion(&major, &minor) != NVJITLINK_SUCCESS)
+    {
+      return 0;
+    }
+    int ptx = 0;
+    if (major == 12)
+    {
+      // CTK 12.0-12.5 -> PTX 8.0-8.5, 12.6 -> 8.5, 12.8 -> 8.7, 12.9 -> 8.8
+      constexpr int ptx_for_12_minor[] = {80, 81, 82, 83, 84, 85, 85, 86, 87, 88};
+      constexpr unsigned int count     = sizeof(ptx_for_12_minor) / sizeof(ptx_for_12_minor[0]);
+      ptx                              = ptx_for_12_minor[minor < count ? minor : count - 1];
+    }
+    else if (major >= 13)
+    {
+      ptx = 90; // 13.0 -> 9.0; later versions are clamped to what LLVM supports below
+    }
+    return ptx > llvm_max_ptx_version ? llvm_max_ptx_version : ptx;
+  }();
+  return cached;
+}
+
+// PTX ISA version (major * 10 + minor) to target for a given SM.
+//
+// The floor is 7.8: some generated device code uses features added in PTX 7.6
+// (e.g. `bmsk`), so older versions can fail to assemble even on sm_75/sm_80.
+// Newer SMs have a minimum PTX version enforced by LLVM (a hard error, not a
+// diagnostic): sm_100 needs 8.6, sm_120 needs 8.7, sm_110 needs 9.0.
+//
+// On top of that floor we use the PTX ISA of the toolkit (see jitLinkMaxPtxVersion).
+static int ptxVersionForSm(int sm_version)
+{
+  int floor = 78;
+  if (sm_version >= 120)
+  {
+    floor = 87;
+  }
+  else if (sm_version >= 110)
+  {
+    floor = 90;
+  }
+  else if (sm_version >= 100)
+  {
+    floor = 86;
+  }
+  else if (sm_version >= 90)
+  {
+    floor = 80;
+  }
+  const int toolkit = jitLinkMaxPtxVersion();
+  return toolkit > floor ? toolkit : floor;
 }
 
 static bool pathExists(const std::filesystem::path& path)
@@ -353,6 +453,14 @@ static bool parseOptions(int num_options, const char* const* raw_options, Compil
     if (option.starts_with("--cuda-path="))
     {
       options.cuda_toolkit_path = value_after_equals(option, "--cuda-path=");
+    }
+    else if (option.starts_with("--libdevice-path="))
+    {
+      options.libdevice_path = value_after_equals(option, "--libdevice-path=");
+    }
+    else if (option.starts_with("--extra-ctk-include-path="))
+    {
+      options.extra_ctk_include_path = value_after_equals(option, "--extra-ctk-include-path=");
     }
     else if (option.starts_with("--hostjit-include-path="))
     {
@@ -911,22 +1019,7 @@ public:
 
     std::string resource_dir = CLANG_RESOURCE_DIR;
 
-    // PTX version floor is 7.8. Some generated device code uses features
-    // added in PTX 7.6 (e.g. `bmsk`), so older versions can fail to assemble
-    // even on sm_75/sm_80.
-    int ptx_version = 78;
-    if (config.sm_version >= 120)
-    {
-      ptx_version = 87;
-    }
-    else if (config.sm_version >= 100)
-    {
-      ptx_version = 85;
-    }
-    else if (config.sm_version >= 90)
-    {
-      ptx_version = 80;
-    }
+    int ptx_version = ptxVersionForSm(config.sm_version);
 
     std::vector<std::string> arg_strings;
     arg_strings.push_back(source_file);
@@ -950,7 +1043,7 @@ public:
     arg_strings.push_back("-fgnuc-version=4.2.1");
 #endif
     arg_strings.push_back("-mlink-builtin-bitcode");
-    arg_strings.push_back(config.cuda_toolkit_path + "/nvvm/libdevice/libdevice.10.bc");
+    arg_strings.push_back(resolved_libdevice_path(config));
     arg_strings.push_back("-target-sdk-version=" CUDA_SDK_VERSION);
     arg_strings.push_back("-target-cpu");
     arg_strings.push_back("sm_" + std::to_string(config.sm_version));
@@ -964,8 +1057,7 @@ public:
     arg_strings.push_back(
       config.clang_headers_path.empty() ? std::string(CLANG_HEADERS_DIR) : config.clang_headers_path);
     appendSystemIncludePaths(arg_strings, config);
-    arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(config.cuda_toolkit_path + "/include");
+    appendCudaToolkitIncludePaths(arg_strings, config);
     arg_strings.push_back("-include");
     arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/__clang_cuda_runtime_wrapper.h");
 
@@ -1107,7 +1199,7 @@ public:
         // introduced by the extra bitcode modules.
         if (success && !bitcode_files_to_link.empty())
         {
-          std::string libdevice_path = config.cuda_toolkit_path + "/nvvm/libdevice/libdevice.10.bc";
+          std::string libdevice_path = resolved_libdevice_path(config);
           llvm::SMDiagnostic err;
           auto libdevice = llvm::parseIRFile(libdevice_path, err, llvm_context);
           if (libdevice)
@@ -1314,22 +1406,7 @@ public:
     std::string source_file  = temp_dir + "/" + input_file;
     std::string resource_dir = CLANG_RESOURCE_DIR;
 
-    // PTX version floor is 7.8. Some generated device code uses features
-    // added in PTX 7.6 (e.g. `bmsk`), so older versions can fail to assemble
-    // even on sm_75/sm_80.
-    int ptx_version = 78;
-    if (config.sm_version >= 120)
-    {
-      ptx_version = 87;
-    }
-    else if (config.sm_version >= 100)
-    {
-      ptx_version = 85;
-    }
-    else if (config.sm_version >= 90)
-    {
-      ptx_version = 80;
-    }
+    int ptx_version = ptxVersionForSm(config.sm_version);
 
     std::vector<std::string> arg_strings;
     arg_strings.push_back(source_file);
@@ -1353,7 +1430,7 @@ public:
     arg_strings.push_back("-fgnuc-version=4.2.1");
 #endif
     arg_strings.push_back("-mlink-builtin-bitcode");
-    arg_strings.push_back(config.cuda_toolkit_path + "/nvvm/libdevice/libdevice.10.bc");
+    arg_strings.push_back(resolved_libdevice_path(config));
     arg_strings.push_back("-target-sdk-version=" CUDA_SDK_VERSION);
     arg_strings.push_back("-target-cpu");
     arg_strings.push_back("sm_" + std::to_string(config.sm_version));
@@ -1367,8 +1444,7 @@ public:
     arg_strings.push_back(
       config.clang_headers_path.empty() ? std::string(CLANG_HEADERS_DIR) : config.clang_headers_path);
     appendSystemIncludePaths(arg_strings, config);
-    arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(config.cuda_toolkit_path + "/include");
+    appendCudaToolkitIncludePaths(arg_strings, config);
     arg_strings.push_back("-include");
     arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/__clang_cuda_runtime_wrapper.h");
 
@@ -1524,10 +1600,16 @@ public:
     arg_strings.push_back(
       config.clang_headers_path.empty() ? std::string(CLANG_HEADERS_DIR) : config.clang_headers_path);
     appendSystemIncludePaths(arg_strings, config);
-    arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(config.cuda_toolkit_path + "/include");
+    appendCudaToolkitIncludePaths(arg_strings, config);
     arg_strings.push_back("-include");
     arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/__clang_cuda_runtime_wrapper.h");
+    // Self-contained __cxa_guard_acquire/release/abort (see cxa_guard.h):
+    // generated host code can contain guarded function-local statics (e.g.
+    // CUB's device_count_cached_value()), and must not depend on borrowing
+    // those symbols from whatever libstdc++ the host process happens to
+    // have loaded.
+    arg_strings.push_back("-include");
+    arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/stubs/cxa_guard.h");
 
     appendIncludePaths(arg_strings, config);
 
@@ -1918,19 +2000,7 @@ public:
 
     if (kind == LIBNVCC_PCH_DEVICE)
     {
-      int ptx_version = 78;
-      if (config.sm_version >= 120)
-      {
-        ptx_version = 87;
-      }
-      else if (config.sm_version >= 100)
-      {
-        ptx_version = 85;
-      }
-      else if (config.sm_version >= 90)
-      {
-        ptx_version = 80;
-      }
+      int ptx_version = ptxVersionForSm(config.sm_version);
 
       arg_strings.push_back("-triple");
       arg_strings.push_back("nvptx64-nvidia-cuda");
@@ -1952,7 +2022,7 @@ public:
       arg_strings.push_back("-fgnuc-version=4.2.1");
 #endif
       arg_strings.push_back("-mlink-builtin-bitcode");
-      arg_strings.push_back(config.cuda_toolkit_path + "/nvvm/libdevice/libdevice.10.bc");
+      arg_strings.push_back(resolved_libdevice_path(config));
       arg_strings.push_back("-target-sdk-version=" CUDA_SDK_VERSION);
       arg_strings.push_back("-target-cpu");
       arg_strings.push_back("sm_" + std::to_string(config.sm_version));
@@ -1999,10 +2069,14 @@ public:
     arg_strings.push_back(
       config.clang_headers_path.empty() ? std::string(CLANG_HEADERS_DIR) : config.clang_headers_path);
     appendSystemIncludePaths(arg_strings, config);
-    arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(config.cuda_toolkit_path + "/include");
+    appendCudaToolkitIncludePaths(arg_strings, config);
     arg_strings.push_back("-include");
     arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/__clang_cuda_runtime_wrapper.h");
+    if (kind == LIBNVCC_PCH_HOST)
+    {
+      arg_strings.push_back("-include");
+      arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/stubs/cxa_guard.h");
+    }
 
     appendIncludePaths(arg_strings, config);
 
@@ -2528,4 +2602,9 @@ extern "C" libnvccResult libnvccGetProgramLog(libnvccProgram prog, char* log)
   }
   std::memcpy(log, prog->log.c_str(), prog->log.size() + 1);
   return LIBNVCC_SUCCESS;
+}
+
+extern "C" int libnvccPtxVersionForSm(int sm_version)
+{
+  return libnvcc::ptxVersionForSm(sm_version);
 }

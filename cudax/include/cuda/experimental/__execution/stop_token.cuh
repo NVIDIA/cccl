@@ -24,7 +24,7 @@
 #include <cuda/std/__concepts/boolean_testable.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/equality_comparable.h>
-#include <cuda/std/__thread/threading_support.h>
+#include <cuda/std/__thread/yield.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/atomic>

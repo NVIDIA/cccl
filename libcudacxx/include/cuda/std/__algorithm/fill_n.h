@@ -20,7 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/convert_to_integral.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -41,7 +40,9 @@ _CCCL_API constexpr _OutputIterator __fill_n(_OutputIterator __first, _Size __n,
 template <class _OutputIterator, class _Size, class _Tp>
 _CCCL_API constexpr _OutputIterator fill_n(_OutputIterator __first, _Size __n, const _Tp& __value_)
 {
-  return ::cuda::std::__fill_n(__first, __convert_to_integral(__n), __value_);
+  static_assert(__is_convertible_to_integral_v<_Size>, "_Size must be convertible to an integral");
+
+  return ::cuda::std::__fill_n(__first, ::cuda::std::__convert_to_integral(__n), __value_);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

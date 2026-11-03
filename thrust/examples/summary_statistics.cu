@@ -62,7 +62,7 @@ struct summary_stats_unary_op
 {
   __host__ __device__ summary_stats_data<T> operator()(const T& x) const
   {
-    summary_stats_data<T> result;
+    summary_stats_data<T> result{};
     result.n    = 1;
     result.min  = x;
     result.max  = x;
@@ -85,7 +85,7 @@ struct summary_stats_binary_op
   __host__ __device__ summary_stats_data<T>
   operator()(const summary_stats_data<T>& x, const summary_stats_data<T>& y) const
   {
-    summary_stats_data<T> result;
+    summary_stats_data<T> result{};
 
     // precompute some common subexpressions
     T n  = x.n + y.n;
@@ -143,7 +143,7 @@ int main()
   // setup arguments
   const summary_stats_unary_op<T> unary_op;
   const summary_stats_binary_op<T> binary_op;
-  summary_stats_data<T> init;
+  summary_stats_data<T> init{};
 
   init.initialize();
 

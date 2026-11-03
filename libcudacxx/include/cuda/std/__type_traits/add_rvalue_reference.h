@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/referenceable.h>
+#include <cuda/std/__concepts/referenceable.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -39,7 +39,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 struct add_rvalue_reference
 {
-  using type = _CCCL_BUILTIN_ADD_RVALUE_REFERENCE(_Tp);
+  using type _CCCL_NODEBUG = _CCCL_BUILTIN_ADD_RVALUE_REFERENCE(_Tp);
 };
 
 #  if _CCCL_COMPILER(GCC) // GCC does not accept the builtin in template signatures
@@ -69,7 +69,7 @@ using add_rvalue_reference_t _CCCL_NODEBUG = typename __add_rvalue_reference_imp
 template <class _Tp>
 struct add_rvalue_reference
 {
-  using type = add_rvalue_reference_t<_Tp>;
+  using type _CCCL_NODEBUG = add_rvalue_reference_t<_Tp>;
 };
 
 #endif // _CCCL_BUILTIN_ADD_RVALUE_REFERENCE

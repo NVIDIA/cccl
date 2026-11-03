@@ -46,7 +46,7 @@ inline constexpr bool has_system_type<T, ::cuda::std::void_t<typename T::system_
 template <class T>
 struct nested_system_type
 {
-  using type = typename T::system_type;
+  using type _CCCL_NODEBUG = typename T::system_type;
 };
 
 template <class T, class = void>
@@ -74,15 +74,16 @@ template <typename Alloc>
 struct allocator_system
 {
   // the type of the allocator's system
-  using type = typename eval_if<allocator_traits_detail::has_system_type<Alloc>,
-                                allocator_traits_detail::nested_system_type<Alloc>,
-                                thrust::iterator_system<typename ::cuda::std::allocator_traits<Alloc>::pointer>>::type;
+  using type = typename ::cuda::std::conditional_t<
+    allocator_traits_detail::has_system_type<Alloc>,
+    allocator_traits_detail::nested_system_type<Alloc>,
+    thrust::iterator_system<typename ::cuda::std::allocator_traits<Alloc>::pointer>>::type;
 
   // the type that get returns
   using get_result_type =
-    typename eval_if<allocator_traits_detail::has_member_system<Alloc>,
-                     ::cuda::std::add_lvalue_reference<type>,
-                     ::cuda::std::type_identity<type>>::type;
+    typename ::cuda::std::conditional_t<allocator_traits_detail::has_member_system<Alloc>,
+                                        ::cuda::std::add_lvalue_reference<type>,
+                                        ::cuda::std::type_identity<type>>::type;
 
   _CCCL_HOST_DEVICE inline static get_result_type get(Alloc& a)
   {

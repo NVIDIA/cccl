@@ -22,11 +22,11 @@
 #endif // no system header
 
 #if _CCCL_CTK_AT_LEAST(13, 5) && _CCCL_HAS_NV_ATOMIC_BUILTINS()
-#  include <cuda/std/__atomic/functions/cuda_nvvm.h>
-#  include <cuda/std/__atomic/functions/cuda_nvvm_backend.h>
+#  include <cuda/std/__atomic/functions/cuda_nvvm.h> // IWYU pragma: export
+#  include <cuda/std/__atomic/functions/cuda_nvvm_backend.h> // IWYU pragma: export
 #else
-#  include <cuda/std/__atomic/functions/cuda_ptx.h>
-#  include <cuda/std/__atomic/functions/cuda_ptx_backend.h>
+#  include <cuda/std/__atomic/functions/cuda_ptx.h> // IWYU pragma: export
+#  include <cuda/std/__atomic/functions/cuda_ptx_backend.h> // IWYU pragma: export
 #endif
 
 #include <cuda/std/__cccl/prologue.h>
@@ -34,9 +34,9 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_CTK_AT_LEAST(13, 5) && _CCCL_HAS_NV_ATOMIC_BUILTINS()
-using __cuda_atomic_device_backend = __cuda_atomic_nvvm_backend;
+using __cuda_atomic_device_backend _CCCL_NODEBUG = __cuda_atomic_nvvm_backend;
 #else
-using __cuda_atomic_device_backend = __cuda_atomic_ptx_backend;
+using __cuda_atomic_device_backend _CCCL_NODEBUG = __cuda_atomic_ptx_backend;
 #endif
 
 _CCCL_END_NAMESPACE_CUDA_STD

@@ -23,22 +23,25 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/allocator.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__memory/pointer_traits.h>
-#include <cuda/std/__new/device_new.h>
+#include <cuda/std/__new/device_new.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_trivially_move_constructible.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
-#include <cuda/std/cstring>
+#include <cuda/std/cstring> // IWYU pragma: keep
 #include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -215,7 +218,7 @@ struct __allocator_traits_rebind<_Alloc<_Tp, _Args...>, _Up, false>
 };
 
 template <class _Alloc, class _Tp>
-using __allocator_traits_rebind_t = typename __allocator_traits_rebind<_Alloc, _Tp>::type;
+using __allocator_traits_rebind_t _CCCL_NODEBUG = typename __allocator_traits_rebind<_Alloc, _Tp>::type;
 
 // __has_allocate_hint
 template <class _Alloc, class _SizeType, class _ConstVoidPtr, class = void>

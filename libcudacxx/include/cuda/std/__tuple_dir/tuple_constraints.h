@@ -20,20 +20,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/get.h>
-#include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__fwd/subrange.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__memory/allocator_arg_t.h>
-#include <cuda/std/__tuple_dir/make_tuple_types.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_indices.h>
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
-#include <cuda/std/__tuple_dir/tuple_types.h>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/disjunction.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_assignable.h>
 #include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/__type_traits/is_constructible.h>
@@ -46,18 +41,14 @@
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_copy_assignable.h>
-#include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
-#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/lazy.h>
+#include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/sfinae_traits.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/integer_sequence.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -69,7 +60,7 @@ inline constexpr bool __tuple_like_with_size = false;
 
 template <class _Tuple, size_t _ExpectedSize>
 inline constexpr bool __tuple_like_with_size<_Tuple, _ExpectedSize, true> =
-  _ExpectedSize == tuple_size<remove_cvref_t<_Tuple>>::value;
+  _ExpectedSize == tuple_size_v<remove_cvref_t<_Tuple>>;
 
 template <class... _Types>
 struct __tuple_constraints;
@@ -339,8 +330,7 @@ struct __tuple_constraints
     else
 #endif // _CCCL_COMPILER(GCC, <, 8)
     {
-      using ::cuda::std::get;
-      return __select_variadic_constructible<decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))...>();
+      return __select_variadic_constructible<decltype(::cuda::std::get<_Indices>(::cuda::std::declval<_UTuple>()))...>();
     }
   }
 
@@ -353,13 +343,29 @@ struct __tuple_constraints
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool
   __nothrow_tuple_like_constructible(__tuple_indices<_Indices...>) noexcept
   {
-    using ::cuda::std::get;
-    return (is_nothrow_constructible_v<_Types, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
+    return (
+      is_nothrow_constructible_v<_Types, decltype(::cuda::std::get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
   }
 
   template <class _UTuple>
   static constexpr bool __nothrow_tuple_like_constructible_v =
     __nothrow_tuple_like_constructible<_UTuple>(__make_tuple_indices_t<sizeof...(_Types)>{});
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Alloc, class _UTuple, size_t... _Indices>
+  [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool
+  __nothrow_uses_allocator_constructible(__tuple_indices<_Indices...>) noexcept
+  {
+    return (
+      __is_nothrow_uses_allocator_constructible_v<_Types,
+                                                  _Alloc,
+                                                  decltype(::cuda::std::get<_Indices>(::cuda::std::declval<_UTuple>()))>
+      && ...);
+  }
+
+  template <class _Alloc, class _UTuple>
+  static constexpr bool __nothrow_uses_allocator_constructible_v =
+    __nothrow_uses_allocator_constructible<_Alloc, _UTuple>(__make_tuple_indices_t<sizeof...(_Types)>{});
 
   // Assignments
   static constexpr bool __all_copy_assignable = (is_copy_assignable_v<_Types> && ...);
@@ -400,7 +406,6 @@ struct __tuple_constraints
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool
   __select_tuple_like_assignable(__tuple_indices<_Indices...>) noexcept
   {
-    using ::cuda::std::get;
     // NOLINTBEGIN(bugprone-branch-clone)
     if constexpr (is_same_v<remove_cvref_t<_UTuple>, tuple<_Types...>>)
     { // [tuple.assign]-39.1: different-from<UTuple, tuple>
@@ -417,11 +422,12 @@ struct __tuple_constraints
     else if constexpr (_IsConst)
     { // [tuple.assign]-42.4: is_assignable_v<const T_i&, decltype(get<i>(std::forward<UTuple>(u)))> is true for
       // all i
-      return (is_assignable_v<const _Types&, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
+      return (
+        is_assignable_v<const _Types&, decltype(::cuda::std::get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
     }
     else
     { // [tuple.assign]-39.4: is_assignable_v<T_i&, decltype(get<i>(std::forward<UTuple>(u)))> is true for all i
-      return (is_assignable_v<_Types&, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
+      return (is_assignable_v<_Types&, decltype(::cuda::std::get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
     }
     // NOLINTEND(bugprone-branch-clone)
   }
@@ -437,14 +443,16 @@ struct __tuple_constraints
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool
   __nothrow_tuple_like_assignable(__tuple_indices<_Indices...>) noexcept
   {
-    using ::cuda::std::get;
     if constexpr (_IsConst)
     {
-      return (is_nothrow_assignable_v<const _Types&, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
+      return (
+        is_nothrow_assignable_v<const _Types&, decltype(::cuda::std::get<_Indices>(::cuda::std::declval<_UTuple>()))>
+        && ...);
     }
     else
     {
-      return (is_nothrow_assignable_v<_Types&, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
+      return (
+        is_nothrow_assignable_v<_Types&, decltype(::cuda::std::get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
     }
   }
   _CCCL_EXEC_CHECK_DISABLE
@@ -494,6 +502,19 @@ struct __tuple_constraints
   template <class... _UTypes>
   static constexpr bool __is_nothrow_less_than_comparable_v =
     (__is_cpp17_nothrow_less_than_comparable_v<_Types, _UTypes> && ...);
+};
+
+// Kept out of __tuple_constraints, which tuple and pair instantiate for their constructors: NVRTC evaluates static data
+// member initializers on class instantiation, and is_swappable_v crashes NVRTC for references to incomplete types.
+template <class... _Types>
+struct __tuple_swap_constraints
+{
+  // [tuple.swap]: is_swappable_v<T> / is_swappable_v<const T> for every element.
+  static constexpr bool __all_swappable       = (is_swappable_v<_Types> && ... && true);
+  static constexpr bool __all_const_swappable = (is_swappable_v<const _Types> && ... && true);
+
+  static constexpr bool __all_nothrow_swappable       = (is_nothrow_swappable_v<_Types> && ... && true);
+  static constexpr bool __all_nothrow_const_swappable = (is_nothrow_swappable_v<const _Types> && ... && true);
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD

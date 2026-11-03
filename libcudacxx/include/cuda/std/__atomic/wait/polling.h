@@ -22,9 +22,9 @@
 #endif // no system header
 
 #include <cuda/std/__atomic/order.h>
-#include <cuda/std/__atomic/scopes.h>
-#include <cuda/std/__atomic/types.h>
-#include <cuda/std/__thread/threading_support.h>
+#include <cuda/std/__atomic/types.h> // IWYU pragma: keep
+#include <cuda/std/__atomic/types/common.h>
+#include <cuda/std/__thread/poll.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -33,7 +33,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <typename _Tp, typename _Sco>
 struct __atomic_poll_tester
 {
-  using __underlying_t = __atomic_underlying_remove_cv_t<_Tp>;
+  using __underlying_t _CCCL_NODEBUG = __atomic_underlying_remove_cv_t<_Tp>;
 
   _Tp const volatile* __atom;
   __underlying_t __val;

@@ -66,16 +66,20 @@ CUB_TEST("Test CustomHalf", "[util][type]", CUB_SMALL)
 {
   // type not registered with cub::Traits
   STATIC_REQUIRE(!cub::detail::is_primitive<CustomHalf>::value);
+  // NOLINTNEXTLINE(cccl-modernize-type-traits): Test the class trait independently.
   STATIC_REQUIRE(!cuda::std::is_floating_point<CustomHalf>::value);
   STATIC_REQUIRE(!cuda::std::is_floating_point_v<CustomHalf>);
+  // NOLINTNEXTLINE(cccl-modernize-type-traits): Test the class trait independently.
   STATIC_REQUIRE(!cuda::is_floating_point<CustomHalf>::value);
   STATIC_REQUIRE(!cuda::is_floating_point_v<CustomHalf>);
   STATIC_REQUIRE(!cuda::std::numeric_limits<CustomHalf>::is_specialized);
 
   // type registered with cub::Traits (specializes NumericTraits, numeric_limits, and is_floating_point)
   STATIC_REQUIRE(cub::detail::is_primitive<half_t>::value);
+  // NOLINTNEXTLINE(cccl-modernize-type-traits): Test the class trait independently.
   STATIC_REQUIRE(!cuda::std::is_floating_point<half_t>::value); // the std traits are not affected
   STATIC_REQUIRE(!cuda::std::is_floating_point_v<half_t>);
+  // NOLINTNEXTLINE(cccl-modernize-type-traits): Test the class trait independently.
   STATIC_REQUIRE(cuda::is_floating_point<half_t>::value);
   STATIC_REQUIRE(cuda::is_floating_point_v<half_t>);
   STATIC_REQUIRE(cuda::std::numeric_limits<half_t>::is_specialized);
@@ -110,6 +114,8 @@ void test_uninitialized(T value)
   STATIC_REQUIRE(sizeof(cub::Uninitialized<T>) == sizeof(T));
   STATIC_REQUIRE(alignof(cub::Uninitialized<T>) == alignof(T));
 
+  // u being uninitialized here is the point of the test
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   cub::Uninitialized<T> u;
   new (&u.Alias()) T(value);
   CHECK(cuda::std::memcmp(&u.Alias(), &value, sizeof(T)) == 0);

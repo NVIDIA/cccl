@@ -26,6 +26,9 @@
 // TODO(fbusato): extend to other GPU archs in the future
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__fwd/simd.h>
+#include <cuda/std/__simd/abi.h>
+#include <cuda/std/__simd/specializations/fixed_size_storage.h>
 #include <cuda/std/__simd/specializations/fixed_size_vec.h>
 #include <cuda/std/__simd/specializations/simd_intrinsics_array.h>
 #include <cuda/std/__type_traits/is_integral.h>

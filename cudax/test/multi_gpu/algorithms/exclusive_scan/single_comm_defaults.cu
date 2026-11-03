@@ -17,7 +17,7 @@
 #include <cuda/std/functional>
 #include <cuda/std/iterator>
 
-#include <cuda/experimental/__multi_gpu/algorithm/scan/scan.h>
+#include <cuda/experimental/mgmn/scan>
 
 #include <numeric>
 #include <vector>

@@ -55,7 +55,7 @@ inline constexpr bool __is_div_representable_v =
 // * Both inputs are signed:   check for min / -1, otherwise directly return the result
 // * Both inputs are positive: directly return the result
 // * Mixed signed/unsigned:
-//   - If the result is unsigned, return overflow (check for lhs != 0)
+//   - If the result is unsigned, return overflow unless the quotient is zero (|lhs| < |rhs|)
 //   - If the result is signed, compute |lhs| / |rhs| and return the result as negative (always representable)
 
 _CCCL_TEMPLATE(typename _Result = void,
@@ -116,10 +116,10 @@ _CCCL_API constexpr overflow_result<_ActualResult> div_overflow(const _Lhs __lhs
       const auto __lhs1   = ::cuda::uabs(__lhs);
       const auto __rhs1   = ::cuda::uabs(__rhs);
       const auto __div    = __lhs1 / __rhs1;
-      const auto __result = static_cast<_ActualResult>(::cuda::neg(__div));
+      const auto __result = ::cuda::neg(static_cast<_ActualResult>(__div));
       if constexpr (is_unsigned_v<_ActualResult>)
       {
-        return overflow_result<_ActualResult>{__result, __lhs != 0};
+        return overflow_result<_ActualResult>{__result, __div != 0};
       }
       else
       {

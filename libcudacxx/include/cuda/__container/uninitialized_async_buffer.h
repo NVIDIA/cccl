@@ -27,7 +27,7 @@
 #  include <cuda/__memory_resource/any_resource.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__stream/stream_ref.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__memory/align.h>
 #  include <cuda/std/__new/launder.h>
@@ -82,7 +82,7 @@ private:
                 "The properties of cuda::__uninitialized_async_buffer must contain at least one execution space "
                 "property!");
 
-  using __async_resource = ::cuda::mr::any_resource<_Properties...>;
+  using __async_resource _CCCL_NODEBUG = ::cuda::mr::any_resource<_Properties...>;
 
   __async_resource __mr_;
   ::cuda::stream_ref __stream_ = {::cudaStream_t{}};

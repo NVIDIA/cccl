@@ -723,7 +723,7 @@ extern "C" __device__ bool op(large_key_pair lhs, large_key_pair rhs) {
   pointer_t<item_t> output_values_it;
   pointer_t<int> output_num_selected_it(1);
 
-  cudaDeviceProp deviceProp;
+  cudaDeviceProp deviceProp{};
   cudaGetDeviceProperties(&deviceProp, 0);
 
   const int cc_major = deviceProp.major;
@@ -897,8 +897,11 @@ C2H_TEST("UniqueByKey works with C++ source operations", "[unique_by_key]")
 
   std::vector<key_t> output_keys(num_selected);
   std::vector<value_t> output_values(num_selected);
-  cudaMemcpy(output_keys.data(), output_keys_ptr.ptr, num_selected * sizeof(key_t), cudaMemcpyDeviceToHost);
-  cudaMemcpy(output_values.data(), output_values_ptr.ptr, num_selected * sizeof(value_t), cudaMemcpyDeviceToHost);
+  REQUIRE(cudaSuccess
+          == cudaMemcpy(output_keys.data(), output_keys_ptr.ptr, num_selected * sizeof(key_t), cudaMemcpyDeviceToHost));
+  REQUIRE(
+    cudaSuccess
+    == cudaMemcpy(output_values.data(), output_values_ptr.ptr, num_selected * sizeof(value_t), cudaMemcpyDeviceToHost));
 
   REQUIRE(output_keys == expected_keys);
   REQUIRE(output_values == expected_values);
@@ -942,9 +945,9 @@ C2H_TEST("UniqueByKey works with C++ source operations using custom headers", "[
   pointer_t<std::size_t> output_num_selected_ptr(1);
 
   // Test _ex version with custom build configuration
-  const char* extra_flags[] = {"-DTEST_IDENTITY_ENABLED"};
-  const char* extra_dirs[]  = {TEST_INCLUDE_PATH};
-  cccl_build_config config  = make_build_config(extra_flags, 1, extra_dirs, 1);
+  const char* extra_flags[]      = {"-DTEST_IDENTITY_ENABLED"};
+  const char* extra_dirs[]       = {TEST_INCLUDE_PATH};
+  const cccl_build_config config = make_build_config(extra_flags, 1, extra_dirs, 1);
 
   // Build with _ex version
   cccl_device_unique_by_key_build_result_t build{};
@@ -1003,7 +1006,9 @@ C2H_TEST("UniqueByKey works with C++ source operations using custom headers", "[
 
   // Verify results
   size_t num_selected;
-  cudaMemcpy(&num_selected, static_cast<void*>(output_num_selected_ptr.ptr), sizeof(size_t), cudaMemcpyDeviceToHost);
+  REQUIRE(cudaSuccess
+          == cudaMemcpy(
+            &num_selected, static_cast<void*>(output_num_selected_ptr.ptr), sizeof(size_t), cudaMemcpyDeviceToHost));
 
   std::vector<key_t> expected_keys;
   std::vector<value_t> expected_values;

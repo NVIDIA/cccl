@@ -11,8 +11,8 @@
 #include <cuda/functional>
 #include <cuda/std/functional>
 
-#include <cuda/experimental/__multi_gpu/concepts.h>
-#include <cuda/experimental/__multi_gpu/nccl_communicator_ref.h>
+#include <cuda/experimental/mgmn/concepts>
+#include <cuda/experimental/mgmn/nccl_communicators>
 
 #include <functional>
 
@@ -30,7 +30,7 @@ struct non_trivial
 {
   non_trivial(const non_trivial&) {} // NOLINT(modernize-use-equals-default)
 
-  int value;
+  int value{};
 };
 
 struct unsupported_op

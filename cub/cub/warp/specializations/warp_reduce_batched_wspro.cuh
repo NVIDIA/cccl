@@ -17,10 +17,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/null_type.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 #include <cub/warp/specializations/warp_redux.cuh>
+#include <cub/warp/warp_utils.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/pow2.h>
@@ -65,18 +66,15 @@ struct warp_reduce_batched_wspro
   //! Shared memory storage layout type
   using TempStorage = NullType;
 
-  int physical_lane_id;
-  int logical_lane_id;
-  int logical_warp_id;
+  // Keep warp-ID division signed to preserve mask and shuffle code generation (affect SM90 only).
+  const int physical_lane_id = static_cast<int>(::cuda::ptx::get_sreg_laneid());
+  const int logical_lane_id  = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
+  const int logical_warp_id  = is_arch_warp ? 0 : physical_lane_id / LogicalWarpThreads;
 
-  ::cuda::std::uint32_t member_mask;
+  ::cuda::std::uint32_t member_mask =
+    SyncPhysicalWarp ? 0xFFFFFFFFu : CUB_NS_QUALIFIER::WarpMask<LogicalWarpThreads>(logical_warp_id);
 
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE warp_reduce_batched_wspro(TempStorage& /*temp_storage*/)
-      : physical_lane_id(static_cast<int>(::cuda::ptx::get_sreg_laneid()))
-      , logical_lane_id(is_arch_warp ? physical_lane_id : physical_lane_id % LogicalWarpThreads)
-      , logical_warp_id(is_arch_warp ? 0 : (physical_lane_id / LogicalWarpThreads))
-      , member_mask(SyncPhysicalWarp ? 0xFFFFFFFFu : cub::WarpMask<LogicalWarpThreads>(logical_warp_id))
-  {}
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE warp_reduce_batched_wspro(TempStorage& /*temp_storage*/) {}
 
   template <bool ToBlocked, typename InputT, typename OutputT, typename ReductionOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void Reduce(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
@@ -95,7 +93,8 @@ struct warp_reduce_batched_wspro
     }
 
     // Needed in case of outputs aliasing inputs
-    ::cuda::std::array<T, max_out_per_thread> intermediate_outputs;
+    // The reduction tree fills every entry before the output copy.
+    ::cuda::std::array<T, max_out_per_thread> intermediate_outputs; // NOLINT(cppcoreguidelines-pro-type-member-init)
 
     ::cuda::static_for<0, max_out_per_thread>([&](auto out_idx) {
       constexpr auto first_idx      = out_idx * LogicalWarpThreads;
@@ -117,10 +116,10 @@ struct warp_reduce_batched_wspro
     if constexpr (Batches != 0)
     {
       // Needed in case of outputs aliasing inputs
-      ::cuda::std::array<T, max_out_per_thread> intermediate_outputs;
+      ::cuda::std::array<T, max_out_per_thread> intermediate_outputs; // NOLINT(cppcoreguidelines-pro-type-member-init)
 
       // Can't use the full member mask given SyncPhysicalWarp==true because it affects the result of the reduction.
-      const auto reduce_mask = cub::WarpMask<LogicalWarpThreads>(logical_warp_id);
+      const auto reduce_mask = CUB_NS_QUALIFIER::WarpMask<LogicalWarpThreads>(logical_warp_id);
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < Batches; ++i)
       {

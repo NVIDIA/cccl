@@ -20,23 +20,30 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/double_buffer.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_radix_sort.cuh>
+#include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_radix_sort.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
-#include <cub/util_type.cuh>
+#include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 // suppress warnings triggered by #pragma unroll:
 // "warning: loop not unrolled: the optimizer was unable to perform the requested transformation; the transformation
@@ -286,8 +293,6 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
     int& current_bit,
     PassConfigT& pass_config)
   {
-    cudaError error = cudaSuccess;
-
     // The number of bits to process in this pass
     const int pass_bits = ::cuda::std::min(pass_config.radix_bits, (end_bit - current_bit));
 
@@ -327,22 +332,25 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
         current_bit,
         pass_bits);
 
-      launcher_factory(
-        static_cast<unsigned int>(num_current_segments), pass_config.segmented_config.threads_per_block, 0, stream)
-        .doit(pass_config.segmented_kernel,
-              d_keys_in,
-              d_keys_out,
-              d_values_in,
-              d_values_out,
-              begin_offsets_current_it,
-              end_offsets_current_it,
-              current_bit,
-              pass_bits,
-              decomposer);
+      if (const auto error = CubDebug(
+            launcher_factory(
+              static_cast<unsigned int>(num_current_segments), pass_config.segmented_config.threads_per_block, 0, stream)
+              .doit(pass_config.segmented_kernel,
+                    d_keys_in,
+                    d_keys_out,
+                    d_values_in,
+                    d_values_out,
+                    begin_offsets_current_it,
+                    end_offsets_current_it,
+                    current_bit,
+                    pass_bits,
+                    decomposer)))
+      {
+        return error;
+      }
 
       // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
       {
         return error;
       }
@@ -354,8 +362,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -364,17 +371,17 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
     // Update current bit once all segments have been processed for the current pass
     current_bit += pass_bits;
 
-    return error;
+    return cudaSuccess;
   }
 
   /// PassConfig data structure
   template <typename SegmentedKernelT>
   struct PassConfig
   {
-    SegmentedKernelT segmented_kernel;
+    SegmentedKernelT segmented_kernel{};
     detail::KernelConfig segmented_config;
-    int radix_bits;
-    int radix_digits;
+    int radix_bits{};
+    int radix_digits{};
 
     /// Initialize pass configuration
     template <typename SegmentedPolicyT>

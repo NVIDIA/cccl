@@ -22,7 +22,9 @@
 #endif // no system header
 
 #include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__simd/basic_vec.h>
 #include <cuda/std/__simd/math/common.h>
 
 #include <cuda/std/__cccl/prologue.h>

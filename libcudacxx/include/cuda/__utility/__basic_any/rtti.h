@@ -25,15 +25,11 @@
 #include <cuda/__utility/__basic_any/interfaces.h>
 #include <cuda/__utility/__basic_any/virtual_ptrs.h>
 #include <cuda/__utility/immovable.h>
-#include <cuda/std/__cccl/unreachable.h>
-#include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/terminate.h> // IWYU pragma: keep
+#include <cuda/std/__host_stdlib/any>
+#include <cuda/std/__type_traits/type_list_operations.h>
 #include <cuda/std/__utility/typeid.h>
-
-#include <nv/target>
-
-#if _CCCL_HOSTED()
-#  include <typeinfo> // IWYU pragma: keep (for std::bad_cast)
-#endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -44,34 +40,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //!
 struct __iunknown : __basic_interface<::cuda::std::__type_always<__iunknown>::__call>
 {};
-
-#if _CCCL_HAS_EXCEPTIONS()
-//!
-//! __bad_any_cast
-//!
-struct __bad_any_cast : ::std::bad_cast
-{
-  __bad_any_cast() noexcept                                         = default;
-  __bad_any_cast(__bad_any_cast const&) noexcept                    = default;
-  ~__bad_any_cast() noexcept override                               = default;
-  auto operator=(__bad_any_cast const&) noexcept -> __bad_any_cast& = default;
-
-  auto what() const noexcept -> char const* override
-  {
-    return "cannot cast value to target type";
-  }
-};
-
-[[noreturn]] _CCCL_HOST_DEVICE_API inline void __throw_bad_any_cast()
-{
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw __bad_any_cast();), (::cuda::std::terminate();))
-}
-#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-[[noreturn]] _CCCL_HOST_DEVICE_API inline void __throw_bad_any_cast()
-{
-  ::cuda::std::terminate();
-}
-#endif // !_CCCL_HAS_EXCEPTIONS()
 
 struct __rtti_base : __immovable
 {
@@ -92,11 +60,13 @@ struct __rtti_base : __immovable
 static_assert(sizeof(__rtti_base) == sizeof(uint64_t) + sizeof(void*));
 
 // Used to map an interface typeid to a pointer to the vtable for that interface.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct __base_info
 {
-  using __cast_fn_t = auto(__rtti const*) noexcept -> __base_vptr;
+  using __cast_fn_t _CCCL_NODEBUG = auto(__rtti const*) noexcept -> __base_vptr;
 
   ::cuda::std::__type_info_ptr __typeid_;
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   union
   {
     __cast_fn_t* __cast_fn_; // used when __basic_any_version >= 1,
@@ -120,6 +90,7 @@ inline constexpr size_t __half_size_t_bits = sizeof(size_t) * CHAR_BIT / 2;
 
 // The metadata for the type-erased object. All vtables have an rtti sub-object,
 // which contains a sub-object of this type.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct __object_metadata
 {
   size_t __size_  : __half_size_t_bits;
@@ -267,7 +238,7 @@ template <class _SrcInterface, class _DstInterface>
     auto __dst_vptr = __try_vptr_cast<_SrcInterface, _DstInterface>(__src_vptr);
     if (!__dst_vptr && __src_vptr)
     {
-      __throw_bad_any_cast();
+      _CCCL_THROW(::std::bad_any_cast);
     }
     return __dst_vptr;
   }

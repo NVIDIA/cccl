@@ -56,8 +56,8 @@ TEST_CASE("TestDiscardIteratorIncrement", "[discard_iterator]")
 
   REQUIRE(-2 == lhs - rhs);
 }
-static_assert(cuda::std::is_trivially_copy_constructible<thrust::discard_iterator<>>::value);
-static_assert(cuda::std::is_trivially_copyable<thrust::discard_iterator<>>::value);
+static_assert(cuda::std::is_trivially_copy_constructible_v<thrust::discard_iterator<>>);
+static_assert(cuda::std::is_trivially_copyable_v<thrust::discard_iterator<>>);
 
 TEST_CASE("TestDiscardIteratorComparison", "[discard_iterator]")
 {

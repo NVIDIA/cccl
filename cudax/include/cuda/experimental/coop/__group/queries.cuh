@@ -34,7 +34,7 @@
 namespace cuda::experimental::coop
 {
 template <class _Unit, class _Group>
-[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::size_t __static_count_query_group() noexcept
+[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::size_t __static_count_query_group()
 {
   using _GroupUnit          = typename _Group::unit_type;
   using _GroupMappingResult = typename _Group::__mapping_result_type;
@@ -66,7 +66,7 @@ template <class _Unit, class _Group>
 }
 
 template <class _Tp, class _Unit, class _Group>
-[[nodiscard]] _CCCL_DEVICE_API constexpr _Tp __count_query_group(const _Group& __group) noexcept
+[[nodiscard]] _CCCL_DEVICE_API constexpr _Tp __count_query_group(const _Group& __group)
 {
   using _GroupUnit = typename _Group::unit_type;
 
@@ -92,7 +92,7 @@ template <class _Tp, class _Unit, class _Group>
 }
 
 template <class _Tp, class _Unit, class _Group>
-[[nodiscard]] _CCCL_DEVICE_API _Tp __rank_query_group(const _Group& __group) noexcept
+[[nodiscard]] _CCCL_DEVICE_API _Tp __rank_query_group(const _Group& __group)
 {
   using _GroupUnit = typename _Group::unit_type;
 
@@ -107,12 +107,6 @@ template <class _Tp, class _Unit, class _Group>
     const auto __unit_count = __count_query<_Unit, _GroupUnit>::template __call<_Tp>(__group.hierarchy());
     return static_cast<_Tp>(__group_unit_rank * __unit_count + __unit_rank);
   }
-}
-
-template <class _Unit, class _Group>
-[[nodiscard]] _CCCL_DEVICE_API bool __is_part_of_group(const _Group& __group) noexcept
-{
-  return __group.__mapping_result().is_valid();
 }
 } // namespace cuda::experimental::coop
 

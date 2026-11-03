@@ -147,7 +147,7 @@ struct reduce_build_ex
     const char* cub_path,
     const char* thrust_path,
     const char* libcudacxx_path,
-    const char* ctk_path) noexcept
+    const char* ctk_path) const noexcept
   {
     return cccl_device_reduce_build_ex(
       build_ptr,
@@ -667,7 +667,7 @@ C2H_TEST("Reduce works with C++ source operations using _ex build", "[reduce]")
   const auto& build_info  = BuildInformation<device_id>::init();
 
   BuildResultT build{};
-  reduce_build_ex builder(extra_flags, 1, extra_includes, 1);
+  const reduce_build_ex builder(extra_flags, 1, extra_includes, 1);
 
   REQUIRE(
     CUDA_SUCCESS

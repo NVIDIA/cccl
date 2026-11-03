@@ -14,6 +14,8 @@
 #endif // no system header
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/integer_sequence.h>

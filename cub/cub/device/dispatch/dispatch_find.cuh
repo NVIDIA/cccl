@@ -20,21 +20,24 @@
 #include <thrust/detail/config.h>
 
 #include <cub/agent/agent_find.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/type_size.cuh>
 #include <cub/device/dispatch/tuning/tuning_find.cuh>
-#include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
-#include <cub/util_type.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
-#include <cuda/__iterator/transform_iterator.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__execution/env.h>
+#include <cuda/std/__type_traits/is_integral.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -84,10 +87,7 @@ template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
           typename PredicateT,
-          typename PolicySelector = policy_selector_from_types<it_value_t<InputIteratorT>>>
-#if _CCCL_HAS_CONCEPTS()
-  requires find_policy_selector<PolicySelector>
-#endif // _CCCL_HAS_CONCEPTS()
+          typename TuningEnvT = ::cuda::std::execution::env<>>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -96,8 +96,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   OffsetT num_items,
   PredicateT predicate,
   cudaStream_t stream,
-  PolicySelector policy_selector = {})
+  TuningEnvT = {})
 {
+  using default_policy_selector_t = policy_selector_from_types<it_value_t<InputIteratorT>>;
+  using policy_selector_t =
+    ::cuda::std::execution::__query_result_or_t<TuningEnvT, FindIfPolicy, default_policy_selector_t>;
+#if _CCCL_HAS_CONCEPTS()
+  static_assert(find_policy_selector<policy_selector_t>);
+#endif // _CCCL_HAS_CONCEPTS()
+
   using output_t = it_value_t<OutputIteratorT>;
 
   // if the output iterator can be turned into a pointer, the value type is integral, and has the same size as OffsetT
@@ -113,7 +120,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  const FindIfPolicy active_policy = policy_selector(cc);
+  const FindIfPolicy active_policy = policy_selector_t{}(cc);
 
   detail::log_dispatch("DeviceFind", cc, active_policy);
 
@@ -133,7 +140,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
 
   using unwrapped_input_iterator_t = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>;
-  auto kernel_ptr                  = find_kernel<PolicySelector, unwrapped_input_iterator_t, OffsetT, PredicateT>;
+  auto kernel_ptr                  = find_kernel<policy_selector_t, unwrapped_input_iterator_t, OffsetT, PredicateT>;
 
   int find_if_sm_occupancy;
   if (const auto error =
@@ -173,33 +180,35 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   // use d_temp_storage as the intermediate device result to read and write from. Then store the final result in the
   // output iterator.
-  if (const auto error = CubDebug(THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-                                    1, 1, 0, stream, /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
-                                    .doit(init_found_pos_pointer<OffsetT, OffsetT>, found_pos_ptr, num_items)))
+  if (const auto error = CubDebug(
+        detail::TripleChevronFactory{}(1, 1, 0, stream, /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
+          .doit(init_found_pos_pointer<OffsetT, OffsetT>, found_pos_ptr, num_items)))
   {
     return error;
   }
 
-  // Unwrap the input iterator to convert device_ptr<T> to T* (raw pointer). This ensures that dereferencing yields T&
-  // instead of device_reference<T>, which is necessary for predicates that don't accept proxy types.
-  auto d_in_unwrapped = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in);
-  if (const auto error = CubDebug(
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-          findif_grid_size,
-          active_policy.threads_per_block,
-          0,
-          stream,
-          /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
-          .doit(kernel_ptr, d_in_unwrapped, num_items, found_pos_ptr, predicate)))
+  if (num_items != 0)
   {
-    return error;
+    // Unwrap the input iterator to convert device_ptr<T> to T* (raw pointer). This ensures that dereferencing yields T&
+    // instead of device_reference<T>, which is necessary for predicates that don't accept proxy types.
+    auto d_in_unwrapped = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in);
+    if (const auto error = CubDebug(
+          detail::TripleChevronFactory{}(
+            findif_grid_size,
+            active_policy.threads_per_block,
+            0,
+            stream,
+            /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
+            .doit(kernel_ptr, d_in_unwrapped, num_items, found_pos_ptr, predicate)))
+    {
+      return error;
+    }
   }
 
   if constexpr (!can_write_to_output_directly)
   {
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-            1, 1, 0, stream, /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
+          detail::TripleChevronFactory{}(1, 1, 0, stream, /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
             .doit(copy_final_result_to_output_iterator<OffsetT, OutputIteratorT>, found_pos_ptr, d_out)))
     {
       return error;

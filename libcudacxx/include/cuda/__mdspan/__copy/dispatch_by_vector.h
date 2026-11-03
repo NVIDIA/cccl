@@ -25,6 +25,7 @@
 
 #  include <cuda/__mdspan/__copy/tensor_copy_utils.h>
 #  include <cuda/__mdspan/__copy/types.h>
+#  include <cuda/__mdspan/__copy/vector_access.h>
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
@@ -50,14 +51,14 @@ template <typename _SrcExtentT,
           ::cuda::std::size_t _MaxRank>
 [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t
 __vector_size_bytes(const __raw_tensor<_SrcExtentT, _SrcStrideT, _TpSrc, _MaxRank>& __src,
-                    const __raw_tensor<_DstExtentT, _DstStrideT, _TpDst, _MaxRank>& __dst) noexcept
+                    const __raw_tensor<_DstExtentT, _DstStrideT, _TpDst, _MaxRank>& __dst)
 {
   return ::cuda::std::min(
     {::cuda::__max_alignment(__src), ::cuda::__max_alignment(__dst), ::cuda::__max_gpu_arch_vector_size()});
 }
 
 template <int _VectorSize>
-constexpr auto __const_vector_size = ::cuda::std::integral_constant<int, _VectorSize>{};
+inline constexpr auto __const_vector_size = ::cuda::std::integral_constant<int, _VectorSize>{};
 
 //! @brief Dispatch a copy operation with the optimal vectorized element type.
 //!
@@ -77,7 +78,7 @@ template <typename _ExtentT,
 _CCCL_HOST_API void __dispatch_by_vector_size(
   const __raw_tensor<_ExtentT, _StrideTIn, _TpIn, _Rank>& __src,
   const __raw_tensor<_ExtentT, _StrideTOut, _TpOut, _Rank>& __dst,
-  _Op __op) noexcept
+  _Op __op)
 {
   const auto __call_vectorized = [&](auto __const_vector_size) {
     const auto __src_recast = ::cuda::__reshape_vectorized<__const_vector_size>(__src);

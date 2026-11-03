@@ -46,17 +46,21 @@ struct ReduceKernel
     RedOp red_op)
   {
     const cudax::coop::this_warp warp{config};
-    const cudax::coop::generic_group group{
-      cuda::gpu_thread, warp, cudax::coop::group_by<NThreadsInGroup, false>{}, cudax::coop::lane_synchronizer{}};
+    const auto group = cudax::coop::make_group<cudax::coop::generic_group>(
+      cudax::coop::non_exhaustive,
+      cuda::gpu_thread,
+      warp,
+      cudax::coop::group_by{cuda::std::integral_constant<cuda::std::size_t, NThreadsInGroup>{}},
+      cudax::coop::lane_synchronizer{});
 
     // All threads that are not part of the groups should exit early.
-    if (!cuda::gpu_thread.is_part_of(group))
+    if (!group.has_value())
     {
       return;
     }
 
     // We want to work only with one group, all other groups should exit early.
-    if (group.rank(warp) > 0)
+    if (group->rank(warp) > 0)
     {
       return;
     }
@@ -64,21 +68,21 @@ struct ReduceKernel
     T thread_data[NumItems];
     for (int i = 0; i < NumItems; ++i)
     {
-      thread_data[i] = d_in[cuda::gpu_thread.rank_as<int>(group) + i * cuda::gpu_thread.count_as<int>(group)];
+      thread_data[i] = d_in[cuda::gpu_thread.rank_as<int>(*group) + i * cuda::gpu_thread.count_as<int>(*group)];
     }
 
     if constexpr (Broadcasted)
     {
-      const auto result = cudax::coop::reduce(cudax::broadcasted, group, thread_data, red_op);
+      const auto result = cudax::coop::reduce(cudax::broadcasted, *group, thread_data, red_op);
 
-      d_out[cuda::gpu_thread.rank(group)] = result;
+      d_out[cuda::gpu_thread.rank(*group)] = result;
     }
     else
     {
-      const auto result = cudax::coop::reduce(group, thread_data, red_op);
+      const auto result = cudax::coop::reduce(*group, thread_data, red_op);
 
-      REQUIRE(result.has_value() == cuda::gpu_thread.is_root_rank(group));
-      if (cuda::gpu_thread.is_root_rank(group))
+      REQUIRE(result.has_value() == cuda::gpu_thread.is_root_rank(*group));
+      if (cuda::gpu_thread.is_root_rank(*group))
       {
         *d_out = result.value();
       }

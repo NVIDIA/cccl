@@ -22,6 +22,7 @@
 #endif // no system header
 
 // Prevent resetting of the diagnostic state by guarding the push/pop with a macro
+// IWYU pragma: begin_exports
 #if _CCCL_HAS_NVFP16()
 _CCCL_DIAG_PUSH
 #  include <cuda_fp16.h>
@@ -112,5 +113,6 @@ __device__ __cudart_builtin__ int __nv_fp128_isnan(__float128);
 __device__ __cudart_builtin__ int __nv_fp128_isunordered(__float128, __float128);
 #  endif // ^^^ _CCCL_COMPILER(NVRTC) ^^^
 #endif // _CCCL_HAS_FLOAT128() && _CCCL_DEVICE_COMPILATION() && _CCCL_CTK_AT_LEAST(12, 8)
+// IWYU pragma: end_exports
 
 #endif // _CUDA_STD___FLOATING_POINT_NVFP_TYPES_H

@@ -13,23 +13,27 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/it_traits.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__device/compute_capability.h>
-#include <cuda/__functional/address_stability.h>
-#include <cuda/__functional/always_true_false.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cccl/execution_space.h>
-#include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__fwd/format.h>
+#include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/array>
-#include <cuda/std/concepts>
-#include <cuda/std/tuple>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/util_device.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 
@@ -207,14 +211,16 @@ struct TransformAsyncCopyPolicy
 };
 
 //! The tuning policy for all algorithms in @ref cub::DeviceTransform "DeviceTransform".
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct TransformPolicy
 {
   int min_bytes_in_flight; //!< Minimum number of bytes in flight per SM to reach by scaling the items per thread. Has
-                           //!< no effect if algorithm is @p vectorized.
+                           //!< no effect if algorithm is @p vectorized and the vectorized code path is eligible at
+                           //!< runtime.
   TransformAlgorithm algorithm; //!< The transform algorithm to use by the kernel
   TransformPrefetchPolicy prefetch; //!< Sub-policy for the prefetch algorithm. Only used when @p algorithm is @p
-                                    //!< prefetch or when @p algorithm is @p vectorized and the input pointers are not
-                                    //!< sufficiently aligned.
+                                    //!< prefetch or when @p algorithm is @p vectorized and the vectorized code path is
+                                    //!< not eligible at runtime.
   TransformVectorizedPolicy vectorized; //!< Sub-policy for the vectorized algorithm. Only used when @p algorithm is @p
                                         //!< vectorized.
   TransformAsyncCopyPolicy async_copy; //!< Sub-policy for the async copy algorithms. Only used when @p algorithm is @p
@@ -277,7 +283,7 @@ _CCCL_HOST_DEVICE constexpr auto memcpy_async_dyn_smem_for_tile_size(
   return smem_size;
 }
 
-constexpr int bulk_copy_size_multiple = 16;
+inline constexpr int bulk_copy_size_multiple = 16;
 
 _CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(::cuda::compute_capability cc) -> int
 {
@@ -411,6 +417,19 @@ struct policy_selector
         tuned_vectorized_policy(cc, ::cuda::std::max(1, output.value_type_size), no_input_streams);
       auto async           = TransformAsyncCopyPolicy{async_block_size};
       async.store_vec_size = auto_ublkcp_store_vec_size(output.value_type_size);
+
+      // sm107 tuning from cub/benchmarks/bench/transform/babelstream.ublkcp.cu (1-byte value types)
+      bool all_value_types_are_one_byte = output.value_type_size == 1;
+      for (const auto& input : inputs)
+      {
+        all_value_types_are_one_byte &= input.value_type_size == 1;
+      }
+      if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0}
+          && all_value_types_are_one_byte)
+      {
+        // bif_-8.tpb_128.unrl_4.svsp_4  1.017  1.008  1.051  1.082  1.085
+        async.unroll_factor = 4;
+      }
 
       // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
       // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but

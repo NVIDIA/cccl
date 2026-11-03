@@ -23,7 +23,7 @@
 #endif // no system header
 
 #if _CCCL_HOSTED()
-#  include <cstddef>
+#  include <cstddef> // IWYU pragma: export
 #else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
 #  if !defined(offsetof)
 #    if _CCCL_HAS_BUILTIN(__builtin_offsetof) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC)

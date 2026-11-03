@@ -44,8 +44,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 inline constexpr auto __warp_threads = 32u;
 
+// Preserve the public aggregate's default construction properties.
 template <typename _Tp>
-struct warp_shuffle_result
+struct warp_shuffle_result // NOLINT(cppcoreguidelines-pro-type-member-init)
 {
   _Tp data;
   bool pred;
@@ -135,7 +136,8 @@ __make_shuffle_result(const ::cuda::std::array<::cuda::std::uint32_t, _Ratio>& _
   else
 #  endif // _CCCL_HAS_INT128()
   {
-    warp_shuffle_result<_Tp> __result;
+    // memcpy supplies data; the predicate is assigned below.
+    warp_shuffle_result<_Tp> __result; // NOLINT(cppcoreguidelines-pro-type-member-init)
     __result.pred = __pred; // __src_lane is always in range [minLane, maxLane]
     ::cuda::std::memcpy(
       static_cast<void*>(::cuda::std::addressof(__result.data)), static_cast<const void*>(__array.data()), sizeof(_Tp));

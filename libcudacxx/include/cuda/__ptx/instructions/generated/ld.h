@@ -234,6 +234,8 @@ _CCCL_DEVICE_API _B256 ld(::cuda::ptx::space_global_t, const _B256* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
+  // The assembly writes all four components before use.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.v4.b64 {%0, %1, %2, %3}, [%4];"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
@@ -517,6 +519,8 @@ _B256 ld_L2_cache_hint(::cuda::ptx::space_global_t, const _B256* __addr, ::cuda:
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
+  // The assembly writes all four components before use.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.L2::cache_hint.v4.b64 {%0, %1, %2, %3}, [%4], %5;"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
@@ -754,6 +758,8 @@ _CCCL_DEVICE_API _B256 ld_L1_evict_first(::cuda::ptx::space_global_t, const _B25
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
+  // The assembly writes all four components before use.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.L1::evict_first.v4.b64 {%0, %1, %2, %3}, [%4];"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
@@ -1037,6 +1043,8 @@ ld_L1_evict_first_L2_cache_hint(::cuda::ptx::space_global_t, const _B256* __addr
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
+  // The assembly writes all four components before use.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.L1::evict_first.L2::cache_hint.v4.b64 {%0, %1, %2, %3}, [%4], %5;"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
@@ -1274,6 +1282,8 @@ _CCCL_DEVICE_API _B256 ld_L1_evict_last(::cuda::ptx::space_global_t, const _B256
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
+  // The assembly writes all four components before use.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.L1::evict_last.v4.b64 {%0, %1, %2, %3}, [%4];"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
@@ -1557,6 +1567,8 @@ ld_L1_evict_last_L2_cache_hint(::cuda::ptx::space_global_t, const _B256* __addr,
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
+  // The assembly writes all four components before use.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.L1::evict_last.L2::cache_hint.v4.b64 {%0, %1, %2, %3}, [%4], %5;"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
@@ -1794,6 +1806,8 @@ _CCCL_DEVICE_API _B256 ld_L1_no_allocate(::cuda::ptx::space_global_t, const _B25
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
+  // The assembly writes all four components before use.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.L1::no_allocate.v4.b64 {%0, %1, %2, %3}, [%4];"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
@@ -2077,6 +2091,8 @@ ld_L1_no_allocate_L2_cache_hint(::cuda::ptx::space_global_t, const _B256* __addr
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
+  // The assembly writes all four components before use.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.L1::no_allocate.L2::cache_hint.v4.b64 {%0, %1, %2, %3}, [%4], %5;"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
@@ -2314,6 +2330,8 @@ _CCCL_DEVICE_API _B256 ld_nc(::cuda::ptx::space_global_t, const _B256* __addr)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
+  // The assembly writes all four components before use.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.nc.v4.b64 {%0, %1, %2, %3}, [%4];"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
@@ -2597,6 +2615,8 @@ _B256 ld_nc_L2_cache_hint(::cuda::ptx::space_global_t, const _B256* __addr, ::cu
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
+  // The assembly writes all four components before use.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.nc.L2::cache_hint.v4.b64 {%0, %1, %2, %3}, [%4], %5;"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
@@ -2834,6 +2854,8 @@ _CCCL_DEVICE_API _B256 ld_nc_L1_evict_first(::cuda::ptx::space_global_t, const _
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
+  // The assembly writes all four components before use.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.nc.L1::evict_first.v4.b64 {%0, %1, %2, %3}, [%4];"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
@@ -3117,6 +3139,8 @@ _CCCL_DEVICE_API _B256 ld_nc_L1_evict_first_L2_cache_hint(
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
+  // The assembly writes all four components before use.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.nc.L1::evict_first.L2::cache_hint.v4.b64 {%0, %1, %2, %3}, [%4], %5;"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
@@ -3354,6 +3378,8 @@ _CCCL_DEVICE_API _B256 ld_nc_L1_evict_last(::cuda::ptx::space_global_t, const _B
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
+  // The assembly writes all four components before use.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.nc.L1::evict_last.v4.b64 {%0, %1, %2, %3}, [%4];"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
@@ -3637,6 +3663,8 @@ _CCCL_DEVICE_API _B256 ld_nc_L1_evict_last_L2_cache_hint(
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
+  // The assembly writes all four components before use.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.nc.L1::evict_last.L2::cache_hint.v4.b64 {%0, %1, %2, %3}, [%4], %5;"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
@@ -3874,6 +3902,8 @@ _CCCL_DEVICE_API _B256 ld_nc_L1_no_allocate(::cuda::ptx::space_global_t, const _
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
+  // The assembly writes all four components before use.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.nc.L1::no_allocate.v4.b64 {%0, %1, %2, %3}, [%4];"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)
@@ -4157,6 +4187,8 @@ _CCCL_DEVICE_API _B256 ld_nc_L1_no_allocate_L2_cache_hint(
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B256) == 32, "");
+  // The assembly writes all four components before use.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   ::cuda::ptx::longlong4_32a __dest;
   asm("ld.global.nc.L1::no_allocate.L2::cache_hint.v4.b64 {%0, %1, %2, %3}, [%4], %5;"
       : "=l"(__dest.x), "=l"(__dest.y), "=l"(__dest.z), "=l"(__dest.w)

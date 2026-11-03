@@ -128,11 +128,6 @@ __device__ cuda::std::optional<T> sum(const Group& group, T (&array)[N])
 
   __shared__ T group_sums[ngroups];
 
-  if (!Unit{}.is_part_of(group))
-  {
-    return cuda::std::nullopt;
-  }
-
   // todo(dabayer): Replace by group.rank(level) once this query is available.
   const auto group_rank = group.__mapping_result().group_rank();
 
@@ -191,9 +186,15 @@ struct TestKernel
     test_cooperative_algorithm(cudax::coop::this_cluster{config});
 
     test_cooperative_algorithm(cudax::coop::generic_group{
-      cuda::gpu_thread, cudax::coop::this_block{config}, cudax::coop::group_by<2>{}, cudax::coop::lane_synchronizer{}});
+      cuda::gpu_thread,
+      cudax::coop::this_block{config},
+      cudax::coop::group_by{cuda::std::cw<2>},
+      cudax::coop::lane_synchronizer{}});
     test_cooperative_algorithm(cudax::coop::generic_group{
-      cuda::gpu_thread, cudax::coop::this_block{config}, cudax::coop::group_by<16>{}, cudax::coop::lane_synchronizer{}});
+      cuda::gpu_thread,
+      cudax::coop::this_block{config},
+      cudax::coop::group_by{cuda::std::cw<2>},
+      cudax::coop::lane_synchronizer{}});
   }
 };
 } // namespace

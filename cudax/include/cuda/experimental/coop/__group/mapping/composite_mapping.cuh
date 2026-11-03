@@ -42,14 +42,13 @@ class composite_mapping
 {
   ::cuda::std::tuple<_Mappings...> __mappings_;
 
-  template <::cuda::std::size_t _Ip = 0, class _Unit, class _ParentGroup, class _PrevMappingResult>
-  [[nodiscard]] _CCCL_DEVICE_API auto __map_impl(
-    const _Unit& __unit, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) noexcept
+  template <::cuda::std::size_t _Ip = 0, class _PrevMappingResult, class... _Args>
+  [[nodiscard]] _CCCL_DEVICE_API auto __map_impl(const _PrevMappingResult& __prev_mapping_result, const _Args&... __args)
   {
-    const auto __result = ::cuda::std::get<_Ip>(__mappings_).map(__unit, __parent, __prev_mapping_result);
+    const auto __result = ::cuda::std::get<_Ip>(__mappings_).map(__args..., __prev_mapping_result);
     if constexpr (_Ip + 1 < sizeof...(_Mappings))
     {
-      return __map_impl<_Ip + 1>(__unit, __parent, __result);
+      return __map_impl<_Ip + 1>(__result, __args...);
     }
     else
     {
@@ -58,23 +57,39 @@ class composite_mapping
   }
 
 public:
-  _CCCL_DEVICE_API constexpr composite_mapping(const _Mappings&... __mappings) noexcept(
-    ::cuda::std::__fold_and_v<::cuda::std::is_nothrow_copy_constructible_v<_Mappings>...>)
+  _CCCL_DEVICE_API constexpr composite_mapping(const _Mappings&... __mappings)
       : __mappings_{__mappings...}
   {}
 
-  [[nodiscard]] _CCCL_DEVICE_API constexpr const ::cuda::std::tuple<_Mappings...>& get() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr const ::cuda::std::tuple<_Mappings...>& get() const
   {
     return __mappings_;
   }
 
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const _Unit& __unit, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) noexcept
+  map(const _Unit& __unit, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result)
   {
     if constexpr (sizeof...(_Mappings) > 0)
     {
-      return __map_impl(__unit, __parent, __prev_mapping_result);
+      return __map_impl(__prev_mapping_result, __unit, __parent);
+    }
+    else
+    {
+      return __prev_mapping_result;
+    }
+  }
+
+  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API auto
+  map(const non_exhaustive_t& __non_exhaustive,
+      const _Unit& __unit,
+      const _ParentGroup& __parent,
+      const _PrevMappingResult& __prev_mapping_result)
+  {
+    if constexpr (sizeof...(_Mappings) > 0)
+    {
+      return __map_impl(__prev_mapping_result, __non_exhaustive, __unit, __parent);
     }
     else
     {
@@ -88,9 +103,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES composite_mapping(const _Mappings&...) -> compo
 
 _CCCL_TEMPLATE(class _Lhs, class _Rhs)
 _CCCL_REQUIRES(__is_group_mapping_v<_Lhs> _CCCL_AND __is_group_mapping_v<_Rhs>)
-[[nodiscard]] _CCCL_DEVICE_API constexpr composite_mapping<_Lhs, _Rhs>
-operator|(const _Lhs& __lhs, const _Rhs& __rhs) noexcept(
-  ::cuda::std::is_nothrow_constructible_v<composite_mapping<_Lhs, _Rhs>, const _Lhs&, const _Rhs&>)
+[[nodiscard]] _CCCL_DEVICE_API constexpr composite_mapping<_Lhs, _Rhs> operator|(const _Lhs& __lhs, const _Rhs& __rhs)
 {
   return {__lhs, __rhs};
 }
@@ -98,8 +111,7 @@ operator|(const _Lhs& __lhs, const _Rhs& __rhs) noexcept(
 _CCCL_TEMPLATE(class... _LhsMappings, class _Rhs)
 _CCCL_REQUIRES(__is_group_mapping_v<_Rhs>)
 [[nodiscard]] _CCCL_DEVICE_API constexpr composite_mapping<_LhsMappings..., _Rhs>
-operator|(const composite_mapping<_LhsMappings...>& __lhs, const _Rhs& __rhs) noexcept(
-  ::cuda::std::is_nothrow_constructible_v<composite_mapping<_LhsMappings..., _Rhs>, const _LhsMappings&..., const _Rhs&>)
+operator|(const composite_mapping<_LhsMappings...>& __lhs, const _Rhs& __rhs)
 {
   return ::cuda::std::apply(
     [&](const auto&... __lhs_mappings) {
@@ -111,8 +123,7 @@ operator|(const composite_mapping<_LhsMappings...>& __lhs, const _Rhs& __rhs) no
 _CCCL_TEMPLATE(class _Lhs, class... _RhsMappings)
 _CCCL_REQUIRES(__is_group_mapping_v<_Lhs>)
 [[nodiscard]] _CCCL_DEVICE_API constexpr composite_mapping<_Lhs, _RhsMappings...>
-operator|(const _Lhs& __lhs, const composite_mapping<_RhsMappings...>& __rhs) noexcept(
-  ::cuda::std::is_nothrow_constructible_v<composite_mapping<_Lhs, _RhsMappings...>, const _Lhs&, const _RhsMappings&...>)
+operator|(const _Lhs& __lhs, const composite_mapping<_RhsMappings...>& __rhs)
 {
   return ::cuda::std::apply(
     [&](const auto&... __rhs_mappings) {
@@ -123,10 +134,7 @@ operator|(const _Lhs& __lhs, const composite_mapping<_RhsMappings...>& __rhs) no
 
 template <class... _LhsMappings, class... _RhsMappings>
 [[nodiscard]] _CCCL_DEVICE_API constexpr composite_mapping<_LhsMappings..., _RhsMappings...>
-operator|(const composite_mapping<_LhsMappings...>& __lhs, const composite_mapping<_RhsMappings...>& __rhs) noexcept(
-  ::cuda::std::is_nothrow_constructible_v<composite_mapping<_LhsMappings..., _RhsMappings...>,
-                                          const _LhsMappings&...,
-                                          const _RhsMappings&...>)
+operator|(const composite_mapping<_LhsMappings...>& __lhs, const composite_mapping<_RhsMappings...>& __rhs)
 {
   return ::cuda::std::apply(
     [&](const auto&... __lhs_mappings) {

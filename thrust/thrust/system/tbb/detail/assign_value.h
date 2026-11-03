@@ -13,5 +13,5 @@
 #  pragma system_header
 #endif // no system header
 
-// this system inherits assign_value
+// tbb system inherits assign_value
 #include <thrust/system/cpp/detail/assign_value.h>

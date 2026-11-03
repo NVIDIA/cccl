@@ -26,9 +26,8 @@
 #include <cuda/__fwd/devices.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__type_traits/always_false.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
 

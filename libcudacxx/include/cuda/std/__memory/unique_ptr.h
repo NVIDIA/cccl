@@ -28,13 +28,13 @@
 #  include <cuda/std/__compare/compare_three_way_result.h>
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-#include <cuda/std/__functional/hash.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__memory/allocator_traits.h> // __pointer
 #include <cuda/std/__memory/compressed_pair.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/dependent_type.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_assignable.h>
@@ -103,25 +103,25 @@ template <class _Deleter>
 struct __unique_ptr_deleter_sfinae
 {
   static_assert(!is_reference_v<_Deleter>, "incorrect specialization");
-  using __lval_ref_type        = const _Deleter&;
-  using __good_rval_ref_type   = _Deleter&&;
-  using __enable_rval_overload = true_type;
+  using __lval_ref_type _CCCL_NODEBUG        = const _Deleter&;
+  using __good_rval_ref_type _CCCL_NODEBUG   = _Deleter&&;
+  using __enable_rval_overload _CCCL_NODEBUG = true_type;
 };
 
 template <class _Deleter>
 struct __unique_ptr_deleter_sfinae<_Deleter const&>
 {
-  using __lval_ref_type        = const _Deleter&;
-  using __bad_rval_ref_type    = const _Deleter&&;
-  using __enable_rval_overload = false_type;
+  using __lval_ref_type _CCCL_NODEBUG        = const _Deleter&;
+  using __bad_rval_ref_type _CCCL_NODEBUG    = const _Deleter&&;
+  using __enable_rval_overload _CCCL_NODEBUG = false_type;
 };
 
 template <class _Deleter>
 struct __unique_ptr_deleter_sfinae<_Deleter&>
 {
-  using __lval_ref_type        = _Deleter&;
-  using __bad_rval_ref_type    = _Deleter&&;
-  using __enable_rval_overload = false_type;
+  using __lval_ref_type _CCCL_NODEBUG        = _Deleter&;
+  using __bad_rval_ref_type _CCCL_NODEBUG    = _Deleter&&;
+  using __enable_rval_overload _CCCL_NODEBUG = false_type;
 };
 
 #if defined(_LIBCUDACXX_ABI_ENABLE_UNIQUE_PTR_TRIVIAL_ABI)
@@ -161,22 +161,21 @@ private:
 
   template <bool _Dummy, class _Deleter = typename __dependent_type<type_identity<deleter_type>, _Dummy>::type>
   using _EnableIfDeleterDefaultConstructible _CCCL_NODEBUG =
-    typename enable_if<is_default_constructible_v<_Deleter> && !is_pointer_v<_Deleter>>::type;
+    enable_if_t<is_default_constructible_v<_Deleter> && !is_pointer_v<_Deleter>>;
 
   template <class _ArgType>
-  using _EnableIfDeleterConstructible _CCCL_NODEBUG =
-    typename enable_if<is_constructible_v<deleter_type, _ArgType>>::type;
+  using _EnableIfDeleterConstructible _CCCL_NODEBUG = enable_if_t<is_constructible_v<deleter_type, _ArgType>>;
 
   template <class _UPtr, class _Up>
   using _EnableIfMoveConvertible _CCCL_NODEBUG =
-    typename enable_if<is_convertible_v<typename _UPtr::pointer, pointer> && !is_array_v<_Up>>::type;
+    enable_if_t<is_convertible_v<typename _UPtr::pointer, pointer> && !is_array_v<_Up>>;
 
   template <class _UDel>
-  using _EnableIfDeleterConvertible _CCCL_NODEBUG = typename enable_if<
-    (is_reference_v<_Dp> && is_same_v<_Dp, _UDel>) || (!is_reference_v<_Dp> && is_convertible_v<_UDel, _Dp>)>::type;
+  using _EnableIfDeleterConvertible _CCCL_NODEBUG =
+    enable_if_t<(is_reference_v<_Dp> && is_same_v<_Dp, _UDel>) || (!is_reference_v<_Dp> && is_convertible_v<_UDel, _Dp>)>;
 
   template <class _UDel>
-  using _EnableIfDeleterAssignable = typename enable_if<is_assignable_v<_Dp&, _UDel&&>>::type;
+  using _EnableIfDeleterAssignable _CCCL_NODEBUG = enable_if_t<is_assignable_v<_Dp&, _UDel&&>>;
 
 public:
   template <bool _Dummy = true, class = _EnableIfDeleterDefaultConstructible<_Dummy>>
@@ -321,13 +320,11 @@ private:
 
   template <class _FromElem>
   struct _CheckArrayPointerConversion<_FromElem*>
-      : integral_constant<
-          bool,
-          is_same_v<_FromElem*, pointer>
-            || (is_same_v<pointer, element_type*> && is_convertible_v<_FromElem (*)[], element_type (*)[]>)>
+      : bool_constant<is_same_v<_FromElem*, pointer>
+                      || (is_same_v<pointer, element_type*> && is_convertible_v<_FromElem (*)[], element_type (*)[]>)>
   {};
 
-  using _DeleterSFINAE = __unique_ptr_deleter_sfinae<_Dp>;
+  using _DeleterSFINAE _CCCL_NODEBUG = __unique_ptr_deleter_sfinae<_Dp>;
 
   template <bool _Dummy>
   using _LValRefType _CCCL_NODEBUG = typename __dependent_type<_DeleterSFINAE, _Dummy>::__lval_ref_type;
@@ -340,19 +337,18 @@ private:
 
   template <bool _Dummy, class _Deleter = typename __dependent_type<type_identity<deleter_type>, _Dummy>::type>
   using _EnableIfDeleterDefaultConstructible _CCCL_NODEBUG =
-    typename enable_if<is_default_constructible_v<_Deleter> && !is_pointer_v<_Deleter>>::type;
+    enable_if_t<is_default_constructible_v<_Deleter> && !is_pointer_v<_Deleter>>;
 
   template <class _ArgType>
-  using _EnableIfDeleterConstructible _CCCL_NODEBUG =
-    typename enable_if<is_constructible_v<deleter_type, _ArgType>>::type;
+  using _EnableIfDeleterConstructible _CCCL_NODEBUG = enable_if_t<is_constructible_v<deleter_type, _ArgType>>;
 
   template <class _Pp>
-  using _EnableIfPointerConvertible _CCCL_NODEBUG = typename enable_if<_CheckArrayPointerConversion<_Pp>::value>::type;
+  using _EnableIfPointerConvertible _CCCL_NODEBUG = enable_if_t<_CheckArrayPointerConversion<_Pp>::value>;
 
   template <class _UPtr, class _Up, class _ElemT = typename _UPtr::element_type>
-  using _EnableIfMoveConvertible _CCCL_NODEBUG = typename enable_if<
-    is_array_v<_Up> && is_same_v<pointer, element_type*> && is_same_v<typename _UPtr::pointer, _ElemT*>
-    && is_convertible_v<_ElemT (*)[], element_type (*)[]>>::type;
+  using _EnableIfMoveConvertible _CCCL_NODEBUG =
+    enable_if_t<is_array_v<_Up> && is_same_v<pointer, element_type*> && is_same_v<typename _UPtr::pointer, _ElemT*>
+                && is_convertible_v<_ElemT (*)[], element_type (*)[]>>;
 
   template <class _UDel>
   using _EnableIfDeleterConvertible _CCCL_NODEBUG =
@@ -546,7 +542,7 @@ _CCCL_HOST_DEVICE_API inline bool operator<(const unique_ptr<_T1, _D1>& __x, con
 {
   using _P1 = typename unique_ptr<_T1, _D1>::pointer;
   using _P2 = typename unique_ptr<_T2, _D2>::pointer;
-  using _Vp = typename common_type<_P1, _P2>::type;
+  using _Vp = common_type_t<_P1, _P2>;
   return less<_Vp>()(__x.get(), __y.get());
 }
 
@@ -672,19 +668,19 @@ operator<=>(const unique_ptr<_T1, _D1>& __x, nullptr_t)
 template <class _Tp>
 struct __unique_if
 {
-  using __unique_single = unique_ptr<_Tp>;
+  using __unique_single _CCCL_NODEBUG = unique_ptr<_Tp>;
 };
 
 template <class _Tp>
 struct __unique_if<_Tp[]>
 {
-  using __unique_array_unknown_bound = unique_ptr<_Tp[]>;
+  using __unique_array_unknown_bound _CCCL_NODEBUG = unique_ptr<_Tp[]>;
 };
 
 template <class _Tp, size_t _Np>
 struct __unique_if<_Tp[_Np]>
 {
-  using __unique_array_known_bound = void;
+  using __unique_array_known_bound _CCCL_NODEBUG = void;
 };
 
 _CCCL_EXEC_CHECK_DISABLE

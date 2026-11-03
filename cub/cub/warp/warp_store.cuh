@@ -17,15 +17,18 @@
 #endif // no system header
 
 #include <cub/block/block_store.cuh>
-#include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/warp/warp_exchange.cuh>
+#include <cub/warp/warp_utils.cuh>
 
 #include <cuda/__cmath/pow2.h>
-#include <cuda/__ptx/instructions/get_sreg.h>
-#include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
 
 CUB_NAMESPACE_BEGIN
 
@@ -33,7 +36,7 @@ CUB_NAMESPACE_BEGIN
 //! ``cub::WarpStoreAlgorithm`` enumerates alternative algorithms for :cpp:struct:`cub::WarpStore`
 //! to write a blocked arrangement of items across a CUDA warp to a linear segment of memory.
 //! @endrst
-enum WarpStoreAlgorithm
+enum WarpStoreAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
   //! @rst
   //! Overview
@@ -254,8 +257,6 @@ class WarpStore
 {
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
 
-  static constexpr bool IS_ARCH_WARP = LogicalWarpThreads == detail::warp_threads;
-
 private:
   /// Store helper
   template <WarpStoreAlgorithm Algorithm, int DUMMY>
@@ -376,7 +377,7 @@ private:
   using InternalStore = StoreInternal<ALGORITHM, 0>;
 
   /// Shared memory storage layout type
-  using _TempStorage = typename InternalStore::TempStorage;
+  using _TempStorage _CCCL_NODEBUG = typename InternalStore::TempStorage;
 
   _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
   {
@@ -386,7 +387,7 @@ private:
 
   _TempStorage& temp_storage;
 
-  int linear_tid;
+  int linear_tid = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
 
 public:
   using TempStorage = Uninitialized<_TempStorage>;
@@ -398,16 +399,12 @@ public:
   //!        memory as temporary storage.
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpStore()
       : temp_storage(PrivateStorage())
-      , linear_tid(
-          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads))
   {}
 
   //! @brief Collective constructor using the specified memory allocation as
   //!        temporary storage.
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpStore(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(
-          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads))
   {}
 
   //! @}

@@ -263,9 +263,9 @@ C2H_TEST("For works with C++ source operations using custom headers", "[for]")
   pointer_t<T> input_ptr(input);
 
   // Test _ex version with custom build configuration
-  const char* extra_flags[] = {"-DTEST_IDENTITY_ENABLED"};
-  const char* extra_dirs[]  = {TEST_INCLUDE_PATH};
-  cccl_build_config config  = make_build_config(extra_flags, 1, extra_dirs, 1);
+  const char* extra_flags[]      = {"-DTEST_IDENTITY_ENABLED"};
+  const char* extra_dirs[]       = {TEST_INCLUDE_PATH};
+  const cccl_build_config config = make_build_config(extra_flags, 1, extra_dirs, 1);
 
   // Build with _ex version
   cccl_device_for_build_result_t build{};
@@ -289,7 +289,9 @@ C2H_TEST("For works with C++ source operations using custom headers", "[for]")
 
   // Verify results
   std::vector<T> output(num_items);
-  cudaMemcpy(output.data(), static_cast<void*>(input_ptr.ptr), sizeof(T) * num_items, cudaMemcpyDeviceToHost);
+  REQUIRE(
+    cudaSuccess
+    == cudaMemcpy(output.data(), static_cast<void*>(input_ptr.ptr), sizeof(T) * num_items, cudaMemcpyDeviceToHost));
   std::vector<T> expected = input;
   std::transform(expected.begin(), expected.end(), expected.begin(), [](T x) {
     return x * 2;
@@ -374,7 +376,7 @@ C2H_TEST("For compile/load round-trip", "[for][serialization]")
   REQUIRE(CUDA_SUCCESS == cccl_device_for(build, input_ptr, n, op, CU_STREAM_LEGACY));
 
   std::vector<T> output(n);
-  cudaMemcpy(output.data(), input_ptr.ptr, sizeof(T) * n, cudaMemcpyDeviceToHost);
+  REQUIRE(cudaSuccess == cudaMemcpy(output.data(), input_ptr.ptr, sizeof(T) * n, cudaMemcpyDeviceToHost));
   REQUIRE(std::all_of(output.begin(), output.end(), [](T v) {
     return v == T{2};
   }));
@@ -441,7 +443,7 @@ C2H_TEST("For link_ltoir round-trip", "[for][serialization]")
   REQUIRE(CUDA_SUCCESS == cccl_device_for(build, input_ptr, n, op_run, CU_STREAM_LEGACY));
 
   std::vector<T> output(n);
-  cudaMemcpy(output.data(), input_ptr.ptr, sizeof(T) * n, cudaMemcpyDeviceToHost);
+  REQUIRE(cudaSuccess == cudaMemcpy(output.data(), input_ptr.ptr, sizeof(T) * n, cudaMemcpyDeviceToHost));
   REQUIRE(std::all_of(output.begin(), output.end(), [](T v) {
     return v == T{2};
   }));

@@ -34,6 +34,12 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
   static_assert(cuda::std::is_same_v<Unit, typename Group::unit_type>);
   static_assert(cuda::std::is_same_v<Level, typename Group::level_type>);
 
+  // Test Group::arrival_token.
+  using ArrivalToken = typename Group::arrival_token;
+  static_assert(cuda::std::is_move_constructible_v<ArrivalToken>);
+  static_assert(cuda::std::is_move_assignable_v<ArrivalToken>);
+  static_assert(cuda::std::is_destructible_v<ArrivalToken>);
+
   // Test that the group can be queried for it's hierarchy.
   {
     decltype(auto) hierarchy = cuda::std::as_const(group).hierarchy();
@@ -43,7 +49,6 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
   // Test that the group can be synchronized using .sync() method.
   {
     static_assert(cuda::std::is_same_v<void, decltype(group.sync())>);
-    static_assert(noexcept(group.sync()));
 
     // .sync() method must support calls from different branches. Add some dummy work to make sure the branches are not
     // collided.
@@ -62,24 +67,55 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
     }
   }
 
+  // Test that the group can be synchronized using .arrive() + .wait() methods.
+  {
+    static_assert(cuda::std::is_same_v<ArrivalToken, decltype(group.arrive())>);
+    static_assert(cuda::std::is_same_v<void, decltype(group.wait(cuda::std::declval<ArrivalToken&&>()))>);
+
+    // Unaligned variants method must support calls from different branches. Add some dummy work to make sure the
+    // branches are not collided.
+    const cuda::atomic_ref<unsigned, cuda::thread_scope_device> atomic{global_var};
+    if ((threadIdx.x + threadIdx.y + threadIdx.z) % 2 == 0)
+    {
+      atomic++;
+      auto arrival_token = group.arrive();
+      atomic--;
+      group.wait(cuda::std::move(arrival_token));
+    }
+    else
+    {
+      atomic--;
+      auto arrival_token = group.arrive();
+      atomic++;
+      group.wait(cuda::std::move(arrival_token));
+    }
+  }
+
   // Test that the group can be synchronized using .sync_aligned() method.
   {
     static_assert(cuda::std::is_same_v<void, decltype(group.sync_aligned())>);
-    static_assert(noexcept(group.sync_aligned()));
 
     // .sync_aligned() method must be called by all threads in the group uniformly in one place.
     group.sync_aligned();
   }
+
+  // Test that the group can be synchronized using .arrive_aligned() + .wait_aligned() methods.
+  {
+    static_assert(cuda::std::is_same_v<ArrivalToken, decltype(group.arrive_aligned())>);
+    static_assert(cuda::std::is_same_v<void, decltype(group.wait_aligned(cuda::std::declval<ArrivalToken&&>()))>);
+
+    group.wait_aligned(group.arrive_aligned());
+  }
 }
 
-template <class ParentGroup, class MappingResult, class Synchronizer>
+template <cuda::std::size_t StaticN, class ParentGroup, class MappingResult, class Synchronizer>
 __device__ void
 test_queries(const cudax::coop::generic_group<cuda::thread_level, ParentGroup, MappingResult, Synchronizer>& group,
              const ParentGroup& parent_group)
 {
-  // todo(dabayer): These queries end up in `error: expression must have a constant value`, when group is taken by
-  // reference. Can we find a solution that works without copying the group?
-  // static_assert(cuda::gpu_thread.static_count(group) == N);
+  // We need a view, because references can't be used in constant expressions before C++23.
+  const cudax::coop::group_view group_view{group};
+  static_assert(cuda::gpu_thread.static_count(group_view) == StaticN);
 
   using Group = cuda::std::remove_cvref_t<decltype(group)>;
   using Level = typename Group::level_type;
@@ -90,7 +126,6 @@ test_queries(const cudax::coop::generic_group<cuda::thread_level, ParentGroup, M
   REQUIRE(cuda::gpu_thread.count(group) == count_ref);
   REQUIRE(cuda::gpu_thread.rank(group) == rank_ref);
   REQUIRE(cuda::gpu_thread.is_root_rank(group) == (rank_ref == 0));
-  REQUIRE(cuda::gpu_thread.is_part_of(group));
 
   const auto static_group_count_ref = group.__mapping_result().static_group_count();
   const auto group_count_ref        = group.__mapping_result().group_count();
@@ -111,23 +146,23 @@ __device__ void test_group_by_group(Unit unit, Level level, Config config)
   {
     auto& barriers = get_barriers<nbarriers, 0>(level);
 
-    const cudax::coop::group_by<N> mapping{};
-    const cudax::coop::barrier_synchronizer synchronizer{barriers};
+    const cudax::coop::group_by mapping{cuda::std::cw<N>};
+    cudax::coop::barrier_synchronizer synchronizer{barriers};
     cudax::coop::generic_group group{unit, parent_group, mapping, synchronizer};
 
     test_common_properties<Unit, Level>(config.hierarchy(), group);
-    test_queries(group, parent_group);
+    test_queries<N>(group, parent_group);
     group.sync();
   }
   {
     auto& barriers = get_barriers<nbarriers, 1>(level);
 
     const cudax::coop::group_by mapping{N};
-    const cudax::coop::barrier_synchronizer synchronizer{barriers};
+    cudax::coop::barrier_synchronizer synchronizer{barriers};
     cudax::coop::generic_group group{unit, parent_group, mapping, synchronizer};
 
     test_common_properties<Unit, Level>(config.hierarchy(), group);
-    test_queries(group, parent_group);
+    test_queries<cuda::std::dynamic_extent>(group, parent_group);
     group.sync();
   }
 }
