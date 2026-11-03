@@ -116,6 +116,8 @@ Checks:
   - '-readability-avoid-const-params-in-decls'
   - '-readability-string-compare'
   - '-readability-inconsistent-declaration-parameter-name'
+  # Handled by clang-tidy
+  - '-readability-misleading-indentation'
 
   # - 'clang-analyzer-*'
 
