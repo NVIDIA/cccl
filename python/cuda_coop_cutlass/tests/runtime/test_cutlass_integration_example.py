@@ -41,6 +41,7 @@ def test_cutlass_integration_example():
         capture_output=True,
         text=True,
         check=False,
+        timeout=180,
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert "block sum verified: 3008" in result.stdout
