@@ -382,12 +382,12 @@ hardware where FP64 is rationed:
   ``atan2``, and the pi-scaled ``sinpi``, ``cospi``, ``sincospi``, which split the argument over
   the limb pair rather than reducing it against a radian multiple of pi
 - **Hyperbolic** — ``sinh``, ``cosh``, ``tanh``, ``asinh``, ``acosh``, ``atanh``
-- **Error functions** — ``erf``, ``erfc``
+- **Error functions** — ``erf``, ``erfc``, ``erfcx``, ``erfinv``, ``erfcinv``
 - **Rounding, magnitude and scaling** — ``ceil``, ``floor``, ``trunc``, ``round``, ``fabs``,
   ``ldexp``, ``scalbn``
 - **Minimum, maximum and remainder** — ``fmin``, ``fmax``, ``min``, ``max``, ``fmod``,
   ``remainder``
-- **Probability** — ``normcdfinv``, and ``icdf`` for ``fp32mp2`` only, which turns a 32- or 64-bit
+- **Probability** — ``normcdf``, ``normcdfinv``, and ``icdf`` for ``fp32mp2`` only, which turns a 32- or 64-bit
   uniform integer into a Gaussian variate. Taking an integer rather than a pair, it is the one
   function here that ADL cannot find, so it has to be written ``cuda::icdf(bits)``, and its
   accuracy level is a defaulted template parameter rather than a deduced one
@@ -398,8 +398,7 @@ The exact operations — ``rint``, ``nearbyint``, ``lrint``, ``lround``, ``llrin
 classification predicates — are written directly on the two float limbs, with no FP64 anywhere:
 an exact operation is exact however it is written, and the limb pair is the cheapest place to
 write it. The remaining names are present with the same signatures, but implemented generically
-rather than through a dedicated float-float path: ``erfinv``, ``erfcinv``, ``erfcx``, ``normcdf``,
-``tgamma``, ``lgamma``, the Bessel family ``j0``, ``j1``, ``jn``, ``y0``, ``y1``, ``yn``,
+rather than through a dedicated float-float path: ``tgamma``, ``lgamma``, the Bessel family ``j0``, ``j1``, ``jn``, ``y0``, ``y1``, ``yn``,
 ``cyl_bessel_i0`` and ``cyl_bessel_i1``, the vector norms ``norm3d``, ``norm4d``, ``rnorm3d`` and
 ``rnorm4d``, and ``nextafter``; for the transcendentals among them that means evaluation through
 the backend covered in the next section.

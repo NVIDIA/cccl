@@ -15,8 +15,7 @@
 //  accuracy to the last bit is the accuracy suite's job, not this one's.
 //
 //  The functions divide by what their *reference* needs rather than by anything
-//  fpmp2 lacks, since fpmp2 math is host and device alike apart from erfinv,
-//  erfcinv and erfcx:
+//  fpmp2 lacks, since fpmp2 math is host and device alike:
 //
 //    - Where the reference is in ISO <cmath>, the check lives in main(), which
 //      force_include.h turns into a __host__ __device__ function that the
@@ -31,6 +30,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/fpmp>
+#include <cuda/std/type_traits>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
 
@@ -71,6 +71,7 @@ TEST_HOST_DEVICE_FUNC void test_host_device(double tol)
 {
   const double x_val = 1.234567890123;
   const double y_val = 2.345678901234;
+  const double p_val = 0.3; // probability argument, must be in (0,1)
   const int n_val    = 3;
 
   // assert per check rather than an accumulated flag, so a failure names the
@@ -112,6 +113,24 @@ TEST_HOST_DEVICE_FUNC void test_host_device(double tol)
   CHECK_1A(erfc, x_val);
   CHECK_1A(lgamma, x_val);
   CHECK_1A(tgamma, x_val);
+
+  // The scaled complementary error function, the normal CDF and the inverse
+  // error functions have no ISO reference; the definitions and the round trips
+  // through erf / erfc stand in, on both sides.  fp64mp2 erfcx, erfinv and
+  // erfcinv are still device-only double fallbacks, so those three stay with
+  // fp32mp2 here and with the CUDA references below for fp64mp2.
+  assert(check(static_cast<double>(normcdf(MP2(x_val))), 0.5 * ::erfc(-x_val * 0.70710678118654752440), tol));
+  assert(check(static_cast<double>(normcdf(MP2(-x_val))), 0.5 * ::erfc(x_val * 0.70710678118654752440), tol));
+  assert(check(0.5 * ::erfc(-static_cast<double>(normcdfinv(MP2(p_val))) * 0.70710678118654752440), p_val, tol));
+  if constexpr (::cuda::std::is_same_v<MP2, cuda::fp32mp2>)
+  {
+    assert(check(static_cast<double>(erfcx(MP2(x_val))), ::exp(x_val * x_val) * ::erfc(x_val), tol));
+    assert(check(static_cast<double>(erfcx(MP2(-x_val))), ::exp(x_val * x_val) * ::erfc(-x_val), tol));
+    assert(check(::erf(static_cast<double>(erfinv(MP2(p_val)))), p_val, tol));
+    assert(check(::erf(static_cast<double>(erfinv(MP2(-0.9)))), -0.9, tol));
+    assert(check(::erfc(static_cast<double>(erfcinv(MP2(p_val)))), p_val, tol));
+    assert(check(::erfc(static_cast<double>(erfcinv(MP2(1.7)))), 1.7, tol));
+  }
 
   // Rounding and absolute value
   CHECK_1A(ceil, x_val);
@@ -197,8 +216,7 @@ TEST_HOST_DEVICE_FUNC void test_host_device(double tol)
 
 // ---- checks whose reference exists only in CUDA -----------------------------
 //
-// Compiled for the device only, since neither these references nor, for erfinv,
-// erfcinv and erfcx, the fpmp2 entry points themselves have a host spelling. The
+// Compiled for the device only, since these references have no host spelling. The
 // kernel that force_include.h already wraps main() in is what runs them, so the test
 // launches nothing of its own -- which is also what keeps it compilable by NVRTC,
 // whose device-only translation unit has no runtime API to launch with.

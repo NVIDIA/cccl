@@ -74,9 +74,9 @@
     Error Functions:
     - erf(x)    : Error function - dedicated fp32mp2
     - erfc(x)   : Complementary error function - dedicated fp32mp2
-    - erfcinv(x): Inverse complementary error function - placeholder (device only)
-    - erfinv(x) : Inverse error function - placeholder (device only)
-    - erfcx(x)  : Scaled complementary error function - placeholder (device only)
+    - erfcinv(x): Inverse complementary error function - dedicated fp32mp2
+    - erfinv(x) : Inverse error function - dedicated fp32mp2
+    - erfcx(x)  : Scaled complementary error function - dedicated fp32mp2
 
     Special Functions:
     - boys_f0(x): Boys function of zeroth order F_0(x) - dedicated fp32mp2
@@ -84,7 +84,7 @@
 
     Probability / Statistics:
     - normcdfinv(p) : Inverse normal CDF Phi^-1(p) - dedicated fp32mp2
-    - normcdf(x)    : Normal CDF Phi(x) - placeholder (host: 0.5*erfc(-x/sqrt2))
+    - normcdf(x)    : Normal CDF Phi(x) - dedicated fp32mp2
 
     Non-standard helper functions to convert integer uniform random numbers
     to Gaussian distributed random numbers:
@@ -393,22 +393,58 @@
       expm1 via argument reduction + polynomial, all in fp32mp2.
 
     erfc(x) for fp32mp2:
-      erfc(x) = erfcx(|x|)*exp(-x^2).
-      Core: erfcx approximated by a degree-22 Chebyshev polynomial in
-      the transformed variable t = 1/(1+|x|), combined with a dedicated
-      exp(-x^2) evaluation using a degree-8 polynomial, all in fp32mp2.
-      Uses the identity erfc(-x) = 2 - erfc(x) for negative arguments.
+      |x| < 1/2: 1 - x Q(x^2), Q a degree-8 fit of erf(x)/x shared by the
+      small-argument paths of this family.  x >= 1/2: erfcx(x) exp(-x^2), the
+      erfcx kernel below times the exact-argument exp(s x^2): x_hi^2 and
+      2 x_hi x_lo are exact products and every piece above 2^-48 |x^2| enters
+      the reduced argument through error-free sums, so no rounding of x^2
+      reaches the exponent.  x <= -1/2: 2 - erfc(|x|).  Zero above 27.5.
+
+    erfcx kernel (a >= 1/2), the basis of erfc, erfcx, normcdf and the
+    inverse error functions:
+      (1 + 2a) e^{a^2} erfc(a) ~ P(t), t = (a - 4)/(a + 4), P of degree 22,
+      both divisions refined with the exact remainder.
+
+    erfcx(x) for fp32mp2:
+      |x| < 1/2: exp(x^2) (1 - x Q(x^2)).  x >= 1/2: the kernel up to 40,
+      then the asymptotic series (1/(x sqrt pi)) sum (-1)^k (2k-1)!!/(2x^2)^k,
+      8 terms.  x <= -1/2: 2 exp(x^2) - erfcx(|x|); +inf below -9.3824.
+
+    normcdf(x) for fp32mp2:
+      y = |x|/sqrt 2 < 1/2: (1 +- y Q(y^2))/2; otherwise h = erfcx(y)
+      exp(-x^2/2)/2 with the exact-argument exp applied to x itself, h for
+      x < 0 and 1 - h for x > 0.  Zero below -14.5, one from 8.4 on.
+
+    erfinv(x), erfcinv(q) for fp32mp2:
+      Giles' single-precision erfinv as the seed (2^-22 up to
+      w = -log(q(2 - q)) = 16, the Abramowitz-Stegun normal quantile 26.2.23
+      below q = 1.1e-7), then one Halley step on erf(y) - x or erfc(y) - q
+      with the small erf y Q(y^2) or the erfc tail and f' = -+ (2/sqrt pi)
+      exp(-y^2) from the exact-argument exp.  erfinv(x) for |x| > 1/2 is erfcinv(1 - |x|)
+      with 1 - |x| exact; erfcinv(q) for q in [1/2, 3/2] is erfinv(1 - q);
+      q > 1 mirrors to -erfcinv(2 - q).  Below q = erfc(8) ~ 1e-29, where
+      erfc's low limb is denormal, the equation ln erfcx(y) - y^2 = ln q is
+      solved on the kernel instead.  erfinv(+-1) = +-inf, erfcinv(0) = +inf,
+      erfcinv(2) = -inf, NaN outside, both limbs read.
 
     normcdfinv(p) for fp32mp2:
-      Rational approximation (Mike Giles coefficients).
-      Variable: w = -log(4p(1-p)), computed via fp32mp2 log.
-      Central branch (w < 6.125): degree-22 Horner polynomial in (w - 3.125).
-      Tail 1 branch (6.125 <= w < 16): degree-18 Horner polynomial in (sqrtw - 3.25).
-      Tail 2 branch (w >= 16): degree-24 Horner polynomial in (sqrtw - 7.25),
-        covering all representable float inputs including denormals,
-        with full fp32mp2 precision (~46+ bits) across the entire range.
-      Returns +-infinity for p <= 0 or p >= 1 (standard mathematical convention).
-      The icdf() wrappers clamp to +-FLT_MAX for safe Gaussian variate generation.
+      Giles' polynomials with sqrt 2 folded into the coefficients, z = a R(w),
+      a = 2p - 1, w = -log(4p(1-p)) from the fp32mp2 log.
+      Central branch (w < 6.25): degree 22 in (w - 3.125).
+      Tail 1 branch (6.25 <= w < 16): degree 18 in (sqrt w - 3.25).
+      Tail 2 branch (w >= 16): degree 24 in (sqrt w - 7.25).
+      Mixed Horner with 4 / 4 / 13 leading float coefficients, sized for a
+      Gaussian sampler: 45-46 bits in the central region and tail 1, 41 bits
+      in tail 2 (p < 5.6e-8), covering all float inputs including denormals.
+      Returns +-infinity for p <= 0 or p >= 1, both limbs read: (1, -tiny) is
+      inside the domain.  The icdf() wrappers clamp to +-FLT_MAX for safe
+      Gaussian variate generation.
+
+    boys_f0(x) for fp32mp2:
+      Five ranges: degree 16 in (3 - x) below 4; degree 14 in (x - 5.65) and
+      in (x - 9.38) up to 11.46; rsqrt(x) G(1/x) with G of degree 16 up to
+      34.38; (sqrt pi / 2) rsqrt(x) beyond.  Mixed Horner (compensated for G),
+      no erf, no sqrt.
 
     icdf(uint32_t x) for fp32mp2:
       Converts a 32-bit integer uniform RNG output to a Gaussian sample.
@@ -482,8 +518,8 @@
     - When _CCCL_FPMP_FP128_MATH_FALLBACK=1, route through __float128 (libquadmath
       on host, CUDA fp128 intrinsics on device) for ~113-bit accuracy.
     - When _CCCL_FPMP_FP128_MATH_FALLBACK=0, fall back to double-precision math.
-    - The fp64mp2 normcdfinv uses CUDA erfcinv on device, the fp32mp2 polynomial
-      on host (no standard erfcinv available).
+    - The fp64mp2 normcdfinv uses CUDA erfcinv on device, the fp32mp2 code on
+      host (no standard erfcinv available).
 
     Configuration Macros:
     -------------------------------------------------------------------------
