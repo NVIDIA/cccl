@@ -21,8 +21,13 @@ mechanisms without the abstractions. The closing section lists the
 questions we would like CUTLASS reviewers to answer. :doc:`cutlass_primer`
 explains the DSL's tracing model that the script builds on.
 
-Run it from a CCCL checkout with ``nvidia-cutlass-dsl``, ``cuda-bindings``,
-and NumPy installed:
+Run it on Linux from a CCCL checkout with a compatible CUTLASS 4.9 CuTe DSL,
+CUDA 13 driver and toolkit, ``cuda-bindings``, and NumPy. This example was
+validated with the retained 4.9 candidate and requires its launch-facts and
+trace-finalization interfaces; see :doc:`index` for installation and
+qualification details.
+
+With those prerequisites available:
 
 .. code-block:: bash
 
@@ -134,10 +139,10 @@ the file to nvJitLink together with the kernel's own LTO-IR. The DSL
 documents the attribute in terms of LLVM bitcode; its compiler accepts the
 NVRTC LTO-IR container as a link input, and the link inlines the wrapper.
 
-The C++ is two templates. The wrapper converts the 32-bit shared-window
-address into a generic pointer, constructs the CUB object on it, and ends
-with the barrier that makes the scratch reusable. The probe template is
-explained with step 5:
+The generated C++ contains a wrapper function and a layout-probe template.
+The wrapper converts the 32-bit shared-window address into a generic pointer,
+constructs the CUB object on it, and ends with the barrier that makes the
+scratch reusable. The probe template is explained with step 5:
 
 .. literalinclude:: cutlass_integration_example.py
    :language: python
@@ -300,9 +305,9 @@ Questions for CUTLASS reviewers
    cubin. Is there a cleaner way to obtain ``sizeof`` and ``alignof`` from
    an NVRTC compilation that CuTe will consume?
 8. Are there constraints on the NVRTC version that produces the LTO-IR
-   relative to the LLVM and nvJitLink bundled with the DSL? The package
-   binds NVRTC to the toolkit that owns the CCCL headers and checks its
-   version, but the compatibility rule itself is not documented.
+   relative to the LLVM and nvJitLink used by the DSL? The package
+   binds NVRTC to the toolkit that supplies the CUDA runtime headers and
+   checks its version, but the compatibility rule itself is not documented.
 
 Testing
 -------

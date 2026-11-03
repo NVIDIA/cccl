@@ -23,8 +23,10 @@ The numbered comments mark the integration points:
    and ``alignof``. Placeholder operands traced in step 3 are replaced inside
    the finalized module.
 
-Run it from a CCCL checkout with ``nvidia-cutlass-dsl``, ``cuda-bindings``,
-and NumPy installed::
+Run it on Linux from a CCCL checkout with a compatible CUTLASS 4.9 CuTe DSL,
+CUDA 13 driver and toolkit, ``cuda-bindings``, and NumPy. The example uses
+the launch-facts and trace-finalization interfaces validated with the 4.9
+candidate; see the accompanying documentation for setup details::
 
    python docs/python/coop_cutlass/cutlass_integration_example.py
 
