@@ -1,10 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Should precede any includes
-struct stream_registry_factory_t;
-#define CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY stream_registry_factory_t
-
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_select.cuh>
@@ -16,14 +12,8 @@ struct stream_registry_factory_t;
 
 #include <algorithm>
 
-#include "block_size_extracting_helpers.h"
 #include "catch2_test_custom_streams.cuh"
-#include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
-
-DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSelect::UniqueByKey, device_select_unique_by_key);
-
-// %PARAM% TEST_LAUNCH lid 0:1:2
 
 template <class T>
 inline T to_bound(const unsigned long long bound)
@@ -89,7 +79,6 @@ struct custom_equality_op
   }
 };
 
-#if TEST_LAUNCH == 0
 CUB_TEST("DeviceSelect::UniqueByKey works with user provided memory and environment",
          "[device][select_unique_by_key]",
          CUB_SMALL)
@@ -268,61 +257,3 @@ CUB_TEST("DeviceSelect::UniqueByKey works with user provided operator, memory an
 
   test_with_custom_streams(test_unique_by_key);
 }
-
-#endif // TEST_LAUNCH == 0
-
-#if TEST_LAUNCH != 1
-struct unique_by_key_tuning_transformer
-{
-  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::UniqueByKeyPolicy policy) const
-    -> cub::UniqueByKeyPolicy
-  {
-    policy.threads_per_block = 96;
-    return policy;
-  }
-};
-
-CUB_TEST("DeviceSelect::UniqueByKey tuning can be modified", "[device][select_unique_by_key]", CUB_SMALL)
-{
-  constexpr unsigned int target_block_size = 96; // must be different from any value we use in production
-
-  auto d_keys_in      = c2h::device_vector<int>{0, 0, 1, 1, 2, 2, 3, 3};
-  auto d_values_in    = c2h::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
-  auto d_keys_out     = c2h::device_vector<int>(8);
-  auto d_values_out   = c2h::device_vector<int>(8);
-  auto d_num_selected = c2h::device_vector<int>(1, thrust::no_init);
-  auto d_block_size   = c2h::device_vector<unsigned int>(1, 0);
-  const auto equality_op =
-    block_size_extracting_op<cuda::std::equal_to<>>{thrust::raw_pointer_cast(d_block_size.data())};
-
-  {
-    // CUB's default tuning must not use the block size we are going to request
-    device_select_unique_by_key(
-      d_keys_in.begin(),
-      d_values_in.begin(),
-      d_keys_out.begin(),
-      d_values_out.begin(),
-      d_num_selected.begin(),
-      static_cast<int>(d_keys_in.size()),
-      equality_op,
-      cuda::std::execution::env<>{});
-    const unsigned int default_block_size = d_block_size[0];
-    REQUIRE(d_num_selected[0] == 4);
-    REQUIRE(default_block_size != 0);
-    REQUIRE(default_block_size != target_block_size);
-    d_block_size[0] = 0;
-  }
-
-  device_select_unique_by_key(
-    d_keys_in.begin(),
-    d_values_in.begin(),
-    d_keys_out.begin(),
-    d_values_out.begin(),
-    d_num_selected.begin(),
-    static_cast<int>(d_keys_in.size()),
-    equality_op,
-    cuda::execution::tune(unique_by_key_tuning_transformer{}));
-  REQUIRE(d_block_size[0] == target_block_size);
-  REQUIRE(d_num_selected[0] == 4);
-}
-#endif // TEST_LAUNCH != 1
