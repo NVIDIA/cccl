@@ -217,18 +217,30 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_by_key_policy_selector<PolicySelector>
 #endif
-__launch_bounds__(int(
-  make_vsmem_helper<device_policy_getter<PolicySelector, current_tuning_cc().get()>,
-                    KeysInputIteratorT,
-                    UniqueOutputIteratorT,
-                    ValuesInputIteratorT,
-                    AggregatesOutputIteratorT,
-                    NumRunsOutputIteratorT,
-                    EqualityOpT,
-                    ReductionOpT,
-                    OffsetT,
-                    AccumT,
-                    StreamingContextT>::type::agent_policy_t::BLOCK_THREADS))
+__launch_bounds__(
+  int(make_vsmem_helper<device_policy_getter<PolicySelector, current_tuning_cc().get()>,
+                        KeysInputIteratorT,
+                        UniqueOutputIteratorT,
+                        ValuesInputIteratorT,
+                        AggregatesOutputIteratorT,
+                        NumRunsOutputIteratorT,
+                        EqualityOpT,
+                        ReductionOpT,
+                        OffsetT,
+                        AccumT,
+                        StreamingContextT>::type::agent_policy_t::BLOCK_THREADS),
+  (::cuda::std::max) (1,
+                      make_vsmem_helper<device_policy_getter<PolicySelector, current_tuning_cc().get()>,
+                                        KeysInputIteratorT,
+                                        UniqueOutputIteratorT,
+                                        ValuesInputIteratorT,
+                                        AggregatesOutputIteratorT,
+                                        NumRunsOutputIteratorT,
+                                        EqualityOpT,
+                                        ReductionOpT,
+                                        OffsetT,
+                                        AccumT,
+                                        StreamingContextT>::policy.lookback.min_blocks_per_sm))
   _CCCL_KERNEL_ATTRIBUTES void DeviceReduceByKeyKernel(
     const KeysInputIteratorT d_keys_in,
     const UniqueOutputIteratorT d_unique_out,
@@ -697,7 +709,7 @@ template <typename KeysInputIteratorT,
           typename OffsetT,
           typename AccumT         = ::cuda::std::__accumulator_t<ReductionOpT, it_value_t<ValuesInputIteratorT>>,
           typename KeyT           = non_void_value_t<UniqueOutputIteratorT, it_value_t<KeysInputIteratorT>>,
-          typename PolicySelector = policy_selector_from_types<AccumT, KeyT>>
+          typename PolicySelector = policy_selector_from_types<AccumT, KeyT, it_value_t<ValuesInputIteratorT>>>
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_by_key::reduce_by_key_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()

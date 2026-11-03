@@ -40,13 +40,16 @@ struct ReduceByKeyLookbackPolicy
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for the prefix scan
   LookbackDelayPolicy lookback_delay; //!< The @ref LookbackDelayPolicy used for the lookback delay
+  int min_blocks_per_sm = 0; //!< Minimum number of resident blocks per SM requested from the compiler via
+                             //!< `__launch_bounds__`, limiting register usage. 0 means no request.
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const ReduceByKeyLookbackPolicy& lhs, const ReduceByKeyLookbackPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
-        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay;
+        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay
+        && lhs.min_blocks_per_sm == rhs.min_blocks_per_sm;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -59,9 +62,10 @@ struct ReduceByKeyLookbackPolicy
   friend ::std::ostream& operator<<(::std::ostream& os, const ReduceByKeyLookbackPolicy& p)
   {
     return os
-        << "ReduceByKeyLookbackPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
-        << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
-        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
+        << "ReduceByKeyLookbackPolicy { .threads_per_block = " << p.threads_per_block
+        << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
+        << ", .load_modifier = " << p.load_modifier << ", .scan_algorithm = " << p.scan_algorithm
+        << ", .lookback_delay = " << p.lookback_delay << ", .min_blocks_per_sm = " << p.min_blocks_per_sm << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -1040,8 +1044,15 @@ struct policy_selector
   int key_size;
   int accum_size;
   type_t accum_t;
+  int value_size = 0; //!< Size of the input values. 0 means unknown, in which case accum_size is assumed.
 
 private:
+  // Input values smaller than the accumulator are promoted (e.g. 1-byte values summed with plus<> into an int)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __value_size() const -> int
+  {
+    return value_size > 0 ? value_size : accum_size;
+  }
+
   // The default policy is a mix of the old CUB and Thrust default policy. We pick whichever is better.
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(
     CacheLoadModifier load_mod,
@@ -1070,7 +1081,8 @@ private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __make_thrust_policy(
     int nominal_4B_items_per_thread   = 9,
     BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE,
-    CacheLoadModifier load_mod        = LOAD_DEFAULT) const -> ReduceByKeyLookbackPolicy
+    CacheLoadModifier load_mod        = LOAD_DEFAULT,
+    int min_blocks_per_sm             = 0) const -> ReduceByKeyLookbackPolicy
   {
     const int combined_input_bytes = key_size + accum_size;
     const int max_input_bytes      = (::cuda::std::max) (key_size, accum_size);
@@ -1085,7 +1097,8 @@ private:
       load_algorithm,
       load_mod,
       BLOCK_SCAN_WARP_SCANS,
-      {LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+      {LookbackDelayAlgorithm::fixed_delay, 350, 450},
+      min_blocks_per_sm};
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookback_policy(::cuda::compute_capability cc) const
@@ -1844,13 +1857,13 @@ struct policy_selector_from_hub
   }
 };
 
-template <class AccumT, class KeyT>
+template <class AccumT, class KeyT, class ValueT = AccumT>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
     -> ReduceByKeyPolicy
   {
-    return policy_selector{int{sizeof(KeyT)}, int{sizeof(AccumT)}, classify_type<AccumT>}(cc);
+    return policy_selector{int{sizeof(KeyT)}, int{sizeof(AccumT)}, classify_type<AccumT>, int{sizeof(ValueT)}}(cc);
   }
 };
 } // namespace detail::reduce_by_key
