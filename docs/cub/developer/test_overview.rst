@@ -382,19 +382,20 @@ The wrapper allocates temporary storage and invokes the CUB API through whicheve
 three launch mechanisms matches the current ``TEST_LAUNCH`` value, checking return codes and
 launch errors along the way.
 
-When stream-ordered setup and teardown must use the same stream as the CUB call,
+To order the wrapped operation after preparation work on a stream,
 pass any type supported by ``cuda::get_stream`` as the wrapper's trailing argument:
 
 .. code-block:: c++
 
     cub_reduce_sum(d_in, d_out, n, stream);
 
-Host launches pass the supplied stream to the wrapped API. Graph launches capture on the supplied
-non-default stream, or on a temporary stream when the default stream is requested, then execute
-the graph on the requested stream.
-
-A device-side launch synchronizes it as a dependency boundary and invokes the wrapped API
-with its default stream because device code cannot consume a host stream handle.
+Host launches pass the supplied stream to the wrapped API. Device launches enqueue a parent
+kernel on that stream, preserving ordering with preparation work. The parent invokes the
+wrapped API using the device-side default stream because host stream handles cannot be used
+in device code. Graph launches capture on the supplied non-default stream, or a temporary
+stream when the default stream is requested, then execute the graph on the requested stream.
+If no stream argument is supplied, the wrapper uses the default stream.
+The wrapper waits for execution to complete before returning.
 
 Under CUDA graph capture (``TEST_LAUNCH == 2``), the wrapper implicitly appends a ``stream`` argument to the call.
 If the wrapped API has default parameters before its ``stream`` parameter,
@@ -415,6 +416,22 @@ For testing single phase environment-based APIs use the ``DECLARE_LAUNCH_WRAPPER
 ``DECLARE_TMPL_LAUNCH_WRAPPER_ENV`` macros from the same header instead.
 They expect the wrapped API's last argument to be an execution environment.
 The helper injects a memory resource and stream into that env automatically.
+Callers must not supply a memory resource. Device-launch tests must provide an
+``expected_allocation_size(...)`` property specifying the expected temporary storage allocation size.
+
+Environment wrappers obtain the preparation stream from the supplied environment, when present.
+Host launches use that stream. Device launches use a separate parent stream and establish a
+dependency on the environment's stream before launching the parent kernel. Non-default streams
+use an event dependency; an explicit default stream is synchronized on the host. The wrapped
+device-side API receives an environment containing the device-side default stream.
+
+Graph launches capture and execute on the environment's stream, or create a temporary stream
+when no stream property is supplied. An explicitly supplied default stream is unsupported
+for environment graph launches.
+
+When the environment has no stream property, callers must complete input preparation before
+invoking the wrapper. Environment wrappers wait for execution to complete before returning.
+
 Consult ``test/catch2_test_launch_wrapper.cu`` for more usage examples.
 
 Since the whole file is compiled three times, any ``CUB_TEST`` in the same translation unit

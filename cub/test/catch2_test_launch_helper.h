@@ -5,6 +5,7 @@
 
 #include <cuda/buffer>
 #include <cuda/devices>
+#include <cuda/launch>
 #include <cuda/std/execution>
 #include <cuda/std/span>
 #include <cuda/std/tuple>
@@ -38,16 +39,16 @@
 //! // Add PARAM to make CMake generate a test for host, device, and graph launches:
 //! // %PARAM% TEST_LAUNCH lid 0:1:2
 //!
-//! // Declare CDP wrapper for CUB API. The wrapper will accept the same
-//! // arguments as the CUB API. The wrapper name is provided as the second argument.
+//! // Declare a launch wrapper for the CUB API, omitting its temporary storage
+//! // arguments. The wrapper name is provided as the second argument.
 //! DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, cub_reduce_sum);
 //!
 //! CUB_TEST("Reduce test", "[device][reduce]", CUB_SMALL)
 //! {
 //!   // ...
 //!   // Invoke the wrapper from the test. It'll allocate temporary storage and
-//!   // invoke the CUB API on the host or device side while checking return
-//!   // codes and launch errors.
+//!   // invoke the CUB API through the selected launch mechanism while checking
+//!   // return codes and launch errors.
 //!   cub_reduce_sum(d_in, d_out, n);
 //!
 //!   // Tests with stream-ordered setup can pass a stream-like object supported by
@@ -57,25 +58,38 @@
 //!
 //! ```
 //!
-//! It's also possible to cover cuda graph capture. To do that, extend
-//! launcher ids with `2` as follows:
-//!
-//! ```
-//! // %PARAM% TEST_LAUNCH lid 0:1:2
-//! ```
-//!
-//! The helper obtains the stream from the last API argument with cuda::get_stream(),
-//! or uses the default stream if no stream argument is supplied. Stream-like arguments
+//! Two-phase wrappers obtain the stream from the last API argument with cuda::get_stream(),
+//! or use the default stream if no stream argument is supplied. Stream-like arguments
 //! are converted to raw handles before invoking the API.
 //!
-//! Host launches use the supplied stream. Device launches synchronize it before
-//! invoking the API on the device-side default stream. Graph launches capture on
-//! the supplied non-default stream, or a temporary stream when the default stream
-//! is requested, then execute the graph on the requested stream.
+//! Host launches pass the supplied stream to the wrapped API. Device launches enqueue
+//! a parent kernel on that stream, preserving ordering with preparation work. The parent
+//! invokes the API using the device-side default stream because host stream handles cannot
+//! be used in device code. Graph launches capture on the supplied non-default stream, or
+//! a temporary stream when the default stream is requested, then execute the graph on
+//! the requested stream. The wrapper waits for execution to complete before returning.
 //!
 //! Graph launches append a capture stream argument when the caller omits it.
 //! Explicitly specify any default parameters preceding the API's stream parameter
 //! when passing a stream or using graph launch.
+//!
+//! Environment wrappers expect an execution environment as the last argument and inject
+//! a memory resource and stream into it. Callers must not supply a memory resource.
+//! Device-launch tests must provide an expected_allocation_size(...) property.
+//!
+//! Host environment launches use the environment's stream, or create a temporary stream
+//! when none is supplied. Device environment launches use a separate parent stream and
+//! establish a dependency on the environment's stream before launching the parent kernel.
+//! Non-default streams use an event dependency; an explicit default stream is synchronized
+//! on the host. The wrapped device-side API receives the device-side default stream.
+//!
+//! Environment graph launches capture and execute on the environment's non-default
+//! stream, or a temporary stream when no stream property is supplied. An explicitly
+//! supplied default stream is unsupported for environment graph launches.
+//!
+//! Without a stream property in the environment, callers must complete input preparation
+//! before invoking the wrapper. Environment wrappers wait for execution to complete
+//! before returning. See docs/cub/developer/test_overview.rst for details.
 //!
 //! Consult with `test/catch2_test_launch_wrapper.cu` for more usage examples.
 
@@ -166,8 +180,6 @@ void launch_impl(cuda::stream_ref stream, ActionT action, Args... args)
 
 inline void check_device_launch_completion(cuda::stream_ref stream, const cuda::device_buffer<cudaError_t>& d_error)
 {
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(cudaSuccess == c2h::read_single(stream, d_error));
 }
 
@@ -189,19 +201,35 @@ void launch_impl(cuda::stream_ref stream, ActionT action, Args... args)
   auto d_error              = c2h::make_device_buffer<cudaError_t>(stream, device, 1, cuda::no_init);
   auto d_temp_storage_bytes = c2h::make_device_buffer<cuda::std::size_t>(stream, device, 1, cuda::no_init);
 
-  // Host streams cannot be used by the device-side CUB call. Complete preparation
-  // before launching the parent kernel on the default stream.
+  const auto config = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<1>());
+
+  // Launch the parent on the requested stream to preserve preparation ordering.
+  // The device-side API receives its own default stream.
   const auto invoke = [&](cuda::std::uint8_t* temp_storage) {
-    stream.sync();
     if constexpr (HasStream)
     {
-      device_side_api_launch_kernel<<<1, 1>>>(
-        temp_storage, d_temp_storage_bytes.data(), d_error.data(), action, args..., cudaStream_t{});
+      cuda::launch(
+        stream,
+        config,
+        device_side_api_launch_kernel<ActionT, Args..., cudaStream_t>,
+        temp_storage,
+        d_temp_storage_bytes.data(),
+        d_error.data(),
+        action,
+        args...,
+        cudaStream_t{});
     }
     else
     {
-      device_side_api_launch_kernel<<<1, 1>>>(
-        temp_storage, d_temp_storage_bytes.data(), d_error.data(), action, args...);
+      cuda::launch(
+        stream,
+        config,
+        device_side_api_launch_kernel<ActionT, Args...>,
+        temp_storage,
+        d_temp_storage_bytes.data(),
+        d_error.data(),
+        action,
+        args...);
     }
     check_device_launch_completion(stream, d_error);
   };
@@ -449,7 +477,6 @@ void launch_env(ActionT action, Args... args)
   auto* const d_error_ptr       = d_error.data();
   auto* const d_allocated_ptr   = d_allocated.data();
   auto* const d_deallocated_ptr = d_deallocated.data();
-  stream.sync();
 
   // Host-side stream is unusable in device code, force it to be 0
   auto stream_env = cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{cudaStream_t{}}};
@@ -462,15 +489,27 @@ void launch_env(ActionT action, Args... args)
 
   auto fixed_args = replace_back(cuda::std::make_index_sequence<env_idx>{}, tuple, fixed_env);
 
+  const auto config = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<1>());
+
   cuda::std::apply(
     [&](auto... args) {
-      // The device-side call uses its own default stream. Complete setup on
-      // the environment's host stream before launching the parent kernel.
+      // Order the parent after preparation on the environment's stream.
+      // The device-side API receives its own default stream.
       if constexpr (cuda::std::execution::__queryable_with<env_t, cuda::get_stream_t>)
       {
-        cuda::get_stream(env).sync();
+        const auto env_stream = cuda::get_stream(env);
+        if (c2h::detail::is_default_stream(env_stream))
+        {
+          // stream.wait() cannot record its dependency event on the default stream.
+          env_stream.sync();
+        }
+        else
+        {
+          stream.wait(env_stream);
+        }
       }
-      device_side_api_launch_kernel_env<<<1, 1>>>(d_error_ptr, action, args...);
+      cuda::launch(
+        stream, config, device_side_api_launch_kernel_env<ActionT, decltype(args)...>, d_error_ptr, action, args...);
       launch_helper_detail::check_device_launch_completion(stream, d_error);
     },
     fixed_args);
