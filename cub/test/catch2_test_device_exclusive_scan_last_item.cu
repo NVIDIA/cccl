@@ -37,7 +37,8 @@ index_t tile_size_on_current_device(PolicySelectorT selector)
 
 //! Generates numbers of items that place the last input element into every position relative to the tile grid: alone
 //! in a tile of size 1, at the end of a full tile, and somewhere inside a partial tile. This covers the single-tile and
-//! multi-tile cases.
+//! multi-tile cases. The multiples of 33 tiles exceed the 32 tile states one lookahead step covers, so the lookahead
+//! warp has to combine tile aggregates across several steps, including partially filled windows of tile states.
 #define GENERATE_NUM_ITEMS(tile_size) \
   GENERATE_COPY(                      \
     values({index_t{1},               \
@@ -47,7 +48,10 @@ index_t tile_size_on_current_device(PolicySelectorT selector)
             (tile_size) + 1,          \
             2 * (tile_size) - 1,      \
             2 * (tile_size),          \
-            2 * (tile_size) + 1}),    \
+            2 * (tile_size) + 1,      \
+            33 * (tile_size) - 1,     \
+            33 * (tile_size),         \
+            33 * (tile_size) + 1}),   \
     take(3, random(index_t{1}, index_t{1'000'000})))
 
 // The last element must not be read in an exclusive scan, to be confirmed by compute-sanitizer initcheck
@@ -121,6 +125,50 @@ struct lookback_tuning
   }
 };
 
+// The lookahead scan algorithm is only compiled when these hold, see `can_use_lookahead` in
+// cub/device/dispatch/tuning/tuning_scan.cuh. Requesting it through the tuning environment bypasses that check, so we
+// have to mirror the conditions here to avoid instantiating a kernel that cannot be built.
+#if __cccl_ptx_isa >= 860 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) \
+  && !(_CCCL_COMPILER(MSVC) && _CCCL_CUDA_COMPILER(NVCC, <, 13, 1)) && !defined(CCCL_DISABLE_WARPSPEED_SCAN)
+#  define TEST_HAS_LOOKAHEAD_SCAN 1
+#else
+#  define TEST_HAS_LOOKAHEAD_SCAN 0
+#endif
+
+//! Requests the lookahead scan algorithm wherever it is supported, with a tuning small enough to fit into the
+//! architecture independent shared memory limit.
+//!
+//! The default tuning picks lookback for this test: `checking_op` is a user-defined operator, for which the sm_120
+//! tuning raises `items_per_thread` to 127. The resulting tile no longer fits into 48 KiB, so `can_use_lookahead`
+//! rejects lookahead and silently falls back. Without this tuning, the test would never exercise lookahead on sm_120.
+template <typename T>
+struct lookahead_tuning
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> cub::ScanPolicy
+  {
+    // The policy is instantiated for every compiled architecture, so fall back to the default tuning wherever
+    // lookahead is unavailable.
+    const bool supported =
+      TEST_HAS_LOOKAHEAD_SCAN && cc >= ::cuda::compute_capability{9, 0} // codegen bug in nvcc below 13.4 on GB20x, see
+                                                                        // https://github.com/NVIDIA/cccl/issues/8528
+      && !(_CCCL_CUDACC_BELOW(13, 4) && cc == ::cuda::compute_capability{12, 0});
+    if (!supported)
+    {
+      return cub::detail::scan::
+        policy_selector_from_types<T*, T*, T, cub::detail::choose_offset_t<index_t>, checking_op>{}(cc);
+    }
+
+    // 256 / sizeof(T) - 1 items per thread is what the sm_100 tuning uses and keeps us within 48 KiB.
+    // Aggregate init instead of designated init, because the test is also compiled as C++17.
+    return cub::ScanPolicy{
+      cub::ScanAlgorithm::lookahead,
+      {},
+      cub::ScanLookaheadPolicy{/* reduce_and_scan_warps */ 4,
+                               /* items_per_thread */ 256 / int{sizeof(T)} - 1,
+                               /* lookahead_items_per_thread */ 4}};
+  }
+};
+
 //! Scans @p num_items items, all of which are valid except for the last one, which the exclusive scan must not pass to
 //! the scan operator.
 template <typename T, typename EnvT>
@@ -148,9 +196,21 @@ CUB_TEST("Device exclusive scan operator only receives valid values", "[scan][de
 {
   using type = c2h::get<0, TestType>;
 
-  const index_t tile_size = tile_size_on_current_device(lookback_tuning<type>{});
-  const index_t num_items = GENERATE_NUM_ITEMS(tile_size);
-  CAPTURE(num_items, tile_size, c2h::type_name<type>());
+  SECTION("lookback tuning")
+  {
+    const index_t tile_size = tile_size_on_current_device(lookback_tuning<type>{});
+    const index_t num_items = GENERATE_NUM_ITEMS(tile_size);
+    CAPTURE(num_items, tile_size, c2h::type_name<type>());
 
-  check_scan_op_receives_only_valid_values<type>(num_items, ::cuda::execution::tune(lookback_tuning<type>{}));
+    check_scan_op_receives_only_valid_values<type>(num_items, ::cuda::execution::tune(lookback_tuning<type>{}));
+  }
+
+  SECTION("lookahead tuning")
+  {
+    const index_t tile_size = tile_size_on_current_device(lookahead_tuning<type>{});
+    const index_t num_items = GENERATE_NUM_ITEMS(tile_size);
+    CAPTURE(num_items, tile_size, c2h::type_name<type>());
+
+    check_scan_op_receives_only_valid_values<type>(num_items, ::cuda::execution::tune(lookahead_tuning<type>{}));
+  }
 }
