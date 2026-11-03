@@ -29,6 +29,7 @@
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/array>
 
 CUB_NAMESPACE_BEGIN
 
@@ -131,7 +132,7 @@ private:
   };
 
   //! Shared memory storage layout type for WarpReduceBatched
-  using _TempStorage = typename InternalWarpReduceBatched::TempStorage;
+  using _TempStorage _CCCL_NODEBUG = typename InternalWarpReduceBatched::TempStorage;
 
   //! Shared storage reference
   _TempStorage& temp_storage;

@@ -184,12 +184,12 @@ class generic_allocation
 public:
   generic_allocation(cuda::device_ref device, cuda::std::uint64_t requested_bytes)
   {
-    auto mem_get_allocation_granularity = reinterpret_cast<PFN_cuMemGetAllocationGranularity_v10020>(
-      cuda::__driver::__get_driver_entry_point("cuMemGetAllocationGranularity", 10, 2));
-    auto mem_create =
-      reinterpret_cast<PFN_cuMemCreate_v10020>(cuda::__driver::__get_driver_entry_point("cuMemCreate", 10, 2));
-    mem_release_ =
-      reinterpret_cast<PFN_cuMemRelease_v10020>(cuda::__driver::__get_driver_entry_point("cuMemRelease", 10, 2));
+    const auto mem_get_allocation_granularity = _CCCLRT_GET_DRIVER_FUNCTION_TYPED(
+      PFN_cuMemGetAllocationGranularity_v10020, "cuMemGetAllocationGranularity", 10, 2);
+    const auto mem_create  = _CCCLRT_GET_DRIVER_FUNCTION_TYPED(PFN_cuMemCreate_v10020, "cuMemCreate", 10, 2);
+    const auto mem_release = _CCCLRT_GET_DRIVER_FUNCTION_TYPED(PFN_cuMemRelease_v10020, "cuMemRelease", 10, 2);
+    cuda::__driver::__throw_if_failed(mem_release.__status_, "Failed to get memory release function");
+    mem_release_ = mem_release.__fn_;
 
     CUmemAllocationProp allocation_prop{};
     allocation_prop.type                 = CU_MEM_ALLOCATION_TYPE_PINNED;
@@ -198,11 +198,14 @@ public:
     allocation_prop.requestedHandleTypes = CU_MEM_HANDLE_TYPE_NONE;
 
     size_t allocation_granularity = 0;
-    REQUIRE(mem_get_allocation_granularity(&allocation_granularity, &allocation_prop, CU_MEM_ALLOC_GRANULARITY_MINIMUM)
-            == CUDA_SUCCESS);
+    REQUIRE(
+      _CCCLRT_CALL_DRIVER_FUNCTION(
+        mem_get_allocation_granularity, &allocation_granularity, &allocation_prop, CU_MEM_ALLOC_GRANULARITY_MINIMUM)
+      == cudaSuccess);
     bytes_ = logical_endpoint_test::align_up(requested_bytes, static_cast<cuda::std::uint64_t>(allocation_granularity));
 
-    REQUIRE(mem_create(&handle_, static_cast<size_t>(bytes_), &allocation_prop, 0) == CUDA_SUCCESS);
+    REQUIRE(_CCCLRT_CALL_DRIVER_FUNCTION(mem_create, &handle_, static_cast<size_t>(bytes_), &allocation_prop, 0)
+            == cudaSuccess);
     owns_handle_ = true;
   }
 

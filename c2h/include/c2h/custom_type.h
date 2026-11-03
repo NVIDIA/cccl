@@ -6,6 +6,7 @@
 #include <cuda/__cmath/round_up.h>
 #include <cuda/std/limits>
 
+#include <cstdint>
 #include <memory>
 #include <ostream>
 
@@ -45,36 +46,32 @@ public:
   }
 };
 
-//! Inflates a custom type to roughly \p TotalSize bytes, so that algorithms have to fall back to
-//! temporary storage backed by global memory (vsmem). We let the filler round the object up to a
-//! multiple of its alignment to avoid tail padding, and appease compute-sanitizer's initcheck of
-//! reads of never-written global memory.
+//! Inflates a custom type to exactly \p TotalSize bytes, so that algorithms have to fall back to
+//! temporary storage backed by global memory (vsmem).
 template <std::size_t TotalSize>
 struct huge_data
 {
   template <class CustomType>
   class type
   {
+    // because custom types are 8-byte aligned we can only increase size in multiples of 8 bytes
+    static_assert(TotalSize % sizeof(std::uint64_t) == 0, "huge_data<TotalSize>: TotalSize must be a multiple of 8");
+
     // Every other policy contributes exactly one byte (their MSVC workaround member), so counting
-    // them is enough, and their order does not matter as they are all byte-aligned.
+    // them is enough, and their order does not matter as they are all byte-aligned. The filler is 8-byte aligned, so
+    // those bytes occupy a whole word, regardless of whether the filler comes before or after them.
     static constexpr std::size_t other_policy_bytes = detail::policy_count_t<CustomType>::value - 1;
-
-    // TotalSize already covers custom_type_state_t and the filler, so the other policies add on top.
-    // Sizing the object to a whole number of alignment units to keep it free of tail padding
-    static constexpr std::size_t object_bytes =
-      ::cuda::round_up(TotalSize + other_policy_bytes, alignof(custom_type_state_t));
-
-    // Where the filler starts, i.e. where the bases in front of it end
-    static constexpr std::size_t bytes_before_filler = sizeof(custom_type_state_t) + other_policy_bytes;
+    static constexpr std::size_t bytes_before_filler =
+      sizeof(custom_type_state_t) + ::cuda::round_up(other_policy_bytes, sizeof(std::uint64_t));
 
     // A second huge_data policy, or any policy contributing more than its one-byte MSVC workaround
     // member, breaks the one-byte-per-policy assumption above and underflows the filler size below.
-    static_assert(bytes_before_filler <= object_bytes,
-                  "huge_data expects to be the only size-contributing policy in the pack, and TotalSize to be at "
-                  "least as large as custom_type_state_t plus one byte per remaining policy");
+    static_assert(bytes_before_filler < TotalSize,
+                  "huge_data expects to be the only size-contributing policy in the pack, and TotalSize to be "
+                  "larger than custom_type_state_t plus one word for the remaining policies");
 
-    // Whatever the other bases leave over becomes the filler
-    std::uint8_t data[object_bytes - bytes_before_filler]{};
+    // Whatever the other bases leave over becomes the filler. Use large words to minimize register allocation.
+    std::uint64_t data[(TotalSize - bytes_before_filler) / sizeof(std::uint64_t)]{};
   };
 };
 

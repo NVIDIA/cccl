@@ -24,8 +24,8 @@
 
 namespace
 {
-template <cuda::std::size_t N, class Config>
-__device__ void test_take(Config config)
+template <cuda::std::size_t N, class Config, class... NonExhaustive>
+__device__ void test_take(Config config, const NonExhaustive&... non_exhaustive)
 {
   constexpr auto n = static_cast<cuda::std::uint32_t>(N);
 
@@ -56,18 +56,19 @@ __device__ void test_take(Config config)
       const ThreadsInWarpMappingResult prev_mapping_result;
 
       static_assert(cudax::coop::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
-      static_assert(
-        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
+                      non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result))>);
+      static_assert(noexcept(cuda::std::declval<const Mapping>().map(
+        non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const cudax::coop::take mapping{cuda::std::cw<N>};
-      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
+      auto result  = mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == ThreadsInWarpMappingResult::static_group_count());
       static_assert(Result::static_unit_count() == N);
       static_assert(Result::is_always_exhaustive()
-                    == (Result::static_unit_count() == ThreadsInWarpMappingResult::static_unit_count()));
+                    == (sizeof...(NonExhaustive) == 0
+                        || Result::static_unit_count() == ThreadsInWarpMappingResult::static_unit_count()));
       static_assert(Result::is_always_contiguous());
 
       const auto is_valid_ref = cuda::std::cmp_less(cuda::gpu_thread.rank(cuda::warp), n);
@@ -113,17 +114,17 @@ __device__ void test_take(Config config)
       const ThreadsInWarpMappingResult prev_mapping_result;
 
       static_assert(cudax::coop::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
-      static_assert(
-        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
+                      non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result))>);
+      static_assert(noexcept(cuda::std::declval<const Mapping>().map(
+        non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const Mapping mapping{n};
-      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
+      auto result  = mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == ThreadsInWarpMappingResult::static_group_count());
       static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
-      static_assert(!Result::is_always_exhaustive());
+      static_assert(Result::is_always_exhaustive() == (sizeof...(NonExhaustive) == 0));
       static_assert(Result::is_always_contiguous());
 
       const auto is_valid_ref = cuda::std::cmp_less(cuda::gpu_thread.rank(cuda::warp), n);
@@ -151,15 +152,17 @@ struct TestKernel
   template <class Config>
   __device__ void operator()(const Config& config)
   {
-    test_take<0>(config);
-    test_take<1>(config);
-    test_take<2>(config);
-    test_take<3>(config);
-    test_take<4>(config);
-    test_take<14>(config);
-    test_take<16>(config);
-    test_take<30>(config);
     test_take<32>(config);
+
+    test_take<0>(config, cudax::coop::non_exhaustive);
+    test_take<1>(config, cudax::coop::non_exhaustive);
+    test_take<2>(config, cudax::coop::non_exhaustive);
+    test_take<3>(config, cudax::coop::non_exhaustive);
+    test_take<4>(config, cudax::coop::non_exhaustive);
+    test_take<14>(config, cudax::coop::non_exhaustive);
+    test_take<16>(config, cudax::coop::non_exhaustive);
+    test_take<30>(config, cudax::coop::non_exhaustive);
+    test_take<32>(config, cudax::coop::non_exhaustive);
   }
 };
 } // namespace

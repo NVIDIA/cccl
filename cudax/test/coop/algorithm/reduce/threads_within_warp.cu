@@ -50,8 +50,7 @@ struct ReduceKernel
       cudax::coop::non_exhaustive,
       cuda::gpu_thread,
       warp,
-      cudax::coop::group_by{cudax::coop::non_exhaustive,
-                            cuda::std::integral_constant<cuda::std::size_t, NThreadsInGroup>{}},
+      cudax::coop::group_by{cuda::std::integral_constant<cuda::std::size_t, NThreadsInGroup>{}},
       cudax::coop::lane_synchronizer{});
 
     // All threads that are not part of the groups should exit early.

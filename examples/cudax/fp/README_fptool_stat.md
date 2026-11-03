@@ -342,3 +342,13 @@ A measurement workflow
 6. Compare the same workload across `_low`, `_mid` and `_high`.
 7. Keep a plain-type run alongside. Results are bit-identical by construction, so a mismatch
    means a race or an uninitialized value rather than a rounding difference.
+
+Optimization guide
+------------------
+
+Several of the recommendations for the `fpmp` types — whether `low` is safe and where to
+renormalize, where `high` pays, whether the pair is earning its cost — are decided from this
+record. The [FP optimization guide](README_fp_optimization_guide.md#using-fptool) gives the
+order to read it in for that purpose, and its [Using fpmp
+efficiently](README_fp_optimization_guide.md#using-fpmp-efficiently) section the recommendations
+themselves.

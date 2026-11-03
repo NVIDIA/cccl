@@ -39,7 +39,7 @@ struct policy_info
   template <template <typename, template <typename> class> class Template, typename Argument>
   struct apply_base_second
   {
-    using type = Template<Argument, CRTPBase>;
+    using type _CCCL_NODEBUG = Template<Argument, CRTPBase>;
   };
 };
 
@@ -49,19 +49,18 @@ struct TestAllocatorAttachment
   template <typename Expected, typename T>
   static void assert_correct(T)
   {
-    REQUIRE(
-      ::cuda::std::is_same<
-        T,
-        typename PolicyInfo::template apply_base_second<thrust::detail::execute_with_allocator, Expected>::type>::value);
+    REQUIRE(::cuda::std::is_same_v<
+            T,
+            typename PolicyInfo::template apply_base_second<thrust::detail::execute_with_allocator, Expected>::type>);
   }
 
   template <typename ExpectedResource, typename T>
   static void assert_npa_correct(T)
   {
-    REQUIRE(::cuda::std::is_same<T,
-                                 typename PolicyInfo::template apply_base_second<
-                                   thrust::detail::execute_with_allocator,
-                                   thrust::mr::allocator<cuda::std::max_align_t, ExpectedResource>>::type>::value);
+    REQUIRE(::cuda::std::is_same_v<T,
+                                   typename PolicyInfo::template apply_base_second<
+                                     thrust::detail::execute_with_allocator,
+                                     thrust::mr::allocator<cuda::std::max_align_t, ExpectedResource>>::type>);
   }
 
   template <typename Policy>

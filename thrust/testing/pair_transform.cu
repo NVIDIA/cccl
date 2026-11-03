@@ -19,8 +19,8 @@ struct add_pairs
   template <typename Pair1, typename Pair2>
   _CCCL_HOST_DEVICE Pair1 operator()(const Pair1& x, const Pair2& y)
   {
-    using T1 = typename ::cuda::std::common_type<typename Pair1::first_type, typename Pair2::first_type>::type;
-    using T2 = typename ::cuda::std::common_type<typename Pair1::second_type, typename Pair2::second_type>::type;
+    using T1 = ::cuda::std::common_type_t<typename Pair1::first_type, typename Pair2::first_type>;
+    using T2 = ::cuda::std::common_type_t<typename Pair1::second_type, typename Pair2::second_type>;
 
     return cuda::std::make_pair(static_cast<T1>(x.first + y.first), static_cast<T2>(x.second + y.second));
   } // end operator()

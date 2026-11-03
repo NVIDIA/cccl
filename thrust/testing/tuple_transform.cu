@@ -17,7 +17,7 @@ template <int N>
 struct GetFunctor
 {
   template <typename Tuple>
-  _CCCL_HOST_DEVICE typename cuda::std::tuple_element<N, Tuple>::type operator()(const Tuple& t)
+  _CCCL_HOST_DEVICE cuda::std::tuple_element_t<N, Tuple> operator()(const Tuple& t)
   {
     return cuda::std::get<N>(t);
   }

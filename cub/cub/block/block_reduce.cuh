@@ -22,14 +22,17 @@
 #include <cub/block/specializations/block_reduce_raking_commutative_only.cuh>
 #include <cub/block/specializations/block_reduce_warp_reductions.cuh>
 #include <cub/detail/uninitialized.cuh>
-#include <cub/thread/thread_operators.cuh>
+#include <cub/thread/thread_reduce.cuh>
 #include <cub/util_ptx.cuh>
 
-#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
 
 CUB_NAMESPACE_BEGIN
 
@@ -325,7 +328,7 @@ private:
                                                        Raking>>>; // BlockReduceRaking
 
   /// Shared memory storage layout type for BlockReduce
-  using _TempStorage = typename InternalBlockReduce::TempStorage;
+  using _TempStorage _CCCL_NODEBUG = typename InternalBlockReduce::TempStorage;
 
   /// Internal storage allocator
   _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()

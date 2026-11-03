@@ -26,7 +26,7 @@
 #include <cuda/__utility/__basic_any/rtti.h>
 #include <cuda/__utility/__basic_any/tagged_ptr.h>
 #include <cuda/__utility/__basic_any/virtual_tables.h>
-#include <cuda/std/__type_traits/type_list.h>
+#include <cuda/std/__type_traits/type_list_operations.h>
 #include <cuda/std/__type_traits/type_set.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -95,11 +95,12 @@ struct __iset_flatten_all<_Interface, _Rest...>
 };
 
 template <class... _Interfaces>
-using __iset = ::cuda::std::__type_call<::cuda::std::__type_unique<typename __iset_flatten_all<_Interfaces...>::type>,
-                                        ::cuda::std::__type_quote<__iset_>>;
+using __iset _CCCL_NODEBUG =
+  ::cuda::std::__type_call<::cuda::std::__type_unique<typename __iset_flatten_all<_Interfaces...>::type>,
+                           ::cuda::std::__type_quote<__iset_>>;
 #else // ^^^ _CCCL_COMPILER(GCC, <, 10) ^^^ / vvv _CCCL_COMPILER(GCC, >=, 10) vvv
 template <class... _Interfaces>
-using __iset =
+using __iset _CCCL_NODEBUG =
   ::cuda::std::__type_call<::cuda::std::__type_unique<::cuda::std::__type_concat<__iset_flatten<_Interfaces>...>>,
                            ::cuda::std::__type_quote<__iset_>>;
 #endif // _CCCL_COMPILER(GCC, >=, 10)

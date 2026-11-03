@@ -307,16 +307,16 @@ TEST_CASE("TestTransformUnaryCudaStreams", "[transform]")
   const Vector result{-1, 2, -3};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   iter =
     thrust::transform(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), ::cuda::std::negate<T>());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(std::size_t(iter - output.begin()) == input.size());
   REQUIRE(output == result);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestTransformBinaryCudaStreams", "[transform]")
@@ -332,16 +332,16 @@ TEST_CASE("TestTransformBinaryCudaStreams", "[transform]")
   const Vector result{5, -7, -3};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   iter = thrust::transform(
     thrust::cuda::par.on(s), input1.begin(), input1.end(), input2.begin(), output.begin(), ::cuda::std::minus<T>());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(std::size_t(iter - output.begin()) == input1.size());
   REQUIRE(output == result);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 struct sum_five

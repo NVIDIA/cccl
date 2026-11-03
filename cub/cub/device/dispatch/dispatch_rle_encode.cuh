@@ -13,31 +13,42 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/cc_dispatch.cuh>
+#include <cub/agent/agent_reduce_by_key.cuh>
+#include <cub/detail/delay_constructor.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
-#include <cub/detail/logging.cuh>
 #include <cub/detail/non_void_value.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce_by_key.cuh>
-#include <cub/device/dispatch/kernels/kernel_rle_encode_lookahead.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_encode.cuh>
-#include <cub/util_debug.cuh>
-#include <cub/util_device.cuh>
-#include <cub/util_temporary_storage.cuh>
+#include <cub/util_vsmem.cuh>
 
-#include <thrust/type_traits/is_contiguous_iterator.h>
-#include <thrust/type_traits/unwrap_contiguous_iterator.h>
-
-#include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
-#include <cuda/__memory/align_up.h>
-#include <cuda/__type_traits/is_trivially_copyable.h>
-#include <cuda/iterator>
-#include <cuda/std/__host_stdlib/sstream>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/cstdint>
+#include <cuda/__iterator/constant_iterator.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/functional>
-#include <cuda/std/limits>
+
+#if __cccl_ptx_isa >= 920
+#  include <thrust/detail/config.h>
+
+#  include <cub/detail/cc_dispatch.cuh>
+#  include <cub/detail/logging.cuh>
+#  include <cub/device/dispatch/kernels/kernel_rle_encode_lookahead.cuh>
+#  include <cub/util_debug.cuh>
+#  include <cub/util_device.cuh>
+#  include <cub/util_temporary_storage.cuh>
+
+#  include <thrust/type_traits/is_contiguous_iterator.h>
+#  include <thrust/type_traits/unwrap_contiguous_iterator.h>
+
+#  include <cuda/__cmath/ceil_div.h>
+#  include <cuda/__type_traits/is_trivially_copyable.h>
+#  include <cuda/std/__limits/numeric_limits.h>
+#  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/cstdint>
+
+#  include <nv/target>
+#endif // __cccl_ptx_isa >= 920
 
 CUB_NAMESPACE_BEGIN
 
@@ -81,7 +92,19 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires rle_encode_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_block))
+__launch_bounds__(int(
+  reduce_by_key::make_vsmem_helper<
+    device_policy_getter<policy_selector_adapter<PolicySelector>, current_tuning_cc().get()>,
+    KeysInputIteratorT,
+    UniqueOutputIteratorT,
+    ValuesInputIteratorT,
+    AggregatesOutputIteratorT,
+    NumRunsOutputIteratorT,
+    EqualityOpT,
+    ReductionOpT,
+    OffsetT,
+    AccumT,
+    StreamingContextT>::type::agent_policy_t::BLOCK_THREADS))
   _CCCL_KERNEL_ATTRIBUTES void DeviceRleEncodeStreamingKernel(
     const KeysInputIteratorT d_keys_in,
     const UniqueOutputIteratorT d_unique_out,
@@ -105,19 +128,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
   }
   else
   {
-    using AgentReduceByKeyPolicyT = agent_reduce_by_key_policy<
-      policy.lookback.threads_per_block,
-      policy.lookback.items_per_thread,
-      policy.lookback.load_algorithm,
-      policy.lookback.load_modifier,
-      policy.lookback.scan_algorithm,
-      delay_constructor_t<policy.lookback.lookback_delay.kind,
-                          policy.lookback.lookback_delay.delay,
-                          policy.lookback.lookback_delay.l2_write_latency>>;
-
-    using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<
-      AgentReduceByKeyPolicyT,
-      reduce_by_key::AgentReduceByKey,
+    using vsmem_helper_t = typename reduce_by_key::make_vsmem_helper<
+      device_policy_getter<policy_selector_adapter<PolicySelector>, current_tuning_cc().get()>,
       KeysInputIteratorT,
       UniqueOutputIteratorT,
       ValuesInputIteratorT,
@@ -127,7 +139,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
       ReductionOpT,
       OffsetT,
       AccumT,
-      StreamingContextT>;
+      StreamingContextT>::type;
 
     using agent_reduce_by_key_t = typename vsmem_helper_t::agent_t;
 

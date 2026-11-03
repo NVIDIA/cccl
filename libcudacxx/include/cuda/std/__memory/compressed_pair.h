@@ -54,9 +54,9 @@ struct __value_init_tag
 template <class _Tp, int _Idx, bool _CanBeEmptyBase = is_empty_v<_Tp> && !is_final_v<_Tp>>
 struct __compressed_pair_elem
 {
-  using _ParamT         = _Tp;
-  using reference       = _Tp&;
-  using const_reference = const _Tp&;
+  using _ParamT _CCCL_NODEBUG = _Tp;
+  using reference             = _Tp&;
+  using const_reference       = const _Tp&;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr explicit __compressed_pair_elem(__default_init_tag) noexcept(
@@ -101,10 +101,10 @@ private:
 template <class _Tp, int _Idx>
 struct __compressed_pair_elem<_Tp, _Idx, true> : private _Tp
 {
-  using _ParamT         = _Tp;
-  using reference       = _Tp&;
-  using const_reference = const _Tp&;
-  using __value_type    = _Tp;
+  using _ParamT _CCCL_NODEBUG      = _Tp;
+  using reference                  = _Tp&;
+  using const_reference            = const _Tp&;
+  using __value_type _CCCL_NODEBUG = _Tp;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HIDE_FROM_ABI explicit constexpr __compressed_pair_elem() = default;
@@ -188,8 +188,8 @@ public:
     piecewise_construct_t __pc,
     tuple<_Args1...> __first_args,
     tuple<_Args2...> __second_args) noexcept(is_constructible_v<_T1, _Args1...> && is_constructible_v<_T2, _Args2...>)
-      : _Base1(__pc, ::cuda::std::move(__first_args), typename __make_tuple_indices<sizeof...(_Args1)>::type())
-      , _Base2(__pc, ::cuda::std::move(__second_args), typename __make_tuple_indices<sizeof...(_Args2)>::type())
+      : _Base1(__pc, ::cuda::std::move(__first_args), __make_tuple_indices_t<sizeof...(_Args1)>())
+      , _Base2(__pc, ::cuda::std::move(__second_args), __make_tuple_indices_t<sizeof...(_Args2)>())
   {}
 
   _CCCL_API constexpr typename _Base1::reference first() noexcept

@@ -60,8 +60,7 @@ struct ReduceKernel
       cudax::coop::non_exhaustive,
       cuda::warp,
       block,
-      cudax::coop::group_by{cudax::coop::non_exhaustive,
-                            cuda::std::integral_constant<cuda::std::size_t, nwarps_in_group>{}},
+      cudax::coop::group_by{cuda::std::integral_constant<cuda::std::size_t, nwarps_in_group>{}},
       cudax::coop::barrier_synchronizer{barriers});
 
     // All threads that are not part of the groups should exit early.
@@ -142,8 +141,7 @@ struct MultiGroupReduceKernel
       cudax::coop::non_exhaustive,
       cuda::warp,
       block,
-      cudax::coop::group_by{cudax::coop::non_exhaustive,
-                            cuda::std::integral_constant<cuda::std::size_t, nwarps_in_group>{}},
+      cudax::coop::group_by{cuda::std::integral_constant<cuda::std::size_t, nwarps_in_group>{}},
       cudax::coop::barrier_synchronizer{barriers});
 
     if (!parent.has_value())

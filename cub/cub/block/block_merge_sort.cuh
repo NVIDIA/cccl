@@ -63,7 +63,7 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
 
 namespace detail
 {
-template <bool Unroll = true, typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
+template <bool Unroll = detail::sort_unroll_default, typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
 _CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
   KeyIt keys_shared,
   int keys1_beg,
@@ -81,7 +81,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
   KeyT key1 = keys1_count != 0 ? keys_shared[keys1_beg] : oob_default;
   KeyT key2 = keys2_count != 0 ? keys_shared[keys2_beg] : oob_default;
 
-  _CCCL_PRAGMA_UNROLL(Unroll ? ItemsPerThread : 1)
+  constexpr int unroll = detail::sort_unroll_count<Unroll, ItemsPerThread>;
+  _CCCL_PRAGMA_UNROLL(unroll)
   for (int item = 0; item < ItemsPerThread; ++item)
   {
     const bool p  = (keys2_beg < keys2_end) && ((keys1_beg >= keys1_end) || compare_op(key2, key1));
@@ -98,7 +99,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
   }
 }
 
-template <bool Unroll = true, typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
+template <bool Unroll = detail::sort_unroll_default, typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
 _CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
   KeyIt keys_shared,
   int keys1_beg,
@@ -212,7 +213,7 @@ template <typename KeyT,
           int NumThreads,
           int ItemsPerThread,
           typename SynchronizationPolicy,
-          bool Unroll = true>
+          bool Unroll = detail::sort_unroll_default>
 class BlockMergeSortStrategy
 {
   static_assert(::cuda::is_power_of_two(NumThreads), "NumThreads must be a power of two");
@@ -894,7 +895,8 @@ private:
         max_key = compare_op(max_key, oob_default) ? oob_default : max_key;
       }
 
-      _CCCL_PRAGMA_UNROLL(Unroll ? ItemsPerThread : 1)
+      constexpr int unroll = detail::sort_unroll_count<Unroll, ItemsPerThread>;
+      _CCCL_PRAGMA_UNROLL(unroll)
       for (int item = 1; item < ItemsPerThread; ++item)
       {
         if (ItemsPerThread * linear_tid + item < valid_items)
@@ -1101,7 +1103,7 @@ template <typename KeyT,
           typename ValueT = NullType,
           int BlockDimY   = 1,
           int BlockDimZ   = 1,
-          bool Unroll     = true>
+          bool Unroll     = detail::sort_unroll_default>
 class BlockMergeSort
     : public BlockMergeSortStrategy<
         KeyT,

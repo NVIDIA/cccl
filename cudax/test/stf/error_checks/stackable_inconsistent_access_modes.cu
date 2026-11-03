@@ -10,52 +10,20 @@
 
 /**
  * @file
- *
  * @brief Test that ensures we catch programming errors with inconsistent access modes in nested contexts
- *
- * This test verifies that attempting to escalate from read-only to read-write access mode
- * in nested stackable contexts is properly caught and produces a clear error message.
- *
  */
 
 #include <cuda/experimental/stf.cuh>
 
-#include <csignal>
+#include <cstdio>
+#include <cstdlib>
+#include <stdexcept>
+#include <vector>
 
 using namespace cuda::experimental::stf;
 
-bool should_abort = false;
-
-void cleanupRoutine(int /*unused*/)
-{
-  if (should_abort)
-  {
-    exit(EXIT_SUCCESS);
-  }
-  else
-  {
-    fprintf(stderr, "Unexpected SIGABRT !\n");
-    exit(EXIT_FAILURE);
-  }
-}
-
 int main()
 {
-  /* Setup an handler to catch the SIGABRT signal during the programming error */
-#if _CCCL_COMPILER(MSVC)
-  signal(SIGABRT, &cleanupRoutine);
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC)
-  struct sigaction sigabrt_action{};
-  memset(&sigabrt_action, 0, sizeof(sigabrt_action));
-  sigabrt_action.sa_handler = &cleanupRoutine;
-
-  if (sigaction(SIGABRT, &sigabrt_action, nullptr) != 0)
-  {
-    perror("sigaction SIGABRT");
-    exit(EXIT_FAILURE);
-  }
-#endif // !_CCCL_COMPILER(MSVC)
-
   stackable_ctx sctx;
 
   const size_t sz = 1024;
@@ -70,23 +38,30 @@ int main()
   // Create logical data
   auto ldata = sctx.logical_data(make_slice(data.data(), sz));
 
+  bool caught = false;
+
   // First scope: push with READ access mode
   {
     const stackable_ctx::graph_scope_guard scope1{sctx};
     ldata.push(access_mode::read);
 
-    // We are going to try to escalate from read to rw access mode in nested context:
-    // this should raise an error.
-    should_abort = true;
-
-    // NESTED second scope: attempt to push with RW access mode
-    // This should be caught as an invalid access mode escalation
+    // NESTED second scope: attempt to escalate from read to rw access mode.
+    // This is an invalid access mode transition and must be reported.
     {
       const stackable_ctx::graph_scope_guard scope2{sctx};
-      ldata.push(access_mode::rw); // This should trigger abort()!
+      try
+      {
+        ldata.push(access_mode::rw);
+      }
+      catch (const ::std::logic_error& e)
+      {
+        caught = true;
+        fprintf(stderr, "Caught expected error: %s\n", e.what());
+      }
     }
   }
 
-  _CCCL_ASSERT(false, "This should not be reached");
-  return EXIT_FAILURE;
+  sctx.finalize();
+
+  return caught ? EXIT_SUCCESS : EXIT_FAILURE;
 }

@@ -25,11 +25,9 @@
 #include <cub/util_namespace.cuh>
 
 #include <cuda/__cmath/round_down.h>
-#include <cuda/__functional/maximum.h>
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -38,6 +36,8 @@
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
+
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 
@@ -133,7 +133,7 @@ CUB_NAMESPACE_BEGIN
 //!   <tt>T operator()(const T &a, const T &b)</tt>
 //!
 //! @param[in] input
-//!   Array-like input
+//!   Array-like input. Must not be empty; use the overload taking a prefix to reduce possibly empty inputs.
 //!
 //! @param[in] reduction_op
 //!   Binary reduction operator
@@ -422,6 +422,9 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
                 "ReductionOp must have the binary call operator: operator(ValueT, ValueT)");
 
   static constexpr auto length = static_size_v<Input>;
+  static_assert(length > 0,
+                "ThreadReduce without a prefix requires a non-empty input. Use the overload taking a prefix to reduce "
+                "possibly empty inputs");
   if constexpr (length == 1)
   {
     return static_cast<AccumT>(input[0]);
@@ -498,7 +501,8 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
 //! @param[in] prefix
 //!   Prefix to seed reduction with
 //!
-//! @return Aggregate of type <tt>cuda::std::__accumulator_t<ReductionOp, ValueT, PrefixT></tt>
+//! @return Aggregate of type <tt>cuda::std::__accumulator_t<ReductionOp, ValueT, PrefixT></tt>. For an empty
+//! @p input, this is @p prefix.
 //!
 template <typename Input,
           typename ReductionOp,

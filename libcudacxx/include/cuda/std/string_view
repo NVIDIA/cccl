@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
@@ -51,7 +52,6 @@
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_standard_layout.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/is_trivially_default_constructible.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/type_identity.h>
@@ -151,7 +151,8 @@ public:
   static_assert(is_standard_layout_v<value_type>, "character type of basic_string_view must be standard-layout");
   static_assert(is_trivially_default_constructible_v<value_type>,
                 "character type of basic_string_view must be trivially default constructible");
-  static_assert(is_trivially_copyable_v<value_type>, "character type of basic_string_view must be trivially copyable");
+  static_assert(::cuda::is_trivially_copyable_v<value_type>,
+                "character type of basic_string_view must be trivially copyable");
   static_assert(is_same_v<_CharT, typename traits_type::char_type>,
                 "traits_type::char_type must be the same type as CharT");
 

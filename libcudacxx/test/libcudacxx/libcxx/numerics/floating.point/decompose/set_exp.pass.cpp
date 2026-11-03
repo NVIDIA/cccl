@@ -17,6 +17,27 @@
 #include "test_macros.h"
 
 template <class T>
+TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST void test_subnormal(T val)
+{
+  constexpr auto fmt = cuda::std::__fp_format_of_v<T>;
+  // Verify the representation even when device floating-point comparisons flush subnormals to zero.
+  assert((cuda::std::__fp_get_storage(val) & cuda::std::__fp_exp_mask_v<fmt>) == 0);
+  assert((cuda::std::__fp_get_storage(val) & cuda::std::__fp_mant_mask_v<fmt>) != 0);
+
+  // NVHPC flushes subnormals to zero on some architectures (nvbug 6303102).
+#if !TEST_COMPILER(NVHPC)
+  if constexpr (TEST_HAS_CUDA_FAST_MATH && cuda::std::is_same_v<T, float>)
+  {
+    NV_IF_TARGET(NV_IS_HOST, (assert(cuda::std::fpclassify(val) == FP_SUBNORMAL);))
+  }
+  else
+  {
+    assert(cuda::std::fpclassify(val) == FP_SUBNORMAL);
+  }
+#endif // !TEST_COMPILER(NVHPC)
+}
+
+template <class T>
 TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST void test_fp_set_exp(T val, int exponent)
 {
   assert(cuda::std::__fp_get_exp(val) != exponent);
@@ -65,11 +86,7 @@ TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST void test_fp_set_exp(T val)
       assert(!cuda::std::isnan(res));
       assert(!cuda::std::isinf(res));
       assert(cuda::std::isfinite(res));
-      // NVHPC flushes subnormals to 0 by default on some architectures. That causes this check to fail, because we use
-      // __builtin_fpclassify to implement fpclassify. Re-enable once nvbug 6303102 is resolved.
-#if !TEST_COMPILER(NVHPC)
-      assert(cuda::std::fpclassify(res) == FP_SUBNORMAL);
-#endif // !TEST_COMPILER(NVHPC)
+      test_subnormal(res);
     }
 
     if constexpr (cuda::std::__fp_has_denorm_v<fmt> && cuda::std::__fp_is_signed_v<fmt>)
@@ -79,11 +96,7 @@ TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST void test_fp_set_exp(T val)
       assert(!cuda::std::isnan(res));
       assert(!cuda::std::isinf(res));
       assert(cuda::std::isfinite(res));
-      // NVHPC flushes subnormals to 0 by default on some architectures. That causes this check to fail, because we use
-      // __builtin_fpclassify to implement fpclassify. Re-enable once nvbug 6303102 is resolved.
-#if !TEST_COMPILER(NVHPC)
-      assert(cuda::std::fpclassify(res) == FP_SUBNORMAL);
-#endif // !TEST_COMPILER(NVHPC)
+      test_subnormal(res);
     }
   }
 

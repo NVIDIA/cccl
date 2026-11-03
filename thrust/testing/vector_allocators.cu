@@ -97,7 +97,7 @@ public:
   using is_always_equal                        = ::cuda::std::false_type;
   using propagate_on_container_copy_assignment = ::cuda::std::true_type;
   using propagate_on_container_move_assignment = ::cuda::std::true_type;
-  using propagate_on_container_swap            = cuda::std::integral_constant<bool, PropagateOnSwap>;
+  using propagate_on_container_swap            = cuda::std::bool_constant<PropagateOnSwap>;
 
 private:
   int state;

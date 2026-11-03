@@ -17,20 +17,23 @@
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
-#include <cub/detail/delay_constructor.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/prefetch.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__optional/optional.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/optional>
+#include <cuda/std/cstdint>
 
 #if _CCCL_COMPILER(MSVC)
 #  include <ciso646>
