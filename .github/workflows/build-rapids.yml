@@ -105,19 +105,18 @@ jobs:
           declare -a failures
 
           _collect_compile_time_traces() {
-            local lib trace destination
-            for lib in ${RAPIDS_LIBS}; do
-              (
-                cd "${HOME}/${lib}" || exit 1
-                # Do not follow the latest symlinks, which alias the same build tree.
-                find . -type f -name '*.o.json' -print0 |
-                  while IFS= read -r -d '' trace; do
-                    destination="/compile-time-traces/${RAPIDS_ENABLE_TESTS}/${lib}/${trace#./}"
-                    mkdir -p "$(dirname "$destination")" || exit 1
-                    mv "$trace" "$destination" || exit 1
-                  done
-              ) || return 1
-            done
+            local trace destination
+            (
+              # Project names can refer to subprojects or aliases, so scan the mounted repositories.
+              cd "${HOME}/cccl/ci/rapids/.repos" || exit 1
+              # Do not follow the latest symlinks, which alias the same build tree.
+              find . -type f -name '*.o.json' -print0 |
+                while IFS= read -r -d '' trace; do
+                  destination="/compile-time-traces/${RAPIDS_ENABLE_TESTS}/${trace#./}"
+                  mkdir -p "$(dirname "$destination")" || exit 1
+                  mv "$trace" "$destination" || exit 1
+                done
+            )
           }
 
           _print_err_exit_msg() {

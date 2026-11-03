@@ -41,7 +41,7 @@ jobs:
     name: Build PyTorch
     runs-on: |-
       ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) &&
-          'linux-amd64-cpu16m' || 'ubuntu-latest' }}
+          'linux-amd64-cpu32' || 'ubuntu-latest' }}
     permissions:
       id-token: write
       contents: read
@@ -111,13 +111,15 @@ jobs:
           echo "::add-mask::$SCCACHE_DIST_AUTH_TOKEN"
 
           # Trace actual NVCC compilations, with bounded local parallelism instead of sccache.
+          # CPU32 provides 500 GB of disk for traces; keep NVCC concurrency capped at 16.
+          parallel_level=$(nproc)
           .devcontainer/launch.sh \
             --docker \
             --cuda 13.4 \
             --host gcc14 \
             --cuda-ext \
             --env "AWS_ROLE_ARN=" \
-            --env "PARALLEL_LEVEL=$(nproc)" \
+            --env "PARALLEL_LEVEL=$(( parallel_level < 16 ? parallel_level : 16 ))" \
             --env "CCCL_TAG=${CCCL_TAG}" \
             --env "CCCL_VERSION=${CCCL_VERSION}" \
             --env "GITHUB_SHA=$GITHUB_SHA" \
