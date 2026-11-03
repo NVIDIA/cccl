@@ -3,10 +3,7 @@
 #pragma once
 
 #include <cub/device/device_segmented_sort.cuh>
-
-#if defined(TEST_ALGORITHM) && TEST_ALGORITHM == 1
-#  include <cub/device/dispatch/dispatch_binned_segmented_sort.cuh>
-#endif
+#include <cub/device/dispatch/dispatch_segmented_sort_lrb.cuh>
 
 #include <thrust/device_ptr.h>
 #include <thrust/for_each.h>
@@ -32,6 +29,14 @@
 #include <c2h/cpu_timer.h>
 #include <c2h/extended_types.h>
 #include <c2h/utility.h>
+
+// Only the CMake matrix input uses preprocessing; test decisions below are constexpr.
+#if defined(TEST_ALGORITHM)
+inline constexpr bool test_lrb = TEST_ALGORITHM == 1;
+#else
+inline constexpr bool test_lrb = false;
+#endif
+inline constexpr bool test_host_launch = TEST_LAUNCH == 0;
 
 #define MAKE_SEED_MOD_FUNCTION(name, xor_mask)                  \
   inline c2h::seed_t make_##name##_seed(const c2h::seed_t seed) \
@@ -1158,7 +1163,6 @@ public:
   }
 };
 
-#if defined(TEST_ALGORITHM) && TEST_ALGORITHM == 1 && TEST_LAUNCH == 0
 // Adapt the internal backend to the same temporary-storage test launcher_factory.
 struct lrb_sort_launcher_t
 {
@@ -1185,7 +1189,6 @@ struct lrb_sort_launcher_t
       result);
   }
 };
-#endif
 
 template <typename KeyT, typename ValueT = cub::NullType>
 void call_cub_segmented_sort_api(
@@ -1211,92 +1214,98 @@ void call_cub_segmented_sort_api(
   C2H_TIME_SCOPE("cub::DeviceSegmentedSort");
   CAPTURE(descending, double_buffer, stable_sort, num_items, num_segments);
 
-#if defined(TEST_ALGORITHM) && TEST_ALGORITHM == 1
-#  if TEST_LAUNCH != 0
-  SKIP("CCCL_SKIP_TEST: The internal LRB backend currently supports only host launches.");
-#  else
-  if constexpr (sizeof(KeyT) > 8 || !cuda::std::is_same_v<ValueT, cub::NullType>)
+  if constexpr (test_lrb)
   {
-    SKIP("The shared LRB tests support keys up to eight bytes without associated values.");
+    if constexpr (!test_host_launch)
+    {
+      SKIP("CCCL_SKIP_TEST: The internal LRB backend currently supports only host launches.");
+    }
+    else if constexpr (!cub::detail::segmented_sort_capacity::can_use_lrb<unwrap_value_t<KeyT>>(
+                         ::cuda::compute_capability{9, 0})
+                       || !cuda::std::is_same_v<ValueT, cub::NullType>)
+    {
+      SKIP("The shared LRB tests support keys up to eight bytes without associated values.");
+    }
+    else
+    {
+      if (descending || double_buffer)
+      {
+        SKIP("The internal LRB backend currently tests ascending pointer-based key sorting only.");
+      }
+      ::cuda::compute_capability cc{};
+      REQUIRE(cudaSuccess == CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY{}.PtxComputeCap(cc));
+      if (!cub::detail::segmented_sort_capacity::can_use_lrb<unwrap_value_t<KeyT>>(cc))
+      {
+        SKIP("CCCL_SKIP_TEST: The internal LRB backend requires a compiled SM90-or-newer target.");
+      }
+      using kernels_t = cub::detail::segmented_sort_capacity::group_merge_sort_kernels_t<unwrap_value_t<KeyT>>;
+      using capacities_t =
+        typename kernels_t::template capacities_t<cub::detail::policy_getter, cuda::compute_capability{9, 0}.get()>;
+      c2h::host_vector<int> begins(num_segments), ends(num_segments);
+      if (num_segments)
+      {
+        REQUIRE(cudaSuccess
+                == cudaMemcpy(begins.data(), d_begin_offsets, begins.size() * sizeof(int), cudaMemcpyDeviceToHost));
+        REQUIRE(
+          cudaSuccess == cudaMemcpy(ends.data(), d_end_offsets, ends.size() * sizeof(int), cudaMemcpyDeviceToHost));
+      }
+      for (int segment = 0; segment < num_segments; ++segment)
+      {
+        if (ends[segment] - begins[segment] > capacities_t::bounds.back())
+        {
+          SKIP("This input requires overflow sorting, which the internal LRB backend does not yet implement.");
+        }
+      }
+      INFO("Backend: internal LRB segmented sort; existing input generation and validation.");
+      launch(lrb_sort_launcher_t{},
+             static_cast<const KeyT*>(input_keys),
+             output_keys,
+             static_cast<unsigned>(num_segments),
+             d_begin_offsets,
+             d_end_offsets);
+      if (keys_selector)
+      {
+        *keys_selector = 0;
+      }
+    }
   }
   else
   {
-    if (descending || double_buffer)
-    {
-      SKIP("The internal LRB backend currently tests ascending pointer-based key sorting only.");
-    }
-    ::cuda::compute_capability cc{};
-    REQUIRE(cudaSuccess == CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY{}.PtxComputeCap(cc));
-    if (cc < ::cuda::compute_capability{9, 0})
-    {
-      SKIP("CCCL_SKIP_TEST: The internal LRB backend requires a compiled SM90-or-newer target.");
-    }
-    using kernels_t = cub::detail::segmented_sort_capacity::group_merge_sort_kernels_t<unwrap_value_t<KeyT>>;
-    using capacities_t =
-      typename kernels_t::template capacities_t<cub::detail::policy_getter, cuda::compute_capability{9, 0}.get()>;
-    c2h::host_vector<int> begins(num_segments), ends(num_segments);
-    if (num_segments)
-    {
-      REQUIRE(
-        cudaSuccess == cudaMemcpy(begins.data(), d_begin_offsets, begins.size() * sizeof(int), cudaMemcpyDeviceToHost));
-      REQUIRE(cudaSuccess == cudaMemcpy(ends.data(), d_end_offsets, ends.size() * sizeof(int), cudaMemcpyDeviceToHost));
-    }
-    for (int segment = 0; segment < num_segments; ++segment)
-    {
-      if (ends[segment] - begins[segment] > capacities_t::bounds.back())
-      {
-        SKIP("This input requires overflow sorting, which the internal LRB backend does not yet implement.");
-      }
-    }
-    INFO("Backend: internal LRB segmented sort; existing input generation and validation.");
-    launch(lrb_sort_launcher_t{},
-           static_cast<const KeyT*>(input_keys),
-           output_keys,
-           static_cast<unsigned>(num_segments),
-           d_begin_offsets,
-           d_end_offsets);
+    segmented_sort_launcher_t action(descending, double_buffer, stable_sort);
+    action.initialize();
+
     if (keys_selector)
     {
-      *keys_selector = 0;
+      action.set_key_selector(*keys_selector);
     }
+
+    if (values_selector)
+    {
+      action.set_value_selector(*values_selector);
+    }
+
+    launch(action, //
+           input_keys,
+           output_keys,
+           input_values,
+           output_values,
+           num_items,
+           num_segments,
+           d_begin_offsets,
+           d_end_offsets);
+
+    if (keys_selector)
+    {
+      *keys_selector = action.key_selector();
+    }
+
+    if (values_selector)
+    {
+      *values_selector = action.value_selector();
+    }
+
+    action.finalize();
   }
-#  endif
-#else
-  segmented_sort_launcher_t action(descending, double_buffer, stable_sort);
-  action.initialize();
-
-  if (keys_selector)
-  {
-    action.set_key_selector(*keys_selector);
-  }
-
-  if (values_selector)
-  {
-    action.set_value_selector(*values_selector);
-  }
-
-  launch(action, //
-         input_keys,
-         output_keys,
-         input_values,
-         output_values,
-         num_items,
-         num_segments,
-         d_begin_offsets,
-         d_end_offsets);
-
-  if (keys_selector)
-  {
-    *keys_selector = action.key_selector();
-  }
-
-  if (values_selector)
-  {
-    *values_selector = action.value_selector();
-  }
-
-  action.finalize();
-#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1339,16 +1348,9 @@ void test_segments_derived(const c2h::device_vector<int>& d_offsets_vec)
 
   C2H_TIME_SECTION("Allocate device memory");
 
-#if defined(TEST_ALGORITHM) && TEST_ALGORITHM == 1
-  // Keep the original backend's full matrix; select only implemented modes here.
   const bool stable_sort     = GENERATE(unstable, stable);
-  const bool sort_descending = ascending;
-  const bool sort_buffers    = pointers;
-#else
-  const bool stable_sort     = GENERATE(unstable, stable);
-  const bool sort_descending = GENERATE(ascending, descending);
-  const bool sort_buffers    = GENERATE(pointers, double_buffer);
-#endif
+  const bool sort_descending = test_lrb ? ascending : GENERATE(ascending, descending);
+  const bool sort_buffers    = test_lrb ? pointers : GENERATE(pointers, double_buffer);
 
   CAPTURE(c2h::type_name<KeyT>(),
           c2h::type_name<ValueT>(),
@@ -1395,10 +1397,12 @@ void test_segments_derived(const c2h::device_vector<int>& d_offsets_vec)
     &keys_selector,
     &values_selector);
 
-#if defined(TEST_ALGORITHM) && TEST_ALGORITHM == 1
-  // Unsupported types skip in the API helper; omit their unreachable validation.
-  if constexpr (sizeof(KeyT) <= 8 && cuda::std::is_same_v<ValueT, cub::NullType>)
-#endif
+  // Unsupported LRB configurations skip in the API helper; omit their unreachable validation.
+  if constexpr (!test_lrb
+                || (test_host_launch
+                    && cub::detail::segmented_sort_capacity::can_use_lrb<unwrap_value_t<KeyT>>(
+                      ::cuda::compute_capability{9, 0})
+                    && cuda::std::is_same_v<ValueT, cub::NullType>) )
   {
     auto& keys   = (keys_selector || !sort_buffers) ? keys_output : keys_input;
     auto& values = (values_selector || !sort_buffers) ? values_output : values_input;
@@ -1445,11 +1449,7 @@ void test_segments_random(
 
   C2H_TIME_SECTION("Allocate device memory");
 
-#if defined(TEST_ALGORITHM) && TEST_ALGORITHM == 1
-  const bool sort_descending = ascending;
-#else
-  const bool sort_descending = GENERATE(ascending, descending);
-#endif
+  const bool sort_descending = test_lrb ? ascending : GENERATE(ascending, descending);
 
   generate_random_unsorted_inputs(seed, keys_input, values_input);
 
@@ -1503,12 +1503,13 @@ void test_segments_random(
   {
     for (const bool sort_buffers : {pointers, double_buffer})
     {
-#if defined(TEST_ALGORITHM) && TEST_ALGORITHM == 1
-      if (sort_buffers)
+      if constexpr (test_lrb)
       {
-        continue; // DoubleBuffer remains covered by the existing-backend variant.
+        if (sort_buffers)
+        {
+          continue; // DoubleBuffer remains covered by the existing-backend variant.
+        }
       }
-#endif
       CAPTURE(stable_sort, sort_descending, sort_buffers);
 
       if (need_reset)

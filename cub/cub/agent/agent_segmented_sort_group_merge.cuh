@@ -87,28 +87,28 @@ struct group_merge_expansion
 };
 
 // Sort segments cooperatively using thread-local sorting and merges across threads.
-// Warp workers have independent shared key storage and never use CTA barriers.
+// Warp groups have independent shared key storage and never use CTA barriers.
 template <typename PolicyGetter>
 struct group_merge_implementation
 {
-  inline static constexpr auto policy     = PolicyGetter{}();
-  using expansion                         = group_merge_expansion<PolicyGetter>;
-  static constexpr bool is_warp           = policy.max_threads <= 32;
-  static constexpr int threads_per_worker = is_warp ? 32 : policy.block_threads;
+  inline static constexpr auto policy    = PolicyGetter{}();
+  using expansion                        = group_merge_expansion<PolicyGetter>;
+  static constexpr bool is_warp          = policy.max_threads <= 32;
+  static constexpr int threads_per_group = is_warp ? 32 : policy.block_threads;
   static_assert(policy.block_threads > 0 && policy.block_threads <= 1024);
-  static_assert(policy.blocks_per_sm > 0 && policy.min_blocks_per_sm > 0);
+  static_assert(policy.grid_size_multiplier > 0 && policy.min_blocks_per_sm > 0);
   static_assert(policy.block_threads % 32 == 0);
   static_assert(is_warp || policy.min_threads >= 64);
   static_assert(policy.block_threads % policy.max_threads == 0);
-  static_assert(policy.min_ipt >= 9 && policy.max_ipt <= 15, "GroupMerge workers support IPT 9..15");
+  static_assert(policy.min_ipt >= 9 && policy.max_ipt <= 15, "GroupMerge groups support IPT 9..15");
 
-  // Dynamic shared memory for key exchange/merging, including one prefetch slot per work unit.
+  // Dynamic shared memory for key exchange/merging, including one prefetch slot per group.
   template <typename Key>
   _CCCL_HOST_DEVICE_API static constexpr size_t scratch_bytes()
   {
     return sizeof(Key) * (policy.block_threads * policy.max_ipt + (is_warp ? policy.block_threads / 32 : 1));
   }
-  // Synchronize only this worker's warp or block so warp units can progress independently.
+  // Synchronize the scheduling group: one full warp or the whole block.
   _CCCL_DEVICE_API static void sync()
   {
     if constexpr (is_warp)
@@ -123,7 +123,8 @@ struct group_merge_implementation
 
   // Obtain an input segment ID from segment_idx, load the segment, sort thread-local runs,
   // merge across cooperating threads, and write the valid keys back.
-  // A segment_idx of ~0u masks an unused group while keeping its threads in synchronization.
+  // A segment_idx of ~0u gives an unused segment zero length; its threads still reach every sync.
+  // Configuration and merge rounds are uniform within the warp/block synchronization group.
   template <int ItemsPerThread, typename Key, typename BeginIterator, typename EndIterator>
   _CCCL_DEVICE_API static void sort_segment(
     unsigned segment_idx,
@@ -135,15 +136,15 @@ struct group_merge_implementation
     Key* out,
     Key* keys_shared)
   {
-    const ::cuda::std::less<Key> compare{};
-    const int worker_thread_idx = threadIdx.x % threads_per_worker;
+    const ::cuda::std::less<Key> compare_op{};
+    const int thread_idx_in_group = threadIdx.x % threads_per_group;
     if constexpr (is_warp)
     {
       keys_shared += (threadIdx.x / 32) * (32 * policy.max_ipt + 1);
     }
-    const int thread_idx_in_group = worker_thread_idx % config.threads_per_segment;
-    const int group_keys_begin_idx =
-      (worker_thread_idx / config.threads_per_segment) * config.threads_per_segment * ItemsPerThread;
+    const int thread_idx_in_segment = thread_idx_in_group % config.threads_per_segment;
+    const int segment_begin_idx_shared =
+      (thread_idx_in_group / config.threads_per_segment) * config.threads_per_segment * ItemsPerThread;
     const bool active               = segment_idx != ~0u;
     const unsigned input_segment_id = active ? bins.segment_ids[segment_idx] : 0;
     const auto begin =
@@ -152,27 +153,27 @@ struct group_merge_implementation
     Key keys[ItemsPerThread];
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      const int local                           = item * config.threads_per_segment + thread_idx_in_group;
-      keys_shared[group_keys_begin_idx + local] = local < segment_size ? in[begin + local] : Key{};
+      const int local                               = item * config.threads_per_segment + thread_idx_in_segment;
+      keys_shared[segment_begin_idx_shared + local] = local < segment_size ? in[begin + local] : Key{};
     }
     // SerialMerge prefetches one unused key beyond its runs.
-    if (worker_thread_idx == 0)
+    if (thread_idx_in_group == 0)
     {
-      keys_shared[threads_per_worker * ItemsPerThread] = Key{};
+      keys_shared[threads_per_group * ItemsPerThread] = Key{};
     }
     sync();
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      keys[item] = keys_shared[group_keys_begin_idx + thread_idx_in_group * ItemsPerThread + item];
+      keys[item] = keys_shared[segment_begin_idx_shared + thread_idx_in_segment * ItemsPerThread + item];
     }
-    if (thread_idx_in_group * ItemsPerThread < segment_size)
+    if (thread_idx_in_segment * ItemsPerThread < segment_size)
     {
       Key max_key = keys[0];
       for (int item = 1; item < ItemsPerThread; ++item)
       {
-        if (thread_idx_in_group * ItemsPerThread + item < segment_size)
+        if (thread_idx_in_segment * ItemsPerThread + item < segment_size)
         {
-          max_key = compare(max_key, keys[item]) ? keys[item] : max_key;
+          max_key = compare_op(max_key, keys[item]) ? keys[item] : max_key;
         }
         else
         {
@@ -180,48 +181,56 @@ struct group_merge_implementation
         }
       }
       NullType values[ItemsPerThread];
-      StableOddEvenSort(keys, values, compare);
+      StableOddEvenSort(keys, values, compare_op);
     }
     for (int merged_threads = 2; merged_threads <= config.threads_per_segment; merged_threads *= 2)
     {
       sync();
       for (int item = 0; item < ItemsPerThread; ++item)
       {
-        keys_shared[worker_thread_idx * ItemsPerThread + item] = keys[item];
+        keys_shared[thread_idx_in_group * ItemsPerThread + item] = keys[item];
       }
       sync();
-      const int start     = (worker_thread_idx & ~(merged_threads - 1)) * ItemsPerThread;
-      const int valid_end = group_keys_begin_idx + segment_size;
-      const int first     = (::cuda::std::min) (valid_end, start);
-      const int middle    = (::cuda::std::min) (valid_end, first + merged_threads / 2 * ItemsPerThread);
-      const int last      = (::cuda::std::min) (valid_end, middle + merged_threads / 2 * ItemsPerThread);
-      const int diag = (::cuda::std::min) (last - first, (worker_thread_idx & (merged_threads - 1)) * ItemsPerThread);
-      const int split =
-        MergePath(keys_shared + first, keys_shared + middle, middle - first, last - middle, diag, compare);
+      const int start                  = (thread_idx_in_group & ~(merged_threads - 1)) * ItemsPerThread;
+      const int segment_end_idx_shared = segment_begin_idx_shared + segment_size;
+      const int keys1_beg_shared       = (::cuda::std::min) (segment_end_idx_shared, start);
+      const int keys1_end_shared =
+        (::cuda::std::min) (segment_end_idx_shared, keys1_beg_shared + merged_threads / 2 * ItemsPerThread);
+      const int keys2_end_shared =
+        (::cuda::std::min) (segment_end_idx_shared, keys1_end_shared + merged_threads / 2 * ItemsPerThread);
+      const int diag           = (::cuda::std::min) (keys2_end_shared - keys1_beg_shared,
+                                                     (thread_idx_in_group & (merged_threads - 1)) * ItemsPerThread);
+      const int partition_diag = MergePath(
+        keys_shared + keys1_beg_shared,
+        keys_shared + keys1_end_shared,
+        keys1_end_shared - keys1_beg_shared,
+        keys2_end_shared - keys1_end_shared,
+        diag,
+        compare_op);
       int indices[ItemsPerThread];
       SerialMerge(
         keys_shared,
-        first + split,
-        middle + diag - split,
-        middle - first - split,
-        last - middle - diag + split,
+        keys1_beg_shared + partition_diag,
+        keys1_end_shared + diag - partition_diag,
+        keys1_end_shared - keys1_beg_shared - partition_diag,
+        keys2_end_shared - keys1_end_shared - diag + partition_diag,
         keys,
         indices,
-        compare,
+        compare_op,
         Key{});
     }
     sync();
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      keys_shared[worker_thread_idx * ItemsPerThread + item] = keys[item];
+      keys_shared[thread_idx_in_group * ItemsPerThread + item] = keys[item];
     }
     sync();
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      const int local = item * config.threads_per_segment + thread_idx_in_group;
+      const int local = item * config.threads_per_segment + thread_idx_in_segment;
       if (local < segment_size)
       {
-        out[begin + local] = keys_shared[group_keys_begin_idx + local];
+        out[begin + local] = keys_shared[segment_begin_idx_shared + local];
       }
     }
     sync();
