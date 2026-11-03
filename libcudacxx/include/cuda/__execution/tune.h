@@ -64,7 +64,13 @@ struct __converts_to_anything
 template <class _PolicySelector>
 _CCCL_NODEBUG_API constexpr auto __detect_policy_return_type()
 {
-  if constexpr (::cuda::std::is_invocable_v<_PolicySelector, ::cuda::compute_capability>)
+  constexpr bool __is_selector = ::cuda::std::is_invocable_v<_PolicySelector, ::cuda::compute_capability>;
+  static_assert(
+    !(__is_selector
+      && ::cuda::std::is_invocable_v<_PolicySelector, ::cuda::compute_capability, __converts_to_anything>),
+    "A callable passed to tune must either be a policy selector (callable with cuda::compute_capability) or "
+    "a policy transformer (callable with cuda::compute_capability and a policy), but not both");
+  if constexpr (__is_selector)
   {
     return decltype(_PolicySelector{}(::cuda::compute_capability{})){};
   }
