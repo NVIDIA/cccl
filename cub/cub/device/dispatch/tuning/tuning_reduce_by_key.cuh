@@ -1464,6 +1464,11 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 {LookbackDelayAlgorithm::no_delay, 0, 1160}};
       }
+      if (key_size == 4 && accum_size == 4 && __value_size() == 4)
+      {
+        // The CUB kernel needs more registers than the former Thrust one, so we request enough occupancy to match it
+        return __make_thrust_policy(9, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_DEFAULT, 5);
+      }
       if (key_size == 4 && accum_size == 4)
       {
         return {256,
@@ -1493,8 +1498,7 @@ private:
       }
       if (key_size == 8 && accum_size == 1)
       {
-        return {
-          256, 10, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 1170}};
+        return __make_thrust_policy(9, BLOCK_LOAD_DIRECT);
       }
       if (key_size == 8 && accum_size == 2)
       {
@@ -1586,15 +1590,17 @@ private:
     {
       if (key_size == 1 && accum_size == 1)
       {
-        return __make_thrust_policy(9, BLOCK_LOAD_DIRECT);
+        return __make_thrust_policy(9, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, 4);
       }
       if ((key_size == 1 && accum_size == 2) || (key_size == 2 && accum_size == 1))
       {
-        return __make_thrust_policy(11);
+        return __make_thrust_policy(11, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_DEFAULT, 4);
       }
-      if (accum_size <= 2)
+      // values smaller than the accumulator (e.g. promoted by plus<>) keep the former CUB default. The CUB kernel needs
+      // more registers than the former Thrust one, so we request enough occupancy to match it.
+      if (accum_size <= 2 || __value_size() == accum_size)
       {
-        return __make_thrust_policy();
+        return __make_thrust_policy(9, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_DEFAULT, 4);
       }
       const bool prefer_thrust_tuning = accum_size == 16;
       return __make_default_policy(LOAD_LDG, prefer_thrust_tuning);
@@ -1605,6 +1611,26 @@ private:
       if (key_size >= 4 && accum_size <= 2)
       {
         return key_size == 4 ? __make_thrust_policy(9, BLOCK_LOAD_DIRECT) : __make_thrust_policy();
+      }
+      if (__value_size() == accum_size) // values smaller than the accumulator keep the former CUB tunings
+      {
+        if (key_size == 1 && accum_size == 4)
+        {
+          return __make_thrust_policy(9, BLOCK_LOAD_DIRECT, LOAD_LDG);
+        }
+        if ((key_size == 2 && accum_size == 4) || (key_size == 4 && accum_size == 4)
+            || (key_size == 8 && accum_size == 8))
+        {
+          return __make_thrust_policy();
+        }
+        if (key_size == 8 && accum_size == 16)
+        {
+          return __make_thrust_policy(13);
+        }
+        if (key_size == 16 && accum_size == 8)
+        {
+          return __make_thrust_policy(7);
+        }
       }
       const bool prefer_thrust_tuning =
         (key_size <= 4 && accum_size <= 4) || accum_size == 16 || (key_size == 16 && accum_size == 8);
