@@ -206,6 +206,7 @@ runs:
       with:
         name: workflow
         path: workflow/
+        include-hidden-files: true
         compression-level: 0
 
     - name: Send Slack error notification

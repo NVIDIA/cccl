@@ -8,7 +8,30 @@
 import argparse
 import json
 import runpy
+import shutil
 from pathlib import Path
+
+
+def merge_devcontainers(input_dirs, output_dir):
+    configs = {}
+    for input_dir in input_dirs:
+        # Share named configs only; helpers and the default config stay in the source.
+        for config in (input_dir / ".devcontainer").glob("*/devcontainer.json"):
+            name = config.parent.name
+            if name in configs:
+                previous = configs[name]
+                if json.loads(previous.read_text()) != json.loads(config.read_text()):
+                    raise ValueError(
+                        f"Conflicting devcontainer '{name}' in {previous} and {config}"
+                    )
+            else:
+                configs[name] = config
+
+    for name, config in configs.items():
+        destination = output_dir / ".devcontainer" / name / "devcontainer.json"
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if config.resolve() != destination.resolve():
+            shutil.copyfile(config, destination)
 
 
 def merge_workflows(input_dirs, output_dir):
@@ -37,6 +60,8 @@ def merge_workflows(input_dirs, output_dir):
         builder["write_override_matrix"](overrides, output_dir)
     else:
         (output_dir / "override.json").unlink(missing_ok=True)
+
+    merge_devcontainers(input_dirs, output_dir)
 
 
 def main():

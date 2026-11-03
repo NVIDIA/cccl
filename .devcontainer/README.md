@@ -198,6 +198,8 @@ CCCL provides environments for both the oldest and newest supported CUDA version
 
 Look in the [`.devcontainer/`](.) directory to see the available configurations. The top-level [`devcontainer.json`](./devcontainer.json) serves as the default environment. All `devcontainer.json` files in the `cuda<CTK_VERSION>-<HOST-COMPILER>` sub-directories are variations on this top-level file, with different base images for the different CUDA and host compiler versions.
 
+Use `launch.sh --extra-devcontainers <directory>` to search an additional directory for named configurations before falling back to `.devcontainer`. CI includes configurations from the selected matrix refs in its `workflow` artifact. To use those configurations locally, download that artifact with `gh run download <run-id> --repo <owner/repo> --name workflow --dir workflow`, then pass `--extra-devcontainers workflow/.devcontainer` along with `--cuda` and `--host`.
+
 ## VSCode Customization
 
 By default, CCCL's Dev Containers come with certain VSCode settings and extensions configured by default, as can be seen in the [`devcontainer.json`](./devcontainer.json) file. This can be further customized by users without needing to modify the `devcontainer.json` file directly.

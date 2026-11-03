@@ -87,18 +87,34 @@ runs:
 
         matrix_files=()
 
-        # Download each resolved matrix directly into the output directory.
+        # Keep each matrix paired with the devcontainers from the same ref.
         echo "::group::Downloading matrix files"
         for matrix in "${matrices[@]}"; do
           read -r name ref path <<< "${matrix}"
           matrix_file="workflow/${name}/matrix.yaml"
           echo "${path} @ ${ref} -> ${matrix_file}"
 
-          mkdir -p "$(dirname "${matrix_file}")"
-          gh api --method GET \
-            --header "Accept: application/vnd.github.raw+json" \
-            --raw-field "ref=${ref}" \
-            "repos/${GITHUB_REPOSITORY}/contents/${path}" > "${matrix_file}"
+          (
+            checkout_dir="$(mktemp -d "${RUNNER_TEMP}/ci-matrix.XXXXXX")"
+            trap 'rm -rf "${checkout_dir}"' EXIT
+
+            # Preserve GH_TOKEN authentication for subsequent lazy blob downloads.
+            gh repo clone \
+              "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" "${checkout_dir}" \
+              --no-upstream -- \
+              --revision "${ref}" --depth=1 --sparse --filter=blob:none \
+              --config credential.helper= \
+              --config 'credential.helper=!gh auth git-credential'
+            git -C "${checkout_dir}" sparse-checkout set --no-cone -- "/${path}" '/.devcontainer/'
+
+            mkdir -p "$(dirname "${matrix_file}")"
+            cp "${checkout_dir}/${path}" "${matrix_file}"
+            # A matrix may rely entirely on the source checkout's devcontainers.
+            rm -rf "workflow/${name}/.devcontainer"
+            if [[ -d "${checkout_dir}/.devcontainer" ]]; then
+              cp -a "${checkout_dir}/.devcontainer" "workflow/${name}/.devcontainer"
+            fi
+          )
           matrix_files+=("${matrix_file}")
         done
         echo "::endgroup::"

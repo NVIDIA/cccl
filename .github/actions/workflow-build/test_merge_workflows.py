@@ -139,6 +139,52 @@ def test_overrides_are_collected_without_overwriting_change_detection(tmp_path):
     assert json.loads((output / "job_ids.json").read_text()) == {}
 
 
+def write_config(workflow_dir, name, contents):
+    config = workflow_dir / ".devcontainer" / name / "devcontainer.json"
+    config.parent.mkdir(parents=True, exist_ok=True)
+    config.write_text(contents)
+    return config
+
+
+def test_devcontainers_are_combined(tmp_path):
+    standard = write_workflow(tmp_path / "standard", {})
+    extended = write_workflow(tmp_path / "extended", {})
+    without_configs = write_workflow(tmp_path / "without-configs", {})
+    shared = write_config(standard, "cuda13.4-gcc16", '{"image": "shared"}')
+    # Formatting differences do not create conflicts.
+    write_config(extended, shared.parent.name, '{\n  "image": "shared"\n}')
+    extra = write_config(extended, "cuda99.8-llvm22", '{"image": "extra"}')
+    for path in [standard, extended]:
+        (path / ".devcontainer/devcontainer.json").write_text(path.name)
+        (path / ".devcontainer/launch.sh").write_text("helper")
+
+    output = tmp_path / "workflow"
+    merge_workflows([standard, extended, without_configs], output)
+    assert {
+        path.relative_to(output / ".devcontainer")
+        for path in (output / ".devcontainer").rglob("*")
+        if path.is_file()
+    } == {
+        Path("cuda13.4-gcc16/devcontainer.json"),
+        Path("cuda99.8-llvm22/devcontainer.json"),
+    }
+    for config in [shared, extra]:
+        assert (
+            output / ".devcontainer" / config.parent.name / config.name
+        ).read_text() == config.read_text()
+
+
+def test_conflicting_devcontainers_fail(tmp_path):
+    standard = write_workflow(tmp_path / "standard", {})
+    extended = write_workflow(tmp_path / "extended", {})
+    write_config(standard, "cuda13.4-gcc16", '{"image": "first"}')
+    write_config(extended, "cuda13.4-gcc16", '{"image": "second"}')
+    with pytest.raises(ValueError, match="Conflicting devcontainer") as error:
+        merge_workflows([standard, extended], tmp_path / "workflow")
+    assert "standard" in str(error.value) and "extended" in str(error.value)
+    assert "cuda13.4-gcc16" in str(error.value)
+
+
 @pytest.mark.skipif(
     sys.platform != "linux", reason="The composite action runs in Bash on Linux."
 )

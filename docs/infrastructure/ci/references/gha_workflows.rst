@@ -115,6 +115,14 @@ Selecting a matrix ref changes the configuration; the workflow's branch or tag
 still selects the code to build and test. PR, nightly, and weekly runs use their
 usual workflow keys.
 
+Each matrix ref may also provide named configurations under
+``.devcontainer/<configuration>/devcontainer.json``. Linux jobs prefer these
+configurations and fall back to ``.devcontainer`` in the source checkout when a
+requested configuration is absent. The matrix ref can supply just additional
+environments; it does not need configurations already present in the source.
+Configurations shared by selected matrix refs must have identical JSON contents;
+conflicting definitions for the same configuration name cause an error.
+
 Manual dispatch requires `write access to the repository
 <https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow>`_.
 Matrix files control job commands, environments, and runner selection, including
