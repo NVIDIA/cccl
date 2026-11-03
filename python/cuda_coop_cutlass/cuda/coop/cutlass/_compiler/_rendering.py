@@ -105,13 +105,18 @@ def canonical_bundle_preamble_lines(lines: Iterable[str]) -> tuple[str, ...]:
 
 
 def bundle_include_lines(requests: Iterable[Any]) -> list[str]:
-    """Collect the preamble required by the registered request kinds."""
+    """Collect implementation headers and shared renderer preambles."""
 
     include_lines: list[str] = []
     for request in canonical_bundle_requests(requests):
         renderer = bundle_renderer_for(request)
         if renderer is not None:
             include_lines.extend(renderer.include_lines)
+        implementation = getattr(request, "implementation", None)
+        include_lines.extend(
+            f"#include <{header}>"
+            for header in getattr(implementation, "includes", ())
+        )
     return list(canonical_bundle_preamble_lines(include_lines))
 
 
