@@ -468,8 +468,7 @@ TEST_FUNC void test_float128_edge_cases()
 
 TEST_FUNC void test_float128_lround_edge_cases()
 {
-  using T  = __float128;
-  using ll = long long;
+  using T = __float128;
 
   // halfway cases round away from zero
   assert(cuda::std::lround(T(0.5)) == 1);
@@ -487,24 +486,24 @@ TEST_FUNC void test_float128_lround_edge_cases()
   assert(cuda::std::llround(-big) == -(1ll << 62) - 1);
 
   // values that round to the limits of the result type convert exactly
-  T ll_max = T(cuda::std::numeric_limits<ll>::max());
-  T ll_min = T(cuda::std::numeric_limits<ll>::min());
-  assert(cuda::std::llround(ll_max) == cuda::std::numeric_limits<ll>::max());
-  assert(cuda::std::llround(ll_min) == cuda::std::numeric_limits<ll>::min());
-  assert(cuda::std::llround(ll_max + T(0.25)) == cuda::std::numeric_limits<ll>::max());
-  assert(cuda::std::llround(ll_min - T(0.25)) == cuda::std::numeric_limits<ll>::min());
+  T max_val = T(cuda::std::numeric_limits<long long>::max());
+  T min_val = T(cuda::std::numeric_limits<long long>::min());
+  assert(cuda::std::llround(max_val) == cuda::std::numeric_limits<long long>::max());
+  assert(cuda::std::llround(min_val) == cuda::std::numeric_limits<long long>::min());
+  assert(cuda::std::llround(max_val + T(0.25)) == cuda::std::numeric_limits<long long>::max());
+  assert(cuda::std::llround(min_val - T(0.25)) == cuda::std::numeric_limits<long long>::min());
   assert(cuda::std::lround(T(cuda::std::numeric_limits<long>::max())) == cuda::std::numeric_limits<long>::max());
   assert(cuda::std::lround(T(cuda::std::numeric_limits<long>::min())) == cuda::std::numeric_limits<long>::min());
 
   // out of range values, infinity and NaN return min()
-  assert(cuda::std::llround(ll_max + T(0.5)) == cuda::std::numeric_limits<ll>::min());
-  assert(cuda::std::llround(ll_min - T(0.5)) == cuda::std::numeric_limits<ll>::min());
-  assert(cuda::std::llround(T(1ull << 63) * T(4)) == cuda::std::numeric_limits<ll>::min());
+  assert(cuda::std::llround(max_val + T(0.5)) == cuda::std::numeric_limits<long long>::min());
+  assert(cuda::std::llround(min_val - T(0.5)) == cuda::std::numeric_limits<long long>::min());
+  assert(cuda::std::llround(T(1ull << 63) * T(4)) == cuda::std::numeric_limits<long long>::min());
   T inf = cuda::std::numeric_limits<T>::infinity();
   T nan = cuda::std::numeric_limits<T>::quiet_NaN();
-  assert(cuda::std::llround(inf) == cuda::std::numeric_limits<ll>::min());
-  assert(cuda::std::llround(-inf) == cuda::std::numeric_limits<ll>::min());
-  assert(cuda::std::llround(nan) == cuda::std::numeric_limits<ll>::min());
+  assert(cuda::std::llround(inf) == cuda::std::numeric_limits<long long>::min());
+  assert(cuda::std::llround(-inf) == cuda::std::numeric_limits<long long>::min());
+  assert(cuda::std::llround(nan) == cuda::std::numeric_limits<long long>::min());
   assert(cuda::std::lround(inf) == cuda::std::numeric_limits<long>::min());
   assert(cuda::std::lround(nan) == cuda::std::numeric_limits<long>::min());
 }

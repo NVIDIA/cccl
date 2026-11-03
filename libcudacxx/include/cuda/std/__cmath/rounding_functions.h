@@ -65,11 +65,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 [[nodiscard]] _CCCL_API inline __float128 round(__float128 __x) noexcept;
 
 template <class _Integer>
-[[nodiscard]] _CCCL_API inline _Integer __lround_fp128(__float128 __x) noexcept
+[[nodiscard]] _CCCL_API _Integer __lround_fp128(__float128 __x) noexcept
 {
   const __float128 __r = ::cuda::std::round(__x);
   // -min() is a power of two, so the bounds are exact
-  const __float128 __bound = -static_cast<__float128>(numeric_limits<_Integer>::min());
+  constexpr __float128 __bound = -static_cast<__float128>(numeric_limits<_Integer>::min());
   if (__r >= -__bound && __r < __bound)
   {
     return static_cast<_Integer>(__r);
