@@ -239,6 +239,7 @@ jobs:
       }}
     needs: build-workflow
     permissions:
+      actions: read
       id-token: write
       contents: read
     strategy:
@@ -258,6 +259,7 @@ jobs:
       }}
     needs: build-workflow
     permissions:
+      actions: read
       id-token: write
       contents: read
     strategy:
@@ -277,6 +279,7 @@ jobs:
       }}
     needs: build-workflow
     permissions:
+      actions: read
       id-token: write
       contents: read
     strategy:
@@ -296,6 +299,7 @@ jobs:
       }}
     needs: build-workflow
     permissions:
+      actions: read
       id-token: write
       contents: read
     strategy:

@@ -89,6 +89,7 @@ jobs:
     if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys']) != '[]' }}
     needs: build-workflow
     permissions:
+      actions: read
       id-token: write
       contents: read
     strategy:
@@ -104,6 +105,7 @@ jobs:
     if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys']) != '[]' }}
     needs: build-workflow
     permissions:
+      actions: read
       id-token: write
       contents: read
     strategy:
@@ -119,6 +121,7 @@ jobs:
     if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys']) != '[]' }}
     needs: build-workflow
     permissions:
+      actions: read
       id-token: write
       contents: read
     strategy:
@@ -134,6 +137,7 @@ jobs:
     if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys']) != '[]' }}
     needs: build-workflow
     permissions:
+      actions: read
       id-token: write
       contents: read
     strategy:
