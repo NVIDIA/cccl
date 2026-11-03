@@ -16,10 +16,9 @@
 
 #include "cub_test_macros.h"
 
-inline constexpr int warp_threads       = 32;
-inline constexpr int num_blocks         = 3;
-inline constexpr int warps_per_block    = 4;
-inline constexpr int shuffle_sort_tiles = num_blocks * warps_per_block;
+inline constexpr int warp_threads    = 32;
+inline constexpr int num_blocks      = 3;
+inline constexpr int warps_per_block = 4;
 
 enum class input_pattern
 {
@@ -58,18 +57,17 @@ struct compare_keys
   }
 };
 
-template <typename Key, int Items>
-__global__ void shuffle_sort_kernel(const Key* input, Key* output, bool descending, bool with_storage)
+template <typename Key, int Items, int LogicalWarpThreads, bool AllLanesActive>
+__global__ void shuffle_sort_kernel(const Key* input, Key* output, bool descending, bool skip_odd_warps)
 {
-  using warp_shuffle_sort = cub::detail::WarpShuffleSort<Key, Items>;
-  constexpr int tile_size = warp_threads * Items;
+  using warp_shuffle_sort = cub::detail::WarpShuffleSort<Key, Items, LogicalWarpThreads, AllLanesActive>;
+  constexpr int tile_size = LogicalWarpThreads * Items;
   const int tid           = static_cast<int>(threadIdx.x);
-  const int warp          = tid / warp_threads;
-  const int lane          = tid % warp_threads;
-  const int tile          = static_cast<int>(blockIdx.x) * warps_per_block + warp;
+  const int warp          = tid / LogicalWarpThreads;
+  const int lane          = tid % LogicalWarpThreads;
+  const int tile          = static_cast<int>(blockIdx.x * blockDim.x) / LogicalWarpThreads + warp;
 
-  typename warp_shuffle_sort::TempStorage unused;
-  const warp_shuffle_sort warp_sort = with_storage ? warp_shuffle_sort{unused} : warp_shuffle_sort{};
+  const warp_shuffle_sort warp_sort{};
 
   Key keys[Items];
   const int thread_offset = tile * tile_size + lane * Items;
@@ -77,7 +75,10 @@ __global__ void shuffle_sort_kernel(const Key* input, Key* output, bool descendi
   {
     keys[slot] = input[thread_offset + slot];
   }
-  warp_sort.Sort(keys, compare_keys{descending});
+  if (AllLanesActive || !skip_odd_warps || tile % 2 == 0)
+  {
+    warp_sort.Sort(keys, compare_keys{descending});
+  }
   for (int slot = 0; slot < Items; ++slot)
   {
     output[thread_offset + slot] = keys[slot];
@@ -140,24 +141,37 @@ auto sorted_representations(const Key* keys, int size)
   return result;
 }
 
-using key_types = c2h::type_list<uint8_t, int, unsigned, int64_t, uint64_t, float, double, record_key>;
+using key_types          = c2h::type_list<uint8_t, int, unsigned, int64_t, uint64_t, float, double, record_key>;
+using logical_warp_sizes = c2h::enum_type_list<int, 1, 2, 8, 32>;
+using active_lane_modes  = c2h::enum_type_list<bool, true, false>;
 
-CUB_TEST(
-  "Warp shuffle warp_sort preserves blocked keys and permutations", "[warp_sort][warp][shuffle]", CUB_SMALL, key_types)
+CUB_TEST("Warp shuffle warp_sort preserves blocked keys and permutations",
+         "[warp_sort][warp][shuffle]",
+         CUB_SMALL,
+         key_types,
+         logical_warp_sizes,
+         active_lane_modes)
 {
-  using key_t             = c2h::get<0, TestType>;
-  constexpr int items     = WARP_SHUFFLE_ITEMS;
-  constexpr int tile_size = warp_threads * items;
-  const auto pattern      = GENERATE(
+  using key_t                        = c2h::get<0, TestType>;
+  constexpr int items                = WARP_SHUFFLE_ITEMS;
+  constexpr int logical_warp_threads = c2h::get<1, TestType>::value;
+  constexpr bool all_lanes_active    = c2h::get<2, TestType>::value;
+  constexpr int tile_size            = logical_warp_threads * items;
+  constexpr int block_size           = warp_threads * warps_per_block;
+  constexpr int shuffle_sort_tiles   = num_blocks * block_size / logical_warp_threads;
+  const auto pattern                 = GENERATE(
     input_pattern::random,
     input_pattern::ordered,
     input_pattern::reversed,
     input_pattern::duplicate_heavy,
     input_pattern::alternating_zeros);
-  const bool descending    = GENERATE(false, true);
-  constexpr int block_size = warp_threads * warps_per_block;
-  const bool with_storage  = GENERATE(false, true);
-  CAPTURE(items, pattern, descending, block_size, with_storage);
+  const bool descending = GENERATE(false, true);
+  bool skip_odd_warps   = false;
+  if constexpr (!all_lanes_active)
+  {
+    skip_odd_warps = GENERATE(false, true);
+  }
+  CAPTURE(items, logical_warp_threads, all_lanes_active, pattern, descending, skip_odd_warps);
 
   c2h::host_vector<key_t> input(shuffle_sort_tiles * tile_size);
   for (int tile = 0; tile < shuffle_sort_tiles; ++tile)
@@ -171,19 +185,22 @@ CUB_TEST(
   auto reference = input;
   for (int tile = 0; tile < shuffle_sort_tiles; ++tile)
   {
-    auto tile_start = reference.begin() + tile * tile_size;
-    auto tile_end   = reference.begin() + (tile + 1) * tile_size;
-    std::sort(tile_start, tile_end, compare_keys{descending});
+    if (!skip_odd_warps || tile % 2 == 0)
+    {
+      auto tile_start = reference.begin() + tile * tile_size;
+      auto tile_end   = reference.begin() + (tile + 1) * tile_size;
+      std::sort(tile_start, tile_end, compare_keys{descending});
+    }
   }
 
   const c2h::device_vector<key_t> device_input(input);
   c2h::device_vector<key_t> device_output(input.size());
 
-  shuffle_sort_kernel<key_t, items><<<num_blocks, block_size>>>(
+  shuffle_sort_kernel<key_t, items, logical_warp_threads, all_lanes_active><<<num_blocks, block_size>>>(
     thrust::raw_pointer_cast(device_input.data()),
     thrust::raw_pointer_cast(device_output.data()),
     descending,
-    with_storage);
+    skip_odd_warps);
   REQUIRE(cudaSuccess == cudaGetLastError());
   const c2h::host_vector<key_t> output(device_output);
 
@@ -196,7 +213,10 @@ CUB_TEST(
     // Preserve +-0 and extra fields of structures
     if constexpr (cuda::std::is_floating_point_v<key_t> || cuda::std::is_same_v<key_t, record_key>)
     {
-      REQUIRE(std::is_sorted(actual, actual + tile_size, compare_keys{descending}));
+      if (!skip_odd_warps || tile % 2 == 0)
+      {
+        REQUIRE(std::is_sorted(actual, actual + tile_size, compare_keys{descending}));
+      }
       REQUIRE(sorted_representations(actual, tile_size) == sorted_representations(expected, tile_size));
     }
     else
