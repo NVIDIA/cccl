@@ -204,7 +204,7 @@ class UnsupportedReasonCode(str, Enum):
 
 
 class GroupOperationSemantics(Protocol):
-    """Operation facts required by the common group-call model.
+    """Operation facts required by the group-call model.
 
     A primitive-family record supplies its semantic identity, result
     visibility, and whether it returns a value. Its concrete type also has

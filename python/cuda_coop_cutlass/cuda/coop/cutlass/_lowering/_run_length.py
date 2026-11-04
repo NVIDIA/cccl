@@ -93,7 +93,7 @@ def _make_run_length_plan(
     """Plan the call and its scratch ownership and reuse barrier.
 
     Keep run extent, decoded window extent, and offset binding distinct. The
-    CUTLASS form uses the common Uint32 total profile without relative-offset
+    CUTLASS form uses the Uint32 total profile without relative-offset
     outputs. Use caller storage controls or keep automatic allocation and a
     trailing reuse barrier.
     """
@@ -162,7 +162,7 @@ class _CubRunLengthRequest:
         """Check decoder templates, results, and storage contracts.
 
         Require numeric values, integer lengths/controls, a one-dimensional
-        block, and the common Uint32 total profile. Match Window or Into and
+        block, and the Uint32 total profile. Match Window or Into and
         every template argument. Check result dtype/extent and exact scratch
         with its reuse policy.
         """
@@ -190,7 +190,7 @@ class _CubRunLengthRequest:
             )
         if p.decoded_offset_dtype is not Uint32 or p.relative_offsets:
             raise ValueError(
-                "run_length_decode requires the common uint32 result profile"
+                "run_length_decode requires the uint32 result profile"
             )
         if (
             specialization.struct_name != "BlockRunLengthDecodeCoop"

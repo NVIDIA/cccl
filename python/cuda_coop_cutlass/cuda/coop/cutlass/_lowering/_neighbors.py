@@ -6,7 +6,7 @@
 
 This backend supports built-in subtraction for differences and inequality for
 discontinuity. Each call copies its input items into a generated C++ function.
-A wrapper struct from the common planner selects the CUB method for the
+A wrapper struct from the planner selects the CUB method for the
 direction or flag mode, partial tile, and outside-tile neighbors. Results go
 to separate value or Int32 flag arrays. Shared-memory scratch is recorded now
 and sized later from the exact CUB TempStorage layout.
@@ -273,7 +273,7 @@ def _render_neighbors(request):
     """Render copied values, boundary arguments, and typed outputs.
 
     Pass runtime counts as signed 64-bit arguments and embed static counts.
-    Both boundary slots are always in the C++ signature. The common planner's
+    Both boundary slots are always in the C++ signature. The planner's
     wrapper struct is chosen by the operation, mode, and partial, predecessor,
     and successor flags. It passes to CUB only the boundary slots whose flags
     are set. Partial wrappers check counts before they narrow them to int.

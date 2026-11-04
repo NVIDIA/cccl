@@ -5,7 +5,7 @@
 """Static types for ``cuda.coop.cutlass.reduce_batched``.
 
 The group must be a warp group, and binary_op accepts only built-in operator
-names. A common ThreadData input keeps its element type in the result. A CuTe
+names. A ThreadData input keeps its element type in the result. A CuTe
 register tensor or TensorSSA input gives ThreadData[Any], because its element
 type is known only when the kernel is traced. The type cannot show which of
 the ceil(B / W) result slots hold a batch total.
