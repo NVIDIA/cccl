@@ -4,7 +4,6 @@
 
 """Check load store examples against host results."""
 
-import cutlass
 import numpy as np
 import pytest
 
@@ -16,6 +15,7 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_load_store_example(items_per_thread):
     # cutlass-load-store-example-begin
+    import cutlass
     from cutlass import cute
 
     import cuda.coop.cutlass as coop
