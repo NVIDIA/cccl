@@ -77,6 +77,11 @@ jobs:
           echo "pr_number=${{ fromJSON(steps.get-pr-info.outputs.pr-info).number }}" | tee -a "${GITHUB_OUTPUT}"
           git fetch origin "${BASE_SHA}" -q
           echo "merge_base_sha=$(git merge-base "${BASE_SHA}" "${GITHUB_SHA}")" | tee -a "${GITHUB_OUTPUT}"
+      - name: Inspect compile-time benchmark inputs
+        id: inspect-compile-time-changes
+        env:
+          BASE_SHA: ${{ steps.export-pr-info.outputs.base_sha }}
+        run: python3 ci/inspect_compile_time_changes.py --refs "${BASE_SHA}" "${GITHUB_SHA}"
       - name: Build benchmark dispatch matrix
         id: build-bench-matrix
         run: |
@@ -102,6 +107,15 @@ jobs:
         run: |
           if [[ "${{ contains(github.event.head_commit.message, '[skip-compile-time-bench]') }}" == "true" ]]; then
             echo "Commit message contains [skip-compile-time-bench]; skipping compile-time benchmark dispatch."
+            {
+              echo "compile_time_enabled=false"
+              echo 'compile_time_matrix={"include":[]}'
+            } >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          if [[ "${{ steps.inspect-compile-time-changes.outputs.compile_time_changed }}" != "true" ]]; then
+            echo "Public headers and compile-time benchmark inputs are unchanged; skipping dispatch."
             {
               echo "compile_time_enabled=false"
               echo 'compile_time_matrix={"include":[]}'

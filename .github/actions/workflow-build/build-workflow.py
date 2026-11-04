@@ -62,6 +62,7 @@ import os
 import re
 import struct
 import sys
+from pathlib import Path
 
 import yaml
 
@@ -1060,21 +1061,22 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
     return workflow_dispatch_groups
 
 
-def find_workflow_line_number(workflow_name):
+def find_workflow_line_number(workflow_name, filename=None):
+    filename = filename or matrix_yaml["filename"]
     regex = re.compile(f"^( )*{workflow_name}:", re.IGNORECASE)
     line_number = 0
-    with open(matrix_yaml["filename"], "r") as f:
+    with open(filename, "r") as f:
         for line in f:
             line_number += 1
             if regex.match(line):
                 return line_number
     raise Exception(
-        f"Workflow '{workflow_name}' not found in {matrix_yaml['filename]']} (could not match regex: {regex})"
+        f"Workflow '{workflow_name}' not found in {filename} (could not match regex: {regex})"
     )
 
 
-def get_matrix_job_origin(matrix_job, workflow_name, workflow_location):
-    filename = matrix_yaml["filename"]
+def get_matrix_job_origin(matrix_job, workflow_name, workflow_location, filename=None):
+    filename = filename or matrix_yaml["filename"]
     original_matrix_job = json.dumps(matrix_job, indent=None, separators=(", ", ": "))
     original_matrix_job = original_matrix_job.replace('"', "")
     return {
@@ -1350,9 +1352,9 @@ def parse_workflow_matrix_jobs(workflow_name, filter_projects=None):
             workflow_location = (
                 f"{matrix_yaml['filename']}:{workflow_line_number} (job {idx + 1})"
             )
-            matrix_job["origin"] = get_matrix_job_origin(
-                matrix_job, workflow_name, workflow_location
-            )
+            matrix_job["origin"] = matrix_yaml.get("project_workflow_origins", {}).get(
+                (workflow_name, idx)
+            ) or get_matrix_job_origin(matrix_job, workflow_name, workflow_location)
 
     # Fill in default values, explode lists.
     matrix_jobs = preprocess_matrix_jobs(matrix_jobs, is_exclusion_matrix)
@@ -1548,6 +1550,53 @@ def print_devcontainer_info(args):
     print(json.dumps(devcontainer_json, indent=2))
 
 
+def load_project_workflows(matrix, matrix_file):
+    """Append optional project-owned workflow rows and retain their source locations."""
+    allowed_workflows = {
+        "pull_request",
+        "pull_request_lite",
+        "pull_request_fork",
+        "nightly",
+        "weekly",
+    }
+    origins = {}
+    for project, config in matrix["projects"].items():
+        workflows_file = config.get("workflows_file")
+        if workflows_file is None:
+            continue
+        path = Path(matrix_file).parent / workflows_file
+        if not path.exists():
+            continue
+        workflows = yaml.safe_load(path.read_text(encoding="utf-8"))
+        if not isinstance(workflows, dict):
+            raise ValueError(f"{path}: expected a mapping of workflows to job lists")
+        for workflow_name, jobs in workflows.items():
+            if (
+                workflow_name not in allowed_workflows
+                or workflow_name not in matrix["workflows"]
+            ):
+                raise ValueError(
+                    f"{path}: unsupported project workflow '{workflow_name}'"
+                )
+            if not isinstance(jobs, list):
+                raise ValueError(
+                    f"{path}: workflow '{workflow_name}' must contain a job list"
+                )
+            existing_jobs = matrix["workflows"][workflow_name] or []
+            line_number = find_workflow_line_number(workflow_name, str(path))
+            for idx, job in enumerate(jobs):
+                if not isinstance(job, dict) or job.get("project") != project:
+                    raise ValueError(
+                        f"{path}: every job must select only project '{project}'"
+                    )
+                location = f"{path}:{line_number} (job {idx + 1})"
+                origins[(workflow_name, len(existing_jobs) + idx)] = (
+                    get_matrix_job_origin(job, workflow_name, location, str(path))
+                )
+            matrix["workflows"][workflow_name] = existing_jobs + jobs
+    return origins
+
+
 def preprocess_matrix_yaml(matrix):
     # Numeric YAML keys lose the spelling of dotted versions.
     if not all(isinstance(version, str) for version in matrix["ctk_versions"]):
@@ -1616,6 +1665,9 @@ def main():
         matrix_yaml = yaml.safe_load(f)
         matrix_yaml = preprocess_matrix_yaml(matrix_yaml)
         matrix_yaml["filename"] = args.matrix_file
+        matrix_yaml["project_workflow_origins"] = load_project_workflows(
+            matrix_yaml, args.matrix_file
+        )
 
     if args.workflows:
         print_gha_workflow(args)

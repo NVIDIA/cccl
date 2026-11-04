@@ -68,6 +68,21 @@ Workflow types
    * - ``devcontainers``
      - Image-generation matrix. Entries catalog currently available devcontainer configs and map to no real jobs.
 
+Project workflow files
+----------------------
+
+A project may declare ``workflows_file`` in its ``projects`` entry. The path is
+relative to ``ci/matrix.yaml`` and contains a mapping of workflow names to job
+lists. Its rows are appended to the main matrix and must select that project
+with a scalar ``project`` value. Supported names are ``pull_request``,
+``pull_request_lite``, ``pull_request_fork``, ``nightly``, and ``weekly``;
+each must already exist in the main matrix.
+
+An absent file contributes no rows, allowing CI definitions to precede the
+package that supplies its jobs. Keep the file under a path owned by the project
+in ``ci/project_files_and_dependencies.yaml`` so its edits select that project's
+coverage. Shared job definitions and toolchain settings remain in the main matrix.
+
 Job entry format
 ----------------
 

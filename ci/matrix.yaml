@@ -864,6 +864,11 @@ jobs:
   test_py_coop_numba_mlir_compile: { name: "Compile cuda.coop Numba-CUDA-MLIR (GPU hidden)", gpu: false, needs: 'build', force_producer_ctk: "pybuild", invoke: { prefix: 'test', args: '-stage numba-mlir-compile'} }
   test_py_coop_numba_mlir_runtime: { name: "Test cuda.coop Numba-CUDA-MLIR (L4)", gpu: true, needs: 'build', force_producer_ctk: "pybuild", invoke: { prefix: 'test', args: '-stage numba-mlir-runtime'} }
 
+  # Standalone CUTLASS compiler tests build and qualify the runtime wheel.
+  test_py_coop_cutlass_host: { name: "Test cuda.coop.cutlass (host)", gpu: false, invoke: { prefix: 'test', args: '-stage host'} }
+  test_py_coop_cutlass_compile: { name: "Compile cuda.coop.cutlass (GPU hidden)", gpu: false, invoke: { prefix: 'test', args: '-stage compile'} }
+  test_py_coop_cutlass_runtime: { name: "Test cuda.coop.cutlass", gpu: true, needs: 'test_py_coop_cutlass_compile', invoke: { prefix: 'test', args: '-stage runtime'} }
+
   # Run jobs for 'target' project (ci/util/build_and_test_targets.sh):
   run_cpu: { gpu: false }
   run_gpu: { gpu: true  }
@@ -948,6 +953,9 @@ projects:
       test:  ['test_py_compute_minimal']
   cuda_coop_python:
     name: "Python (cuda.coop)"
+  cuda_coop_cutlass:
+    name: "Python (cuda.coop.cutlass)"
+    workflows_file: ../python/cuda_coop_cutlass/ci/matrix.yaml
   cccl_c_parallel:
     name: 'CCCL C Parallel'
     stds: [20]
