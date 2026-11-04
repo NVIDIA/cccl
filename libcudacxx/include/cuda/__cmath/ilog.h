@@ -29,6 +29,7 @@
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/array>
 #include <cuda/std/cstdint>
 
 #include <nv/target>
@@ -56,87 +57,30 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_cv_integer_v<_Tp>)
   return ::cuda::ilog2(__t) + !::cuda::std::has_single_bit(static_cast<_Up>(__t));
 }
 
-// Use non-template variables for the widths supported by the MSVC host compiler.
-_CCCL_GLOBAL_CONSTANT ::cuda::std::uint32_t __powers_of_10_32[10]{
-  10,
-  100,
-  1'000,
-  10'000,
-  100'000,
-  1'000'000,
-  10'000'000,
-  100'000'000,
-  1'000'000'000,
-  ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max()};
-
-_CCCL_GLOBAL_CONSTANT ::cuda::std::uint64_t __powers_of_10_64[20]{
-  10,
-  100,
-  1'000,
-  10'000,
-  100'000,
-  1'000'000,
-  10'000'000,
-  100'000'000,
-  1'000'000'000,
-  10'000'000'000,
-  100'000'000'000,
-  1'000'000'000'000,
-  10'000'000'000'000,
-  100'000'000'000'000,
-  1'000'000'000'000'000,
-  10'000'000'000'000'000,
-  100'000'000'000'000'000,
-  1'000'000'000'000'000'000,
-  10'000'000'000'000'000'000ull,
-  ::cuda::std::numeric_limits<::cuda::std::uint64_t>::max()};
-
-#if _CCCL_HAS_INT128()
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT __uint128_t __powers_of_10_128[39]{
-  10,
-  100,
-  1'000,
-  10'000,
-  100'000,
-  1'000'000,
-  10'000'000,
-  100'000'000,
-  1'000'000'000,
-  10'000'000'000,
-  100'000'000'000,
-  1'000'000'000'000,
-  10'000'000'000'000,
-  100'000'000'000'000,
-  1'000'000'000'000'000,
-  10'000'000'000'000'000,
-  100'000'000'000'000'000,
-  1'000'000'000'000'000'000,
-  10'000'000'000'000'000'000ull,
-  __uint128_t{10'000'000'000'000'000'000ull} * 10,
-  __uint128_t{10'000'000'000'000'000'000ull} * 100,
-  __uint128_t{10'000'000'000'000'000'000ull} * 1'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 10'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 100'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 10'000'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 100'000'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 10'000'000'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 100'000'000'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 10'000'000'000'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 100'000'000'000'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000'000'000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000'000'0000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 10'000'000'000'000'0000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 100'000'000'000'000'0000,
-  __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000'000'000'0000ull,
-  ::cuda::std::numeric_limits<__uint128_t>::max()};
-#endif // _CCCL_HAS_INT128()
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __make_powers_of_10() noexcept
+{
+  constexpr unsigned __count = ::cuda::std::numeric_limits<_Tp>::digits10 + 1;
+  ::cuda::std::array<_Tp, __count> __result{};
+  _Tp __power = 1;
+  for (unsigned __i = 0; __i != __count - 1; ++__i)
+  {
+    __power *= 10;
+    __result[__i] = __power;
+  }
+  __result[__count - 1] = ::cuda::std::numeric_limits<_Tp>::max();
+  return __result;
+}
+
+#if !_CCCL_DEVICE_COMPILATION()
+inline constexpr auto __powers_of_10_32 = ::cuda::__make_powers_of_10<::cuda::std::uint32_t>();
+inline constexpr auto __powers_of_10_64 = ::cuda::__make_powers_of_10<::cuda::std::uint64_t>();
+#  if _CCCL_HAS_INT128()
+inline constexpr auto __powers_of_10_128 = ::cuda::__make_powers_of_10<__uint128_t>();
+#  endif // _CCCL_HAS_INT128()
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL const auto& __powers_of_10() noexcept
+[[nodiscard]] _CCCL_HOST_API _CCCL_CONSTEVAL const auto& __powers_of_10_host() noexcept
 {
   if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint32_t))
   {
@@ -146,20 +90,20 @@ template <class _Tp>
   {
     return __powers_of_10_64;
   }
-#if _CCCL_HAS_INT128()
+#  if _CCCL_HAS_INT128()
   else
   {
-    return __powers_of_10_128<_Tp>;
+    return __powers_of_10_128;
   }
-#endif // _CCCL_HAS_INT128()
+#  endif // _CCCL_HAS_INT128()
 }
+#endif // !_CCCL_DEVICE_COMPILATION()
 
-template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr int __ilog10_generic(const _Tp __v) noexcept
+template <class _Tp, class _Table>
+[[nodiscard]] _CCCL_API constexpr int __ilog10_generic_impl(const _Tp __v, const _Table& __pows_of_10) noexcept
 {
   using _Up                           = ::cuda::std::make_unsigned_t<_Tp>;
   constexpr auto __reciprocal_log2_10 = 0.301029995663f; // 1 / log2(10)
-  constexpr const auto& __pows_of_10  = __powers_of_10<_Up>();
 
   const auto __log2   = ::cuda::ilog2(__v) * __reciprocal_log2_10;
   auto __log10_approx = static_cast<int>(__log2);
@@ -176,6 +120,16 @@ template <class _Tp>
     __log10_approx += static_cast<_Up>(__v) >= __pows_of_10[__log10_approx];
   }
   return __log10_approx;
+}
+
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr int __ilog10_generic(const _Tp __v) noexcept
+{
+  using _Up = ::cuda::std::make_unsigned_t<_Tp>;
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    (return ::cuda::__ilog10_generic_impl(__v, ::cuda::__powers_of_10_host<_Up>());),
+                    (constexpr auto __pows_of_10 = ::cuda::__make_powers_of_10<_Up>();
+                     return ::cuda::__ilog10_generic_impl(__v, __pows_of_10);))
 }
 
 #if _CCCL_CUDA_COMPILATION() && !_CCCL_TILE_COMPILATION()
