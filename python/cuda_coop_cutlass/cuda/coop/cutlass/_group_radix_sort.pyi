@@ -36,8 +36,8 @@ from ._thread_data import (
 )
 from ._typing import (
     BlockGroup,
-    CommonNumericScalar,
-    CommonThreadDataLike,
+    NumericScalar,
+    ReadableThreadDataLike,
     TempStorageLike,
     ThreadDataLike,
 )
@@ -58,7 +58,7 @@ _SortKey: TypeAlias = (
 )
 _KeyT = TypeVar("_KeyT", bound=_SortKey)
 _RankKeyT = TypeVar("_RankKeyT", bound=_IntegerKey)
-_ValueT = TypeVar("_ValueT", bound=CommonNumericScalar)
+_ValueT = TypeVar("_ValueT", bound=NumericScalar)
 _RegisterPayload: TypeAlias = CutlassTensorSample | CutlassTensorSSASample
 _BitBound: TypeAlias = (
     int
@@ -82,7 +82,7 @@ _PrefixOutput: TypeAlias = ThreadDataLike[np.int32] | ThreadDataLike[Int32]
 @overload
 def radix_sort_keys(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_KeyT],
+    keys: ReadableThreadDataLike[_KeyT],
     /,
     *,
     begin_bit: _BitBound = 0,
@@ -118,8 +118,8 @@ def radix_sort_keys(
 @overload
 def radix_sort_pairs(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_KeyT],
-    values: CommonThreadDataLike[_ValueT],
+    keys: ReadableThreadDataLike[_KeyT],
+    values: ReadableThreadDataLike[_ValueT],
     /,
     *,
     begin_bit: _BitBound = 0,
@@ -132,7 +132,7 @@ def radix_sort_pairs(
 def radix_sort_pairs(
     group: BlockGroup,
     keys: _RegisterPayload,
-    values: CommonThreadDataLike[_ValueT],
+    values: ReadableThreadDataLike[_ValueT],
     /,
     *,
     begin_bit: _BitBound = 0,
@@ -144,7 +144,7 @@ def radix_sort_pairs(
 @overload
 def radix_sort_pairs(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_KeyT],
+    keys: ReadableThreadDataLike[_KeyT],
     values: _RegisterPayload,
     /,
     *,
@@ -183,7 +183,7 @@ def radix_sort_pairs(
 @overload
 def radix_rank_keys(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_RankKeyT],
+    keys: ReadableThreadDataLike[_RankKeyT],
     /,
     *,
     begin_bit: int = 0,

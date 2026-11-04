@@ -114,7 +114,7 @@ BlockExchangeMode: TypeAlias = (
     ]
 )
 
-CommonShuffleMode: TypeAlias = Literal["down", "up"]
+ArrayShuffleMode: TypeAlias = Literal["down", "up"]
 
 ScalarShuffleMode: TypeAlias = Literal["offset", "rotate"]
 
@@ -159,12 +159,12 @@ class CompilerIntegerLike(CompilerScalarLike, Protocol):
 
 
 if not TYPE_CHECKING and numpy is None:
-    CommonNumericScalar: TypeAlias = int | float | CompilerScalarLike
+    NumericScalar: TypeAlias = int | float | CompilerScalarLike
     IntegerValue: TypeAlias = int | CompilerIntegerLike
     SignedIntegerScalar: TypeAlias = int | CompilerIntegerLike
     IntegralScalar: TypeAlias = SignedIntegerScalar
 else:
-    CommonNumericScalar: TypeAlias = (
+    NumericScalar: TypeAlias = (
         int
         | float
         | numpy.int8
@@ -193,16 +193,16 @@ else:
 
 ValidItems: TypeAlias = IntegerValue
 
-_CommonNumericT = TypeVar("_CommonNumericT", bound=CommonNumericScalar)
+_NumericT = TypeVar("_NumericT", bound=NumericScalar)
 
-CommonThreadDataLike = _ReadableThreadDataLike
+ReadableThreadDataLike = _ReadableThreadDataLike
 
 __all__ = [
-    "CommonThreadDataLike",
+    "ReadableThreadDataLike",
     "TempStorageLike",
     "ThreadDataLike",
     "WritableArrayLike",
-    "_CommonNumericT",
+    "_NumericT",
 ]
 
 

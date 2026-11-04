@@ -32,7 +32,7 @@ def run_example(items_per_thread=4):
     Each group loads a different count, then stores its full tile. The CPU
     comparison checks copied values, fill values and automatic tile origins
     within both physical warps. Sentinels outside the stored interval must
-    remain untouched. Common and qualified calls use the same check.
+    remain untouched.
     """
 
     group_tile = _WIDTH * items_per_thread

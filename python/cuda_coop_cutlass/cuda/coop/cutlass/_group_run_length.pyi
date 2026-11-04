@@ -24,21 +24,21 @@ from ._thread_data import (
 )
 from ._typing import (
     BlockGroup,
-    CommonNumericScalar,
-    CommonThreadDataLike,
     IntegralScalar,
+    NumericScalar,
+    ReadableThreadDataLike,
     TempStorageLike,
 )
 
-_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=NumericScalar)
 _LengthT = TypeVar("_LengthT", bound=IntegralScalar)
 _RegisterPayload: TypeAlias = CutlassTensorSample | CutlassTensorSSASample
 
 @overload
 def run_length_decode(
     group: BlockGroup,
-    run_values: CommonThreadDataLike[_ItemT],
-    run_lengths: CommonThreadDataLike[_LengthT] | _RegisterPayload,
+    run_values: ReadableThreadDataLike[_ItemT],
+    run_lengths: ReadableThreadDataLike[_LengthT] | _RegisterPayload,
     /,
     *,
     decoded_items_per_thread: int,
@@ -49,7 +49,7 @@ def run_length_decode(
 def run_length_decode(
     group: BlockGroup,
     run_values: _RegisterPayload,
-    run_lengths: CommonThreadDataLike[_LengthT] | _RegisterPayload,
+    run_lengths: ReadableThreadDataLike[_LengthT] | _RegisterPayload,
     /,
     *,
     decoded_items_per_thread: int,
@@ -58,8 +58,8 @@ def run_length_decode(
 ) -> ThreadData[Any]: ...
 def run_length_decode_into(
     group: BlockGroup,
-    run_values: CommonThreadDataLike[_ItemT] | _RegisterPayload,
-    run_lengths: CommonThreadDataLike[_LengthT] | _RegisterPayload,
+    run_values: ReadableThreadDataLike[_ItemT] | _RegisterPayload,
+    run_lengths: ReadableThreadDataLike[_LengthT] | _RegisterPayload,
     destination: CutlassTensorSample,
     /,
     *,

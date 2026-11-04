@@ -15,7 +15,6 @@ from cutlass.base_dsl.dsl import BaseDSL
 from cutlass.cute.runtime import make_ptr
 
 import cuda.coop.cutlass as coop
-import cuda.coop.cutlass as cutlass_coop
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
 
@@ -69,13 +68,12 @@ def test_release_rejects_unmodeled_extension_control_flow():
         _compile(kernel)
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,))
 @pytest.mark.parametrize("dtype", (None, np.int32, cutlass.Float32))
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
-def test_release_native_view(api, dtype, sharing):
+def test_release_native_view(dtype, sharing):
     @cute.kernel
     def kernel(memory: cute.Pointer, flag: cutlass.Int32):
-        storage = api.TempStorage(sharing=sharing)
+        storage = coop.TempStorage(sharing=sharing)
         storage.reserve(64, cutlass.Int32)
         view = storage.release(dtype)
         view[0] = view.element_type(7)
@@ -313,7 +311,7 @@ def test_release_region_validation(size, alignment, dtype, diagnostic):
 
 @pytest.mark.parametrize("operation", ("reserve", "release", "sync"))
 def test_release_requires_kernel_local_descriptor(operation):
-    storage = cutlass_coop.TempStorage(256, alignment=4)
+    storage = coop.TempStorage(256, alignment=4)
 
     @cute.kernel
     def kernel(memory: cute.Pointer, flag: cutlass.Int32):

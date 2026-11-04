@@ -10,23 +10,19 @@ import pytest
 from cutlass import cute
 
 import cuda.coop.cutlass as coop
-import cuda.coop.cutlass as cutlass_coop
 from tests.runtime_support import device_array
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,))
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
 @pytest.mark.parametrize("capacity", (None, 1024))
 @pytest.mark.parametrize("dtype", (None, np.int32, cutlass.Float64))
-def test_released_view_covers_existing_allocation(
-    api, sharing, capacity, dtype
-):
+def test_released_view_covers_existing_allocation(sharing, capacity, dtype):
     @cute.kernel
     def kernel(destination: cute.Pointer):
         thread, _, _ = cute.arch.thread_idx()
-        storage = api.TempStorage(capacity, sharing=sharing)
+        storage = coop.TempStorage(capacity, sharing=sharing)
         first = storage.reserve(65, cutlass.Int32)
         second = storage.reserve(64, cutlass.Float64, alignment=128)
         released = storage.release(dtype)

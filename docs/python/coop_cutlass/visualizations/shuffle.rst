@@ -80,10 +80,10 @@ so the undefined first result is never consumed. The first element of each
 block's destination tile is left unchanged; initialize those elements
 separately if they need a value.
 
-.. literalinclude:: ../../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_collective_examples.py
+.. literalinclude:: ../../../../python/cuda_coop_cutlass/tests/runtime/test_collective_documentation.py
    :language: python
-   :start-after: # qualified-rotate-example-begin
-   :end-before: # qualified-rotate-example-end
+   :start-after: # cutlass-rotate-example-begin
+   :end-before: # cutlass-rotate-example-end
    :dedent: 4
 
 See :func:`cuda.coop.cutlass.shuffle` and

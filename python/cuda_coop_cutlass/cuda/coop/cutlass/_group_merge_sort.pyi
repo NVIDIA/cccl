@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Type full and partial Merge Sort over common or register payloads.
+"""Type full and partial Merge Sort over ThreadData or CuTe register payloads.
 
 Overloads keep count and sentinel together and permit explicit scratch only
 for blocks. Pair results preserve each input dtype independently. Register
@@ -24,15 +24,15 @@ from ._thread_data import (
 )
 from ._typing import (
     BlockGroup,
-    CommonNumericScalar,
-    CommonThreadDataLike,
     ContextualInitialValue,
+    NumericScalar,
+    ReadableThreadDataLike,
     TempStorageLike,
     WarpGroup,
 )
 
-_KeyT = TypeVar("_KeyT", bound=CommonNumericScalar)
-_ValueT = TypeVar("_ValueT", bound=CommonNumericScalar)
+_KeyT = TypeVar("_KeyT", bound=NumericScalar)
+_ValueT = TypeVar("_ValueT", bound=NumericScalar)
 _RegisterPayload: TypeAlias = CutlassTensorSample | CutlassTensorSSASample
 _ValidItems: TypeAlias = (
     int
@@ -55,7 +55,7 @@ _ValidItems: TypeAlias = (
 @overload
 def merge_sort_keys(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_KeyT],
+    keys: ReadableThreadDataLike[_KeyT],
     /,
     *,
     descending: bool = False,
@@ -77,7 +77,7 @@ def merge_sort_keys(
 @overload
 def merge_sort_keys(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_KeyT],
+    keys: ReadableThreadDataLike[_KeyT],
     /,
     *,
     descending: bool = False,
@@ -93,13 +93,13 @@ def merge_sort_keys(
     *,
     descending: bool = False,
     valid_items: _ValidItems,
-    oob_default: CommonNumericScalar,
+    oob_default: NumericScalar,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadData[Any]: ...
 @overload
 def merge_sort_keys(
     group: WarpGroup,
-    keys: CommonThreadDataLike[_KeyT],
+    keys: ReadableThreadDataLike[_KeyT],
     /,
     *,
     descending: bool = False,
@@ -121,7 +121,7 @@ def merge_sort_keys(
 @overload
 def merge_sort_keys(
     group: WarpGroup,
-    keys: CommonThreadDataLike[_KeyT],
+    keys: ReadableThreadDataLike[_KeyT],
     /,
     *,
     descending: bool = False,
@@ -137,14 +137,14 @@ def merge_sort_keys(
     *,
     descending: bool = False,
     valid_items: _ValidItems,
-    oob_default: CommonNumericScalar,
+    oob_default: NumericScalar,
     temp_storage: None = None,
 ) -> ThreadData[Any]: ...
 @overload
 def merge_sort_pairs(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_KeyT],
-    values: CommonThreadDataLike[_ValueT],
+    keys: ReadableThreadDataLike[_KeyT],
+    values: ReadableThreadDataLike[_ValueT],
     /,
     *,
     descending: bool = False,
@@ -156,7 +156,7 @@ def merge_sort_pairs(
 def merge_sort_pairs(
     group: BlockGroup,
     keys: _RegisterPayload,
-    values: CommonThreadDataLike[_ValueT],
+    values: ReadableThreadDataLike[_ValueT],
     /,
     *,
     descending: bool = False,
@@ -167,7 +167,7 @@ def merge_sort_pairs(
 @overload
 def merge_sort_pairs(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_KeyT],
+    keys: ReadableThreadDataLike[_KeyT],
     values: _RegisterPayload,
     /,
     *,
@@ -191,8 +191,8 @@ def merge_sort_pairs(
 @overload
 def merge_sort_pairs(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_KeyT],
-    values: CommonThreadDataLike[_ValueT],
+    keys: ReadableThreadDataLike[_KeyT],
+    values: ReadableThreadDataLike[_ValueT],
     /,
     *,
     descending: bool = False,
@@ -204,18 +204,18 @@ def merge_sort_pairs(
 def merge_sort_pairs(
     group: BlockGroup,
     keys: _RegisterPayload,
-    values: CommonThreadDataLike[_ValueT],
+    values: ReadableThreadDataLike[_ValueT],
     /,
     *,
     descending: bool = False,
     valid_items: _ValidItems,
-    oob_default: CommonNumericScalar,
+    oob_default: NumericScalar,
     temp_storage: TempStorageLike | None = None,
 ) -> tuple[ThreadData[Any], ThreadData[_ValueT]]: ...
 @overload
 def merge_sort_pairs(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_KeyT],
+    keys: ReadableThreadDataLike[_KeyT],
     values: _RegisterPayload,
     /,
     *,
@@ -233,14 +233,14 @@ def merge_sort_pairs(
     *,
     descending: bool = False,
     valid_items: _ValidItems,
-    oob_default: CommonNumericScalar,
+    oob_default: NumericScalar,
     temp_storage: TempStorageLike | None = None,
 ) -> tuple[ThreadData[Any], ThreadData[Any]]: ...
 @overload
 def merge_sort_pairs(
     group: WarpGroup,
-    keys: CommonThreadDataLike[_KeyT],
-    values: CommonThreadDataLike[_ValueT],
+    keys: ReadableThreadDataLike[_KeyT],
+    values: ReadableThreadDataLike[_ValueT],
     /,
     *,
     descending: bool = False,
@@ -252,7 +252,7 @@ def merge_sort_pairs(
 def merge_sort_pairs(
     group: WarpGroup,
     keys: _RegisterPayload,
-    values: CommonThreadDataLike[_ValueT],
+    values: ReadableThreadDataLike[_ValueT],
     /,
     *,
     descending: bool = False,
@@ -263,7 +263,7 @@ def merge_sort_pairs(
 @overload
 def merge_sort_pairs(
     group: WarpGroup,
-    keys: CommonThreadDataLike[_KeyT],
+    keys: ReadableThreadDataLike[_KeyT],
     values: _RegisterPayload,
     /,
     *,
@@ -287,8 +287,8 @@ def merge_sort_pairs(
 @overload
 def merge_sort_pairs(
     group: WarpGroup,
-    keys: CommonThreadDataLike[_KeyT],
-    values: CommonThreadDataLike[_ValueT],
+    keys: ReadableThreadDataLike[_KeyT],
+    values: ReadableThreadDataLike[_ValueT],
     /,
     *,
     descending: bool = False,
@@ -300,18 +300,18 @@ def merge_sort_pairs(
 def merge_sort_pairs(
     group: WarpGroup,
     keys: _RegisterPayload,
-    values: CommonThreadDataLike[_ValueT],
+    values: ReadableThreadDataLike[_ValueT],
     /,
     *,
     descending: bool = False,
     valid_items: _ValidItems,
-    oob_default: CommonNumericScalar,
+    oob_default: NumericScalar,
     temp_storage: None = None,
 ) -> tuple[ThreadData[Any], ThreadData[_ValueT]]: ...
 @overload
 def merge_sort_pairs(
     group: WarpGroup,
-    keys: CommonThreadDataLike[_KeyT],
+    keys: ReadableThreadDataLike[_KeyT],
     values: _RegisterPayload,
     /,
     *,
@@ -329,6 +329,6 @@ def merge_sort_pairs(
     *,
     descending: bool = False,
     valid_items: _ValidItems,
-    oob_default: CommonNumericScalar,
+    oob_default: NumericScalar,
     temp_storage: None = None,
 ) -> tuple[ThreadData[Any], ThreadData[Any]]: ...

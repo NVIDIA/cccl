@@ -24,7 +24,6 @@ from cutlass.base_dsl.common import DSLRuntimeError
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 
 import cuda.coop.cutlass as coop
-import cuda.coop.cutlass as cutlass_coop
 from tests.runtime_support import (
     NUMPY_DTYPES,
     cutlass_dtype,
@@ -60,7 +59,6 @@ class _Readonly:
 
 
 def _run(
-    api=coop,
     *,
     dtype=np.int32,
     operation="adjacent_difference",
@@ -132,8 +130,8 @@ def _run(
         originals = cute.recast_tensor(
             cute.make_tensor(original, cute.make_layout(size)), value_type
         )
-        group = api.this_block()
-        values = api.ThreadData(
+        group = coop.this_block()
+        values = coop.ThreadData(
             items_per_thread,
             dtype=None if inferred else value_type,
             alignment=alignment,
@@ -147,7 +145,7 @@ def _run(
         else:
             inputs = values
         if cutlass.const_expr(reuse):
-            storage = api.TempStorage(
+            storage = coop.TempStorage(
                 size_in_bytes=capacity,
                 alignment=alignment,
                 sharing=sharing,
@@ -155,14 +153,14 @@ def _run(
             )
         else:
             storage = None
-        first = api.ThreadData(items_per_thread, dtype=result_type)
-        other = api.ThreadData(items_per_thread, dtype=result_type)
+        first = coop.ThreadData(items_per_thread, dtype=result_type)
+        other = coop.ThreadData(items_per_thread, dtype=result_type)
         for item in cutlass.range_constexpr(items_per_thread):
             first[item] = result_type(0)
             other[item] = result_type(0)
         for iteration in range(repeats):
             if cutlass.const_expr(operation == "adjacent_difference"):
-                first = api.adjacent_difference(
+                first = coop.adjacent_difference(
                     group,
                     inputs,
                     direction=mode,
@@ -172,7 +170,7 @@ def _run(
                     temp_storage=storage,
                 )
             elif cutlass.const_expr(mode == "heads_and_tails"):
-                first, other = api.discontinuity(
+                first, other = coop.discontinuity(
                     group,
                     inputs,
                     mode=mode,
@@ -181,7 +179,7 @@ def _run(
                     temp_storage=storage,
                 )
             else:
-                first = api.discontinuity(
+                first = coop.discontinuity(
                     group,
                     inputs,
                     mode=mode,
@@ -284,7 +282,6 @@ def _run(
                 )
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("dtype", NUMPY_DTYPES)
 @pytest.mark.parametrize(
     "operation,mode",
@@ -297,9 +294,8 @@ def _run(
     ],
 )
 @pytest.mark.parametrize("items_per_thread", (1, 4))
-def test_numeric_results(api, dtype, operation, mode, items_per_thread):
+def test_numeric_results(dtype, operation, mode, items_per_thread):
     _run(
-        api,
         dtype=dtype,
         operation=operation,
         mode=mode,
@@ -334,18 +330,16 @@ def test_boundary(operation, mode):
     _run(operation=operation, mode=mode, boundary=True)
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize(
     "operation,mode",
     [("adjacent_difference", "left"), ("discontinuity", "heads_and_tails")],
 )
-def test_readonly_inference(api, operation, mode):
-    _run(api, operation=operation, mode=mode, payload="readonly", inferred=True)
+def test_readonly_inference(operation, mode):
+    _run(operation=operation, mode=mode, payload="readonly", inferred=True)
 
 
-def test_qualified_tensor():
+def test_tensor():
     _run(
-        cutlass_coop,
         payload="tensor",
         operation="discontinuity",
         mode="heads_and_tails",
@@ -430,8 +424,8 @@ def test_runtime_count_traps(count):
         "tests = types.ModuleType('tests')\n"
         f"tests.__path__ = {[str(TESTS_ROOT)]!r}\n"
         "sys.modules['tests'] = tests\n"
-        "import cuda.coop.cutlass as cutlass_coop\n"
-        f"assert cutlass_coop.__file__ == {cutlass_coop.__file__!r}\n"
+        "import cuda.coop.cutlass as coop\n"
+        f"assert coop.__file__ == {coop.__file__!r}\n"
         "from tests.runtime.test_neighbors import _run\n"
         + f"_run(count={count})\n"
     )

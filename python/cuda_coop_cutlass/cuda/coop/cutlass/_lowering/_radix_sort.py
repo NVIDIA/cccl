@@ -686,7 +686,7 @@ def provider_radix_sort(
 ):
     """Resolve numeric Sort operands and the omitted end-bit default.
 
-    The qualified Sort entry point calls this during tracing after checking
+    The Sort entry point calls this during tracing after checking
     the public argument form. It preserves scalar versus payload input so
     the generated result has the same form, even for a one-item payload.
 
@@ -774,7 +774,7 @@ def provider_radix_rank(
 ):
     """Resolve integer keys and validate the optional writable prefix.
 
-    The qualified Rank entry point calls this during tracing. The optional
+    The Rank entry point calls this during tracing. The optional
     prefix is a second output: it holds bin offsets needed by radix passes
     and does not replace the returned rank of each input key.
 

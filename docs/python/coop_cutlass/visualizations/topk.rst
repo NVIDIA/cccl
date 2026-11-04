@@ -93,7 +93,7 @@ output order or stable ties, and demonstrates register-payload conversions.
    :end-before: # docs: end cutlass-topk
    :dedent: 4
 
-Common TopK calls accept numeric ``ThreadData`` payloads in blocked order.
+TopK calls accept numeric ``ThreadData`` payloads in blocked order.
 All four variants accept ``ThreadData`` and CuTe register payloads. They
 preserve inputs and return fresh payloads. See :ref:`the Programming Guide
 <coop-cutlass-topk>` and :doc:`../api` for counts, dtypes, and scratch rules.

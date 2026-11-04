@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Run the qualified block and partial-warp scan documentation examples.
+"""Run the block and partial-warp scan documentation examples.
 
 Host checks distinguish seeded prefixes from the unseeded warp aggregate,
 check block sums and running maxima, and preserve undefined-lane sentinels.
@@ -24,7 +24,7 @@ def test_partial_warp_scan_example():
     the seed, although the exclusive results start from seven.
     """
 
-    # qualified-exclusive-scan-example-begin
+    # cutlass-exclusive-scan-example-begin
     import operator
 
     from cutlass import cute
@@ -63,7 +63,7 @@ def test_partial_warp_scan_example():
     ):
         scan_prefix(source, destination, aggregates).launch(grid=1, block=64)
 
-    # qualified-exclusive-scan-example-end
+    # cutlass-exclusive-scan-example-end
 
     values = np.arange(64, dtype=np.int32)
     observed = np.full_like(values, -101)
@@ -87,7 +87,7 @@ def test_partial_warp_scan_example():
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_scan_example(items_per_thread):
-    # qualified-scan-example-begin
+    # cutlass-scan-example-begin
     import cutlass
     from cutlass import cute
 
@@ -131,7 +131,7 @@ def test_scan_example(items_per_thread):
             source, seeded, maxima, exclusive, inclusive, items_per_thread
         ).launch(grid=1, block=64)
 
-    # qualified-scan-example-end
+    # cutlass-scan-example-end
     values = (np.arange(64 * items_per_thread, dtype=np.int32) * 13) % 31 - 15
     seeded, maxima, exclusive, inclusive = (
         np.zeros_like(values) for _ in range(4)

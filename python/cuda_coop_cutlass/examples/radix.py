@@ -25,23 +25,17 @@ def _check(result):
     return result[1] if len(result) == 2 else result[1:]
 
 
-def run_example(api="common", items_per_thread=2):
+def run_example(items_per_thread=2):
     """Check full-key Sort, stable signed-digit pairs, ranks, and prefixes.
 
     The host flips the sign bit before extracting the high digit, then uses a
     stable descending order to track ties by their original positions. Rank
     must return that permutation's inverse at the original input positions.
-    The qualified path stores the striped pair-sort results with a striped
-    Store and counts greater digits for each bin prefix. Both paths check
-    that the input keys are unchanged.
+    Striped pair-sort results use a striped Store. Bin prefixes count
+    greater digits, and a separate output checks that input keys are unchanged.
     """
     tile_size = 64 * items_per_thread
-    if api == "common":
-        import cuda.coop.cutlass as coop
-    elif api == "qualified":
-        import cuda.coop.cutlass as coop
-    else:
-        raise ValueError("api must be 'common' or 'qualified'")
+    import cuda.coop.cutlass as coop
 
     # docs: start cutlass-radix
     @cute.kernel
@@ -65,52 +59,30 @@ def run_example(api="common", items_per_thread=2):
         scratch = coop.TempStorage(alignment=32, auto_sync=True)
         ordered = coop.radix_sort_keys(block, keys, temp_storage=scratch)
         coop.store(block, full_keys, ordered)
-        if cutlass.const_expr(api == "qualified"):
-            pair_keys, pair_positions = coop.radix_sort_pairs(
-                block,
-                keys,
-                positions,
-                begin_bit=28,
-                end_bit=32,
-                descending=True,
-                temp_storage=scratch,
-                blocked_to_striped=True,
-            )
-            # Match the Store layout to the striped result registers.
-            coop.store(block, digit_keys, pair_keys, algorithm="striped")
-            coop.store(
-                block, digit_positions, pair_positions, algorithm="striped"
-            )
-            prefixes = coop.ThreadData(items_per_thread=1)
-            ranks = coop.radix_rank_keys(
-                block,
-                keys,
-                begin_bit=28,
-                radix_bits=4,
-                descending=True,
-                exclusive_digit_prefix=prefixes,
-            )
-            # Only the first 16 bin slots are defined for this four-bit digit.
-            coop.store(block, prefixes_out, prefixes, valid_items=_BINS)
-        else:
-            pair_keys, pair_positions = coop.radix_sort_pairs(
-                block,
-                keys,
-                positions,
-                begin_bit=28,
-                end_bit=32,
-                descending=True,
-                temp_storage=scratch,
-            )
-            coop.store(block, digit_keys, pair_keys)
-            coop.store(block, digit_positions, pair_positions)
-            ranks = coop.radix_rank_keys(
-                block,
-                keys,
-                begin_bit=28,
-                radix_bits=4,
-                descending=True,
-            )
+        pair_keys, pair_positions = coop.radix_sort_pairs(
+            block,
+            keys,
+            positions,
+            begin_bit=28,
+            end_bit=32,
+            descending=True,
+            temp_storage=scratch,
+            blocked_to_striped=True,
+        )
+        # Match the Store layout to the striped result registers.
+        coop.store(block, digit_keys, pair_keys, algorithm="striped")
+        coop.store(block, digit_positions, pair_positions, algorithm="striped")
+        prefixes = coop.ThreadData(items_per_thread=1)
+        ranks = coop.radix_rank_keys(
+            block,
+            keys,
+            begin_bit=28,
+            radix_bits=4,
+            descending=True,
+            exclusive_digit_prefix=prefixes,
+        )
+        # Only the first 16 bin slots are defined for this four-bit digit.
+        coop.store(block, prefixes_out, prefixes, valid_items=_BINS)
         coop.store(block, ranks_out, ranks)
         coop.store(block, original_keys, keys)
 
@@ -185,14 +157,11 @@ def run_example(api="common", items_per_thread=2):
     np.testing.assert_array_equal(positions, order)
     np.testing.assert_array_equal(ranks, expected_ranks)
     np.testing.assert_array_equal(original_keys, source)
-    if api == "qualified":
-        expected_prefixes = np.array(
-            [np.count_nonzero(digit > bin_index) for bin_index in range(_BINS)],
-            dtype=np.int32,
-        )
-        np.testing.assert_array_equal(prefixes, expected_prefixes)
-    else:
-        np.testing.assert_array_equal(prefixes, -999)
+    expected_prefixes = np.array(
+        [np.count_nonzero(digit > bin_index) for bin_index in range(_BINS)],
+        dtype=np.int32,
+    )
+    np.testing.assert_array_equal(prefixes, expected_prefixes)
     return outputs
 
 

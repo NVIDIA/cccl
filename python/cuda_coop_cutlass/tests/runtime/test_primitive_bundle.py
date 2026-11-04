@@ -16,15 +16,14 @@ import numpy as np
 import pytest
 from cutlass import cute
 
-import cuda.coop.cutlass as cutlass_coop
+import cuda.coop.cutlass as coop
 from tests.runtime_support import device_array, values_for
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("items_per_thread", (1, 4))
-def test_mixed_primitives(api, items_per_thread):
+def test_mixed_primitives(items_per_thread):
     """Check both reductions and the later Store from the same loaded payload.
 
     The block root records both results. The prefix result uses the first
@@ -39,25 +38,25 @@ def test_mixed_primitives(api, items_per_thread):
         observed: cute.Pointer,
         items_per_thread: cutlass.Constexpr,
     ):
-        group = api.this_block()
+        group = coop.this_block()
         thread = group.rank()
         outputs = cute.make_tensor(observed, cute.make_layout(2))
-        storage = api.TempStorage(sharing="shared", auto_sync=True)
-        payload = api.load(
+        storage = coop.TempStorage(sharing="shared", auto_sync=True)
+        payload = coop.load(
             group,
             source,
             items_per_thread=items_per_thread,
             algorithm="transpose",
             temp_storage=storage,
         )
-        total = api.sum(group, payload, temp_storage=storage)
-        prefix = api.sum(
+        total = coop.sum(group, payload, temp_storage=storage)
+        prefix = coop.sum(
             group, payload[0], valid_items=45, temp_storage=storage
         )
         if thread == 0:
             outputs[0] = total
             outputs[1] = prefix
-        api.store(
+        coop.store(
             group, copied, payload, algorithm="transpose", temp_storage=storage
         )
 
@@ -88,9 +87,8 @@ def test_mixed_primitives(api, items_per_thread):
     ].sum(dtype=np.int32)
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("items_per_thread", (1, 4))
-def test_sort_scan_shared_storage(api, items_per_thread):
+def test_sort_scan_shared_storage(items_per_thread):
     """Share one allocation across Load, MergeSort, Scan, and Store.
 
     Four runtime iterations process independent tiles with automatic reuse
@@ -105,10 +103,10 @@ def test_sort_scan_shared_storage(api, items_per_thread):
         tiles: cutlass.Int32,
         items_per_thread: cutlass.Constexpr,
     ):
-        group = api.this_block()
-        storage = api.TempStorage(alignment=128, auto_sync=True)
+        group = coop.this_block()
+        storage = coop.TempStorage(alignment=128, auto_sync=True)
         for tile in range(tiles):
-            keys = api.load(
+            keys = coop.load(
                 group,
                 source,
                 items_per_thread=items_per_thread,
@@ -116,9 +114,9 @@ def test_sort_scan_shared_storage(api, items_per_thread):
                 offset=tile * 64 * items_per_thread,
                 temp_storage=storage,
             )
-            ordered = api.merge_sort_keys(group, keys, temp_storage=storage)
-            prefixes = api.exclusive_sum(group, ordered, temp_storage=storage)
-            api.store(
+            ordered = coop.merge_sort_keys(group, keys, temp_storage=storage)
+            prefixes = coop.exclusive_sum(group, ordered, temp_storage=storage)
+            coop.store(
                 group,
                 output,
                 prefixes,

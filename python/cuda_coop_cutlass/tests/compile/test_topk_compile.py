@@ -19,14 +19,13 @@ from cutlass.base_dsl.common import DSLRuntimeError
 from cutlass.base_dsl.compiler import GPUArch
 from cutlass.cute.runtime import make_ptr
 
-import cuda.coop.cutlass as cutlass_coop
+import cuda.coop.cutlass as coop
 from cuda.coop.cutlass._compiler._types import ALL_PROVIDER_TYPES
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
 
 
 def _compile(
-    api=cutlass_coop,
     *,
     mode="min",
     pairs=False,
@@ -43,7 +42,7 @@ def _compile(
     by the CUTLASS implementation. The null pointer is never used at runtime.
     """
 
-    operation = getattr(api, f"topk_{mode}_{'pairs' if pairs else 'keys'}")
+    operation = getattr(coop, f"topk_{mode}_{'pairs' if pairs else 'keys'}")
 
     @cute.kernel
     def kernel(
@@ -51,14 +50,14 @@ def _compile(
         count: cutlass.Int64,
         items_per_thread: cutlass.Constexpr,
     ):
-        keys = api.ThreadData(items_per_thread, dtype=dtype)
-        values = api.ThreadData(
+        keys = coop.ThreadData(items_per_thread, dtype=dtype)
+        values = coop.ThreadData(
             items_per_thread=1 if bad == "extent" else 2, dtype=cutlass.Float64
         )
         keys[0], keys[1] = dtype(7), dtype(3)
         for item in cutlass.range_constexpr(values.items_per_thread):
             values[item] = cutlass.Float64(item)
-        group = api.this_warp() if bad == "group" else api.this_block()
+        group = coop.this_warp() if bad == "group" else coop.this_block()
         k = count if static_k is None else static_k
         valid = count if partial else None
         if cutlass.const_expr(bad == "uint64"):
@@ -97,12 +96,11 @@ def _compile(
     )
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("mode", ("min", "max"))
 @pytest.mark.parametrize("pairs", (False, True))
 @pytest.mark.parametrize("partial", (False, True))
-def test_entrypoints(api, mode, pairs, partial):
-    assert _compile(api, mode=mode, pairs=pairs, partial=partial) is not None
+def test_entrypoints(mode, pairs, partial):
+    assert _compile(mode=mode, pairs=pairs, partial=partial) is not None
 
 
 @pytest.mark.parametrize("dtype", tuple(ALL_PROVIDER_TYPES))
@@ -146,5 +144,5 @@ def test_multidimensional_block_rejected():
         _compile(block=(8, 4, 2))
 
 
-def test_qualified_register_conversion():
+def test_register_conversion():
     assert _compile(bad="register") is not None

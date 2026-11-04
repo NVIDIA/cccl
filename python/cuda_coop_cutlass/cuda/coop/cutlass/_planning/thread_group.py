@@ -171,8 +171,8 @@ class ThreadHierarchy:
     Use :func:`cuda.coop.cutlass.this_block`,
     :func:`cuda.coop.cutlass.this_warp`, or another group factory in a kernel
     to obtain a :class:`cuda.coop.cutlass.ThreadGroup`.
-    See :ref:`thread groups <coop-common-groups>` for the hierarchy and
-    :ref:`ranks and sizes <coop-common-groups>` for runtime queries.
+    See :ref:`thread groups <coop-concepts-groups>` for the hierarchy and
+    :ref:`ranks and sizes <coop-concepts-groups>` for runtime queries.
     The corresponding C++ abstraction is
     :ref:`cuda::hierarchy <cccl-runtime-hierarchy>`.
 
@@ -256,7 +256,7 @@ class ThreadHierarchy:
         """Return a descriptor for the compiler's current kernel launch.
 
         Equivalent to ``ThreadHierarchy()``. See
-        :ref:`thread groups <coop-common-groups>`.
+        :ref:`thread groups <coop-concepts-groups>`.
         """
 
         return cls()

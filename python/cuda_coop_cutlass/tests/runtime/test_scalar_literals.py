@@ -14,32 +14,31 @@ import numpy as np
 import pytest
 from cutlass import cute
 
-import cuda.coop.cutlass as cutlass_coop
+import cuda.coop.cutlass as coop
 from tests.runtime_support import device_array
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("dtype", (np.float32, np.float64))
 @pytest.mark.parametrize("items_per_thread", (1, 4))
-def test_integer_default_and_seed(api, dtype, items_per_thread):
+def test_integer_default_and_seed(dtype, items_per_thread):
     @cute.kernel
     def kernel(
         source: cute.Pointer,
         output: cute.Pointer,
         items_per_thread: cutlass.Constexpr,
     ):
-        group = api.this_block()
-        values = api.load(
+        group = coop.this_block()
+        values = coop.load(
             group,
             source,
             items_per_thread=items_per_thread,
             valid_items=64 * items_per_thread - 13,
             oob_default=0,
         )
-        scanned = api.exclusive_scan(group, values, initial_value=2)
-        api.store(group, output, scanned)
+        scanned = coop.exclusive_scan(group, values, initial_value=2)
+        coop.store(group, output, scanned)
 
     @cute.jit
     def launch(

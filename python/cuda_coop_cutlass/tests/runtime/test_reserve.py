@@ -11,14 +11,12 @@ from cutlass import cute
 from cutlass.memory import SmemAllocator
 
 import cuda.coop.cutlass as coop
-import cuda.coop.cutlass as cutlass_coop
 from tests.runtime_support import device_array
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
-def test_shared_reservations_alias_across_native_and_cooperative_phases(api):
+def test_shared_reservations_alias_across_native_and_cooperative_phases():
     """Reuse one region while another descriptor and native arrays stay live."""
 
     @cute.jit
@@ -28,13 +26,13 @@ def test_shared_reservations_alias_across_native_and_cooperative_phases(api):
 
     @cute.kernel
     def kernel(destination: cute.Pointer):
-        group = api.this_block()
+        group = coop.this_block()
         thread = group.rank()
-        scratch = api.TempStorage(512, sharing="shared")
+        scratch = coop.TempStorage(512, sharing="shared")
         alias = scratch
         first = scratch.reserve(128, cutlass.Int32, alignment=64)
         second = alias.reserve(64, cutlass.Float64, alignment=128)
-        persistent = api.TempStorage().reserve(64, cutlass.Int32, alignment=32)
+        persistent = coop.TempStorage().reserve(64, cutlass.Int32, alignment=32)
         native = SmemAllocator().allocate_tensor(
             cutlass.Int32, cute.make_layout(64), byte_alignment=64
         )
@@ -45,7 +43,7 @@ def test_shared_reservations_alias_across_native_and_cooperative_phases(api):
         scratch.sync()
         output[thread] = cutlass.Int64(first[63 - thread])
         scratch.sync()
-        total = api.sum(group, cutlass.Int32(thread + 1), temp_storage=alias)
+        total = coop.sum(group, cutlass.Int32(thread + 1), temp_storage=alias)
         scratch.sync()
         second[thread] = cutlass.Float64(2 * thread + 17)
         scratch.sync()

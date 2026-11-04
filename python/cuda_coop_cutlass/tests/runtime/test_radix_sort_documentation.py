@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Check qualified radix sort examples against host results."""
+"""Check radix sort examples against host results."""
 
 import numpy as np
 import pytest
@@ -14,7 +14,7 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_radix_sort_example(items_per_thread):
-    # qualified-radix-sort-example-begin
+    # cutlass-radix-sort-example-begin
     import cutlass
     from cutlass import cute
 
@@ -61,7 +61,7 @@ def test_radix_sort_example(items_per_thread):
             source, ascending, descending, positions, items_per_thread
         ).launch(grid=1, block=64)
 
-    # qualified-radix-sort-example-end
+    # cutlass-radix-sort-example-end
     values = (np.arange(64 * items_per_thread, dtype=np.int32) * 13) % 127
     ascending, descending, positions = (np.zeros_like(values) for _ in range(3))
     with (

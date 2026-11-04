@@ -16,7 +16,7 @@ from cutlass import cute
 from cutlass.base_dsl.compiler import GPUArch
 from cutlass.cute.runtime import make_ptr
 
-import cuda.coop.cutlass as cutlass_coop
+import cuda.coop.cutlass as coop
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
 
@@ -25,8 +25,7 @@ def _pointer():
     return make_ptr(cutlass.Uint64, 0, cute.AddressSpace.gmem, assumed_align=16)
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
-def test_hierarchy_compile(api):
+def test_hierarchy_compile():
     """Compile mixed hierarchy queries, including nonexhaustive mappings.
 
     Non-power-of-two lane groups and mapped warp groups exercise query support
@@ -38,10 +37,10 @@ def test_hierarchy_compile(api):
     @cute.kernel
     def kernel(memory: cute.Pointer):
         output = cute.make_tensor(memory, cute.make_layout(32))
-        thread = api.this_thread()
-        warp = api.this_warp()
-        block = api.this_block()
-        grid = api.this_grid()
+        thread = coop.this_thread()
+        warp = coop.this_warp()
+        block = coop.this_block()
+        grid = coop.this_grid()
         lanes = warp.group_by(3, exhaustive=False)
         warps = block.group_by(2, exhaustive=False)
         assert isinstance(block.rank(), cutlass.Uint32)
@@ -69,7 +68,7 @@ def test_hierarchy_compile(api):
 def test_missing_exact_block(method):
     @cute.kernel
     def kernel(memory: cute.Pointer):
-        value = getattr(cutlass_coop.this_block(), method)()
+        value = getattr(coop.this_block(), method)()
         if cutlass.const_expr(method != "sync"):
             cute.make_tensor(memory, cute.make_layout(1))[0] = value
 
@@ -87,9 +86,9 @@ def test_unsupported_synchronization(group_kind, method):
     @cute.kernel
     def kernel():
         if cutlass.const_expr(group_kind == "grid"):
-            group = cutlass_coop.this_grid()
+            group = coop.this_grid()
         else:
-            group = cutlass_coop.this_block().group_by(2)
+            group = coop.this_block().group_by(2)
         getattr(group, method)()
 
     @cute.jit
@@ -106,7 +105,7 @@ def test_unsupported_synchronization(group_kind, method):
 def test_query_rejects_noninteger(dtype):
     @cute.kernel
     def kernel():
-        cutlass_coop.this_block().rank_as(dtype)
+        coop.this_block().rank_as(dtype)
 
     @cute.jit
     def launch():
@@ -119,7 +118,7 @@ def test_query_rejects_noninteger(dtype):
 def test_higher_mapped_query_rejected():
     @cute.kernel
     def kernel():
-        cutlass_coop.this_warp().group_by(8).rank("block")
+        coop.this_warp().group_by(8).rank("block")
 
     @cute.jit
     def launch():

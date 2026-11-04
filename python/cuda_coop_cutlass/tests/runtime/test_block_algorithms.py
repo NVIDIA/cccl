@@ -23,7 +23,7 @@ from cutlass import cute
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 from cutlass.memory import SmemAllocator
 
-import cuda.coop.cutlass as cutlass_coop
+import cuda.coop.cutlass as coop
 from tests.runtime_support import device_array, values_for
 from tests.support.paths import PACKAGE_ROOT
 
@@ -59,12 +59,11 @@ def _tile_index(algorithm, thread, item):
     )
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize(
     "valid", (0, _TILE - 19, _TILE), ids=("zero", "partial", "full")
 )
-def test_load_layout_and_runtime_bounds(api, algorithm, valid):
+def test_load_layout_and_runtime_bounds(algorithm, valid):
     """Observe each loaded item without passing it through Store.
 
     The kernel writes each thread's payload to a plain CuTe output. The host
@@ -81,8 +80,8 @@ def test_load_layout_and_runtime_bounds(api, algorithm, valid):
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
-        payload = api.load(
-            api.this_block(),
+        payload = coop.load(
+            coop.this_block(),
             source,
             items_per_thread=items_per_thread,
             algorithm=algorithm,
@@ -118,12 +117,11 @@ def test_load_layout_and_runtime_bounds(api, algorithm, valid):
     np.testing.assert_array_equal(observed, expected)
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize(
     "valid", (0, _TILE - 19, _TILE), ids=("zero", "partial", "full")
 )
-def test_store_layout_and_bounds(api, algorithm, valid):
+def test_store_layout_and_bounds(algorithm, valid):
     """Check Store against payloads filled independently of Load.
 
     Plain CuTe reads assign distinct values to each thread's payload. The host
@@ -140,11 +138,11 @@ def test_store_layout_and_bounds(api, algorithm, valid):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         inputs = cute.make_tensor(source, cute.make_layout(_TILE))
-        payload = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
+        payload = coop.ThreadData(items_per_thread, dtype=cutlass.Int32)
         for item in cutlass.range_constexpr(items_per_thread):
             payload[item] = inputs[thread * items_per_thread + item]
-        api.store(
-            api.this_block(),
+        coop.store(
+            coop.this_block(),
             destination,
             payload,
             algorithm=algorithm,
@@ -202,16 +200,16 @@ def test_partial_transpose_loads_valid_items_without_default(
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         outputs = cute.make_tensor(observed, cute.make_layout(_TILE))
         if cutlass.const_expr(static_count):
-            payload = cutlass_coop.load(
-                cutlass_coop.this_block(),
+            payload = coop.load(
+                coop.this_block(),
                 source,
                 items_per_thread=items_per_thread,
                 algorithm=algorithm,
                 valid_items=valid,
             )
         else:
-            payload = cutlass_coop.load(
-                cutlass_coop.this_block(),
+            payload = coop.load(
+                coop.this_block(),
                 source,
                 items_per_thread=items_per_thread,
                 algorithm=algorithm,
@@ -274,19 +272,19 @@ def test_unguarded_full_tiles_use_the_correct_layout(
         outputs = cute.make_tensor(
             observed, cute.make_layout(_THREADS * items_per_thread)
         )
-        loaded = cutlass_coop.load(
-            cutlass_coop.this_block(),
+        loaded = coop.load(
+            coop.this_block(),
             source,
             items_per_thread=items_per_thread,
             algorithm=algorithm,
             offset=offset,
         )
-        stored = cutlass_coop.ThreadData(items_per_thread, dtype=cutlass.Int32)
+        stored = coop.ThreadData(items_per_thread, dtype=cutlass.Int32)
         for item in cutlass.range_constexpr(items_per_thread):
             outputs[thread * items_per_thread + item] = loaded[item]
             stored[item] = inputs[thread * items_per_thread + item]
-        cutlass_coop.store(
-            cutlass_coop.this_block(),
+        coop.store(
+            coop.this_block(),
             destination,
             stored,
             algorithm=algorithm,
@@ -349,15 +347,15 @@ def test_storage_reuse_in_runtime_loop(
         tiles: cutlass.Int32,
         items_per_thread: cutlass.Constexpr,
     ):
-        storage = cutlass_coop.TempStorage(
+        storage = coop.TempStorage(
             capacity,
             sharing=sharing,
             auto_sync=not manual_sync,
             alignment=1,
         )
         for tile in range(tiles):
-            payload = cutlass_coop.load(
-                cutlass_coop.this_block(),
+            payload = coop.load(
+                coop.this_block(),
                 source,
                 items_per_thread=items_per_thread,
                 algorithm=algorithm,
@@ -368,8 +366,8 @@ def test_storage_reuse_in_runtime_loop(
                 storage.sync()
             for item in cutlass.range_constexpr(items_per_thread):
                 payload[item] = payload[item] + cutlass.Int32(tile + 1)
-            cutlass_coop.store(
-                cutlass_coop.this_block(),
+            coop.store(
+                coop.this_block(),
                 destination,
                 payload,
                 algorithm=algorithm,
@@ -402,10 +400,9 @@ def test_storage_reuse_in_runtime_loop(
     np.testing.assert_array_equal(destination, expected.reshape(-1))
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("alignment", (1, 32, 64))
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
-def test_requested_storage_alignment_is_a_minimum(api, alignment, sharing):
+def test_requested_storage_alignment_is_a_minimum(alignment, sharing):
     """Use scratch even when the caller requests less alignment than it needs.
 
     Transpose operations on float64 data require aligned storage. Requests of
@@ -419,18 +416,18 @@ def test_requested_storage_alignment_is_a_minimum(api, alignment, sharing):
         destination: cute.Pointer,
         items_per_thread: cutlass.Constexpr,
     ):
-        storage = api.TempStorage(
+        storage = coop.TempStorage(
             alignment=alignment, sharing=sharing, auto_sync=True
         )
-        payload = api.load(
-            api.this_block(),
+        payload = coop.load(
+            coop.this_block(),
             source,
             items_per_thread=items_per_thread,
             algorithm="transpose",
             temp_storage=storage,
         )
-        api.store(
-            api.this_block(),
+        coop.store(
+            coop.this_block(),
             destination,
             payload,
             algorithm="transpose",
@@ -471,9 +468,8 @@ def test_storage_example(sharing, manual_sync, items_per_thread):
     )
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
-def test_deferred_storage_preserves_user_shared_memory(api, sharing):
+def test_deferred_storage_preserves_user_shared_memory(sharing):
     """Keep deferred scratch separate from the caller's shared allocation.
 
     Each thread writes a canary in the caller's shared allocation before the
@@ -501,17 +497,17 @@ def test_deferred_storage_preserves_user_shared_memory(api, sharing):
         canary[thread] = 101 + 7 * thread
         cute.arch.sync_threads()
 
-        storage = api.TempStorage(sharing=sharing)
-        payload = api.load(
-            api.this_block(),
+        storage = coop.TempStorage(sharing=sharing)
+        payload = coop.load(
+            coop.this_block(),
             source,
             items_per_thread=items_per_thread,
             algorithm="transpose",
             temp_storage=storage,
         )
         storage.sync()
-        api.store(
-            api.this_block(),
+        coop.store(
+            coop.this_block(),
             destination,
             payload,
             algorithm="transpose",
@@ -571,18 +567,18 @@ def test_final_cubin_storage_contract(tmp_path, algorithm):
         destination: cute.Pointer,
         items_per_thread: cutlass.Constexpr,
     ):
-        storage = cutlass_coop.TempStorage(
+        storage = coop.TempStorage(
             sharing="shared", alignment=64, auto_sync=True
         )
-        payload = cutlass_coop.load(
-            cutlass_coop.this_block(),
+        payload = coop.load(
+            coop.this_block(),
             source,
             items_per_thread=items_per_thread,
             algorithm=algorithm,
             temp_storage=storage,
         )
-        cutlass_coop.store(
-            cutlass_coop.this_block(),
+        coop.store(
+            coop.this_block(),
             destination,
             payload,
             algorithm=algorithm,

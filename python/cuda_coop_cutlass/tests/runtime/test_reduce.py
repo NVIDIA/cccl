@@ -22,7 +22,6 @@ from cutlass import cute
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 
 import cuda.coop.cutlass as coop
-import cuda.coop.cutlass as cutlass_coop
 from cuda.bindings import driver
 from tests.runtime_support import (
     NUMPY_DTYPES,
@@ -34,7 +33,6 @@ from tests.support.paths import PACKAGE_ROOT, TESTS_ROOT
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
-_APIS = (coop, cutlass_coop)
 _BLOCK = (8, 4, 4)
 _THREADS = 128
 _WIDTHS = {
@@ -46,12 +44,12 @@ _OPS = ("sum", "multiplies", "min", "max", "bit_and", "bit_or", "bit_xor")
 _ALGORITHMS = ("raking_commutative_only", "raking", "warp_reductions")
 
 
-def _group(api, kind):
+def _group(kind):
     if kind == "warp":
-        return api.this_warp()
+        return coop.this_warp()
     if kind == "logical":
-        return api.this_warp().group_by(8)
-    return api.this_block()
+        return coop.this_warp().group_by(8)
+    return coop.this_block()
 
 
 def _fold(values, operation):
@@ -73,12 +71,11 @@ def _fold(values, operation):
     return operation.reduce(values.reshape(-1), dtype=values.dtype)
 
 
-@pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("dtype", NUMPY_DTYPES)
 @pytest.mark.parametrize(
     "items_per_thread", (0, 1, 4), ids=("scalar", "one-item", "four-items")
 )
-def test_sum_types(api, dtype, items_per_thread):
+def test_sum_types(dtype, items_per_thread):
     """Check result type and input preservation for scalar and payload sums.
 
     The block root records the result. A second output records the original
@@ -110,13 +107,13 @@ def test_sum_types(api, dtype, items_per_thread):
         )
         if cutlass.const_expr(items_per_thread == 0):
             value = inputs[thread]
-            result = api.sum(api.this_block(), value)
+            result = coop.sum(coop.this_block(), value)
             checks[thread] = value
         else:
-            payload = api.ThreadData(items_per_thread, dtype=value_type)
+            payload = coop.ThreadData(items_per_thread, dtype=value_type)
             for item in cutlass.range_constexpr(items_per_thread):
                 payload[item] = inputs[thread * items_per_thread + item]
-            result = api.sum(api.this_block(), payload)
+            result = coop.sum(coop.this_block(), payload)
             for item in cutlass.range_constexpr(items_per_thread):
                 checks[thread * items_per_thread + item] = payload[item]
         assert isinstance(result, value_type)
@@ -152,10 +149,9 @@ def test_sum_types(api, dtype, items_per_thread):
     np.testing.assert_array_equal(preserved, source)
 
 
-@pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("kind", tuple(_WIDTHS))
 @pytest.mark.parametrize("operation", _OPS)
-def test_group_builtins(api, kind, operation):
+def test_group_builtins(kind, operation):
     """Observe built-in reductions only where their results are defined.
 
     Each group root writes one result and leaves other output sentinels
@@ -178,12 +174,12 @@ def test_group_builtins(api, kind, operation):
         )
         outputs = cute.make_tensor(observed, cute.make_layout(_THREADS))
         if cutlass.const_expr(kind == "block"):
-            value = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
+            value = coop.ThreadData(items_per_thread, dtype=cutlass.Int32)
             for item in cutlass.range_constexpr(items_per_thread):
                 value[item] = inputs[thread * items_per_thread + item]
         else:
             value = inputs[thread]
-        result = api.reduce(_group(api, kind), value, binary_op=operation)
+        result = coop.reduce(_group(kind), value, binary_op=operation)
         if thread % width == 0:
             outputs[thread] = result
 
@@ -214,9 +210,8 @@ def test_group_builtins(api, kind, operation):
     np.testing.assert_array_equal(observed, expected)
 
 
-@pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("dtype", (np.uint8, np.uint16, np.uint32, np.uint64))
-def test_unsigned_result(api, dtype):
+def test_unsigned_result(dtype):
     """Carry an unsigned result through two reductions and a typed payload.
 
     A warp maximum becomes the input to a block maximum. The block result
@@ -240,15 +235,15 @@ def test_unsigned_result(api, dtype):
         outputs = cute.recast_tensor(
             cute.make_tensor(observed, cute.make_layout(1)), value_type
         )
-        first = api.reduce(api.this_warp(), inputs[thread], binary_op="max")
+        first = coop.reduce(coop.this_warp(), inputs[thread], binary_op="max")
         assert isinstance(first, value_type)
         contribution = value_type(0)
         if thread % 32 == 0:
             contribution = first
-        second = api.reduce(api.this_block(), contribution, binary_op="max")
+        second = coop.reduce(coop.this_block(), contribution, binary_op="max")
         assert isinstance(second, value_type)
         if thread == 0:
-            payload = api.ThreadData(items_per_thread, dtype=value_type)
+            payload = coop.ThreadData(items_per_thread, dtype=value_type)
             payload[0] = second
             outputs[0] = payload[0]
 
@@ -267,11 +262,10 @@ def test_unsigned_result(api, dtype):
     assert observed[0] == source.max()
 
 
-@pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("kind", ("block", "warp", "logical"))
 @pytest.mark.parametrize("runtime", (False, True), ids=("static", "runtime"))
 @pytest.mark.parametrize("prefix", (1, 5, None), ids=("one", "several", "full"))
-def test_prefix(api, kind, runtime, prefix):
+def test_prefix(kind, runtime, prefix):
     """Reduce each group's scalar prefix with static or runtime counts.
 
     All members call the collective, but only each group's root stores a
@@ -293,15 +287,15 @@ def test_prefix(api, kind, runtime, prefix):
             observed, cute.make_layout(_THREADS // width)
         )
         if cutlass.const_expr(runtime):
-            result = api.reduce(
-                _group(api, kind),
+            result = coop.reduce(
+                _group(kind),
                 inputs[thread],
                 binary_op="max",
                 valid_items=count,
             )
         else:
-            result = api.reduce(
-                _group(api, kind),
+            result = coop.reduce(
+                _group(kind),
                 inputs[thread],
                 binary_op="max",
                 valid_items=prefix,
@@ -326,10 +320,9 @@ def test_prefix(api, kind, runtime, prefix):
     np.testing.assert_array_equal(observed, expected)
 
 
-@pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize("items_per_thread", (0, 2), ids=("scalar", "payload"))
-def test_block_algorithm(api, algorithm, items_per_thread):
+def test_block_algorithm(algorithm, items_per_thread):
     """Select each CUB block algorithm without modifying its input.
 
     Only thread zero consumes the root-only result. Every thread separately
@@ -354,12 +347,12 @@ def test_block_algorithm(api, algorithm, items_per_thread):
             preserved, cute.make_layout(_THREADS * extent)
         )
         if cutlass.const_expr(items_per_thread):
-            value = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
+            value = coop.ThreadData(items_per_thread, dtype=cutlass.Int32)
             for item in cutlass.range_constexpr(items_per_thread):
                 value[item] = inputs[thread * items_per_thread + item]
         else:
             value = inputs[thread]
-        result = api.sum(api.this_block(), value, algorithm=algorithm)
+        result = coop.sum(coop.this_block(), value, algorithm=algorithm)
         if thread == 0:
             outputs[0] = result
         if cutlass.const_expr(items_per_thread):
@@ -392,9 +385,8 @@ def test_block_algorithm(api, algorithm, items_per_thread):
     np.testing.assert_array_equal(preserved, source)
 
 
-@pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("kind", ("block", "warp", "logical"))
-def test_reuse_loop(api, kind):
+def test_reuse_loop(kind):
     """Reuse prefix-reduction scratch across eight runtime iterations.
 
     Each iteration changes the scalar inputs. Only group roots accumulate the
@@ -417,8 +409,8 @@ def test_reuse_loop(api, kind):
         outputs = cute.make_tensor(observed, cute.make_layout(groups))
         total = cutlass.Int32(0)
         for iteration in range(iterations):
-            result = api.sum(
-                _group(api, kind),
+            result = coop.sum(
+                _group(kind),
                 inputs[thread] + iteration,
                 valid_items=count,
             )
@@ -477,10 +469,9 @@ import cutlass
 from cutlass import cute
 import cuda.coop.cutlass as coop
 from cuda.bindings import driver
-import cuda.coop.cutlass as cutlass_coop
 from tests.runtime_support import device_array
 
-assert cutlass_coop.__file__ == {cutlass_coop.__file__!r}
+assert coop.__file__ == {coop.__file__!r}
 
 @cute.kernel
 def kernel(source: cute.Pointer, destination: cute.Pointer, count: cutlass.Int64):
@@ -540,8 +531,8 @@ def test_final_cubin(tmp_path, algorithm):
         thread = cute.arch.thread_idx()[0]
         inputs = cute.make_tensor(source, cute.make_layout(_THREADS))
         outputs = cute.make_tensor(observed, cute.make_layout(1))
-        result = cutlass_coop.sum(
-            cutlass_coop.this_block(), inputs[thread], algorithm=algorithm
+        result = coop.sum(
+            coop.this_block(), inputs[thread], algorithm=algorithm
         )
         if thread == 0:
             outputs[0] = result
@@ -569,13 +560,12 @@ def test_final_cubin(tmp_path, algorithm):
         assert re.search(r"\bCALL(?:\.[A-Z0-9_]+)*\b", sass) is None
 
 
-@pytest.mark.parametrize("api", ("common", "qualified"))
 @pytest.mark.parametrize("items_per_thread", (1, 4))
-def test_example(api, items_per_thread):
+def test_example(items_per_thread):
     path = PACKAGE_ROOT / "examples/reduce.py"
     spec = importlib.util.spec_from_file_location(
         "cutlass_reduce_example", path
     )
     example = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(example)
-    example.run_example(api, items_per_thread=items_per_thread)
+    example.run_example(items_per_thread=items_per_thread)

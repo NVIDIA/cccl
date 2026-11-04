@@ -20,7 +20,7 @@ def _check(result):
     return result[1] if len(result) == 2 else result[1:]
 
 
-def run_example(api="common", items_per_thread=3):
+def run_example(items_per_thread=3):
     """Sum matching features in two independent warps and check against NumPy.
 
     Reshaping the input as warp, lane, feature makes the CPU reference reduce
@@ -28,12 +28,7 @@ def run_example(api="common", items_per_thread=3):
     leaving the two warps' feature totals separate.
     """
 
-    if api == "common":
-        import cuda.coop.cutlass as coop
-    elif api == "qualified":
-        import cuda.coop.cutlass as coop
-    else:
-        raise ValueError("api must be 'common' or 'qualified'")
+    import cuda.coop.cutlass as coop
 
     # docs: start cutlass-reduce-batched
     @cute.kernel

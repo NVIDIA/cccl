@@ -52,7 +52,7 @@ class ThreadHierarchy:
 Hierarchy: TypeAlias = ThreadHierarchy
 
 class ThreadGroup(Generic[_GroupKindT_co]):
-    """Common compiler-facing contract for one CUDA thread group."""
+    """Compiler-facing contract for one CUDA thread group."""
 
     hierarchy: ThreadHierarchy
     block_dim: tuple[int, int, int] | None

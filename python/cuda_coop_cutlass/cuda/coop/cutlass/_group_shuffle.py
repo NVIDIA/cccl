@@ -24,25 +24,25 @@ from ._thread_data import (
     _coerce_thread_payload,
 )
 from ._typing import (
+    ArrayShuffleMode,
     BlockGroup,
-    CommonNumericScalar,
-    CommonShuffleMode,
-    CommonThreadDataLike,
+    NumericScalar,
+    ReadableThreadDataLike,
     ScalarShuffleMode,
 )
 
-_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=NumericScalar)
 
 
 def shuffle(
     group: BlockGroup,
-    value: CommonThreadDataLike[_ItemT]
+    value: ReadableThreadDataLike[_ItemT]
     | CutlassTensorSample
     | CutlassTensorSSASample
     | _ItemT,
     /,
     *,
-    mode: CommonShuffleMode | ScalarShuffleMode = "down",
+    mode: ArrayShuffleMode | ScalarShuffleMode = "down",
     distance: Literal[1] | IntegerValue = 1,
 ) -> ThreadData | _ItemT:
     """Shift register payloads or select another block member's scalar.
@@ -107,10 +107,10 @@ def shuffle(
     including wraparound.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_collective_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_collective_documentation.py
         :language: python
-        :start-after: # qualified-rotate-example-begin
-        :end-before: # qualified-rotate-example-end
+        :start-after: # cutlass-rotate-example-begin
+        :end-before: # cutlass-rotate-example-end
         :dedent: 4
     """
     if not isinstance(group, ThreadGroup):

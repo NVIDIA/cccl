@@ -18,7 +18,7 @@ import pytest
 from cutlass.base_dsl.common import active_env_manager
 from cutlass.cutlass_dsl import CuTeDSL
 
-import cuda.coop.cutlass as cutlass_coop
+import cuda.coop.cutlass as coop
 from cuda.coop.cutlass._compiler import _rendering, _state, _storage, _types
 from cuda.coop.cutlass._lowering import _run_length
 from cuda.coop.cutlass._planning import (
@@ -99,7 +99,7 @@ def test_group_and_dimensions():
 @pytest.mark.parametrize("auto_sync", (False, True))
 def test_storage_contract(sharing, auto_sync):
     request = _request(
-        temp_storage=cutlass_coop.TempStorage(
+        temp_storage=coop.TempStorage(
             alignment=128, sharing=sharing, auto_sync=auto_sync
         )
     )
@@ -145,22 +145,21 @@ def test_result_mismatch_rejected():
         _run_length._CubRunLengthRequest(replace(request.plan, result=result))
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize(
     "primitive", ("run_length_decode", "run_length_decode_into")
 )
 @pytest.mark.parametrize("invalid", ("run_values", "run_lengths"))
-def test_invalid_payload_names_operation(api, primitive, invalid):
+def test_invalid_payload_names_operation(primitive, invalid):
     """Name the invoked operation and bad payload in validation errors.
 
     An active CuTe environment reaches decoding-specific validation so errors
     identify the relevant run-value or run-length payload.
     """
 
-    values = cutlass_coop.ThreadData(
+    values = coop.ThreadData(
         items_per_thread=1, dtype=cutlass.Int32, values=[3]
     )
-    lengths = cutlass_coop.ThreadData(
+    lengths = coop.ThreadData(
         items_per_thread=1, dtype=cutlass.Uint32, values=[2]
     )
     args = [
@@ -174,7 +173,7 @@ def test_invalid_payload_names_operation(api, primitive, invalid):
         active_env_manager(CuTeDSL._get_dsl().envar),
         pytest.raises(TypeError, match=rf"\.{primitive} ") as error,
     ):
-        getattr(api, primitive)(*args, decoded_items_per_thread=2)
+        getattr(coop, primitive)(*args, decoded_items_per_thread=2)
     assert invalid in str(error.value)
     assert "ThreadData" in str(error.value)
 
@@ -199,10 +198,10 @@ def test_failed_storage_restores_session(monkeypatch):
         raise RuntimeError("run length scratch emission failed")
 
     monkeypatch.setattr(_storage, "register_deferred_temp_storage_event", fail)
-    values = cutlass_coop.ThreadData(
+    values = coop.ThreadData(
         items_per_thread=1, dtype=cutlass.Int32, values=[3]
     )
-    lengths = cutlass_coop.ThreadData(
+    lengths = coop.ThreadData(
         items_per_thread=1, dtype=cutlass.Uint32, values=[2]
     )
     with pytest.raises(RuntimeError, match="scratch emission failed"):

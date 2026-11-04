@@ -23,22 +23,17 @@ def _check(result):
     return result[1] if len(result) == 2 else result[1:]
 
 
-def run_example(api="common", items_per_thread=2):
+def run_example(items_per_thread=2):
     """Check exclusive prefix sums that start from seven across a block tile.
 
     Load, Scan and Store share one descriptor with automatic synchronization.
     The CPU reference gives each item seven plus the sum of all earlier
     inputs in blocked order. The stored values come from Scan's separate
-    output payload. Common and qualified calls use the same comparison.
+    output payload.
     """
 
     tile_size = _THREADS * items_per_thread
-    if api == "common":
-        import cuda.coop.cutlass as coop
-    elif api == "qualified":
-        import cuda.coop.cutlass as coop
-    else:
-        raise ValueError("api must be 'common' or 'qualified'")
+    import cuda.coop.cutlass as coop
 
     # docs: start cutlass-scan
     @cute.kernel

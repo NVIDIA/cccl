@@ -31,7 +31,7 @@ _ITEMS = 2
 _TILE = _THREADS * _ITEMS
 
 
-def _copy_launcher(api, *, nested=False):
+def _copy_launcher(*, nested=False):
     """Build direct or nested calls with the same cooperative copy behavior.
 
     The nested form enters another cute.jit function within one kernel trace.
@@ -45,10 +45,10 @@ def _copy_launcher(api, *, nested=False):
         destination: cute.Pointer,
         items_per_thread: cutlass.Constexpr,
     ):
-        payload = api.load(
-            api.this_block(), source, items_per_thread=items_per_thread
+        payload = coop.load(
+            coop.this_block(), source, items_per_thread=items_per_thread
         )
-        api.store(api.this_block(), destination, payload)
+        coop.store(coop.this_block(), destination, payload)
 
     @cute.kernel
     def kernel(
@@ -59,10 +59,10 @@ def _copy_launcher(api, *, nested=False):
         if cutlass.const_expr(nested):
             copy_tile(source, destination, items_per_thread)
         else:
-            payload = api.load(
-                api.this_block(), source, items_per_thread=items_per_thread
+            payload = coop.load(
+                coop.this_block(), source, items_per_thread=items_per_thread
             )
-            api.store(api.this_block(), destination, payload)
+            coop.store(coop.this_block(), destination, payload)
 
     @cute.jit
     def launch(
@@ -86,7 +86,7 @@ def _exercise_copy(*, nested=False, repeats=1):
     active.
     """
 
-    launch = _copy_launcher(coop, nested=nested)
+    launch = _copy_launcher(nested=nested)
     source = values_for(np.int32, _TILE, shift=31)
     for _ in range(repeats):
         destination = np.full(_TILE, -101, dtype=np.int32)
@@ -143,7 +143,7 @@ def test_failed_compilation_or_linking_can_retry(
     environment left active by the failed attempt.
     """
 
-    launch = _copy_launcher(coop)
+    launch = _copy_launcher()
     source = values_for(np.int32, _TILE, shift=47)
     destination = np.full(_TILE, -101, dtype=np.int32)
     original = _bundle.compile_bundle_source

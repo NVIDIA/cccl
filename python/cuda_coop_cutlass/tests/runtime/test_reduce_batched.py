@@ -18,7 +18,6 @@ import pytest
 from cutlass import cute
 
 import cuda.coop.cutlass as coop
-import cuda.coop.cutlass as cutlass_coop
 from tests.runtime_support import (
     NUMPY_DTYPES,
     cutlass_dtype,
@@ -30,7 +29,6 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 def _run(
     *,
-    api=coop,
     width=32,
     items_per_thread=3,
     layout="striped",
@@ -63,8 +61,8 @@ def _run(
         preserved: cute.Pointer,
         items_per_thread: cutlass.Constexpr,
     ):
-        block_group = api.this_block()
-        warp = api.this_warp().group_by(width)
+        block_group = coop.this_block()
+        warp = coop.this_warp().group_by(width)
         source_tensor = cute.recast_tensor(
             cute.make_tensor(
                 source, cute.make_layout(threads * items_per_thread)
@@ -77,7 +75,7 @@ def _run(
             ),
             dtype=value_type,
         )
-        values = api.load(
+        values = coop.load(
             block_group, source_tensor, items_per_thread=items_per_thread
         )
         thread = block_group.rank()
@@ -94,7 +92,7 @@ def _run(
         # Repeated calls also exercise request deduplication and live registers.
         for _ in range(3):
             if not divergent or thread < width:
-                result = api.reduce_batched(
+                result = coop.reduce_batched(
                     warp, values, binary_op=op, output_layout=layout
                 )
                 assert result.dtype is value_type
@@ -109,8 +107,8 @@ def _run(
                             (thread // width) * items_per_thread + batch
                         ] = result[item]
         if cutlass.const_expr(payload_kind != "thread_data"):
-            values = api.ThreadData.from_payload(values)
-        api.store(block_group, preserved_tensor, values)
+            values = coop.ThreadData.from_payload(values)
+        coop.store(block_group, preserved_tensor, values)
 
     @cute.jit
     def launch(
@@ -158,12 +156,11 @@ def _run(
     return compiled
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32))
 @pytest.mark.parametrize("items_per_thread", (1, 4, 33))
 @pytest.mark.parametrize("layout", ("striped", "blocked"))
-def test_batch_layouts(api, width, items_per_thread, layout):
-    _run(api=api, width=width, items_per_thread=items_per_thread, layout=layout)
+def test_batch_layouts(width, items_per_thread, layout):
+    _run(width=width, items_per_thread=items_per_thread, layout=layout)
 
 
 @pytest.mark.parametrize("dtype", NUMPY_DTYPES)
@@ -190,5 +187,5 @@ def test_independent_divergent_subgroup(width):
 
 
 @pytest.mark.parametrize("payload_kind", ("rmem", "ssa"))
-def test_qualified_register_payloads(payload_kind):
-    _run(api=cutlass_coop, payload_kind=payload_kind, dtype=np.float64)
+def test_register_payloads(payload_kind):
+    _run(payload_kind=payload_kind, dtype=np.float64)

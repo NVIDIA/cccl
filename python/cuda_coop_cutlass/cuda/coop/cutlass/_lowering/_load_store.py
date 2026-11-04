@@ -443,7 +443,7 @@ def provider_load(
 ):
     """Trace a Load call and copy its per-thread result into ``output``.
 
-    The qualified ``load`` entry point calls this during CuTe tracing,
+    The ``load`` entry point calls this during CuTe tracing,
     after classifying the optional controls. Each live control has a
     matching ArgumentBinding: the binding says whether to omit it, embed
     a constant in C++, or pass the live value to the generated function.
@@ -571,7 +571,7 @@ def provider_store(
 ):
     """Trace a Store call with per-thread values and deferred scratch.
 
-    The qualified ``store`` entry point calls this during CuTe tracing.
+    The ``store`` entry point calls this during CuTe tracing.
     The binding records choose which controls are embedded in C++ and
     which live values become operands; the call itself executes later on
     the GPU.

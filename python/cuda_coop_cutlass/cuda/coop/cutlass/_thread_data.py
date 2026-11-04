@@ -549,7 +549,7 @@ class ThreadData:
     its values:
 
     .. literalinclude::
-       ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_payload_examples.py
+       ../../../python/cuda_coop_cutlass/tests/runtime/test_payload_documentation.py
        :language: python
        :start-after: # example-begin
        :end-before: # example-end

@@ -23,7 +23,7 @@ _RUNTIME_MODULES = (
 
 
 class CutlassRuntimeDependencyError(ImportError):
-    """Structured failure to load a qualified CUTLASS backend."""
+    """Structured failure to load the CUTLASS runtime."""
 
     def __init__(
         self,

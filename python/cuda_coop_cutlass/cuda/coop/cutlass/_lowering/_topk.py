@@ -396,7 +396,7 @@ def provider_topk(
 ):
     """Emit selection with independently typed key and value outputs.
 
-    The qualified TopK entry point calls this during tracing after choosing
+    The TopK entry point calls this during tracing after choosing
     min/max and keys/pairs form. The result allocates as many slots as the
     input so a runtime k can vary without changing the return shape. Only
     items belonging to the selected prefix are defined.

@@ -23,23 +23,18 @@ def _check(result):
     return result[1] if len(result) == 2 else result[1:]
 
 
-def run_example(api="common", items_per_thread=3):
+def run_example(items_per_thread=3):
     """Check a layout conversion followed by a one-item downward shift.
 
     The CPU reference builds striped order: thread t holds source[t],
     source[t + 64], and so on. It shifts that flattened sequence down by one
     and appends zero. The kernel explicitly repairs Shuffle's undefined final
     item before Store. The comparison checks the composition of two
-    operations. Common and qualified calls use the same reference.
+    operations.
     """
 
     tile_size = _THREADS * items_per_thread
-    if api == "common":
-        import cuda.coop.cutlass as coop
-    elif api == "qualified":
-        import cuda.coop.cutlass as coop
-    else:
-        raise ValueError("api must be 'common' or 'qualified'")
+    import cuda.coop.cutlass as coop
 
     # docs: start cutlass-exchange-shuffle
     @cute.kernel

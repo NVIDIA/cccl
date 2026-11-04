@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Check qualified neighbors examples against host results."""
+"""Check neighbors examples against host results."""
 
 import numpy as np
 import pytest
@@ -14,7 +14,7 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_neighbors_example(items_per_thread):
-    # qualified-neighbors-example-begin
+    # cutlass-neighbors-example-begin
     import cutlass
     from cutlass import cute
 
@@ -57,7 +57,7 @@ def test_neighbors_example(items_per_thread):
             items_per_thread,
         ).launch(grid=1, block=64)
 
-    # qualified-neighbors-example-end
+    # cutlass-neighbors-example-end
     values = np.arange(64 * items_per_thread, dtype=np.int32) // 3 + 10
     differences, heads, tails = (np.zeros_like(values) for _ in range(3))
     with (

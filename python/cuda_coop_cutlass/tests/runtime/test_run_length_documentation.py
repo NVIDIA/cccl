@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Check qualified run length examples against host results."""
+"""Check run length examples against host results."""
 
 import numpy as np
 import pytest
@@ -14,7 +14,7 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_run_length_example(items_per_thread):
-    # qualified-run-length-example-begin
+    # cutlass-run-length-example-begin
     import cutlass
     from cutlass import cute
 
@@ -71,7 +71,7 @@ def test_run_length_example(items_per_thread):
             window_pointer, stream_pointer, totals_pointer, items_per_thread
         ).launch(grid=1, block=32)
 
-    # qualified-run-length-example-end
+    # cutlass-run-length-example-end
     expected = np.repeat(
         np.arange(10, 10 + 32 * items_per_thread, dtype=np.int32), 2
     )

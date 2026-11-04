@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from cutlass import cute
 
-import cuda.coop.cutlass as cutlass_coop
+import cuda.coop.cutlass as coop
 from tests.runtime_support import device_array, values_for
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
@@ -48,11 +48,10 @@ _SETUP_NAMES = (
 )
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize(
     "sharing,capacity,auto_sync,alignment", _SETUPS, ids=_SETUP_NAMES
 )
-def test_mixed_loop(api, sharing, capacity, auto_sync, alignment):
+def test_mixed_loop(sharing, capacity, auto_sync, alignment):
     """Reuse Load, Scan, and Store scratch for eight independent tiles.
 
     Manual mode places a reuse barrier after each operation. Each call site
@@ -76,15 +75,15 @@ def test_mixed_loop(api, sharing, capacity, auto_sync, alignment):
         if cutlass.const_expr(sharing is None):
             storage = None
         else:
-            storage = api.TempStorage(
+            storage = coop.TempStorage(
                 capacity,
                 sharing=sharing,
                 auto_sync=auto_sync,
                 alignment=alignment,
             )
-        group = api.this_block()
+        group = coop.this_block()
         for tile in range(tiles):
-            payload = api.load(
+            payload = coop.load(
                 group,
                 source,
                 items_per_thread=items_per_thread,
@@ -94,7 +93,7 @@ def test_mixed_loop(api, sharing, capacity, auto_sync, alignment):
             )
             if cutlass.const_expr(not auto_sync):
                 storage.sync()
-            result = api.exclusive_scan(
+            result = coop.exclusive_scan(
                 group,
                 payload,
                 initial_value=7,
@@ -103,7 +102,7 @@ def test_mixed_loop(api, sharing, capacity, auto_sync, alignment):
             )
             if cutlass.const_expr(not auto_sync):
                 storage.sync()
-            api.store(
+            coop.store(
                 group,
                 observed,
                 result,
@@ -155,12 +154,11 @@ def test_mixed_loop(api, sharing, capacity, auto_sync, alignment):
     np.testing.assert_array_equal(preserved, source)
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("width", (1, 8, 32))
 @pytest.mark.parametrize(
     "divergent", (False, True), ids=("all-groups", "selected-group")
 )
-def test_warp_loop(api, width, divergent):
+def test_warp_loop(width, divergent):
     """Repeat Scan while complete sibling groups may stay inactive.
 
     Widths one and eight select the third subgroup within each physical warp.
@@ -182,10 +180,10 @@ def test_warp_loop(api, width, divergent):
         else:
             selected = (thread % 32) // width == 2
         if selected or not divergent:
-            group = api.this_warp().group_by(width)
+            group = coop.this_warp().group_by(width)
             total = cutlass.Int32(0)
             for iteration in range(iterations):
-                total += api.inclusive_sum(group, inputs[thread] + iteration)
+                total += coop.inclusive_sum(group, inputs[thread] + iteration)
             outputs[thread] = total
 
     @cute.jit

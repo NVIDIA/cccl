@@ -116,10 +116,10 @@ original representations. Negative and positive zero compare equally and
 preserve their input order; NaNs follow CUB's transformed-bit ordering.
 The unsigned explorer does not model these floating-point cases.
 
-Common calls accept ``ThreadData`` keys with ``int32``, ``uint32``,
+Calls accept ``ThreadData`` keys with ``int32``, ``uint32``,
 ``int64``, or ``uint64`` dtype. Associated values may use the supported
-numeric dtypes and must have the same extent as the keys. Qualified calls
-also accept scalars. CuTe register tensors and ``TensorSSA`` are also supported.
+numeric dtypes and must have the same extent as the keys. Scalars,
+CuTe register tensors, and ``TensorSSA`` are also supported.
 Floating-point keys are supported for Sort, while Rank requires integral keys.
 
 Sort's bit bounds may be block-uniform runtime integers and must satisfy

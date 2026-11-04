@@ -17,7 +17,7 @@ from cutlass import cute
 from cutlass.base_dsl.compiler import GPUArch
 from cutlass.cute.runtime import make_ptr
 
-import cuda.coop.cutlass as cutlass_coop
+import cuda.coop.cutlass as coop
 from cuda.coop.cutlass._compiler._types import ALL_PROVIDER_TYPES
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
@@ -27,24 +27,23 @@ def _pointer(dtype=cutlass.Int32):
     return make_ptr(dtype, 0, cute.AddressSpace.gmem, assumed_align=16)
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize(
     "algorithm", ("raking", "raking_memoize", "warp_scans")
 )
 @pytest.mark.parametrize("array", (False, True))
-def test_block_forms(api, algorithm, array):
+def test_block_forms(algorithm, array):
     @cute.kernel
     def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         value = cutlass.Int32(cute.arch.thread_idx()[0])
         if cutlass.const_expr(array):
-            payload = api.ThreadData(
+            payload = coop.ThreadData(
                 items_per_thread, dtype=cutlass.Int32, alignment=64
             )
             payload[0] = value
             payload[1] = value
             value = payload
-        result = api.exclusive_scan(
-            api.this_block(),
+        result = coop.exclusive_scan(
+            coop.this_block(),
             value,
             scan_op="max",
             initial_value=-7,
@@ -72,17 +71,17 @@ def test_typed_zero_partial(dtype):
 
     @cute.kernel
     def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
-        aggregate = cutlass_coop.ThreadData(items_per_thread, alignment=64)
-        result = cutlass_coop.exclusive_sum(
-            cutlass_coop.this_warp().group_by(8),
+        aggregate = coop.ThreadData(items_per_thread, alignment=64)
+        result = coop.exclusive_sum(
+            coop.this_warp().group_by(8),
             dtype(1),
             valid_items=5,
             aggregate_output=aggregate,
         )
-        payload = cutlass_coop.ThreadData(
+        payload = coop.ThreadData(
             items_per_thread, dtype=dtype, values=[result]
         )
-        total = cutlass_coop.sum(cutlass_coop.this_block(), payload)
+        total = coop.sum(coop.this_block(), payload)
         cute.make_tensor(memory, cute.make_layout(1))[0] = total + aggregate[0]
 
     @cute.jit
@@ -107,8 +106,8 @@ def test_dynamic_prefix(dtype):
 
     @cute.kernel
     def kernel(memory: cute.Pointer, count: dtype):
-        result = cutlass_coop.exclusive_sum(
-            cutlass_coop.this_warp().group_by(8),
+        result = coop.exclusive_sum(
+            coop.this_warp().group_by(8),
             cutlass.Int32(1),
             valid_items=count,
         )
@@ -128,8 +127,8 @@ def test_dynamic_prefix(dtype):
 def test_float_seed(seed):
     @cute.kernel
     def kernel(memory: cute.Pointer):
-        result = cutlass_coop.exclusive_scan(
-            cutlass_coop.this_block(), cutlass.Float32(1), initial_value=seed
+        result = coop.exclusive_scan(
+            coop.this_block(), cutlass.Float32(1), initial_value=seed
         )
         cute.make_tensor(memory, cute.make_layout(1))[0] = result
 
@@ -169,76 +168,66 @@ def test_float_seed(seed):
 def test_invalid_controls(case, expected):
     @cute.kernel
     def kernel():
-        group = cutlass_coop.this_warp().group_by(8)
+        group = coop.this_warp().group_by(8)
         value = cutlass.Int32(1)
         if cutlass.const_expr(case == "zero"):
-            cutlass_coop.exclusive_sum(group, value, valid_items=0)
+            coop.exclusive_sum(group, value, valid_items=0)
         elif cutlass.const_expr(case == "too_many"):
-            cutlass_coop.exclusive_sum(group, value, valid_items=9)
+            coop.exclusive_sum(group, value, valid_items=9)
         elif cutlass.const_expr(case == "block_prefix"):
-            cutlass_coop.inclusive_sum(
-                cutlass_coop.this_block(), value, valid_items=1
-            )
+            coop.inclusive_sum(coop.this_block(), value, valid_items=1)
         elif cutlass.const_expr(case == "warp_array"):
-            cutlass_coop.inclusive_sum(
+            coop.inclusive_sum(
                 group,
-                cutlass_coop.ThreadData(
+                coop.ThreadData(
                     items_per_thread=1, dtype=cutlass.Int32, values=[value]
                 ),
             )
         elif cutlass.const_expr(case == "warp_storage"):
-            cutlass_coop.exclusive_sum(
-                group, value, temp_storage=cutlass_coop.TempStorage()
-            )
+            coop.exclusive_sum(group, value, temp_storage=coop.TempStorage())
         elif cutlass.const_expr(case == "warp_algorithm"):
-            cutlass_coop.exclusive_sum(group, value, algorithm="raking")
+            coop.exclusive_sum(group, value, algorithm="raking")
         elif cutlass.const_expr(case == "missing_seed"):
-            cutlass_coop.exclusive_scan(group, value, scan_op="max")
+            coop.exclusive_scan(group, value, scan_op="max")
         elif cutlass.const_expr(case == "inclusive_seed"):
-            cutlass_coop.scan(group, value, mode="inclusive", initial_value=1)
+            coop.scan(group, value, mode="inclusive", initial_value=1)
         elif cutlass.const_expr(case == "float_seed"):
-            cutlass_coop.exclusive_scan(group, value, initial_value=1.0)
+            coop.exclusive_scan(group, value, initial_value=1.0)
         elif cutlass.const_expr(case == "typed_seed"):
-            cutlass_coop.exclusive_scan(
-                group, value, initial_value=cutlass.Int64(1)
-            )
+            coop.exclusive_scan(group, value, initial_value=cutlass.Int64(1))
         elif cutlass.const_expr(case == "nonfinite_seed"):
-            cutlass_coop.exclusive_scan(
+            coop.exclusive_scan(
                 group, cutlass.Float32(1), initial_value=np.float32(np.inf)
             )
         elif cutlass.const_expr(case == "large_seed"):
-            cutlass_coop.exclusive_scan(
+            coop.exclusive_scan(
                 group, cutlass.Float32(1), initial_value=1 << 200
             )
         elif cutlass.const_expr(case == "aggregate_extent"):
-            cutlass_coop.exclusive_sum(
+            coop.exclusive_sum(
                 group,
                 value,
-                aggregate_output=cutlass_coop.ThreadData(items_per_thread=2),
+                aggregate_output=coop.ThreadData(items_per_thread=2),
             )
         elif cutlass.const_expr(case == "aggregate_dtype"):
-            cutlass_coop.exclusive_sum(
+            coop.exclusive_sum(
                 group,
                 value,
-                aggregate_output=cutlass_coop.ThreadData(
+                aggregate_output=coop.ThreadData(
                     items_per_thread=1, dtype=cutlass.Float32
                 ),
             )
         elif cutlass.const_expr(case == "aggregate_scalar"):
-            cutlass_coop.exclusive_sum(group, value, aggregate_output=value)
+            coop.exclusive_sum(group, value, aggregate_output=value)
         elif cutlass.const_expr(case == "bitwise_float"):
-            cutlass_coop.inclusive_scan(
-                group, cutlass.Float32(1), scan_op="bit_and"
-            )
+            coop.inclusive_scan(group, cutlass.Float32(1), scan_op="bit_and")
         elif cutlass.const_expr(case == "callback"):
-            cutlass_coop.inclusive_scan(
-                group, value, scan_op=lambda a, b: a + b
-            )
+            coop.inclusive_scan(group, value, scan_op=lambda a, b: a + b)
         else:
-            cutlass_coop.exclusive_sum(
-                cutlass_coop.this_block(),
+            coop.exclusive_sum(
+                coop.this_block(),
                 value,
-                temp_storage=cutlass_coop.TempStorage(1),
+                temp_storage=coop.TempStorage(1),
             )
 
     @cute.jit
@@ -250,8 +239,7 @@ def test_invalid_controls(case, expected):
 
 
 @pytest.mark.parametrize("ssa", (False, True))
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
-def test_register_payload(ssa, api):
+def test_register_payload(ssa):
     """Compile indexed Scan results from rmem and TensorSSA inputs."""
 
     @cute.kernel
@@ -262,7 +250,7 @@ def test_register_payload(ssa, api):
             value = fragment.load()
         else:
             value = fragment
-        result = api.inclusive_sum(api.this_block(), value)
+        result = coop.inclusive_sum(coop.this_block(), value)
         cute.make_tensor(memory, cute.make_layout(1))[0] = result[0]
 
     @cute.jit
@@ -284,19 +272,15 @@ def test_launch_requirements(case, expected):
     @cute.kernel
     def kernel():
         if cutlass.const_expr(case == "logical"):
-            cutlass_coop.inclusive_sum(
-                cutlass_coop.this_warp().group_by(8), cutlass.Int32(1)
-            )
+            coop.inclusive_sum(coop.this_warp().group_by(8), cutlass.Int32(1))
         elif cutlass.const_expr(case == "warp_scans"):
-            cutlass_coop.inclusive_sum(
-                cutlass_coop.this_block(),
+            coop.inclusive_sum(
+                coop.this_block(),
                 cutlass.Int32(1),
                 algorithm="warp_scans",
             )
         else:
-            cutlass_coop.inclusive_sum(
-                cutlass_coop.this_block(), cutlass.Int32(1)
-            )
+            coop.inclusive_sum(coop.this_block(), cutlass.Int32(1))
 
     @cute.jit
     def launch(block_size: cutlass.Int32):

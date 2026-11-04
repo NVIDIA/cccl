@@ -13,31 +13,30 @@ import numpy as np
 import pytest
 from cutlass import cute
 
-import cuda.coop.cutlass as cutlass_coop
+import cuda.coop.cutlass as coop
 from tests.runtime_support import device_array, values_for
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize(
     "width,prefix",
     ((1, False), (32, False), (1, True), (32, True)),
 )
-def test_logical_width(api, width, prefix):
+def test_logical_width(width, prefix):
     @cute.kernel
     def kernel(source: cute.Pointer, observed: cute.Pointer):
         x, y, z = cute.arch.thread_idx()
         thread = x + 8 * (y + 4 * z)
         inputs = cute.make_tensor(source, cute.make_layout(128))
         outputs = cute.make_tensor(observed, cute.make_layout(128))
-        group = api.this_warp().group_by(width, exhaustive=False)
+        group = coop.this_warp().group_by(width, exhaustive=False)
         if cutlass.const_expr(prefix):
-            result = api.sum(group, inputs[thread], valid_items=1)
+            result = coop.sum(group, inputs[thread], valid_items=1)
             if thread % width == 0:
                 outputs[thread] = result
         else:
-            result = api.sum(group, inputs[thread])
+            result = coop.sum(group, inputs[thread])
             if thread % width == 0:
                 outputs[thread] = result
 

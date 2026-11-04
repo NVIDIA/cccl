@@ -23,14 +23,14 @@ from ._thread_data import (
     ThreadData,
 )
 from ._typing import (
+    ArrayShuffleMode,
     BlockGroup,
-    CommonNumericScalar,
-    CommonShuffleMode,
-    CommonThreadDataLike,
+    NumericScalar,
+    ReadableThreadDataLike,
     ScalarShuffleMode,
 )
 
-_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=NumericScalar)
 _Distance: TypeAlias = (
     int
     | np.int8
@@ -52,10 +52,10 @@ _Distance: TypeAlias = (
 @overload
 def shuffle(
     group: BlockGroup,
-    value: CommonThreadDataLike[_ItemT],
+    value: ReadableThreadDataLike[_ItemT],
     /,
     *,
-    mode: CommonShuffleMode = "down",
+    mode: ArrayShuffleMode = "down",
     distance: Literal[1] = 1,
 ) -> ThreadData[_ItemT]: ...
 @overload
@@ -64,7 +64,7 @@ def shuffle(
     value: CutlassTensorSample | CutlassTensorSSASample,
     /,
     *,
-    mode: CommonShuffleMode = "down",
+    mode: ArrayShuffleMode = "down",
     distance: Literal[1] = 1,
 ) -> ThreadData[Any]: ...
 @overload

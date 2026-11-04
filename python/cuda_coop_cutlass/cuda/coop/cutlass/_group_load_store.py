@@ -19,16 +19,16 @@ from typing import Any
 
 from cuda.coop.cutlass._planning import ArgumentBinding, GroupLoadStoreAlgorithm
 from cuda.coop.cutlass._planning.thread_group import (
-    ThreadGroup as CommonThreadGroup,
+    ThreadGroup as PlanningThreadGroup,
 )
 from cuda.coop.cutlass._typing import (
     BlockLoadStoreAlgorithm,
-    CommonThreadDataLike,
     IntegerValue,
+    ReadableThreadDataLike,
     TempStorageLike,
     ValidItems,
     WarpLoadStoreAlgorithm,
-    _CommonNumericT,
+    _NumericT,
 )
 from cuda.coop.cutlass._validation import _validate_temp_storage
 
@@ -53,7 +53,7 @@ def _resolve_group(group, algorithm, temp_storage, operation):
     launch facts, and normalized algorithm for lowering.
     """
 
-    if not isinstance(group, CommonThreadGroup):
+    if not isinstance(group, PlanningThreadGroup):
         raise TypeError(f"{_SCOPE}.{operation} group must be a ThreadGroup")
     if group.kind not in {"block", "warp", "threads_within_warp"}:
         raise NotImplementedError(
@@ -94,7 +94,7 @@ def load(
     alignment: int | None = None,
     algorithm: BlockLoadStoreAlgorithm | WarpLoadStoreAlgorithm = "direct",
     valid_items: ValidItems | None = None,
-    oob_default: _CommonNumericT | float | None = None,
+    oob_default: _NumericT | float | None = None,
     offset: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadData:
@@ -157,10 +157,10 @@ def load(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_load_store_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_load_store_documentation.py
         :language: python
-        :start-after: # qualified-load-store-example-begin
-        :end-before: # qualified-load-store-example-end
+        :start-after: # cutlass-load-store-example-begin
+        :end-before: # cutlass-load-store-example-end
         :dedent: 4
     """
 
@@ -194,7 +194,7 @@ def load(
 def store(
     group: BlockGroup | WarpGroup,
     destination: object,
-    value: _CommonNumericT | CommonThreadDataLike[_CommonNumericT],
+    value: _NumericT | ReadableThreadDataLike[_NumericT],
     /,
     *,
     algorithm: BlockLoadStoreAlgorithm | WarpLoadStoreAlgorithm = "direct",
@@ -232,10 +232,10 @@ def store(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_load_store_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_load_store_documentation.py
         :language: python
-        :start-after: # qualified-load-store-example-begin
-        :end-before: # qualified-load-store-example-end
+        :start-after: # cutlass-load-store-example-begin
+        :end-before: # cutlass-load-store-example-end
         :dedent: 4
     """
 

@@ -34,7 +34,7 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
 )
 @pytest.mark.parametrize("items_per_thread", (1, 4))
 def test_algorithm_selector_spellings(algorithm, items_per_thread):
-    """Normalize movement selector spelling through the qualified API.
+    """Normalize movement selector spelling through the CUTLASS API.
 
     Uppercase names, surrounding spaces, and hyphenated names must be accepted
     as supported algorithm names. Typed null pointers and an SM80 target check

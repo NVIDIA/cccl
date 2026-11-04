@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Run the qualified register-conversion example and check copy ownership.
+"""Run the CuTe register-conversion example and check copy ownership.
 
 The host compares the original register values, the immutable vector from
 ``to_tensor_ssa``, and a separately modified register copy. Each pair differs
