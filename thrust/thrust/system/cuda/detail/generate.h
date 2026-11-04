@@ -26,7 +26,7 @@ namespace cuda_cub
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class OutputIt, class Size, class Generator>
-OutputIt _CCCL_HOST_DEVICE
+OutputIt _CCCL_HOST_DEVICE_API
 generate_n(execution_policy<Derived>& policy, OutputIt result, Size count, Generator generator)
 {
   THRUST_CDP_DISPATCH(({
@@ -44,7 +44,8 @@ generate_n(execution_policy<Derived>& policy, OutputIt result, Size count, Gener
 }
 
 template <class Derived, class OutputIt, class Generator>
-void _CCCL_HOST_DEVICE generate(execution_policy<Derived>& policy, OutputIt first, OutputIt last, Generator generator)
+void _CCCL_HOST_DEVICE_API
+generate(execution_policy<Derived>& policy, OutputIt first, OutputIt last, Generator generator)
 {
   cuda_cub::generate_n(policy, first, ::cuda::std::distance(first, last), generator);
 }

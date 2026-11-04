@@ -231,7 +231,7 @@ struct AgentTopK
   //! @param identify_candidates_op
   //!   Filter operator
   //!
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentTopK(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentTopK(
     TempStorage& temp_storage,
     const KeyInputIteratorT d_keys_in,
     KeyOutputIteratorT d_keys_out,
@@ -260,7 +260,7 @@ struct AgentTopK
 
   // Process a range of input data in tiles, calling f(key, index) for each element
   template <typename InputItT, typename FuncT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void process_range(InputItT in, const OffsetT num_items, FuncT f)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void process_range(InputItT in, const OffsetT num_items, FuncT f)
   {
     key_in_t thread_data[items_per_thread];
 
@@ -314,7 +314,7 @@ struct AgentTopK
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void init_histograms(OffsetT* histogram)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void init_histograms(OffsetT* histogram)
   {
     // Initialize histogram bin counts to zeros
     int histo_offset = 0;
@@ -332,7 +332,7 @@ struct AgentTopK
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void merge_histograms(OffsetT* global_histogram)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void merge_histograms(OffsetT* global_histogram)
   {
     int histo_offset = 0;
 
@@ -354,7 +354,7 @@ struct AgentTopK
   }
 
   // Fused filtering of the current pass and building histogram for the next pass
-  _CCCL_DEVICE _CCCL_FORCEINLINE void filter_and_histogram(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void filter_and_histogram(
     key_in_t* in_buf,
     OffsetT* in_idx_buf,
     key_in_t* out_buf,
@@ -485,7 +485,7 @@ struct AgentTopK
   }
 
   // Replace histogram with its own prefix sum
-  _CCCL_DEVICE _CCCL_FORCEINLINE void compute_bin_offsets(volatile OffsetT* histogram)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void compute_bin_offsets(volatile OffsetT* histogram)
   {
     OffsetT thread_data[bins_per_thread]{};
 
@@ -500,7 +500,7 @@ struct AgentTopK
   }
 
   // Identify the bucket that the k-th value falls into
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   choose_bucket(Counter<key_in_t, OffsetT, OutOffsetT>* counter, const OutOffsetT k, const int pass)
   {
     // Initialize histogram bin counts to zeros
@@ -543,7 +543,7 @@ struct AgentTopK
   // the histogram for the next pass. The caller-supplied counter_update_fn runs on thread 0 of the
   // last block to update pass-specific counter state.
   template <typename CounterUpdateFn>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void finalize_pass(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void finalize_pass(
     Counter<key_in_t, OffsetT, OutOffsetT>* counter,
     OffsetT* histogram,
     OutOffsetT current_k,
@@ -589,7 +589,7 @@ struct AgentTopK
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void invoke_last_filter(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void invoke_last_filter(
     key_in_t* in_buf, OffsetT* in_idx_buf, Counter<key_in_t, OffsetT, OutOffsetT>* counter, OutOffsetT k, int pass)
   {
     const bool load_from_original_input = (pass <= 1) || counter->previous_len > buffer_length;
@@ -647,7 +647,7 @@ struct AgentTopK
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void invoke_filter_and_histogram(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void invoke_filter_and_histogram(
     key_in_t* in_buf,
     OffsetT* in_idx_buf,
     key_in_t* out_buf,
@@ -711,7 +711,7 @@ struct AgentTopK
 
   // Histogram-only pass: computes the histogram over the full input without filtering.
   // Used for the first radix pass before any candidates have been identified.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void invoke_histogram_only(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void invoke_histogram_only(
     Counter<key_in_t, OffsetT, OutOffsetT>* counter, OffsetT* histogram, int pass, bool is_last_pass)
   {
     // Initialize shared memory histogram

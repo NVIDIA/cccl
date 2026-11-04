@@ -47,7 +47,7 @@ struct select_if_less_than_t
   bool negate;
   uint8_t threshold;
 
-  __device__ __forceinline__ bool operator()(uint8_t val) const
+  _CCCL_DEVICE_API __forceinline__ bool operator()(uint8_t val) const
   {
     return negate ? !(val < threshold) : val < threshold;
   }
@@ -59,7 +59,7 @@ struct write_pivot_point_t
   OffsetT threshold;
   OffsetT* pivot_point;
 
-  __device__ void operator()(OffsetT output_index, OffsetT input_index) const
+  _CCCL_DEVICE_API void operator()(OffsetT output_index, OffsetT input_index) const
   {
     if (output_index == threshold)
     {
@@ -69,7 +69,7 @@ struct write_pivot_point_t
 };
 
 template <typename KeyT>
-std::pair<thrust::device_vector<KeyT>, thrust::device_vector<KeyT>>
+_CCCL_HOST_API std::pair<thrust::device_vector<KeyT>, thrust::device_vector<KeyT>>
 generate_lhs_rhs(std::size_t num_items_lhs, std::size_t num_items_rhs, bit_entropy entropy)
 {
   using offset_t = std::size_t;

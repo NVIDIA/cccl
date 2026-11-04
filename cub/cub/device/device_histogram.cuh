@@ -554,7 +554,7 @@ struct DeviceHistogram
 
 private:
   template <size_t N, typename T>
-  _CCCL_HOST_DEVICE static auto to_array(T* ptr)
+  _CCCL_HOST_DEVICE_API static auto to_array(T* ptr)
   {
     ::cuda::std::array<::cuda::std::remove_const_t<T>, N> a{};
     ::cuda::std::copy(ptr, ptr + N, a.begin());

@@ -12,7 +12,7 @@
 struct benchmark_op_t
 {
   template <typename T>
-  __device__ __forceinline__ T operator()(T thread_data) const
+  _CCCL_DEVICE_API __forceinline__ T operator()(T thread_data) const
   {
     using WarpScan    = cub::WarpScan<T>;
     using TempStorage = typename WarpScan::TempStorage;
@@ -25,7 +25,7 @@ struct benchmark_op_t
 };
 
 template <typename T>
-void warp_scan(nvbench::state& state, nvbench::type_list<T>)
+_CCCL_HOST_API void warp_scan(nvbench::state& state, nvbench::type_list<T>)
 {
   constexpr int block_size    = 256;
   constexpr int unroll_factor = 128; // compromise between compile time and noise

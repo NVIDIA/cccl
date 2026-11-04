@@ -34,15 +34,15 @@ THRUST_NAMESPACE_BEGIN
 
 // Forward declare generic reduce circumvent circular dependency.
 template <typename DerivedPolicy, typename InputIterator, typename T, typename BinaryFunction>
-T _CCCL_HOST_DEVICE
-reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, // NOLINT(readability-redundant-declaration)
-       InputIterator first,
-       InputIterator last,
-       T init,
-       BinaryFunction binary_op);
+T _CCCL_HOST_DEVICE_API reduce(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec, // NOLINT(readability-redundant-declaration)
+  InputIterator first,
+  InputIterator last,
+  T init,
+  BinaryFunction binary_op);
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
-void _CCCL_HOST_DEVICE reduce_into( // NOLINT(readability-redundant-declaration)
+void _CCCL_HOST_DEVICE_API reduce_into( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -151,7 +151,7 @@ THRUST_RUNTIME_FUNCTION void reduce_n_into_impl(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Derived, typename InputIt, typename Size, typename T, typename BinaryOp>
-_CCCL_HOST_DEVICE T
+_CCCL_HOST_DEVICE_API T
 reduce_n(execution_policy<Derived>& policy, InputIt first, Size num_items, T init, BinaryOp binary_op)
 {
   THRUST_CDP_DISPATCH(
@@ -162,7 +162,7 @@ reduce_n(execution_policy<Derived>& policy, InputIt first, Size num_items, T ini
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Derived, typename InputIt, typename Size, typename OutputIt, typename T, typename BinaryOp>
-_CCCL_HOST_DEVICE void reduce_n_into(
+_CCCL_HOST_DEVICE_API void reduce_n_into(
   execution_policy<Derived>& policy, InputIt first, Size num_items, OutputIt output, T init, BinaryOp binary_op)
 {
   THRUST_CDP_DISPATCH(
@@ -171,7 +171,8 @@ _CCCL_HOST_DEVICE void reduce_n_into(
 }
 
 template <class Derived, class InputIt, class T, class BinaryOp>
-_CCCL_HOST_DEVICE T reduce(execution_policy<Derived>& policy, InputIt first, InputIt last, T init, BinaryOp binary_op)
+_CCCL_HOST_DEVICE_API T
+reduce(execution_policy<Derived>& policy, InputIt first, InputIt last, T init, BinaryOp binary_op)
 {
   using size_type = thrust::detail::it_difference_t<InputIt>;
   // FIXME: Check for RA iterator.
@@ -180,13 +181,13 @@ _CCCL_HOST_DEVICE T reduce(execution_policy<Derived>& policy, InputIt first, Inp
 }
 
 template <class Derived, class InputIt, class T>
-_CCCL_HOST_DEVICE T reduce(execution_policy<Derived>& policy, InputIt first, InputIt last, T init)
+_CCCL_HOST_DEVICE_API T reduce(execution_policy<Derived>& policy, InputIt first, InputIt last, T init)
 {
   return cuda_cub::reduce(policy, first, last, init, ::cuda::std::plus<T>());
 }
 
 template <class Derived, class InputIt>
-_CCCL_HOST_DEVICE thrust::detail::it_value_t<InputIt>
+_CCCL_HOST_DEVICE_API thrust::detail::it_value_t<InputIt>
 reduce(execution_policy<Derived>& policy, InputIt first, InputIt last)
 {
   using value_type = thrust::detail::it_value_t<InputIt>;
@@ -194,7 +195,7 @@ reduce(execution_policy<Derived>& policy, InputIt first, InputIt last)
 }
 
 template <class Derived, class InputIt, class OutputIt, class T, class BinaryOp>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 reduce_into(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt output, T init, BinaryOp binary_op)
 {
   using size_type = thrust::detail::it_difference_t<InputIt>;
@@ -204,14 +205,14 @@ reduce_into(execution_policy<Derived>& policy, InputIt first, InputIt last, Outp
 }
 
 template <class Derived, class InputIt, class OutputIt, class T>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 reduce_into(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt output, T init)
 {
   cuda_cub::reduce_into(policy, first, last, output, init, ::cuda::std::plus<T>());
 }
 
 template <class Derived, class InputIt, class OutputIt>
-_CCCL_HOST_DEVICE void reduce_into(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt output)
+_CCCL_HOST_DEVICE_API void reduce_into(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt output)
 {
   using value_type = thrust::detail::it_value_t<InputIt>;
   return cuda_cub::reduce_into(policy, first, last, output, value_type(0));

@@ -27,7 +27,7 @@ THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
 template <class Derived, class InputIt1, class InputIt2, class T, class ReduceOp, class ProductOp>
-T _CCCL_HOST_DEVICE inner_product(
+T _CCCL_HOST_DEVICE_API inner_product(
   execution_policy<Derived>& policy,
   InputIt1 first1,
   InputIt1 last1,
@@ -43,7 +43,7 @@ T _CCCL_HOST_DEVICE inner_product(
 }
 
 template <class Derived, class InputIt1, class InputIt2, class T>
-T _CCCL_HOST_DEVICE
+T _CCCL_HOST_DEVICE_API
 inner_product(execution_policy<Derived>& policy, InputIt1 first1, InputIt1 last1, InputIt2 first2, T init)
 {
   return cuda_cub::inner_product(

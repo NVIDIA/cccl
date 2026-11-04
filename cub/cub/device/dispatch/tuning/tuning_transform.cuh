@@ -70,7 +70,7 @@ namespace detail
 #endif // _CCCL_HOSTED()
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, const TransformAlgorithm& algo)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, const TransformAlgorithm& algo)
 {
   return os << _CUB::detail::to_string(algo);
 }
@@ -83,7 +83,7 @@ template <::cuda::std::same_as<char> CharT>
 struct std::formatter<_CUB::TransformAlgorithm, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const _CUB::TransformAlgorithm& algo, FmtCtx& ctx) const
+  _CCCL_HOST_API auto format(const _CUB::TransformAlgorithm& algo, FmtCtx& ctx) const
   {
     return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(algo), ctx);
   }
@@ -125,7 +125,7 @@ struct TransformPrefetchPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const TransformPrefetchPolicy& policy)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const TransformPrefetchPolicy& policy)
   {
     return os
         << "TransformPrefetchPolicy { .threads_per_block = " << policy.threads_per_block
@@ -158,7 +158,7 @@ struct TransformVectorizedPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const TransformVectorizedPolicy& policy)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const TransformVectorizedPolicy& policy)
   {
     return os << "TransformVectorizedPolicy { .threads_per_block = " << policy.threads_per_block
               << ", .items_per_thread = " << policy.items_per_thread << ", .vec_size = " << policy.vec_size << " }";
@@ -199,7 +199,7 @@ struct TransformAsyncCopyPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const TransformAsyncCopyPolicy& policy)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const TransformAsyncCopyPolicy& policy)
   {
     return os
         << "TransformAsyncCopyPolicy { .threads_per_block = " << policy.threads_per_block
@@ -240,7 +240,7 @@ struct TransformPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const TransformPolicy& policy)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const TransformPolicy& policy)
   {
     return os << "TransformPolicy { .min_bytes_in_flight = " << policy.min_bytes_in_flight
               << ", .algorithm = " << policy.algorithm << ", .prefetch = " << policy.prefetch
@@ -257,7 +257,7 @@ concept transform_policy_selector = policy_selector<T, TransformPolicy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 template <typename... Its>
-_CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
+_CCCL_HOST_DEVICE_API constexpr auto loaded_bytes_per_iteration() -> int
 {
   return (int{sizeof(it_value_t<Its>)} + ... + 0);
 }
@@ -265,7 +265,7 @@ _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
 inline constexpr int ldgsts_size_and_align = 16;
 
 template <int InputCount>
-_CCCL_HOST_DEVICE constexpr auto memcpy_async_dyn_smem_for_tile_size(
+_CCCL_HOST_DEVICE_API constexpr auto memcpy_async_dyn_smem_for_tile_size(
   const ::cuda::std::array<iterator_info, InputCount>& inputs,
   int tile_size,
   int copy_alignment = ldgsts_size_and_align) -> int
@@ -285,13 +285,13 @@ _CCCL_HOST_DEVICE constexpr auto memcpy_async_dyn_smem_for_tile_size(
 
 inline constexpr int bulk_copy_size_multiple = 16;
 
-_CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(::cuda::compute_capability cc) -> int
+_CCCL_HOST_DEVICE_API constexpr auto bulk_copy_alignment(::cuda::compute_capability cc) -> int
 {
   return (cc < ::cuda::compute_capability{10, 0}) ? 128 : 16;
 }
 
 template <int InputCount>
-_CCCL_HOST_DEVICE constexpr auto bulk_copy_dyn_smem_for_tile_size(
+_CCCL_HOST_DEVICE_API constexpr auto bulk_copy_dyn_smem_for_tile_size(
   const ::cuda::std::array<iterator_info, InputCount>& inputs, int tile_size, int bulk_copy_align) -> int
 {
   // we rely on the tile_size being a multiple of alignments, so shifting offsets/pointers by it retains alignments

@@ -27,7 +27,7 @@ namespace system::detail::sequential
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator inclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator inclusive_scan(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator first,
   InputIterator last,
@@ -63,7 +63,7 @@ template <typename DerivedPolicy,
           typename OutputIterator,
           typename InitialValueType,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator inclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator inclusive_scan(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator first,
   InputIterator last,
@@ -103,7 +103,7 @@ template <typename DerivedPolicy,
           typename OutputIterator,
           typename InitialValueType,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator exclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator exclusive_scan(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator first,
   InputIterator last,

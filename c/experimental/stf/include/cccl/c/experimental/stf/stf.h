@@ -67,6 +67,8 @@
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
 #endif // !CCCL_C_EXPERIMENTAL
 
+#include <cuda/std/detail/__config>
+
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <stddef.h>
@@ -1775,7 +1777,7 @@ stf_error_t stf_cuda_kernel_add_desc_cufunc(
 //!
 //! \see stf_cuda_kernel_add_desc_cufunc(), stf_cuda_kernel_get_arg()
 
-inline cudaError_t stf_cuda_kernel_add_desc(
+_CCCL_HOST_API inline cudaError_t stf_cuda_kernel_add_desc(
   stf_cuda_kernel_handle k,
   const void* func,
   dim3 grid_dim_,

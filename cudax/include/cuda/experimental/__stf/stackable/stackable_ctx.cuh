@@ -83,13 +83,13 @@ namespace cuda::experimental::stf
  * this checks if a subsequent operation requesting a different mode is valid.
  * For example, data imported as read-only cannot be written.
  */
-inline bool access_mode_is_mutating(access_mode m)
+_CCCL_HOST_API inline bool access_mode_is_mutating(access_mode m)
 {
   return m == access_mode::write || m == access_mode::rw || m == access_mode::reduce
       || m == access_mode::reduce_no_init;
 }
 
-inline bool access_mode_permits(access_mode granted, access_mode requested)
+_CCCL_HOST_API inline bool access_mode_permits(access_mode granted, access_mode requested)
 {
   return !access_mode_is_mutating(requested) || access_mode_is_mutating(granted);
 }
@@ -105,16 +105,17 @@ public:
   /// @brief Alias for `T` - matches logical_data<T> convention
   using element_type = T;
 
-  stackable_logical_data() = default;
+  _CCCL_HIDE_FROM_ABI stackable_logical_data() = default;
 
-  stackable_logical_data(const stackable_logical_data&)                = default;
-  stackable_logical_data& operator=(const stackable_logical_data&)     = default;
-  stackable_logical_data(stackable_logical_data&&) noexcept            = default;
-  stackable_logical_data& operator=(stackable_logical_data&&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI stackable_logical_data(const stackable_logical_data&)                = default;
+  _CCCL_HIDE_FROM_ABI stackable_logical_data& operator=(const stackable_logical_data&)     = default;
+  _CCCL_HIDE_FROM_ABI stackable_logical_data(stackable_logical_data&&) noexcept            = default;
+  _CCCL_HIDE_FROM_ABI stackable_logical_data& operator=(stackable_logical_data&&) noexcept = default;
 
   /* Create a logical data in the stackable ctx : in order to make it possible
    * to export all the way down to the root context, we create the logical data
    * in the root, and import them. */
+  _CCCL_HOST_API
   stackable_logical_data(stackable_ctx sctx, int ctx_offset, bool ld_from_shape, logical_data<T> ld, bool can_export)
       : owner_(::std::make_shared<owner>(::std::make_shared<state>(mv(sctx))))
   {
@@ -152,7 +153,7 @@ public:
     }
   }
 
-  int get_data_root_offset() const
+  _CCCL_HOST_API int get_data_root_offset() const
   {
     return data().data_root_offset;
   }
@@ -163,110 +164,110 @@ public:
   // this logical data, so a reference into the vector would dangle as soon as
   // the shared lock below is released. The handle itself is a cheap shared_ptr
   // wrapper and stays valid regardless of vector growth.
-  logical_data<T> get_ld(int offset) const
+  _CCCL_HOST_API logical_data<T> get_ld(int offset) const
   {
     auto lock = data().acquire_shared_lock();
     _CCCL_ASSERT(offset >= 0 && data().was_imported(offset), "Failed to find imported data");
     return data().get_data_node(offset).ld;
   }
 
-  int get_unique_id() const
+  _CCCL_HOST_API int get_unique_id() const
   {
     return get_ld(get_data_root_offset()).get_unique_id();
   }
 
-  void push(int ctx_offset, access_mode m, data_place where = data_place::invalid()) const
+  _CCCL_HOST_API void push(int ctx_offset, access_mode m, data_place where = data_place::invalid()) const
   {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     const_cast<stackable_logical_data*>(this)->push_at(ctx_offset, m, mv(where));
   }
 
-  void push(access_mode m, data_place where = data_place::invalid()) const
+  _CCCL_HOST_API void push(access_mode m, data_place where = data_place::invalid()) const
   {
     push(data().sctx.get_head_offset(), m, mv(where));
   }
 
-  stackable_ctx& sctx()
+  _CCCL_HOST_API stackable_ctx& sctx()
   {
     return mut_data().sctx;
   }
 
-  const stackable_ctx& sctx() const
+  _CCCL_HOST_API const stackable_ctx& sctx() const
   {
     return data().sctx;
   }
 
   // Helpers — return lazy stackable_task_dep descriptors.
-  auto read() const
+  _CCCL_HOST_API auto read() const
   {
     return stackable_task_dep<T, ::cuda::std::monostate, false>(*this, access_mode::read);
   }
 
-  auto read(data_place dp) const
+  _CCCL_HOST_API auto read(data_place dp) const
   {
     return stackable_task_dep<T, ::cuda::std::monostate, false>(*this, access_mode::read, mv(dp));
   }
 
-  auto write()
+  _CCCL_HOST_API auto write()
   {
     return stackable_task_dep<T, ::cuda::std::monostate, false>(*this, access_mode::write);
   }
 
-  auto write(data_place dp)
+  _CCCL_HOST_API auto write(data_place dp)
   {
     return stackable_task_dep<T, ::cuda::std::monostate, false>(*this, access_mode::write, mv(dp));
   }
 
-  auto rw()
+  _CCCL_HOST_API auto rw()
   {
     return stackable_task_dep<T, ::cuda::std::monostate, false>(*this, access_mode::rw);
   }
 
-  auto rw(data_place dp)
+  _CCCL_HOST_API auto rw(data_place dp)
   {
     return stackable_task_dep<T, ::cuda::std::monostate, false>(*this, access_mode::rw, mv(dp));
   }
 
   template <typename Op>
-  auto reduce(Op)
+  _CCCL_HOST_API auto reduce(Op)
   {
     return stackable_task_dep<T, Op, true>(*this, access_mode::reduce);
   }
 
   template <typename Op>
-  auto reduce(Op, data_place dp)
+  _CCCL_HOST_API auto reduce(Op, data_place dp)
   {
     return stackable_task_dep<T, Op, true>(*this, access_mode::reduce, mv(dp));
   }
 
   template <typename Op>
-  auto reduce(Op, no_init)
+  _CCCL_HOST_API auto reduce(Op, no_init)
   {
     return stackable_task_dep<T, Op, false>(*this, access_mode::reduce_no_init);
   }
 
   template <typename Op>
-  auto reduce(Op, no_init, data_place dp)
+  _CCCL_HOST_API auto reduce(Op, no_init, data_place dp)
   {
     return stackable_task_dep<T, Op, false>(*this, access_mode::reduce_no_init, mv(dp));
   }
 
-  auto dep_with_mode(access_mode m)
+  _CCCL_HOST_API auto dep_with_mode(access_mode m)
   {
     return stackable_task_dep<T, ::cuda::std::monostate, false>(*this, m);
   }
 
-  auto dep_with_mode(access_mode m, data_place dp)
+  _CCCL_HOST_API auto dep_with_mode(access_mode m, data_place dp)
   {
     return stackable_task_dep<T, ::cuda::std::monostate, false>(*this, m, mv(dp));
   }
 
-  auto shape() const
+  _CCCL_HOST_API auto shape() const
   {
     return get_ld(get_data_root_offset()).shape();
   }
 
-  auto& set_symbol(::std::string symbol)
+  _CCCL_HOST_API auto& set_symbol(::std::string symbol)
   {
     auto& st      = mut_data();
     auto ctx_lock = st.sctx.acquire_exclusive_lock();
@@ -277,7 +278,7 @@ public:
     return *this;
   }
 
-  void set_write_back(bool flag)
+  _CCCL_HOST_API void set_write_back(bool flag)
   {
     const auto& st = data();
     _CCCL_ASSERT(st.data_root_offset >= 0, "invalid value");
@@ -285,17 +286,17 @@ public:
     mut_data().get_data_node(st.data_root_offset).ld.set_write_back(flag);
   }
 
-  void set_read_only(bool flag = true)
+  _CCCL_HOST_API void set_read_only(bool flag = true)
   {
     mut_data().read_only = flag;
   }
 
-  bool is_read_only() const
+  _CCCL_HOST_API bool is_read_only() const
   {
     return data().read_only;
   }
 
-  auto get_symbol() const
+  _CCCL_HOST_API auto get_symbol() const
   {
     return data().symbol;
   }
@@ -305,10 +306,11 @@ public:
   // if necessary.
   //
   // Returns true if the task_dep needs an update
-  bool validate_access(int ctx_offset,
-                       const stackable_ctx& sctx_ref,
-                       access_mode m,
-                       const data_place& dplace_hint = data_place::invalid()) const
+  _CCCL_HOST_API bool validate_access(
+    int ctx_offset,
+    const stackable_ctx& sctx_ref,
+    access_mode m,
+    const data_place& dplace_hint = data_place::invalid()) const
   {
     auto& self = *const_cast<stackable_logical_data*>(this); // NOLINT(cppcoreguidelines-pro-type-const-cast)
     auto lock  = self.mut_data().acquire_exclusive_lock();
@@ -378,11 +380,11 @@ private:
   class state : public stackable_logical_data_impl_state_base
   {
   public:
-    explicit state(stackable_ctx _sctx)
+    _CCCL_HOST_API explicit state(stackable_ctx _sctx)
         : sctx(mv(_sctx))
     {}
 
-    void pop_before_finalize(int ctx_offset) override
+    _CCCL_HOST_API void pop_before_finalize(int ctx_offset) override
     {
       const int parent_offset = sctx.get_parent_offset(ctx_offset);
       _CCCL_ASSERT(parent_offset >= 0, "");
@@ -419,7 +421,7 @@ private:
       sctx.get_node(ctx_offset)->ctx.get_dot()->ctx_add_output_id(parent_dnode.frozen_ld.value().unfreeze_fake_task_id());
     }
 
-    void pop_after_finalize(int parent_offset, const event_list& finalize_prereqs) override
+    _CCCL_HOST_API void pop_after_finalize(int parent_offset, const event_list& finalize_prereqs) override
     {
       const nvtx_range r("stackable_logical_data::pop_after_finalize");
 
@@ -441,7 +443,7 @@ private:
 
     struct data_node
     {
-      explicit data_node(logical_data<T> ld)
+      _CCCL_HOST_API explicit data_node(logical_data<T> ld)
           : ld(mv(ld))
       {}
 
@@ -452,7 +454,7 @@ private:
       access_mode effective_mode = access_mode::none;
     };
 
-    auto& get_data_node(int offset)
+    _CCCL_HOST_API auto& get_data_node(int offset)
     {
       _CCCL_ASSERT(offset >= 0, "invalid value");
       const auto idx = static_cast<size_t>(offset);
@@ -460,7 +462,7 @@ private:
       return data_nodes[idx].value();
     }
 
-    const auto& get_data_node(int offset) const
+    _CCCL_HOST_API const auto& get_data_node(int offset) const
     {
       _CCCL_ASSERT(offset >= 0, "invalid value");
       const auto idx = static_cast<size_t>(offset);
@@ -468,9 +470,9 @@ private:
       return data_nodes[idx].value();
     }
 
-    void grow_data_nodes(size_t target_size,
-                         size_t factor_numerator   = node_hierarchy::default_growth_numerator,
-                         size_t factor_denominator = node_hierarchy::default_growth_denominator)
+    _CCCL_HOST_API void grow_data_nodes(size_t target_size,
+                                        size_t factor_numerator   = node_hierarchy::default_growth_numerator,
+                                        size_t factor_denominator = node_hierarchy::default_growth_denominator)
     {
       if (target_size <= data_nodes.size())
       {
@@ -481,7 +483,7 @@ private:
       data_nodes.resize(new_size);
     }
 
-    bool was_imported(int offset) const
+    _CCCL_HOST_API bool was_imported(int offset) const
     {
       if (offset < 0)
       {
@@ -492,32 +494,32 @@ private:
       return idx < data_nodes.size() && data_nodes[idx].has_value();
     }
 
-    void mark_access(int offset, access_mode m)
+    _CCCL_HOST_API void mark_access(int offset, access_mode m)
     {
       _CCCL_ASSERT(offset >= 0, "Failed to find data node for mark_access");
       _CCCL_ASSERT(data_nodes[static_cast<size_t>(offset)].has_value(), "Failed to find data node for mark_access");
       data_nodes[static_cast<size_t>(offset)].value().effective_mode |= m;
     }
 
-    bool is_frozen(int offset) const
+    _CCCL_HOST_API bool is_frozen(int offset) const
     {
       _CCCL_ASSERT(offset >= 0, "");
       _CCCL_ASSERT(data_nodes[static_cast<size_t>(offset)].has_value(), "");
       return data_nodes[static_cast<size_t>(offset)].value().frozen_ld.has_value();
     }
 
-    access_mode get_frozen_mode(int offset) const
+    _CCCL_HOST_API access_mode get_frozen_mode(int offset) const
     {
       _CCCL_ASSERT(is_frozen(offset), "");
       return data_nodes[static_cast<size_t>(offset)].value().frozen_ld.value().get_access_mode();
     }
 
-    ::std::shared_lock<::std::shared_mutex> acquire_shared_lock() const
+    _CCCL_HOST_API ::std::shared_lock<::std::shared_mutex> acquire_shared_lock() const
     {
       return ::std::shared_lock<::std::shared_mutex>(mutex);
     }
 
-    ::std::unique_lock<::std::shared_mutex> acquire_exclusive_lock()
+    _CCCL_HOST_API ::std::unique_lock<::std::shared_mutex> acquire_exclusive_lock()
     {
       return ::std::unique_lock<::std::shared_mutex>(mutex);
     }
@@ -539,11 +541,11 @@ private:
   {
     ::std::shared_ptr<state> payload;
 
-    explicit owner(::std::shared_ptr<state> st)
+    _CCCL_HOST_API explicit owner(::std::shared_ptr<state> st)
         : payload(mv(st))
     {}
 
-    ~owner()
+    _CCCL_HOST_API ~owner()
     {
       if (payload)
       {
@@ -557,19 +559,19 @@ private:
     owner& operator=(owner&&)      = delete;
   };
 
-  const state& data() const
+  _CCCL_HOST_API const state& data() const
   {
     _CCCL_ASSERT(owner_ && owner_->payload, "stackable_logical_data used after move or default construction");
     return *owner_->payload;
   }
 
-  state& mut_data()
+  _CCCL_HOST_API state& mut_data()
   {
     _CCCL_ASSERT(owner_ && owner_->payload, "stackable_logical_data used after move or default construction");
     return *owner_->payload;
   }
 
-  static void adopt_into_context(const ::std::shared_ptr<state>& st)
+  _CCCL_HOST_API static void adopt_into_context(const ::std::shared_ptr<state>& st)
   {
     if (!st)
     {
@@ -597,7 +599,7 @@ private:
   }
 
   template <typename Func>
-  static void traverse_data_nodes(state& st, Func&& func)
+  _CCCL_HOST_API static void traverse_data_nodes(state& st, Func&& func)
   {
     ::std::stack<int> node_stack;
     node_stack.push(st.data_root_offset);
@@ -620,12 +622,12 @@ private:
     }
   }
 
-  void mark_access_at(int offset, access_mode m)
+  _CCCL_HOST_API void mark_access_at(int offset, access_mode m)
   {
     mut_data().mark_access(offset, m);
   }
 
-  void push_at(int ctx_offset, access_mode m, data_place where = data_place::invalid())
+  _CCCL_HOST_API void push_at(int ctx_offset, access_mode m, data_place where = data_place::invalid())
   {
     auto& st                = mut_data();
     const int parent_offset = st.sctx.get_parent_offset(ctx_offset);
@@ -773,7 +775,7 @@ private:
   ::std::shared_ptr<owner> owner_;
 };
 
-inline stackable_logical_data<void_interface> stackable_ctx::token()
+_CCCL_HOST_API inline stackable_logical_data<void_interface> stackable_ctx::token()
 {
   const int head = pimpl->get_head_offset();
   return stackable_logical_data<void_interface>(*this, head, true, get_root_ctx().token(), true);
@@ -794,6 +796,7 @@ public:
   using op_type                   = reduce_op;
   static constexpr bool does_work = !::cuda::std::is_same_v<reduce_op, ::cuda::std::monostate>;
 
+  _CCCL_HOST_API
   stackable_task_dep(stackable_logical_data<T> _d, access_mode _mode, data_place _dplace = data_place::affine())
       : d(mv(_d))
       , mode(_mode)
@@ -802,7 +805,7 @@ public:
 
   // Implicit conversion to task_dep for interop with non-stackable contexts.
   // Resolves at the current thread's head offset.
-  operator task_dep<T, reduce_op, initialize>() const
+  _CCCL_HOST_API operator task_dep<T, reduce_op, initialize>() const
   {
     auto& sctx = d.sctx();
     int offset = sctx.get_head_offset();
@@ -810,24 +813,24 @@ public:
     return resolve(offset);
   }
 
-  const stackable_logical_data<T>& get_d() const
+  _CCCL_HOST_API const stackable_logical_data<T>& get_d() const
   {
     return d;
   }
 
-  access_mode get_access_mode() const
+  _CCCL_HOST_API access_mode get_access_mode() const
   {
     return mode;
   }
 
-  const data_place& get_dplace() const
+  _CCCL_HOST_API const data_place& get_dplace() const
   {
     return dplace;
   }
 
   // Create a concrete task_dep from the logical data at the given context offset.
   // Callers must ensure validate_access has already been called for this offset.
-  task_dep<T, reduce_op, initialize> resolve(int context_offset) const
+  _CCCL_HOST_API task_dep<T, reduce_op, initialize> resolve(int context_offset) const
   {
     auto context_ld = d.get_ld(context_offset);
     return task_dep<T, reduce_op, initialize>(context_ld, mode, dplace);
@@ -862,7 +865,7 @@ private:
 class launchable_graph_handle
 {
 public:
-  launchable_graph_handle() = default;
+  _CCCL_HIDE_FROM_ABI launchable_graph_handle() = default;
 
   //! \brief Underlying executable graph. Aborts if the handle is invalid.
   //!
@@ -876,7 +879,7 @@ public:
   //! Note: unlike `graph()`, calling `exec()` *does* force instantiation.
   //! Callers that only want to embed the graph as a child node in another
   //! graph should use `graph()` and avoid `exec()` entirely.
-  cudaGraphExec_t exec() const
+  _CCCL_HOST_API cudaGraphExec_t exec() const
   {
     _CCCL_VERIFY(!token_.expired(), "launchable_graph_handle::exec() called after pop_epilogue()");
     auto shared_exec = ctx_.prepare_handle_for_exec(node_offset_);
@@ -889,7 +892,7 @@ public:
   //! Does NOT perform any stream synchronization - it is purely observational.
   //! If you plan to drive the graph manually, call `exec()` first (it will
   //! lazily sync), or use `launch()` which does both in one step.
-  cudaStream_t stream() const
+  _CCCL_HOST_API cudaStream_t stream() const
   {
     _CCCL_VERIFY(!token_.expired(), "launchable_graph_handle::stream() called after pop_epilogue()");
     return support_stream_;
@@ -899,7 +902,7 @@ public:
   //!
   //! On the first call, waits for the nested context's freeze/get events
   //! (dep A). Subsequent calls skip the sync and issue the launch directly.
-  void launch()
+  _CCCL_HOST_API void launch()
   {
     _CCCL_VERIFY(!token_.expired(), "launchable_graph_handle::launch() called after pop_epilogue()");
     ctx_.launch_prepared_graph(node_offset_, support_stream_);
@@ -934,7 +937,7 @@ public:
   //! work has completed (e.g. via `cudaStreamSynchronize` on your launch
   //! stream) before calling `pop_epilogue()`, otherwise the unfreeze of the
   //! pushed data will race the child graph.
-  cudaGraph_t graph() const
+  _CCCL_HOST_API cudaGraph_t graph() const
   {
     _CCCL_VERIFY(!token_.expired(), "launchable_graph_handle::graph() called after pop_epilogue()");
     ctx_.prepare_handle_for_graph(node_offset_);
@@ -942,12 +945,12 @@ public:
   }
 
   //! \brief True iff the owning stackable_ctx has not yet run pop_epilogue().
-  bool valid() const
+  _CCCL_HOST_API bool valid() const
   {
     return !token_.expired();
   }
 
-  explicit operator bool() const
+  _CCCL_HOST_API explicit operator bool() const
   {
     return valid();
   }
@@ -968,7 +971,7 @@ private:
   cudaStream_t support_stream_ = nullptr;
 };
 
-inline launchable_graph_handle stackable_ctx::pop_prologue()
+_CCCL_HOST_API inline launchable_graph_handle stackable_ctx::pop_prologue()
 {
   auto r = pimpl->pop_prologue_impl();
 
@@ -1007,8 +1010,8 @@ class stackable_ctx::graph_scope_guard
 public:
   using context_type = stackable_ctx;
 
-  explicit graph_scope_guard(stackable_ctx& ctx,
-                             ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+  _CCCL_HOST_API explicit graph_scope_guard(stackable_ctx& ctx,
+                                            ::cuda::std::source_location loc = ::cuda::std::source_location::current())
       : ctx_(ctx)
   {
     ctx_.push(loc);
@@ -1016,7 +1019,7 @@ public:
 
   // pop() completes the level's teardown whatever its steps report; a destructor cannot pass the
   // first failure on, so the policy is to report it and end the program.
-  ~graph_scope_guard()
+  _CCCL_HOST_API ~graph_scope_guard()
   {
     ctx_.pop(sump::abort);
   }
@@ -1030,7 +1033,7 @@ private:
   stackable_ctx& ctx_;
 };
 
-inline stackable_ctx::graph_scope_guard stackable_ctx::graph_scope(::cuda::std::source_location loc)
+_CCCL_HOST_API inline stackable_ctx::graph_scope_guard stackable_ctx::graph_scope(::cuda::std::source_location loc)
 {
   return graph_scope_guard(*this, loc);
 }
@@ -1057,8 +1060,8 @@ class stackable_ctx::launchable_graph_scope
 public:
   using context_type = stackable_ctx;
 
-  explicit launchable_graph_scope(stackable_ctx& ctx,
-                                  ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+  _CCCL_HOST_API explicit launchable_graph_scope(
+    stackable_ctx& ctx, ::cuda::std::source_location loc = ::cuda::std::source_location::current())
       : ctx_(ctx)
   {
     ctx_.push(loc);
@@ -1066,7 +1069,7 @@ public:
     // or on release() if none of those were called.
   }
 
-  ~launchable_graph_scope() noexcept
+  _CCCL_HOST_API ~launchable_graph_scope() noexcept
   {
     release();
   }
@@ -1077,21 +1080,21 @@ public:
   launchable_graph_scope& operator=(launchable_graph_scope&&)      = delete;
 
   //! \brief Launch the graph once. The first call triggers pop_prologue().
-  void launch()
+  _CCCL_HOST_API void launch()
   {
     ensure_prepared_();
     handle_.launch();
   }
 
   //! \brief Expose the executable graph. Triggers pop_prologue() on demand.
-  cudaGraphExec_t exec()
+  _CCCL_HOST_API cudaGraphExec_t exec()
   {
     ensure_prepared_();
     return handle_.exec();
   }
 
   //! \brief Expose the support stream. Triggers pop_prologue() on demand.
-  cudaStream_t stream()
+  _CCCL_HOST_API cudaStream_t stream()
   {
     ensure_prepared_();
     return handle_.stream();
@@ -1100,7 +1103,7 @@ public:
   //! \brief Expose the underlying CUDA graph (for embedding into another
   //! graph via cudaGraphAddChildGraphNode). Triggers pop_prologue() on
   //! demand.
-  cudaGraph_t graph()
+  _CCCL_HOST_API cudaGraph_t graph()
   {
     ensure_prepared_();
     return handle_.graph();
@@ -1114,7 +1117,7 @@ public:
   //! Tearing the graph node down is not something a caller could retry or recover from, so
   //! a failure here terminates.
   // NOLINTNEXTLINE(bugprone-exception-escape)
-  void release() noexcept
+  _CCCL_HOST_API void release() noexcept
   {
     if (released_)
     {
@@ -1135,7 +1138,7 @@ public:
   }
 
 private:
-  void ensure_prepared_()
+  _CCCL_HOST_API void ensure_prepared_()
   {
     _CCCL_VERIFY(!released_, "launchable_graph_scope used after release()");
     if (!handle_)
@@ -1207,15 +1210,15 @@ private:
 class stackable_ctx::launchable_graph
 {
 public:
-  launchable_graph()                                       = default;
-  launchable_graph(const launchable_graph&)                = default;
-  launchable_graph(launchable_graph&&) noexcept            = default;
-  launchable_graph& operator=(const launchable_graph&)     = default;
-  launchable_graph& operator=(launchable_graph&&) noexcept = default;
-  ~launchable_graph()                                      = default;
+  _CCCL_HIDE_FROM_ABI launchable_graph()                                       = default;
+  _CCCL_HIDE_FROM_ABI launchable_graph(const launchable_graph&)                = default;
+  _CCCL_HIDE_FROM_ABI launchable_graph(launchable_graph&&) noexcept            = default;
+  _CCCL_HIDE_FROM_ABI launchable_graph& operator=(const launchable_graph&)     = default;
+  _CCCL_HIDE_FROM_ABI launchable_graph& operator=(launchable_graph&&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI ~launchable_graph()                                      = default;
 
   //! \brief Launch the graph once on its support stream.
-  void launch()
+  _CCCL_HOST_API void launch()
   {
     _CCCL_VERIFY(state_, "launchable_graph::launch() called on an empty/moved-from handle");
     state_->handle.launch();
@@ -1223,14 +1226,14 @@ public:
 
   //! \brief Underlying executable graph. Triggers lazy instantiation + dep-A
   //! sync on the first call (same contract as `launchable_graph_handle::exec()`).
-  cudaGraphExec_t exec() const
+  _CCCL_HOST_API cudaGraphExec_t exec() const
   {
     _CCCL_VERIFY(state_, "launchable_graph::exec() called on an empty/moved-from handle");
     return state_->handle.exec();
   }
 
   //! \brief Support stream the graph was prepared against. Purely observational.
-  cudaStream_t stream() const
+  _CCCL_HOST_API cudaStream_t stream() const
   {
     _CCCL_VERIFY(state_, "launchable_graph::stream() called on an empty/moved-from handle");
     return state_->handle.stream();
@@ -1238,7 +1241,7 @@ public:
 
   //! \brief Underlying cudaGraph_t topology (for embedding as a child graph).
   //! Triggers lazy dep-A sync but does NOT call `cudaGraphInstantiate`.
-  cudaGraph_t graph() const
+  _CCCL_HOST_API cudaGraph_t graph() const
   {
     _CCCL_VERIFY(state_, "launchable_graph::graph() called on an empty/moved-from handle");
     return state_->handle.graph();
@@ -1247,12 +1250,12 @@ public:
   //! \brief True iff this copy still holds a shared reference and the
   //! underlying pop has not been epilogued (e.g. manually via
   //! `ctx.pop_epilogue()`).
-  bool valid() const noexcept
+  _CCCL_HOST_API bool valid() const noexcept
   {
     return state_ && state_->handle.valid();
   }
 
-  explicit operator bool() const noexcept
+  _CCCL_HOST_API explicit operator bool() const noexcept
   {
     return valid();
   }
@@ -1260,14 +1263,14 @@ public:
   //! \brief Number of live shared copies referring to the same graph. Debug
   //! introspection only. Returns 0 for a default-constructed / moved-from
   //! instance.
-  long use_count() const noexcept
+  _CCCL_HOST_API long use_count() const noexcept
   {
     return state_ ? state_.use_count() : 0;
   }
 
   //! \brief Drop this shared reference eagerly. When this was the last copy,
   //! `pop_epilogue()` runs now instead of at destruction time. Idempotent.
-  void reset() noexcept
+  _CCCL_HOST_API void reset() noexcept
   {
     state_.reset();
   }
@@ -1283,7 +1286,7 @@ private:
     stackable_ctx ctx;
     launchable_graph_handle handle;
 
-    state(stackable_ctx c, launchable_graph_handle h)
+    _CCCL_HOST_API state(stackable_ctx c, launchable_graph_handle h)
         : ctx(mv(c))
         , handle(mv(h))
     {}
@@ -1291,7 +1294,7 @@ private:
     // As in release(), a failing pop_epilogue() is not recoverable, so terminating is the
     // intended outcome.
     // NOLINTNEXTLINE(bugprone-exception-escape)
-    ~state()
+    _CCCL_HOST_API ~state()
     {
       // Guard against users who manually called pop_epilogue() on the ctx
       // while shared copies were still alive: the handle's token is expired
@@ -1309,7 +1312,7 @@ private:
   ::std::shared_ptr<state> state_;
 };
 
-inline stackable_ctx::launchable_graph stackable_ctx::pop_prologue_shared()
+_CCCL_HOST_API inline stackable_ctx::launchable_graph stackable_ctx::pop_prologue_shared()
 {
   // pop_prologue() already performs the validity / state checks.
   auto handle = pop_prologue();
@@ -1329,7 +1332,7 @@ class stackable_ctx::while_graph_scope_guard
 public:
   using context_type = stackable_ctx;
 
-  explicit while_graph_scope_guard(
+  _CCCL_HOST_API explicit while_graph_scope_guard(
     stackable_ctx& ctx,
     unsigned int default_launch_value = 0,
     unsigned int flags                = cudaGraphCondAssignDefault,
@@ -1340,12 +1343,12 @@ public:
   }
 
   // As with graph_scope_guard: a destructor can only report the first failure and end the program.
-  ~while_graph_scope_guard()
+  _CCCL_HOST_API ~while_graph_scope_guard()
   {
     ctx_.pop(sump::abort);
   }
 
-  cudaGraphConditionalHandle cond_handle() const
+  _CCCL_HOST_API cudaGraphConditionalHandle cond_handle() const
   {
     return conditional_handle_;
   }
@@ -1354,7 +1357,7 @@ public:
   class condition_update_scope
   {
   public:
-    condition_update_scope(stackable_ctx& ctx, cudaGraphConditionalHandle handle, Deps... deps)
+    _CCCL_HOST_API condition_update_scope(stackable_ctx& ctx, cudaGraphConditionalHandle handle, Deps... deps)
         : ctx_(ctx)
         , handle_(handle)
         , tdeps(mv(deps)...)
@@ -1385,7 +1388,7 @@ public:
     using kernel_tuple_t = typename to_cuda_tuple<filtered_data_t>::type;
 
     template <typename CondFunc>
-    void operator->*(CondFunc&& cond_func)
+    _CCCL_HOST_API void operator->*(CondFunc&& cond_func)
     {
       ::std::apply(
         [this](auto&&... deps) {
@@ -1414,7 +1417,7 @@ public:
   //!
   //! The lambda should return true to continue the loop, false to exit.
   template <typename... Args>
-  auto update_cond(Args&&... args)
+  _CCCL_HOST_API auto update_cond(Args&&... args)
   {
     return condition_update_scope(ctx_, cond_handle(), args...);
   }
@@ -1429,7 +1432,7 @@ private:
   cudaGraphConditionalHandle conditional_handle_{};
 };
 
-inline stackable_ctx::while_graph_scope_guard stackable_ctx::while_graph_scope(
+_CCCL_HOST_API inline stackable_ctx::while_graph_scope_guard stackable_ctx::while_graph_scope(
   unsigned int default_launch_value, unsigned int flags, ::cuda::std::source_location loc)
 {
   return while_graph_scope_guard(*this, default_launch_value, flags, loc);
@@ -1464,7 +1467,7 @@ class repeat_graph_scope_guard
 {
 public:
   template <typename CounterType>
-  static void init_counter_value(stackable_ctx& ctx, CounterType counter, size_t count)
+  _CCCL_HOST_API static void init_counter_value(stackable_ctx& ctx, CounterType counter, size_t count)
   {
     ctx.parallel_for(box(1), counter.write())->*[count] __device__(size_t, auto counter) {
       *counter = count;
@@ -1472,7 +1475,8 @@ public:
   }
 
   template <typename CounterType>
-  static void setup_condition_update(stackable_ctx::while_graph_scope_guard& while_guard, CounterType counter)
+  _CCCL_HOST_API static void
+  setup_condition_update(stackable_ctx::while_graph_scope_guard& while_guard, CounterType counter)
   {
     while_guard.update_cond(counter.read())->*[] __device__(auto counter) {
       (*counter)--;
@@ -1480,7 +1484,7 @@ public:
     };
   }
 
-  explicit repeat_graph_scope_guard(
+  _CCCL_HOST_API explicit repeat_graph_scope_guard(
     stackable_ctx& ctx,
     size_t count,
     unsigned int default_launch_value = 1,
@@ -1512,7 +1516,7 @@ private:
   ::cuda::std::optional<stackable_ctx::while_graph_scope_guard> while_guard_;
 };
 
-inline auto stackable_ctx::repeat_graph_scope(
+_CCCL_HOST_API inline auto stackable_ctx::repeat_graph_scope(
   size_t count, unsigned int default_launch_value, unsigned int flags, ::cuda::std::source_location loc)
 {
   return repeat_graph_scope_guard(*this, count, default_launch_value, flags, loc);
@@ -1524,20 +1528,20 @@ inline auto stackable_ctx::repeat_graph_scope(
 namespace reserved
 {
 template <typename T>
-static __global__ void kernel_set(T* addr, T val)
+_CCCL_KERNEL_ATTRIBUTES void kernel_set(T* addr, T val)
 {
   printf("SETTING ADDR %p at %d\n", addr, val);
   *addr = val;
 }
 
 template <typename T>
-static __global__ void kernel_add(T* addr, T val)
+_CCCL_KERNEL_ATTRIBUTES void kernel_add(T* addr, T val)
 {
   *addr += val;
 }
 
 template <typename T>
-static __global__ void kernel_check_value(T* addr, T val)
+_CCCL_KERNEL_ATTRIBUTES void kernel_check_value(T* addr, T val)
 {
   printf("CHECK %d EXPECTED %d\n", *addr, val);
   if (*addr != val)
@@ -1668,7 +1672,7 @@ UNITTEST("graph_scope multiple sequential scopes")
   ctx.finalize();
 };
 
-inline void test_graph_scope_with_tmp()
+_CCCL_HOST_API inline void test_graph_scope_with_tmp()
 {
   stackable_ctx ctx;
   auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
@@ -1704,7 +1708,7 @@ UNITTEST("graph_scope with temporary data")
   test_graph_scope_with_tmp();
 };
 
-inline void test_graph_scope()
+_CCCL_HOST_API inline void test_graph_scope()
 {
   stackable_ctx ctx;
 
@@ -1784,7 +1788,7 @@ UNITTEST("stackable task with set_symbol and set_exec_place")
   };
 };
 
-inline void test_pop_prologue_repeated_launch()
+_CCCL_HOST_API inline void test_pop_prologue_repeated_launch()
 {
   constexpr int N = 16;
 
@@ -1830,7 +1834,7 @@ UNITTEST("pop_prologue + repeated launch accumulates N times")
   test_pop_prologue_repeated_launch();
 };
 
-inline void test_pop_prologue_manual_exec_launch()
+_CCCL_HOST_API inline void test_pop_prologue_manual_exec_launch()
 {
   // Same setup as test_pop_prologue_repeated_launch, but drive the graph
   // manually via cudaGraphLaunch(handle.exec(), handle.stream()) as the
@@ -1881,7 +1885,7 @@ UNITTEST("pop_prologue + manual cudaGraphLaunch via exec()/stream()")
   test_pop_prologue_manual_exec_launch();
 };
 
-inline void test_pop_prologue_zero_launches()
+_CCCL_HOST_API inline void test_pop_prologue_zero_launches()
 {
   stackable_ctx ctx;
 
@@ -1928,7 +1932,7 @@ UNITTEST("pop_prologue + pop_epilogue with zero launches")
   test_pop_prologue_zero_launches();
 };
 
-inline void test_pop_prologue_handle_invalidation()
+_CCCL_HOST_API inline void test_pop_prologue_handle_invalidation()
 {
   stackable_ctx ctx;
 
@@ -1965,7 +1969,7 @@ UNITTEST("pop_prologue invalidates handle after pop_epilogue")
   test_pop_prologue_handle_invalidation();
 };
 
-inline void test_pop_prologue_graph_child_embed()
+_CCCL_HOST_API inline void test_pop_prologue_graph_child_embed()
 {
   // Exercise launchable_graph_handle::graph(): embed the popped graph as a
   // child node in an outer, user-built graph instead of launching it through
@@ -2052,7 +2056,7 @@ UNITTEST("pop_prologue graph() embedded as a child graph node")
   test_pop_prologue_graph_child_embed();
 };
 
-inline void test_launchable_graph_scope_raii()
+_CCCL_HOST_API inline void test_launchable_graph_scope_raii()
 {
   constexpr int N = 5;
 
@@ -2094,7 +2098,7 @@ UNITTEST("launchable_graph_scope RAII")
   test_launchable_graph_scope_raii();
 };
 
-inline void test_pop_prologue_shared_basic()
+_CCCL_HOST_API inline void test_pop_prologue_shared_basic()
 {
   constexpr int N = 5;
 
@@ -2154,7 +2158,7 @@ UNITTEST("pop_prologue_shared last copy triggers pop_epilogue")
   test_pop_prologue_shared_basic();
 };
 
-inline void test_pop_prologue_shared_copies()
+_CCCL_HOST_API inline void test_pop_prologue_shared_copies()
 {
   stackable_ctx ctx;
 
@@ -2205,7 +2209,7 @@ UNITTEST("pop_prologue_shared multiple copies share a single graph")
   test_pop_prologue_shared_copies();
 };
 
-inline void test_pop_prologue_shared_stored_in_container()
+_CCCL_HOST_API inline void test_pop_prologue_shared_stored_in_container()
 {
   stackable_ctx ctx;
 
@@ -2255,7 +2259,7 @@ UNITTEST("pop_prologue_shared storable across scopes / in containers")
   test_pop_prologue_shared_stored_in_container();
 };
 
-inline void test_pop_prologue_shared_manual_epilogue_meh()
+_CCCL_HOST_API inline void test_pop_prologue_shared_manual_epilogue_meh()
 {
   // If the user manually calls ctx.pop_epilogue() after creating shared
   // copies, outstanding copies must become invalid and the shared state
@@ -2293,7 +2297,7 @@ UNITTEST("pop_prologue_shared tolerates manual pop_epilogue")
 };
 
 #    if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION)
-inline void test_pop_prologue_with_while_graph_scope_meh()
+_CCCL_HOST_API inline void test_pop_prologue_with_while_graph_scope_meh()
 {
   constexpr int N              = 3; // re-launch the whole while-graph 3 times
   constexpr size_t inner_iters = 4; // each launch runs the body 4 times

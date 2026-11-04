@@ -86,7 +86,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator inclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator inclusive_scan(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -143,7 +143,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator>
-OutputIterator inclusive_scan(InputIterator first, InputIterator last, OutputIterator result);
+_CCCL_HOST_API OutputIterator inclusive_scan(InputIterator first, InputIterator last, OutputIterator result);
 
 /*! \p inclusive_scan computes an inclusive prefix sum operation. The
  *  term 'inclusive' means that each result includes the corresponding
@@ -199,7 +199,7 @@ OutputIterator inclusive_scan(InputIterator first, InputIterator last, OutputIte
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename AssociativeOperator>
-_CCCL_HOST_DEVICE OutputIterator inclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator inclusive_scan(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -255,7 +255,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename AssociativeOperator>
-OutputIterator
+_CCCL_HOST_API OutputIterator
 inclusive_scan(InputIterator first, InputIterator last, OutputIterator result, AssociativeOperator binary_op);
 
 /*! \p inclusive_scan computes an inclusive prefix sum operation. The
@@ -307,7 +307,7 @@ inclusive_scan(InputIterator first, InputIterator last, OutputIterator result, A
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T, typename AssociativeOperator>
-_CCCL_HOST_DEVICE OutputIterator inclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator inclusive_scan(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -360,7 +360,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename T, typename AssociativeOperator>
-OutputIterator
+_CCCL_HOST_API OutputIterator
 inclusive_scan(InputIterator first, InputIterator last, OutputIterator result, T init, AssociativeOperator binary_op);
 
 /*! \p exclusive_scan computes an exclusive prefix sum operation. The
@@ -416,7 +416,7 @@ inclusive_scan(InputIterator first, InputIterator last, OutputIterator result, T
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator exclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator exclusive_scan(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -468,7 +468,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator>
-OutputIterator exclusive_scan(InputIterator first, InputIterator last, OutputIterator result);
+_CCCL_HOST_API OutputIterator exclusive_scan(InputIterator first, InputIterator last, OutputIterator result);
 
 /*! \p exclusive_scan computes an exclusive prefix sum operation. The
  *  term 'exclusive' means that each result does not include the
@@ -523,7 +523,7 @@ OutputIterator exclusive_scan(InputIterator first, InputIterator last, OutputIte
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
-_CCCL_HOST_DEVICE OutputIterator exclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator exclusive_scan(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -577,7 +577,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename T>
-OutputIterator exclusive_scan(InputIterator first, InputIterator last, OutputIterator result, T init);
+_CCCL_HOST_API OutputIterator exclusive_scan(InputIterator first, InputIterator last, OutputIterator result, T init);
 
 /*! \p exclusive_scan computes an exclusive prefix sum operation. The
  *  term 'exclusive' means that each result does not include the
@@ -639,7 +639,7 @@ OutputIterator exclusive_scan(InputIterator first, InputIterator last, OutputIte
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T, typename AssociativeOperator>
-_CCCL_HOST_DEVICE OutputIterator exclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator exclusive_scan(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -700,7 +700,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename T, typename AssociativeOperator>
-OutputIterator
+_CCCL_HOST_API OutputIterator
 exclusive_scan(InputIterator first, InputIterator last, OutputIterator result, T init, AssociativeOperator binary_op);
 
 /*! \addtogroup segmentedprefixsums Segmented Prefix Sums
@@ -774,7 +774,7 @@ exclusive_scan(InputIterator first, InputIterator last, OutputIterator result, T
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
+_CCCL_HOST_DEVICE_API OutputIterator inclusive_scan_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -840,7 +840,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
-OutputIterator
+_CCCL_HOST_API OutputIterator
 inclusive_scan_by_key(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputIterator result);
 
 /*! \p inclusive_scan_by_key computes an inclusive key-value or 'segmented' prefix
@@ -918,7 +918,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename BinaryPredicate>
-_CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
+_CCCL_HOST_DEVICE_API OutputIterator inclusive_scan_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -990,7 +990,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename BinaryPredicate>
-OutputIterator inclusive_scan_by_key(
+_CCCL_HOST_API OutputIterator inclusive_scan_by_key(
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
@@ -1076,7 +1076,7 @@ template <typename DerivedPolicy,
           typename OutputIterator,
           typename BinaryPredicate,
           typename AssociativeOperator>
-_CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
+_CCCL_HOST_DEVICE_API OutputIterator inclusive_scan_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -1156,7 +1156,7 @@ template <typename InputIterator1,
           typename OutputIterator,
           typename BinaryPredicate,
           typename AssociativeOperator>
-OutputIterator inclusive_scan_by_key(
+_CCCL_HOST_API OutputIterator inclusive_scan_by_key(
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
@@ -1220,7 +1220,7 @@ OutputIterator inclusive_scan_by_key(
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
+_CCCL_HOST_DEVICE_API OutputIterator exclusive_scan_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -1277,7 +1277,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
-OutputIterator
+_CCCL_HOST_API OutputIterator
 exclusive_scan_by_key(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputIterator result);
 
 /*! \p exclusive_scan_by_key computes an exclusive key-value or 'segmented' prefix
@@ -1335,7 +1335,7 @@ exclusive_scan_by_key(InputIterator1 first1, InputIterator1 last1, InputIterator
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator, typename T>
-_CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
+_CCCL_HOST_DEVICE_API OutputIterator exclusive_scan_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -1392,7 +1392,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename T>
-OutputIterator exclusive_scan_by_key(
+_CCCL_HOST_API OutputIterator exclusive_scan_by_key(
   InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputIterator result, T init);
 
 /*! \p exclusive_scan_by_key computes an exclusive key-value or 'segmented' prefix
@@ -1463,7 +1463,7 @@ template <typename DerivedPolicy,
           typename OutputIterator,
           typename T,
           typename BinaryPredicate>
-_CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
+_CCCL_HOST_DEVICE_API OutputIterator exclusive_scan_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -1529,7 +1529,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename T, typename BinaryPredicate>
-OutputIterator exclusive_scan_by_key(
+_CCCL_HOST_API OutputIterator exclusive_scan_by_key(
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
@@ -1624,7 +1624,7 @@ template <typename DerivedPolicy,
           typename T,
           typename BinaryPredicate,
           typename AssociativeOperator>
-_CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
+_CCCL_HOST_DEVICE_API OutputIterator exclusive_scan_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -1712,7 +1712,7 @@ template <typename InputIterator1,
           typename T,
           typename BinaryPredicate,
           typename AssociativeOperator>
-OutputIterator exclusive_scan_by_key(
+_CCCL_HOST_API OutputIterator exclusive_scan_by_key(
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,

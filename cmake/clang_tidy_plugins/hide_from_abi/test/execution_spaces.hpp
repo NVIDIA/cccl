@@ -4,17 +4,9 @@
 // clang-format off
 // CLANG_TIDY_CONFIG_BEGIN
 // Checks: cccl-hide-from-abi
+// CheckOptions: cccl-hide-from-abi.IgnoreTestFiles=false
 // CLANG_TIDY_CONFIG_END
 
-#include <cuda/std/detail/__config>
-
-#undef _CCCL_HOST
-#undef _CCCL_DEVICE
-#undef _CCCL_TILE
-#undef _CCCL_HOST_DEVICE
-#undef __host__
-#undef __device__
-#undef __tile__
 // Attribute expansions keep the annotation in the declaration's source range.
 #define __host__ __attribute__((annotate("host")))
 #define __device__ __attribute__((annotate("device")))

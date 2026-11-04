@@ -32,7 +32,7 @@ namespace cuda_cub
 {
 // forward declare and not include thrust/system/cuda/detail/copy.h to avoid a circular dependency
 template <class System, class InputIterator, class Size, class OutputIterator>
-OutputIterator _CCCL_HOST_DEVICE
+OutputIterator _CCCL_HOST_DEVICE_API
 copy_n(execution_policy<System>& system, InputIterator first, Size n, OutputIterator result);
 
 namespace __uninitialized_copy
@@ -57,7 +57,7 @@ struct functor
 } // namespace __uninitialized_copy
 
 template <class Derived, class InputIt, class Size, class OutputIt>
-OutputIt _CCCL_HOST_DEVICE
+OutputIt _CCCL_HOST_DEVICE_API
 uninitialized_copy_n(execution_policy<Derived>& policy, InputIt first, Size count, OutputIt result)
 {
   // if the output type is trivially constructible from the input, it has no side effect, and we can skip placement new
@@ -80,7 +80,7 @@ uninitialized_copy_n(execution_policy<Derived>& policy, InputIt first, Size coun
 }
 
 template <class Derived, class InputIt, class OutputIt>
-OutputIt _CCCL_HOST_DEVICE
+OutputIt _CCCL_HOST_DEVICE_API
 uninitialized_copy(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
 {
   return cuda_cub::uninitialized_copy_n(policy, first, ::cuda::std::distance(first, last), result);

@@ -79,7 +79,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator
+_CCCL_HOST_DEVICE_API OutputIterator
 copy(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, // NOLINT(readability-redundant-declaration)
      InputIterator first,
      InputIterator last,
@@ -135,7 +135,7 @@ copy(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, // NOLINT
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator copy_n( // NOLINT(readability-redundant-declaration)
+_CCCL_HOST_DEVICE_API OutputIterator copy_n( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   Size n,
@@ -188,7 +188,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_n( // NOLINT(readability-redundant-declara
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator>
-OutputIterator
+_CCCL_HOST_API OutputIterator
 copy(InputIterator first, InputIterator last, OutputIterator result); // NOLINT(readability-redundant-declaration)
 
 /*! \p copy_n copies elements from the range <tt>[first, first + n)</tt> to the range
@@ -236,7 +236,8 @@ copy(InputIterator first, InputIterator last, OutputIterator result); // NOLINT(
  *  \endverbatim
  */
 template <typename InputIterator, typename Size, typename OutputIterator>
-OutputIterator copy_n(InputIterator first, Size n, OutputIterator result); // NOLINT(readability-redundant-declaration)
+_CCCL_HOST_API OutputIterator
+copy_n(InputIterator first, Size n, OutputIterator result); // NOLINT(readability-redundant-declaration)
 
 /*! \} // end copying
  */
@@ -307,7 +308,7 @@ OutputIterator copy_n(InputIterator first, Size n, OutputIterator result); // NO
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if( // NOLINT(readability-redundant-declaration)
+_CCCL_HOST_DEVICE_API OutputIterator copy_if( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -371,10 +372,11 @@ _CCCL_HOST_DEVICE OutputIterator copy_if( // NOLINT(readability-redundant-declar
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename Predicate>
-OutputIterator copy_if(InputIterator first, // NOLINT(readability-redundant-declaration)
-                       InputIterator last,
-                       OutputIterator result,
-                       Predicate pred);
+_CCCL_HOST_API OutputIterator copy_if(
+  InputIterator first, // NOLINT(readability-redundant-declaration)
+  InputIterator last,
+  OutputIterator result,
+  Predicate pred);
 
 /*! This version of \p copy_if copies elements from the range <tt>[first,last)</tt>
  *  to a range beginning at \p result, except that any element whose corresponding stencil
@@ -449,7 +451,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if( // NOLINT(readability-redundant-declaration)
+_CCCL_HOST_DEVICE_API OutputIterator copy_if( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -520,12 +522,12 @@ _CCCL_HOST_DEVICE OutputIterator copy_if( // NOLINT(readability-redundant-declar
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
-OutputIterator
-copy_if(InputIterator1 first, // NOLINT(readability-redundant-declaration)
-        InputIterator1 last,
-        InputIterator2 stencil,
-        OutputIterator result,
-        Predicate pred);
+_CCCL_HOST_API OutputIterator copy_if(
+  InputIterator1 first, // NOLINT(readability-redundant-declaration)
+  InputIterator1 last,
+  InputIterator2 stencil,
+  OutputIterator result,
+  Predicate pred);
 
 /*! \} // end stream_compaction
  */

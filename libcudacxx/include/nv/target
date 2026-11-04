@@ -88,7 +88,7 @@ struct _NV_BITSET_ATTRIBUTE target_description
 {
   base_int_t targets;
 
-  constexpr target_description(base_int_t a)
+  constexpr target_description(base_int_t a) // NOLINT(cccl-hide-from-abi)
       : targets(a)
   {}
 };
@@ -121,12 +121,12 @@ enum class sm_selector : base_int_t
   sm_121 = 121,
 };
 
-constexpr base_int_t toint(sm_selector a)
+constexpr base_int_t toint(sm_selector a) // NOLINT(cccl-hide-from-abi)
 {
   return static_cast<base_int_t>(a);
 }
 
-constexpr base_int_t bitexact(sm_selector a)
+constexpr base_int_t bitexact(sm_selector a) // NOLINT(cccl-hide-from-abi)
 {
   return toint(a) == 35  ? sm_35_bit
        : toint(a) == 37  ? sm_37_bit
@@ -154,7 +154,7 @@ constexpr base_int_t bitexact(sm_selector a)
                          : 0;
 }
 
-constexpr base_int_t bitrounddown(sm_selector a)
+constexpr base_int_t bitrounddown(sm_selector a) // NOLINT(cccl-hide-from-abi)
 {
   return toint(a) >= 121 ? sm_121_bit
        : toint(a) >= 120 ? sm_120_bit
@@ -184,29 +184,29 @@ constexpr base_int_t bitrounddown(sm_selector a)
 
 // Public API for NVIDIA GPUs
 
-constexpr target_description is_exactly(sm_selector a)
+constexpr target_description is_exactly(sm_selector a) // NOLINT(cccl-hide-from-abi)
 {
   return target_description(bitexact(a));
 }
 
-constexpr target_description provides(sm_selector a)
+constexpr target_description provides(sm_selector a) // NOLINT(cccl-hide-from-abi)
 {
   return target_description(~(bitrounddown(a) - 1) & all_devices);
 }
 
 // Boolean operations on target sets
 
-constexpr target_description operator&&(target_description a, target_description b)
+constexpr target_description operator&&(target_description a, target_description b) // NOLINT(cccl-hide-from-abi)
 {
   return target_description(a.targets & b.targets);
 }
 
-constexpr target_description operator||(target_description a, target_description b)
+constexpr target_description operator||(target_description a, target_description b) // NOLINT(cccl-hide-from-abi)
 {
   return target_description(a.targets | b.targets);
 }
 
-constexpr target_description operator!(target_description a)
+constexpr target_description operator!(target_description a) // NOLINT(cccl-hide-from-abi)
 {
   return target_description(~a.targets & (all_devices | all_hosts));
 }

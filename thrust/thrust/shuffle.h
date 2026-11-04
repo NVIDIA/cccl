@@ -64,7 +64,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename RandomIterator, typename URBG>
-_CCCL_HOST_DEVICE void shuffle(
+_CCCL_HOST_DEVICE_API void shuffle(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, RandomIterator first, RandomIterator last, URBG&& g);
 
 /*! \p shuffle reorders the elements <tt>[first, last)</tt> by a uniform pseudorandom permutation, defined by
@@ -96,7 +96,7 @@ _CCCL_HOST_DEVICE void shuffle(
  *  \endverbatim
  */
 template <typename RandomIterator, typename URBG>
-_CCCL_HOST_DEVICE void shuffle(RandomIterator first, RandomIterator last, URBG&& g);
+_CCCL_HOST_DEVICE_API void shuffle(RandomIterator first, RandomIterator last, URBG&& g);
 
 /*! shuffle_copy differs from shuffle only in that the reordered sequence is written to different output sequences,
  rather than in place.
@@ -138,7 +138,7 @@ _CCCL_HOST_DEVICE void shuffle(RandomIterator first, RandomIterator last, URBG&&
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename RandomIterator, typename OutputIterator, typename URBG>
-_CCCL_HOST_DEVICE void shuffle_copy(
+_CCCL_HOST_DEVICE_API void shuffle_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   RandomIterator first,
   RandomIterator last,
@@ -178,7 +178,7 @@ _CCCL_HOST_DEVICE void shuffle_copy(
  *  \endverbatim
  */
 template <typename RandomIterator, typename OutputIterator, typename URBG>
-_CCCL_HOST_DEVICE void shuffle_copy(RandomIterator first, RandomIterator last, OutputIterator result, URBG&& g);
+_CCCL_HOST_DEVICE_API void shuffle_copy(RandomIterator first, RandomIterator last, OutputIterator result, URBG&& g);
 
 THRUST_NAMESPACE_END
 

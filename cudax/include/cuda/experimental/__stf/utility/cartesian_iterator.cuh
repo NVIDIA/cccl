@@ -138,103 +138,103 @@ public:
   using reference         = const value_type&;
   using iterator_category = ::std::random_access_iterator_tag;
 
-  _CCCL_HOST_DEVICE explicit RangeIterator(int value)
+  _CCCL_HOST_DEVICE_API explicit RangeIterator(int value)
       : currentValue(value)
   {}
 
-  _CCCL_HOST_DEVICE value_type operator*() const
+  _CCCL_HOST_DEVICE_API value_type operator*() const
   {
     return currentValue;
   }
 
-  _CCCL_HOST_DEVICE RangeIterator& operator++()
+  _CCCL_HOST_DEVICE_API RangeIterator& operator++()
   {
     ++currentValue;
     return *this;
   }
 
-  _CCCL_HOST_DEVICE RangeIterator operator++(int)
+  _CCCL_HOST_DEVICE_API RangeIterator operator++(int)
   {
     RangeIterator temp = *this;
     ++(*this);
     return temp;
   }
 
-  _CCCL_HOST_DEVICE RangeIterator& operator--()
+  _CCCL_HOST_DEVICE_API RangeIterator& operator--()
   {
     --currentValue;
     return *this;
   }
 
-  _CCCL_HOST_DEVICE RangeIterator operator--(int)
+  _CCCL_HOST_DEVICE_API RangeIterator operator--(int)
   {
     RangeIterator temp = *this;
     --(*this);
     return temp;
   }
 
-  _CCCL_HOST_DEVICE RangeIterator& operator+=(difference_type n)
+  _CCCL_HOST_DEVICE_API RangeIterator& operator+=(difference_type n)
   {
     currentValue += static_cast<int>(n);
     return *this;
   }
 
-  _CCCL_HOST_DEVICE RangeIterator operator+(difference_type n) const
+  _CCCL_HOST_DEVICE_API RangeIterator operator+(difference_type n) const
   {
     RangeIterator result = *this;
     result += n;
     return result;
   }
 
-  _CCCL_HOST_DEVICE RangeIterator& operator-=(difference_type n)
+  _CCCL_HOST_DEVICE_API RangeIterator& operator-=(difference_type n)
   {
     currentValue -= static_cast<int>(n);
     return *this;
   }
 
-  _CCCL_HOST_DEVICE RangeIterator operator-(difference_type n) const
+  _CCCL_HOST_DEVICE_API RangeIterator operator-(difference_type n) const
   {
     RangeIterator result = *this;
     result -= n;
     return result;
   }
 
-  _CCCL_HOST_DEVICE difference_type operator-(const RangeIterator& other) const
+  _CCCL_HOST_DEVICE_API difference_type operator-(const RangeIterator& other) const
   {
     return currentValue - other.currentValue;
   }
 
-  _CCCL_HOST_DEVICE value_type operator[](difference_type n) const
+  _CCCL_HOST_DEVICE_API value_type operator[](difference_type n) const
   {
     return *(*this + n);
   }
 
-  _CCCL_HOST_DEVICE bool operator==(const RangeIterator& other) const
+  _CCCL_HOST_DEVICE_API bool operator==(const RangeIterator& other) const
   {
     return currentValue == other.currentValue;
   }
 
-  _CCCL_HOST_DEVICE bool operator!=(const RangeIterator& other) const
+  _CCCL_HOST_DEVICE_API bool operator!=(const RangeIterator& other) const
   {
     return !(*this == other);
   }
 
-  _CCCL_HOST_DEVICE bool operator<(const RangeIterator& other) const
+  _CCCL_HOST_DEVICE_API bool operator<(const RangeIterator& other) const
   {
     return currentValue < other.currentValue;
   }
 
-  _CCCL_HOST_DEVICE bool operator>(const RangeIterator& other) const
+  _CCCL_HOST_DEVICE_API bool operator>(const RangeIterator& other) const
   {
     return currentValue > other.currentValue;
   }
 
-  _CCCL_HOST_DEVICE bool operator<=(const RangeIterator& other) const
+  _CCCL_HOST_DEVICE_API bool operator<=(const RangeIterator& other) const
   {
     return currentValue <= other.currentValue;
   }
 
-  _CCCL_HOST_DEVICE bool operator>=(const RangeIterator& other) const
+  _CCCL_HOST_DEVICE_API bool operator>=(const RangeIterator& other) const
   {
     return currentValue >= other.currentValue;
   }
@@ -250,27 +250,27 @@ public:
   using iterator        = RangeIterator;
   using difference_type = iterator::difference_type;
 
-  _CCCL_HOST_DEVICE explicit Range(int n)
+  _CCCL_HOST_DEVICE_API explicit Range(int n)
       : beginIterator(0)
       , endIterator(n)
   {}
 
-  _CCCL_HOST_DEVICE iterator begin() const
+  _CCCL_HOST_DEVICE_API iterator begin() const
   {
     return beginIterator;
   }
 
-  _CCCL_HOST_DEVICE iterator end() const
+  _CCCL_HOST_DEVICE_API iterator end() const
   {
     return endIterator;
   }
 
-  _CCCL_HOST_DEVICE value_type size() const
+  _CCCL_HOST_DEVICE_API value_type size() const
   {
     return endIterator - beginIterator;
   }
 
-  _CCCL_HOST_DEVICE value_type operator[](difference_type index) const
+  _CCCL_HOST_DEVICE_API value_type operator[](difference_type index) const
   {
     return *(beginIterator + index);
   }
@@ -284,7 +284,7 @@ private:
 namespace reserved
 {
 template <typename T>
-__global__ void unit_test_range_func(T n)
+_CCCL_KERNEL_ATTRIBUTES void unit_test_range_func(T n)
 {
   const Range range(n);
   int sum = 0;
@@ -329,95 +329,95 @@ public:
   using reference         = const value_type&;
   using iterator_category = ::std::random_access_iterator_tag;
 
-  _CCCL_HOST_DEVICE explicit StridedRangeIterator(value_type value, difference_type stride)
+  _CCCL_HOST_DEVICE_API explicit StridedRangeIterator(value_type value, difference_type stride)
       : currentValue(value)
       , stride(stride)
   {}
 
-  _CCCL_HOST_DEVICE value_type operator*() const
+  _CCCL_HOST_DEVICE_API value_type operator*() const
   {
     return currentValue;
   }
 
-  _CCCL_HOST_DEVICE StridedRangeIterator& operator++()
+  _CCCL_HOST_DEVICE_API StridedRangeIterator& operator++()
   {
     currentValue += stride;
     return *this;
   }
 
-  _CCCL_HOST_DEVICE StridedRangeIterator operator++(int)
+  _CCCL_HOST_DEVICE_API StridedRangeIterator operator++(int)
   {
     StridedRangeIterator temp = *this;
     ++(*this);
     return temp;
   }
 
-  _CCCL_HOST_DEVICE StridedRangeIterator& operator--()
+  _CCCL_HOST_DEVICE_API StridedRangeIterator& operator--()
   {
     currentValue -= stride;
     return *this;
   }
 
-  _CCCL_HOST_DEVICE StridedRangeIterator operator--(int)
+  _CCCL_HOST_DEVICE_API StridedRangeIterator operator--(int)
   {
     StridedRangeIterator temp = *this;
     --(*this);
     return temp;
   }
 
-  _CCCL_HOST_DEVICE StridedRangeIterator& operator+=(difference_type n)
+  _CCCL_HOST_DEVICE_API StridedRangeIterator& operator+=(difference_type n)
   {
     currentValue += stride * n;
     return *this;
   }
 
-  _CCCL_HOST_DEVICE StridedRangeIterator& operator-=(difference_type n)
+  _CCCL_HOST_DEVICE_API StridedRangeIterator& operator-=(difference_type n)
   {
     currentValue -= stride * n;
     return *this;
   }
 
-  _CCCL_HOST_DEVICE StridedRangeIterator operator+(difference_type n) const
+  _CCCL_HOST_DEVICE_API StridedRangeIterator operator+(difference_type n) const
   {
     return StridedRangeIterator(currentValue + (stride * n), stride);
   }
 
-  _CCCL_HOST_DEVICE StridedRangeIterator operator-(difference_type n) const
+  _CCCL_HOST_DEVICE_API StridedRangeIterator operator-(difference_type n) const
   {
     return StridedRangeIterator(currentValue - (stride * n), stride);
   }
 
-  _CCCL_HOST_DEVICE difference_type operator-(const StridedRangeIterator& other) const
+  _CCCL_HOST_DEVICE_API difference_type operator-(const StridedRangeIterator& other) const
   {
     return static_cast<difference_type>((currentValue - other.currentValue) / stride);
   }
 
-  _CCCL_HOST_DEVICE bool operator==(const StridedRangeIterator& other) const
+  _CCCL_HOST_DEVICE_API bool operator==(const StridedRangeIterator& other) const
   {
     return currentValue == other.currentValue;
   }
 
-  _CCCL_HOST_DEVICE bool operator!=(const StridedRangeIterator& other) const
+  _CCCL_HOST_DEVICE_API bool operator!=(const StridedRangeIterator& other) const
   {
     return currentValue != other.currentValue;
   }
 
-  _CCCL_HOST_DEVICE bool operator<(const StridedRangeIterator& other) const
+  _CCCL_HOST_DEVICE_API bool operator<(const StridedRangeIterator& other) const
   {
     return currentValue < other.currentValue;
   }
 
-  _CCCL_HOST_DEVICE bool operator>(const StridedRangeIterator& other) const
+  _CCCL_HOST_DEVICE_API bool operator>(const StridedRangeIterator& other) const
   {
     return currentValue > other.currentValue;
   }
 
-  _CCCL_HOST_DEVICE bool operator<=(const StridedRangeIterator& other) const
+  _CCCL_HOST_DEVICE_API bool operator<=(const StridedRangeIterator& other) const
   {
     return currentValue <= other.currentValue;
   }
 
-  _CCCL_HOST_DEVICE bool operator>=(const StridedRangeIterator& other) const
+  _CCCL_HOST_DEVICE_API bool operator>=(const StridedRangeIterator& other) const
   {
     return currentValue >= other.currentValue;
   }
@@ -434,7 +434,7 @@ public:
   using iterator        = StridedRangeIterator;
   using difference_type = iterator::difference_type;
 
-  _CCCL_HOST_DEVICE explicit StridedRange(value_type start, value_type end, difference_type stride)
+  _CCCL_HOST_DEVICE_API explicit StridedRange(value_type start, value_type end, difference_type stride)
       : start_(start)
       , end_(end)
       , stride_(stride)
@@ -450,12 +450,12 @@ public:
     }
   }
 
-  _CCCL_HOST_DEVICE iterator begin() const
+  _CCCL_HOST_DEVICE_API iterator begin() const
   {
     return iterator(start_, stride_);
   }
 
-  _CCCL_HOST_DEVICE iterator end() const
+  _CCCL_HOST_DEVICE_API iterator end() const
   {
     return iterator(end_, stride_);
   }
@@ -507,7 +507,7 @@ UNITTEST("StridedRange loop")
 };
 
 template <typename T>
-__global__ void unit_test_strided_range_func(T n)
+_CCCL_KERNEL_ATTRIBUTES void unit_test_strided_range_func(T n)
 {
   const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);

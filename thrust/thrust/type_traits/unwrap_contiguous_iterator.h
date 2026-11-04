@@ -15,7 +15,7 @@ THRUST_NAMESPACE_BEGIN
 //! Converts a contiguous iterator to its underlying raw pointer.
 _CCCL_EXEC_CHECK_DISABLE
 template <typename ContiguousIterator>
-_CCCL_HOST_DEVICE auto unwrap_contiguous_iterator(ContiguousIterator it)
+_CCCL_HOST_DEVICE_API auto unwrap_contiguous_iterator(ContiguousIterator it)
 {
   static_assert(thrust::is_contiguous_iterator_v<ContiguousIterator>,
                 "unwrap_contiguous_iterator called with non-contiguous iterator.");
@@ -30,7 +30,7 @@ using unwrap_contiguous_iterator_t = decltype(unwrap_contiguous_iterator(::cuda:
 //! iterator unmodified.
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Iterator>
-_CCCL_HOST_DEVICE auto try_unwrap_contiguous_iterator(Iterator it)
+_CCCL_HOST_DEVICE_API auto try_unwrap_contiguous_iterator(Iterator it)
 {
   if constexpr (thrust::is_contiguous_iterator_v<Iterator>)
   {

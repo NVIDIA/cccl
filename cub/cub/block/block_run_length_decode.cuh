@@ -162,7 +162,7 @@ class BlockRunLengthDecode
 #endif // _CCCL_DOXYGEN_INVOKED
 
   /// Internal storage allocator (used when the user does not provide pre-allocated shared memory)
-  _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
   {
     __shared__ _TempStorage private_storage;
     return private_storage;
@@ -190,7 +190,7 @@ public:
   //!    First appears in CUDA Toolkit 12.3.
   //! @endrst
   template <typename RunLengthT, typename TotalDecodedSizeT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockRunLengthDecode(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockRunLengthDecode(
     TempStorage& temp_storage,
     ItemT (&run_values)[RunsPerThread],
     RunLengthT (&run_lengths)[RunsPerThread],
@@ -210,7 +210,7 @@ public:
   //!    First appears in CUDA Toolkit 12.3.
   //! @endrst
   template <typename UserRunOffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockRunLengthDecode(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockRunLengthDecode(
     TempStorage& temp_storage, ItemT (&run_values)[RunsPerThread], UserRunOffsetT (&run_offsets)[RunsPerThread])
       : temp_storage(temp_storage.Alias())
       , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
@@ -227,7 +227,7 @@ public:
    * @endrst
    */
   template <typename RunLengthT, typename TotalDecodedSizeT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockRunLengthDecode(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockRunLengthDecode(
     ItemT (&run_values)[RunsPerThread], RunLengthT (&run_lengths)[RunsPerThread], TotalDecodedSizeT& total_decoded_size)
       : temp_storage(PrivateStorage())
       , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
@@ -244,7 +244,7 @@ public:
    * @endrst
    */
   template <typename UserRunOffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE
   BlockRunLengthDecode(ItemT (&run_values)[RunsPerThread], UserRunOffsetT (&run_offsets)[RunsPerThread])
       : temp_storage(PrivateStorage())
       , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
@@ -268,7 +268,7 @@ private:
    *   Search key
    */
   template <int MaxNumItems, typename InputIteratorT, typename OffsetT, typename T>
-  _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT StaticUpperBound(InputIteratorT input, OffsetT num_items, T val)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE OffsetT StaticUpperBound(InputIteratorT input, OffsetT num_items, T val)
   {
     OffsetT lower_bound = 0;
     OffsetT upper_bound = num_items;
@@ -293,7 +293,7 @@ private:
   }
 
   template <typename RunOffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   InitWithRunOffsets(ItemT (&run_values)[RunsPerThread], RunOffsetT (&run_offsets)[RunsPerThread])
   {
     // Keep the runs' items and the offsets of each run's beginning in the temporary storage
@@ -312,7 +312,7 @@ private:
   }
 
   template <typename RunLengthT, typename TotalDecodedSizeT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InitWithRunLengths(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InitWithRunLengths(
     ItemT (&run_values)[RunsPerThread], RunLengthT (&run_lengths)[RunsPerThread], TotalDecodedSizeT& total_decoded_size)
   {
     // Compute the offset for the beginning of each run
@@ -357,7 +357,7 @@ public:
    * in undefined behavior.
    */
   template <typename RelativeOffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void RunLengthDecode(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void RunLengthDecode(
     ItemT (&decoded_items)[DecodedItemsPerThread],
     RelativeOffsetT (&item_offsets)[DecodedItemsPerThread],
     DecodedOffsetT from_decoded_offset = 0)
@@ -424,7 +424,7 @@ public:
    * \param[in] from_decoded_offset If invoked with from_decoded_offset that is larger than total_decoded_size results
    * in undefined behavior.
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   RunLengthDecode(ItemT (&decoded_items)[DecodedItemsPerThread], DecodedOffsetT from_decoded_offset = 0)
   {
     DecodedOffsetT item_offsets[DecodedItemsPerThread];

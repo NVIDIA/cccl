@@ -154,7 +154,7 @@ class error_category
 public:
   /*! Destructor does nothing.
    */
-  inline virtual ~error_category();
+  _CCCL_HOST_API virtual ~error_category();
 
   // XXX enable upon c++0x
   // error_category(const error_category &) = delete;
@@ -162,36 +162,36 @@ public:
 
   /*! \return A string naming the error category.
    */
-  inline virtual const char* name() const = 0;
+  _CCCL_HOST_API virtual const char* name() const = 0;
 
   /*! \return \p error_condition(ev, *this).
    */
-  inline virtual error_condition default_error_condition(int ev) const;
+  _CCCL_HOST_API virtual error_condition default_error_condition(int ev) const;
 
   /*! \return <tt>default_error_condition(code) == condition</tt>
    */
-  inline virtual bool equivalent(int code, const error_condition& condition) const;
+  _CCCL_HOST_API virtual bool equivalent(int code, const error_condition& condition) const;
 
   /*! \return <tt>*this == code.category() && code.value() == condition</tt>
    */
-  inline virtual bool equivalent(const error_code& code, int condition) const;
+  _CCCL_HOST_API virtual bool equivalent(const error_code& code, int condition) const;
 
   /*! \return A string that describes the error condition denoted by \p ev.
    */
-  virtual std::string message(int ev) const = 0;
+  _CCCL_HOST_API virtual std::string message(int ev) const = 0;
 
   /*! \return <tt>*this == &rhs</tt>
    */
-  inline bool operator==(const error_category& rhs) const;
+  _CCCL_HOST_API bool operator==(const error_category& rhs) const;
 
   /*! \return <tt>!(*this == rhs)</tt>
    */
-  inline bool operator!=(const error_category& rhs) const;
+  _CCCL_HOST_API bool operator!=(const error_category& rhs) const;
 
   /*! \return <tt>less<const error_category*>()(this, &rhs)</tt>
    *  \note \c less provides a total ordering for pointers.
    */
-  inline bool operator<(const error_category& rhs) const;
+  _CCCL_HOST_API bool operator<(const error_category& rhs) const;
 }; // end error_category
 
 // [19.5.1.5] error_category objects
@@ -201,7 +201,7 @@ public:
  *        shall behave as specified for the class \p error_category. The object's
  *        \p name virtual function shall return a pointer to the string <tt>"generic"</tt>.
  */
-inline const error_category& generic_category();
+_CCCL_HOST_API inline const error_category& generic_category();
 
 /*! \return A reference to an object of a type derived from class \p error_category.
  *  \note The object's \p equivalent virtual functions shall behave as specified for
@@ -214,7 +214,7 @@ inline const error_category& generic_category();
  *        Otherwise, the function shall return <tt>error_condition(ev,system_category())</tt>.
  *        What constitutes correspondence for any given operating system is unspecified.
  */
-inline const error_category& system_category();
+_CCCL_HOST_API inline const error_category& system_category();
 
 // [19.5.2] Class error_code
 
@@ -230,22 +230,22 @@ public:
   /*! Effects: Constructs an object of type \p error_code.
    *  \post <tt>value() == 0</tt> and <tt>category() == &system_category()</tt>.
    */
-  inline error_code();
+  _CCCL_HOST_API error_code();
 
   /*! Effects: Constructs an object of type \p error_code.
    *  \post <tt>value() == val</tt> and <tt>category() == &cat</tt>.
    */
-  inline error_code(int val, const error_category& cat);
+  _CCCL_HOST_API error_code(int val, const error_category& cat);
 
   /*! Effects: Constructs an object of type \p error_code.
    *  \post <tt>*this == make_error_code(e)</tt>.
    */
   template <typename ErrorCodeEnum>
-  error_code(ErrorCodeEnum e
+  _CCCL_HOST_API error_code(ErrorCodeEnum e
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
-             ,
-             ::cuda::std::enable_if_t<is_error_code_enum<ErrorCodeEnum>::value, int> = 0
+                            ,
+                            ::cuda::std::enable_if_t<is_error_code_enum<ErrorCodeEnum>::value, int> = 0
 #endif // !_CCCL_COMPILER(MSVC)
   );
 
@@ -253,13 +253,14 @@ public:
 
   /*! \post <tt>value() == val</tt> and <tt>category() == &cat</tt>.
    */
-  inline void assign(int val, const error_category& cat);
+  _CCCL_HOST_API void assign(int val, const error_category& cat);
 
   /*! \post <tt>*this == make_error_code(e)</tt>.
    */
   // The enable_if_t below is error_code& after substitution, as the MSVC branch spells out.
   // NOLINTBEGIN(misc-unconventional-assign-operator)
   template <typename ErrorCodeEnum>
+  _CCCL_HOST_API
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
   ::cuda::std::enable_if_t<is_error_code_enum<ErrorCodeEnum>::value, error_code>&
@@ -271,32 +272,32 @@ public:
 
   /*! \post <tt>value() == 0</tt> and <tt>category() == system_category()</tt>.
    */
-  inline void clear();
+  _CCCL_HOST_API void clear();
 
   // [19.5.2.4] observers:
 
   /*! \return An integral value of this \p error_code object.
    */
-  inline int value() const;
+  _CCCL_HOST_API int value() const;
 
   /*! \return An \p error_category describing the category of this \p error_code object.
    */
-  inline const error_category& category() const;
+  _CCCL_HOST_API const error_category& category() const;
 
   /*! \return <tt>category().default_error_condition()</tt>.
    */
-  inline error_condition default_error_condition() const;
+  _CCCL_HOST_API error_condition default_error_condition() const;
 
   /*! \return <tt>category().message(value())</tt>.
    */
-  inline std::string message() const;
+  _CCCL_HOST_API std::string message() const;
 
   // XXX replace the below upon c++0x
   // inline explicit operator bool (void) const;
 
   /*! \return <tt>value() != 0</tt>.
    */
-  inline operator bool() const;
+  _CCCL_HOST_API operator bool() const;
 
   /*! \cond
    */
@@ -313,17 +314,18 @@ private:
 // XXX replace errc::errc_t with errc upon c++0x
 /*! \return <tt>error_code(static_cast<int>(e), generic_category())</tt>
  */
-inline error_code make_error_code(errc::errc_t e);
+_CCCL_HOST_API inline error_code make_error_code(errc::errc_t e);
 
 /*! \return <tt>lhs.category() < rhs.category() || lhs.category() == rhs.category() && lhs.value() < rhs.value()</tt>.
  */
-inline bool operator<(const error_code& lhs, const error_code& rhs);
+_CCCL_HOST_API inline bool operator<(const error_code& lhs, const error_code& rhs);
 
 #if _CCCL_HOSTED()
 /*! Effects: <tt>os << ec.category().name() << ':' << ec.value()</tt>.
  */
 template <typename CharT, typename Traits>
-std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const error_code& ec);
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>&
+operator<<(std::basic_ostream<CharT, Traits>& os, const error_code& ec);
 #endif // _CCCL_HOSTED()
 
 // [19.5.3] class error_condition
@@ -343,13 +345,13 @@ public:
    *  \post <tt>value() == 0</tt>.
    *  \post <tt>category() == generic_category()</tt>.
    */
-  inline error_condition();
+  _CCCL_HOST_API error_condition();
 
   /*! Constructs an object of type \p error_condition.
    *  \post <tt>value() == val</tt>.
    *  \post <tt>category() == cat</tt>.
    */
-  inline error_condition(int val, const error_category& cat);
+  _CCCL_HOST_API error_condition(int val, const error_category& cat);
 
   /*! Constructs an object of type \p error_condition.
    *  \post <tt>*this == make_error_condition(e)</tt>.
@@ -357,11 +359,11 @@ public:
    *        <tt>is_error_condition_enum<ErrorConditionEnum>::value</tt> is <tt>true</tt>.
    */
   template <typename ErrorConditionEnum>
-  error_condition(ErrorConditionEnum e
+  _CCCL_HOST_API error_condition(ErrorConditionEnum e
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
-                  ,
-                  ::cuda::std::enable_if_t<is_error_condition_enum<ErrorConditionEnum>::value, int> = 0
+                                 ,
+                                 ::cuda::std::enable_if_t<is_error_condition_enum<ErrorConditionEnum>::value, int> = 0
 #endif // !_CCCL_COMPILER(MSVC)
   );
 
@@ -373,7 +375,7 @@ public:
    *  \post <tt>value() == val</tt>.
    *  \post <tt>category() == cat</tt>.
    */
-  inline void assign(int val, const error_category& cat);
+  _CCCL_HOST_API void assign(int val, const error_category& cat);
 
   /*! Assigns to this \p error_code object from an error condition enumeration.
    *  \return *this
@@ -385,6 +387,7 @@ public:
   // spells out.
   // NOLINTBEGIN(misc-unconventional-assign-operator)
   template <typename ErrorConditionEnum>
+  _CCCL_HOST_API
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
   ::cuda::std::enable_if_t<is_error_condition_enum<ErrorConditionEnum>::value, error_condition>&
@@ -398,28 +401,28 @@ public:
    *  \post <tt>value == 0</tt>
    *  \post <tt>category() == generic_category()</tt>.
    */
-  inline void clear();
+  _CCCL_HOST_API void clear();
 
   // [19.5.3.4] observers
 
   /*! \return The value encoded by this \p error_condition.
    */
-  inline int value() const;
+  _CCCL_HOST_API int value() const;
 
   /*! \return A <tt>const</tt> reference to the \p error_category encoded by this \p error_condition.
    */
-  inline const error_category& category() const;
+  _CCCL_HOST_API const error_category& category() const;
 
   /*! \return <tt>category().message(value())</tt>.
    */
-  inline std::string message() const;
+  _CCCL_HOST_API std::string message() const;
 
   // XXX replace below with this upon c++0x
   // explicit operator bool (void) const;
 
   /*! \return <tt>value() != 0</tt>.
    */
-  inline operator bool() const;
+  _CCCL_HOST_API operator bool() const;
 
   /*! \cond
    */
@@ -437,45 +440,45 @@ private:
 // XXX replace errc::errc_t with errc upon c++0x
 /*! \return <tt>error_condition(static_cast<int>(e), generic_category())</tt>.
  */
-inline error_condition make_error_condition(errc::errc_t e);
+_CCCL_HOST_API inline error_condition make_error_condition(errc::errc_t e);
 
 /*! \return <tt>lhs.category() < rhs.category() || lhs.category() == rhs.category() && lhs.value() < rhs.value()</tt>.
  */
-inline bool operator<(const error_condition& lhs, const error_condition& rhs);
+_CCCL_HOST_API inline bool operator<(const error_condition& lhs, const error_condition& rhs);
 
 // [19.5.4] Comparison operators
 
 /*! \return <tt>lhs.category() == rhs.category() && lhs.value() == rhs.value()</tt>.
  */
-inline bool operator==(const error_code& lhs, const error_code& rhs);
+_CCCL_HOST_API inline bool operator==(const error_code& lhs, const error_code& rhs);
 
 /*! \return <tt>lhs.category().equivalent(lhs.value(), rhs) || rhs.category().equivalent(lhs,rhs.value())</tt>.
  */
-inline bool operator==(const error_code& lhs, const error_condition& rhs);
+_CCCL_HOST_API inline bool operator==(const error_code& lhs, const error_condition& rhs);
 
 /*! \return <tt>rhs.category().equivalent(lhs.value(), lhs) || lhs.category().equivalent(rhs, lhs.value())</tt>.
  */
-inline bool operator==(const error_condition& lhs, const error_code& rhs);
+_CCCL_HOST_API inline bool operator==(const error_condition& lhs, const error_code& rhs);
 
 /*! \return <tt>lhs.category() == rhs.category() && lhs.value() == rhs.value()</tt>
  */
-inline bool operator==(const error_condition& lhs, const error_condition& rhs);
+_CCCL_HOST_API inline bool operator==(const error_condition& lhs, const error_condition& rhs);
 
 /*! \return <tt>!(lhs == rhs)</tt>
  */
-inline bool operator!=(const error_code& lhs, const error_code& rhs);
+_CCCL_HOST_API inline bool operator!=(const error_code& lhs, const error_code& rhs);
 
 /*! \return <tt>!(lhs == rhs)</tt>
  */
-inline bool operator!=(const error_code& lhs, const error_condition& rhs);
+_CCCL_HOST_API inline bool operator!=(const error_code& lhs, const error_condition& rhs);
 
 /*! \return <tt>!(lhs == rhs)</tt>
  */
-inline bool operator!=(const error_condition& lhs, const error_code& rhs);
+_CCCL_HOST_API inline bool operator!=(const error_condition& lhs, const error_code& rhs);
 
 /*! \return <tt>!(lhs == rhs)</tt>
  */
-inline bool operator!=(const error_condition& lhs, const error_condition& rhs);
+_CCCL_HOST_API inline bool operator!=(const error_condition& lhs, const error_condition& rhs);
 
 /*! \} // end system_diagnostics
  */

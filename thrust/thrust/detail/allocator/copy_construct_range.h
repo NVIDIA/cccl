@@ -38,7 +38,7 @@ struct copy_construct_with_allocator
   Allocator& a;
 
   template <typename Tuple>
-  _CCCL_HOST_DEVICE void operator()(Tuple t)
+  _CCCL_HOST_DEVICE_API void operator()(Tuple t)
   {
     const InputType& in = ::cuda::std::get<0>(t);
     OutputType& out     = ::cuda::std::get<1>(t);
@@ -66,7 +66,7 @@ inline constexpr bool needs_copy_construct_via_allocator<std::allocator<U>, T> =
 //     perhaps generic::uninitialized_copy could call this routine
 //     with a default allocator
 template <typename Allocator, typename FromSystem, typename ToSystem, typename InputIterator, typename Pointer>
-_CCCL_HOST_DEVICE Pointer uninitialized_copy_with_allocator(
+_CCCL_HOST_DEVICE_API Pointer uninitialized_copy_with_allocator(
   Allocator& a,
   const thrust::execution_policy<FromSystem>& from_system,
   const thrust::execution_policy<ToSystem>& to_system,
@@ -111,7 +111,7 @@ _CCCL_HOST_DEVICE Pointer uninitialized_copy_with_allocator(
 //     perhaps generic::uninitialized_copy_n could call this routine
 //     with a default allocator
 template <typename Allocator, typename FromSystem, typename ToSystem, typename InputIterator, typename Size, typename Pointer>
-_CCCL_HOST_DEVICE Pointer uninitialized_copy_with_allocator_n(
+_CCCL_HOST_DEVICE_API Pointer uninitialized_copy_with_allocator_n(
   Allocator& a,
   const thrust::execution_policy<FromSystem>& from_system,
   const thrust::execution_policy<ToSystem>& to_system,
@@ -148,7 +148,7 @@ _CCCL_HOST_DEVICE Pointer uninitialized_copy_with_allocator_n(
 }
 
 template <typename System, typename Allocator, typename InputIterator, typename Pointer>
-_CCCL_HOST_DEVICE Pointer copy_construct_range(
+_CCCL_HOST_DEVICE_API Pointer copy_construct_range(
   thrust::execution_policy<System>& from_system, Allocator& a, InputIterator first, InputIterator last, Pointer result)
 {
   if constexpr (needs_copy_construct_via_allocator<Allocator,
@@ -164,7 +164,7 @@ _CCCL_HOST_DEVICE Pointer copy_construct_range(
 }
 
 template <typename System, typename Allocator, typename InputIterator, typename Size, typename Pointer>
-_CCCL_HOST_DEVICE Pointer copy_construct_range_n(
+_CCCL_HOST_DEVICE_API Pointer copy_construct_range_n(
   thrust::execution_policy<System>& from_system, Allocator& a, InputIterator first, Size n, Pointer result)
 {
   if constexpr (needs_copy_construct_via_allocator<Allocator,

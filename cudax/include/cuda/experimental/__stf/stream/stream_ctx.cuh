@@ -60,9 +60,9 @@ struct streamed_interface_of;
 class uncached_stream_allocator : public block_allocator_interface
 {
 public:
-  uncached_stream_allocator() = default;
+  _CCCL_HIDE_FROM_ABI uncached_stream_allocator() = default;
 
-  void*
+  _CCCL_HOST_API void*
   allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
     auto dstream = memory_node.getDataStream(ctx.async_resources().get_place_resources());
@@ -84,7 +84,7 @@ public:
     return result;
   }
 
-  void deallocate(
+  _CCCL_HOST_API void deallocate(
     backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
     auto dstream = memory_node.getDataStream(ctx.async_resources().get_place_resources());
@@ -108,12 +108,12 @@ public:
   }
 
   // Nothing is done as all deallocation are done immediately
-  event_list deinit(backend_ctx_untyped& /* ctx */) override
+  _CCCL_HOST_API event_list deinit(backend_ctx_untyped& /* ctx */) override
   {
     return event_list();
   }
 
-  ::std::string to_string() const override
+  _CCCL_HOST_API ::std::string to_string() const override
   {
     return "uncached stream allocator";
   }
@@ -155,10 +155,10 @@ public:
 
   /// @brief This type is copyable, assignable, and movable. However, copies have reference semantics.
   ///@{
-  stream_ctx(async_resources_handle handle = async_resources_handle(nullptr))
+  _CCCL_HOST_API stream_ctx(async_resources_handle handle = async_resources_handle(nullptr))
       : backend_ctx<stream_ctx>(::std::make_shared<impl>(mv(handle)))
   {}
-  stream_ctx(cudaStream_t user_stream, async_resources_handle handle = async_resources_handle(nullptr))
+  _CCCL_HOST_API stream_ctx(cudaStream_t user_stream, async_resources_handle handle = async_resources_handle(nullptr))
       : backend_ctx<stream_ctx>(::std::make_shared<impl>(mv(handle), !is_stream_capturing(user_stream)))
   {
     // If ``user_stream`` is currently capturing a CUDA graph, avoid issuing
@@ -197,7 +197,7 @@ public:
 
   ///@}
 
-  void set_user_stream(cudaStream_t user_stream)
+  _CCCL_HOST_API void set_user_stream(cudaStream_t user_stream)
   {
     // TODO first introduce the user stream in our pool
     auto dstream = augmented_stream(user_stream);
@@ -222,14 +222,14 @@ public:
    * @brief Creates a task on the specified execution place
    */
   template <typename... Deps>
-  stream_task<Deps...> task(exec_place e_place, task_dep<Deps>... deps)
+  _CCCL_HOST_API stream_task<Deps...> task(exec_place e_place, task_dep<Deps>... deps)
   {
     EXPECT(state().deferred_tasks.empty(), "Mixing deferred and immediate tasks is not supported yet.");
     return stream_task<Deps...>(*this, mv(e_place), mv(deps)...); // NOLINT(cppcoreguidelines-slicing)
   }
 
   template <typename... Deps>
-  deferred_stream_task<Deps...> deferred_task(exec_place e_place, task_dep<Deps>... deps)
+  _CCCL_HOST_API deferred_stream_task<Deps...> deferred_task(exec_place e_place, task_dep<Deps>... deps)
   {
     auto result = deferred_stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
 
@@ -241,13 +241,13 @@ public:
   }
 
   template <typename... Deps>
-  deferred_stream_task<Deps...> deferred_task(task_dep<Deps>... deps)
+  _CCCL_HOST_API deferred_stream_task<Deps...> deferred_task(task_dep<Deps>... deps)
   {
     return deferred_task(exec_place::current_device(), mv(deps)...);
   }
 
   template <typename... Deps>
-  auto deferred_host_launch(task_dep<Deps>... deps)
+  _CCCL_HOST_API auto deferred_host_launch(task_dep<Deps>... deps)
   {
     auto result = deferred_host_launch_scope<Deps...>(this, mv(deps)...);
     int id      = result.get_mapping_id();
@@ -258,7 +258,7 @@ public:
     return result;
   }
 
-  cudaStream_t fence()
+  _CCCL_HOST_API cudaStream_t fence()
   {
     const auto& user_dstream = state().user_dstream;
     // We either use the user-provided stream, or we get one stream from the pool
@@ -287,34 +287,34 @@ public:
   {
     struct payload_t : public deferred_stream_task<>::payload_t
     {
-      payload_t(stream_ctx& ctx, exec_place e_place, shape_t shape, task_dep<Data>... deps)
+      _CCCL_HOST_API payload_t(stream_ctx& ctx, exec_place e_place, shape_t shape, task_dep<Data>... deps)
           : task(ctx, mv(e_place), mv(shape), mv(deps)...)
       {}
 
       reserved::parallel_for_scope<stream_ctx, shape_t, P, Data...> task;
       ::std::function<void(reserved::parallel_for_scope<stream_ctx, shape_t, P, Data...>&)> todo;
 
-      void set_symbol(::std::string s) override
+      _CCCL_HOST_API void set_symbol(::std::string s) override
       {
         task.set_symbol(mv(s));
       }
 
-      const ::std::string& get_symbol() const override
+      _CCCL_HOST_API const ::std::string& get_symbol() const override
       {
         return task.get_symbol();
       }
 
-      int get_mapping_id() const override
+      _CCCL_HOST_API int get_mapping_id() const override
       {
         return task.get_mapping_id();
       }
 
-      void run() override
+      _CCCL_HOST_API void run() override
       {
         todo(task);
       }
 
-      void populate_deps_scheduling_info() override
+      _CCCL_HOST_API void populate_deps_scheduling_info() override
       {
         const auto& deps = get_task_deps();
         reserved::ensure_task_deps_initialized(deps);
@@ -325,24 +325,25 @@ public:
         }
       }
 
-      const task_dep_vector_untyped& get_task_deps() const override
+      _CCCL_HOST_API const task_dep_vector_untyped& get_task_deps() const override
       {
         return task.get_task_deps();
       }
 
-      void set_exec_place(exec_place e_place) override
+      _CCCL_HOST_API void set_exec_place(exec_place e_place) override
       {
         task.set_exec_place(mv(e_place));
       }
     };
 
-    payload_t& my_payload() const
+    _CCCL_HOST_API payload_t& my_payload() const
     {
       // Safe to do the cast because we've set the pointer earlier ourselves
       return *static_cast<payload_t*>(payload.get());
     }
 
   public:
+    _CCCL_HOST_API
     deferred_parallel_for_scope(stream_ctx& ctx, exec_place e_place, shape_t shape, task_dep<Data>... deps)
         : deferred_stream_task<>(::std::make_shared<payload_t>(ctx, mv(e_place), mv(shape), mv(deps)...))
     {}
@@ -354,26 +355,26 @@ public:
      * @param s
      * @return deferred_parallel_for_scope&
      */
-    deferred_parallel_for_scope& set_symbol(::std::string s) &
+    _CCCL_HOST_API deferred_parallel_for_scope& set_symbol(::std::string s) &
     {
       payload->set_symbol(mv(s));
       return *this;
     }
 
-    deferred_parallel_for_scope&& set_symbol(::std::string s) &&
+    _CCCL_HOST_API deferred_parallel_for_scope&& set_symbol(::std::string s) &&
     {
       set_symbol(mv(s));
       return mv(*this);
     }
     ///@}
 
-    void populate_deps_scheduling_info()
+    _CCCL_HOST_API void populate_deps_scheduling_info()
     {
       payload->populate_deps_scheduling_info();
     }
 
     template <typename Fun>
-    void operator->*(Fun fun)
+    _CCCL_HOST_API void operator->*(Fun fun)
     {
       my_payload().todo = [f = mv(fun)](reserved::parallel_for_scope<stream_ctx, shape_t, P, Data...>& task) {
         task->*f;
@@ -386,34 +387,34 @@ public:
   {
     struct payload_t : public deferred_stream_task<>::payload_t
     {
-      payload_t(stream_ctx& ctx, task_dep<Data>... deps)
+      _CCCL_HOST_API payload_t(stream_ctx& ctx, task_dep<Data>... deps)
           : task(ctx, mv(deps)...)
       {}
 
       reserved::host_launch_scope<stream_ctx, false, Data...> task;
       ::std::function<void(reserved::host_launch_scope<stream_ctx, false, Data...>&)> todo;
 
-      void set_symbol(::std::string s) override
+      _CCCL_HOST_API void set_symbol(::std::string s) override
       {
         task.set_symbol(s);
       }
 
-      const ::std::string& get_symbol() const override
+      _CCCL_HOST_API const ::std::string& get_symbol() const override
       {
         return task.get_symbol();
       }
 
-      int get_mapping_id() const override
+      _CCCL_HOST_API int get_mapping_id() const override
       {
         return task.get_mapping_id();
       }
 
-      void run() override
+      _CCCL_HOST_API void run() override
       {
         todo(task);
       }
 
-      void populate_deps_scheduling_info() override
+      _CCCL_HOST_API void populate_deps_scheduling_info() override
       {
         const auto& deps = get_task_deps();
         reserved::ensure_task_deps_initialized(deps);
@@ -424,22 +425,22 @@ public:
         }
       }
 
-      const task_dep_vector_untyped& get_task_deps() const override
+      _CCCL_HOST_API const task_dep_vector_untyped& get_task_deps() const override
       {
         return task.get_task_deps();
       }
 
-      void set_exec_place(exec_place) override {}
+      _CCCL_HOST_API void set_exec_place(exec_place) override {}
     };
 
-    payload_t& my_payload() const
+    _CCCL_HOST_API payload_t& my_payload() const
     {
       // Safe to do the cast because we've set the pointer earlier ourselves
       return *static_cast<payload_t*>(payload.get());
     }
 
   public:
-    deferred_host_launch_scope(stream_ctx& ctx, task_dep<Data>... deps)
+    _CCCL_HOST_API deferred_host_launch_scope(stream_ctx& ctx, task_dep<Data>... deps)
         : deferred_stream_task<>(::std::make_shared<payload_t>(ctx, mv(deps)...))
     {}
 
@@ -450,26 +451,26 @@ public:
      * @param s
      * @return deferred_host_launch_scope&
      */
-    deferred_host_launch_scope& set_symbol(::std::string s) &
+    _CCCL_HOST_API deferred_host_launch_scope& set_symbol(::std::string s) &
     {
       payload->set_symbol(mv(s));
       return *this;
     }
 
-    deferred_host_launch_scope&& set_symbol(::std::string s) &&
+    _CCCL_HOST_API deferred_host_launch_scope&& set_symbol(::std::string s) &&
     {
       set_symbol(mv(s));
       return mv(*this);
     }
     ///@}
 
-    void populate_deps_scheduling_info()
+    _CCCL_HOST_API void populate_deps_scheduling_info()
     {
       payload->populate_deps_scheduling_info();
     }
 
     template <typename Fun>
-    void operator->*(Fun fun)
+    _CCCL_HOST_API void operator->*(Fun fun)
     {
       my_payload().todo = [f = mv(fun)](reserved::host_launch_scope<stream_ctx, false, Data...>& task) {
         task->*f;
@@ -477,7 +478,7 @@ public:
     }
   };
 
-  void finalize()
+  _CCCL_HOST_API void finalize()
   {
     _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::finalized, "");
     auto& state = this->state();
@@ -512,13 +513,13 @@ public:
     }
   }
 
-  float get_submission_time_ms() const
+  _CCCL_HOST_API float get_submission_time_ms() const
   {
     assert(state().submitted_stream);
     return state().submission_time;
   }
 
-  void submit()
+  _CCCL_HOST_API void submit()
   {
     auto& state = this->state();
     _CCCL_ASSERT(!state.submitted_stream, "");
@@ -612,10 +613,10 @@ public:
   }
 
   // no-op : so that we can use the same code with stream_ctx and graph_ctx
-  void change_stage() {}
+  _CCCL_HOST_API void change_stage() {}
 
   template <typename S, typename... Deps>
-  auto deferred_parallel_for(exec_place e_place, S shape, task_dep<Deps>... deps)
+  _CCCL_HOST_API auto deferred_parallel_for(exec_place e_place, S shape, task_dep<Deps>... deps)
   {
     auto result = deferred_parallel_for_scope<S, null_partition, Deps...>(*this, mv(e_place), mv(shape), mv(deps)...);
     int id      = result.get_mapping_id();
@@ -626,13 +627,13 @@ public:
   }
 
   template <typename S, typename... Deps>
-  auto deferred_parallel_for(S shape, task_dep<Deps>... deps)
+  _CCCL_HOST_API auto deferred_parallel_for(S shape, task_dep<Deps>... deps)
   {
     return deferred_parallel_for(exec_place::current_device(), mv(shape), mv(deps)...);
   }
 
   template <typename T>
-  auto wait(cuda::experimental::stf::logical_data<T>& ldata)
+  _CCCL_HOST_API auto wait(cuda::experimental::stf::logical_data<T>& ldata)
   {
     if constexpr (::cuda::std::is_same_v<T, void_interface>)
     {
@@ -663,13 +664,14 @@ private:
   class impl : public base_impl
   {
   public:
-    impl(async_resources_handle _async_resources = async_resources_handle(nullptr), bool initialize_cuda_runtime = true)
+    _CCCL_HOST_API impl(async_resources_handle _async_resources = async_resources_handle(nullptr),
+                        bool initialize_cuda_runtime            = true)
         : base_impl(mv(_async_resources), initialize_cuda_runtime)
     {
       reserved::backend_ctx_setup_allocators<impl, uncached_stream_allocator>(*this);
     }
 
-    void cleanup()
+    _CCCL_HOST_API void cleanup()
     {
       // Reset this object
       deferred_tasks.clear();
@@ -679,25 +681,25 @@ private:
     }
 
     // Due to circular dependencies, we need to define it here, and not in backend_ctx_untyped
-    void update_uncached_allocator(block_allocator_untyped custom) override
+    _CCCL_HOST_API void update_uncached_allocator(block_allocator_untyped custom) override
     {
       reserved::backend_ctx_update_uncached_allocator(*this, mv(custom));
     }
 
-    event_list stream_to_event_list(cudaStream_t stream, ::std::string symbol) const override
+    _CCCL_HOST_API event_list stream_to_event_list(cudaStream_t stream, ::std::string symbol) const override
     {
       auto e = reserved::record_event_in_stream(augmented_stream(stream), *get_dot(), mv(symbol));
       return event_list(mv(e));
     }
 
-    ::std::string to_string() const override
+    _CCCL_HOST_API ::std::string to_string() const override
     {
       return "stream backend context";
     }
 
     // We need to ensure all dangling events have been completed (eg. by having
     // the CUDA stream used in the finalization wait on these events)
-    bool track_dangling_events() const override
+    _CCCL_HOST_API bool track_dangling_events() const override
     {
       return true;
     }
@@ -716,11 +718,11 @@ private:
     bool blocking_finalize = true;
   };
 
-  impl& state()
+  _CCCL_HOST_API impl& state()
   {
     return dynamic_cast<impl&>(get_state());
   }
-  const impl& state() const
+  _CCCL_HOST_API const impl& state() const
   {
     return dynamic_cast<const impl&>(get_state());
   }
@@ -728,7 +730,7 @@ private:
   /// @brief Build the task graph by populating the predecessor and successor lists.
   /// The logic here is copied from acquire_release.h notify_access(), although this doesn't handle redux at the
   /// moment
-  void build_task_graph()
+  _CCCL_HOST_API void build_task_graph()
   {
     auto& state = this->state();
 
@@ -831,7 +833,7 @@ UNITTEST("logical_data_untyped moveable")
   class scalar
   {
   public:
-    scalar(stream_ctx& ctx)
+    _CCCL_HOST scalar(stream_ctx& ctx)
     {
       const size_t s = sizeof(double);
       auto owner     = ::cuda::std::make_unique<double>();
@@ -849,7 +851,7 @@ UNITTEST("logical_data_untyped moveable")
       owner.release();
     }
 
-    scalar& operator=(scalar&& rhs) noexcept
+    _CCCL_HOST scalar& operator=(scalar&& rhs) noexcept
     {
       handle = mv(rhs.handle);
       return *this;
@@ -881,7 +883,7 @@ UNITTEST("logical_data_untyped moveable")
 #  if _CCCL_CUDA_COMPILATION()
 namespace reserved
 {
-static __global__ void dummy() {}
+_CCCL_KERNEL_ATTRIBUTES void dummy() {}
 } // namespace reserved
 
 UNITTEST("copyable stream_ctx")
@@ -1083,7 +1085,7 @@ UNITTEST("const class containing a stream_ctx")
   struct foo
   {
     foo() = default;
-    stream_ctx& get_ctx() const
+    _CCCL_HOST stream_ctx& get_ctx() const
     {
       return ctx;
     }
@@ -1154,7 +1156,7 @@ UNITTEST("get logical_data from a task_dep")
 #  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 namespace reserved
 {
-inline void unit_test_pfor()
+_CCCL_HOST_API inline void unit_test_pfor()
 {
   stream_ctx ctx;
   // finalize() submits pending work and synchronizes, so it belongs on the normal path only:
@@ -1181,7 +1183,7 @@ UNITTEST("basic parallel_for test")
   unit_test_pfor();
 };
 
-inline void unit_test_pfor_integral_shape()
+_CCCL_HOST_API inline void unit_test_pfor_integral_shape()
 {
   stream_ctx ctx;
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
@@ -1204,7 +1206,7 @@ UNITTEST("parallel_for with integral shape")
   unit_test_pfor_integral_shape();
 };
 
-inline void unit_test_host_pfor()
+_CCCL_HOST_API inline void unit_test_host_pfor()
 {
   stream_ctx ctx;
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
@@ -1225,7 +1227,7 @@ UNITTEST("basic parallel_for test on host")
   unit_test_host_pfor();
 };
 
-inline void unit_test_pfor_mix_host_dev()
+_CCCL_HOST_API inline void unit_test_pfor_mix_host_dev()
 {
   stream_ctx ctx;
 
@@ -1261,7 +1263,7 @@ UNITTEST("parallel_for host and device")
   unit_test_pfor_mix_host_dev();
 };
 
-inline void unit_test_untyped_place_pfor()
+_CCCL_HOST_API inline void unit_test_untyped_place_pfor()
 {
   stream_ctx ctx;
 
@@ -1289,7 +1291,7 @@ UNITTEST("basic parallel_for test on host (untyped execution place)")
   unit_test_untyped_place_pfor();
 };
 
-inline void unit_test_pfor_grid()
+_CCCL_HOST_API inline void unit_test_pfor_grid()
 {
   stream_ctx ctx;
   auto where = exec_place::all_devices();
@@ -1311,7 +1313,7 @@ UNITTEST("basic parallel_for test on grid")
   unit_test_pfor_grid();
 };
 
-inline void unit_test_pfor_untyped_grid()
+_CCCL_HOST_API inline void unit_test_pfor_untyped_grid()
 {
   stream_ctx ctx;
 
@@ -1335,7 +1337,7 @@ UNITTEST("basic parallel_for test on grid")
   unit_test_pfor_untyped_grid();
 };
 
-inline void unit_test_launch()
+_CCCL_HOST_API inline void unit_test_launch()
 {
   stream_ctx ctx;
   // finalize() submits pending work and synchronizes, so it belongs on the normal path only:

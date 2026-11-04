@@ -119,7 +119,7 @@ struct choose_signed_offset
    * Checks if the given num_items can be covered by the selected offset type. If not, returns cudaErrorInvalidValue,
    * otherwise returns cudaSuccess.
    */
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t is_exceeding_offset_type(NumItemsT num_items)
+  _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE cudaError_t is_exceeding_offset_type(NumItemsT num_items)
   {
     _CCCL_DIAG_PUSH
     _CCCL_DIAG_SUPPRESS_MSVC(4127) /* conditional expression is constant */

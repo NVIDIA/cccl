@@ -58,8 +58,8 @@ public:
     shared_device_memory_pool&& __other) noexcept
       : __shared_memory_pool_base(::cuda::std::move(__other))
   {}
-  shared_device_memory_pool& operator=(const shared_device_memory_pool&) = default;
-  shared_device_memory_pool& operator=(shared_device_memory_pool&&)      = default;
+  _CCCL_HIDE_FROM_ABI shared_device_memory_pool& operator=(const shared_device_memory_pool&) = default;
+  _CCCL_HIDE_FROM_ABI shared_device_memory_pool& operator=(shared_device_memory_pool&&)      = default;
 
   //! @brief Constructs an empty shared device memory pool.
   _CCCL_HOST_API explicit shared_device_memory_pool(no_init_t) noexcept

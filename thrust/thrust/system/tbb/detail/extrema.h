@@ -19,7 +19,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::tbb::detail
 {
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-ForwardIterator
+_CCCL_HOST_API ForwardIterator
 max_element(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
   // tbb prefers generic::max_element to cpp::max_element
@@ -27,7 +27,7 @@ max_element(execution_policy<DerivedPolicy>& exec, ForwardIterator first, Forwar
 } // end max_element()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-ForwardIterator
+_CCCL_HOST_API ForwardIterator
 min_element(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
   // tbb prefers generic::min_element to cpp::min_element
@@ -35,7 +35,7 @@ min_element(execution_policy<DerivedPolicy>& exec, ForwardIterator first, Forwar
 } // end min_element()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-::cuda::std::pair<ForwardIterator, ForwardIterator>
+_CCCL_HOST_API ::cuda::std::pair<ForwardIterator, ForwardIterator>
 minmax_element(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
   // tbb prefers generic::minmax_element to cpp::minmax_element

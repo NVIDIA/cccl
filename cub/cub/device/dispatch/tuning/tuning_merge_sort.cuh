@@ -85,7 +85,7 @@ struct MergeSortPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const MergeSortPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const MergeSortPolicy& p)
   {
     return os
         << "MergeSortPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "

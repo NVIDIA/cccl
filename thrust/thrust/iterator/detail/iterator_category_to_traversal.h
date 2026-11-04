@@ -21,21 +21,23 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-_CCCL_HOST_DEVICE auto cat_to_traversal_impl(...) -> void;
+_CCCL_HOST_DEVICE_API auto cat_to_traversal_impl(...) -> void;
 
 // host
-_CCCL_HOST_DEVICE auto cat_to_traversal_impl(const random_access_host_iterator_tag&) -> random_access_traversal_tag;
-_CCCL_HOST_DEVICE auto cat_to_traversal_impl(const bidirectional_host_iterator_tag&) -> bidirectional_traversal_tag;
-_CCCL_HOST_DEVICE auto cat_to_traversal_impl(const forward_host_iterator_tag&) -> forward_traversal_tag;
-_CCCL_HOST_DEVICE auto cat_to_traversal_impl(const input_host_iterator_tag&) -> single_pass_traversal_tag;
-_CCCL_HOST_DEVICE auto cat_to_traversal_impl(const output_host_iterator_tag&) -> incrementable_traversal_tag;
+_CCCL_HOST_DEVICE_API auto cat_to_traversal_impl(const random_access_host_iterator_tag&) -> random_access_traversal_tag;
+_CCCL_HOST_DEVICE_API auto cat_to_traversal_impl(const bidirectional_host_iterator_tag&) -> bidirectional_traversal_tag;
+_CCCL_HOST_DEVICE_API auto cat_to_traversal_impl(const forward_host_iterator_tag&) -> forward_traversal_tag;
+_CCCL_HOST_DEVICE_API auto cat_to_traversal_impl(const input_host_iterator_tag&) -> single_pass_traversal_tag;
+_CCCL_HOST_DEVICE_API auto cat_to_traversal_impl(const output_host_iterator_tag&) -> incrementable_traversal_tag;
 
 // device
-_CCCL_HOST_DEVICE auto cat_to_traversal_impl(const random_access_device_iterator_tag&) -> random_access_traversal_tag;
-_CCCL_HOST_DEVICE auto cat_to_traversal_impl(const bidirectional_device_iterator_tag&) -> bidirectional_traversal_tag;
-_CCCL_HOST_DEVICE auto cat_to_traversal_impl(const forward_device_iterator_tag&) -> forward_traversal_tag;
-_CCCL_HOST_DEVICE auto cat_to_traversal_impl(const input_device_iterator_tag&) -> single_pass_traversal_tag;
-_CCCL_HOST_DEVICE auto cat_to_traversal_impl(const output_device_iterator_tag&) -> incrementable_traversal_tag;
+_CCCL_HOST_DEVICE_API auto cat_to_traversal_impl(const random_access_device_iterator_tag&)
+  -> random_access_traversal_tag;
+_CCCL_HOST_DEVICE_API auto cat_to_traversal_impl(const bidirectional_device_iterator_tag&)
+  -> bidirectional_traversal_tag;
+_CCCL_HOST_DEVICE_API auto cat_to_traversal_impl(const forward_device_iterator_tag&) -> forward_traversal_tag;
+_CCCL_HOST_DEVICE_API auto cat_to_traversal_impl(const input_device_iterator_tag&) -> single_pass_traversal_tag;
+_CCCL_HOST_DEVICE_API auto cat_to_traversal_impl(const output_device_iterator_tag&) -> incrementable_traversal_tag;
 
 template <typename CategoryOrTraversal>
 struct iterator_category_to_traversal

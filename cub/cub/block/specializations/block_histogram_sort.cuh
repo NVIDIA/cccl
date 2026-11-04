@@ -99,7 +99,7 @@ struct BlockHistogramSort
   unsigned int linear_tid;
 
   /// Constructor
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogramSort(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockHistogramSort(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
       , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
@@ -111,12 +111,12 @@ struct BlockHistogramSort
     _TempStorage& temp_storage;
 
     // Constructor
-    _CCCL_DEVICE _CCCL_FORCEINLINE DiscontinuityOp(_TempStorage& temp_storage)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE DiscontinuityOp(_TempStorage& temp_storage)
         : temp_storage(temp_storage)
     {}
 
     // Discontinuity predicate
-    _CCCL_DEVICE _CCCL_FORCEINLINE bool operator()(const T& a, const T& b, int b_index)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE bool operator()(const T& a, const T& b, int b_index)
     {
       if (a != b)
       {
@@ -141,7 +141,7 @@ struct BlockHistogramSort
    *   Reference to shared/device-accessible memory histogram
    */
   template <typename CounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ItemsPerThread], CounterT histogram[Bins])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Composite(T (&items)[ItemsPerThread], CounterT histogram[Bins])
   {
     static constexpr int TILE_SIZE = BLOCK_THREADS * ItemsPerThread;
 

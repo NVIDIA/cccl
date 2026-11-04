@@ -75,11 +75,12 @@ struct policy_selector
 #endif // !TUNE_BASE
 
 template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename TransformOp>
-void bench_transform(nvbench::state& state,
-                     cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
-                     RandomAccessIteratorOut output,
-                     ::cuda::std::int64_t num_items,
-                     TransformOp transform_op)
+_CCCL_HOST_API void bench_transform(
+  nvbench::state& state,
+  cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
+  RandomAccessIteratorOut output,
+  ::cuda::std::int64_t num_items,
+  TransformOp transform_op)
 {
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](const nvbench::launch& launch) {
     cub::DeviceTransform::Transform(

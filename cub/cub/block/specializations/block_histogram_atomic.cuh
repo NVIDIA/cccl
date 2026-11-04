@@ -42,7 +42,7 @@ struct BlockHistogramAtomic
   {};
 
   /// Constructor
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogramAtomic(TempStorage& temp_storage) {}
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockHistogramAtomic(TempStorage& temp_storage) {}
 
   /**
    * @brief Composite data onto an existing histogram
@@ -54,7 +54,7 @@ struct BlockHistogramAtomic
    *   Reference to shared/device-accessible memory histogram
    */
   template <typename T, typename CounterT, int ItemsPerThread>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(const T (&items)[ItemsPerThread], CounterT histogram[Bins])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Composite(const T (&items)[ItemsPerThread], CounterT histogram[Bins])
   {
     // Use unsigned, unsigned long long for all integer counters
     constexpr bool is_integer_counter =

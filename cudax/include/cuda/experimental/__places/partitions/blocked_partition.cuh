@@ -36,10 +36,10 @@ template <::std::ptrdiff_t which_dim = -1>
 class blocked_partition_custom
 {
 public:
-  blocked_partition_custom() = default;
+  _CCCL_HIDE_FROM_ABI blocked_partition_custom() = default;
 
   template <size_t dimensions>
-  _CCCL_HOST_DEVICE static auto apply(const box<dimensions>& in, pos4 place_position, dim4 grid_dims)
+  _CCCL_HOST_DEVICE_API static auto apply(const box<dimensions>& in, pos4 place_position, dim4 grid_dims)
   {
     ::std::array<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>, dimensions> bounds;
     size_t target_dim = (which_dim == -1) ? dimensions - 1 : size_t(which_dim);
@@ -74,7 +74,7 @@ public:
   }
 
   template <typename mdspan_shape_t>
-  _CCCL_HOST_DEVICE static auto apply(const mdspan_shape_t& in, pos4 place_position, dim4 grid_dims)
+  _CCCL_HOST_DEVICE_API static auto apply(const mdspan_shape_t& in, pos4 place_position, dim4 grid_dims)
   {
     constexpr size_t dimensions = mdspan_shape_t::rank();
 
@@ -103,7 +103,7 @@ public:
     return box<dimensions>(bounds);
   }
 
-  _CCCL_HOST_DEVICE static void get_executor(pos4* result, pos4 data_coords, dim4 data_dims, dim4 grid_dims)
+  _CCCL_HOST_DEVICE_API static void get_executor(pos4* result, pos4 data_coords, dim4 data_dims, dim4 grid_dims)
   {
     // Find the largest dimension
     const size_t rank = data_dims.get_rank();

@@ -67,18 +67,19 @@ struct BaseTraits<UNSIGNED_INTEGER, true, UnsignedBitsT, T>
   static constexpr UnsignedBits LOWEST_KEY = UnsignedBits(0);
   static constexpr UnsignedBits MAX_KEY    = UnsignedBits(-1);
 
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
+  _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
     return key;
   }
 
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleOut(UnsignedBits key)
+  _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE UnsignedBits TwiddleOut(UnsignedBits key)
   {
     return key;
   }
 
   //! deprecated [Since 3.0]
-  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()") static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()") _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE T
+  Max()
   {
     UnsignedBits retval_bits = MAX_KEY;
     T retval;
@@ -87,7 +88,7 @@ struct BaseTraits<UNSIGNED_INTEGER, true, UnsignedBitsT, T>
   }
 
   //! deprecated [Since 3.0]
-  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()") static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()") _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE T
   Lowest()
   {
     UnsignedBits retval_bits = LOWEST_KEY;
@@ -116,25 +117,26 @@ struct BaseTraits<SIGNED_INTEGER, true, UnsignedBitsT, T>
   static constexpr UnsignedBits LOWEST_KEY = HIGH_BIT;
   static constexpr UnsignedBits MAX_KEY    = UnsignedBits(-1) ^ HIGH_BIT;
 
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
+  _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
     return key ^ HIGH_BIT;
   };
 
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleOut(UnsignedBits key)
+  _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE UnsignedBits TwiddleOut(UnsignedBits key)
   {
     return key ^ HIGH_BIT;
   };
 
   //! deprecated [Since 3.0]
-  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()") static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()") _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE T
+  Max()
   {
     UnsignedBits retval = MAX_KEY;
     return reinterpret_cast<T&>(retval);
   }
 
   //! deprecated [Since 3.0]
-  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()") static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()") _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE T
   Lowest()
   {
     UnsignedBits retval = LOWEST_KEY;
@@ -168,26 +170,27 @@ struct BaseTraits<FLOATING_POINT, true, UnsignedBitsT, T>
   static constexpr UnsignedBits LOWEST_KEY = UnsignedBits(-1);
   static constexpr UnsignedBits MAX_KEY    = UnsignedBits(-1) ^ HIGH_BIT;
 
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
+  _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
     const UnsignedBits mask = (key & HIGH_BIT) ? UnsignedBits(-1) : HIGH_BIT;
     return key ^ mask;
   };
 
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleOut(UnsignedBits key)
+  _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE UnsignedBits TwiddleOut(UnsignedBits key)
   {
     const UnsignedBits mask = (key & HIGH_BIT) ? HIGH_BIT : UnsignedBits(-1);
     return key ^ mask;
   };
 
   //! deprecated [Since 3.0]
-  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()") static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()") _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE T
+  Max()
   {
     return ::cuda::std::numeric_limits<T>::max();
   }
 
   //! deprecated [Since 3.0]
-  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()") static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()") _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE T
   Lowest()
   {
     return ::cuda::std::numeric_limits<T>::lowest();
@@ -240,24 +243,25 @@ struct NumericTraits<__uint128_t>
   static constexpr UnsignedBits LOWEST_KEY = UnsignedBits(0);
   static constexpr UnsignedBits MAX_KEY    = UnsignedBits(-1);
 
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
+  _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
     return key;
   }
 
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleOut(UnsignedBits key)
+  _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE UnsignedBits TwiddleOut(UnsignedBits key)
   {
     return key;
   }
 
   //! deprecated [Since 3.0]
-  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()") static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()") _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE T
+  Max()
   {
     return MAX_KEY;
   }
 
   //! deprecated [Since 3.0]
-  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()") static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()") _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE T
   Lowest()
   {
     return LOWEST_KEY;
@@ -279,25 +283,26 @@ struct NumericTraits<__int128_t>
   static constexpr UnsignedBits LOWEST_KEY = HIGH_BIT;
   static constexpr UnsignedBits MAX_KEY    = UnsignedBits(-1) ^ HIGH_BIT;
 
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
+  _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
     return key ^ HIGH_BIT;
   };
 
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleOut(UnsignedBits key)
+  _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE UnsignedBits TwiddleOut(UnsignedBits key)
   {
     return key ^ HIGH_BIT;
   };
 
   //! deprecated [Since 3.0]
-  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()") static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()") _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE T
+  Max()
   {
     UnsignedBits retval = MAX_KEY;
     return reinterpret_cast<T&>(retval);
   }
 
   //! deprecated [Since 3.0]
-  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()") static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()") _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE T
   Lowest()
   {
     UnsignedBits retval = LOWEST_KEY;

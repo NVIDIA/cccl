@@ -97,7 +97,7 @@ public:
    *  \param mean The mean (expected value) of the distribution. Defaults to \c 0.0.
    *  \param stddev The standard deviation of the distribution. Defaults to \c 1.0.
    */
-  _CCCL_HOST_DEVICE explicit normal_distribution(RealType mean = 0.0, RealType stddev = 1.0);
+  _CCCL_HOST_DEVICE_API explicit normal_distribution(RealType mean = 0.0, RealType stddev = 1.0);
 
   /*! This constructor creates a new \p normal_distribution from a \p param_type object
    *  encapsulating the range of the distribution.
@@ -105,13 +105,13 @@ public:
    *  \param parm A \p param_type object encapsulating the parameters (i.e., the mean and standard deviation) of the
    * distribution.
    */
-  _CCCL_HOST_DEVICE explicit normal_distribution(const param_type& parm);
+  _CCCL_HOST_DEVICE_API explicit normal_distribution(const param_type& parm);
 
   /*! Calling this member function guarantees that subsequent uses of this
    *  \p normal_distribution do not depend on values produced by any random
    *  number generator prior to invoking this function.
    */
-  _CCCL_HOST_DEVICE void reset();
+  _CCCL_HOST_DEVICE_API void reset();
 
   // generating functions
 
@@ -121,7 +121,7 @@ public:
    *  \param urng The \p UniformRandomNumberGenerator to use as a source of randomness.
    */
   template <typename UniformRandomNumberGenerator>
-  _CCCL_HOST_DEVICE result_type operator()(UniformRandomNumberGenerator& urng);
+  _CCCL_HOST_DEVICE_API result_type operator()(UniformRandomNumberGenerator& urng);
 
   /*! This method produces a new Normal random integer as if by creating a new \p normal_distribution
    *  from the given \p param_type object, and calling its <tt>operator()</tt> method with the given
@@ -132,7 +132,7 @@ public:
    *              to draw from.
    */
   template <typename UniformRandomNumberGenerator>
-  _CCCL_HOST_DEVICE result_type operator()(UniformRandomNumberGenerator& urng, const param_type& parm);
+  _CCCL_HOST_DEVICE_API result_type operator()(UniformRandomNumberGenerator& urng, const param_type& parm);
 
   // property functions
 
@@ -141,14 +141,14 @@ public:
    *
    *  \return The mean (expected value) of this \p normal_distribution's output.
    */
-  _CCCL_HOST_DEVICE result_type mean() const;
+  _CCCL_HOST_DEVICE_API result_type mean() const;
 
   /*! This method returns the value of the parameter with which this \p normal_distribution
    *  was constructed.
    *
    *  \return The standard deviation of this \p uniform_real_distribution's output.
    */
-  _CCCL_HOST_DEVICE result_type stddev() const;
+  _CCCL_HOST_DEVICE_API result_type stddev() const;
 
   /*! This method returns a \p param_type object encapsulating the parameters with which this
    *  \p normal_distribution was constructed.
@@ -156,7 +156,7 @@ public:
    *  \return A \p param_type object encapsulating the parameters (i.e., the mean and standard deviation) of this \p
    * normal_distribution.
    */
-  _CCCL_HOST_DEVICE param_type param() const;
+  _CCCL_HOST_DEVICE_API param_type param() const;
 
   /*! This method changes the parameters of this \p normal_distribution using the values encapsulated
    *  in a given \p param_type object.
@@ -164,20 +164,20 @@ public:
    *  \param parm A \p param_type object encapsulating the new parameters (i.e., the mean and variance) of this \p
    * normal_distribution.
    */
-  _CCCL_HOST_DEVICE void param(const param_type& parm);
+  _CCCL_HOST_DEVICE_API void param(const param_type& parm);
 
   /*! This method returns the smallest floating point number this \p normal_distribution can potentially produce.
    *
    *  \return The lower bound of this \p normal_distribution's half-open interval.
    */
-  _CCCL_HOST_DEVICE result_type min THRUST_PREVENT_MACRO_SUBSTITUTION() const;
+  _CCCL_HOST_DEVICE_API result_type min THRUST_PREVENT_MACRO_SUBSTITUTION() const;
 
   /*! This method returns the smallest number larger than largest floating point number this \p
    * uniform_real_distribution can potentially produce.
    *
    *  \return The upper bound of this \p normal_distribution's half-open interval.
    */
-  _CCCL_HOST_DEVICE result_type max THRUST_PREVENT_MACRO_SUBSTITUTION() const;
+  _CCCL_HOST_DEVICE_API result_type max THRUST_PREVENT_MACRO_SUBSTITUTION() const;
 
   /*! \cond
    */
@@ -187,7 +187,7 @@ private:
 
   friend struct thrust::random::detail::random_core_access;
 
-  _CCCL_HOST_DEVICE bool equal(const normal_distribution& rhs) const;
+  _CCCL_HOST_DEVICE_API bool equal(const normal_distribution& rhs) const;
 
   template <typename CharT, typename Traits>
   std::basic_ostream<CharT, Traits>& stream_out(std::basic_ostream<CharT, Traits>& os) const;
@@ -204,7 +204,8 @@ private:
  *  \return \c true if \p lhs is equal to \p rhs; \c false, otherwise.
  */
 template <typename RealType>
-_CCCL_HOST_DEVICE bool operator==(const normal_distribution<RealType>& lhs, const normal_distribution<RealType>& rhs);
+_CCCL_HOST_DEVICE_API bool
+operator==(const normal_distribution<RealType>& lhs, const normal_distribution<RealType>& rhs);
 
 /*! This function checks two \p normal_distributions for inequality.
  *  \param lhs The first \p normal_distribution to test.
@@ -212,7 +213,8 @@ _CCCL_HOST_DEVICE bool operator==(const normal_distribution<RealType>& lhs, cons
  *  \return \c true if \p lhs is not equal to \p rhs; \c false, otherwise.
  */
 template <typename RealType>
-_CCCL_HOST_DEVICE bool operator!=(const normal_distribution<RealType>& lhs, const normal_distribution<RealType>& rhs);
+_CCCL_HOST_DEVICE_API bool
+operator!=(const normal_distribution<RealType>& lhs, const normal_distribution<RealType>& rhs);
 
 /*! This function streams a normal_distribution to a \p std::basic_ostream.
  *  \param os The \p basic_ostream to stream out to.
@@ -220,7 +222,7 @@ _CCCL_HOST_DEVICE bool operator!=(const normal_distribution<RealType>& lhs, cons
  *  \return \p os
  */
 template <typename RealType, typename CharT, typename Traits>
-std::basic_ostream<CharT, Traits>&
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>&
 operator<<(std::basic_ostream<CharT, Traits>& os, const normal_distribution<RealType>& d);
 
 /*! This function streams a normal_distribution in from a std::basic_istream.
@@ -229,7 +231,8 @@ operator<<(std::basic_ostream<CharT, Traits>& os, const normal_distribution<Real
  *  \return \p is
  */
 template <typename RealType, typename CharT, typename Traits>
-std::basic_istream<CharT, Traits>& operator>>(std::basic_istream<CharT, Traits>& is, normal_distribution<RealType>& d);
+_CCCL_HOST_API std::basic_istream<CharT, Traits>&
+operator>>(std::basic_istream<CharT, Traits>& is, normal_distribution<RealType>& d);
 
 /*! \} // end random_number_distributions
  */

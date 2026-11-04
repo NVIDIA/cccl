@@ -24,7 +24,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::tbb::detail
 {
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-OutputIterator
+_CCCL_HOST_API OutputIterator
 copy(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
 {
   using traversal1 = typename iterator_traversal<InputIterator>::type;
@@ -41,7 +41,8 @@ copy(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator l
 }
 
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename OutputIterator>
-OutputIterator copy_n(execution_policy<DerivedPolicy>& exec, InputIterator first, Size n, OutputIterator result)
+_CCCL_HOST_API OutputIterator
+copy_n(execution_policy<DerivedPolicy>& exec, InputIterator first, Size n, OutputIterator result)
 {
   using traversal1 = typename iterator_traversal<InputIterator>::type;
   using traversal2 = typename iterator_traversal<OutputIterator>::type;

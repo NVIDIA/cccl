@@ -242,8 +242,8 @@ private:
     token_impl& operator=(const token_impl&) = delete;
     // NOLINTEND(modernize-use-equals-delete)
 
-    token_impl(token_impl&&)            = default;
-    token_impl& operator=(token_impl&&) = default;
+    _CCCL_HIDE_FROM_ABI token_impl(token_impl&&)            = default;
+    _CCCL_HIDE_FROM_ABI token_impl& operator=(token_impl&&) = default;
   };
 
 public:
