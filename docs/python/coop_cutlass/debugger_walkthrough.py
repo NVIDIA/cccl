@@ -15,7 +15,8 @@ import cutlass
 from cutlass import cute
 from cutlass.cute.runtime import make_ptr
 
-import cuda.coop.cutlass as coop  # First breakpoint: inspect compiler validation.
+# First breakpoint: inspect compiler validation.
+import cuda.coop.cutlass as coop
 from cuda.bindings import driver
 # isort: on
 
@@ -53,7 +54,9 @@ def main(*, algorithm="direct", items_per_thread=2):
             algorithm=algorithm,
             temp_storage=scratch,
         )
-        coop.store(block, destination, items, algorithm=algorithm, temp_storage=scratch)
+        coop.store(
+            block, destination, items, algorithm=algorithm, temp_storage=scratch
+        )
 
     @cute.jit
     def launch(
@@ -61,7 +64,9 @@ def main(*, algorithm="direct", items_per_thread=2):
         destination: cute.Pointer,
         items_per_thread: cutlass.Constexpr,
     ):
-        copy_tile(source, destination, items_per_thread).launch(grid=1, block=128)
+        copy_tile(source, destination, items_per_thread).launch(
+            grid=1, block=128
+        )
 
     # docs: end cutlass-debug-kernel
 
@@ -73,7 +78,9 @@ def main(*, algorithm="direct", items_per_thread=2):
         destination_device = _check(driver.cuMemAlloc(destination.nbytes))
         try:
             _check(
-                driver.cuMemcpyHtoD(source_device, source.ctypes.data, source.nbytes)
+                driver.cuMemcpyHtoD(
+                    source_device, source.ctypes.data, source.nbytes
+                )
             )
             source_pointer = make_ptr(
                 cutlass.Int32,
@@ -96,14 +103,18 @@ def main(*, algorithm="direct", items_per_thread=2):
                 destination.fill(-1)
                 _check(
                     driver.cuMemcpyHtoD(
-                        destination_device, destination.ctypes.data, destination.nbytes
+                        destination_device,
+                        destination.ctypes.data,
+                        destination.nbytes,
                     )
                 )
                 compiled(source_pointer, destination_pointer)
                 _check(driver.cuCtxSynchronize())
                 _check(
                     driver.cuMemcpyDtoH(
-                        destination.ctypes.data, destination_device, destination.nbytes
+                        destination.ctypes.data,
+                        destination_device,
+                        destination.nbytes,
                     )
                 )
                 np.testing.assert_array_equal(destination, source)
@@ -123,7 +134,9 @@ if __name__ == "__main__":
     )
     parser.add_argument("--items-per-thread", type=int, default=2)
     args = parser.parse_args()
-    # Each debug session reaches NVRTC; the second launch still reuses its kernel.
-    with tempfile.TemporaryDirectory(prefix="cuda-coop-cutlass-debug-") as cache_dir:
+    # Each debug session reaches NVRTC; launch two reuses the compiled kernel.
+    with tempfile.TemporaryDirectory(
+        prefix="cuda-coop-cutlass-debug-"
+    ) as cache_dir:
         os.environ["CUDA_COOP_CUTLASS_PROVIDER_CACHE_DIR"] = cache_dir
         main(algorithm=args.algorithm, items_per_thread=args.items_per_thread)
