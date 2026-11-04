@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cmath/copysign.h>
+#include <cuda/std/__cmath/signbit.h>
 #include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__host_stdlib/math.h>
@@ -78,10 +80,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
   return _CCCL_BUILTIN_RINTF128(__x);
 #  else // ^^^ _CCCL_BUILTIN_RINTF128 ^^^ / vvv !_CCCL_BUILTIN_RINTF128 vvv
   NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_rint(__x);))
-  using __storage_t          = __fp_storage_of_t<__float128>;
   constexpr auto __fmt       = __fp_format_of_v<__float128>;
   constexpr int __mant_nbits = __fp_mant_nbits_v<__fmt>;
-  constexpr auto __sign_mask = __fp_sign_mask_of_v<__float128>;
 
   if (::cuda::std::__fp_get_exp(__x) >= __mant_nbits)
   {
@@ -90,21 +90,19 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
   }
   // The ulp of 2^112 is 1, so adding it rounds |x| to an integer in the current rounding mode (raising FE_INEXACT
   // when needed) and subtracting it again is exact
-  const __float128 __two_112 = __float128(1ull << 56) * __float128(1ull << 56);
-  const __storage_t __sign   = static_cast<__storage_t>(::cuda::std::__fp_get_storage(__x) & __sign_mask);
-  const __float128 __r       = __sign ? (__x - __two_112) + __two_112 : (__x + __two_112) - __two_112;
+  constexpr __float128 __two_112 = __float128(1ull << 56) * __float128(1ull << 56);
+  const __float128 __r = ::cuda::std::signbit(__x) ? (__x - __two_112) + __two_112 : (__x + __two_112) - __two_112;
   // a zero result keeps the sign of the argument
-  return ::cuda::std::__fp_from_storage<__float128>(
-    static_cast<__storage_t>((::cuda::std::__fp_get_storage(__r) & ~__sign_mask) | __sign));
+  return ::cuda::std::copysign(__r, __x);
 #  endif // ^^^ !_CCCL_BUILTIN_RINTF128 ^^^
 }
 
 template <class _Integer>
-[[nodiscard]] _CCCL_API inline _Integer __lrint_fp128(__float128 __x) noexcept
+[[nodiscard]] _CCCL_API _Integer __lrint_fp128(__float128 __x) noexcept
 {
   const __float128 __r = ::cuda::std::__rint_fp128(__x);
   // -min() is a power of two, so the bounds are exact
-  const __float128 __bound = -static_cast<__float128>(numeric_limits<_Integer>::min());
+  constexpr __float128 __bound = -static_cast<__float128>(numeric_limits<_Integer>::min());
   if (__r >= -__bound && __r < __bound)
   {
     return static_cast<_Integer>(__r);
@@ -665,11 +663,9 @@ _CCCL_API inline long lround(_Integer __x) noexcept
 #  define _CCCL_BUILTIN_NEARBYINTL(...) __builtin_nearbyintl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_nearbyint)
 
-#if _CCCL_HAS_FLOAT128()
-#  if _CCCL_CHECK_BUILTIN(builtin_nearbyintf128)
-#    define _CCCL_BUILTIN_NEARBYINTF128(...) __builtin_nearbyintf128(__VA_ARGS__)
-#  endif // _CCCL_CHECK_BUILTIN(builtin_nearbyintf128)
-#endif // _CCCL_HAS_FLOAT128()
+#if _CCCL_HAS_FLOAT128() && _CCCL_CHECK_BUILTIN(builtin_nearbyintf128)
+#  define _CCCL_BUILTIN_NEARBYINTF128(...) __builtin_nearbyintf128(__VA_ARGS__)
+#endif // _CCCL_HAS_FLOAT128() && _CCCL_CHECK_BUILTIN(builtin_nearbyintf128)
 
 // nvcc doesn't implement __builtin_nearbyintf128 on device
 #if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
