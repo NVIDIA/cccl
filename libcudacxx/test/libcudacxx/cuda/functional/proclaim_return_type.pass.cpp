@@ -24,11 +24,11 @@ TEST_FUNC void test_lambda_return_type()
     return ReturnT{};
   };
 #  else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION() vvv
-  auto d_lm = [] TEST_DEVICE_FUNC() -> ReturnT {
+  [[maybe_unused]] auto d_lm = [] TEST_DEVICE_FUNC() -> ReturnT {
     return ReturnT{};
   };
 #  endif // !_CCCL_TILE_COMPILATION()
-  auto hd_lm = [] TEST_FUNC() -> ReturnT {
+  [[maybe_unused]] auto hd_lm = [] TEST_FUNC() -> ReturnT {
     return ReturnT{};
   };
   using Td  = decltype(d_lm);
@@ -36,8 +36,6 @@ TEST_FUNC void test_lambda_return_type()
 
   static_assert(cuda::std::is_same_v<cuda::std::invoke_result_t<Td>, ReturnT>);
   static_assert(cuda::std::is_same_v<cuda::std::invoke_result_t<Thd>, ReturnT>);
-  unused(d_lm);
-  unused(hd_lm);
 }
 
 struct custom_type
@@ -172,14 +170,12 @@ int main(int argc, char** argv)
        v);))
 
   // Ensure that we can always declare functions even on host
-  auto f = cuda::proclaim_return_type<bool>([] TEST_DEVICE_FUNC() {
+  [[maybe_unused]] auto f = cuda::proclaim_return_type<bool>([] TEST_DEVICE_FUNC() {
     return false;
   });
-  auto g = cuda::proclaim_return_type<bool>([f] TEST_DEVICE_FUNC() {
+  [[maybe_unused]] auto g = cuda::proclaim_return_type<bool>([f] TEST_DEVICE_FUNC() {
     return f();
   });
-  unused(f);
-  unused(g);
 
 #  if _CCCL_CUDACC_AT_LEAST(12, 3)
   test_lambda_return_type<int>();

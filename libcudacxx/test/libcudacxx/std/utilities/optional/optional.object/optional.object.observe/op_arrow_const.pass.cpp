@@ -47,8 +47,7 @@ struct Z
 TEST_FUNC constexpr bool test()
 {
   {
-    const cuda::std::optional<X> opt{};
-    unused(opt);
+    [[maybe_unused]] const cuda::std::optional<X> opt{};
     static_assert(cuda::std::is_same_v<decltype(opt.operator->()), X const*>);
     // static_assert(!noexcept(opt.operator->()));
     // FIXME: This assertion fails with GCC because it can see that
@@ -59,8 +58,7 @@ TEST_FUNC constexpr bool test()
     // Regardless this function should still be noexcept(false) because
     // it has a narrow contract.
 
-    const cuda::std::optional<X&> optref;
-    unused(optref);
+    [[maybe_unused]] const cuda::std::optional<X&> optref;
     static_assert(cuda::std::is_same_v<decltype(optref.operator->()), X*>);
     static_assert(noexcept(optref.operator->()));
   }

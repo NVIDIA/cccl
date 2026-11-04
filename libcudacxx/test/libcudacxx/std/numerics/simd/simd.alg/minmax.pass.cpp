@@ -31,9 +31,8 @@ TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Pair = cuda::std::pair<Vec, Vec>;
-  Vec a(T{6});
-  Vec b(T{3});
-  unused(a, b);
+  [[maybe_unused]] Vec a(T{6});
+  [[maybe_unused]] Vec b(T{3});
 
   static_assert(cuda::std::is_same_v<decltype(simd::minmax(a, b)), Pair>);
   static_assert(noexcept(simd::minmax(a, b)));

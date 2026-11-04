@@ -41,10 +41,9 @@ TEST_FUNC void testCTAD()
   static_assert(
     cuda::std::is_same_v<decltype(cuda::std::ranges::zip_view(Container{}, View{})), result_zip_owning_container_view>);
 
-  Container c{};
+  [[maybe_unused]] Container c{};
   static_assert(
     cuda::std::is_same_v<decltype(cuda::std::ranges::zip_view(Container{}, View{}, c)), result_zip_ref_container_view>);
-  unused(c);
 }
 
 int main(int, char**)

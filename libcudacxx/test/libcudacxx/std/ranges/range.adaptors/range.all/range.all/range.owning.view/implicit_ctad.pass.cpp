@@ -26,8 +26,7 @@ struct Range
 int main(int, char**)
 {
   Range r;
-  cuda::std::ranges::owning_view view{cuda::std::move(r)};
-  unused(view);
+  [[maybe_unused]] cuda::std::ranges::owning_view view{cuda::std::move(r)};
   static_assert(cuda::std::is_same_v<decltype(view), cuda::std::ranges::owning_view<Range>>);
 
   return 0;

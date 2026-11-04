@@ -22,9 +22,8 @@
 int main(int, char**)
 {
   NV_IF_TARGET(NV_IS_HOST, ({
-                 using C          = ::std::chrono::system_clock;
-                 C::time_point t1 = C::from_time_t(C::to_time_t(C::now()));
-                 unused(t1);
+                 using C                           = ::std::chrono::system_clock;
+                 [[maybe_unused]] C::time_point t1 = C::from_time_t(C::to_time_t(C::now()));
                }));
   return 0;
 }

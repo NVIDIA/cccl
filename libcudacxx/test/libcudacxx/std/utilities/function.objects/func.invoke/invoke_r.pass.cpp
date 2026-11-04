@@ -185,7 +185,9 @@ TEST_FUNC constexpr bool test()
       };
 
       bool was_called = false;
-      unused(cuda::std::invoke_r<int>(F{was_called}, NonCopyable()));
+      {
+        [[maybe_unused]] auto&& discarded = cuda::std::invoke_r<int>(F{was_called}, NonCopyable());
+      }
       assert(was_called);
     }
     // Forward function object, with void return
@@ -214,7 +216,9 @@ TEST_FUNC constexpr bool test()
         }
       };
       bool was_called = false;
-      unused(cuda::std::invoke_r<int>(MoveOnlyIntFunction{was_called}));
+      {
+        [[maybe_unused]] auto&& discarded = cuda::std::invoke_r<int>(MoveOnlyIntFunction{was_called});
+      }
       assert(was_called);
     }
   }

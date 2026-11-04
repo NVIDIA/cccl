@@ -74,10 +74,8 @@ struct small_aggregate
 template <class T>
 TEST_HOST_DEVICE_FUNC void test()
 {
-  cuda::atomic<T> a({42, 137});
-  cuda::std::atomic<T> b({42, 137});
-  unused(a);
-  unused(b);
+  [[maybe_unused]] cuda::atomic<T> a({42, 137});
+  [[maybe_unused]] cuda::std::atomic<T> b({42, 137});
 }
 
 int main(int, char**)

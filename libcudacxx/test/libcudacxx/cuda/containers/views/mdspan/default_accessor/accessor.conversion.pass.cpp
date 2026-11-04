@@ -175,54 +175,52 @@ TEST_FUNC void test_basic_accessor_conversions()
   using user1::AccessorB;
   {
     AccessorA<float> A_acc1;
-    AccessorA<float> A_acc2{A_acc1};
-    AccessorA<const float> A_acc_const1{A_acc1};
+    [[maybe_unused]] AccessorA<float> A_acc2{A_acc1};
+    [[maybe_unused]] AccessorA<const float> A_acc_const1{A_acc1};
     auto f = [](const AccessorA<float>& acc) -> AccessorA<const float> {
       return acc;
     };
-    unused(f(AccessorA<float>{}));
-    unused(A_acc2);
-    unused(A_acc_const1);
+    {
+      [[maybe_unused]] auto&& discarded = f(AccessorA<float>{});
+    }
   }
   {
     AccessorB<float> B_acc1;
-    AccessorB<const float> B_acc_const1{B_acc1};
-    AccessorB<float> B_acc2{B_acc1};
+    [[maybe_unused]] AccessorB<const float> B_acc_const1{B_acc1};
+    [[maybe_unused]] AccessorB<float> B_acc2{B_acc1};
     auto f = [](const AccessorB<float>& B_acc1) -> AccessorB<const float> {
       return B_acc1;
     };
-    unused(f(AccessorB<float>{}));
-    unused(B_acc2);
-    unused(B_acc_const1);
+    {
+      [[maybe_unused]] auto&& discarded = f(AccessorB<float>{});
+    }
   }
   // Implicit conversion from AccessorB to AccessorA.
   {
-    AccessorA<float> A_acc1{AccessorB<float>{}};
-    AccessorA<const float> A_acc_const1{AccessorB<float>{}};
-    AccessorA<const float> A_acc_const2{AccessorB<const float>{}};
+    [[maybe_unused]] AccessorA<float> A_acc1{AccessorB<float>{}};
+    [[maybe_unused]] AccessorA<const float> A_acc_const1{AccessorB<float>{}};
+    [[maybe_unused]] AccessorA<const float> A_acc_const2{AccessorB<const float>{}};
     // AccessorA<float> A_acc2{AccessorB<const float>{}}; // doesn't compile, rightfully so
     auto f = [](const AccessorB<float>& B_acc1) -> AccessorA<float> {
       return B_acc1; // implicit conversion
     };
-    unused(f(AccessorB<float>{}));
-    unused(A_acc1);
-    unused(A_acc_const1);
-    unused(A_acc_const2);
+    {
+      [[maybe_unused]] auto&& discarded = f(AccessorB<float>{});
+    }
   }
   // Only explicit conversion from AccessorA to AccessorB.
   {
-    AccessorB<float> B_acc1{AccessorA<float>{}};
-    AccessorB<const float> B_acc_const1{AccessorA<float>{}};
-    AccessorB<const float> b_acc_const2{AccessorA<const float>{}};
+    [[maybe_unused]] AccessorB<float> B_acc1{AccessorA<float>{}};
+    [[maybe_unused]] AccessorB<const float> B_acc_const1{AccessorA<float>{}};
+    [[maybe_unused]] AccessorB<const float> b_acc_const2{AccessorA<const float>{}};
     // AccessorB<float> B_acc2{AccessorA<const float>{}}; // doesn't compile, rightfully so
     auto f = [](const AccessorA<float>& A_acc1) -> AccessorB<float> {
       // return A_acc1; // implicit conversion doesn't compile, rightfully so
       return AccessorB<float>{A_acc1};
     };
-    unused(f(AccessorA<float>{}));
-    unused(B_acc1);
-    unused(B_acc_const1);
-    unused(b_acc_const2);
+    {
+      [[maybe_unused]] auto&& discarded = f(AccessorA<float>{});
+    }
   }
 }
 
@@ -242,21 +240,20 @@ TEST_FUNC void test_host_device_accessor_conversions()
     static_assert(cuda::std::is_same_v<decltype(wrapper_acc_const1), WrapperAconst>);
 
     // Test CTAD with copy constructor
-    WrapperA wrapper_acc2{wrapper_acc1};
+    [[maybe_unused]] WrapperA wrapper_acc2{wrapper_acc1};
     static_assert(cuda::std::is_same_v<decltype(wrapper_acc2), decltype(wrapper_acc1)>);
-    WrapperAconst wrapper_acc_const2{wrapper_acc_const1};
+    [[maybe_unused]] WrapperAconst wrapper_acc_const2{wrapper_acc_const1};
     static_assert(cuda::std::is_same_v<decltype(wrapper_acc_const2), decltype(wrapper_acc_const1)>);
-    unused(wrapper_acc2);
-    unused(wrapper_acc_const2);
 
     // Test converting constructor: Wrapper<AccessorA<const T>>(AccessorA<T>)
-    WrapperAconst wrapper_acc_const3{wrapper_acc1};
-    unused(wrapper_acc_const3);
+    [[maybe_unused]] WrapperAconst wrapper_acc_const3{wrapper_acc1};
     // Test implicit conversion: Wrapper<AccessorA<T>> -> Wrapper<AccessorA<const T>>
     auto f = [](const WrapperA& wrapper_acc1) -> WrapperAconst {
       return wrapper_acc1;
     };
-    unused(f(WrapperA{}));
+    {
+      [[maybe_unused]] auto&& discarded = f(WrapperA{});
+    }
   }
   {
     // Test (explicit) converting constructor: Wrapper<AccessorB<T>>(AccessorA<T>)
@@ -265,20 +262,26 @@ TEST_FUNC void test_host_device_accessor_conversions()
     auto f1 = [](const WrapperB& wrapper_acc1) -> WrapperA {
       return wrapper_acc1;
     };
-    unused(f1(wrapper_acc3));
+    {
+      [[maybe_unused]] auto&& discarded = f1(wrapper_acc3);
+    }
 
     // Test implicit conversion from AccessorB<T> to AccessorA<const T> (type erasure)
     auto f2 = [](const WrapperB& wrapper_acc1) -> WrapperAconst {
       return wrapper_acc1;
     };
-    unused(f2(wrapper_acc3));
+    {
+      [[maybe_unused]] auto&& discarded = f2(wrapper_acc3);
+    }
 
     // Test that implicit conversion from AccessorA<T> to AccessorB<T> is forbidden
     auto f3 = [](const WrapperA& wrapper_acc1) -> WrapperB {
       return WrapperB{wrapper_acc1};
       // return wrapper_acc1; // rightfully does not compile
     };
-    unused(f3(WrapperA{}));
+    {
+      [[maybe_unused]] auto&& discarded = f3(WrapperA{});
+    }
   }
 }
 
@@ -301,7 +304,9 @@ TEST_FUNC void test_conversion()
     auto f1 = [](const WrapperA& wrapper_acc1) -> WrapperA {
       return wrapper_acc1;
     };
-    unused(f1(WrapperC{}));
+    {
+      [[maybe_unused]] auto&& discarded = f1(WrapperC{});
+    }
   }
   {
     // Test explicit conversion from Wrapper<AccessorD<T>> to Wrapper<AccessorB<T>>.
@@ -312,7 +317,9 @@ TEST_FUNC void test_conversion()
       return WrapperB{};
       // return w; // rightfully does not compile
     };
-    unused(f1(WrapperD{}));
+    {
+      [[maybe_unused]] auto&& discarded = f1(WrapperD{});
+    }
   }
 }
 
@@ -327,7 +334,9 @@ TEST_FUNC void test_aligned_to_default()
   auto f = [](const WrapperAligned& w) -> WrapperDefault {
     return w;
   };
-  unused(f(wrapper_align_acc));
+  {
+    [[maybe_unused]] auto&& discarded = f(wrapper_align_acc);
+  }
 }
 
 // Application: Explicit conversion of Wrapper<default_accessor<T>>
@@ -338,13 +347,14 @@ TEST_FUNC void test_default_to_aligned()
   using WrapperDefault = Wrapper<cuda::std::default_accessor<float>>;
   using WrapperAligned = Wrapper<cuda::std::aligned_accessor<float, 16>>;
   WrapperDefault wrapper_default_acc{cuda::std::default_accessor<float>{}};
-  WrapperAligned wrapper_aligned_acc{wrapper_default_acc};
+  [[maybe_unused]] WrapperAligned wrapper_aligned_acc{wrapper_default_acc};
   auto f = [](const WrapperDefault& w) -> WrapperAligned {
     return WrapperAligned{w};
     // return w; // rightfully does not compile
   };
-  unused(wrapper_aligned_acc);
-  unused(f(wrapper_default_acc));
+  {
+    [[maybe_unused]] auto&& discarded = f(wrapper_default_acc);
+  }
 }
 
 template <template <class> class Wrapper>
@@ -356,29 +366,32 @@ TEST_FUNC void test_managed_conversions()
   using ManagedAccessorConst      = cuda::managed_accessor<cuda::std::default_accessor<const float>>;
   static_assert(cuda::is_host_device_managed_accessor_v<HostOrDeviceAccessor>);
   static_assert(cuda::is_host_device_managed_accessor_v<HostOrDeviceAccessorConst>);
-  HostOrDeviceAccessor host_acc1{ManagedAccessor{}};
-  HostOrDeviceAccessorConst host_acc2{ManagedAccessor{}};
-  HostOrDeviceAccessorConst host_acc3{ManagedAccessorConst{}};
-  unused(host_acc1);
-  unused(host_acc2);
-  unused(host_acc3);
+  [[maybe_unused]] HostOrDeviceAccessor host_acc1{ManagedAccessor{}};
+  [[maybe_unused]] HostOrDeviceAccessorConst host_acc2{ManagedAccessor{}};
+  [[maybe_unused]] HostOrDeviceAccessorConst host_acc3{ManagedAccessorConst{}};
   {
     auto f = [](const ManagedAccessor& w) -> HostOrDeviceAccessor {
       return w;
     };
-    unused(f(ManagedAccessor{}));
+    {
+      [[maybe_unused]] auto&& discarded = f(ManagedAccessor{});
+    }
   }
   {
     auto f = [](const ManagedAccessorConst& w) -> HostOrDeviceAccessorConst {
       return w;
     };
-    unused(f(ManagedAccessorConst{}));
+    {
+      [[maybe_unused]] auto&& discarded = f(ManagedAccessorConst{});
+    }
   }
   {
     auto f = [](const ManagedAccessor& w) -> HostOrDeviceAccessorConst {
       return w;
     };
-    unused(f(ManagedAccessor{}));
+    {
+      [[maybe_unused]] auto&& discarded = f(ManagedAccessor{});
+    }
   }
 }
 

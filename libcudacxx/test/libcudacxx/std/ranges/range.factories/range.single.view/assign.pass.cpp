@@ -57,10 +57,9 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   {
     const cuda::std::ranges::single_view<NotAssignable> a;
-    cuda::std::ranges::single_view<NotAssignable> b;
+    [[maybe_unused]] cuda::std::ranges::single_view<NotAssignable> b;
     b = a;
     b = cuda::std::move(a);
-    unused(b);
   }
 
   {

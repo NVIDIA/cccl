@@ -552,13 +552,12 @@ TEST_FUNC void call_operator_sfinae_test()
   // but doesn't let me fix it with annotations
 #if !TEST_COMPILER(NVRTC)
   { // returns bad type with no operator!
-    auto fn = [](auto x) {
+    [[maybe_unused]] auto fn = [](auto x) {
       return x;
     };
     using T = decltype(cuda::std::not_fn(fn));
     static_assert(cuda::std::is_invocable<T, bool>::value);
     // static_assert(!cuda::std::is_invocable<T, cuda::std::string>::value);
-    unused(fn);
   }
 #endif // TEST_COMPILER(NVRTC)
 }
@@ -660,11 +659,10 @@ TEST_FUNC void call_operator_noexcept_test()
 #if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(ret()), "call should not be noexcept");
 #endif // TEST_COMPILER(NVHPC)
-    auto const& cret = ret;
+    [[maybe_unused]] auto const& cret = ret;
 #if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(cret()), "call should not be noexcept");
 #endif // TEST_COMPILER(NVHPC)
-    unused(cret);
   }
   {
     using T = NoExceptCallable<bool>;
@@ -676,11 +674,10 @@ TEST_FUNC void call_operator_noexcept_test()
 #if !_CCCL_CUDA_COMPILATION()
     static_assert(noexcept(ret()), "call should be noexcept");
 #endif // !_CCCL_CUDA_COMPILATION()
-    auto const& cret = ret;
+    [[maybe_unused]] auto const& cret = ret;
 #if !_CCCL_CUDA_COMPILATION()
     static_assert(noexcept(cret()), "call should be noexcept");
 #endif // !_CCCL_CUDA_COMPILATION()
-    unused(cret);
   }
   {
     using T = NoExceptCallable<NoExceptEvilBool>;
@@ -690,11 +687,10 @@ TEST_FUNC void call_operator_noexcept_test()
 #if !_CCCL_CUDA_COMPILATION()
     static_assert(noexcept(ret()), "call should not be noexcept");
 #endif // !_CCCL_CUDA_COMPILATION()
-    auto const& cret = ret;
+    [[maybe_unused]] auto const& cret = ret;
 #if !_CCCL_CUDA_COMPILATION()
     static_assert(noexcept(cret()), "call should not be noexcept");
 #endif // !_CCCL_CUDA_COMPILATION()
-    unused(cret);
   }
 #if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable ("EvilBool_bang_called") cannot be used in tile code
   {
@@ -704,11 +700,10 @@ TEST_FUNC void call_operator_noexcept_test()
 #  if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(ret()), "call should not be noexcept");
 #  endif // TEST_COMPILER(NVHPC)
-    auto const& cret = ret;
+    [[maybe_unused]] auto const& cret = ret;
 #  if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(cret()), "call should not be noexcept");
 #  endif // TEST_COMPILER(NVHPC)
-    unused(cret);
   }
 #endif // !_CCCL_TILE_COMPILATION()
 }

@@ -176,12 +176,11 @@ TEST_FUNC constexpr void testOne()
     auto range = make_subrange<Range, Iter, Sent>(buffer);
     cuda::std::ranges::drop_while_view<decltype(range), TrackingPred> dwv{
       cuda::std::move(range), TrackingPred(&moved, &copied)};
-    moved   = false;
-    copied  = false;
-    auto it = dwv.begin();
+    moved                    = false;
+    copied                   = false;
+    [[maybe_unused]] auto it = dwv.begin();
     assert(!moved);
     assert(!copied);
-    unused(it);
   }
 
 #if !TEST_COMPILER(MSVC) && !_CCCL_TILE_COMPILATION() // lambda-to-pointer is invalid

@@ -225,27 +225,24 @@ struct TestNoexceptCallable
 TEST_HOST_DEVICE_FUNC void test_noexcept()
 {
   TestNoexceptCallable<true> nec;
-  TestNoexceptCallable<false> tc;
+  [[maybe_unused]] TestNoexceptCallable<false> tc;
   {
     // test that the functions noexcept-ness is propagated
     using Tup = cuda::std::tuple<int, const char*, long>;
-    Tup t;
+    [[maybe_unused]] Tup t;
     static_assert(noexcept(cuda::std::apply(nec, t)));
 #if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(cuda::std::apply(tc, t)));
 #endif // TEST_COMPILER(NVHPC)
-    unused(t);
-    unused(tc);
   }
   {
     // test that the noexcept-ness of the argument conversions is checked.
     using Tup = cuda::std::tuple<NothrowMoveable, int>;
-    Tup t;
+    [[maybe_unused]] Tup t;
 #if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(cuda::std::apply(nec, t)));
 #endif // TEST_COMPILER(NVHPC)
     static_assert(noexcept(cuda::std::apply(nec, cuda::std::move(t))));
-    unused(t);
   }
 }
 
@@ -324,13 +321,11 @@ TEST_HOST_DEVICE_FUNC void test()
 {
   using RawInvokeResult = decltype(f(index<Func>{}));
   static_assert(cuda::std::is_same<RawInvokeResult, Expect>::value);
-  using FnType = RawInvokeResult (*)(index<Func>);
-  FnType fn    = f;
-  cuda::std::tuple<index<Func>> t;
+  using FnType               = RawInvokeResult (*)(index<Func>);
+  [[maybe_unused]] FnType fn = f;
+  [[maybe_unused]] cuda::std::tuple<index<Func>> t;
   using InvokeResult = decltype(cuda::std::apply(fn, t));
   static_assert(cuda::std::is_same<InvokeResult, Expect>::value);
-  unused(t);
-  unused(fn);
 }
 } // end namespace ReturnTypeTest
 

@@ -33,8 +33,7 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
   const int expect_alive = IsArray ? 3 : 1;
   {
     using U = cuda::std::unique_ptr<VT>;
-    U u;
-    unused(u);
+    [[maybe_unused]] U u;
     static_assert(noexcept(u.release()));
   }
   {

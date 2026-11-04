@@ -22,8 +22,7 @@ bool host_accessor_runtime_fail()
   int* device_ptr = nullptr;
   assert(cudaMalloc(&device_ptr, 4) == cudaSuccess);
   using ext_t = cuda::std::extents<int, 4>;
-  cuda::host_mdspan<int, ext_t> h_md{device_ptr, ext_t{}};
-  unused(h_md);
+  [[maybe_unused]] cuda::host_mdspan<int, ext_t> h_md{device_ptr, ext_t{}};
   return true;
 }
 

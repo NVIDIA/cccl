@@ -135,8 +135,7 @@ void test_exceptions()
     const cuda::std::expected<Throwing, int> e1;
     try
     {
-      auto e2 = e1;
-      unused(e2);
+      [[maybe_unused]] auto e2 = e1;
       assert(false);
     }
     catch (Except)
@@ -148,8 +147,7 @@ void test_exceptions()
     const cuda::std::expected<int, Throwing> e1(cuda::std::unexpect);
     try
     {
-      auto e2 = e1;
-      unused(e2);
+      [[maybe_unused]] auto e2 = e1;
     }
     catch (Except)
     {}

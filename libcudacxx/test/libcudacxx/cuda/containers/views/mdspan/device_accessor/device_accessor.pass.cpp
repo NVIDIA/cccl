@@ -21,10 +21,8 @@ bool device_accessor_test()
   int* managed_ptr;
   assert(cudaMalloc(&device_ptr, 4) == cudaSuccess);
   assert(cudaMallocManaged(&managed_ptr, 4) == cudaSuccess);
-  cuda::device_mdspan<int, ext_t> d_md{device_ptr, ext_t{}};
-  cuda::device_mdspan<int, ext_t> m_md{managed_ptr, ext_t{}};
-  unused(d_md);
-  unused(m_md);
+  [[maybe_unused]] cuda::device_mdspan<int, ext_t> d_md{device_ptr, ext_t{}};
+  [[maybe_unused]] cuda::device_mdspan<int, ext_t> m_md{managed_ptr, ext_t{}};
   return true;
 }
 

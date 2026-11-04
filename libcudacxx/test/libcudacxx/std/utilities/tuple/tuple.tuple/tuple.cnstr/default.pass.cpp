@@ -50,8 +50,7 @@ struct IllFormedDefault
 int main(int, char**)
 {
   {
-    cuda::std::tuple<> t;
-    unused(t);
+    [[maybe_unused]] cuda::std::tuple<> t;
   }
   {
     cuda::std::tuple<int> t;
@@ -95,8 +94,7 @@ int main(int, char**)
 #endif // !TEST_COMPILER(NVHPC)
   }
   {
-    constexpr cuda::std::tuple<> t;
-    unused(t);
+    [[maybe_unused]] constexpr cuda::std::tuple<> t;
   }
   {
     constexpr cuda::std::tuple<int> t;
@@ -112,8 +110,7 @@ int main(int, char**)
     // it isn't needed. If the default constructor is evaluated then this test
     // should fail to compile.
     IllFormedDefault v(0);
-    cuda::std::tuple<IllFormedDefault> t(v);
-    unused(t);
+    [[maybe_unused]] cuda::std::tuple<IllFormedDefault> t(v);
   }
   {
     struct Base

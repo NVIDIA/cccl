@@ -21,9 +21,15 @@ TEST_HOST_DEVICE_FUNC bool test()
 {
   uintptr_t ptr_int = 10;
   auto ptr          = reinterpret_cast<int*>(ptr_int);
-  unused(cuda::align_up(ptr, 7)); // not power of two
-  unused(cuda::align_up(ptr, 2)); // alignment smaller than alignof(int)
-  unused(cuda::align_up(ptr, 4)); // wrong pointer alignment
+  {
+    [[maybe_unused]] auto&& discarded = cuda::align_up(ptr, 7); // not power of two
+  }
+  {
+    [[maybe_unused]] auto&& discarded = cuda::align_up(ptr, 2); // alignment smaller than alignof(int)
+  }
+  {
+    [[maybe_unused]] auto&& discarded = cuda::align_up(ptr, 4); // wrong pointer alignment
+  }
   return true;
 }
 

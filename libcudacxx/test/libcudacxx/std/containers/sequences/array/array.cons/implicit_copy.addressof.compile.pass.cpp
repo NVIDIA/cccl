@@ -21,9 +21,8 @@
 TEST_FUNC void test()
 {
   cuda::std::array<operator_hijacker, 1> ao{};
-  cuda::std::array<operator_hijacker, 1> a;
+  [[maybe_unused]] cuda::std::array<operator_hijacker, 1> a;
   a = ao;
-  unused(a);
 }
 
 int main(int, char**)

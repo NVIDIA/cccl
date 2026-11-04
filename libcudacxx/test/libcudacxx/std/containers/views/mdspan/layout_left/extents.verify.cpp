@@ -29,16 +29,14 @@ TEST_FUNC void not_extents()
 {
   // expected-error-re@*:* {{{{(static_assert|static assertion)}} failed {{.*}}layout_left::mapping template argument
   // must be a specialization of extents}}
-  cuda::std::layout_left::mapping<void> mapping;
-  unused(mapping);
+  [[maybe_unused]] cuda::std::layout_left::mapping<void> mapping;
 }
 
 TEST_FUNC void representable()
 {
   // expected-error-re@*:* {{{{(static_assert|static assertion)}} failed {{.*}}layout_left::mapping product of static
   // extents must be representable as index_type.}}
-  cuda::std::layout_left::mapping<cuda::std::extents<signed char, 20, 20>> mapping;
-  unused(mapping);
+  [[maybe_unused]] cuda::std::layout_left::mapping<cuda::std::extents<signed char, 20, 20>> mapping;
 }
 
 int main(int, char**)

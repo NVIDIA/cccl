@@ -113,8 +113,7 @@ struct WithSpecialMoveAssignment
   WithSpecialMoveAssignment& operator=(const WithSpecialMoveAssignment&) = default;
   TEST_FUNC constexpr WithSpecialMoveAssignment& operator=(WithSpecialMoveAssignment&&) noexcept
   {
-    Always_false invalid{move_assignment_called};
-    unused(invalid);
+    [[maybe_unused]] Always_false invalid{move_assignment_called};
     return *this;
   };
 };

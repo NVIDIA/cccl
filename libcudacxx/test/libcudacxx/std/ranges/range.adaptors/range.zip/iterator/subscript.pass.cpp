@@ -56,9 +56,8 @@ TEST_FUNC constexpr bool test()
   {
     // non random_access_range
     cuda::std::ranges::zip_view v(BidiCommonView{buffer});
-    auto iter = v.begin();
+    [[maybe_unused]] auto iter = v.begin();
     static_assert(!canSubscript<decltype(iter)>);
-    unused(iter);
   }
 
   return true;

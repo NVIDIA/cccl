@@ -31,8 +31,7 @@ static_assert(!cuda::std::is_default_constructible_v<cuda::std::move_iterator<No
 template <class It>
 TEST_FUNC void test()
 {
-  cuda::std::move_iterator<It> r;
-  unused(r);
+  [[maybe_unused]] cuda::std::move_iterator<It> r;
 }
 
 int main(int, char**)
@@ -44,8 +43,7 @@ int main(int, char**)
   test<char*>();
 
   {
-    constexpr cuda::std::move_iterator<const char*> it;
-    unused(it);
+    [[maybe_unused]] constexpr cuda::std::move_iterator<const char*> it;
   }
 
   return 0;

@@ -136,8 +136,7 @@ void test_exception(optional<U>&& rhs)
   static_assert(!(cuda::std::is_convertible<optional<U>&&, optional<T>>::value));
   try
   {
-    optional<T> lhs(cuda::std::move(rhs));
-    unused(lhs);
+    [[maybe_unused]] optional<T> lhs(cuda::std::move(rhs));
     assert(false);
   }
   catch (int i)

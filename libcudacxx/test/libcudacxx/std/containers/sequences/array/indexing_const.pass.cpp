@@ -41,8 +41,7 @@ TEST_FUNC constexpr bool tests()
       if (c.size() > (0))
       { // always false
 #if !TEST_COMPILER(MSVC)
-        C::const_reference r = c[0];
-        unused(r);
+        [[maybe_unused]] C::const_reference r = c[0];
 #endif // !TEST_COMPILER(MSVC)
       }
     }
@@ -55,8 +54,7 @@ TEST_FUNC constexpr bool tests()
       if (c.size() > (0))
       { // always false
 #if !TEST_COMPILER(MSVC)
-        C::const_reference r = c[0];
-        unused(r);
+        [[maybe_unused]] C::const_reference r = c[0];
 #endif // !TEST_COMPILER(MSVC)
       }
     }

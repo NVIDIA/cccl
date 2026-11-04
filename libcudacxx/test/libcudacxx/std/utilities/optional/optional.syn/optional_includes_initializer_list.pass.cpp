@@ -19,8 +19,7 @@ int main(int, char**)
 {
   using cuda::std::optional;
 
-  cuda::std::initializer_list<int> list;
-  unused(list);
+  [[maybe_unused]] cuda::std::initializer_list<int> list;
 
   return 0;
 }

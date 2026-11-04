@@ -28,8 +28,7 @@ static_assert(cuda::std::is_trivially_default_constructible<decltype(cuda::std::
 TEST_FUNC constexpr bool test()
 {
   {
-    auto& ignore_v = cuda::std::ignore;
-    unused(ignore_v);
+    [[maybe_unused]] auto& ignore_v = cuda::std::ignore;
   }
 
   { // Test that cuda::std::ignore provides converting assignment.
@@ -49,16 +48,14 @@ TEST_FUNC constexpr bool test()
   }
 #endif // !_CCCL_TILE_COMPILATION()
   { // Test that cuda::std::ignore provides constexpr copy/move constructors
-    auto copy  = cuda::std::ignore;
-    auto moved = cuda::std::move(copy);
-    unused(moved);
+    auto copy                   = cuda::std::ignore;
+    [[maybe_unused]] auto moved = cuda::std::move(copy);
   }
   { // Test that cuda::std::ignore provides constexpr copy/move assignment
-    auto copy  = cuda::std::ignore;
-    copy       = cuda::std::ignore;
-    auto moved = cuda::std::ignore;
-    moved      = cuda::std::move(copy);
-    unused(moved);
+    auto copy                   = cuda::std::ignore;
+    copy                        = cuda::std::ignore;
+    [[maybe_unused]] auto moved = cuda::std::ignore;
+    moved                       = cuda::std::move(copy);
   }
 
   {

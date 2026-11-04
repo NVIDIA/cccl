@@ -52,10 +52,9 @@ TEST_FUNC void cant_construct_data_handle_type()
   // expected-error-re@*:* {{{{.*}}no matching constructor for initialization of {{.*}} (aka
   // 'not_const_convertible_handle<const int>')}} expected-error-re@*:* {{{{(static_assert|static assertion)}} failed
   // {{.*}}mdspan: incompatible data_handle_type for mdspan construction}}
-  cuda::std::
+  [[maybe_unused]] cuda::std::
     mdspan<const int, cuda::std::extents<int>, cuda::std::layout_right, convertible_accessor_but_not_handle<const int>>
       m_c(m_nc);
-  unused(m_c);
 }
 
 TEST_FUNC void mapping_constructible_despite_extents_compatibility()
@@ -64,8 +63,7 @@ TEST_FUNC void mapping_constructible_despite_extents_compatibility()
   cuda::device_mdspan<int, cuda::std::extents<int>, always_convertible_layout> m(&data);
   // expected-error-re@*:* {{{{(static_assert|static assertion)}} failed {{.*}}mdspan: incompatible extents for mdspan
   // construction}}
-  cuda::device_mdspan<int, cuda::std::extents<int, 5>, always_convertible_layout> m2(m);
-  unused(m2);
+  [[maybe_unused]] cuda::device_mdspan<int, cuda::std::extents<int, 5>, always_convertible_layout> m2(m);
 }
 
 int main(int, char**)

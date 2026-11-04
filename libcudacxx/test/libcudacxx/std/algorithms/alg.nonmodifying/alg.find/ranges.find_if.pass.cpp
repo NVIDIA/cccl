@@ -272,9 +272,8 @@ TEST_HOST_DEVICE_FUNC constexpr bool test()
 
   {
     // check that ranges::dangling is returned
-    decltype(auto) ret = cuda::std::ranges::find_if(cuda::std::array<int, 2>{1, 2}, AlwaysFalse{});
+    [[maybe_unused]] decltype(auto) ret = cuda::std::ranges::find_if(cuda::std::array<int, 2>{1, 2}, AlwaysFalse{});
     static_assert(cuda::std::same_as<decltype(ret), cuda::std::ranges::dangling>);
-    unused(ret);
   }
 
   {

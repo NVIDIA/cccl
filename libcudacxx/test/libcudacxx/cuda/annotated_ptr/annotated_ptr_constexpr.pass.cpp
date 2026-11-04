@@ -28,17 +28,13 @@ TEST_HOST_DEVICE_FUNC constexpr bool test_public_methods()
   using annotated_smem_ptr [[maybe_unused]] = cuda::annotated_ptr<const int, access_property::shared>;
   annotated_ptr a{}; // default constructor
   annotated_ptr b{a}; // copy constructor
-  annotated_ptr c{cuda::std::move(a)}; // move constructor
+  [[maybe_unused]] annotated_ptr c{cuda::std::move(a)}; // move constructor
   NV_IF_TARGET(NV_IS_DEVICE, (annotated_smem_ptr d{nullptr};)) // pointer constructor
-  b         = a; // copy assignment
-  b         = cuda::std::move(a); // move assignment
-  auto diff = a - b;
-  auto pred = static_cast<bool>(a);
-  auto prop = a.__property();
-  unused(c);
-  unused(diff);
-  unused(pred);
-  unused(prop);
+  b                          = a; // copy assignment
+  b                          = cuda::std::move(a); // move assignment
+  [[maybe_unused]] auto diff = a - b;
+  [[maybe_unused]] auto pred = static_cast<bool>(a);
+  [[maybe_unused]] auto prop = a.__property();
   return true;
 }
 

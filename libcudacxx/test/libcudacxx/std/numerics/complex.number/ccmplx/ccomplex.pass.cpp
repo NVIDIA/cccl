@@ -15,8 +15,7 @@
 
 int main(int, char**)
 {
-  cuda::std::complex<double> d;
-  unused(d);
+  [[maybe_unused]] cuda::std::complex<double> d;
 
   return 0;
 }

@@ -29,11 +29,9 @@ struct Abs
 template <bool Count, typename It>
 TEST_FUNC constexpr void check(int* first, cuda::std::iter_difference_t<It> n, int* expected)
 {
-  using Difference   = cuda::std::iter_difference_t<It>;
-  Difference const M = (expected - first); // expected travel distance (which may be negative)
-  Abs abs{};
-  unused(abs);
-  unused(M);
+  using Difference                    = cuda::std::iter_difference_t<It>;
+  [[maybe_unused]] Difference const M = (expected - first); // expected travel distance (which may be negative)
+  [[maybe_unused]] Abs abs{};
 
   {
     It it(first);

@@ -93,8 +93,8 @@ int main(int, char**)
   {
     using T = cuda::std::tuple<>;
     T t0;
-    T t = cuda::std::move(t0);
-    unused(t); // Prevent unused warning
+    [[maybe_unused]] T t = cuda::std::move(t0);
+    // Prevent unused warning
   }
   {
     using T = cuda::std::tuple<MoveOnly>;
@@ -123,8 +123,7 @@ int main(int, char**)
   {
     using d_t = cuda::std::tuple<ConstructsWithTupleLeaf>;
     d_t d((ConstructsWithTupleLeaf()));
-    d_t d2(static_cast<d_t&&>(d));
-    unused(d2);
+    [[maybe_unused]] d_t d2(static_cast<d_t&&>(d));
   }
   {
     test_sfinae<move_only_ebo>();

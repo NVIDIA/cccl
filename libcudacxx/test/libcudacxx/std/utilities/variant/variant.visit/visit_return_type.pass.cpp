@@ -41,8 +41,7 @@ TEST_FUNC void test_return_type()
 {
   using Fn = ForwardingCallObject;
   Fn obj{};
-  const Fn& cobj = obj;
-  unused(cobj);
+  [[maybe_unused]] const Fn& cobj = obj;
   { // test call operator forwarding - no variant
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(obj)), Fn&>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cobj)), const Fn&>);
@@ -51,46 +50,41 @@ TEST_FUNC void test_return_type()
   }
   { // test call operator forwarding - single variant, single arg
     using V = cuda::std::variant<int>;
-    V v(42);
+    [[maybe_unused]] V v(42);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(obj, v)), Fn&>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cobj, v)), const Fn&>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cuda::std::move(obj), v)), Fn&&>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cuda::std::move(cobj), v)), const Fn&&>);
-    unused(v);
   }
   { // test call operator forwarding - single variant, multi arg
     using V = cuda::std::variant<int, long, double>;
-    V v(42l);
+    [[maybe_unused]] V v(42l);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(obj, v)), Fn&>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cobj, v)), const Fn&>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cuda::std::move(obj), v)), Fn&&>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cuda::std::move(cobj), v)), const Fn&&>);
-    unused(v);
   }
   { // test call operator forwarding - multi variant, multi arg
     using V  = cuda::std::variant<int, long, double>;
     using V2 = cuda::std::variant<int*, almost_string>;
-    V v(42l);
-    V2 v2("hello");
+    [[maybe_unused]] V v(42l);
+    [[maybe_unused]] V2 v2("hello");
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(obj, v, v2)), Fn&>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cobj, v, v2)), const Fn&>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cuda::std::move(obj), v, v2)), Fn&&>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cuda::std::move(cobj), v, v2)), const Fn&&>);
-    unused(v, v2);
   }
   {
     using V = cuda::std::variant<int, long, double, almost_string>;
-    V v1(42l), v2("hello"), v3(101), v4(1.1);
+    [[maybe_unused]] V v1(42l), v2("hello"), v3(101), v4(1.1);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(obj, v1, v2, v3, v4)), Fn&>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cobj, v1, v2, v3, v4)), const Fn&>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cuda::std::move(obj), v1, v2, v3, v4)), Fn&&>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cuda::std::move(cobj), v1, v2, v3, v4)), const Fn&&>);
-    unused(v1, v2, v3, v4);
   }
   {
     using V = cuda::std::variant<int, long, double, int*, almost_string>;
-    V v1(42l), v2("hello"), v3(nullptr), v4(1.1);
-    unused(v1, v2, v3, v4);
+    [[maybe_unused]] V v1(42l), v2("hello"), v3(nullptr), v4(1.1);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(obj, v1, v2, v3, v4)), Fn&>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cobj, v1, v2, v3, v4)), const Fn&>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cuda::std::move(obj), v1, v2, v3, v4)), Fn&&>);

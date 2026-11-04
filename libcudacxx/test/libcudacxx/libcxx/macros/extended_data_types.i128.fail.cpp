@@ -18,10 +18,8 @@
 int main(int, char**)
 {
 #if !_CCCL_HAS_INT128()
-  __int128 x    = __int128(123456789123) + __int128(123456789123);
-  __uint128_t y = __uint128_t(123456789123) + __uint128_t(123456789123);
-  unused(x);
-  unused(y);
+  [[maybe_unused]] __int128 x    = __int128(123456789123) + __int128(123456789123);
+  [[maybe_unused]] __uint128_t y = __uint128_t(123456789123) + __uint128_t(123456789123);
 #else
   static_assert(false);
 #endif

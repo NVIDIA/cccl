@@ -34,11 +34,10 @@ TEST_HOST_DEVICE_FUNC void test(bool add_delay = false)
     delay = cuda::std::chrono::duration<int>(1);
   }
 
-  typename Barrier::arrival_token* tok = nullptr;
+  [[maybe_unused]] typename Barrier::arrival_token* tok = nullptr;
   execute_on_main_thread([&] {
     tok = new auto(b->arrive());
   });
-  unused(tok);
 
   auto awaiter = LAMBDA()
   {
@@ -54,9 +53,8 @@ TEST_HOST_DEVICE_FUNC void test(bool add_delay = false)
   concurrent_agents_launch(awaiter, arriver);
 
   execute_on_main_thread([&] {
-    auto tok2 = b->arrive(2);
-    unused(tok2);
-    const auto until_time = cuda::std::chrono::system_clock::now() + delay;
+    [[maybe_unused]] auto tok2 = b->arrive(2);
+    const auto until_time      = cuda::std::chrono::system_clock::now() + delay;
     while (b->try_wait_parity_until(!phase, until_time) == false)
     {
     }

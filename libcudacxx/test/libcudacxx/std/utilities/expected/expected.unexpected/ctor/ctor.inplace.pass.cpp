@@ -94,9 +94,8 @@ TEST_FUNC constexpr bool test()
 
   // Direct-non-list-initializes: does not trigger initializer_list overload
   {
-    Error e(5);
+    [[maybe_unused]] Error e(5);
     cuda::std::unexpected<Error> unex(cuda::std::in_place, e);
-    unused(e);
   }
   return true;
 }

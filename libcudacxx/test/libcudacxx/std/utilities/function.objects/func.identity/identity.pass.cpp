@@ -65,10 +65,9 @@ TEST_FUNC constexpr bool test()
     TEST_FUNC constexpr S(S&&) noexcept(false) {}
     TEST_FUNC constexpr S(S const&) noexcept(false) {}
   };
-  S x{};
+  [[maybe_unused]] S x{};
   static_assert(noexcept(id(x)));
   static_assert(noexcept(id(S{})));
-  unused(x);
 
   return true;
 }

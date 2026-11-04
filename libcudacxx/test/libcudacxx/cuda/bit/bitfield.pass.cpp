@@ -17,9 +17,8 @@
 template <typename T>
 TEST_FUNC constexpr bool test()
 {
-  using nl             = cuda::std::numeric_limits<T>;
-  constexpr T all_ones = static_cast<T>(~T{0});
-  unused(all_ones);
+  using nl                              = cuda::std::numeric_limits<T>;
+  [[maybe_unused]] constexpr T all_ones = static_cast<T>(~T{0});
   assert(cuda::bitfield_insert(T{0}, all_ones, 0, 1) == 1);
   assert(cuda::bitfield_insert(T{0}, all_ones, 1, 1) == 0b10);
   assert(cuda::bitfield_insert(T{0b10}, all_ones, 0, 1) == 0b11);

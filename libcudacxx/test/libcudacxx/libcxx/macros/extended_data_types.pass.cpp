@@ -30,16 +30,14 @@
 template <class T>
 TEST_FUNC void test_nv_fp()
 {
-  auto v = T{1.0f};
-  unused(v);
+  [[maybe_unused]] auto v = T{1.0f};
 }
 
 int main(int, char**)
 {
 #if _CCCL_HAS_INT128()
-  auto a = __int128(123456789123) + __int128(123456789123);
-  auto b = __uint128_t(123456789123) + __uint128_t(123456789123);
-  unused(a, b);
+  [[maybe_unused]] auto a = __int128(123456789123) + __int128(123456789123);
+  [[maybe_unused]] auto b = __uint128_t(123456789123) + __uint128_t(123456789123);
 #endif
 
 #if _CCCL_HAS_NVFP4_E2M1()
@@ -68,8 +66,7 @@ int main(int, char**)
 #endif
 
 #if _CCCL_HAS_FLOAT128()
-  __float128 x5 = __float128(3.14) + __float128(3.14);
-  unused(x5);
+  [[maybe_unused]] __float128 x5 = __float128(3.14) + __float128(3.14);
 #endif
 
   return 0;

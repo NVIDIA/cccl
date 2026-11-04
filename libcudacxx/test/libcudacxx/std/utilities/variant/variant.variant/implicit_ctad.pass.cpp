@@ -29,16 +29,14 @@ int main(int, char**)
   // This is the motivating example from P0739R0
   {
     cuda::std::variant<int, double> v1(3);
-    cuda::std::variant v2 = v1;
+    [[maybe_unused]] cuda::std::variant v2 = v1;
     static_assert(cuda::std::is_same_v<decltype(v2), cuda::std::variant<int, double>>);
-    unused(v2);
   }
 
   {
     cuda::std::variant<int, double> v1(3);
-    cuda::std::variant v2 = cuda::std::variant(v1); // Technically valid, but intent is ambiguous!
+    [[maybe_unused]] cuda::std::variant v2 = cuda::std::variant(v1); // Technically valid, but intent is ambiguous!
     static_assert(cuda::std::is_same_v<decltype(v2), cuda::std::variant<int, double>>);
-    unused(v2);
   }
 
   return 0;

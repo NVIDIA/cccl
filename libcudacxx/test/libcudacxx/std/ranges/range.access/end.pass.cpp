@@ -71,20 +71,17 @@ struct Different
 TEST_FUNC constexpr bool testReturnTypes()
 {
   {
-    int* x[2] = {};
-    unused(x);
+    [[maybe_unused]] int* x[2] = {};
     static_assert(cuda::std::same_as<decltype(cuda::std::ranges::end(x)), int**>);
     static_assert(cuda::std::same_as<decltype(cuda::std::ranges::cend(x)), int* const*>);
   }
   {
-    int x[2][2] = {};
-    unused(x);
+    [[maybe_unused]] int x[2][2] = {};
     static_assert(cuda::std::same_as<decltype(cuda::std::ranges::end(x)), int (*)[2]>);
     static_assert(cuda::std::same_as<decltype(cuda::std::ranges::cend(x)), const int (*)[2]>);
   }
   {
-    Different x{};
-    unused(x);
+    [[maybe_unused]] Different x{};
     static_assert(cuda::std::same_as<decltype(cuda::std::ranges::end(x)), sentinel_wrapper<char*>>);
     static_assert(cuda::std::same_as<decltype(cuda::std::ranges::cend(x)), sentinel_wrapper<short*>>);
   }
@@ -430,7 +427,7 @@ static_assert(noexcept(cuda::std::ranges::cend(cuda::std::declval<int (&)[10]>()
 
 // needs c++17's guaranteed copy elision
 #if !TEST_COMPILER(MSVC2019) // broken noexcept
-_CCCL_GLOBAL_CONSTANT struct NoThrowMemberEnd
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct NoThrowMemberEnd
 {
   TEST_FUNC ThrowingIterator<int> begin() const;
   TEST_FUNC ThrowingIterator<int> end() const noexcept; // auto(t.end()) doesn't throw
@@ -438,7 +435,7 @@ _CCCL_GLOBAL_CONSTANT struct NoThrowMemberEnd
 static_assert(noexcept(cuda::std::ranges::end(ntme)));
 static_assert(noexcept(cuda::std::ranges::cend(ntme)));
 
-_CCCL_GLOBAL_CONSTANT struct NoThrowADLEnd
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct NoThrowADLEnd
 {
   TEST_FUNC ThrowingIterator<int> begin() const;
   TEST_FUNC friend ThrowingIterator<int> end(NoThrowADLEnd&) noexcept; // auto(end(t)) doesn't throw
@@ -448,7 +445,7 @@ static_assert(noexcept(cuda::std::ranges::end(ntae)));
 static_assert(noexcept(cuda::std::ranges::cend(ntae)));
 #endif // !TEST_COMPILER(MSVC2019)
 
-_CCCL_GLOBAL_CONSTANT struct NoThrowMemberEndReturnsRef
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct NoThrowMemberEndReturnsRef
 {
   TEST_FUNC ThrowingIterator<int> begin() const;
   TEST_FUNC ThrowingIterator<int>& end() const noexcept; // auto(t.end()) may throw
@@ -456,7 +453,7 @@ _CCCL_GLOBAL_CONSTANT struct NoThrowMemberEndReturnsRef
 static_assert(!noexcept(cuda::std::ranges::end(ntmerr)));
 static_assert(!noexcept(cuda::std::ranges::cend(ntmerr)));
 
-_CCCL_GLOBAL_CONSTANT struct EndReturnsArrayRef
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct EndReturnsArrayRef
 {
   TEST_FUNC auto begin() const noexcept -> int (&)[10];
   TEST_FUNC auto end() const noexcept -> int (&)[10];
@@ -492,11 +489,7 @@ int main(int, char**)
   static_assert(testEndFunction());
 
 #if !TEST_COMPILER(MSVC2019) // broken noexcept
-  unused(ntme);
-  unused(ntae);
 #endif // !TEST_COMPILER(MSVC2019)
-  unused(ntmerr);
-  unused(erar);
 
   return 0;
 }

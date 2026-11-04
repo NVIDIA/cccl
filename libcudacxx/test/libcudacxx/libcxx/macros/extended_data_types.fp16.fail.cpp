@@ -18,8 +18,7 @@
 int main(int, char**)
 {
 #if !_CCCL_HAS_NVFP16()
-  auto x2 = __half(1.0f);
-  unused(x2);
+  [[maybe_unused]] auto x2 = __half(1.0f);
 #else
   static_assert(false);
 #endif

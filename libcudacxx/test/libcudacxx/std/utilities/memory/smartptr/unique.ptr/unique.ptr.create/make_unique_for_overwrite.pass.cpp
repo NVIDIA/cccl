@@ -146,20 +146,18 @@ TEST_HOST_DEVICE_FUNC void testCustomNew()
 {
   // single with custom operator new
   {
-    decltype(auto) ptr = cuda::std::make_unique_for_overwrite<WithCustomNew>();
+    [[maybe_unused]] decltype(auto) ptr = cuda::std::make_unique_for_overwrite<WithCustomNew>();
     static_assert(cuda::std::same_as<cuda::std::unique_ptr<WithCustomNew>, decltype(ptr)>);
 
     assert(WithCustomNew_customNewCalled);
-    unused(ptr);
   }
 
   // unbounded array with custom operator new
   {
-    decltype(auto) ptr = cuda::std::make_unique_for_overwrite<WithCustomNew[]>(3);
+    [[maybe_unused]] decltype(auto) ptr = cuda::std::make_unique_for_overwrite<WithCustomNew[]>(3);
     static_assert(cuda::std::same_as<cuda::std::unique_ptr<WithCustomNew[]>, decltype(ptr)>);
 
     assert(WithCustomNew_customNewArrCalled);
-    unused(ptr);
   }
 }
 

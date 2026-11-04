@@ -108,8 +108,7 @@ void test_too_large_count_throws_bad_alloc()
   cuda::std::size_t too_large = cuda::std::numeric_limits<cuda::std::size_t>::max() / sizeof(T) + 1;
   try
   {
-    cuda::__simple_vector<T> vec(too_large, cuda::no_init);
-    unused(vec);
+    [[maybe_unused]] cuda::__simple_vector<T> vec(too_large, cuda::no_init);
     assert(false);
   }
   catch (const std::bad_alloc&)

@@ -55,8 +55,7 @@ TEST_FUNC constexpr bool test()
 
 __global__ void test_global_visibility()
 {
-  cuda::std::optional<int> meow{cuda::std::nullopt};
-  unused(meow);
+  [[maybe_unused]] cuda::std::optional<int> meow{cuda::std::nullopt};
 }
 
 int main(int, char**)

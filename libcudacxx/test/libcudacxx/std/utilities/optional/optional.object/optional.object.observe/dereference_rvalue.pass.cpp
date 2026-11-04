@@ -55,8 +55,7 @@ struct Y
 TEST_FUNC constexpr bool test()
 {
   {
-    optional<X> opt{};
-    unused(opt);
+    [[maybe_unused]] optional<X> opt{};
     static_assert(cuda::std::is_same_v<decltype(*cuda::std::move(opt)), X&&>);
     static_assert(noexcept(*cuda::std::move(opt)));
     // static_assert(!noexcept(*cuda::std::move(opt)));
@@ -68,8 +67,7 @@ TEST_FUNC constexpr bool test()
     // Regardless this function should still be noexcept(false) because
     // it has a narrow contract.
 
-    optional<X&> optref;
-    unused(optref);
+    [[maybe_unused]] optional<X&> optref;
     static_assert(cuda::std::is_same_v<decltype(*cuda::std::move(optref)), X&>);
     static_assert(noexcept(*cuda::std::move(optref)));
     static_assert(noexcept(*cuda::std::move(optref)));
