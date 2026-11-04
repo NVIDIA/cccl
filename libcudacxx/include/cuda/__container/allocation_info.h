@@ -34,6 +34,8 @@
 //! allocation.
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+//! @brief Struct containing allocation info used to acquire a buffer.
+//! Returned when a buffer is released.
 template <class _Tp, class... _Properties>
 struct __allocation_info
 {
