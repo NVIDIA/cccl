@@ -125,6 +125,16 @@ inline constexpr bool __is_value_preserving_v =
   || (is_integral_v<_From> && ::cuda::is_floating_point_v<_To>
       && numeric_limits<_From>::digits <= numeric_limits<_To>::digits);
 
+template <typename _From, typename _To>
+inline constexpr bool __is_value_preserving_v<_From, ::cuda::std::complex<_To>> = __is_value_preserving_v<_From, _To>;
+
+template <typename _From, typename _To>
+inline constexpr bool __is_value_preserving_v<_From, ::cuda::complex<_To>> = __is_value_preserving_v<_From, _To>;
+
+#if _CCCL_HAS_HOST_STD_LIB()
+template <typename _From, typename _To>
+inline constexpr bool __is_value_preserving_v<_From, ::std::complex<_To>> = __is_value_preserving_v<_From, _To>;
+#endif // _CCCL_HAS_HOST_STD_LIB()
 template <typename _From, typename _ValueType, typename = void>
 inline constexpr bool __is_constexpr_wrapper_value_preserving_v = false;
 
