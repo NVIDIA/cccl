@@ -68,7 +68,6 @@ def test_runtime_uses_the_cpu_qualified_artifact(tmp_path, lite):
     [
         "python/cuda_coop_cutlass/cuda/coop/cutlass/_compiler/_runtime.py",
         "python/cuda_coop_cutlass/pyproject.toml",
-        "python/cuda_coop_cutlass/ci/matrix.yaml",
         "ci/test/test_cuda_coop_cutlass_ci.py",
         "ci/cuda_coop_cutlass_requirements.txt",
         "ci/test_cuda_coop_cutlass.sh",
