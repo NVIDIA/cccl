@@ -40,4 +40,6 @@ Overview
 
 .. note:: Grid synchronization requires a cooperative kernel launch on a device that supports it. With ``cuda::launch``, include ``cuda::cooperative_launch{}`` in the configuration passed to ``cuda::make_config``.
 
+For thread, warp and block level, the ``do_arrive()`` and ``do_wait(...)`` (and aligned variants) are emulated by calling ``do_sync(...)`` in ``do_wait(...)``. For cluster (on SM90 and newer) and grid-level, they are implemented by splitting the synchronization into the arrival and wait parts.
+
 The type is empty and is explicitly default constructible.

@@ -43,6 +43,10 @@ Users should always rely on template argument deduction and never set the templa
 
 .. warning:: The barrier ID ``0`` is also used by the ``__syncthreads()`` operation. It is recommended to avoid this barrier ID and start from barrier ID ``1`` instead.
 
+The instance's ``do_sync(...)`` and ``do_sync_aligned(...)`` both call ``__barrier_sync_count(barrier_id, unit_count * 32)``, using the assigned barrier ID and the mapping result's warp count. Both use the unaligned barrier instruction because the aligned instruction requires the entire block to participate.
+
+The ``do_arrive()`` and ``do_wait(...)`` (and aligned variants) are emulated by calling ``do_sync(...)`` in ``do_wait(...)``.
+
 Examples
 --------
 

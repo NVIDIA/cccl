@@ -88,23 +88,34 @@ The requirements on groups are formally specified by the ``cuda::experimental::c
   {
 
   template <typename T>
-  concept group = requires (T& t, const T& ct)
+  concept group = requires (const T& t, typename T::arrival_token&& arrival_token)
   {
     // Member types.
-    requires /*is-hierarchy-level*/<typename T::unit_type>;     // (1)
-    requires /*is-hierarchy-level*/<typename T::level_type>;    // (2)
-    requires /*is-hierarchy*/<typename T::hierarchy_type>;      // (3)
+    requires /*is-hierarchy-level*/<typename T::unit_type>;      // (1)
+    requires /*is-hierarchy-level*/<typename T::level_type>;     // (2)
+    requires /*is-hierarchy*/<typename T::hierarchy_type>;       // (3)
+    requires /*is-arrival-token*/<typename T::arrival_token>;    // (4)
 
     // Getters.
-    { ct.hierarchy() }
-      -> cuda::std::same_as<const typename T::hierarchy_type&>; // (4)
+    { t.hierarchy() }
+      -> cuda::std::same_as<const typename T::hierarchy_type&>;  // (5)
 
     // Synchronization.
-    { t.sync() } -> cuda::std::same_as<void>;                   // (5)
-    { t.sync_aligned() } -> cuda::std::same_as<void>;           // (6)
+    { t.sync() } -> cuda::std::same_as<void>;                    // (6)
+    { t.arrive() }
+      -> cuda::std::same_as<typename T::arrival_token>;          // (7)
+    { t.wait(cuda::std::move(arrival_token)) }
+      -> cuda::std::same_as<void>;                               // (8)
+
+    // Contextually aligned synchronization.
+    { t.sync_aligned() } -> cuda::std::same_as<void>;            // (9)
+    { t.arrive_aligned() }
+      -> cuda::std::same_as<typename T::arrival_token>;          // (10)
+    { t.wait_aligned(cuda::std::move(arrival_token)) }
+      -> cuda::std::same_as<void>;                               // (11)
 
     // Properties.
-    { T::is_always_contiguous() } -> cuda::std::same_as<bool>;  // (7), must be constexpr
+    { T::is_always_contiguous() } -> cuda::std::same_as<bool>;   // (12), must be constexpr
   };
 
   } // namespace cuda::experimental::coop
@@ -114,10 +125,17 @@ Where:
 #. The unit level type that defines what units are being grouped.
 #. The upper level bound type that defines the level within which the units are grouped.
 #. The hierarchy type within which the group is operating.
+#. The arrival token type, which must be move constructible, move assignable, and destructible.
 #. Returns a ``const hierarchy_type&`` to the hierarchy stored by the group.
 #. Synchronizes all units that are part of the group.
+#. Arrives at the synchronization point and returns an arrival token for the matching ``wait(...)`` call.
+#. Waits for group synchronization to complete, using a token returned by the matching ``arrive(...)`` on the same group.
 #. Same as ``sync()``, but all of the units are contextually aligned (execute the same statement).
+#. Same as ``arrive()``, but all of the units are contextually aligned.
+#. Same as ``wait()``, but all of the units are contextually aligned.
 #. A property known at compile time that specifies whether each group occupies a contiguous range of physical units, numbered in ascending physical order from zero.
+
+Each arrive() call must be paired with a wait(...) call. The pair may mix contextually aligned and unaligned variants.
 
 .. _cudax-coop-group-group-queries:
 

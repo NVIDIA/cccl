@@ -11,9 +11,10 @@
   class virtual_group : public /*group-interface-for*/<virtual_group>
   {
   public:
-    using unit_type       = Unit;
-    using level_type      = typename ParentGroup::level_type;
-    using hierarchy_type  = typename ParentGroup::hierarchy_type;
+    using unit_type      = Unit;
+    using level_type     = typename ParentGroup::level_type;
+    using hierarchy_type = typename ParentGroup::hierarchy_type;
+    using arrival_token  = typename ParentGroup::arrival_token;
 
     template <typename Mapping>
       requires cuda::std::same_as</*mapping-result-of*/<Unit, ParentGroup, Mapping>, MappingResult>

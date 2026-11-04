@@ -11,9 +11,10 @@
   class coalesced_group : public /*group-interface-for*/<coalesced_group>
   {
   public:
-    using unit_type       = thread_level;
-    using level_type      = warp_level;
-    using hierarchy_type  = Hierarchy;
+    using unit_type      = thread_level;
+    using level_type     = warp_level;
+    using hierarchy_type = Hierarchy;
+    using arrival_token  = /*implementation-defined*/;
 
     coalesced_group() = delete;
 

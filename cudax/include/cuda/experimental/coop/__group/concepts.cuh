@@ -28,6 +28,10 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
+#include <cuda/std/__type_traits/is_destructible.h>
+#include <cuda/std/__type_traits/is_move_assignable.h>
+#include <cuda/std/__type_traits/is_move_constructible.h>
+#include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -37,22 +41,40 @@
 namespace cuda::experimental::coop
 {
 template <class _Group>
-_CCCL_CONCEPT group = _CCCL_REQUIRES_EXPR((_Group), _Group&& __g, const _Group&& __cg)(
+_CCCL_CONCEPT group = _CCCL_REQUIRES_EXPR((_Group), const _Group&& __g)(
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Member types.
   typename(typename _Group::unit_type),
   requires(__is_hierarchy_level_v<typename _Group::unit_type>),
+
   typename(typename _Group::level_type),
   requires(__is_hierarchy_level_v<typename _Group::level_type>),
+
   typename(typename _Group::hierarchy_type),
   requires(__is_hierarchy_v<typename _Group::hierarchy_type>),
 
-  // Getters.
-  _Same_as(const typename _Group::hierarchy_type&) __cg.hierarchy(),
+  typename(typename _Group::arrival_token),
+  requires(::cuda::std::is_move_constructible_v<typename _Group::arrival_token>),
+  requires(::cuda::std::is_move_assignable_v<typename _Group::arrival_token>),
+  requires(::cuda::std::is_destructible_v<typename _Group::arrival_token>),
 
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // Getters.
+  _Same_as(const typename _Group::hierarchy_type&) __g.hierarchy(),
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Synchronization.
   _Same_as(void) __g.sync(),
-  _Same_as(void) __g.sync_aligned(),
+  _Same_as(typename _Group::arrival_token) __g.arrive(),
+  _Same_as(void) __g.wait(::cuda::std::declval<typename _Group::arrival_token>()),
 
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // Contextually aligned synchronization.
+  _Same_as(void) __g.sync_aligned(),
+  _Same_as(typename _Group::arrival_token) __g.arrive_aligned(),
+  _Same_as(void) __g.wait_aligned(::cuda::std::declval<typename _Group::arrival_token>()),
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Properties.
   _Same_as(bool) _Group::is_always_contiguous(),
   (::cuda::std::bool_constant<_Group::is_always_contiguous()>::value)

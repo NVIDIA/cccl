@@ -16,8 +16,12 @@ Group Synchronizer Instance Concept
   concept /*group-synchronizer-instance*/ = requires (T& t,
                                                       const T& ct,
                                                       const MappingResult& mapping_result,
-                                                      const Hierarchy& hierarchy)
+                                                      const Hierarchy& hierarchy,
+                                                      typename T::arrival_token&& token)
   {
+    // Member types.
+    requires /*is-arrival-token*/<typename T::arrival_token>;
+
     // Lifetime-related methods.
     { t.deinit(mapping_result, hierarchy) } -> cuda::std::same_as<void>;           // (1)
     { ct.view() } -> /*group-synchronizer-instance*/<MappingResult, Hierarchy>;    // (2)
@@ -25,14 +29,28 @@ Group Synchronizer Instance Concept
     // Synchronization interface.
     { ct.do_sync(mapping_result, hierarchy) } -> cuda::std::same_as<void>;         // (3)
     { ct.do_sync_aligned(mapping_result, hierarchy) } -> cuda::std::same_as<void>; // (4)
+
+    { ct.do_arrive(mapping_result, hierarchy) }
+      -> cuda::std::same_as<typename T::arrival_token>;                            // (5)
+    { ct.do_arrive_aligned(mapping_result, hierarchy) }
+      -> cuda::std::same_as<typename T::arrival_token>;                            // (6)
+
+    { ct.do_wait(mapping_result, hierarchy, cuda::std::move(token)) }
+      -> cuda::std::same_as<void>;                                                 // (7)
+    { ct.do_wait_aligned(mapping_result, hierarchy, cuda::std::move(token)) }
+      -> cuda::std::same_as<void>;                                                 // (8)
   };
 
 Where:
 
 #. Deinitializes the synchronizer instance.
-#. Creates a non-owning view over the synchronizer instance resources. It must also satisfy the *group-synchronizer-instance* concept.
+#. Creates a non-owning view over the synchronizer instance resources. It must also satisfy the *group-synchronizer-instance* concept and have the same ``arrival_token``.
 #. Runs the synchronization. It doesn't require the units to be contextually aligned.
 #. Runs the synchronization. The caller guarantees that all of the units are contextually aligned (execute the exact same statement in the code).
+#. Arrives at the synchronization point and returns an arrival token.
+#. Same as ``do_arrive(...)``, with contextually aligned units.
+#. Waits for synchronization to complete using the token from the matching arrival on the same instance.
+#. Same as ``do_wait(...)``, with contextually aligned units.
 
 Group Synchronizer Instantiation Process
 ----------------------------------------

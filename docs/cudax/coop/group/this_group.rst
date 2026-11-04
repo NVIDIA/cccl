@@ -11,9 +11,10 @@
   class /*this-group*/ : public /*group-interface-for*/</*this-group*/>
   {
   public:
-    using unit_type       = Level;
-    using level_type      = Level;
-    using hierarchy_type  = Hierarchy;
+    using unit_type      = Level;
+    using level_type     = Level;
+    using hierarchy_type = Hierarchy;
+    using arrival_token  = /*implementation-defined*/;
 
     /*this-group*/() = delete;
 
