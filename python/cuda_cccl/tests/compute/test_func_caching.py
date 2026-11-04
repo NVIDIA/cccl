@@ -48,6 +48,25 @@ def test_func_caching_different_code():
     assert f1 != f2
 
 
+def test_func_caching_literal_types():
+    # Literals that compare equal across types (1 == 1.0 == True, 0.0 == -0.0)
+    # compile to different code, so they must not share a cache key.
+    assert CachableFunction(lambda x: x * 1) != CachableFunction(lambda x: x * 1.0)
+    assert CachableFunction(lambda x: x * 1) != CachableFunction(lambda x: x * True)
+    assert CachableFunction(lambda x: x + 0.0) != CachableFunction(lambda x: x + -0.0)
+    assert CachableFunction(lambda x: x in (1, 2)) != CachableFunction(
+        lambda x: x in (1.0, 2.0)
+    )
+    assert CachableFunction(lambda x: x in {1, 2}) != CachableFunction(
+        lambda x: x in {1.0, 2.0}
+    )
+
+    assert CachableFunction(lambda x: x * 1.0) == CachableFunction(lambda x: x * 1.0)
+    assert CachableFunction(lambda x: x in (1, 2)) == CachableFunction(
+        lambda x: x in (1, 2)
+    )
+
+
 def test_func_caching_with_closure():
     def factory(x):
         def func(y):
