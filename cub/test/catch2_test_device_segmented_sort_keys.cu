@@ -7,6 +7,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/iterator>
+#include <cuda/std/type_traits>
 
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_segmented_sort_helper.cuh"
@@ -19,15 +20,16 @@
 // graph launch.
 // %PARAM% TEST_LAUNCH lid 0:1
 // %PARAM% TEST_TYPES types 0:1
-// %PARAM% TEST_ALGORITHM alg 0:1
-// Algorithm 0 retains public API coverage; algorithm 1 tests supported cases through internal dispatch.
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortKeys, stable_sort_keys);
+
+// Register both backends in each executable so an unsupported LRB case can skip independently.
+using test_algorithms = c2h::enum_type_list<test_algorithm, test_algorithm::existing, test_algorithm::lrb>;
 
 #if TEST_TYPES == 0
 using key_types = c2h::type_list<bool, std::uint8_t>;
 #elif TEST_TYPES == 1
-using full_key_types =
+using key_types =
   c2h::type_list<std::uint64_t,
                  float,
                  double
@@ -40,14 +42,15 @@ using full_key_types =
                  bfloat16_t
 #  endif // TEST_BF_T()
                  >;
-using key_types =
-  cuda::std::conditional_t<test_lrb, full_key_types, c2h::remove<c2h::remove<full_key_types, float>, double>>;
 #endif
 
 #if TEST_TYPES == 0
 
-CUB_TEST("DeviceSegmentedSortKeys: No segments", "[keys][segmented][sort][device]", CUB_SMALL)
+CUB_TEST("DeviceSegmentedSortKeys: No segments", "[keys][segmented][sort][device]", CUB_SMALL, test_algorithms)
 {
+  constexpr auto selected_algorithm = c2h::get<0, TestType>::value;
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "existing CUB" : "internal LRB"));
+
   // Type doesn't affect the escape logic, so it should be fine
   // to test only one set of types here.
 
@@ -61,7 +64,7 @@ CUB_TEST("DeviceSegmentedSortKeys: No segments", "[keys][segmented][sort][device
   cub::DoubleBuffer<cub::NullType> values_buffer(nullptr, nullptr);
   values_buffer.selector = 1;
 
-  call_cub_segmented_sort_api(
+  call_cub_segmented_sort_api<KeyT, cub::NullType, selected_algorithm>(
     sort_descending,
     sort_buffer,
     stable_sort,
@@ -80,8 +83,11 @@ CUB_TEST("DeviceSegmentedSortKeys: No segments", "[keys][segmented][sort][device
   REQUIRE(values_buffer.selector == 1);
 }
 
-CUB_TEST("DeviceSegmentedSortKeys: Empty segments", "[keys][segmented][sort][device]", CUB_SMALL)
+CUB_TEST("DeviceSegmentedSortKeys: Empty segments", "[keys][segmented][sort][device]", CUB_SMALL, test_algorithms)
 {
+  constexpr auto selected_algorithm = c2h::get<0, TestType>::value;
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "existing CUB" : "internal LRB"));
+
   // Type doesn't affect the escape logic, so it should be fine
   // to test only one set of types here.
 
@@ -99,7 +105,7 @@ CUB_TEST("DeviceSegmentedSortKeys: Empty segments", "[keys][segmented][sort][dev
   cub::DoubleBuffer<cub::NullType> values_buffer(nullptr, nullptr);
   values_buffer.selector = 1;
 
-  call_cub_segmented_sort_api(
+  call_cub_segmented_sort_api<KeyT, cub::NullType, selected_algorithm>(
     sort_descending,
     sort_buffer,
     sort_stable,
@@ -123,8 +129,12 @@ CUB_TEST("DeviceSegmentedSortKeys: Empty segments", "[keys][segmented][sort][dev
 CUB_TEST("DeviceSegmentedSortKeys: Same size segments, derived keys",
          "[keys][segmented][sort][device][skip-cs-racecheck]",
          CUB_SMALL,
-         key_types)
+         key_types,
+         test_algorithms)
 {
+  constexpr auto selected_algorithm = c2h::get<1, TestType>::value;
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "existing CUB" : "internal LRB"));
+
   using KeyT = c2h::get<0, TestType>;
 
   // Use adjust_seed_count to limit the number of passes run during sanitizer tests.
@@ -137,14 +147,18 @@ CUB_TEST("DeviceSegmentedSortKeys: Same size segments, derived keys",
     take(c2h::adjust_seed_count(2), random(1 << 0, 1 << 5)), //
     take(c2h::adjust_seed_count(2), random(1 << 5, 1 << 10)));
 
-  test_same_size_segments_derived<KeyT>(segment_size, segments);
+  test_same_size_segments_derived<KeyT, cub::NullType, selected_algorithm>(segment_size, segments);
 }
 
 CUB_TEST("DeviceSegmentedSortKeys: Randomly sized segments, derived keys",
          "[keys][segmented][sort][device][skip-cs-racecheck]",
          CUB_SMALL,
-         key_types)
+         key_types,
+         test_algorithms)
 {
+  constexpr auto selected_algorithm = c2h::get<1, TestType>::value;
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "existing CUB" : "internal LRB"));
+
   using KeyT = c2h::get<0, TestType>;
 
   const int max_items   = 1 << 22;
@@ -157,14 +171,19 @@ CUB_TEST("DeviceSegmentedSortKeys: Randomly sized segments, derived keys",
     take(c2h::adjust_seed_count(2), random(1 << 10, 1 << 15)),
     take(c2h::adjust_seed_count(2), random(1 << 15, 1 << 20)));
 
-  test_random_size_segments_derived<KeyT>(C2H_SEED(1), max_items, max_segment, segments);
+  test_random_size_segments_derived<KeyT, cub::NullType, selected_algorithm>(
+    C2H_SEED(1), max_items, max_segment, segments);
 }
 
 CUB_TEST("DeviceSegmentedSortKeys: Randomly sized segments, random keys",
          "[keys][segmented][sort][device][skip-cs-initcheck][skip-cs-racecheck]",
          CUB_SMALL,
-         key_types)
+         key_types,
+         test_algorithms)
 {
+  constexpr auto selected_algorithm = c2h::get<1, TestType>::value;
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "existing CUB" : "internal LRB"));
+
   using KeyT = c2h::get<0, TestType>;
 
   const int max_items   = 1 << 22;
@@ -173,21 +192,34 @@ CUB_TEST("DeviceSegmentedSortKeys: Randomly sized segments, random keys",
   // Use adjust_seed_count to limit the number of passes run during sanitizer tests.
   const int segments = GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1 << 15, 1 << 20)));
 
-  test_random_size_segments_random<KeyT>(C2H_SEED(1), max_items, max_segment, segments);
+  test_random_size_segments_random<KeyT, cub::NullType, selected_algorithm>(
+    C2H_SEED(1), max_items, max_segment, segments);
 }
 
-CUB_TEST(
-  "DeviceSegmentedSortKeys: Edge case segments, random keys", "[keys][segmented][sort][device]", CUB_SMALL, key_types)
+CUB_TEST("DeviceSegmentedSortKeys: Edge case segments, random keys",
+         "[keys][segmented][sort][device]",
+         CUB_SMALL,
+         key_types,
+         test_algorithms)
 {
+  constexpr auto selected_algorithm = c2h::get<1, TestType>::value;
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "existing CUB" : "internal LRB"));
+
   using KeyT = c2h::get<0, TestType>;
-  test_edge_case_segments_random<KeyT>(C2H_SEED(4));
+  test_edge_case_segments_random<KeyT, cub::NullType, selected_algorithm>(C2H_SEED(4));
 }
 
-CUB_TEST(
-  "DeviceSegmentedSortKeys: Unspecified segments, random keys", "[keys][segmented][sort][device]", CUB_SMALL, key_types)
+CUB_TEST("DeviceSegmentedSortKeys: Unspecified segments, random keys",
+         "[keys][segmented][sort][device]",
+         CUB_SMALL,
+         key_types,
+         test_algorithms)
 {
+  constexpr auto selected_algorithm = c2h::get<1, TestType>::value;
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "existing CUB" : "internal LRB"));
+
   using KeyT = c2h::get<0, TestType>;
-  test_unspecified_segments_random<KeyT>(C2H_SEED(4));
+  test_unspecified_segments_random<KeyT, cub::NullType, selected_algorithm>(C2H_SEED(4));
 }
 
 #if TEST_TYPES == 0
@@ -195,12 +227,16 @@ CUB_TEST(
 CUB_TEST("DeviceSegmentedSortKeys: very large number of segments",
          "[keys][segmented][sort][device][skip-cs-memcheck][skip-cs-racecheck][skip-cs-initcheck]",
          CUB_LARGE,
-         all_offset_types)
+         all_offset_types,
+         test_algorithms)
 try
 {
-  if constexpr (test_lrb)
+  constexpr auto selected_algorithm = c2h::get<1, TestType>::value;
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "existing CUB" : "internal LRB"));
+
+  if constexpr (selected_algorithm == test_algorithm::lrb)
   {
-    SKIP("CCCL_SKIP_TEST: The internal LRB backend does not yet support more than UINT_MAX segments.");
+    SKIP("The internal LRB backend does not yet support more than UINT_MAX segments.");
   }
   else
   {
@@ -248,12 +284,16 @@ catch (...)
 CUB_TEST("DeviceSegmentedSort::SortKeys: very large segments",
          "[keys][segmented][sort][device][skip-cs-memcheck][skip-cs-racecheck][skip-cs-initcheck]",
          CUB_LARGE,
-         all_offset_types)
+         all_offset_types,
+         test_algorithms)
 try
 {
-  if constexpr (test_lrb)
+  constexpr auto selected_algorithm = c2h::get<1, TestType>::value;
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "existing CUB" : "internal LRB"));
+
+  if constexpr (selected_algorithm == test_algorithm::lrb)
   {
-    SKIP("CCCL_SKIP_TEST: The internal LRB backend does not yet sort oversized segments.");
+    SKIP("The internal LRB backend does not yet sort oversized segments.");
   }
   else
   {
