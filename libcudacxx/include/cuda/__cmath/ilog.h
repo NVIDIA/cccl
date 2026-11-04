@@ -89,7 +89,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_cv_integer_v<_Tp>)
   _CCCL_ASSERT(__t > 0, "cuda::ilog10() argument must be strictly positive");
   if constexpr (sizeof(_Tp) <= 2)
   {
-    int __result = (__t >= 10) + (__t >= 100);
+    const int __result = (__t >= 10) + (__t >= 100);
     if constexpr (sizeof(_Tp) == 2)
     {
       __result += (__t >= 1'000) + (__t >= 10'000);
