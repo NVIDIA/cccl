@@ -26,11 +26,9 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__iterator/size.h>
 #include <cuda/std/__limits/numeric_limits.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
-#include <cuda/std/array>
 #include <cuda/std/cstdint>
 
 #include <nv/target>
@@ -58,51 +56,42 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_cv_integer_v<_Tp>)
   return ::cuda::ilog2(__t) + !::cuda::std::has_single_bit(static_cast<_Up>(__t));
 }
 
-// Const-qualified device variable templates are unsupported with the MSVC host compiler.
-template <class _Tp, ::cuda::std::enable_if_t<sizeof(_Tp) == sizeof(::cuda::std::uint32_t), int> = 0>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __powers_of_10() noexcept
-{
-  return ::cuda::std::array<::cuda::std::uint32_t, 10>{
-    10,
-    100,
-    1'000,
-    10'000,
-    100'000,
-    1'000'000,
-    10'000'000,
-    100'000'000,
-    1'000'000'000,
-    ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max()};
-}
+// Use non-template variables for the widths supported by the MSVC host compiler.
+_CCCL_GLOBAL_CONSTANT ::cuda::std::uint32_t __powers_of_10_32[10]{
+  10,
+  100,
+  1'000,
+  10'000,
+  100'000,
+  1'000'000,
+  10'000'000,
+  100'000'000,
+  1'000'000'000,
+  ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max()};
 
-template <class _Tp, ::cuda::std::enable_if_t<sizeof(_Tp) == sizeof(::cuda::std::uint64_t), int> = 0>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL ::cuda::std::array<::cuda::std::uint64_t, 20> __powers_of_10() noexcept
-{
-  return {
-    10,
-    100,
-    1'000,
-    10'000,
-    100'000,
-    1'000'000,
-    10'000'000,
-    100'000'000,
-    1'000'000'000,
-    10'000'000'000,
-    100'000'000'000,
-    1'000'000'000'000,
-    10'000'000'000'000,
-    100'000'000'000'000,
-    1'000'000'000'000'000,
-    10'000'000'000'000'000,
-    100'000'000'000'000'000,
-    1'000'000'000'000'000'000,
-    10'000'000'000'000'000'000ull,
-    ::cuda::std::numeric_limits<::cuda::std::uint64_t>::max()};
-}
+_CCCL_GLOBAL_CONSTANT ::cuda::std::uint64_t __powers_of_10_64[20]{
+  10,
+  100,
+  1'000,
+  10'000,
+  100'000,
+  1'000'000,
+  10'000'000,
+  100'000'000,
+  1'000'000'000,
+  10'000'000'000,
+  100'000'000'000,
+  1'000'000'000'000,
+  10'000'000'000'000,
+  100'000'000'000'000,
+  1'000'000'000'000'000,
+  10'000'000'000'000'000,
+  100'000'000'000'000'000,
+  1'000'000'000'000'000'000,
+  10'000'000'000'000'000'000ull,
+  ::cuda::std::numeric_limits<::cuda::std::uint64_t>::max()};
 
 #if _CCCL_HAS_INT128()
-// CUDA 12.0 cannot initialize a device cuda::std::array of 128-bit integers.
 template <class _Tp>
 _CCCL_GLOBAL_CONSTANT __uint128_t __powers_of_10_128[39]{
   10,
@@ -144,25 +133,33 @@ _CCCL_GLOBAL_CONSTANT __uint128_t __powers_of_10_128[39]{
   __uint128_t{10'000'000'000'000'000'000ull} * 100'000'000'000'000'0000,
   __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000'000'000'0000ull,
   ::cuda::std::numeric_limits<__uint128_t>::max()};
-
-template <class _Tp, ::cuda::std::enable_if_t<sizeof(_Tp) == sizeof(__uint128_t), int> = 0>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __powers_of_10() noexcept
-{
-  ::cuda::std::array<__uint128_t, 39> __result{};
-  for (unsigned __i = 0; __i != 39; ++__i)
-  {
-    __result[__i] = __powers_of_10_128<_Tp>[__i];
-  }
-  return __result;
-}
 #endif // _CCCL_HAS_INT128()
+
+template <class _Tp>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL const auto& __powers_of_10() noexcept
+{
+  if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint32_t))
+  {
+    return __powers_of_10_32;
+  }
+  else if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint64_t))
+  {
+    return __powers_of_10_64;
+  }
+#if _CCCL_HAS_INT128()
+  else
+  {
+    return __powers_of_10_128<_Tp>;
+  }
+#endif // _CCCL_HAS_INT128()
+}
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr int __ilog10_generic(const _Tp __v) noexcept
 {
   using _Up                           = ::cuda::std::make_unsigned_t<_Tp>;
   constexpr auto __reciprocal_log2_10 = 0.301029995663f; // 1 / log2(10)
-  constexpr auto __pows_of_10         = __powers_of_10<_Up>();
+  constexpr const auto& __pows_of_10  = __powers_of_10<_Up>();
 
   const auto __log2   = ::cuda::ilog2(__v) * __reciprocal_log2_10;
   auto __log10_approx = static_cast<int>(__log2);
