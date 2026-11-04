@@ -27,6 +27,7 @@
 #    include <cub/device/device_transform.cuh>
 #  endif // _CCCL_CUDA_COMPILATION()
 
+#  include <cuda/__container/allocation_info.h>
 #  include <cuda/__container/heterogeneous_iterator.h>
 #  include <cuda/__container/uninitialized_async_buffer.h>
 #  include <cuda/__functional/call_or.h>
@@ -42,7 +43,6 @@
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__execution/env.h>
-#  include <cuda/std/__host_stdlib/cstddef>
 #  include <cuda/std/__iterator/concepts.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/reverse_iterator.h>
@@ -55,6 +55,7 @@
 #  include <cuda/std/__type_traits/is_one_of.h>
 #  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/__utility/move.h>
+#  include <cuda/std/cstddef>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/initializer_list>
 
@@ -72,6 +73,9 @@ inline constexpr bool __buffer_compatible_env =
 template <class _Tp>
 inline constexpr bool __is_buffer_byte_type_v =
   ::cuda::std::__is_one_of_v<_Tp, ::std::byte, ::cuda::std::byte, char, unsigned char>;
+
+template <class _Tp, class... _Properties>
+_CCCL_HOST_API auto __acquire_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info);
 
 _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 //! @rst
@@ -113,12 +117,15 @@ public:
   using difference_type        = ::cuda::std::ptrdiff_t;
   using properties_list        = ::cuda::mr::properties_list<_Properties...>;
 
-  using __buffer_t       = ::cuda::__uninitialized_async_buffer<_Tp, _Properties...>;
-  using __resource_t     = ::cuda::mr::any_resource<_Properties...>;
-  using __resource_ref_t = ::cuda::mr::resource_ref<_Properties...>;
+  using __buffer_t          = ::cuda::__uninitialized_async_buffer<_Tp, _Properties...>;
+  using __resource_t        = ::cuda::mr::any_resource<_Properties...>;
+  using __resource_ref_t    = ::cuda::mr::resource_ref<_Properties...>;
+  using __allocation_info_t = ::cuda::__allocation_info<_Tp, _Properties...>;
 
   template <class, class...>
   friend class buffer;
+
+  friend auto ::cuda::__acquire_buffer<_Tp, _Properties...>(::cuda::__allocation_info<_Tp, _Properties...>&& __info);
 
   // For now we require trivially copyable type to simplify the implementation
   static_assert(::cuda::is_trivially_copyable_v<_Tp>, "cuda::buffer requires T to be trivially copyable.");
@@ -202,13 +209,13 @@ private:
   [[nodiscard]] _CCCL_HOST_API buffer<_Up, _Properties...> __as_type() &&
   {
     auto __alloc = ::cuda::std::move(*this).release();
-    return buffer<_Up, _Properties...>::acquire(
-      __alloc.stream,
-      ::cuda::std::move(__alloc.mr),
-      reinterpret_cast<_Up*>(__alloc.ptr),
-      __alloc.size * sizeof(_Tp) / sizeof(_Up),
-      __alloc.size * sizeof(_Tp) / sizeof(_Up),
-      __alloc.alignment);
+    return ::cuda::__acquire_buffer<_Up, _Properties...>(
+      {__alloc.stream,
+       ::cuda::std::move(__alloc.mr),
+       reinterpret_cast<_Up*>(__alloc.ptr),
+       __alloc.size * sizeof(_Tp) / sizeof(_Up),
+       __alloc.size * sizeof(_Tp) / sizeof(_Up),
+       __alloc.alignment});
   }
 
 public:
@@ -786,26 +793,13 @@ public:
     __lhs.swap(__rhs);
   }
 
-  //! @brief An allocation whose ownership was released from a buffer by
-  //! `release()`. Passing the members to `acquire()` creates an equivalent
-  //! buffer.
-  struct released_allocation
-  {
-    ::cuda::stream_ref stream;
-    __resource_t mr;
-    pointer ptr;
-    size_type capacity;
-    size_type size;
-    size_type alignment;
-  };
-
   //! @brief Releases ownership of the allocation without deallocating it.
   //! @return The stream, memory resource, pointer, capacity, element count and alignment
   //! of the allocation. The caller becomes responsible for deallocating `ptr`
   //! with `mr.deallocate(stream, ptr, bytes, alignment)`, where `bytes` is
   //! `size * sizeof(T)` rounded up to a multiple of `alignment`.
   //! @warning After this call, the buffer can only be assigned to or destroyed.
-  [[nodiscard]] _CCCL_HOST_API released_allocation release() && noexcept
+  [[nodiscard]] _CCCL_HOST_API __allocation_info_t release() && noexcept
   {
     const pointer __ptr               = __buf_.data();
     const size_type __capacity        = __buf_.size();
@@ -813,35 +807,6 @@ public:
     const size_type __alignment       = __buf_.alignment();
     const ::cuda::stream_ref __stream = __buf_.stream();
     return {__stream, std::move(__buf_).__release_allocation(), __ptr, __capacity, __size, __alignment};
-  }
-
-  //! @brief Creates a buffer that takes ownership of an existing allocation.
-  //! @param __stream The stream stored in the buffer.
-  //! @param __mr The memory resource used to deallocate the allocation.
-  //! @param __ptr The allocation. May only be null if \p __size is zero.
-  //! @param __capacity The maximum number of elements in the allocation.
-  //! @param __size The number of elements in the allocation.
-  //! @param __alignment The alignment of the allocation.
-  //! @pre \p __ptr is not owned by anything else and can be deallocated with
-  //! `__mr.deallocate(__stream, __ptr, bytes, __alignment)`, where `bytes` is
-  //! `__size * sizeof(T)` rounded up to a multiple of \p __alignment.
-  //! @throw std::invalid_argument if \p __alignment is not a power of two that
-  //! is at least `alignof(T)`, if \p __ptr is not aligned to \p __alignment,
-  //! if \p __ptr is null and \p __size is not zero, if \p __capacity does not
-  //! equal \p __size, or if the allocation size overflows.
-  [[nodiscard]] _CCCL_HOST_API static buffer acquire(
-    ::cuda::stream_ref __stream,
-    __resource_t __mr,
-    pointer __ptr,
-    size_type __capacity,
-    size_type __size,
-    size_type __alignment = alignof(_Tp))
-  {
-    if (__capacity != __size)
-    {
-      _CCCL_THROW(::std::invalid_argument, "cuda::buffer::acquire: capacity must match size");
-    }
-    return buffer{__buffer_t::__adopt_allocation(__stream, ::cuda::std::move(__mr), __ptr, __size, __alignment)};
   }
 
   //! @brief Converts the buffer into a buffer of bytes that owns the same
@@ -1347,6 +1312,28 @@ _CCCL_HOST_API auto make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& 
   return __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), ::cuda::std::forward<_Range>(__range), __env};
 }
 #  endif // _CCCL_DOXYGEN_INVOKED
+
+//! @brief Creates a buffer that takes ownership of an existing allocation.
+//! @param __info The allocation info to acquire.
+//! @pre \p __info.ptr is not owned by anything else and can be deallocated with
+//! `__info.mr.deallocate(__info.stream, __info.ptr, bytes, __info.alignment)`, where `bytes` is
+//! `__info.size * sizeof(T)` rounded up to a multiple of \p __info.alignment.
+//! @throw std::invalid_argument if \p __info.alignment is not a power of two that
+//! is at least `alignof(T)`, if \p __info.ptr is not aligned to \p __info.alignment,
+//! if \p __info.ptr is null and \p __info.size is not zero, if \p __info.capacity does not
+//! equal \p __info.size, or if the allocation size overflows.
+template <class _Tp, class... _Properties>
+_CCCL_HOST_API auto __acquire_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info)
+{
+  using __buffer_type = ::cuda::buffer<_Tp, _Properties...>;
+
+  if (__info.capacity != __info.size)
+  {
+    _CCCL_THROW(::std::invalid_argument, "cuda::__acquire_buffer: capacity must match size");
+  }
+  return __buffer_type{__buffer_type::__buffer_t::__adopt_allocation(
+    __info.stream, ::cuda::std::move(__info.mr), __info.ptr, __info.size, __info.alignment)};
+}
 _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>

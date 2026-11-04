@@ -171,13 +171,7 @@ C2H_CCCLRT_TEST("cuda::buffer release, acquire and byte conversion", "[container
       CHECK(buf.data() == nullptr);
       CHECK(log.live.size() == 1);
 
-      Buffer acquired = Buffer::acquire(
-        released.stream,
-        cuda::std::move(released.mr),
-        released.ptr,
-        released.capacity,
-        released.size,
-        released.alignment);
+      Buffer acquired = cuda::__acquire_buffer(cuda::std::move(released));
       CHECK(acquired.data() == allocation);
       CHECK(acquired.alignment() == alignment);
       CHECK(acquired.stream() == cuda::stream_ref{stream});
@@ -192,18 +186,32 @@ C2H_CCCLRT_TEST("cuda::buffer release, acquire and byte conversion", "[container
       CHECK(released.capacity == 0);
       CHECK(released.size == 0);
 
-      Buffer acquired =
-        Buffer::acquire(released.stream, cuda::std::move(released.mr), released.ptr, released.capacity, released.size);
+      Buffer acquired = cuda::__acquire_buffer(cuda::std::move(released));
       CHECK(acquired.empty());
     }
 
     SECTION("acquire rejects invalid allocations")
     {
-      CHECK_THROWS_AS((void) Buffer::acquire(stream, resource, nullptr, 1, 1), std::invalid_argument);
-      CHECK_THROWS_AS((void) Buffer::acquire(stream, resource, reinterpret_cast<T*>(1), 1, 1, 2 * alignof(T)),
+      using allocation_info_t = cuda::__allocation_info<T, cuda::mr::device_accessible>;
+
+      // Null buffer with non-zero size
+      CHECK_THROWS_AS((void) cuda::__acquire_buffer(allocation_info_t{stream, resource, nullptr, 1, 1, alignof(T)}),
                       std::invalid_argument);
-      CHECK_THROWS_AS((void) Buffer::acquire(stream, resource, nullptr, 0, 0, 3), std::invalid_argument);
-      CHECK_THROWS_AS((void) Buffer::acquire(stream, resource, reinterpret_cast<T*>(1), 2, 1), std::invalid_argument);
+      // Misligned pointer
+      CHECK_THROWS_AS((void) cuda::__acquire_buffer(
+                        allocation_info_t{stream, resource, reinterpret_cast<T*>(1), 1, 1, 2 * alignof(T)}),
+                      std::invalid_argument);
+      // Invalid alignment
+      CHECK_THROWS_AS((void) cuda::__acquire_buffer(allocation_info_t{stream, resource, nullptr, 0, 0, 3}),
+                      std::invalid_argument);
+      // Capacity/size mismatch (TODO: lift this when buffers are resizable)
+      CHECK_THROWS_AS((void) cuda::__acquire_buffer(
+                        allocation_info_t{stream, resource, reinterpret_cast<T*>(sizeof(T)), 2, 1, alignof(T)}),
+                      std::invalid_argument);
+      // Capacity less than size
+      CHECK_THROWS_AS((void) cuda::__acquire_buffer(
+                        allocation_info_t{stream, resource, reinterpret_cast<T*>(sizeof(T)), 1, 2, alignof(T)}),
+                      std::invalid_argument);
     }
 
     SECTION("as_bytes and as_type round trip with every byte type")
