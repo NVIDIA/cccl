@@ -365,6 +365,7 @@ CheckOptions:
   readability-simplify-boolean-expr.ChainedConditionalAssignment: 'true'
   readability-enum-initial-value.AllowExplicitZeroFirstInitialValue: 'false'
   readability-enum-initial-value.AllowExplicitSequentialInitialValues: 'false'
+  readability-redundant-access-specifiers.CheckFirstDeclaration: 'true'
   # readability-identifier-naming.ClassCase: 'lower_case'
   # readability-identifier-naming.UnionCase: 'lower_case'
   # readability-identifier-naming.ClassConstantCase: 'UPPER_CASE'
