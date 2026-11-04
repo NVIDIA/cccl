@@ -30,9 +30,9 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/fpmp>
-#include <cuda/std/type_traits>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
+#include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
@@ -163,6 +163,15 @@ TEST_HOST_DEVICE_FUNC void test_host_device(double tol)
   assert(check(static_cast<double>(boys_f0(MP2(x_val))),
                0.5 * ::sqrt(3.14159265358979323846 / x_val) * ::erf(::sqrt(x_val)),
                tol));
+
+  // normcdfinv at the ends of (0, 1), against CUDA's double normcdfinv. 1 - 2^-53 is
+  // (1.0f, -2^-53) as an fp32mp2 pair, so the result must come from the whole pair,
+  // not from hi == 1.
+  assert(check(static_cast<double>(normcdfinv(MP2(0x1.fffffffffffffp-1))), 8.2095361516013874, tol));
+  assert(check(static_cast<double>(normcdfinv(MP2(1.0 - 0x1p-40))), 7.0477002566644087, tol));
+  assert(check(static_cast<double>(normcdfinv(MP2(0x1p-40))), -7.0477002566644087, tol));
+  assert(fpmp_isinf(normcdfinv(MP2(1.0))) && !fpmp_signbit(normcdfinv(MP2(1.0))));
+  assert(fpmp_isinf(normcdfinv(MP2(0.0))) && fpmp_signbit(normcdfinv(MP2(0.0))));
 
   // Scaling by a power of two
   assert(check(static_cast<double>(ldexp(MP2(x_val), n_val)), ::ldexp(x_val, n_val), tol));
