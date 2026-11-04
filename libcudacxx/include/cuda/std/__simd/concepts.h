@@ -97,6 +97,16 @@ template <>
 inline constexpr int __integer_conversion_rank<long long> = 5;
 template <>
 inline constexpr int __integer_conversion_rank<unsigned long long> = 5;
+template <>
+inline constexpr int __integer_conversion_rank<wchar_t> = __integer_conversion_rank<make_signed_t<wchar_t>>;
+template <>
+inline constexpr int __integer_conversion_rank<char16_t> = __integer_conversion_rank<make_signed_t<char16_t>>;
+template <>
+inline constexpr int __integer_conversion_rank<char32_t> = __integer_conversion_rank<make_signed_t<char32_t>>;
+#if _CCCL_HAS_CHAR8_T()
+template <>
+inline constexpr int __integer_conversion_rank<char8_t> = __integer_conversion_rank<unsigned char>;
+#endif // _CCCL_HAS_CHAR8_T()
 #if _CCCL_HAS_INT128()
 template <>
 inline constexpr int __integer_conversion_rank<__int128_t> = 6;
