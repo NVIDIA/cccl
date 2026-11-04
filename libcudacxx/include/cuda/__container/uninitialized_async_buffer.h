@@ -491,7 +491,7 @@ public:
 
   [[nodiscard]] _CCCL_HOST_API __async_resource __release_allocation() && noexcept
   {
-    __stream_    = ::cuda::stream_ref{::cudaStream_t{}};
+    __stream_    = ::cuda::stream_ref{::cuda::invalid_stream};
     __count_     = 0;
     __alignment_ = alignof(_Tp);
     __buf_       = nullptr;
