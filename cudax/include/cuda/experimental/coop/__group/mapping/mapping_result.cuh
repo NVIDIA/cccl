@@ -179,9 +179,9 @@ template <bool _IsAlwaysContiguous>
 
     const auto __less_mask = __prev_lane_mask & ::cuda::device::lane_mask::all_less();
     const auto __nless     = ::cuda::std::popcount(__less_mask.value());
-    if (__nless >= __rank)
+    if (__nless > __rank)
     {
-      const auto __last_to_remove = ::cuda::bit_fns(__less_mask.value(), __nless - __rank);
+      const auto __last_to_remove = ::cuda::bit_fns(__less_mask.value(), __nless - __rank - 1);
       __lane_mask |= ::cuda::device::lane_mask{__less_mask.value() & (~0u << (__last_to_remove + 1))};
     }
     else
