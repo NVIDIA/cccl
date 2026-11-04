@@ -126,6 +126,9 @@ __global__ void cub_api_example_x0_5_kernel(const T* d_in, T* d_out, int num_ite
   }
 }
 
+struct get_two_phase_token_t
+{};
+
 struct cub_api_example_t
 {
   static constexpr int threads_in_block = 256;
@@ -240,28 +243,59 @@ struct cub_api_example_t
     return error;
   }
 
-  template <class T>
+  template <class T, class StreamOrEnv = cudaStream_t>
   CUB_RUNTIME_FUNCTION static cudaError_t
   x2_0(std::uint8_t* d_temp_storage,
        std::size_t& temp_storage_bytes,
        const T* d_in,
        T* d_out,
        int num_items,
-       cudaStream_t stream = nullptr)
+       const StreamOrEnv& stream_or_env = {})
   {
-    return invoke(d_temp_storage, temp_storage_bytes, cub_api_example_x2_0_kernel<T>, d_in, d_out, num_items, stream);
+    return invoke(
+      d_temp_storage,
+      temp_storage_bytes,
+      cub_api_example_x2_0_kernel<T>,
+      d_in,
+      d_out,
+      num_items,
+      cuda::get_stream(stream_or_env).get());
   }
 
-  template <class T>
+  template <class T, class StreamOrEnv = cudaStream_t>
   CUB_RUNTIME_FUNCTION static cudaError_t
   x0_5(std::uint8_t* d_temp_storage,
        std::size_t& temp_storage_bytes,
        const T* d_in,
        T* d_out,
        int num_items,
-       cudaStream_t stream = nullptr)
+       const StreamOrEnv& stream_or_env = {})
   {
-    return invoke(d_temp_storage, temp_storage_bytes, cub_api_example_x0_5_kernel<T>, d_in, d_out, num_items, stream);
+    return invoke(
+      d_temp_storage,
+      temp_storage_bytes,
+      cub_api_example_x0_5_kernel<T>,
+      d_in,
+      d_out,
+      num_items,
+      cuda::get_stream(stream_or_env).get());
+  }
+
+  template <class T, class Env>
+  CUB_RUNTIME_FUNCTION static cudaError_t x2_0_with_env(
+    std::uint8_t* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const T* d_in,
+    T* d_out,
+    int num_items,
+    const Env& env)
+  {
+    // Check forwarding during both the storage query and execution.
+    if (env.query(get_two_phase_token_t{}) != 123)
+    {
+      return cudaErrorInvalidValue;
+    }
+    return x2_0(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, env);
   }
 
   template <class T, class Env>
@@ -279,6 +313,9 @@ struct cub_api_example_t
 
 DECLARE_LAUNCH_WRAPPER(cub_api_example_t::x2_0, x2_0);
 DECLARE_LAUNCH_WRAPPER(cub_api_example_t::x0_5, x0_5);
+DECLARE_LAUNCH_WRAPPER(cub_api_example_t::x2_0_with_env, x2_0_with_env);
+DECLARE_TMPL_LAUNCH_WRAPPER(
+  cub_api_example_t::x2_0_with_env, x2_0_with_env_templated, ESCAPE_LIST(class T), ESCAPE_LIST(T));
 DECLARE_TMPL_LAUNCH_WRAPPER(cub_api_example_t::x2_0, x2_0_templated, ESCAPE_LIST(class T), ESCAPE_LIST(T));
 DECLARE_LAUNCH_WRAPPER_ENV(cub_api_example_t::x2_0, x2_0_env);
 DECLARE_LAUNCH_WRAPPER_ENV(cub_api_example_t::x0_5, x0_5_env);
@@ -312,14 +349,14 @@ CUB_TEST("Launch wrapper works with predefined invocables", "[test][utils]", CUB
 
 struct custom_x2_0_invocable
 {
-  template <class T>
+  template <class T, class StreamOrEnv = cudaStream_t>
   CUB_RUNTIME_FUNCTION cudaError_t operator()(
     std::uint8_t* d_temp_storage,
     std::size_t& temp_storage_bytes,
     const T* d_in,
     T* d_out,
     int num_items,
-    cudaStream_t stream = nullptr)
+    const StreamOrEnv& stream = {})
   {
     return cub_api_example_t::x2_0(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
@@ -327,14 +364,14 @@ struct custom_x2_0_invocable
 
 struct custom_x0_5_invocable
 {
-  template <class T>
+  template <class T, class StreamOrEnv = cudaStream_t>
   CUB_RUNTIME_FUNCTION cudaError_t operator()(
     std::uint8_t* d_temp_storage,
     std::size_t& temp_storage_bytes,
     const T* d_in,
     T* d_out,
     int num_items,
-    cudaStream_t stream = nullptr)
+    const StreamOrEnv& stream = {})
   {
     return cub_api_example_t::x0_5(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
@@ -397,6 +434,34 @@ CUB_TEST("Launch wrapper accepts trailing stream-like arguments", "[test][utils]
   };
 
   test_with_custom_streams(test_stream, stream);
+}
+
+CUB_TEST("Two-phase launch wrapper preserves environment properties", "[test][utils]", CUB_SMALL)
+{
+  constexpr int num_items       = 42;
+  const auto owning_stream      = c2h::make_current_device_stream();
+  const bool use_default_stream = GENERATE(false, true);
+  const auto stream             = use_default_stream ? c2h::default_stream_ref() : cuda::stream_ref{owning_stream};
+  CAPTURE(use_default_stream);
+
+  launch_test_data<int> data{stream, num_items};
+  const auto stream_prop = cuda::std::execution::prop{cuda::get_stream_t{}, stream};
+  const auto token_prop  = cuda::std::execution::prop{get_two_phase_token_t{}, 123};
+  const auto env         = cuda::std::execution::env{stream_prop, token_prop};
+  const expected_stream_scope expected_scope{stream.get()};
+  data.prepare(stream);
+
+  SECTION("predefined invocable")
+  {
+    x2_0_with_env(data.in.data(), data.out.data(), num_items, env);
+  }
+  SECTION("templated invocable")
+  {
+    x2_0_with_env_templated<int>(data.in.data(), data.out.data(), num_items, env);
+  }
+
+  REQUIRE(stream.is_done());
+  require_all_equal(stream, data.out, 42);
 }
 
 CUB_TEST("Launch wrapper accepts an explicit default stream", "[test][utils]", CUB_SMALL)

@@ -396,6 +396,9 @@ in device code. Graph launches capture on the supplied non-default stream, or a 
 stream when the default stream is requested, then execute the graph on the requested stream.
 If no stream argument is supplied, the wrapper uses the default stream.
 The wrapper waits for execution to complete before returning.
+When the trailing argument is an environment providing a stream, the wrapper preserves
+its other properties. Device launches override its stream with the device-side default
+stream; graph launches override it only when a temporary capture stream is needed.
 
 Under CUDA graph capture (``TEST_LAUNCH == 2``), the wrapper implicitly appends a ``stream`` argument to the call.
 If the wrapped API has default parameters before its ``stream`` parameter,
