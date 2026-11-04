@@ -229,4 +229,4 @@ using random::subtract_with_carry_engine;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/random/detail/subtract_with_carry_engine.inl> // IWYU pragma: keep
+#include <thrust/random/detail/subtract_with_carry_engine.inl> // IWYU pragma: export
