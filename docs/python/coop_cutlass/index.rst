@@ -43,8 +43,8 @@ A public package release and package uploads are not part of this draft.
 
 Start with the :doc:`Programming Guide <programming_guide>` for a complete
 prefix-sum kernel and :doc:`concepts` for participation, layouts, ownership,
-and storage. The :doc:`examples` page links executable programs with CPU
-reference checks. The :doc:`API reference <api>` lists every operation and
+and storage. The :doc:`examples` page shows executable programs with CPU
+reference checks and downloads. The :doc:`API reference <api>` lists every operation and
 its controls. Developers new to CUTLASS can read :doc:`cutlass_primer`
 before the :doc:`Developer Guide <developer_guide>`.
 
@@ -61,5 +61,4 @@ before the :doc:`Developer Guide <developer_guide>`.
    configuration
    faqs
    glossary
-   neighbor-operations
    visualizations/index
