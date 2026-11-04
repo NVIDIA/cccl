@@ -158,11 +158,12 @@ private:
     }
   }
 
-  // don't provide access to this part of super_t's interface
-  using super_t::base;
+  // base_type stays private. Callers use raw_pointer.
   using typename super_t::base_type;
 
 public:
+  //! @brief The stored raw pointer. Public so contiguous unwrapping can reach it.
+  using super_t::base;
   /*! The type of the raw pointer
    */
   using raw_pointer = typename super_t::base_type;
@@ -391,6 +392,14 @@ public:
     !detail::ptr_can_compare_less_than<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
     bool>
   operator<=(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs) = delete;
+
+  //! @brief Retargets this pointer at @p ptr.
+  //! @param[in] ptr The address that replaces the stored pointer.
+  template <class T>
+  _CCCL_HOST_DEVICE void __rebase(T* ptr) & // NOLINT(readability-identifier-naming): libcu++ calls this by name
+  {
+    this->base_reference() = static_cast<Element*>(ptr);
+  }
 };
 
 /*! \} // memory_management
@@ -430,5 +439,10 @@ struct pointer_traits<Pointer, void_t<typename Pointer::raw_pointer>>
     return iter.get();
   }
 };
+
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+template <class Element, class Tag, class Reference, class Derived>
+inline constexpr bool __has_contiguous_traversal<THRUST_NS_QUALIFIER::pointer<Element, Tag, Reference, Derived>> = true;
+#endif // _CCCL_DOXYGEN_INVOKED
 
 _CCCL_END_NAMESPACE_CUDA_STD

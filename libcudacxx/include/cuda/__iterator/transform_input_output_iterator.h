@@ -24,6 +24,7 @@
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#include <cuda/__iterator/contiguous_iterator_adaptor.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__functional/invoke.h>
@@ -246,6 +247,16 @@ public:
   [[nodiscard]] _CCCL_API constexpr _Iter base() && noexcept(::cuda::std::is_nothrow_move_constructible_v<_Iter>)
   {
     return ::cuda::std::move(__iter());
+  }
+
+  //! @brief Retargets the stored iterator at @p __ptr. The stored functors are left unchanged. The input functor is
+  //! then invoked on the elements at @p __ptr.
+  //! @param[in] __ptr The address that replaces the contiguous storage this adaptor reads from and writes to.
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__iterator_can_rebase<_Iter, _Tp> || ::cuda::std::is_pointer_v<_Iter>)
+  _CCCL_API constexpr void __rebase(_Tp* __ptr) &
+  {
+    ::cuda::__rebase_contiguous_iterator_adaptor(__iter(), __ptr);
   }
 
   //! @brief Dereferences the @c transform_input_output_iterator. Returns a proxy that transforms values read from the

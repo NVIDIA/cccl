@@ -241,3 +241,10 @@ THRUST_NAMESPACE_END
 
 #include <thrust/detail/device_ptr.inl>
 #include <thrust/detail/raw_pointer_cast.h>
+
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+template <class T>
+inline constexpr bool __has_contiguous_traversal<THRUST_NS_QUALIFIER::device_ptr<T>> = true;
+_CCCL_END_NAMESPACE_CUDA_STD
+#endif // _CCCL_DOXYGEN_INVOKED
