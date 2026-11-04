@@ -72,7 +72,7 @@ inline constexpr bool __cccl_std_contiguous_iterator_tag_exists_v =
 
 #endif // _CCCL_HOSTED()
 
-#include <cuda/std/__cccl/prologue.h>
+#include <cuda/std/__cccl/prologue.h> // NOLINT(readability-duplicate-include)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -563,9 +563,6 @@ using __iterator_pointer_type _CCCL_NODEBUG = typename iterator_traits<_Iter>::p
 template <class _Iter>
 using __iter_diff_t _CCCL_NODEBUG = typename iterator_traits<_Iter>::difference_type;
 
-template <class _Iter>
-using __iter_value_type _CCCL_NODEBUG = typename iterator_traits<_Iter>::value_type;
-
 // C++20 iterators do not play nicely with C++17 interfaces, because they commmonly use `iterator_concept` to
 // communicate their iterator category. Deduce the actual iterator category from the maximum of `iterator_concept` and
 // `iterator_category`
@@ -608,6 +605,6 @@ using __iterator_traits_category_or_concept_t _CCCL_NODEBUG =
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
-#include <cuda/std/__cccl/epilogue.h>
+#include <cuda/std/__cccl/epilogue.h> // NOLINT(readability-duplicate-include)
 
 #endif // _CUDA_STD___ITERATOR_ITERATOR_TRAITS_H
