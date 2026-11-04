@@ -575,41 +575,40 @@ public:
     while (true)
     {
       const auto __bucket_slots = __storage_ref[*__probing_iter];
-      auto __expected_slot      = empty_slot_sentinel();
-      auto __probing_result     = __bucket_probing_results{detail::__equal_result::__unequal, -1};
+      // Only read when a slot is available, which overwrites it; starting from the first slot lets
+      // single-slot buckets use the loaded value directly.
+      auto __expected_slot = __bucket_slots[0];
+      // Zero, not -1, so every lane forms an in-bounds slot index below.
+      auto __probing_result = __bucket_probing_results{detail::__equal_result::__unequal, 0};
 
+      // Scan without `break` so the bucket loop compiles to straight-line code.
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
       {
-        const auto __slot = __bucket_slots[__i];
-        const auto __state =
-          __predicate.template operator()<detail::__is_insert::__yes, _SupportsErase>(__key, __extract_key(__slot));
-
-        if (__state == detail::__equal_result::__available)
+        if (__probing_result.__state == detail::__equal_result::__unequal)
         {
-          __expected_slot  = __slot;
-          __probing_result = __bucket_probing_results{__state, __i};
-          break;
-        }
-        if constexpr (!__allows_duplicates)
-        {
-          if (__state == detail::__equal_result::__equal)
+          const auto __slot = __bucket_slots[__i];
+          const auto __state =
+            __predicate.template operator()<detail::__is_insert::__yes, _SupportsErase>(__key, __extract_key(__slot));
+          if (__state == detail::__equal_result::__available
+              || (!__allows_duplicates && __state == detail::__equal_result::__equal))
           {
             __expected_slot  = __slot;
             __probing_result = __bucket_probing_results{__state, __i};
-            break;
           }
         }
       }
 
       const auto [__state, __intra_bucket_index] = __probing_result;
+      // Broadcasting one slot index takes one shuffle instead of two, and forming the pointer from
+      // the storage base after the shuffle keeps it known to address global memory.
+      const auto __slot_index = *__probing_iter + __intra_bucket_index;
 
       const auto __group_finds_equal = __group.ballot(__state == detail::__equal_result::__equal);
       if (__group_finds_equal != 0)
       {
-        const auto __src_lane      = __ffs(__group_finds_equal) - 1;
-        const auto __probing_index = __group.shfl(*__probing_iter, __src_lane);
-        const auto __slot_index    = __group.shfl(__intra_bucket_index, __src_lane);
-        auto* const __slot_ptr     = __get_slot_ptr(__probing_index, __slot_index);
+        const auto __src_lane  = __ffs(__group_finds_equal) - 1;
+        auto* const __slot_ptr = __storage_ref.data() + __group.shfl(__slot_index, __src_lane);
 
         if (__group.thread_rank() == __src_lane)
         {
@@ -622,11 +621,9 @@ public:
       const auto __group_contains_available = __group.ballot(__state == detail::__equal_result::__available);
       if (__group_contains_available != 0)
       {
-        const auto __src_lane      = __ffs(__group_contains_available) - 1;
-        const auto __probing_index = __group.shfl(*__probing_iter, __src_lane);
-        const auto __slot_index    = __group.shfl(__intra_bucket_index, __src_lane);
-        auto* const __slot_ptr     = __get_slot_ptr(__probing_index, __slot_index);
-        auto __status              = __insert_result::__continue;
+        const auto __src_lane  = __ffs(__group_contains_available) - 1;
+        auto* const __slot_ptr = __storage_ref.data() + __group.shfl(__slot_index, __src_lane);
+        auto __status          = __insert_result::__continue;
 
         if (__group.thread_rank() == __src_lane)
         {

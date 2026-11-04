@@ -79,11 +79,6 @@
 #include <typeinfo>
 #include <utility>
 
-#ifdef UNITTESTED_FILE
-#  include <sstream>
-#  include <string>
-#endif // UNITTESTED_FILE
-
 namespace cuda::experimental::stf
 {
 /**
