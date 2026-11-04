@@ -246,6 +246,8 @@ def _attach_link_library(module: ir.Module, path: str) -> None:
     passes the files to the device linker with the kernel's own LTO-IR.
     """
 
+    # CuTe generally emits one gpu.module containing all kernels in a trace.
+    # Visit every GPU module, as CuTe's link-library collection does.
     for op in module.body.operations:
         if op.name != "gpu.module":
             continue
