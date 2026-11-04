@@ -43,6 +43,11 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 #if !_CCCL_COMPILER(NVRTC)
+// `cuda_error` grew in a minor release (it now carries the status object, its type and the source location), so
+// the class and the hidden friends it defines live in the version-bump namespace: an object built against the
+// previous layout has a different mangled name, and mixing the two fails to link or to match a handler instead
+// of reading the wrong bytes. The bump goes away with the next ABI version.
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 // Bootstrap errors cannot depend on cuGetErrorString being available.
 template <int _Error>
 [[noreturn]] _CCCL_HOST_API void __throw_cuda_error(
@@ -55,7 +60,7 @@ template <int _Error>
   const char* __msg,
   const char* __api                         = nullptr,
   const ::cuda::std::source_location& __loc = ::cuda::std::source_location::current());
-
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #if _CCCL_HAS_CTK()
@@ -165,6 +170,7 @@ using __canonical_status_t =
 //! raised (`location()`). Any status enumeration can be thrown; a struct status up to sixteen trivially
 //! copyable bytes as well. `status()` keeps its historical meaning: the
 //! status seen as a CUDA Runtime error code.
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 class cuda_error : public ::std::runtime_error
 {
   static constexpr ::cuda::std::size_t __status_capacity = 16;
@@ -360,6 +366,7 @@ public:
     _CCCL_THROW(::cuda::cuda_error, static_cast<__cuda_error_t>(__error), __msg, __api, __loc);
   }
 };
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
 #endif // _CCCL_HOSTED()
 
 _CCCL_END_NAMESPACE_CUDA
