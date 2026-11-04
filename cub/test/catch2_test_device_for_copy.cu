@@ -76,8 +76,14 @@ CUB_TEST("Device for each works", "[for_copy][device]", CUB_SMALL)
   REQUIRE(num_of_once_marked_items == num_items);
 }
 
-CUB_TEST("Device for each works with unaligned vectors", "[for_copy][device]", CUB_SMALL)
+// An offset of 2 aligns 8-byte items to 16 but not 32 bytes, which suffices for their vectors of at most 16 bytes
+CUB_TEST("Device for each works with unaligned vectors",
+         "[for_copy][device]",
+         CUB_SMALL,
+         c2h::type_list<std::int32_t, std::int64_t>)
 {
+  using item_t = c2h::get<0, TestType>;
+
   constexpr int max_items = 5000000;
   constexpr int min_items = 1;
 
@@ -91,11 +97,11 @@ CUB_TEST("Device for each works with unaligned vectors", "[for_copy][device]", C
   const int offset = GENERATE(1, 2, 3);
 
   c2h::device_vector<int> counts(num_items);
-  c2h::device_vector<int> input(num_items + offset);
+  c2h::device_vector<item_t> input(num_items + offset);
   thrust::sequence(c2h::device_policy, input.begin() + offset, input.end());
 
-  int* d_counts = thrust::raw_pointer_cast(counts.data());
-  int* d_input  = thrust::raw_pointer_cast(input.data()) + offset;
+  int* d_counts   = thrust::raw_pointer_cast(counts.data());
+  item_t* d_input = thrust::raw_pointer_cast(input.data()) + offset;
 
   device_for_each_copy(d_input, d_input + num_items, incrementer_t{d_counts});
 
