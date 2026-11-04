@@ -351,8 +351,6 @@ bool build_and_serialize(std::vector<char>& out_blob)
     }
 
     // The compute capability sits after magic[8], algo_tag and os_arch_tag.
-    int cc_major, cc_minor;
-    get_cc(cc_major, cc_minor);
     uint32_t other_major_cc = (cc_major == 7 ? 8 : 7) * 10 + 5;
     std::vector<char> wrong_cc(static_cast<char*>(buf), static_cast<char*>(buf) + size);
     std::memcpy(wrong_cc.data() + 8 + 2 * sizeof(uint32_t), &other_major_cc, sizeof(other_major_cc));
