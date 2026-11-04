@@ -344,3 +344,63 @@ def test_requirement_key_must_be_hashable():
         _storage.register_deferred_temp_storage_event(
             TempStorage(), primitive_name="load", requirement_key=[]
         )
+
+
+@pytest.mark.parametrize("returns_value", (False, True))
+def test_launch_size_warning_preserves_value_producing_branches(returns_value):
+    """Refresh print-only diagnostics without changing host results.
+
+    A conditional can contain only print and yield operations while still
+    selecting a value used outside its regions. Only a result-free branch
+    can be treated as a diagnostic when updating the launch allocation.
+    """
+
+    from cutlass._mlir.dialects import arith, cute, scf
+
+    with ir.Context() as context, ir.Location.unknown():
+        context.allow_unregistered_dialects = True
+        module = ir.Module.create()
+        with ir.InsertionPoint(module.body):
+            gpu_module = _region_op(
+                "gpu.module", {"sym_name": ir.StringAttr.get("kernels")}
+            )
+        with ir.InsertionPoint(gpu_module.regions[0].blocks[0]):
+            kernel = _region_op(
+                "cuda.kernel", {"sym_name": ir.StringAttr.get("example")}
+            )
+        symbol = ir.SymbolRefAttr.get(["kernels", "example"])
+        with ir.InsertionPoint(module.body):
+            i64 = ir.IntegerType.get_signless(64)
+            requested = arith.constant(i64, 128)
+            other = arith.constant(i64, 256)
+            inferred = cute.kernel_smem_size(symbol)
+            check = arith.CmpIOp(arith.CmpIPredicate.slt, requested, inferred)
+            branch = scf.IfOp(
+                check.result,
+                [i64] if returns_value else [],
+                has_else=returns_value,
+            )
+            with ir.InsertionPoint(branch.then_block):
+                cute.print_([requested], fmt="Requested: {}")
+                scf.YieldOp([requested] if returns_value else [])
+            if returns_value:
+                with ir.InsertionPoint(branch.else_block):
+                    scf.YieldOp([other])
+                ir.Operation.create("test.consume", operands=[branch.result])
+            launch = ir.Operation.create(
+                "cuda.launch",
+                operands=[requested] * 7,
+                attributes={"callee": symbol},
+            )
+        plans = _storage.plan_deferred_temp_storage_events(
+            [_event(TempStorage(), "scratch", kernel)],
+            {"scratch": _types.ScratchLayout(16, 8)},
+        )
+
+        _storage._include_deferred_storage_in_launches(plans)
+
+        assert launch.operands[6].owner.name == "arith.maxsi"
+        if returns_value:
+            assert ir.Value.__eq__(check.operands[0], requested)
+        else:
+            assert check.operands[0].owner.name == "arith.maxsi"

@@ -490,6 +490,118 @@ def _replace_all_uses(old_value: Any, new_value: Any) -> None:
     _deferred_temp_storage_capability_error()
 
 
+def _include_deferred_storage_in_launches(plans) -> None:
+    """Let CuTe account for scratch when a caller supplied an explicit size.
+
+    Deferred allocations participate in CuTe's shared-memory layout, including
+    alignment with existing buffers. An explicit launch size predates those
+    allocations, so preserve it as a minimum while querying the final layout.
+    """
+    from cutlass._mlir import ir
+    from cutlass._mlir.dialects import arith, cute
+
+    modules = {}
+    for plan in plans:
+        kernel = plan.kernel_op
+        gpu_module = kernel.parent
+        symbol = ir.SymbolRefAttr.get(
+            [
+                ir.StringAttr(gpu_module.attributes["sym_name"]).value,
+                ir.StringAttr(kernel.attributes["sym_name"]).value,
+            ]
+        )
+        root = gpu_module
+        while root.parent is not None:
+            root = root.parent
+        modules.setdefault(root, set()).add(symbol)
+
+    for module, symbols in modules.items():
+        launches = []
+        queries = []
+
+        def collect(operation):
+            if operation.name in ("cuda.launch", "cuda.launch_ex"):
+                if operation.attributes["callee"] in symbols:
+                    launches.append(operation)
+            elif operation.name == "cute.kernel_smem_size":
+                if operation.attributes["kernel_name"] in symbols:
+                    queries.append(operation)
+            return ir.WalkResult.ADVANCE
+
+        module.walk(collect)
+        for launch in launches:
+            if launch.name == "cuda.launch_ex":
+                config = launch.opview.launch_cfg.owner
+                if config.name != "cuda.launch_cfg.create":
+                    raise DSLRuntimeError(
+                        "Deferred TempStorage requires a traced CUDA launch "
+                        "configuration to account for its shared memory."
+                    )
+                owner, index = config, 3  # dynamicSmemBytes
+            else:
+                owner, index = launch, 6  # dynamicSmem
+            original = owner.operands[index]
+
+            def source(value):
+                while getattr(value.owner, "name", None) in (
+                    "arith.extsi",
+                    "arith.extui",
+                ):
+                    value = value.owner.operands[0]
+                return value
+
+            # CuTe emits an explicit-size warning before the launch. Refresh
+            # only a same-kernel size comparison whose sole effect is printing
+            # that diagnostic; other conditions and hardware-limit checks stay.
+            for query in queries:
+                if (
+                    query.attributes["kernel_name"]
+                    != launch.attributes["callee"]
+                ):
+                    continue
+                for use in list(query.results[0].uses):
+                    check = use.owner
+                    if (
+                        check.name != "arith.cmpi"
+                        or ir.IntegerAttr(check.attributes["predicate"]).value
+                        != arith.CmpIPredicate.slt
+                        or not ir.Value.__eq__(
+                            check.operands[1], query.results[0]
+                        )
+                        or not ir.Value.__eq__(
+                            source(check.operands[0]), source(original)
+                        )
+                    ):
+                        continue
+                    users = [use.owner for use in check.results[0].uses]
+                    if not users or any(
+                        user.name != "scf.if" or len(user.results) != 0
+                        for user in users
+                    ):
+                        continue
+                    bodies = [
+                        child.operation.name
+                        for user in users
+                        for region in user.regions
+                        for block in region.blocks
+                        for child in block.operations
+                    ]
+                    if "cute.print" not in bodies or set(bodies) - {
+                        "cute.print",
+                        "scf.yield",
+                    }:
+                        continue
+                    with ir.InsertionPoint(check), check.location:
+                        check.operands[0] = arith.maxsi(
+                            check.operands[0], query.results[0]
+                        )
+            with ir.InsertionPoint(owner), owner.location:
+                inferred = cute.kernel_smem_size(launch.attributes["callee"])
+                owner.operands[index] = arith.maxsi(
+                    owner.operands[index], inferred
+                )
+
+
 def materialize_deferred_temp_storage_plans(
     plans: tuple[DeferredTempStoragePlan, ...],
 ) -> None:
@@ -585,3 +697,5 @@ def materialize_deferred_temp_storage_plans(
                         smem_addr,
                     )
                     _replace_all_uses(binding.event.size_placeholder, size)
+
+    _include_deferred_storage_in_launches(plans)
