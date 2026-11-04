@@ -24,11 +24,10 @@
 #include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__bit/integral.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__limits/numeric_limits.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_integer.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
-#include <cuda/std/array>
+#include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -54,138 +53,61 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_cv_integer_v<_Tp>)
   return ::cuda::ilog2(__t) + !::cuda::std::has_single_bit(static_cast<_Up>(__t));
 }
 
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL ::cuda::std::array<::cuda::std::uint32_t, 10> __power_of_10_32bit() noexcept
+// Construct a representable power of ten without a memory lookup. The low three exponent bits
+// produce a 32-bit factor of at most 10^7. Use constant multiplications for 64-bit results and select
+// the remaining factor before multiplying for 128-bit results.
+template <class _Up>
+[[nodiscard]] _CCCL_API constexpr _Up __ilog10_power_of_10(unsigned __exponent) noexcept
 {
-  return {10,
-          100,
-          1'000,
-          10'000,
-          100'000,
-          1'000'000,
-          10'000'000,
-          100'000'000,
-          1'000'000'000,
-          ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max()};
+  ::cuda::std::uint32_t __low = (__exponent & 1) ? 10u : 1u;
+  __low                       = (__exponent & 2) ? __low * 100u : __low;
+  __low                       = (__exponent & 4) ? __low * 10'000u : __low;
+  if constexpr (sizeof(_Up) <= sizeof(::cuda::std::uint32_t))
+  {
+    return (__exponent & 8) ? __low * 100'000'000u : __low;
+  }
+  else if constexpr (sizeof(_Up) == sizeof(::cuda::std::uint64_t))
+  {
+    const auto __power = (__exponent & 8) ? static_cast<_Up>(__low) * 100'000'000u : static_cast<_Up>(__low);
+    return (__exponent & 16) ? __power * 10'000'000'000'000'000ull : __power;
+  }
+  else
+  {
+    _Up __high                 = (__exponent & 8) ? _Up{100'000'000} : _Up{1};
+    constexpr auto __power16   = _Up{10'000'000'000'000'000ull};
+    const auto __power16_or_24 = (__exponent & 8) ? __power16 * 100'000'000u : __power16;
+    __high                     = (__exponent & 16) ? __power16_or_24 : __high;
+    __high                     = (__exponent & 32) ? __power16 * __power16 : __high;
+    return static_cast<_Up>(__low) * __high;
+  }
 }
-
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL ::cuda::std::array<::cuda::std::uint64_t, 20> __power_of_10_64bit() noexcept
-{
-  return {
-    10,
-    100,
-    1'000,
-    10'000,
-    100'000,
-    1'000'000,
-    10'000'000,
-    100'000'000,
-    1'000'000'000,
-    10'000'000'000,
-    100'000'000'000,
-    1'000'000'000'000,
-    10'000'000'000'000,
-    100'000'000'000'000,
-    1'000'000'000'000'000,
-    10'000'000'000'000'000,
-    100'000'000'000'000'000,
-    1'000'000'000'000'000'000,
-    10'000'000'000'000'000'000ull,
-    ::cuda::std::numeric_limits<::cuda::std::uint64_t>::max()};
-}
-
-#if _CCCL_HAS_INT128()
-
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL ::cuda::std::array<__uint128_t, 39> __power_of_10_128bit() noexcept
-{
-  return {
-    10,
-    100,
-    1'000,
-    10'000,
-    100'000,
-    1'000'000,
-    10'000'000,
-    100'000'000,
-    1'000'000'000,
-    10'000'000'000,
-    100'000'000'000,
-    1'000'000'000'000,
-    10'000'000'000'000,
-    100'000'000'000'000,
-    1'000'000'000'000'000,
-    10'000'000'000'000'000,
-    100'000'000'000'000'000,
-    1'000'000'000'000'000'000,
-    10'000'000'000'000'000'000ull,
-    __uint128_t{10'000'000'000'000'000'000ull} * 10,
-    __uint128_t{10'000'000'000'000'000'000ull} * 100,
-    __uint128_t{10'000'000'000'000'000'000ull} * 1'000,
-    __uint128_t{10'000'000'000'000'000'000ull} * 10'000,
-    __uint128_t{10'000'000'000'000'000'000ull} * 100'000,
-    __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000,
-    __uint128_t{10'000'000'000'000'000'000ull} * 10'000'000,
-    __uint128_t{10'000'000'000'000'000'000ull} * 100'000'000,
-    __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000,
-    __uint128_t{10'000'000'000'000'000'000ull} * 10'000'000'000,
-    __uint128_t{10'000'000'000'000'000'000ull} * 100'000'000'000,
-    __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000'000,
-    __uint128_t{10'000'000'000'000'000'000ull} * 10'000'000'000'000,
-    __uint128_t{10'000'000'000'000'000'000ull} * 100'000'000'000'000,
-    __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000'000'000,
-    __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000'000'0000,
-    __uint128_t{10'000'000'000'000'000'000ull} * 10'000'000'000'000'0000,
-    __uint128_t{10'000'000'000'000'000'000ull} * 100'000'000'000'000'0000,
-    __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000'000'000'0000ull,
-    ::cuda::std::numeric_limits<__uint128_t>::max()};
-}
-#endif // _CCCL_HAS_INT128()
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_cv_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr int ilog10(const _Tp __t) noexcept
 {
-  using ::cuda::std::uint32_t;
-  using ::cuda::std::uint64_t;
   _CCCL_ASSERT(__t > 0, "cuda::ilog10() argument must be strictly positive");
-  constexpr auto __reciprocal_log2_10 = 0.301029995663f; // 1 / log2(10)
-  const auto __log2                   = ::cuda::ilog2(__t) * __reciprocal_log2_10;
-  auto __log10_approx                 = static_cast<int>(__log2);
-  if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
+  if constexpr (sizeof(_Tp) <= 2)
   {
-    _CCCL_ASSERT(__log10_approx < static_cast<int>(::cuda::__power_of_10_32bit().size()), "out of bounds");
-    if constexpr (::cuda::std::is_same_v<_Tp, uint32_t>)
+    int __result = (__t >= 10) + (__t >= 100);
+    if constexpr (sizeof(_Tp) == 2)
     {
-      // don't replace +1 with >= because wraparound behavior is needed here
-      __log10_approx += static_cast<uint32_t>(__t) + 1 > ::cuda::__power_of_10_32bit()[__log10_approx];
+      __result += (__t >= 1'000) + (__t >= 10'000);
     }
-    else
-    {
-      __log10_approx += static_cast<uint32_t>(__t) >= ::cuda::__power_of_10_32bit()[__log10_approx];
-    }
+    return __result;
   }
-  else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
-  {
-    _CCCL_ASSERT(__log10_approx < static_cast<int>(::cuda::__power_of_10_64bit().size()), "out of bounds");
-    // +1 is not needed here
-    __log10_approx += static_cast<uint64_t>(__t) >= ::cuda::__power_of_10_64bit()[__log10_approx];
-  }
-#if _CCCL_HAS_INT128()
   else
   {
-    _CCCL_ASSERT(__log10_approx < static_cast<int>(::cuda::__power_of_10_128bit().size()), "out of bounds");
-    if constexpr (::cuda::std::is_same_v<_Tp, __uint128_t>)
-    {
-      // don't replace +1 with >= because wraparound behavior is needed here
-      __log10_approx += static_cast<__uint128_t>(__t) + 1 > ::cuda::__power_of_10_128bit()[__log10_approx];
-    }
-    else
-    {
-      __log10_approx += static_cast<__uint128_t>(__t) >= ::cuda::__power_of_10_128bit()[__log10_approx];
-    }
+    using _Up = ::cuda::std::make_unsigned_t<::cuda::std::remove_cv_t<_Tp>>;
+    // For bit widths b in [1, 128], floor(b * log10(2)) == (b * 1233) >> 12.
+    // This is either ilog10(t) or one greater, so one exact comparison corrects the estimate.
+    const auto __bit_width = static_cast<unsigned>(::cuda::ilog2(__t) + 1);
+    const auto __estimate  = (__bit_width * 1233u) >> 12;
+    const auto __power     = ::cuda::__ilog10_power_of_10<_Up>(__estimate);
+    const auto __result    = static_cast<int>(__estimate) - (static_cast<_Up>(__t) < __power);
+    _CCCL_ASSUME(__result <= ::cuda::std::numeric_limits<_Tp>::digits / 3); // 2^X < 10^(X/3)
+    return __result;
   }
-#endif // _CCCL_HAS_INT128()
-  _CCCL_ASSUME(__log10_approx <= ::cuda::std::numeric_limits<_Tp>::digits / 3); // 2^X < 10^(x/3) -> 8^X < 10^x
-  return __log10_approx;
 }
 
 _CCCL_TEMPLATE(typename _Tp)
