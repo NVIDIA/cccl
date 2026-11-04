@@ -70,9 +70,14 @@ inline constexpr bool __buffer_compatible_env =
   ::cuda::std::is_same_v<::cuda::std::decay_t<_Env>, ::cuda::std::execution::env<>>
   || ::cuda::std::execution::__queryable_with<const _Env&, allocation_alignment_t>;
 
+#  if _CCCL_HOSTED()
 template <class _Tp>
 inline constexpr bool __is_buffer_byte_type_v =
   ::cuda::std::__is_one_of_v<_Tp, ::std::byte, ::cuda::std::byte, char, unsigned char>;
+#  else
+template <class _Tp>
+inline constexpr bool __is_buffer_byte_type_v = ::cuda::std::__is_one_of_v<_Tp, ::cuda::std::byte, char, unsigned char>;
+#  endif
 
 template <class _Tp, class... _Properties>
 _CCCL_HOST_API auto __acquire_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info);
