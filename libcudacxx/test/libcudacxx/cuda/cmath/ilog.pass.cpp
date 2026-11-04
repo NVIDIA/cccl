@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// Expanded boundary coverage across all integer types exceeds the default Clang constexpr step limit.
+// CONSTEXPR_STEPS: 15000000
+
 #include <cuda/cmath>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
