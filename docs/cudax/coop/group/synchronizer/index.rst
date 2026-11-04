@@ -19,20 +19,22 @@ Group Synchronizer Instance Concept
                                                       const Hierarchy& hierarchy)
   {
     // Lifetime-related methods.
-    { t.deinit(mapping_result, hierarchy) } -> cuda::std::same_as<void>;           // (1)
-    { ct.view() } -> /*group-synchronizer-instance*/<MappingResult, Hierarchy>;    // (2)
+    { t.deinit(mapping_result, hierarchy) } -> cuda::std::same_as<void>;             // (1)
+    { ct.view() } -> /*group-synchronizer-instance-view*/<MappingResult, Hierarchy>; // (2)
 
     // Synchronization interface.
-    { ct.do_sync(mapping_result, hierarchy) } -> cuda::std::same_as<void>;         // (3)
-    { ct.do_sync_aligned(mapping_result, hierarchy) } -> cuda::std::same_as<void>; // (4)
+    { ct.do_sync(hierarchy) } -> cuda::std::same_as<void>;                           // (3)
+    { ct.do_sync_aligned(hierarchy) } -> cuda::std::same_as<void>;                   // (4)
   };
 
 Where:
 
 #. Deinitializes the synchronizer instance.
-#. Creates a non-owning view over the synchronizer instance resources. It must also satisfy the *group-synchronizer-instance* concept.
+#. Creates a non-owning view over the synchronizer instance resources. It must also satisfy the *group-synchronizer-instance-view* concept.
 #. Runs the synchronization. It doesn't require the units to be contextually aligned.
 #. Runs the synchronization. The caller guarantees that all of the units are contextually aligned (execute the exact same statement in the code).
+
+The *group-synchronizer-instance-view* concept is the same as the *group-synchronizer-instance*, but it doesn't require the ``.deinit(...)`` method, since the view has nothing to deinitialize.
 
 Group Synchronizer Instantiation Process
 ----------------------------------------

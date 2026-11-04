@@ -104,38 +104,38 @@ public:
       : __barrier_{__barrier}
   {}
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_sync(const _MappingResult&, const _Hierarchy&) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_sync(const _Hierarchy&) const
   {
     __barrier_->arrive_and_wait();
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_sync_aligned(const _MappingResult&, const _Hierarchy&) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_sync_aligned(const _Hierarchy&) const
   {
     __barrier_->arrive_and_wait();
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API arrival_token do_arrive(const _MappingResult&, const _Hierarchy&) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API arrival_token do_arrive(const _Hierarchy&) const
   {
     return __barrier_->arrive();
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API arrival_token do_arrive_aligned(const _MappingResult&, const _Hierarchy&) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API arrival_token do_arrive_aligned(const _Hierarchy&) const
   {
     return __barrier_->arrive();
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_wait(const _MappingResult&, const _Hierarchy&, arrival_token&& __tok) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_wait(const _Hierarchy&, arrival_token&& __tok) const
   {
     __barrier_->wait(::cuda::std::move(__tok));
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_wait_aligned(const _MappingResult&, const _Hierarchy&, arrival_token&& __tok) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_wait_aligned(const _Hierarchy&, arrival_token&& __tok) const
   {
     __barrier_->wait(::cuda::std::move(__tok));
   }
@@ -144,10 +144,6 @@ public:
   {
     return *this;
   }
-
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void deinit(const _MappingResult&, const _Hierarchy&) const
-  {}
 };
 
 template <class _Barrier, class _Unit>
@@ -168,38 +164,38 @@ public:
   __barrier_synchronizer_instance& operator=(const __barrier_synchronizer_instance&) = delete;
   __barrier_synchronizer_instance& operator=(__barrier_synchronizer_instance&&)      = delete;
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_sync(const _MappingResult&, const _Hierarchy&) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_sync(const _Hierarchy&) const
   {
     __barrier_->arrive_and_wait();
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_sync_aligned(const _MappingResult&, const _Hierarchy&) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_sync_aligned(const _Hierarchy&) const
   {
     __barrier_->arrive_and_wait();
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API arrival_token do_arrive(const _MappingResult&, const _Hierarchy&) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API arrival_token do_arrive(const _Hierarchy&) const
   {
     return __barrier_->arrive();
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API arrival_token do_arrive_aligned(const _MappingResult&, const _Hierarchy&) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API arrival_token do_arrive_aligned(const _Hierarchy&) const
   {
     return __barrier_->arrive();
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_wait(const _MappingResult&, const _Hierarchy&, arrival_token&& __tok) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_wait(const _Hierarchy&, arrival_token&& __tok) const
   {
     __barrier_->wait(::cuda::std::move(__tok));
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_wait_aligned(const _MappingResult&, const _Hierarchy&, arrival_token&& __tok) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_wait_aligned(const _Hierarchy&, arrival_token&& __tok) const
   {
     __barrier_->wait(::cuda::std::move(__tok));
   }
