@@ -142,7 +142,7 @@ struct batch_copy_tuning
     return {
       cub::BatchedCopyAlgorithm::lookback,
       {
-        {BlockThreads, 4, 8, false, 256 * 32, 128, 8 * 1024, {}, {}},
+        {BlockThreads, 1, 4, 8, false, 256 * 32, 32, 64, 96, 128, 8 * 1024, {}, {}},
         {256, 32},
       },
     };
