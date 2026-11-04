@@ -44,6 +44,10 @@ The barrier at position ``i`` in the range is assigned to the group with rank ``
 
 Users should always rely on template argument deduction and never set the template arguments themselves.
 
+The instance's ``do_sync(...)`` and ``do_sync_aligned(...)`` both call the underlying barrier's ``arrive_and_wait()``.
+
+The instance's ``do_arrive(...)`` and ``do_arrive_aligned(...)`` call the underlying barrier's ``arrive()``. The matching ``do_wait(...)`` and ``do_wait_aligned(...)`` pass the arrival token to the barrier's ``wait(...)``.
+
 Examples
 --------
 

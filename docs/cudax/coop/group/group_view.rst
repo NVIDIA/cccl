@@ -11,9 +11,10 @@
   class group_view : public /*group-interface-for*/<group_view>
   {
   public:
-    using unit_type       = Unit;
-    using level_type      = typename Group::level_type;
-    using hierarchy_type  = typename Group::hierarchy_type;
+    using unit_type      = Unit;
+    using level_type     = typename Group::level_type;
+    using hierarchy_type = typename Group::hierarchy_type;
+    using arrival_token  = typename Group::arrival_token;
 
     group_view() = delete;
 

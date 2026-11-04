@@ -14,9 +14,10 @@
   class generic_group : public /*group-interface-for*/<generic_group>
   {
   public:
-    using unit_type       = Unit;
-    using level_type      = typename ParentGroup::level_type;
-    using hierarchy_type  = typename ParentGroup::hierarchy_type;
+    using unit_type      = Unit;
+    using level_type     = typename ParentGroup::level_type;
+    using hierarchy_type = typename ParentGroup::hierarchy_type;
+    using arrival_token  = typename SynchronizerInstance::arrival_token;
 
     template <typename Mapping, typename Synchronizer>
       requires cuda::std::same_as</*mapping-result-of*/<Unit, ParentGroup, Mapping>, MappingResult>
