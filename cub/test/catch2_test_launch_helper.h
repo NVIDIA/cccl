@@ -163,7 +163,7 @@ inline void execute_and_destroy_graph(cudaGraph_t graph, cuda::stream_ref stream
 }
 
 template <bool HasStream, class ActionT, class StreamOrEnv, class... Args>
-void launch_impl(cuda::stream_ref stream, ActionT action, StreamOrEnv stream_or_env, Args... args)
+void launch_impl(cuda::stream_ref stream, ActionT action, [[maybe_unused]] StreamOrEnv stream_or_env, Args... args)
 {
   cuda::stream owning_capture_stream{cuda::no_init};
   auto capture_stream = stream;
@@ -225,7 +225,7 @@ __global__ void device_side_api_launch_kernel(
 }
 
 template <bool HasStream, class ActionT, class StreamOrEnv, class... Args>
-void launch_impl(cuda::stream_ref stream, ActionT action, StreamOrEnv stream_or_env, Args... args)
+void launch_impl(cuda::stream_ref stream, ActionT action, [[maybe_unused]] StreamOrEnv stream_or_env, Args... args)
 {
   const auto device         = c2h::current_device();
   auto d_error              = c2h::make_device_buffer<cudaError_t>(stream, device, 1, cuda::no_init);
@@ -274,7 +274,7 @@ void launch_impl(cuda::stream_ref stream, ActionT action, StreamOrEnv stream_or_
 #elif TEST_LAUNCH == 0
 
 template <bool HasStream, class ActionT, class StreamOrEnv, class... Args>
-void launch_impl(cuda::stream_ref stream, ActionT action, StreamOrEnv stream_or_env, Args... args)
+void launch_impl(cuda::stream_ref stream, ActionT action, [[maybe_unused]] StreamOrEnv stream_or_env, Args... args)
 {
   const auto invoke = [&](cuda::std::uint8_t* temp_storage, std::size_t& temp_storage_bytes) {
     if constexpr (HasStream)
