@@ -52,7 +52,7 @@ The functions perform the following operations in device code:
 
 - ``ilog2``: ``FLO``
 - ``ceil_ilog2``: ``FLO``, ``POPC``, ``ADD``, comparison
-- ``ilog10``: ``FLO``, ``FMUL``, ``F2I``, constant memory lookup, ``SEL`` + ``IADD`` only if ``T == uint32_t`` or ``T == __uint128_t``
+- ``ilog10``: multiple integer arithmetic and comparison operations
 - ``ceil_ilog10``: ``ilog10`` with an additional comparison, subtraction, and ``IADD``
 
 Example
