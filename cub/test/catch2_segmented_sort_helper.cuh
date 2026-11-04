@@ -30,12 +30,12 @@
 #include <c2h/extended_types.h>
 #include <c2h/utility.h>
 
-// Only the CMake matrix input uses preprocessing; test decisions below are constexpr.
-#if defined(TEST_ALGORITHM)
-inline constexpr bool test_lrb = TEST_ALGORITHM == 1;
-#else
-inline constexpr bool test_lrb = false;
-#endif
+// Tests select a backend; public dispatch remains unchanged.
+enum class test_algorithm
+{
+  existing,
+  lrb
+};
 inline constexpr bool test_host_launch = TEST_LAUNCH == 0;
 
 #define MAKE_SEED_MOD_FUNCTION(name, xor_mask)                  \
@@ -1190,7 +1190,7 @@ struct lrb_sort_launcher_t
   }
 };
 
-template <typename KeyT, typename ValueT = cub::NullType>
+template <typename KeyT, typename ValueT = cub::NullType, test_algorithm Algorithm = test_algorithm::existing>
 void call_cub_segmented_sort_api(
   bool descending,
   bool double_buffer,
@@ -1211,6 +1211,7 @@ void call_cub_segmented_sort_api(
   [[maybe_unused]] int* keys_selector   = nullptr,
   [[maybe_unused]] int* values_selector = nullptr)
 {
+  constexpr bool test_lrb = Algorithm == test_algorithm::lrb;
   C2H_TIME_SCOPE("cub::DeviceSegmentedSort");
   CAPTURE(descending, double_buffer, stable_sort, num_items, num_segments);
 
@@ -1218,7 +1219,7 @@ void call_cub_segmented_sort_api(
   {
     if constexpr (!test_host_launch)
     {
-      SKIP("CCCL_SKIP_TEST: The internal LRB backend currently supports only host launches.");
+      SKIP("The internal LRB backend currently supports only host launches.");
     }
     else if constexpr (!cub::detail::segmented_sort_capacity::can_use_lrb<unwrap_value_t<KeyT>>(
                          ::cuda::compute_capability{9, 0})
@@ -1236,7 +1237,7 @@ void call_cub_segmented_sort_api(
       REQUIRE(cudaSuccess == CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY{}.PtxComputeCap(cc));
       if (!cub::detail::segmented_sort_capacity::can_use_lrb<unwrap_value_t<KeyT>>(cc))
       {
-        SKIP("CCCL_SKIP_TEST: The internal LRB backend requires a compiled SM90-or-newer target.");
+        SKIP("The internal LRB backend requires a compiled SM90-or-newer target.");
       }
       using kernels_t = cub::detail::segmented_sort_capacity::group_merge_sort_kernels_t<unwrap_value_t<KeyT>>;
       using capacities_t =
@@ -1324,9 +1325,10 @@ inline constexpr bool stable   = true;
 // Much faster that test_segments_random, as this avoids H<->D copies and host reference sorting.
 // Drawback is that the unsorted keys are always reversed (though duplicate keys introduce some sorting variation
 // due to stability).
-template <typename KeyT, typename ValueT = cub::NullType>
+template <typename KeyT, typename ValueT = cub::NullType, test_algorithm Algorithm = test_algorithm::existing>
 void test_segments_derived(const c2h::device_vector<int>& d_offsets_vec)
 {
+  constexpr bool test_lrb = Algorithm == test_algorithm::lrb;
   C2H_TIME_SECTION_INIT();
   constexpr bool sort_pairs = !::cuda::std::is_same_v<ValueT, cub::NullType>;
 
@@ -1382,7 +1384,7 @@ void test_segments_derived(const c2h::device_vector<int>& d_offsets_vec)
   ValueT* d_values_input     = thrust::raw_pointer_cast(values_input.data());
   ValueT* d_values_output    = thrust::raw_pointer_cast(values_output.data());
 
-  call_cub_segmented_sort_api(
+  call_cub_segmented_sort_api<KeyT, ValueT, Algorithm>(
     sort_descending,
     sort_buffers,
     stable_sort,
@@ -1418,7 +1420,7 @@ void test_segments_derived(const c2h::device_vector<int>& d_offsets_vec)
   }
 }
 
-template <typename KeyT, typename ValueT>
+template <typename KeyT, typename ValueT, test_algorithm Algorithm = test_algorithm::existing>
 void test_segments_random(
   c2h::seed_t seed, //
   int num_items,
@@ -1426,6 +1428,7 @@ void test_segments_random(
   const int* d_begin_offsets,
   const int* d_end_offsets)
 {
+  constexpr bool test_lrb   = Algorithm == test_algorithm::lrb;
   constexpr bool sort_pairs = !::cuda::std::is_same_v<ValueT, cub::NullType>;
 
   CAPTURE(c2h::type_name<KeyT>(), //
@@ -1539,7 +1542,7 @@ void test_segments_random(
       ValueT* d_values_input  = thrust::raw_pointer_cast(values_input.data());
       ValueT* d_values_output = thrust::raw_pointer_cast(values_output.data());
 
-      call_cub_segmented_sort_api(
+      call_cub_segmented_sort_api<KeyT, ValueT, Algorithm>(
         sort_descending,
         sort_buffers,
         stable_sort,
@@ -1572,13 +1575,13 @@ void test_segments_random(
   }
 }
 
-template <typename KeyT, typename ValueT>
+template <typename KeyT, typename ValueT, test_algorithm Algorithm = test_algorithm::existing>
 void test_segments_random(c2h::seed_t seed, const c2h::device_vector<int>& d_offsets_vec)
 {
   const int num_items    = d_offsets_vec.back();
   const int num_segments = static_cast<int>(d_offsets_vec.size() - 1);
 
-  test_segments_random<KeyT, ValueT>(
+  test_segments_random<KeyT, ValueT, Algorithm>(
     seed, //
     num_items,
     num_segments,
@@ -1761,39 +1764,39 @@ inline int generate_unspecified_segments_offsets(
 ///////////////////////////////////////////////////////////////////////////////
 // Entry points
 
-template <typename KeyT, typename ValueT = cub::NullType>
+template <typename KeyT, typename ValueT = cub::NullType, test_algorithm Algorithm = test_algorithm::existing>
 void test_same_size_segments_derived(int segment_size, int num_segments)
 {
   CAPTURE(segment_size, num_segments);
   const c2h::device_vector<int> offsets = generate_same_size_offsets(segment_size, num_segments);
-  test_segments_derived<KeyT, ValueT>(offsets);
+  test_segments_derived<KeyT, ValueT, Algorithm>(offsets);
 }
 
-template <typename KeyT, typename ValueT = cub::NullType>
+template <typename KeyT, typename ValueT = cub::NullType, test_algorithm Algorithm = test_algorithm::existing>
 void test_random_size_segments_derived(c2h::seed_t seed, int max_items, int max_segment, int num_segments)
 {
   CAPTURE(seed.get());
   const c2h::device_vector<int> offsets = generate_random_offsets(seed, max_items, max_segment, num_segments);
-  test_segments_derived<KeyT, ValueT>(offsets);
+  test_segments_derived<KeyT, ValueT, Algorithm>(offsets);
 }
 
-template <typename KeyT, typename ValueT = cub::NullType>
+template <typename KeyT, typename ValueT = cub::NullType, test_algorithm Algorithm = test_algorithm::existing>
 void test_random_size_segments_random(c2h::seed_t seed, int max_items, int max_segment, int num_segments)
 {
   CAPTURE(seed.get());
   const c2h::device_vector<int> offsets = generate_random_offsets(seed, max_items, max_segment, num_segments);
-  test_segments_random<KeyT, ValueT>(seed, offsets);
+  test_segments_random<KeyT, ValueT, Algorithm>(seed, offsets);
 }
 
-template <typename KeyT, typename ValueT = cub::NullType>
+template <typename KeyT, typename ValueT = cub::NullType, test_algorithm Algorithm = test_algorithm::existing>
 void test_edge_case_segments_random(c2h::seed_t seed)
 {
   CAPTURE(seed.get());
   const c2h::device_vector<int> offsets = generate_edge_case_offsets<KeyT, ValueT>();
-  test_segments_random<KeyT, ValueT>(seed, offsets);
+  test_segments_random<KeyT, ValueT, Algorithm>(seed, offsets);
 }
 
-template <typename KeyT, typename ValueT = cub::NullType>
+template <typename KeyT, typename ValueT = cub::NullType, test_algorithm Algorithm = test_algorithm::existing>
 void test_unspecified_segments_random(c2h::seed_t seed)
 {
   CAPTURE(seed.get());
@@ -1804,7 +1807,7 @@ void test_unspecified_segments_random(c2h::seed_t seed)
 
   const int num_segments = static_cast<int>(d_begin_offsets.size());
 
-  test_segments_random<KeyT, ValueT>(
+  test_segments_random<KeyT, ValueT, Algorithm>(
     seed,
     num_items,
     num_segments,

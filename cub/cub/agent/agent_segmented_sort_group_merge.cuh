@@ -20,6 +20,11 @@
 #include <cub/detail/segmented_sort_entries.cuh>
 #include <cub/thread/thread_sort.cuh>
 
+#include <cuda/__cmath/ilog.h>
+#include <cuda/__cmath/ipow.h>
+#include <cuda/__cmath/pow2.h>
+#include <cuda/__cmath/round_down.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/functional>
@@ -34,40 +39,22 @@ template <typename PolicyGetter>
 struct group_merge_expansion
 {
   inline static constexpr auto policy = PolicyGetter{}();
-  static_assert(policy.min_threads > 0 && (policy.min_threads & (policy.min_threads - 1)) == 0);
-  static_assert(policy.max_threads >= policy.min_threads && (policy.max_threads & (policy.max_threads - 1)) == 0
+  static_assert(policy.min_threads > 0 && ::cuda::is_power_of_two(policy.min_threads));
+  static_assert(policy.max_threads >= policy.min_threads && ::cuda::is_power_of_two(policy.max_threads)
                 && policy.max_threads <= policy.block_threads);
   static_assert(policy.min_ipt > 0 && policy.max_ipt >= policy.min_ipt);
-  static constexpr int ipt_choices = policy.max_ipt - policy.min_ipt + 1;
-  // Count the power-of-two thread choices within the policy range.
-  _CCCL_HOST_DEVICE_API static constexpr int thread_choices()
-  {
-    int count = 0;
-    for (int threads = policy.min_threads; threads <= policy.max_threads; threads *= 2)
-    {
-      ++count;
-    }
-    return count;
-  }
-  static_assert(thread_choices() == 1 || policy.max_ipt < 2 * policy.min_ipt,
+  static constexpr int ipt_choices    = policy.max_ipt - policy.min_ipt + 1;
+  static constexpr int thread_choices = ::cuda::ilog2(policy.max_threads) - ::cuda::ilog2(policy.min_threads) + 1;
+  static_assert(thread_choices == 1 || policy.max_ipt < 2 * policy.min_ipt,
                 "GroupMerge policy: with multiple thread counts, max_ipt must be < 2 * min_ipt so that threads * ipt "
                 "strictly increases across bins (bin order must equal capacity order)");
-  static constexpr int size = thread_choices() * ipt_choices;
+  static constexpr int size = thread_choices * ipt_choices;
   // Map a local bin to its thread/IPT pair during compile-time expansion.
   _CCCL_HOST_DEVICE_API static constexpr bin_config enumerate_shape(int bin_idx)
   {
-    // Enumerate supported pairs at compile time, without encoding bin positions.
-    for (int threads = policy.min_threads; threads <= policy.max_threads; threads *= 2)
-    {
-      for (int ipt = policy.min_ipt; ipt <= policy.max_ipt; ++ipt)
-      {
-        if (bin_idx-- == 0)
-        {
-          return {threads, ipt};
-        }
-      }
-    }
-    _CCCL_UNREACHABLE();
+    const int thread_config_idx = bin_idx / ipt_choices;
+    const int ipt_config_idx    = bin_idx % ipt_choices;
+    return {policy.min_threads * ::cuda::ipow(2, thread_config_idx), policy.min_ipt + ipt_config_idx};
   }
   // Select each pair once and reuse it for its capacity and configuration type.
   template <int Bin>
@@ -144,7 +131,7 @@ struct group_merge_implementation
     }
     const int thread_idx_in_segment = thread_idx_in_group % config.threads_per_segment;
     const int segment_begin_idx_shared =
-      (thread_idx_in_group / config.threads_per_segment) * config.threads_per_segment * ItemsPerThread;
+      ::cuda::round_down(thread_idx_in_group, config.threads_per_segment) * ItemsPerThread;
     const bool active               = segment_idx != ~0u;
     const unsigned input_segment_id = active ? bins.segment_ids[segment_idx] : 0;
     const auto begin =
@@ -173,7 +160,7 @@ struct group_merge_implementation
       {
         if (thread_idx_in_segment * ItemsPerThread + item < segment_size)
         {
-          max_key = compare_op(max_key, keys[item]) ? keys[item] : max_key;
+          max_key = ::cuda::std::max(max_key, keys[item], compare_op);
         }
         else
         {
