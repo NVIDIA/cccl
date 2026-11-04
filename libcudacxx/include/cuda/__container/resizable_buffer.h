@@ -45,7 +45,7 @@ _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 template <class _Tp, class... _Properties>
 class __resizable_buffer : public buffer<_Tp, _Properties...>
 {
-  using __base_t = buffer<_Tp, _Properties...>;
+  using __base_t _CCCL_NODEBUG = buffer<_Tp, _Properties...>;
 
 public:
   using size_type = typename __base_t::size_type;

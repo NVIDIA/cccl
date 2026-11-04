@@ -11,15 +11,24 @@ struct stream_registry_factory_t;
 
 #include <thrust/device_vector.h>
 
+#include <cuda/__functional/call_or.h>
+#include <cuda/std/cstdint>
+
 #include <sstream>
 
 #include "block_size_extracting_helpers.h"
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedRadixSort::SortPairs, sort_pairs);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedRadixSort::SortPairsDescending, sort_pairs_descending);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedRadixSort::SortKeys, sort_keys);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedRadixSort::SortKeysDescending, sort_keys_descending);
+
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortKeys, sort_keys_two_phase);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortKeysDescending, sort_keys_descending_two_phase);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortPairs, sort_pairs_two_phase);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortPairsDescending, sort_pairs_descending_two_phase);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -828,8 +837,6 @@ CUB_TEST_CASE("DeviceSegmentedRadixSort::SortPairs DoubleBuffer uses custom stre
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
-#if TEST_LAUNCH != 1
-
 // Radix sort does not accept user-provided functors or iterators, so we cannot use the block_size_extracting_op
 // approach. Instead, we pass block_size_extracting_constant_iterator for the offsets, which records blockDim.x when
 // dereferenced on the device. A custom policy selector sets threads_per_block, and we verify the recorded block size
@@ -849,6 +856,8 @@ struct segmented_radix_sort_block_size_tuning
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
+
+#if TEST_LAUNCH != 1
 
 CUB_TEST("DeviceSegmentedRadixSort::SortPairs can be tuned", "[segmented_radix_sort][device]", CUB_SMALL, block_sizes)
 {
@@ -1101,6 +1110,413 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeysDescending DoubleBuffer can be tuned
 }
 
 #endif // TEST_LAUNCH != 1
+
+// The graph launch appends its own stream argument, which cannot be combined with an environment
+#if TEST_LAUNCH != 2
+
+constexpr int key_bits = sizeof(int) * 8;
+
+c2h::device_vector<int> sorted_keys(bool descending)
+{
+  return descending ? c2h::device_vector<int>{8, 7, 6, 9, 5, 3, 0} : c2h::device_vector<int>{6, 7, 8, 0, 3, 5, 9};
+}
+
+template <class... Args>
+cudaError_t sort_keys_direct(bool descending, Args&&... args)
+{
+  return descending ? cub::DeviceSegmentedRadixSort::SortKeysDescending(cuda::std::forward<Args>(args)...)
+                    : cub::DeviceSegmentedRadixSort::SortKeys(cuda::std::forward<Args>(args)...);
+}
+
+template <class... Args>
+void launch_sort_keys_two_phase(bool descending, Args... args)
+{
+  if (descending)
+  {
+    sort_keys_descending_two_phase(args...);
+  }
+  else
+  {
+    sort_keys_two_phase(args...);
+  }
+}
+
+c2h::device_vector<int> sorted_values(bool descending)
+{
+  return descending ? c2h::device_vector<int>{0, 2, 1, 6, 3, 4, 5} : c2h::device_vector<int>{1, 2, 0, 5, 4, 3, 6};
+}
+
+template <class... Args>
+cudaError_t sort_pairs_direct(bool descending, Args&&... args)
+{
+  return descending ? cub::DeviceSegmentedRadixSort::SortPairsDescending(cuda::std::forward<Args>(args)...)
+                    : cub::DeviceSegmentedRadixSort::SortPairs(cuda::std::forward<Args>(args)...);
+}
+
+template <class... Args>
+void launch_sort_pairs_two_phase(bool descending, Args... args)
+{
+  if (descending)
+  {
+    sort_pairs_descending_two_phase(args...);
+  }
+  else
+  {
+    sort_pairs_two_phase(args...);
+  }
+}
+
+template <class EnvT, class TwoPhaseFn>
+void run_two_phase(const EnvT& env, TwoPhaseFn two_phase)
+{
+  const stream_scope scope{cuda::__call_or(cuda::get_stream, cuda::stream_ref{cudaStream_t{}}, env).get()};
+
+  size_t temp_storage_bytes = 0;
+  REQUIRE(cudaSuccess == two_phase(nullptr, temp_storage_bytes));
+
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  REQUIRE(cudaSuccess == two_phase(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes));
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+}
+
+#  if TEST_LAUNCH == 0
+
+// The launch wrappers copy their arguments, which the non-copyable streams of test_with_custom_streams do not allow
+CUB_TEST_CASE("DeviceSegmentedRadixSort keys two-phase works with custom streams",
+              "[segmented_radix_sort][device]",
+              CUB_SMALL)
+{
+  const bool descending = GENERATE(false, true);
+  const auto offsets    = c2h::device_vector<int>{0, 3, 3, 7};
+  auto keys             = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto alt_keys         = c2h::device_vector<int>(7, thrust::no_init);
+  int* d_keys_buf       = thrust::raw_pointer_cast(keys.data());
+  int* d_keys_alt       = thrust::raw_pointer_cast(alt_keys.data());
+
+  SECTION("pointers")
+  {
+    test_with_custom_streams([&](const auto& env) {
+      run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+        return sort_keys_direct(
+          descending,
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys_buf,
+          d_keys_alt,
+          7,
+          3,
+          offsets.begin(),
+          offsets.begin() + 1,
+          0,
+          key_bits,
+          env);
+      });
+      REQUIRE(alt_keys == sorted_keys(descending));
+    });
+  }
+
+  SECTION("DoubleBuffer")
+  {
+    test_with_custom_streams([&](const auto& env) {
+      cub::DoubleBuffer<int> d_keys(d_keys_buf, d_keys_alt);
+      run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+        return sort_keys_direct(
+          descending,
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys,
+          7,
+          3,
+          offsets.begin(),
+          offsets.begin() + 1,
+          0,
+          key_bits,
+          env);
+      });
+      REQUIRE((d_keys.selector == 0 ? keys : alt_keys) == sorted_keys(descending));
+    });
+  }
+}
+
+CUB_TEST_CASE("DeviceSegmentedRadixSort pairs two-phase works with custom streams",
+              "[segmented_radix_sort][device]",
+              CUB_SMALL)
+{
+  const bool descending = GENERATE(false, true);
+  const auto offsets    = c2h::device_vector<int>{0, 3, 3, 7};
+  auto keys             = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto values           = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+  auto alt_keys         = c2h::device_vector<int>(7, thrust::no_init);
+  auto alt_values       = c2h::device_vector<int>(7, thrust::no_init);
+  int* d_keys_buf       = thrust::raw_pointer_cast(keys.data());
+  int* d_values_buf     = thrust::raw_pointer_cast(values.data());
+  int* d_keys_alt       = thrust::raw_pointer_cast(alt_keys.data());
+  int* d_values_alt     = thrust::raw_pointer_cast(alt_values.data());
+
+  SECTION("pointers")
+  {
+    test_with_custom_streams([&](const auto& env) {
+      run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+        return sort_pairs_direct(
+          descending,
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys_buf,
+          d_keys_alt,
+          d_values_buf,
+          d_values_alt,
+          7,
+          3,
+          offsets.begin(),
+          offsets.begin() + 1,
+          0,
+          key_bits,
+          env);
+      });
+      REQUIRE(alt_keys == sorted_keys(descending));
+      REQUIRE(alt_values == sorted_values(descending));
+    });
+  }
+
+  SECTION("DoubleBuffer")
+  {
+    test_with_custom_streams([&](const auto& env) {
+      cub::DoubleBuffer<int> d_keys(d_keys_buf, d_keys_alt);
+      cub::DoubleBuffer<int> d_values(d_values_buf, d_values_alt);
+      run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+        return sort_pairs_direct(
+          descending,
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys,
+          d_values,
+          7,
+          3,
+          offsets.begin(),
+          offsets.begin() + 1,
+          0,
+          key_bits,
+          env);
+      });
+      REQUIRE((d_keys.selector == 0 ? keys : alt_keys) == sorted_keys(descending));
+      REQUIRE((d_values.selector == 0 ? values : alt_values) == sorted_values(descending));
+    });
+  }
+}
+
+#  endif // TEST_LAUNCH == 0
+
+CUB_TEST_CASE("DeviceSegmentedRadixSort keys two-phase accepts legacy null streams",
+              "[segmented_radix_sort][device]",
+              CUB_SMALL)
+{
+  const bool descending    = GENERATE(false, true);
+  const bool double_buffer = GENERATE(false, true);
+  const auto offsets       = c2h::device_vector<int>{0, 3, 3, 7};
+  auto keys                = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto alt_keys            = c2h::device_vector<int>(7, thrust::no_init);
+  int* d_keys_buf          = thrust::raw_pointer_cast(keys.data());
+  int* d_keys_alt          = thrust::raw_pointer_cast(alt_keys.data());
+
+  const stream_scope scope{cudaStream_t{}};
+  const auto sort = [&](auto stream) {
+    if (double_buffer)
+    {
+      const cub::DoubleBuffer<int> d_keys(d_keys_buf, d_keys_alt);
+      launch_sort_keys_two_phase(descending, d_keys, 7, 3, offsets.begin(), offsets.begin() + 1, 0, key_bits, stream);
+    }
+    else
+    {
+      launch_sort_keys_two_phase(
+        descending, d_keys_buf, d_keys_alt, 7, 3, offsets.begin(), offsets.begin() + 1, 0, key_bits, stream);
+    }
+  };
+
+  SECTION("nullptr")
+  {
+    sort(nullptr);
+  }
+  SECTION("literal 0")
+  {
+    sort(0);
+  }
+  SECTION("cudaStream_t{}")
+  {
+    sort(cudaStream_t{});
+  }
+
+  // the launch wrappers copy the DoubleBuffer, so its selector is not observable here
+  const auto expected_keys = sorted_keys(descending);
+  REQUIRE((keys == expected_keys || alt_keys == expected_keys));
+}
+
+CUB_TEST(
+  "DeviceSegmentedRadixSort keys two-phase can be tuned", "[segmented_radix_sort][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  const bool descending                    = GENERATE(false, true);
+
+  auto keys     = c2h::device_vector<int>(10'000);
+  auto alt_keys = c2h::device_vector<int>(10'000, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
+  int* d_keys_buf = thrust::raw_pointer_cast(keys.data());
+  int* d_keys_alt = thrust::raw_pointer_cast(alt_keys.data());
+
+  auto d_begin_offsets = block_size_extracting_constant_iterator(0, thrust::raw_pointer_cast(d_block_size.data()));
+  auto d_end_offsets   = block_size_extracting_constant_iterator(10'000, thrust::raw_pointer_cast(d_block_size.data()));
+  const auto env =
+    cuda::execution::tune(segmented_radix_sort_block_size_tuning<int, cub::NullType, target_block_size>{});
+
+  SECTION("pointers")
+  {
+    launch_sort_keys_two_phase(
+      descending,
+      d_keys_buf,
+      d_keys_alt,
+      cuda::std::int64_t{10'000},
+      cuda::std::int64_t{1},
+      d_begin_offsets,
+      d_end_offsets,
+      0,
+      key_bits,
+      env);
+  }
+  SECTION("DoubleBuffer")
+  {
+    const cub::DoubleBuffer<int> d_keys(d_keys_buf, d_keys_alt);
+    launch_sort_keys_two_phase(
+      descending,
+      d_keys,
+      cuda::std::int64_t{10'000},
+      cuda::std::int64_t{1},
+      d_begin_offsets,
+      d_end_offsets,
+      0,
+      key_bits,
+      env);
+  }
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST_CASE("DeviceSegmentedRadixSort pairs two-phase accepts legacy null streams",
+              "[segmented_radix_sort][device]",
+              CUB_SMALL)
+{
+  const bool descending    = GENERATE(false, true);
+  const bool double_buffer = GENERATE(false, true);
+  const auto offsets       = c2h::device_vector<int>{0, 3, 3, 7};
+  auto keys                = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto values              = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+  auto alt_keys            = c2h::device_vector<int>(7, thrust::no_init);
+  auto alt_values          = c2h::device_vector<int>(7, thrust::no_init);
+  int* d_keys_buf          = thrust::raw_pointer_cast(keys.data());
+  int* d_values_buf        = thrust::raw_pointer_cast(values.data());
+  int* d_keys_alt          = thrust::raw_pointer_cast(alt_keys.data());
+  int* d_values_alt        = thrust::raw_pointer_cast(alt_values.data());
+
+  const stream_scope scope{cudaStream_t{}};
+  const auto sort = [&](auto stream) {
+    if (double_buffer)
+    {
+      const cub::DoubleBuffer<int> d_keys(d_keys_buf, d_keys_alt);
+      const cub::DoubleBuffer<int> d_values(d_values_buf, d_values_alt);
+      launch_sort_pairs_two_phase(
+        descending, d_keys, d_values, 7, 3, offsets.begin(), offsets.begin() + 1, 0, key_bits, stream);
+    }
+    else
+    {
+      launch_sort_pairs_two_phase(
+        descending,
+        d_keys_buf,
+        d_keys_alt,
+        d_values_buf,
+        d_values_alt,
+        7,
+        3,
+        offsets.begin(),
+        offsets.begin() + 1,
+        0,
+        key_bits,
+        stream);
+    }
+  };
+
+  SECTION("nullptr")
+  {
+    sort(nullptr);
+  }
+  SECTION("literal 0")
+  {
+    sort(0);
+  }
+  SECTION("cudaStream_t{}")
+  {
+    sort(cudaStream_t{});
+  }
+
+  // the launch wrappers copy the DoubleBuffer, so its selector is not observable here
+  const auto expected_keys   = sorted_keys(descending);
+  const auto expected_values = sorted_values(descending);
+  REQUIRE(((keys == expected_keys && values == expected_values)
+           || (alt_keys == expected_keys && alt_values == expected_values)));
+}
+
+CUB_TEST(
+  "DeviceSegmentedRadixSort pairs two-phase can be tuned", "[segmented_radix_sort][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  const bool descending                    = GENERATE(false, true);
+
+  auto keys       = c2h::device_vector<int>(10'000);
+  auto values     = c2h::device_vector<int>(10'000);
+  auto alt_keys   = c2h::device_vector<int>(10'000, thrust::no_init);
+  auto alt_values = c2h::device_vector<int>(10'000, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
+  int* d_keys_buf   = thrust::raw_pointer_cast(keys.data());
+  int* d_values_buf = thrust::raw_pointer_cast(values.data());
+  int* d_keys_alt   = thrust::raw_pointer_cast(alt_keys.data());
+  int* d_values_alt = thrust::raw_pointer_cast(alt_values.data());
+
+  auto d_begin_offsets = block_size_extracting_constant_iterator(0, thrust::raw_pointer_cast(d_block_size.data()));
+  auto d_end_offsets   = block_size_extracting_constant_iterator(10'000, thrust::raw_pointer_cast(d_block_size.data()));
+  const auto env       = cuda::execution::tune(segmented_radix_sort_block_size_tuning<int, int, target_block_size>{});
+
+  SECTION("pointers")
+  {
+    launch_sort_pairs_two_phase(
+      descending,
+      d_keys_buf,
+      d_keys_alt,
+      d_values_buf,
+      d_values_alt,
+      cuda::std::int64_t{10'000},
+      cuda::std::int64_t{1},
+      d_begin_offsets,
+      d_end_offsets,
+      0,
+      key_bits,
+      env);
+  }
+  SECTION("DoubleBuffer")
+  {
+    const cub::DoubleBuffer<int> d_keys(d_keys_buf, d_keys_alt);
+    const cub::DoubleBuffer<int> d_values(d_values_buf, d_values_alt);
+    launch_sort_pairs_two_phase(
+      descending,
+      d_keys,
+      d_values,
+      cuda::std::int64_t{10'000},
+      cuda::std::int64_t{1},
+      d_begin_offsets,
+      d_end_offsets,
+      0,
+      key_bits,
+      env);
+  }
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+#endif // TEST_LAUNCH != 2
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
 CUB_TEST("Test SegmentedRadixSortPolicy properties", "[segmented_radix_sort][device]", CUB_SMALL)

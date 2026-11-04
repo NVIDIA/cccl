@@ -5,6 +5,7 @@
 #include <cub/util_device.cuh>
 #include <cub/util_macro.cuh>
 
+#include <thrust/detail/preprocessor.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 
@@ -140,7 +141,7 @@ template <int SelectedPolicyCc, int... CcList>
 struct check
 {
   static_assert(((SelectedPolicyCc == CcList * CUDA_SM_LIST_SCALE) || ...));
-  using type = cudaError_t;
+  using type _CCCL_NODEBUG = cudaError_t;
 };
 
 struct closure_all
