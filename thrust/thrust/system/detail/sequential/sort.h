@@ -57,9 +57,13 @@ _CCCL_HOST_DEVICE void stable_sort(
     (
       using KeyType = thrust::detail::it_value_t<RandomAccessIterator>;
       if constexpr (sort_detail::use_primitive_sort<KeyType, StrictWeakOrdering>) {
-        thrust::system::detail::sequential::stable_primitive_sort(exec, first, last);
-
         // if comp is greater<T> then reverse the keys
+        // note, we also have to reverse the (unordered) input to preserve stability
+        if constexpr (sort_detail::needs_reverse<KeyType, StrictWeakOrdering>)
+        {
+          thrust::reverse(exec, first, last);
+        }
+        thrust::system::detail::sequential::stable_primitive_sort(exec, first, last);
         if constexpr (sort_detail::needs_reverse<KeyType, StrictWeakOrdering>)
         {
           thrust::reverse(exec, first, last);

@@ -2,6 +2,10 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/sort.h>
 
+#include <algorithm>
+#include <numeric>
+#include <vector>
+
 #include <unittest/unittest.h>
 
 template <typename RandomAccessIterator1, typename RandomAccessIterator2>
@@ -117,3 +121,41 @@ struct TestStableSortByKeySemantics
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(
   TestStableSortByKeySemantics, unittest::type_list<unittest::uint8_t, unittest::uint16_t, unittest::uint32_t>);
+
+// -0.0 and +0.0 compare equal, so a stable sort has to keep them in their input order (see #750)
+template <typename T, typename Compare>
+void test_stable_sort_by_key_signed_zeros(Compare comp)
+{
+  const int n = 10000;
+  thrust::host_vector<T> h_keys(n);
+  thrust::host_vector<int> h_values(n);
+  for (int i = 0; i < n; ++i)
+  {
+    h_keys[i]   = i % 3 == 0 ? T(0.0) : i % 3 == 1 ? T(-0.0) : T(i % 7) - T(3.0);
+    h_values[i] = i;
+  }
+
+  // the values are the original positions, so they show the order a stable sort must produce
+  std::vector<int> positions(n);
+  std::iota(positions.begin(), positions.end(), 0);
+  std::stable_sort(positions.begin(), positions.end(), [&](int a, int b) {
+    return comp(h_keys[a], h_keys[b]);
+  });
+  const thrust::host_vector<int> expected(positions.begin(), positions.end());
+
+  thrust::device_vector<T> d_keys     = h_keys;
+  thrust::device_vector<int> d_values = h_values;
+  thrust::stable_sort_by_key(h_keys.begin(), h_keys.end(), h_values.begin(), comp);
+  thrust::stable_sort_by_key(d_keys.begin(), d_keys.end(), d_values.begin(), comp);
+
+  REQUIRE(h_values == expected);
+  REQUIRE(thrust::host_vector<int>(d_values) == expected);
+}
+
+TEST_CASE("TestStableSortByKeySignedZeros", "[stable_sort_by_key]")
+{
+  test_stable_sort_by_key_signed_zeros<float>(thrust::less<float>());
+  test_stable_sort_by_key_signed_zeros<float>(thrust::greater<float>());
+  test_stable_sort_by_key_signed_zeros<double>(thrust::less<double>());
+  test_stable_sort_by_key_signed_zeros<double>(thrust::greater<double>());
+}
