@@ -94,6 +94,21 @@ Native CuTe staging, explicit synchronization, and returning Load from shared me
 .. literalinclude:: ../../../python/cuda_coop_cutlass/examples/shared_staging.py
    :language: python
 
+.. _tensor-memory-topk-py:
+
+tensor_memory_topk.py
+---------------------
+
+Tensor Core MMA, cooperative TopK in registers, and a TMEM round trip across
+dependent windows. Requires an SM100 or SM103 GPU. The
+:doc:`Tensor Core and TopK walkthrough <tensor_memory_topk>` explains the
+copy layouts, synchronization, and accumulator feedback.
+
+:download:`Download tensor_memory_topk.py <../../../python/cuda_coop_cutlass/examples/tensor_memory_topk.py>`
+
+.. literalinclude:: ../../../python/cuda_coop_cutlass/examples/tensor_memory_topk.py
+   :language: python
+
 Integration walkthroughs
 ------------------------
 
