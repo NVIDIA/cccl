@@ -13,7 +13,7 @@
 
 namespace c2h
 {
-inline std::size_t get_override_seed_count()
+_CCCL_HOST_API inline std::size_t get_override_seed_count()
 {
   // Setting this environment variable forces a fixed number of seeds to be generated, regardless of the requested
   // count. Set to 1 to reduce redundant, expensive testing when using sanitizers, etc.
@@ -22,7 +22,7 @@ inline std::size_t get_override_seed_count()
   return override_seeds;
 }
 
-inline std::size_t adjust_seed_count(std::size_t requested)
+_CCCL_HOST_API inline std::size_t adjust_seed_count(std::size_t requested)
 {
   static const std::size_t override_seeds = get_override_seed_count();
   return override_seeds != 0 ? override_seeds : requested;

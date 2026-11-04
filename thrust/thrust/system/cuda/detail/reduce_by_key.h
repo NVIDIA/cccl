@@ -890,7 +890,7 @@ template <class Derived,
           class ValOutputIt,
           class BinaryPred,
           class BinaryOp>
-::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
+::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE_API reduce_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt keys_first,
   KeyInputIt keys_last,
@@ -917,7 +917,7 @@ template <class Derived,
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class KeyOutputIt, class ValOutputIt, class BinaryPred>
-::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
+::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE_API reduce_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt keys_first,
   KeyInputIt keys_last,
@@ -941,7 +941,7 @@ template <class Derived, class KeyInputIt, class ValInputIt, class KeyOutputIt, 
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class KeyOutputIt, class ValOutputIt>
-::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
+::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE_API reduce_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt keys_first,
   KeyInputIt keys_last,

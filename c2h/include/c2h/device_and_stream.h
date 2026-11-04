@@ -12,14 +12,14 @@
 
 namespace c2h
 {
-[[nodiscard]] inline cuda::device_ref current_device()
+[[nodiscard]] _CCCL_HOST_API inline cuda::device_ref current_device()
 {
   int device_id{};
   REQUIRE(cudaSuccess == cudaGetDevice(&device_id));
   return cuda::devices[device_id];
 }
 
-[[nodiscard]] inline cuda::stream make_current_device_stream()
+[[nodiscard]] _CCCL_HOST_API inline cuda::stream make_current_device_stream()
 {
   return cuda::stream{current_device()};
 }
@@ -27,7 +27,7 @@ namespace c2h
 // Returns a reference to the legacy default stream without changing the current device.
 // The handle uses whichever device is current when work is submitted; it does not
 // retain an association with the device that was current when this function was called.
-[[nodiscard]] constexpr cuda::stream_ref default_stream_ref() noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr cuda::stream_ref default_stream_ref() noexcept
 {
   return cuda::stream_ref{cuda::stream_ref::value_type{}};
 }

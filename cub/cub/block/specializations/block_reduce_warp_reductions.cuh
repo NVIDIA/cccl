@@ -110,7 +110,7 @@ struct BlockReduceWarpReductions
   int warp_id;
   int lane_id;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduceWarpReductions(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockReduceWarpReductions(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
       , warp_id((warps == 1) ? 0 : linear_tid / warp_threads)
@@ -130,7 +130,8 @@ struct BlockReduceWarpReductions
   //! @param[in] warp_aggregate
   //!   **[**\ *lane*\ :sub:`0` **only]** Warp-wide aggregate reduction of input items
   template <typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregatesNonDeterministic(ReductionOp /*reduction_op*/, T warp_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T
+  ApplyWarpAggregatesNonDeterministic(ReductionOp /*reduction_op*/, T warp_aggregate)
   {
     if (linear_tid == 0)
     {
@@ -164,7 +165,7 @@ struct BlockReduceWarpReductions
   //! @tparam ReductionOp
   //!   **[inferred]** Binary reduction operator type
   template <bool FullTile, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(ReductionOp reduction_op, T warp_aggregate, int num_valid)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T ApplyWarpAggregates(ReductionOp reduction_op, T warp_aggregate, int num_valid)
   {
     // Share lane aggregates
     if (lane_id == 0)
@@ -234,7 +235,7 @@ struct BlockReduceWarpReductions
   //! @param[in] num_valid
   //!   Number of valid elements (may be less than threads_per_block)
   template <bool FullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int num_valid)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(T input, int num_valid)
   {
     return Reduce<FullTile>(input, num_valid, ::cuda::std::plus<>{});
   }
@@ -260,7 +261,7 @@ struct BlockReduceWarpReductions
   //! @param[in] reduction_op
   //!   Binary reduction operator
   template <bool FullTile, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int num_valid, ReductionOp reduction_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(T input, int num_valid, ReductionOp reduction_op)
   {
     const int warp_offset = warp_id * logical_warp_size;
     const int warp_num_valid =

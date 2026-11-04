@@ -28,20 +28,22 @@ using legacy_pinned_resource  = cuda::mr::synchronous_resource_adapter<cuda::mr:
 using legacy_managed_resource = cuda::mr::synchronous_resource_adapter<cuda::mr::legacy_managed_memory_resource>;
 
 template <typename T>
-auto make_pinned_memory_buffer(cuda::stream_ref stream, std::size_t size, cuda::device_ref device = cuda::devices[0])
+_CCCL_HOST_API auto
+make_pinned_memory_buffer(cuda::stream_ref stream, std::size_t size, cuda::device_ref device = cuda::devices[0])
 {
   legacy_pinned_resource resource{cuda::mr::legacy_pinned_memory_resource{device}};
   return cuda::make_buffer<T>(stream, resource, size, cuda::no_init);
 }
 
 template <typename T>
-auto make_managed_memory_buffer(cuda::stream_ref stream, std::size_t size, cuda::device_ref device = cuda::devices[0])
+_CCCL_HOST_API auto
+make_managed_memory_buffer(cuda::stream_ref stream, std::size_t size, cuda::device_ref device = cuda::devices[0])
 {
   legacy_managed_resource resource{cuda::mr::legacy_managed_memory_resource{cudaMemAttachGlobal, device}};
   return cuda::make_buffer<T>(stream, resource, size, cuda::no_init);
 }
 
-inline int get_expected_value(uint8_t pattern_byte)
+_CCCL_HOST_API inline int get_expected_value(uint8_t pattern_byte)
 {
   int result;
   memset(&result, pattern_byte, sizeof(int));
@@ -49,7 +51,7 @@ inline int get_expected_value(uint8_t pattern_byte)
 }
 
 template <typename Result>
-void check_result_and_erase(cuda::stream_ref stream, Result&& result, uint8_t pattern_byte = fill_byte)
+_CCCL_HOST_API void check_result_and_erase(cuda::stream_ref stream, Result&& result, uint8_t pattern_byte = fill_byte)
 {
   const int expected = get_expected_value(pattern_byte);
 
@@ -62,7 +64,7 @@ void check_result_and_erase(cuda::stream_ref stream, Result&& result, uint8_t pa
 }
 
 template <typename Layout = cuda::std::layout_right, typename Extents>
-auto make_buffer_for_mdspan(cuda::stream_ref stream, Extents extents, char value = 0)
+_CCCL_HOST_API auto make_buffer_for_mdspan(cuda::stream_ref stream, Extents extents, char value = 0)
 {
   auto mapping = typename Layout::template mapping<Extents>{extents};
 
@@ -74,7 +76,7 @@ auto make_buffer_for_mdspan(cuda::stream_ref stream, Extents extents, char value
   return buffer;
 }
 
-inline auto create_fake_strided_mdspan()
+_CCCL_HOST_API inline auto create_fake_strided_mdspan()
 {
   const cuda::std::dextents<size_t, 3> dynamic_extents{1, 2, 3};
   const cuda::std::array<size_t, 3> strides{12, 4, 1};

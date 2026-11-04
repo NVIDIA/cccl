@@ -33,7 +33,7 @@ class temporary_array;
 namespace system::detail::sequential
 {
 template <typename ForwardIterator1, typename ForwardIterator2>
-_CCCL_HOST_DEVICE void iter_swap(ForwardIterator1 iter1, ForwardIterator2 iter2)
+_CCCL_HOST_DEVICE_API void iter_swap(ForwardIterator1 iter1, ForwardIterator2 iter2)
 {
   // note: we cannot use swap(*iter1, *iter2) here, because the reference_type's could be proxy references, for which
   // swap() is not guaranteed to work
@@ -45,7 +45,7 @@ _CCCL_HOST_DEVICE void iter_swap(ForwardIterator1 iter1, ForwardIterator2 iter2)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator
+_CCCL_HOST_DEVICE_API ForwardIterator
 partition(sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, Predicate pred)
 {
   if (first == last)
@@ -81,7 +81,7 @@ partition(sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, F
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator partition(
+_CCCL_HOST_DEVICE_API ForwardIterator partition(
   sequential::execution_policy<DerivedPolicy>&,
   ForwardIterator first,
   ForwardIterator last,
@@ -127,7 +127,7 @@ _CCCL_HOST_DEVICE ForwardIterator partition(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator stable_partition(
+_CCCL_HOST_DEVICE_API ForwardIterator stable_partition(
   sequential::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Predicate pred)
 {
   if (first == last)
@@ -170,7 +170,7 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator stable_partition(
+_CCCL_HOST_DEVICE_API ForwardIterator stable_partition(
   sequential::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -218,7 +218,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator first,
   InputIterator last,
@@ -253,7 +253,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator1 first,
   InputIterator1 last,

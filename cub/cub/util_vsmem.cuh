@@ -78,7 +78,7 @@ public:
    * passed to the agent, specialized for the case when we can use native shared memory as temporary
    * storage.
    */
-  static _CCCL_DEVICE _CCCL_FORCEINLINE typename AgentT::TempStorage&
+  _CCCL_DEVICE_API static _CCCL_FORCEINLINE typename AgentT::TempStorage&
   get_temp_storage(typename AgentT::TempStorage& static_temp_storage, vsmem_t&)
   {
     return static_temp_storage;
@@ -89,7 +89,7 @@ public:
    * passed to the agent, specialized for the case when we can use native shared memory as temporary
    * storage and taking a linear block id.
    */
-  static _CCCL_DEVICE _CCCL_FORCEINLINE typename AgentT::TempStorage&
+  _CCCL_DEVICE_API static _CCCL_FORCEINLINE typename AgentT::TempStorage&
   get_temp_storage(typename AgentT::TempStorage& static_temp_storage, vsmem_t&, ::cuda::std::size_t)
   {
     return static_temp_storage;
@@ -100,7 +100,7 @@ public:
    * passed to the agent, specialized for the case when we have to use global memory-backed
    * virtual shared memory as temporary storage.
    */
-  static _CCCL_DEVICE _CCCL_FORCEINLINE typename AgentT::TempStorage&
+  _CCCL_DEVICE_API static _CCCL_FORCEINLINE typename AgentT::TempStorage&
   get_temp_storage(cub::NullType& static_temp_storage, vsmem_t& vsmem)
   {
     return *reinterpret_cast<typename AgentT::TempStorage*>(
@@ -112,7 +112,7 @@ public:
    * passed to the agent, specialized for the case when we have to use global memory-backed
    * virtual shared memory as temporary storage and taking a linear block id.
    */
-  static _CCCL_DEVICE _CCCL_FORCEINLINE typename AgentT::TempStorage&
+  _CCCL_DEVICE_API static _CCCL_FORCEINLINE typename AgentT::TempStorage&
   get_temp_storage(cub::NullType& static_temp_storage, vsmem_t& vsmem, ::cuda::std::size_t linear_block_id)
   {
     return *reinterpret_cast<typename AgentT::TempStorage*>(
@@ -127,7 +127,7 @@ public:
    * supposed to be reused after this function call.
    */
   template <bool NeedsVsmem = needs_vsmem, ::cuda::std::enable_if_t<!NeedsVsmem, int> = 0>
-  static _CCCL_DEVICE _CCCL_FORCEINLINE bool discard_temp_storage(typename AgentT::TempStorage& temp_storage)
+  _CCCL_DEVICE_API static _CCCL_FORCEINLINE bool discard_temp_storage(typename AgentT::TempStorage& temp_storage)
   {
     return false;
   }
@@ -140,7 +140,7 @@ public:
    * supposed to be reused after this function call.
    */
   template <bool NeedsVsmem = needs_vsmem, ::cuda::std::enable_if_t<NeedsVsmem, int> = 0>
-  static _CCCL_DEVICE _CCCL_FORCEINLINE bool discard_temp_storage(typename AgentT::TempStorage& temp_storage)
+  _CCCL_DEVICE_API static _CCCL_FORCEINLINE bool discard_temp_storage(typename AgentT::TempStorage& temp_storage)
   {
     // Ensure all threads finished using temporary storage
     __syncthreads();
@@ -161,7 +161,7 @@ public:
 };
 
 template <class DefaultAgentT, class FallbackAgentT>
-_CCCL_HOST_DEVICE constexpr bool use_fallback_agent()
+_CCCL_HOST_DEVICE_API constexpr bool use_fallback_agent()
 {
   return (sizeof(typename DefaultAgentT::TempStorage) > max_smem_per_block)
       && (sizeof(typename FallbackAgentT::TempStorage) <= max_smem_per_block);

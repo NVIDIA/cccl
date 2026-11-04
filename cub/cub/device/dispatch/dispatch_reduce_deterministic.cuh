@@ -66,25 +66,25 @@ struct deterministic_sum_t
 {
   using DeterministicAcc = ReproducibleFloatingAccumulator<FloatType>;
 
-  _CCCL_DEVICE DeterministicAcc operator()(DeterministicAcc acc, FloatType f)
+  _CCCL_DEVICE_API DeterministicAcc operator()(DeterministicAcc acc, FloatType f)
   {
     acc += f;
     return acc;
   }
 
-  _CCCL_DEVICE DeterministicAcc operator()(FloatType f, DeterministicAcc acc)
+  _CCCL_DEVICE_API DeterministicAcc operator()(FloatType f, DeterministicAcc acc)
   {
     return this->operator()(acc, f);
   }
 
-  _CCCL_DEVICE DeterministicAcc operator()(DeterministicAcc lhs, DeterministicAcc rhs)
+  _CCCL_DEVICE_API DeterministicAcc operator()(DeterministicAcc lhs, DeterministicAcc rhs)
   {
     DeterministicAcc rtn = lhs;
     rtn += rhs;
     return rtn;
   }
 
-  _CCCL_DEVICE FloatType operator()(FloatType lhs, FloatType rhs)
+  _CCCL_DEVICE_API FloatType operator()(FloatType lhs, FloatType rhs)
   {
     return lhs + rhs;
   }

@@ -25,7 +25,7 @@
 #include "utility.cuh"
 #include <c2h/catch2_test_helper.h>
 
-TEST_FUNC constexpr bool operator==(const dim3& lhs, const dim3& rhs) noexcept
+_CCCL_HIDE_FROM_ABI TEST_FUNC constexpr bool operator==(const dim3& lhs, const dim3& rhs) noexcept
 {
   return (lhs.x == rhs.x) && (lhs.y == rhs.y) && (lhs.z == rhs.z);
 }
@@ -35,7 +35,7 @@ namespace Catch
 template <>
 struct StringMaker<dim3>
 {
-  static std::string convert(dim3 const& dims)
+  _CCCL_HOST_API static std::string convert(dim3 const& dims)
   {
     std::ostringstream oss;
     oss << "(" << dims.x << ", " << dims.y << ", " << dims.z << ")";
@@ -46,7 +46,7 @@ struct StringMaker<dim3>
 template <typename T>
 struct StringMaker<cuda::hierarchy_query_result<T>>
 {
-  static std::string convert(cuda::hierarchy_query_result<T> const& result)
+  _CCCL_HOST_API static std::string convert(cuda::hierarchy_query_result<T> const& result)
   {
     std::ostringstream oss;
     oss << "(" << result.x << ", " << result.y << ", " << result.z << ")";
@@ -57,7 +57,7 @@ struct StringMaker<cuda::hierarchy_query_result<T>>
 
 namespace test
 {
-inline int count_driver_stack()
+_CCCL_HOST_API inline int count_driver_stack()
 {
   if (::cuda::__driver::__ctxGetCurrent() != nullptr)
   {
@@ -72,7 +72,7 @@ inline int count_driver_stack()
   }
 }
 
-inline void empty_driver_stack()
+_CCCL_HOST_API inline void empty_driver_stack()
 {
   while (::cuda::__driver::__ctxGetCurrent() != nullptr)
   {
@@ -80,7 +80,7 @@ inline void empty_driver_stack()
   }
 }
 
-inline int cuda_driver_version()
+_CCCL_HOST_API inline int cuda_driver_version()
 {
   return ::cuda::__driver::__getVersion();
 }
@@ -89,11 +89,11 @@ inline int cuda_driver_version()
 template <typename Dummy = void>
 struct ccclrt_test_fixture
 {
-  ccclrt_test_fixture()
+  _CCCL_HOST_API ccclrt_test_fixture()
   {
     empty_driver_stack();
   }
-  ~ccclrt_test_fixture()
+  _CCCL_HOST_API ~ccclrt_test_fixture()
   {
     CHECK(count_driver_stack() == 0);
   }

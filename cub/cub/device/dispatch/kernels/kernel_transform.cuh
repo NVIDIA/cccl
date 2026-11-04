@@ -75,14 +75,14 @@ _CCCL_IKET_CREATE_PUSH_POP_RANGE(ProcessAndStore);
 // TODO(bgruber): there is also the cp.async.bulk.prefetch instruction available on Hopper. May improve perf a tiny bit
 // as we need to create less instructions to prefetch the same amount of data.
 template <typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE void prefetch(const T* addr)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void prefetch(const T* addr)
 {
   // TODO(bgruber): prefetch to L1 may be even better
   asm volatile("prefetch.global.L2 [%0];" : : "l"(__cvta_generic_to_global(addr)) : "memory");
 }
 
 template <int BlockDim, int PrefetchStride, typename It>
-_CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It begin, int items)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void prefetch_tile(It begin, int items)
 {
   if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<It>)
   {
@@ -102,7 +102,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It begin, int items)
 // _CCCL_PRAGMA_UNROLL(-1), but issues a warning though. Trying to suppress this warning inside the _CCCL_PRAGMA_UNROLL
 // macro kills MSVC. Also clang in CUDA mode does not support a non-positive unroll factor.
 template <int UnrollFactor, typename F>
-_CCCL_DEVICE _CCCL_FORCEINLINE void unrolled_for(int count, F&& body)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void unrolled_for(int count, F&& body)
 {
   static_assert(UnrollFactor >= 0,
                 "unroll_factor must be zero (ignore unroll hint) or positive (unroll with the given factor)");
@@ -134,7 +134,7 @@ template <int ThreadsPerBlock,
           typename F,
           typename RandomAccessIteratorOut,
           typename... RandomAccessIteratorIn>
-_CCCL_DEVICE void transform_kernel_prefetch(
+_CCCL_DEVICE_API void transform_kernel_prefetch(
   Offset num_items,
   int num_elem_per_thread,
   Predicate pred,
@@ -189,7 +189,7 @@ struct alignas(32) aligned32_t
 #endif // _CCCL_CTK_BELOW(13, 0)
 
 template <int Bytes>
-_CCCL_HOST_DEVICE _CCCL_CONSTEVAL auto load_store_type()
+_CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto load_store_type()
 {
   static_assert(::cuda::is_power_of_two(Bytes));
   if constexpr (Bytes == 1)
@@ -238,7 +238,7 @@ template <int ThreadsPerBlock,
           typename F,
           typename RandomAccessIteratorOut,
           typename... RandomAccessIteratorsIn>
-_CCCL_DEVICE void transform_kernel_vectorized(
+_CCCL_DEVICE_API void transform_kernel_vectorized(
   Offset num_items,
   int num_elem_per_thread_prefetch,
   bool can_vectorize,
@@ -409,19 +409,19 @@ struct aligned_base_ptr
                    // alignof(T). E.g.: array of int3 starting at address 4, ptr == 0
   int head_padding; // byte offset between ptr and the original pointer. Value inside [0;15] or [0;127].
 
-  _CCCL_HOST_DEVICE const T* ptr_to_elements() const
+  _CCCL_HOST_DEVICE_API const T* ptr_to_elements() const
   {
     return reinterpret_cast<const T*>(ptr + head_padding);
   }
 
-  _CCCL_HOST_DEVICE friend bool operator==(const aligned_base_ptr& a, const aligned_base_ptr& b)
+  _CCCL_HOST_DEVICE_API friend bool operator==(const aligned_base_ptr& a, const aligned_base_ptr& b)
   {
     return a.ptr == b.ptr && a.head_padding == b.head_padding;
   }
 };
 
 template <typename T>
-_CCCL_HOST_DEVICE auto make_aligned_base_ptr(const T* ptr, int alignment) -> aligned_base_ptr<T>
+_CCCL_HOST_DEVICE_API auto make_aligned_base_ptr(const T* ptr, int alignment) -> aligned_base_ptr<T>
 {
   const auto raw_ptr  = reinterpret_cast<const char*>(ptr);
   const auto base_ptr = ::cuda::align_down(raw_ptr, alignment);
@@ -429,7 +429,7 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr(const T* ptr, int alignment) -> ali
 }
 
 template <int ThreadsPerBlock>
-_CCCL_DEVICE void memcpy_async_aligned(void* dst, const void* src, unsigned int bytes_to_copy)
+_CCCL_DEVICE_API void memcpy_async_aligned(void* dst, const void* src, unsigned int bytes_to_copy)
 {
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(src), "");
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(dst), "");
@@ -456,7 +456,8 @@ _CCCL_DEVICE void memcpy_async_aligned(void* dst, const void* src, unsigned int 
 }
 
 template <int ThreadsPerBlock>
-_CCCL_DEVICE void memcpy_async_maybe_unaligned(void* dst, const void* src, unsigned int bytes_to_copy, int head_padding)
+_CCCL_DEVICE_API void
+memcpy_async_maybe_unaligned(void* dst, const void* src, unsigned int bytes_to_copy, int head_padding)
 {
   // early exiting if (head_padding == 0 && bytes_to_copy % ldgsts_size_and_align == 0) does not yield a benefit
 
@@ -511,7 +512,7 @@ _CCCL_DEVICE void memcpy_async_maybe_unaligned(void* dst, const void* src, unsig
 // Turning this function into a lambda will make nvcc generate it once for each iterator instead of for each distinct
 // value type (which may be less).
 template <int ThreadsPerBlock, typename AlignedPtr, typename Offset>
-_CCCL_DEVICE auto
+_CCCL_DEVICE_API auto
 copy_and_return_smem_dst(AlignedPtr aligned_ptr, int& smem_offset, Offset offset, char* smem, int valid_items)
 {
   using T = typename decltype(aligned_ptr)::value_type;
@@ -546,7 +547,7 @@ copy_and_return_smem_dst(AlignedPtr aligned_ptr, int& smem_offset, Offset offset
 }
 
 template <int ThreadsPerBlock, typename AlignedPtr, typename Offset>
-_CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
+_CCCL_DEVICE_API auto copy_and_return_smem_dst_fallback(
   AlignedPtr aligned_ptr, int& smem_offset, Offset offset, char* smem, int valid_items, int tile_size)
 {
   // TODO(bgruber): drop handling of head bytes and just read OOB, since gmem buffers are always sufficiently aligned
@@ -585,7 +586,7 @@ template <int ThreadsPerBlock,
           typename F,
           typename RandomAccessIteratorOut,
           typename... InTs>
-_CCCL_DEVICE void transform_kernel_ldgsts(
+_CCCL_DEVICE_API void transform_kernel_ldgsts(
   Offset num_items,
   int num_elem_per_thread,
   Predicate pred,
@@ -655,7 +656,7 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
 }
 
 template <int BulkCopyAlignment>
-_CCCL_DEVICE void bulk_copy_maybe_unaligned(
+_CCCL_DEVICE_API void bulk_copy_maybe_unaligned(
   void* dst,
   const void* src,
   unsigned int bytes_to_copy,
@@ -734,7 +735,7 @@ template <int ThreadsPerBlock,
           typename F,
           typename RandomAccessIteratorOut,
           typename... InTs>
-_CCCL_DEVICE void transform_kernel_ublkcp(
+_CCCL_DEVICE_API void transform_kernel_ublkcp(
   Offset num_items,
   int num_elem_per_thread,
   Predicate pred,
@@ -1194,10 +1195,10 @@ union kernel_arg
   // thrust::normal_iterator<thrust::device_pointer<T>>), so because of
   // https://eel.is/c++draft/class.union#general-note-3, kernel_args's special members are deleted. We work around it by
   // explicitly defining them.
-  _CCCL_HOST_DEVICE kernel_arg() noexcept {}
-  _CCCL_HOST_DEVICE ~kernel_arg() noexcept {}
+  _CCCL_HOST_DEVICE_API kernel_arg() noexcept {}
+  _CCCL_HOST_DEVICE_API ~kernel_arg() noexcept {}
 
-  _CCCL_HOST_DEVICE kernel_arg(const kernel_arg& other)
+  _CCCL_HOST_DEVICE_API kernel_arg(const kernel_arg& other)
   {
     // since we use kernel_arg only to pass data to the device, the contained data is semantically trivially copyable,
     // even if the type system is telling us otherwise.
@@ -1206,7 +1207,7 @@ union kernel_arg
 };
 
 template <typename It>
-_CCCL_HOST_DEVICE auto make_iterator_kernel_arg(It it) -> kernel_arg<It>
+_CCCL_HOST_DEVICE_API auto make_iterator_kernel_arg(It it) -> kernel_arg<It>
 {
   kernel_arg<It> arg;
   // since we switch the active member of the union, we must use placement new or construct_at. This also uses the copy
@@ -1217,7 +1218,7 @@ _CCCL_HOST_DEVICE auto make_iterator_kernel_arg(It it) -> kernel_arg<It>
 }
 
 template <typename It>
-_CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr, int alignment) -> kernel_arg<It>
+_CCCL_HOST_DEVICE_API auto make_aligned_base_ptr_kernel_arg(It ptr, int alignment) -> kernel_arg<It>
 {
   kernel_arg<It> arg;
   arg.aligned_ptr = make_aligned_base_ptr(ptr, alignment);

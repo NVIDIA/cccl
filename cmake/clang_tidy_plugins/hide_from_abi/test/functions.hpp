@@ -176,7 +176,7 @@ inline _CCCL_HOST_DEVICE void middle_annotation() {}
 
 #define DEFINE_FUNCTION(name) inline void name() {}
 DEFINE_FUNCTION(macro_function)
-// CHECK-MESSAGES: :[[@LINE-1]]:17: warning: function needs an API macro (one of _CCCL_API, _CCCL_DEVICE_API, or _CCCL_HOST_API) to limit ABI visibility [cccl-hide-from-abi]
+// CHECK-MESSAGES: :[[@LINE-2]]:43: warning: function needs an API macro (one of _CCCL_API, _CCCL_DEVICE_API, or _CCCL_HOST_API) to limit ABI visibility [cccl-hide-from-abi]
 // CHECK-MESSAGES-NOT: warning:
 // CHECK-FIXES: DiagnosticName: cccl-hide-from-abi
 // CHECK-FIXES: Replacements: []

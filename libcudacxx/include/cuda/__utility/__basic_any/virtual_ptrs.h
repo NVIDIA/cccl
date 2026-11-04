@@ -30,7 +30,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 struct __base_vptr
 {
-  __base_vptr() = default;
+  _CCCL_HIDE_FROM_ABI __base_vptr() = default;
 
   _CCCL_NODEBUG_HOST_DEVICE_API constexpr __base_vptr(__rtti_base const* __vptr) noexcept
       : __vptr_(__vptr)

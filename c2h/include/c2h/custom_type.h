@@ -40,7 +40,7 @@ class custom_type_t
     , public Policies<custom_type_t<Policies...>>...
 {
 public:
-  friend __host__ std::ostream& operator<<(std::ostream& os, const custom_type_t& self)
+  _CCCL_HOST_API friend std::ostream& operator<<(std::ostream& os, const custom_type_t& self)
   {
     return os << "{ " << self.key << ", " << self.val << " }";
   }
@@ -83,7 +83,7 @@ class less_comparable_t
   char workaround_msvc{};
 
 public:
-  friend __host__ __device__ bool operator<(const CustomType& lhs, const CustomType& rhs)
+  _CCCL_HOST_DEVICE_API friend bool operator<(const CustomType& lhs, const CustomType& rhs)
   {
     return lhs.key < rhs.key;
   }
@@ -97,7 +97,7 @@ class greater_comparable_t
   char workaround_msvc{};
 
 public:
-  friend __host__ __device__ bool operator>(const CustomType& lhs, const CustomType& rhs)
+  _CCCL_HOST_DEVICE_API friend bool operator>(const CustomType& lhs, const CustomType& rhs)
   {
     return lhs.key > rhs.key;
   }
@@ -111,7 +111,7 @@ class lexicographical_less_comparable_t
   char workaround_msvc{};
 
 public:
-  friend __host__ __device__ bool operator<(const CustomType& lhs, const CustomType& rhs)
+  _CCCL_HOST_DEVICE_API friend bool operator<(const CustomType& lhs, const CustomType& rhs)
   {
     return lhs.key == rhs.key ? lhs.val < rhs.val : lhs.key < rhs.key;
   }
@@ -125,7 +125,7 @@ class lexicographical_greater_comparable_t
   char workaround_msvc{};
 
 public:
-  friend __host__ __device__ bool operator>(const CustomType& lhs, const CustomType& rhs)
+  _CCCL_HOST_DEVICE_API friend bool operator>(const CustomType& lhs, const CustomType& rhs)
   {
     return lhs.key == rhs.key ? lhs.val > rhs.val : lhs.key > rhs.key;
   }
@@ -139,12 +139,12 @@ class equal_comparable_t
   char workaround_msvc{};
 
 public:
-  friend __host__ __device__ bool operator==(const CustomType& lhs, const CustomType& rhs)
+  _CCCL_HOST_DEVICE_API friend bool operator==(const CustomType& lhs, const CustomType& rhs)
   {
     return lhs.key == rhs.key && lhs.val == rhs.val;
   }
 
-  friend __host__ __device__ bool operator!=(const CustomType& lhs, const CustomType& rhs)
+  _CCCL_HOST_DEVICE_API friend bool operator!=(const CustomType& lhs, const CustomType& rhs)
   {
     return !(lhs == rhs);
   }
@@ -158,7 +158,7 @@ class subtractable_t
   char workaround_msvc{};
 
 public:
-  friend __host__ __device__ CustomType operator-(const CustomType& lhs, const CustomType& rhs)
+  _CCCL_HOST_DEVICE_API friend CustomType operator-(const CustomType& lhs, const CustomType& rhs)
   {
     CustomType result{};
 
@@ -177,7 +177,7 @@ class accumulateable_t
   char workaround_msvc{};
 
 public:
-  friend __host__ __device__ CustomType operator+(const CustomType& lhs, const CustomType& rhs)
+  _CCCL_HOST_DEVICE_API friend CustomType operator+(const CustomType& lhs, const CustomType& rhs)
   {
     CustomType result{};
 
@@ -199,7 +199,7 @@ public:
   // with `numeric_limits<conditional<is_void_v<void>, __common_type2_imp<uint64_t, uint64_t>::type, void>::type>`
 
   template <class SizeT = std::size_t>
-  static __host__ __device__ c2h::custom_type_t<Policies...> max()
+  _CCCL_HOST_DEVICE_API static c2h::custom_type_t<Policies...> max()
   {
     c2h::custom_type_t<Policies...> val{};
     val.key = numeric_limits<SizeT>::max();
@@ -208,7 +208,7 @@ public:
   }
 
   template <class SizeT = std::size_t>
-  static __host__ __device__ c2h::custom_type_t<Policies...> min()
+  _CCCL_HOST_DEVICE_API static c2h::custom_type_t<Policies...> min()
   {
     c2h::custom_type_t<Policies...> val{};
     val.key = numeric_limits<SizeT>::min();
@@ -217,7 +217,7 @@ public:
   }
 
   template <class SizeT = std::size_t>
-  static __host__ __device__ c2h::custom_type_t<Policies...> lowest()
+  _CCCL_HOST_DEVICE_API static c2h::custom_type_t<Policies...> lowest()
   {
     c2h::custom_type_t<Policies...> val{};
     val.key = numeric_limits<SizeT>::lowest();

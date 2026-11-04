@@ -35,50 +35,50 @@ public:
   using pointer           = It;
   using reference         = typename cuda::std::iterator_traits<It>::reference;
 
-  TEST_FUNC constexpr forward_iterator()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr forward_iterator()
       : it_()
   {}
-  TEST_FUNC constexpr explicit forward_iterator(It it)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr explicit forward_iterator(It it)
       : it_(it)
   {}
 
   template <class U>
-  TEST_FUNC constexpr forward_iterator(const forward_iterator<U>& u)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr forward_iterator(const forward_iterator<U>& u)
       : it_(u.it_)
   {}
 
   template <class U, class = cuda::std::enable_if_t<cuda::std::is_default_constructible_v<U>>>
-  TEST_FUNC constexpr forward_iterator(forward_iterator<U>&& other)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr forward_iterator(forward_iterator<U>&& other)
       : it_(cuda::std::move(other.it_))
   {
     other.it_ = U();
   }
 
-  TEST_FUNC constexpr reference operator*() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr reference operator*() const
   {
     return *it_;
   }
 
-  TEST_FUNC constexpr forward_iterator& operator++()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr forward_iterator& operator++()
   {
     ++it_;
     return *this;
   }
-  TEST_FUNC constexpr forward_iterator operator++(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr forward_iterator operator++(int)
   {
     return forward_iterator(it_++);
   }
 
-  TEST_FUNC friend constexpr bool operator==(const forward_iterator& x, const forward_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator==(const forward_iterator& x, const forward_iterator& y)
   {
     return x.it_ == y.it_;
   }
-  TEST_FUNC friend constexpr bool operator!=(const forward_iterator& x, const forward_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator!=(const forward_iterator& x, const forward_iterator& y)
   {
     return x.it_ != y.it_;
   }
 
-  TEST_FUNC friend constexpr It base(const forward_iterator& i)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr It base(const forward_iterator& i)
   {
     return i.it_;
   }
@@ -93,29 +93,29 @@ template <class It>
 class sentinel_wrapper
 {
 public:
-  explicit sentinel_wrapper() = default;
-  TEST_FUNC constexpr explicit sentinel_wrapper(const It& it)
+  _CCCL_HIDE_FROM_ABI explicit sentinel_wrapper() = default;
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr explicit sentinel_wrapper(const It& it)
       : base_(base(it))
   {}
-  TEST_FUNC friend constexpr bool operator==(const sentinel_wrapper& s, const It& i)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator==(const sentinel_wrapper& s, const It& i)
   {
     return s.base_ == base(i);
   }
 #if TEST_STD_VER < 2020
-  TEST_FUNC friend constexpr bool operator==(const It& i, const sentinel_wrapper& s)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator==(const It& i, const sentinel_wrapper& s)
   {
     return s.base_ == base(i);
   }
-  TEST_FUNC friend constexpr bool operator!=(const sentinel_wrapper& s, const It& i)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator!=(const sentinel_wrapper& s, const It& i)
   {
     return s.base_ != base(i);
   }
-  TEST_FUNC friend constexpr bool operator!=(const It& i, const sentinel_wrapper& s)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator!=(const It& i, const sentinel_wrapper& s)
   {
     return s.base_ != base(i);
   }
 #endif
-  TEST_FUNC friend constexpr It base(const sentinel_wrapper& s)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr It base(const sentinel_wrapper& s)
   {
     return It(s.base_);
   }
@@ -128,37 +128,37 @@ template <class It>
 class sized_sentinel
 {
 public:
-  explicit sized_sentinel() = default;
-  TEST_FUNC constexpr explicit sized_sentinel(const It& it)
+  _CCCL_HIDE_FROM_ABI explicit sized_sentinel() = default;
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr explicit sized_sentinel(const It& it)
       : base_(base(it))
   {}
-  TEST_FUNC friend constexpr bool operator==(const sized_sentinel& s, const It& i)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator==(const sized_sentinel& s, const It& i)
   {
     return s.base_ == base(i);
   }
 #if TEST_STD_VER < 2020
-  TEST_FUNC friend constexpr bool operator==(const It& i, const sized_sentinel& s)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator==(const It& i, const sized_sentinel& s)
   {
     return s.base_ == base(i);
   }
-  TEST_FUNC friend constexpr bool operator!=(const sized_sentinel& s, const It& i)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator!=(const sized_sentinel& s, const It& i)
   {
     return s.base_ != base(i);
   }
-  TEST_FUNC friend constexpr bool operator!=(const It& i, const sized_sentinel& s)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator!=(const It& i, const sized_sentinel& s)
   {
     return s.base_ != base(i);
   }
 #endif
-  TEST_FUNC friend constexpr auto operator-(const sized_sentinel& s, const It& i)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr auto operator-(const sized_sentinel& s, const It& i)
   {
     return s.base_ - base(i);
   }
-  TEST_FUNC friend constexpr auto operator-(const It& i, const sized_sentinel& s)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr auto operator-(const It& i, const sized_sentinel& s)
   {
     return base(i) - s.base_;
   }
-  TEST_FUNC friend constexpr It base(const sized_sentinel& s)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr It base(const sized_sentinel& s)
   {
     return It(s.base_);
   }
@@ -173,12 +173,12 @@ struct uncommon_range
   cuda::std::array<T, Capacity> data;
   forward_iterator<T*> end_{data.data() + Capacity};
 
-  TEST_FUNC constexpr forward_iterator<T*> begin() noexcept
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr forward_iterator<T*> begin() noexcept
   {
     return forward_iterator<T*>{data.begin()};
   }
 
-  TEST_FUNC constexpr sentinel_wrapper<forward_iterator<T*>> end() noexcept
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr sentinel_wrapper<forward_iterator<T*>> end() noexcept
   {
     return sentinel_wrapper<forward_iterator<T*>>{end_};
   }
@@ -193,12 +193,12 @@ struct sized_uncommon_range
   cuda::std::array<T, Capacity> data;
   forward_iterator<T*> end_{data.data() + Capacity};
 
-  TEST_FUNC constexpr forward_iterator<T*> begin() noexcept
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr forward_iterator<T*> begin() noexcept
   {
     return forward_iterator<T*>{data.begin()};
   }
 
-  TEST_FUNC constexpr sized_sentinel<forward_iterator<T*>> end() noexcept
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr sized_sentinel<forward_iterator<T*>> end() noexcept
   {
     return sized_sentinel<forward_iterator<T*>>{end_};
   }

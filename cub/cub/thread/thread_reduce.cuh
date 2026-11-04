@@ -277,7 +277,8 @@ inline constexpr bool enable_ternary_reduction_sm50_v =
  **********************************************************************************************************************/
 
 template <typename AccumT, typename Input, typename ReductionOp>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduceSequential(const Input& input, ReductionOp reduction_op)
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT
+ThreadReduceSequential(const Input& input, ReductionOp reduction_op)
 {
   auto retval = static_cast<AccumT>(input[0]);
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -289,7 +290,8 @@ template <typename AccumT, typename Input, typename ReductionOp>
 }
 
 template <typename AccumT, typename Input, typename ReductionOp>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduceBinaryTree(const Input& input, ReductionOp reduction_op)
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT
+ThreadReduceBinaryTree(const Input& input, ReductionOp reduction_op)
 {
   constexpr auto length = static_size_v<Input>;
   auto array            = cub::detail::to_array<AccumT>(input);
@@ -306,7 +308,8 @@ template <typename AccumT, typename Input, typename ReductionOp>
 }
 
 template <typename AccumT, typename Input, typename ReductionOp>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduceTernaryTree(const Input& input, ReductionOp reduction_op)
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT
+ThreadReduceTernaryTree(const Input& input, ReductionOp reduction_op)
 {
   constexpr auto length = static_size_v<Input>;
   auto array            = cub::detail::to_array<AccumT>(input);
@@ -324,7 +327,7 @@ template <typename AccumT, typename Input, typename ReductionOp>
 }
 
 template <typename AccumT, typename Input, typename ReductionOp>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT
 ThreadReduceSequentialPartial(const Input& input, ReductionOp reduction_op, int valid_items)
 {
   auto retval = static_cast<AccumT>(input[0]);
@@ -344,7 +347,7 @@ ThreadReduceSequentialPartial(const Input& input, ReductionOp reduction_op, int 
  **********************************************************************************************************************/
 
 template <typename Input, typename ReductionOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, ReductionOp)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, ReductionOp)
 {
   using cub::detail::unsafe_bitcast;
   using T                       = ::cuda::std::iter_value_t<Input>;
@@ -388,7 +391,7 @@ template <typename Input,
           typename ReductionOp,
           typename ValueT = ::cuda::std::iter_value_t<Input>,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT>>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT
 ThreadReducePartial(const Input& input, ReductionOp reduction_op, int valid_items)
 {
   static_assert(is_fixed_size_random_access_range_v<Input>,
@@ -413,7 +416,7 @@ ThreadReducePartial(const Input& input, ReductionOp reduction_op, int valid_item
  **********************************************************************************************************************/
 
 template <typename Input, typename ReductionOp, typename ValueT, typename AccumT>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op)
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op)
 {
   using namespace cub::detail;
   static_assert(is_fixed_size_random_access_range_v<Input>,
@@ -509,7 +512,7 @@ template <typename Input,
           typename PrefixT,
           typename ValueT = ::cuda::std::iter_value_t<Input>,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT, PrefixT>>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT
 ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
 {
   using namespace cub::detail;

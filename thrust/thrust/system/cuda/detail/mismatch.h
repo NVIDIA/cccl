@@ -56,7 +56,7 @@ THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
 template <class Derived, class InputIt1, class InputIt2, class BinaryPred>
-::cuda::std::pair<InputIt1, InputIt2> _CCCL_HOST_DEVICE
+::cuda::std::pair<InputIt1, InputIt2> _CCCL_HOST_DEVICE_API
 mismatch(execution_policy<Derived>& policy, InputIt1 first1, InputIt1 last1, InputIt2 first2, BinaryPred binary_pred)
 {
   const auto n            = ::cuda::std::distance(first1, last1);
@@ -68,15 +68,15 @@ mismatch(execution_policy<Derived>& policy, InputIt1 first1, InputIt1 last1, Inp
 }
 
 template <class Derived, class InputIt1, class InputIt2>
-::cuda::std::pair<InputIt1, InputIt2> _CCCL_HOST_DEVICE
-mismatch(execution_policy<Derived>& policy, InputIt1 first1, InputIt1 last1, InputIt2 first2)
+::cuda::std::pair<InputIt1, InputIt2>
+  _CCCL_HOST_DEVICE_API mismatch(execution_policy<Derived>& policy, InputIt1 first1, InputIt1 last1, InputIt2 first2)
 {
   using InputType1 = thrust::detail::it_value_t<InputIt1>;
   return cuda_cub::mismatch(policy, first1, last1, first2, ::cuda::std::equal_to<InputType1>());
 }
 
 template <class Derived, class InputIt1, class InputIt2, class BinaryPred>
-::cuda::std::pair<InputIt1, InputIt2> _CCCL_HOST_DEVICE mismatch(
+::cuda::std::pair<InputIt1, InputIt2> _CCCL_HOST_DEVICE_API mismatch(
   execution_policy<Derived>& policy,
   InputIt1 first1,
   InputIt1 last1,
@@ -95,7 +95,7 @@ template <class Derived, class InputIt1, class InputIt2, class BinaryPred>
 }
 
 template <class Derived, class InputIt1, class InputIt2>
-::cuda::std::pair<InputIt1, InputIt2> _CCCL_HOST_DEVICE
+::cuda::std::pair<InputIt1, InputIt2> _CCCL_HOST_DEVICE_API
 mismatch(execution_policy<Derived>& policy, InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2)
 {
   using InputType1 = thrust::detail::it_value_t<InputIt1>;

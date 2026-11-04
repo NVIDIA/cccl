@@ -35,19 +35,19 @@ class normal_iterator : public iterator_adaptor<normal_iterator<Pointer>, Pointe
 public:
   _CCCL_HIDE_FROM_ABI normal_iterator() = default;
 
-  _CCCL_HOST_DEVICE normal_iterator(Pointer p)
+  _CCCL_HOST_DEVICE_API normal_iterator(Pointer p)
       : super_t(p)
   {}
 
   template <typename OtherPointer>
-  _CCCL_HOST_DEVICE
+  _CCCL_HOST_DEVICE_API
   normal_iterator(const normal_iterator<OtherPointer>& other, enable_if_convertible_t<OtherPointer, Pointer>* = nullptr)
       : super_t(other.base())
   {}
 };
 
 template <typename Pointer>
-_CCCL_HOST_DEVICE normal_iterator<Pointer> make_normal_iterator(Pointer ptr)
+_CCCL_HOST_DEVICE_API normal_iterator<Pointer> make_normal_iterator(Pointer ptr)
 {
   return normal_iterator<Pointer>(ptr);
 }

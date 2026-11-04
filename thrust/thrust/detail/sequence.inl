@@ -34,7 +34,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 sequence(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::sequence");
@@ -44,7 +44,7 @@ sequence(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Forwa
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE void sequence(
+_CCCL_HOST_DEVICE_API void sequence(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, T init)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::sequence");
@@ -54,7 +54,7 @@ _CCCL_HOST_DEVICE void sequence(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE void sequence(
+_CCCL_HOST_DEVICE_API void sequence(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -67,7 +67,7 @@ _CCCL_HOST_DEVICE void sequence(
 } // end sequence()
 
 template <typename ForwardIterator>
-void sequence(ForwardIterator first, ForwardIterator last)
+_CCCL_HOST_API void sequence(ForwardIterator first, ForwardIterator last)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::sequence");
   using thrust::system::detail::generic::select_system;
@@ -80,7 +80,7 @@ void sequence(ForwardIterator first, ForwardIterator last)
 } // end sequence()
 
 template <typename ForwardIterator, typename T>
-void sequence(ForwardIterator first, ForwardIterator last, T init)
+_CCCL_HOST_API void sequence(ForwardIterator first, ForwardIterator last, T init)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::sequence");
   using thrust::system::detail::generic::select_system;
@@ -93,7 +93,7 @@ void sequence(ForwardIterator first, ForwardIterator last, T init)
 } // end sequence()
 
 template <typename ForwardIterator, typename T>
-void sequence(ForwardIterator first, ForwardIterator last, T init, T step)
+_CCCL_HOST_API void sequence(ForwardIterator first, ForwardIterator last, T init, T step)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::sequence");
   using thrust::system::detail::generic::select_system;

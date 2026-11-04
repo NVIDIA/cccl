@@ -35,10 +35,11 @@ _CCCL_DIAG_POP
 namespace c2h
 {
 template <template <typename> class... Ps>
-void gen(seed_t seed,
-         device_vector<custom_type_t<Ps...>>& data,
-         custom_type_t<Ps...> min = ::cuda::std::numeric_limits<custom_type_t<Ps...>>::lowest(),
-         custom_type_t<Ps...> max = ::cuda::std::numeric_limits<custom_type_t<Ps...>>::max())
+_CCCL_HOST_API void
+gen(seed_t seed,
+    device_vector<custom_type_t<Ps...>>& data,
+    custom_type_t<Ps...> min = ::cuda::std::numeric_limits<custom_type_t<Ps...>>::lowest(),
+    custom_type_t<Ps...> max = ::cuda::std::numeric_limits<custom_type_t<Ps...>>::max())
 {
   detail::gen_custom_type_state(
     seed,
@@ -50,16 +51,17 @@ void gen(seed_t seed,
 }
 
 template <typename T>
-void gen(seed_t seed,
-         device_vector<T>& data,
-         T min = ::cuda::std::numeric_limits<T>::lowest(),
-         T max = ::cuda::std::numeric_limits<T>::max())
+_CCCL_HOST_API void
+gen(seed_t seed,
+    device_vector<T>& data,
+    T min = ::cuda::std::numeric_limits<T>::lowest(),
+    T max = ::cuda::std::numeric_limits<T>::max())
 {
   detail::gen_values_between(seed, {THRUST_NS_QUALIFIER::raw_pointer_cast(data.data()), data.size()}, min, max);
 }
 
 template <typename T>
-void gen(modulo_t mod, device_vector<T>& data)
+_CCCL_HOST_API void gen(modulo_t mod, device_vector<T>& data)
 {
   detail::gen_values_cyclic(mod, ::cuda::std::span<T>{THRUST_NS_QUALIFIER::raw_pointer_cast(data.data()), data.size()});
 }
@@ -72,7 +74,8 @@ void gen(modulo_t mod, device_vector<T>& data)
  * `max_segment_size` items.
  */
 template <typename T>
-device_vector<T> gen_uniform_offsets(seed_t seed, T total_elements, T min_segment_size, T max_segment_size)
+_CCCL_HOST_API device_vector<T>
+gen_uniform_offsets(seed_t seed, T total_elements, T min_segment_size, T max_segment_size)
 {
   const auto offsets_size = ::c2h::detail::checked_uniform_offsets_size(total_elements);
   device_vector<T> segment_offsets(offsets_size);
@@ -91,7 +94,7 @@ device_vector<T> gen_uniform_offsets(seed_t seed, T total_elements, T min_segmen
  * `gen_uniform_offset`.
  */
 template <typename OffsetT, typename KeyT>
-void init_key_segments(const device_vector<OffsetT>& segment_offsets, device_vector<KeyT>& keys_out)
+_CCCL_HOST_API void init_key_segments(const device_vector<OffsetT>& segment_offsets, device_vector<KeyT>& keys_out)
 {
   detail::init_key_segments(
     ::cuda::std::span<const OffsetT>{
@@ -101,7 +104,8 @@ void init_key_segments(const device_vector<OffsetT>& segment_offsets, device_vec
 }
 
 template <typename OffsetT, template <typename> class... Ps>
-void init_key_segments(const device_vector<OffsetT>& segment_offsets, device_vector<custom_type_t<Ps...>>& keys_out)
+_CCCL_HOST_API void
+init_key_segments(const device_vector<OffsetT>& segment_offsets, device_vector<custom_type_t<Ps...>>& keys_out)
 {
   detail::init_key_segments(
     ::cuda::std::span<const OffsetT>{

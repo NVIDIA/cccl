@@ -104,6 +104,7 @@ public:
       // We don't need to do a search because by virtue of being here (the function has no
       // visibility attributes) we know that it's missing the macro.
       const auto begin = SM.getExpansionLoc(function->getInnerLocStart());
+
       diag(function->getLocation(), "use _CCCL_HIDE_FROM_ABI to limit ABI visibility")
         << FixItHint::CreateInsertion(begin, "_CCCL_HIDE_FROM_ABI ");
       return;
@@ -119,11 +120,34 @@ private:
 
     if (matches.empty())
     {
+      auto loc = fn->getLocation();
+      // Unwrap any macros, otherwise given:
+      //
+      // #define MACRO(name) __device__ name()
+      //
+      // MACRO(Foo);
+      //
+      // we emit:
+      //
+      // error: Use _CCCL_DEVICE_API...
+      // | MACRO(Foo);
+      // |      ^
+      //
+      // Which is obviously not useful. We want to point to "__device__ name()" instead. The
+      // other path below doesn't need this treatment because it already searches the textual
+      // definition pointed to by the function definition and therefore implicitly unwraps
+      // macros.
+      while (loc.isMacroID() && SM.isMacroArgExpansion(loc))
+      {
+        loc = SM.getImmediateExpansionRange(loc).getBegin();
+      }
+      loc = SM.getSpellingLoc(loc);
+
       // Without an execution-space macro, we cannot choose an API macro for the fix-it.
-      diag(fn->getLocation(),
+      diag(loc,
            "function needs an API macro (one of _CCCL_API, _CCCL_DEVICE_API, or _CCCL_HOST_API) to limit ABI "
            "visibility")
-        << fn->getLocation();
+        << loc;
       return;
     }
 

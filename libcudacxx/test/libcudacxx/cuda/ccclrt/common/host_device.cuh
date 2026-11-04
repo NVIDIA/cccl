@@ -22,7 +22,7 @@ void __global__ lambda_launcher(const Dims dims, const Lambda lambda)
 }
 
 template <typename Comparator, unsigned int FilterArch>
-bool arch_filter(const cudaDeviceProp& props)
+_CCCL_HOST_API bool arch_filter(const cudaDeviceProp& props)
 {
   const int act_arch = props.major * 10 + props.minor;
   if (Comparator()(act_arch, FilterArch))
@@ -32,12 +32,12 @@ bool arch_filter(const cudaDeviceProp& props)
   return false;
 }
 
-inline bool skip_host_exec(bool (* /* filter */)(const cudaDeviceProp&))
+_CCCL_HOST_API inline bool skip_host_exec(bool (* /* filter */)(const cudaDeviceProp&))
 {
   return false;
 }
 
-inline bool skip_device_exec(bool (*filter)(const cudaDeviceProp&))
+_CCCL_HOST_API inline bool skip_device_exec(bool (*filter)(const cudaDeviceProp&))
 {
   cudaDeviceProp props{};
   REQUIRE_CUDART(cudaGetDeviceProperties(&props, 0));
@@ -45,7 +45,7 @@ inline bool skip_device_exec(bool (*filter)(const cudaDeviceProp&))
 }
 
 template <typename Dims, typename Lambda, typename... Filters>
-void test_host_dev(const Dims& dims, const Lambda& lambda, const Filters&... filters)
+_CCCL_HOST_API void test_host_dev(const Dims& dims, const Lambda& lambda, const Filters&... filters)
 {
   SECTION("Host execution")
   {
@@ -91,7 +91,7 @@ void test_host_dev(const Dims& dims, const Lambda& lambda, const Filters&... fil
 }
 
 template <typename Fn, typename Tuple>
-void apply_each(const Fn& fn, const Tuple& tuple)
+_CCCL_HOST_API void apply_each(const Fn& fn, const Tuple& tuple)
 {
   cuda::std::apply(
     [&](const auto&... elems) {

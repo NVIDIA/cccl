@@ -194,7 +194,7 @@ public:
    */
   using pointer = typename super_t::pointer;
 
-  device_reference(const device_reference& other) = default;
+  _CCCL_HIDE_FROM_ABI device_reference(const device_reference& other) = default;
 
   /*! This copy constructor accepts a const reference to another
    *  \p device_reference. After this \p device_reference is constructed,
@@ -231,7 +231,7 @@ public:
    *  \endverbatim
    */
   template <typename OtherT>
-  _CCCL_HOST_DEVICE device_reference(
+  _CCCL_HOST_DEVICE_API device_reference(
     const device_reference<OtherT>& other,
     thrust::detail::enable_if_convertible_t<typename device_reference<OtherT>::pointer, pointer>* = nullptr)
       : super_t(other)
@@ -270,7 +270,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE explicit device_reference(const pointer& ptr)
+  _CCCL_HOST_DEVICE_API explicit device_reference(const pointer& ptr)
       : super_t(ptr)
   {}
 
@@ -278,7 +278,7 @@ public:
   // reference writes the referent and not the proxy. This mirrors
   // std::vector<bool>::reference and is what `*it = x` needs for output iterators.
   // NOLINTNEXTLINE(misc-unconventional-assign-operator)
-  _CCCL_HOST_DEVICE const device_reference& operator=(const device_reference& other) const
+  _CCCL_HOST_DEVICE_API const device_reference& operator=(const device_reference& other) const
   {
     return super_t::operator=(other);
   }
@@ -296,7 +296,7 @@ public:
    */
   // NOLINTBEGIN(misc-unconventional-assign-operator): proxy reference, see above
   template <typename OtherT>
-  _CCCL_HOST_DEVICE const device_reference& operator=(const device_reference<OtherT>& other) const
+  _CCCL_HOST_DEVICE_API const device_reference& operator=(const device_reference<OtherT>& other) const
   {
     return super_t::operator=(other);
   }
@@ -313,7 +313,7 @@ public:
    *  \endverbatim
    */
   // NOLINTNEXTLINE(misc-unconventional-assign-operator): proxy reference, see above
-  _CCCL_HOST_DEVICE const device_reference& operator=(const value_type& x) const
+  _CCCL_HOST_DEVICE_API const device_reference& operator=(const value_type& x) const
   {
     return super_t::operator=(x);
   }
@@ -989,7 +989,7 @@ public:
  */
 // note: this is not a hidden friend, because nvcc 12.0 will miscompile with: error: incomplete type is not allowed
 template <typename T>
-_CCCL_HOST_DEVICE void swap(device_reference<T> x, device_reference<T> y) noexcept(noexcept(x.swap(y)))
+_CCCL_HOST_DEVICE_API void swap(device_reference<T> x, device_reference<T> y) noexcept(noexcept(x.swap(y)))
 {
   x.swap(y);
 }

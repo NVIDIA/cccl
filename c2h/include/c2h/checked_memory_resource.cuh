@@ -237,7 +237,7 @@ make_host_buffer(::cuda::stream_ref stream, ::cuda::device_ref device, ::cuda::s
 // Requires: device must refer to the current C2H test device.
 // Requires: stream must be valid for device. The legacy default stream is supported.
 template <typename T>
-[[nodiscard]] auto
+[[nodiscard]] _CCCL_HOST_API auto
 make_host_buffer(cuda::stream_ref stream, cuda::device_ref device, std::size_t num_items, const T& value)
 {
   auto result = ::c2h::make_host_buffer<T>(stream, device, num_items, cuda::no_init);

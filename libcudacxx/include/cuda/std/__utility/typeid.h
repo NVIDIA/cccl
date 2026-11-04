@@ -371,7 +371,7 @@ private:
   friend struct __type_info_ptr_;
   friend struct __type_info_ref_;
 
-  __type_info(__type_info const&) = default; // needed by __type_info_ptr_::operator*() before C++17
+  _CCCL_HIDE_FROM_ABI __type_info(__type_info const&) = default; // needed by __type_info_ptr_::operator*() before C++17
   __type_info_impl (*__pfn_)() noexcept;
 };
 

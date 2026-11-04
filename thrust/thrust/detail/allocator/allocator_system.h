@@ -85,7 +85,7 @@ struct allocator_system
                                         ::cuda::std::add_lvalue_reference<type>,
                                         ::cuda::std::type_identity<type>>::type;
 
-  _CCCL_HOST_DEVICE static get_result_type get(Alloc& a)
+  _CCCL_HOST_DEVICE_API static get_result_type get(Alloc& a)
   {
     return allocator_traits_detail::system(a);
   }

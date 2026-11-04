@@ -28,19 +28,19 @@ struct memory_info
 
 // If the environment variable C2H_DEVICE_MEMORY_LIMIT is set, the total device memory
 // will be limited to this number of bytes.
-inline std::size_t get_device_memory_limit()
+_CCCL_HOST_API inline std::size_t get_device_memory_limit()
 {
   static const std::size_t result = get_env_as_integer<std::size_t>("C2H_DEVICE_MEMORY_LIMIT");
   return result;
 }
 
-inline bool get_debug_checked_allocs()
+_CCCL_HOST_API inline bool get_debug_checked_allocs()
 {
   static const bool result = get_env_as_integer<long long>("C2H_DEBUG_CHECKED_ALLOC_FAILURES") != 0;
   return result;
 }
 
-inline cudaError_t get_device_memory(memory_info& info)
+_CCCL_HOST_API inline cudaError_t get_device_memory(memory_info& info)
 {
   static const std::size_t device_memory_limit = get_device_memory_limit();
 
@@ -62,7 +62,7 @@ inline cudaError_t get_device_memory(memory_info& info)
   return cudaSuccess;
 }
 
-inline cudaError_t check_free_device_memory(std::size_t bytes)
+_CCCL_HOST_API inline cudaError_t check_free_device_memory(std::size_t bytes)
 {
   memory_info info;
   const cudaError_t status = get_device_memory(info);
@@ -107,7 +107,7 @@ inline cudaError_t check_free_device_memory(std::size_t bytes)
 // Check available memory prior to calling cudaMalloc.
 // This avoids hangups and slowdowns from allocating swap / non-device memory
 // on some platforms, namely tegra.
-inline cudaError_t checked_cuda_malloc(void** ptr, std::size_t bytes)
+_CCCL_HOST_API inline cudaError_t checked_cuda_malloc(void** ptr, std::size_t bytes)
 {
   auto status = check_free_device_memory(bytes);
   if (status != cudaSuccess)
@@ -119,12 +119,12 @@ inline cudaError_t checked_cuda_malloc(void** ptr, std::size_t bytes)
 }
 
 // Returns whether alignment is valid and guaranteed to be satisfied by cudaMalloc.
-[[nodiscard]] inline bool cuda_malloc_satisfies_alignment(std::size_t alignment) noexcept
+[[nodiscard]] _CCCL_HOST_API inline bool cuda_malloc_satisfies_alignment(std::size_t alignment) noexcept
 {
   return ::cuda::__is_valid_alignment(alignment) && alignment <= ::cuda::mr::default_cuda_malloc_alignment;
 }
 
-[[nodiscard]] inline void* checked_device_allocate(int device, std::size_t bytes, std::size_t alignment)
+[[nodiscard]] _CCCL_HOST_API inline void* checked_device_allocate(int device, std::size_t bytes, std::size_t alignment)
 {
   if (!cuda_malloc_satisfies_alignment(alignment))
   {
@@ -149,7 +149,7 @@ inline cudaError_t checked_cuda_malloc(void** ptr, std::size_t bytes)
   return ptr;
 }
 
-inline void checked_device_deallocate(int device, void* ptr) noexcept
+_CCCL_HOST_API inline void checked_device_deallocate(int device, void* ptr) noexcept
 {
   if (ptr == nullptr)
   {
@@ -160,7 +160,7 @@ inline void checked_device_deallocate(int device, void* ptr) noexcept
   (void) cudaFree(ptr);
 }
 
-[[nodiscard]] inline std::size_t checked_host_allocation_size(std::size_t bytes, std::size_t alignment)
+[[nodiscard]] _CCCL_HOST_API inline std::size_t checked_host_allocation_size(std::size_t bytes, std::size_t alignment)
 {
   if (!::cuda::__is_valid_alignment(alignment))
   {
@@ -169,7 +169,7 @@ inline void checked_device_deallocate(int device, void* ptr) noexcept
   return bytes;
 }
 
-[[nodiscard]] inline bool is_integrated_device(int device)
+[[nodiscard]] _CCCL_HOST_API inline bool is_integrated_device(int device)
 {
   assert_current_device(device);
 
@@ -185,7 +185,7 @@ inline void checked_device_deallocate(int device, void* ptr) noexcept
   return result;
 }
 
-[[nodiscard]] inline void* checked_host_allocate(int device, std::size_t bytes, std::size_t alignment)
+[[nodiscard]] _CCCL_HOST_API inline void* checked_host_allocate(int device, std::size_t bytes, std::size_t alignment)
 {
   const std::size_t allocation_size = checked_host_allocation_size(bytes, alignment);
 
@@ -206,7 +206,8 @@ inline void checked_device_deallocate(int device, void* ptr) noexcept
   return ::operator new(bytes, std::align_val_t(alignment));
 }
 
-inline void checked_host_deallocate(void* ptr, [[maybe_unused]] std::size_t bytes, std::size_t alignment) noexcept
+_CCCL_HOST_API inline void
+checked_host_deallocate(void* ptr, [[maybe_unused]] std::size_t bytes, std::size_t alignment) noexcept
 {
   if (ptr == nullptr)
   {

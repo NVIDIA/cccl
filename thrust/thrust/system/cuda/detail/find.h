@@ -86,7 +86,7 @@ find_if_n_impl(execution_policy<Derived>& policy, InputIt first, Size num_items,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class Size, class Predicate>
-InputIt _CCCL_HOST_DEVICE
+InputIt _CCCL_HOST_DEVICE_API
 find_if_n(execution_policy<Derived>& policy, InputIt first, Size num_items, Predicate predicate)
 {
   if (num_items == 0)
@@ -103,20 +103,21 @@ find_if_n(execution_policy<Derived>& policy, InputIt first, Size num_items, Pred
 }
 
 template <class Derived, class InputIt, class Predicate>
-InputIt _CCCL_HOST_DEVICE find_if(execution_policy<Derived>& policy, InputIt first, InputIt last, Predicate predicate)
+InputIt _CCCL_HOST_DEVICE_API
+find_if(execution_policy<Derived>& policy, InputIt first, InputIt last, Predicate predicate)
 {
   return cuda_cub::find_if_n(policy, first, ::cuda::std::distance(first, last), predicate);
 }
 
 template <class Derived, class InputIt, class Predicate>
-InputIt _CCCL_HOST_DEVICE
+InputIt _CCCL_HOST_DEVICE_API
 find_if_not(execution_policy<Derived>& policy, InputIt first, InputIt last, Predicate predicate)
 {
   return cuda_cub::find_if(policy, first, last, ::cuda::std::not_fn(predicate));
 }
 
 template <class Derived, class InputIt, class T>
-InputIt _CCCL_HOST_DEVICE find(execution_policy<Derived>& policy, InputIt first, InputIt last, T const& value)
+InputIt _CCCL_HOST_DEVICE_API find(execution_policy<Derived>& policy, InputIt first, InputIt last, T const& value)
 {
   using thrust::placeholders::_1;
 

@@ -15,7 +15,7 @@
 namespace c2h
 {
 // TODO(bgruber): duplicated version of thrust/testing/unittest/system.h
-inline std::string demangle(const char* name)
+_CCCL_HOST_API inline std::string demangle(const char* name)
 {
 #if __GNUC__ && !_NVHPC_CUDA
   int status = 0;
@@ -30,7 +30,7 @@ inline std::string demangle(const char* name)
 
 // TODO(bgruber): duplicated version of thrust/testing/unittest/util.h
 template <typename T>
-std::string type_name()
+_CCCL_HOST_API std::string type_name()
 {
   return demangle(typeid(T).name());
 }

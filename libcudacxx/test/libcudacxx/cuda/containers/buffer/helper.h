@@ -57,7 +57,7 @@ __global__ void check_equal_value_kernel(Iter ptr, size_t size, Val value)
 }
 
 template <class Buffer>
-bool equal_range(const Buffer& buf)
+_CCCL_HOST_API bool equal_range(const Buffer& buf)
 {
   if constexpr (Buffer::properties_list::has_property(cuda::mr::host_accessible{}))
   {
@@ -79,7 +79,7 @@ bool equal_range(const Buffer& buf)
 }
 
 template <class Buffer, class T>
-bool compare_value(const T& value, const T& expected)
+_CCCL_HOST_API bool compare_value(const T& value, const T& expected)
 {
   if constexpr (!Buffer::properties_list::has_property(cuda::mr::device_accessible{}))
   {
@@ -102,7 +102,7 @@ bool compare_value(const T& value, const T& expected)
 }
 
 template <class Buffer, class T>
-void assign_value(T& value, const T& input)
+_CCCL_HOST_API void assign_value(T& value, const T& input)
 {
   if constexpr (!Buffer::properties_list::has_property(cuda::mr::device_accessible{}))
   {
@@ -128,18 +128,18 @@ struct equal_to_value
 {
   T value_;
 
-  explicit equal_to_value(T value) noexcept
+  _CCCL_HOST_API explicit equal_to_value(T value) noexcept
       : value_(value)
   {}
 
-  TEST_FUNC bool operator()(const T lhs, const T) const noexcept
+  _CCCL_HIDE_FROM_ABI TEST_FUNC bool operator()(const T lhs, const T) const noexcept
   {
     return lhs == value_;
   }
 };
 
 template <class Buffer>
-bool equal_size_value(const Buffer& buf, const size_t size, const typename Buffer::value_type value)
+_CCCL_HOST_API bool equal_size_value(const Buffer& buf, const size_t size, const typename Buffer::value_type value)
 {
   if constexpr (Buffer::properties_list::has_property(cuda::mr::host_accessible{}))
   {
@@ -166,7 +166,7 @@ bool equal_size_value(const Buffer& buf, const size_t size, const typename Buffe
 
 // Helper function to compare two ranges
 template <class Range1, class Range2>
-bool equal_range(const Range1& range1, const Range2& range2)
+_CCCL_HOST_API bool equal_range(const Range1& range1, const Range2& range2)
 {
   if constexpr (!Range1::properties_list::has_property(cuda::mr::device_accessible{}))
   {
@@ -182,7 +182,7 @@ bool equal_range(const Range1& range1, const Range2& range2)
 }
 
 template <class Buffer>
-void check_allocation_device(const Buffer& buf, cuda::device_ref device)
+_CCCL_HOST_API void check_allocation_device(const Buffer& buf, cuda::device_ref device)
 {
   ::cudaPointerAttributes attributes{};
   REQUIRE(::cudaPointerGetAttributes(&attributes, buf.data()) == ::cudaSuccess);
@@ -196,7 +196,7 @@ struct extract_properties;
 template <class T, class... Properties>
 struct extract_properties<cuda::buffer<T, Properties...>>
 {
-  static auto get_resource()
+  _CCCL_HOST_API static auto get_resource()
   {
     if constexpr (cuda::mr::__is_host_accessible<Properties...>)
     {
@@ -212,7 +212,7 @@ struct extract_properties<cuda::buffer<T, Properties...>>
     }
   }
 
-  static bool is_resource_supported()
+  _CCCL_HOST_API static bool is_resource_supported()
   {
     if constexpr (cuda::mr::__is_host_accessible<Properties...>)
     {
@@ -235,16 +235,17 @@ struct extract_properties<cuda::buffer<T, Properties...>>
 // operators against int
 struct custom_char3
 {
-  constexpr custom_char3() = default;
+  _CCCL_HIDE_FROM_ABI constexpr custom_char3() = default;
 
-  TEST_FUNC custom_char3(int v) noexcept
+  _CCCL_HIDE_FROM_ABI TEST_FUNC custom_char3(int v) noexcept
   {
     const auto u = static_cast<cuda::std::int16_t>(v);
 
     cuda::std::memcpy(data, &u, sizeof(u));
   }
 
-  TEST_FUNC constexpr friend bool operator==(const custom_char3& lhs, const custom_char3& rhs) noexcept
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr friend bool
+  operator==(const custom_char3& lhs, const custom_char3& rhs) noexcept
   {
     for (cuda::std::size_t i = 0; i < cuda::std::size(lhs.data); ++i)
     {
@@ -256,7 +257,8 @@ struct custom_char3
     return true;
   }
 
-  TEST_FUNC constexpr friend bool operator!=(const custom_char3& lhs, const custom_char3& rhs) noexcept
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr friend bool
+  operator!=(const custom_char3& lhs, const custom_char3& rhs) noexcept
   {
     return !(lhs == rhs);
   }

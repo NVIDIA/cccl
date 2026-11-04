@@ -46,7 +46,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
   return __ret;
 }
 
-[[nodiscard]] inline ::cuda::std::span<const device_ref> __devices()
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::span<const device_ref> __devices()
 {
   static const auto __devices = ::cuda::__make_devices();
   return ::cuda::std::span<const device_ref>{__devices.data(), __devices.size()};

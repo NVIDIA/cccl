@@ -84,7 +84,7 @@ using remove = ::cuda::std::__type_remove<TypeList, T>;
  * Types `T` and `U` must be the same size.
  */
 template <typename T, typename U>
-__host__ __device__ constexpr T SafeBitCast(const U& in) noexcept
+_CCCL_HOST_DEVICE_API constexpr T SafeBitCast(const U& in) noexcept
 {
   static_assert(sizeof(T) == sizeof(U), "Types must be same size.");
   T out;
@@ -93,48 +93,48 @@ __host__ __device__ constexpr T SafeBitCast(const U& in) noexcept
 }
 
 template <typename T>
-[[nodiscard]] constexpr bool isnan(T value) noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr bool isnan(T value) noexcept
 {
   return cuda::std::isnan(value);
 }
 
-[[nodiscard]] constexpr bool isnan(float1 val) noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr bool isnan(float1 val) noexcept
 {
   return (cuda::std::isnan(val.x));
 }
 
-[[nodiscard]] constexpr bool isnan(float2 val) noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr bool isnan(float2 val) noexcept
 {
   return (cuda::std::isnan(val.y) || cuda::std::isnan(val.x));
 }
 
-[[nodiscard]] constexpr bool isnan(float3 val) noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr bool isnan(float3 val) noexcept
 {
   return (cuda::std::isnan(val.z) || cuda::std::isnan(val.y) || cuda::std::isnan(val.x));
 }
 
-[[nodiscard]] constexpr bool isnan(float4 val) noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr bool isnan(float4 val) noexcept
 {
   return (cuda::std::isnan(val.y) || cuda::std::isnan(val.x) || cuda::std::isnan(val.w) || cuda::std::isnan(val.z));
 }
 
-[[nodiscard]] constexpr bool isnan(double1 val) noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr bool isnan(double1 val) noexcept
 {
   return (cuda::std::isnan(val.x));
 }
 
-[[nodiscard]] constexpr bool isnan(double2 val) noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr bool isnan(double2 val) noexcept
 {
   return (cuda::std::isnan(val.y) || cuda::std::isnan(val.x));
 }
 
-[[nodiscard]] constexpr bool isnan(double3 val) noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr bool isnan(double3 val) noexcept
 {
   return (cuda::std::isnan(val.z) || cuda::std::isnan(val.y) || cuda::std::isnan(val.x));
 }
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
-[[nodiscard]] constexpr bool isnan(double4 val) noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr bool isnan(double4 val) noexcept
 {
   return (cuda::std::isnan(val.y) || cuda::std::isnan(val.x) || cuda::std::isnan(val.w) || cuda::std::isnan(val.z));
 }
@@ -143,12 +143,12 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 // TODO: move to libcu++
 #if TEST_HALF_T()
 
-[[nodiscard]] constexpr bool isnan(__half2 value) noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr bool isnan(__half2 value) noexcept
 {
   return cuda::std::isnan(value.x) || cuda::std::isnan(value.y);
 }
 
-[[nodiscard]] constexpr bool isnan(half_t val) noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr bool isnan(half_t val) noexcept
 {
   const auto bits = SafeBitCast<uint16_t>(val);
   // commented bit is always true, leaving for documentation:
@@ -159,12 +159,12 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 #if TEST_BF_T()
 
-[[nodiscard]] constexpr bool isnan(__nv_bfloat162 value) noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr bool isnan(__nv_bfloat162 value) noexcept
 {
   return cuda::std::isnan(value.x) || cuda::std::isnan(value.y);
 }
 
-[[nodiscard]] constexpr bool isnan(bfloat16_t val) noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr bool isnan(bfloat16_t val) noexcept
 {
   const auto bits = SafeBitCast<uint16_t>(val);
   // commented bit is always true, leaving for documentation:
@@ -177,26 +177,26 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 namespace detail
 {
 template <class T>
-std::vector<T> to_vec(c2h::device_vector<T> const& vec)
+_CCCL_HOST_API std::vector<T> to_vec(c2h::device_vector<T> const& vec)
 {
   c2h::host_vector<T> temp = vec;
   return std::vector<T>{temp.begin(), temp.end()};
 }
 
 template <class T>
-std::vector<T> to_vec(c2h::host_vector<T> const& vec)
+_CCCL_HOST_API std::vector<T> to_vec(c2h::host_vector<T> const& vec)
 {
   return std::vector<T>{vec.begin(), vec.end()};
 }
 
 template <class T>
-std::vector<T> to_vec(std::vector<T> const& vec)
+_CCCL_HOST_API std::vector<T> to_vec(std::vector<T> const& vec)
 {
   return vec;
 }
 
 template <class T, class... Props>
-std::vector<T> to_vec(cuda::buffer<T, Props...> const& buf)
+_CCCL_HOST_API std::vector<T> to_vec(cuda::buffer<T, Props...> const& buf)
 {
   const auto host = cuda::make_buffer(buf.stream(), cuda::mr::legacy_pinned_memory_resource{}, buf);
 
@@ -237,16 +237,16 @@ class QuietMatchExpr : public Catch::ITransientExpression
 
 public:
   // ArgT can be a reference type, so the stored reference must use forward.
-  constexpr QuietMatchExpr(ArgT&& arg, // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
-                           MatcherT const& matcher)
+  _CCCL_HOST_API constexpr QuietMatchExpr(ArgT&& arg, // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+                                          MatcherT const& matcher)
       : ITransientExpression{true, matcher.match(arg)}
       , m_arg(cuda::std::forward<ArgT>(arg))
       , m_matcher(matcher)
   {}
 
-  virtual ~QuietMatchExpr() = default;
+  _CCCL_HIDE_FROM_ABI virtual ~QuietMatchExpr() = default;
 
-  void streamReconstructedExpression(std::ostream& os) const override
+  _CCCL_HOST_API void streamReconstructedExpression(std::ostream& os) const override
   {
     os << m_matcher.toString();
   }
@@ -287,7 +287,7 @@ namespace detail
 struct equal_or_nans
 {
   template <typename T>
-  bool operator()(const T& a, const T& b) const
+  _CCCL_HOST_API bool operator()(const T& a, const T& b) const
   {
     return (c2h::isnan(a) && c2h::isnan(b)) || a == b;
   }
@@ -296,7 +296,7 @@ struct equal_or_nans
 struct bitwise_equal
 {
   template <typename T>
-  bool operator()(const T& a, const T& b) const
+  _CCCL_HOST_API bool operator()(const T& a, const T& b) const
   {
     return ::cuda::std::memcmp(&a, &b, sizeof(T)) == 0;
   }
@@ -306,11 +306,11 @@ struct bitwise_equal
 template <typename Range, typename Pred>
 struct CustomEqualsRangeMatcher : Catch::Matchers::MatcherBase<Range>
 {
-  CustomEqualsRangeMatcher(Range const& range)
+  _CCCL_HOST_API CustomEqualsRangeMatcher(Range const& range)
       : range{range}
   {}
 
-  bool match(Range const& other) const override
+  _CCCL_HOST_API bool match(Range const& other) const override
   {
     using std::begin;
     using std::end;
@@ -321,7 +321,7 @@ struct CustomEqualsRangeMatcher : Catch::Matchers::MatcherBase<Range>
   // Catch2 matchers must expose describe() publicly so that composing matchers
   // (AllMatch, Contains, SizeIs, ...) can call it on a member matcher.
   // NOLINTNEXTLINE(misc-override-with-different-visibility)
-  std::string describe() const override
+  _CCCL_HOST_API std::string describe() const override
   {
     return "Equals: " + Catch::rangeToString(range);
   }
@@ -331,13 +331,13 @@ private:
 };
 
 template <typename Range>
-auto NaNEqualsRange(const Range& range) -> CustomEqualsRangeMatcher<Range, equal_or_nans>
+_CCCL_HOST_API auto NaNEqualsRange(const Range& range) -> CustomEqualsRangeMatcher<Range, equal_or_nans>
 {
   return CustomEqualsRangeMatcher<Range, equal_or_nans>(range);
 }
 
 template <typename Range>
-auto BitwiseEqualsRange(const Range& range) -> CustomEqualsRangeMatcher<Range, bitwise_equal>
+_CCCL_HOST_API auto BitwiseEqualsRange(const Range& range) -> CustomEqualsRangeMatcher<Range, bitwise_equal>
 {
   return CustomEqualsRangeMatcher<Range, bitwise_equal>(range);
 }
@@ -386,7 +386,7 @@ struct vector_compare_result_t
 };
 
 template <typename LhsRange, typename RhsRange, typename T = typename LhsRange::value_type>
-auto compare_host_ranges(const LhsRange& actual, const RhsRange& expected) -> vector_compare_result_t<T>
+_CCCL_HOST_API auto compare_host_ranges(const LhsRange& actual, const RhsRange& expected) -> vector_compare_result_t<T>
 {
   constexpr size_t good_values_before_mismatch = 3;
   constexpr size_t first_mismatches_count      = 5;
@@ -456,20 +456,22 @@ auto compare_host_ranges(const LhsRange& actual, const RhsRange& expected) -> ve
 }
 
 template <typename T>
-auto compare_vectors(const host_vector<T>& actual, const host_vector<T>& expected) -> vector_compare_result_t<T>
+_CCCL_HOST_API auto compare_vectors(const host_vector<T>& actual, const host_vector<T>& expected)
+  -> vector_compare_result_t<T>
 {
   return compare_host_ranges(actual, expected);
 }
 
 template <typename T>
-auto compare_vectors(const device_vector<T>& actual, const device_vector<T>& expected) -> vector_compare_result_t<T>
+_CCCL_HOST_API auto compare_vectors(const device_vector<T>& actual, const device_vector<T>& expected)
+  -> vector_compare_result_t<T>
 {
   return compare_vectors<T>(host_vector<T>(actual), host_vector<T>(expected));
 }
 
 template <typename T, typename... LhsProps, typename... RhsProps>
-auto compare_vectors(const cuda::buffer<T, LhsProps...>& actual, const cuda::buffer<T, RhsProps...>& expected)
-  -> vector_compare_result_t<T>
+_CCCL_HOST_API auto compare_vectors(const cuda::buffer<T, LhsProps...>& actual,
+                                    const cuda::buffer<T, RhsProps...>& expected) -> vector_compare_result_t<T>
 {
   const auto actual_host   = cuda::make_buffer(actual.stream(), cuda::mr::legacy_pinned_memory_resource{}, actual);
   const auto expected_host = cuda::make_buffer(expected.stream(), cuda::mr::legacy_pinned_memory_resource{}, expected);
@@ -480,13 +482,13 @@ auto compare_vectors(const cuda::buffer<T, LhsProps...>& actual, const cuda::buf
 }
 
 template <typename LhsVec, typename RhsVec, typename T = typename LhsVec::value_type>
-auto compare_vectors(const LhsVec& actual, const RhsVec& expected) -> vector_compare_result_t<T>
+_CCCL_HOST_API auto compare_vectors(const LhsVec& actual, const RhsVec& expected) -> vector_compare_result_t<T>
 {
   return compare_vectors<T>(host_vector<T>(actual), host_vector<T>(expected));
 }
 
 template <typename T>
-void print_comparison(const vector_compare_result_t<T>& res, std::ostream& os)
+_CCCL_HOST_API void print_comparison(const vector_compare_result_t<T>& res, std::ostream& os)
 {
   if (res.actual_size != res.expected_size)
   {
@@ -535,12 +537,12 @@ void print_comparison(const vector_compare_result_t<T>& res, std::ostream& os)
 template <typename Vec>
 struct vector_matcher : Catch::Matchers::MatcherGenericBase
 {
-  vector_matcher(Vec const& expected)
+  _CCCL_HOST_API vector_matcher(Vec const& expected)
       : expected_vec{expected}
   {}
 
   template <typename OtherVec>
-  bool match(OtherVec const& actual_vec) const // TODO(Bgruber): remove const?
+  _CCCL_HOST_API bool match(OtherVec const& actual_vec) const // TODO(Bgruber): remove const?
   {
     comparison_result = compare_vectors(actual_vec, expected_vec);
     return comparison_result.actual_size == comparison_result.expected_size && comparison_result.total_mismatches == 0;
@@ -548,7 +550,7 @@ struct vector_matcher : Catch::Matchers::MatcherGenericBase
 
   // See the note on CustomEqualsRangeMatcher::describe above.
   // NOLINTNEXTLINE(misc-override-with-different-visibility)
-  std::string describe() const override
+  _CCCL_HOST_API std::string describe() const override
   {
     std::stringstream ss;
     print_comparison(comparison_result, ss);
@@ -563,14 +565,15 @@ private:
 
 //! Compare thrust vectors in a match expression. Example: CHECK_THAT_QUIET(vec_a, Equals(vec_v))
 template <typename T, typename Alloc>
-auto Equals(const THRUST_NS_QUALIFIER::detail::vector_base<T, Alloc>& expected)
+_CCCL_HOST_API auto Equals(const THRUST_NS_QUALIFIER::detail::vector_base<T, Alloc>& expected)
   -> c2h::detail::vector_matcher<THRUST_NS_QUALIFIER::detail::vector_base<T, Alloc>>
 {
   return {expected};
 }
 
 template <typename T, typename... Props>
-auto Equals(const cuda::buffer<T, Props...>& expected) -> c2h::detail::vector_matcher<cuda::buffer<T, Props...>>
+_CCCL_HOST_API auto Equals(const cuda::buffer<T, Props...>& expected)
+  -> c2h::detail::vector_matcher<cuda::buffer<T, Props...>>
 {
   return {expected};
 }
@@ -584,17 +587,17 @@ template <typename T1,
           // provide this operator only when the pair's content is also streamable
           ::cuda::std::void_t<decltype(::cuda::std::declval<::std::ostream>()
                                        << ::cuda::std::declval<T1>() << ::cuda::std::declval<T2>())>* = nullptr>
-::std::ostream& operator<<(::std::ostream& os, const pair<T1, T2>& pair)
+_CCCL_HOST_API ::std::ostream& operator<<(::std::ostream& os, const pair<T1, T2>& pair)
 {
   return os << "[" << pair.first << ", " << pair.second << "]";
 }
 
 template <size_t N, typename... T>
-enable_if_t<(N == sizeof...(T))> print_elem(::std::ostream&, const tuple<T...>&)
+_CCCL_HOST_API enable_if_t<(N == sizeof...(T))> print_elem(::std::ostream&, const tuple<T...>&)
 {}
 
 template <size_t N, typename... T>
-enable_if_t<(N < sizeof...(T))> print_elem(::std::ostream& os, const tuple<T...>& tup)
+_CCCL_HOST_API enable_if_t<(N < sizeof...(T))> print_elem(::std::ostream& os, const tuple<T...>& tup)
 {
   if constexpr (N != 0)
   {
@@ -605,7 +608,7 @@ enable_if_t<(N < sizeof...(T))> print_elem(::std::ostream& os, const tuple<T...>
 }
 
 template <typename... T>
-::std::ostream& operator<<(::std::ostream& os, const tuple<T...>& tup)
+_CCCL_HOST_API ::std::ostream& operator<<(::std::ostream& os, const tuple<T...>& tup)
 {
   os << "[";
   ::cuda::std::print_elem<0>(os, tup);
@@ -615,7 +618,7 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 template <typename T, typename... Props>
-::std::ostream& operator<<(::std::ostream& os, const cuda::buffer<T, Props...>& buffer)
+_CCCL_HOST_API ::std::ostream& operator<<(::std::ostream& os, const cuda::buffer<T, Props...>& buffer)
 {
   const auto host_buf = cuda::make_buffer(buffer.stream(), cuda::mr::legacy_pinned_memory_resource{}, buffer);
 
@@ -628,7 +631,7 @@ _CCCL_END_NAMESPACE_CUDA
 template <>
 struct Catch::StringMaker<cudaError>
 {
-  static auto convert(cudaError e) -> std::string
+  _CCCL_HOST_API static auto convert(cudaError e) -> std::string
   {
     return std::to_string(cuda::std::to_underlying(e)) + " (" + cudaGetErrorString(e) + ")";
   }

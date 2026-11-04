@@ -54,7 +54,7 @@ struct ReducePassPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ReducePassPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const ReducePassPolicy& p)
   {
     return os << "ReducePassPolicy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << ", .vec_size = " << p.vec_size
@@ -83,7 +83,7 @@ struct ReducePolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ReducePolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const ReducePolicy& p)
   {
     return os << "ReducePolicy { .multi_tile = " << p.multi_tile << ", .single_tile = " << p.single_tile << " }";
   }
@@ -112,7 +112,7 @@ concept reduce_policy_selector = policy_selector<T, ReducePolicy>;
 template <typename PolicyT, typename = void>
 struct ReducePolicyWrapper : PolicyT
 {
-  _CCCL_HOST_DEVICE ReducePolicyWrapper(PolicyT base)
+  _CCCL_HOST_DEVICE_API ReducePolicyWrapper(PolicyT base)
       : PolicyT(base)
   {}
 };
@@ -123,7 +123,7 @@ struct ReducePolicyWrapper<
   StaticPolicyT,
   ::cuda::std::void_t<typename StaticPolicyT::ReducePolicy, typename StaticPolicyT::SingleTilePolicy>> : StaticPolicyT
 {
-  _CCCL_HOST_DEVICE ReducePolicyWrapper(StaticPolicyT base)
+  _CCCL_HOST_DEVICE_API ReducePolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
 
@@ -135,7 +135,7 @@ struct ReducePolicyWrapper<
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the dispatchers
 template <typename PolicyT>
-_CCCL_HOST_DEVICE ReducePolicyWrapper<PolicyT> MakeReducePolicyWrapper(PolicyT policy)
+_CCCL_HOST_DEVICE_API ReducePolicyWrapper<PolicyT> MakeReducePolicyWrapper(PolicyT policy)
 {
   return ReducePolicyWrapper<PolicyT>{policy};
 }
@@ -162,7 +162,7 @@ enum class accum_size
   unknown
 };
 template <class AccumT>
-_CCCL_HOST_DEVICE constexpr accum_size classify_accum_size()
+_CCCL_HOST_DEVICE_API constexpr accum_size classify_accum_size()
 {
   return sizeof(AccumT) == 1 ? accum_size::_1
        : sizeof(AccumT) == 2 ? accum_size::_2
@@ -173,7 +173,7 @@ _CCCL_HOST_DEVICE constexpr accum_size classify_accum_size()
          : accum_size::unknown;
 }
 template <class OffsetT>
-_CCCL_HOST_DEVICE constexpr offset_size classify_offset_size()
+_CCCL_HOST_DEVICE_API constexpr offset_size classify_offset_size()
 {
   return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
 }

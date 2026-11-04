@@ -25,7 +25,7 @@ private:
   using super_t = BaseAllocator;
 
 public:
-  _CCCL_HOST_DEVICE no_throw_allocator(const BaseAllocator& other = BaseAllocator())
+  _CCCL_HOST_DEVICE_API no_throw_allocator(const BaseAllocator& other = BaseAllocator())
       : super_t(other)
   {}
 
@@ -35,7 +35,7 @@ public:
     using other = no_throw_allocator<typename super_t::template rebind<U>::other>;
   }; // end rebind
 
-  _CCCL_HOST_DEVICE void deallocate(typename super_t::pointer p, typename super_t::size_type n) noexcept
+  _CCCL_HOST_DEVICE_API void deallocate(typename super_t::pointer p, typename super_t::size_type n) noexcept
   {
     NV_IF_TARGET(
       NV_IS_HOST,
@@ -47,12 +47,12 @@ public:
       (super_t::deallocate(p, n);));
   } // end deallocate()
 
-  _CCCL_HOST_DEVICE bool operator==(no_throw_allocator const& other)
+  _CCCL_HOST_DEVICE_API bool operator==(no_throw_allocator const& other)
   {
     return super_t::operator==(other);
   }
 
-  _CCCL_HOST_DEVICE bool operator!=(no_throw_allocator const& other)
+  _CCCL_HOST_DEVICE_API bool operator!=(no_throw_allocator const& other)
   {
     return super_t::operator!=(other);
   }

@@ -47,9 +47,9 @@ struct __archetype;
 template <>
 struct __archetype<false, false> // immovable archetype
 {
-  __archetype()                   = default;
-  __archetype(__archetype&&)      = delete;
-  __archetype(const __archetype&) = delete;
+  _CCCL_HIDE_FROM_ABI __archetype() = default;
+  __archetype(__archetype&&)        = delete;
+  __archetype(const __archetype&)   = delete;
 
   template <class _Value>
   _CCCL_HOST_DEVICE_API __archetype(_Value) noexcept;
@@ -61,7 +61,7 @@ struct __archetype<false, false> // immovable archetype
 template <>
 struct __archetype<true, false> : __archetype<false, false> // movable archetype
 {
-  __archetype() = default;
+  _CCCL_HIDE_FROM_ABI __archetype() = default;
   _CCCL_HOST_DEVICE_API __archetype(__archetype&&) noexcept;
   __archetype(const __archetype&) = delete;
 };
@@ -70,7 +70,7 @@ struct __archetype<true, false> : __archetype<false, false> // movable archetype
 template <>
 struct __archetype<true, true> : __archetype<true, false>
 {
-  __archetype() = default;
+  _CCCL_HIDE_FROM_ABI __archetype() = default;
   _CCCL_HOST_DEVICE_API __archetype(__archetype const&);
 };
 

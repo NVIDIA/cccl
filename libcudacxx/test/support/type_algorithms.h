@@ -50,14 +50,14 @@ struct concatenate<type_list<Types1...>, type_list<Types2...>, Rest...>
 };
 
 template <class... Types>
-TEST_FUNC constexpr void swallow(Types...)
+_CCCL_HIDE_FROM_ABI TEST_FUNC constexpr void swallow(Types...)
 {}
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4864) // nvbug5765092 latest toolchain complains about missing template
 
 template <class... Types, class Functor>
-TEST_FUNC constexpr void for_each(type_list<Types...>, Functor f)
+_CCCL_HIDE_FROM_ABI TEST_FUNC constexpr void for_each(type_list<Types...>, Functor f)
 {
   swallow((f.template operator()<Types>(), 0)...);
 }
@@ -76,13 +76,13 @@ struct apply_type_identity
   Func func_;
 
   _CCCL_EXEC_CHECK_DISABLE
-  TEST_FUNC apply_type_identity(Func func)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC apply_type_identity(Func func)
       : func_(func)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class... Args>
-  TEST_FUNC decltype(auto) operator()() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC decltype(auto) operator()() const
   {
     return func_(type_identity<Args>{}...);
   }

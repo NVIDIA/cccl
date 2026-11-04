@@ -71,7 +71,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
 
 #if !_CCCL_COMPILER(NVRTC)
   template <class K, class... Args>
-  cudaError_t _CCCL_HOST doit_host(K k, Args const&... args) const
+  cudaError_t _CCCL_HOST_API doit_host(K k, Args const&... args) const
   {
 #  if _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()
     const bool has_cluster = cluster_dim.x != 0u;
@@ -136,18 +136,18 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
 #endif // !_CCCL_COMPILER(NVRTC)
 
   template <class T>
-  size_t _CCCL_DEVICE align_up(size_t offset) const
+  size_t _CCCL_DEVICE_API align_up(size_t offset) const
   {
     return ::cuda::ceil_div(offset, alignof(T)) * alignof(T);
   }
 
-  size_t _CCCL_DEVICE argument_pack_size(size_t size) const
+  size_t _CCCL_DEVICE_API argument_pack_size(size_t size) const
   {
     return size;
   }
 
   template <class... Args>
-  size_t _CCCL_DEVICE argument_pack_size(size_t size, Args const&...) const
+  size_t _CCCL_DEVICE_API argument_pack_size(size_t size, Args const&...) const
   {
     // TODO(bgruber): replace by fold over comma in C++17 (make sure order of evaluation is left to right!)
     [[maybe_unused]] const int dummy[] = {(size = align_up<Args>(size) + sizeof(Args), 0)...};
@@ -155,7 +155,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   }
 
   template <class Arg>
-  void _CCCL_DEVICE copy_arg(char* buffer, size_t& offset, const Arg& arg) const
+  void _CCCL_DEVICE_API copy_arg(char* buffer, size_t& offset, const Arg& arg) const
   {
     // TODO(bgruber): we should make sure that we can actually byte-wise copy Arg, but this fails with some tests
     // static_assert(::cuda::std::is_trivially_copyable<Arg>::value);
@@ -164,10 +164,10 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
     offset += sizeof(Arg);
   }
 
-  _CCCL_DEVICE void fill_arguments(char*, size_t) const {}
+  _CCCL_DEVICE_API void fill_arguments(char*, size_t) const {}
 
   template <class... Args>
-  _CCCL_DEVICE void fill_arguments(char* buffer, size_t offset, Args const&... args) const
+  _CCCL_DEVICE_API void fill_arguments(char* buffer, size_t offset, Args const&... args) const
   {
     // TODO(bgruber): replace by fold over comma in C++17 (make sure order of evaluation is left to right!)
     [[maybe_unused]] const int dummy[] = {(copy_arg(buffer, offset, args), 0)...};
@@ -196,7 +196,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   }
 #else
   template <class K, class... Args>
-  cudaError_t _CCCL_DEVICE doit_device(K, Args const&...) const
+  cudaError_t _CCCL_DEVICE_API doit_device(K, Args const&...) const
   {
     return cudaErrorNotSupported;
   }

@@ -115,7 +115,7 @@ private:
   };
 
   /// Internal storage allocator
-  _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
   {
     __shared__ _TempStorage private_storage;
     return private_storage;
@@ -126,7 +126,7 @@ private:
   struct ApplyOp
   {
     // Apply flag operator
-    static _CCCL_DEVICE _CCCL_FORCEINLINE bool FlagT(FlagOp flag_op, const T& a, const T& b, int idx)
+    _CCCL_DEVICE_API static _CCCL_FORCEINLINE bool FlagT(FlagOp flag_op, const T& a, const T& b, int idx)
     {
       return flag_op(a, b, idx);
     }
@@ -137,7 +137,7 @@ private:
   struct ApplyOp<FlagOp, false>
   {
     // Apply flag operator
-    static _CCCL_DEVICE _CCCL_FORCEINLINE bool FlagT(FlagOp flag_op, const T& a, const T& b, int /*idx*/)
+    _CCCL_DEVICE_API static _CCCL_FORCEINLINE bool FlagT(FlagOp flag_op, const T& a, const T& b, int /*idx*/)
     {
       return flag_op(a, b);
     }
@@ -162,7 +162,7 @@ private:
      *   Binary boolean flag predicate
      */
     template <int ItemsPerThread, typename FlagT, typename FlagOp>
-    static _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeads(
+    _CCCL_DEVICE_API static _CCCL_FORCEINLINE void FlagHeads(
       int linear_tid,
       FlagT (&flags)[ItemsPerThread],
       T (&input)[ItemsPerThread],
@@ -190,7 +190,7 @@ private:
      *   Binary boolean flag predicate
      */
     template <int ItemsPerThread, typename FlagT, typename FlagOp>
-    static _CCCL_DEVICE _CCCL_FORCEINLINE void
+    _CCCL_DEVICE_API static _CCCL_FORCEINLINE void
     FlagTails(int linear_tid, FlagT (&flags)[ItemsPerThread], T (&input)[ItemsPerThread], FlagOp flag_op)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -227,7 +227,7 @@ public:
    *    First appears in CUDA Toolkit 12.3.
    * @endrst
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockDiscontinuity()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockDiscontinuity()
       : temp_storage(PrivateStorage())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
@@ -243,7 +243,7 @@ public:
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockDiscontinuity(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockDiscontinuity(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
@@ -268,7 +268,7 @@ public:
    *   Binary boolean flag predicate
    */
   template <int ItemsPerThread, typename FlagT, typename FlagOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   FlagHeads(FlagT (&head_flags)[ItemsPerThread], T (&input)[ItemsPerThread], T (&preds)[ItemsPerThread], FlagOp flag_op)
   {
     // Share last item
@@ -309,7 +309,7 @@ public:
    *   (<tt>input<sub>0</sub></tt> from <em>thread</em><sub>0</sub>).
    */
   template <int ItemsPerThread, typename FlagT, typename FlagOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeads(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void FlagHeads(
     FlagT (&head_flags)[ItemsPerThread],
     T (&input)[ItemsPerThread],
     T (&preds)[ItemsPerThread],
@@ -404,7 +404,7 @@ public:
   //! @param[in] flag_op
   //!   Binary boolean flag predicate
   template <int ItemsPerThread, typename FlagT, typename FlagOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   FlagHeads(FlagT (&head_flags)[ItemsPerThread], T (&input)[ItemsPerThread], FlagOp flag_op)
   {
     T preds[ItemsPerThread];
@@ -491,7 +491,7 @@ public:
   //!   *thread*\ :sub:`0` only item with which to compare the first tile item (``input[0]`` from *thread*\ :sub:`0`).
   //!   @endrst
   template <int ItemsPerThread, typename FlagT, typename FlagOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   FlagHeads(FlagT (&head_flags)[ItemsPerThread], T (&input)[ItemsPerThread], FlagOp flag_op, T tile_predecessor_item)
   {
     T preds[ItemsPerThread];
@@ -574,7 +574,7 @@ public:
   //! @param[in] flag_op
   //!   Binary boolean flag predicate
   template <int ItemsPerThread, typename FlagT, typename FlagOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   FlagTails(FlagT (&tail_flags)[ItemsPerThread], T (&input)[ItemsPerThread], FlagOp flag_op)
   {
     // Share first item
@@ -678,7 +678,7 @@ public:
   //!   *thread*\ :sub:`BLOCK_THREADS - 1`).
   //!   @endrst
   template <int ItemsPerThread, typename FlagT, typename FlagOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   FlagTails(FlagT (&tail_flags)[ItemsPerThread], T (&input)[ItemsPerThread], FlagOp flag_op, T tile_successor_item)
   {
     // Share first item
@@ -782,7 +782,7 @@ public:
   //! @param[in] flag_op
   //!   Binary boolean flag predicate
   template <int ItemsPerThread, typename FlagT, typename FlagOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeadsAndTails(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void FlagHeadsAndTails(
     FlagT (&head_flags)[ItemsPerThread], FlagT (&tail_flags)[ItemsPerThread], T (&input)[ItemsPerThread], FlagOp flag_op)
   {
     // Share first and last items
@@ -913,7 +913,7 @@ public:
   //! @param[in] flag_op
   //!   Binary boolean flag predicate
   template <int ItemsPerThread, typename FlagT, typename FlagOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeadsAndTails(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void FlagHeadsAndTails(
     FlagT (&head_flags)[ItemsPerThread],
     FlagT (&tail_flags)[ItemsPerThread],
     T tile_successor_item,
@@ -1049,7 +1049,7 @@ public:
   //! @param[in] flag_op
   //!   Binary boolean flag predicate
   template <int ItemsPerThread, typename FlagT, typename FlagOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeadsAndTails(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void FlagHeadsAndTails(
     FlagT (&head_flags)[ItemsPerThread],
     T tile_predecessor_item,
     FlagT (&tail_flags)[ItemsPerThread],
@@ -1189,7 +1189,7 @@ public:
   //! @param[in] flag_op
   //!   Binary boolean flag predicate
   template <int ItemsPerThread, typename FlagT, typename FlagOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeadsAndTails(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void FlagHeadsAndTails(
     FlagT (&head_flags)[ItemsPerThread],
     T tile_predecessor_item,
     FlagT (&tail_flags)[ItemsPerThread],

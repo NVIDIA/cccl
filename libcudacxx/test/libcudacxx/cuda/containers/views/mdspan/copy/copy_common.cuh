@@ -23,7 +23,7 @@
 static const cuda::stream copy_stream{cuda::device_ref{0}};
 
 template <typename T>
-thrust::host_vector<T> make_iota(int n)
+_CCCL_HOST_API thrust::host_vector<T> make_iota(int n)
 {
   thrust::host_vector<T> data(n);
   for (int i = 0; i < n; ++i)
@@ -37,7 +37,7 @@ thrust::host_vector<T> make_iota(int n)
 // Basic Layout Tests
 
 template <typename SrcLayout, typename DstLayout, typename T, typename... Ints>
-void test_copy(const thrust::host_vector<T>& input, const thrust::host_vector<T>& expected, Ints... shape)
+_CCCL_HOST_API void test_copy(const thrust::host_vector<T>& input, const thrust::host_vector<T>& expected, Ints... shape)
 {
   [[maybe_unused]] constexpr size_t Rank = sizeof...(Ints); // msvc warns, only used in nttp
   using extents_t                        = cuda::std::dextents<int, Rank>;
@@ -59,13 +59,13 @@ void test_copy(const thrust::host_vector<T>& input, const thrust::host_vector<T>
 }
 
 template <typename Layout, typename T, typename... Ints>
-void test_copy(const thrust::host_vector<T>& data, Ints... shape)
+_CCCL_HOST_API void test_copy(const thrust::host_vector<T>& data, Ints... shape)
 {
   test_copy<Layout, Layout>(data, data, shape...);
 }
 
 template <typename T, typename... Ints>
-void test_copy_iota(Ints... shape)
+_CCCL_HOST_API void test_copy_iota(Ints... shape)
 {
   using cuda::std::layout_right;
   test_copy<layout_right>(make_iota<T>((static_cast<int>(shape) * ...)), shape...);
@@ -75,7 +75,7 @@ void test_copy_iota(Ints... shape)
 // Strided Layout Tests
 
 template <typename T, size_t Rank>
-void test_copy_strided(
+_CCCL_HOST_API void test_copy_strided(
   const thrust::host_vector<T>& input,
   const thrust::host_vector<T>& expected,
   const cuda::std::array<int, Rank>& shape,
@@ -107,15 +107,15 @@ void test_copy_strided(
 // Strided Relaxed Layout Tests
 
 template <typename T, size_t Rank>
-void test_copy_strided(const thrust::host_vector<T>& data,
-                       const cuda::std::array<int, Rank>& shape,
-                       const cuda::std::array<int, Rank>& strides)
+_CCCL_HOST_API void test_copy_strided(const thrust::host_vector<T>& data,
+                                      const cuda::std::array<int, Rank>& shape,
+                                      const cuda::std::array<int, Rank>& strides)
 {
   test_copy_strided(data, data, shape, strides, strides);
 }
 
 template <typename T, size_t Rank>
-void test_copy_stride_relaxed(
+_CCCL_HOST_API void test_copy_stride_relaxed(
   int src_alloc,
   int src_offset,
   const cuda::std::array<int, Rank>& shape,
@@ -172,7 +172,7 @@ void test_copy_stride_relaxed(
 }
 
 template <typename T, size_t Rank>
-void test_copy_stride_relaxed(
+_CCCL_HOST_API void test_copy_stride_relaxed(
   int alloc, int offset, const cuda::std::array<int, Rank>& shape, const cuda::std::array<int, Rank>& strides)
 {
   test_copy_stride_relaxed<T>(alloc, offset, shape, strides, alloc, offset, strides);

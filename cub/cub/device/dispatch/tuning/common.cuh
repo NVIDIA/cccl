@@ -235,7 +235,7 @@ namespace detail
 } // namespace detail
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, LookbackDelayAlgorithm algo)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, LookbackDelayAlgorithm algo)
 {
   return os << CUB_NS_QUALIFIER::detail::to_string(algo);
 }
@@ -277,7 +277,7 @@ struct LookbackDelayPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const LookbackDelayPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const LookbackDelayPolicy& p)
   {
     return os << "LookbackDelayPolicy { .kind = " << p.kind << ", .delay = " << p.delay
               << ", .l2_write_latency = " << p.l2_write_latency << " }";

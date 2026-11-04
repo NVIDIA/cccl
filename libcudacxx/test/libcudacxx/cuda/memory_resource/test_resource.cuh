@@ -21,7 +21,7 @@ struct Counts
   int new_count              = 0;
   int delete_count           = 0;
 
-  friend std::ostream& operator<<(std::ostream& os, const Counts& counts)
+  _CCCL_HOST_API friend std::ostream& operator<<(std::ostream& os, const Counts& counts)
   {
     return os
         << "object: " << counts.object_count << ", " //
@@ -36,7 +36,7 @@ struct Counts
         << "delete: " << counts.delete_count;
   }
 
-  friend bool operator==(const Counts& lhs, const Counts& rhs) noexcept
+  _CCCL_HOST_API friend bool operator==(const Counts& lhs, const Counts& rhs) noexcept
   {
     return lhs.object_count == rhs.object_count && //
            lhs.move_count == rhs.move_count && //
@@ -50,7 +50,7 @@ struct Counts
            lhs.delete_count == rhs.delete_count; //
   }
 
-  friend bool operator!=(const Counts& lhs, const Counts& rhs) noexcept
+  _CCCL_HOST_API friend bool operator!=(const Counts& lhs, const Counts& rhs) noexcept
   {
     return !(lhs == rhs);
   }
@@ -63,19 +63,19 @@ struct test_fixture_
   std::size_t align_ = 0;
   static thread_local Counts* counts_;
 
-  test_fixture_() noexcept
+  _CCCL_HOST_API test_fixture_() noexcept
       : counts()
   {
     counts_ = &counts;
   }
 
-  std::size_t bytes(std::size_t sz) noexcept
+  _CCCL_HOST_API std::size_t bytes(std::size_t sz) noexcept
   {
     bytes_ = sz;
     return bytes_;
   }
 
-  std::size_t align(std::size_t align) noexcept
+  _CCCL_HOST_API std::size_t align(std::size_t align) noexcept
   {
     align_ = align;
     return align_;
@@ -102,14 +102,14 @@ struct test_resource
   test_fixture_* fixture;
   T cookie[2] = {0xDEADBEEF, 0xDEADBEEF};
 
-  explicit test_resource(int i, test_fixture_* fix) noexcept
+  _CCCL_HOST_API explicit test_resource(int i, test_fixture_* fix) noexcept
       : data(i)
       , fixture(fix)
   {
     ++fixture->counts.object_count;
   }
 
-  test_resource(test_resource&& other) noexcept
+  _CCCL_HOST_API test_resource(test_resource&& other) noexcept
       : data(other.data)
       , fixture(other.fixture)
   {
@@ -119,7 +119,7 @@ struct test_resource
     other.cookie[0] = other.cookie[1] = 0x0C07FEFE;
   }
 
-  test_resource(const test_resource& other) noexcept
+  _CCCL_HOST_API test_resource(const test_resource& other) noexcept
       : data(other.data)
       , fixture(other.fixture)
   {
@@ -128,12 +128,12 @@ struct test_resource
     ++fixture->counts.object_count;
   }
 
-  ~test_resource()
+  _CCCL_HOST_API ~test_resource()
   {
     --fixture->counts.object_count;
   }
 
-  test_resource& operator=(test_resource other) noexcept
+  _CCCL_HOST_API test_resource& operator=(test_resource other) noexcept
   {
     other._assert_valid();
     ::cuda::std::swap(data, other.data);
@@ -141,7 +141,7 @@ struct test_resource
     return *this;
   }
 
-  void* allocate_sync(std::size_t bytes, std::size_t align)
+  _CCCL_HOST_API void* allocate_sync(std::size_t bytes, std::size_t align)
   {
     _assert_valid();
     CHECK(bytes == fixture->bytes_);
@@ -150,7 +150,7 @@ struct test_resource
     return fixture;
   }
 
-  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t align) noexcept
+  _CCCL_HOST_API void deallocate_sync(void* ptr, std::size_t bytes, std::size_t align) noexcept
   {
     _assert_valid();
     CHECK(ptr == fixture);
@@ -159,7 +159,7 @@ struct test_resource
     ++fixture->counts.deallocate_count;
   }
 
-  void* allocate(::cuda::stream_ref, std::size_t bytes, std::size_t align)
+  _CCCL_HOST_API void* allocate(::cuda::stream_ref, std::size_t bytes, std::size_t align)
   {
     _assert_valid();
     CHECK(bytes == fixture->bytes_);
@@ -168,7 +168,7 @@ struct test_resource
     return fixture;
   }
 
-  void deallocate(::cuda::stream_ref, void* ptr, std::size_t bytes, std::size_t align) noexcept
+  _CCCL_HOST_API void deallocate(::cuda::stream_ref, void* ptr, std::size_t bytes, std::size_t align) noexcept
   {
     _assert_valid();
     CHECK(ptr == fixture);
@@ -177,7 +177,7 @@ struct test_resource
     ++fixture->counts.deallocate_async_count;
   }
 
-  friend bool operator==(const test_resource& lhs, const test_resource& rhs)
+  _CCCL_HOST_API friend bool operator==(const test_resource& lhs, const test_resource& rhs)
   {
     lhs._assert_valid();
     rhs._assert_valid();
@@ -185,33 +185,33 @@ struct test_resource
     return lhs.data == rhs.data;
   }
 
-  friend bool operator!=(const test_resource& lhs, const test_resource& rhs)
+  _CCCL_HOST_API friend bool operator!=(const test_resource& lhs, const test_resource& rhs)
   {
     FAIL("any_resource should only be calling operator==");
     return lhs.data != rhs.data;
   }
 
-  void _assert_valid() const noexcept
+  _CCCL_HOST_API void _assert_valid() const noexcept
   {
     REQUIRE(cookie[0] == 0xDEADBEEF);
     REQUIRE(cookie[1] == 0xDEADBEEF);
   }
 
-  static void* operator new(::cuda::std::size_t size)
+  _CCCL_HOST_API static void* operator new(::cuda::std::size_t size)
   {
     ++test_fixture_::counts_->new_count;
     return ::operator new(size);
   }
 
-  static void operator delete(void* pv) noexcept
+  _CCCL_HOST_API static void operator delete(void* pv) noexcept
   {
     ++test_fixture_::counts_->delete_count;
     return ::operator delete(pv);
   }
 
-  friend constexpr void get_property(const test_resource&, ::cuda::mr::host_accessible) noexcept {}
-  friend constexpr void get_property(const test_resource&, extra_property) noexcept {}
-  friend constexpr int get_property(const test_resource& self, get_data) noexcept
+  _CCCL_HOST_API friend constexpr void get_property(const test_resource&, ::cuda::mr::host_accessible) noexcept {}
+  _CCCL_HOST_API friend constexpr void get_property(const test_resource&, extra_property) noexcept {}
+  _CCCL_HOST_API friend constexpr int get_property(const test_resource& self, get_data) noexcept
   {
     return self.data;
   }

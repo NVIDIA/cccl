@@ -13,7 +13,7 @@
 namespace c2h::detail
 {
 template <typename T>
-[[nodiscard]] inline T parse_env_integer(const char* value) noexcept
+[[nodiscard]] _CCCL_HOST_API inline T parse_env_integer(const char* value) noexcept
 {
   static_assert(::cuda::std::is_integral_v<T>);
 
@@ -34,7 +34,7 @@ template <typename T>
 }
 
 template <typename T>
-[[nodiscard]] inline T get_env_as_integer(const char* name) noexcept
+[[nodiscard]] _CCCL_HOST_API inline T get_env_as_integer(const char* name) noexcept
 {
 #ifdef _WIN32
   char* buf         = nullptr;

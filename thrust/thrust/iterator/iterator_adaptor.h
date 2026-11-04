@@ -131,12 +131,12 @@ protected:
 public:
   /*! \p iterator_adaptor's default constructor does nothing.
    */
-  iterator_adaptor() = default;
+  _CCCL_HIDE_FROM_ABI iterator_adaptor() = default;
 
   /*! This constructor copies from a given instance of the \p Base iterator.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE explicit iterator_adaptor(Base const& iter)
+  _CCCL_HOST_DEVICE_API explicit iterator_adaptor(Base const& iter)
       : m_iterator(iter)
   {}
 
@@ -154,7 +154,7 @@ public:
 
   /*! \return A \p const reference to the \p Base iterator this \p iterator_adaptor adapts.
    */
-  _CCCL_HOST_DEVICE Base const& base() const
+  _CCCL_HOST_DEVICE_API Base const& base() const
   {
     return m_iterator;
   }
@@ -162,14 +162,14 @@ public:
 protected:
   /*! \return A \p const reference to the \p Base iterator this \p iterator_adaptor adapts.
    */
-  _CCCL_HOST_DEVICE Base const& base_reference() const
+  _CCCL_HOST_DEVICE_API Base const& base_reference() const
   {
     return m_iterator;
   }
 
   /*! \return A mutable reference to the \p Base iterator this \p iterator_adaptor adapts.
    */
-  _CCCL_HOST_DEVICE Base& base_reference()
+  _CCCL_HOST_DEVICE_API Base& base_reference()
   {
     return m_iterator;
   }
@@ -179,20 +179,20 @@ protected:
 
 private: // Core iterator interface for iterator_facade
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE reference dereference() const
+  _CCCL_HOST_DEVICE_API reference dereference() const
   {
     return *m_iterator;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename OtherDerived, typename OtherIterator, typename V, typename S, typename T, typename R, typename D>
-  _CCCL_HOST_DEVICE bool equal(iterator_adaptor<OtherDerived, OtherIterator, V, S, T, R, D> const& x) const
+  _CCCL_HOST_DEVICE_API bool equal(iterator_adaptor<OtherDerived, OtherIterator, V, S, T, R, D> const& x) const
   {
     return m_iterator == x.base();
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE void advance(difference_type n)
+  _CCCL_HOST_DEVICE_API void advance(difference_type n)
   {
     // XXX statically assert on random_access_traversal_tag
 
@@ -202,13 +202,13 @@ private: // Core iterator interface for iterator_facade
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE void increment()
+  _CCCL_HOST_DEVICE_API void increment()
   {
     ++m_iterator;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE void decrement()
+  _CCCL_HOST_DEVICE_API void decrement()
   {
     // XXX statically assert on bidirectional_traversal_tag
     --m_iterator;
@@ -216,7 +216,7 @@ private: // Core iterator interface for iterator_facade
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename OtherDerived, typename OtherIterator, typename V, typename S, typename T, typename R, typename D>
-  _CCCL_HOST_DEVICE difference_type
+  _CCCL_HOST_DEVICE_API difference_type
   distance_to(iterator_adaptor<OtherDerived, OtherIterator, V, S, T, R, D> const& y) const
   {
     return y.base() - m_iterator;

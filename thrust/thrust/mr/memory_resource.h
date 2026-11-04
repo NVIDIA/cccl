@@ -50,7 +50,7 @@ public:
 
   /*! Virtual destructor, defaulted when possible.
    */
-  virtual ~memory_resource() = default;
+  _CCCL_HIDE_FROM_ABI virtual ~memory_resource() = default;
 
   /*! Allocates memory of size at least \p bytes and alignment at least \p alignment.
    *
@@ -59,7 +59,7 @@ public:
    *  \throws thrust::bad_alloc when no memory with requested size and alignment can be allocated.
    *  \return A pointer to void to the newly allocated memory.
    */
-  [[nodiscard]] pointer allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT)
+  [[nodiscard]] _CCCL_HOST_API pointer allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT)
   {
     return do_allocate(bytes, alignment);
   }
@@ -72,7 +72,8 @@ public:
    *  \param alignment the alignment of the allocation. This must be equivalent to the value of \p alignment
    *      that was passed to the allocation function that returned \p p.
    */
-  void deallocate(pointer p, std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) noexcept
+  _CCCL_HOST_API void
+  deallocate(pointer p, std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) noexcept
   {
     do_deallocate(p, bytes, alignment);
   }
@@ -83,7 +84,7 @@ public:
    *  \param other the other resource to compare this resource to
    *  \return whether the two resources are equivalent.
    */
-  _CCCL_HOST_DEVICE bool is_equal(const memory_resource& other) const noexcept
+  _CCCL_HOST_DEVICE_API bool is_equal(const memory_resource& other) const noexcept
   {
     return do_is_equal(other);
   }
@@ -113,7 +114,7 @@ public:
    *  \param other the other resource to compare this resource to
    *  \return whether the two resources are equivalent.
    */
-  _CCCL_HOST_DEVICE virtual bool do_is_equal(const memory_resource& other) const noexcept
+  _CCCL_HOST_DEVICE_API virtual bool do_is_equal(const memory_resource& other) const noexcept
   {
     return this == &other;
   }
@@ -128,26 +129,27 @@ class memory_resource<void*>
 public:
   using pointer = void*;
 
-  virtual ~memory_resource() = default;
+  _CCCL_HIDE_FROM_ABI virtual ~memory_resource() = default;
 
-  [[nodiscard]] pointer allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT)
+  [[nodiscard]] _CCCL_HOST_API pointer allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT)
   {
     return do_allocate(bytes, alignment);
   }
 
-  void deallocate(pointer p, std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) noexcept
+  _CCCL_HOST_API void
+  deallocate(pointer p, std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) noexcept
   {
     do_deallocate(p, bytes, alignment);
   }
 
-  _CCCL_HOST_DEVICE bool is_equal(const memory_resource& other) const noexcept
+  _CCCL_HOST_DEVICE_API bool is_equal(const memory_resource& other) const noexcept
   {
     return do_is_equal(other);
   }
 
   virtual pointer do_allocate(std::size_t bytes, std::size_t alignment)           = 0;
   virtual void do_deallocate(pointer p, std::size_t bytes, std::size_t alignment) = 0;
-  _CCCL_HOST_DEVICE virtual bool do_is_equal(const memory_resource& other) const noexcept
+  _CCCL_HOST_DEVICE_API virtual bool do_is_equal(const memory_resource& other) const noexcept
   {
     return this == &other;
   }
@@ -171,7 +173,7 @@ public:
 /*! Compares the memory resources for equality, first by identity, then by \p is_equal.
  */
 template <typename Pointer>
-_CCCL_HOST_DEVICE bool operator==(const memory_resource<Pointer>& lhs, const memory_resource<Pointer>& rhs) noexcept
+_CCCL_HOST_DEVICE_API bool operator==(const memory_resource<Pointer>& lhs, const memory_resource<Pointer>& rhs) noexcept
 {
   return &lhs == &rhs || lhs.is_equal(rhs);
 }
@@ -179,7 +181,7 @@ _CCCL_HOST_DEVICE bool operator==(const memory_resource<Pointer>& lhs, const mem
 /*! Compares the memory resources for inequality, first by identity, then by \p is_equal.
  */
 template <typename Pointer>
-_CCCL_HOST_DEVICE bool operator!=(const memory_resource<Pointer>& lhs, const memory_resource<Pointer>& rhs) noexcept
+_CCCL_HOST_DEVICE_API bool operator!=(const memory_resource<Pointer>& lhs, const memory_resource<Pointer>& rhs) noexcept
 {
   return !(lhs == rhs);
 }
@@ -190,7 +192,7 @@ _CCCL_HOST_DEVICE bool operator!=(const memory_resource<Pointer>& lhs, const mem
  *  \return a pointer to a global instance of \p MR.
  */
 template <typename MR>
-_CCCL_HOST MR* get_global_resource()
+_CCCL_HOST_API MR* get_global_resource()
 {
   static MR resource;
   return &resource;

@@ -23,7 +23,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator inclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator inclusive_scan(
   thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
 {
   // assume plus as the associative operator
@@ -40,7 +40,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
   BinaryFunction binary_op) = delete;
 
 template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator exclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator exclusive_scan(
   thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
 {
   // Use the input iterator's value type per https://wg21.link/P0571
@@ -49,7 +49,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
 }
 
 template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator, typename T>
-_CCCL_HOST_DEVICE OutputIterator exclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator exclusive_scan(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator first,
   InputIterator last,

@@ -79,7 +79,7 @@ namespace detail
 #endif // _CCCL_HOSTED()
 
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
-inline ::std::ostream& operator<<(::std::ostream& os, RadixSortStoreAlgorithm algo)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, RadixSortStoreAlgorithm algo)
 {
   return os << CUB_NS_QUALIFIER::detail::to_string(algo);
 }
@@ -259,23 +259,23 @@ struct AgentRadixSortOnesweep
   PortionOffsetT block_idx;
   bool full_block;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE digit_extractor_t digit_extractor()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE digit_extractor_t digit_extractor()
   {
     return traits::template digit_extractor<fundamental_digit_extractor_t>(current_bit, num_bits, decomposer);
   }
 
   // helper methods
-  _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t Digit(bit_ordered_type key)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE uint32_t Digit(bit_ordered_type key)
   {
     return digit_extractor().Digit(key);
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE int ThreadBin(int u)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE int ThreadBin(int u)
   {
     return threadIdx.x * BINS_PER_THREAD + u;
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LookbackPartial(int (&bins)[BINS_PER_THREAD])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void LookbackPartial(int (&bins)[BINS_PER_THREAD])
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < BINS_PER_THREAD; ++u)
@@ -299,13 +299,13 @@ struct AgentRadixSortOnesweep
     int (&bins)[BINS_PER_THREAD];
     bit_ordered_type (&keys)[ITEMS_PER_THREAD];
     static constexpr bool EMPTY = false;
-    _CCCL_DEVICE _CCCL_FORCEINLINE
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE
     CountsCallback(AgentT& agent, int (&bins)[BINS_PER_THREAD], bit_ordered_type (&keys)[ITEMS_PER_THREAD])
         : agent(agent)
         , bins(bins)
         , keys(keys)
     {}
-    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(int (&other_bins)[BINS_PER_THREAD])
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()(int (&other_bins)[BINS_PER_THREAD])
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int u = 0; u < BINS_PER_THREAD; ++u)
@@ -321,7 +321,7 @@ struct AgentRadixSortOnesweep
     }
   };
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LookbackGlobal(int (&bins)[BINS_PER_THREAD])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void LookbackGlobal(int (&bins)[BINS_PER_THREAD])
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < BINS_PER_THREAD; ++u)
@@ -359,7 +359,7 @@ struct AgentRadixSortOnesweep
     _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadKeys(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void LoadKeys(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])
   {
     if (full_block)
     {
@@ -378,7 +378,7 @@ struct AgentRadixSortOnesweep
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadValues(OffsetT tile_offset, ValueT (&values)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void LoadValues(OffsetT tile_offset, ValueT (&values)[ITEMS_PER_THREAD])
   {
     if (full_block)
     {
@@ -402,7 +402,7 @@ struct AgentRadixSortOnesweep
    * d_keys_out corresponding to their digit. The values (if also sorting
    * values) assigned to the current thread block are similarly copied from
    * d_values_in to d_values_out. */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   TryShortCircuit(bit_ordered_type (&keys)[ITEMS_PER_THREAD], int (&bins)[BINS_PER_THREAD])
   {
     // check if any bin can be short-circuited
@@ -425,7 +425,7 @@ struct AgentRadixSortOnesweep
     ShortCircuitCopy(keys, bins);
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ShortCircuitCopy(bit_ordered_type (&keys)[ITEMS_PER_THREAD], int (&bins)[BINS_PER_THREAD])
   {
     // short-circuit handling; note that global look-back is still required
@@ -485,7 +485,7 @@ struct AgentRadixSortOnesweep
     ThreadExit();
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ScatterKeysShared(bit_ordered_type (&keys)[ITEMS_PER_THREAD], int (&ranks)[ITEMS_PER_THREAD])
   {
     // write to shared memory
@@ -496,7 +496,7 @@ struct AgentRadixSortOnesweep
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ScatterValuesShared(ValueT (&values)[ITEMS_PER_THREAD], int (&ranks)[ITEMS_PER_THREAD])
   {
     // write to shared memory
@@ -507,7 +507,7 @@ struct AgentRadixSortOnesweep
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadBinsToOffsetsGlobal(int (&offsets)[BINS_PER_THREAD])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void LoadBinsToOffsetsGlobal(int (&offsets)[BINS_PER_THREAD])
   {
     // global offset - global part
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -521,7 +521,7 @@ struct AgentRadixSortOnesweep
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void UpdateBinsGlobal(int (&bins)[BINS_PER_THREAD], int (&offsets)[BINS_PER_THREAD])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void UpdateBinsGlobal(int (&bins)[BINS_PER_THREAD], int (&offsets)[BINS_PER_THREAD])
   {
     const bool last_block = (block_idx + 1) * TILE_ITEMS >= num_items;
     if (d_bins_out != nullptr && last_block)
@@ -539,7 +539,7 @@ struct AgentRadixSortOnesweep
   }
 
   template <bool FullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterKeysGlobalDirect()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterKeysGlobalDirect()
   {
     const int tile_items = FullTile ? TILE_ITEMS : num_items - block_idx * TILE_ITEMS;
 
@@ -558,7 +558,7 @@ struct AgentRadixSortOnesweep
   }
 
   template <bool FullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterValuesGlobalDirect(int (&digits)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterValuesGlobalDirect(int (&digits)[ITEMS_PER_THREAD])
   {
     const int tile_items = FullTile ? TILE_ITEMS : num_items - block_idx * TILE_ITEMS;
 
@@ -576,7 +576,7 @@ struct AgentRadixSortOnesweep
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterKeysGlobalAligned()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterKeysGlobalAligned()
   {
     // this only works with full tiles
     constexpr int ITEMS_PER_WARP  = TILE_ITEMS / BLOCK_WARPS;
@@ -617,7 +617,7 @@ struct AgentRadixSortOnesweep
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterKeysGlobal()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterKeysGlobal()
   {
     // write block data to global memory
     if (full_block)
@@ -637,7 +637,7 @@ struct AgentRadixSortOnesweep
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterValuesGlobal(int (&digits)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterValuesGlobal(int (&digits)[ITEMS_PER_THREAD])
   {
     // write block data to global memory
     if (full_block)
@@ -650,7 +650,7 @@ struct AgentRadixSortOnesweep
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ComputeKeyDigits(int (&digits)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ComputeKeyDigits(int (&digits)[ITEMS_PER_THREAD])
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
@@ -660,7 +660,7 @@ struct AgentRadixSortOnesweep
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void GatherScatterValues(int (&ranks)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void GatherScatterValues(int (&ranks)[ITEMS_PER_THREAD])
   {
     // compute digits corresponding to the keys
     int digits[ITEMS_PER_THREAD];
@@ -678,7 +678,7 @@ struct AgentRadixSortOnesweep
     ScatterValuesGlobal(digits);
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Process()
   {
     // load keys
     // if warp1 < warp2, all elements of warp1 occur before those of warp2
@@ -713,7 +713,7 @@ struct AgentRadixSortOnesweep
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE //
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE //
   AgentRadixSortOnesweep(
     TempStorage& temp_storage,
     AtomicOffsetT* d_lookback,

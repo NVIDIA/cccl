@@ -36,38 +36,38 @@ public:
   using pointer           = It;
   using reference         = typename cuda::std::iterator_traits<It>::reference;
 
-  TEST_FUNC constexpr explicit cpp17_output_iterator(It it)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr explicit cpp17_output_iterator(It it)
       : it_(cuda::std::move(it))
   {}
 
   template <class U>
-  TEST_FUNC constexpr cpp17_output_iterator(const cpp17_output_iterator<U>& u)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr cpp17_output_iterator(const cpp17_output_iterator<U>& u)
       : it_(u.it_)
   {}
 
   template <class U, class = cuda::std::enable_if_t<cuda::std::is_default_constructible_v<U>>>
-  TEST_FUNC constexpr cpp17_output_iterator(cpp17_output_iterator<U>&& u)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr cpp17_output_iterator(cpp17_output_iterator<U>&& u)
       : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
 
-  TEST_FUNC constexpr reference operator*() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr reference operator*() const
   {
     return *it_;
   }
 
-  TEST_FUNC constexpr cpp17_output_iterator& operator++()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr cpp17_output_iterator& operator++()
   {
     ++it_;
     return *this;
   }
-  TEST_FUNC constexpr cpp17_output_iterator operator++(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr cpp17_output_iterator operator++(int)
   {
     return cpp17_output_iterator(it_++);
   }
 
-  TEST_FUNC friend constexpr It base(const cpp17_output_iterator& i)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr It base(const cpp17_output_iterator& i)
   {
     return i.it_;
   }
@@ -95,47 +95,49 @@ public:
   using pointer           = It;
   using reference         = typename Traits::reference;
 
-  TEST_FUNC constexpr explicit cpp17_input_iterator(It it)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr explicit cpp17_input_iterator(It it)
       : it_(it)
   {}
 
   template <class U, class T>
-  TEST_FUNC constexpr cpp17_input_iterator(const cpp17_input_iterator<U, T>& u)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr cpp17_input_iterator(const cpp17_input_iterator<U, T>& u)
       : it_(u.it_)
   {}
 
   template <class U, class T, class = cuda::std::enable_if_t<cuda::std::is_default_constructible_v<U>>>
-  TEST_FUNC constexpr cpp17_input_iterator(cpp17_input_iterator<U, T>&& u)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr cpp17_input_iterator(cpp17_input_iterator<U, T>&& u)
       : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
 
-  TEST_FUNC constexpr reference operator*() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr reference operator*() const
   {
     return *it_;
   }
 
-  TEST_FUNC constexpr cpp17_input_iterator& operator++()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr cpp17_input_iterator& operator++()
   {
     ++it_;
     return *this;
   }
-  TEST_FUNC constexpr cpp17_input_iterator operator++(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr cpp17_input_iterator operator++(int)
   {
     return cpp17_input_iterator(it_++);
   }
 
-  TEST_FUNC friend constexpr bool operator==(const cpp17_input_iterator& x, const cpp17_input_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator==(const cpp17_input_iterator& x, const cpp17_input_iterator& y)
   {
     return x.it_ == y.it_;
   }
-  TEST_FUNC friend constexpr bool operator!=(const cpp17_input_iterator& x, const cpp17_input_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator!=(const cpp17_input_iterator& x, const cpp17_input_iterator& y)
   {
     return x.it_ != y.it_;
   }
 
-  TEST_FUNC friend constexpr It base(const cpp17_input_iterator& i)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr It base(const cpp17_input_iterator& i)
   {
     return i.it_;
   }
@@ -162,55 +164,55 @@ public:
   using pointer           = It;
   using reference         = typename cuda::std::iterator_traits<It>::reference;
 
-  TEST_FUNC constexpr forward_iterator()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr forward_iterator()
       : it_()
   {}
-  TEST_FUNC constexpr explicit forward_iterator(It it)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr explicit forward_iterator(It it)
       : it_(it)
   {}
 
   template <class U>
-  TEST_FUNC constexpr forward_iterator(const forward_iterator<U>& u)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr forward_iterator(const forward_iterator<U>& u)
       : it_(u.it_)
   {}
 
   template <class U, class = cuda::std::enable_if_t<cuda::std::is_default_constructible_v<U>>>
-  TEST_FUNC constexpr forward_iterator(forward_iterator<U>&& other)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr forward_iterator(forward_iterator<U>&& other)
       : it_(cuda::std::move(other.it_))
   {
     other.it_ = U();
   }
 
-  TEST_FUNC constexpr reference operator*() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr reference operator*() const
   {
     return *it_;
   }
 
-  TEST_FUNC constexpr forward_iterator& operator++()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr forward_iterator& operator++()
   {
     ++it_;
     return *this;
   }
-  TEST_FUNC constexpr forward_iterator operator++(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr forward_iterator operator++(int)
   {
     return forward_iterator(it_++);
   }
 
-  TEST_FUNC friend constexpr bool operator==(const forward_iterator& x, const forward_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator==(const forward_iterator& x, const forward_iterator& y)
   {
     return x.it_ == y.it_;
   }
-  TEST_FUNC friend constexpr bool operator!=(const forward_iterator& x, const forward_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator!=(const forward_iterator& x, const forward_iterator& y)
   {
     return x.it_ != y.it_;
   }
 
-  TEST_FUNC constexpr It base() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr It base() const
   {
     return it_;
   }
 
-  TEST_FUNC friend constexpr It base(const forward_iterator& i)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr It base(const forward_iterator& i)
   {
     return i.it_;
   }
@@ -235,59 +237,61 @@ public:
   using pointer           = It;
   using reference         = typename cuda::std::iterator_traits<It>::reference;
 
-  TEST_FUNC constexpr bidirectional_iterator()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr bidirectional_iterator()
       : it_()
   {}
-  TEST_FUNC constexpr explicit bidirectional_iterator(It it)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr explicit bidirectional_iterator(It it)
       : it_(it)
   {}
 
   template <class U>
-  TEST_FUNC constexpr bidirectional_iterator(const bidirectional_iterator<U>& u)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr bidirectional_iterator(const bidirectional_iterator<U>& u)
       : it_(u.it_)
   {}
 
   template <class U, class = cuda::std::enable_if_t<cuda::std::is_default_constructible_v<U>>>
-  TEST_FUNC constexpr bidirectional_iterator(bidirectional_iterator<U>&& u)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr bidirectional_iterator(bidirectional_iterator<U>&& u)
       : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
 
-  TEST_FUNC constexpr reference operator*() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr reference operator*() const
   {
     return *it_;
   }
 
-  TEST_FUNC constexpr bidirectional_iterator& operator++()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr bidirectional_iterator& operator++()
   {
     ++it_;
     return *this;
   }
-  TEST_FUNC constexpr bidirectional_iterator& operator--()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr bidirectional_iterator& operator--()
   {
     --it_;
     return *this;
   }
-  TEST_FUNC constexpr bidirectional_iterator operator++(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr bidirectional_iterator operator++(int)
   {
     return bidirectional_iterator(it_++);
   }
-  TEST_FUNC constexpr bidirectional_iterator operator--(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr bidirectional_iterator operator--(int)
   {
     return bidirectional_iterator(it_--);
   }
 
-  TEST_FUNC friend constexpr bool operator==(const bidirectional_iterator& x, const bidirectional_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator==(const bidirectional_iterator& x, const bidirectional_iterator& y)
   {
     return x.it_ == y.it_;
   }
-  TEST_FUNC friend constexpr bool operator!=(const bidirectional_iterator& x, const bidirectional_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator!=(const bidirectional_iterator& x, const bidirectional_iterator& y)
   {
     return x.it_ != y.it_;
   }
 
-  TEST_FUNC friend constexpr It base(const bidirectional_iterator& i)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr It base(const bidirectional_iterator& i)
   {
     return i.it_;
   }
@@ -312,109 +316,119 @@ public:
   using pointer           = It;
   using reference         = typename cuda::std::iterator_traits<It>::reference;
 
-  TEST_FUNC constexpr random_access_iterator()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr random_access_iterator()
       : it_()
   {}
-  TEST_FUNC constexpr explicit random_access_iterator(It it)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr explicit random_access_iterator(It it)
       : it_(it)
   {}
 
   template <class U>
-  TEST_FUNC constexpr random_access_iterator(const random_access_iterator<U>& u)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr random_access_iterator(const random_access_iterator<U>& u)
       : it_(u.it_)
   {}
 
   template <class U, class = cuda::std::enable_if_t<cuda::std::is_default_constructible_v<U>>>
-  TEST_FUNC constexpr random_access_iterator(random_access_iterator<U>&& u)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr random_access_iterator(random_access_iterator<U>&& u)
       : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
 
-  TEST_FUNC constexpr reference operator*() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr reference operator*() const
   {
     return *it_;
   }
-  TEST_FUNC constexpr reference operator[](difference_type n) const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr reference operator[](difference_type n) const
   {
     return it_[n];
   }
 
-  TEST_FUNC constexpr random_access_iterator& operator++()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr random_access_iterator& operator++()
   {
     ++it_;
     return *this;
   }
-  TEST_FUNC constexpr random_access_iterator& operator--()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr random_access_iterator& operator--()
   {
     --it_;
     return *this;
   }
-  TEST_FUNC constexpr random_access_iterator operator++(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr random_access_iterator operator++(int)
   {
     return random_access_iterator(it_++);
   }
-  TEST_FUNC constexpr random_access_iterator operator--(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr random_access_iterator operator--(int)
   {
     return random_access_iterator(it_--);
   }
 
-  TEST_FUNC constexpr random_access_iterator& operator+=(difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr random_access_iterator& operator+=(difference_type n)
   {
     it_ += n;
     return *this;
   }
-  TEST_FUNC constexpr random_access_iterator& operator-=(difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr random_access_iterator& operator-=(difference_type n)
   {
     it_ -= n;
     return *this;
   }
-  TEST_FUNC friend constexpr random_access_iterator operator+(random_access_iterator x, difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr random_access_iterator
+  operator+(random_access_iterator x, difference_type n)
   {
     x += n;
     return x;
   }
-  TEST_FUNC friend constexpr random_access_iterator operator+(difference_type n, random_access_iterator x)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr random_access_iterator
+  operator+(difference_type n, random_access_iterator x)
   {
     x += n;
     return x;
   }
-  TEST_FUNC friend constexpr random_access_iterator operator-(random_access_iterator x, difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr random_access_iterator
+  operator-(random_access_iterator x, difference_type n)
   {
     x -= n;
     return x;
   }
-  TEST_FUNC friend constexpr difference_type operator-(random_access_iterator x, random_access_iterator y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr difference_type
+  operator-(random_access_iterator x, random_access_iterator y)
   {
     return x.it_ - y.it_;
   }
 
-  TEST_FUNC friend constexpr bool operator==(const random_access_iterator& x, const random_access_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator==(const random_access_iterator& x, const random_access_iterator& y)
   {
     return x.it_ == y.it_;
   }
-  TEST_FUNC friend constexpr bool operator!=(const random_access_iterator& x, const random_access_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator!=(const random_access_iterator& x, const random_access_iterator& y)
   {
     return x.it_ != y.it_;
   }
-  TEST_FUNC friend constexpr bool operator<(const random_access_iterator& x, const random_access_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator<(const random_access_iterator& x, const random_access_iterator& y)
   {
     return x.it_ < y.it_;
   }
-  TEST_FUNC friend constexpr bool operator<=(const random_access_iterator& x, const random_access_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator<=(const random_access_iterator& x, const random_access_iterator& y)
   {
     return x.it_ <= y.it_;
   }
-  TEST_FUNC friend constexpr bool operator>(const random_access_iterator& x, const random_access_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator>(const random_access_iterator& x, const random_access_iterator& y)
   {
     return x.it_ > y.it_;
   }
-  TEST_FUNC friend constexpr bool operator>=(const random_access_iterator& x, const random_access_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator>=(const random_access_iterator& x, const random_access_iterator& y)
   {
     return x.it_ >= y.it_;
   }
 
-  TEST_FUNC friend constexpr It base(const random_access_iterator& i)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr It base(const random_access_iterator& i)
   {
     return i.it_;
   }
@@ -433,37 +447,39 @@ struct common_input_iterator
   using difference_type  = cuda::std::intptr_t;
   using iterator_concept = cuda::std::input_iterator_tag;
 
-  constexpr common_input_iterator() = default;
-  TEST_FUNC constexpr explicit common_input_iterator(Base it)
+  _CCCL_HIDE_FROM_ABI constexpr common_input_iterator() = default;
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr explicit common_input_iterator(Base it)
       : it_(it)
   {}
 
-  TEST_FUNC constexpr common_input_iterator& operator++()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr common_input_iterator& operator++()
   {
     ++it_;
     return *this;
   }
-  TEST_FUNC constexpr void operator++(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr void operator++(int)
   {
     ++it_;
   }
 
-  TEST_FUNC constexpr decltype(auto) operator*() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr decltype(auto) operator*() const
   {
     return *it_;
   }
 
-  TEST_FUNC friend constexpr bool operator==(common_input_iterator const& lhs, common_input_iterator const& rhs)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator==(common_input_iterator const& lhs, common_input_iterator const& rhs)
   {
     return lhs.it_ == rhs.it_;
   }
 
-  TEST_FUNC friend constexpr bool operator!=(common_input_iterator const& lhs, common_input_iterator const& rhs)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator!=(common_input_iterator const& lhs, common_input_iterator const& rhs)
   {
     return lhs.it_ != rhs.it_;
   }
 
-  TEST_FUNC friend constexpr Base base(const common_input_iterator& i)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr Base base(const common_input_iterator& i)
   {
     return i.it_;
   }
@@ -483,113 +499,119 @@ public:
   using value_type        = typename cuda::std::iterator_traits<It>::value_type;
   using difference_type   = typename cuda::std::iterator_traits<It>::difference_type;
 
-  TEST_FUNC constexpr cpp20_random_access_iterator()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr cpp20_random_access_iterator()
       : it_()
   {}
-  TEST_FUNC constexpr explicit cpp20_random_access_iterator(It it)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr explicit cpp20_random_access_iterator(It it)
       : it_(it)
   {}
 
   template <class U>
-  TEST_FUNC constexpr cpp20_random_access_iterator(const cpp20_random_access_iterator<U>& u)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr cpp20_random_access_iterator(const cpp20_random_access_iterator<U>& u)
       : it_(u.it_)
   {}
 
   template <class U>
-  TEST_FUNC constexpr cpp20_random_access_iterator(cpp20_random_access_iterator<U>&& u)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr cpp20_random_access_iterator(cpp20_random_access_iterator<U>&& u)
       : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
 
-  TEST_FUNC constexpr decltype(auto) operator*() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr decltype(auto) operator*() const
   {
     return *it_;
   }
-  TEST_FUNC constexpr decltype(auto) operator[](difference_type n) const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr decltype(auto) operator[](difference_type n) const
   {
     return it_[n];
   }
 
-  TEST_FUNC constexpr cpp20_random_access_iterator& operator++()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr cpp20_random_access_iterator& operator++()
   {
     ++it_;
     return *this;
   }
-  TEST_FUNC constexpr cpp20_random_access_iterator& operator--()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr cpp20_random_access_iterator& operator--()
   {
     --it_;
     return *this;
   }
-  TEST_FUNC constexpr cpp20_random_access_iterator operator++(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr cpp20_random_access_iterator operator++(int)
   {
     return cpp20_random_access_iterator(it_++);
   }
-  TEST_FUNC constexpr cpp20_random_access_iterator operator--(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr cpp20_random_access_iterator operator--(int)
   {
     return cpp20_random_access_iterator(it_--);
   }
 
-  TEST_FUNC constexpr cpp20_random_access_iterator& operator+=(difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr cpp20_random_access_iterator& operator+=(difference_type n)
   {
     it_ += n;
     return *this;
   }
-  TEST_FUNC constexpr cpp20_random_access_iterator& operator-=(difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr cpp20_random_access_iterator& operator-=(difference_type n)
   {
     it_ -= n;
     return *this;
   }
-  TEST_FUNC friend constexpr cpp20_random_access_iterator operator+(cpp20_random_access_iterator x, difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr cpp20_random_access_iterator
+  operator+(cpp20_random_access_iterator x, difference_type n)
   {
     x += n;
     return x;
   }
-  TEST_FUNC friend constexpr cpp20_random_access_iterator operator+(difference_type n, cpp20_random_access_iterator x)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr cpp20_random_access_iterator
+  operator+(difference_type n, cpp20_random_access_iterator x)
   {
     x += n;
     return x;
   }
-  TEST_FUNC friend constexpr cpp20_random_access_iterator operator-(cpp20_random_access_iterator x, difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr cpp20_random_access_iterator
+  operator-(cpp20_random_access_iterator x, difference_type n)
   {
     x -= n;
     return x;
   }
-  TEST_FUNC friend constexpr difference_type operator-(cpp20_random_access_iterator x, cpp20_random_access_iterator y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr difference_type
+  operator-(cpp20_random_access_iterator x, cpp20_random_access_iterator y)
   {
     return x.it_ - y.it_;
   }
 
-  TEST_FUNC friend constexpr bool
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
   operator==(const cpp20_random_access_iterator& x, const cpp20_random_access_iterator& y)
   {
     return x.it_ == y.it_;
   }
-  TEST_FUNC friend constexpr bool
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
   operator!=(const cpp20_random_access_iterator& x, const cpp20_random_access_iterator& y)
   {
     return x.it_ != y.it_;
   }
-  TEST_FUNC friend constexpr bool operator<(const cpp20_random_access_iterator& x, const cpp20_random_access_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator<(const cpp20_random_access_iterator& x, const cpp20_random_access_iterator& y)
   {
     return x.it_ < y.it_;
   }
-  TEST_FUNC friend constexpr bool
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
   operator<=(const cpp20_random_access_iterator& x, const cpp20_random_access_iterator& y)
   {
     return x.it_ <= y.it_;
   }
-  TEST_FUNC friend constexpr bool operator>(const cpp20_random_access_iterator& x, const cpp20_random_access_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator>(const cpp20_random_access_iterator& x, const cpp20_random_access_iterator& y)
   {
     return x.it_ > y.it_;
   }
-  TEST_FUNC friend constexpr bool
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
   operator>=(const cpp20_random_access_iterator& x, const cpp20_random_access_iterator& y)
   {
     return x.it_ >= y.it_;
   }
 
-  TEST_FUNC friend constexpr It base(const cpp20_random_access_iterator& i)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr It base(const cpp20_random_access_iterator& i)
   {
     return i.it_;
   }
@@ -618,120 +640,126 @@ public:
   using reference         = typename cuda::std::iterator_traits<It>::reference;
   using element_type      = cuda::std::remove_pointer_t<It>;
 
-  TEST_FUNC constexpr It base() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr It base() const
   {
     return it_;
   }
 
-  TEST_FUNC constexpr contiguous_iterator()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr contiguous_iterator()
       : it_()
   {}
-  TEST_FUNC constexpr explicit contiguous_iterator(It it)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr explicit contiguous_iterator(It it)
       : it_(it)
   {}
 
   template <class U, class = cuda::std::enable_if_t<cuda::std::is_constructible_v<It, const U&>>>
-  TEST_FUNC constexpr contiguous_iterator(const contiguous_iterator<U>& u)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr contiguous_iterator(const contiguous_iterator<U>& u)
       : it_(u.it_)
   {}
 
   template <
     class U,
     class = cuda::std::enable_if_t<cuda::std::is_constructible_v<It, U> && cuda::std::is_default_constructible_v<U>>>
-  TEST_FUNC constexpr contiguous_iterator(contiguous_iterator<U>&& u)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr contiguous_iterator(contiguous_iterator<U>&& u)
       : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
 
-  TEST_FUNC constexpr reference operator*() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr reference operator*() const
   {
     return *it_;
   }
-  TEST_FUNC constexpr pointer operator->() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr pointer operator->() const
   {
     return it_;
   }
-  TEST_FUNC constexpr reference operator[](difference_type n) const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr reference operator[](difference_type n) const
   {
     return it_[n];
   }
 
-  TEST_FUNC constexpr contiguous_iterator& operator++()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr contiguous_iterator& operator++()
   {
     ++it_;
     return *this;
   }
-  TEST_FUNC constexpr contiguous_iterator& operator--()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr contiguous_iterator& operator--()
   {
     --it_;
     return *this;
   }
-  TEST_FUNC constexpr contiguous_iterator operator++(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr contiguous_iterator operator++(int)
   {
     return contiguous_iterator(it_++);
   }
-  TEST_FUNC constexpr contiguous_iterator operator--(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr contiguous_iterator operator--(int)
   {
     return contiguous_iterator(it_--);
   }
 
-  TEST_FUNC constexpr contiguous_iterator& operator+=(difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr contiguous_iterator& operator+=(difference_type n)
   {
     it_ += n;
     return *this;
   }
-  TEST_FUNC constexpr contiguous_iterator& operator-=(difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr contiguous_iterator& operator-=(difference_type n)
   {
     it_ -= n;
     return *this;
   }
-  TEST_FUNC friend constexpr contiguous_iterator operator+(contiguous_iterator x, difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr contiguous_iterator operator+(contiguous_iterator x, difference_type n)
   {
     x += n;
     return x;
   }
-  TEST_FUNC friend constexpr contiguous_iterator operator+(difference_type n, contiguous_iterator x)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr contiguous_iterator operator+(difference_type n, contiguous_iterator x)
   {
     x += n;
     return x;
   }
-  TEST_FUNC friend constexpr contiguous_iterator operator-(contiguous_iterator x, difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr contiguous_iterator operator-(contiguous_iterator x, difference_type n)
   {
     x -= n;
     return x;
   }
-  TEST_FUNC friend constexpr difference_type operator-(contiguous_iterator x, contiguous_iterator y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr difference_type operator-(contiguous_iterator x, contiguous_iterator y)
   {
     return x.it_ - y.it_;
   }
 
-  TEST_FUNC friend constexpr bool operator==(const contiguous_iterator& x, const contiguous_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator==(const contiguous_iterator& x, const contiguous_iterator& y)
   {
     return x.it_ == y.it_;
   }
-  TEST_FUNC friend constexpr bool operator!=(const contiguous_iterator& x, const contiguous_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator!=(const contiguous_iterator& x, const contiguous_iterator& y)
   {
     return x.it_ != y.it_;
   }
-  TEST_FUNC friend constexpr bool operator<(const contiguous_iterator& x, const contiguous_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator<(const contiguous_iterator& x, const contiguous_iterator& y)
   {
     return x.it_ < y.it_;
   }
-  TEST_FUNC friend constexpr bool operator<=(const contiguous_iterator& x, const contiguous_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator<=(const contiguous_iterator& x, const contiguous_iterator& y)
   {
     return x.it_ <= y.it_;
   }
-  TEST_FUNC friend constexpr bool operator>(const contiguous_iterator& x, const contiguous_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator>(const contiguous_iterator& x, const contiguous_iterator& y)
   {
     return x.it_ > y.it_;
   }
-  TEST_FUNC friend constexpr bool operator>=(const contiguous_iterator& x, const contiguous_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator>=(const contiguous_iterator& x, const contiguous_iterator& y)
   {
     return x.it_ >= y.it_;
   }
 
-  TEST_FUNC friend constexpr It base(const contiguous_iterator& i)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr It base(const contiguous_iterator& i)
   {
     return i.it_;
   }
@@ -865,7 +893,7 @@ public:
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 template <class Iter> // ADL base() for everything else (including pointers)
-TEST_FUNC constexpr Iter base(Iter i)
+_CCCL_HIDE_FROM_ABI TEST_FUNC constexpr Iter base(Iter i)
 {
   return i;
 }
@@ -888,14 +916,14 @@ struct ThrowingIterator
     TAComparison
   };
 
-  TEST_FUNC constexpr ThrowingIterator()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr ThrowingIterator()
       : begin_(nullptr)
       , end_(nullptr)
       , current_(nullptr)
       , action_(ThrowingAction::TADereference)
       , index_(0)
   {}
-  TEST_FUNC constexpr explicit ThrowingIterator(
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr explicit ThrowingIterator(
     const T* first, const T* last, int index = 0, ThrowingAction action = ThrowingAction::TADereference)
       : begin_(first)
       , end_(last)
@@ -903,7 +931,7 @@ struct ThrowingIterator
       , action_(action)
       , index_(index)
   {}
-  TEST_FUNC constexpr ThrowingIterator(const ThrowingIterator& rhs)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr ThrowingIterator(const ThrowingIterator& rhs)
       : begin_(rhs.begin_)
       , end_(rhs.end_)
       , current_(rhs.current_)
@@ -913,7 +941,7 @@ struct ThrowingIterator
 
   // Irrelevant for testing code
   // NOLINTNEXTLINE(bugprone-unhandled-self-assignment)
-  TEST_FUNC constexpr ThrowingIterator& operator=(const ThrowingIterator& rhs)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr ThrowingIterator& operator=(const ThrowingIterator& rhs)
   {
     if (action_ == ThrowingAction::TAAssignment && --index_ < 0)
     {
@@ -927,7 +955,7 @@ struct ThrowingIterator
     return *this;
   }
 
-  TEST_FUNC constexpr reference operator*() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr reference operator*() const
   {
     if (action_ == ThrowingAction::TADereference && --index_ < 0)
     {
@@ -936,7 +964,7 @@ struct ThrowingIterator
     return *current_;
   }
 
-  TEST_FUNC constexpr ThrowingIterator& operator++()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr ThrowingIterator& operator++()
   {
     if (action_ == ThrowingAction::TAIncrement && --index_ < 0)
     {
@@ -946,14 +974,14 @@ struct ThrowingIterator
     return *this;
   }
 
-  TEST_FUNC constexpr ThrowingIterator operator++(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr ThrowingIterator operator++(int)
   {
     ThrowingIterator temp = *this;
     ++(*this);
     return temp;
   }
 
-  TEST_FUNC constexpr ThrowingIterator& operator--()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr ThrowingIterator& operator--()
   {
     if (action_ == ThrowingAction::TADecrement && --index_ < 0)
     {
@@ -963,14 +991,14 @@ struct ThrowingIterator
     return *this;
   }
 
-  TEST_FUNC constexpr ThrowingIterator operator--(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr ThrowingIterator operator--(int)
   {
     ThrowingIterator temp = *this;
     --(*this);
     return temp;
   }
 
-  TEST_FUNC constexpr friend bool operator==(const ThrowingIterator& a, const ThrowingIterator& b)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr friend bool operator==(const ThrowingIterator& a, const ThrowingIterator& b)
   {
     if (a.action_ == ThrowingAction::TAComparison && --a.index_ < 0)
     {
@@ -989,7 +1017,7 @@ struct ThrowingIterator
     return a.current_ == b.current_;
   }
 
-  TEST_FUNC constexpr friend bool operator!=(const ThrowingIterator& a, const ThrowingIterator& b)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr friend bool operator!=(const ThrowingIterator& a, const ThrowingIterator& b)
   {
     return !(a == b);
   }
@@ -1014,56 +1042,57 @@ struct NonThrowingIterator
   using pointer           = const T*;
   using reference         = const T&;
 
-  TEST_FUNC NonThrowingIterator()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC NonThrowingIterator()
       : begin_(nullptr)
       , end_(nullptr)
       , current_(nullptr)
   {}
-  TEST_FUNC explicit NonThrowingIterator(const T* first, const T* last)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC explicit NonThrowingIterator(const T* first, const T* last)
       : begin_(first)
       , end_(last)
       , current_(first)
   {}
-  TEST_FUNC NonThrowingIterator(const NonThrowingIterator& rhs)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC NonThrowingIterator(const NonThrowingIterator& rhs)
       : begin_(rhs.begin_)
       , end_(rhs.end_)
       , current_(rhs.current_)
   {}
 
-  NonThrowingIterator& operator=(const NonThrowingIterator& rhs) noexcept = default;
+  _CCCL_HIDE_FROM_ABI NonThrowingIterator& operator=(const NonThrowingIterator& rhs) noexcept = default;
 
-  TEST_FUNC reference operator*() const noexcept
+  _CCCL_HIDE_FROM_ABI TEST_FUNC reference operator*() const noexcept
   {
     return *current_;
   }
 
-  TEST_FUNC NonThrowingIterator& operator++() noexcept
+  _CCCL_HIDE_FROM_ABI TEST_FUNC NonThrowingIterator& operator++() noexcept
   {
     ++current_;
     return *this;
   }
 
-  TEST_FUNC NonThrowingIterator operator++(int) noexcept
+  _CCCL_HIDE_FROM_ABI TEST_FUNC NonThrowingIterator operator++(int) noexcept
   {
     NonThrowingIterator temp = *this;
     ++(*this);
     return temp;
   }
 
-  TEST_FUNC NonThrowingIterator& operator--() noexcept
+  _CCCL_HIDE_FROM_ABI TEST_FUNC NonThrowingIterator& operator--() noexcept
   {
     --current_;
     return *this;
   }
 
-  TEST_FUNC NonThrowingIterator operator--(int) noexcept
+  _CCCL_HIDE_FROM_ABI TEST_FUNC NonThrowingIterator operator--(int) noexcept
   {
     NonThrowingIterator temp = *this;
     --(*this);
     return temp;
   }
 
-  TEST_FUNC friend bool operator==(const NonThrowingIterator& a, const NonThrowingIterator& b) noexcept
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend bool
+  operator==(const NonThrowingIterator& a, const NonThrowingIterator& b) noexcept
   {
     bool atEndL = a.current_ == a.end_;
     bool atEndR = b.current_ == b.end_;
@@ -1078,7 +1107,8 @@ struct NonThrowingIterator
     return a.current_ == b.current_;
   }
 
-  TEST_FUNC friend bool operator!=(const NonThrowingIterator& a, const NonThrowingIterator& b) noexcept
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend bool
+  operator!=(const NonThrowingIterator& a, const NonThrowingIterator& b) noexcept
   {
     return !(a == b);
   }
@@ -1104,50 +1134,52 @@ struct CopyMayThrowIterator
 
   int* ptr_ = nullptr;
 
-  constexpr CopyMayThrowIterator() noexcept = default;
-  TEST_FUNC constexpr explicit CopyMayThrowIterator(int* ptr) noexcept
+  _CCCL_HIDE_FROM_ABI constexpr CopyMayThrowIterator() noexcept = default;
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr explicit CopyMayThrowIterator(int* ptr) noexcept
       : ptr_(ptr)
   {}
   // The exception specification depends on NoThrowCopy, so this copy cannot be defaulted.
   // NOLINTBEGIN(modernize-use-equals-default)
-  TEST_FUNC constexpr CopyMayThrowIterator(const CopyMayThrowIterator& other) noexcept(NoThrowCopy)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr CopyMayThrowIterator(const CopyMayThrowIterator& other) noexcept(NoThrowCopy)
       : ptr_(other.ptr_)
   {}
   // NOLINTEND(modernize-use-equals-default)
-  constexpr CopyMayThrowIterator& operator=(const CopyMayThrowIterator&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr CopyMayThrowIterator& operator=(const CopyMayThrowIterator&) noexcept = default;
 
-  TEST_FUNC constexpr reference operator*() const noexcept
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr reference operator*() const noexcept
   {
     return *ptr_;
   }
-  TEST_FUNC constexpr CopyMayThrowIterator& operator++() noexcept
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr CopyMayThrowIterator& operator++() noexcept
   {
     ++ptr_;
     return *this;
   }
-  TEST_FUNC constexpr CopyMayThrowIterator operator++(int) noexcept(NoThrowCopy)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr CopyMayThrowIterator operator++(int) noexcept(NoThrowCopy)
   {
     CopyMayThrowIterator tmp(*this);
     ++ptr_;
     return tmp;
   }
-  TEST_FUNC constexpr CopyMayThrowIterator& operator--() noexcept
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr CopyMayThrowIterator& operator--() noexcept
   {
     --ptr_;
     return *this;
   }
-  TEST_FUNC constexpr CopyMayThrowIterator operator--(int) noexcept(NoThrowCopy)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr CopyMayThrowIterator operator--(int) noexcept(NoThrowCopy)
   {
     CopyMayThrowIterator tmp(*this);
     --ptr_;
     return tmp;
   }
 
-  TEST_FUNC friend constexpr bool operator==(const CopyMayThrowIterator& x, const CopyMayThrowIterator& y) noexcept
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator==(const CopyMayThrowIterator& x, const CopyMayThrowIterator& y) noexcept
   {
     return x.ptr_ == y.ptr_;
   }
-  TEST_FUNC friend constexpr bool operator!=(const CopyMayThrowIterator& x, const CopyMayThrowIterator& y) noexcept
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator!=(const CopyMayThrowIterator& x, const CopyMayThrowIterator& y) noexcept
   {
     return x.ptr_ != y.ptr_;
   }
@@ -1166,28 +1198,28 @@ public:
   using difference_type  = cuda::std::iter_difference_t<It>;
   using iterator_concept = cuda::std::input_iterator_tag;
 
-  TEST_FUNC constexpr explicit cpp20_input_iterator(It it)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr explicit cpp20_input_iterator(It it)
       : it_(it)
   {}
 
-  cpp20_input_iterator(cpp20_input_iterator&&)            = default;
-  cpp20_input_iterator& operator=(cpp20_input_iterator&&) = default;
+  _CCCL_HIDE_FROM_ABI cpp20_input_iterator(cpp20_input_iterator&&)            = default;
+  _CCCL_HIDE_FROM_ABI cpp20_input_iterator& operator=(cpp20_input_iterator&&) = default;
 
-  TEST_FUNC constexpr decltype(auto) operator*() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr decltype(auto) operator*() const
   {
     return *it_;
   }
-  TEST_FUNC constexpr cpp20_input_iterator& operator++()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr cpp20_input_iterator& operator++()
   {
     ++it_;
     return *this;
   }
-  TEST_FUNC constexpr void operator++(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr void operator++(int)
   {
     ++it_;
   }
 
-  TEST_FUNC friend constexpr It base(const cpp20_input_iterator& i)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr It base(const cpp20_input_iterator& i)
   {
     return i.it_;
   }
@@ -1222,28 +1254,28 @@ class cpp20_output_iterator
 public:
   using difference_type = cuda::std::iter_difference_t<It>;
 
-  TEST_FUNC constexpr explicit cpp20_output_iterator(It it)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr explicit cpp20_output_iterator(It it)
       : it_(it)
   {}
 
-  cpp20_output_iterator(cpp20_output_iterator&&)            = default;
-  cpp20_output_iterator& operator=(cpp20_output_iterator&&) = default;
+  _CCCL_HIDE_FROM_ABI cpp20_output_iterator(cpp20_output_iterator&&)            = default;
+  _CCCL_HIDE_FROM_ABI cpp20_output_iterator& operator=(cpp20_output_iterator&&) = default;
 
-  TEST_FUNC constexpr decltype(auto) operator*() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr decltype(auto) operator*() const
   {
     return *it_;
   }
-  TEST_FUNC constexpr cpp20_output_iterator& operator++()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr cpp20_output_iterator& operator++()
   {
     ++it_;
     return *this;
   }
-  TEST_FUNC constexpr cpp20_output_iterator operator++(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr cpp20_output_iterator operator++(int)
   {
     return cpp20_output_iterator(it_++);
   }
 
-  TEST_FUNC friend constexpr It base(const cpp20_output_iterator& i)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr It base(const cpp20_output_iterator& i)
   {
     return i.it_;
   }
@@ -1287,40 +1319,40 @@ public:
   = default;
 #else
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::default_initializable<It2>, int> = 0>
-  TEST_FUNC constexpr stride_counting_iterator() noexcept {};
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr stride_counting_iterator() noexcept {};
 #endif
 
-  TEST_FUNC constexpr explicit stride_counting_iterator(It const& it)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr explicit stride_counting_iterator(It const& it)
       : base_(base(it))
   {}
 
-  TEST_FUNC friend constexpr It base(stride_counting_iterator const& it)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr It base(stride_counting_iterator const& it)
   {
     return It(it.base_);
   }
 
-  TEST_FUNC constexpr difference_type stride_count() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr difference_type stride_count() const
   {
     return stride_count_;
   }
 
-  TEST_FUNC constexpr difference_type stride_displacement() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr difference_type stride_displacement() const
   {
     return stride_displacement_;
   }
 
-  TEST_FUNC constexpr decltype(auto) operator*() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr decltype(auto) operator*() const
   {
     return *It(base_);
   }
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::random_access_iterator<It2>, int> = 0>
-  TEST_FUNC constexpr decltype(auto) operator[](difference_type n) const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr decltype(auto) operator[](difference_type n) const
   {
     return It(base_)[n];
   }
 
-  TEST_FUNC constexpr stride_counting_iterator& operator++()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr stride_counting_iterator& operator++()
   {
     It tmp(base_);
     base_ = base(++tmp);
@@ -1330,13 +1362,13 @@ public:
   }
 
   template <class It2 = It, cuda::std::enable_if_t<!cuda::std::forward_iterator<It2>, int> = 0>
-  TEST_FUNC constexpr void operator++(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr void operator++(int)
   {
     ++*this;
   }
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::forward_iterator<It2>, int> = 0>
-  TEST_FUNC constexpr stride_counting_iterator operator++(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr stride_counting_iterator operator++(int)
   {
     auto temp = *this;
     ++*this;
@@ -1344,7 +1376,7 @@ public:
   }
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::bidirectional_iterator<It2>, int> = 0>
-  TEST_FUNC constexpr stride_counting_iterator& operator--()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr stride_counting_iterator& operator--()
   {
     It tmp(base_);
     base_ = base(--tmp);
@@ -1354,7 +1386,7 @@ public:
   }
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::bidirectional_iterator<It2>, int> = 0>
-  TEST_FUNC constexpr stride_counting_iterator operator--(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr stride_counting_iterator operator--(int)
   {
     auto temp = *this;
     --*this;
@@ -1362,7 +1394,7 @@ public:
   }
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::random_access_iterator<It2>, int> = 0>
-  TEST_FUNC constexpr stride_counting_iterator& operator+=(difference_type const n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr stride_counting_iterator& operator+=(difference_type const n)
   {
     It tmp(base_);
     base_ = base(tmp += n);
@@ -1372,7 +1404,7 @@ public:
   }
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::random_access_iterator<It2>, int> = 0>
-  TEST_FUNC constexpr stride_counting_iterator& operator-=(difference_type const n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr stride_counting_iterator& operator-=(difference_type const n)
   {
     It tmp(base_);
     base_ = base(tmp -= n);
@@ -1382,64 +1414,71 @@ public:
   }
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::random_access_iterator<It2>, int> = 0>
-  TEST_FUNC friend constexpr stride_counting_iterator operator+(stride_counting_iterator it, difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr stride_counting_iterator
+  operator+(stride_counting_iterator it, difference_type n)
   {
     return it += n;
   }
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::random_access_iterator<It2>, int> = 0>
-  TEST_FUNC friend constexpr stride_counting_iterator operator+(difference_type n, stride_counting_iterator it)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr stride_counting_iterator
+  operator+(difference_type n, stride_counting_iterator it)
   {
     return it += n;
   }
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::random_access_iterator<It2>, int> = 0>
-  TEST_FUNC friend constexpr stride_counting_iterator operator-(stride_counting_iterator it, difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr stride_counting_iterator
+  operator-(stride_counting_iterator it, difference_type n)
   {
     return it -= n;
   }
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::sized_sentinel_for<It2, It2>, int> = 0>
-  TEST_FUNC friend constexpr difference_type
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr difference_type
   operator-(stride_counting_iterator const& x, stride_counting_iterator const& y)
   {
     return base(x) - base(y);
   }
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::sentinel_for<It2, It2>, int> = 0>
-  TEST_FUNC constexpr bool operator==(stride_counting_iterator const& other) const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr bool operator==(stride_counting_iterator const& other) const
   {
     return It(base_) == It(other.base_);
   }
 
 #if TEST_STD_VER < 2020
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::sentinel_for<It2, It2>, int> = 0>
-  TEST_FUNC constexpr bool operator!=(stride_counting_iterator const& other) const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr bool operator!=(stride_counting_iterator const& other) const
   {
     return It(base_) != It(other.base_);
   }
 #endif
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::random_access_iterator<It2>, int> = 0>
-  TEST_FUNC friend constexpr bool operator<(stride_counting_iterator const& x, stride_counting_iterator const& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator<(stride_counting_iterator const& x, stride_counting_iterator const& y)
   {
     return It(x.base_) < It(y.base_);
   }
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::random_access_iterator<It2>, int> = 0>
-  TEST_FUNC friend constexpr bool operator>(stride_counting_iterator const& x, stride_counting_iterator const& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator>(stride_counting_iterator const& x, stride_counting_iterator const& y)
   {
     return It(x.base_) > It(y.base_);
   }
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::random_access_iterator<It2>, int> = 0>
-  TEST_FUNC friend constexpr bool operator<=(stride_counting_iterator const& x, stride_counting_iterator const& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator<=(stride_counting_iterator const& x, stride_counting_iterator const& y)
   {
     return It(x.base_) <= It(y.base_);
   }
 
   template <class It2 = It, cuda::std::enable_if_t<cuda::std::random_access_iterator<It2>, int> = 0>
-  TEST_FUNC friend constexpr bool operator>=(stride_counting_iterator const& x, stride_counting_iterator const& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator>=(stride_counting_iterator const& x, stride_counting_iterator const& y)
   {
     return It(x.base_) >= It(y.base_);
   }
@@ -1457,33 +1496,33 @@ template <class It>
 class sentinel_wrapper
 {
 public:
-  explicit sentinel_wrapper() = default;
-  TEST_FUNC constexpr explicit sentinel_wrapper(const It& it)
+  _CCCL_HIDE_FROM_ABI explicit sentinel_wrapper() = default;
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr explicit sentinel_wrapper(const It& it)
       : base_(base(it))
   {}
   _CCCL_EXEC_CHECK_DISABLE
-  TEST_FUNC friend constexpr bool operator==(const sentinel_wrapper& s, const It& i)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator==(const sentinel_wrapper& s, const It& i)
   {
     return s.base_ == base(i);
   }
 #if TEST_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
-  TEST_FUNC friend constexpr bool operator==(const It& i, const sentinel_wrapper& s)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator==(const It& i, const sentinel_wrapper& s)
   {
     return s.base_ == base(i);
   }
   _CCCL_EXEC_CHECK_DISABLE
-  TEST_FUNC friend constexpr bool operator!=(const sentinel_wrapper& s, const It& i)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator!=(const sentinel_wrapper& s, const It& i)
   {
     return s.base_ != base(i);
   }
   _CCCL_EXEC_CHECK_DISABLE
-  TEST_FUNC friend constexpr bool operator!=(const It& i, const sentinel_wrapper& s)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator!=(const It& i, const sentinel_wrapper& s)
   {
     return s.base_ != base(i);
   }
 #endif
-  TEST_FUNC friend constexpr It base(const sentinel_wrapper& s)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr It base(const sentinel_wrapper& s)
   {
     return It(s.base_);
   }
@@ -1496,37 +1535,37 @@ template <class It>
 class sized_sentinel
 {
 public:
-  explicit sized_sentinel() = default;
-  TEST_FUNC constexpr explicit sized_sentinel(const It& it)
+  _CCCL_HIDE_FROM_ABI explicit sized_sentinel() = default;
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr explicit sized_sentinel(const It& it)
       : base_(base(it))
   {}
-  TEST_FUNC friend constexpr bool operator==(const sized_sentinel& s, const It& i)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator==(const sized_sentinel& s, const It& i)
   {
     return s.base_ == base(i);
   }
 #if TEST_STD_VER < 2020
-  TEST_FUNC friend constexpr bool operator==(const It& i, const sized_sentinel& s)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator==(const It& i, const sized_sentinel& s)
   {
     return s.base_ == base(i);
   }
-  TEST_FUNC friend constexpr bool operator!=(const sized_sentinel& s, const It& i)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator!=(const sized_sentinel& s, const It& i)
   {
     return s.base_ != base(i);
   }
-  TEST_FUNC friend constexpr bool operator!=(const It& i, const sized_sentinel& s)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator!=(const It& i, const sized_sentinel& s)
   {
     return s.base_ != base(i);
   }
 #endif
-  TEST_FUNC friend constexpr auto operator-(const sized_sentinel& s, const It& i)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr auto operator-(const sized_sentinel& s, const It& i)
   {
     return s.base_ - base(i);
   }
-  TEST_FUNC friend constexpr auto operator-(const It& i, const sized_sentinel& s)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr auto operator-(const It& i, const sized_sentinel& s)
   {
     return base(i) - s.base_;
   }
-  TEST_FUNC friend constexpr It base(const sized_sentinel& s)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr It base(const sized_sentinel& s)
   {
     return It(s.base_);
   }
@@ -1549,99 +1588,99 @@ private:
   int* iter_moves_ = nullptr;
   int* iter_swaps_ = nullptr;
 
-  TEST_FUNC constexpr Iterator(int* p, int* iter_moves, int* iter_swaps)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr Iterator(int* p, int* iter_moves, int* iter_swaps)
       : ptr_(p)
       , iter_moves_(iter_moves)
       , iter_swaps_(iter_swaps)
   {}
 
 public:
-  constexpr Iterator() = default;
-  TEST_FUNC static constexpr Iterator TrackMoves(int* p, int& iter_moves)
+  _CCCL_HIDE_FROM_ABI constexpr Iterator() = default;
+  _CCCL_HIDE_FROM_ABI TEST_FUNC static constexpr Iterator TrackMoves(int* p, int& iter_moves)
   {
     return Iterator(p, &iter_moves, /*iter_swaps=*/nullptr);
   }
-  TEST_FUNC static constexpr Iterator TrackSwaps(int& iter_swaps)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC static constexpr Iterator TrackSwaps(int& iter_swaps)
   {
     return Iterator(/*p=*/nullptr, /*iter_moves=*/nullptr, &iter_swaps);
   }
-  TEST_FUNC static constexpr Iterator TrackSwaps(int* p, int& iter_swaps)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC static constexpr Iterator TrackSwaps(int* p, int& iter_swaps)
   {
     return Iterator(p, /*iter_moves=*/nullptr, &iter_swaps);
   }
 
-  TEST_FUNC constexpr int iter_moves() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr int iter_moves() const
   {
     assert(iter_moves_);
     return *iter_moves_;
   }
-  TEST_FUNC constexpr int iter_swaps() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr int iter_swaps() const
   {
     assert(iter_swaps_);
     return *iter_swaps_;
   }
 
-  TEST_FUNC constexpr value_type& operator*() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr value_type& operator*() const
   {
     return *ptr_;
   }
-  TEST_FUNC constexpr reference operator[](difference_type n) const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr reference operator[](difference_type n) const
   {
     return ptr_[n];
   }
 
-  TEST_FUNC friend constexpr Iterator operator+(Iterator i, difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr Iterator operator+(Iterator i, difference_type n)
   {
     return Iterator(i.ptr_ + n, i.iter_moves_, i.iter_swaps_);
   }
-  TEST_FUNC friend constexpr Iterator operator+(difference_type n, Iterator i)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr Iterator operator+(difference_type n, Iterator i)
   {
     return i + n;
   }
-  TEST_FUNC constexpr Iterator operator-(difference_type n) const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr Iterator operator-(difference_type n) const
   {
     return Iterator(ptr_ - n, iter_moves_, iter_swaps_);
   }
-  TEST_FUNC constexpr difference_type operator-(Iterator rhs) const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr difference_type operator-(Iterator rhs) const
   {
     return ptr_ - rhs.ptr_;
   }
-  TEST_FUNC constexpr Iterator& operator+=(difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr Iterator& operator+=(difference_type n)
   {
     ptr_ += n;
     return *this;
   }
-  TEST_FUNC constexpr Iterator& operator-=(difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr Iterator& operator-=(difference_type n)
   {
     ptr_ -= n;
     return *this;
   }
 
-  TEST_FUNC constexpr Iterator& operator++()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr Iterator& operator++()
   {
     ++ptr_;
     return *this;
   }
-  TEST_FUNC constexpr Iterator operator++(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr Iterator operator++(int)
   {
     Iterator prev = *this;
     ++ptr_;
     return prev;
   }
 
-  TEST_FUNC constexpr Iterator& operator--()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr Iterator& operator--()
   {
     --ptr_;
     return *this;
   }
-  TEST_FUNC constexpr Iterator operator--(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr Iterator operator--(int)
   {
     Iterator prev = *this;
     --ptr_;
     return prev;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX20 friend void iter_swap(Iterator a, Iterator b)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC TEST_CONSTEXPR_CXX20 friend void iter_swap(Iterator a, Iterator b)
   {
     cuda::std::swap(a.ptr_, b.ptr_);
     if (a.iter_swaps_)
@@ -1650,7 +1689,7 @@ public:
     }
   }
 
-  TEST_FUNC constexpr friend value_type&& iter_move(Iterator iter)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr friend value_type&& iter_move(Iterator iter)
   {
     if (iter.iter_moves_)
     {
@@ -1659,7 +1698,7 @@ public:
     return cuda::std::move(*iter);
   }
 
-  TEST_FUNC constexpr friend bool operator==(const Iterator& lhs, const Iterator& rhs)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr friend bool operator==(const Iterator& lhs, const Iterator& rhs)
   {
     return lhs.ptr_ == rhs.ptr_;
   }
@@ -1669,23 +1708,23 @@ public:
     return lhs.ptr_ <=> rhs.ptr_;
   }
 #else
-  TEST_FUNC constexpr friend bool operator!=(const Iterator& lhs, const Iterator& rhs)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr friend bool operator!=(const Iterator& lhs, const Iterator& rhs)
   {
     return lhs.ptr_ != rhs.ptr_;
   }
-  TEST_FUNC constexpr friend bool operator<(const Iterator& lhs, const Iterator& rhs)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr friend bool operator<(const Iterator& lhs, const Iterator& rhs)
   {
     return lhs.ptr_ < rhs.ptr_;
   }
-  TEST_FUNC constexpr friend bool operator<=(const Iterator& lhs, const Iterator& rhs)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr friend bool operator<=(const Iterator& lhs, const Iterator& rhs)
   {
     return lhs.ptr_ <= rhs.ptr_;
   }
-  TEST_FUNC constexpr friend bool operator>(const Iterator& lhs, const Iterator& rhs)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr friend bool operator>(const Iterator& lhs, const Iterator& rhs)
   {
     return lhs.ptr_ > rhs.ptr_;
   }
-  TEST_FUNC constexpr friend bool operator>=(const Iterator& lhs, const Iterator& rhs)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr friend bool operator>=(const Iterator& lhs, const Iterator& rhs)
   {
     return lhs.ptr_ >= rhs.ptr_;
   }
@@ -1721,32 +1760,32 @@ struct Proxy
 {
   T data;
 
-  TEST_FUNC constexpr T& getData() &
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr T& getData() &
   {
     return data;
   }
 
-  TEST_FUNC constexpr const T& getData() const&
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr const T& getData() const&
   {
     return data;
   }
 
-  TEST_FUNC constexpr T&& getData() &&
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr T&& getData() &&
   {
     return static_cast<T&&>(data);
   }
 
-  TEST_FUNC constexpr const T&& getData() const&&
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr const T&& getData() const&&
   {
     return static_cast<const T&&>(data);
   }
 
-  Proxy(const Proxy&) = default;
+  _CCCL_HIDE_FROM_ABI Proxy(const Proxy&) = default;
 
   // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_TEMPLATE(class U)
   _CCCL_REQUIRES(cuda::std::constructible_from<T, U&&>)
-  TEST_FUNC constexpr Proxy(U&& u)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr Proxy(U&& u)
       : data{cuda::std::forward<U>(u)}
   {}
   // NOLINTEND(bugprone-forwarding-reference-overload)
@@ -1757,7 +1796,7 @@ struct Proxy
   _CCCL_TEMPLATE(class Other)
   _CCCL_REQUIRES((IsProxy<cuda::std::decay_t<Other>>
                   && cuda::std::constructible_from<T, decltype(cuda::std::declval<Other>().getData())>) )
-  TEST_FUNC constexpr Proxy(Other&& other)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr Proxy(Other&& other)
       : data{cuda::std::forward<Other>(other).getData()}
   {}
   // NOLINTEND(bugprone-forwarding-reference-overload)
@@ -1766,7 +1805,7 @@ struct Proxy
   _CCCL_REQUIRES((IsProxy<cuda::std::decay_t<Other>>
                   && cuda::std::assignable_from<cuda::std::add_lvalue_reference_t<T>,
                                                 decltype(cuda::std::declval<Other>().getData())>) )
-  TEST_FUNC constexpr Proxy& operator=(Other&& other)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr Proxy& operator=(Other&& other)
   {
     data = cuda::std::forward<Other>(other).getData();
     return *this;
@@ -1777,7 +1816,7 @@ struct Proxy
   _CCCL_REQUIRES((IsProxy<cuda::std::decay_t<Other>>
                   && cuda::std::assignable_from<const cuda::std::add_lvalue_reference_t<T>,
                                                 decltype(cuda::std::declval<Other>().getData())>) )
-  TEST_FUNC constexpr const Proxy& operator=(Other&& other) const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr const Proxy& operator=(Other&& other) const
   {
     data = cuda::std::forward<Other>(other).getData();
     return *this;
@@ -1785,7 +1824,7 @@ struct Proxy
 
   // If `T` is a reference type, the implicitly-generated assignment operator will be deleted (and would take precedence
   // over the templated `operator=` above because it's a better match).
-  TEST_FUNC constexpr Proxy& operator=(const Proxy& rhs)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr Proxy& operator=(const Proxy& rhs)
   {
     data = rhs.data;
     return *this;
@@ -1802,7 +1841,7 @@ struct Proxy
 #else
   _CCCL_TEMPLATE(class T2 = T)
   _CCCL_REQUIRES((cuda::std::equality_comparable<T2> && !cuda::std::is_reference_v<T2>) )
-  TEST_FUNC friend constexpr bool operator==(const Proxy& lhs, const Proxy& rhs)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator==(const Proxy& lhs, const Proxy& rhs)
   {
     return lhs.data == rhs.data;
   }
@@ -1812,7 +1851,7 @@ struct Proxy
   // when `T` is a reference type.
   _CCCL_TEMPLATE(class U)
   _CCCL_REQUIRES((cuda::std::equality_comparable_with<cuda::std::decay_t<T>, cuda::std::decay_t<U>>) )
-  TEST_FUNC friend constexpr bool operator==(const Proxy& lhs, const Proxy<U>& rhs)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator==(const Proxy& lhs, const Proxy<U>& rhs)
   {
     return lhs.data == rhs.data;
   }
@@ -1888,7 +1927,7 @@ template <class Base>
 TEST_FUNC auto get_iter_concept_impl(cuda::std::__priority_tag<0>) -> cuda::std::input_iterator_tag;
 
 template <class Base, cuda::std::enable_if_t<cuda::std::input_iterator<Base>, int> = 0>
-TEST_FUNC constexpr auto get_iterator_concept()
+_CCCL_HIDE_FROM_ABI TEST_FUNC constexpr auto get_iterator_concept()
 {
   using Tag = decltype(get_iter_concept_impl<Base>(cuda::std::__priority_tag<3>{}));
   return Tag{};
@@ -1909,22 +1948,22 @@ struct ProxyIterator : ProxyIteratorBase<Base>
   = default;
 #else
   template <class B2 = Base, cuda::std::enable_if_t<cuda::std::default_initializable<B2>, int> = 0>
-  TEST_FUNC constexpr ProxyIterator() noexcept {};
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr ProxyIterator() noexcept {};
 #endif // TEST_STD_VER > 2017
 
-  TEST_FUNC constexpr ProxyIterator(Base base)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr ProxyIterator(Base base)
       : base_{cuda::std::move(base)}
   {}
 
   // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_TEMPLATE(class T)
   _CCCL_REQUIRES(cuda::std::constructible_from<Base, T&&>)
-  TEST_FUNC constexpr ProxyIterator(T&& t)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr ProxyIterator(T&& t)
       : base_{cuda::std::forward<T>(t)}
   {}
   // NOLINTEND(bugprone-forwarding-reference-overload)
 
-  TEST_FUNC friend constexpr decltype(auto) base(const ProxyIterator& p)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr decltype(auto) base(const ProxyIterator& p)
   {
     return base(p.base_);
   }
@@ -1935,7 +1974,7 @@ struct ProxyIterator : ProxyIteratorBase<Base>
   // it will likely result in a copy rather than a move
   // MSVC falls over its feet without the template indirection
   template <class B2 = Base>
-  TEST_FUNC friend constexpr auto iter_move(const ProxyIterator<B2>& p) noexcept
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr auto iter_move(const ProxyIterator<B2>& p) noexcept
   {
     return Proxy<cuda::std::iter_rvalue_reference_t<Base>>{cuda::std::ranges::iter_move(p.base_)};
   }
@@ -1943,31 +1982,31 @@ struct ProxyIterator : ProxyIteratorBase<Base>
   // Specialization of iter_swap
   // Note cuda::std::swap(*x, *y) would fail to compile as operator* returns prvalues
   // and cuda::std::swap takes non-const lvalue references
-  TEST_FUNC friend constexpr void iter_swap(const ProxyIterator& x, const ProxyIterator& y) noexcept
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr void iter_swap(const ProxyIterator& x, const ProxyIterator& y) noexcept
   {
     cuda::std::ranges::iter_swap(x.base_, y.base_);
   }
 
   // to satisfy input_iterator
-  TEST_FUNC constexpr Proxy<cuda::std::iter_reference_t<Base>> operator*() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr Proxy<cuda::std::iter_reference_t<Base>> operator*() const
   {
     return {*base_};
   }
 
-  TEST_FUNC constexpr ProxyIterator& operator++()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr ProxyIterator& operator++()
   {
     ++base_;
     return *this;
   }
 
-  TEST_FUNC constexpr void operator++(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr void operator++(int)
   {
     ++*this;
   }
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::equality_comparable<B2>)
-  TEST_FUNC friend constexpr bool operator==(const ProxyIterator& x, const ProxyIterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator==(const ProxyIterator& x, const ProxyIterator& y)
   {
     return x.base_ == y.base_;
   }
@@ -1975,7 +2014,7 @@ struct ProxyIterator : ProxyIteratorBase<Base>
   // to satisfy forward_iterator
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::forward_iterator<B2>)
-  TEST_FUNC constexpr ProxyIterator operator++(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr ProxyIterator operator++(int)
   {
     auto tmp = *this;
     ++*this;
@@ -1985,7 +2024,7 @@ struct ProxyIterator : ProxyIteratorBase<Base>
   // to satisfy bidirectional_iterator
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::bidirectional_iterator<B2>)
-  TEST_FUNC constexpr ProxyIterator& operator--()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr ProxyIterator& operator--()
   {
     --base_;
     return *this;
@@ -1993,7 +2032,7 @@ struct ProxyIterator : ProxyIteratorBase<Base>
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::bidirectional_iterator<B2>)
-  TEST_FUNC constexpr ProxyIterator operator--(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr ProxyIterator operator--(int)
   {
     auto tmp = *this;
     --*this;
@@ -2003,7 +2042,7 @@ struct ProxyIterator : ProxyIteratorBase<Base>
   // to satisfy random_access_iterator
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>)
-  TEST_FUNC constexpr ProxyIterator& operator+=(difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr ProxyIterator& operator+=(difference_type n)
   {
     base_ += n;
     return *this;
@@ -2011,7 +2050,7 @@ struct ProxyIterator : ProxyIteratorBase<Base>
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>)
-  TEST_FUNC constexpr ProxyIterator& operator-=(difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr ProxyIterator& operator-=(difference_type n)
   {
     base_ -= n;
     return *this;
@@ -2019,35 +2058,35 @@ struct ProxyIterator : ProxyIteratorBase<Base>
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>)
-  TEST_FUNC constexpr Proxy<cuda::std::iter_reference_t<Base>> operator[](difference_type n) const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr Proxy<cuda::std::iter_reference_t<Base>> operator[](difference_type n) const
   {
     return {base_[n]};
   }
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>)
-  TEST_FUNC friend constexpr bool operator<(const ProxyIterator& x, const ProxyIterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator<(const ProxyIterator& x, const ProxyIterator& y)
   {
     return x.base_ < y.base_;
   }
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>)
-  TEST_FUNC friend constexpr bool operator>(const ProxyIterator& x, const ProxyIterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator>(const ProxyIterator& x, const ProxyIterator& y)
   {
     return x.base_ > y.base_;
   }
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>)
-  TEST_FUNC friend constexpr bool operator<=(const ProxyIterator& x, const ProxyIterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator<=(const ProxyIterator& x, const ProxyIterator& y)
   {
     return x.base_ <= y.base_;
   }
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>)
-  TEST_FUNC friend constexpr bool operator>=(const ProxyIterator& x, const ProxyIterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator>=(const ProxyIterator& x, const ProxyIterator& y)
   {
     return x.base_ >= y.base_;
   }
@@ -2063,28 +2102,29 @@ struct ProxyIterator : ProxyIteratorBase<Base>
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>)
-  TEST_FUNC friend constexpr ProxyIterator operator+(const ProxyIterator& x, difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr ProxyIterator operator+(const ProxyIterator& x, difference_type n)
   {
     return ProxyIterator{x.base_ + n};
   }
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>)
-  TEST_FUNC friend constexpr ProxyIterator operator+(difference_type n, const ProxyIterator& x)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr ProxyIterator operator+(difference_type n, const ProxyIterator& x)
   {
     return ProxyIterator{n + x.base_};
   }
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>)
-  TEST_FUNC friend constexpr ProxyIterator operator-(const ProxyIterator& x, difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr ProxyIterator operator-(const ProxyIterator& x, difference_type n)
   {
     return ProxyIterator{x.base_ - n};
   }
 
   _CCCL_TEMPLATE(class B2 = Base)
   _CCCL_REQUIRES(cuda::std::random_access_iterator<B2>)
-  TEST_FUNC friend constexpr difference_type operator-(const ProxyIterator& x, const ProxyIterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr difference_type
+  operator-(const ProxyIterator& x, const ProxyIterator& y)
   {
     return x.base_ - y.base_;
   }
@@ -2099,14 +2139,14 @@ struct ProxySentinel
 {
   BaseSent base_;
 
-  ProxySentinel() = default;
-  TEST_FUNC constexpr ProxySentinel(BaseSent base)
+  _CCCL_HIDE_FROM_ABI ProxySentinel() = default;
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr ProxySentinel(BaseSent base)
       : base_{cuda::std::move(base)}
   {}
 
   _CCCL_TEMPLATE(class Base)
   _CCCL_REQUIRES(cuda::std::equality_comparable_with<Base, BaseSent>)
-  TEST_FUNC friend constexpr bool operator==(const ProxyIterator<Base>& p, const ProxySentinel& sent)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator==(const ProxyIterator<Base>& p, const ProxySentinel& sent)
   {
     return p.base_ == sent.base_;
   }
@@ -2181,88 +2221,98 @@ public:
   using pointer           = int*;
   using reference         = int&;
 
-  constexpr advance_only_iterator() = default;
-  TEST_FUNC constexpr advance_only_iterator(int* iter)
+  _CCCL_HIDE_FROM_ABI constexpr advance_only_iterator() = default;
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr advance_only_iterator(int* iter)
       : iter_(iter)
   {}
 
-  TEST_FUNC constexpr reference operator*() const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr reference operator*() const
   {
     return *iter_;
   }
-  TEST_FUNC constexpr reference operator[](difference_type n) const
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr reference operator[](difference_type n) const
   {
     return iter_[n];
   }
 
-  TEST_FUNC constexpr advance_only_iterator& operator++()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr advance_only_iterator& operator++()
   {
     return *this;
   }
-  TEST_FUNC constexpr advance_only_iterator& operator--()
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr advance_only_iterator& operator--()
   {
     return *this;
   }
-  TEST_FUNC constexpr advance_only_iterator operator++(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr advance_only_iterator operator++(int)
   {
     return *this;
   }
-  TEST_FUNC constexpr advance_only_iterator operator--(int)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr advance_only_iterator operator--(int)
   {
     return *this;
   }
 
-  TEST_FUNC constexpr advance_only_iterator& operator+=(difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr advance_only_iterator& operator+=(difference_type n)
   {
     iter_ += n;
     return *this;
   }
-  TEST_FUNC constexpr advance_only_iterator& operator-=(difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr advance_only_iterator& operator-=(difference_type n)
   {
     iter_ -= n;
     return *this;
   }
-  TEST_FUNC friend constexpr advance_only_iterator operator+(advance_only_iterator x, difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr advance_only_iterator
+  operator+(advance_only_iterator x, difference_type n)
   {
     x += n;
     return x;
   }
-  TEST_FUNC friend constexpr advance_only_iterator operator+(difference_type n, advance_only_iterator x)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr advance_only_iterator
+  operator+(difference_type n, advance_only_iterator x)
   {
     x += n;
     return x;
   }
-  TEST_FUNC friend constexpr advance_only_iterator operator-(advance_only_iterator x, difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr advance_only_iterator
+  operator-(advance_only_iterator x, difference_type n)
   {
     x -= n;
     return x;
   }
-  TEST_FUNC friend constexpr difference_type operator-(advance_only_iterator x, advance_only_iterator y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr difference_type
+  operator-(advance_only_iterator x, advance_only_iterator y)
   {
     return x.iter_ - y.iter_;
   }
 
-  TEST_FUNC friend constexpr bool operator==(const advance_only_iterator& x, const advance_only_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator==(const advance_only_iterator& x, const advance_only_iterator& y)
   {
     return x.iter_ == y.iter_;
   }
-  TEST_FUNC friend constexpr bool operator!=(const advance_only_iterator& x, const advance_only_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator!=(const advance_only_iterator& x, const advance_only_iterator& y)
   {
     return x.iter_ != y.iter_;
   }
-  TEST_FUNC friend constexpr bool operator<(const advance_only_iterator& x, const advance_only_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator<(const advance_only_iterator& x, const advance_only_iterator& y)
   {
     return x.iter_ < y.iter_;
   }
-  TEST_FUNC friend constexpr bool operator<=(const advance_only_iterator& x, const advance_only_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator<=(const advance_only_iterator& x, const advance_only_iterator& y)
   {
     return x.iter_ <= y.iter_;
   }
-  TEST_FUNC friend constexpr bool operator>(const advance_only_iterator& x, const advance_only_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator>(const advance_only_iterator& x, const advance_only_iterator& y)
   {
     return x.iter_ > y.iter_;
   }
-  TEST_FUNC friend constexpr bool operator>=(const advance_only_iterator& x, const advance_only_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool
+  operator>=(const advance_only_iterator& x, const advance_only_iterator& y)
   {
     return x.iter_ >= y.iter_;
   }
@@ -2285,109 +2335,109 @@ public:
   using pointer           = It;
   using reference         = typename cuda::std::iterator_traits<It>::reference;
 
-  constexpr host_only_iterator()
+  _CCCL_HOST_API constexpr host_only_iterator()
       : it_()
   {}
-  constexpr explicit host_only_iterator(It it)
+  _CCCL_HOST_API constexpr explicit host_only_iterator(It it)
       : it_(it)
   {}
 
   template <class U>
-  constexpr host_only_iterator(const host_only_iterator<U>& u)
+  _CCCL_HOST_API constexpr host_only_iterator(const host_only_iterator<U>& u)
       : it_(u.it_)
   {}
 
   template <class U, class = cuda::std::enable_if_t<cuda::std::is_default_constructible_v<U>>>
-  constexpr host_only_iterator(host_only_iterator<U>&& u)
+  _CCCL_HOST_API constexpr host_only_iterator(host_only_iterator<U>&& u)
       : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
 
-  constexpr reference operator*() const
+  _CCCL_HOST_API constexpr reference operator*() const
   {
     return *it_;
   }
-  constexpr reference operator[](difference_type n) const
+  _CCCL_HOST_API constexpr reference operator[](difference_type n) const
   {
     return it_[n];
   }
 
-  constexpr host_only_iterator& operator++()
+  _CCCL_HOST_API constexpr host_only_iterator& operator++()
   {
     ++it_;
     return *this;
   }
-  constexpr host_only_iterator& operator--()
+  _CCCL_HOST_API constexpr host_only_iterator& operator--()
   {
     --it_;
     return *this;
   }
-  constexpr host_only_iterator operator++(int)
+  _CCCL_HOST_API constexpr host_only_iterator operator++(int)
   {
     return host_only_iterator(it_++);
   }
-  constexpr host_only_iterator operator--(int)
+  _CCCL_HOST_API constexpr host_only_iterator operator--(int)
   {
     return host_only_iterator(it_--);
   }
 
-  constexpr host_only_iterator& operator+=(difference_type n)
+  _CCCL_HOST_API constexpr host_only_iterator& operator+=(difference_type n)
   {
     it_ += n;
     return *this;
   }
-  constexpr host_only_iterator& operator-=(difference_type n)
+  _CCCL_HOST_API constexpr host_only_iterator& operator-=(difference_type n)
   {
     it_ -= n;
     return *this;
   }
-  friend constexpr host_only_iterator operator+(host_only_iterator x, difference_type n)
+  _CCCL_HOST_API friend constexpr host_only_iterator operator+(host_only_iterator x, difference_type n)
   {
     x += n;
     return x;
   }
-  friend constexpr host_only_iterator operator+(difference_type n, host_only_iterator x)
+  _CCCL_HOST_API friend constexpr host_only_iterator operator+(difference_type n, host_only_iterator x)
   {
     x += n;
     return x;
   }
-  friend constexpr host_only_iterator operator-(host_only_iterator x, difference_type n)
+  _CCCL_HOST_API friend constexpr host_only_iterator operator-(host_only_iterator x, difference_type n)
   {
     x -= n;
     return x;
   }
-  friend constexpr difference_type operator-(host_only_iterator x, host_only_iterator y)
+  _CCCL_HOST_API friend constexpr difference_type operator-(host_only_iterator x, host_only_iterator y)
   {
     return x.it_ - y.it_;
   }
 
-  friend constexpr bool operator==(const host_only_iterator& x, const host_only_iterator& y)
+  _CCCL_HOST_API friend constexpr bool operator==(const host_only_iterator& x, const host_only_iterator& y)
   {
     return x.it_ == y.it_;
   }
-  friend constexpr bool operator!=(const host_only_iterator& x, const host_only_iterator& y)
+  _CCCL_HOST_API friend constexpr bool operator!=(const host_only_iterator& x, const host_only_iterator& y)
   {
     return x.it_ != y.it_;
   }
-  friend constexpr bool operator<(const host_only_iterator& x, const host_only_iterator& y)
+  _CCCL_HOST_API friend constexpr bool operator<(const host_only_iterator& x, const host_only_iterator& y)
   {
     return x.it_ < y.it_;
   }
-  friend constexpr bool operator<=(const host_only_iterator& x, const host_only_iterator& y)
+  _CCCL_HOST_API friend constexpr bool operator<=(const host_only_iterator& x, const host_only_iterator& y)
   {
     return x.it_ <= y.it_;
   }
-  friend constexpr bool operator>(const host_only_iterator& x, const host_only_iterator& y)
+  _CCCL_HOST_API friend constexpr bool operator>(const host_only_iterator& x, const host_only_iterator& y)
   {
     return x.it_ > y.it_;
   }
-  friend constexpr bool operator>=(const host_only_iterator& x, const host_only_iterator& y)
+  _CCCL_HOST_API friend constexpr bool operator>=(const host_only_iterator& x, const host_only_iterator& y)
   {
     return x.it_ >= y.it_;
   }
 
-  friend constexpr It base(const host_only_iterator& i)
+  _CCCL_HOST_API friend constexpr It base(const host_only_iterator& i)
   {
     return i.it_;
   }
@@ -2414,109 +2464,119 @@ public:
   using pointer           = It;
   using reference         = typename cuda::std::iterator_traits<It>::reference;
 
-  TEST_DEVICE_FUNC constexpr device_only_iterator()
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC constexpr device_only_iterator()
       : it_()
   {}
-  TEST_DEVICE_FUNC constexpr explicit device_only_iterator(It it)
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC constexpr explicit device_only_iterator(It it)
       : it_(it)
   {}
 
   template <class U>
-  TEST_DEVICE_FUNC constexpr device_only_iterator(const device_only_iterator<U>& u)
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC constexpr device_only_iterator(const device_only_iterator<U>& u)
       : it_(u.it_)
   {}
 
   template <class U, class = cuda::std::enable_if_t<cuda::std::is_default_constructible_v<U>>>
-  TEST_DEVICE_FUNC constexpr device_only_iterator(device_only_iterator<U>&& u)
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC constexpr device_only_iterator(device_only_iterator<U>&& u)
       : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
 
-  TEST_DEVICE_FUNC constexpr reference operator*() const
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC constexpr reference operator*() const
   {
     return *it_;
   }
-  TEST_DEVICE_FUNC constexpr reference operator[](difference_type n) const
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC constexpr reference operator[](difference_type n) const
   {
     return it_[n];
   }
 
-  TEST_DEVICE_FUNC constexpr device_only_iterator& operator++()
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC constexpr device_only_iterator& operator++()
   {
     ++it_;
     return *this;
   }
-  TEST_DEVICE_FUNC constexpr device_only_iterator& operator--()
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC constexpr device_only_iterator& operator--()
   {
     --it_;
     return *this;
   }
-  TEST_DEVICE_FUNC constexpr device_only_iterator operator++(int)
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC constexpr device_only_iterator operator++(int)
   {
     return device_only_iterator(it_++);
   }
-  TEST_DEVICE_FUNC constexpr device_only_iterator operator--(int)
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC constexpr device_only_iterator operator--(int)
   {
     return device_only_iterator(it_--);
   }
 
-  TEST_DEVICE_FUNC constexpr device_only_iterator& operator+=(difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC constexpr device_only_iterator& operator+=(difference_type n)
   {
     it_ += n;
     return *this;
   }
-  TEST_DEVICE_FUNC constexpr device_only_iterator& operator-=(difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC constexpr device_only_iterator& operator-=(difference_type n)
   {
     it_ -= n;
     return *this;
   }
-  TEST_DEVICE_FUNC friend constexpr device_only_iterator operator+(device_only_iterator x, difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC friend constexpr device_only_iterator
+  operator+(device_only_iterator x, difference_type n)
   {
     x += n;
     return x;
   }
-  TEST_DEVICE_FUNC friend constexpr device_only_iterator operator+(difference_type n, device_only_iterator x)
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC friend constexpr device_only_iterator
+  operator+(difference_type n, device_only_iterator x)
   {
     x += n;
     return x;
   }
-  TEST_DEVICE_FUNC friend constexpr device_only_iterator operator-(device_only_iterator x, difference_type n)
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC friend constexpr device_only_iterator
+  operator-(device_only_iterator x, difference_type n)
   {
     x -= n;
     return x;
   }
-  TEST_DEVICE_FUNC friend constexpr difference_type operator-(device_only_iterator x, device_only_iterator y)
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC friend constexpr difference_type
+  operator-(device_only_iterator x, device_only_iterator y)
   {
     return x.it_ - y.it_;
   }
 
-  TEST_DEVICE_FUNC friend constexpr bool operator==(const device_only_iterator& x, const device_only_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC friend constexpr bool
+  operator==(const device_only_iterator& x, const device_only_iterator& y)
   {
     return x.it_ == y.it_;
   }
-  TEST_DEVICE_FUNC friend constexpr bool operator!=(const device_only_iterator& x, const device_only_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC friend constexpr bool
+  operator!=(const device_only_iterator& x, const device_only_iterator& y)
   {
     return x.it_ != y.it_;
   }
-  TEST_DEVICE_FUNC friend constexpr bool operator<(const device_only_iterator& x, const device_only_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC friend constexpr bool
+  operator<(const device_only_iterator& x, const device_only_iterator& y)
   {
     return x.it_ < y.it_;
   }
-  TEST_DEVICE_FUNC friend constexpr bool operator<=(const device_only_iterator& x, const device_only_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC friend constexpr bool
+  operator<=(const device_only_iterator& x, const device_only_iterator& y)
   {
     return x.it_ <= y.it_;
   }
-  TEST_DEVICE_FUNC friend constexpr bool operator>(const device_only_iterator& x, const device_only_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC friend constexpr bool
+  operator>(const device_only_iterator& x, const device_only_iterator& y)
   {
     return x.it_ > y.it_;
   }
-  TEST_DEVICE_FUNC friend constexpr bool operator>=(const device_only_iterator& x, const device_only_iterator& y)
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC friend constexpr bool
+  operator>=(const device_only_iterator& x, const device_only_iterator& y)
   {
     return x.it_ >= y.it_;
   }
 
-  TEST_DEVICE_FUNC friend constexpr It base(const device_only_iterator& i)
+  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC friend constexpr It base(const device_only_iterator& i)
   {
     return i.it_;
   }

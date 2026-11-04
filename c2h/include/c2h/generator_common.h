@@ -19,7 +19,7 @@ namespace c2h
 namespace detail
 {
 template <typename T>
-[[nodiscard]] std::size_t checked_uniform_offsets_size(T total_elements)
+[[nodiscard]] _CCCL_HOST_API std::size_t checked_uniform_offsets_size(T total_elements)
 {
   static_assert(::cuda::std::is_integral_v<T>, "Uniform offset types must be integral");
 
@@ -56,13 +56,13 @@ class value_wrapper_t
 public:
   using value_type = T;
 
-  explicit value_wrapper_t(T val)
+  _CCCL_HOST_API explicit value_wrapper_t(T val)
       : m_val(val)
   {}
-  explicit value_wrapper_t(int val)
+  _CCCL_HOST_API explicit value_wrapper_t(int val)
       : m_val(static_cast<T>(val))
   {}
-  T get() const
+  _CCCL_HOST_API T get() const
   {
     return m_val;
   }

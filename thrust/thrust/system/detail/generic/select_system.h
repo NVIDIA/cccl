@@ -40,14 +40,14 @@ template <typename... Tags>
 inline constexpr bool select_system_exists = select_system_exists_impl<void, Tags...>;
 
 template <typename System, ::cuda::std::enable_if_t<!select_system_exists<System>, int> = 0>
-_CCCL_HOST_DEVICE auto select_system(thrust::execution_policy<System>& system) -> System&
+_CCCL_HOST_DEVICE_API auto select_system(thrust::execution_policy<System>& system) -> System&
 {
   return thrust::detail::derived_cast(system);
 }
 
 // note: previous binary implementation of select_system also did not check select_system_exists<System1, System2>
 template <typename System1, typename System2>
-_CCCL_HOST_DEVICE auto
+_CCCL_HOST_DEVICE_API auto
 select_system(thrust::execution_policy<System1>& system1, thrust::execution_policy<System2>& system2)
   -> thrust::detail::minimum_system_t<System1, System2>&
 {
@@ -75,7 +75,7 @@ template <typename System1,
           typename System2,
           typename... Systems,
           ::cuda::std::enable_if_t<!select_system_exists<System1, System2, Systems...>, int> = 0>
-_CCCL_HOST_DEVICE auto select_system(
+_CCCL_HOST_DEVICE_API auto select_system(
   thrust::execution_policy<System1>& system1,
   thrust::execution_policy<System2>& system2,
   thrust::execution_policy<Systems>&... systems) -> thrust::detail::minimum_system_t<System1, System2, Systems...>&
@@ -84,7 +84,7 @@ _CCCL_HOST_DEVICE auto select_system(
 }
 
 // Map a single any_system_tag to device_system_tag.
-inline _CCCL_HOST_DEVICE thrust::device_system_tag select_system(thrust::any_system_tag)
+_CCCL_HOST_DEVICE_API inline thrust::device_system_tag select_system(thrust::any_system_tag)
 {
   return thrust::device_system_tag();
 }

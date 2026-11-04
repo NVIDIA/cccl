@@ -44,11 +44,11 @@ struct reduce_by_key_functor
 
   using result_type = typename ::cuda::std::tuple<ValueType, TailFlagType>;
 
-  _CCCL_HOST_DEVICE reduce_by_key_functor(AssociativeOperator _binary_op)
+  _CCCL_HOST_DEVICE_API reduce_by_key_functor(AssociativeOperator _binary_op)
       : binary_op(_binary_op)
   {}
 
-  _CCCL_HOST_DEVICE result_type operator()(result_type a, result_type b)
+  _CCCL_HOST_DEVICE_API result_type operator()(result_type a, result_type b)
   {
     return result_type(
       ::cuda::std::get<1>(b) ? ::cuda::std::get<0>(b) : binary_op(::cuda::std::get<0>(a), ::cuda::std::get<0>(b)),
@@ -64,7 +64,7 @@ template <typename ExecutionPolicy,
           typename OutputIterator2,
           typename BinaryPredicate,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -133,7 +133,7 @@ template <typename ExecutionPolicy,
           typename InputIterator2,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -154,7 +154,7 @@ template <typename ExecutionPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,

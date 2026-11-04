@@ -118,7 +118,7 @@
 #endif // TEST_COMPILER(MSVC)
 
 template <class Tp>
-TEST_FUNC inline void DoNotOptimize(Tp& value)
+_CCCL_HIDE_FROM_ABI TEST_FUNC void DoNotOptimize(Tp& value)
 {
   [[maybe_unused]] const volatile void* volatile ptr = &reinterpret_cast<const volatile char&>(value);
 
@@ -153,7 +153,7 @@ TEST_FUNC inline void DoNotOptimize(Tp& value)
   }
 
 template <class... T>
-TEST_FUNC constexpr bool unused(T&&...)
+_CCCL_HIDE_FROM_ABI TEST_FUNC constexpr bool unused(T&&...)
 {
   return true;
 }

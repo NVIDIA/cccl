@@ -30,7 +30,7 @@ namespace c2h
 namespace detail
 {
 template <typename T>
-[[nodiscard]] cuda::host_buffer<T>
+[[nodiscard]] _CCCL_HOST_API cuda::host_buffer<T>
 device_buffer_to_host_buffer(const cuda::device_buffer<T>& d_items, std::size_t num_items)
 {
   const auto stream = d_items.stream();
@@ -43,7 +43,8 @@ device_buffer_to_host_buffer(const cuda::device_buffer<T>& d_items, std::size_t 
 }
 
 template <typename T>
-[[nodiscard]] cuda::device_buffer<T> make_generator_buffer(cuda::stream_ref stream, std::size_t num_items, const T&)
+[[nodiscard]] _CCCL_HOST_API cuda::device_buffer<T>
+make_generator_buffer(cuda::stream_ref stream, std::size_t num_items, const T&)
 {
   return ::c2h::make_device_buffer<T>(stream, num_items, cuda::no_init);
 }
@@ -51,7 +52,7 @@ template <typename T>
 // custom_type_t generation only overwrites key and val. Initialize policy members
 // from min and padding bytes to zero before any whole-object copies.
 template <template <typename> class... Ps>
-[[nodiscard]] cuda::device_buffer<custom_type_t<Ps...>>
+[[nodiscard]] _CCCL_HOST_API cuda::device_buffer<custom_type_t<Ps...>>
 make_generator_buffer(cuda::stream_ref stream, std::size_t num_items, [[maybe_unused]] const custom_type_t<Ps...>& min)
 {
   // For custom_type_t<equal_comparable_t>, a typical layout is
@@ -86,10 +87,11 @@ make_generator_buffer(cuda::stream_ref stream, std::size_t num_items, [[maybe_un
 //!
 //! @pre Querying the device of the stream associated with @p data must succeed and return the current C2H test device.
 template <template <typename> class... Ps>
-void gen(seed_t seed,
-         cuda::device_buffer<custom_type_t<Ps...>>& data,
-         custom_type_t<Ps...> min = ::cuda::std::numeric_limits<custom_type_t<Ps...>>::lowest(),
-         custom_type_t<Ps...> max = ::cuda::std::numeric_limits<custom_type_t<Ps...>>::max())
+_CCCL_HOST_API void
+gen(seed_t seed,
+    cuda::device_buffer<custom_type_t<Ps...>>& data,
+    custom_type_t<Ps...> min = ::cuda::std::numeric_limits<custom_type_t<Ps...>>::lowest(),
+    custom_type_t<Ps...> max = ::cuda::std::numeric_limits<custom_type_t<Ps...>>::max())
 {
   ::c2h::detail::gen_custom_type_state(
     data.stream(), seed, reinterpret_cast<char*>(data.data()), min, max, data.size(), sizeof(custom_type_t<Ps...>));
@@ -99,10 +101,11 @@ void gen(seed_t seed,
 //!
 //! @pre Querying the device of the stream associated with @p data must succeed and return the current C2H test device.
 template <typename T>
-void gen(seed_t seed,
-         cuda::device_buffer<T>& data,
-         T min = ::cuda::std::numeric_limits<T>::lowest(),
-         T max = ::cuda::std::numeric_limits<T>::max())
+_CCCL_HOST_API void
+gen(seed_t seed,
+    cuda::device_buffer<T>& data,
+    T min = ::cuda::std::numeric_limits<T>::lowest(),
+    T max = ::cuda::std::numeric_limits<T>::max())
 {
   ::c2h::detail::gen_values_between(data.stream(), seed, data.first(data.size()), min, max);
 }
@@ -118,7 +121,7 @@ struct device_host_buffers
   cuda::host_buffer<T> h_items;
 
   // Returns the number of logical items shared by both buffers.
-  [[nodiscard]] std::size_t size() const noexcept
+  [[nodiscard]] _CCCL_HOST_API std::size_t size() const noexcept
   {
     _CCCL_ASSERT(d_items.size() == h_items.size(), "Device and host buffers must have the same logical size");
     return h_items.size();
@@ -129,7 +132,7 @@ struct device_host_buffers
 //!
 //! @pre Querying the device of @p stream must succeed and return the current C2H test device.
 template <typename T>
-[[nodiscard]] device_host_buffers<T> gen_buffers(
+[[nodiscard]] _CCCL_HOST_API device_host_buffers<T> gen_buffers(
   cuda::stream_ref stream,
   seed_t seed,
   std::size_t num_items,
@@ -149,7 +152,7 @@ template <typename T>
 //!
 //! @pre Querying the device of @p stream must succeed and return the current C2H test device.
 template <typename T>
-[[nodiscard]] cuda::host_buffer<T> gen_host_buffer(
+[[nodiscard]] _CCCL_HOST_API cuda::host_buffer<T> gen_host_buffer(
   cuda::stream_ref stream,
   seed_t seed,
   std::size_t num_items,
@@ -164,7 +167,7 @@ template <typename T>
 //
 // Requires: stream must not be the legacy default stream.
 template <typename T>
-[[nodiscard]] cuda::__resizable_buffer<T, cuda::mr::device_accessible> gen_uniform_offsets_device_buffer(
+[[nodiscard]] _CCCL_HOST_API cuda::__resizable_buffer<T, cuda::mr::device_accessible> gen_uniform_offsets_device_buffer(
   cuda::stream_ref stream, seed_t seed, T total_elements, T min_segment_size, T max_segment_size)
 {
   const auto offsets_size = ::c2h::detail::checked_uniform_offsets_size(total_elements);
@@ -184,7 +187,7 @@ template <typename T>
 //
 // Requires: stream must not be the legacy default stream.
 template <typename T>
-[[nodiscard]] device_host_buffers<T, cuda::__resizable_buffer<T, cuda::mr::device_accessible>>
+[[nodiscard]] _CCCL_HOST_API device_host_buffers<T, cuda::__resizable_buffer<T, cuda::mr::device_accessible>>
 gen_uniform_offsets_buffers(
   cuda::stream_ref stream, seed_t seed, T total_elements, T min_segment_size, T max_segment_size)
 {

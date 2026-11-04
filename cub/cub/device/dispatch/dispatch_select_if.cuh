@@ -76,7 +76,7 @@ private:
 public:
   using total_num_items_t = TotalNumItemsT;
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE streaming_context_t(
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE streaming_context_t(
     TotalNumItemsT* d_num_selected_in,
     TotalNumItemsT* d_num_selected_out,
     TotalNumItemsT total_num_items,
@@ -87,7 +87,7 @@ public:
       , d_num_selected_out(d_num_selected_out)
   {}
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void advance(TotalNumItemsT num_items, bool next_partition_is_the_last)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void advance(TotalNumItemsT num_items, bool next_partition_is_the_last)
   {
     using ::cuda::std::swap;
     swap(d_num_selected_in, d_num_selected_out);
@@ -96,34 +96,34 @@ public:
     total_previous_num_items += num_items;
   };
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT input_offset() const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE TotalNumItemsT input_offset() const
   {
     return first_partition ? TotalNumItemsT{0} : total_previous_num_items;
   };
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT is_first_partition() const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE TotalNumItemsT is_first_partition() const
   {
     return first_partition;
   };
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected() const
   {
     return first_partition ? TotalNumItemsT{0} : *d_num_selected_in;
   };
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_rejected() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE TotalNumItemsT num_previously_rejected() const
   {
     return first_partition ? TotalNumItemsT{0} : (total_previous_num_items - num_previously_selected());
   };
 
   template <typename OffsetT>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_total_items(OffsetT) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE TotalNumItemsT num_total_items(OffsetT) const
   {
     return total_num_items;
   }
 
   template <typename NumSelectedIteratorT, typename OffsetT>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void
   update_num_selected(NumSelectedIteratorT user_num_selected_out_it, OffsetT num_selections) const
   {
     if (last_partition)
@@ -143,38 +143,38 @@ class streaming_context_t<TotalNumItemsT, false>
 public:
   using total_num_items_t = TotalNumItemsT;
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE streaming_context_t(TotalNumItemsT*, TotalNumItemsT*, TotalNumItemsT, bool) {}
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE streaming_context_t(TotalNumItemsT*, TotalNumItemsT*, TotalNumItemsT, bool) {}
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void advance(TotalNumItemsT, bool) {};
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void advance(TotalNumItemsT, bool) {};
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT input_offset() const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE TotalNumItemsT input_offset() const
   {
     return TotalNumItemsT{0};
   };
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT is_first_partition() const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE TotalNumItemsT is_first_partition() const
   {
     return true;
   };
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected() const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected() const
   {
     return TotalNumItemsT{0};
   };
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_rejected() const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE TotalNumItemsT num_previously_rejected() const
   {
     return TotalNumItemsT{0};
   };
 
   template <typename OffsetT>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_total_items(OffsetT num_partition_items) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE TotalNumItemsT num_total_items(OffsetT num_partition_items) const
   {
     return num_partition_items;
   }
 
   template <typename NumSelectedIteratorT, typename OffsetT>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void
   update_num_selected(NumSelectedIteratorT user_num_selected_out_it, OffsetT num_selections) const
   {
     *user_num_selected_out_it = num_selections;
