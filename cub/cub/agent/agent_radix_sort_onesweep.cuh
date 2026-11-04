@@ -30,6 +30,7 @@
 #include <cub/util_ptx.cuh>
 
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/atomic>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
@@ -156,7 +157,8 @@ template <typename AgentRadixSortOnesweepPolicy,
           typename ValueT,
           typename OffsetT,
           typename PortionOffsetT,
-          typename DecomposerT = identity_decomposer_t>
+          typename DecomposerT = identity_decomposer_t,
+          bool Deferred        = false>
 struct AgentRadixSortOnesweep
 {
   // constants
@@ -286,15 +288,30 @@ struct AgentRadixSortOnesweep
         // write the local sum into the bin
         AtomicOffsetT& loc   = d_lookback[block_idx * RADIX_DIGITS + bin];
         PortionOffsetT value = bins[u] | LOOKBACK_PARTIAL_MASK;
-        ThreadStore<STORE_VOLATILE>(&loc, value);
+        if constexpr (Deferred)
+        {
+          ::cuda::atomic_ref<AtomicOffsetT, ::cuda::thread_scope_device>{loc}.store(
+            value, ::cuda::std::memory_order_relaxed);
+        }
+        else
+        {
+          ThreadStore<STORE_VOLATILE>(&loc, value);
+        }
       }
     }
   }
 
   struct CountsCallback
   {
-    using AgentT =
-      AgentRadixSortOnesweep<AgentRadixSortOnesweepPolicy, IsDescending, KeyT, ValueT, OffsetT, PortionOffsetT, DecomposerT>;
+    using AgentT = AgentRadixSortOnesweep<
+      AgentRadixSortOnesweepPolicy,
+      IsDescending,
+      KeyT,
+      ValueT,
+      OffsetT,
+      PortionOffsetT,
+      DecomposerT,
+      Deferred>;
     AgentT& agent;
     int (&bins)[BINS_PER_THREAD];
     bit_ordered_type (&keys)[ITEMS_PER_THREAD];
@@ -317,7 +334,11 @@ struct AgentRadixSortOnesweep
       _CCCL_PDL_GRID_DEPENDENCY_SYNC();
       agent.LookbackPartial(bins);
 
-      agent.TryShortCircuit(keys, bins);
+      // ShortCircuitCopy uses ThreadExit. Deferred CTAs must reach retirement.
+      if constexpr (!Deferred)
+      {
+        agent.TryShortCircuit(keys, bins);
+      }
     }
   };
 
@@ -339,8 +360,16 @@ struct AgentRadixSortOnesweep
           AtomicOffsetT& loc_j   = d_lookback[block_jdx * RADIX_DIGITS + bin];
           do
           {
-            __threadfence_block(); // prevent hoisting loads from loop
-            value_j = ThreadLoad<LOAD_VOLATILE>(&loc_j);
+            if constexpr (Deferred)
+            {
+              value_j = ::cuda::atomic_ref<AtomicOffsetT, ::cuda::thread_scope_device>{loc_j}.load(
+                ::cuda::std::memory_order_relaxed);
+            }
+            else
+            {
+              __threadfence_block(); // prevent hoisting loads from loop
+              value_j = ThreadLoad<LOAD_VOLATILE>(&loc_j);
+            }
           } while (value_j == 0);
 
           inc_sum += value_j & LOOKBACK_VALUE_MASK;
@@ -352,7 +381,15 @@ struct AgentRadixSortOnesweep
         }
         AtomicOffsetT& loc_i   = d_lookback[block_idx * RADIX_DIGITS + bin];
         PortionOffsetT value_i = inc_sum | LOOKBACK_GLOBAL_MASK;
-        ThreadStore<STORE_VOLATILE>(&loc_i, value_i);
+        if constexpr (Deferred)
+        {
+          ::cuda::atomic_ref<AtomicOffsetT, ::cuda::thread_scope_device>{loc_i}.store(
+            value_i, ::cuda::std::memory_order_relaxed);
+        }
+        else
+        {
+          ThreadStore<STORE_VOLATILE>(&loc_i, value_i);
+        }
         s.global_offsets[bin] += inc_sum - bins[u];
       }
     }
@@ -678,7 +715,8 @@ struct AgentRadixSortOnesweep
     ScatterValuesGlobal(digits);
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
+  template <typename PrefixCallbackT = NullType>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Process(PrefixCallbackT prefix_ready = {})
   {
     // load keys
     // if warp1 < warp2, all elements of warp1 occur before those of warp2
@@ -704,6 +742,14 @@ struct AgentRadixSortOnesweep
 
     // scatter keys in global memory
     __syncthreads();
+    // The prefix callback runs collectively after this CTA has captured its
+    // bin offsets and completed lookback. It may release the next batch while
+    // this CTA scatters using its own shared storage.
+    if constexpr (!::cuda::std::is_same_v<PrefixCallbackT, NullType>)
+    {
+      prefix_ready();
+    }
+
     ScatterKeysGlobal();
 
     // scatter values if necessary
@@ -727,7 +773,8 @@ struct AgentRadixSortOnesweep
     PortionOffsetT num_items,
     int current_bit,
     int num_bits,
-    DecomposerT decomposer = {})
+    DecomposerT decomposer  = {},
+    PortionOffsetT tile_idx = 0)
       : s(temp_storage.Alias())
       , d_lookback(d_lookback)
       , d_ctrs(d_ctrs)
@@ -747,7 +794,14 @@ struct AgentRadixSortOnesweep
     // initialization
     if (threadIdx.x == 0)
     {
-      s.block_idx = atomicAdd(d_ctrs, 1);
+      if constexpr (Deferred)
+      {
+        s.block_idx = tile_idx;
+      }
+      else
+      {
+        s.block_idx = atomicAdd(d_ctrs, 1);
+      }
     }
     __syncthreads();
     block_idx  = s.block_idx;

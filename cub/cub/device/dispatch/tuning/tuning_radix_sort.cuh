@@ -170,13 +170,15 @@ struct RadixSortOnesweepPolicy
 
   int radix_bits; //!< Number of bits per radix digit
 
+  int tiles_per_batch = 4096; //!< Number of tiles in a deferred radix sort batch
+
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const RadixSortOnesweepPolicy& lhs, const RadixSortOnesweepPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.store_algorithm == rhs.store_algorithm && lhs.rank_algorithm == rhs.rank_algorithm
         && lhs.scan_algorithm == rhs.scan_algorithm && lhs.rank_private_partitions == rhs.rank_private_partitions
-        && lhs.radix_bits == rhs.radix_bits;
+        && lhs.radix_bits == rhs.radix_bits && lhs.tiles_per_batch == rhs.tiles_per_batch;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -192,7 +194,8 @@ struct RadixSortOnesweepPolicy
         << "RadixSortOnesweepPolicy { .threads_per_block = " << p.threads_per_block
         << ", .items_per_thread = " << p.items_per_thread << ", .store_algorithm = " << p.store_algorithm
         << ", .rank_algorithm = " << p.rank_algorithm << ", .scan_algorithm = " << p.scan_algorithm
-        << ", .rank_private_partitions = " << p.rank_private_partitions << ", .radix_bits = " << p.radix_bits << " }";
+        << ", .rank_private_partitions = " << p.rank_private_partitions << ", .radix_bits = " << p.radix_bits
+        << ", .tiles_per_batch = " << p.tiles_per_batch << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -1846,6 +1849,7 @@ struct policy_selector
   int value_size; // when 0, indicates keys-only
   int offset_size;
   type_t key_type;
+  bool is_deferred = false;
 
   // Whether this is a keys-only (or key-value) sort
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int __keys_only() const
@@ -1989,13 +1993,49 @@ struct policy_selector
       // Only the sm100 int64 key-value tuning with 64-bit offsets overrides the large-key policy
       const bool use_tuning_for_large_keys =
         cc < ::cuda::compute_capability{10, 1} && key_type == type_t::int64 && value_size == 8 && offset_size == 8;
-      return make_onesweep_small_key_policy(
+      auto policy = make_onesweep_small_key_policy(
         get_sm100_tuning(key_size, value_size, offset_size, key_type), use_tuning_for_large_keys);
+      if (is_deferred && __keys_only() && offset_size == 8
+          && (cc == ::cuda::compute_capability{10, 0} || cc == ::cuda::compute_capability{10, 3}))
+      {
+        switch (key_type)
+        {
+          case type_t::int32:
+            policy.onesweep.threads_per_block = 448;
+            policy.onesweep.items_per_thread  = 23;
+            break;
+          case type_t::float32:
+            policy.onesweep.threads_per_block = 480;
+            policy.onesweep.items_per_thread  = 24;
+            break;
+          case type_t::int64:
+          case type_t::float64:
+            policy.onesweep.threads_per_block = 256;
+            policy.onesweep.items_per_thread  = 22;
+            break;
+          default:
+            return policy;
+        }
+        policy.onesweep.rank_algorithm  = RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR;
+        policy.onesweep.tiles_per_batch = key_type == type_t::int64 ? 32768 : 16384;
+      }
+      return policy;
     }
 
     if (cc >= ::cuda::compute_capability{9, 0})
     {
-      return make_onesweep_small_key_policy(get_sm90_tuning(key_size, value_size, offset_size));
+      auto policy = make_onesweep_small_key_policy(get_sm90_tuning(key_size, value_size, offset_size));
+      if (is_deferred && __keys_only() && offset_size == 8 && key_type == type_t::int32
+          && cc == ::cuda::compute_capability{9, 0})
+      {
+        // Larger tiles amortize the persistent kernel's per-tile bookkeeping.
+        policy.onesweep.threads_per_block       = 384;
+        policy.onesweep.items_per_thread        = 23;
+        policy.onesweep.rank_private_partitions = 1;
+        policy.onesweep.rank_algorithm          = RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR;
+        policy.onesweep.scan_algorithm          = BLOCK_SCAN_RAKING_MEMOIZE;
+      }
+      return policy;
     }
 
     if (cc >= ::cuda::compute_capability{8, 0})
@@ -2003,7 +2043,9 @@ struct policy_selector
       const int primary_radix_bits     = (key_size > 1) ? 7 : 5;
       const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
       const auto use_onesweep =
-        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
+        is_deferred || key_size >= int{sizeof(uint32_t)}
+          ? RadixSortAlgorithm::onesweep
+          : RadixSortAlgorithm::multi_pass;
       const int onesweep_radix_bits = 8;
       const bool offset_64bit       = offset_size == 8;
 
@@ -2085,7 +2127,9 @@ struct policy_selector
       const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
       // 15.8B 32b keys/s (V100-SXM2, 64M random keys)
       const auto use_onesweep =
-        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
+        is_deferred || key_size >= int{sizeof(uint32_t)}
+          ? RadixSortAlgorithm::onesweep
+          : RadixSortAlgorithm::multi_pass;
       const int onesweep_radix_bits = 8;
       const bool offset_64bit       = offset_size == 8;
 
@@ -2166,7 +2210,9 @@ struct policy_selector
       const int primary_radix_bits = 5;
       const int alt_radix_bits     = primary_radix_bits - 1;
       const auto use_onesweep =
-        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
+        is_deferred || key_size >= int{sizeof(uint32_t)}
+          ? RadixSortAlgorithm::onesweep
+          : RadixSortAlgorithm::multi_pass;
       const int onesweep_radix_bits = 8;
 
       const auto histogram = RadixSortHistogramPolicy{256, 8, __scale_num_parts(8, key_size), onesweep_radix_bits};
@@ -2250,7 +2296,9 @@ struct policy_selector
       const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
       // 10.0B 32b keys/s (GP100, 64M random keys)
       const auto use_onesweep =
-        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
+        is_deferred || key_size >= int{sizeof(uint32_t)}
+          ? RadixSortAlgorithm::onesweep
+          : RadixSortAlgorithm::multi_pass;
       const int onesweep_radix_bits = 8;
 
       const auto histogram = RadixSortHistogramPolicy{256, 8, __scale_num_parts(8, key_size), onesweep_radix_bits};
@@ -2331,7 +2379,9 @@ struct policy_selector
       const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
       // 10.0B 32b keys/s (GP100, 64M random keys)
       const auto use_onesweep =
-        key_size >= int{sizeof(uint32_t)} ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
+        is_deferred || key_size >= int{sizeof(uint32_t)}
+          ? RadixSortAlgorithm::onesweep
+          : RadixSortAlgorithm::multi_pass;
       const int onesweep_radix_bits = 8;
       const bool offset_64bit       = (offset_size == 8);
 
@@ -2413,7 +2463,7 @@ struct policy_selector
     // SM50
     const int primary_radix_bits     = (key_size > 1) ? 7 : 5; // 3.5B 32b keys/s, 1.92B 32b pairs/s (TitanX)
     const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
-    const auto use_onesweep          = RadixSortAlgorithm::multi_pass;
+    const auto use_onesweep          = is_deferred ? RadixSortAlgorithm::onesweep : RadixSortAlgorithm::multi_pass;
     const int onesweep_radix_bits    = 8;
 
     const auto histogram = RadixSortHistogramPolicy{256, 8, __scale_num_parts(1, key_size), onesweep_radix_bits};
@@ -2496,7 +2546,7 @@ struct policy_selector
 static_assert(radix_sort_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
-template <typename KeyT, typename ValueT, typename OffsetT>
+template <typename KeyT, typename ValueT, typename OffsetT, bool IsDeferred = false>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const -> RadixSortPolicy
@@ -2505,7 +2555,8 @@ struct policy_selector_from_types
       int{sizeof(KeyT)},
       ::cuda::std::is_same_v<ValueT, NullType> ? 0 : int{sizeof(ValueT)},
       int{sizeof(OffsetT)},
-      classify_type<KeyT>};
+      classify_type<KeyT>,
+      IsDeferred};
     return policies(cc);
   }
 };

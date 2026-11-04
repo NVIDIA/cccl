@@ -249,7 +249,8 @@ struct AgentRadixSortHistogram
     _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
     // Within a portion, avoid overflowing (u)int32 counters.
     // Between portions, accumulate results in global memory.
-    constexpr OffsetT MAX_PORTION_SIZE = 1 << 30;
+    // Tile-aligned boundaries keep interior tiles from reading the next portion.
+    constexpr OffsetT MAX_PORTION_SIZE = ((1 << 30) / TILE_ITEMS) * TILE_ITEMS;
     OffsetT num_portions               = ::cuda::ceil_div(num_items, MAX_PORTION_SIZE);
     for (OffsetT portion = 0; portion < num_portions; ++portion)
     {

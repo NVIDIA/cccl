@@ -25,6 +25,7 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/detail/constant.cuh>
+#include <cub/detail/deferred_parameter.cuh>
 #include <cub/detail/delay_constructor.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
@@ -473,16 +474,18 @@ template <typename PolicySelector,
           SortOrder Order,
           typename KeyT,
           typename OffsetT,
-          typename DecomposerT = identity_decomposer_t>
+          typename DecomposerT     = identity_decomposer_t,
+          typename KernelNumItemsT = OffsetT>
 _CCCL_KERNEL_ATTRIBUTES
 __launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) void DeviceRadixSortHistogramKernel(
   OffsetT* const d_bins_out,
   const KeyT* const d_keys_in,
-  const OffsetT num_items,
+  const KernelNumItemsT kernel_num_items,
   const int start_bit,
   const int end_bit,
   const DecomposerT decomposer = {})
 {
+  const OffsetT num_items = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
   static constexpr RadixSortHistogramPolicy policy = current_policy<PolicySelector>().histogram;
 
   using HistogramPolicyT = detail::agent_radix_sort_histogram_policy<

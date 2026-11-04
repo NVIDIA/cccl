@@ -26,10 +26,12 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/deferred_parameter.cuh>
 #include <cub/detail/double_buffer.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
+#include <cub/device/dispatch/dispatch_radix_sort_deferred.cuh>
 #include <cub/util_runs_on.cuh>
 
 #include <cuda/__execution/require.h>
@@ -151,6 +153,43 @@ inline constexpr bool __can_use_radix_sort =
 //!
 //! @cdp_class{DeviceRadixSort}
 //!
+//! Deferred problem sizes
+//! --------------------------------------------------
+//!
+//! ``SortKeys``, ``SortKeysDescending``, ``SortPairs``, and ``SortPairsDescending`` allow specifying the problem size
+//! from a value that resides in device memory through a single-value ``cuda::args::deferred`` argument. The deferred
+//! source may be a device pointer, a one-element span, or a random-access fancy iterator whose element is a
+//! 32- or 64-bit integer.
+//!
+//! The problem size is read in stream order by the sorting kernels. Work that produces the count in the same stream
+//! is ordered automatically; a producer in another stream requires an event or an equivalent dependency. The source
+//! and its value must remain accessible and unchanged until all sorting kernels complete. The value must be
+//! nonnegative, and all input and output ranges must cover ``num_items`` elements. A temporary-storage query does not
+//! dereference the deferred source.
+//!
+//! Sorts with deferred problem sizes are CUDA Graph capturable. The pointed-to count may change between graph
+//! replays without updating or recapturing the graph, within the declared bounds and array capacities.
+//!
+//! A deferred problem size requires the Onesweep algorithm. Default tuning selects Onesweep automatically. A custom
+//! tuning policy must select Onesweep and provide valid tuning parameters with matching histogram, scan, and sorting
+//! radix widths; selecting another algorithm with a deferred problem size is rejected at compile time.
+//!
+//! Compile-time and runtime bounds are accepted as caller preconditions. With DoubleBuffer overloads, bounds do not
+//! change temporary storage, grid dimensions, or pass selection. Both caller-owned buffers must cover ``num_items``
+//! elements; no host-visible bound or count readback is required.
+//!
+//! Separate input/output overloads preserve the input and require a host-known upper bound, supplied through
+//! ``cuda::args::bounds<0, capacity>()`` or ``cuda::args::bounds(0, capacity)``. The upper bound must be nonnegative
+//! and less than the count element type's maximum value; the default type maximum denotes an unbounded count. An absent
+//! or invalid bound returns ``cudaErrorInvalidValue``, including during a temporary-storage query. Multiple digit
+//! passes require one intermediate key array and, for pairs, one intermediate value array, each sized using the upper
+//! bound. Other temporary storage and grid dimensions are independent of the bound. The kernels process the actual
+//! problem size, which must not exceed the bound.
+//!
+//! The digit pass count is determined by the bit range. DoubleBuffer selectors advance according to that pass count,
+//! including when ``num_items`` is zero or one. An empty bit range leaves selectors unchanged for DoubleBuffer
+//! overloads and copies ``num_items`` elements to the output for separate input/output overloads.
+//!
 //! Performance
 //! --------------------------------------------------
 //!
@@ -185,7 +224,7 @@ private:
   template <SortOrder Order,
             typename KeyT,
             typename ValueT,
-            typename OffsetT,
+            typename NumItemsT,
             typename DecomposerT = detail::identity_decomposer_t,
             typename TuningEnvT  = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t select_tuning_and_dispatch(
@@ -193,7 +232,7 @@ private:
     size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    OffsetT num_items,
+    NumItemsT num_items,
     int begin_bit,
     int end_bit,
     bool is_overwrite_okay,
@@ -202,22 +241,43 @@ private:
     TuningEnvT                          = {},
     const experimental::RunsOn& runs_on = {})
   {
-    using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, ValueT, OffsetT>;
+    using offset_t = detail::num_items_offset_t<NumItemsT>;
+    using default_policy_selector_t =
+      detail::radix_sort::policy_selector_from_types<KeyT, ValueT, offset_t, ::cuda::args::__is_deferred_v<NumItemsT>>;
     using policy_selector_t =
       ::cuda::std::execution::__query_result_or_t<TuningEnvT, RadixSortPolicy, default_policy_selector_t>;
-    return detail::radix_sort::dispatch<Order>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      num_items,
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      stream,
-      runs_on,
-      decomposer,
-      policy_selector_t{});
+    if constexpr (::cuda::args::__is_deferred_v<NumItemsT>)
+    {
+      return detail::radix_sort::dispatch_deferred<Order>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_keys,
+        d_values,
+        num_items,
+        begin_bit,
+        end_bit,
+        is_overwrite_okay,
+        stream,
+        runs_on,
+        decomposer,
+        policy_selector_t{});
+    }
+    else
+    {
+      return detail::radix_sort::dispatch<Order>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_keys,
+        d_values,
+        num_items,
+        begin_bit,
+        end_bit,
+        is_overwrite_okay,
+        stream,
+        runs_on,
+        decomposer,
+        policy_selector_t{});
+    }
   }
 
   template <SortOrder Order,
@@ -240,7 +300,6 @@ private:
     int end_bit                         = detail::radix::traits_t<KeyT>::default_end_bit(DecomposerT{}),
     bool is_overwrite_okay              = true)
   {
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
     static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
     static_assert(decomposer_check,
@@ -254,7 +313,7 @@ private:
         temp_storage_bytes,
         d_keys,
         d_values,
-        static_cast<offset_t>(num_items),
+        detail::make_num_items_dispatch_arg(num_items),
         begin_bit,
         end_bit,
         is_overwrite_okay,
@@ -439,9 +498,6 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    // Unsigned integer type for global offsets.
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
     // TODO API that doesn't accept decomposer should also contain a static
     //      assert that the key type is fundamental.
 
@@ -465,7 +521,7 @@ public:
           bytes,
           d_keys,
           d_values,
-          static_cast<OffsetT>(num_items),
+          detail::make_num_items_dispatch_arg(num_items),
           begin_bit,
           end_bit,
           is_overwrite_okay,
@@ -555,8 +611,9 @@ public:
   template <typename KeyT,
             typename ValueT,
             typename NumItemsT,
-            typename EnvT                                                        = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename EnvT                 = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<(::cuda::std::is_integral_v<NumItemsT> || ::cuda::args::__is_deferred_v<NumItemsT>),
+                                     int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairs(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
@@ -568,8 +625,6 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-
-    using offset_t = detail::choose_offset_t<NumItemsT>;
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
@@ -583,7 +638,7 @@ public:
           bytes,
           d_keys,
           d_values,
-          static_cast<offset_t>(num_items),
+          detail::make_num_items_dispatch_arg(num_items),
           begin_bit,
           end_bit,
           false,
@@ -1213,9 +1268,6 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    // Unsigned integer type for global offsets.
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
     constexpr bool is_overwrite_okay = true;
 
     return detail::dispatch_with_env_and_runs_on(
@@ -1228,7 +1280,7 @@ public:
           bytes,
           d_keys,
           d_values,
-          static_cast<OffsetT>(num_items),
+          detail::make_num_items_dispatch_arg(num_items),
           begin_bit,
           end_bit,
           is_overwrite_okay,
@@ -1311,8 +1363,9 @@ public:
   template <typename KeyT,
             typename ValueT,
             typename NumItemsT,
-            typename EnvT                                                        = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename EnvT                 = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<(::cuda::std::is_integral_v<NumItemsT> || ::cuda::args::__is_deferred_v<NumItemsT>),
+                                     int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairs(
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
@@ -1323,8 +1376,6 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using offset_t = detail::choose_offset_t<NumItemsT>;
-
     return detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         return select_tuning_and_dispatch<SortOrder::Ascending>(
@@ -1332,7 +1383,7 @@ public:
           bytes,
           d_keys,
           d_values,
-          static_cast<offset_t>(num_items),
+          detail::make_num_items_dispatch_arg(num_items),
           begin_bit,
           end_bit,
           true,
@@ -1906,9 +1957,6 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    // Unsigned integer type for global offsets.
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
     // We cast away const-ness, but will *not* write to these arrays.
     // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
     // create a new double-buffer internally when the ``is_overwrite_ok`` flag
@@ -1929,7 +1977,7 @@ public:
           bytes,
           d_keys,
           d_values,
-          static_cast<OffsetT>(num_items),
+          detail::make_num_items_dispatch_arg(num_items),
           begin_bit,
           end_bit,
           is_overwrite_okay,
@@ -2019,8 +2067,9 @@ public:
   template <typename KeyT,
             typename ValueT,
             typename NumItemsT,
-            typename EnvT                                                        = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename EnvT                 = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<(::cuda::std::is_integral_v<NumItemsT> || ::cuda::args::__is_deferred_v<NumItemsT>),
+                                     int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairsDescending(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
@@ -2032,8 +2081,6 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-
-    using offset_t = detail::choose_offset_t<NumItemsT>;
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
@@ -2047,7 +2094,7 @@ public:
           bytes,
           d_keys,
           d_values,
-          static_cast<offset_t>(num_items),
+          detail::make_num_items_dispatch_arg(num_items),
           begin_bit,
           end_bit,
           false,
@@ -2470,9 +2517,6 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    // Unsigned integer type for global offsets.
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
     constexpr bool is_overwrite_okay = true;
 
     return detail::dispatch_with_env_and_runs_on(
@@ -2485,7 +2529,7 @@ public:
           bytes,
           d_keys,
           d_values,
-          static_cast<OffsetT>(num_items),
+          detail::make_num_items_dispatch_arg(num_items),
           begin_bit,
           end_bit,
           is_overwrite_okay,
@@ -2568,8 +2612,9 @@ public:
   template <typename KeyT,
             typename ValueT,
             typename NumItemsT,
-            typename EnvT                                                        = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename EnvT                 = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<(::cuda::std::is_integral_v<NumItemsT> || ::cuda::args::__is_deferred_v<NumItemsT>),
+                                     int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairsDescending(
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
@@ -2580,8 +2625,6 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using offset_t = detail::choose_offset_t<NumItemsT>;
-
     return detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         return select_tuning_and_dispatch<SortOrder::Descending>(
@@ -2589,7 +2632,7 @@ public:
           bytes,
           d_keys,
           d_values,
-          static_cast<offset_t>(num_items),
+          detail::make_num_items_dispatch_arg(num_items),
           begin_bit,
           end_bit,
           true,
@@ -3264,9 +3307,6 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    // Unsigned integer type for global offsets.
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
     // We cast away const-ness, but will *not* write to these arrays.
     // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
     // create a new double-buffer internally when the ``is_overwrite_ok`` flag
@@ -3287,7 +3327,7 @@ public:
           bytes,
           d_keys,
           d_values,
-          static_cast<OffsetT>(num_items),
+          detail::make_num_items_dispatch_arg(num_items),
           begin_bit,
           end_bit,
           is_overwrite_okay,
@@ -3364,8 +3404,9 @@ public:
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename KeyT,
             typename NumItemsT,
-            typename EnvT                                                        = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename EnvT                 = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<(::cuda::std::is_integral_v<NumItemsT> || ::cuda::args::__is_deferred_v<NumItemsT>),
+                                     int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeys(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
@@ -3375,8 +3416,6 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-
-    using offset_t = detail::choose_offset_t<NumItemsT>;
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
@@ -3389,7 +3428,7 @@ public:
           bytes,
           d_keys,
           d_values,
-          static_cast<offset_t>(num_items),
+          detail::make_num_items_dispatch_arg(num_items),
           begin_bit,
           end_bit,
           false,
@@ -3922,9 +3961,6 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    // Unsigned integer type for global offsets.
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
     constexpr bool is_overwrite_okay = true;
 
     // Null value type
@@ -3940,7 +3976,7 @@ public:
           bytes,
           d_keys,
           d_values,
-          static_cast<OffsetT>(num_items),
+          detail::make_num_items_dispatch_arg(num_items),
           begin_bit,
           end_bit,
           is_overwrite_okay,
@@ -4021,8 +4057,9 @@ public:
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename KeyT,
             typename NumItemsT,
-            typename EnvT                                                        = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename EnvT                 = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<(::cuda::std::is_integral_v<NumItemsT> || ::cuda::args::__is_deferred_v<NumItemsT>),
+                                     int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeys(
     DoubleBuffer<KeyT>& d_keys,
     NumItemsT num_items,
@@ -4031,8 +4068,6 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-
-    using offset_t = detail::choose_offset_t<NumItemsT>;
 
     DoubleBuffer<NullType> d_values;
 
@@ -4043,7 +4078,7 @@ public:
           bytes,
           d_keys,
           d_values,
-          static_cast<offset_t>(num_items),
+          detail::make_num_items_dispatch_arg(num_items),
           begin_bit,
           end_bit,
           true,
@@ -4532,9 +4567,6 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    // Unsigned integer type for global offsets.
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
     // We cast away const-ness, but will *not* write to these arrays.
     // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
     // create a new double-buffer internally when the ``is_overwrite_ok`` flag
@@ -4554,7 +4586,7 @@ public:
           bytes,
           d_keys,
           d_values,
-          static_cast<OffsetT>(num_items),
+          detail::make_num_items_dispatch_arg(num_items),
           begin_bit,
           end_bit,
           is_overwrite_okay,
@@ -4631,8 +4663,9 @@ public:
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename KeyT,
             typename NumItemsT,
-            typename EnvT                                                        = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename EnvT                 = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<(::cuda::std::is_integral_v<NumItemsT> || ::cuda::args::__is_deferred_v<NumItemsT>),
+                                     int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeysDescending(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
@@ -4642,8 +4675,6 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-
-    using offset_t = detail::choose_offset_t<NumItemsT>;
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
@@ -4656,7 +4687,7 @@ public:
           bytes,
           d_keys,
           d_values,
-          static_cast<offset_t>(num_items),
+          detail::make_num_items_dispatch_arg(num_items),
           begin_bit,
           end_bit,
           false,
@@ -5034,9 +5065,6 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    // Unsigned integer type for global offsets.
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
     constexpr bool is_overwrite_okay = true;
 
     // Null value type
@@ -5052,7 +5080,7 @@ public:
           bytes,
           d_keys,
           d_values,
-          static_cast<OffsetT>(num_items),
+          detail::make_num_items_dispatch_arg(num_items),
           begin_bit,
           end_bit,
           is_overwrite_okay,
@@ -5133,8 +5161,9 @@ public:
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename KeyT,
             typename NumItemsT,
-            typename EnvT                                                        = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename EnvT                 = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<(::cuda::std::is_integral_v<NumItemsT> || ::cuda::args::__is_deferred_v<NumItemsT>),
+                                     int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeysDescending(
     DoubleBuffer<KeyT>& d_keys,
     NumItemsT num_items,
@@ -5143,8 +5172,6 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-
-    using offset_t = detail::choose_offset_t<NumItemsT>;
 
     DoubleBuffer<NullType> d_values;
 
@@ -5155,7 +5182,7 @@ public:
           bytes,
           d_keys,
           d_values,
-          static_cast<offset_t>(num_items),
+          detail::make_num_items_dispatch_arg(num_items),
           begin_bit,
           end_bit,
           true,
