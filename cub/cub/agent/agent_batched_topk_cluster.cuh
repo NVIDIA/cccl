@@ -1395,7 +1395,7 @@ private:
   // `is_scan_descending` order (the leader is last and pushes to nobody, so it holds the full predecessor sum) and
   // adds its own tie-region base `num_cluster_selected` to its own tie counter. All are commutative `red.add`s into
   // the counters zeroed in `process_impl`, so only post-push synchronization is needed (a cluster barrier, or each
-  // block's wait in `exchange_prefixes`), leaving `selected_offset_counter = selected_prefix` and
+  // block's `prefix_mbar` wait), leaving `selected_offset_counter = selected_prefix` and
   // `tie_offset_counter = num_cluster_selected + tie_prefix` -- the absolute output-slot bases `place_one` expects.
   //
   // Returns this CTA's exclusive selected/tie prefixes for the driver's region math (the non-deterministic path uses
@@ -1454,18 +1454,17 @@ private:
     }
     const unsigned num_preceding =
       is_scan_descending ? (layout.num_logical_cluster_blocks - 1u - cluster_block_rank) : cluster_block_rank;
+    // `.release`: the waiters also acquire this thread's tie-base seed, so no block barrier is needed.
     if (is_block_leader)
     {
       ::cuda::ptx::mbarrier_arrive_expect_tx(
-        ::cuda::ptx::sem_relaxed,
+        ::cuda::ptx::sem_release,
         ::cuda::ptx::scope_cta,
         ::cuda::ptx::space_shared,
         &temp_storage.prefix_mbar,
         num_preceding * 2u * ::cuda::std::uint32_t{sizeof(offset_t)});
     }
     wait_handshake(&temp_storage.prefix_mbar, 0u);
-    // Also publishes the local tie-base seed.
-    __syncthreads();
 #else // ^^^ _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() ^^^ / vvv !_CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() vvv
     if (num_local_selected_for_scan != offset_t{0} || num_local_tied_for_scan != offset_t{0})
     {
@@ -3334,7 +3333,8 @@ private:
         leader_identify_kth_bucket();
       }
 
-      if (pass + 1 < num_passes)
+      const bool resets_hist = pass + 1 < num_passes;
+      if (resets_hist)
       {
         // Unconditional barrier: every working rank just read `hist` (the leader via its BlockScan, non-leaders via the
         // scan above), so order all of those reads before any rank resets `hist`.
@@ -3356,8 +3356,12 @@ private:
       }
       else
       {
+        // Orders only the reset, so it can precede the wait; `run`'s pre-filter barrier covers the last pass.
+        if (resets_hist)
+        {
+          __syncthreads();
+        }
         wait_handshake(&temp_storage.pass_mbar, static_cast<::cuda::std::uint32_t>(pass) & 1u);
-        __syncthreads();
       }
 #else // ^^^ _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() ^^^ / vvv !_CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() vvv
       // End-of-pass rendezvous of the whole cluster (idle ranks arrive here only to keep the cluster barrier
