@@ -561,15 +561,15 @@ exists, add the entry to its ``configurations`` list:
          "justMyCode": false,
          "env": {
            "PYTHONPATH": "${workspaceFolder}/python/cuda_coop_cutlass",
-           "CUDA_COOP_CCCL_ROOT": "${workspaceFolder}",
-           "CUDA_COOP_SOURCE_DUMP_DIR": "${workspaceFolder}/build/coop-cutlass-debug-sources"
+           "CUDA_COOP_CUTLASS_CCCL_ROOT": "${workspaceFolder}",
+           "CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR": "${workspaceFolder}/build/coop-cutlass-debug-sources"
          }
        }
      ]
    }
 
 ``justMyCode: false`` permits stepping into library code. ``PYTHONPATH`` and
-``CUDA_COOP_CCCL_ROOT`` select this checkout's Python sources and C++ headers.
+``CUDA_COOP_CUTLASS_CCCL_ROOT`` select this checkout's Python sources and C++ headers.
 ``cute.compile`` explicitly requests CuTe compilation. When run as a script,
 the example also selects a fresh temporary provider-cache directory and
 removes it on exit. A new process with that empty provider cache lets each
@@ -835,9 +835,9 @@ If a breakpoint does not stop
 * Use the named launch configuration with ``justMyCode: false``. A hollow
   breakpoint can remain pending until its module loads. Put it on an
   executable statement rather than a decorator or ``def`` line.
-* If compiler initialization is skipped, keep the example's import order and
-  ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION=0``. Read any dependency error
-  or compiler initialization warning before investigating later compiler stops.
+* If compiler initialization is skipped, check the example's import order.
+  Read any dependency error or compiler initialization warning before
+  investigating later compiler stops.
 * If NVRTC is skipped, restart the complete script. Its temporary provider
   cache is created only under ``if __name__ == "__main__"``. Check that
   the provider directory is new and that you set the breakpoint before
@@ -891,7 +891,7 @@ does not establish a passing compiler integration. Fresh-process and installed-a
 module origins, import diagnostics, and typing. Run affected planning tests
 when changing specialization or participation rules.
 
-To inspect the generated C++, set ``CUDA_COOP_SOURCE_DUMP_DIR`` before
+To inspect the generated C++, set ``CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR`` before
 compiling a kernel. The dump includes the source on provider-cache hits too.
 ``CUDA_COOP_CUTLASS_PROVIDER_CACHE_DIR`` selects the provider artifact cache
 when a test needs an isolated cache directory. See :doc:`configuration`

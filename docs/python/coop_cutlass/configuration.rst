@@ -13,7 +13,7 @@ generated code. Build-time settings apply when packaging ``cuda-coop-cutlass``.
 Runtime environment variables
 -----------------------------
 
-``CUDA_COOP_CCCL_ROOT``
+``CUDA_COOP_CUTLASS_CCCL_ROOT``
    Selects a CCCL source checkout or a ``cuda-coop-cutlass`` header bundle. An invalid
    configured root is an error; resolution does not fall back to another CCCL
    source.
@@ -24,14 +24,39 @@ Runtime environment variables
    writes provider artifacts for the linker. The cache must be a real directory owned by
    the current user where ownership checks are available. The backend sets
    its permissions to ``0700``, including for a configured directory.
-   See the :doc:`Developer Guide <developer_guide>` for
-   artifact lifetime and cache validation.
+   The setting is read on each provider compilation request, including cache
+   hits. Changing it selects a separate cache; existing compiled kernels keep
+   their artifacts. Set it before ``cute.compile``; a CuTe cache hit that skips
+   provider compilation will not populate a new provider directory.
+   See the :doc:`Developer Guide <developer_guide>` for artifact lifetime and
+   cache validation.
 
-``CUDA_COOP_SOURCE_DUMP_DIR``
+``CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR``
    Writes generated CUDA source to this directory for compiler diagnostics.
    Files use ``cuda_coop_cutlass_<hash>.cu`` names. Set it before compiling; it also writes
    the source when the provider compilation cache is hit. Unset or empty
    disables dumping.
+
+Walkthrough and test settings
+-----------------------------
+
+``CUDA_COOP_CUTLASS_EXAMPLE_PRINT_IR``
+   Prints finalized MLIR in the :doc:`cutlass_integration_example` when set
+   to a nonempty value.
+
+``CUDA_COOP_CUTLASS_EXAMPLE_ARTIFACT_DIR``
+   Selects an existing parent directory for that example's temporary LTO-IR
+   directory. It defaults to the system temporary directory. The example
+   reads this setting at startup and removes its temporary directory on exit;
+   it does not use the package's persistent provider cache.
+
+``CUDA_COOP_CUTLASS_RUN_RACECHECK``
+   Set to ``1`` to run the optional Run Length Decode sanitizer test.
+
+CUDA Toolkit settings
+---------------------
+
+These variables belong to the CUDA toolchain and retain its standard names.
 
 ``CUDA_PATH``
    Supplies ``<value>/include`` as a CUDA header candidate if

@@ -26,8 +26,8 @@ def dump_source(
 ) -> Path | None:
     """Write generated CUDA source to a file named by its content and backend.
 
-    ``CUDA_COOP_SOURCE_DUMP_DIR`` selects the directory and is read on every
-    call; unset or empty disables dumping. Other values are directory names,
+    ``CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR`` selects the directory and is read on
+    every call; unset or empty disables dumping. Other values name directories,
     including strings such as ``"0"`` or ``"false"``. Expand ``~`` and resolve
     relative paths against the current working directory when the call runs.
     Environment changes affect subsequent dumps without reimporting a backend.
@@ -66,7 +66,7 @@ def dump_source(
         The destination directory or source file cannot be created or written.
     """
 
-    dump_dir = os.environ.get("CUDA_COOP_SOURCE_DUMP_DIR")
+    dump_dir = os.environ.get("CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR")
     if not dump_dir:
         return None
 

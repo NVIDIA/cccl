@@ -62,7 +62,7 @@ def resolve_compile_context(
 
     paths = resolve_include_paths(
         start=Path(__file__),
-        configured_roots=(os.environ.get("CUDA_COOP_CCCL_ROOT"),),
+        configured_roots=(os.environ.get("CUDA_COOP_CUTLASS_CCCL_ROOT"),),
         required_headers=required_headers,
     )
     include_dirs = tuple(map(str, paths.as_tuple()))

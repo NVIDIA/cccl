@@ -1134,7 +1134,7 @@ returns a callable you can retain for repeated launches; the
 compilation followed by two executions. The first compilation includes
 provider generation, NVRTC, and device linking.
 
-To inspect generated C++, set ``CUDA_COOP_SOURCE_DUMP_DIR`` before compilation.
+To inspect generated C++, set ``CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR`` before compilation.
 Use the final linked cubin to assess inlining, barriers, shared memory, and
 register use. A provider's source or intermediate PTX does not establish what
 remains in the kernel. Use Compute Sanitizer race checking when changing

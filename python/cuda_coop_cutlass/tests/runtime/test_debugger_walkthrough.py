@@ -25,7 +25,7 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 def test_debugger_walkthrough(algorithm, tmp_path):
     env = os.environ.copy()
     env.update(
-        CUDA_COOP_SOURCE_DUMP_DIR=str(tmp_path),
+        CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR=str(tmp_path),
     )
     result = subprocess.run(
         [

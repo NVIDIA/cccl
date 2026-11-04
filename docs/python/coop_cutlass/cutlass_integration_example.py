@@ -30,7 +30,7 @@ candidate; see the accompanying documentation for setup details::
 
    python docs/python/coop_cutlass/cutlass_integration_example.py
 
-Set ``CUTE_CUB_EXAMPLE_PRINT_IR=1`` to print the finalized MLIR module.
+Set ``CUDA_COOP_CUTLASS_EXAMPLE_PRINT_IR=1`` to print the finalized MLIR module.
 """
 
 from __future__ import annotations
@@ -132,7 +132,10 @@ class _ScratchUse:
 _requests: dict[str, _Request] = {}
 _scratch_uses: list[_ScratchUse] = []
 # The LTO-IR file must outlive the device link, which happens after the hook.
-_ARTIFACTS = tempfile.TemporaryDirectory(prefix="cute-cub-example-")
+_ARTIFACTS = tempfile.TemporaryDirectory(
+    prefix="cuda-coop-cutlass-example-",
+    dir=os.environ.get("CUDA_COOP_CUTLASS_EXAMPLE_ARTIFACT_DIR") or None,
+)
 # docs: end cute-cub-requests
 
 
@@ -230,7 +233,7 @@ def _finalize_trace(dsl, module: ir.Module, function_name: str) -> None:
 
     _allocate_scratch(uses, {r.symbol: layouts[r.probe] for r in requests})
     _attach_link_library(module, path)
-    if os.environ.get("CUTE_CUB_EXAMPLE_PRINT_IR"):
+    if os.environ.get("CUDA_COOP_CUTLASS_EXAMPLE_PRINT_IR"):
         print(module)
 
 
@@ -300,10 +303,13 @@ def _include_dirs() -> list[str]:
     """Select this checkout's CCCL headers, then the CUDA runtime headers."""
 
     root = Path(
-        os.environ.get("CUDA_COOP_CCCL_ROOT") or Path(__file__).resolve().parents[3]
+        os.environ.get("CUDA_COOP_CUTLASS_CCCL_ROOT")
+        or Path(__file__).resolve().parents[3]
     )
     if not (root / "cub" / "cub" / "version.cuh").is_file():
-        raise RuntimeError(f"{root} is not a CCCL checkout; set CUDA_COOP_CCCL_ROOT")
+        raise RuntimeError(
+            f"{root} is not a CCCL checkout; set CUDA_COOP_CUTLASS_CCCL_ROOT"
+        )
     from cuda.pathfinder import find_nvidia_header_directory
 
     cuda_include = find_nvidia_header_directory("cudart")

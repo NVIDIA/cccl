@@ -34,10 +34,14 @@ With those prerequisites available:
    python docs/python/coop_cutlass/cutlass_integration_example.py
    # block sum verified: 3008
 
-   CUTE_CUB_EXAMPLE_PRINT_IR=1 python docs/python/coop_cutlass/cutlass_integration_example.py
+   CUDA_COOP_CUTLASS_EXAMPLE_PRINT_IR=1 python docs/python/coop_cutlass/cutlass_integration_example.py
 
 The second command prints the finalized MLIR module from inside the hook.
-``CUDA_COOP_CCCL_ROOT`` selects another CCCL checkout for the headers.
+``CUDA_COOP_CUTLASS_CCCL_ROOT`` selects another CCCL checkout for the headers.
+``CUDA_COOP_CUTLASS_EXAMPLE_ARTIFACT_DIR`` selects an existing parent directory
+for the example's temporary LTO-IR files; they are removed when the process
+exits. The package's persistent cache is configured separately with
+``CUDA_COOP_CUTLASS_PROVIDER_CACHE_DIR``; see :doc:`configuration`.
 
 What the script uses from the DSL
 ---------------------------------
@@ -193,7 +197,7 @@ when its size must be visible to CuTe's own accounting.
 The finalized module
 --------------------
 
-This excerpt is the module printed by ``CUTE_CUB_EXAMPLE_PRINT_IR=1`` on the
+This excerpt is the module printed by ``CUDA_COOP_CUTLASS_EXAMPLE_PRINT_IR=1`` on the
 CUTLASS 4.9 candidate for ``sm_120a``, trimmed to the lines the integration
 produced or depends on. Names and attributes vary between DSL versions.
 

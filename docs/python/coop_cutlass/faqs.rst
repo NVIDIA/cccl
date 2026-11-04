@@ -329,7 +329,7 @@ Check the operation's launch shape, dtype, and participation requirements.
 A successful host import alone does not establish GPU runtime qualification.
 
 For provider compilation errors, verify the toolkit and CCCL header origins,
-then use ``CUDA_COOP_SOURCE_DUMP_DIR`` to inspect generated source. The
+then use ``CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR`` to inspect generated source. The
 :doc:`Developer Guide <developer_guide>` explains compiler and linker
 inspection, including why the final linked cubin is needed to assess calls,
 barriers, spills, and resource use.

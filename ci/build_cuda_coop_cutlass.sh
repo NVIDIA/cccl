@@ -14,11 +14,11 @@ parse_python_args "$@"
 require_py_version "$usage" || exit 1
 # shellcheck source=ci/pyenv_helper.sh
 source "$ci_dir/pyenv_helper.sh"
-if [[ "${CCCL_CUDA_COOP_CUTLASS_PYENV_READY:-0}" != "1" ]]; then
+if [[ "${CUDA_COOP_CUTLASS_PYENV_READY:-0}" != "1" ]]; then
   setup_python_env "${py_version}" ".cccl-coop-cutlass-build-venv"
 fi
 python -m pip install build
-artifacts_dir="${CCCL_CUDA_COOP_CUTLASS_ARTIFACT_DIR:-$repo_root/wheelhouse}"
+artifacts_dir="${CUDA_COOP_CUTLASS_ARTIFACT_DIR:-$repo_root/wheelhouse}"
 mkdir -p "$artifacts_dir"
 python -m build --outdir "$artifacts_dir" "$repo_root/python/cuda_coop_cutlass"
 mapfile -t wheels < <(find "$artifacts_dir" -maxdepth 1 -name 'cuda_coop_cutlass-*.whl' -print | sort)
