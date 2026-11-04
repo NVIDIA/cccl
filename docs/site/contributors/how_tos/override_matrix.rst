@@ -82,7 +82,7 @@ slow. To build and run a single test target instead, use ``project:
 
 The ``run_cpu`` and ``run_gpu`` jobs map directly to
 ``build_and_test_targets.sh``. See that script for the available ``args``,
-covered in :doc:`/cccl/development/build_and_bisect_tools`.
+covered in :doc:`cpp:cccl/development/build_and_bisect_tools`.
 
 **Step 4. Reduce overhead further with skip tags.** Combine the override
 with :ref:`[skip-*] tags <infra-ci-skip-tags>` in the last commit message to drop

@@ -167,5 +167,26 @@ repos:
         language: python
         types: [text]
 
+      # Each failure these cover is silent: a tag routed to the wrong component,
+      # pages stamped with a label the switcher manifest does not list, or a
+      # deploy whose replacement reaches past the version directory it built.
+      # They use fixtures and run in well under a second.
+      - id: docs-build-contract
+        name: docs publication contract
+        entry: python -m pytest -q docs/test_docs_build.py
+        language: python
+        additional_dependencies: [pytest, pyyaml]
+        files: |
+          (?x)^(
+            docs/(registry|build_site|make_manifest|test_docs_build)\.py|
+            docs/registry\.yml|
+            docs/gen_(docs|python_docs)\.bash|
+            docs/(conf|site/conf)\.py|
+            docs/(cpp|python)_site/.*|
+            \.github/workflows/build-site\.yml
+          )$
+        pass_filenames: false
+
+
 default_language_version:
   python: python3

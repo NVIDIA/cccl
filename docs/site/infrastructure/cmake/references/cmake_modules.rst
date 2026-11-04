@@ -62,7 +62,7 @@ Helper modules
      - Generate header and CMake-config install rules per project, gated by a ``<project>_ENABLE_INSTALL_RULES`` cache option.
      - ``cccl_generate_install_rules()``
    * - ``CCCLTestParams.cmake``
-     - Parse ``%PARAM%`` comments in test sources into the cartesian product of variant labels and preprocessor definitions. See :doc:`/cccl/development/testing` for usage.
+     - Parse ``%PARAM%`` comments in test sources into the cartesian product of variant labels and preprocessor definitions. See :doc:`cpp:cccl/development/testing` for usage.
      - ``cccl_parse_variant_params()``
    * - ``CCCLUtilities.cmake``
      - Shared utilities: non-fatal process execution, CPM-consumption compile tests, and expected-failure compile tests.

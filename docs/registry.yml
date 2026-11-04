@@ -1,0 +1,47 @@
+# The products this repository publishes documentation for. The landing index,
+# cross-reference mappings, release-tag routing, build exclusions and site
+# assembly all read the product list from here; a new product also needs its own
+# build script and Sphinx project.
+#
+# Fields:
+#   key          the URL namespace, /cccl/<key>/<version>/, and the directory
+#                name in the published site
+#   name         what a reader sees in the landing index and the switcher
+#   source_root  the Sphinx source root, relative to docs/
+#   tag_prefix   the release tag prefix that selects this product; the rest of
+#                the tag is the version
+#   summary      one line for the landing index
+
+site:
+  title: CUDA Core Compute Libraries
+  summary: >-
+    Thrust, CUB, libcu++, CUDA Experimental and the CCCL Python libraries,
+    documented per product and per release.
+  base_url: https://nvidia.github.io/cccl
+
+# The unversioned root project: the landing index, and anything that describes
+# the repository rather than one release of one library.
+root:
+  source_root: site
+
+# Order matters. build_site.py builds products top to bottom, and a product can
+# link only to the products above it -- one below has no inventory yet. The
+# landing index lists them in the same order.
+products:
+  - key: cpp
+    name: C++
+    source_root: .
+    tag_prefix: v
+    build: ./gen_docs.bash --allow-dep-install --label {label}
+    summary: >-
+      Thrust, CUB, libcu++ and CUDA Experimental -- the CUDA C++ core libraries,
+      released and versioned together.
+
+  - key: python
+    name: Python
+    source_root: python
+    tag_prefix: python-
+    build: ./gen_python_docs.bash --allow-dep-install --label {label}
+    summary: >-
+      cuda.compute and cuda.cccl -- the Python interfaces to the same
+      algorithms, on their own release line.

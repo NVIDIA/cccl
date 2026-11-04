@@ -4,6 +4,7 @@
 #
 # Usage:
 #   ./gen_docs.bash                    - Build documentation
+#   ./gen_docs.bash --label 3.4.2      - Build as release 3.4.2 (default: unstable)
 #   ./gen_docs.bash --allow-dep-install - Build, auto-install missing system deps
 #   ./gen_docs.bash clean              - Clean build directory
 #   ./gen_docs.bash clean --all        - Clean build directory and Doxygen build
@@ -17,14 +18,18 @@ set -euo pipefail
 ALLOW_DEP_INSTALL=false
 CLEAN=false
 CLEAN_ALL=false
+LABEL=""
 
-for arg in "$@"; do
-    case "$arg" in
+while [[ $# -gt 0 ]]; do
+    case "$1" in
         --allow-dep-install) ALLOW_DEP_INSTALL=true ;;
         clean)               CLEAN=true ;;
         --all)               CLEAN_ALL=true ;;
-        *)                   echo "Unknown argument: $arg"; exit 1 ;;
+        --label)             LABEL="${2:-}"; shift ;;
+        --label=*)           LABEL="${1#*=}" ;;
+        *)                   echo "Unknown argument: $1"; exit 1 ;;
     esac
+    shift
 done
 
 SCRIPT_PATH=$(cd "$(dirname "${0}")"; pwd -P)
@@ -259,12 +264,28 @@ else
     echo "Skipping Doxygen (not installed)"
 fi
 
-VERSION="${SPHINX_CCCL_VER:-unstable}"
-BASE_URL="${CCCL_DOCS_BASE_URL:-https://nvidia.github.io/cccl/}"
-BASE_URL="${BASE_URL%/}/"
-IS_LATEST="${CCCL_DOCS_IS_LATEST:-true}"
+# One value is the directory this build is served from, the version its pages
+# are stamped with, and the release they display, so the three cannot disagree.
+# --label sets it; SPHINX_CCCL_VER, as build_and_bisect_tools.rst documents, is
+# the fallback.
+VERSION="${LABEL:-${SPHINX_CCCL_VER:-unstable}}"
 
-HTML_DIR="${BUILDDIR}/html"
+if [[ ! "${VERSION}" =~ ^(unstable|[0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+    echo "Error: the version must be 'unstable' or an exact MAJOR.MINOR.PATCH release," >&2
+    echo "       got '${VERSION}'." >&2
+    echo "       'unstable' is the development branch; a release uses its full" >&2
+    echo "       version, e.g. 3.4.2. There is no rolling MAJOR.MINOR directory." >&2
+    echo "       Set it with --label, or with SPHINX_CCCL_VER for a local build." >&2
+    exit 1
+fi
+
+# conf.py reads this for the displayed release, the canonical URL and the
+# switcher entry. Exported after validation, so Sphinx can only ever see a
+# value that is a legal directory name.
+export SPHINX_CCCL_VER="${VERSION}"
+
+# Laid out as the published site: artifacts/docs/cpp/ becomes /cccl/cpp/.
+HTML_DIR="${BUILDDIR}/artifacts/docs/cpp"
 VERSIONED_HTML_DIR="${HTML_DIR}/${VERSION}"
 
 # Full builds validate the regenerated API sources from a fresh Sphinx state.
@@ -279,36 +300,47 @@ mkdir -p "${VERSIONED_HTML_DIR}"
 # Use the virtual environment's Python
 python -m sphinx.cmd.build -b html -d "${BUILDDIR}/doctrees" -j auto "." "${VERSIONED_HTML_DIR}" "${SPHINXOPTS[@]}"
 
-# Copy objects.inv to the root to support intersphinx consumers
-if [[ -f "${VERSIONED_HTML_DIR}/objects.inv" ]]; then
+# This script produces the C++ product's artifact only: its version directory,
+# landing redirect and switcher manifest. The site root and .nojekyll belong to
+# build_site.py, which knows every product.
+
+# conf.py excludes docs/python via the registry; confirm the artifact honours
+# that rather than publish Python pages under a C++ version.
+if [[ -d "${VERSIONED_HTML_DIR}/python" ]]; then
+    echo "Error: the C++ artifact contains a top-level python/ directory." >&2
+    echo "       docs/python was not excluded from the C++ build; publishing" >&2
+    echo "       would put Python pages under ${VERSION}/python/." >&2
+    exit 1
+fi
+
+# The product's landing redirect ships beside its version directory.
+cp "${SCRIPT_PATH}/cpp_site/index.html" "${HTML_DIR}/index.html"
+
+# The convenience inventory at the component root, for intersphinx consumers
+# who want a stable URL. It tracks the development documentation.
+if [[ "${VERSION}" == "unstable" && -f "${VERSIONED_HTML_DIR}/objects.inv" ]]; then
     cp "${VERSIONED_HTML_DIR}/objects.inv" "${HTML_DIR}/objects.inv"
 fi
 
-# Scrape docs to generate page list
-./scrape_docs.bash "${VERSIONED_HTML_DIR}"
+# The published entry must claim the directory it is served from, or the
+# switcher silently never highlights the current page.
+if ! grep -q "version_match = '${VERSION}'" "${VERSIONED_HTML_DIR}/index.html"; then
+    echo "Error: pages are not stamped '${VERSION}'." >&2
+    echo "       The switcher matches this stamp against its manifest entry;" >&2
+    echo "       a mismatch renders correctly and is invisible to a page check." >&2
+    exit 1
+fi
 
-cp "./404.html" "${HTML_DIR}/404.html"
-cp "./index.html" "${HTML_DIR}/index.html"
+# The switcher is the only thing linking versions together, so the manifest
+# lists this version plus every one already published, read from the
+# documentation branch rather than maintained by hand.
+MANIFEST_ARGS=(--component cpp --version "${VERSION}" --out "${HTML_DIR}")
+if [[ -n "${CCCL_DOCS_SITE_URL:-}" ]]; then
+    MANIFEST_ARGS+=(--site-url "${CCCL_DOCS_SITE_URL}")
+fi
+if [[ -n "${CCCL_DOCS_BRANCH:-}" ]]; then
+    MANIFEST_ARGS+=(--from-branch "${CCCL_DOCS_BRANCH}" --repo "${SCRIPT_PATH}/..")
+fi
+python3 "${SCRIPT_PATH}/make_manifest.py" "${MANIFEST_ARGS[@]}"
 
-# Provide version metadata for the theme switcher
-cat > "${HTML_DIR}/nv-versions.json" <<EOF
-[
-  {
-    "name": "${VERSION}",
-    "version": "${VERSION}",
-    "url": "${BASE_URL}${VERSION}/",
-    "latest": ${IS_LATEST},
-    "preferred": ${IS_LATEST}
-  }
-]
-EOF
-
-cat > "${HTML_DIR}/versions.json" <<EOF
-{
-  "${VERSION}": "${VERSION}"
-}
-EOF
-
-touch "${HTML_DIR}/.nojekyll"
-
-echo "Documentation build complete! HTML output is in ${BUILDDIR}/html/"
+echo "C++ documentation build complete: ${VERSIONED_HTML_DIR}"

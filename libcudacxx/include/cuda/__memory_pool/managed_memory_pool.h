@@ -41,8 +41,6 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 // clang complains about missing braces in CUmemLocation constructor but GCC complains if we add them
 
 //! @rst
-//! .. _libcudacxx-memory-resource-async:
-//!
 //! Stream ordered memory resource
 //! ------------------------------
 //!
@@ -93,8 +91,6 @@ public:
 }
 
 //! @rst
-//! .. _libcudacxx-memory-resource-async:
-//!
 //! Stream ordered memory resource
 //! ------------------------------
 //!

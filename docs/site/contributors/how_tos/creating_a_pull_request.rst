@@ -55,7 +55,7 @@ This verification is a two-step process:
 
 #. Determine whether your changes affect the generated SASS code (details below).
 #. If the generated SASS code changes, run the benchmarks (see :doc:`CUB Benchmarks
-   </cub/benchmarking>`) to quantify potential performance implications.
+   <cpp:cub/benchmarking>`) to quantify potential performance implications.
 
 Automatic SASS diffing
 --------------------------
@@ -95,4 +95,4 @@ Benchmark
 
 If non-trivial SASS changes have been detected,
 a performance comparison must be provided per impacted architecture and benchmark.
-See :doc:`CUB Benchmarks </cub/benchmarking>` for more information on how to produce those.
+See :doc:`CUB Benchmarks <cpp:cub/benchmarking>` for more information on how to produce those.

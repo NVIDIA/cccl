@@ -10,7 +10,7 @@ a CI job, but it is slow when you are iterating on a single test.
 ``ci/util/build_and_test_targets.sh`` builds and runs a named subset of CMake
 targets against one preset. Use it to compile one test, run one CTest pattern,
 or execute one libcudacxx lit test without rebuilding the rest of the project.
-The full flag reference is in :doc:`/cccl/development/build_and_bisect_tools`.
+The full flag reference is in :doc:`cpp:cccl/development/build_and_bisect_tools`.
 
 Build a single CUB test
 -----------------------

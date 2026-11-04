@@ -283,7 +283,7 @@ but at least the most recent host compiler of any supported older CUDA Toolkit.
 We may retain support of additional compilers and will accept corresponding patches from the community with reasonable fixes.
 But we will not invest significant time in triaging or fixing issues for older compilers.
 
-In the spirit of "You only support what you test", see our [CI Overview](https://github.com/NVIDIA/cccl/blob/main/docs/infrastructure/ci/references/ci_overview.rst) for more information on exactly what we test.
+In the spirit of "You only support what you test", see our [CI Overview](https://github.com/NVIDIA/cccl/blob/main/docs/site/infrastructure/ci/references/ci_overview.rst) for more information on exactly what we test.
 
 ### GPU Architectures
 
@@ -315,7 +315,7 @@ For each CUDA version, builds are completed against all supported host compilers
 
 The testing strategy and matrix are constantly evolving.
 The matrix defined in the [`ci/matrix.yaml`](ci/matrix.yaml) file is the definitive source of truth.
-For more information about our CI pipeline, see [here](docs/infrastructure/ci/references/ci_overview.rst).
+For more information about our CI pipeline, see [here](docs/site/infrastructure/ci/references/ci_overview.rst).
 
 ## Versioning
 
@@ -403,7 +403,7 @@ For example, adding a new data member to a struct is an ABI Breaking Change as i
 In CCCL, the guarantees about ABI are as follows:
 
 - Symbols in the `thrust::` and `cub::` namespaces may break ABI at any time without warning.
-- The ABI of `thrust::` and `cub::` [symbols includes the CUDA architectures used for compilation](https://nvidia.github.io/cccl/cub/developer_overview.html#symbols-visibility). Therefore, a `thrust::` or `cub::` symbol may have a different ABI if:
+- The ABI of `thrust::` and `cub::` [symbols includes the CUDA architectures used for compilation](https://nvidia.github.io/cccl/cpp/unstable/cub/developer_overview.html#symbols-visibility). Therefore, a `thrust::` or `cub::` symbol may have a different ABI if:
     - compiled with different architectures
     - compiled as a CUDA source file (`-x cu`) vs C++ source (`-x cpp`)
 - Symbols in the `cuda::` namespace may also break ABI at any time. However, `cuda::` symbols embed an ABI version number that is incremented whenever an ABI break occurs. Multiple ABI versions may be supported concurrently, and therefore users have the option to revert to a prior ABI version. For more information, see [here](libcudacxx/docs/releases/versioning.md).
@@ -477,7 +477,7 @@ CTKs before 12.4 shipped Thrust, CUB and libcudacxx as individual libraries.
 
 ## CI Pipeline Overview
 
-For a detailed overview of the CI pipeline, see [CI overview](docs/infrastructure/ci/references/ci_overview.rst).
+For a detailed overview of the CI pipeline, see [CI overview](docs/site/infrastructure/ci/references/ci_overview.rst).
 
 ## Related Projects
 

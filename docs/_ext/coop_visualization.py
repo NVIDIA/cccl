@@ -39,7 +39,7 @@ def add_api_visualization_link(app, what, name, obj, options, lines):
                 "",
                 (
                     f"   :doc:`{title} visualization "
-                    f"</python/coop/visualizations/{visualization}>`"
+                    f"</coop/visualizations/{visualization}>`"
                 ),
                 "",
             ]
@@ -72,7 +72,7 @@ class CoopVisualization(SphinxDirective):
 
 def add_visualization_assets(app, pagename, templatename, context, doctree):
     """Load styles and scripts for the explorers recorded on this page."""
-    if pagename == "python/coop_api":
+    if pagename == "coop_api":
         app.add_css_file("coop-api.css")
     if doctree is None:
         return

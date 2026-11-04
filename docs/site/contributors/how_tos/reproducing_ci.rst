@@ -118,4 +118,4 @@ entire project's test suite. Once the container reproduces the failure, use
 
 This rebuilds one target instead of the full project. For preset, target, and
 lit-test flags, and for ``ci/util/git_bisect.sh`` to find the introducing commit,
-see :doc:`/cccl/development/build_and_bisect_tools`.
+see :doc:`cpp:cccl/development/build_and_bisect_tools`.

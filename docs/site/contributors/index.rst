@@ -72,14 +72,14 @@ Developer Guides
 
 For more information about architecture, design, and development practices, consult the following developer guides:
 
-- :doc:`CCCL Coding Conventions </cccl/development/coding_conventions>` - Our coding conventions, must be followed
-- :doc:`CCCL Development Guide </cccl/development/index>` - Internal details and development process shared across CCCL libraries, mostly libcudacxx
-- :doc:`Thrust Systems </thrust/developer/systems>` - Overview of Thrust's backend systems and execution policies
-- :doc:`Thrust Developer CMake Options </thrust/developer/cmake_options>` - CMake options for Thrust development builds
-- :doc:`CUB Developer Guide </cub/developer_overview>` - General overview of the design of CUB internals
-- :doc:`CUB Tests </cub/developer/test_overview>` - Overview of how to write CUB unit tests
-- :doc:`CUB Benchmarks </cub/benchmarking>` - Overview of CUB's performance benchmarks
-- :doc:`CUB Tunings </cub/tuning>` - Overview of CUB's performance tuning infrastructure
+- :doc:`CCCL Coding Conventions <cpp:cccl/development/coding_conventions>` - Our coding conventions, must be followed
+- :doc:`CCCL Development Guide <cpp:cccl/development/index>` - Internal details and development process shared across CCCL libraries, mostly libcudacxx
+- :doc:`Thrust Systems <cpp:thrust/developer/systems>` - Overview of Thrust's backend systems and execution policies
+- :doc:`Thrust Developer CMake Options <cpp:thrust/developer/cmake_options>` - CMake options for Thrust development builds
+- :doc:`CUB Developer Guide <cpp:cub/developer_overview>` - General overview of the design of CUB internals
+- :doc:`CUB Tests <cpp:cub/developer/test_overview>` - Overview of how to write CUB unit tests
+- :doc:`CUB Benchmarks <cpp:cub/benchmarking>` - Overview of CUB's performance benchmarks
+- :doc:`CUB Tunings <cpp:cub/tuning>` - Overview of CUB's performance tuning infrastructure
 
 Building and Testing
 ----------------------

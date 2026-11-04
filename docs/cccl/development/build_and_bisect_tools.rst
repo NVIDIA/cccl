@@ -90,8 +90,10 @@ Documentation builds
 
 Use :file:`docs/gen_docs.bash` for local documentation builds. It generates
 Doxygen XML, regenerates API reference pages, builds Sphinx HTML, and writes
-directly to the versioned output directory under :file:`docs/_build/html/`. The
-version defaults to ``unstable`` and can be overridden with ``SPHINX_CCCL_VER``.
+directly to the versioned output directory under
+:file:`docs/_build/artifacts/docs/cpp/`. The version defaults to ``unstable``
+and can be overridden with ``SPHINX_CCCL_VER`` or the ``--label`` flag; it must
+be ``unstable`` or an exact ``MAJOR.MINOR.PATCH``.
 The script runs Doxygen builds in parallel and builds Sphinx with ``-j auto``::
 
   ./docs/gen_docs.bash

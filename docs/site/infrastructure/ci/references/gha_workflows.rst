@@ -84,9 +84,10 @@ Documentation
    * - Workflow
      - Trigger
      - Purpose
-   * - ``.github/workflows/docs-deploy.yml``
+   * - ``.github/workflows/build-site.yml``
      - Both
-     - Builds the Sphinx docs and publishes them to GitHub Pages under a version-derived path.
+     - Builds each product's documentation, assembles them into one site, and publishes
+       it under a version-derived path.
 
 
 CI orchestration

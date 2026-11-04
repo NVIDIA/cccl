@@ -50,10 +50,6 @@ namespace cuda::experimental
 //! This structure provides an interface to manage and interact with a CUDA graph node
 //! within a CUDA graph. It includes functionality for swapping, retrieving node information,
 //! and managing dependencies between nodes.
-//!
-//! \rst
-//! .. _cudax-graph-graph-node-ref:
-//! \endrst
 struct graph_node_ref
 {
   //! \brief Default constructor.

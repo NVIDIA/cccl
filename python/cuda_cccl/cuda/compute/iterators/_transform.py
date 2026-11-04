@@ -21,7 +21,7 @@ class TransformIterator(IteratorBase):
     """
     An iterator that applies a unary function to elements as they are read from an underlying iterator.
 
-    Similar to `thrust::transform_iterator <https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__iterator.html>`_.
+    Similar to `thrust::transform_iterator <https://nvidia.github.io/cccl/cpp/unstable/thrust/api/classthrust_1_1transform__iterator.html>`_.
 
     For input iteration (default): reads from underlying, applies transform, returns result.
     For output iteration: applies transform to input values, writes to underlying.
@@ -320,7 +320,7 @@ class TransformOutputIterator(TransformIterator):
     """
     An iterator that applies a unary function to values before writing them to an underlying iterator.
 
-    Similar to `thrust::transform_output_iterator <https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__output__iterator.html>`_.
+    Similar to `thrust::transform_output_iterator <https://nvidia.github.io/cccl/cpp/unstable/thrust/api/classthrust_1_1transform__output__iterator.html>`_.
 
     This is a convenience subclass of TransformIterator configured for output mode.
 

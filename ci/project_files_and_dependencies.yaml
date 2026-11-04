@@ -309,7 +309,7 @@ ignore_regexes:
   - '\.github/workflows/build-matx\.yml'
   - '\.github/workflows/build-pytorch\.yml'
   - '\.github/workflows/build-rapids\.yml'
-  - '^\.github/workflows/docs-deploy\.yml$'
+  - '^\.github/workflows/build-site\.yml$'
   - '\.github/workflows/git-bisect\.yml'
   - '^\.github/workflows/new-version-tagging\.yml$'
   - '\.github/workflows/project_automation.*\.yml'
