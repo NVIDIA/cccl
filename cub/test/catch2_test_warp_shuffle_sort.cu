@@ -167,6 +167,10 @@ CUB_TEST("Warp shuffle warp_sort preserves blocked keys and permutations",
     input_pattern::alternating_zeros);
   const bool descending     = GENERATE(false, true);
   const bool skip_odd_warps = !all_lanes_active && GENERATE(false, true);
+  // Calling a predicate avoids MSVC C4127 when skip_odd_warps is constant
+  const auto is_active_tile = [=](int tile) {
+    return !skip_odd_warps || tile % 2 == 0;
+  };
   CAPTURE(items, logical_warp_threads, all_lanes_active, pattern, descending, skip_odd_warps);
 
   c2h::host_vector<key_t> input(shuffle_sort_tiles * tile_size);
@@ -181,7 +185,7 @@ CUB_TEST("Warp shuffle warp_sort preserves blocked keys and permutations",
   auto reference = input;
   for (int tile = 0; tile < shuffle_sort_tiles; ++tile)
   {
-    if (!skip_odd_warps || tile % 2 == 0)
+    if (is_active_tile(tile))
     {
       auto tile_start = reference.begin() + tile * tile_size;
       auto tile_end   = reference.begin() + (tile + 1) * tile_size;
@@ -209,7 +213,7 @@ CUB_TEST("Warp shuffle warp_sort preserves blocked keys and permutations",
     // Preserve +-0 and extra fields of structures
     if constexpr (cuda::std::is_floating_point_v<key_t> || cuda::std::is_same_v<key_t, record_key>)
     {
-      if (!skip_odd_warps || tile % 2 == 0)
+      if (is_active_tile(tile))
       {
         REQUIRE(std::is_sorted(actual, actual + tile_size, compare_keys{descending}));
       }
