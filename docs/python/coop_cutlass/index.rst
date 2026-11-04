@@ -55,6 +55,7 @@ before the :doc:`Developer Guide <developer_guide>`.
    programming_guide
    api
    examples
+   tensor_memory_topk
    developer_guide
    cutlass_primer
    cutlass_integration_example
