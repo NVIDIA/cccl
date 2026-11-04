@@ -9,8 +9,8 @@
   const algorithms = [
     { id: "up", label: "Up", tag: "Previous item in the blocked tile" },
     { id: "down", label: "Down", tag: "Next item in the blocked tile" },
-    { id: "offset", label: "Offset", tag: "Qualified scalar neighbor" },
-    { id: "rotate", label: "Rotate", tag: "Qualified scalar wraparound" },
+    { id: "offset", label: "Offset", tag: "Scalar neighbor" },
+    { id: "rotate", label: "Rotate", tag: "Scalar wraparound" },
   ];
 
   // Build ownership phases for a small eight-thread teaching block.

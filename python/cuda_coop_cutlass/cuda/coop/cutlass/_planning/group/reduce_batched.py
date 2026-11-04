@@ -42,7 +42,7 @@ from ._model import (
 
 @dataclass(frozen=True)
 class GroupReduceBatchedSemantics:
-    """Expose batched reduction semantics to the common group dispatcher.
+    """Expose batched reduction semantics to the group dispatcher.
 
     Every member receives an array of result slots. The selected layout
     assigns each batch aggregate to one slot in one member. A slot is invalid
