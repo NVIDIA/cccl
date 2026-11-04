@@ -10,7 +10,7 @@ from cuda.coop.cutlass._planning._source_dump import dump_source
 def test_source_dump_distinguishes_source_target_and_mode(
     tmp_path, monkeypatch
 ):
-    monkeypatch.setenv("CUDA_COOP_SOURCE_DUMP_DIR", str(tmp_path))
+    monkeypatch.setenv("CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR", str(tmp_path))
     source = "// CUDA source with a Unicode comment: π\n"
     first = dump_source(source, backend="cutlass", identity=(90, "lto"))
     repeated = dump_source(source, backend="cutlass", identity=(90, "lto"))
@@ -30,14 +30,14 @@ def test_source_dump_distinguishes_source_target_and_mode(
 
 
 def test_source_dump_disabled_by_default(tmp_path, monkeypatch):
-    monkeypatch.delenv("CUDA_COOP_SOURCE_DUMP_DIR", raising=False)
+    monkeypatch.delenv("CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR", raising=False)
     monkeypatch.chdir(tmp_path)
     assert dump_source("// source", backend="cutlass") is None
     assert not list(tmp_path.iterdir())
 
 
 def test_concurrent_source_dumps_leave_complete_files(tmp_path, monkeypatch):
-    monkeypatch.setenv("CUDA_COOP_SOURCE_DUMP_DIR", str(tmp_path))
+    monkeypatch.setenv("CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR", str(tmp_path))
     source = "// shared translation unit\n" * 1000
 
     def write(_):

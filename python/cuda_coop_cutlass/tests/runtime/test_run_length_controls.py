@@ -119,8 +119,10 @@ def test_scratch_reuse_racecheck():
     the sanitizer must report zero hazards as well as a successful exit.
     """
 
-    if os.environ.get("CUDA_COOP_RUN_RACECHECK") != "1":
-        pytest.skip("set CUDA_COOP_RUN_RACECHECK=1 to run compute-sanitizer")
+    if os.environ.get("CUDA_COOP_CUTLASS_RUN_RACECHECK") != "1":
+        pytest.skip(
+            "set CUDA_COOP_CUTLASS_RUN_RACECHECK=1 to run compute-sanitizer"
+        )
     tool = find_nvidia_binary_utility("compute-sanitizer")
     if tool is None:
         pytest.skip("compute-sanitizer is required")
