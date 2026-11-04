@@ -22,6 +22,7 @@
 #include <cub/util_ptx.cuh>
 
 #include <cuda/__cmath/round_down.h>
+#include <cuda/__memory/__vectorized_storage.h>
 #include <cuda/__memory/address_space.h>
 #include <cuda/__memory/align_up.h>
 #include <cuda/__memory/is_aligned.h>
@@ -80,10 +81,7 @@ private:
   static constexpr int threads_per_block = BlockDimX * BlockDimY * BlockDimZ;
 
   // Helper for fallback to gmem->reg->smem
-  struct alignas(detail::bulk_copy_min_align) vec_load_t
-  {
-    char c_array[detail::bulk_copy_min_align];
-  };
+  using vec_load_t = ::cuda::__as_vectorized_storage_t<char, detail::bulk_copy_min_align>;
 
   struct _TempStorage
   {
