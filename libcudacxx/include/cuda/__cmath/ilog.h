@@ -237,17 +237,16 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_cv_integer_v<_Tp>)
   }
   else
   {
-    int __ret = 0;
 #if _CCCL_CUDA_COMPILATION() && !_CCCL_TILE_COMPILATION()
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__ret = ::cuda::__ilog10_device(__uv);), (__ret = ::cuda::__ilog10_generic(__v);))
+      NV_IF_TARGET(NV_IS_DEVICE,
+                   (const auto __ret = ::cuda::__ilog10_device(__uv);
+                    _CCCL_ASSUME(__ret >= 0 && __ret <= ::cuda::std::numeric_limits<_Tp>::digits / 3);
+                    return __ret;))
     }
-    else
 #endif // _CCCL_CUDA_COMPILATION() && !_CCCL_TILE_COMPILATION()
-    {
-      __ret = ::cuda::__ilog10_generic(__v);
-    }
+    const auto __ret = ::cuda::__ilog10_generic(__v);
     _CCCL_ASSUME(__ret >= 0 && __ret <= ::cuda::std::numeric_limits<_Tp>::digits / 3); // 2^X < 10^(X/3)
     return __ret;
   }
