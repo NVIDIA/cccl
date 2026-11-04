@@ -93,6 +93,22 @@ def test_cache_reuses_only_intact_artifacts(compilation):
     assert str(path) in _cache.managed_bundle_paths()
 
 
+def test_cache_directory_can_change_after_a_memory_hit(
+    compilation, monkeypatch, tmp_path
+):
+    first = Path(_compile())
+    assert _compile() == str(first)
+    second_dir = tmp_path / "another-cache"
+    monkeypatch.setenv(_cache.CACHE_DIR_ENV, str(second_dir))
+    second = Path(_compile())
+    assert second.parent == second_dir
+    assert second.read_bytes() == first.read_bytes()
+    assert len(compilation.calls) == 2
+    monkeypatch.setenv(_cache.CACHE_DIR_ENV, str(first.parent))
+    assert _compile() == str(first)
+    assert len(compilation.calls) == 2
+
+
 def test_cache_identity_includes_source_target_headers_and_toolkit(compilation):
     paths = {_compile(), _compile("other"), _compile(arch="compute_90")}
     compilation.context = replace(

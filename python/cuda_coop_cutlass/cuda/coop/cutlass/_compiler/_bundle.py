@@ -119,13 +119,15 @@ def _compile_bundle_source(
             return None
         return cached
 
-    cached = complete(_cache.memory_cached_bundle(key))
+    # Scope memory hits to the selected directory, including after an override
+    # changes in a long-lived process.
+    path = os.path.join(
+        _cache.ensure_cache_dir("cuda.coop.cutlass"), f"{key}.ltoir"
+    )
+    cached = complete(_cache.memory_cached_bundle(path))
     if cached is None:
-        path = os.path.join(
-            _cache.ensure_cache_dir("cuda.coop.cutlass"), f"{key}.ltoir"
-        )
         with _cache.artifact_lock(path, scope="cuda.coop.cutlass"):
-            cached = complete(_cache.memory_cached_bundle(key)) or complete(
+            cached = complete(_cache.memory_cached_bundle(path)) or complete(
                 _cache.load_bundle(path, key)
             )
             if cached is None:
@@ -138,7 +140,7 @@ def _compile_bundle_source(
                 cached = _cache.publish_bundle(
                     path, key, blob, layouts_by_expression=layouts
                 )
-            _cache.store_memory_bundle(key, cached)
+            _cache.store_memory_bundle(path, cached)
     _cache.add_managed_bundle_path(cached.path)
     return BundleCompilation(
         cached.path,

@@ -40,7 +40,7 @@ if [[ -n "${GITHUB_ACTIONS:-}" && "$stage" == runtime ]]; then
   artifact_name="$(CCCL_WHEEL_KIND=coop-cutlass "$ci_dir/util/workflow/get_wheel_artifact_name.sh")"
   "$ci_dir/util/artifacts/download.sh" "$artifact_name" "$repo_root/"
 else
-  CCCL_CUDA_COOP_CUTLASS_PYENV_READY=1 "$ci_dir/build_cuda_coop_cutlass.sh" -py-version "${py_version}"
+  CUDA_COOP_CUTLASS_PYENV_READY=1 "$ci_dir/build_cuda_coop_cutlass.sh" -py-version "${py_version}"
 fi
 mapfile -t wheels < <(find "$repo_root/wheelhouse" -maxdepth 1 -name 'cuda_coop_cutlass-*.whl' -print | sort)
 [[ ${#wheels[@]} -eq 1 ]] || { echo "Expected exactly one cuda-coop-cutlass wheel" >&2; exit 1; }

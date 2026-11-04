@@ -522,7 +522,7 @@ Useful environment variables while debugging a trace, all prefixed
 ``CUTE_DSL_``: ``PRINT_IR=1`` prints each module after tracing; ``KEEP`` with
 ``ir``, ``ptx``, ``cubin``, or ``sass`` keeps those artifacts under
 ``DUMP_DIR``; ``ARCH`` overrides the detected target; ``LOG_LEVEL`` raises
-the DSL's own logging. ``CUDA_COOP_SOURCE_DUMP_DIR`` dumps the generated
+the DSL's own logging. ``CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR`` dumps the generated
 C++ on our side; see :doc:`configuration`.
 
 Vocabulary
