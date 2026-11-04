@@ -20,12 +20,12 @@ CCCL Cooperative Groups are available through the ``<cuda/experimental/coop/grou
 Introduction
 ------------
 
-This section describes the fundamental ideas and features of CCCL Cooperative Groups and how they compare to the original cooperative groups (``<cooperative_groups.h>``).
+This section describes the fundamental ideas and features of CCCL Cooperative Groups and how they compare to the original cooperative groups (``<cooperative_groups.h>``, see `online docs <https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/cooperative-groups.html>`__).
 
 Concerning Groups
 ^^^^^^^^^^^^^^^^^
 
-Let's start with a quick introduction to groups regarding the CUDA programming model. A group could be simply defined as a collection of threads that must be able to synchronize, so they cooperate on solving algorithmic problems. However, such a generic group isn't too suitable for the CUDA programming model, because the definition doesn't allow an efficient implementation of synchronization in hardware.
+Let's start with a quick introduction to groups regarding the CUDA programming model. A group could be simply defined as a collection of threads, each identified by a rank in range :math:`[0;N)`, that must be able to synchronize, so they cooperate on solving algorithmic problems. However, such a generic group isn't too suitable for the CUDA programming model, because the definition doesn't allow an efficient implementation of synchronization in hardware.
 
 The original cooperative groups solve this issue by adding an upper boundary within which the threads are grouped to the definition. It means that you can't simply group arbitrary threads, but you can only group threads within a given CUDA hierarchy level. This information is used by the implementation to select the right synchronization mechanism for a given group.
 
@@ -71,35 +71,11 @@ The original cooperative groups provide ``cg_group.thread_rank()`` and ``cg_grou
 
 For this reason, CCCL Cooperative Groups implement group queries in a similar fashion to hierarchy queries that allow querying information about any level below the group's unit type. We call them *sub-unit* queries. Similarly, a group might be queried for its rank/count within the parent group or a hierarchy level, when the group is an implicit group. These are called *super-level* queries.
 
+See :ref:`cudax-coop-group-group-queries` the API description.
+
 .. figure:: images/group-queries.svg
    :width: 100%
    :alt: Comparison of available queries for a group of 3 warps within a block of 128 threads between the original cooperative groups and CCCL Cooperative Groups. The original cooperative groups allow only thread rank query, while CCCL Cooperative Groups allow both thread and warp rank queries.
-
-Separation of Partition and Synchronization
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-When creating a group, it is necessary to define *how the units are grouped* and *how the units are synchronized*.
-
-The original cooperative groups fuse these 2 properties together, providing free functions that partition the group and select a suitable synchronization mechanism for the group.
-
-CCCL Cooperative Groups instead try to give the user control over both properties by separating them. This is implemented by a family of types that implement a well-defined interface. The information about *how the units are grouped* is passed by :ref:`cudax-coop-group-mapping` and *how the units are synchronized* is passed by :ref:`cudax-coop-group-synchronizer`. The design can be likened to ``std::mdspan``'s layout mappings and accessors.
-
-.. figure:: images/group-design.svg
-   :width: 100%
-   :alt: Four choices when creating a group: which units to group, within which boundary, how to partition the units, and how to synchronize them. Examples include threads or warps, a block or another group, groups of four or a predicate, and a barrier or __syncwarp().
-
-Optional Participation
-^^^^^^^^^^^^^^^^^^^^^^
-
-Imagine a group of :math:`N` units that shall be split into :math:`N / M` groups of :math:`M` units. When :math:`N` is divisible by :math:`M` without a remainder, every unit can be assigned to a new group. However, when :math:`N` is not divisible by :math:`M` without a remainder, you are left with 3 options:
-
-#. mark this case as unsupported,
-#. create :math:`N / M` groups and leave :math:`N \bmod M` units without a group, or
-#. create :math:`N / M + 1` groups with the last group being incomplete.
-
-Cases **1.** and **3.** can be handled inside the mapping implementation; however, case **2.** requires additional support from the groups implementation.
-
-For this reason, CCCL Cooperative Groups introduce the optional participation feature in the form of non-exhaustive group construction that return an *optional* of the group.
 
 Requirements on Groups
 ----------------------
@@ -115,20 +91,20 @@ The requirements on groups are formally specified by the ``cuda::experimental::c
   concept group = requires (T& t, const T& ct)
   {
     // Member types.
-    requires /*is-hierarchy-level*/<typename T::unit_type>;             // (1)
-    requires /*is-hierarchy-level*/<typename T::level_type>;            // (2)
-    requires /*is-hierarchy*/<typename T::hierarchy_type>;              // (3)
+    requires /*is-hierarchy-level*/<typename T::unit_type>;     // (1)
+    requires /*is-hierarchy-level*/<typename T::level_type>;    // (2)
+    requires /*is-hierarchy*/<typename T::hierarchy_type>;      // (3)
 
     // Getters.
-    { ct.hierarchy() } noexcept
-      -> cuda::std::same_as<const typename T::hierarchy_type&>;         // (4)
+    { ct.hierarchy() }
+      -> cuda::std::same_as<const typename T::hierarchy_type&>; // (4)
 
     // Synchronization.
-    { t.sync() } noexcept -> cuda::std::same_as<void>;                  // (5)
-    { t.sync_aligned() } noexcept -> cuda::std::same_as<void>;          // (6)
+    { t.sync() } -> cuda::std::same_as<void>;                   // (5)
+    { t.sync_aligned() } -> cuda::std::same_as<void>;           // (6)
 
     // Properties.
-    { T::is_always_contiguous() } noexcept -> cuda::std::same_as<bool>; // (7), must be constexpr
+    { T::is_always_contiguous() } -> cuda::std::same_as<bool>;  // (7), must be constexpr
   };
 
   } // namespace cuda::experimental::coop
@@ -143,6 +119,7 @@ Where:
 #. Same as ``sync()``, but all of the units are contextually aligned (execute the same statement).
 #. A property known at compile time that specifies whether each group occupies a contiguous range of physical units, numbered in ascending physical order from zero.
 
+.. _cudax-coop-group-group-queries:
 
 Group Queries
 -------------
@@ -183,6 +160,42 @@ The supported query kinds are:
 #. Equivalent to ``qunit.rank_as</*default-T*/>(group)``.
 #. Equivalent to ``qunit.rank(group) == 0``.
 
+Example:
+
+.. code:: cpp
+
+  template </*is-this-warp-group*/ Group>
+  __device__ int sum(const Group& group, int value);
+
+  // Returns an array of warp partial sums.
+  template </*is-warps-within-block-group*/ Group>
+  __device__ auto parital_sum(const Group& group, int value)
+  {
+    // Make sure that the number of warps in the group is statically-known.
+    static_assert(cuda::warp.static_count(group) != cuda::std::dynamic_extent);
+
+    // Allocate shared memory scratch.
+    __shared__ int smem_scratch[cuda::warp.static_count(group)];
+
+    // Group consist of several warps within a block, so we can safely use this_warp group for calculating the partials.
+    const cuda::experimental::coop::this_warp warp{group.hierarchy()};
+
+    // Calculate partials.
+    const auto partial = sum(warp, value);
+
+    // Store partials in shared memory by lane 0 of each warp.
+    if (cuda::gpu_thread.is_root_rank(warp))
+    {
+      smem_scratch[cuda::warp.rank(group)] = partial;
+    }
+
+    // Wait until all partials are written.
+    group.sync();
+
+    // Return the partials as cuda::std::array object.
+    return cuda::std::to_array(smem_scratch);
+  }
+
 Super-Level Queries
 ^^^^^^^^^^^^^^^^^^^
 
@@ -218,23 +231,57 @@ The supported query kinds are:
 #. Equivalent to ``group.count_as</*default-T*/>(/*parent-group-or-qlevel*/)``.
 #. Equivalent to ``group.rank_as</*default-T*/>(/*parent-group-or-qlevel*/)``.
 
-Predefined Groups
------------------
+Example:
 
-CCCL Cooperative Groups come with several predefined group types.
+.. code:: cpp
 
-1. Implicit groups without a parent group. They are essential building blocks for other groups.
-  - :ref:`cudax-coop-group-this-group`
-  - :ref:`cudax-coop-group-coalesced-group`
-2. Groups that are created by splitting another group.
-  - :ref:`cudax-coop-group-generic-group`
-  - :ref:`cudax-coop-group-virtual-group`
-3. A non-owning group view over a group.
-  - :ref:`cudax-coop-group-group-view`
+  // Inside a kernel receiving the launch configuration:
+  const cuda::experimental::coop::this_block block{config};
 
+  constexpr auto total = block.static_count(cuda::grid); // 4 for grid_dims<4>()
+  const auto count = block.count(cuda::grid);            // 4
+  const auto rank  = block.rank(cuda::grid);             // 0, 1, 2, or 3
+
+  // Print once per block.
+  if (cuda::gpu_thread.is_root_rank(block))
+  {
+    printf("Block %d of %d\n", static_cast<int>(rank), static_cast<int>(count));
+  }
+
+Group Types
+-----------
+
+Implicit Groups
+^^^^^^^^^^^^^^^
+
+Implicit groups are essential building blocks for other groups. They don't have a parent group and always use a hierarchy level in super-level queries.
+
+- :ref:`cudax-coop-group-this-group` -- abstraction over a whole hierarchy level
+- :ref:`cudax-coop-group-coalesced-group` -- a group containing all currently active threads within a warp
+
+Derived Groups
+^^^^^^^^^^^^^^
+
+Derived groups originate by splitting an another parent group.
+
+When creating a group, it is necessary to define *how the units are grouped* and *how the units are synchronized*. The original cooperative groups fuse these 2 properties together, providing free functions that partition the group and select a suitable synchronization mechanism for the group.
+
+CCCL Cooperative Groups instead try to give the user control over both properties by separating them. This is implemented by a family of types that implement a well-defined interface. The information about *how the units are grouped* is passed by :ref:`cudax-coop-group-mapping` and *how the units are synchronized* is passed by :ref:`cudax-coop-group-synchronizer`. The design can be likened to ``std::mdspan``'s layout mappings and accessors.
+
+.. figure:: images/group-design.svg
+   :width: 100%
+   :alt: Four choices when creating a group: which units to group, within which boundary, how to partition the units, and how to synchronize them. Examples include threads or warps, a block or another group, groups of four or a predicate, and a barrier or ``__syncwarp()``.
+
+This functionality is implemented by the :ref:`cudax-coop-group-generic-group`.
+
+Other Group Types
+^^^^^^^^^^^^^^^^^
+
+- :ref:`cudax-coop-group-group-view` -- non-owning view over an another group
+- :ref:`cudax-coop-group-virtual-group` -- an abstraction layer over an existing group
 
 Factory Functions and Optional Participation Support
------------------------------------------------------
+----------------------------------------------------
 
 CCCL Cooperative Groups can be constructed 2 ways -- using their constructor or the ``make_group`` factory function:
 
@@ -246,26 +293,25 @@ CCCL Cooperative Groups can be constructed 2 ways -- using their constructor or 
   template <template <typename...> typename GroupTempl, typename... Args>
   [[nodiscard]] __device__
   auto make_group(Args&&... args)
-    noexcept(/*is-nothrow-constructible-from-args*/)
-    -> /*GroupTempl-instantiated-with-args*/;                                                   // (1)
+    -> /*GroupTempl-instantiated-with-args*/;                                          // (1)
 
   template <template <typename...> typename GroupTempl, typename... Args>
   [[nodiscard]] __device__
-  auto make_group(const non_exhaustive_t&, Args&&... args) noexcept
-    -> cuda::std::optional</*GroupTempl-instantiated-with-args*/>;                              // (2)
+  auto make_group(const non_exhaustive_t&, Args&&... args)
+    -> cuda::std::optional</*GroupTempl-instantiated-with-args*/>;                     // (2)
 
   template <typename CgGroup, /*hierarchy-like-type*/ HierarchyLike>
   [[nodiscard]] __device__
-  group auto make_group(const CgGroup& cg_group, const HierarchyLike& hierarchy_like) noexcept; // (3)
+  group auto make_group(const CgGroup& cg_group, const HierarchyLike& hierarchy_like); // (3)
 
   } // namespace cuda::experimental::coop
 
 Both overloads take the ``GroupTempl`` template template parameter that denotes the group kind that shall be constructed from ``args`` arguments.
 
-The overload (1) is equivalent to  ``GroupTempl{args...}``.
+#. Equivalent to  ``GroupTempl{args...}``.
 
-The overload (2) takes the ``cuda::experimental::coop::non_exhaustive`` tag as the first argument, which makes allows the group mapping to be non-exhaustive. This means that some of the units may not be assigned to a group, getting an empty ``cuda::std::optional``.
+#. Instantiates ``GroupTempl`` with ``args`` and the result the :ref:`non-exhaustive<cudax-coop-group-mapping-exhaustivness>` mapping, returns an empty ``cuda::std::optional``, when the current unit was not assigned to any group.
 
-The overload (3) takes an original cooperative groups group and converts it to a CCCL Cooperative Groups equivalent group.
+#. Takes an original cooperative groups group and converts it to a CCCL Cooperative Groups equivalent group.
 
-.. note:: The group returned by ``cuda::experimental::coop::make_cg_equivalent_group(...)`` doesn't take ownership of the resources owned by ``cg_group``, so ``cg_group`` should outlive the returned group.
+.. note:: The group returned by ``cuda::experimental::coop::make_group(...)`` doesn't take ownership of the resources owned by ``cg_group``, so ``cg_group`` should outlive the returned group.
