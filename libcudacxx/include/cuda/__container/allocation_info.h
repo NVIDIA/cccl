@@ -37,9 +37,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _Tp, class... _Properties>
 struct __allocation_info
 {
-  using __resource_t = ::cuda::mr::any_resource<_Properties...>;
-  using __pointer_t  = _Tp*;
-  using __size_type  = ::cuda::std::size_t;
+  using __resource_t _CCCL_NODEBUG = ::cuda::mr::any_resource<_Properties...>;
+  using __pointer_t _CCCL_NODEBUG  = _Tp*;
+  using __size_type _CCCL_NODEBUG  = ::cuda::std::size_t;
 
   ::cuda::stream_ref stream;
   __resource_t mr;
