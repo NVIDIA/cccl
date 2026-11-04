@@ -10,8 +10,8 @@
 #include <cuda/cmath>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
-#include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
@@ -50,6 +50,18 @@ TEST_FUNC constexpr void test_ceil_log2()
 }
 
 template <class T>
+TEST_FUNC constexpr int reference_log10(T value)
+{
+  int result = 0;
+  while (value >= 10)
+  {
+    value /= 10;
+    ++result;
+  }
+  return result;
+}
+
+template <class T>
 TEST_FUNC constexpr void test_log10()
 {
   int i = 0;
@@ -70,9 +82,10 @@ TEST_FUNC constexpr void test_log10()
     }
     i++;
   }
-  auto max_v = cuda::std::numeric_limits<T>::max();
-  assert(cuda::ilog10(max_v) == cuda::std::numeric_limits<T>::digits10);
+  constexpr auto max_v = cuda::std::numeric_limits<T>::max();
+  assert(cuda::ilog10(max_v) == reference_log10(max_v));
   assert(cuda::ilog10<const T>(max_v) == cuda::std::numeric_limits<T>::digits10);
+  assert(cuda::ilog10(static_cast<T>(max_v - 1)) == reference_log10(static_cast<T>(max_v - 1)));
 }
 
 template <class T>
@@ -96,31 +109,26 @@ TEST_FUNC constexpr void test_ceil_log10()
     }
     i++;
   }
-  auto max_v = cuda::std::numeric_limits<T>::max();
-  assert(cuda::ceil_ilog10(max_v) == cuda::std::numeric_limits<T>::digits10 + 1);
-}
-
-template <class T>
-TEST_FUNC constexpr int reference_log10(T value)
-{
-  int result = 0;
-  for (; value >= 10; value /= 10)
-  {
-    ++result;
-  }
-  return result;
+  constexpr auto max_v = cuda::std::numeric_limits<T>::max();
+  assert(cuda::ceil_ilog10(max_v) == reference_log10(static_cast<T>(max_v - 1)) + 1);
 }
 
 template <class T>
 TEST_FUNC constexpr void test_log10_binary_boundaries()
 {
+  // The approximation changes at powers of two; the exact correction changes at powers of ten.
   for (T value = 1;; value *= 2)
   {
     assert(cuda::ilog10(value) == reference_log10(value));
-    assert(cuda::ilog10(static_cast<T>(value + 1)) == reference_log10(static_cast<T>(value + 1)));
+    assert(cuda::ceil_ilog10(value) == (value == 1 ? 0 : reference_log10(static_cast<T>(value - 1)) + 1));
     if (value > 1)
     {
-      assert(cuda::ilog10(static_cast<T>(value - 1)) == reference_log10(static_cast<T>(value - 1)));
+      auto before = static_cast<T>(value - 1);
+      auto after  = static_cast<T>(value + 1);
+      assert(cuda::ilog10(before) == reference_log10(before));
+      assert(cuda::ilog10(after) == reference_log10(after));
+      assert(cuda::ceil_ilog10(before) == (before == 1 ? 0 : reference_log10(static_cast<T>(before - 1)) + 1));
+      assert(cuda::ceil_ilog10(after) == reference_log10(value) + 1);
     }
     if (value > cuda::std::numeric_limits<T>::max() / 2)
     {
