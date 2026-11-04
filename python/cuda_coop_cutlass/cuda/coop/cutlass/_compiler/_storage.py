@@ -495,8 +495,10 @@ def materialize_deferred_temp_storage_plans(
 ) -> None:
     """Allocate each plan at kernel entry and replace its call operands.
 
-    ``plans`` comes from :func:`plan_deferred_temp_storage_events`. One
-    ``SmemAllocator`` per kernel places all of that kernel's allocations.
+    ``plans`` comes from :func:`plan_deferred_temp_storage_events`. Each
+    ``SmemAllocator.allocate`` emits a separate shared-memory allocation;
+    CuTe lays these out together with allocations from the kernel and its
+    other libraries. Allocator instances do not own independent byte arenas.
     Each binding supplies its slice's shared-memory address and capacity to
     the recorded call, including calls nested in loops or conditional regions.
     This step emits no barriers. The provider wrapper adds a trailing barrier
