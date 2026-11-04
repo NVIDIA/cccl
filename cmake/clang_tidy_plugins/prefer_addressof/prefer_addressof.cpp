@@ -18,45 +18,74 @@ namespace
 {
 using namespace ast_matchers; // NOLINT(google-build-using-namespace)
 
-AST_MATCHER(QualType, isReservedClassTemplateType) // NOLINT
+[[nodiscard]] ClassTemplateDecl* unwrap(const Type& ty)
 {
-  const QualType type   = Node.getCanonicalType().getUnqualifiedType();
-  const Type* const raw = type.getTypePtrOrNull();
-
-  if (!raw)
+  if (const auto* spec = dyn_cast<TemplateSpecializationType>(&ty))
   {
-    return false;
+    return dyn_cast_if_present<ClassTemplateDecl>(spec->getTemplateName().getAsTemplateDecl());
   }
 
-  const ClassTemplateDecl* decl = nullptr;
+  if (const auto* injected = dyn_cast<InjectedClassNameType>(&ty))
+  {
+    return injected->getDecl()->getDescribedClassTemplate();
+  }
 
-  if (const auto* spec = dyn_cast<TemplateSpecializationType>(raw))
-  {
-    decl = dyn_cast_if_present<ClassTemplateDecl>(spec->getTemplateName().getAsTemplateDecl());
-  }
-  else if (const auto* injected = dyn_cast<InjectedClassNameType>(raw))
-  {
-    decl = injected->getDecl()->getDescribedClassTemplate();
-  }
-  else if (const auto* record = dyn_cast<RecordType>(raw))
+  if (const auto* record = dyn_cast<RecordType>(&ty))
   {
     if (const auto* spec = dyn_cast<ClassTemplateSpecializationDecl>(record->getDecl()))
     {
-      decl = spec->getSpecializedTemplate();
+      return spec->getSpecializedTemplate();
     }
   }
 
-  if (!decl)
+  return nullptr;
+}
+
+// determine whether decl points to exactly "thrust::reference", "thrust::device_reference", or
+// "thrust::tagged_reference".
+[[nodiscard]] bool is_known_thrust_reference_template(const NamedDecl& decl)
+{
+  const StringRef name = decl.getName();
+
+  if (name != "reference" && name != "device_reference" && name != "tagged_reference")
   {
     return false;
   }
 
-  const IdentifierInfo* const ident = decl->getIdentifier();
+  const DeclContext* ctx = decl.getDeclContext();
 
-  return ident && util::is_ugly_name(ident->getName());
+  while (const auto* ns = dyn_cast<NamespaceDecl>(ctx))
+  {
+    if (!ns->isInline())
+    {
+      return ns->getName() == "thrust";
+    }
+
+    ctx = ns->getParent();
+  }
+  return false;
 }
 
-AST_MATCHER(UnresolvedLookupExpr, refersOnlyToFunctions) // NOLINT
+AST_MATCHER(Type, isKnownThrustProxyReference) // NOLINT
+{
+  const ClassTemplateDecl* decl = unwrap(Node);
+
+  return decl && is_known_thrust_reference_template(*decl);
+}
+
+AST_MATCHER(Type, isReservedClassTemplateType) // NOLINT
+{
+  if (const ClassTemplateDecl* const decl = unwrap(Node))
+  {
+    const IdentifierInfo* const ident = decl->getIdentifier();
+
+    return ident && util::is_ugly_name(ident->getName());
+  }
+  return false;
+}
+
+AST_POLYMORPHIC_MATCHER(refersOnlyToFunctions, // NOLINT
+                        AST_POLYMORPHIC_SUPPORTED_TYPES(UnresolvedLookupExpr, UnresolvedMemberExpr))
 {
   return std::all_of(Node.decls_begin(), Node.decls_end(), [](const NamedDecl* decl) {
     return isa<FunctionDecl, FunctionTemplateDecl>(decl->getUnderlyingDecl());
@@ -86,14 +115,34 @@ public:
 
   void registerMatchers(MatchFinder* finder) override
   {
-    // Known pointer and array types cannot overload address-of, even when their element type is dependent.
     const auto operand =
       expr(unless(anyOf(
              dependentScopeDeclRefExpr(),
-             hasType(pointerType()),
-             hasType(memberPointerType()),
-             hasType(qualType(hasCanonicalType(arrayType()))),
-             hasType(functionType()),
+             // Known pointer and array types cannot overload address-of, even when their
+             // element type is dependent.
+             hasType(qualType(hasCanonicalType(anyOf(
+               pointerType(),
+               memberPointerType(),
+               arrayType(),
+               functionType(),
+               // This is a heuristic. There are many cases in libcu++ where we do things like
+               //
+               // template <class T>
+               // struct __wrapper { };
+               //
+               // auto *p = &__wrapper<T>{foo};
+               //
+               // We control the definition of `__wrapper`, and we definitely have not added an
+               // operator&() overload for it.
+               //
+               // Now *technically* we should be using addressof() here (because some code
+               // somewhere *could* define a specialization for some __wrapper<T> which adds
+               // operator&()). But such specializations are probably UB anyways, so this
+               // scenario is vanishingly unlikely and we can save a bunch of NOLINTs this way.
+               isReservedClassTemplateType(),
+               // Special-case for thrust proxy references, which we know to have valid
+               // operator&() overloads that we should honor.
+               isKnownThrustProxyReference())))),
              // We need this extra condition here because hasType(functionType())
              // does not necessarily fire for type-dependent function template
              // lookups (known in AST parlance as "unresolved lookup
@@ -112,22 +161,7 @@ public:
              // refer to the function template `foo`.
              //
              // The clang AST is weird sometimes.
-             unresolvedLookupExpr(refersOnlyToFunctions()),
-             // This is a heuristic. There are many cases in libcu++ where we do things like
-             //
-             // template <class T>
-             // struct __wrapper { };
-             //
-             // auto *p = &__wrapper<T>{foo};
-             //
-             // We control the definition of `__wrapper`, and we definitely have not added an
-             // operator&() overload for it.
-             //
-             // Now *technically* we should be using addressof() here (because some code
-             // somewhere *could* define a specialization for some __wrapper<T> which adds
-             // operator&()). But such specializations are probably UB anyways, so this
-             // scenario is vanishingly unlikely and we can save a bunch of NOLINTs this way.
-             hasType(isReservedClassTemplateType()))))
+             mapAnyOf(unresolvedLookupExpr, unresolvedMemberExpr).with(refersOnlyToFunctions()))))
         .bind(OPERAND_BIND);
 
     finder->addMatcher(
