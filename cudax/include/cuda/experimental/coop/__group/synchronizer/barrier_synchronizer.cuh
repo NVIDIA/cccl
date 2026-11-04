@@ -92,11 +92,6 @@ inline constexpr bool __is_sufficient_scope_for_v<thread_scope_system, cluster_l
 template <>
 inline constexpr bool __is_sufficient_scope_for_v<thread_scope_system, grid_level> = true;
 
-template <class _Tp>
-inline constexpr thread_scope __barrier_scope_v = thread_scope_system;
-template <thread_scope _Sco, class _ComplFn>
-inline constexpr thread_scope __barrier_scope_v<barrier<_Sco, _ComplFn>> = _Sco;
-
 template <class _Barrier>
 class __barrier_synchronizer_instance_view
 {
@@ -263,7 +258,7 @@ public:
   {
     using _Level = typename _ParentGroup::level_type;
 
-    static_assert(__is_sufficient_scope_for_v<__barrier_scope_v<_Barrier>, _Level>,
+    static_assert(__is_sufficient_scope_for_v<_Barrier::scope, _Level>,
                   "_Barrier's thread scope is insufficient for group synchronization in _Level");
 
     ::cuda::std::size_t __nthread_in_unit     = 1;
