@@ -236,4 +236,4 @@ using random::xor_combine_engine;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/random/detail/xor_combine_engine.inl> // IWYU pragma: keep
+#include <thrust/random/detail/xor_combine_engine.inl> // IWYU pragma: export

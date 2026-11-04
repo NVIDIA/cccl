@@ -223,4 +223,4 @@ using random::discard_block_engine;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/random/detail/discard_block_engine.inl> // IWYU pragma: keep
+#include <thrust/random/detail/discard_block_engine.inl> // IWYU pragma: export

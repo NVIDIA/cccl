@@ -241,4 +241,4 @@ using random::uniform_real_distribution;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/random/detail/uniform_real_distribution.inl> // IWYU pragma: keep
+#include <thrust/random/detail/uniform_real_distribution.inl> // IWYU pragma: export
