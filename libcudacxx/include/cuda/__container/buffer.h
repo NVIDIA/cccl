@@ -839,8 +839,8 @@ public:
   //! is left unchanged in that case.
   //! @warning After a successful call, the buffer can only be assigned to or
   //! destroyed.
-  _CCCL_TEMPLATE(class _Up, class _Byte = _Tp)
-  _CCCL_REQUIRES(__is_buffer_byte_type_v<_Byte>)
+  _CCCL_TEMPLATE(class _Up)
+  _CCCL_REQUIRES(__is_buffer_byte_type_v<_Tp>)
   [[nodiscard]] _CCCL_HOST_API buffer<_Up, _Properties...> as_type() &&
   {
     if ((size() * sizeof(_Tp)) % sizeof(_Up) != 0 || alignment() < alignof(_Up))

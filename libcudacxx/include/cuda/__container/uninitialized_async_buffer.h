@@ -467,8 +467,7 @@ public:
   _CCCL_HOST_API static __uninitialized_async_buffer __adopt_allocation(
     const ::cuda::stream_ref __stream, __async_resource __mr, _Tp* __ptr, const size_t __count, const size_t __alignment)
   {
-    // Zero count for now, will be set once pointer is checked
-    __uninitialized_async_buffer __ret{::cuda::std::move(__mr), __stream, 0, __alignment};
+    __uninitialized_async_buffer __ret{::cuda::std::move(__mr), __stream, /* __count_ = */ 0, __alignment};
     __validate_element_count(__count, __alignment);
     if (__ptr == nullptr)
     {
