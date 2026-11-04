@@ -36,6 +36,10 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
   [[maybe_unused]] cuda::std::execution::prop prop2{a_query, 42};
 
   static_assert(cuda::std::is_same_v<decltype(prop1), decltype(prop2)>);
+  static_assert(
+    cuda::std::is_same_v<typename decltype(prop1)::__property_keys, cuda::execution::property_key_list<a_query_t>>);
+  static_assert(cuda::std::is_same_v<cuda::execution::property_keys_t<decltype(prop1)>,
+                                     cuda::execution::property_key_list<a_query_t>>);
   static_assert(sizeof(prop1) == sizeof(int));
 
   assert(prop1.query(a_query) == 42);

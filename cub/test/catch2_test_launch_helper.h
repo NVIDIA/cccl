@@ -162,7 +162,7 @@ void launch(ActionT action, Args... args)
 
 #endif // TEST_LAUNCH == 0
 
-struct get_expected_allocation_size_t
+struct get_expected_allocation_size_t : cuda::std::execution::__basic_query<get_expected_allocation_size_t>
 {};
 
 [[nodiscard]] inline _CCCL_API cuda::std::execution::prop<get_expected_allocation_size_t, size_t>

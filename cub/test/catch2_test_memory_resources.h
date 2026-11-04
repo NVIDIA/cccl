@@ -27,11 +27,14 @@ struct device_memory_resource
       , bytes_deallocated(dealloc)
   {}
 
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4702) // warning C4702: unreachable code after FAIL
   void* allocate_sync(size_t /* bytes */, size_t /* alignment */)
   {
     FAIL("CUB shouldn't use synchronous allocation");
     return nullptr;
   }
+  _CCCL_DIAG_POP
 
   void deallocate_sync(void* /* ptr */, size_t /* bytes */, size_t /* alignment */)
   {
@@ -84,11 +87,14 @@ static_assert(::cuda::mr::resource<device_memory_resource>);
 
 struct throwing_memory_resource
 {
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4702) // warning C4702: unreachable code after FAIL
   void* allocate_sync(size_t /* bytes */, size_t /* alignment */)
   {
     FAIL("CUB shouldn't use synchronous allocation");
     return nullptr;
   }
+  _CCCL_DIAG_POP
 
   void deallocate_sync(void* /* ptr */, size_t /* bytes */, size_t /* alignment */)
   {
