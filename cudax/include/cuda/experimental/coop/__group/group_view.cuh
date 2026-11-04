@@ -100,6 +100,10 @@ public:
 
   _CCCL_HIDE_FROM_ABI group_view(group_view&&) = default;
 
+  _CCCL_HIDE_FROM_ABI group_view& operator=(const group_view&) = default;
+
+  _CCCL_HIDE_FROM_ABI group_view& operator=(group_view&&) = default;
+
   _CCCL_TEMPLATE(class _Unit2 = _Unit)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Unit2, typename _Group::unit_type>)
   _CCCL_DEVICE_API group_view(const _Group& __group)
@@ -179,6 +183,22 @@ public:
     -> decltype(_Group::static_count(__arg))
   {
     return _Group::static_count(__arg);
+  }
+
+  template <class _Tp, class _QueryMappingResult, class _Arg>
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr auto
+  __count_as_impl(const _QueryMappingResult& __mapping_result, const hierarchy_type& __hier, const _Arg& __arg)
+    -> decltype(_Group::template __count_as_impl<_Tp>(__mapping_result, __hier, __arg))
+  {
+    return _Group::template __count_as_impl<_Tp>(__mapping_result, __hier, __arg);
+  }
+
+  template <class _Tp, class _QueryMappingResult, class _Arg>
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr auto
+  __rank_as_impl(const _QueryMappingResult& __mapping_result, const hierarchy_type& __hier, const _Arg& __arg)
+    -> decltype(_Group::template __rank_as_impl<_Tp>(__mapping_result, __hier, __arg))
+  {
+    return _Group::template __rank_as_impl<_Tp>(__mapping_result, __hier, __arg);
   }
 
   _CCCL_TEMPLATE(class _Tp, class _Arg)
