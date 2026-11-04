@@ -44,13 +44,14 @@ from pathlib import Path
 
 import cutlass
 import numpy as np
-from cuda.bindings import driver, nvrtc
 from cutlass import cute
 from cutlass._mlir import ir
 from cutlass._mlir.dialects import arith, llvm
 from cutlass.cute.runtime import make_ptr
 from cutlass.cutlass_dsl import CuTeDSL, T
 from cutlass.memory import SmemAllocator
+
+from cuda.bindings import driver, nvrtc
 
 _BLOCK = (32, 4, 1)
 _THREADS = _BLOCK[0] * _BLOCK[1] * _BLOCK[2]
@@ -194,7 +195,8 @@ def _enclosing_kernel() -> ir.Operation:
     while op is not None:
         operation = getattr(op, "operation", op)
         if operation.name == "cuda.kernel" or (
-            operation.name == "lir.func" and "gpu.kernel" in operation.attributes
+            operation.name == "lir.func"
+            and "gpu.kernel" in operation.attributes
         ):
             return operation
         op = operation.parent
@@ -206,7 +208,7 @@ def _enclosing_kernel() -> ir.Operation:
 
 # docs: start cute-cub-finalize
 def _finalize_trace(dsl, module: ir.Module, function_name: str) -> None:
-    """Compile the traced requests and complete the module before CuTe hashes it.
+    """Compile requests and complete the module before CuTe hashes it.
 
     CuTe calls every registered hook once per trace, after the Python body
     returns and before the module hash, the compile-cache lookup, and the
@@ -349,7 +351,9 @@ def _allocate_scratch(
                 pointer = allocator.allocate(size, alignment)
                 address = llvm.ptrtoint(T.i32(), pointer.to_llvm_ptr())
                 use.smem_addr.replace_all_uses_with(address)
-                use.smem_bytes.replace_all_uses_with(arith.constant(T.i32(), size))
+                use.smem_bytes.replace_all_uses_with(
+                    arith.constant(T.i32(), size)
+                )
 
 
 # docs: end cute-cub-scratch
@@ -387,10 +391,16 @@ def main() -> None:
         try:
             _check(driver.cuMemcpyHtoD(src, values.ctypes.data, values.nbytes))
             source = make_ptr(
-                cutlass.Int32, int(src), cute.AddressSpace.gmem, assumed_align=16
+                cutlass.Int32,
+                int(src),
+                cute.AddressSpace.gmem,
+                assumed_align=16,
             )
             destination = make_ptr(
-                cutlass.Int32, int(dst), cute.AddressSpace.gmem, assumed_align=16
+                cutlass.Int32,
+                int(dst),
+                cute.AddressSpace.gmem,
+                assumed_align=16,
             )
             # docs: start cute-cub-main
             # Tracing, the finalize hook, NVRTC, and the device link all happen
