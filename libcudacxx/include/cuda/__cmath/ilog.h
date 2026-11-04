@@ -60,7 +60,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_cv_integer_v<_Tp>)
 
 // Const-qualified device variable templates are unsupported with the MSVC host compiler.
 template <class _Tp, ::cuda::std::enable_if_t<sizeof(_Tp) == sizeof(::cuda::std::uint32_t), int> = 0>
-[[nodiscard]] _CCCL_API constexpr auto __powers_of_10() noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __powers_of_10() noexcept
 {
   return ::cuda::std::array<::cuda::std::uint32_t, 10>{
     10,
@@ -76,7 +76,7 @@ template <class _Tp, ::cuda::std::enable_if_t<sizeof(_Tp) == sizeof(::cuda::std:
 }
 
 template <class _Tp, ::cuda::std::enable_if_t<sizeof(_Tp) == sizeof(::cuda::std::uint64_t), int> = 0>
-[[nodiscard]] _CCCL_API constexpr ::cuda::std::array<::cuda::std::uint64_t, 20> __powers_of_10() noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL ::cuda::std::array<::cuda::std::uint64_t, 20> __powers_of_10() noexcept
 {
   return {
     10,
@@ -146,7 +146,7 @@ _CCCL_GLOBAL_CONSTANT __uint128_t __powers_of_10_128[39]{
   ::cuda::std::numeric_limits<__uint128_t>::max()};
 
 template <class _Tp, ::cuda::std::enable_if_t<sizeof(_Tp) == sizeof(__uint128_t), int> = 0>
-[[nodiscard]] _CCCL_API constexpr auto __powers_of_10() noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __powers_of_10() noexcept
 {
   ::cuda::std::array<__uint128_t, 39> __result{};
   for (unsigned __i = 0; __i != 39; ++__i)
