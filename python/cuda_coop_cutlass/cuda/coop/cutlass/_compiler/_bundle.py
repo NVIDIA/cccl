@@ -26,6 +26,8 @@ def append_link_library_attr(module: ir.Module, path: str) -> None:
     paths keep repeated registration deterministic.
     """
 
+    # CuTe generally emits one gpu.module containing all kernels in a trace.
+    # Visit every GPU module, as CuTe's link-library collection does.
     for op in module.body.operations:
         if op.name != "gpu.module":
             continue
