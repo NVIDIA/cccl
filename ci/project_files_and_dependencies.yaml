@@ -176,29 +176,6 @@ projects:
     - "pyproject.toml"
     exclude_regexes: []
 
-  cuda_coop_python:
-    name: "cuda.coop Python"
-    matrix_project: "cuda_coop_python"
-    # The wheel carries these three public header trees at one CCCL revision.
-    # Header changes therefore exercise the focused installed-wheel lane.
-    lite_dependencies:
-      - libcudacxx_public
-      - cub_public
-      - thrust_public
-    full_dependencies: []
-    include_regexes:
-    - "python/cuda_coop/"
-    - "ci/build_cuda_coop_python\\.sh"
-    - "ci/test_cuda_coop_python\\.sh"
-    - "ci/validate_cuda_coop_wheel\\.py"
-    - "ci/windows/build_cuda_coop_python\\.ps1"
-    - "^LICENSE$"
-    - "^cub/LICENSE\\.TXT$"
-    - "^libcudacxx/LICENSE\\.TXT$"
-    - "^thrust/LICENSE$"
-    - "^pyproject\\.toml$"
-    exclude_regexes: []
-
   cuda_coop_cutlass:
     name: "cuda.coop.cutlass"
     matrix_project: "cuda_coop_cutlass"
