@@ -97,6 +97,11 @@ public:
     return true;
   }
 
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive()
+  {
+    return true;
+  }
+
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous()
   {
     return false;
