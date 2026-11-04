@@ -461,6 +461,7 @@ CUB_TEST("Launch environment wrapper orders preparation and completes kernels", 
     {
       // Without a stream property, the caller must complete preparation itself.
       setup_stream.sync();
+      expected_stream = cuda::std::nullopt;
     }
     const expected_stream_scope expected_scope{expected_stream};
 
