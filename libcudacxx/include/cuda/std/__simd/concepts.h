@@ -135,15 +135,43 @@ inline constexpr bool __is_value_preserving_v<_From, ::cuda::complex<_To>> = __i
 template <typename _From, typename _To>
 inline constexpr bool __is_value_preserving_v<_From, ::std::complex<_To>> = __is_value_preserving_v<_From, _To>;
 #endif // _CCCL_HAS_HOST_STD_LIB()
+
+template <typename _From, typename _ValueType>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __is_constexpr_wrapper_value_preserving() noexcept
+{
+  using _Source = remove_cvref_t<decltype(_From::value)>;
+  if constexpr (!__constexpr_wrapper_like<_From> || !is_arithmetic_v<_Source>)
+  {
+    return false;
+  }
+  else if constexpr (__is_complex_vectorizable_v<_ValueType>)
+  {
+    using __value_type _CCCL_NODEBUG = typename _ValueType::value_type;
+    return ::cuda::std::simd::__is_constexpr_wrapper_value_preserving<_From, __value_type>();
+  }
+  else if constexpr (is_integral_v<_Source> && is_integral_v<_ValueType>)
+  {
+    // Promote bool and character types, which cmp_equal does not accept directly.
+    return ::cuda::std::cmp_equal(+static_cast<_ValueType>(_From::value), +_From::value);
+  }
+  else
+  {
+    return static_cast<_Source>(static_cast<_ValueType>(_From::value)) == _From::value;
+  }
+}
+
 template <typename _From, typename _ValueType, typename = void>
 inline constexpr bool __is_constexpr_wrapper_value_preserving_v = false;
 
 // The standard requires checking whether the specific compile-time value From::value is representable by _ValueType,
 // not whether the entire source type is value-preserving.
 template <typename _From, typename _ValueType>
-inline constexpr bool __is_constexpr_wrapper_value_preserving_v<_From, _ValueType, void_t<decltype(_From::value)>> =
-  is_arithmetic_v<remove_cvref_t<decltype(_From::value)>>
-  && (static_cast<remove_cvref_t<decltype(_From::value)>>(static_cast<_ValueType>(_From::value)) == _From::value);
+inline constexpr bool __is_constexpr_wrapper_value_preserving_v<
+  _From,
+  _ValueType,
+  void_t<decltype(_From::value),
+         decltype(bool_constant<__is_constexpr_wrapper_value_preserving<_From, _ValueType>()>{})>> =
+  __is_constexpr_wrapper_value_preserving<_From, _ValueType>();
 
 // [simd.ctor] implicit value constructor
 // - From is not an arithmetic type and does not satisfy constexpr-wrapper-like,
