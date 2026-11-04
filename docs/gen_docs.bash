@@ -5,6 +5,7 @@
 # Usage:
 #   ./gen_docs.bash                    - Build documentation
 #   ./gen_docs.bash --allow-dep-install - Build, auto-install missing system deps
+#   ./gen_docs.bash --linkcheck        - Check documentation links
 #   ./gen_docs.bash clean              - Clean build directory
 #   ./gen_docs.bash clean --all        - Clean build directory and Doxygen build
 #
@@ -17,12 +18,14 @@ set -euo pipefail
 ALLOW_DEP_INSTALL=false
 CLEAN=false
 CLEAN_ALL=false
+LINKCHECK=false
 
 for arg in "$@"; do
     case "$arg" in
         --allow-dep-install) ALLOW_DEP_INSTALL=true ;;
         clean)               CLEAN=true ;;
         --all)               CLEAN_ALL=true ;;
+        --linkcheck)         LINKCHECK=true ;;
         *)                   echo "Unknown argument: $arg"; exit 1 ;;
     esac
 done
@@ -267,31 +270,45 @@ IS_LATEST="${CCCL_DOCS_IS_LATEST:-true}"
 HTML_DIR="${BUILDDIR}/html"
 VERSIONED_HTML_DIR="${HTML_DIR}/${VERSION}"
 
+LINKCHECK_DIR="${BUILDDIR}/linkcheck"
+
 # Full builds validate the regenerated API sources from a fresh Sphinx state.
 # Fast local builds preserve the caches and HTML outputs for incremental reuse.
 if [[ "${CCCL_DOCS_SKIP_AUTO_API_GENERATOR:-0}" != "1" ]]; then
     rm -rf "${BUILDDIR}/doctrees" "${VERSIONED_HTML_DIR}"
 fi
 
-# Build Sphinx HTML documentation directly into the versioned directory.
-echo "Building documentation with Sphinx..."
-mkdir -p "${VERSIONED_HTML_DIR}"
-# Use the virtual environment's Python
-python -m sphinx.cmd.build -b html -d "${BUILDDIR}/doctrees" -j auto "." "${VERSIONED_HTML_DIR}" "${SPHINXOPTS[@]}"
+# Select the Sphinx builder and output directory
+SPHINX_BUILDER="html"
+SPHINX_OUTPUT_DIR="${VERSIONED_HTML_DIR}"
 
-# Copy objects.inv to the root to support intersphinx consumers
-if [[ -f "${VERSIONED_HTML_DIR}/objects.inv" ]]; then
-    cp "${VERSIONED_HTML_DIR}/objects.inv" "${HTML_DIR}/objects.inv"
+if [[ "$LINKCHECK" == "true" ]]; then
+    SPHINX_BUILDER="linkcheck"
+    SPHINX_OUTPUT_DIR="${LINKCHECK_DIR}"
 fi
 
-# Scrape docs to generate page list
-./scrape_docs.bash "${VERSIONED_HTML_DIR}"
+echo "Building documentation with Sphinx (${SPHINX_BUILDER})."
+mkdir -p "${SPHINX_OUTPUT_DIR}"
 
-cp "./404.html" "${HTML_DIR}/404.html"
-cp "./index.html" "${HTML_DIR}/index.html"
+python -m sphinx.cmd.build \
+    -b "${SPHINX_BUILDER}" \
+    -d "${BUILDDIR}/doctrees" \
+    -j auto "." "${SPHINX_OUTPUT_DIR}" "${SPHINXOPTS[@]}"
+
+if [[ "$LINKCHECK" != "true" ]]; then
+    # Copy objects.inv to the root to support intersphinx consumers
+    if [[ -f "${VERSIONED_HTML_DIR}/objects.inv" ]]; then
+        cp "${VERSIONED_HTML_DIR}/objects.inv" "${HTML_DIR}/objects.inv"
+    fi
+
+    # Scrape docs to generate page list
+    ./scrape_docs.bash "${VERSIONED_HTML_DIR}"
+
+    cp "./404.html" "${HTML_DIR}/404.html"
+    cp "./index.html" "${HTML_DIR}/index.html"
 
 # Provide version metadata for the theme switcher
-cat > "${HTML_DIR}/nv-versions.json" <<EOF
+    cat > "${HTML_DIR}/nv-versions.json" <<EOF
 [
   {
     "name": "${VERSION}",
@@ -303,12 +320,13 @@ cat > "${HTML_DIR}/nv-versions.json" <<EOF
 ]
 EOF
 
-cat > "${HTML_DIR}/versions.json" <<EOF
+    cat > "${HTML_DIR}/versions.json" <<EOF
 {
   "${VERSION}": "${VERSION}"
 }
 EOF
 
-touch "${HTML_DIR}/.nojekyll"
+    touch "${HTML_DIR}/.nojekyll"
 
-echo "Documentation build complete! HTML output is in ${BUILDDIR}/html/"
+    echo "Documentation build complete! HTML output is in ${BUILDDIR}/html/"
+fi
