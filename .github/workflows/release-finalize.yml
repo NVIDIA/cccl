@@ -35,13 +35,29 @@ on:
         type: boolean
         required: true
         default: false
+      skip_rapids:
+        description: "Skip the required RAPIDS CI check. Use only if RAPIDS CI is broken for reasons unrelated to this release."
+        type: boolean
+        required: true
+        default: false
 
 defaults:
   run:
     shell: bash --noprofile --norc -euo pipefail {0}
 
 jobs:
+  build-rapids:
+    name: Build RAPIDS (required)
+    if: ${{ !inputs.skip_rapids }}
+    secrets: inherit
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/build-rapids.yml
+
   create-release:
+    needs: build-rapids
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
@@ -53,6 +69,21 @@ jobs:
       working_branch: ${{ steps.prepare.outputs.working_branch }}
       next_full_version: ${{ steps.prepare.outputs.next_full_version }}
     steps:
+      - name: Check RAPIDS CI result
+        env:
+          rapids_result: ${{ needs.build-rapids.result }}
+        run: |
+          if [[ "${{ inputs.skip_rapids }}" == "true" ]]; then
+            echo "::warning::The required RAPIDS CI check was skipped by request." | tee -a $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+
+          echo "RAPIDS CI result: ${rapids_result}" | tee -a $GITHUB_STEP_SUMMARY
+          if [[ "${rapids_result}" != "success" ]]; then
+            echo "::error::RAPIDS CI must pass before finalizing a release (result: '${rapids_result}'). Fix the RAPIDS failures and cut a new release candidate, or re-run with 'skip_rapids' if RAPIDS CI is broken for unrelated reasons."
+            exit 1
+          fi
+
       - name: Checkout the repository
         uses: actions/checkout@v6
 
