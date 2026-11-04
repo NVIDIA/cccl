@@ -29,6 +29,7 @@
 #  include <cuda/__utility/basic_any.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__optional/optional.h>
+#  include <cuda/std/__type_traits/is_void.h>
 #  include <cuda/std/__type_traits/type_list_operations.h>
 #  include <cuda/std/__utility/delegate_constructors.h>
 #  include <cuda/std/__utility/forward.h>
@@ -53,7 +54,7 @@ struct __with_property
   template <class _Ty, class _ReturnType = __property_result_t<_Property>>
   _CCCL_PUBLIC_HOST_API static _ReturnType __get_property(const _Ty& __obj)
   {
-    if constexpr (!::cuda::std::is_same_v<__property_result_t<_Property>, void>)
+    if constexpr (!::cuda::std::is_void_v<__property_result_t<_Property>>)
     {
       return get_property(__obj, _Property());
     }
@@ -69,13 +70,15 @@ struct __with_property
     _CCCL_HOST_API friend auto get_property([[maybe_unused]] const __iproperty& __obj, _Property)
       -> __property_result_t<_Property>
     {
-      if constexpr (!::cuda::std::is_same_v<__property_result_t<_Property>, void>)
+      if constexpr (!::cuda::std::is_void_v<__property_result_t<_Property>>)
       {
         return ::cuda::__virtcall<&__get_property<__iproperty>>(&__obj);
       }
       else
       {
-        return;
+        // For whatever reason MSVC does not like a bare "return" here, even though
+        // __property_result_t is exactly void.
+        return void(); // NOLINT(readability-avoid-return-with-void-value)
       }
     }
 
@@ -199,7 +202,7 @@ using __iasync_resource _CCCL_NODEBUG = __iset<__iresource<_Properties...>, __ib
 
 template <class _Property>
 using __try_property_result_t _CCCL_NODEBUG =
-  ::cuda::std::conditional_t<!::cuda::std::is_same_v<__property_result_t<_Property>, void>, //
+  ::cuda::std::conditional_t<!::cuda::std::is_void_v<__property_result_t<_Property>>, //
                              ::cuda::std::optional<__property_result_t<_Property>>, //
                              bool>;
 
@@ -211,7 +214,7 @@ struct __with_try_get_property
     -> __try_property_result_t<_Property>
   {
     auto __prop = ::cuda::__dynamic_any_cast<const __iproperty<_Property>*>(&__self);
-    if constexpr (::cuda::std::is_same_v<__property_result_t<_Property>, void>)
+    if constexpr (::cuda::std::is_void_v<__property_result_t<_Property>>)
     {
       return __prop != nullptr;
     }
