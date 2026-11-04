@@ -14,4 +14,4 @@
 #endif // no system header
 
 // omp system inherits sequence
-#include <thrust/system/cpp/detail/sequence.h>
+#include <thrust/system/cpp/detail/sequence.h> // IWYU pragma: export
