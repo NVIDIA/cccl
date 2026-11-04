@@ -24,7 +24,7 @@ template <class T>
 TEST_FUNC void check(const unsigned char* bytes)
 {
   T value{};
-  cuda::std::memcpy(cuda::std::addressof(value), bytes, sizeof(T));
+  cuda::std::memcpy(static_cast<void*>(cuda::std::addressof(value)), bytes, sizeof(T));
   assert(value.a == 42);
   assert(value.b == 'x');
   for (cuda::std::size_t i = offsetof(T, b) + sizeof(char); i < sizeof(T); ++i)

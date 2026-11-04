@@ -66,7 +66,7 @@ _CCCL_HOST_DEVICE_API void __clear_padding(_Tp& __value) noexcept
     // We also need to prevent operator& overloading
     _Tp __copy[1]{__value};
     _CCCL_BUILTIN_CLEAR_PADDING(&__copy);
-    ::cuda::std::memcpy(::cuda::std::addressof(__value), __copy, sizeof(_Tp));
+    ::cuda::std::memcpy(static_cast<void*>(::cuda::std::addressof(__value)), __copy, sizeof(_Tp));
   }
 }
 
