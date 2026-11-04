@@ -199,4 +199,4 @@ using random::linear_feedback_shift_engine;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/random/detail/linear_feedback_shift_engine.inl> // IWYU pragma: keep
+#include <thrust/random/detail/linear_feedback_shift_engine.inl> // IWYU pragma: export
