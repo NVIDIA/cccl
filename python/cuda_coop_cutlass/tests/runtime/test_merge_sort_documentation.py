@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Check qualified merge sort examples against host results."""
+"""Check merge sort examples against host results."""
 
 import numpy as np
 import pytest
@@ -14,7 +14,7 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_merge_sort_example(items_per_thread):
-    # qualified-merge-sort-example-begin
+    # cutlass-merge-sort-example-begin
     import cutlass
     from cutlass import cute
 
@@ -69,7 +69,7 @@ def test_merge_sort_example(items_per_thread):
             source, ascending, descending, positions, items_per_thread
         ).launch(grid=1, block=64)
 
-    # qualified-merge-sort-example-end
+    # cutlass-merge-sort-example-end
     values = (np.arange(64 * items_per_thread, dtype=np.int32) * 13) % 31 - 15
     ascending, descending, positions = (
         np.full_like(values, -101) for _ in range(3)

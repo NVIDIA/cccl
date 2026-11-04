@@ -23,15 +23,17 @@ from ._thread_data import (
 )
 from ._typing import (
     BlockGroup,
-    CommonNumericScalar,
-    CommonThreadDataLike,
+    NumericScalar,
+    ReadableThreadDataLike,
     TempStorageLike,
 )
 
-_Sample = TypeVar("_Sample", bound=CommonNumericScalar)
+_Sample = TypeVar("_Sample", bound=NumericScalar)
 
 _Samples: TypeAlias = (
-    CommonThreadDataLike[_Sample] | CutlassTensorSample | CutlassTensorSSASample
+    ReadableThreadDataLike[_Sample]
+    | CutlassTensorSample
+    | CutlassTensorSSASample
 )
 _Counter = TypeVar(
     "_Counter",

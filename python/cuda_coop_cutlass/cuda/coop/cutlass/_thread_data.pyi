@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Type per-thread payloads and their qualified register conversions.
+"""Type per-thread payloads and their CuTe register conversions.
 
 Structural samples describe the CuTe attributes used by conversion methods.
 Matching a protocol does not establish register address space, static extent,
@@ -114,7 +114,7 @@ class ThreadDataSource(
     """Producer supporting both register loading and tensor reconstruction."""
 
 class ThreadData(ThreadDataLike[_ItemT], Generic[_ItemT]):
-    """Fixed-size per-thread payload with qualified CuTe conversions."""
+    """Fixed-size per-thread payload with CuTe register conversions."""
 
     items_per_thread: int
     dtype: object | None

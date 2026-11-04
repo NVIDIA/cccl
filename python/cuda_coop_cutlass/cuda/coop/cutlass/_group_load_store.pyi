@@ -8,9 +8,9 @@ from typing_extensions import TypeVar
 
 from cuda.coop.cutlass._typing import (
     BlockLoadStoreAlgorithm,
-    CommonNumericScalar,
-    CommonThreadDataLike,
     IntegerValue,
+    NumericScalar,
+    ReadableThreadDataLike,
     TempStorageLike,
     ValidItems,
     WarpLoadStoreAlgorithm,
@@ -19,7 +19,7 @@ from cuda.coop.cutlass._typing import (
 from ._thread_data import ThreadData
 from ._typing import BlockGroup, WarpGroup
 
-_CommonNumericT = TypeVar("_CommonNumericT", bound=CommonNumericScalar)
+_NumericT = TypeVar("_NumericT", bound=NumericScalar)
 
 @overload
 def load(
@@ -47,7 +47,7 @@ def load(
     alignment: int | None = None,
     algorithm: BlockLoadStoreAlgorithm = "direct",
     valid_items: ValidItems,
-    oob_default: CommonNumericScalar | float,
+    oob_default: NumericScalar | float,
     offset: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadData[Any]:
@@ -79,7 +79,7 @@ def load(
     alignment: int | None = None,
     algorithm: WarpLoadStoreAlgorithm = "direct",
     valid_items: ValidItems,
-    oob_default: CommonNumericScalar | float,
+    oob_default: NumericScalar | float,
     offset: IntegerValue | None = None,
     temp_storage: None = None,
 ) -> ThreadData[Any]:
@@ -89,7 +89,7 @@ def load(
 def store(
     group: BlockGroup,
     destination: object,
-    value: _CommonNumericT | CommonThreadDataLike[_CommonNumericT],
+    value: _NumericT | ReadableThreadDataLike[_NumericT],
     /,
     *,
     algorithm: BlockLoadStoreAlgorithm = "direct",
@@ -103,7 +103,7 @@ def store(
 def store(
     group: WarpGroup,
     destination: object,
-    value: _CommonNumericT | CommonThreadDataLike[_CommonNumericT],
+    value: _NumericT | ReadableThreadDataLike[_NumericT],
     /,
     *,
     algorithm: WarpLoadStoreAlgorithm = "direct",

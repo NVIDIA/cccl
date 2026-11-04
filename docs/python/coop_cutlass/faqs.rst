@@ -8,7 +8,7 @@ FAQs
 ====
 
 .. _coop-faq-namespaces:
-.. _coop-faq-qualified-only:
+.. _coop-faq-namespace:
 
 Which package and import should I use?
 --------------------------------------
@@ -181,7 +181,7 @@ Reduce, Scan, Merge Sort, Radix Sort, TopK, Adjacent Difference,
 Discontinuity, Histogram, and both Run Length Decode forms. Storage-free
 Load/Store accept a descriptor without using scratch. Warp operations manage
 their own resources and reject explicit descriptors. See
-:ref:`the storage model <coop-common-storage>` and
+:ref:`the storage model <coop-concepts-storage>` and
 :ref:`storage requirements <coop-cutlass-storage>` for each family's limits.
 
 .. _coop-faq-topk-order:

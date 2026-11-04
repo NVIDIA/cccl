@@ -23,22 +23,17 @@ def _check(result):
     return result[1] if len(result) == 2 else result[1:]
 
 
-def run_example(api="common", items_per_thread=2):
+def run_example(items_per_thread=2):
     """Check full block and logical-warp results plus a scalar input prefix.
 
     The output has one block sum, one maximum per logical group, and one
     prefix sum, each stored by its group leader. The expected prefix
     sum uses each thread's first item; the count is threads, not contiguous
-    input elements. The same checks cover common and qualified calls.
+    input elements.
     """
 
     tile_size = _THREADS * items_per_thread
-    if api == "common":
-        import cuda.coop.cutlass as coop
-    elif api == "qualified":
-        import cuda.coop.cutlass as coop
-    else:
-        raise ValueError("api must be 'common' or 'qualified'")
+    import cuda.coop.cutlass as coop
 
     # docs: start cutlass-reduce
     @cute.kernel

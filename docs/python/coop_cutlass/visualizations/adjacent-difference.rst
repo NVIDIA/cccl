@@ -61,7 +61,7 @@ values must match the input dtype and agree across the block.
 Every thread in the complete block must call the operation, including for
 partial tiles; warp groups are unsupported. The function infers dtype and
 per-thread extent from ``ThreadData``. It accepts automatic scratch or an
-explicit :ref:`TempStorage <coop-common-storage>`.
+explicit :ref:`TempStorage <coop-concepts-storage>`.
 
 For a partial tile, ``valid_items`` must agree across the block. Only
 positions below that count compute a difference. Every later position

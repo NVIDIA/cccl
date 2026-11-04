@@ -18,7 +18,6 @@ import pytest
 from cutlass import cute
 
 import cuda.coop.cutlass as coop
-import cuda.coop.cutlass as cutlass_coop
 from tests.runtime_support import (
     NUMPY_DTYPES,
     cutlass_dtype,
@@ -35,7 +34,7 @@ class _Readonly:
     """Expose a payload snapshot that has no item-assignment method.
 
     Extent, dtype, and alignment stay visible; the dtype may still be None.
-    Both APIs can copy this input, infer its dtype, and return a separate
+    The operation can copy this input, infer its dtype, and return a separate
     result without writing to the input.
     """
 
@@ -159,7 +158,7 @@ def _check_result(result, source, dtype, items_per_thread, scalar, alignment):
     if scalar:
         assert isinstance(result, dtype)
     else:
-        assert isinstance(result, cutlass_coop.ThreadData)
+        assert isinstance(result, coop.ThreadData)
         assert result is not source
         assert result.dtype is dtype
         assert len(result) == items_per_thread
@@ -167,7 +166,6 @@ def _check_result(result, source, dtype, items_per_thread, scalar, alignment):
 
 
 def _run_sort(
-    api=coop,
     *,
     dtype=np.int32,
     value_dtype=np.float64,
@@ -205,7 +203,6 @@ def _run_sort(
     threads = int(np.prod(block))
     tile, size = threads * items_per_thread, blocks * threads * items_per_thread
     resolved_end = np.dtype(dtype).itemsize * 8 if end_bit is None else end_bit
-    is_qualified = api is cutlass_coop
 
     @cute.kernel
     def kernel(
@@ -242,17 +239,17 @@ def _run_sort(
         values_check = cute.recast_tensor(
             cute.make_tensor(value_check, cute.make_layout(size)), value_type
         )
-        group = api.this_block()
+        group = coop.this_block()
         if cutlass.const_expr(scalar):
             keys = sources[offset + thread]
             values = payloads[offset + thread]
         else:
-            keys = api.ThreadData(
+            keys = coop.ThreadData(
                 items_per_thread,
                 dtype=None if inferred else key_type,
                 alignment=alignment,
             )
-            values = api.ThreadData(
+            values = coop.ThreadData(
                 items_per_thread,
                 dtype=None if inferred else value_type,
                 alignment=alignment,
@@ -269,7 +266,7 @@ def _run_sort(
         if cutlass.const_expr(sharing is None):
             storage = None
         else:
-            storage = api.TempStorage(
+            storage = coop.TempStorage(
                 capacity,
                 sharing=sharing,
                 auto_sync=auto_sync,
@@ -286,52 +283,31 @@ def _run_sort(
         result, result_values = keys, values
         for iteration in range(repeats):
             if cutlass.const_expr(pairs):
-                if cutlass.const_expr(is_qualified):
-                    result, result_values = api.radix_sort_pairs(
-                        group,
-                        key_input,
-                        value_input,
-                        begin_bit=begin,
-                        end_bit=end,
-                        descending=descending,
-                        temp_storage=storage,
-                        blocked_to_striped=striped,
-                    )
-                else:
-                    result, result_values = api.radix_sort_pairs(
-                        group,
-                        key_input,
-                        value_input,
-                        begin_bit=begin,
-                        end_bit=end,
-                        descending=descending,
-                        temp_storage=storage,
-                    )
+                result, result_values = coop.radix_sort_pairs(
+                    group,
+                    key_input,
+                    value_input,
+                    begin_bit=begin,
+                    end_bit=end,
+                    descending=descending,
+                    temp_storage=storage,
+                    blocked_to_striped=striped,
+                )
             else:
-                if cutlass.const_expr(is_qualified):
-                    result = api.radix_sort_keys(
-                        group,
-                        key_input,
-                        begin_bit=begin,
-                        end_bit=end,
-                        descending=descending,
-                        temp_storage=storage,
-                        blocked_to_striped=striped,
-                    )
-                else:
-                    result = api.radix_sort_keys(
-                        group,
-                        key_input,
-                        begin_bit=begin,
-                        end_bit=end,
-                        descending=descending,
-                        temp_storage=storage,
-                    )
+                result = coop.radix_sort_keys(
+                    group,
+                    key_input,
+                    begin_bit=begin,
+                    end_bit=end,
+                    descending=descending,
+                    temp_storage=storage,
+                    blocked_to_striped=striped,
+                )
             if cutlass.const_expr(sharing is not None and not auto_sync):
                 storage.sync()
             if cutlass.const_expr(chain):
                 if cutlass.const_expr(pairs):
-                    result, result_values = api.radix_sort_pairs(
+                    result, result_values = coop.radix_sort_pairs(
                         group,
                         result,
                         result_values,
@@ -341,7 +317,7 @@ def _run_sort(
                         temp_storage=storage,
                     )
                 else:
-                    result = api.radix_sort_keys(
+                    result = coop.radix_sort_keys(
                         group,
                         result,
                         begin_bit=begin,
@@ -462,7 +438,6 @@ def _run_sort(
 
 
 def _run_rank(
-    api=coop,
     *,
     dtype=np.int32,
     begin_bit=0,
@@ -522,11 +497,11 @@ def _run_rank(
         prefixes = cute.make_tensor(
             prefix_output, cute.make_layout(blocks * prefix_tile)
         )
-        group = api.this_block()
+        group = coop.this_block()
         if cutlass.const_expr(scalar):
             keys = sources[offset + thread]
         else:
-            keys = api.ThreadData(
+            keys = coop.ThreadData(
                 items_per_thread,
                 dtype=None if inferred else key_type,
                 alignment=64,
@@ -538,21 +513,21 @@ def _run_rank(
         else:
             input_keys = keys
         if cutlass.const_expr(prefix):
-            digit_prefix = api.ThreadData(
+            digit_prefix = coop.ThreadData(
                 items_per_thread=prefix_items,
                 dtype=None if prefix_inferred else cutlass.Int32,
             )
         if cutlass.const_expr(scalar):
             result = cutlass.Int32(0)
         else:
-            result = api.ThreadData(
+            result = coop.ThreadData(
                 items_per_thread, dtype=cutlass.Int32, alignment=64
             )
             for item in cutlass.range_constexpr(items_per_thread):
                 result[item] = cutlass.Int32(0)
         for iteration in range(repeats):
             if cutlass.const_expr(prefix):
-                result = api.radix_rank_keys(
+                result = coop.radix_rank_keys(
                     group,
                     input_keys,
                     begin_bit=begin_bit,
@@ -561,7 +536,7 @@ def _run_rank(
                     exclusive_digit_prefix=digit_prefix,
                 )
             else:
-                result = api.radix_rank_keys(
+                result = coop.radix_rank_keys(
                     group,
                     input_keys,
                     begin_bit=begin_bit,
@@ -575,7 +550,7 @@ def _run_rank(
                     ] = digit_prefix[item]
         _check_result(result, keys, cutlass.Int32, items_per_thread, scalar, 64)
         if cutlass.const_expr(chain):
-            sorted_ranks = api.radix_sort_keys(group, result)
+            sorted_ranks = coop.radix_sort_keys(group, result)
         if cutlass.const_expr(scalar):
             outputs[offset + thread] = result
             checks[offset + thread] = keys
@@ -664,7 +639,7 @@ def _run_rank(
 @pytest.mark.parametrize("descending", (False, True))
 @pytest.mark.parametrize("pairs", (False, True))
 @pytest.mark.parametrize("items_per_thread", (1, 4))
-def test_common_integral_sort(dtype, descending, pairs, items_per_thread):
+def test_integral_sort(dtype, descending, pairs, items_per_thread):
     _run_sort(
         dtype=dtype,
         descending=descending,
@@ -677,9 +652,7 @@ def test_common_integral_sort(dtype, descending, pairs, items_per_thread):
 @pytest.mark.parametrize("descending", (False, True))
 @pytest.mark.parametrize("striped", (False, True))
 @pytest.mark.parametrize("selected", (False, True))
-def test_qualified_float_bits_and_stable_ties(
-    dtype, descending, striped, selected
-):
+def test_float_bits_and_stable_ties(dtype, descending, striped, selected):
     """Keep floating key bits and stable ties through both output layouts.
 
     Full-key and high-byte windows exercise different equal-digit groups. The
@@ -689,7 +662,6 @@ def test_qualified_float_bits_and_stable_ties(
 
     width = np.dtype(dtype).itemsize * 8
     _run_sort(
-        cutlass_coop,
         dtype=dtype,
         descending=descending,
         striped=striped,
@@ -717,11 +689,9 @@ def test_nonzero_begin_with_default_end(dtype):
     _run_sort(dtype=dtype, begin_bit=3, end_bit=None, bounds="runtime-begin")
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("pairs", (False, True))
-def test_readonly_inferred_sort_composes(api, pairs):
+def test_readonly_inferred_sort_composes(pairs):
     _run_sort(
-        api,
         dtype=np.int64,
         pairs=pairs,
         readonly=True,
@@ -739,9 +709,8 @@ def test_readonly_inferred_sort_composes(api, pairs):
         (np.float64, True, False),
     ),
 )
-def test_qualified_scalar_sort(dtype, pairs, descending):
+def test_scalar_sort(dtype, pairs, descending):
     _run_sort(
-        cutlass_coop,
         dtype=dtype,
         pairs=pairs,
         descending=descending,
@@ -785,7 +754,6 @@ def test_prefix_ascending_bin_ownership(bits, block, descending):
     """
 
     _run_rank(
-        cutlass_coop,
         dtype=np.int64,
         radix_bits=bits,
         block=block,
@@ -795,15 +763,13 @@ def test_prefix_ascending_bin_ownership(bits, block, descending):
     )
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
-def test_readonly_inferred_rank_composes(api):
-    _run_rank(api, dtype=np.uint64, readonly=True, inferred=True, chain=True)
+def test_readonly_inferred_rank_composes():
+    _run_rank(dtype=np.uint64, readonly=True, inferred=True, chain=True)
 
 
 @pytest.mark.parametrize("descending", (False, True))
-def test_qualified_scalar_rank(descending):
+def test_scalar_rank(descending):
     _run_rank(
-        cutlass_coop,
         dtype=np.int32,
         scalar=True,
         descending=descending,

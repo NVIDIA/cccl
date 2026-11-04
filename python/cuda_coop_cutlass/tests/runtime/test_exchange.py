@@ -22,7 +22,6 @@ from cutlass import cute
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 
 import cuda.coop.cutlass as coop
-import cuda.coop.cutlass as cutlass_coop
 from tests.runtime_support import (
     NUMPY_DTYPES,
     cutlass_dtype,
@@ -32,7 +31,6 @@ from tests.runtime_support import (
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
-_APIS = (coop, cutlass_coop)
 _BLOCK = (8, 4, 2)
 _THREADS = 64
 _ITEMS = 3
@@ -75,7 +73,6 @@ def _layout(source, width, mode, items_per_thread=3):
 
 
 def _run_layout(
-    api,
     dtype,
     mode,
     scope,
@@ -116,22 +113,22 @@ def _run_layout(
             cute.make_tensor(preserved, cute.make_layout(size)), value_type
         )
         if cutlass.const_expr(scope == "block"):
-            group = api.this_block()
+            group = coop.this_block()
         elif cutlass.const_expr(scope == "warp"):
-            group = api.this_warp()
+            group = coop.this_warp()
         else:
-            group = api.this_warp().group_by(width)
-        payload = api.ThreadData(
+            group = coop.this_warp().group_by(width)
+        payload = coop.ThreadData(
             items_per_thread, dtype=value_type, alignment=64
         )
         for item in cutlass.range_constexpr(items_per_thread):
             payload[item] = inputs[thread * items_per_thread + item]
         if cutlass.const_expr(time_slicing):
-            result = api.exchange(
+            result = coop.exchange(
                 group, payload, mode=mode, warp_time_slicing=True
             )
         else:
-            result = api.exchange(group, payload, mode=mode)
+            result = coop.exchange(group, payload, mode=mode)
         assert result.alignment >= 64
         for item in cutlass.range_constexpr(items_per_thread):
             outputs[thread * items_per_thread + item] = result[item]
@@ -170,20 +167,18 @@ def _run_layout(
     np.testing.assert_array_equal(preserved, source)
 
 
-@pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("dtype", NUMPY_DTYPES)
 @pytest.mark.parametrize("mode", _LAYOUTS)
 @pytest.mark.parametrize("scope", ("block", "warp", "logical"))
 @pytest.mark.parametrize("items_per_thread", (1, 4))
-def test_layout_types(api, dtype, mode, scope, items_per_thread):
-    _run_layout(api, dtype, mode, scope, items_per_thread=items_per_thread)
+def test_layout_types(dtype, mode, scope, items_per_thread):
+    _run_layout(dtype, mode, scope, items_per_thread=items_per_thread)
 
 
-@pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32))
 @pytest.mark.parametrize("mode", _LAYOUTS)
-def test_logical_width(api, width, mode):
-    _run_layout(api, np.int32, mode, "logical", width=width)
+def test_logical_width(width, mode):
+    _run_layout(np.int32, mode, "logical", width=width)
 
 
 @pytest.mark.parametrize(
@@ -193,15 +188,12 @@ def test_logical_width(api, width, mode):
     "time_slicing", (False, True), ids=("ordinary", "time-sliced")
 )
 def test_block_modes(mode, time_slicing):
-    _run_layout(
-        cutlass_coop, np.int32, mode, "block", time_slicing=time_slicing
-    )
+    _run_layout(np.int32, mode, "block", time_slicing=time_slicing)
 
 
-@pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("mode", _LAYOUTS)
-def test_partial_block(api, mode):
-    _run_layout(api, np.int64, mode, "block", block=(8, 3, 2))
+def test_partial_block(mode):
+    _run_layout(np.int64, mode, "block", block=(8, 3, 2))
 
 
 def _run_scatter(
@@ -262,25 +254,25 @@ def _run_scatter(
         flag_checks = cute.recast_tensor(
             cute.make_tensor(flags_out, cute.make_layout(size)), flag_type
         )
-        payload = cutlass_coop.ThreadData(items_per_thread, dtype=value_type)
-        ranks = cutlass_coop.ThreadData(items_per_thread, dtype=rank_type)
-        flags = cutlass_coop.ThreadData(items_per_thread, dtype=flag_type)
+        payload = coop.ThreadData(items_per_thread, dtype=value_type)
+        ranks = coop.ThreadData(items_per_thread, dtype=rank_type)
+        flags = coop.ThreadData(items_per_thread, dtype=flag_type)
         for item in cutlass.range_constexpr(items_per_thread):
             index = thread * items_per_thread + item
             payload[item] = inputs[index]
             ranks[item] = rank_inputs[index]
             flags[item] = flag_inputs[index]
         if cutlass.const_expr(mode == "scatter_to_striped_flagged"):
-            result = cutlass_coop.exchange(
-                cutlass_coop.this_block(),
+            result = coop.exchange(
+                coop.this_block(),
                 payload,
                 mode=mode,
                 ranks=ranks,
                 valid_flags=flags,
             )
         else:
-            result = cutlass_coop.exchange(
-                cutlass_coop.this_block(),
+            result = coop.exchange(
+                coop.this_block(),
                 payload,
                 mode=mode,
                 ranks=ranks,
@@ -383,12 +375,11 @@ def test_scatter_partial_block(mode):
     _run_scatter(mode, block=(8, 3, 2))
 
 
-@pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("width", (1, 8, 32, 64))
 @pytest.mark.parametrize(
     "divergent", (False, True), ids=("all-groups", "selected-group")
 )
-def test_reuse_loop(api, width, divergent):
+def test_reuse_loop(width, divergent):
     """Repeat Exchange while complete sibling groups may skip the calls.
 
     Five runtime iterations convert the previous payload and add a changing
@@ -411,20 +402,20 @@ def test_reuse_loop(api, width, divergent):
         inputs = cute.make_tensor(source, cute.make_layout(_TILE))
         outputs = cute.make_tensor(observed, cute.make_layout(_TILE))
         if cutlass.const_expr(width == 64):
-            group = api.this_block()
+            group = coop.this_block()
             selected = True
         else:
-            group = api.this_warp().group_by(width)
+            group = coop.this_warp().group_by(width)
             if cutlass.const_expr(width == 32):
                 selected = thread // 32 == 1
             else:
                 selected = (thread % 32) // width == 2
         if selected or not divergent:
-            payload = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
+            payload = coop.ThreadData(items_per_thread, dtype=cutlass.Int32)
             for item in cutlass.range_constexpr(items_per_thread):
                 payload[item] = inputs[thread * items_per_thread + item]
             for iteration in range(iterations):
-                payload = api.exchange(
+                payload = coop.exchange(
                     group, payload, mode="blocked_to_striped"
                 )
                 for item in cutlass.range_constexpr(items_per_thread):
@@ -494,15 +485,13 @@ def test_final_cubin(tmp_path, warp):
         inputs = cute.make_tensor(source, cute.make_layout(_TILE))
         outputs = cute.make_tensor(observed, cute.make_layout(_TILE))
         if cutlass.const_expr(warp):
-            group = cutlass_coop.this_warp().group_by(8)
+            group = coop.this_warp().group_by(8)
         else:
-            group = cutlass_coop.this_block()
-        payload = cutlass_coop.ThreadData(items_per_thread, dtype=cutlass.Int32)
+            group = coop.this_block()
+        payload = coop.ThreadData(items_per_thread, dtype=cutlass.Int32)
         for item in cutlass.range_constexpr(items_per_thread):
             payload[item] = inputs[thread * items_per_thread + item]
-        result = cutlass_coop.exchange(
-            group, payload, mode="blocked_to_striped"
-        )
+        result = coop.exchange(group, payload, mode="blocked_to_striped")
         for item in cutlass.range_constexpr(items_per_thread):
             outputs[thread * items_per_thread + item] = result[item]
 

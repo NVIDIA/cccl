@@ -6,7 +6,7 @@
 
 An SM80 target and typed null pointer exercise provider compilation. Sort
 bit bounds can be runtime operands; rank digits use compile-time bounds.
-The same helper checks qualified-only register and floating-key forms,
+The same helper checks register and floating-key forms,
 prefix-output requirements, and rejected control types.
 """
 
@@ -17,14 +17,13 @@ from cutlass.base_dsl.common import DSLRuntimeError
 from cutlass.base_dsl.compiler import GPUArch
 from cutlass.cute.runtime import make_ptr
 
-import cuda.coop.cutlass as cutlass_coop
+import cuda.coop.cutlass as coop
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
 
 
 def _compile(
     *,
-    api=cutlass_coop,
     mode="sort",
     dtype=cutlass.Int32,
     block=(8, 4, 2),
@@ -48,12 +47,12 @@ def _compile(
         items_per_thread: cutlass.Constexpr,
     ):
         values = cute.make_tensor(memory, cute.make_layout(1024))
-        keys = api.ThreadData(items_per_thread, dtype=dtype)
-        payload = api.ThreadData(items_per_thread)
+        keys = coop.ThreadData(items_per_thread, dtype=dtype)
+        payload = coop.ThreadData(items_per_thread)
         for item in cutlass.range_constexpr(items_per_thread):
             keys[item] = dtype(item + 3)
             payload[item] = cutlass.Float64(item + 0.5)
-        group = api.this_warp() if bad == "group" else api.this_block()
+        group = coop.this_warp() if bad == "group" else coop.this_block()
         if cutlass.const_expr(bad == "register"):
             keys = cute.make_rmem_tensor(items_per_thread, dtype)
             keys.fill(dtype(3))
@@ -63,27 +62,25 @@ def _compile(
             output = None
             if cutlass.const_expr(prefix):
                 count = max(1, ((1 << radix_bits) + 63) // 64)
-                output = api.ThreadData(
+                output = coop.ThreadData(
                     items_per_thread=count, dtype=cutlass.Int32
                 )
             if cutlass.const_expr(bad == "prefix-dtype"):
-                output = api.ThreadData(
+                output = coop.ThreadData(
                     items_per_thread=1, dtype=cutlass.Uint32
                 )
             if cutlass.const_expr(bad == "prefix-extent"):
-                output = api.ThreadData(items_per_thread=7, dtype=cutlass.Int32)
+                output = coop.ThreadData(
+                    items_per_thread=7, dtype=cutlass.Int32
+                )
             if cutlass.const_expr(bad == "prefix-alias"):
                 output = keys
-            result = (
-                api.radix_rank_keys(
-                    group,
-                    keys,
-                    begin_bit=bound if bad == "rank-runtime" else 0,
-                    radix_bits=radix_bits,
-                    exclusive_digit_prefix=output,
-                )
-                if cutlass.const_expr(api is cutlass_coop)
-                else api.radix_rank_keys(group, keys, radix_bits=radix_bits)
+            result = coop.radix_rank_keys(
+                group,
+                keys,
+                begin_bit=bound if bad == "rank-runtime" else 0,
+                radix_bits=radix_bits,
+                exclusive_digit_prefix=output,
             )
         else:
             begin = bound
@@ -97,11 +94,11 @@ def _compile(
             if cutlass.const_expr(bad == "empty"):
                 begin = 32
             if cutlass.const_expr(mode == "pairs"):
-                result, _ = api.radix_sort_pairs(
+                result, _ = coop.radix_sort_pairs(
                     group, keys, payload, begin_bit=begin, end_bit=end
                 )
             else:
-                result = api.radix_sort_keys(
+                result = coop.radix_sort_keys(
                     group, keys, begin_bit=begin, end_bit=end
                 )
         for item in cutlass.range_constexpr(items_per_thread):
@@ -121,13 +118,12 @@ def _compile(
     )
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("mode", ("sort", "pairs", "rank"))
 @pytest.mark.parametrize(
     "dtype", (cutlass.Int32, cutlass.Uint32, cutlass.Int64, cutlass.Uint64)
 )
-def test_common_profiles(api, mode, dtype):
-    assert _compile(api=api, mode=mode, dtype=dtype) is not None
+def test_profiles(mode, dtype):
+    assert _compile(mode=mode, dtype=dtype) is not None
 
 
 @pytest.mark.parametrize("bits", (1, 4, 7, 8))
@@ -136,7 +132,7 @@ def test_rank_prefix(bits):
 
 
 @pytest.mark.parametrize("dtype", (cutlass.Float32, cutlass.Float64))
-def test_qualified_float_sort(dtype):
+def test_float_sort(dtype):
     assert _compile(dtype=dtype) is not None
 
 
@@ -165,7 +161,7 @@ def test_invalid_profiles(mode, bad, dtype, message):
         _compile(mode=mode, bad=bad, dtype=dtype)
 
 
-def test_qualified_register_payload():
+def test_register_payload():
     assert _compile(bad="register") is not None
 
 

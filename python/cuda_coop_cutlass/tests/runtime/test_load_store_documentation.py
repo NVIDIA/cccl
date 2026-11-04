@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Check qualified load store examples against host results."""
+"""Check load store examples against host results."""
 
 import cutlass
 import numpy as np
@@ -15,7 +15,7 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_load_store_example(items_per_thread):
-    # qualified-load-store-example-begin
+    # cutlass-load-store-example-begin
     from cutlass import cute
 
     import cuda.coop.cutlass as coop
@@ -54,7 +54,7 @@ def test_load_store_example(items_per_thread):
             grid=1, block=64
         )
 
-    # qualified-load-store-example-end
+    # cutlass-load-store-example-end
     count = 64 * items_per_thread - 3
     values = np.arange(count + 5, dtype=np.int32) * 3
     observed = np.full(count + 7, -101, dtype=np.int32)

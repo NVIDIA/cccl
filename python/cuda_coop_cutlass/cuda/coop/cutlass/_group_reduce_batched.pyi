@@ -16,8 +16,8 @@ from typing import Any, Literal, overload
 from typing_extensions import TypeVar
 
 from cuda.coop.cutlass._typing import (
-    CommonNumericScalar,
-    CommonThreadDataLike,
+    NumericScalar,
+    ReadableThreadDataLike,
     WarpGroup,
 )
 
@@ -28,12 +28,12 @@ from ._thread_data import (
     ThreadData,
 )
 
-_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=NumericScalar)
 
 @overload
 def reduce_batched(
     group: WarpGroup,
-    value: CommonThreadDataLike[_ItemT],
+    value: ReadableThreadDataLike[_ItemT],
     /,
     *,
     binary_op: _BuiltinReduceOperator | None = None,

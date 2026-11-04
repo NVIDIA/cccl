@@ -25,7 +25,7 @@ def _check(result):
     return result[1] if len(result) == 2 else result[1:]
 
 
-def run_example(api="common", items_per_thread=2):
+def run_example(items_per_thread=2):
     """Check selected keys and pair identity without assuming output order.
 
     Repeated keys allow several correct selections at the boundary. Sorting
@@ -39,12 +39,7 @@ def run_example(api="common", items_per_thread=2):
     tile_size = _THREADS * items_per_thread
     valid_items = tile_size - 35
     selected_items = min(_K, valid_items)
-    if api == "common":
-        import cuda.coop.cutlass as coop
-    elif api == "qualified":
-        import cuda.coop.cutlass as coop
-    else:
-        raise ValueError("api must be 'common' or 'qualified'")
+    import cuda.coop.cutlass as coop
 
     # docs: start cutlass-topk
     @cute.kernel
@@ -67,12 +62,8 @@ def run_example(api="common", items_per_thread=2):
             positions[item] = (
                 cutlass.Int32(block.rank()) * items_per_thread + item
             )
-        if cutlass.const_expr(api == "qualified"):
-            input_keys = keys.to_register_tensor()
-            input_positions = positions.to_tensor_ssa(dtype=cutlass.Int32)
-        else:
-            input_keys = keys
-            input_positions = positions
+        input_keys = keys.to_register_tensor()
+        input_positions = positions.to_tensor_ssa(dtype=cutlass.Int32)
         scratch = coop.TempStorage(alignment=16, auto_sync=True)
         min_keys = coop.topk_min_keys(
             block,

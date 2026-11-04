@@ -27,13 +27,13 @@ from ._thread_data import (
 )
 from ._typing import (
     BlockGroup,
-    CommonNumericScalar,
-    CommonThreadDataLike,
     IntegerValue,
+    NumericScalar,
+    ReadableThreadDataLike,
     TempStorageLike,
 )
 
-_T = TypeVar("_T", bound=CommonNumericScalar)
+_T = TypeVar("_T", bound=NumericScalar)
 
 
 def _neighbors(
@@ -96,15 +96,15 @@ def _neighbors(
 
 def adjacent_difference(
     group: BlockGroup,
-    values: CommonThreadDataLike[_T]
+    values: ReadableThreadDataLike[_T]
     | CutlassTensorSample
     | CutlassTensorSSASample,
     /,
     *,
     direction: Literal["left", "right"] = "left",
     valid_items: IntegerValue | None = None,
-    tile_predecessor_item: CommonNumericScalar | None = None,
-    tile_successor_item: CommonNumericScalar | None = None,
+    tile_predecessor_item: NumericScalar | None = None,
+    tile_successor_item: NumericScalar | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadData:
     """Return blocked neighbor differences, preserving the input payload.
@@ -175,10 +175,10 @@ def adjacent_difference(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_neighbors_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_neighbors_documentation.py
         :language: python
-        :start-after: # qualified-neighbors-example-begin
-        :end-before: # qualified-neighbors-example-end
+        :start-after: # cutlass-neighbors-example-begin
+        :end-before: # cutlass-neighbors-example-end
         :dedent: 4
     """
     return _neighbors(
@@ -195,14 +195,14 @@ def adjacent_difference(
 
 def discontinuity(
     group: BlockGroup,
-    values: CommonThreadDataLike[_T]
+    values: ReadableThreadDataLike[_T]
     | CutlassTensorSample
     | CutlassTensorSSASample,
     /,
     *,
     mode: Literal["heads", "tails", "heads_and_tails"] = "heads",
-    tile_predecessor_item: CommonNumericScalar | None = None,
-    tile_successor_item: CommonNumericScalar | None = None,
+    tile_predecessor_item: NumericScalar | None = None,
+    tile_successor_item: NumericScalar | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadData | tuple[ThreadData, ThreadData]:
     """Flag unequal neighbors in a full blocked tile.
@@ -264,10 +264,10 @@ def discontinuity(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_neighbors_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_neighbors_documentation.py
         :language: python
-        :start-after: # qualified-neighbors-example-begin
-        :end-before: # qualified-neighbors-example-end
+        :start-after: # cutlass-neighbors-example-begin
+        :end-before: # cutlass-neighbors-example-end
         :dedent: 4
     """
     return _neighbors(

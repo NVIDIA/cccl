@@ -19,7 +19,6 @@ import pytest
 from cutlass import cute
 
 import cuda.coop.cutlass as coop
-import cuda.coop.cutlass as cutlass_coop
 from tests.runtime_support import (
     NUMPY_DTYPES,
     cutlass_dtype,
@@ -75,7 +74,7 @@ def _check_result(result, source, dtype, items_per_thread, alignment):
     shrink the per-thread payload or reuse the input object.
     """
 
-    assert isinstance(result, cutlass_coop.ThreadData)
+    assert isinstance(result, coop.ThreadData)
     assert result is not source
     assert result.dtype is dtype
     assert len(result) == items_per_thread
@@ -83,7 +82,6 @@ def _check_result(result, source, dtype, items_per_thread, alignment):
 
 
 def _run(
-    api=coop,
     *,
     mode="min",
     pairs=True,
@@ -123,9 +121,9 @@ def _run(
 
     key_type, value_type = cutlass_dtype(dtype), cutlass_dtype(value_dtype)
     tile, size = threads * items_per_thread, blocks * threads * items_per_thread
-    topk = getattr(api, f"topk_{mode}_{'pairs' if pairs else 'keys'}")
+    topk = getattr(coop, f"topk_{mode}_{'pairs' if pairs else 'keys'}")
     opposite = "max" if mode == "min" else "min"
-    next_topk = getattr(api, f"topk_{opposite}_{'pairs' if pairs else 'keys'}")
+    next_topk = getattr(coop, f"topk_{opposite}_{'pairs' if pairs else 'keys'}")
     if cases is None:
         cases = [(k, tile if valid_items is None else valid_items)]
     else:
@@ -167,13 +165,13 @@ def _run(
         values_check = cute.recast_tensor(
             cute.make_tensor(value_check, cute.make_layout(size)), value_type
         )
-        group = api.this_block()
-        keys = api.ThreadData(
+        group = coop.this_block()
+        keys = coop.ThreadData(
             items_per_thread,
             dtype=None if inferred else key_type,
             alignment=alignment,
         )
-        values = api.ThreadData(
+        values = coop.ThreadData(
             items_per_thread,
             dtype=None if inferred else value_type,
             alignment=alignment,
@@ -188,7 +186,7 @@ def _run(
         if cutlass.const_expr(sharing is None):
             storage = None
         else:
-            storage = api.TempStorage(
+            storage = coop.TempStorage(
                 capacity,
                 sharing=sharing,
                 auto_sync=auto_sync,
@@ -383,13 +381,11 @@ def test_independent_pair_value_types(value_dtype):
     _run(dtype=np.float64, value_dtype=value_dtype, valid_items=59, threads=32)
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,))
 @pytest.mark.parametrize("mode", ("min", "max"))
 @pytest.mark.parametrize("pairs", (False, True))
 @pytest.mark.parametrize("items_per_thread", (1, 4))
-def test_entrypoints(api, mode, pairs, items_per_thread):
+def test_entrypoints(mode, pairs, items_per_thread):
     _run(
-        api,
         mode=mode,
         pairs=pairs,
         valid_items=64 * items_per_thread - 25,
@@ -420,11 +416,9 @@ def test_mixed_count_bindings(controls, pairs):
     _run(controls=controls, pairs=pairs, k=7, valid_items=91)
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,))
 @pytest.mark.parametrize("pairs", (False, True))
-def test_readonly_inferred_composition(api, pairs):
+def test_readonly_inferred_composition(pairs):
     _run(
-        api,
         pairs=pairs,
         dtype=np.uint32,
         value_dtype=np.float32,
@@ -449,7 +443,7 @@ def test_selected_signed_zero_pairs_preserve_original_bits(dtype, mode):
     source = np.tile(
         np.array([-0.0, 0.0, nonzero, 2 * nonzero], dtype=dtype), 64
     )
-    _run(cutlass_coop, mode=mode, dtype=dtype, source=source)
+    _run(mode=mode, dtype=dtype, source=source)
 
 
 @pytest.mark.parametrize("mode", ("min", "max"))

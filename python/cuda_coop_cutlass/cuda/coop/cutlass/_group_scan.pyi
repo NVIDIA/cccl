@@ -60,10 +60,10 @@ from cuda.coop.cutlass._scan_typing import (
     _SeedUint64,
 )
 from cuda.coop.cutlass._typing import (
-    CommonNumericScalar,
-    CommonThreadDataLike,
     ContextualInitialValue,
     NonSumScanOperator,
+    NumericScalar,
+    ReadableThreadDataLike,
     ScanAlgorithm,
     ScanOperator,
     SumScanOperator,
@@ -80,8 +80,8 @@ from ._thread_data import (
 )
 from ._typing import BlockGroup, WarpGroup
 
-_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
-_ScalarT = TypeVar("_ScalarT", bound=CommonNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=NumericScalar)
+_ScalarT = TypeVar("_ScalarT", bound=NumericScalar)
 _RegisterPayload: TypeAlias = CutlassTensorSample | CutlassTensorSSASample
 _NumpyScanUfuncName: TypeAlias = Literal[
     "add",
@@ -359,7 +359,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_ItemT],
+    value: ReadableThreadDataLike[_ItemT],
     /,
     *,
     mode: Literal["exclusive"] = "exclusive",
@@ -373,7 +373,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_NumpyInt8T],
+    value: ReadableThreadDataLike[_NumpyInt8T],
     /,
     *,
     initial_value: _CutlassInt8,
@@ -382,7 +382,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_CompilerInt8T],
+    value: ReadableThreadDataLike[_CompilerInt8T],
     /,
     *,
     initial_value: _SeedInt8,
@@ -391,7 +391,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_NumpyUint8T],
+    value: ReadableThreadDataLike[_NumpyUint8T],
     /,
     *,
     initial_value: _CutlassUint8,
@@ -400,7 +400,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_CompilerUint8T],
+    value: ReadableThreadDataLike[_CompilerUint8T],
     /,
     *,
     initial_value: _SeedUint8,
@@ -409,7 +409,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_NumpyInt16T],
+    value: ReadableThreadDataLike[_NumpyInt16T],
     /,
     *,
     initial_value: _CutlassInt16,
@@ -418,7 +418,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_CompilerInt16T],
+    value: ReadableThreadDataLike[_CompilerInt16T],
     /,
     *,
     initial_value: _SeedInt16,
@@ -427,7 +427,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_NumpyUint16T],
+    value: ReadableThreadDataLike[_NumpyUint16T],
     /,
     *,
     initial_value: _CutlassUint16,
@@ -436,7 +436,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_CompilerUint16T],
+    value: ReadableThreadDataLike[_CompilerUint16T],
     /,
     *,
     initial_value: _SeedUint16,
@@ -445,7 +445,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_NumpyInt32T],
+    value: ReadableThreadDataLike[_NumpyInt32T],
     /,
     *,
     initial_value: _CutlassInt32,
@@ -454,7 +454,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_CompilerInt32T],
+    value: ReadableThreadDataLike[_CompilerInt32T],
     /,
     *,
     initial_value: _SeedInt32,
@@ -463,7 +463,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_NumpyUint32T],
+    value: ReadableThreadDataLike[_NumpyUint32T],
     /,
     *,
     initial_value: _CutlassUint32,
@@ -472,7 +472,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_CompilerUint32T],
+    value: ReadableThreadDataLike[_CompilerUint32T],
     /,
     *,
     initial_value: _SeedUint32,
@@ -481,7 +481,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_NumpyInt64T],
+    value: ReadableThreadDataLike[_NumpyInt64T],
     /,
     *,
     initial_value: _CutlassInt64,
@@ -490,7 +490,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_CompilerInt64T],
+    value: ReadableThreadDataLike[_CompilerInt64T],
     /,
     *,
     initial_value: _SeedInt64,
@@ -499,7 +499,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_NumpyUint64T],
+    value: ReadableThreadDataLike[_NumpyUint64T],
     /,
     *,
     initial_value: _CutlassUint64,
@@ -508,7 +508,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_CompilerUint64T],
+    value: ReadableThreadDataLike[_CompilerUint64T],
     /,
     *,
     initial_value: _SeedUint64,
@@ -517,7 +517,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_NumpyFloat32T],
+    value: ReadableThreadDataLike[_NumpyFloat32T],
     /,
     *,
     initial_value: _CutlassFloat32,
@@ -526,7 +526,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_CompilerFloat32T],
+    value: ReadableThreadDataLike[_CompilerFloat32T],
     /,
     *,
     initial_value: _SeedFloat32,
@@ -535,7 +535,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_NumpyFloat64T],
+    value: ReadableThreadDataLike[_NumpyFloat64T],
     /,
     *,
     initial_value: _CutlassFloat64,
@@ -544,7 +544,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_CompilerFloat64T],
+    value: ReadableThreadDataLike[_CompilerFloat64T],
     /,
     *,
     initial_value: _SeedFloat64,
@@ -558,7 +558,7 @@ def scan(
     *,
     mode: Literal["exclusive"] = "exclusive",
     scan_op: SumScanOperator | _NumpySumScanUfunc | None = None,
-    initial_value: CommonNumericScalar | None = None,
+    initial_value: NumericScalar | None = None,
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
     valid_items: None = None,
@@ -567,7 +567,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_ItemT],
+    value: ReadableThreadDataLike[_ItemT],
     /,
     *,
     mode: Literal["exclusive"] = "exclusive",
@@ -586,7 +586,7 @@ def scan(
     *,
     mode: Literal["exclusive"] = "exclusive",
     scan_op: _SeededScanOperator,
-    initial_value: CommonNumericScalar,
+    initial_value: NumericScalar,
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
     valid_items: None = None,
@@ -595,7 +595,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_ItemT],
+    value: ReadableThreadDataLike[_ItemT],
     /,
     *,
     mode: Literal["inclusive"],
@@ -856,7 +856,7 @@ def exclusive_sum(
 @overload
 def exclusive_sum(
     group: BlockGroup,
-    value: CommonThreadDataLike[_ItemT],
+    value: ReadableThreadDataLike[_ItemT],
     /,
     *,
     algorithm: ScanAlgorithm | None = None,
@@ -900,7 +900,7 @@ def inclusive_sum(
 @overload
 def inclusive_sum(
     group: BlockGroup,
-    value: CommonThreadDataLike[_ItemT],
+    value: ReadableThreadDataLike[_ItemT],
     /,
     *,
     algorithm: ScanAlgorithm | None = None,
@@ -1139,7 +1139,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_ItemT],
+    value: ReadableThreadDataLike[_ItemT],
     /,
     *,
     scan_op: SumScanOperator | _NumpySumScanUfunc | None = None,
@@ -1152,7 +1152,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_NumpyInt8T],
+    value: ReadableThreadDataLike[_NumpyInt8T],
     /,
     *,
     initial_value: _CutlassInt8,
@@ -1161,7 +1161,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_CompilerInt8T],
+    value: ReadableThreadDataLike[_CompilerInt8T],
     /,
     *,
     initial_value: _SeedInt8,
@@ -1170,7 +1170,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_NumpyUint8T],
+    value: ReadableThreadDataLike[_NumpyUint8T],
     /,
     *,
     initial_value: _CutlassUint8,
@@ -1179,7 +1179,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_CompilerUint8T],
+    value: ReadableThreadDataLike[_CompilerUint8T],
     /,
     *,
     initial_value: _SeedUint8,
@@ -1188,7 +1188,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_NumpyInt16T],
+    value: ReadableThreadDataLike[_NumpyInt16T],
     /,
     *,
     initial_value: _CutlassInt16,
@@ -1197,7 +1197,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_CompilerInt16T],
+    value: ReadableThreadDataLike[_CompilerInt16T],
     /,
     *,
     initial_value: _SeedInt16,
@@ -1206,7 +1206,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_NumpyUint16T],
+    value: ReadableThreadDataLike[_NumpyUint16T],
     /,
     *,
     initial_value: _CutlassUint16,
@@ -1215,7 +1215,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_CompilerUint16T],
+    value: ReadableThreadDataLike[_CompilerUint16T],
     /,
     *,
     initial_value: _SeedUint16,
@@ -1224,7 +1224,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_NumpyInt32T],
+    value: ReadableThreadDataLike[_NumpyInt32T],
     /,
     *,
     initial_value: _CutlassInt32,
@@ -1233,7 +1233,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_CompilerInt32T],
+    value: ReadableThreadDataLike[_CompilerInt32T],
     /,
     *,
     initial_value: _SeedInt32,
@@ -1242,7 +1242,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_NumpyUint32T],
+    value: ReadableThreadDataLike[_NumpyUint32T],
     /,
     *,
     initial_value: _CutlassUint32,
@@ -1251,7 +1251,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_CompilerUint32T],
+    value: ReadableThreadDataLike[_CompilerUint32T],
     /,
     *,
     initial_value: _SeedUint32,
@@ -1260,7 +1260,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_NumpyInt64T],
+    value: ReadableThreadDataLike[_NumpyInt64T],
     /,
     *,
     initial_value: _CutlassInt64,
@@ -1269,7 +1269,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_CompilerInt64T],
+    value: ReadableThreadDataLike[_CompilerInt64T],
     /,
     *,
     initial_value: _SeedInt64,
@@ -1278,7 +1278,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_NumpyUint64T],
+    value: ReadableThreadDataLike[_NumpyUint64T],
     /,
     *,
     initial_value: _CutlassUint64,
@@ -1287,7 +1287,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_CompilerUint64T],
+    value: ReadableThreadDataLike[_CompilerUint64T],
     /,
     *,
     initial_value: _SeedUint64,
@@ -1296,7 +1296,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_NumpyFloat32T],
+    value: ReadableThreadDataLike[_NumpyFloat32T],
     /,
     *,
     initial_value: _CutlassFloat32,
@@ -1305,7 +1305,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_CompilerFloat32T],
+    value: ReadableThreadDataLike[_CompilerFloat32T],
     /,
     *,
     initial_value: _SeedFloat32,
@@ -1314,7 +1314,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_NumpyFloat64T],
+    value: ReadableThreadDataLike[_NumpyFloat64T],
     /,
     *,
     initial_value: _CutlassFloat64,
@@ -1323,7 +1323,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_CompilerFloat64T],
+    value: ReadableThreadDataLike[_CompilerFloat64T],
     /,
     *,
     initial_value: _SeedFloat64,
@@ -1336,7 +1336,7 @@ def exclusive_scan(
     /,
     *,
     scan_op: SumScanOperator | _NumpySumScanUfunc | None = None,
-    initial_value: CommonNumericScalar | None = None,
+    initial_value: NumericScalar | None = None,
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
     valid_items: None = None,
@@ -1345,7 +1345,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_ItemT],
+    value: ReadableThreadDataLike[_ItemT],
     /,
     *,
     scan_op: _SeededScanOperator,
@@ -1362,7 +1362,7 @@ def exclusive_scan(
     /,
     *,
     scan_op: _SeededScanOperator,
-    initial_value: CommonNumericScalar,
+    initial_value: NumericScalar,
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
     valid_items: None = None,
@@ -1589,7 +1589,7 @@ def inclusive_scan(
 @overload
 def inclusive_scan(
     group: BlockGroup,
-    value: CommonThreadDataLike[_ItemT],
+    value: ReadableThreadDataLike[_ItemT],
     /,
     *,
     scan_op: _ScanOperator | None = None,

@@ -24,7 +24,7 @@ def _check(result):
     return result[1] if len(result) == 2 else result[1:]
 
 
-def run_example(api="common", items_per_thread=3):
+def run_example(items_per_thread=3):
     """Check partial sorting, pair association, and unchanged input payloads.
 
     Five output buffers expose ascending keys, descending key/value pairs,
@@ -34,12 +34,7 @@ def run_example(api="common", items_per_thread=3):
     """
     tile_size = 64 * items_per_thread
     valid_items = tile_size - 7
-    if api == "common":
-        import cuda.coop.cutlass as coop
-    elif api == "qualified":
-        import cuda.coop.cutlass as coop
-    else:
-        raise ValueError("api must be 'common' or 'qualified'")
+    import cuda.coop.cutlass as coop
 
     # docs: start cutlass-merge-sort
     @cute.kernel

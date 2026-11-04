@@ -20,13 +20,13 @@ from cuda.coop.cutlass._planning import (
     resolve_thread_group,
 )
 from cuda.coop.cutlass._planning.thread_group import (
-    ThreadGroup as CommonThreadGroup,
+    ThreadGroup as PlanningThreadGroup,
 )
 
 Hierarchy = ThreadHierarchy
 
 
-class ThreadGroup(CommonThreadGroup):
+class ThreadGroup(PlanningThreadGroup):
     """Describe a group and emit CuTe hierarchy queries on demand.
 
     Construction and group_by create descriptors. Rank, count,
@@ -113,7 +113,7 @@ def _resolve_primitive_group_from_launch(
 ) -> ThreadGroup:
     """Resolve a primitive group using the compiler's exact launch facts.
 
-    Keep shared resolution failures but add the qualified operation context.
+    Keep shared resolution failures but add the operation context.
     Record whether the supplied group was already static or inferred from the
     launch; constructing this descriptor does not emit a collective.
     """

@@ -126,7 +126,7 @@ def check_cutlass_logical_warp_surface(
 ) -> None:
     """Check logical Warp group kinds and their Load/Store calls.
 
-    Each width keeps the ``threads_within_warp`` kind. Qualified calls accept
+    Each width keeps the ``threads_within_warp`` kind. Calls accept
     all four Warp algorithms. Mapped group kinds remain distinct.
     """
     values = coop.ThreadData(items_per_thread=2, dtype=np.int32)

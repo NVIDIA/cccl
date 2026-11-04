@@ -27,15 +27,15 @@ from ._thread_data import (
 )
 from ._typing import (
     BlockGroup,
-    CommonNumericScalar,
-    CommonThreadDataLike,
     IntegralScalar,
+    NumericScalar,
+    ReadableThreadDataLike,
     TempStorageLike,
 )
 
 _LengthT = TypeVar("_LengthT", bound=IntegralScalar)
 
-_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=NumericScalar)
 
 
 def _decode(
@@ -95,10 +95,10 @@ def _decode(
 
 def run_length_decode(
     group: BlockGroup,
-    run_values: CommonThreadDataLike[_ItemT]
+    run_values: ReadableThreadDataLike[_ItemT]
     | CutlassTensorSample
     | CutlassTensorSSASample,
-    run_lengths: CommonThreadDataLike[_LengthT]
+    run_lengths: ReadableThreadDataLike[_LengthT]
     | CutlassTensorSample
     | CutlassTensorSSASample,
     /,
@@ -166,10 +166,10 @@ def run_length_decode(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_run_length_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_run_length_documentation.py
         :language: python
-        :start-after: # qualified-run-length-example-begin
-        :end-before: # qualified-run-length-example-end
+        :start-after: # cutlass-run-length-example-begin
+        :end-before: # cutlass-run-length-example-end
         :dedent: 4
     """
     return _decode(
@@ -186,10 +186,10 @@ def run_length_decode(
 
 def run_length_decode_into(
     group: BlockGroup,
-    run_values: CommonThreadDataLike[_ItemT]
+    run_values: ReadableThreadDataLike[_ItemT]
     | CutlassTensorSample
     | CutlassTensorSSASample,
-    run_lengths: CommonThreadDataLike[_LengthT]
+    run_lengths: ReadableThreadDataLike[_LengthT]
     | CutlassTensorSample
     | CutlassTensorSSASample,
     destination: CutlassTensorSample,
@@ -256,10 +256,10 @@ def run_length_decode_into(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_run_length_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_run_length_documentation.py
         :language: python
-        :start-after: # qualified-run-length-example-begin
-        :end-before: # qualified-run-length-example-end
+        :start-after: # cutlass-run-length-example-begin
+        :end-before: # cutlass-run-length-example-end
         :dedent: 4
     """
     return _decode(

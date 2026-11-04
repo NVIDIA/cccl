@@ -23,7 +23,7 @@ from cutlass import cute
 from cutlass.base_dsl.common import DSLRuntimeError, get_current_env_manager
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 
-import cuda.coop.cutlass as cutlass_coop
+import cuda.coop.cutlass as coop
 from cuda.coop.cutlass._compiler import _bundle, _cache
 from tests.runtime.test_topk import _run
 from tests.runtime_support import device_array
@@ -98,8 +98,8 @@ def test_invalid_runtime_counts_trap(name, value):
         "tests = types.ModuleType('tests')\n"
         f"tests.__path__ = {[str(TESTS_ROOT)]!r}\n"
         "sys.modules['tests'] = tests\n"
-        "import cuda.coop.cutlass as cutlass_coop\n"
-        f"assert cutlass_coop.__file__ == {cutlass_coop.__file__!r}\n"
+        "import cuda.coop.cutlass as coop\n"
+        f"assert coop.__file__ == {coop.__file__!r}\n"
         "from tests.runtime.test_topk import _run\n"
         f"_run(k={args['k']}, valid_items={args['valid_items']})\n"
         "raise AssertionError('invalid count did not trap')\n"
@@ -139,7 +139,6 @@ def test_final_cubin(tmp_path, pairs, mode):
     if tool is None:
         pytest.skip("cuobjdump is required for final linked code inspection")
     _run(
-        cutlass_coop,
         pairs=pairs,
         mode=mode,
         valid_items=91,
@@ -192,8 +191,7 @@ def test_provider_failure_retry(monkeypatch, tmp_path, failure):
     _run(valid_items=91)
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
-def test_load_topk_sort_store_loop(api):
+def test_load_topk_sort_store_loop():
     """Share one scratch allocation across four operations and runtime tiles.
 
     TopK produces an unordered prefix. MergeSort receives only that prefix and
@@ -211,10 +209,10 @@ def test_load_topk_sort_store_loop(api):
         repeats: cutlass.Int32,
         items_per_thread: cutlass.Constexpr,
     ):
-        scratch = api.TempStorage(alignment=128, auto_sync=True)
-        group = api.this_block()
+        scratch = coop.TempStorage(alignment=128, auto_sync=True)
+        group = coop.this_block()
         for index in range(repeats):
-            data = api.load(
+            data = coop.load(
                 group,
                 source,
                 items_per_thread=items_per_thread,
@@ -222,17 +220,17 @@ def test_load_topk_sort_store_loop(api):
                 algorithm="transpose",
                 temp_storage=scratch,
             )
-            chosen = api.topk_min_keys(
+            chosen = coop.topk_min_keys(
                 group, data, k=selected, temp_storage=scratch
             )
-            ordered = api.merge_sort_keys(
+            ordered = coop.merge_sort_keys(
                 group,
                 chosen,
                 valid_items=selected,
                 oob_default=(1 << 31) - 1,
                 temp_storage=scratch,
             )
-            api.store(
+            coop.store(
                 group,
                 output,
                 ordered,

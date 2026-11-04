@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Describe qualified reduction shapes and root-only CUB options.
+"""Describe reduction shapes and root-only CUB options.
 
 Overloads preserve the input element type and separate full-group payloads
 from scalar valid prefixes. Structural callable types admit built-in aliases;
@@ -15,8 +15,8 @@ from typing import Any, Literal, Protocol, TypeAlias, overload
 from typing_extensions import TypeVar
 
 from cuda.coop.cutlass._typing import (
-    CommonNumericScalar,
-    CommonThreadDataLike,
+    NumericScalar,
+    ReadableThreadDataLike,
     ReduceAlgorithm,
     ReduceOperator,
     TempStorageLike,
@@ -27,7 +27,7 @@ from ._device_operator import DeviceOperator
 from ._thread_data import CutlassTensorSample, CutlassTensorSSASample
 from ._typing import BlockGroup, WarpGroup
 
-_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=NumericScalar)
 _RegisterPayload: TypeAlias = CutlassTensorSample | CutlassTensorSSASample
 
 _NumpyReduceUfuncName: TypeAlias = Literal[
@@ -61,7 +61,7 @@ _ReduceOperator: TypeAlias = _BuiltinReduceOperator | DeviceOperator
 @overload
 def reduce(
     group: BlockGroup,
-    value: CommonThreadDataLike[_ItemT],
+    value: ReadableThreadDataLike[_ItemT],
     /,
     *,
     binary_op: _ReduceOperator | None = None,
@@ -87,7 +87,7 @@ def reduce(
 @overload
 def reduce(
     group: WarpGroup,
-    value: CommonThreadDataLike[_ItemT],
+    value: ReadableThreadDataLike[_ItemT],
     /,
     *,
     binary_op: _ReduceOperator | None = None,
@@ -139,7 +139,7 @@ def reduce(
 @overload
 def sum(
     group: BlockGroup,
-    value: CommonThreadDataLike[_ItemT],
+    value: ReadableThreadDataLike[_ItemT],
     /,
     *,
     valid_items: None = None,
@@ -163,7 +163,7 @@ def sum(
 @overload
 def sum(
     group: WarpGroup,
-    value: CommonThreadDataLike[_ItemT],
+    value: ReadableThreadDataLike[_ItemT],
     /,
     *,
     valid_items: None = None,

@@ -19,8 +19,8 @@ from typing import TypeVar
 from cuda.coop.cutlass._planning import ArgumentBinding
 from cuda.coop.cutlass._planning.thread_group import ThreadGroup
 from cuda.coop.cutlass._typing import (
-    CommonNumericScalar,
-    CommonThreadDataLike,
+    NumericScalar,
+    ReadableThreadDataLike,
     ReduceAlgorithm,
     ReduceOperator,
     TempStorageLike,
@@ -39,7 +39,7 @@ from ._thread_group import _require_complete_warp_partition
 from ._typing import BlockGroup, WarpGroup
 from ._validation import _validate_temp_storage
 
-_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=NumericScalar)
 
 
 _SCOPE = "cuda.coop.cutlass"
@@ -95,7 +95,7 @@ def _normalize_algorithm(algorithm):
 
 def reduce(
     group: BlockGroup | WarpGroup,
-    value: CommonThreadDataLike[_ItemT]
+    value: ReadableThreadDataLike[_ItemT]
     | _ItemT
     | CutlassTensorSample
     | CutlassTensorSSASample,
@@ -185,10 +185,10 @@ def reduce(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_reduce_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_reduce_documentation.py
         :language: python
-        :start-after: # qualified-reduce-example-begin
-        :end-before: # qualified-reduce-example-end
+        :start-after: # cutlass-reduce-example-begin
+        :end-before: # cutlass-reduce-example-end
         :dedent: 4
     """
 
@@ -237,7 +237,7 @@ def reduce(
 
 def sum(
     group: BlockGroup | WarpGroup,
-    value: CommonThreadDataLike[_ItemT]
+    value: ReadableThreadDataLike[_ItemT]
     | _ItemT
     | CutlassTensorSample
     | CutlassTensorSSASample,
@@ -288,10 +288,10 @@ def sum(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_reduce_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_reduce_documentation.py
         :language: python
-        :start-after: # qualified-reduce-example-begin
-        :end-before: # qualified-reduce-example-end
+        :start-after: # cutlass-reduce-example-begin
+        :end-before: # cutlass-reduce-example-end
         :dedent: 4
     """
     return reduce(

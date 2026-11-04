@@ -20,7 +20,6 @@ from cutlass.base_dsl.compiler import GPUArch
 from cutlass.cute.runtime import make_ptr
 
 import cuda.coop.cutlass as coop
-import cuda.coop.cutlass as cutlass_coop
 from cuda.coop.cutlass._compiler._types import (
     ALL_PROVIDER_TYPES,
     INTEGER_VALUE_TYPES,
@@ -30,7 +29,6 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
 
 
 def _compile(
-    api=coop,
     *,
     bulk=False,
     dtype=cutlass.Int32,
@@ -55,8 +53,8 @@ def _compile(
         capacity: cutlass.Int64,
         items_per_thread: cutlass.Constexpr,
     ):
-        values = api.ThreadData(items_per_thread, dtype=dtype)
-        lengths = api.ThreadData(
+        values = coop.ThreadData(items_per_thread, dtype=dtype)
+        lengths = coop.ThreadData(
             items_per_thread=1 if bad == "extent" else 2, dtype=length_dtype
         )
         for i in cutlass.range_constexpr(2):
@@ -65,7 +63,7 @@ def _compile(
             lengths[i] = length_dtype(2)
         if cutlass.const_expr(bad == "register"):
             values = values.to_register_tensor()
-        group = api.this_warp() if bad == "group" else api.this_block()
+        group = coop.this_warp() if bad == "group" else coop.this_block()
         if cutlass.const_expr(bad == "scalar"):
             values = dtype(3)
         control = offset if static_offset is None else static_offset
@@ -90,7 +88,7 @@ def _compile(
                 destination = cute.recast_tensor(destination, cutlass.Float64)
             if cutlass.const_expr(bad == "rmem"):
                 destination = cute.make_rmem_tensor(256, dtype)
-            total = api.run_length_decode_into(
+            total = coop.run_length_decode_into(
                 group,
                 values,
                 lengths,
@@ -101,7 +99,7 @@ def _compile(
             output = cute.make_tensor(memory, cute.make_layout(256))
             output[0] = dtype(total)
         else:
-            decoded = api.run_length_decode(
+            decoded = coop.run_length_decode(
                 group,
                 values,
                 lengths,
@@ -130,10 +128,9 @@ def _compile(
     )
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("bulk", (False, True))
-def test_entrypoints(api, bulk):
-    assert _compile(api, bulk=bulk) is not None
+def test_entrypoints(bulk):
+    assert _compile(bulk=bulk) is not None
 
 
 @pytest.mark.parametrize("dtype", tuple(ALL_PROVIDER_TYPES))
@@ -188,5 +185,5 @@ def test_static_offset_rejected(offset):
         _compile(static_offset=offset)
 
 
-def test_qualified_register_conversion():
-    assert _compile(cutlass_coop, bad="register") is not None
+def test_register_conversion():
+    assert _compile(bad="register") is not None

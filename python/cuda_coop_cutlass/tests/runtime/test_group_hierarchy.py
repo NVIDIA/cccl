@@ -22,7 +22,6 @@ from cutlass import cute
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 
 import cuda.coop.cutlass as coop
-import cuda.coop.cutlass as cutlass_coop
 from cuda.bindings import driver
 from tests.runtime_support import (
     NUMPY_DTYPES,
@@ -33,7 +32,6 @@ from tests.runtime_support import (
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
-_APIS = (coop, cutlass_coop)
 _BLOCK = (8, 4, 3)
 _GRID = (2, 2, 1)
 _BLOCK_THREADS = 96
@@ -41,8 +39,7 @@ _THREADS = 4 * _BLOCK_THREADS
 _FIELDS = 23
 
 
-@pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
-def test_queries(api):
+def test_queries():
     """Record per-thread hierarchy fields across a multidimensional grid.
 
     The mapped group uses two of each block's three warps. Only members query
@@ -61,11 +58,11 @@ def test_queries(api):
         outputs = cute.make_tensor(
             observed, cute.make_layout(_FIELDS * _THREADS)
         )
-        thread = api.this_thread()
-        warp = api.this_warp()
-        block = api.this_block()
-        cluster = api.this_cluster()
-        grid = api.this_grid()
+        thread = coop.this_thread()
+        warp = coop.this_warp()
+        block = coop.this_block()
+        cluster = coop.this_cluster()
+        grid = coop.this_grid()
         lanes = warp.group_by(8)
         warps = block.group_by(2, exhaustive=False)
         thread.sync()
@@ -151,9 +148,8 @@ def test_queries(api):
     np.testing.assert_array_equal(observed.reshape(_FIELDS, _THREADS), expected)
 
 
-@pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("dtype", NUMPY_DTYPES[:8])
-def test_query_dtype(api, dtype):
+def test_query_dtype(dtype):
     value_type = cutlass_dtype(dtype)
 
     @cute.kernel
@@ -162,7 +158,7 @@ def test_query_dtype(api, dtype):
         outputs = cute.recast_tensor(
             cute.make_tensor(observed, cute.make_layout(64)), value_type
         )
-        group = api.this_block()
+        group = coop.this_block()
         rank = group.rank_as(value_type)
         count = group.count_as(value_type)
         assert isinstance(rank, value_type)
@@ -182,8 +178,7 @@ def test_query_dtype(api, dtype):
     )
 
 
-@pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
-def test_partial_warp(api):
+def test_partial_warp():
     """Count a partial final warp when querying the enclosing block.
 
     A 48-thread block contains two physical warp slots. This block-level query
@@ -195,7 +190,7 @@ def test_partial_warp(api):
     def kernel(observed: cute.Pointer):
         thread = cute.arch.thread_idx()[0]
         outputs = cute.make_tensor(observed, cute.make_layout(96))
-        group = api.this_block()
+        group = coop.this_block()
         outputs[thread] = group.rank("warp")
         outputs[48 + thread] = group.count("warp")
 
@@ -211,8 +206,7 @@ def test_partial_warp(api):
     )
 
 
-@pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
-def test_nonpower_mapping(api):
+def test_nonpower_mapping():
     """Query and synchronize complete groups of three lanes within each warp.
 
     Thirty lanes belong to ten groups; the last two lanes are nonmembers.
@@ -224,7 +218,7 @@ def test_nonpower_mapping(api):
     def kernel(observed: cute.Pointer):
         thread = cute.arch.thread_idx()[0]
         outputs = cute.make_tensor(observed, cute.make_layout(4 * 64))
-        group = api.this_warp().group_by(3, exhaustive=False)
+        group = coop.this_warp().group_by(3, exhaustive=False)
         member = group.is_member()
         outputs[thread] = member
         outputs[64 + thread] = group.count()
@@ -253,8 +247,7 @@ def test_nonpower_mapping(api):
     np.testing.assert_array_equal(observed.reshape(4, 64), expected)
 
 
-@pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
-def test_cluster_queries_and_sync(api):
+def test_cluster_queries_and_sync():
     """Synchronize real clusters and compare their hierarchy coordinates.
 
     Two two-block clusters distinguish thread ranks within a cluster, blocks
@@ -279,15 +272,15 @@ def test_cluster_queries_and_sync(api):
         x, y, _ = cute.arch.thread_idx()
         index = cute.arch.block_idx()[0] * 32 + x + 8 * y
         outputs = cute.make_tensor(observed, cute.make_layout(fields * threads))
-        cluster = api.this_cluster()
+        cluster = coop.this_cluster()
         cluster.sync()
         cluster.sync_aligned()
         outputs[index] = cluster.rank()
         outputs[threads + index] = cluster.count()
-        outputs[2 * threads + index] = api.this_block().rank("cluster")
+        outputs[2 * threads + index] = coop.this_block().rank("cluster")
         outputs[3 * threads + index] = cluster.rank("grid")
-        outputs[4 * threads + index] = api.this_grid().count("cluster")
-        outputs[5 * threads + index] = api.this_grid().count("block")
+        outputs[4 * threads + index] = coop.this_grid().count("cluster")
+        outputs[5 * threads + index] = coop.this_grid().count("block")
 
     @cute.jit
     def launch(observed: cute.Pointer):
@@ -331,7 +324,7 @@ def test_mapped_query_cubin(tmp_path):
         thread = cute.arch.thread_idx()[0]
         outputs = cute.make_tensor(observed, cute.make_layout(96))
         if thread < 32:
-            group = cutlass_coop.this_block().group_by(2, exhaustive=False)
+            group = coop.this_block().group_by(2, exhaustive=False)
             outputs[thread] = group.rank() + group.count()
 
     @cute.jit

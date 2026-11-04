@@ -9,15 +9,14 @@ import numpy as np
 import pytest
 from cutlass import cute
 
-import cuda.coop.cutlass as cutlass_coop
+import cuda.coop.cutlass as coop
 from tests.runtime_support import device_array, values_for
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("width", (8, 32, 128))
-def test_full_reductions_reuse_scratch_in_a_loop(api, width):
+def test_full_reductions_reuse_scratch_in_a_loop(width):
     @cute.kernel
     def kernel(
         source: cute.Pointer, observed: cute.Pointer, iterations: cutlass.Int32
@@ -26,15 +25,15 @@ def test_full_reductions_reuse_scratch_in_a_loop(api, width):
         inputs = cute.make_tensor(source, cute.make_layout(128))
         outputs = cute.make_tensor(observed, cute.make_layout(128 // width))
         if cutlass.const_expr(width == 128):
-            group = api.this_block()
+            group = coop.this_block()
         elif cutlass.const_expr(width == 32):
-            group = api.this_warp()
+            group = coop.this_warp()
         else:
-            group = api.this_warp().group_by(width)
+            group = coop.this_warp().group_by(width)
         accumulated = cutlass.Int32(0)
         for iteration in range(iterations):
-            total = api.sum(group, inputs[thread] + iteration)
-            largest = api.reduce(group, inputs[thread], binary_op="max")
+            total = coop.sum(group, inputs[thread] + iteration)
+            largest = coop.reduce(group, inputs[thread], binary_op="max")
             if thread % width == 0:
                 accumulated += total + largest
         if thread % width == 0:
@@ -58,7 +57,6 @@ def test_full_reductions_reuse_scratch_in_a_loop(api, width):
     np.testing.assert_array_equal(observed, expected)
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("items_per_thread", (1, 4))
 @pytest.mark.parametrize(
     "sharing,auto_sync,size_in_bytes",
@@ -71,7 +69,7 @@ def test_full_reductions_reuse_scratch_in_a_loop(api, width):
     ids=("shared-auto", "shared-manual", "exclusive-manual", "dynamic"),
 )
 def test_explicit_scratch_reused_by_load_reduce_store(
-    api, items_per_thread, sharing, auto_sync, size_in_bytes
+    items_per_thread, sharing, auto_sync, size_in_bytes
 ):
     tile_size = 128 * items_per_thread
 
@@ -83,14 +81,14 @@ def test_explicit_scratch_reused_by_load_reduce_store(
         tiles: cutlass.Int32,
         items_per_thread: cutlass.Constexpr,
     ):
-        block = api.this_block()
+        block = coop.this_block()
         thread = block.rank()
         output = cute.make_tensor(observed, cute.make_layout(4))
-        scratch = api.TempStorage(
+        scratch = coop.TempStorage(
             size_in_bytes, sharing=sharing, auto_sync=auto_sync
         )
         for tile in range(tiles):
-            payload = api.load(
+            payload = coop.load(
                 block,
                 source,
                 items_per_thread=items_per_thread,
@@ -100,15 +98,15 @@ def test_explicit_scratch_reused_by_load_reduce_store(
             )
             if cutlass.const_expr(not auto_sync):
                 scratch.sync()
-            total = api.sum(block, payload, temp_storage=scratch)
+            total = coop.sum(block, payload, temp_storage=scratch)
             if cutlass.const_expr(not auto_sync):
                 scratch.sync()
-            maximum = api.reduce(
+            maximum = coop.reduce(
                 block, payload, binary_op="max", temp_storage=scratch
             )
             if cutlass.const_expr(not auto_sync):
                 scratch.sync()
-            api.store(
+            coop.store(
                 block,
                 preserved,
                 payload,
@@ -149,7 +147,6 @@ def test_explicit_scratch_reused_by_load_reduce_store(
     np.testing.assert_array_equal(preserved, source)
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "width,physical",
@@ -164,7 +161,7 @@ def test_explicit_scratch_reused_by_load_reduce_store(
     ],
 )
 def test_warp_payload_reductions_reuse_scratch(
-    api, items_per_thread, width, physical
+    items_per_thread, width, physical
 ):
     """Reduce every item, preserving payloads across independent warp groups."""
 
@@ -180,23 +177,23 @@ def test_warp_payload_reductions_reuse_scratch(
         iterations: cutlass.Int32,
         items_per_thread: cutlass.Constexpr,
     ):
-        thread = api.this_block().rank()
+        thread = coop.this_block().rank()
         inputs = cute.make_tensor(source, cute.make_layout(tile_size))
         copied = cute.make_tensor(preserved, cute.make_layout(tile_size))
         outputs = cute.make_tensor(observed, cute.make_layout(group_count * 2))
-        group = api.this_warp()
+        group = coop.this_warp()
         if cutlass.const_expr(not physical):
             group = group.group_by(width, exhaustive=False)
         accumulated_sum = cutlass.Int32(0)
         accumulated_max = cutlass.Int32(0)
         for iteration in range(iterations):
-            payload = api.ThreadData(items_per_thread)
+            payload = coop.ThreadData(items_per_thread)
             for item in cutlass.range_constexpr(items_per_thread):
                 payload[item] = inputs[thread * items_per_thread + item]
                 payload[item] += iteration
             if group.is_member():
-                total = api.sum(group, payload)
-                largest = api.reduce(group, payload, binary_op="max")
+                total = coop.sum(group, payload)
+                largest = coop.reduce(group, payload, binary_op="max")
                 if group.rank() == 0:
                     accumulated_sum += total
                     accumulated_max += largest
@@ -246,9 +243,8 @@ def test_warp_payload_reductions_reuse_scratch(
     np.testing.assert_array_equal(preserved, source + iterations - 1)
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("width", [17, 31])
-def test_non_power_of_two_warp_prefixes_reuse_scratch(api, width):
+def test_non_power_of_two_warp_prefixes_reuse_scratch(width):
     """Partial logical-warp partitions keep scratch local to each group."""
 
     groups_per_warp = 32 // width
@@ -261,18 +257,18 @@ def test_non_power_of_two_warp_prefixes_reuse_scratch(api, width):
         valid_items: cutlass.Int32,
         iterations: cutlass.Int32,
     ):
-        thread = api.this_block().rank()
+        thread = coop.this_block().rank()
         inputs = cute.make_tensor(source, cute.make_layout(64))
         outputs = cute.make_tensor(observed, cute.make_layout(group_count * 2))
-        group = api.this_warp().group_by(width, exhaustive=False)
+        group = coop.this_warp().group_by(width, exhaustive=False)
         if group.is_member():
             accumulated_sum = cutlass.Int32(0)
             accumulated_max = cutlass.Int32(0)
             for iteration in range(iterations):
-                total = api.sum(
+                total = coop.sum(
                     group, inputs[thread] + iteration, valid_items=valid_items
                 )
-                largest = api.reduce(
+                largest = coop.reduce(
                     group,
                     inputs[thread] + iteration,
                     binary_op="max",

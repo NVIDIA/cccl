@@ -28,7 +28,7 @@ Scan also accept :ref:`compiled scalar device operators
 <coop-cutlass-device-operators>`. Prepare these operators on the host before
 kernel tracing. Stateful Scan prefix callbacks are unsupported.
 
-.. _coop-common-calling-conventions:
+.. _coop-concepts-calling-conventions:
 
 Calling conventions
 -------------------
@@ -52,7 +52,7 @@ controls, and ownership rules.
 Shared execution model
 ----------------------
 
-.. _coop-common-groups:
+.. _coop-concepts-groups:
 .. _coop-thread-groups:
 .. _groups-and-thread-data:
 
@@ -80,7 +80,7 @@ adds the group's within-block tile origin to the memory address. A caller's
 ``offset`` supplies the remaining element offset, such as the block's tile
 origin in a larger array; do not add the within-block group origin again.
 
-.. _coop-common-participation:
+.. _coop-concepts-participation:
 .. _coop-participation:
 .. _load-and-store-semantics:
 
@@ -108,7 +108,7 @@ destination elements outside the valid prefix untouched. A valid prefix
 controls data access; it does not make it safe to skip a required participant
 or a reuse barrier.
 
-.. _coop-common-payloads:
+.. _coop-concepts-payloads:
 
 Per-thread payloads
 ^^^^^^^^^^^^^^^^^^^
@@ -156,7 +156,7 @@ type. See :ref:`element-type inference <coop-faq-thread-data-dtype>` and
 :ref:`register and producer conversions <coop-cutlass-register-payloads>`
 for ownership, lifetime, and runtime-control-flow rules.
 
-.. _coop-common-layouts:
+.. _coop-concepts-layouts:
 .. _exchange-semantics:
 .. _shuffle-semantics:
 .. _scan-semantics:
@@ -184,7 +184,7 @@ must therefore be converted before a Scan intended to follow the array's
 original order. Choosing a memory-access algorithm and choosing the order
 of values seen by an operation are related but distinct decisions.
 
-.. _coop-common-results:
+.. _coop-concepts-results:
 
 Result ownership
 ^^^^^^^^^^^^^^^^
@@ -199,7 +199,7 @@ sort a whole array. TopK defines an unordered selected prefix; the remaining
 payload positions are not output. See the :doc:`API reference <api>`
 for sorting and selection operations.
 
-.. _coop-common-storage:
+.. _coop-concepts-storage:
 .. _coop-temp-storage:
 .. _temporary-storage:
 

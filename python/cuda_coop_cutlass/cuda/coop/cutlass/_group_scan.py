@@ -18,8 +18,8 @@ from typing import Any, Literal, TypeVar
 
 from cuda.coop.cutlass._planning.thread_group import ThreadGroup
 from cuda.coop.cutlass._typing import (
-    CommonNumericScalar,
-    CommonThreadDataLike,
+    NumericScalar,
+    ReadableThreadDataLike,
     ScanAlgorithm,
     ScanOperator,
     TempStorageLike,
@@ -38,7 +38,7 @@ from ._thread_data import (
 from ._thread_group import _require_complete_warp_partition
 from ._typing import BlockGroup, WarpGroup
 
-_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=NumericScalar)
 
 
 _SCOPE = "cuda.coop.cutlass"
@@ -58,7 +58,7 @@ def _selector(value, *, name, choices):
 
 def scan(
     group: BlockGroup | WarpGroup,
-    value: CommonThreadDataLike[_ItemT]
+    value: ReadableThreadDataLike[_ItemT]
     | CutlassTensorSample
     | CutlassTensorSSASample
     | _ItemT,
@@ -69,7 +69,7 @@ def scan(
     | DeviceOperator
     | Callable[[object, object], object]
     | None = None,
-    initial_value: CommonNumericScalar | None = None,
+    initial_value: NumericScalar | None = None,
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
     valid_items: ValidItems | None = None,
@@ -169,10 +169,10 @@ def scan(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_scan_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_scan_documentation.py
         :language: python
-        :start-after: # qualified-scan-example-begin
-        :end-before: # qualified-scan-example-end
+        :start-after: # cutlass-scan-example-begin
+        :end-before: # cutlass-scan-example-end
         :dedent: 4
     """
     from ._compiler._launch import current_kernel_launch_facts
@@ -233,7 +233,7 @@ def scan(
 
 def exclusive_scan(
     group: BlockGroup | WarpGroup,
-    value: CommonThreadDataLike[_ItemT]
+    value: ReadableThreadDataLike[_ItemT]
     | CutlassTensorSample
     | CutlassTensorSSASample
     | _ItemT,
@@ -243,7 +243,7 @@ def exclusive_scan(
     | DeviceOperator
     | Callable[[object, object], object]
     | None = None,
-    initial_value: CommonNumericScalar | None = None,
+    initial_value: NumericScalar | None = None,
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
     valid_items: ValidItems | None = None,
@@ -271,10 +271,10 @@ def exclusive_scan(
     write their prefixes. ``operator.add`` selects the built-in sum.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_scan_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_scan_documentation.py
         :language: python
-        :start-after: # qualified-exclusive-scan-example-begin
-        :end-before: # qualified-exclusive-scan-example-end
+        :start-after: # cutlass-exclusive-scan-example-begin
+        :end-before: # cutlass-exclusive-scan-example-end
         :dedent: 4
     """
     return scan(
@@ -292,7 +292,7 @@ def exclusive_scan(
 
 def inclusive_scan(
     group: BlockGroup | WarpGroup,
-    value: CommonThreadDataLike[_ItemT]
+    value: ReadableThreadDataLike[_ItemT]
     | CutlassTensorSample
     | CutlassTensorSSASample
     | _ItemT,
@@ -336,10 +336,10 @@ def inclusive_scan(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_scan_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_scan_documentation.py
         :language: python
-        :start-after: # qualified-scan-example-begin
-        :end-before: # qualified-scan-example-end
+        :start-after: # cutlass-scan-example-begin
+        :end-before: # cutlass-scan-example-end
         :dedent: 4
     """
     return scan(
@@ -356,7 +356,7 @@ def inclusive_scan(
 
 def exclusive_sum(
     group: BlockGroup | WarpGroup,
-    value: CommonThreadDataLike[_ItemT]
+    value: ReadableThreadDataLike[_ItemT]
     | CutlassTensorSample
     | CutlassTensorSSASample
     | _ItemT,
@@ -398,10 +398,10 @@ def exclusive_sum(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_scan_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_scan_documentation.py
         :language: python
-        :start-after: # qualified-scan-example-begin
-        :end-before: # qualified-scan-example-end
+        :start-after: # cutlass-scan-example-begin
+        :end-before: # cutlass-scan-example-end
         :dedent: 4
     """
     return scan(
@@ -417,7 +417,7 @@ def exclusive_sum(
 
 def inclusive_sum(
     group: BlockGroup | WarpGroup,
-    value: CommonThreadDataLike[_ItemT]
+    value: ReadableThreadDataLike[_ItemT]
     | CutlassTensorSample
     | CutlassTensorSSASample
     | _ItemT,
@@ -459,10 +459,10 @@ def inclusive_sum(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_scan_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_scan_documentation.py
         :language: python
-        :start-after: # qualified-scan-example-begin
-        :end-before: # qualified-scan-example-end
+        :start-after: # cutlass-scan-example-begin
+        :end-before: # cutlass-scan-example-end
         :dedent: 4
     """
     return scan(

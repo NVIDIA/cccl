@@ -19,7 +19,6 @@ from cutlass.base_dsl.compiler import GPUArch
 from cutlass.cute.runtime import make_ptr
 
 import cuda.coop.cutlass as coop
-import cuda.coop.cutlass as cutlass_coop
 from cuda.coop.cutlass._compiler._types import ALL_PROVIDER_TYPES
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
@@ -29,11 +28,10 @@ def _pointer(dtype=cutlass.Int32):
     return make_ptr(dtype, 0, cute.AddressSpace.gmem, assumed_align=16)
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32, 64))
 @pytest.mark.parametrize("partial", (False, True))
 @pytest.mark.parametrize("items_per_thread", (1, 4))
-def test_groups_and_partial_pairs(api, width, partial, items_per_thread):
+def test_groups_and_partial_pairs(width, partial, items_per_thread):
     @cute.kernel
     def kernel(
         memory: cute.Pointer,
@@ -41,20 +39,20 @@ def test_groups_and_partial_pairs(api, width, partial, items_per_thread):
         items_per_thread: cutlass.Constexpr,
     ):
         if cutlass.const_expr(width == 64):
-            group = api.this_block()
+            group = coop.this_block()
         else:
-            group = api.this_warp().group_by(width)
-        keys = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
-        values = api.ThreadData(items_per_thread, dtype=cutlass.Float64)
+            group = coop.this_warp().group_by(width)
+        keys = coop.ThreadData(items_per_thread, dtype=cutlass.Int32)
+        values = coop.ThreadData(items_per_thread, dtype=cutlass.Float64)
         for item in cutlass.range_constexpr(items_per_thread):
             keys[item] = cutlass.Int32(item + 1)
             values[item] = cutlass.Float64(item + 1)
         if cutlass.const_expr(partial):
-            result, payload = api.merge_sort_pairs(
+            result, payload = coop.merge_sort_pairs(
                 group, keys, values, valid_items=count, oob_default=99
             )
         else:
-            result, payload = api.merge_sort_pairs(group, keys, values)
+            result, payload = coop.merge_sort_pairs(group, keys, values)
         cute.make_tensor(memory, cute.make_layout(1))[0] = result[
             0
         ] + cutlass.Int32(payload[0])
@@ -194,15 +192,14 @@ def test_invalid_profiles(case, message):
         cute.compile[(GPUArch("sm_80"),)](launch, _pointer(), count_type(1))
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
-def test_register_input_boundary(api):
+def test_register_input_boundary():
     """Compile Merge Sort from a native register tensor."""
 
     @cute.kernel
     def kernel(memory: cute.Pointer):
         fragment = cute.make_rmem_tensor(2, cutlass.Int32)
         fragment[0], fragment[1] = cutlass.Int32(2), cutlass.Int32(1)
-        result = api.merge_sort_keys(api.this_block(), fragment)
+        result = coop.merge_sort_keys(coop.this_block(), fragment)
         cute.make_tensor(memory, cute.make_layout(1))[0] = result[0]
 
     @cute.jit

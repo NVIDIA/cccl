@@ -29,8 +29,8 @@ from cuda.coop.cutlass._typing import IntegerValue
 from ._thread_data import CutlassTensorSample, CutlassTensorSSASample
 from ._typing import (
     BlockGroup,
-    CommonNumericScalar,
-    CommonThreadDataLike,
+    NumericScalar,
+    ReadableThreadDataLike,
     TempStorageLike,
     ThreadDataLike,
 )
@@ -46,7 +46,7 @@ _KeyT = TypeVar(
     ),
 )
 
-_ValueT = TypeVar("_ValueT", bound=CommonNumericScalar)
+_ValueT = TypeVar("_ValueT", bound=NumericScalar)
 
 _RankKeyT = TypeVar(
     "_RankKeyT",
@@ -147,7 +147,7 @@ def _sort(
 
 def radix_sort_keys(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_KeyT]
+    keys: ReadableThreadDataLike[_KeyT]
     | CutlassTensorSample
     | CutlassTensorSSASample
     | _KeyT,
@@ -227,10 +227,10 @@ def radix_sort_keys(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_radix_sort_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_radix_sort_documentation.py
         :language: python
-        :start-after: # qualified-radix-sort-example-begin
-        :end-before: # qualified-radix-sort-example-end
+        :start-after: # cutlass-radix-sort-example-begin
+        :end-before: # cutlass-radix-sort-example-end
         :dedent: 4
     """
     return _sort(
@@ -247,11 +247,11 @@ def radix_sort_keys(
 
 def radix_sort_pairs(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_KeyT]
+    keys: ReadableThreadDataLike[_KeyT]
     | CutlassTensorSample
     | CutlassTensorSSASample
     | _KeyT,
-    values: CommonThreadDataLike[_ValueT]
+    values: ReadableThreadDataLike[_ValueT]
     | CutlassTensorSample
     | CutlassTensorSSASample
     | _ValueT,
@@ -318,10 +318,10 @@ def radix_sort_pairs(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_radix_sort_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_radix_sort_documentation.py
         :language: python
-        :start-after: # qualified-radix-sort-example-begin
-        :end-before: # qualified-radix-sort-example-end
+        :start-after: # cutlass-radix-sort-example-begin
+        :end-before: # cutlass-radix-sort-example-end
         :dedent: 4
     """
     if values is None:
@@ -342,7 +342,7 @@ def radix_sort_pairs(
 
 def radix_rank_keys(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_RankKeyT]
+    keys: ReadableThreadDataLike[_RankKeyT]
     | CutlassTensorSample
     | CutlassTensorSSASample
     | _RankKeyT,
@@ -418,10 +418,10 @@ def radix_rank_keys(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_radix_rank_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_radix_rank_documentation.py
         :language: python
-        :start-after: # qualified-radix-rank-example-begin
-        :end-before: # qualified-radix-rank-example-end
+        :start-after: # cutlass-radix-rank-example-begin
+        :end-before: # cutlass-radix-rank-example-end
         :dedent: 4
     """
     _validate_group(group)

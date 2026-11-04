@@ -32,7 +32,6 @@ from tests.support.paths import PACKAGE_ROOT
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
-_APIS = (coop, coop)
 _ALGORITHMS = ("direct", "striped", "vectorize", "transpose")
 _BLOCK = (8, 4, 2)
 _THREADS = 64

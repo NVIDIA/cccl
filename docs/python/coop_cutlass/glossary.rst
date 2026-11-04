@@ -32,7 +32,7 @@ Terms
       ``reduce``, or ``exclusive_sum``. Each primitive defines which threads
       participate, how it uses their data, and where its results are
       available. See
-      :ref:`participation and synchronization <coop-common-participation>`.
+      :ref:`participation and synchronization <coop-concepts-participation>`.
 
    family
       A group of related :term:`primitives <primitive>` that share semantics
@@ -47,7 +47,7 @@ Terms
       The values contributed or received by one thread. ``ThreadData(K)``
       describes a fixed-size payload of ``K`` items. Some operations also
       accept scalars or CuTe register tensors. See
-      :ref:`thread data <coop-common-payloads>`.
+      :ref:`thread data <coop-concepts-payloads>`.
 
    phi
       A compiler intermediate representation (IR) operation that selects a
@@ -147,7 +147,7 @@ Terms
    thread group
       The threads participating in a primitive, such as a block, a physical
       warp, or a logical group within a warp. A thread's rank identifies its
-      position within that group. See :ref:`groups <coop-common-groups>`.
+      position within that group. See :ref:`groups <coop-concepts-groups>`.
 
    tile
       The sequence of values processed by one group in an operation. With
@@ -219,7 +219,7 @@ Load with a direct Store without conversion changes the output order.
 Follow the values in the :doc:`Load <visualizations/load>` and
 :doc:`Store <visualizations/store>` visualizations. :doc:`Exchange
 <visualizations/exchange>` converts between layouts; the
-:ref:`shared layout discussion <coop-common-layouts>` explains how layout
+:ref:`shared layout discussion <coop-concepts-layouts>` explains how layout
 affects Scan.
 
 .. _coop-glossary-decoding:

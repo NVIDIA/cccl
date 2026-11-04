@@ -92,10 +92,10 @@ block.
    coop.store(block, destination, blocked, algorithm="direct", offset=offset)
    # blocked owns consecutive items; items retains striped ownership.
 
-.. literalinclude:: ../../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_collective_examples.py
+.. literalinclude:: ../../../../python/cuda_coop_cutlass/tests/runtime/test_collective_documentation.py
    :language: python
-   :start-after: # qualified-scatter-example-begin
-   :end-before: # qualified-scatter-example-end
+   :start-after: # cutlass-scatter-example-begin
+   :end-before: # cutlass-scatter-example-end
    :dedent: 4
 
 See :func:`cuda.coop.cutlass.exchange` and

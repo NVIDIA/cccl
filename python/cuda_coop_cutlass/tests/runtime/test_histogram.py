@@ -21,7 +21,6 @@ from cutlass.base_dsl.common import DSLRuntimeError
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 
 import cuda.coop.cutlass as coop
-import cuda.coop.cutlass as cutlass_coop
 from tests.runtime_support import cutlass_dtype, device_array
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
@@ -51,7 +50,6 @@ class _Readonly:
 
 
 def _run(
-    api=coop,
     *,
     dtype=np.int32,
     counter_dtype=np.int64,
@@ -107,7 +105,7 @@ def _run(
     ):
         thread = cute.arch.thread_idx()[0]
         block_index = cute.arch.block_idx()[0]
-        group = api.this_block()
+        group = coop.this_block()
         inputs = cute.recast_tensor(
             cute.make_tensor(source, cute.make_layout(size)), value_type
         )
@@ -118,7 +116,7 @@ def _run(
         originals = cute.recast_tensor(
             cute.make_tensor(preserved, cute.make_layout(size)), value_type
         )
-        samples = api.ThreadData(
+        samples = coop.ThreadData(
             items_per_thread,
             dtype=None if inferred else value_type,
             alignment=alignment,
@@ -126,7 +124,7 @@ def _run(
         for item in cutlass.range_constexpr(items_per_thread):
             samples[item] = value_type(0)
         if cutlass.const_expr(reuse):
-            scratch = api.TempStorage(
+            scratch = coop.TempStorage(
                 size_in_bytes=capacity,
                 sharing=sharing,
                 alignment=alignment,
@@ -148,7 +146,7 @@ def _run(
                 values = samples.to_tensor_ssa()
             else:
                 values = samples
-            counts = api.histogram(
+            counts = coop.histogram(
                 group,
                 values,
                 bins=bins,
@@ -208,7 +206,6 @@ def _run(
         )
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize(
     "dtype", (np.uint8, np.int32, np.uint32, np.int64, np.uint64)
 )
@@ -218,10 +215,9 @@ def _run(
 @pytest.mark.parametrize("algorithm", ("atomic", "sort"))
 @pytest.mark.parametrize("items_per_thread", (1, 4))
 def test_counts_types_and_preservation(
-    api, dtype, counter_dtype, algorithm, items_per_thread
+    dtype, counter_dtype, algorithm, items_per_thread
 ):
     _run(
-        api,
         dtype=dtype,
         counter_dtype=counter_dtype,
         algorithm=algorithm,
@@ -259,19 +255,17 @@ def test_fresh_counters_on_scratch_reuse(sharing, manual_sync, algorithm):
     )
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
-def test_readonly_inference(api):
-    _run(api, payload="readonly", inferred=True)
+def test_readonly_inference():
+    _run(payload="readonly", inferred=True)
 
 
 @pytest.mark.parametrize("payload", ("tensor", "vector"))
-def test_qualified_register_payloads(payload):
-    _run(cutlass_coop, payload=payload, cute_selector=True)
+def test_register_payloads(payload):
+    _run(payload=payload, cute_selector=True)
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
-def test_default_counter(api):
-    _run(api, default_counter=True, counter_dtype=np.int32)
+def test_default_counter():
+    _run(default_counter=True, counter_dtype=np.int32)
 
 
 def test_alignment_minimum():

@@ -19,8 +19,8 @@ from typing import Literal, TypeVar
 
 from cuda.coop.cutlass._planning.thread_group import ThreadGroup
 from cuda.coop.cutlass._typing import (
-    CommonNumericScalar,
-    CommonThreadDataLike,
+    NumericScalar,
+    ReadableThreadDataLike,
     ReduceOperator,
     WarpGroup,
 )
@@ -34,12 +34,12 @@ from ._thread_data import (
 )
 from ._thread_group import _require_complete_warp_partition
 
-_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=NumericScalar)
 
 
 def reduce_batched(
     group: WarpGroup,
-    value: CommonThreadDataLike[_ItemT]
+    value: ReadableThreadDataLike[_ItemT]
     | CutlassTensorSample
     | CutlassTensorSSASample,
     /,
@@ -108,10 +108,10 @@ def reduce_batched(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_reduce_batched_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_reduce_batched_documentation.py
         :language: python
-        :start-after: # qualified-reduce-batched-example-begin
-        :end-before: # qualified-reduce-batched-example-end
+        :start-after: # cutlass-reduce-batched-example-begin
+        :end-before: # cutlass-reduce-batched-example-end
         :dedent: 4
     """
     if not isinstance(group, ThreadGroup):

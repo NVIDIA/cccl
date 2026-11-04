@@ -27,14 +27,14 @@ from ._thread_data import (
 )
 from ._typing import (
     BlockGroup,
-    CommonNumericScalar,
-    CommonThreadDataLike,
+    NumericScalar,
+    ReadableThreadDataLike,
     TempStorageLike,
 )
 
-_ValueT = TypeVar("_ValueT", bound=CommonNumericScalar)
+_ValueT = TypeVar("_ValueT", bound=NumericScalar)
 
-_KeyT = TypeVar("_KeyT", bound=CommonNumericScalar)
+_KeyT = TypeVar("_KeyT", bound=NumericScalar)
 
 
 def _topk(group, keys, values, *, selection, k, valid_items, temp_storage):
@@ -83,7 +83,7 @@ def _topk(group, keys, values, *, selection, k, valid_items, temp_storage):
 
 def topk_min_keys(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_KeyT]
+    keys: ReadableThreadDataLike[_KeyT]
     | CutlassTensorSample
     | CutlassTensorSSASample,
     /,
@@ -157,10 +157,10 @@ def topk_min_keys(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_topk_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py
         :language: python
-        :start-after: # qualified-topk-keys-example-begin
-        :end-before: # qualified-topk-keys-example-end
+        :start-after: # cutlass-topk-keys-example-begin
+        :end-before: # cutlass-topk-keys-example-end
         :dedent: 4
     """
     return _topk(
@@ -176,7 +176,7 @@ def topk_min_keys(
 
 def topk_max_keys(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_KeyT]
+    keys: ReadableThreadDataLike[_KeyT]
     | CutlassTensorSample
     | CutlassTensorSSASample,
     /,
@@ -234,10 +234,10 @@ def topk_max_keys(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_topk_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py
         :language: python
-        :start-after: # qualified-topk-keys-example-begin
-        :end-before: # qualified-topk-keys-example-end
+        :start-after: # cutlass-topk-keys-example-begin
+        :end-before: # cutlass-topk-keys-example-end
         :dedent: 4
     """
     return _topk(
@@ -253,10 +253,10 @@ def topk_max_keys(
 
 def topk_min_pairs(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_KeyT]
+    keys: ReadableThreadDataLike[_KeyT]
     | CutlassTensorSample
     | CutlassTensorSSASample,
-    values: CommonThreadDataLike[_ValueT]
+    values: ReadableThreadDataLike[_ValueT]
     | CutlassTensorSample
     | CutlassTensorSSASample,
     /,
@@ -316,10 +316,10 @@ def topk_min_pairs(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_topk_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py
         :language: python
-        :start-after: # qualified-topk-pairs-example-begin
-        :end-before: # qualified-topk-pairs-example-end
+        :start-after: # cutlass-topk-pairs-example-begin
+        :end-before: # cutlass-topk-pairs-example-end
         :dedent: 4
     """
     if values is None:
@@ -337,10 +337,10 @@ def topk_min_pairs(
 
 def topk_max_pairs(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_KeyT]
+    keys: ReadableThreadDataLike[_KeyT]
     | CutlassTensorSample
     | CutlassTensorSSASample,
-    values: CommonThreadDataLike[_ValueT]
+    values: ReadableThreadDataLike[_ValueT]
     | CutlassTensorSample
     | CutlassTensorSSASample,
     /,
@@ -400,10 +400,10 @@ def topk_max_pairs(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_topk_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py
         :language: python
-        :start-after: # qualified-topk-pairs-example-begin
-        :end-before: # qualified-topk-pairs-example-end
+        :start-after: # cutlass-topk-pairs-example-begin
+        :end-before: # cutlass-topk-pairs-example-end
         :dedent: 4
     """
     if values is None:

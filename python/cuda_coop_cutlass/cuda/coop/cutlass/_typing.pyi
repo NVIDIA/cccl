@@ -117,9 +117,9 @@ BlockExchangeMode: TypeAlias = (
     ]
 )
 WarpExchangeMode: TypeAlias = ExchangeMode
-CommonShuffleMode: TypeAlias = Literal["down", "up"]
+ArrayShuffleMode: TypeAlias = Literal["down", "up"]
 ScalarShuffleMode: TypeAlias = Literal["offset", "rotate"]
-ShuffleMode: TypeAlias = CommonShuffleMode | ScalarShuffleMode
+ShuffleMode: TypeAlias = ArrayShuffleMode | ScalarShuffleMode
 TempStorageSharing: TypeAlias = Literal["shared", "exclusive"]
 
 class WritableArrayLike(Protocol):
@@ -155,7 +155,7 @@ class CompilerIntegerLike(CompilerScalarLike, Protocol):
     def signed(self) -> bool:
         """Return whether this integer type is signed."""
 
-CommonNumericScalar: TypeAlias = (
+NumericScalar: TypeAlias = (
     int
     | float
     | numpy.int8
@@ -171,7 +171,7 @@ CommonNumericScalar: TypeAlias = (
     | CompilerScalarLike
 )
 
-_CommonNumericT = TypeVar("_CommonNumericT", bound=CommonNumericScalar)
+_NumericT = TypeVar("_NumericT", bound=NumericScalar)
 
 class _ExactScalar(Protocol[_ItemT]):
     """Match a seed's exact scalar type without widening the input type.
@@ -189,7 +189,7 @@ ContextualInitialValue: TypeAlias = (
     _ExactScalar[_ItemT] | _ExactScalar[int] | _ExactScalar[float]
 )
 _ReadableItemT_co = TypeVar(
-    "_ReadableItemT_co", bound=CommonNumericScalar, covariant=True
+    "_ReadableItemT_co", bound=NumericScalar, covariant=True
 )
 ScalarValue: TypeAlias = (
     bool | int | float | complex | numpy.number | CompilerScalarLike
@@ -214,7 +214,7 @@ TraceInteger: TypeAlias = int | numpy.integer[Any]
 ValidItems: TypeAlias = IntegerValue
 
 class ThreadDataLike(Protocol[_ItemT]):
-    """Common mutable, indexable per-thread payload contract.
+    """Mutable, indexable per-thread payload contract.
 
     Concrete payloads may attach additional helpers and metadata, but
     CUTLASS operations rely only on this payload shape and item access
@@ -234,7 +234,7 @@ class ThreadDataLike(Protocol[_ItemT]):
     def __setitem__(self, index: int, value: _ItemT, /) -> None:
         """Replace one thread-local item."""
 
-class CommonThreadDataLike(Protocol[_ReadableItemT_co]):
+class ReadableThreadDataLike(Protocol[_ReadableItemT_co]):
     """Describe readable per-thread items with supported numeric types.
 
     Operations that only read a payload use this protocol. Mutable operations
@@ -277,7 +277,7 @@ class TempStorageLike(Protocol):
 __all__ = [
     "BlockExchangeMode",
     "BlockLoadStoreAlgorithm",
-    "CommonShuffleMode",
+    "ArrayShuffleMode",
     "ContextualInitialValue",
     "ExchangeMode",
     "LoadStoreAlgorithm",
@@ -299,7 +299,7 @@ __all__ = [
     "WarpExchangeMode",
     "WarpLoadStoreAlgorithm",
     "WritableArrayLike",
-    "_CommonNumericT",
+    "_NumericT",
 ]
 
 MemoryGroup: TypeAlias = ThreadGroup[

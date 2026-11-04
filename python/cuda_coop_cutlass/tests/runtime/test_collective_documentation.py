@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Run the qualified scatter and rotate examples used in the documentation.
+"""Run the scatter and rotate examples used in the documentation.
 
 Marked regions remain suitable for direct inclusion in the public guide.
 Host oracles outside those regions compare the complete reversed tile or
@@ -25,7 +25,7 @@ def test_scatter_example(items_per_thread):
     including the one-item case. It does not rely on an inverse Exchange call.
     """
 
-    # qualified-scatter-example-begin
+    # cutlass-scatter-example-begin
     import cutlass
     from cutlass import cute
 
@@ -62,7 +62,7 @@ def test_scatter_example(items_per_thread):
             grid=1, block=64
         )
 
-    # qualified-scatter-example-end
+    # cutlass-scatter-example-end
 
     values = np.arange(64 * items_per_thread, dtype=np.int32) * 3 - 200
     observed = np.zeros_like(values)
@@ -78,7 +78,7 @@ def test_rotate_example():
     direction for a positive distance and the wraparound at the tile boundary.
     """
 
-    # qualified-rotate-example-begin
+    # cutlass-rotate-example-begin
     from cutlass import cute
 
     import cuda.coop.cutlass as cutlass_coop
@@ -97,7 +97,7 @@ def test_rotate_example():
     def launch(source: cute.Pointer, destination: cute.Pointer):
         rotate_tile(source, destination).launch(grid=1, block=64)
 
-    # qualified-rotate-example-end
+    # cutlass-rotate-example-end
 
     values = np.arange(64, dtype=np.int32) * 3 - 200
     observed = np.zeros_like(values)

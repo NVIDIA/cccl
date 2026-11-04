@@ -17,15 +17,14 @@ from cutlass import cute
 from cutlass.base_dsl.compiler import GPUArch
 from cutlass.cute.runtime import make_ptr
 
-import cuda.coop.cutlass as cutlass_coop
+import cuda.coop.cutlass as coop
 from cuda.coop.cutlass._compiler._types import ALL_PROVIDER_TYPES
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
 
 
 @pytest.mark.parametrize("dtype", tuple(ALL_PROVIDER_TYPES))
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
-def test_dynamic_payload(dtype, api):
+def test_dynamic_payload(dtype):
     """Carry a payload through a runtime loop, branch, and nested JIT helper.
 
     Rebind the helper result so tracing must reconstruct the payload from
@@ -45,7 +44,7 @@ def test_dynamic_payload(dtype, api):
         iterations: cutlass.Int32,
         items_per_thread: cutlass.Constexpr,
     ):
-        payload = api.ThreadData(items_per_thread, dtype=dtype, alignment=64)
+        payload = coop.ThreadData(items_per_thread, dtype=dtype, alignment=64)
         payload[0] = 1
         payload[1] = 3
         for iteration in range(iterations):
@@ -84,15 +83,15 @@ def test_tensor_ssa_conversion_across_regions():
 
     @cute.kernel
     def kernel(memory: cute.Pointer, iterations: cutlass.Int32):
-        payload = cutlass_coop.ThreadData.from_values(
+        payload = coop.ThreadData.from_values(
             cutlass.Int32(1), cutlass.Int32(3), dtype=cutlass.Int32
         )
         vector = payload.to_tensor_ssa()
         output = cute.make_tensor(memory, cute.make_layout(6))
         for _ in range(iterations):
-            inside = cutlass_coop.ThreadData.from_vector(vector)
+            inside = coop.ThreadData.from_vector(vector)
             output[0], output[1] = inside[0], inside[1]
-        outside = cutlass_coop.ThreadData.from_vector(vector)
+        outside = coop.ThreadData.from_vector(vector)
         output[2], output[3] = outside[0], outside[1]
         output[4], output[5] = vector[0], vector[1]
 

@@ -24,13 +24,13 @@ from ._thread_data import (
 )
 from ._typing import (
     BlockGroup,
-    CommonNumericScalar,
-    CommonThreadDataLike,
+    NumericScalar,
+    ReadableThreadDataLike,
     TempStorageLike,
 )
 
-_KeyT = TypeVar("_KeyT", bound=CommonNumericScalar)
-_ValueT = TypeVar("_ValueT", bound=CommonNumericScalar)
+_KeyT = TypeVar("_KeyT", bound=NumericScalar)
+_ValueT = TypeVar("_ValueT", bound=NumericScalar)
 _RegisterPayload: TypeAlias = CutlassTensorSample | CutlassTensorSSASample
 _Count: TypeAlias = (
     int
@@ -53,7 +53,7 @@ _Count: TypeAlias = (
 @overload
 def topk_min_keys(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_KeyT],
+    keys: ReadableThreadDataLike[_KeyT],
     /,
     *,
     k: _Count,
@@ -73,8 +73,8 @@ def topk_min_keys(
 @overload
 def topk_min_pairs(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_KeyT],
-    values: CommonThreadDataLike[_ValueT],
+    keys: ReadableThreadDataLike[_KeyT],
+    values: ReadableThreadDataLike[_ValueT],
     /,
     *,
     k: _Count,
@@ -85,7 +85,7 @@ def topk_min_pairs(
 def topk_min_pairs(
     group: BlockGroup,
     keys: _RegisterPayload,
-    values: CommonThreadDataLike[_ValueT],
+    values: ReadableThreadDataLike[_ValueT],
     /,
     *,
     k: _Count,
@@ -95,7 +95,7 @@ def topk_min_pairs(
 @overload
 def topk_min_pairs(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_KeyT],
+    keys: ReadableThreadDataLike[_KeyT],
     values: _RegisterPayload,
     /,
     *,
@@ -117,7 +117,7 @@ def topk_min_pairs(
 @overload
 def topk_max_keys(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_KeyT],
+    keys: ReadableThreadDataLike[_KeyT],
     /,
     *,
     k: _Count,
@@ -137,8 +137,8 @@ def topk_max_keys(
 @overload
 def topk_max_pairs(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_KeyT],
-    values: CommonThreadDataLike[_ValueT],
+    keys: ReadableThreadDataLike[_KeyT],
+    values: ReadableThreadDataLike[_ValueT],
     /,
     *,
     k: _Count,
@@ -149,7 +149,7 @@ def topk_max_pairs(
 def topk_max_pairs(
     group: BlockGroup,
     keys: _RegisterPayload,
-    values: CommonThreadDataLike[_ValueT],
+    values: ReadableThreadDataLike[_ValueT],
     /,
     *,
     k: _Count,
@@ -159,7 +159,7 @@ def topk_max_pairs(
 @overload
 def topk_max_pairs(
     group: BlockGroup,
-    keys: CommonThreadDataLike[_KeyT],
+    keys: ReadableThreadDataLike[_KeyT],
     values: _RegisterPayload,
     /,
     *,

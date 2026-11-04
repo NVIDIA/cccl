@@ -106,10 +106,10 @@ In a complete CuTe kernel, this tested example scans a logical warp's valid
 prefix and writes its aggregate. ``operator.add`` selects the built-in sum;
 it is not a custom device callback.
 
-.. literalinclude:: ../../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_scan_examples.py
+.. literalinclude:: ../../../../python/cuda_coop_cutlass/tests/runtime/test_scan_documentation.py
    :language: python
-   :start-after: # qualified-exclusive-scan-example-begin
-   :end-before: # qualified-exclusive-scan-example-end
+   :start-after: # cutlass-exclusive-scan-example-begin
+   :end-before: # cutlass-exclusive-scan-example-end
    :dedent: 4
 
 See :doc:`../api` and :ref:`the Programming Guide <coop-cutlass-scan>`

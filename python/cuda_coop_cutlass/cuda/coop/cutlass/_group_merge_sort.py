@@ -33,15 +33,15 @@ from ._thread_group import (
 )
 from ._typing import (
     BlockGroup,
-    CommonNumericScalar,
-    CommonThreadDataLike,
+    NumericScalar,
+    ReadableThreadDataLike,
     TempStorageLike,
     WarpGroup,
 )
 
-_ValueT = TypeVar("_ValueT", bound=CommonNumericScalar)
+_ValueT = TypeVar("_ValueT", bound=NumericScalar)
 
-_KeyT = TypeVar("_KeyT", bound=CommonNumericScalar)
+_KeyT = TypeVar("_KeyT", bound=NumericScalar)
 
 
 _SCOPE = "cuda.coop.cutlass"
@@ -117,14 +117,14 @@ def _merge_sort(
 
 def merge_sort_keys(
     group: BlockGroup | WarpGroup,
-    keys: CommonThreadDataLike[_KeyT]
+    keys: ReadableThreadDataLike[_KeyT]
     | CutlassTensorSample
     | CutlassTensorSSASample,
     /,
     *,
     descending: bool = False,
     valid_items: IntegerValue | None = None,
-    oob_default: CommonNumericScalar | None = None,
+    oob_default: NumericScalar | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadData:
     """Sort keys across a block or warp without changing the input.
@@ -191,10 +191,10 @@ def merge_sort_keys(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_merge_sort_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_merge_sort_documentation.py
         :language: python
-        :start-after: # qualified-merge-sort-example-begin
-        :end-before: # qualified-merge-sort-example-end
+        :start-after: # cutlass-merge-sort-example-begin
+        :end-before: # cutlass-merge-sort-example-end
         :dedent: 4
     """
     return _merge_sort(
@@ -210,17 +210,17 @@ def merge_sort_keys(
 
 def merge_sort_pairs(
     group: BlockGroup | WarpGroup,
-    keys: CommonThreadDataLike[_KeyT]
+    keys: ReadableThreadDataLike[_KeyT]
     | CutlassTensorSample
     | CutlassTensorSSASample,
-    values: CommonThreadDataLike[_ValueT]
+    values: ReadableThreadDataLike[_ValueT]
     | CutlassTensorSample
     | CutlassTensorSSASample,
     /,
     *,
     descending: bool = False,
     valid_items: IntegerValue | None = None,
-    oob_default: CommonNumericScalar | None = None,
+    oob_default: NumericScalar | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> tuple[ThreadData, ThreadData]:
     """Sort keys and their associated values without changing either input.
@@ -277,10 +277,10 @@ def merge_sort_pairs(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_merge_sort_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_merge_sort_documentation.py
         :language: python
-        :start-after: # qualified-merge-sort-example-begin
-        :end-before: # qualified-merge-sort-example-end
+        :start-after: # cutlass-merge-sort-example-begin
+        :end-before: # cutlass-merge-sort-example-end
         :dedent: 4
     """
     return _merge_sort(

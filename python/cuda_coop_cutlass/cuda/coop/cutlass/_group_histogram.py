@@ -36,7 +36,7 @@ from ._thread_data import (
     CutlassTensorSSASample,
     ThreadData,
 )
-from ._typing import BlockGroup, CommonThreadDataLike, TempStorageLike
+from ._typing import BlockGroup, ReadableThreadDataLike, TempStorageLike
 
 _Counter = TypeVar(
     "_Counter",
@@ -50,7 +50,7 @@ _Counter = TypeVar(
 
 def histogram(
     group: BlockGroup,
-    samples: CommonThreadDataLike[
+    samples: ReadableThreadDataLike[
         int
         | np.uint8
         | np.int32
@@ -124,10 +124,10 @@ def histogram(
     ``items_per_thread`` value.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_histogram_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_histogram_documentation.py
         :language: python
-        :start-after: # qualified-histogram-example-begin
-        :end-before: # qualified-histogram-example-end
+        :start-after: # cutlass-histogram-example-begin
+        :end-before: # cutlass-histogram-example-end
         :dedent: 4
     """
     if not isinstance(group, ThreadGroup):

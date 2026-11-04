@@ -105,10 +105,10 @@
   }
 
   const exchanges = [
-    {id: "striped_to_blocked", label: "Striped to blocked", tag: "Common API", input: "striped", output: "blocked"},
-    {id: "blocked_to_striped", label: "Blocked to striped", tag: "Common API", input: "blocked", output: "striped"},
-    {id: "warp_striped_to_blocked", label: "Warp-striped to blocked", tag: "Qualified block API", input: "warp-striped", output: "blocked"},
-    {id: "blocked_to_warp_striped", label: "Blocked to warp-striped", tag: "Qualified block API", input: "blocked", output: "warp-striped"},
+    {id: "striped_to_blocked", label: "Striped to blocked", tag: "Block or warp", input: "striped", output: "blocked"},
+    {id: "blocked_to_striped", label: "Blocked to striped", tag: "Block or warp", input: "blocked", output: "striped"},
+    {id: "warp_striped_to_blocked", label: "Warp-striped to blocked", tag: "Block", input: "warp-striped", output: "blocked"},
+    {id: "blocked_to_warp_striped", label: "Blocked to warp-striped", tag: "Block", input: "blocked", output: "warp-striped"},
     {id: "scatter_to_blocked", label: "Scatter to blocked", tag: "Ranked destinations", input: "blocked", output: "blocked", scatter: true},
     {id: "scatter_to_striped", label: "Scatter to striped", tag: "Ranked destinations", input: "blocked", output: "striped", scatter: true},
     {id: "scatter_to_striped_guarded", label: "Guarded scatter", tag: "Negative ranks suppress writes", input: "blocked", output: "striped", scatter: true, guarded: true},

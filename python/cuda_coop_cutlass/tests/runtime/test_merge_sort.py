@@ -23,7 +23,6 @@ from cutlass.base_dsl.common import DSLRuntimeError
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 
 import cuda.coop.cutlass as coop
-import cuda.coop.cutlass as cutlass_coop
 from tests.runtime_support import (
     NUMPY_DTYPES,
     cutlass_dtype,
@@ -38,7 +37,7 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 class _Readonly:
     """Copy payload items into an object with reads but no item assignment.
 
-    The wrapper retains extent, dtype, and alignment. Both APIs must accept
+    The wrapper retains extent, dtype, and alignment. The operation must accept
     this read-only input and return a separate sorted payload.
     """
 
@@ -56,7 +55,6 @@ class _Readonly:
 
 
 def _run(
-    api=coop,
     *,
     dtype=np.int32,
     value_dtype=np.float64,
@@ -139,17 +137,17 @@ def _run(
             cute.make_tensor(check_values, cute.make_layout(size)), value_type
         )
         if cutlass.const_expr(width == 64):
-            group = api.this_block()
+            group = coop.this_block()
         elif cutlass.const_expr(width == 32):
-            group = api.this_warp()
+            group = coop.this_warp()
         else:
-            group = api.this_warp().group_by(width)
-        keys = api.ThreadData(
+            group = coop.this_warp().group_by(width)
+        keys = coop.ThreadData(
             items_per_thread,
             dtype=None if inferred else key_type,
             alignment=alignment,
         )
-        values = api.ThreadData(
+        values = coop.ThreadData(
             items_per_thread,
             dtype=None if inferred else value_type,
             alignment=alignment,
@@ -166,7 +164,7 @@ def _run(
         else:
             value_input = values
         if cutlass.const_expr(reuse and width == 64):
-            storage = api.TempStorage(
+            storage = coop.TempStorage(
                 size_in_bytes=capacity,
                 alignment=alignment,
                 sharing=sharing,
@@ -179,7 +177,7 @@ def _run(
             if not selected_groups or (thread // group_size) % 2 == 0:
                 if cutlass.const_expr(pairs):
                     if cutlass.const_expr(partial):
-                        result, result_values = api.merge_sort_pairs(
+                        result, result_values = coop.merge_sort_pairs(
                             group,
                             key_input,
                             value_input,
@@ -189,7 +187,7 @@ def _run(
                             temp_storage=storage,
                         )
                     else:
-                        result, result_values = api.merge_sort_pairs(
+                        result, result_values = coop.merge_sort_pairs(
                             group,
                             key_input,
                             value_input,
@@ -198,7 +196,7 @@ def _run(
                         )
                 else:
                     if cutlass.const_expr(partial):
-                        result = api.merge_sort_keys(
+                        result = coop.merge_sort_keys(
                             group,
                             key_input,
                             descending=descending,
@@ -207,7 +205,7 @@ def _run(
                             temp_storage=storage,
                         )
                     else:
-                        result = api.merge_sort_keys(
+                        result = coop.merge_sort_keys(
                             group,
                             key_input,
                             descending=descending,
@@ -311,12 +309,11 @@ def _run(
             assert actual == original
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("dtype", NUMPY_DTYPES)
 @pytest.mark.parametrize("pairs", (False, True))
 @pytest.mark.parametrize("items_per_thread", (1, 4))
-def test_numeric_keys(api, dtype, pairs, items_per_thread):
-    _run(api, dtype=dtype, pairs=pairs, items_per_thread=items_per_thread)
+def test_numeric_keys(dtype, pairs, items_per_thread):
+    _run(dtype=dtype, pairs=pairs, items_per_thread=items_per_thread)
 
 
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32, 64))
@@ -329,11 +326,10 @@ def test_group_prefix(width, descending, prefix):
     _run(width=width, partial=True, count=count, descending=descending)
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("readonly", ("keys", "values", "both"))
 @pytest.mark.parametrize("inferred", (False, True))
-def test_readonly_inputs(api, readonly, inferred):
-    _run(api, readonly=readonly, inferred=inferred, width=8, partial=True)
+def test_readonly_inputs(readonly, inferred):
+    _run(readonly=readonly, inferred=inferred, width=8, partial=True)
 
 
 @pytest.mark.parametrize(
@@ -349,12 +345,11 @@ def test_partial_key_types(dtype, descending):
     _run(dtype=dtype, partial=True, descending=descending)
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("dtype", (np.float32, np.float64))
 @pytest.mark.parametrize("descending", (False, True))
 @pytest.mark.parametrize("width", (8, 64))
 @pytest.mark.parametrize("pairs", (False, True))
-def test_infinite_partial_bound(api, dtype, descending, width, pairs):
+def test_infinite_partial_bound(dtype, descending, width, pairs):
     """Keep a valid infinite key even when padding uses the same infinity.
 
     The first valid item of each tile equals the selected sentinel. The valid
@@ -363,7 +358,6 @@ def test_infinite_partial_bound(api, dtype, descending, width, pairs):
     """
 
     _run(
-        api,
         dtype=dtype,
         descending=descending,
         width=width,
@@ -373,9 +367,8 @@ def test_infinite_partial_bound(api, dtype, descending, width, pairs):
     )
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
-def test_readonly_keys_only(api):
-    _run(api, pairs=False, readonly="keys", inferred=True)
+def test_readonly_keys_only():
+    _run(pairs=False, readonly="keys", inferred=True)
 
 
 @pytest.mark.parametrize("block", ((16, 1, 1), (8, 8, 1), (4, 4, 4)))
@@ -474,8 +467,8 @@ def test_runtime_count_traps(count):
         "tests = types.ModuleType('tests')\n"
         f"tests.__path__ = {[str(TESTS_ROOT)]!r}\n"
         "sys.modules['tests'] = tests\n"
-        "import cuda.coop.cutlass as cutlass_coop\n"
-        f"assert cutlass_coop.__file__ == {cutlass_coop.__file__!r}\n"
+        "import cuda.coop.cutlass as coop\n"
+        f"assert coop.__file__ == {coop.__file__!r}\n"
         "from tests.runtime.test_merge_sort import _run\n"
         f"_run(partial=True, count={count})\n"
         "raise AssertionError('invalid count did not trap')\n"

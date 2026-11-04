@@ -18,7 +18,6 @@ import pytest
 from cutlass import cute
 
 import cuda.coop.cutlass as coop
-import cuda.coop.cutlass as cutlass_coop
 from tests.runtime_support import (
     NUMPY_DTYPES,
     cutlass_dtype,
@@ -50,7 +49,6 @@ class _Readonly:
 
 
 def _run(
-    api=coop,
     *,
     bulk=False,
     dtype=np.int32,
@@ -131,13 +129,13 @@ def _run(
             cute.make_tensor(totals, cute.make_layout(blocks * threads)),
             cutlass.Uint32,
         )
-        group = api.this_block()
-        values = api.ThreadData(
+        group = coop.this_block()
+        values = coop.ThreadData(
             items_per_thread,
             dtype=None if inferred else value_type,
             alignment=alignment,
         )
-        lengths = api.ThreadData(
+        lengths = coop.ThreadData(
             items_per_thread, dtype=None if inferred else length_type
         )
         for item in cutlass.range_constexpr(items_per_thread):
@@ -151,7 +149,7 @@ def _run(
         storage = (
             None
             if sharing is None
-            else api.TempStorage(
+            else coop.TempStorage(
                 storage_bytes,
                 alignment=alignment,
                 sharing=sharing,
@@ -169,7 +167,7 @@ def _run(
                     ),
                     value_type,
                 )
-                total = api.run_length_decode_into(
+                total = coop.run_length_decode_into(
                     group,
                     value_input,
                     length_input,
@@ -180,7 +178,7 @@ def _run(
                 )
                 total_output[block * threads + thread] = total
             else:
-                result = api.run_length_decode(
+                result = coop.run_length_decode(
                     group,
                     value_input,
                     length_input,
@@ -188,7 +186,7 @@ def _run(
                     decoded_window_offset=start,
                     temp_storage=storage,
                 )
-                assert isinstance(result, cutlass_coop.ThreadData)
+                assert isinstance(result, coop.ThreadData)
                 assert result is not values
                 assert result.dtype is value_type
                 assert result.items_per_thread == decoded
@@ -307,13 +305,11 @@ def _run(
     return compiled
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("bulk", (False, True))
 @pytest.mark.parametrize("static", (False, True))
 @pytest.mark.parametrize("items_per_thread", (1, 4))
-def test_entrypoints(api, bulk, static, items_per_thread):
+def test_entrypoints(bulk, static, items_per_thread):
     _run(
-        api,
         bulk=bulk,
         static=static,
         items_per_thread=items_per_thread,

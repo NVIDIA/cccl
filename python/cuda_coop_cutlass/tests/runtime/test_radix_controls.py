@@ -19,7 +19,7 @@ from cuda.pathfinder import find_nvidia_binary_utility
 from cutlass.base_dsl.common import DSLRuntimeError, get_current_env_manager
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 
-import cuda.coop.cutlass as cutlass_coop
+import cuda.coop.cutlass as coop
 from cuda.coop.cutlass._compiler import _bundle, _cache
 from tests.runtime.test_radix import _run_rank, _run_sort
 from tests.support.paths import TESTS_ROOT
@@ -66,9 +66,7 @@ def test_rank_reuse(bits):
     every tile index once.
     """
 
-    _run_rank(
-        cutlass_coop, radix_bits=bits, prefix=True, reuse=True, chain=True
-    )
+    _run_rank(radix_bits=bits, prefix=True, reuse=True, chain=True)
 
 
 def test_undersized_storage():
@@ -105,8 +103,8 @@ def test_invalid_runtime_bits_trap(begin, end, control):
         "tests = types.ModuleType('tests')\n"
         f"tests.__path__ = {[str(TESTS_ROOT)]!r}\n"
         "sys.modules['tests'] = tests\n"
-        "import cuda.coop.cutlass as cutlass_coop\n"
-        f"assert cutlass_coop.__file__ == {cutlass_coop.__file__!r}\n"
+        "import cuda.coop.cutlass as coop\n"
+        f"assert coop.__file__ == {coop.__file__!r}\n"
         "import cutlass\n"
         "from tests.runtime.test_radix import _run_sort\n"
         f"_run_sort(begin_bit={begin}, end_bit={end}, "
@@ -150,7 +148,6 @@ def test_final_cubin(tmp_path, operation):
     options = (KeepCUBIN(True), DumpDir(str(tmp_path)))
     if operation == "sort":
         _run_sort(
-            cutlass_coop,
             bounds="runtime",
             begin_bit=7,
             end_bit=31,
@@ -158,7 +155,6 @@ def test_final_cubin(tmp_path, operation):
         )
     else:
         _run_rank(
-            cutlass_coop,
             radix_bits=int(operation[-1]),
             prefix=True,
             compile_options=options,
@@ -199,7 +195,7 @@ def test_provider_failure_retry(monkeypatch, tmp_path, failure):
     with monkeypatch.context() as patch:
         patch.setattr(_bundle, "compile_bundle_source_with_layouts", fail)
         with pytest.raises(Exception) as caught:
-            _run_rank(cutlass_coop, prefix=True)
+            _run_rank(prefix=True)
     assert attempted
     message = str(caught.value).lower()
     assert any(
@@ -207,4 +203,4 @@ def test_provider_failure_retry(monkeypatch, tmp_path, failure):
         for token in ("compile", "compilation", "link", "lto", "nvvm")
     ), message
     assert get_current_env_manager() is None
-    _run_rank(cutlass_coop, prefix=True)
+    _run_rank(prefix=True)

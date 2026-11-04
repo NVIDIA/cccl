@@ -23,20 +23,20 @@ from ._thread_data import (
 )
 from ._typing import (
     BlockGroup,
-    CommonNumericScalar,
-    CommonThreadDataLike,
     ContextualInitialValue,
     IntegerValue,
+    NumericScalar,
+    ReadableThreadDataLike,
     TempStorageLike,
 )
 
-_T = TypeVar("_T", bound=CommonNumericScalar)
+_T = TypeVar("_T", bound=NumericScalar)
 _RegisterPayload: TypeAlias = CutlassTensorSample | CutlassTensorSSASample
 
 @overload
 def adjacent_difference(
     group: BlockGroup,
-    values: CommonThreadDataLike[_T],
+    values: ReadableThreadDataLike[_T],
     /,
     *,
     direction: Literal["left", "right"] = "left",
@@ -53,14 +53,14 @@ def adjacent_difference(
     *,
     direction: Literal["left", "right"] = "left",
     valid_items: IntegerValue | None = None,
-    tile_predecessor_item: CommonNumericScalar | None = None,
-    tile_successor_item: CommonNumericScalar | None = None,
+    tile_predecessor_item: NumericScalar | None = None,
+    tile_successor_item: NumericScalar | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadData[Any]: ...
 @overload
 def discontinuity(
     group: BlockGroup,
-    values: CommonThreadDataLike[_T],
+    values: ReadableThreadDataLike[_T],
     /,
     *,
     mode: Literal["heads", "tails"] = "heads",
@@ -75,14 +75,14 @@ def discontinuity(
     /,
     *,
     mode: Literal["heads", "tails"] = "heads",
-    tile_predecessor_item: CommonNumericScalar | None = None,
-    tile_successor_item: CommonNumericScalar | None = None,
+    tile_predecessor_item: NumericScalar | None = None,
+    tile_successor_item: NumericScalar | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadData[Int32]: ...
 @overload
 def discontinuity(
     group: BlockGroup,
-    values: CommonThreadDataLike[_T],
+    values: ReadableThreadDataLike[_T],
     /,
     *,
     mode: Literal["heads_and_tails"],
@@ -97,7 +97,7 @@ def discontinuity(
     /,
     *,
     mode: Literal["heads_and_tails"],
-    tile_predecessor_item: CommonNumericScalar | None = None,
-    tile_successor_item: CommonNumericScalar | None = None,
+    tile_predecessor_item: NumericScalar | None = None,
+    tile_successor_item: NumericScalar | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> tuple[ThreadData[Int32], ThreadData[Int32]]: ...

@@ -245,7 +245,7 @@ _rendering.register_bundle_renderer(
 def provider_reduce_batched(*, group, launch, value, op, output_layout):
     """Emit independent batch reductions into a fresh aligned payload.
 
-    The qualified ``reduce_batched`` entry point calls this during tracing.
+    The ``reduce_batched`` entry point calls this during tracing.
     Input slot i in every participating lane belongs to batch i. Reducing
     those values yields one total per batch, distributed across lanes
     according to output_layout.

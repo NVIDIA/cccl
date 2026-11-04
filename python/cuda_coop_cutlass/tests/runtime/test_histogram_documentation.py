@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Check qualified histogram examples against host results."""
+"""Check histogram examples against host results."""
 
 import numpy as np
 import pytest
@@ -14,7 +14,7 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_histogram_example(items_per_thread):
-    # qualified-histogram-example-begin
+    # cutlass-histogram-example-begin
     import cutlass
     from cutlass import cute
 
@@ -49,7 +49,7 @@ def test_histogram_example(items_per_thread):
             source, atomic_output, sort_output, items_per_thread
         ).launch(grid=1, block=64)
 
-    # qualified-histogram-example-end
+    # cutlass-histogram-example-end
     values = (np.arange(64 * items_per_thread, dtype=np.int32) * 13) % 70
     atomic, sorted_counts = (np.full(128, -1, dtype=np.int32) for _ in range(2))
     with (

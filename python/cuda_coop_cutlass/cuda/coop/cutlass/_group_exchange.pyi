@@ -25,13 +25,13 @@ from ._thread_data import (
 )
 from ._typing import (
     BlockGroup,
-    CommonNumericScalar,
-    CommonThreadDataLike,
     ExchangeMode,
+    NumericScalar,
+    ReadableThreadDataLike,
     WarpGroup,
 )
 
-_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=NumericScalar)
 _RegisterPayload: TypeAlias = CutlassTensorSample | CutlassTensorSSASample
 _RankScalar: TypeAlias = (
     int
@@ -55,8 +55,8 @@ _FlagScalar: TypeAlias = (
     | Uint32
     | Uint64
 )
-_Ranks: TypeAlias = CommonThreadDataLike[_RankScalar] | _RegisterPayload
-_Flags: TypeAlias = CommonThreadDataLike[_FlagScalar] | _RegisterPayload
+_Ranks: TypeAlias = ReadableThreadDataLike[_RankScalar] | _RegisterPayload
+_Flags: TypeAlias = ReadableThreadDataLike[_FlagScalar] | _RegisterPayload
 _BlockLayoutMode: TypeAlias = (
     ExchangeMode | Literal["warp_striped_to_blocked", "blocked_to_warp_striped"]
 )
@@ -67,7 +67,7 @@ _BlockScatterMode: TypeAlias = Literal[
 @overload
 def exchange(
     group: BlockGroup,
-    value: CommonThreadDataLike[_ItemT],
+    value: ReadableThreadDataLike[_ItemT],
     /,
     *,
     mode: _BlockLayoutMode = "striped_to_blocked",
@@ -89,7 +89,7 @@ def exchange(
 @overload
 def exchange(
     group: BlockGroup,
-    value: CommonThreadDataLike[_ItemT],
+    value: ReadableThreadDataLike[_ItemT],
     /,
     *,
     mode: _BlockScatterMode,
@@ -111,7 +111,7 @@ def exchange(
 @overload
 def exchange(
     group: BlockGroup,
-    value: CommonThreadDataLike[_ItemT],
+    value: ReadableThreadDataLike[_ItemT],
     /,
     *,
     mode: Literal["scatter_to_striped_guarded"],
@@ -133,7 +133,7 @@ def exchange(
 @overload
 def exchange(
     group: BlockGroup,
-    value: CommonThreadDataLike[_ItemT],
+    value: ReadableThreadDataLike[_ItemT],
     /,
     *,
     mode: Literal["scatter_to_striped_flagged"],
@@ -155,7 +155,7 @@ def exchange(
 @overload
 def exchange(
     group: WarpGroup,
-    value: CommonThreadDataLike[_ItemT],
+    value: ReadableThreadDataLike[_ItemT],
     /,
     *,
     mode: ExchangeMode = "striped_to_blocked",

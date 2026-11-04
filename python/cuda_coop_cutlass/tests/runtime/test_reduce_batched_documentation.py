@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Check qualified reduce batched examples against host results."""
+"""Check reduce batched examples against host results."""
 
 import numpy as np
 import pytest
@@ -14,7 +14,7 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_reduce_batched_example(items_per_thread):
-    # qualified-reduce-batched-example-begin
+    # cutlass-reduce-batched-example-begin
     import cutlass
     from cutlass import cute
 
@@ -49,7 +49,7 @@ def test_reduce_batched_example(items_per_thread):
             grid=1, block=64
         )
 
-    # qualified-reduce-batched-example-end
+    # cutlass-reduce-batched-example-end
     values = np.arange(64 * items_per_thread, dtype=np.int32) - 50
     observed = np.zeros(2 * items_per_thread, dtype=np.int32)
     with device_array(values) as src, device_array(observed) as out:

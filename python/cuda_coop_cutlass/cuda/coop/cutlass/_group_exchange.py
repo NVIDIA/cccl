@@ -34,13 +34,13 @@ from ._thread_group import (
 )
 from ._typing import (
     BlockGroup,
-    CommonNumericScalar,
-    CommonThreadDataLike,
     ExchangeMode,
+    NumericScalar,
+    ReadableThreadDataLike,
     WarpGroup,
 )
 
-_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=NumericScalar)
 
 
 _SCOPE = "cuda.coop.cutlass"
@@ -91,7 +91,7 @@ def _payload(value, *, name):
 
 def exchange(
     group: BlockGroup | WarpGroup,
-    value: CommonThreadDataLike[_ItemT]
+    value: ReadableThreadDataLike[_ItemT]
     | CutlassTensorSample
     | CutlassTensorSSASample,
     /,
@@ -101,11 +101,11 @@ def exchange(
     | Literal[
         "scatter_to_striped_guarded", "scatter_to_striped_flagged"
     ] = "striped_to_blocked",
-    ranks: CommonThreadDataLike[SignedIntegerScalar]
+    ranks: ReadableThreadDataLike[SignedIntegerScalar]
     | CutlassTensorSample
     | CutlassTensorSSASample
     | None = None,
-    valid_flags: CommonThreadDataLike[IntegralScalar]
+    valid_flags: ReadableThreadDataLike[IntegralScalar]
     | CutlassTensorSample
     | CutlassTensorSSASample
     | None = None,
@@ -190,10 +190,10 @@ def exchange(
     rank. Each of the 64 threads holds two items.
 
     .. literalinclude::
-        ../../../python/cuda_coop_cutlass/tests/runtime/test_qualified_collective_examples.py
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_collective_documentation.py
         :language: python
-        :start-after: # qualified-scatter-example-begin
-        :end-before: # qualified-scatter-example-end
+        :start-after: # cutlass-scatter-example-begin
+        :end-before: # cutlass-scatter-example-end
         :dedent: 4
     """
     if not isinstance(group, ThreadGroup):

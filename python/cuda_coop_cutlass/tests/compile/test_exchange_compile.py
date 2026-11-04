@@ -18,7 +18,7 @@ from cutlass import cute
 from cutlass.base_dsl.compiler import GPUArch
 from cutlass.cute.runtime import make_ptr
 
-import cuda.coop.cutlass as cutlass_coop
+import cuda.coop.cutlass as coop
 from cuda.coop.cutlass._compiler._types import (
     ALL_PROVIDER_TYPES,
     INTEGER_VALUE_TYPES,
@@ -31,20 +31,19 @@ def _pointer(dtype=cutlass.Int32):
     return make_ptr(dtype, 0, cute.AddressSpace.gmem, assumed_align=16)
 
 
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32))
 @pytest.mark.parametrize("mode", ("striped_to_blocked", "blocked_to_striped"))
 @pytest.mark.parametrize("items_per_thread", (1, 4))
-def test_logical_layouts(api, width, mode, items_per_thread):
+def test_logical_layouts(width, mode, items_per_thread):
     @cute.kernel
     def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
-        payload = api.ThreadData(
+        payload = coop.ThreadData(
             items_per_thread, dtype=cutlass.Int32, alignment=64
         )
         for item in cutlass.range_constexpr(items_per_thread):
             payload[item] = cutlass.Int32(item + 1)
-        result = api.exchange(
-            api.this_warp().group_by(width), payload, mode=mode
+        result = coop.exchange(
+            coop.this_warp().group_by(width), payload, mode=mode
         )
         cute.make_tensor(memory, cute.make_layout(1))[0] = result[0]
 
@@ -68,11 +67,11 @@ def test_typed_result(dtype):
 
     @cute.kernel
     def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
-        payload = cutlass_coop.ThreadData(
+        payload = coop.ThreadData(
             items_per_thread, dtype=dtype, values=[dtype(1), dtype(2)]
         )
-        result = cutlass_coop.exchange(cutlass_coop.this_block(), payload)
-        total = cutlass_coop.sum(cutlass_coop.this_block(), result)
+        result = coop.exchange(coop.this_block(), payload)
+        total = coop.sum(coop.this_block(), result)
         cute.make_tensor(memory, cute.make_layout(1))[0] = total
 
     @cute.jit
@@ -97,16 +96,16 @@ def test_rank_width(rank_type):
 
     @cute.kernel
     def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
-        value = cutlass_coop.ThreadData(
+        value = coop.ThreadData(
             items_per_thread, dtype=cutlass.Int32, values=[1, 2]
         )
-        ranks = cutlass_coop.ThreadData(
+        ranks = coop.ThreadData(
             items_per_thread,
             dtype=rank_type,
             values=[rank_type(0), rank_type(1)],
         )
-        result = cutlass_coop.exchange(
-            cutlass_coop.this_block(),
+        result = coop.exchange(
+            coop.this_block(),
             value,
             mode="scatter_to_blocked",
             ranks=ranks,
@@ -131,19 +130,19 @@ def test_flag_width(flag_type):
 
     @cute.kernel
     def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
-        value = cutlass_coop.ThreadData(
+        value = coop.ThreadData(
             items_per_thread, dtype=cutlass.Int32, values=[1, 2]
         )
-        ranks = cutlass_coop.ThreadData(
+        ranks = coop.ThreadData(
             items_per_thread, dtype=cutlass.Int32, values=[0, 1]
         )
-        flags = cutlass_coop.ThreadData(
+        flags = coop.ThreadData(
             items_per_thread,
             dtype=flag_type,
             values=[flag_type(0), flag_type(2)],
         )
-        result = cutlass_coop.exchange(
-            cutlass_coop.this_block(),
+        result = coop.exchange(
+            coop.this_block(),
             value,
             mode="scatter_to_striped_flagged",
             ranks=ranks,
@@ -188,78 +187,76 @@ class _Mode(str, Enum):
 def test_invalid_controls(case, expected):
     @cute.kernel
     def kernel():
-        value = cutlass_coop.ThreadData(
+        value = coop.ThreadData(
             items_per_thread=2, dtype=cutlass.Int32, values=[1, 2]
         )
-        ranks = cutlass_coop.ThreadData(
+        ranks = coop.ThreadData(
             items_per_thread=2, dtype=cutlass.Int32, values=[0, 1]
         )
-        group = cutlass_coop.this_block()
+        group = coop.this_block()
         if cutlass.const_expr(case == "scalar"):
-            cutlass_coop.exchange(group, cutlass.Int32(1))
+            coop.exchange(group, cutlass.Int32(1))
         elif cutlass.const_expr(case == "warp_scatter"):
-            cutlass_coop.exchange(
-                cutlass_coop.this_warp(),
+            coop.exchange(
+                coop.this_warp(),
                 value,
                 mode="scatter_to_striped",
                 ranks=ranks,
             )
         elif cutlass.const_expr(case == "missing_ranks"):
-            cutlass_coop.exchange(group, value, mode="scatter_to_blocked")
+            coop.exchange(group, value, mode="scatter_to_blocked")
         elif cutlass.const_expr(case == "extra_ranks"):
-            cutlass_coop.exchange(group, value, ranks=ranks)
+            coop.exchange(group, value, ranks=ranks)
         elif cutlass.const_expr(case == "missing_flags"):
-            cutlass_coop.exchange(
+            coop.exchange(
                 group, value, mode="scatter_to_striped_flagged", ranks=ranks
             )
         elif cutlass.const_expr(case == "extra_flags"):
-            cutlass_coop.exchange(group, value, valid_flags=ranks)
+            coop.exchange(group, value, valid_flags=ranks)
         elif cutlass.const_expr(case == "rank_extent"):
-            cutlass_coop.exchange(
+            coop.exchange(
                 group,
                 value,
                 mode="scatter_to_blocked",
-                ranks=cutlass_coop.ThreadData(
+                ranks=coop.ThreadData(
                     items_per_thread=1, dtype=cutlass.Int32, values=[0]
                 ),
             )
         elif cutlass.const_expr(case == "rank_unsigned"):
-            cutlass_coop.exchange(
+            coop.exchange(
                 group,
                 value,
                 mode="scatter_to_blocked",
-                ranks=cutlass_coop.ThreadData(
+                ranks=coop.ThreadData(
                     items_per_thread=2, dtype=cutlass.Uint32, values=[0, 1]
                 ),
             )
         elif cutlass.const_expr(case == "flag_float"):
-            cutlass_coop.exchange(
+            coop.exchange(
                 group,
                 value,
                 mode="scatter_to_striped_flagged",
                 ranks=ranks,
-                valid_flags=cutlass_coop.ThreadData(
+                valid_flags=coop.ThreadData(
                     items_per_thread=2, dtype=cutlass.Float32, values=[0.0, 1.0]
                 ),
             )
         elif cutlass.const_expr(case == "flag_bool"):
-            cutlass_coop.exchange(
+            coop.exchange(
                 group,
                 value,
                 mode="scatter_to_striped_flagged",
                 ranks=ranks,
-                valid_flags=cutlass_coop.ThreadData(
+                valid_flags=coop.ThreadData(
                     items_per_thread=2, dtype=bool, values=[True, False]
                 ),
             )
         elif cutlass.const_expr(case == "timeslicing_integer"):
-            cutlass_coop.exchange(group, value, warp_time_slicing=1)
+            coop.exchange(group, value, warp_time_slicing=1)
         elif cutlass.const_expr(case == "timeslicing_warp"):
-            cutlass_coop.exchange(
-                cutlass_coop.this_warp(), value, warp_time_slicing=True
-            )
+            coop.exchange(coop.this_warp(), value, warp_time_slicing=True)
         elif cutlass.const_expr(case == "timeslicing_guarded"):
-            cutlass_coop.exchange(
+            coop.exchange(
                 group,
                 value,
                 mode="scatter_to_striped_guarded",
@@ -267,21 +264,17 @@ def test_invalid_controls(case, expected):
                 warp_time_slicing=True,
             )
         elif cutlass.const_expr(case == "selector_enum"):
-            cutlass_coop.exchange(group, value, mode=_Mode.BLOCKED)
+            coop.exchange(group, value, mode=_Mode.BLOCKED)
         elif cutlass.const_expr(case == "nested"):
-            cutlass_coop.exchange(
-                cutlass_coop.this_warp().group_by(16).group_by(8), value
-            )
+            coop.exchange(coop.this_warp().group_by(16).group_by(8), value)
         elif cutlass.const_expr(case == "partial"):
-            cutlass_coop.exchange(cutlass_coop.this_warp().group_by(8), value)
+            coop.exchange(coop.this_warp().group_by(8), value)
         elif cutlass.const_expr(case == "warp_striped_partial"):
-            cutlass_coop.exchange(group, value, mode="blocked_to_warp_striped")
+            coop.exchange(group, value, mode="blocked_to_warp_striped")
         else:
-            cutlass_coop.exchange(
+            coop.exchange(
                 group,
-                cutlass_coop.ThreadData(
-                    items_per_thread=2, values=[1 << 40, 2]
-                ),
+                coop.ThreadData(items_per_thread=2, values=[1 << 40, 2]),
             )
 
     @cute.jit
@@ -296,12 +289,10 @@ def test_invalid_controls(case, expected):
 
 
 @pytest.mark.parametrize("ssa", (False, True))
-@pytest.mark.parametrize("api", (cutlass_coop,), ids=("cutlass",))
-def test_register_payload(ssa, api):
-    """Keep native CuTe register inputs behind the qualified Exchange API.
+def test_register_payload(ssa):
+    """Accept native CuTe register tensors and their loaded SSA values.
 
-    The qualified path accepts a register tensor or its loaded SSA value. The
-    common path requires fixed-size ThreadData and rejects both native forms.
+    Both input forms produce a ThreadData result consumed by the kernel.
     """
 
     @cute.kernel
@@ -312,7 +303,7 @@ def test_register_payload(ssa, api):
             value = fragment.load()
         else:
             value = fragment
-        result = api.exchange(api.this_block(), value)
+        result = coop.exchange(coop.this_block(), value)
         cute.make_tensor(memory, cute.make_layout(1))[0] = result[0]
 
     @cute.jit
@@ -325,9 +316,9 @@ def test_register_payload(ssa, api):
 def test_missing_exact_block():
     @cute.kernel
     def kernel(items_per_thread: cutlass.Constexpr):
-        cutlass_coop.exchange(
-            cutlass_coop.this_block(),
-            cutlass_coop.ThreadData(
+        coop.exchange(
+            coop.this_block(),
+            coop.ThreadData(
                 items_per_thread, dtype=cutlass.Int32, values=[1, 2]
             ),
         )
