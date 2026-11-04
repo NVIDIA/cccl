@@ -28,7 +28,18 @@ Extensions
 Restrictions
 ------------
 
-  - Algorithms in namespace `ranges` are not yet supported.
+  - Only a subset of the algorithms in namespace `ranges` is supported:
+
+    * ``find_if``
+    * ``find_if_not``
+    * ``find_last``
+    * ``find_last_if``
+    * ``find_last_if_not``
+    * ``for_each``
+    * ``for_each_n``
+    * ``min``
+    * ``min_element``
+
   - Some sorting algorithms are not yet supported:
 
     * ``inplace_merge``
