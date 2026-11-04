@@ -42,8 +42,7 @@
 namespace cuda::experimental::coop
 {
 template <class _Unit, class _Group>
-[[nodiscard]] _CCCL_DEVICE_API constexpr auto
-__do_group_view_mapping(const _Unit& __unit, const _Group& __group) noexcept
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto __do_group_view_mapping(const _Unit& __unit, const _Group& __group)
 {
   if constexpr (::cuda::std::is_same_v<_Unit, typename _Group::unit_type>)
   {
@@ -97,19 +96,19 @@ public:
 
   group_view() = delete;
 
-  _CCCL_HIDE_FROM_ABI group_view(const group_view&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI group_view(const group_view&) = default;
 
-  _CCCL_HIDE_FROM_ABI group_view(group_view&&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI group_view(group_view&&) = default;
 
   _CCCL_TEMPLATE(class _Unit2 = _Unit)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Unit2, typename _Group::unit_type>)
-  _CCCL_DEVICE_API group_view(const _Group& __group) noexcept
+  _CCCL_DEVICE_API group_view(const _Group& __group)
       : __hier_{__group.hierarchy()}
       , __mapping_result_{::cuda::experimental::coop::__do_group_view_mapping(_Unit{}, __group)}
       , __synchronizer_instance_{__group.__synchronizer_instance().view()}
   {}
 
-  _CCCL_DEVICE_API explicit group_view(const _Unit& __unit, const _Group& __group) noexcept
+  _CCCL_DEVICE_API explicit group_view(const _Unit& __unit, const _Group& __group)
       : __hier_{__group.hierarchy()}
       , __mapping_result_{::cuda::experimental::coop::__do_group_view_mapping(__unit, __group)}
       , __synchronizer_instance_{__group.__synchronizer_instance().view()}
@@ -117,66 +116,66 @@ public:
 
   _CCCL_TEMPLATE(class _OtherUnit)
   _CCCL_REQUIRES(__unit_same_as_or_below_v<_Unit, _OtherUnit>)
-  _CCCL_DEVICE_API explicit group_view(const _Unit& __unit, const group_view<_OtherUnit, _Group>& __other) noexcept
+  _CCCL_DEVICE_API explicit group_view(const _Unit& __unit, const group_view<_OtherUnit, _Group>& __other)
       : __hier_{__other.hierarchy()}
       , __mapping_result_{::cuda::experimental::coop::__do_group_view_mapping(__unit, __other)}
       , __synchronizer_instance_{__other.__synchronizer_instance()}
   {}
 
-  [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const
   {
     return __hier_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API _MappingResult __mapping_result() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API _MappingResult __mapping_result() const
   {
     return __mapping_result_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API const _SynchronizerInstance& __synchronizer_instance() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API const _SynchronizerInstance& __synchronizer_instance() const
   {
     return __synchronizer_instance_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous()
   {
     return _MappingResult::is_always_contiguous();
   }
 
   // todo(dabayer): Do we want to expose .arrive() and .wait()? Do we want to implement .sync() using them? Do we want
   //                aligned/unaligned variants?
-  _CCCL_DEVICE_API void sync() const noexcept
+  _CCCL_DEVICE_API void sync() const
   {
     __synchronizer_instance_.do_sync(__mapping_result_, __hier_);
   }
 
-  _CCCL_DEVICE_API void sync_aligned() const noexcept
+  _CCCL_DEVICE_API void sync_aligned() const
   {
     __synchronizer_instance_.do_sync_aligned(__mapping_result_, __hier_);
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API arrival_token arrive() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API arrival_token arrive() const
   {
     return __synchronizer_instance_.do_arrive(__mapping_result_, __hier_);
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API arrival_token arrive_aligned() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API arrival_token arrive_aligned() const
   {
     return __synchronizer_instance_.do_arrive_aligned(__mapping_result_, __hier_);
   }
 
-  _CCCL_DEVICE_API void wait(arrival_token&& __tok) const noexcept
+  _CCCL_DEVICE_API void wait(arrival_token&& __tok) const
   {
     __synchronizer_instance_.do_wait(__mapping_result_, __hier_, ::cuda::std::move(__tok));
   }
 
-  _CCCL_DEVICE_API void wait_aligned(arrival_token&& __tok) const noexcept
+  _CCCL_DEVICE_API void wait_aligned(arrival_token&& __tok) const
   {
     __synchronizer_instance_.do_wait_aligned(__mapping_result_, __hier_, ::cuda::std::move(__tok));
   }
 
   template <class _Arg>
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr auto static_count(const _Arg& __arg) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr auto static_count(const _Arg& __arg)
     -> decltype(_Group::static_count(__arg))
   {
     return _Group::static_count(__arg);
@@ -184,14 +183,14 @@ public:
 
   _CCCL_TEMPLATE(class _Tp, class _Arg)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-  [[nodiscard]] _CCCL_DEVICE_API constexpr auto count_as(const _Arg& __arg) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto count_as(const _Arg& __arg) const
     -> decltype(::cuda::std::declval<const _Group&>().template count_as<_Tp>(__arg))
   {
     return _Group::template __count_as_impl<_Tp>(__mapping_result_, __hier_, __arg);
   }
 
   template <class _Arg>
-  [[nodiscard]] _CCCL_DEVICE_API constexpr auto count(const _Arg& __arg) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto count(const _Arg& __arg) const
     -> decltype(::cuda::std::declval<const _Group&>().count(__arg))
   {
     using _Level = typename _Arg::level_type;
@@ -200,14 +199,14 @@ public:
 
   _CCCL_TEMPLATE(class _Tp, class _Arg)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-  [[nodiscard]] _CCCL_DEVICE_API constexpr auto rank_as(const _Arg& __arg) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto rank_as(const _Arg& __arg) const
     -> decltype(::cuda::std::declval<const _Group&>().template rank_as<_Tp>(__arg))
   {
     return _Group::template __rank_as_impl<_Tp>(__mapping_result_, __hier_, __arg);
   }
 
   template <class _Arg>
-  [[nodiscard]] _CCCL_DEVICE_API constexpr auto rank(const _Arg& __arg) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto rank(const _Arg& __arg) const
     -> decltype(::cuda::std::declval<const _Group&>().rank(__arg))
   {
     using _Level = typename _Arg::level_type;

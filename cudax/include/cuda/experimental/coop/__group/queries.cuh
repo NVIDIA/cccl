@@ -26,6 +26,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -34,7 +35,7 @@
 namespace cuda::experimental::coop
 {
 template <class _Unit, class _Group>
-[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::size_t __static_count_query_group() noexcept
+[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::size_t __static_count_query_group()
 {
   using _GroupUnit          = typename _Group::unit_type;
   using _GroupMappingResult = typename _Group::__mapping_result_type;
@@ -66,7 +67,7 @@ template <class _Unit, class _Group>
 }
 
 template <class _Tp, class _Unit, class _Group>
-[[nodiscard]] _CCCL_DEVICE_API constexpr _Tp __count_query_group(const _Group& __group) noexcept
+[[nodiscard]] _CCCL_DEVICE_API constexpr _Tp __count_query_group(const _Group& __group)
 {
   using _GroupUnit = typename _Group::unit_type;
 
@@ -92,7 +93,7 @@ template <class _Tp, class _Unit, class _Group>
 }
 
 template <class _Tp, class _Unit, class _Group>
-[[nodiscard]] _CCCL_DEVICE_API _Tp __rank_query_group(const _Group& __group) noexcept
+[[nodiscard]] _CCCL_DEVICE_API _Tp __rank_query_group(const _Group& __group)
 {
   using _GroupUnit = typename _Group::unit_type;
 
