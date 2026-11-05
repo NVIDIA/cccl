@@ -997,6 +997,9 @@ auto __normalize(_R&& __r);
  * passes the whole sequence through. The predicate takes either nothing or the
  * `const std::exception*` of the failure in flight. A guard can be named and applied to
  * several sinks: `auto transient = when(is_transient); transient(retry(3)) | transient(notify(log))`.
+ * The guard holds the predicate by value: an lvalue predicate is copied, so later changes to the
+ * original do not reach the guard; pass `std::ref(pred)` to share one predicate object. Each
+ * application copies the predicate into the guarded sink.
  * `if_isa` remains separate because its typed claims support the starved-arm theorem, while
  * arbitrary predicates do not.
  */
