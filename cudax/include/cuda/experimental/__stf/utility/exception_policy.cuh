@@ -1052,13 +1052,110 @@ struct when_t
 };
 
 /**
- * @brief Boundary translation: catches a `_From` (catch-clause rules: same or publicly
- * derived) and throws a `_To` (a `std::exception` derivative) -- constructed from the caught
- * `_From` when such a constructor exists, default-constructed otherwise. Anything that is not a `_From` forwards
- * untouched, so `translate<low, high> | ...` ladders compose; a following arm sees the `_To`.
+ * @brief Boundary translation. `translate<To>` replaces every failure by a `To` built from it;
+ * `translate<From, To>` does so only for a `From` (catch-clause rules: same or publicly
+ * derived) and forwards anything else untouched.
+ *
+ * `To` is a `std::exception` derivative, constructed from the caught exception when such a
+ * constructor exists, from its `what()` otherwise, default-constructed failing both. The
+ * one-type form claims everything, a non-standard exception included, for which `To` is
+ * default-constructed, or built from the message "non-standard exception" when it takes a
+ * `const char*`. Restrict the source with a selector, as in
+ * `if_isa<cuda_error>(translate<device_error>)`. A following `|` arm sees the `To`, so
+ * `translate<low, high> | if_isa<high>(...)` ladders compose.
  */
-template <class _From, class _To>
+template <class... _Ts>
 struct translate_t
+{
+  static_assert(sizeof...(_Ts) == 1 || sizeof...(_Ts) == 2,
+                "translate<To> replaces every exception; translate<From, To> replaces a From");
+};
+
+namespace detail
+{
+// Builds and throws the `_To` of a translation: from the caught `_From` when such a constructor
+// exists, from its `what()` otherwise, default-constructed failing both.
+template <class _To, class _From>
+[[noreturn]] void __throw_translated(const _From& __from)
+{
+  if constexpr (::cuda::std::is_constructible_v<_To, const _From&>)
+  {
+    _CCCL_THROW(_To, __from);
+  }
+  else if constexpr (::cuda::std::is_base_of_v<::std::exception, _From>
+                     && ::cuda::std::is_constructible_v<_To, const char*>)
+  {
+    _CCCL_THROW(_To, __from.what()); // carry the message across the translation
+  }
+  else if constexpr (::cuda::std::is_default_constructible_v<_To>)
+  {
+    _CCCL_THROW(_To);
+  }
+  else
+  {
+    static_assert(!::cuda::std::is_same_v<_From, _From>,
+                  "translate: To must be constructible from the caught exception, from its what(), or "
+                  "default-constructible");
+  }
+  _CCCL_UNREACHABLE();
+}
+
+// The `_To` for a non-standard exception, which offers nothing to build from.
+template <class _To>
+[[noreturn]] void __throw_translated()
+{
+  if constexpr (::cuda::std::is_default_constructible_v<_To>)
+  {
+    _CCCL_THROW(_To);
+  }
+  else if constexpr (::cuda::std::is_constructible_v<_To, const char*>)
+  {
+    _CCCL_THROW(_To, "non-standard exception");
+  }
+  else
+  {
+    static_assert(!::cuda::std::is_same_v<_To, _To>,
+                  "translate<To>: To must be default-constructible or constructible from a const char* to stand "
+                  "in for a non-standard exception");
+  }
+  _CCCL_UNREACHABLE();
+}
+} // namespace detail
+
+template <class _To>
+struct translate_t<_To>
+{
+  static_assert(::cuda::std::is_base_of_v<::std::exception, _To>,
+                "translate: the target type must derive from std::exception");
+
+  _CUDAX_STF_SINK(translate_t)
+  using __pure_claim_tag _CCCL_NODEBUG = void;
+
+  //! Everything is claimed; the funnel pointer, null or not, says how to build the `_To`.
+  __claim __claims(const ::std::exception*) const noexcept
+  {
+    return __claim::__yes;
+  }
+
+  template <class _Fn>
+  [[noreturn]] nullval __claimed(const ::std::exception* __e, const ::cuda::std::source_location, _Fn&) const
+  {
+    if (__e)
+    {
+      detail::__throw_translated<_To>(*__e);
+    }
+    detail::__throw_translated<_To>();
+  }
+
+  template <class _Fn>
+  [[noreturn]] nullval on_thrown(const ::std::exception* __e, const ::cuda::std::source_location __loc, _Fn& __fn) const
+  {
+    __claimed(__e, __loc, __fn);
+  }
+};
+
+template <class _From, class _To>
+struct translate_t<_From, _To>
 {
   // The target must be a std::exception: the rest of the algebra reports through what(), and so
   // does _CCCL_THROW in a build without exceptions.
@@ -1082,7 +1179,7 @@ struct translate_t
   template <class _Fn>
   [[noreturn]] nullval __claimed(const ::std::exception* __e, const ::cuda::std::source_location, _Fn&) const
   {
-    __throw_translated(*dynamic_cast<const _From*>(__e)); // the claim was answered yes: the cast holds
+    detail::__throw_translated<_To>(*dynamic_cast<const _From*>(__e)); // the claim was answered yes: the cast holds
   }
 
   template <class _Fn>
@@ -1093,7 +1190,7 @@ struct translate_t
       // The funnel pointer decides for std-derived exceptions, no rethrow needed.
       if (const auto* __from = dynamic_cast<const _From*>(__e))
       {
-        __throw_translated(*__from);
+        detail::__throw_translated<_To>(*__from);
       }
       _CCCL_RETHROW; // decline: a std exception that is not a _From
     }
@@ -1104,42 +1201,17 @@ struct translate_t
     }
     _CCCL_CATCH (const _From& __from)
     {
-      __throw_translated(__from);
+      detail::__throw_translated<_To>(__from);
     }
     _CCCL_CATCH_FALLTHROUGH // decline: not a _From either
     _CCCL_UNREACHABLE();
   }
-
-private:
-  [[noreturn]] static void __throw_translated(const _From& __from)
-  {
-    if constexpr (::cuda::std::is_constructible_v<_To, const _From&>)
-    {
-      _CCCL_THROW(_To, __from);
-    }
-    else if constexpr (::cuda::std::is_base_of_v<::std::exception, _From>
-                       && ::cuda::std::is_constructible_v<_To, const char*>)
-    {
-      _CCCL_THROW(_To, __from.what()); // carry the message across the translation
-    }
-    else if constexpr (::cuda::std::is_default_constructible_v<_To>)
-    {
-      _CCCL_THROW(_To);
-    }
-    else
-    {
-      static_assert(!::cuda::std::is_same_v<_From, _From>,
-                    "translate<From, To>: To must be constructible from const From&, from "
-                    "From::what(), or default-constructible");
-    }
-    _CCCL_UNREACHABLE();
-  }
 };
 
-//! @brief Translates: catches a `_From` (catch-clause rules), throws a `_To` -- constructed from
-//! the caught `_From` when possible, default-constructed otherwise. Anything else forwards.
-template <class _From, class _To>
-inline constexpr translate_t<_From, _To> translate{};
+//! @brief Translates: `translate<To>` replaces every exception by a `To` built from it;
+//! `translate<From, To>` replaces a `From` and forwards anything else. See @ref translate_t.
+template <class... _Ts>
+inline constexpr translate_t<_Ts...> translate{};
 
 /**
  * @brief Throws a stored exception with the active exception nested as its cause.
@@ -6187,6 +6259,30 @@ UNITTEST("selecting arms decline by return")
   EXPECT(((translate<key, boom> | if_isa<boom>(subst(5)) | subst(0))->*throw_key) == 5);
   EXPECT(((translate<key, boom> | if_isa<boom>(subst(5)) | subst(0))->*throw_boom) == 5);
   EXPECT(((translate<key, boom> | if_isa<boom>(subst(5)) | subst(0))->*throw_other) == 0);
+
+  // The one-type form replaces every exception, a non-standard one included; a selector
+  // restricts the source.
+  static_assert(::cuda::std::is_same_v<decltype(translate<boom>), const translate_t<boom>>);
+  static_assert(__has_pure_claim<decltype(translate<boom>)>);
+  EXPECT(((translate<boom> | if_isa<boom>(subst(5)) | subst(0))->*throw_key) == 5);
+  EXPECT(((translate<boom> | if_isa<boom>(subst(5)) | subst(0))->*throw_other) == 5);
+  EXPECT(((translate<boom> | if_isa<boom>(subst(5)) | subst(0))->*throw_int) == 5);
+  EXPECT(((if_isa<key>(translate<boom>) | if_isa<boom>(subst(5)) | subst(0))->*throw_key) == 5);
+  EXPECT(((if_isa<key>(translate<boom>) | if_isa<boom>(subst(5)) | subst(0))->*throw_other) == 0);
+  // The message crosses the translation when To takes a const char*; boom above does not, so
+  // it is default-constructed.
+  struct tagged : ::std::runtime_error
+  {
+    using runtime_error::runtime_error;
+  };
+  const auto first_char = thrown([](const ::std::exception& e) {
+    return int(e.what()[0]);
+  });
+  EXPECT(((translate<tagged> | first_char)->*throw_key) == int('k'));
+  EXPECT(((translate<boom> | first_char)->*throw_key) == int('b'));
+  // A non-standard exception has no message; a To that takes one gets a fixed text.
+  EXPECT(((translate<tagged> | first_char)->*throw_int) == int('n'));
+  EXPECT(((translate<boom> | first_char)->*throw_int) == int('b'));
 
   // A predicate is evaluated exactly once, whether it claims or declines.
   int evals = 0;
