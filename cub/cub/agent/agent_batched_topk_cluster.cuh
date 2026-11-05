@@ -61,6 +61,7 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_ptx.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
@@ -108,6 +109,20 @@
 #else // ^^^ __cccl_ptx_isa >= 860 ^^^ / vvv __cccl_ptx_isa < 860 vvv
 #  define _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() 0
 #endif // __cccl_ptx_isa >= 860
+
+// TODO(cluster-topk): benchmarking toggles for the mbarrier path; remove before merging.
+// End-of-pass publish of the leader's `state`: 0 = after a block barrier, from `state` in shared memory by the leader's
+// lanes (one rank each); 1 = straight from the owning thread's registers, serially to every rank; 2 = from the owning
+// warp, shuffled to its lanes (one rank each). Modes 1 and 2 zero the leader's `hist` while the scan reads it instead
+// of a separate `reset_hist`.
+#ifndef CUB_DETAIL_CLUSTER_TOPK_PUBLISH_MODE
+#  define CUB_DETAIL_CLUSTER_TOPK_PUBLISH_MODE 0
+#endif
+// Prefix exchange: 0 = every count is pushed, zeros included; 1 = zero counts are not pushed, their bytes are settled
+// with one `mbarrier.complete_tx` per successor instead.
+#ifndef CUB_DETAIL_CLUSTER_TOPK_PREFIX_COMPLETE_TX
+#  define CUB_DETAIL_CLUSTER_TOPK_PREFIX_COMPLETE_TX 0
+#endif
 
 CUB_NAMESPACE_BEGIN
 
@@ -280,6 +295,13 @@ struct agent_batched_topk_cluster
   static_assert(sizeof(state_t) == 16, "the published cluster state must be exactly one 16-byte st.async payload");
   using size_state_t  = typename state_t::size_state;
   using pass_result_t = typename state_t::pass_result;
+
+  // TODO(cluster-topk): benchmarking toggles (see the macros at the top); remove before merging.
+  static constexpr int publish_mode = _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() ? CUB_DETAIL_CLUSTER_TOPK_PUBLISH_MODE : 0;
+  static_assert(publish_mode >= 0 && publish_mode <= 2, "CUB_DETAIL_CLUSTER_TOPK_PUBLISH_MODE must be 0, 1 or 2");
+  static constexpr bool publish_from_owner = publish_mode != 0;
+  static constexpr bool prefix_complete_tx =
+    _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() && CUB_DETAIL_CLUSTER_TOPK_PREFIX_COMPLETE_TX != 0;
 
   // See the class comment: deterministic guarantees select the index-ordered scan; `is_tie_reversed` flips its order.
   static constexpr bool needs_set_determinism =
@@ -896,12 +918,24 @@ private:
     {
       const int bucket = tid * buckets_per_thread + j;
       hist_vals[j]     = (bucket < num_buckets) ? temp_storage.hist[bucket] : offset_t{0};
+      if constexpr (publish_from_owner)
+      {
+        // Replaces the leader's `reset_hist`: the scan's internal block barrier orders every thread's zeroing before
+        // the owner's publish, whose release must cover it (the receivers' next fold adds into this `hist`), and
+        // before the next pass's histogram atomics.
+        if (bucket < num_buckets)
+        {
+          temp_storage.hist[bucket] = 0;
+        }
+      }
     }
 
     block_scan_t(temp_storage.scan_storage).ExclusiveSum(hist_vals, prefixes);
 
     // Exactly one (thread, slot) pair satisfies
     // `prefix < target_k <= prefix + hist_val`.
+    [[maybe_unused]] bool is_owner = false;
+    [[maybe_unused]] state_t new_state{};
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int j = 0; j < buckets_per_thread; ++j)
     {
@@ -914,11 +948,39 @@ private:
         temp_storage.state.size.leftover_k              = new_k;
         // Publish the splitter bucket and the early-stop flag (set when the bucket holds exactly the remaining `k`);
         // see `pass_result`.
-        temp_storage.state.result = pass_result_t{
+        const pass_result_t result{
           static_cast<::cuda::std::uint32_t>(bucket),
           static_cast<::cuda::std::uint32_t>(static_cast<out_offset_t>(num_remaining_cluster_candidates) == new_k)};
+        temp_storage.state.result = result;
+        if constexpr (publish_from_owner)
+        {
+          is_owner  = true;
+          new_state = state_t{size_state_t{num_remaining_cluster_candidates, new_k}, result};
+        }
       }
     }
+#if _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC()
+    // Owner publish modes: `new_state` goes out from registers, without a round trip through shared memory.
+    if constexpr (publish_mode == 1)
+    {
+      if (is_owner && !is_single_cta)
+      {
+        publish_pass_state(new_state, 0u, 1u);
+      }
+    }
+    else if constexpr (publish_mode == 2)
+    {
+      // All leader threads get here, so every warp is converged; only the owner's warp publishes.
+      const unsigned owner_lanes = __ballot_sync(~0u, is_owner);
+      if (owner_lanes != 0u && !is_single_cta)
+      {
+        const int owner_lane = __ffs(static_cast<int>(owner_lanes)) - 1;
+        publish_pass_state(ShuffleIndex<detail::warp_threads>(new_state, owner_lane, ~0u),
+                           static_cast<unsigned>(tid % detail::warp_threads),
+                           unsigned{detail::warp_threads});
+      }
+    }
+#endif // _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC()
   }
 
   // ---------------------------------------------------------------------------
@@ -1354,26 +1416,36 @@ private:
     }
   }
 
-  // Leader half of the publish; lane `t` serves rank `t`. `st.async` only orders same-address accesses, so the
-  // shared-memory release fence plus the remote relaxed arrival (which also arms the receiver for the payload) is what
-  // orders this pass's `hist` accesses (BlockScan reads, reset) before the receiver's next fold. The caller's block
-  // barrier puts every thread's accesses into the issuing lanes' history.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void publish_pass_state()
+  // Leader half of the publish: pushes `state` to the working ranks `first_rank, first_rank + rank_stride, ...` other
+  // than the leader. `st.async` only orders same-address accesses, so the shared-memory release fence plus the remote
+  // relaxed arrival (which also arms the receiver for the payload) is what orders this pass's `hist` accesses
+  // (BlockScan reads, reset) before the receiver's next fold. The caller puts every thread's accesses into the issuing
+  // threads' history: a block barrier, or the scan's barrier in `leader_identify_kth_bucket` for the owner modes.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void publish_pass_state(const state_t& state, unsigned first_rank, unsigned rank_stride)
   {
     struct state_words
     {
       ::cuda::std::uint32_t words[4];
     };
+    // A single publishing thread fences once for all its pushes; otherwise each thread pushes to at most one rank.
+    if constexpr (publish_mode == 1)
+    {
+      ::cuda::ptx::fence_sync_restrict(::cuda::ptx::sem_release, ::cuda::ptx::space_shared, ::cuda::ptx::scope_cluster);
+    }
     _CCCL_PRAGMA_NOUNROLL()
-    for (unsigned rank = threadIdx.x; rank < layout.num_logical_cluster_blocks; rank += policy.threads_per_block)
+    for (unsigned rank = first_rank; rank < layout.num_logical_cluster_blocks; rank += rank_stride)
     {
       if (rank == layout.leader_rank)
       {
         continue;
       }
       _TempStorage* const remote = map_to_rank(&temp_storage, rank);
-      const auto payload         = ::cuda::std::bit_cast<state_words>(temp_storage.state);
-      ::cuda::ptx::fence_sync_restrict(::cuda::ptx::sem_release, ::cuda::ptx::space_shared, ::cuda::ptx::scope_cluster);
+      const auto payload         = ::cuda::std::bit_cast<state_words>(state);
+      if constexpr (publish_mode != 1)
+      {
+        ::cuda::ptx::fence_sync_restrict(
+          ::cuda::ptx::sem_release, ::cuda::ptx::space_shared, ::cuda::ptx::scope_cluster);
+      }
       ::cuda::ptx::mbarrier_arrive_expect_tx(
         ::cuda::ptx::sem_relaxed,
         ::cuda::ptx::scope_cluster,
@@ -1428,10 +1500,45 @@ private:
     _CCCL_ASSERT(cluster_block_rank < layout.num_logical_cluster_blocks, "idle ranks take no part in the prefix scan");
     const auto push_prefixes = [&](unsigned rank) {
       _TempStorage* const remote = map_to_rank(&temp_storage, rank);
-      ::cuda::ptx::red_async(
-        ::cuda::ptx::op_add, &remote->selected_offset_counter, num_local_selected_for_scan, &remote->prefix_mbar);
-      ::cuda::ptx::red_async(
-        ::cuda::ptx::op_add, &remote->tie_offset_counter, num_local_tied_for_scan, &remote->prefix_mbar);
+      if constexpr (prefix_complete_tx)
+      {
+        // Zero counts are not sent; one `complete_tx` settles their bytes, so the receiver's expectation stays fixed.
+        ::cuda::std::uint32_t num_skipped_bytes = 0;
+        if (num_local_selected_for_scan != offset_t{0})
+        {
+          ::cuda::ptx::red_async(
+            ::cuda::ptx::op_add, &remote->selected_offset_counter, num_local_selected_for_scan, &remote->prefix_mbar);
+        }
+        else
+        {
+          num_skipped_bytes += ::cuda::std::uint32_t{sizeof(offset_t)};
+        }
+        if (num_local_tied_for_scan != offset_t{0})
+        {
+          ::cuda::ptx::red_async(
+            ::cuda::ptx::op_add, &remote->tie_offset_counter, num_local_tied_for_scan, &remote->prefix_mbar);
+        }
+        else
+        {
+          num_skipped_bytes += ::cuda::std::uint32_t{sizeof(offset_t)};
+        }
+        if (num_skipped_bytes != 0)
+        {
+          ::cuda::ptx::mbarrier_complete_tx(
+            ::cuda::ptx::sem_relaxed,
+            ::cuda::ptx::scope_cluster,
+            ::cuda::ptx::space_cluster,
+            &remote->prefix_mbar,
+            num_skipped_bytes);
+        }
+      }
+      else
+      {
+        ::cuda::ptx::red_async(
+          ::cuda::ptx::op_add, &remote->selected_offset_counter, num_local_selected_for_scan, &remote->prefix_mbar);
+        ::cuda::ptx::red_async(
+          ::cuda::ptx::op_add, &remote->tie_offset_counter, num_local_tied_for_scan, &remote->prefix_mbar);
+      }
     };
     if constexpr (is_scan_descending)
     {
@@ -3334,7 +3441,8 @@ private:
       }
 
       const bool resets_hist = pass + 1 < num_passes;
-      if (resets_hist)
+      // The owner publish modes already zeroed the leader's `hist` in `leader_identify_kth_bucket`.
+      if (resets_hist && !(publish_from_owner && cluster_block_rank == layout.leader_rank))
       {
         // Unconditional barrier: every working rank just read `hist` (the leader via its BlockScan, non-leaders via the
         // scan above), so order all of those reads before any rank resets `hist`.
@@ -3351,8 +3459,12 @@ private:
       }
       else if (cluster_block_rank == layout.leader_rank)
       {
+        // In the owner publish modes the state is already out; the barrier only publishes it to the leader's threads.
         __syncthreads();
-        publish_pass_state();
+        if constexpr (!publish_from_owner)
+        {
+          publish_pass_state(temp_storage.state, threadIdx.x, policy.threads_per_block);
+        }
       }
       else
       {
