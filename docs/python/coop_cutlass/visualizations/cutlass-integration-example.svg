@@ -1,0 +1,137 @@
+<!-- Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+
+SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+-->
+
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="integration-example-title integration-example-desc" viewBox="0 0 1024 1900">
+  <title id="integration-example-title">Minimal CuTe DSL integration: component handoffs</title>
+  <desc id="integration-example-desc">Read from top to bottom across four host-side lanes: CuTe compiler, the example's integration code, NVRTC, and nvJitLink. CuTe traces launch and sum_block. The example reads exact launch facts, registers its finalizer, and traces scratch placeholders. CuTe emits the external call. After tracing, the example renders a CUB wrapper and layout probe; NVRTC returns wrapper LTO-IR plus scratch size and alignment. The finalizer inserts scratch, replaces placeholders, and attaches the wrapper link input. CuTe compiles the finalized kernel. nvJitLink combines kernel and wrapper LTO-IR into a cubin, which CuTe loads. Calling the compiled function launches one block of 128 GPU threads. CUB sums their integers and thread zero stores the total.</desc>
+  <defs>
+    <marker id="integration-example-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0L10 5L0 10Z" fill="#44556b"/>
+    </marker>
+  </defs>
+  <rect width="1024" height="1900" fill="#ffffff"/>
+  <g font-family="sans-serif" font-size="18" fill="#172b3a">
+    <text x="12" y="26" font-size="20" font-weight="500">HOST · compile, link, and launch</text>
+    <rect x="4" y="40" width="254" height="1670" fill="#e9f2fb" fill-opacity="0.34"/>
+    <text x="131" y="68" text-anchor="middle" font-weight="500">CuTe compiler</text>
+    <rect x="258" y="40" width="254" height="1670" fill="#e5f1d7" fill-opacity="0.34"/>
+    <line x1="258" x2="258" y1="40" y2="1710" stroke="#d2dbe5"/>
+    <text x="385" y="68" text-anchor="middle" font-weight="500">Example integration</text>
+    <rect x="512" y="40" width="254" height="1670" fill="#fff0c9" fill-opacity="0.34"/>
+    <line x1="512" x2="512" y1="40" y2="1710" stroke="#d2dbe5"/>
+    <text x="639" y="68" text-anchor="middle" font-weight="500">NVRTC</text>
+    <rect x="766" y="40" width="254" height="1670" fill="#e7dff4" fill-opacity="0.34"/>
+    <line x1="766" x2="766" y1="40" y2="1710" stroke="#d2dbe5"/>
+    <text x="893" y="68" text-anchor="middle" font-weight="500">nvJitLink</text>
+    <g data-node="trace" role="group" aria-label="CuTe compiler. Trace launch + sum_block. Build kernel IR from symbolic values.">
+      <rect x="12" y="92" width="238" height="108" rx="7" fill="#e9f2fb" stroke="#68798b"/>
+      <text x="24" y="124" font-weight="500">Trace launch + sum_block</text>
+      <text x="24" y="150">Build kernel IR from</text>
+      <text x="24" y="176">symbolic values.</text>
+    </g>
+    <g data-handoff="Values + launch facts">
+      <path d="M131 203V236H385V241" fill="none" stroke="#44556b" stroke-width="1.5" marker-end="url(#integration-example-arrow)"/>
+      <rect x="157" y="204" width="202" height="26" fill="#ffffff"/>
+      <text x="258" y="224" text-anchor="middle">Values + launch facts</text>
+    </g>
+    <g data-node="block_sum" role="group" aria-label="Example integration. block_sum. Read exact (32, 4, 1). Register finalize hook. Trace scratch address and size placeholders.">
+      <rect x="266" y="244" width="238" height="164" rx="7" fill="#e5f1d7" stroke="#68798b"/>
+      <text x="278" y="276" font-weight="500">block_sum</text>
+      <text x="278" y="302">Read exact (32, 4, 1).</text>
+      <text x="278" y="328">Register finalize hook.</text>
+      <text x="278" y="354">Trace scratch address</text>
+      <text x="278" y="380">and size placeholders.</text>
+    </g>
+    <g data-handoff="Symbol + operands">
+      <path d="M385 411V450H131V465" fill="none" stroke="#44556b" stroke-width="1.5" marker-end="url(#integration-example-arrow)"/>
+      <rect x="168" y="419" width="180" height="26" fill="#ffffff"/>
+      <text x="258" y="439" text-anchor="middle">Symbol + operands</text>
+    </g>
+    <g data-node="emit-call" role="group" aria-label="CuTe compiler. cute.ffi emits func.call. Continue tracing kernel and host launch code.">
+      <rect x="12" y="468" width="238" height="108" rx="7" fill="#e9f2fb" stroke="#68798b"/>
+      <text x="24" y="500" font-weight="500">cute.ffi emits func.call</text>
+      <text x="24" y="526">Continue tracing kernel</text>
+      <text x="24" y="552">and host launch code.</text>
+    </g>
+    <g data-handoff="Completed trace">
+      <path d="M131 579V622H385V639" fill="none" stroke="#44556b" stroke-width="1.5" marker-end="url(#integration-example-arrow)"/>
+      <rect x="178" y="591" width="160" height="26" fill="#ffffff"/>
+      <text x="258" y="611" text-anchor="middle">Completed trace</text>
+    </g>
+    <g data-node="render-wrapper" role="group" aria-label="Example integration. _finalize_trace. Render CUB wrapper and layout probe.">
+      <rect x="266" y="642" width="238" height="108" rx="7" fill="#e5f1d7" stroke="#68798b"/>
+      <text x="278" y="674" font-weight="500">_finalize_trace</text>
+      <text x="278" y="700">Render CUB wrapper</text>
+      <text x="278" y="726">and layout probe.</text>
+    </g>
+    <g data-handoff="C++ + layout probe">
+      <path d="M385 753V794H639V811" fill="none" stroke="#44556b" stroke-width="1.5" marker-end="url(#integration-example-arrow)"/>
+      <rect x="420" y="763" width="184" height="26" fill="#ffffff"/>
+      <text x="512" y="783" text-anchor="middle">C++ + layout probe</text>
+    </g>
+    <g data-node="nvrtc" role="group" aria-label="NVRTC. Compile with NVRTC. One program supplies code and scratch layout.">
+      <rect x="520" y="814" width="238" height="108" rx="7" fill="#fff0c9" stroke="#68798b"/>
+      <text x="532" y="846" font-weight="500">Compile with NVRTC</text>
+      <text x="532" y="872">One program supplies</text>
+      <text x="532" y="898">code and scratch layout.</text>
+    </g>
+    <g data-handoff="LTO-IR + size + alignment">
+      <path d="M639 925V966H385V983" fill="none" stroke="#44556b" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#integration-example-arrow)"/>
+      <rect x="395" y="935" width="234" height="26" fill="#ffffff"/>
+      <text x="512" y="955" text-anchor="middle">LTO-IR + size + alignment</text>
+    </g>
+    <g data-node="complete-kernel" role="group" aria-label="Example integration. Complete kernel IR. SmemAllocator inserts scratch; replace operands. Attach wrapper LTO-IR to gpu.module attribute: link-libraries.">
+      <rect x="266" y="986" width="238" height="190" rx="7" fill="#e5f1d7" stroke="#68798b"/>
+      <text x="278" y="1018" font-weight="500">Complete kernel IR</text>
+      <text x="278" y="1044">SmemAllocator inserts</text>
+      <text x="278" y="1070">scratch; replace operands.</text>
+      <text x="278" y="1096">Attach wrapper LTO-IR to</text>
+      <text x="278" y="1122">gpu.module attribute:</text>
+      <text x="278" y="1148">link-libraries.</text>
+    </g>
+    <g data-handoff="Final IR + link input">
+      <path d="M385 1179V1220H131V1231" fill="none" stroke="#44556b" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#integration-example-arrow)"/>
+      <rect x="164" y="1189" width="188" height="26" fill="#ffffff"/>
+      <text x="258" y="1209" text-anchor="middle">Final IR + link input</text>
+    </g>
+    <g data-node="compile-kernel" role="group" aria-label="CuTe compiler. Compile completed IR. Produce kernel LTO-IR. Keep wrapper link input.">
+      <rect x="12" y="1234" width="238" height="108" rx="7" fill="#e9f2fb" stroke="#68798b"/>
+      <text x="24" y="1266" font-weight="500">Compile completed IR</text>
+      <text x="24" y="1292">Produce kernel LTO-IR.</text>
+      <text x="24" y="1318">Keep wrapper link input.</text>
+    </g>
+    <g data-handoff="Kernel LTO-IR + wrapper LTO-IR">
+      <path d="M131 1345V1386H893V1403" fill="none" stroke="#44556b" stroke-width="1.5" marker-end="url(#integration-example-arrow)"/>
+      <rect x="365" y="1355" width="294" height="26" fill="#ffffff"/>
+      <text x="512" y="1375" text-anchor="middle">Kernel LTO-IR + wrapper LTO-IR</text>
+    </g>
+    <g data-node="link" role="group" aria-label="nvJitLink. Link both LTO-IR inputs. Resolve the CUB wrapper. Produce the cubin.">
+      <rect x="774" y="1406" width="238" height="108" rx="7" fill="#e7dff4" stroke="#68798b"/>
+      <text x="786" y="1438" font-weight="500">Link both LTO-IR inputs</text>
+      <text x="786" y="1464">Resolve the CUB wrapper.</text>
+      <text x="786" y="1490">Produce the cubin.</text>
+    </g>
+    <g data-handoff="Linked cubin">
+      <path d="M893 1517V1548H131V1559" fill="none" stroke="#44556b" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#integration-example-arrow)"/>
+      <rect x="448" y="1517" width="128" height="26" fill="#ffffff"/>
+      <text x="512" y="1537" text-anchor="middle">Linked cubin</text>
+    </g>
+    <g data-node="load-launch" role="group" aria-label="CuTe compiler. Load the cubin. Return compiled callable. Calling compiled(...) then launches the GPU kernel.">
+      <rect x="12" y="1562" width="238" height="134" rx="7" fill="#e9f2fb" stroke="#68798b"/>
+      <text x="24" y="1594" font-weight="500">Load the cubin</text>
+      <text x="24" y="1620">Return compiled callable.</text>
+      <text x="24" y="1646">Calling compiled(...) then</text>
+      <text x="24" y="1672">launches the GPU kernel.</text>
+    </g>
+    <path d="M131 1699V1724H512V1777" fill="none" stroke="#44556b" stroke-width="1.5" marker-end="url(#integration-example-arrow)"/>
+    <text x="12" y="1754" font-size="20" font-weight="500">GPU EXECUTION</text>
+    <g data-node="execute" role="group" aria-label="GPU execution. One block has 128 threads. Each thread contributes one integer. CUB sums the block and thread zero stores the total.">
+      <rect x="266" y="1780" width="492" height="108" rx="7" fill="#e9f2fb" stroke="#68798b"/>
+      <text x="282" y="1812" font-weight="500">One block: 128 GPU threads</text>
+      <text x="282" y="1838">Each thread contributes one int; CUB sums the block.</text>
+      <text x="282" y="1864">Thread 0 stores the total.</text>
+    </g>
+  </g>
+</svg>
