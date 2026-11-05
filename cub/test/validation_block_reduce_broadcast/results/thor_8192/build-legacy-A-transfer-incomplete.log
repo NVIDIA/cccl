@@ -1,0 +1,18 @@
+W1001 22:56:46.730000 172276 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+Traceback (most recent call last):
+  File "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_legacy/build.py", line 26, in <module>
+    extension = load(
+                ^^^^^
+  File "/home/jwipc/projects/host-gateway/.vllm/lib/python3.12/site-packages/torch/utils/cpp_extension.py", line 1927, in load
+    return _jit_compile(
+           ^^^^^^^^^^^^^
+  File "/home/jwipc/projects/host-gateway/.vllm/lib/python3.12/site-packages/torch/utils/cpp_extension.py", line 2329, in _jit_compile
+    version = JIT_EXTENSION_VERSIONER.bump_version_if_changed(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jwipc/projects/host-gateway/.vllm/lib/python3.12/site-packages/torch/utils/_cpp_extension_versioner.py", line 49, in bump_version_if_changed
+    hash_value = hash_source_files(hash_value, source_files)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jwipc/projects/host-gateway/.vllm/lib/python3.12/site-packages/torch/utils/_cpp_extension_versioner.py", line 16, in hash_source_files
+    with open(filename, "rb") as file:
+         ^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_legacy/bindings.cpp'

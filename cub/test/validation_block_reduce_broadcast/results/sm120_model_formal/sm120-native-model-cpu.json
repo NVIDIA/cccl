@@ -1,0 +1,8 @@
+{
+  "torch": "2.13.0+cu132",
+  "transformers": "5.14.1",
+  "native_source": "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/transformers/models/qwen3/modeling_qwen3.py",
+  "native_source_sha256": "fbdcfeeb1b54135ca67ba7df924da92f4b264e1252b517eea2de989289ebaeab",
+  "signature": "(module: torch.nn.modules.module.Module, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor, attention_mask: torch.Tensor | None, scaling: float, dropout: float = 0.0, **kwargs: Unpack[transformers.utils.generic.TransformersKwargs])",
+  "cuda_initialized": false
+}

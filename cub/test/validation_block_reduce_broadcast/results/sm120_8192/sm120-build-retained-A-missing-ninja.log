@@ -1,0 +1,20 @@
+W1001 23:50:46.209000 307 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/nvidia/cu13'
+Traceback (most recent call last):
+  File "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py", line 26, in <module>
+    runpy.run_path(str(script), run_name="__main__")
+  File "<frozen runpy>", line 286, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_retained/build.py", line 25, in <module>
+    extension = load(
+                ^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/utils/cpp_extension.py", line 1927, in load
+    return _jit_compile(
+           ^^^^^^^^^^^^^
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/utils/cpp_extension.py", line 2382, in _jit_compile
+    _write_ninja_file_and_build_library(
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/utils/cpp_extension.py", line 2496, in _write_ninja_file_and_build_library
+    verify_ninja_availability()
+  File "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/torch/utils/cpp_extension.py", line 2562, in verify_ninja_availability
+    raise RuntimeError("Ninja is required to load C++ extensions (pip install ninja to get it)")
+RuntimeError: Ninja is required to load C++ extensions (pip install ninja to get it)

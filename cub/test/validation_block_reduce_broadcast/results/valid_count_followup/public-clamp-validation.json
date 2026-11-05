@@ -1,0 +1,124 @@
+{
+  "catch2_counts": [
+    {
+      "assertions": 5040,
+      "cases": 120
+    },
+    {
+      "assertions": 5040,
+      "cases": 120
+    },
+    {
+      "assertions": 5040,
+      "cases": 120
+    },
+    {
+      "assertions": 5040,
+      "cases": 120
+    },
+    {
+      "assertions": 5040,
+      "cases": 120
+    },
+    {
+      "assertions": 5040,
+      "cases": 120
+    },
+    {
+      "assertions": 5040,
+      "cases": 120
+    },
+    {
+      "assertions": 5040,
+      "cases": 120
+    },
+    {
+      "assertions": 5040,
+      "cases": 120
+    },
+    {
+      "assertions": 5040,
+      "cases": 120
+    },
+    {
+      "assertions": 992,
+      "cases": 8
+    },
+    {
+      "assertions": 992,
+      "cases": 8
+    },
+    {
+      "assertions": 992,
+      "cases": 8
+    },
+    {
+      "assertions": 992,
+      "cases": 8
+    },
+    {
+      "assertions": 992,
+      "cases": 8
+    },
+    {
+      "assertions": 992,
+      "cases": 8
+    },
+    {
+      "assertions": 992,
+      "cases": 8
+    },
+    {
+      "assertions": 992,
+      "cases": 8
+    },
+    {
+      "assertions": 992,
+      "cases": 8
+    },
+    {
+      "assertions": 992,
+      "cases": 8
+    },
+    {
+      "assertions": 992,
+      "cases": 8
+    },
+    {
+      "assertions": 992,
+      "cases": 8
+    }
+  ],
+  "files": [
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/cub/block/block_reduce.cuh",
+      "bytes": 29500,
+      "sha256": "d5737af3698d46525d4ead85cca5de05fe0d9e5794f4907b31505c11bcbd781b"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/catch2_test_block_reduce_broadcast.cu",
+      "bytes": 5795,
+      "sha256": "9ae39a3f6105f3d53f62c731401c9dfc94239fb1053c63cdf431a63690ab1048"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/evidence/iteration/cub-public-clamp-build.log",
+      "bytes": 3184,
+      "sha256": "19ce0979d655f96b71ca0b624175393ee00d2bac7471588ec88e14eb6ccdbc53"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/evidence/iteration/cub-public-clamp-tests.log",
+      "bytes": 4669,
+      "sha256": "5e1e5e7886df671f3a760d2587b12d13831a045dbdaca5547e69656320781c06"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/evidence/iteration/cub-public-clamp-LastTest.log",
+      "bytes": 66425,
+      "sha256": "6a4d646b8d2315eb5a5180f761b464f5ef5cc0151db2f8e4aad27aa79910f84b"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/evidence/iteration/precommit-public-clamp.log",
+      "bytes": 2080,
+      "sha256": "eafa31982df4ca32d0b5f2a6e40a0224b3ce6e83d134dbe73d5857fa5c9f2e8e"
+    }
+  ]
+}

@@ -1,0 +1,1267 @@
+[
+  {
+    "file": "ORIGINAL_RAW_TEXT.json",
+    "bytes": 1679123,
+    "sha256": "89ff52495953a07fac54b711eacb1f1bc82808718a397fe3d354cf8b8c971116"
+  },
+  {
+    "file": "PUBLIC_FORMATTING.json",
+    "bytes": 5943,
+    "sha256": "f18f248fd97b4e2d27b7dafc3dd66e728a7301e03beeb150dff9d8515d9f6aa6"
+  },
+  {
+    "file": "THOR_FORMAL_ADMISSION.json",
+    "bytes": 312,
+    "sha256": "94ecec195227cf0e601e045b121ba4a01c1fd7a878195b8aea06d26fe5881b08"
+  },
+  {
+    "file": "THOR_SCREEN_FREEZE.json",
+    "bytes": 7681,
+    "sha256": "648ca0afe41d3dbfc7888643869b829728ee82c5dad71317013144df478e5f1a"
+  },
+  {
+    "file": "build-integer-A.json",
+    "bytes": 1756,
+    "sha256": "b3aed9b142b31f7b36bb22a26716811717885c3479bec8896ef9f31eb785095f"
+  },
+  {
+    "file": "build-integer-A.log",
+    "bytes": 3718,
+    "sha256": "f73057296b1d49715cbce42211733e7abc417cd4e3cc7260ac4d7048cb13abf7"
+  },
+  {
+    "file": "build-integer-P.json",
+    "bytes": 1753,
+    "sha256": "6475c8a81a086258da0e884d34018d39ba2d9bcc4319d8f1abe1f8746f480b7a"
+  },
+  {
+    "file": "build-integer-P.log",
+    "bytes": 3724,
+    "sha256": "9daf1efd330d85efedfe963bcbfbcf5ccc1c6f5b08258e0648bd7de03c936b25"
+  },
+  {
+    "file": "build-legacy-A-transfer-incomplete.log",
+    "bytes": 1406,
+    "sha256": "ceaef3ce17ce04f244a9189214b10f5ed4265f7711da3b90d6507a5c724aa4b9"
+  },
+  {
+    "file": "build-legacy-A.json",
+    "bytes": 1751,
+    "sha256": "f0501cc70fff9e75e9360306561bdb93c86d5fb42e56292ff4ec833c1eb048ed"
+  },
+  {
+    "file": "build-legacy-A.log",
+    "bytes": 3724,
+    "sha256": "650d9dbdc8c1c75d5641713e7d22a6b28f474bf4761eb0eb9b5a0a9a7ba18fe7"
+  },
+  {
+    "file": "build-legacy-P.json",
+    "bytes": 1748,
+    "sha256": "48d8bedab20bbcb4eb2dc7236cb6e58d27e3584180a460337193a8b3a3a81c40"
+  },
+  {
+    "file": "build-legacy-P.log",
+    "bytes": 3730,
+    "sha256": "b18eda846df46c304e3984a979ce5bfe284c6c82116373e3105ad0fbb1b7165e"
+  },
+  {
+    "file": "build-retained-A.json",
+    "bytes": 1761,
+    "sha256": "bde8c1b169c5b70917827742faa78a5a90fb408ad6d0a9591dcda6ea83145720"
+  },
+  {
+    "file": "build-retained-A.log",
+    "bytes": 3725,
+    "sha256": "02e36bf5fca0d91a333eeeddb99d8a55b7a97621f0fc4b91da630c8b76b65e1a"
+  },
+  {
+    "file": "build-retained-P.json",
+    "bytes": 1758,
+    "sha256": "8787ab964d4eafa53a55e7d9abf477b488ae9c5f2f32b3f5eefd239dec076f49"
+  },
+  {
+    "file": "build-retained-P.log",
+    "bytes": 3731,
+    "sha256": "7d18ca7ae55c07df7b24d721dc6486f6741c108c579ba39549e4543a428f32aa"
+  },
+  {
+    "file": "build-torch_order-A.json",
+    "bytes": 1776,
+    "sha256": "1ea373f8c509d3f831e593760bc2ec33bbe3f2323780249535cf9b9fa85d9765"
+  },
+  {
+    "file": "build-torch_order-A.log",
+    "bytes": 3777,
+    "sha256": "38d2118c618855051f6aa2ce8d90ad6796fbe9de81f1f75f81fb5f9ecb1267b8"
+  },
+  {
+    "file": "build-torch_order-P.json",
+    "bytes": 1773,
+    "sha256": "20bc4ae1ed35b1a012c8dba808a966641188b00ad4c2018bca6cae02712ca7f8"
+  },
+  {
+    "file": "build-torch_order-P.log",
+    "bytes": 3783,
+    "sha256": "90a056c3faf3bf960263a01f81b032aecd6615abdde9439953542482a8d26c97"
+  },
+  {
+    "file": "cpu-build-plan.log",
+    "bytes": 82,
+    "sha256": "d5e8f4128faf71e204c44e5cceaa357510df49c8342c1f62e0f89631075c2f3c"
+  },
+  {
+    "file": "cpu-build-plan.status.json",
+    "bytes": 4292,
+    "sha256": "85282530f02c554d3c1fdd4c0d630c44f11db1fd9709a8cbef45e987edab41d2"
+  },
+  {
+    "file": "cpu-legacy-build-plan-r1.status.json",
+    "bytes": 748,
+    "sha256": "dce70c5467eb10b4b30f49017b514a3d38411ea99ea4c3ed38b5df1693ecb6f0"
+  },
+  {
+    "file": "cpu-legacy-build-plan-r2.log",
+    "bytes": 22,
+    "sha256": "90f23383e41996ae20ad6dedb45713249ce202ec403352137569e82b1cbcffe0"
+  },
+  {
+    "file": "cpu-legacy-build-plan-r2.status.json",
+    "bytes": 1456,
+    "sha256": "de830cf9f4b678cea325e9f2816965056ad047eb5836b0f7cd384223910b7f67"
+  },
+  {
+    "file": "cpu-legacy-build-plan.log",
+    "bytes": 11,
+    "sha256": "702475c22fbed2d02c4df044d453ac6c321583927fdc9c6fabc5e348d84ae9e8"
+  },
+  {
+    "file": "cpu-legacy-build-plan.status.json",
+    "bytes": 748,
+    "sha256": "dce70c5467eb10b4b30f49017b514a3d38411ea99ea4c3ed38b5df1693ecb6f0"
+  },
+  {
+    "file": "formal-audit-v2.log",
+    "bytes": 38,
+    "sha256": "c7e6bc0e8d2e264774fd32159235bff34f02fd06d5345d1eccfa2cbd65401b57"
+  },
+  {
+    "file": "formal-micro-raw-index.json",
+    "bytes": 34131,
+    "sha256": "921ce2db61b6863a4449128669be54487dff37ac0cc5ebfc1e1f819c7f8207d7"
+  },
+  {
+    "file": "harness-sources.json",
+    "bytes": 100848,
+    "sha256": "d1f1c7b564f5bd583551440097b29f4a8b97cd76e047e5bfb012e7eca8cfd2eb"
+  },
+  {
+    "file": "screen-raw-index.json",
+    "bytes": 10961,
+    "sha256": "3231c6f2456ba6c822413dae64acb7ae79945db3c3b65d53976bbb5d33232a16"
+  },
+  {
+    "file": "thor-accuracy-torch-order-A.json",
+    "bytes": 28569,
+    "sha256": "626679c6cb615ca2fac2a7965aa6508c598efab711e4576cc06582914e9cdb15"
+  },
+  {
+    "file": "thor-accuracy-torch-order-A.log",
+    "bytes": 14,
+    "sha256": "e3726da14179ccb8726fb3b45b8b8c9346a9dcfcc5bf44b100e9d566a6c27f2c"
+  },
+  {
+    "file": "thor-accuracy-torch-order-P.json",
+    "bytes": 28566,
+    "sha256": "638fb6285218841192902a5190c6fa96d4f333e57c0924f356812b5e351bb625"
+  },
+  {
+    "file": "thor-accuracy-torch-order-P.log",
+    "bytes": 14,
+    "sha256": "e3726da14179ccb8726fb3b45b8b8c9346a9dcfcc5bf44b100e9d566a6c27f2c"
+  },
+  {
+    "file": "thor-default-sass-comparison.json",
+    "bytes": 766,
+    "sha256": "72fab176342d83b294ad5ca83baf35a79bcd3040d41f3f1b9d17b009915ef9c6"
+  },
+  {
+    "file": "thor-formal-integer-8192-q0-p0-A.json",
+    "bytes": 11994,
+    "sha256": "3a0ce013c3eec053acad3332882f48c9a859f74bfb3275fdfeb32a8dda1473f0"
+  },
+  {
+    "file": "thor-formal-integer-8192-q0-p0-A.log",
+    "bytes": 9398,
+    "sha256": "1e50a91890d154293215dee663915c1b6fec2a2a50d3f1a58c78004c7848a8b3"
+  },
+  {
+    "file": "thor-formal-integer-8192-q0-p1-P.json",
+    "bytes": 11985,
+    "sha256": "0572857811d617c2b1c34c96836f507938da7f246b7b83733ff675136e759725"
+  },
+  {
+    "file": "thor-formal-integer-8192-q0-p1-P.log",
+    "bytes": 9389,
+    "sha256": "015e9844ed30414af1de7d0c3fe9677a754babaee229a21c8fc41768021e4c2a"
+  },
+  {
+    "file": "thor-formal-integer-8192-q0-p2-P.json",
+    "bytes": 11990,
+    "sha256": "769d3775bb3dd98088389835c5b1332d6656ad6cb74378c6f20063a656c2bac3"
+  },
+  {
+    "file": "thor-formal-integer-8192-q0-p2-P.log",
+    "bytes": 9394,
+    "sha256": "0ec9b3c3dbc5313947d60634af3c7e12780219bfe295d437953720f0cea5d3a7"
+  },
+  {
+    "file": "thor-formal-integer-8192-q0-p3-A.json",
+    "bytes": 11998,
+    "sha256": "e4bd7527992aede5b64bce2169fed9da5f74c91883fb93be5daec694530d1775"
+  },
+  {
+    "file": "thor-formal-integer-8192-q0-p3-A.log",
+    "bytes": 9402,
+    "sha256": "e2f0fe6908bdda417109518979fc81b2a1c512bcbad29014658ae3fb795c8f6f"
+  },
+  {
+    "file": "thor-formal-integer-8192-q1-p0-P.json",
+    "bytes": 11997,
+    "sha256": "8269c04a03f7ef097dd8a683e92e2f328f3b93dd88a025b516aa6e3a76660391"
+  },
+  {
+    "file": "thor-formal-integer-8192-q1-p0-P.log",
+    "bytes": 9401,
+    "sha256": "9c7ff2a7acb52ede1f8342832fe87aee5460a396e1fae47740b2294a157c5c7e"
+  },
+  {
+    "file": "thor-formal-integer-8192-q1-p1-A.json",
+    "bytes": 11985,
+    "sha256": "4695e5b80b3e5c772b442f235f9f9d8235e556632ceae1f910a15b65807f757a"
+  },
+  {
+    "file": "thor-formal-integer-8192-q1-p1-A.log",
+    "bytes": 9389,
+    "sha256": "6e27c11eda7f1e93439ef7af2a2b1d264aaa215b43e437fc8524b741abe85adc"
+  },
+  {
+    "file": "thor-formal-integer-8192-q1-p2-A.json",
+    "bytes": 11989,
+    "sha256": "da3043f13e108b39510bc5d9b7e170ac0465583e7b20298a3bc397980d20c346"
+  },
+  {
+    "file": "thor-formal-integer-8192-q1-p2-A.log",
+    "bytes": 9393,
+    "sha256": "283a796aa4608357c4834d63a82455cae3e5a2079817c9a97cc2866bf766a255"
+  },
+  {
+    "file": "thor-formal-integer-8192-q1-p3-P.json",
+    "bytes": 11993,
+    "sha256": "0c2fd106b0a4a8fcca904fcb4524fa36e8aa2a538441f059de632f40b4035434"
+  },
+  {
+    "file": "thor-formal-integer-8192-q1-p3-P.log",
+    "bytes": 9397,
+    "sha256": "a61f002280e1758cb66883bcd0f7c61022b2b321490d41f5e97f9bb4cc4faf76"
+  },
+  {
+    "file": "thor-formal-integer-8192-q2-p0-A.json",
+    "bytes": 12010,
+    "sha256": "50e3b97e61a59f89d7f43dee7532f68564047acae414ab333c0dc9405c94c34d"
+  },
+  {
+    "file": "thor-formal-integer-8192-q2-p0-A.log",
+    "bytes": 9414,
+    "sha256": "6c02318e9eaaeae9d73fafa84c00b0add295f6f909f20c58fb29617420d516d2"
+  },
+  {
+    "file": "thor-formal-integer-8192-q2-p1-P.json",
+    "bytes": 11992,
+    "sha256": "6e5f992bb4fd78d9ed4bd0019fdf9d0ba04d918ae1d06e6c77fcc5bb6ec68efc"
+  },
+  {
+    "file": "thor-formal-integer-8192-q2-p1-P.log",
+    "bytes": 9396,
+    "sha256": "a0231e5e4cb86c259a5be00fc83f6294131345840370994d53322d2718cb9a46"
+  },
+  {
+    "file": "thor-formal-integer-8192-q2-p2-P.json",
+    "bytes": 11987,
+    "sha256": "f284056e8b630fc743ed371d298a9a933adfacb43387b52d612c1d12e66b6af9"
+  },
+  {
+    "file": "thor-formal-integer-8192-q2-p2-P.log",
+    "bytes": 9391,
+    "sha256": "814b999448531f668a03474abc326dd17af70052ed3829460084eabe39dbde7a"
+  },
+  {
+    "file": "thor-formal-integer-8192-q2-p3-A.json",
+    "bytes": 11992,
+    "sha256": "ceb256bb1f0df84e289247372b2c12abe0dbe502bd69bebe82cbfbd5eda1b4c3"
+  },
+  {
+    "file": "thor-formal-integer-8192-q2-p3-A.log",
+    "bytes": 9396,
+    "sha256": "72c3752ab1b9eb86aa536ff6722261d3769ab6511071fa5cecd8912eeb1241c1"
+  },
+  {
+    "file": "thor-formal-integer-8192-q3-p0-P.json",
+    "bytes": 11979,
+    "sha256": "e503911c56da7b70e0a76e13251b3da80e04ebb9f97100b1e9995ad4c4fdf6a9"
+  },
+  {
+    "file": "thor-formal-integer-8192-q3-p0-P.log",
+    "bytes": 9383,
+    "sha256": "d6c809d28e0ec49e9905eae1d2d038501b969763ce0b7281cda33f083a173c8f"
+  },
+  {
+    "file": "thor-formal-integer-8192-q3-p1-A.json",
+    "bytes": 11978,
+    "sha256": "2992d8b4f2cf0171b5df22d4494cea02781db489330fddac03ff4d6a3dcd9ee1"
+  },
+  {
+    "file": "thor-formal-integer-8192-q3-p1-A.log",
+    "bytes": 9382,
+    "sha256": "0f1218c614d2a9520749e7d1189f17e8e8cbf44c3b0f3221ad461d8404ada66a"
+  },
+  {
+    "file": "thor-formal-integer-8192-q3-p2-A.json",
+    "bytes": 11993,
+    "sha256": "6550942b49c65d285ff84b95cf9d60c612128e87dc97fa82c86d7f21b2a80b25"
+  },
+  {
+    "file": "thor-formal-integer-8192-q3-p2-A.log",
+    "bytes": 9397,
+    "sha256": "8f8ce3b56067ac76693451c50ac69e54e9e3000452f01894b4bc8ce19c4604fd"
+  },
+  {
+    "file": "thor-formal-integer-8192-q3-p3-P.json",
+    "bytes": 11993,
+    "sha256": "d9041cc3cdafd9c5b6e9f728fc3838cbeaa2387bde8dd24a2aabaaf07f6d0076"
+  },
+  {
+    "file": "thor-formal-integer-8192-q3-p3-P.log",
+    "bytes": 9397,
+    "sha256": "d2063442ba6fb3d48b0f6c4f1697098da7a5e5ea95fb37df33fde27828da4750"
+  },
+  {
+    "file": "thor-formal-integer-8192-q4-p0-A.json",
+    "bytes": 11991,
+    "sha256": "76ba00c903cae98fd7e4a4d0d9375ba72767451a5e1bb5cd6ad485ee265da9b2"
+  },
+  {
+    "file": "thor-formal-integer-8192-q4-p0-A.log",
+    "bytes": 9395,
+    "sha256": "095ead71586b2bd1017f02873c915be489d3e80c32e53a0c7ee7c65f12fe2503"
+  },
+  {
+    "file": "thor-formal-integer-8192-q4-p1-P.json",
+    "bytes": 11988,
+    "sha256": "4130430983a2e274988681cb457467cc8ca9b337ce6f70f67cf1986dd2ce403a"
+  },
+  {
+    "file": "thor-formal-integer-8192-q4-p1-P.log",
+    "bytes": 9392,
+    "sha256": "a6ed0e57f0bd3a43a7ba9c49be828784614c5ded5f8258c51e30a50a5827e7bc"
+  },
+  {
+    "file": "thor-formal-integer-8192-q4-p2-P.json",
+    "bytes": 11987,
+    "sha256": "6840dfca4569249b7b9dcfefbf28737711dfad88173d3b2089675ad6ba57da40"
+  },
+  {
+    "file": "thor-formal-integer-8192-q4-p2-P.log",
+    "bytes": 9391,
+    "sha256": "1bd55687be3bfd2a87e9e26ec33bf59b22cafd6fab886a1c472421ea5566163f"
+  },
+  {
+    "file": "thor-formal-integer-8192-q4-p3-A.json",
+    "bytes": 11977,
+    "sha256": "744946913bb021b51c39061a25ef9703a0fe62f99cf7a02885245bcc6ae1051b"
+  },
+  {
+    "file": "thor-formal-integer-8192-q4-p3-A.log",
+    "bytes": 9381,
+    "sha256": "fe96db5185de402eb13fe40f4cf87c67e03fd3c8902c70098115f246b7c4b095"
+  },
+  {
+    "file": "thor-formal-integer-8192-q5-p0-P.json",
+    "bytes": 11983,
+    "sha256": "5be80f3b1b4021344a6c0a6d549e2be201595c79b5c4c02d64918a6cd0df759b"
+  },
+  {
+    "file": "thor-formal-integer-8192-q5-p0-P.log",
+    "bytes": 9387,
+    "sha256": "45e6c2d05ed13d5c1920f021aafa694d54a48a233b5a7b4879fd6b5e135141a2"
+  },
+  {
+    "file": "thor-formal-integer-8192-q5-p1-A.json",
+    "bytes": 11992,
+    "sha256": "128366fb831f919b20d9188e0c1697af8366073a29d773168610217d66f41e37"
+  },
+  {
+    "file": "thor-formal-integer-8192-q5-p1-A.log",
+    "bytes": 9396,
+    "sha256": "b0e72e38826bf037d6c9561ac3cff1b4f916619c801c5368826a2f03adb7d85f"
+  },
+  {
+    "file": "thor-formal-integer-8192-q5-p2-A.json",
+    "bytes": 11984,
+    "sha256": "9a97aa075d442aa04d8a3961d1102cf8b32de3f7927a11775b6f11dc356af192"
+  },
+  {
+    "file": "thor-formal-integer-8192-q5-p2-A.log",
+    "bytes": 9388,
+    "sha256": "d109fac07bcad4e64446822875fe2149bd77f5f928c501e92a7c0bdbf3958c40"
+  },
+  {
+    "file": "thor-formal-integer-8192-q5-p3-P.json",
+    "bytes": 11980,
+    "sha256": "331eca51cc35bdd96d0223d9655fa52290723a23c7a49b4b9f6224463eab4ad9"
+  },
+  {
+    "file": "thor-formal-integer-8192-q5-p3-P.log",
+    "bytes": 9384,
+    "sha256": "10c3f73c271bebc507454f6a96886d03fba6bc5749eb29246221644d13b1a916"
+  },
+  {
+    "file": "thor-formal-integer-8192-q6-p0-A.json",
+    "bytes": 11996,
+    "sha256": "863e1fa33119e7c0284929ef2bea322a8f3e65143ca65547964a845d72063b19"
+  },
+  {
+    "file": "thor-formal-integer-8192-q6-p0-A.log",
+    "bytes": 9400,
+    "sha256": "bdc05f683e38afc4b93fcdea3befc87447e603538793210c06bb8182345563b2"
+  },
+  {
+    "file": "thor-formal-integer-8192-q6-p1-P.json",
+    "bytes": 11985,
+    "sha256": "0ddc9c8e6b66167e7c95b57b475604a2d3988e8b829d15ba15bd8cbfeb44aef8"
+  },
+  {
+    "file": "thor-formal-integer-8192-q6-p1-P.log",
+    "bytes": 9389,
+    "sha256": "fb8b020a5bd43be67f9f6b54d979b627af1f8cc7be21c3fbe4e79cb5c4972396"
+  },
+  {
+    "file": "thor-formal-integer-8192-q6-p2-P.json",
+    "bytes": 11990,
+    "sha256": "412d36083a8c421911e8559eb33aaf9a18e506e9956ad95b84401fb394a4418f"
+  },
+  {
+    "file": "thor-formal-integer-8192-q6-p2-P.log",
+    "bytes": 9394,
+    "sha256": "35c58c52d75a9e93137d7a7ebaa2ab8b3f008ee4bd23b6643d7298b77238f954"
+  },
+  {
+    "file": "thor-formal-integer-8192-q6-p3-A.json",
+    "bytes": 11995,
+    "sha256": "f2f53b91615b3b9e66beed5f7917052605bf8765444c336f02e92b4e92bbe5d6"
+  },
+  {
+    "file": "thor-formal-integer-8192-q6-p3-A.log",
+    "bytes": 9399,
+    "sha256": "771e84930a93f4b5c10860b9b8ecd5f5632eda2adf05a617295fdc4c2697fba7"
+  },
+  {
+    "file": "thor-formal-integer-8192-q7-p0-P.json",
+    "bytes": 11979,
+    "sha256": "930f9030c206abee9395c936bbc55f2e5146aed1288a2f94fdd2db216a24129e"
+  },
+  {
+    "file": "thor-formal-integer-8192-q7-p0-P.log",
+    "bytes": 9383,
+    "sha256": "543399d826dd6e138f9a8ddcf9eab5518ec50f1bc25fb0f673e00d56e77ab304"
+  },
+  {
+    "file": "thor-formal-integer-8192-q7-p1-A.json",
+    "bytes": 11999,
+    "sha256": "e5111a03264e4ea5b5a0b8101a165e51df668c6e7fc2b980c8fba5499133b399"
+  },
+  {
+    "file": "thor-formal-integer-8192-q7-p1-A.log",
+    "bytes": 9403,
+    "sha256": "d0c0fa4f752ee829c174f798be6cafaf0c0c92b69d40031ebd8e678dab239627"
+  },
+  {
+    "file": "thor-formal-integer-8192-q7-p2-A.json",
+    "bytes": 11994,
+    "sha256": "b6115091474a95be97c041580ab9b5a520801f9a284f176bd3578af3176ccf56"
+  },
+  {
+    "file": "thor-formal-integer-8192-q7-p2-A.log",
+    "bytes": 9398,
+    "sha256": "e3ac7f9929252bd8a872c67f3b0efd3836ffcb2800d32264dc4d9b9965a3b08f"
+  },
+  {
+    "file": "thor-formal-integer-8192-q7-p3-P.json",
+    "bytes": 11985,
+    "sha256": "d9d095ad461327c9a32ef063abf7f754ea0338d10d5f5b48f6d9fb6a2a9dfc7d"
+  },
+  {
+    "file": "thor-formal-integer-8192-q7-p3-P.log",
+    "bytes": 9389,
+    "sha256": "b17a3fc5ddf467434c39d8c91f20177cecd77f9eb38a2b15bb7f975a383dab2a"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q0-p0-A.json",
+    "bytes": 12462,
+    "sha256": "cdccf35a2b1706a1562f90a3cdba0142bfca2884da567a644a15573b02d1e67a"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q0-p0-A.log",
+    "bytes": 9866,
+    "sha256": "84500e34c1a7e98b43e483d7cbc01238e8b401d8fe60c807ea9c40570691325c"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q0-p1-P.json",
+    "bytes": 12452,
+    "sha256": "453dd0a82f7cd5c39fea92a0e5e3ca1c30248a050180e0eeff92e9f549b11c30"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q0-p1-P.log",
+    "bytes": 9856,
+    "sha256": "3e295e9a09e507038553f73868163af84771a392fed909a187a20e28fea72243"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q0-p2-P.json",
+    "bytes": 12466,
+    "sha256": "5b06fdaf9783a14c36a675424b4e4184c47497efbc1208ba4f5b007065bb7855"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q0-p2-P.log",
+    "bytes": 9870,
+    "sha256": "fdce56727a6ca10567d96a3ac0e35ac02a5df378175d988004e2f8e8d8e5ea65"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q0-p3-A.json",
+    "bytes": 12459,
+    "sha256": "a661ae90057130a57406b09e1ae3785b385710afe4c9f83200bb487503581f1e"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q0-p3-A.log",
+    "bytes": 9863,
+    "sha256": "34d6ef082710f331a53736209e316353368b04189fb0171348fa43e13403ad4b"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q1-p0-P.json",
+    "bytes": 12456,
+    "sha256": "4d4994d62dca68818d7a5646b1cf1de3d54753ffc54e7501b36727fcc1a73825"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q1-p0-P.log",
+    "bytes": 9860,
+    "sha256": "80ce42c2ccafd0c7c8f65ae1d419dfa576cbe9bc8a6b039776ec96d5beae8d14"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q1-p1-A.json",
+    "bytes": 12471,
+    "sha256": "4e8be52d2357188c9b9afc6633fa99759e17605afadee1ca9b4ed515470ce85c"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q1-p1-A.log",
+    "bytes": 9875,
+    "sha256": "b040525da8fc8fdc4e80a5ab4b13f829656a5c67a89f60f659d1565ee1af5ab0"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q1-p2-A.json",
+    "bytes": 12465,
+    "sha256": "cbef540c2a2bcc4836dfcf6dd2ca6812808f3d78c8b6102305b6eb9458628bf2"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q1-p2-A.log",
+    "bytes": 9869,
+    "sha256": "69cfca3e42b5dc044fce50b04d01e639fcb5715f96223be76457f1e740c0135c"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q1-p3-P.json",
+    "bytes": 12470,
+    "sha256": "058fe40681c723b41e9d26c1f7e036e4e575fc84d226f30d32ec644810f72977"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q1-p3-P.log",
+    "bytes": 9874,
+    "sha256": "0adb841110e44c7d54befa8c3e0abafd1c16c19c19b86a64154fe051883fc2bb"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q2-p0-A.json",
+    "bytes": 12453,
+    "sha256": "792a4c07896a8eba1e3c51ecf34fdb5004e658edaecc1586080d5293b104dbdc"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q2-p0-A.log",
+    "bytes": 9857,
+    "sha256": "b38f24837003ca8fbcabac1291fade7da7bb5c6db1c8c27790c547ffc80856ed"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q2-p1-P.json",
+    "bytes": 12460,
+    "sha256": "f5378374bec951a515abbc9226b200b46fcb768795444dda29af3b3b6b043580"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q2-p1-P.log",
+    "bytes": 9864,
+    "sha256": "55dd3e7494575d48c6b17ec9bb0d5c9d9a4e67b13767cb00a7fa2037d57696ad"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q2-p2-P.json",
+    "bytes": 12465,
+    "sha256": "33d48127b0e97c8bbbaf758d385aab75dd2214b697e982560df5130a2b3db459"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q2-p2-P.log",
+    "bytes": 9869,
+    "sha256": "76d2affa9c665efdb1c06e82ca523444c9b402550ea0fd443fd35c0a3e743d57"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q2-p3-A.json",
+    "bytes": 12455,
+    "sha256": "ae95f9e00eb94e9558e394d7f4be26b19c3dbc4888556be0271e01a6cbc8edb7"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q2-p3-A.log",
+    "bytes": 9859,
+    "sha256": "f3f452157c44575e6b172dcd0d6a497934af796b8a02324056841c7c2b4202b9"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q3-p0-P.json",
+    "bytes": 12451,
+    "sha256": "6162be27868250ed6a9daf75db9b0c3777601c265ea182f82f823412e0330528"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q3-p0-P.log",
+    "bytes": 9855,
+    "sha256": "e2843234f46eba1d6954e1b4241d7f1535c0c9419ca0232dab320b20bcb54013"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q3-p1-A.json",
+    "bytes": 12477,
+    "sha256": "6c5c776ddf47b34a6339950e261cdebe105ba5fb0af8e8275a65a9eba0a3ea8b"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q3-p1-A.log",
+    "bytes": 9881,
+    "sha256": "7bde6840f8e263975faca8cb12b8982be10926fb7c0fa273dc413affd73fea95"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q3-p2-A.json",
+    "bytes": 12461,
+    "sha256": "466c3a0415b9789ca91ff9f357dd45355fdd4712a80ac5d6f6f25ba388b4c116"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q3-p2-A.log",
+    "bytes": 9865,
+    "sha256": "6fb02a676a88cf0a4280920bcc02c61d8ceb1ed288dd2fafdadaa9239a62e151"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q3-p3-P.json",
+    "bytes": 12465,
+    "sha256": "fe7c76f669ebe28204afcabe8244de9e5eb4d69d0a27186fa704d6154e262dc3"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q3-p3-P.log",
+    "bytes": 9869,
+    "sha256": "261be38c16f885ce95c7b58135f9a9df48f187a261716d61fda30e96b9ce481d"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q4-p0-A.json",
+    "bytes": 12465,
+    "sha256": "d4e862149a214bf3f0ecf19d7947fcd0c772d687a765584c5e6df7374493f0cc"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q4-p0-A.log",
+    "bytes": 9869,
+    "sha256": "e17cfd8a66bfb9b3b7b38f558dd5dabcaa7e24cee04c4fd8c66a76497b19a1e0"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q4-p1-P.json",
+    "bytes": 12446,
+    "sha256": "a47a26e0f22b16a9383460f50601e987db0e7f2a489ef8643d1c2e07b0bc940d"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q4-p1-P.log",
+    "bytes": 9850,
+    "sha256": "e9c341e3a00914ea45b70450df1e8ed9e81ad9ed4bf9893126b02ce10154ec5a"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q4-p2-P.json",
+    "bytes": 12460,
+    "sha256": "f9f823732cc406e7ce113c3178284638dba1d8c1f11bc9dd2ff2da1664c64d08"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q4-p2-P.log",
+    "bytes": 9864,
+    "sha256": "b1a4a3a767682b34014340b99e66141e184426ecf4da06adb9118f6662386539"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q4-p3-A.json",
+    "bytes": 12465,
+    "sha256": "39679f9bbe129d2fc6e301801b7f94d479da0186aa399fe38fa8cc81983de114"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q4-p3-A.log",
+    "bytes": 9869,
+    "sha256": "07803fe9d29d22bc249b5b2b23af869ed389f795aa1ac723abdc5c43b7766168"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q5-p0-P.json",
+    "bytes": 12451,
+    "sha256": "4c44d6599342e6e1d77b5340e63033dab8ada60986553dcfc4985ed2b9dbceb5"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q5-p0-P.log",
+    "bytes": 9855,
+    "sha256": "cc5eb64fe1ef26b0c24a4ed9e94f72af092aac6412a6b2fca8e30a8cccd6f07e"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q5-p1-A.json",
+    "bytes": 12470,
+    "sha256": "95ee811fcb837d4c95d3917183929d11a45904a9338353adf3b71500072b563d"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q5-p1-A.log",
+    "bytes": 9874,
+    "sha256": "5b5d0c8396fba32c76034cbdb83df1604d39e33c9c9aee8edc24d3d0e35db779"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q5-p2-A.json",
+    "bytes": 12459,
+    "sha256": "5bcca352b8c96c24782934e84279e7efeabbd6ddfe7ba743b82b3c7ca9d5cdce"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q5-p2-A.log",
+    "bytes": 9863,
+    "sha256": "a99a5451f50a80e64fc954158ceaff6fe068a2dbe7f752797a9410119d0ae6d2"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q5-p3-P.json",
+    "bytes": 12474,
+    "sha256": "deef61813e6ffcab31404e2a8df34c0da0a7dd336ba6d8f16778ac97f19a5ff3"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q5-p3-P.log",
+    "bytes": 9878,
+    "sha256": "560653c86ee91a8d8e96fa44299067c3a019f16185d9820fc14cd4c68f5183c0"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q6-p0-A.json",
+    "bytes": 12463,
+    "sha256": "d9f9f18863485a6e54883585857664d796a6d53464d21625014528be8cf8591c"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q6-p0-A.log",
+    "bytes": 9867,
+    "sha256": "39fbcd5e01e9ff7b2e660b685eeb52b205378a35523d241bd2a56c2fa12567cc"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q6-p1-P.json",
+    "bytes": 12455,
+    "sha256": "62a5a8a76eed243489adf18f4be3fa97f95ee104585ff55cadc1444017a921d7"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q6-p1-P.log",
+    "bytes": 9859,
+    "sha256": "cec0f8b15b00eeae01c2b6264a686facadcb9ce7e43f145075c1bcbecc4c7bea"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q6-p2-P.json",
+    "bytes": 12466,
+    "sha256": "2e38f44efb19cc5a39fd0a086dd1c47ae279ee98da95c375ffd7c01c42f41035"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q6-p2-P.log",
+    "bytes": 9870,
+    "sha256": "869df5738527579b5d928e45b2bc4ab0ecf20be48a31bddf3d018daafdb249b1"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q6-p3-A.json",
+    "bytes": 12468,
+    "sha256": "8db3b97cff478f737ccedbb986ae6aabdb3c460ce004d064009d5d89af72223f"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q6-p3-A.log",
+    "bytes": 9872,
+    "sha256": "2ccd546a9f5726ccb5165138856c66d6fa3a0dabc06fdb87dfd2c7b7073a4b61"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q7-p0-P.json",
+    "bytes": 12461,
+    "sha256": "7979bf8bb6493f219d36eb9381688ede02a3c5b675eebce391cad63cfa2c722d"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q7-p0-P.log",
+    "bytes": 9865,
+    "sha256": "444d56a62fd577449630c316c69be148b97713a8ab9bb7a154518219bd100897"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q7-p1-A.json",
+    "bytes": 12444,
+    "sha256": "e17f29140f9b2f4c3c52181718f01b8574d57d5ee501fbde5171a96fdd683df4"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q7-p1-A.log",
+    "bytes": 9848,
+    "sha256": "f5f68e0790af1ca0425dee4c79a1b737e723141038664231f59a293c77a116fb"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q7-p2-A.json",
+    "bytes": 12457,
+    "sha256": "b72614abbd861e751c75a43f964e719035727b65247ede4af93e81d1b457801a"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q7-p2-A.log",
+    "bytes": 9861,
+    "sha256": "7537a925c31fe7daabe7ae90520ce3b3e3c0dfc75b66be9a049a50530cb53344"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q7-p3-P.json",
+    "bytes": 12461,
+    "sha256": "1227f3ff8e4a6bba5350b81962da8758ba75c6489d0db7871f49ba1a3c7d3d6c"
+  },
+  {
+    "file": "thor-formal-legacy-8192-q7-p3-P.log",
+    "bytes": 9865,
+    "sha256": "e2f5b3e0dec9010cb35f6ad7e0e2f8176e3238d44a17a27f84ec1ae683a34a8b"
+  },
+  {
+    "file": "thor-formal-micro-manifest.json",
+    "bytes": 3793,
+    "sha256": "d088b88619ad7f1f4c988b7f1e3a2d35e886a6fe4be38cc1c9df4a48a57a75c2"
+  },
+  {
+    "file": "thor-formal-micro-plan.json",
+    "bytes": 89475,
+    "sha256": "e141fff719010bfca6a12cc1b30193fdd85233643b4934c626ab0dfc16104c5c"
+  },
+  {
+    "file": "thor-formal-micro-plan.status.json",
+    "bytes": 7980426,
+    "sha256": "2f2915734f2156af8f2c6460de2ca8924f6b36e1113a4f852efed0c61dc3e467"
+  },
+  {
+    "file": "thor-formal-micro-summary.json",
+    "bytes": 85369,
+    "sha256": "0f6562ef2ec648e607b53879bdb5cb3da11804bd55747196fd5fb79578539920"
+  },
+  {
+    "file": "thor-formal-micro-summary.md",
+    "bytes": 2872,
+    "sha256": "fe0e001598f22ecee582da02be675780e398a45171bc2493b50f109f648bef04"
+  },
+  {
+    "file": "thor-formal-retained-8192-q0-p0-A.json",
+    "bytes": 12473,
+    "sha256": "3356e0958313eccd8da2e4416c1eb18451a38d31d88cb35829bbe2aa70a3a75e"
+  },
+  {
+    "file": "thor-formal-retained-8192-q0-p0-A.log",
+    "bytes": 9877,
+    "sha256": "5c9858abcdf62f3749b04cc3593dfb772efee7769e56bc0f9c07f48ae2af8c97"
+  },
+  {
+    "file": "thor-formal-retained-8192-q0-p1-P.json",
+    "bytes": 12458,
+    "sha256": "213ebff005d09e45dbd0705f50fd318b8e00db0703e24ba137bff2c57e034eeb"
+  },
+  {
+    "file": "thor-formal-retained-8192-q0-p1-P.log",
+    "bytes": 9862,
+    "sha256": "e966b1d48d0720976b2849bf58f7074928c2390fe16671b7cf30f0da1a7ef2d6"
+  },
+  {
+    "file": "thor-formal-retained-8192-q0-p2-P.json",
+    "bytes": 12464,
+    "sha256": "7d835a9c9fad13842d8a7320d11da6226fbae3a315b0e031f987ec12c28f0efe"
+  },
+  {
+    "file": "thor-formal-retained-8192-q0-p2-P.log",
+    "bytes": 9868,
+    "sha256": "19b90dcd24994da26b9642b01772b09411740b138abbdf5b822fed42049c74e5"
+  },
+  {
+    "file": "thor-formal-retained-8192-q0-p3-A.json",
+    "bytes": 12469,
+    "sha256": "d3e304aad3754a9038b6abc7c67ba75c1ee224569b7ccb26eb6e553e17f74d81"
+  },
+  {
+    "file": "thor-formal-retained-8192-q0-p3-A.log",
+    "bytes": 9873,
+    "sha256": "d2ccfe0c3fa4b96ac9e691f6bedb064cf848caa83641e5145c6103f60a98ea97"
+  },
+  {
+    "file": "thor-formal-retained-8192-q1-p0-P.json",
+    "bytes": 12449,
+    "sha256": "1faabec703f641092c4eabdad97a3adce3aae9a16c598f6b458c47e837d00393"
+  },
+  {
+    "file": "thor-formal-retained-8192-q1-p0-P.log",
+    "bytes": 9853,
+    "sha256": "21aba0eafaf99d3320b65b068c913bc862a085b971740e3d17642e3688ec076a"
+  },
+  {
+    "file": "thor-formal-retained-8192-q1-p1-A.json",
+    "bytes": 12470,
+    "sha256": "9f10f4f2b1aa76545383c95ffebec5f171ae201e6de6e5ad4127009095ebf0d7"
+  },
+  {
+    "file": "thor-formal-retained-8192-q1-p1-A.log",
+    "bytes": 9874,
+    "sha256": "d90e69be734586a52a28680ba51792b40a820260d9a9bf9c959700790786855d"
+  },
+  {
+    "file": "thor-formal-retained-8192-q1-p2-A.json",
+    "bytes": 12461,
+    "sha256": "83a1944b19554ba181073f9aa679dfe16887eed09338cc3dcfb26186c6f32813"
+  },
+  {
+    "file": "thor-formal-retained-8192-q1-p2-A.log",
+    "bytes": 9865,
+    "sha256": "19d63b2ca7659b1323fdd944e5e2b691d989d799289a91fa9c8112698503dc73"
+  },
+  {
+    "file": "thor-formal-retained-8192-q1-p3-P.json",
+    "bytes": 12445,
+    "sha256": "5d4d0be59591aa57605a53b28d0bf4ad8cd2f177ba2d5171d5b17c7fc5b7b32f"
+  },
+  {
+    "file": "thor-formal-retained-8192-q1-p3-P.log",
+    "bytes": 9849,
+    "sha256": "efb30561b25e193427657a3b34f033b295b08c2ff727886324ae98e65512dbae"
+  },
+  {
+    "file": "thor-formal-retained-8192-q2-p0-A.json",
+    "bytes": 12466,
+    "sha256": "ef03a6e179b77513631225c920bfe17ca15ecda08cefe9b107d3b114837f44e0"
+  },
+  {
+    "file": "thor-formal-retained-8192-q2-p0-A.log",
+    "bytes": 9870,
+    "sha256": "f189fcc81753aa3a21f9c2c736fadb2195d7fa4e079d0f13ecfb1d5c84ce8fe6"
+  },
+  {
+    "file": "thor-formal-retained-8192-q2-p1-P.json",
+    "bytes": 12468,
+    "sha256": "d10fc07c3076a7ec84d2664ec0199f2ae49d92262b00e0d9fe6aaae21aaf102d"
+  },
+  {
+    "file": "thor-formal-retained-8192-q2-p1-P.log",
+    "bytes": 9872,
+    "sha256": "fb0075a7653349164d2c3b5c9ab5972ab9ad2c4ecd327244b07abb94838bb5e9"
+  },
+  {
+    "file": "thor-formal-retained-8192-q2-p2-P.json",
+    "bytes": 12457,
+    "sha256": "180e6f16ac6f07d0d37905b07b0bba37f28c19f827817cc8b4c751232fa995df"
+  },
+  {
+    "file": "thor-formal-retained-8192-q2-p2-P.log",
+    "bytes": 9861,
+    "sha256": "60214e86039afe51927ae5705b0a0730bf3874377a7f7c8dfb30494171985cfc"
+  },
+  {
+    "file": "thor-formal-retained-8192-q2-p3-A.json",
+    "bytes": 12464,
+    "sha256": "39574285bf9decefe7f7b00c8d65a4d5f00a1ae3d04822d613f2027585acbb7c"
+  },
+  {
+    "file": "thor-formal-retained-8192-q2-p3-A.log",
+    "bytes": 9868,
+    "sha256": "242e57cd6e73b13fa0181eaaa1eff8797a7c847f5137ffda4b028004060e06a9"
+  },
+  {
+    "file": "thor-formal-retained-8192-q3-p0-P.json",
+    "bytes": 12462,
+    "sha256": "004f06f2e83708efa302339613f0fe803537a0103b307bdbe68e0828660d4087"
+  },
+  {
+    "file": "thor-formal-retained-8192-q3-p0-P.log",
+    "bytes": 9866,
+    "sha256": "bf29f94a4be7352b26276ae2c2fe1122b78067f7ebd4058f627874170c898c84"
+  },
+  {
+    "file": "thor-formal-retained-8192-q3-p1-A.json",
+    "bytes": 12460,
+    "sha256": "61dac893c1558a2252691d9962dbd5be7ce0f2d8dfe1e20f1d5f7953a3d3e1f6"
+  },
+  {
+    "file": "thor-formal-retained-8192-q3-p1-A.log",
+    "bytes": 9864,
+    "sha256": "3dd4a4ce574e40ea0451767f06ee53f921c48e9c52bba5505852248f31f93554"
+  },
+  {
+    "file": "thor-formal-retained-8192-q3-p2-A.json",
+    "bytes": 12464,
+    "sha256": "cac62b9776badea71c895c3202f3f127adbae411aeb46b815d261624caa1f17c"
+  },
+  {
+    "file": "thor-formal-retained-8192-q3-p2-A.log",
+    "bytes": 9868,
+    "sha256": "03eb0f2813e06dc264c6c9fe06f5bf8cd10183e0e6276df6c01c3d64888f92ca"
+  },
+  {
+    "file": "thor-formal-retained-8192-q3-p3-P.json",
+    "bytes": 12469,
+    "sha256": "c6fd82706dcaa0fe44450b9ac575f8e865bbbf96b458872eab1314eb9522bfad"
+  },
+  {
+    "file": "thor-formal-retained-8192-q3-p3-P.log",
+    "bytes": 9873,
+    "sha256": "3cb24fbfe59e7e4622d91b55392a705d7051e2ea7d75af9b03946e9ca7f2e7a0"
+  },
+  {
+    "file": "thor-formal-retained-8192-q4-p0-A.json",
+    "bytes": 12458,
+    "sha256": "dad36eb8514c8f2757939571ff17fc42b332744a3cabd3a83399aa37f2945e14"
+  },
+  {
+    "file": "thor-formal-retained-8192-q4-p0-A.log",
+    "bytes": 9862,
+    "sha256": "e800e36194527d9deefca06fecb2fa570d7414e842121f32bf5d6c7d7ca2f7f7"
+  },
+  {
+    "file": "thor-formal-retained-8192-q4-p1-P.json",
+    "bytes": 12458,
+    "sha256": "de906399b6797aeec012afa941332a1d5c0bd010250320d4f723d798daf49ebf"
+  },
+  {
+    "file": "thor-formal-retained-8192-q4-p1-P.log",
+    "bytes": 9862,
+    "sha256": "3703e97db4199d4d43de8a8ca1edeb43f6fc8f6549782d99d26640022955c148"
+  },
+  {
+    "file": "thor-formal-retained-8192-q4-p2-P.json",
+    "bytes": 12455,
+    "sha256": "adacf1189d79c0646078ac01bd57866f3ed0df98ec5fdbbb0ccaef216c7598bd"
+  },
+  {
+    "file": "thor-formal-retained-8192-q4-p2-P.log",
+    "bytes": 9859,
+    "sha256": "87eae8f48ccc15dc54bd1c2d9e7301adde62df0969ec53ce58b5a92a38aa410e"
+  },
+  {
+    "file": "thor-formal-retained-8192-q4-p3-A.json",
+    "bytes": 12457,
+    "sha256": "ed4fa5c3bf9ebfcec85de29a2f3a26f187b8b6038315194522e437f912ee73a5"
+  },
+  {
+    "file": "thor-formal-retained-8192-q4-p3-A.log",
+    "bytes": 9861,
+    "sha256": "c1f70c40ff3f5bd550d2c680777d913383a019e8468503a69a34238353007c9c"
+  },
+  {
+    "file": "thor-formal-retained-8192-q5-p0-P.json",
+    "bytes": 12452,
+    "sha256": "9facb16144f4003eb234be1b10adb0280e7a0a93c648269e468ba81b16e186ff"
+  },
+  {
+    "file": "thor-formal-retained-8192-q5-p0-P.log",
+    "bytes": 9856,
+    "sha256": "f249605a7a6413717a282afb268b6ff23e709ff15e2a380c08c06b10daa3499c"
+  },
+  {
+    "file": "thor-formal-retained-8192-q5-p1-A.json",
+    "bytes": 12455,
+    "sha256": "0ffff297945f773e682294bd2560b49dee14774e51230bbc601093f4e68e778b"
+  },
+  {
+    "file": "thor-formal-retained-8192-q5-p1-A.log",
+    "bytes": 9859,
+    "sha256": "c009aecd15c394fc6e4ffac36cff8ded123474905b3e70e2bb87a079e4f4323e"
+  },
+  {
+    "file": "thor-formal-retained-8192-q5-p2-A.json",
+    "bytes": 12467,
+    "sha256": "2748f706e135c4dd9fe38b5ce9556714ff5c8b578d549ea397f09ff787db321c"
+  },
+  {
+    "file": "thor-formal-retained-8192-q5-p2-A.log",
+    "bytes": 9871,
+    "sha256": "a2d72e276047acb51ee01454d951439eedfe6b17226e76c3347a09d415f77e1f"
+  },
+  {
+    "file": "thor-formal-retained-8192-q5-p3-P.json",
+    "bytes": 12452,
+    "sha256": "cefe135bbb56521898435f132e60bc4751868f9e9c9b443ab41a1bff292fe6ac"
+  },
+  {
+    "file": "thor-formal-retained-8192-q5-p3-P.log",
+    "bytes": 9856,
+    "sha256": "e6e36f899c6c5b720015a8bd967d7ec4561f12b68271774b03499d96320651c1"
+  },
+  {
+    "file": "thor-formal-retained-8192-q6-p0-A.json",
+    "bytes": 12461,
+    "sha256": "fbd47f169ddc35926f1519a38e2c1ba823b813c836c9db1addcbd94160de4ca6"
+  },
+  {
+    "file": "thor-formal-retained-8192-q6-p0-A.log",
+    "bytes": 9865,
+    "sha256": "ce4af76e5f84b83b3f17f65ba2dc57b87432d983cbf5a67adaa02965f03d353b"
+  },
+  {
+    "file": "thor-formal-retained-8192-q6-p1-P.json",
+    "bytes": 12466,
+    "sha256": "81cf9e3312d6d7eadc761d4b3fa3460e2ad8769ca5369b8451a944746b4a5f19"
+  },
+  {
+    "file": "thor-formal-retained-8192-q6-p1-P.log",
+    "bytes": 9870,
+    "sha256": "15f2eb2ca5eee02099b0c2fbc6191455faa1129ceab6c8fbc195e677af0f5721"
+  },
+  {
+    "file": "thor-formal-retained-8192-q6-p2-P.json",
+    "bytes": 12457,
+    "sha256": "4ecc8d82b798212ae984f7edcdf92f467168f55285917a16f8c61de1f1b89dc2"
+  },
+  {
+    "file": "thor-formal-retained-8192-q6-p2-P.log",
+    "bytes": 9861,
+    "sha256": "938d792c73d859508d004d092e13ed6379ee6e1bfcf6b9fdd230b3d27f262cef"
+  },
+  {
+    "file": "thor-formal-retained-8192-q6-p3-A.json",
+    "bytes": 12464,
+    "sha256": "e028983408b0117fb4f6cfe11877c7f9373cd6f34b65e06e787832cc7e37a629"
+  },
+  {
+    "file": "thor-formal-retained-8192-q6-p3-A.log",
+    "bytes": 9868,
+    "sha256": "a15992e6d21dabefa22a9da49c36c605dd5652413ca82b6fae85160a4128a0cc"
+  },
+  {
+    "file": "thor-formal-retained-8192-q7-p0-P.json",
+    "bytes": 12457,
+    "sha256": "351de03d4f13e50de7a81139354751957e4f243da992463b56731ad38648c279"
+  },
+  {
+    "file": "thor-formal-retained-8192-q7-p0-P.log",
+    "bytes": 9861,
+    "sha256": "bc345d13e8aa67997e9aef39f935744b3bda095bb7523485bad94f7168a8ed86"
+  },
+  {
+    "file": "thor-formal-retained-8192-q7-p1-A.json",
+    "bytes": 12460,
+    "sha256": "f0952fc895f9e4caaf4a8d65f3e3105f3517a3f1b4c6638f7e9f23c3d009f90c"
+  },
+  {
+    "file": "thor-formal-retained-8192-q7-p1-A.log",
+    "bytes": 9864,
+    "sha256": "095d5c830c0d75d6bc38662782d53b47b6ec51d48588b184bd13f716c9732628"
+  },
+  {
+    "file": "thor-formal-retained-8192-q7-p2-A.json",
+    "bytes": 12483,
+    "sha256": "c05d4b20d12f8d90812443912fba1d58521e0f029ca6205192f48e431daeeca0"
+  },
+  {
+    "file": "thor-formal-retained-8192-q7-p2-A.log",
+    "bytes": 9887,
+    "sha256": "662faabfd8c5709f35bddf501a256849e8331693f6fc5ef6f046269ca1a3a71d"
+  },
+  {
+    "file": "thor-formal-retained-8192-q7-p3-P.json",
+    "bytes": 12448,
+    "sha256": "0c30623753eb814dcac9b7ebab40c425c4631f4ff5eb6d4cc39aa618f2a446b2"
+  },
+  {
+    "file": "thor-formal-retained-8192-q7-p3-P.log",
+    "bytes": 9852,
+    "sha256": "f0bf312d007e73a2fb5718703d9a51573d4d9b7d572cb77ff118270654aae1e4"
+  },
+  {
+    "file": "thor-legacy-A-resources.txt",
+    "bytes": 1661,
+    "sha256": "ad15562495b2da9a9f827993e8299d59eba0de0379c024a50c2eb866094e7a36"
+  },
+  {
+    "file": "thor-legacy-A-sass.txt",
+    "bytes": 550752,
+    "sha256": "a4b8274d51585564261568acbd05034b75b29dd126d0a19dd578767d9d50fc07"
+  },
+  {
+    "file": "thor-legacy-P-resources.txt",
+    "bytes": 2529,
+    "sha256": "e032afdc5c753f5d6da2e5d787ef5516f5e7322a1c51782931501c8993e19c2a"
+  },
+  {
+    "file": "thor-legacy-P-sass.txt",
+    "bytes": 1018174,
+    "sha256": "e5dd6b523cdb0a700fef97175c6dc909c20ba4f7dea8a52593fb1906ab4f10e9"
+  },
+  {
+    "file": "thor-screen-integer-A.json",
+    "bytes": 12000,
+    "sha256": "4a46773a28e3937f62e4023295c65d69a865169bc077e87ad74c3d6eb604e2c2"
+  },
+  {
+    "file": "thor-screen-integer-A.log",
+    "bytes": 9404,
+    "sha256": "7756f254198b8e1093aa8a51db81d69b1aa11153256682e5bac419fce3a975ff"
+  },
+  {
+    "file": "thor-screen-integer-P.json",
+    "bytes": 11989,
+    "sha256": "c3a0bad942f61c1ebb6c06a1154b22e51d86ae9340f4a870527d2acfa6aad587"
+  },
+  {
+    "file": "thor-screen-integer-P.log",
+    "bytes": 9393,
+    "sha256": "8897e318b44dd099ef5d21d10805fb7e18541f5455f4b0c48e9736c6d30c0b6b"
+  },
+  {
+    "file": "thor-screen-legacy-A.json",
+    "bytes": 12450,
+    "sha256": "177e08ba2fe1626fe43cd10429426b5f23d52cb5a548095a4252e2b7fdb2a81e"
+  },
+  {
+    "file": "thor-screen-legacy-A.log",
+    "bytes": 9854,
+    "sha256": "f4b88921683092e0bdfc0a49c9e3f7b3affdfcd3f8ead8f3ea6668dad91e67be"
+  },
+  {
+    "file": "thor-screen-legacy-P.json",
+    "bytes": 12459,
+    "sha256": "6917f37505ac26ca743b1ca6565f24056a4e812d88fb18dda829d56e00c9edbb"
+  },
+  {
+    "file": "thor-screen-legacy-P.log",
+    "bytes": 9863,
+    "sha256": "ea424357d7e44f6e3fbda8f7d50409ce921ed6e309cf64b0a6a776f52439c453"
+  },
+  {
+    "file": "thor-screen-plan.json",
+    "bytes": 6333,
+    "sha256": "ee5467099990e59be53fc41a6ea9bf6ac0e25e8c02b401cd0411ebf4596c7899"
+  },
+  {
+    "file": "thor-screen-plan.log",
+    "bytes": 221,
+    "sha256": "77f187ac9afabce1721907cc177a9cfe3c7f29a24198f2346d58a9f5a00c8f20"
+  },
+  {
+    "file": "thor-screen-plan.status.json",
+    "bytes": 592769,
+    "sha256": "d5ca2e88c0ad7d9957c485c2ef390997af1067228f67e7cc9f1bb2e79a3f7c77"
+  },
+  {
+    "file": "thor-screen-retained-A.json",
+    "bytes": 12466,
+    "sha256": "028d161f755c937a55c4c9d437af0a11bcee5bcddde1d54c5dd6bd2b09e004a5"
+  },
+  {
+    "file": "thor-screen-retained-A.log",
+    "bytes": 9870,
+    "sha256": "0fcea05622fa5738c957bac4b17b04c4ee6cf3c833693e063c985d67be899f10"
+  },
+  {
+    "file": "thor-screen-retained-P.json",
+    "bytes": 12455,
+    "sha256": "0aa2b0be36e8a3d2b363231d27dc9b6a5df7b18717cadb9bf8311ccaee9a8800"
+  },
+  {
+    "file": "thor-screen-retained-P.log",
+    "bytes": 9859,
+    "sha256": "09969cc3b9bf07b7f199c62a42bf029f4986ba7ec6f59ec53499ecb3cb314af0"
+  }
+]

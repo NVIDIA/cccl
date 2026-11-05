@@ -1,0 +1,56 @@
+{
+  "source_sha": "76db7e3f3ab0d665fc87282b0160a321e51e698e",
+  "targeted_ctest_entries": 29,
+  "existing_reduce_sum": {
+    "cases": 1200,
+    "assertions": 50400
+  },
+  "broadcast": {
+    "cases": 168,
+    "assertions": 14208
+  },
+  "sanitizers": [
+    {
+      "threads": 65,
+      "tools": [
+        "memcheck",
+        "racecheck",
+        "synccheck"
+      ],
+      "errors": 0,
+      "hazards": 0,
+      "warnings": 0
+    },
+    {
+      "threads": 512,
+      "tools": [
+        "memcheck",
+        "racecheck",
+        "synccheck"
+      ],
+      "errors": 0,
+      "hazards": 0,
+      "warnings": 0
+    },
+    {
+      "threads": 1024,
+      "tools": [
+        "memcheck",
+        "racecheck",
+        "synccheck"
+      ],
+      "errors": 0,
+      "hazards": 0,
+      "warnings": 0
+    }
+  ],
+  "independent_default_sass_identical": {
+    "legacy": 8,
+    "retained": 10,
+    "integer": 8
+  },
+  "precommit": "passed",
+  "screening_workers_passed": 24,
+  "model_native_gate": "retained A failed; original expf A diagnostic preserved native tokens; candidate full-model follow-up pending",
+  "formal_timing": "64 primary workers completed, 16 valid quartets; remaining consumer/model follow-up pending"
+}

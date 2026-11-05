@@ -1,0 +1,11 @@
+`torch_dtype` is deprecated! Use `dtype` instead!
+The following generation flags are not valid and may be ignored: ['temperature', 'top_p', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+A 0 0 [725.158, 844.751]
+P 0 1 [721.722, 839.444]
+P 0 2 [720.395, 839.18]
+A 0 3 [721.506, 839.497]
+P 1 0 [722.032, 847.47]
+A 1 1 [722.545, 844.332]
+A 1 2 [722.748, 841.381]
+P 1 3 [755.886, 911.743]

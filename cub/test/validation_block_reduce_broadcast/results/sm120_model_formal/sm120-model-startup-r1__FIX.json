@@ -1,0 +1,9 @@
+{
+  "failure": "Triton cuda_utils.c compile cannot find stdlib.h",
+  "resolution": "process-local C_INCLUDE_PATH reuses existing readonly native headers; private Triton/Python caches",
+  "env": {
+    "C_INCLUDE_PATH": "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/native/usr/lib/gcc/x86_64-linux-gnu/13/include:/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/native/usr/include:/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/native/usr/include/x86_64-linux-gnu",
+    "TRITON_CACHE_DIR": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/cache/triton",
+    "PYTHONPYCACHEPREFIX": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/cache/pycache"
+  }
+}

@@ -1,0 +1,62 @@
+[
+  {
+    "label": "sm120-model-torch-order-b1-screen",
+    "command": [
+      "/usr/bin/python3",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/model_generation_screen.py",
+      "--candidate",
+      "hybrid-v2",
+      "--consumer-mode",
+      "torch-order",
+      "--batch-size",
+      "1",
+      "--baseline-build",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/torch_order-A",
+      "--candidate-build",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/torch_order-P",
+      "--checkpoint",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/models/iteration-qwen3-mirror",
+      "--output",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-model-torch-order-b1-screen.json"
+    ],
+    "cwd": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001",
+    "log": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-model-torch-order-b1-screen.log",
+    "harness_script": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/model_generation_screen.py",
+    "env": {
+      "C_INCLUDE_PATH": "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/native/usr/lib/gcc/x86_64-linux-gnu/13/include:/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/native/usr/include:/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/native/usr/include/x86_64-linux-gnu",
+      "TRITON_CACHE_DIR": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/cache/triton",
+      "PYTHONPYCACHEPREFIX": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/cache/pycache"
+    }
+  },
+  {
+    "label": "sm120-model-torch-order-b16-screen",
+    "command": [
+      "/usr/bin/python3",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/model_generation_screen.py",
+      "--candidate",
+      "hybrid-v2",
+      "--consumer-mode",
+      "torch-order",
+      "--batch-size",
+      "16",
+      "--baseline-build",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/torch_order-A",
+      "--candidate-build",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/torch_order-P",
+      "--checkpoint",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/models/iteration-qwen3-mirror",
+      "--output",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-model-torch-order-b16-screen.json"
+    ],
+    "cwd": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001",
+    "log": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-model-torch-order-b16-screen.log",
+    "harness_script": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/model_generation_screen.py",
+    "env": {
+      "C_INCLUDE_PATH": "/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/native/usr/lib/gcc/x86_64-linux-gnu/13/include:/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/native/usr/include:/mnt/d/0z5a/flux-ovis-consolidation-20261001/dependencies/native/usr/include/x86_64-linux-gnu",
+      "TRITON_CACHE_DIR": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/cache/triton",
+      "PYTHONPYCACHEPREFIX": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/cache/pycache"
+    }
+  }
+]

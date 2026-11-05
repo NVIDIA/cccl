@@ -1,0 +1,110 @@
+[
+  {
+    "file": "formal-micro-raw-index.json",
+    "original_sha256": "9335d2736072b4d426305ec53a25599b0a806453968cc7a16ee94b88daa6d015",
+    "published_sha256": "921ce2db61b6863a4449128669be54487dff37ac0cc5ebfc1e1f819c7f8207d7",
+    "reason": "required EOF/trailing-whitespace hooks; semantic JSON and timing values unchanged"
+  },
+  {
+    "file": "thor-legacy-P-sass.txt",
+    "original_sha256": "9575d0425d271cf1d03a7349a8aac18b266620164274faa99a8e49b55d55447f",
+    "published_sha256": "e5dd6b523cdb0a700fef97175c6dc909c20ba4f7dea8a52593fb1906ab4f10e9",
+    "reason": "required EOF/trailing-whitespace hooks; semantic JSON and timing values unchanged"
+  },
+  {
+    "file": "THOR_FORMAL_ADMISSION.json",
+    "original_sha256": "8eb6ac65a2d582804799ee9803a19345d0ce5231b95449d204d822dafe760ebd",
+    "published_sha256": "94ecec195227cf0e601e045b121ba4a01c1fd7a878195b8aea06d26fe5881b08",
+    "reason": "required EOF/trailing-whitespace hooks; semantic JSON and timing values unchanged"
+  },
+  {
+    "file": "thor-legacy-A-sass.txt",
+    "original_sha256": "827d61d557418d1b49a02c1ac19a9e83d6fbbbafafeb38bca77d156a8cf34cc5",
+    "published_sha256": "a4b8274d51585564261568acbd05034b75b29dd126d0a19dd578767d9d50fc07",
+    "reason": "required EOF/trailing-whitespace hooks; semantic JSON and timing values unchanged"
+  },
+  {
+    "file": "build-torch_order-A.log",
+    "original_sha256": "0ad1b009f62aeef6d7d3a4ac121786aa40d2be8c86514b2a11722397467b512a",
+    "published_sha256": "38d2118c618855051f6aa2ce8d90ad6796fbe9de81f1f75f81fb5f9ecb1267b8",
+    "reason": "required EOF/trailing-whitespace hooks; semantic JSON and timing values unchanged"
+  },
+  {
+    "file": "build-integer-A.log",
+    "original_sha256": "69cdec25ea9c0f1eb284d39f671254492748b202f0c2d37c1a70a94152cfccbc",
+    "published_sha256": "f73057296b1d49715cbce42211733e7abc417cd4e3cc7260ac4d7048cb13abf7",
+    "reason": "required EOF/trailing-whitespace hooks; semantic JSON and timing values unchanged"
+  },
+  {
+    "file": "build-retained-A.log",
+    "original_sha256": "b1974ed998907610613da8db7b34fc6377908caf866456fe3a1c918dfce1abe4",
+    "published_sha256": "02e36bf5fca0d91a333eeeddb99d8a55b7a97621f0fc4b91da630c8b76b65e1a",
+    "reason": "required EOF/trailing-whitespace hooks; semantic JSON and timing values unchanged"
+  },
+  {
+    "file": "build-torch_order-P.log",
+    "original_sha256": "b4f8be7771b2e252d50157f48c80eeeb6e4baf967b5232046911e13bc863dc39",
+    "published_sha256": "90a056c3faf3bf960263a01f81b032aecd6615abdde9439953542482a8d26c97",
+    "reason": "required EOF/trailing-whitespace hooks; semantic JSON and timing values unchanged"
+  },
+  {
+    "file": "build-integer-P.log",
+    "original_sha256": "71f956697b11ba454cde96467f5955d58c4ade13fb51d5516807c2947d1004bf",
+    "published_sha256": "9daf1efd330d85efedfe963bcbfbcf5ccc1c6f5b08258e0648bd7de03c936b25",
+    "reason": "required EOF/trailing-whitespace hooks; semantic JSON and timing values unchanged"
+  },
+  {
+    "file": "build-retained-P.log",
+    "original_sha256": "38150c47ad01e165b30a2c69b3eedc66cf3870bc7cdfd19c668b6c47dea5896a",
+    "published_sha256": "7d18ca7ae55c07df7b24d721dc6486f6741c108c579ba39549e4543a428f32aa",
+    "reason": "required EOF/trailing-whitespace hooks; semantic JSON and timing values unchanged"
+  },
+  {
+    "file": "cpu-build-plan.status.json",
+    "original_sha256": "1971164b5a7465d70819d44844e281379c5a394966d5dd41e090c90f4e1aa1c9",
+    "published_sha256": "85282530f02c554d3c1fdd4c0d630c44f11db1fd9709a8cbef45e987edab41d2",
+    "reason": "required EOF/trailing-whitespace hooks; semantic JSON and timing values unchanged"
+  },
+  {
+    "file": "cpu-legacy-build-plan.status.json",
+    "original_sha256": "cf24abffc52bc0e111fb202ba8b7f72b615d150a16ea6d2d4dfa77fff5b1aa84",
+    "published_sha256": "dce70c5467eb10b4b30f49017b514a3d38411ea99ea4c3ed38b5df1693ecb6f0",
+    "reason": "required EOF/trailing-whitespace hooks; semantic JSON and timing values unchanged"
+  },
+  {
+    "file": "cpu-legacy-build-plan-r2.status.json",
+    "original_sha256": "d53a3418ccdfd389c23a30d08ccb73920245eb6b3908e399cf7f27cabc252f91",
+    "published_sha256": "de830cf9f4b678cea325e9f2816965056ad047eb5836b0f7cd384223910b7f67",
+    "reason": "required EOF/trailing-whitespace hooks; semantic JSON and timing values unchanged"
+  },
+  {
+    "file": "cpu-legacy-build-plan-r1.status.json",
+    "original_sha256": "cf24abffc52bc0e111fb202ba8b7f72b615d150a16ea6d2d4dfa77fff5b1aa84",
+    "published_sha256": "dce70c5467eb10b4b30f49017b514a3d38411ea99ea4c3ed38b5df1693ecb6f0",
+    "reason": "required EOF/trailing-whitespace hooks; semantic JSON and timing values unchanged"
+  },
+  {
+    "file": "THOR_SCREEN_FREEZE.json",
+    "original_sha256": "b4aadec65dfe699feca785d84381390de3f01910888afd09f2a05492c4d063cc",
+    "published_sha256": "648ca0afe41d3dbfc7888643869b829728ee82c5dad71317013144df478e5f1a",
+    "reason": "required EOF/trailing-whitespace hooks; semantic JSON and timing values unchanged"
+  },
+  {
+    "file": "build-legacy-A.log",
+    "original_sha256": "3a63f930f767087a30552d21c431bac2535d20468be5d0ec5f5f9537af6e6b85",
+    "published_sha256": "650d9dbdc8c1c75d5641713e7d22a6b28f474bf4761eb0eb9b5a0a9a7ba18fe7",
+    "reason": "required EOF/trailing-whitespace hooks; semantic JSON and timing values unchanged"
+  },
+  {
+    "file": "build-legacy-P.log",
+    "original_sha256": "8d29e98a101512e7dd1eaeb2746095692ed699a8c52d1e4b6221b57700c54d97",
+    "published_sha256": "b18eda846df46c304e3984a979ce5bfe284c6c82116373e3105ad0fbb1b7165e",
+    "reason": "required EOF/trailing-whitespace hooks; semantic JSON and timing values unchanged"
+  },
+  {
+    "file": "screen-raw-index.json",
+    "original_sha256": "468ebf253f288ea9756cdf0d77c59aec128e78cefa8634c9e8dfe23209bd497c",
+    "published_sha256": "3231c6f2456ba6c822413dae64acb7ae79945db3c3b65d53976bbb5d33232a16",
+    "reason": "required EOF/trailing-whitespace hooks; semantic JSON and timing values unchanged"
+  }
+]

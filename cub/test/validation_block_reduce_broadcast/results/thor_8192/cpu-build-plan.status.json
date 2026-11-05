@@ -1,0 +1,127 @@
+{
+  "state": "FINISHED",
+  "jobs": [
+    {
+      "label": "retained-A",
+      "command": [
+        "/home/jwipc/projects/host-gateway/.vllm/bin/python",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_retained/build.py",
+        "--source",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/source",
+        "--variant",
+        "baseline",
+        "--build",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/retained-A",
+        "--output",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/build-retained-A.json",
+        "--arch",
+        "110"
+      ],
+      "code": 0,
+      "seconds": 27.270578384399414
+    },
+    {
+      "label": "retained-P",
+      "command": [
+        "/home/jwipc/projects/host-gateway/.vllm/bin/python",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_retained/build.py",
+        "--source",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/candidate",
+        "--variant",
+        "patch",
+        "--build",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/retained-P",
+        "--output",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/build-retained-P.json",
+        "--arch",
+        "110"
+      ],
+      "code": 0,
+      "seconds": 26.44704842567444
+    },
+    {
+      "label": "integer-A",
+      "command": [
+        "/home/jwipc/projects/host-gateway/.vllm/bin/python",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_integer/build.py",
+        "--source",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/source",
+        "--variant",
+        "baseline",
+        "--build",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/integer-A",
+        "--output",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/build-integer-A.json",
+        "--arch",
+        "110"
+      ],
+      "code": 0,
+      "seconds": 29.840888500213623
+    },
+    {
+      "label": "integer-P",
+      "command": [
+        "/home/jwipc/projects/host-gateway/.vllm/bin/python",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_integer/build.py",
+        "--source",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/candidate",
+        "--variant",
+        "patch",
+        "--build",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/integer-P",
+        "--output",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/build-integer-P.json",
+        "--arch",
+        "110"
+      ],
+      "code": 0,
+      "seconds": 28.131398677825928
+    },
+    {
+      "label": "torch_order-A",
+      "command": [
+        "/home/jwipc/projects/host-gateway/.vllm/bin/python",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_torch_order/build.py",
+        "--source",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/source",
+        "--variant",
+        "baseline",
+        "--build",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/torch_order-A",
+        "--output",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/build-torch_order-A.json",
+        "--arch",
+        "110",
+        "--permute-lanes",
+        "1",
+        "--fast-exp",
+        "0"
+      ],
+      "code": 0,
+      "seconds": 27.73261022567749
+    },
+    {
+      "label": "torch_order-P",
+      "command": [
+        "/home/jwipc/projects/host-gateway/.vllm/bin/python",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_torch_order/build.py",
+        "--source",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/candidate",
+        "--variant",
+        "patch",
+        "--build",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/torch_order-P",
+        "--output",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/build-torch_order-P.json",
+        "--arch",
+        "110",
+        "--permute-lanes",
+        "1",
+        "--fast-exp",
+        "0"
+      ],
+      "code": 0,
+      "seconds": 26.770254373550415
+    }
+  ]
+}

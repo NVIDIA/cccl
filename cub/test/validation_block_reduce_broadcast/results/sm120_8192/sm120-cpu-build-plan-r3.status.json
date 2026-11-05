@@ -1,0 +1,28 @@
+{
+  "state": "FAILED",
+  "completed": [
+    {
+      "label": "sm120-build-retained-A",
+      "command": [
+        "/usr/bin/python3",
+        "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py",
+        "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_retained/build.py",
+        "--source",
+        "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/source",
+        "--variant",
+        "baseline",
+        "--build",
+        "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/retained-A",
+        "--output",
+        "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-build-retained-A.json",
+        "--arch",
+        "120"
+      ],
+      "cwd": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001",
+      "log": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-build-retained-A.log",
+      "pid": 292,
+      "exit_code": 1,
+      "elapsed_s": 65.1586594581604
+    }
+  ]
+}

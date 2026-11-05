@@ -1,0 +1,31 @@
+ninja: Entering directory `/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20'
+[0/2] Re-checking globbed directories...
+[1/30] Building CUDA object c2h/CMakeFiles/cccl.c2h.dir/generators.cu.o
+[2/30] Building CUDA object c2h/CMakeFiles/cccl.c2h.dir/generators_gen_values.cu.o
+[3/30] Building CUDA object c2h/CMakeFiles/cccl.c2h.dir/generators_uniform_offsets.cu.o
+[4/30] Building CUDA object cub/test/CMakeFiles/cub.test.block.reduce_broadcast.dimx_1.dimyz_1.dir/catch2_test_block_reduce_broadcast.cu.o
+[5/30] Building CUDA object c2h/CMakeFiles/cccl.c2h.dir/generators_vector.cu.o
+[6/30] Building CUDA object cub/test/CMakeFiles/cub.test.block.reduce_broadcast.dimx_1.dimyz_2.dir/catch2_test_block_reduce_broadcast.cu.o
+[7/30] Building CUDA object cub/test/CMakeFiles/cub.test.block.reduce_broadcast.dimx_7.dimyz_1.dir/catch2_test_block_reduce_broadcast.cu.o
+[8/30] Building CUDA object cub/test/CMakeFiles/cub.test.block.reduce_broadcast.dimx_7.dimyz_2.dir/catch2_test_block_reduce_broadcast.cu.o
+[9/30] Building CUDA object cub/test/CMakeFiles/cub.test.block.reduce_broadcast.dimx_32.dimyz_1.dir/catch2_test_block_reduce_broadcast.cu.o
+[10/30] Building CUDA object cub/test/CMakeFiles/cub.test.block.reduce_broadcast.dimx_32.dimyz_2.dir/catch2_test_block_reduce_broadcast.cu.o
+[11/30] Building CUDA object cub/test/CMakeFiles/cub.test.block.reduce_broadcast.dimx_65.dimyz_1.dir/catch2_test_block_reduce_broadcast.cu.o
+[12/30] Building CUDA object cub/test/CMakeFiles/cub.test.block.reduce_broadcast.dimx_65.dimyz_2.dir/catch2_test_block_reduce_broadcast.cu.o
+[13/30] Building CUDA object cub/test/CMakeFiles/cub.test.block.reduce_broadcast.dimx_128.dimyz_1.dir/catch2_test_block_reduce_broadcast.cu.o
+[14/30] Building CUDA object cub/test/CMakeFiles/cub.test.block.reduce_broadcast.dimx_128.dimyz_2.dir/catch2_test_block_reduce_broadcast.cu.o
+[15/30] Building CUDA object cub/test/CMakeFiles/cub.test.block.reduce_broadcast.dimx_256.dimyz_1.dir/catch2_test_block_reduce_broadcast.cu.o
+[16/30] Linking CXX static library lib/libcccl.c2h.a
+[17/30] Linking CXX executable bin/cub.test.block.reduce_broadcast.dimx_1.dimyz_1
+[18/30] Linking CXX executable bin/cub.test.block.reduce_broadcast.dimx_1.dimyz_2
+[19/30] Linking CXX executable bin/cub.test.block.reduce_broadcast.dimx_7.dimyz_1
+[20/30] Linking CXX executable bin/cub.test.block.reduce_broadcast.dimx_7.dimyz_2
+[21/30] Linking CXX executable bin/cub.test.block.reduce_broadcast.dimx_32.dimyz_1
+[22/30] Linking CXX executable bin/cub.test.block.reduce_broadcast.dimx_32.dimyz_2
+[23/30] Linking CXX executable bin/cub.test.block.reduce_broadcast.dimx_65.dimyz_1
+[24/30] Linking CXX executable bin/cub.test.block.reduce_broadcast.dimx_65.dimyz_2
+[25/30] Linking CXX executable bin/cub.test.block.reduce_broadcast.dimx_128.dimyz_1
+[26/30] Linking CXX executable bin/cub.test.block.reduce_broadcast.dimx_128.dimyz_2
+[27/30] Linking CXX executable bin/cub.test.block.reduce_broadcast.dimx_256.dimyz_1
+[28/30] Building CUDA object cub/test/CMakeFiles/cub.test.block.reduce_broadcast.dimx_256.dimyz_2.dir/catch2_test_block_reduce_broadcast.cu.o
+[29/30] Linking CXX executable bin/cub.test.block.reduce_broadcast.dimx_256.dimyz_2
