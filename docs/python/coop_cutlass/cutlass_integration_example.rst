@@ -43,6 +43,47 @@ for the example's temporary LTO-IR files; they are removed when the process
 exits. The package's persistent cache is configured separately with
 ``CUDA_COOP_CUTLASS_PROVIDER_CACHE_DIR``; see :doc:`configuration`.
 
+Compilation and execution
+-------------------------
+
+``cute.compile`` drives the host-side steps below. The trace-finalize hook
+supplies the CUB wrapper and completes the kernel's scratch operands before
+CuTe links the two LTO-IR inputs. Calling the returned callable then launches
+the GPU kernel.
+
+.. raw:: html
+
+   <style>
+   .coop-cutlass-example-scroll {
+     max-width: 100%;
+     overflow-x: auto;
+   }
+   .coop-cutlass-example-scroll img {
+     width: 100%;
+     min-width: 760px;
+     max-width: none;
+   }
+   @media print {
+     .coop-cutlass-example-scroll { overflow: visible; }
+     .coop-cutlass-example-scroll img {
+       min-width: 0;
+       max-width: 100%;
+     }
+   }
+   </style>
+   <div class="coop-cutlass-example-scroll" role="region" aria-label="Minimal CuTe DSL integration flowchart; scroll horizontally to follow all four columns" tabindex="0">
+
+.. figure:: visualizations/cutlass-integration-example.svg
+   :alt: Four columns show CuTe tracing the kernel, the example collecting the CUB call and finalizing scratch, NVRTC returning wrapper LTO-IR and scratch layout, and nvJitLink combining kernel and wrapper LTO-IR. Labeled arrows show each handoff, followed by GPU execution below the host lanes.
+   :width: 100%
+
+   Columns show ownership; arrows show the data passed between components.
+   On narrow screens, scroll horizontally to follow all four columns.
+
+.. raw:: html
+
+   </div>
+
 What the script uses from the DSL
 ---------------------------------
 
