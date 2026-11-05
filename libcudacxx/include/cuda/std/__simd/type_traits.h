@@ -61,24 +61,21 @@ inline constexpr size_t alignment_v = alignment<_Tp, _Up>::value;
 
 // [simd.traits], rebind
 template <typename _Tp, typename _Vp>
-struct rebind;
+struct rebind
+{};
 
 template <typename _Tp, typename _Up, typename _Abi>
 struct rebind<_Tp, basic_vec<_Up, _Abi>>
-{
-  static_assert(__is_vectorizable_v<_Tp>, "T must be a vectorizable type");
-  using type = basic_vec<_Tp, __deduce_abi_t<_Tp, __simd_size_v<_Up, _Abi>>>;
-};
+    : enable_if<__is_enabled_vec_v<_Up, _Abi> && __is_enabled_vec_v<_Tp, __deduce_abi_t<_Tp, __simd_size_v<_Up, _Abi>>>,
+                basic_vec<_Tp, __deduce_abi_t<_Tp, __simd_size_v<_Up, _Abi>>>>
+{};
 
 template <typename _Tp, size_t _Bytes, typename _Abi>
 struct rebind<_Tp, basic_mask<_Bytes, _Abi>>
-{
-  static_assert(__is_vectorizable_v<_Tp>, "T must be a vectorizable type");
-  using __integer_t       = __integer_from<sizeof(_Tp)>;
-  using __integer_bytes_t = __integer_from<_Bytes>;
-
-  using type = basic_mask<sizeof(_Tp), __deduce_abi_t<__integer_t, __simd_size_v<__integer_bytes_t, _Abi>>>;
-};
+    : enable_if<__is_enabled_mask_v<_Bytes, _Abi>
+                  && __is_enabled_vec_v<_Tp, __deduce_abi_t<_Tp, __mask_size_v<_Bytes, _Abi>>>,
+                basic_mask<__simd_element_size<_Tp>::value, __deduce_abi_t<_Tp, __mask_size_v<_Bytes, _Abi>>>>
+{};
 
 template <typename _Tp, typename _Vp>
 using rebind_t = typename rebind<_Tp, _Vp>::type;
