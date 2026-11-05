@@ -384,7 +384,7 @@ load_direct_striped_vectorized_aligned(int linear_tid, const InputT* block_src_p
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < vectors_per_thread; i++)
   {
-    vec_items[i] = ThreadLoad<Modifier>(vec_ptr + i * ThreadsPerBlock);
+    vec_items[i] = _CUB::ThreadLoad<Modifier>(vec_ptr + i * ThreadsPerBlock);
   }
 
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -459,7 +459,7 @@ LoadDirectStripedVectorized(int linear_tid, const InputT* block_src_ptr, T (&dst
   {
     if (::cuda::std::is_sufficiently_aligned<alignof(typename CubVector<InputT, vec_size>::Type)>(block_src_ptr))
     {
-      detail::load_direct_striped_vectorized_aligned<ThreadsPerBlock, VecSize, Modifier>(
+      _CUB::detail::load_direct_striped_vectorized_aligned<ThreadsPerBlock, VecSize, Modifier>(
         linear_tid, block_src_ptr, dst_items);
       return;
     }
@@ -472,13 +472,14 @@ LoadDirectStripedVectorized(int linear_tid, const InputT* block_src_ptr, T (&dst
   {
     if constexpr (Modifier != LOAD_DEFAULT)
     {
-      LoadDirectBlocked(i * ThreadsPerBlock,
-                        CacheModifiedInputIterator<Modifier, InputT, int>(thread_src_ptr),
-                        reinterpret_cast<T(&)[vec_size]>(dst_items[i * vec_size]));
+      _CUB::LoadDirectBlocked(i * ThreadsPerBlock,
+                              CacheModifiedInputIterator<Modifier, InputT, int>(thread_src_ptr),
+                              reinterpret_cast<T(&)[vec_size]>(dst_items[i * vec_size]));
     }
     else
     {
-      LoadDirectBlocked(i * ThreadsPerBlock, thread_src_ptr, reinterpret_cast<T(&)[vec_size]>(dst_items[i * vec_size]));
+      _CUB::LoadDirectBlocked(
+        i * ThreadsPerBlock, thread_src_ptr, reinterpret_cast<T(&)[vec_size]>(dst_items[i * vec_size]));
     }
   }
 }
@@ -1235,13 +1236,13 @@ public:
       if constexpr (detail::is_CacheModifiedInputIterator<RandomAccessIterator>
                     && ::cuda::std::is_same_v<detail::it_value_t<RandomAccessIterator>, T>)
       {
-        LoadDirectStripedVectorized<ThreadsPerBlock, vec_size, RandomAccessIterator::__modifier>(
+        _CUB::LoadDirectStripedVectorized<ThreadsPerBlock, vec_size, RandomAccessIterator::__modifier>(
           linear_tid, block_src_it.ptr, dst_items);
       }
       else if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIterator>
                          && ::cuda::std::is_same_v<detail::it_value_t<RandomAccessIterator>, T>)
       {
-        LoadDirectStripedVectorized<ThreadsPerBlock, vec_size, LOAD_DEFAULT>(
+        _CUB::LoadDirectStripedVectorized<ThreadsPerBlock, vec_size, LOAD_DEFAULT>(
           linear_tid, ::cuda::std::to_address(block_src_it), dst_items);
       }
       else
@@ -1251,7 +1252,7 @@ public:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread / vec_size; i++)
         {
-          LoadDirectBlocked(
+          _CUB::LoadDirectBlocked(
             i * ThreadsPerBlock, thread_src_it, reinterpret_cast<T(&)[vec_size]>(dst_items[i * vec_size]));
         }
       }

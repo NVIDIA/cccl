@@ -105,7 +105,7 @@ struct WarpReduceShfl
   {
     KeyValuePair<KeyT, ValueT> output;
 
-    KeyT other_key = CUB_NS_QUALIFIER::ShuffleDown<shuffle_threads>(input.key, offset, last_lane, member_mask);
+    KeyT other_key = _CUB::ShuffleDown<shuffle_threads>(input.key, offset, last_lane, member_mask);
 
     output.key   = input.key;
     output.value = ReduceStep(input.value, ::cuda::std::plus<>{}, last_lane, offset);
@@ -172,7 +172,7 @@ struct WarpReduceShfl
     else
     {
       Tp output = input;
-      Tp tmp    = CUB_NS_QUALIFIER::ShuffleDown<shuffle_threads>(output, offset, last_lane, member_mask);
+      Tp tmp    = _CUB::ShuffleDown<shuffle_threads>(output, offset, last_lane, member_mask);
       // Perform reduction op if valid
       if (offset + lane_id <= last_lane)
       {
