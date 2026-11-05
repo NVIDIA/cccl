@@ -6177,6 +6177,14 @@ UNITTEST("alternation and repetition nested under & and |")
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
 
+// A test exception that forwards its message, at namespace scope on purpose: nvcc <= 12.9 in
+// C++20 mode infers __host__ __device__ for a local class's special members inside an extended
+// lambda, and the inherited std::runtime_error constructor is host-only (error #20011).
+struct __ut_tagged_error : ::std::runtime_error
+{
+  using ::std::runtime_error::runtime_error;
+};
+
 UNITTEST("selecting arms decline by return")
 {
   // A type guard, an exact guard, a translator or a predicate on the left of `|` (or under `*`)
@@ -6283,17 +6291,13 @@ UNITTEST("selecting arms decline by return")
   EXPECT(((if_isa<key>(translate<boom>) | if_isa<boom>(subst(5)) | subst(0))->*throw_other) == 0);
   // The message crosses the translation when To takes a const char*; boom above does not, so
   // it is default-constructed.
-  struct tagged : ::std::runtime_error
-  {
-    using runtime_error::runtime_error;
-  };
   const auto first_char = thrown([](const ::std::exception& e) {
     return int(e.what()[0]);
   });
-  EXPECT(((translate<tagged> | first_char)->*throw_key) == int('k'));
+  EXPECT(((translate<__ut_tagged_error> | first_char)->*throw_key) == int('k'));
   EXPECT(((translate<boom> | first_char)->*throw_key) == int('b'));
   // A non-standard exception has no message; a To that takes one gets a fixed text.
-  EXPECT(((translate<tagged> | first_char)->*throw_int) == int('n'));
+  EXPECT(((translate<__ut_tagged_error> | first_char)->*throw_int) == int('n'));
   EXPECT(((translate<boom> | first_char)->*throw_int) == int('b'));
 
   // A predicate is evaluated exactly once, whether it claims or declines.
