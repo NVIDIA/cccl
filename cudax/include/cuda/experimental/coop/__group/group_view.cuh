@@ -79,8 +79,8 @@ class group_view
   static_assert(__unit_same_as_or_below_v<_Unit, typename _Group::unit_type>,
                 "unit_type must be same as or below the _Group's unit_type");
 
-  using _MappingResult        = __group_view_mapping_result_t<_Unit, _Group>;
-  using _SynchronizerInstance = decltype(::cuda::std::declval<const _Group&>().__synchronizer_instance().view());
+  using _MappingResult _CCCL_NODEBUG        = __group_view_mapping_result_t<_Unit, _Group>;
+  using _SynchronizerInstance _CCCL_NODEBUG = typename _Group::__synchronizer_instance_type;
   static_assert(__group_mapping_result<_MappingResult>);
 
   typename _Group::hierarchy_type __hier_;
@@ -88,11 +88,12 @@ class group_view
   _SynchronizerInstance __synchronizer_instance_;
 
 public:
-  using unit_type             = _Unit;
-  using level_type            = typename _Group::level_type;
-  using hierarchy_type        = typename _Group::hierarchy_type;
-  using __mapping_result_type = _MappingResult;
-  using arrival_token         = typename _Group::arrival_token;
+  using unit_type                    = _Unit;
+  using level_type                   = typename _Group::level_type;
+  using hierarchy_type               = typename _Group::hierarchy_type;
+  using __mapping_result_type        = _MappingResult;
+  using __synchronizer_instance_type = _SynchronizerInstance;
+  using arrival_token                = typename _Group::arrival_token;
 
   group_view() = delete;
 
@@ -109,13 +110,13 @@ public:
   _CCCL_DEVICE_API group_view(const _Group& __group)
       : __hier_{__group.hierarchy()}
       , __mapping_result_{::cuda::experimental::coop::__do_group_view_mapping(_Unit{}, __group)}
-      , __synchronizer_instance_{__group.__synchronizer_instance().view()}
+      , __synchronizer_instance_{__group.__synchronizer_instance()}
   {}
 
   _CCCL_DEVICE_API explicit group_view(const _Unit& __unit, const _Group& __group)
       : __hier_{__group.hierarchy()}
       , __mapping_result_{::cuda::experimental::coop::__do_group_view_mapping(__unit, __group)}
-      , __synchronizer_instance_{__group.__synchronizer_instance().view()}
+      , __synchronizer_instance_{__group.__synchronizer_instance()}
   {}
 
   _CCCL_TEMPLATE(class _OtherUnit)
