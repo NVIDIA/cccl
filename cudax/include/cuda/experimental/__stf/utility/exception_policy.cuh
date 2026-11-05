@@ -1145,12 +1145,14 @@ struct translate_t<_To>
       detail::__throw_translated<_To>(*__e);
     }
     detail::__throw_translated<_To>();
+    _CCCL_UNREACHABLE();
   }
 
   template <class _Fn>
   [[noreturn]] nullval on_thrown(const ::std::exception* __e, const ::cuda::std::source_location __loc, _Fn& __fn) const
   {
     __claimed(__e, __loc, __fn);
+    _CCCL_UNREACHABLE(); // nvcc's front end does not propagate [[noreturn]] through the call above
   }
 };
 
