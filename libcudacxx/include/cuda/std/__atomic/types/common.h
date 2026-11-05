@@ -71,9 +71,14 @@ _CCCL_HOST_DEVICE_API _Tp __cuda_atomic_add(_Tp __lhs, _Tp __rhs)
 #if _CCCL_HAS_NVBF16()
     if constexpr (is_same_v<_Tp, __nv_bfloat16>)
   {
-    NV_IF_ELSE_TARGET(
+    NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_80,
       (return __hadd(__lhs, __rhs);),
+      NV_IS_DEVICE,
+      ( // Preserve bfloat16 subnormals when fast math flushes float subnormals.
+        return __float2bfloat16(
+                 __atomic_adl_float<_Tp>{__fmaf_ieee_rn(__bfloat162float(__lhs), 1.0f, __bfloat162float(__rhs))});),
+      NV_IS_HOST,
       (return __float2bfloat16(__atomic_adl_float<_Tp>{__bfloat162float(__lhs) + __bfloat162float(__rhs)});))
   }
   else
@@ -98,9 +103,14 @@ _CCCL_HOST_DEVICE_API _Tp __cuda_atomic_sub(_Tp __lhs, _Tp __rhs)
 #if _CCCL_HAS_NVBF16()
     if constexpr (is_same_v<_Tp, __nv_bfloat16>)
   {
-    NV_IF_ELSE_TARGET(
+    NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_80,
       (return __hsub(__lhs, __rhs);),
+      NV_IS_DEVICE,
+      ( // Preserve bfloat16 subnormals when fast math flushes float subnormals.
+        return __float2bfloat16(
+                 __atomic_adl_float<_Tp>{__fmaf_ieee_rn(__bfloat162float(__rhs), -1.0f, __bfloat162float(__lhs))});),
+      NV_IS_HOST,
       (return __float2bfloat16(__atomic_adl_float<_Tp>{__bfloat162float(__lhs) - __bfloat162float(__rhs)});))
   }
   else

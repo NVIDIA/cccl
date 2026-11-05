@@ -41,7 +41,7 @@ extern "C" __device__ auto atomic_codegen_test(TEMPLATE<TYPE, SCOPE>& atom, TYPE
 ; BLOCK: {{.*}}LD.E.STRONG.{{CTA|SM}} {{R[0-9]+}}, {{.*\[}}[[ALIGNED_ADDR]]{{(\.64)?\].*}}
 ; NON_BLOCK: {{.*}}LD.E.STRONG.[[SASS_SCOPE]] {{R[0-9]+}}, {{.*\[}}[[ALIGNED_ADDR]]{{(\.64)?\].*}}
 ; F16: {{.*}}HADD2{{.*}}
-; NOT-SM80-PLUS_BF16: {{.*}}FADD{{.*}}
+; NOT-SM80-PLUS_BF16: {{.*}}{{FADD|FFMA}}{{.*}}
 ; SM80-PLUS_BF16: {{.*}}{{HADD2|HFMA2}}{{.*}}.BF16{{.*}}
 ; RELEASE: {{.*}}MEMBAR.ALL.[[SASS_SCOPE]]{{.*}}
 ; SEQ_CST: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}
