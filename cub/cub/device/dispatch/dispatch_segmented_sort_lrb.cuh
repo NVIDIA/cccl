@@ -17,13 +17,19 @@
 
 #include <cub/agent/agent_segmented_sort_group_merge.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/device_double_buffer.cuh>
+#include <cub/detail/double_buffer.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/segmented_sort_entries.cuh>
+#include <cub/device/dispatch/kernels/kernel_segmented_sort.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_sort_lrb.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_temporary_storage.cuh>
 
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/limits>
+#include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
 CUB_NAMESPACE_BEGIN
@@ -125,7 +131,13 @@ _CCCL_HOST_API cudaError_t dispatch_partition(
 }
 
 // Configure shared scratch, validate occupancy, and launch one sorting kernel with a policy-sized grid.
-template <typename Kernel, int CC, typename Key, typename BeginIterator, typename EndIterator, typename KernelLauncherFactory>
+template <typename Kernel,
+          int CC,
+          bool Descending = false,
+          typename Key,
+          typename BeginIterator,
+          typename EndIterator,
+          typename KernelLauncherFactory>
 _CCCL_HOST_API cudaError_t launch_sort_kernel(
   partition_result bins,
   BeginIterator begins,
@@ -136,7 +148,7 @@ _CCCL_HOST_API cudaError_t launch_sort_kernel(
   cudaStream_t stream,
   KernelLauncherFactory launcher_factory)
 {
-  constexpr auto kernel = sort_kernel<Kernel, Key, BeginIterator, EndIterator>;
+  constexpr auto kernel = sort_kernel<Kernel, Key, BeginIterator, EndIterator, Descending>;
   using implementation_t =
     typename Kernel::template implementation_t<policy_getter<typename Kernel::policy_selector, CC>>;
   constexpr auto tuning               = implementation_t::policy;
@@ -176,6 +188,7 @@ _CCCL_HOST_API cudaError_t launch_sort_kernel(
 // The index sequence enumerates kernel types at compile time.
 template <typename Kernels,
           int CC,
+          bool Descending = false,
           typename Key,
           typename BeginIterator,
           typename EndIterator,
@@ -198,7 +211,7 @@ _CCCL_HOST_API cudaError_t launch_sort_kernel_list(
   }
   cudaError_t error = cudaSuccess;
   ((error = error == cudaSuccess
-            ? launch_sort_kernel<typename Kernels::template kernel_t<KernelIndices>, CC>(
+            ? launch_sort_kernel<typename Kernels::template kernel_t<KernelIndices>, CC, Descending>(
                 {bins.bin_offsets + Kernels::template kernel_bin_begin_idx<CC>(KernelIndices), bins.segment_ids},
                 begins,
                 ends,
@@ -257,6 +270,149 @@ _CCCL_HOST_API cudaError_t dispatch(
       }
       return launch_sort_kernel_list<kernels_t, selected_cc.get()>(
         result, begins, ends, in, out, stream, launcher_factory, ::cuda::std::make_index_sequence<kernels_t::size>{});
+    }
+  });
+}
+// Public routing retains current CUB for pairs, custom tuning, and wider segment counts.
+// Device-side callers stay on the existing dispatch because this backend requires host resource setup.
+template <typename Key, typename Value, typename PolicySelector>
+_CCCL_HOST_DEVICE_API constexpr bool
+can_use_lrb(::cuda::compute_capability cc, ::cuda::std::int64_t num_items, ::cuda::std::int64_t num_segments)
+{
+  return !_CCCL_HAS_CDP() && can_use_lrb<Key>(cc) && ::cuda::std::is_same_v<Value, NullType>
+      && ::cuda::std::is_same_v<PolicySelector, segmented_sort::policy_selector_from_types<Key, Value>>
+      && num_items >= 0 && num_segments >= 0
+      && static_cast<unsigned long long>(num_segments) < ::cuda::std::numeric_limits<unsigned>::max();
+}
+
+// Complete keys-only path: bounded GroupMerge bins and CUB's existing radix kernel for overflow.
+// Pointer overloads preserve the input with an intermediate array; DoubleBuffer reuses both caller buffers.
+// Reading the overflow range synchronizes the stream. Capture and device invocation remain on current CUB.
+template <SortOrder Order,
+          typename Offset,
+          typename Key,
+          typename BeginIterator,
+          typename EndIterator,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+_CCCL_HOST_API cudaError_t dispatch(
+  void* temp_storage,
+  size_t& temp_storage_bytes,
+  DoubleBuffer<Key>& keys,
+  ::cuda::std::int64_t num_items,
+  unsigned num_segments,
+  BeginIterator begins,
+  EndIterator ends,
+  bool is_overwrite_okay,
+  cudaStream_t stream                    = 0,
+  KernelLauncherFactory launcher_factory = {})
+{
+  using kernels_t        = group_merge_sort_kernels_t<Key>;
+  using radix_selector_t = segmented_sort::policy_selector_from_types<Key, NullType>;
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+  {
+    return error;
+  }
+  return dispatch_compute_cap(group_merge_tuning_arch_selector{}, cc, [&](auto arch) -> cudaError_t {
+    constexpr auto selected_cc = decltype(arch){}();
+    if constexpr (!can_use_lrb<Key>(selected_cc))
+    {
+      return cudaErrorNotSupported;
+    }
+    else
+    {
+      using capacities_t = typename kernels_t::template capacities_t<policy_getter, selected_cc.get()>;
+      partition_result bins;
+      size_t partition_bytes = 0;
+      if (const auto error = dispatch_partition<capacities_t>(
+            nullptr, partition_bytes, begins, ends, num_segments, bins, stream, launcher_factory))
+      {
+        return error;
+      }
+      const size_t sizes[] = {partition_bytes, is_overwrite_okay ? 0 : sizeof(Key) * size_t(num_items)};
+      void* allocations[2]{};
+      if (const auto error = CubDebug(alias_temporaries(temp_storage, temp_storage_bytes, allocations, sizes)))
+      {
+        return error;
+      }
+      if (!temp_storage || !num_segments)
+      {
+        return cudaSuccess;
+      }
+      if (const auto error = dispatch_partition<capacities_t>(
+            allocations[0], partition_bytes, begins, ends, num_segments, bins, stream, launcher_factory))
+      {
+        return error;
+      }
+      // The radix policy is selected independently from the GroupMerge tuning.
+      return dispatch_compute_cap(radix_selector_t{}, cc, [&](auto radix_getter) -> cudaError_t {
+        const auto radix_policy  = radix_getter().large_segment;
+        const int num_passes     = ::cuda::ceil_div(int(sizeof(Key) * 8), radix_policy.radix_bits);
+        const bool odd_passes    = num_passes % 2 != 0;
+        const int final_selector = is_overwrite_okay ? (keys.selector + num_passes) % 2 : 1 - keys.selector;
+        Key* out                 = keys.d_buffers[final_selector];
+        Key* intermediate        = static_cast<Key*>(allocations[1]);
+        device_double_buffer<Key> radix_buffers(
+          (is_overwrite_okay || odd_passes) ? keys.Alternate() : intermediate,
+          is_overwrite_okay ? keys.Current() : (odd_passes ? intermediate : keys.Alternate()));
+        // Copy only the overflow boundaries; segment IDs stay on the device.
+        unsigned overflow_offsets[2]{};
+        if (const auto error = CubDebug(cudaMemcpyAsync(
+              overflow_offsets,
+              bins.bin_offsets + capacities_t::size,
+              sizeof(overflow_offsets),
+              cudaMemcpyDeviceToHost,
+              stream)))
+        {
+          return error;
+        }
+        if (const auto error = CubDebug(cudaStreamSynchronize(stream)))
+        {
+          return error;
+        }
+        if (const auto error = launch_sort_kernel_list<kernels_t, selected_cc.get(), Order == SortOrder::Descending>(
+              bins,
+              begins,
+              ends,
+              keys.Current(),
+              out,
+              stream,
+              launcher_factory,
+              ::cuda::std::make_index_sequence<kernels_t::size>{}))
+        {
+          return error;
+        }
+        // A CUDA x-grid is int-sized even though segment IDs are unsigned.
+        for (unsigned first_segment = overflow_offsets[0]; first_segment < overflow_offsets[1];)
+        {
+          const unsigned grid_size =
+            (::cuda::std::min) (overflow_offsets[1] - first_segment, unsigned(::cuda::std::numeric_limits<int>::max()));
+          constexpr auto kernel = segmented_sort::
+            DeviceSegmentedSortKernelLarge<Order, radix_selector_t, Key, NullType, BeginIterator, EndIterator, Offset>;
+          if (const auto error = CubDebug(
+                launcher_factory(grid_size, radix_policy.threads_per_block, 0, stream)
+                  .doit(kernel,
+                        bins.segment_ids + first_segment,
+                        keys.Current(),
+                        out,
+                        radix_buffers,
+                        static_cast<const NullType*>(nullptr),
+                        static_cast<NullType*>(nullptr),
+                        device_double_buffer<NullType>(nullptr, nullptr),
+                        begins,
+                        ends)))
+          {
+            return error;
+          }
+          if (const auto error = CubDebug(cudaPeekAtLastError()))
+          {
+            return error;
+          }
+          first_segment += grid_size;
+        }
+        keys.selector = final_selector;
+        return CubDebug(DebugSyncStream(stream));
+      });
     }
   });
 }

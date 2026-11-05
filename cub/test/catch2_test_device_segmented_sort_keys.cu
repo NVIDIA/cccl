@@ -49,7 +49,7 @@ using key_types =
 CUB_TEST("DeviceSegmentedSortKeys: No segments", "[keys][segmented][sort][device]", CUB_SMALL, test_algorithms)
 {
   constexpr auto selected_algorithm = c2h::get<0, TestType>::value;
-  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "existing CUB" : "internal LRB"));
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "public API" : "internal LRB"));
 
   // Type doesn't affect the escape logic, so it should be fine
   // to test only one set of types here.
@@ -86,7 +86,7 @@ CUB_TEST("DeviceSegmentedSortKeys: No segments", "[keys][segmented][sort][device
 CUB_TEST("DeviceSegmentedSortKeys: Empty segments", "[keys][segmented][sort][device]", CUB_SMALL, test_algorithms)
 {
   constexpr auto selected_algorithm = c2h::get<0, TestType>::value;
-  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "existing CUB" : "internal LRB"));
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "public API" : "internal LRB"));
 
   // Type doesn't affect the escape logic, so it should be fine
   // to test only one set of types here.
@@ -133,7 +133,7 @@ CUB_TEST("DeviceSegmentedSortKeys: Same size segments, derived keys",
          test_algorithms)
 {
   constexpr auto selected_algorithm = c2h::get<1, TestType>::value;
-  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "existing CUB" : "internal LRB"));
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "public API" : "internal LRB"));
 
   using KeyT = c2h::get<0, TestType>;
 
@@ -157,7 +157,7 @@ CUB_TEST("DeviceSegmentedSortKeys: Randomly sized segments, derived keys",
          test_algorithms)
 {
   constexpr auto selected_algorithm = c2h::get<1, TestType>::value;
-  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "existing CUB" : "internal LRB"));
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "public API" : "internal LRB"));
 
   using KeyT = c2h::get<0, TestType>;
 
@@ -182,7 +182,7 @@ CUB_TEST("DeviceSegmentedSortKeys: Randomly sized segments, random keys",
          test_algorithms)
 {
   constexpr auto selected_algorithm = c2h::get<1, TestType>::value;
-  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "existing CUB" : "internal LRB"));
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "public API" : "internal LRB"));
 
   using KeyT = c2h::get<0, TestType>;
 
@@ -203,7 +203,7 @@ CUB_TEST("DeviceSegmentedSortKeys: Edge case segments, random keys",
          test_algorithms)
 {
   constexpr auto selected_algorithm = c2h::get<1, TestType>::value;
-  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "existing CUB" : "internal LRB"));
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "public API" : "internal LRB"));
 
   using KeyT = c2h::get<0, TestType>;
   test_edge_case_segments_random<KeyT, cub::NullType, selected_algorithm>(C2H_SEED(4));
@@ -216,7 +216,7 @@ CUB_TEST("DeviceSegmentedSortKeys: Unspecified segments, random keys",
          test_algorithms)
 {
   constexpr auto selected_algorithm = c2h::get<1, TestType>::value;
-  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "existing CUB" : "internal LRB"));
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "public API" : "internal LRB"));
 
   using KeyT = c2h::get<0, TestType>;
   test_unspecified_segments_random<KeyT, cub::NullType, selected_algorithm>(C2H_SEED(4));
@@ -232,7 +232,7 @@ CUB_TEST("DeviceSegmentedSortKeys: very large number of segments",
 try
 {
   constexpr auto selected_algorithm = c2h::get<1, TestType>::value;
-  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "existing CUB" : "internal LRB"));
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "public API" : "internal LRB"));
 
   if constexpr (selected_algorithm == test_algorithm::lrb)
   {
@@ -289,14 +289,23 @@ CUB_TEST("DeviceSegmentedSort::SortKeys: very large segments",
 try
 {
   constexpr auto selected_algorithm = c2h::get<1, TestType>::value;
-  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "existing CUB" : "internal LRB"));
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "public API" : "internal LRB"));
 
-  if constexpr (selected_algorithm == test_algorithm::lrb)
+  if constexpr (selected_algorithm == test_algorithm::lrb && !test_host_launch)
   {
-    SKIP("The internal LRB backend does not yet sort oversized segments.");
+    SKIP("The internal LRB backend currently supports only host launches.");
   }
   else
   {
+    if constexpr (selected_algorithm == test_algorithm::lrb)
+    {
+      cuda::compute_capability cc{};
+      REQUIRE(cudaSuccess == CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY{}.PtxComputeCap(cc));
+      if (!cub::detail::segmented_sort_capacity::can_use_lrb<cuda::std::uint8_t>(cc))
+      {
+        SKIP("The internal LRB backend requires a compiled SM90-or-newer target.");
+      }
+    }
     using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
     using segment_offset_t           = std::int32_t;
     using offset_t                   = c2h::get<0, TestType>;
@@ -319,13 +328,26 @@ try
     short_key_verification_helper<key_t> verification_helper{};
     verification_helper.prepare_verification_data(in_keys);
 
-    stable_sort_keys(
-      thrust::raw_pointer_cast(in_keys.data()),
-      thrust::raw_pointer_cast(out_keys.data()),
-      static_cast<offset_t>(num_items),
-      static_cast<segment_offset_t>(num_segments),
-      thrust::raw_pointer_cast(offsets.data()),
-      offsets.cbegin() + 1);
+    if constexpr (selected_algorithm == test_algorithm::lrb)
+    {
+      launch(lrb_sort_launcher_t{false, false, nullptr},
+             thrust::raw_pointer_cast(in_keys.data()),
+             thrust::raw_pointer_cast(out_keys.data()),
+             static_cast<cuda::std::int64_t>(num_items),
+             static_cast<unsigned>(num_segments),
+             thrust::raw_pointer_cast(offsets.data()),
+             offsets.cbegin() + 1);
+    }
+    else
+    {
+      stable_sort_keys(
+        thrust::raw_pointer_cast(in_keys.data()),
+        thrust::raw_pointer_cast(out_keys.data()),
+        static_cast<offset_t>(num_items),
+        static_cast<segment_offset_t>(num_segments),
+        thrust::raw_pointer_cast(offsets.data()),
+        offsets.cbegin() + 1);
+    }
 
     // Verify the keys are sorted correctly
     verification_helper.verify_sorted(out_keys);

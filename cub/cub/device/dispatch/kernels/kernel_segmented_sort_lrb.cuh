@@ -37,8 +37,8 @@ __launch_bounds__(partition_policy::block_threads) _CCCL_KERNEL_ATTRIBUTES void 
     bin_counts_shared[bin_idx] = 0;
   }
   __syncthreads();
-  const unsigned input_segment_id               = blockIdx.x * blockDim.x + threadIdx.x;
-  int bin_idx                                   = -1;
+  const auto input_segment_id = static_cast<unsigned long long>(blockIdx.x) * blockDim.x + threadIdx.x;
+  int bin_idx                 = -1;
   [[maybe_unused]] unsigned segment_rank_in_bin = 0;
   if (input_segment_id < num_segments)
   {
@@ -63,7 +63,7 @@ __launch_bounds__(partition_policy::block_threads) _CCCL_KERNEL_ATTRIBUTES void 
     __syncthreads();
     if (bin_idx >= 0)
     {
-      ids[bin_starts_shared[bin_idx] + segment_rank_in_bin] = input_segment_id;
+      ids[bin_starts_shared[bin_idx] + segment_rank_in_bin] = static_cast<unsigned>(input_segment_id);
     }
   }
 }
@@ -83,7 +83,7 @@ _CCCL_KERNEL_ATTRIBUTES void segment_prefix_kernel(const unsigned* counts, unsig
 
 // Consume this kernel's bins, packing segments into groups and invoking its sorting implementation.
 // The kernel type carries the selector; launch bounds and the body select tuning for the compiled target.
-template <typename Kernel, typename Key, typename BeginIterator, typename EndIterator>
+template <typename Kernel, typename Key, typename BeginIterator, typename EndIterator, bool Descending = false>
 __launch_bounds__(current_policy<typename Kernel::policy_selector>().block_threads,
                   current_policy<typename Kernel::policy_selector>().min_blocks_per_sm)
   _CCCL_KERNEL_ATTRIBUTES void sort_kernel(
@@ -146,7 +146,7 @@ __launch_bounds__(current_policy<typename Kernel::policy_selector>().block_threa
     const unsigned segments_per_group = threads_per_group / config.threads_per_segment;
     const auto segment_idx = partition.bin_offsets[bin_idx] + (work_id - bin_work_offsets[bin_idx]) * segments_per_group
                            + thread_idx_in_group / config.threads_per_segment;
-    implementation_t::invoke(
+    implementation_t::template invoke<Descending>(
       segment_idx < partition.bin_offsets[bin_idx + 1] ? segment_idx : ~0u,
       config,
       partition,

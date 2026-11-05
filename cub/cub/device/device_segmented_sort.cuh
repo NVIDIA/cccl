@@ -29,8 +29,10 @@
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_segmented_sort.cuh>
+#include <cub/device/dispatch/dispatch_segmented_sort_lrb.cuh>
 #include <cub/util_namespace.cuh>
 
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/cstdint>
 
@@ -168,6 +170,69 @@ private:
     using default_policy_selector_t = detail::segmented_sort::policy_selector_from_types<KeyT, ValueT>;
     using policy_selector_t =
       ::cuda::std::execution::__query_result_or_t<TuningEnvT, SegmentedSortPolicy, default_policy_selector_t>;
+    // Retain the existing backend for CDP builds and unsupported API configurations.
+    if constexpr (detail::segmented_sort_capacity::can_use_lrb<KeyT, ValueT, policy_selector_t>(
+                    ::cuda::compute_capability{9, 0}, 0, 0))
+    {
+      ::cuda::compute_capability cc{};
+      if (const auto error = CubDebug(CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY{}.PtxComputeCap(cc)))
+      {
+        return error;
+      }
+      if (detail::segmented_sort_capacity::can_use_lrb<KeyT, ValueT, policy_selector_t>(cc, num_items, num_segments))
+      {
+        cudaStreamCaptureStatus capture_status{};
+        if (const auto error = CubDebug(cudaStreamIsCapturing(stream, &capture_status)))
+        {
+          return error;
+        }
+        if (capture_status == cudaStreamCaptureStatusNone)
+        {
+          if (!d_temp_storage)
+          {
+            // A later execution may use the existing backend during capture.
+            size_t lrb_bytes = 0;
+            if (const auto error = detail::segmented_sort_capacity::dispatch<Order, offset_t>(
+                  nullptr,
+                  lrb_bytes,
+                  d_keys,
+                  num_items,
+                  static_cast<unsigned>(num_segments),
+                  d_begin_offsets,
+                  d_end_offsets,
+                  is_overwrite_okay,
+                  stream))
+            {
+              return error;
+            }
+            const auto error = detail::segmented_sort::dispatch<Order, offset_t>(
+              nullptr,
+              temp_storage_bytes,
+              d_keys,
+              d_values,
+              num_items,
+              num_segments,
+              d_begin_offsets,
+              d_end_offsets,
+              is_overwrite_okay,
+              stream,
+              policy_selector_t{});
+            temp_storage_bytes = (::cuda::std::max) (temp_storage_bytes, lrb_bytes);
+            return error;
+          }
+          return detail::segmented_sort_capacity::dispatch<Order, offset_t>(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_keys,
+            num_items,
+            static_cast<unsigned>(num_segments),
+            d_begin_offsets,
+            d_end_offsets,
+            is_overwrite_okay,
+            stream);
+        }
+      }
+    }
     return detail::segmented_sort::dispatch<Order, offset_t>(
       d_temp_storage,
       temp_storage_bytes,

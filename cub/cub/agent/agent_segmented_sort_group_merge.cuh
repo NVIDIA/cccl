@@ -26,6 +26,7 @@
 #include <cuda/__cmath/round_down.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/functional>
 #include <cuda/std/utility>
@@ -112,7 +113,7 @@ struct group_merge_implementation
   // merge across cooperating threads, and write the valid keys back.
   // A segment_idx of ~0u gives an unused segment zero length; its threads still reach every sync.
   // Configuration and merge rounds are uniform within the warp/block synchronization group.
-  template <int ItemsPerThread, typename Key, typename BeginIterator, typename EndIterator>
+  template <int ItemsPerThread, bool Descending, typename Key, typename BeginIterator, typename EndIterator>
   _CCCL_DEVICE_API static void sort_segment(
     unsigned segment_idx,
     bin_config config,
@@ -123,7 +124,7 @@ struct group_merge_implementation
     Key* out,
     Key* keys_shared)
   {
-    const ::cuda::std::less<Key> compare_op{};
+    const ::cuda::std::conditional_t<Descending, ::cuda::std::greater<Key>, ::cuda::std::less<Key>> compare_op{};
     const int thread_idx_in_group = threadIdx.x % threads_per_group;
     if constexpr (is_warp)
     {
@@ -224,7 +225,7 @@ struct group_merge_implementation
   }
 
   // Translate runtime IPT into a specialization with a fixed-size per-thread key array.
-  template <typename Key, typename BeginIterator, typename EndIterator>
+  template <bool Descending = false, typename Key, typename BeginIterator, typename EndIterator>
   _CCCL_DEVICE_API static void invoke(
     unsigned segment_idx,
     bin_config config,
@@ -239,25 +240,25 @@ struct group_merge_implementation
     switch (config.items_per_thread)
     {
       case 9:
-        sort_segment<9>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
+        sort_segment<9, Descending>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
         break;
       case 10:
-        sort_segment<10>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
+        sort_segment<10, Descending>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
         break;
       case 11:
-        sort_segment<11>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
+        sort_segment<11, Descending>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
         break;
       case 12:
-        sort_segment<12>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
+        sort_segment<12, Descending>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
         break;
       case 13:
-        sort_segment<13>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
+        sort_segment<13, Descending>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
         break;
       case 14:
-        sort_segment<14>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
+        sort_segment<14, Descending>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
         break;
       case 15:
-        sort_segment<15>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
+        sort_segment<15, Descending>(segment_idx, config, bins, begins, ends, in, out, keys_shared);
         break;
       default:
         _CCCL_UNREACHABLE();
