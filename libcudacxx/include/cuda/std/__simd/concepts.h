@@ -38,7 +38,6 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
-#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_signed.h>
@@ -187,7 +186,7 @@ template <typename _From, typename _To>
     return ::cuda::std::simd::__is_fp_in_integer_range<_To>(__value) // e.g. 1e100 is not representable by int
         && static_cast<_FromValue>(static_cast<_To>(__value)) == __value; // e.g. 3.0 <-> 3
   }
-  else if constexpr (is_integral_v<_FromValue> && is_floating_point_v<_To>)
+  else if constexpr (is_integral_v<_FromValue> && ::cuda::is_floating_point_v<_To>)
   {
     // Promote bool and character types before computing the unsigned magnitude
     const auto __value         = ::cuda::uabs(+_From::value);
