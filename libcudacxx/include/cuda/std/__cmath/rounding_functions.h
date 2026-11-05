@@ -25,6 +25,7 @@
 #include <cuda/std/__cmath/signbit.h>
 #include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__floating_point/fp.h>
+#include <cuda/std/__host_stdlib/fenv.h>
 #include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -769,11 +770,25 @@ _CCCL_API inline long lround(_Integer __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_NEARBYINTF128)
   return _CCCL_BUILTIN_NEARBYINTF128(__x);
-#  else // ^^^ _CCCL_BUILTIN_NEARBYINTF128 ^^^ / vvv !_CCCL_BUILTIN_NEARBYINTF128 vvv
-  // Only differs from rint in not raising FE_INEXACT. The device has no floating point exceptions, but the portable
-  // fallback on hosts without the builtin may raise it
+#  elif _CCCL_HOSTED() // ^^^ _CCCL_BUILTIN_NEARBYINTF128 ^^^ / vvv _CCCL_HOSTED() vvv
+  // Only differs from rint in not raising FE_INEXACT, which only matters on the host as the device has no floating
+  // point exceptions. feholdexcept masks the traps while rounding and fesetenv discards the raised flags, which can
+  // only be FE_INEXACT as rint returns NaN and infinity before any arithmetic. Like in glibc's nearbyint, the results
+  // of both calls are ignored as they do not fail on the supported hosts. The volatile keeps the rounding between them
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    ({
+                      ::fenv_t __env;
+                      ::feholdexcept(&__env);
+                      volatile __float128 __result = __x;
+                      __result                     = ::cuda::std::__rint_fp128(__result);
+                      ::fesetenv(&__env);
+                      return __result;
+                    }),
+                    (return ::cuda::std::__rint_fp128(__x);))
+#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
+  // Without <fenv.h> the environment can not be saved, so freestanding hosts may raise FE_INEXACT here
   return ::cuda::std::__rint_fp128(__x);
-#  endif // ^^^ !_CCCL_BUILTIN_NEARBYINTF128 ^^^
+#  endif // ^^^ !_CCCL_HOSTED() ^^^
 }
 #endif // _CCCL_HAS_FLOAT128()
 

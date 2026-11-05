@@ -21,6 +21,10 @@
 #include "fp_compare.h"
 #include "test_macros.h"
 
+#if _CCCL_HOSTED()
+#  include <fenv.h>
+#endif // _CCCL_HOSTED()
+
 TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'double' to 'float', possible loss of data
 TEST_DIAG_SUPPRESS_MSVC(4305) // 'argument': truncation from 'T' to 'float'
 TEST_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
@@ -534,6 +538,26 @@ TEST_FUNC void test_float128_rint_edge_cases()
   assert(cuda::std::isnan(cuda::std::nearbyint(nan)));
 }
 
+#  if _CCCL_HOSTED()
+// nearbyint must not raise FE_INEXACT, nor clear it when it was already raised
+TEST_FUNC void test_float128_nearbyint_inexact(float val)
+{
+  unused(val);
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 using T = __float128;
+
+                 feclearexcept(FE_INEXACT);
+                 assert(eq(cuda::std::nearbyint(T(val)), T(2)));
+                 assert(!fetestexcept(FE_INEXACT));
+
+                 feraiseexcept(FE_INEXACT);
+                 assert(eq(cuda::std::nearbyint(T(val)), T(2)));
+                 assert(fetestexcept(FE_INEXACT));
+                 feclearexcept(FE_INEXACT);
+               }))
+}
+#  endif // _CCCL_HOSTED()
+
 TEST_FUNC void test_float128_lround_edge_cases()
 {
   using T = __float128;
@@ -591,6 +615,9 @@ TEST_FUNC void test_float128(const float val)
   test_trunc<__float128>(val);
   test_float128_edge_cases();
   test_float128_rint_edge_cases();
+#  if _CCCL_HOSTED()
+  test_float128_nearbyint_inexact(val);
+#  endif // _CCCL_HOSTED()
   test_float128_lround_edge_cases();
 }
 #endif // _CCCL_HAS_FLOAT128()
