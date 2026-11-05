@@ -3,6 +3,7 @@
 
 // Focused checks for capacity mapping, ID partitioning, and the internal bounded GroupMerge sorting path.
 
+#include <cub/agent/agent_segmented_sort_tiny.cuh>
 #include <cub/device/dispatch/dispatch_segmented_sort_lrb.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
 
@@ -28,6 +29,73 @@ struct irregular_expansion
     Bin,
     cuda::std::tuple<capacity::bin_shape<4, 9>, capacity::bin_shape<8, 10>, capacity::bin_shape<16, 9>>>;
 };
+
+// One block sorts every segment, one per logical warp, over as many passes as needed.
+template <int LogicalWarpThreads, typename Key>
+__global__ void tiny_sort_kernel(const int* begins, const int* ends, unsigned num_segments, const Key* in, Key* out)
+{
+  using sorter_t = capacity::tiny_sort_implementation<Key>;
+  __shared__ typename sorter_t::temp_storage storage;
+  constexpr unsigned segments_per_pass = capacity::tiny_walk_policy::block_threads / LogicalWarpThreads;
+  for (unsigned pass_begin = 0; pass_begin < num_segments; pass_begin += segments_per_pass)
+  {
+    const unsigned segment_id = pass_begin + threadIdx.x / LogicalWarpThreads;
+    const bool is_valid       = segment_id < num_segments;
+    sorter_t::template sort_segment<LogicalWarpThreads>(
+      storage, is_valid ? segment_id : 0, is_valid, begins, ends, in, out);
+    __syncwarp();
+  }
+}
+
+// Check every length up to each logical warp's capacity, with partial final passes and untouched gaps.
+CUB_TEST("Tiny sort sorts each segment within its logical warp capacity",
+         "[segmented][sort][device]",
+         CUB_SMALL,
+         c2h::type_list<int, double>)
+{
+  using key_type   = c2h::get<0, TestType>;
+  const auto check = [](auto logical_warp_threads) {
+    constexpr int threads    = decltype(logical_warp_threads)::value;
+    constexpr int max_length = threads * capacity::tiny_walk_policy::items_per_thread;
+    c2h::host_vector<int> begins, ends;
+    c2h::host_vector<key_type> input;
+    std::mt19937 random{threads};
+    std::uniform_int_distribution<int> random_key{-1000, 1000};
+    for (int repeat = 0; repeat < 3; ++repeat)
+    {
+      for (int length = 0; length <= max_length; ++length)
+      {
+        input.push_back(key_type{-99});
+        begins.push_back(static_cast<int>(input.size()));
+        for (int i = 0; i < length; ++i)
+        {
+          const int value = repeat == 1 ? random_key(random) % 5 : random_key(random);
+          input.push_back(static_cast<key_type>(value) / key_type{4});
+        }
+        ends.push_back(static_cast<int>(input.size()));
+      }
+    }
+    auto expected = input;
+    for (size_t segment = 0; segment < begins.size(); ++segment)
+    {
+      std::sort(expected.begin() + begins[segment], expected.begin() + ends[segment]);
+    }
+    c2h::device_vector<key_type> d_in = input, d_out(input.size(), key_type{-99});
+    c2h::device_vector<int> d_begins = begins, d_ends = ends;
+    tiny_sort_kernel<threads><<<1, capacity::tiny_walk_policy::block_threads>>>(
+      thrust::raw_pointer_cast(d_begins.data()),
+      thrust::raw_pointer_cast(d_ends.data()),
+      static_cast<unsigned>(begins.size()),
+      thrust::raw_pointer_cast(d_in.data()),
+      thrust::raw_pointer_cast(d_out.data()));
+    REQUIRE(cudaGetLastError() == cudaSuccess);
+    REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
+    REQUIRE(c2h::host_vector<key_type>(d_out) == expected);
+  };
+  check(cuda::std::integral_constant<int, 1>{});
+  check(cuda::std::integral_constant<int, 2>{});
+  check(cuda::std::integral_constant<int, 4>{});
+}
 
 // Check generic bounds, irregular configuration mapping, overflow IDs, and empty-workspace reuse.
 CUB_TEST("Capacity partition accepts arbitrary bounds without sort tuning", "[segmented][sort][device]", CUB_SMALL)
