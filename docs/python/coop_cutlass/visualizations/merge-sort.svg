@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 624" role="img" aria-labelledby="title desc">
+<title id="title">Merge Sort keeps each key with its associated position</title>
+<desc id="desc">Eight teaching threads own two key and position pairs each. Sorted local copies merge into runs of four, eight, then sixteen items. Final keys are zero through fifteen. Their position badges are F C P M J G D A N K H E B O L I, identifying the original positions. Inputs remain unchanged.</desc>
+<rect width="1000" height="624" rx="12" fill="#f7f9fc"/>
+<g font-family="sans-serif" fill="#203341">
+<text x="22" y="31" font-size="21" font-weight="600">Merge Sort: keys and original positions</text>
+<text x="22" y="56" font-size="14">One block, two items per thread. Each cell is key:badge; A=0, B=1, ..., P=15.</text>
+<text x="22" y="90" font-size="15" font-weight="600">Inputs remain unchanged</text>
+<text x="97" y="112" text-anchor="middle" font-size="12">T0</text>
+<text x="209" y="112" text-anchor="middle" font-size="12">T1</text>
+<text x="321" y="112" text-anchor="middle" font-size="12">T2</text>
+<text x="433" y="112" text-anchor="middle" font-size="12">T3</text>
+<text x="545" y="112" text-anchor="middle" font-size="12">T4</text>
+<text x="657" y="112" text-anchor="middle" font-size="12">T5</text>
+<text x="769" y="112" text-anchor="middle" font-size="12">T6</text>
+<text x="881" y="112" text-anchor="middle" font-size="12">T7</text>
+<rect x="44" y="120" width="50" height="34" rx="5" fill="#dceac1" stroke="#9facba"/>
+<text x="69" y="142" text-anchor="middle" font-size="14">7:A</text>
+<rect x="100" y="120" width="50" height="34" rx="5" fill="#dceac1" stroke="#9facba"/>
+<text x="125" y="142" text-anchor="middle" font-size="14">12:B</text>
+<rect x="156" y="120" width="50" height="34" rx="5" fill="#c9eaf0" stroke="#9facba"/>
+<text x="181" y="142" text-anchor="middle" font-size="14">1:C</text>
+<rect x="212" y="120" width="50" height="34" rx="5" fill="#c9eaf0" stroke="#9facba"/>
+<text x="237" y="142" text-anchor="middle" font-size="14">6:D</text>
+<rect x="268" y="120" width="50" height="34" rx="5" fill="#fff0bd" stroke="#9facba"/>
+<text x="293" y="142" text-anchor="middle" font-size="14">11:E</text>
+<rect x="324" y="120" width="50" height="34" rx="5" fill="#fff0bd" stroke="#9facba"/>
+<text x="349" y="142" text-anchor="middle" font-size="14">0:F</text>
+<rect x="380" y="120" width="50" height="34" rx="5" fill="#f5d5e4" stroke="#9facba"/>
+<text x="405" y="142" text-anchor="middle" font-size="14">5:G</text>
+<rect x="436" y="120" width="50" height="34" rx="5" fill="#f5d5e4" stroke="#9facba"/>
+<text x="461" y="142" text-anchor="middle" font-size="14">10:H</text>
+<rect x="492" y="120" width="50" height="34" rx="5" fill="#e8def7" stroke="#9facba"/>
+<text x="517" y="142" text-anchor="middle" font-size="14">15:I</text>
+<rect x="548" y="120" width="50" height="34" rx="5" fill="#e8def7" stroke="#9facba"/>
+<text x="573" y="142" text-anchor="middle" font-size="14">4:J</text>
+<rect x="604" y="120" width="50" height="34" rx="5" fill="#fde2c9" stroke="#9facba"/>
+<text x="629" y="142" text-anchor="middle" font-size="14">9:K</text>
+<rect x="660" y="120" width="50" height="34" rx="5" fill="#fde2c9" stroke="#9facba"/>
+<text x="685" y="142" text-anchor="middle" font-size="14">14:L</text>
+<rect x="716" y="120" width="50" height="34" rx="5" fill="#c7e9e1" stroke="#9facba"/>
+<text x="741" y="142" text-anchor="middle" font-size="14">3:M</text>
+<rect x="772" y="120" width="50" height="34" rx="5" fill="#c7e9e1" stroke="#9facba"/>
+<text x="797" y="142" text-anchor="middle" font-size="14">8:N</text>
+<rect x="828" y="120" width="50" height="34" rx="5" fill="#dde5ea" stroke="#9facba"/>
+<text x="853" y="142" text-anchor="middle" font-size="14">13:O</text>
+<rect x="884" y="120" width="50" height="34" rx="5" fill="#dde5ea" stroke="#9facba"/>
+<text x="909" y="142" text-anchor="middle" font-size="14">2:P</text>
+<text x="22" y="190" font-size="15" font-weight="600">Local sorted copies</text>
+<text x="97" y="212" text-anchor="middle" font-size="12">T0</text>
+<text x="209" y="212" text-anchor="middle" font-size="12">T1</text>
+<text x="321" y="212" text-anchor="middle" font-size="12">T2</text>
+<text x="433" y="212" text-anchor="middle" font-size="12">T3</text>
+<text x="545" y="212" text-anchor="middle" font-size="12">T4</text>
+<text x="657" y="212" text-anchor="middle" font-size="12">T5</text>
+<text x="769" y="212" text-anchor="middle" font-size="12">T6</text>
+<text x="881" y="212" text-anchor="middle" font-size="12">T7</text>
+<rect x="44" y="220" width="50" height="34" rx="5" fill="#dceac1" stroke="#9facba"/>
+<text x="69" y="242" text-anchor="middle" font-size="14">7:A</text>
+<rect x="100" y="220" width="50" height="34" rx="5" fill="#dceac1" stroke="#9facba"/>
+<text x="125" y="242" text-anchor="middle" font-size="14">12:B</text>
+<rect x="156" y="220" width="50" height="34" rx="5" fill="#c9eaf0" stroke="#9facba"/>
+<text x="181" y="242" text-anchor="middle" font-size="14">1:C</text>
+<rect x="212" y="220" width="50" height="34" rx="5" fill="#c9eaf0" stroke="#9facba"/>
+<text x="237" y="242" text-anchor="middle" font-size="14">6:D</text>
+<rect x="268" y="220" width="50" height="34" rx="5" fill="#fff0bd" stroke="#9facba"/>
+<text x="293" y="242" text-anchor="middle" font-size="14">0:F</text>
+<rect x="324" y="220" width="50" height="34" rx="5" fill="#fff0bd" stroke="#9facba"/>
+<text x="349" y="242" text-anchor="middle" font-size="14">11:E</text>
+<rect x="380" y="220" width="50" height="34" rx="5" fill="#f5d5e4" stroke="#9facba"/>
+<text x="405" y="242" text-anchor="middle" font-size="14">5:G</text>
+<rect x="436" y="220" width="50" height="34" rx="5" fill="#f5d5e4" stroke="#9facba"/>
+<text x="461" y="242" text-anchor="middle" font-size="14">10:H</text>
+<rect x="492" y="220" width="50" height="34" rx="5" fill="#e8def7" stroke="#9facba"/>
+<text x="517" y="242" text-anchor="middle" font-size="14">4:J</text>
+<rect x="548" y="220" width="50" height="34" rx="5" fill="#e8def7" stroke="#9facba"/>
+<text x="573" y="242" text-anchor="middle" font-size="14">15:I</text>
+<rect x="604" y="220" width="50" height="34" rx="5" fill="#fde2c9" stroke="#9facba"/>
+<text x="629" y="242" text-anchor="middle" font-size="14">9:K</text>
+<rect x="660" y="220" width="50" height="34" rx="5" fill="#fde2c9" stroke="#9facba"/>
+<text x="685" y="242" text-anchor="middle" font-size="14">14:L</text>
+<rect x="716" y="220" width="50" height="34" rx="5" fill="#c7e9e1" stroke="#9facba"/>
+<text x="741" y="242" text-anchor="middle" font-size="14">3:M</text>
+<rect x="772" y="220" width="50" height="34" rx="5" fill="#c7e9e1" stroke="#9facba"/>
+<text x="797" y="242" text-anchor="middle" font-size="14">8:N</text>
+<rect x="828" y="220" width="50" height="34" rx="5" fill="#dde5ea" stroke="#9facba"/>
+<text x="853" y="242" text-anchor="middle" font-size="14">2:P</text>
+<rect x="884" y="220" width="50" height="34" rx="5" fill="#dde5ea" stroke="#9facba"/>
+<text x="909" y="242" text-anchor="middle" font-size="14">13:O</text>
+<text x="22" y="290" font-size="15" font-weight="600">Merge runs from two threads</text>
+<text x="97" y="312" text-anchor="middle" font-size="12">T0</text>
+<text x="209" y="312" text-anchor="middle" font-size="12">T1</text>
+<text x="321" y="312" text-anchor="middle" font-size="12">T2</text>
+<text x="433" y="312" text-anchor="middle" font-size="12">T3</text>
+<text x="545" y="312" text-anchor="middle" font-size="12">T4</text>
+<text x="657" y="312" text-anchor="middle" font-size="12">T5</text>
+<text x="769" y="312" text-anchor="middle" font-size="12">T6</text>
+<text x="881" y="312" text-anchor="middle" font-size="12">T7</text>
+<rect x="44" y="320" width="50" height="34" rx="5" fill="#c9eaf0" stroke="#9facba"/>
+<text x="69" y="342" text-anchor="middle" font-size="14">1:C</text>
+<rect x="100" y="320" width="50" height="34" rx="5" fill="#c9eaf0" stroke="#9facba"/>
+<text x="125" y="342" text-anchor="middle" font-size="14">6:D</text>
+<rect x="156" y="320" width="50" height="34" rx="5" fill="#dceac1" stroke="#9facba"/>
+<text x="181" y="342" text-anchor="middle" font-size="14">7:A</text>
+<rect x="212" y="320" width="50" height="34" rx="5" fill="#dceac1" stroke="#9facba"/>
+<text x="237" y="342" text-anchor="middle" font-size="14">12:B</text>
+<rect x="268" y="320" width="50" height="34" rx="5" fill="#fff0bd" stroke="#9facba"/>
+<text x="293" y="342" text-anchor="middle" font-size="14">0:F</text>
+<rect x="324" y="320" width="50" height="34" rx="5" fill="#f5d5e4" stroke="#9facba"/>
+<text x="349" y="342" text-anchor="middle" font-size="14">5:G</text>
+<rect x="380" y="320" width="50" height="34" rx="5" fill="#f5d5e4" stroke="#9facba"/>
+<text x="405" y="342" text-anchor="middle" font-size="14">10:H</text>
+<rect x="436" y="320" width="50" height="34" rx="5" fill="#fff0bd" stroke="#9facba"/>
+<text x="461" y="342" text-anchor="middle" font-size="14">11:E</text>
+<rect x="492" y="320" width="50" height="34" rx="5" fill="#e8def7" stroke="#9facba"/>
+<text x="517" y="342" text-anchor="middle" font-size="14">4:J</text>
+<rect x="548" y="320" width="50" height="34" rx="5" fill="#fde2c9" stroke="#9facba"/>
+<text x="573" y="342" text-anchor="middle" font-size="14">9:K</text>
+<rect x="604" y="320" width="50" height="34" rx="5" fill="#fde2c9" stroke="#9facba"/>
+<text x="629" y="342" text-anchor="middle" font-size="14">14:L</text>
+<rect x="660" y="320" width="50" height="34" rx="5" fill="#e8def7" stroke="#9facba"/>
+<text x="685" y="342" text-anchor="middle" font-size="14">15:I</text>
+<rect x="716" y="320" width="50" height="34" rx="5" fill="#dde5ea" stroke="#9facba"/>
+<text x="741" y="342" text-anchor="middle" font-size="14">2:P</text>
+<rect x="772" y="320" width="50" height="34" rx="5" fill="#c7e9e1" stroke="#9facba"/>
+<text x="797" y="342" text-anchor="middle" font-size="14">3:M</text>
+<rect x="828" y="320" width="50" height="34" rx="5" fill="#c7e9e1" stroke="#9facba"/>
+<text x="853" y="342" text-anchor="middle" font-size="14">8:N</text>
+<rect x="884" y="320" width="50" height="34" rx="5" fill="#dde5ea" stroke="#9facba"/>
+<text x="909" y="342" text-anchor="middle" font-size="14">13:O</text>
+<text x="22" y="390" font-size="15" font-weight="600">Merge runs from four threads</text>
+<text x="97" y="412" text-anchor="middle" font-size="12">T0</text>
+<text x="209" y="412" text-anchor="middle" font-size="12">T1</text>
+<text x="321" y="412" text-anchor="middle" font-size="12">T2</text>
+<text x="433" y="412" text-anchor="middle" font-size="12">T3</text>
+<text x="545" y="412" text-anchor="middle" font-size="12">T4</text>
+<text x="657" y="412" text-anchor="middle" font-size="12">T5</text>
+<text x="769" y="412" text-anchor="middle" font-size="12">T6</text>
+<text x="881" y="412" text-anchor="middle" font-size="12">T7</text>
+<rect x="44" y="420" width="50" height="34" rx="5" fill="#fff0bd" stroke="#9facba"/>
+<text x="69" y="442" text-anchor="middle" font-size="14">0:F</text>
+<rect x="100" y="420" width="50" height="34" rx="5" fill="#c9eaf0" stroke="#9facba"/>
+<text x="125" y="442" text-anchor="middle" font-size="14">1:C</text>
+<rect x="156" y="420" width="50" height="34" rx="5" fill="#f5d5e4" stroke="#9facba"/>
+<text x="181" y="442" text-anchor="middle" font-size="14">5:G</text>
+<rect x="212" y="420" width="50" height="34" rx="5" fill="#c9eaf0" stroke="#9facba"/>
+<text x="237" y="442" text-anchor="middle" font-size="14">6:D</text>
+<rect x="268" y="420" width="50" height="34" rx="5" fill="#dceac1" stroke="#9facba"/>
+<text x="293" y="442" text-anchor="middle" font-size="14">7:A</text>
+<rect x="324" y="420" width="50" height="34" rx="5" fill="#f5d5e4" stroke="#9facba"/>
+<text x="349" y="442" text-anchor="middle" font-size="14">10:H</text>
+<rect x="380" y="420" width="50" height="34" rx="5" fill="#fff0bd" stroke="#9facba"/>
+<text x="405" y="442" text-anchor="middle" font-size="14">11:E</text>
+<rect x="436" y="420" width="50" height="34" rx="5" fill="#dceac1" stroke="#9facba"/>
+<text x="461" y="442" text-anchor="middle" font-size="14">12:B</text>
+<rect x="492" y="420" width="50" height="34" rx="5" fill="#dde5ea" stroke="#9facba"/>
+<text x="517" y="442" text-anchor="middle" font-size="14">2:P</text>
+<rect x="548" y="420" width="50" height="34" rx="5" fill="#c7e9e1" stroke="#9facba"/>
+<text x="573" y="442" text-anchor="middle" font-size="14">3:M</text>
+<rect x="604" y="420" width="50" height="34" rx="5" fill="#e8def7" stroke="#9facba"/>
+<text x="629" y="442" text-anchor="middle" font-size="14">4:J</text>
+<rect x="660" y="420" width="50" height="34" rx="5" fill="#c7e9e1" stroke="#9facba"/>
+<text x="685" y="442" text-anchor="middle" font-size="14">8:N</text>
+<rect x="716" y="420" width="50" height="34" rx="5" fill="#fde2c9" stroke="#9facba"/>
+<text x="741" y="442" text-anchor="middle" font-size="14">9:K</text>
+<rect x="772" y="420" width="50" height="34" rx="5" fill="#dde5ea" stroke="#9facba"/>
+<text x="797" y="442" text-anchor="middle" font-size="14">13:O</text>
+<rect x="828" y="420" width="50" height="34" rx="5" fill="#fde2c9" stroke="#9facba"/>
+<text x="853" y="442" text-anchor="middle" font-size="14">14:L</text>
+<rect x="884" y="420" width="50" height="34" rx="5" fill="#e8def7" stroke="#9facba"/>
+<text x="909" y="442" text-anchor="middle" font-size="14">15:I</text>
+<text x="22" y="490" font-size="15" font-weight="600">Sorted results in blocked order</text>
+<text x="97" y="512" text-anchor="middle" font-size="12">T0</text>
+<text x="209" y="512" text-anchor="middle" font-size="12">T1</text>
+<text x="321" y="512" text-anchor="middle" font-size="12">T2</text>
+<text x="433" y="512" text-anchor="middle" font-size="12">T3</text>
+<text x="545" y="512" text-anchor="middle" font-size="12">T4</text>
+<text x="657" y="512" text-anchor="middle" font-size="12">T5</text>
+<text x="769" y="512" text-anchor="middle" font-size="12">T6</text>
+<text x="881" y="512" text-anchor="middle" font-size="12">T7</text>
+<rect x="44" y="520" width="50" height="34" rx="5" fill="#fff0bd" stroke="#9facba"/>
+<text x="69" y="542" text-anchor="middle" font-size="14">0:F</text>
+<rect x="100" y="520" width="50" height="34" rx="5" fill="#c9eaf0" stroke="#9facba"/>
+<text x="125" y="542" text-anchor="middle" font-size="14">1:C</text>
+<rect x="156" y="520" width="50" height="34" rx="5" fill="#dde5ea" stroke="#9facba"/>
+<text x="181" y="542" text-anchor="middle" font-size="14">2:P</text>
+<rect x="212" y="520" width="50" height="34" rx="5" fill="#c7e9e1" stroke="#9facba"/>
+<text x="237" y="542" text-anchor="middle" font-size="14">3:M</text>
+<rect x="268" y="520" width="50" height="34" rx="5" fill="#e8def7" stroke="#9facba"/>
+<text x="293" y="542" text-anchor="middle" font-size="14">4:J</text>
+<rect x="324" y="520" width="50" height="34" rx="5" fill="#f5d5e4" stroke="#9facba"/>
+<text x="349" y="542" text-anchor="middle" font-size="14">5:G</text>
+<rect x="380" y="520" width="50" height="34" rx="5" fill="#c9eaf0" stroke="#9facba"/>
+<text x="405" y="542" text-anchor="middle" font-size="14">6:D</text>
+<rect x="436" y="520" width="50" height="34" rx="5" fill="#dceac1" stroke="#9facba"/>
+<text x="461" y="542" text-anchor="middle" font-size="14">7:A</text>
+<rect x="492" y="520" width="50" height="34" rx="5" fill="#c7e9e1" stroke="#9facba"/>
+<text x="517" y="542" text-anchor="middle" font-size="14">8:N</text>
+<rect x="548" y="520" width="50" height="34" rx="5" fill="#fde2c9" stroke="#9facba"/>
+<text x="573" y="542" text-anchor="middle" font-size="14">9:K</text>
+<rect x="604" y="520" width="50" height="34" rx="5" fill="#f5d5e4" stroke="#9facba"/>
+<text x="629" y="542" text-anchor="middle" font-size="14">10:H</text>
+<rect x="660" y="520" width="50" height="34" rx="5" fill="#fff0bd" stroke="#9facba"/>
+<text x="685" y="542" text-anchor="middle" font-size="14">11:E</text>
+<rect x="716" y="520" width="50" height="34" rx="5" fill="#dceac1" stroke="#9facba"/>
+<text x="741" y="542" text-anchor="middle" font-size="14">12:B</text>
+<rect x="772" y="520" width="50" height="34" rx="5" fill="#dde5ea" stroke="#9facba"/>
+<text x="797" y="542" text-anchor="middle" font-size="14">13:O</text>
+<rect x="828" y="520" width="50" height="34" rx="5" fill="#fde2c9" stroke="#9facba"/>
+<text x="853" y="542" text-anchor="middle" font-size="14">14:L</text>
+<rect x="884" y="520" width="50" height="34" rx="5" fill="#e8def7" stroke="#9facba"/>
+<text x="909" y="542" text-anchor="middle" font-size="14">15:I</text>
+<text x="22" y="585" font-size="14">Example: key 0 keeps badge F, so its associated original-position value remains 5.</text>
+<text x="22" y="608" font-size="13">Illustrative merges, not an instruction trace. Equal-key ordering is unspecified.</text>
+</g>
+</svg>
