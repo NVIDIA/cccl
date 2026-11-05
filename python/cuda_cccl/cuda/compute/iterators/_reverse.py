@@ -137,4 +137,9 @@ class ReverseIterator(IteratorBase):
         return ("ReverseIterator", self._underlying.kind)
 
     def __add__(self, offset: int):
-        return ReverseIterator(self._underlying + offset)
+        """Return a new ReverseIterator advanced by offset elements.
+
+        A positive offset moves backward in the underlying iterator, matching
+        the negation performed by the device-side advance op.
+        """
+        return ReverseIterator(self._underlying + (-offset))

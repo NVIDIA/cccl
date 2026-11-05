@@ -3,6 +3,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import sys
+
 import numpy as np
 import pytest
 from _utils.device_array import DeviceArray
@@ -118,6 +120,39 @@ def test_reverse_output_iterator_equality():
 
     assert it1.kind == it2.kind == it3.kind
     assert it1.kind != it4.kind
+
+
+def test_reverse_iterator_add_moves_underlying_backward():
+    # A positive offset on a ReverseIterator must step the underlying
+    # iterator backward, matching the device-side advance op.
+    it = ReverseIterator(CountingIterator(np.int32(10))) + 2
+
+    assert np.frombuffer(bytes(it.state), dtype=np.int32)[0] == 8
+
+
+def test_reverse_iterator_add_unsigned_start():
+    # A negative offset must not raise for an unsigned start value.
+    it = ReverseIterator(CountingIterator(np.uint32(10))) + 2
+
+    assert np.frombuffer(bytes(it.state), dtype=np.uint32)[0] == 8
+
+
+def test_reverse_iterator_add_stays_in_bounds():
+    # ReverseIterator starts at the last element, so advancing must stay
+    # inside the array instead of stepping past the end.
+    ary = DeviceArray.from_numpy(np.arange(5, dtype="int32"))
+    base = ary.__cuda_array_interface__["data"][0]
+
+    it = ReverseIterator(ary) + 1
+    pointer = int.from_bytes(bytes(it.state), sys.byteorder)
+
+    assert (pointer - base) // ary.dtype.itemsize == 3
+
+
+def test_counting_iterator_add_negative_offset():
+    it = CountingIterator(np.int32(10)) + (-2)
+
+    assert np.frombuffer(bytes(it.state), dtype=np.int32)[0] == 8
 
 
 @pytest.mark.parametrize(

@@ -102,7 +102,21 @@ class CountingIterator(IteratorBase):
     def _make_output_deref_op(self) -> Op | None:
         return None
 
-    def __add__(self, offset: int) -> "CountingIterator":
-        """Return a new CountingIterator advanced by offset elements."""
-        new_start = self._start_value + offset
+    def __add__(self, offset: int) -> CountingIterator:
+        """Return a new CountingIterator advanced by offset elements.
+
+        The offset may be negative, e.g. when a ReverseIterator advances this
+        iterator backward. Integer start values wrap on overflow, the same way
+        the device-side advance op wraps.
+        """
+        dtype = self._start_value.dtype
+        if np.issubdtype(dtype, np.integer):
+            # NumPy rejects mixing a negative Python int with an unsigned
+            # scalar, so do the arithmetic in Python and wrap explicitly.
+            iinfo = np.iinfo(dtype)
+            modulus = int(iinfo.max) - int(iinfo.min) + 1
+            advanced = int(self._start_value) + offset - int(iinfo.min)
+            new_start = dtype.type(advanced % modulus + int(iinfo.min))
+        else:
+            new_start = dtype.type(self._start_value + offset)
         return CountingIterator(new_start)
