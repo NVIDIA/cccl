@@ -112,7 +112,6 @@ Checks:
   - '-readability-make-member-function-const'
   - '-readability-enum-initial-value'
   - '-readability-avoid-return-with-void-value'
-  - '-readability-redundant-string-cstr'
   - '-readability-suspicious-call-argument'
   - '-readability-container-size-empty'
   - '-readability-redundant-control-flow'
