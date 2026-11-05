@@ -21,7 +21,7 @@
 
     template <typename Unit, typename ParentGroup, typename MappingResult>
     [[nodiscard]] __device__
-    auto make_instance(const Unit&, const ParentGroup&, const MappingResult&) const;
+    auto make_instance(const Unit&, const ParentGroup&, const MappingResult&);
   };
 
   template <typename Range>
@@ -43,6 +43,8 @@ Overview
 The barrier at position ``i`` in the range is assigned to the group with rank ``i`` in the mapping result. The range must provide at least as many barriers as there are groups. The barriers must be accessible to all participating threads, and their scope must be sufficient for the parent group's level.
 
 Users should always rely on template argument deduction and never set the template arguments themselves.
+
+.. note:: Before reusing the barrier storage, the user is required to synchronize the parent group to make sure all of the synchronizer instance barriers were properly destroyed.
 
 Examples
 --------
