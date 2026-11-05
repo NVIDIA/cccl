@@ -215,14 +215,14 @@ jobs:
             --env "DISABLE_SCCACHE=1" \
             --env "CMAKE_CUDA_COMPILER_LAUNCHER=" \
             --env "NVCC_APPEND_FLAGS=${NVCC_APPEND_FLAGS:+${NVCC_APPEND_FLAGS} }--fdevice-time-trace=- --threads=1" \
-            --env "PARALLEL_LEVEL=$(nproc)" \
+            --env "PARALLEL_LEVEL=$(nproc --ignore=1)" \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
             --volume "$RUNNER_TEMP/compile-time-reports:/compile-time-reports" \
             -- ./ci/rapids/rapids-entrypoint.sh /ci.sh
 
       - name: Upload compile-time reports (tests OFF)
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: rapids-cuda${{ matrix.cuda }}-${{ strategy.job-index }}-tests-OFF-compile-time-reports
           path: ${{ runner.temp }}/compile-time-reports/OFF
@@ -231,7 +231,7 @@ jobs:
 
       - name: Upload compile-time reports (tests ON)
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: rapids-cuda${{ matrix.cuda }}-${{ strategy.job-index }}-tests-ON-compile-time-reports
           path: ${{ runner.temp }}/compile-time-reports/ON
