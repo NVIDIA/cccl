@@ -366,7 +366,7 @@ and ``2`` records the launch under CUDA graph capture and then executes it.
 Instead of calling the CUB API directly, declare a launch wrapper for it with
 ``DECLARE_LAUNCH_WRAPPER`` and call the wrapper from the test body,
 with exactly the same arguments as you would call the wrapped function,
-omitting the temporary storage size and pointer arguments, as well as a stream argument:
+omitting the temporary storage size and pointer arguments:
 
 .. code-block:: c++
 
@@ -375,34 +375,12 @@ omitting the temporary storage size and pointer arguments, as well as a stream a
     CUB_TEST("Reduce test", "[device][reduce]", CUB_SMALL)
     {
       // ...
-      cub_reduce_sum(d_in, d_out, n); // same
+      cub_reduce_sum(d_in, d_out, n); // same arguments
     }
 
 The wrapper allocates temporary storage and invokes the CUB API through whichever of the
 three launch mechanisms matches the current ``TEST_LAUNCH`` value, checking return codes and
 launch errors along the way.
-
-To order the wrapped operation after preparation work on a stream,
-pass any type supported by ``cuda::get_stream`` as the wrapper's trailing argument:
-
-.. code-block:: c++
-
-    cub_reduce_sum(d_in, d_out, n, stream);
-
-Host launches pass the supplied stream to the wrapped API. Device launches enqueue a parent
-kernel on that stream, preserving ordering with preparation work. The parent invokes the
-wrapped API using the device-side default stream because host stream handles cannot be used
-in device code. Graph launches capture on the supplied non-default stream, or a temporary
-stream when the default stream is requested, then execute the graph on the requested stream.
-If no stream argument is supplied, the wrapper uses the default stream.
-The wrapper waits for execution to complete before returning.
-When the trailing argument is an environment providing a stream, the wrapper preserves
-its other properties. Device launches override its stream with the device-side default
-stream; graph launches override it only when a temporary capture stream is needed.
-
-Under CUDA graph capture (``TEST_LAUNCH == 2``), the wrapper implicitly appends a ``stream`` argument to the call.
-If the wrapped API has default parameters before its ``stream`` parameter,
-specify those explicitly at all call sites so the injected stream argument lines up.
 
 For APIs that take template parameters, use ``DECLARE_TMPL_LAUNCH_WRAPPER`` instead,
 passing the template parameter list and the arguments to instantiate it with.
@@ -418,22 +396,46 @@ Use the ``ESCAPE_LIST`` macro to protect commas inside each list from the prepro
 For testing single phase environment-based APIs use the ``DECLARE_LAUNCH_WRAPPER_ENV`` and
 ``DECLARE_TMPL_LAUNCH_WRAPPER_ENV`` macros from the same header instead.
 They expect the wrapped API's last argument to be an execution environment.
-The helper injects a memory resource and stream into that env automatically.
+The helper injects a memory resource into that env automatically.
 Callers must not supply a memory resource. Device-launch tests must provide an
 ``expected_allocation_size(...)`` property specifying the expected temporary storage allocation size.
 
-Environment wrappers obtain the preparation stream from the supplied environment, when present.
-Host launches use that stream. Device launches use a separate parent stream and establish a
-dependency on the environment's stream before launching the parent kernel. Non-default streams
-use an event dependency; an explicit default stream is synchronized on the host. The wrapped
-device-side API receives an environment containing the device-side default stream.
+Stream ordering of the wrapped operation after preparation work is preserved
+if the stream is passed as the environment of the CUB API (usually the last argument):
 
-Graph launches capture and execute on the environment's stream, or create a temporary stream
-when no stream property is supplied. An explicitly supplied default stream is unsupported
-for environment graph launches.
+.. code-block:: c++
 
-When the environment has no stream property, callers must complete input preparation before
-invoking the wrapper. Environment wrappers wait for execution to complete before returning.
+    cub_reduce_sum(d_in, d_out, n, stream);
+
+Both wrapper families preserve the environment's other properties and use the following
+launch behavior:
+
+- Host launch (``TEST_LAUNCH == 0``): enqueue the algorithm's work on a host
+  stream and pass that stream to the wrapped API.
+
+- Device launch (``TEST_LAUNCH == 1``): enqueue a parent kernel ordered after pending work
+  on the stream specified by the API environment. The parent kernel invokes the wrapped API
+  with the device-side default stream.
+
+- Graph launch (``TEST_LAUNCH == 2``): capture the algorithm's work on a non-default capture
+  stream, pass that stream to the wrapped API, and execute the graph on a host stream.
+
+The wrappers wait for execution to complete before returning.
+
+Two-phase wrappers select the supplied stream, or the default stream when none is supplied.
+Graph launches capture on the selected stream when it is non-default, and use a temporary
+capture stream otherwise.
+
+For two-phase graph launches, the wrapper appends a ``stream`` argument when the caller
+omits one. If the wrapped API has default parameters before its ``stream`` parameter,
+specify those explicitly at all call sites so the injected stream argument lines up.
+
+For ``_ENV`` wrappers, host and graph launches select the environment's stream, or create a
+temporary host stream when no stream property exists. Graph ``_ENV`` launches capture on
+that same stream and reject an explicitly supplied default stream.
+
+When an ``_ENV`` environment has no stream property, callers must complete input preparation
+before invoking the wrapper.
 
 Consult ``test/catch2_test_launch_wrapper.cu`` for more usage examples.
 
