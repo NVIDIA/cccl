@@ -12,10 +12,77 @@ from dataclasses import replace
 from pathlib import Path, PurePosixPath
 
 from ci.compile_time import summarize_events as events
+from ci.compile_time.trace_json import iter_trace_events
 
 REPORT_ROOT = Path("/__cccl__")
 CCCL_SCOPE = re.compile(r"^(?:::)?(?:cuda|thrust|cub|cccl)::")
 TOP = 100
+
+
+def read_trace(path: Path, source_root: PurePosixPath) -> list[events.TraceEvent]:
+    """Keep the timing tree, without keeping huge non-CCCL symbol strings."""
+    parsed = []
+    metadata = {}
+    with path.open(encoding="utf-8") as source:
+        for raw in iter_trace_events(source, metadata):
+            if raw.get("ph") not in (None, "X") or "ts" not in raw or "dur" not in raw:
+                continue
+            name = str(raw.get("name", ""))
+            if not name:
+                continue
+            args = raw.get("args", {})
+            detail = str(args.get("detail", "") or "") if isinstance(args, dict) else ""
+            if name == "Processing Header File":
+                header = cccl_header(detail, source_root)
+                detail = str(REPORT_ROOT / header) if header else ""
+            elif name in (
+                "Scanning Function Body",
+                "Instantiating Template Class",
+                "Instantiating Template Function",
+            ) and cccl_symbol(detail):
+                pass
+            else:
+                # These intervals still subtract from a CCCL parent's exclusive
+                # time. Their names and (potentially enormous) symbols are unused.
+                name, detail = "", ""
+            start = int(raw["ts"])
+            parsed.append(
+                events.TraceEvent(
+                    name,
+                    detail,
+                    start,
+                    start + int(raw["dur"]),
+                    int(raw.get("pid", 0)),
+                    int(raw.get("tid", 0)),
+                    "",
+                )
+            )
+    # The last raw event can itself carry a large discarded symbol.
+    raw = args = None
+    if not parsed:
+        raise ValueError("No duration events found")
+    tu = PurePosixPath(posixpath.normpath(events.trace_root_tu(metadata, path)))
+    root_tu = (
+        tu.relative_to(source_root).as_posix()
+        if tu.is_relative_to(source_root)
+        else tu.as_posix()
+    )
+    for event in parsed:
+        event.root_tu = root_tu
+    parsed.append(
+        events.TraceEvent(
+            "Total Compilation Time",
+            root_tu,
+            min(e.start_us for e in parsed),
+            max(e.end_us for e in parsed),
+            -1,
+            -1,
+            root_tu,
+            synthetic=True,
+        )
+    )
+    events.link_child_events(parsed)
+    return parsed
 
 
 def cccl_header(detail: str, source_root: PurePosixPath) -> str | None:
@@ -126,80 +193,48 @@ def report_configs() -> dict[str, events.ReportConfig]:
     return configs
 
 
-def summarize(
-    trace_dir: Path,
-    output: Path,
-    source_root: PurePosixPath,
-    project: str,
-    phase: str,
-    delete_traces: bool = False,
-) -> int:
-    paths = sorted(
-        p for p in trace_dir.rglob("*.o.json") if p.is_file() and not p.is_symlink()
-    )
-    configs = report_configs()
-    aggregates = {slice_id: {} for slice_id in configs}
-    failed = []
-    trace_count = 0
-    # Individual third-party traces can be large; parse one at a time and reuse
-    # its event tree for every slice rather than multiplying peak memory usage.
-    for path in paths:
-        relative_path = path.relative_to(trace_dir).as_posix()
-        try:
-            parsed = events.read_trace_events(path, REPORT_ROOT)
-            if not parsed:
-                raise ValueError("No duration events found")
-            for event in parsed:
-                if event.name == "Processing Header File":
-                    header = cccl_header(event.detail, source_root)
-                    # Keep non-CCCL children for correct exclusive-time subtraction,
-                    # but prevent them from appearing in the header report.
-                    event.detail = str(REPORT_ROOT / header) if header else ""
-                tu = PurePosixPath(posixpath.normpath(event.root_tu))
-                if tu.is_relative_to(source_root):
-                    event.root_tu = tu.relative_to(source_root).as_posix()
-                if event.synthetic:
-                    event.detail = event.root_tu
-            trace_stats = {}
-            for slice_id, config in configs.items():
-                if slice_id == "primary-template-instantiation":
-                    continue
-                stats = events.side_stats_for_events(
-                    parsed, relative_path, REPORT_ROOT, config
-                )
-                trace_stats[slice_id] = stats
-                if slice_id == "template-instantiation":
-                    grouped = {}
-                    for stat in stats.values():
-                        key = primary_template(stat.event_key)
-                        events.merge_side_stats(
-                            grouped,
-                            {
-                                (stat.event_name, key): replace(
-                                    stat,
-                                    event_key=key,
-                                    trace_paths=set(stat.trace_paths),
-                                    root_tus=set(stat.root_tus),
-                                )
-                            },
+def summarize_trace(path, relative_path, source_root, configs):
+    # The per-trace scope releases the timing tree before opening the next file.
+    parsed = read_trace(path, source_root)
+    trace_stats = {}
+    for slice_id, config in configs.items():
+        if slice_id == "primary-template-instantiation":
+            continue
+        stats = events.side_stats_for_events(parsed, relative_path, REPORT_ROOT, config)
+        trace_stats[slice_id] = stats
+        if slice_id == "template-instantiation":
+            grouped = {}
+            for stat in stats.values():
+                key = primary_template(stat.event_key)
+                events.merge_side_stats(
+                    grouped,
+                    {
+                        (stat.event_name, key): replace(
+                            stat,
+                            event_key=key,
+                            trace_paths=set(stat.trace_paths),
+                            root_tus=set(stat.root_tus),
                         )
-                    trace_stats["primary-template-instantiation"] = grouped
-            for slice_id, stats in trace_stats.items():
-                events.merge_side_stats(aggregates[slice_id], stats)
-            trace_count += 1
-        except (OSError, ValueError, TypeError, KeyError, AttributeError) as error:
-            failed.append({"trace": relative_path, "error": str(error)})
-            print(f"Cannot summarize {relative_path}: {error}", file=sys.stderr)
-        if (trace_count + len(failed)) % 25 == 0:
-            print(f"Summarized {trace_count}/{len(paths)} traces", flush=True)
+                    },
+                )
+            trace_stats["primary-template-instantiation"] = grouped
+    return trace_stats
 
+
+def save_reports(
+    output, project, phase, configs, aggregates, trace_count, total, failed, complete
+):
     output.mkdir(parents=True, exist_ok=True)
     warnings = []
-    if not paths:
+    if not total:
         warnings.append("No object-adjacent traces found")
     if not aggregates["file-processing"] and not aggregates["template-instantiation"]:
         warnings.append(
             "No CCCL headers or templates matched; check trace paths and filtering"
+        )
+    if not complete:
+        warnings.append(
+            f"Incomplete dataset: reports cover {trace_count} of {total} input traces"
         )
     manifest = {
         "schema_version": 1,
@@ -208,6 +243,8 @@ def summarize(
         "phase": phase,
         "top": TOP,
         "trace_count": trace_count,
+        "input_trace_count": total,
+        "complete": complete,
         "failed_traces": failed,
         "warnings": warnings,
         "slices": [],
@@ -228,14 +265,86 @@ def summarize(
                 ],
             }
         )
-    events.write_json(output / "summary.json", manifest)
+    # Keep the last valid checkpoint if writing the next manifest is interrupted.
+    temporary = output / ".summary.json.tmp"
+    events.write_json(temporary, manifest)
+    temporary.replace(output / "summary.json")
+
+
+def summarize(
+    trace_dir: Path,
+    output: Path,
+    source_root: PurePosixPath,
+    project: str,
+    phase: str,
+    delete_traces: bool = False,
+) -> int:
+    paths = sorted(
+        p for p in trace_dir.rglob("*.o.json") if p.is_file() and not p.is_symlink()
+    )
+    configs = report_configs()
+    aggregates = {slice_id: {} for slice_id in configs}
+    failed = []
+    trace_count = 0
+    cleanup_paths = paths
+    for index, path in enumerate(paths, 1):
+        relative_path = path.relative_to(trace_dir).as_posix()
+        try:
+            trace_stats = summarize_trace(path, relative_path, source_root, configs)
+            for slice_id, stats in trace_stats.items():
+                events.merge_side_stats(aggregates[slice_id], stats)
+            trace_count += 1
+        except (
+            OSError,
+            ValueError,
+            TypeError,
+            KeyError,
+            AttributeError,
+            MemoryError,
+        ) as error:
+            message = str(error) or type(error).__name__
+            failed.append({"trace": relative_path, "error": message})
+            print(f"Cannot summarize {relative_path}: {message}", file=sys.stderr)
+            if isinstance(error, MemoryError):
+                cleanup_paths = paths[: index - 1]
+                break
+        if index % 25 == 0:
+            print(f"Summarized {trace_count}/{len(paths)} traces", flush=True)
+            # Preserve useful, explicitly incomplete reports even if a later
+            # trace exhausts memory or the process is killed.
+            save_reports(
+                output,
+                project,
+                phase,
+                configs,
+                aggregates,
+                trace_count,
+                len(paths),
+                failed,
+                False,
+            )
+    complete = bool(paths) and trace_count == len(paths)
+    save_reports(
+        output,
+        project,
+        phase,
+        configs,
+        aggregates,
+        trace_count,
+        len(paths),
+        failed,
+        complete,
+    )
     if delete_traces:
         # After RAPIDS' OFF report is saved, prevent unchanged OFF traces from
         # being counted again as ON work, and release their local disk space.
-        for path in paths:
+        for path in cleanup_paths:
             path.unlink()
     print(f"Saved top-{TOP} reports for {trace_count} traces in {output}", flush=True)
-    return int(bool(failed or warnings))
+    return int(
+        not complete
+        or not (aggregates["file-processing"] or aggregates["template-instantiation"])
+    )
 
 
 def main() -> None:

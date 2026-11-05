@@ -70,7 +70,8 @@ mkdir -p "${workdir}"
 cd "${workdir}"
 
 # Python deps:
-pip install numpy
+# MatX's test-vector generators require SciPy during CMake configuration.
+pip install numpy scipy
 
 # Clone MatX
 rm -rf MatX

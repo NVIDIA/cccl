@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
+import io
 import json
 import tempfile
 import unittest
@@ -10,6 +11,7 @@ from unittest.mock import patch
 
 from ci.compile_time import summarize_third_party as reports
 from ci.compile_time.test_summarize_events import TraceBuilder, csv_rows
+from ci.compile_time.trace_json import iter_trace_events
 
 
 class ThirdPartySummaryTest(unittest.TestCase):
@@ -139,9 +141,7 @@ class ThirdPartySummaryTest(unittest.TestCase):
                 ),
             ],
         )
-        with patch.object(
-            reports.events, "read_trace_events", wraps=reports.events.read_trace_events
-        ) as parse:
+        with patch.object(reports, "read_trace", wraps=reports.read_trace) as parse:
             self.assertEqual(self.run_summary(), 0)
             self.assertEqual(parse.call_count, 2)
         headers = self.rows("file-processing")
@@ -290,6 +290,172 @@ class ThirdPartySummaryTest(unittest.TestCase):
                 self.run_summary(delete_traces=True)
         self.assertTrue((self.traces / "good.o.json").exists())
         self.assertFalse((self.output / "summary.json").exists())
+
+    def test_streaming_json_boundaries(self):
+        entries = [
+            self.builder.event(
+                "Scanning Function Body", 'void cuda::std::quoted_é("},]\\")', 1, 20
+            )
+        ]
+        # Metadata may precede or follow events, and events need not occupy a line.
+        for data in (
+            {
+                "otherData": {"inputFiles": ["a.cu"]},
+                "traceEvents": entries,
+                "version": 1.25e20,
+            },
+            {
+                "traceEvents": entries,
+                "version": -1.25e-20,
+                "otherData": {"inputFiles": ["a.cu"]},
+            },
+        ):
+            for chunk_size in (1, 2, 3, 7, 64, 65536):
+                with self.subTest(chunk_size=chunk_size, data=data):
+                    metadata = {}
+
+                    class BoundedRead(io.StringIO):
+                        def read(self, size=-1):
+                            if not 0 < size <= max(chunk_size, 4 * 1024 * 1024):
+                                raise AssertionError("Unbounded read")
+                            return super().read(size)
+
+                    self.assertEqual(
+                        list(
+                            iter_trace_events(
+                                BoundedRead(json.dumps(data, ensure_ascii=False)),
+                                metadata,
+                                chunk_size=chunk_size,
+                            )
+                        ),
+                        entries,
+                    )
+                    self.assertEqual(
+                        metadata, {k: v for k, v in data.items() if k != "traceEvents"}
+                    )
+        for malformed in (
+            '{"traceEvents":[{}',
+            '{"traceEvents": [{} ,]}',
+            '{"traceEvents":[] trailing}',
+            '{"traceEvents":[]} junk',
+        ):
+            with self.subTest(malformed=malformed), self.assertRaises(ValueError):
+                list(iter_trace_events(io.StringIO(malformed), {}, chunk_size=3))
+
+        class LimitedReads(io.StringIO):
+            remaining = 2
+
+            def read(self, size=-1):
+                self.remaining -= 1
+                if self.remaining < 0:
+                    raise AssertionError("Read past a definite syntax error")
+                return super().read(size)
+
+        with self.assertRaises(json.JSONDecodeError):
+            list(
+                iter_trace_events(
+                    LimitedReads('{"traceEvents":[{"name": invalid' + "x" * 10000),
+                    {},
+                    chunk_size=64,
+                )
+            )
+
+    def test_memory_failure_preserves_partial_reports(self):
+        for index in range(2):
+            self.write_trace(
+                str(index),
+                [
+                    self.builder.event(
+                        "Instantiating Template Class", "cuda::std::tuple [int]", 0, 10
+                    )
+                ],
+            )
+        original = reports.summarize_trace
+
+        def fail_second(path, *args):
+            if path.name == "1.o.json":
+                raise MemoryError()
+            return original(path, *args)
+
+        with patch.object(reports, "summarize_trace", side_effect=fail_second):
+            self.assertEqual(self.run_summary(), 1)
+        manifest = json.loads((self.output / "summary.json").read_text())
+        self.assertFalse(manifest["complete"])
+        self.assertEqual(manifest["trace_count"], 1)
+        self.assertEqual(manifest["input_trace_count"], 2)
+        self.assertEqual(
+            manifest["failed_traces"], [{"trace": "1.o.json", "error": "MemoryError"}]
+        )
+
+    def test_large_foreign_symbol_keeps_exclusive_timing(self):
+        self.write_trace(
+            "large",
+            [
+                self.builder.event(
+                    "Scanning Function Body", "void cuda::std::foo()", 0, 100
+                ),
+                self.builder.event(
+                    "Generating Function IR",
+                    "foreign::" + ('quoted_"}[\\]' * 200000),
+                    10,
+                    50,
+                ),
+                self.builder.event(
+                    "Instantiating Template Class", "cuda::std::tuple [int]", 110, 10
+                ),
+            ],
+        )
+        self.assertEqual(self.run_summary(), 0)
+        body = self.rows("function-bodies")["void cuda::std::foo()"]
+        self.assertEqual(float(body["total_inclusive_s"]), 100 / 1e6)
+        self.assertEqual(float(body["total_exclusive_s"]), 50 / 1e6)
+
+    def test_failed_manifest_write_keeps_previous_report(self):
+        self.write_trace(
+            "good",
+            [
+                self.builder.event(
+                    "Instantiating Template Class", "cuda::std::tuple [int]", 0, 10
+                )
+            ],
+        )
+        self.assertEqual(self.run_summary(), 0)
+        previous = (self.output / "summary.json").read_bytes()
+
+        def fail_write(path, payload):
+            path.write_text('{"partial":', encoding="utf-8")
+            raise OSError("Disk full")
+
+        with patch.object(reports.events, "write_json", side_effect=fail_write):
+            with self.assertRaisesRegex(OSError, "Disk full"):
+                self.run_summary()
+        self.assertEqual((self.output / "summary.json").read_bytes(), previous)
+
+    def test_interrupted_preprocessing_preserves_checkpoint(self):
+        for index in range(26):
+            self.write_trace(
+                f"{index:02}",
+                [
+                    self.builder.event(
+                        "Instantiating Template Class", "cuda::std::tuple [int]", 0, 10
+                    )
+                ],
+            )
+        original = reports.summarize_trace
+
+        def interrupt_last(path, *args):
+            if path.name == "25.o.json":
+                raise KeyboardInterrupt()
+            return original(path, *args)
+
+        with patch.object(reports, "summarize_trace", side_effect=interrupt_last):
+            with self.assertRaises(KeyboardInterrupt):
+                self.run_summary()
+        manifest = json.loads((self.output / "summary.json").read_text())
+        self.assertFalse(manifest["complete"])
+        self.assertEqual(manifest["trace_count"], 25)
+        self.assertEqual(manifest["input_trace_count"], 26)
+        self.assertEqual(len(self.rows("template-instantiation")), 1)
 
 
 if __name__ == "__main__":

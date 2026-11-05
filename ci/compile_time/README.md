@@ -100,3 +100,9 @@ traces after summarization to avoid counting unchanged OFF traces in ON.
 Partial reports are uploaded after build failures, and unreadable traces or
 missing CCCL data fail preprocessing with diagnostics in `summary.json`.
 Artifacts are retained for 90 days. Raw traces are not uploaded.
+
+The third-party reader streams JSON entries and drops non-CCCL symbol text
+before building the timing tree, so multi-gigabyte individual traces do not
+require a full JSON document in memory. All duration intervals remain available
+for exclusive-time calculations. Reports are checkpointed every 25 input traces
+with `complete: false` and a coverage warning until preprocessing finishes.
