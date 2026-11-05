@@ -180,10 +180,9 @@ inline constexpr bool __is_constexpr_wrapper_value_preserving_v<
 //   From::value is representable by value_type.
 template <typename _Up, typename _ValueType, typename _From = remove_cvref_t<_Up>>
 _CCCL_CONCEPT __is_value_ctor_implicit =
-  convertible_to<_Up, _ValueType>
-  && ((!is_arithmetic_v<_From> && !__constexpr_wrapper_like<_From>)
+  (convertible_to<_Up, _ValueType> && !is_arithmetic_v<_From> && !__constexpr_wrapper_like<_From>)
       || (is_arithmetic_v<_From> && __is_value_preserving_v<_From, _ValueType>)
-      || (__constexpr_wrapper_like<_From> && __is_constexpr_wrapper_value_preserving_v<_From, _ValueType>) );
+  || (__constexpr_wrapper_like<_From> && __is_constexpr_wrapper_value_preserving_v<_From, _ValueType>);
 
 // [simd.ctor] p7: explicit(see below) for basic_vec(const basic_vec<U, UAbi>&)
 // explicit evaluates to true if either:
