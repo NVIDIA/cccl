@@ -26,6 +26,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
@@ -42,23 +43,10 @@
 namespace cuda::experimental::coop
 {
 template <class _Unit, class _ParentGroup, class _MappingResult, class _Synchronizer>
-[[nodiscard]] _CCCL_DEVICE_API constexpr auto __make_synchronizer_instance(
-  const _Unit& __unit,
-  const _ParentGroup& __parent,
-  const _MappingResult& __mapping_result,
-  _Synchronizer&& __synchronizer)
-{
-  using _ParentMappingResult  = typename _ParentGroup::__mapping_result_type;
-  using _SynchronizerInstance = decltype(__synchronizer.make_instance(__unit, __parent, __mapping_result));
-  return __synchronizer.make_instance(__unit, __parent, __mapping_result);
-}
-
-template <class _Unit, class _ParentGroup, class _MappingResult, class _Synchronizer>
-using __group_synchronizer_instance_t = decltype(::cuda::experimental::coop::__make_synchronizer_instance(
+using __group_synchronizer_instance_t = decltype(::cuda::std::declval<_Synchronizer&>().make_instance(
   ::cuda::std::declval<const _Unit&>(),
   ::cuda::std::declval<const _ParentGroup&>(),
-  ::cuda::std::declval<const _MappingResult&>(),
-  ::cuda::std::declval<_Synchronizer>()));
+  ::cuda::std::declval<const _MappingResult&>()));
 
 template <class _Unit, class _ParentGroup, class _MappingResult, class _SynchronizerInstance>
 class generic_group
@@ -68,8 +56,8 @@ class generic_group
   static_assert(__unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>,
                 "unit_type must be same as or below _ParentGroup's unit_type");
 
-  using _Hierarchy           = typename _ParentGroup::hierarchy_type;
-  using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
+  using _Hierarchy _CCCL_NODEBUG           = typename _ParentGroup::hierarchy_type;
+  using _ParentMappingResult _CCCL_NODEBUG = typename _ParentGroup::__mapping_result_type;
   static_assert(__group_mapping_result<_MappingResult>);
 
   _Hierarchy __hier_;
@@ -77,11 +65,12 @@ class generic_group
   _SynchronizerInstance __synchronizer_instance_;
 
 public:
-  using unit_type             = _Unit;
-  using level_type            = typename _ParentGroup::level_type;
-  using hierarchy_type        = _Hierarchy;
-  using __mapping_result_type = _MappingResult;
-  using arrival_token         = typename _SynchronizerInstance::arrival_token;
+  using unit_type                    = _Unit;
+  using level_type                   = typename _ParentGroup::level_type;
+  using hierarchy_type               = _Hierarchy;
+  using __mapping_result_type        = _MappingResult;
+  using __synchronizer_instance_type = _SynchronizerInstance;
+  using arrival_token                = typename _SynchronizerInstance::arrival_token;
 
   _CCCL_TEMPLATE(class _Mapping, class _Synchronizer)
   _CCCL_REQUIRES(
@@ -93,25 +82,20 @@ public:
       : __hier_{__parent.hierarchy()}
       , __mapping_result_{::cuda::experimental::coop::__do_group_mapping(
           __unit, __parent, ::cuda::std::forward<_Mapping>(__mapping))}
-      , __synchronizer_instance_{::cuda::experimental::coop::__make_synchronizer_instance(
-          __unit, __parent, __mapping_result_, ::cuda::std::forward<_Synchronizer>(__synchronizer))}
+      , __synchronizer_instance_{
+          ::cuda::std::forward<_Synchronizer>(__synchronizer).make_instance(__unit, __parent, __mapping_result_)}
   {}
 
   // internal constructor used by make_group(non_exhaustive_t, ...)
-  _CCCL_TEMPLATE(class _Synchronizer)
-  _CCCL_REQUIRES(
-    ::cuda::std::is_same_v<_SynchronizerInstance,
-                           __group_synchronizer_instance_t<_Unit, _ParentGroup, _MappingResult, _Synchronizer>>)
   _CCCL_DEVICE_API explicit generic_group(
     const non_exhaustive_t&,
     const _Unit& __unit,
     const _ParentGroup& __parent,
-    const _MappingResult& __mapping_result,
-    _Synchronizer&& __synchronizer)
+    const ::cuda::std::type_identity_t<_MappingResult>& __mapping_result,
+    const ::cuda::std::type_identity_t<_SynchronizerInstance>& __synchronizer_instance)
       : __hier_{__parent.hierarchy()}
       , __mapping_result_{__mapping_result}
-      , __synchronizer_instance_{::cuda::experimental::coop::__make_synchronizer_instance(
-          __unit, __parent, __mapping_result_, ::cuda::std::forward<_Synchronizer>(__synchronizer))}
+      , __synchronizer_instance_{__synchronizer_instance}
   {}
 
   // Groups can't be copied, moved nor assigned.
