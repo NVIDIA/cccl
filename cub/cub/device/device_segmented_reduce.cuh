@@ -158,7 +158,7 @@ private:
         detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
       using policy_selector_t =
         detail::policy_selector_from_tuning_env_t<TuningEnvT, SegmentedReducePolicy, default_policy_selector_t>;
-      return detail::segmented_reduce::dispatch<OverrideAccumT, offset_t>(
+      return _CUB::detail::segmented_reduce::dispatch<OverrideAccumT, offset_t>(
         d_temp_storage,
         temp_storage_bytes,
         d_in,
@@ -201,7 +201,7 @@ private:
       detail::segmented_reduce::policy_selector_from_types<accum_t, OffsetT, ReductionOpT>;
     using policy_selector_t =
       detail::policy_selector_from_tuning_env_t<TuningEnvT, SegmentedReducePolicy, default_policy_selector_t>;
-    return detail::segmented_reduce::dispatch_fixed_size<OverrideAccumT>(
+    return _CUB::detail::segmented_reduce::dispatch_fixed_size<OverrideAccumT>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,

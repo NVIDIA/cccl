@@ -169,7 +169,7 @@ private:
     using default_policy_selector_t = detail::segmented_sort::policy_selector_from_types<KeyT, ValueT>;
     using policy_selector_t =
       detail::policy_selector_from_tuning_env_t<TuningEnvT, SegmentedSortPolicy, default_policy_selector_t>;
-    return detail::segmented_sort::dispatch<Order, offset_t>(
+    return _CUB::detail::segmented_sort::dispatch<Order, offset_t>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
