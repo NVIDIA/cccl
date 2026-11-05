@@ -25,11 +25,15 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/complex.h>
 #include <cuda/std/__simd/abi.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/is_extended_arithmetic.h>
+#include <cuda/std/__type_traits/is_object.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_volatile.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
+#include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__type_traits/void_t.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -80,8 +84,21 @@ inline constexpr bool __is_vectorizable_byte_size_v =
 #endif // _CCCL_HAS_INT128()
   );
 
+// Disabled vectors remain complete even when sizeof cannot be applied to their element type
+template <typename _Tp, bool = is_object_v<remove_reference_t<_Tp>>, typename = void>
+struct __simd_element_size : integral_constant<size_t, 0>
+{};
+
+template <typename _Tp>
+struct __simd_element_size<_Tp, true, void_t<decltype(sizeof(_Tp))>> : integral_constant<size_t, sizeof(_Tp)>
+{};
+
 template <size_t _Bytes, typename _Abi>
 inline constexpr bool __is_enabled_mask_v = __is_vectorizable_byte_size_v<_Bytes> && __is_enabled_abi_v<_Abi>;
+
+template <typename _Tp, typename _Abi>
+inline constexpr bool __is_enabled_vec_v =
+  __is_vectorizable_v<_Tp> && __is_enabled_mask_v<__simd_element_size<_Tp>::value, _Abi>;
 
 // [simd.expos], simd-complex-value-type
 template <typename _Tp>
@@ -91,7 +108,15 @@ template <typename _Tp, typename _Abi>
 inline constexpr __simd_size_type __simd_size_v = 0;
 
 template <typename _Tp, __simd_size_type _Np>
-inline constexpr __simd_size_type __simd_size_v<_Tp, fixed_size<_Np>> = _Np;
+inline constexpr __simd_size_type __simd_size_v<_Tp, fixed_size<_Np>> =
+  __is_enabled_vec_v<_Tp, fixed_size<_Np>> ? _Np : 0;
+
+template <size_t _Bytes, typename _Abi>
+inline constexpr __simd_size_type __mask_size_v = 0;
+
+template <size_t _Bytes, __simd_size_type _Np>
+inline constexpr __simd_size_type __mask_size_v<_Bytes, fixed_size<_Np>> =
+  __is_enabled_mask_v<_Bytes, fixed_size<_Np>> ? _Np : 0;
 
 _CCCL_END_NAMESPACE_CUDA_STD_SIMD
 
