@@ -143,7 +143,7 @@ struct DeviceFor
     using default_policy_selector = detail::for_each::policy_selector;
     using policy_selector =
       detail::policy_selector_from_tuning_env_t<decltype(tuning_env), ForPolicy, default_policy_selector>;
-    return detail::for_each::dispatch(static_cast<offset_t>(num_items), op, stream.get(), policy_selector{});
+    return _CUB::detail::for_each::dispatch(static_cast<offset_t>(num_items), op, stream.get(), policy_selector{});
   }
 
   template <bool AllowCopy = false, class RandomAccessIteratorT, class NumItemsT, class OpT, class EnvT>

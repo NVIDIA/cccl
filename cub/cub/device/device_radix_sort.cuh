@@ -206,7 +206,7 @@ private:
     using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, ValueT, OffsetT>;
     using policy_selector_t =
       detail::policy_selector_from_tuning_env_t<TuningEnvT, RadixSortPolicy, default_policy_selector_t>;
-    return detail::radix_sort::dispatch<Order>(
+    return _CUB::detail::radix_sort::dispatch<Order>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,

@@ -279,7 +279,7 @@ struct DevicePartition
           detail::policy_selector_from_tuning_env_t<decltype(tuning_env),
                                                     PartitionPolicy,
                                                     __default_partition_policy_selector<default_policy_selector>>;
-        return detail::select::dispatch<SelectImpl::Partition>(
+        return _CUB::detail::select::dispatch<SelectImpl::Partition>(
           storage,
           bytes,
           d_in,
@@ -399,7 +399,7 @@ struct DevicePartition
           detail::policy_selector_from_tuning_env_t<decltype(tuning_env),
                                                     PartitionPolicy,
                                                     __default_partition_policy_selector<default_policy_selector>>;
-        return detail::select::dispatch<SelectImpl::Partition>(
+        return _CUB::detail::select::dispatch<SelectImpl::Partition>(
           storage,
           bytes,
           d_in,
@@ -562,7 +562,7 @@ struct DevicePartition
           detail::policy_selector_from_tuning_env_t<decltype(tuning_env),
                                                     PartitionPolicy,
                                                     __default_partition_policy_selector<default_policy_selector>>;
-        return detail::select::dispatch<SelectImpl::Partition>(
+        return _CUB::detail::select::dispatch<SelectImpl::Partition>(
           storage,
           bytes,
           d_in,
@@ -679,7 +679,7 @@ struct DevicePartition
           detail::policy_selector_from_tuning_env_t<decltype(tuning_env),
                                                     PartitionPolicy,
                                                     __default_partition_policy_selector<default_policy_selector>>;
-        return detail::select::dispatch<SelectImpl::Partition>(
+        return _CUB::detail::select::dispatch<SelectImpl::Partition>(
           storage,
           bytes,
           d_in,

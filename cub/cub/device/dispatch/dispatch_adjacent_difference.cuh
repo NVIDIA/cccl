@@ -349,7 +349,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   const AdjacentDifferencePolicy active_policy = policy_selector_t{}(cc);
-  detail::log_dispatch("DeviceAdjacentDifference", cc, active_policy);
+  _CUB::detail::log_dispatch("DeviceAdjacentDifference", cc, active_policy);
 
   const int tile_size = active_policy.threads_per_block * active_policy.items_per_thread;
   const int num_tiles = static_cast<int>(::cuda::ceil_div(static_cast<offset_t>(num_items), tile_size));
