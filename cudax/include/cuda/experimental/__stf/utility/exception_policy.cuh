@@ -1059,8 +1059,8 @@ struct when_t
  * `To` is a `std::exception` derivative, constructed from the caught exception when such a
  * constructor exists, from its `what()` otherwise, default-constructed failing both. The
  * one-type form claims everything, a non-standard exception included, for which `To` is
- * default-constructed, or built from the message "non-standard exception" when it takes a
- * `const char*`. Restrict the source with a selector, as in
+ * built from the message "non-standard exception" when it takes a `const char*`, and
+ * default-constructed otherwise. Restrict the source with a selector, as in
  * `if_isa<cuda_error>(translate<device_error>)`. A following `|` arm sees the `To`, so
  * `translate<low, high> | if_isa<high>(...)` ladders compose.
  */
@@ -1127,19 +1127,20 @@ struct translate_t<_To>
     }
   }
 
-  // The `_To` for a non-standard exception, which offers nothing to build from.
+  // The `_To` for a non-standard exception, which offers nothing to build from: say so when
+  // `_To` takes a message, default-construct otherwise.
   [[noreturn]] static void __throw_translated()
   {
-    if constexpr (::cuda::std::is_default_constructible_v<_To>)
+    if constexpr (::cuda::std::is_constructible_v<_To, const char*>)
     {
-      _CCCL_THROW(_To);
+      _CCCL_THROW(_To, "non-standard exception");
     }
     else
     {
-      static_assert(::cuda::std::is_constructible_v<_To, const char*>,
-                    "translate<To>: To must be default-constructible or constructible from a const char* to stand "
+      static_assert(::cuda::std::is_default_constructible_v<_To>,
+                    "translate<To>: To must be constructible from a const char* or default-constructible to stand "
                     "in for a non-standard exception");
-      _CCCL_THROW(_To, "non-standard exception");
+      _CCCL_THROW(_To);
     }
   }
 };
