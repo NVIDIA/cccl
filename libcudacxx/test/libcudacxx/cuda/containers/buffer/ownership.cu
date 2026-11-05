@@ -186,13 +186,15 @@ C2H_CCCLRT_TEST("cuda::buffer release, acquire and byte conversion", "[container
       CHECK(released.capacity == 0);
       CHECK(released.size == 0);
 
-      Buffer acquired = cuda::__acquire_buffer(cuda::std::move(released));
+      Buffer const acquired = cuda::__acquire_buffer(cuda::std::move(released));
       CHECK(acquired.empty());
     }
 
     SECTION("acquire rejects invalid allocations")
     {
       using allocation_info_t = cuda::__allocation_info<T, cuda::mr::device_accessible>;
+
+      T* ptr = reinterpret_cast<T*>(sizeof(T)); // NOLINT(Performance-no-int-to-ptr)
 
       // Null buffer with non-zero size
       CHECK_THROWS_AS((void) cuda::__acquire_buffer(allocation_info_t{stream, resource, nullptr, 1, 1, alignof(T)}),
@@ -205,12 +207,10 @@ C2H_CCCLRT_TEST("cuda::buffer release, acquire and byte conversion", "[container
       CHECK_THROWS_AS((void) cuda::__acquire_buffer(allocation_info_t{stream, resource, nullptr, 0, 0, 3}),
                       std::invalid_argument);
       // Capacity/size mismatch (TODO: lift this when buffers are resizable)
-      CHECK_THROWS_AS((void) cuda::__acquire_buffer(
-                        allocation_info_t{stream, resource, reinterpret_cast<T*>(sizeof(T)), 2, 1, alignof(T)}),
+      CHECK_THROWS_AS((void) cuda::__acquire_buffer(allocation_info_t{stream, resource, ptr, 2, 1, alignof(T)}),
                       std::invalid_argument);
       // Capacity less than size
-      CHECK_THROWS_AS((void) cuda::__acquire_buffer(
-                        allocation_info_t{stream, resource, reinterpret_cast<T*>(sizeof(T)), 1, 2, alignof(T)}),
+      CHECK_THROWS_AS((void) cuda::__acquire_buffer(allocation_info_t{stream, resource, ptr, 1, 2, alignof(T)}),
                       std::invalid_argument);
     }
 

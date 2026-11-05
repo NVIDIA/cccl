@@ -70,7 +70,7 @@ inline constexpr bool __buffer_compatible_env =
   ::cuda::std::is_same_v<::cuda::std::decay_t<_Env>, ::cuda::std::execution::env<>>
   || ::cuda::std::execution::__queryable_with<const _Env&, allocation_alignment_t>;
 
-template <class _Tp>
+template <class _Tp, class _Up = void>
 inline constexpr bool __is_buffer_byte_type_v =
   ::cuda::std::__is_one_of_v<_Tp,
 #  if _CCCL_HOSTED()
@@ -840,7 +840,7 @@ public:
   //! @warning After a successful call, the buffer can only be assigned to or
   //! destroyed.
   _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES(__is_buffer_byte_type_v<_Tp>)
+  _CCCL_REQUIRES(__is_buffer_byte_type_v<_Tp, _Up>)
   [[nodiscard]] _CCCL_HOST_API buffer<_Up, _Properties...> as_type() &&
   {
     if ((size() * sizeof(_Tp)) % sizeof(_Up) != 0 || alignment() < alignof(_Up))
