@@ -8,10 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/atomic>
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
@@ -37,8 +37,8 @@ __device__ void test_coalesced_group(Config config)
 
     // Test Group::arrival_token.
     using ArrivalToken = typename Group::arrival_token;
-    static_assert(cuda::std::is_nothrow_move_constructible_v<ArrivalToken>);
-    static_assert(cuda::std::is_nothrow_move_assignable_v<ArrivalToken>);
+    static_assert(cuda::std::is_move_constructible_v<ArrivalToken>);
+    static_assert(cuda::std::is_move_assignable_v<ArrivalToken>);
     static_assert(cuda::std::is_destructible_v<ArrivalToken>);
 
     // Test that the group can be queried for it's hierarchy.
@@ -87,8 +87,8 @@ __device__ void test_coalesced_group(Config config)
 
     // Test Group::arrival_token.
     using ArrivalToken = typename Group::arrival_token;
-    static_assert(cuda::std::is_nothrow_move_constructible_v<ArrivalToken>);
-    static_assert(cuda::std::is_nothrow_move_assignable_v<ArrivalToken>);
+    static_assert(cuda::std::is_move_constructible_v<ArrivalToken>);
+    static_assert(cuda::std::is_move_assignable_v<ArrivalToken>);
     static_assert(cuda::std::is_destructible_v<ArrivalToken>);
 
     // Test that the group can be queried for it's hierarchy.
@@ -137,8 +137,8 @@ __device__ void test_coalesced_group(Config config)
 
     // Test Group::arrival_token.
     using ArrivalToken = typename Group::arrival_token;
-    static_assert(cuda::std::is_nothrow_move_constructible_v<ArrivalToken>);
-    static_assert(cuda::std::is_nothrow_move_assignable_v<ArrivalToken>);
+    static_assert(cuda::std::is_move_constructible_v<ArrivalToken>);
+    static_assert(cuda::std::is_move_assignable_v<ArrivalToken>);
     static_assert(cuda::std::is_destructible_v<ArrivalToken>);
 
     // Test that the group can be queried for it's hierarchy.

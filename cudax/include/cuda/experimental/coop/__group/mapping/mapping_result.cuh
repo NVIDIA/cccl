@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__bit/bit_fns.h>
+#include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__warp/lane_mask.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__cstddef/types.h>
@@ -50,7 +51,7 @@ struct __mapping_result
   ::cuda::std::uint32_t __unit_rank_;
   ::cuda::device::lane_mask __lane_mask_;
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result __invalid() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result __invalid()
   {
     return {__invalid_count_or_rank,
             __invalid_count_or_rank,
@@ -59,12 +60,12 @@ struct __mapping_result
             ::cuda::device::lane_mask::none()};
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_count() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_count()
   {
     return _StaticGroupCount;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_count() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_count() const
   {
     if constexpr (!_IsAlwaysExhaustive)
     {
@@ -81,7 +82,7 @@ struct __mapping_result
     }
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_rank() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_rank() const
   {
     if constexpr (!_IsAlwaysExhaustive)
     {
@@ -90,12 +91,12 @@ struct __mapping_result
     return __group_rank_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count()
   {
     return _StaticCount;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_count() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_count() const
   {
     if constexpr (!_IsAlwaysExhaustive)
     {
@@ -112,7 +113,7 @@ struct __mapping_result
     }
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_rank() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_rank() const
   {
     if constexpr (!_IsAlwaysExhaustive)
     {
@@ -121,7 +122,7 @@ struct __mapping_result
     return __unit_rank_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::device::lane_mask lane_mask() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::device::lane_mask lane_mask() const
   {
     if constexpr (!_IsAlwaysExhaustive)
     {
@@ -130,7 +131,7 @@ struct __mapping_result
     return __lane_mask_;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API bool is_valid() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API bool is_valid() const
   {
     if constexpr (_IsAlwaysExhaustive)
     {
@@ -142,12 +143,12 @@ struct __mapping_result
     }
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive()
   {
     return _IsAlwaysExhaustive;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous()
   {
     return _IsAlwaysContiguous;
   }
@@ -155,7 +156,7 @@ struct __mapping_result
 
 template <bool _IsAlwaysContiguous>
 [[nodiscard]] _CCCL_DEVICE_API ::cuda::device::lane_mask __make_lane_mask_for_n(
-  ::cuda::device::lane_mask __prev_lane_mask, ::cuda::std::uint32_t __n, ::cuda::std::uint32_t __rank) noexcept
+  ::cuda::device::lane_mask __prev_lane_mask, ::cuda::std::uint32_t __n, ::cuda::std::uint32_t __rank)
 {
   if constexpr (_IsAlwaysContiguous)
   {
@@ -178,9 +179,9 @@ template <bool _IsAlwaysContiguous>
 
     const auto __less_mask = __prev_lane_mask & ::cuda::device::lane_mask::all_less();
     const auto __nless     = ::cuda::std::popcount(__less_mask.value());
-    if (__nless >= __rank)
+    if (__nless > __rank)
     {
-      const auto __last_to_remove = ::cuda::bit_fns(__less_mask.value(), __nless - __rank);
+      const auto __last_to_remove = ::cuda::bit_fns(__less_mask.value(), __nless - __rank - 1);
       __lane_mask |= ::cuda::device::lane_mask{__less_mask.value() & (~0u << (__last_to_remove + 1))};
     }
     else
