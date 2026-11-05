@@ -123,6 +123,11 @@
 #ifndef CUB_DETAIL_CLUSTER_TOPK_PREFIX_COMPLETE_TX
 #  define CUB_DETAIL_CLUSTER_TOPK_PREFIX_COMPLETE_TX 0
 #endif
+// `hist` layout (both paths): 0 = bin `b` at word `b`; 1 = striped, so the per-thread scan loads are bank-conflict-free
+// (see `bin_slot`).
+#ifndef CUB_DETAIL_CLUSTER_TOPK_STRIPED_HIST
+#  define CUB_DETAIL_CLUSTER_TOPK_STRIPED_HIST 0
+#endif
 
 CUB_NAMESPACE_BEGIN
 
@@ -445,7 +450,30 @@ struct agent_batched_topk_cluster
   // past the last valid bucket contribute zero so the histogram size is no
   // longer constrained to be `<= policy.threads_per_block`.
   static constexpr int buckets_per_thread = ::cuda::ceil_div(num_buckets, policy.threads_per_block);
-  using block_scan_t                      = BlockScan<offset_t, policy.threads_per_block, BLOCK_SCAN_WARP_SCANS>;
+
+  // TODO(cluster-topk): benchmarking toggle (see the macros at the top); remove before merging.
+  // The scans give thread `t` the consecutive bins `t * buckets_per_thread + j`, so with the contiguous layout a warp's
+  // `j`-th load strides `buckets_per_thread` words (a `buckets_per_thread`-way bank conflict). The striped layout puts
+  // bin `b` at word `(b % buckets_per_thread) * threads_per_block + b / buckets_per_thread`, making that load read
+  // consecutive words. Only used when every thread owns the same number of bins (a clean bijection) and more than one.
+  static constexpr bool use_striped_hist =
+    CUB_DETAIL_CLUSTER_TOPK_STRIPED_HIST != 0 && buckets_per_thread > 1
+    && buckets_per_thread* policy.threads_per_block == num_buckets;
+  // Word of `hist` that holds bin `bin`. Only the scans and the histogram atomics address `hist` by bin; resetting
+  // and the cross-CTA fold walk words, which every CTA lays out identically.
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static int bin_slot(int bin)
+  {
+    if constexpr (use_striped_hist)
+    {
+      const auto b = static_cast<unsigned>(bin);
+      return static_cast<int>((b % buckets_per_thread) * policy.threads_per_block + b / buckets_per_thread);
+    }
+    else
+    {
+      return bin;
+    }
+  }
+  using block_scan_t = BlockScan<offset_t, policy.threads_per_block, BLOCK_SCAN_WARP_SCANS>;
 
   // ---------------------------------------------------------------------------
   // Shared memory storage
@@ -917,7 +945,7 @@ private:
     for (int j = 0; j < buckets_per_thread; ++j)
     {
       const int bucket = tid * buckets_per_thread + j;
-      hist_vals[j]     = (bucket < num_buckets) ? temp_storage.hist[bucket] : offset_t{0};
+      hist_vals[j]     = (bucket < num_buckets) ? temp_storage.hist[bin_slot(bucket)] : offset_t{0};
       if constexpr (publish_from_owner)
       {
         // Replaces the leader's `reset_hist`: the scan's internal block barrier orders every thread's zeroing before
@@ -925,7 +953,7 @@ private:
         // before the next pass's histogram atomics.
         if (bucket < num_buckets)
         {
-          temp_storage.hist[bucket] = 0;
+          temp_storage.hist[bin_slot(bucket)] = 0;
         }
       }
     }
@@ -2578,7 +2606,7 @@ private:
     auto add_first_pass  = [&](const key_t& key) {
       const int bucket = extract_op(key);
       _CCCL_ASSERT(bucket >= 0 && bucket < num_buckets, "histogram bucket index out of range");
-      atomicAdd(hist + bucket, offset_t{1});
+      atomicAdd(hist + bin_slot(bucket), offset_t{1});
     };
 
     if constexpr (use_block_load_to_shared)
@@ -3277,7 +3305,7 @@ private:
           {
             const int bucket = extract_op(key);
             _CCCL_ASSERT(bucket >= 0 && bucket < num_buckets, "histogram bucket index out of range");
-            atomicAdd(hist + bucket, offset_t{1});
+            atomicAdd(hist + bin_slot(bucket), offset_t{1});
           }
         };
 
@@ -3401,7 +3429,7 @@ private:
         for (int j = 0; j < buckets_per_thread; ++j)
         {
           const int bucket   = tid * buckets_per_thread + j;
-          local_hist_vals[j] = (bucket < num_buckets) ? temp_storage.hist[bucket] : offset_t{0};
+          local_hist_vals[j] = (bucket < num_buckets) ? temp_storage.hist[bin_slot(bucket)] : offset_t{0};
         }
         block_scan_t(temp_storage.scan_storage).ExclusiveSum(local_hist_vals, local_prefixes);
       }
