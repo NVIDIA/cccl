@@ -29,13 +29,16 @@
 #include <cuda/std/__floating_point/conversion_rank_order.h>
 #include <cuda/std/__fwd/simd.h>
 #include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__simd/exposition.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/__type_traits/make_signed.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -181,7 +184,7 @@ inline constexpr bool __is_constexpr_wrapper_value_preserving_v<
 template <typename _Up, typename _ValueType, typename _From = remove_cvref_t<_Up>>
 _CCCL_CONCEPT __is_value_ctor_implicit =
   (convertible_to<_Up, _ValueType> && !is_arithmetic_v<_From> && !__constexpr_wrapper_like<_From>)
-      || (is_arithmetic_v<_From> && __is_value_preserving_v<_From, _ValueType>)
+  || (is_arithmetic_v<_From> && __is_value_preserving_v<_From, _ValueType>)
   || (__constexpr_wrapper_like<_From> && __is_constexpr_wrapper_value_preserving_v<_From, _ValueType>);
 
 // [simd.ctor] p7: explicit(see below) for basic_vec(const basic_vec<U, UAbi>&)

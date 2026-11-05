@@ -59,7 +59,7 @@ template <typename _Tp, typename _Generator, __simd_size_type _Idx>
 inline constexpr bool
   __is_well_formed<_Tp, _Generator, _Idx, void_t<decltype(declval<_Generator&>()(__simd_size_constant<_Idx>()))>> = [] {
     using _From = decltype(declval<_Generator&>()(__simd_size_constant<_Idx>()));
-    if constexpr (is_same_v<_Tp, bool>)
+    if constexpr (is_same_v<_Tp, bool>) // bool is supported by mask only
     {
       return is_same_v<_From, bool>;
     }
