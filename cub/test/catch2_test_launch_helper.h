@@ -30,69 +30,6 @@
 //! This file contains utilities for device-scope API tests of both conventional two-phase APIs and single-phase
 //! environment-based APIs (using the wrapper macros suffixed with `_ENV`). See the "Launch wrappers" section of
 //! docs/cub/developer/test_overview.rst for usage.
-//!
-//! Device-scope APIs in CUB can be launched from the host, from device code, or through CUDA graph capture.
-//! Utilities in this file facilitate testing in all three cases.
-//!
-//!
-//! ```
-//! // Add PARAM to make CMake generate a test for host, device, and graph launches:
-//! // %PARAM% TEST_LAUNCH lid 0:1:2
-//!
-//! // Declare a launch wrapper for the CUB API, omitting its temporary storage
-//! // arguments. The wrapper name is provided as the second argument.
-//! DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, cub_reduce_sum);
-//!
-//! CUB_TEST("Reduce test", "[device][reduce]", CUB_SMALL)
-//! {
-//!   // ...
-//!   // Invoke the wrapper from the test. It'll allocate temporary storage and
-//!   // invoke the CUB API through the selected launch mechanism while checking
-//!   // return codes and launch errors.
-//!   cub_reduce_sum(d_in, d_out, n);
-//!
-//!   // Tests with stream-ordered setup can pass a stream-like object supported by
-//!   // cuda::get_stream() as the trailing API argument.
-//!   cub_reduce_sum(d_in, d_out, n, stream);
-//! }
-//!
-//! ```
-//!
-//! Two-phase wrappers obtain the stream from the last API argument with cuda::get_stream(),
-//! or use the default stream if no stream argument is supplied. Stream-like arguments
-//! are converted to raw handles before invoking the API. Trailing environments retain their other properties;
-//! only their stream property is overridden when device execution or graph capture requires a different stream.
-//!
-//! Host launches pass the supplied stream to the wrapped API. Device launches enqueue
-//! a parent kernel on that stream, preserving ordering with preparation work. The parent
-//! invokes the API using the device-side default stream because host stream handles cannot
-//! be used in device code. Graph launches capture on the supplied non-default stream, or
-//! a temporary stream when the default stream is requested, then execute the graph on
-//! the requested stream. The wrapper waits for execution to complete before returning.
-//!
-//! Graph launches append a capture stream argument when the caller omits it.
-//! Explicitly specify any default parameters preceding the API's stream parameter
-//! when passing a stream or using graph launch.
-//!
-//! Environment wrappers expect an execution environment as the last argument and inject
-//! a memory resource and stream into it. Callers must not supply a memory resource.
-//! Device-launch tests must provide an expected_allocation_size(...) property.
-//!
-//! Host environment launches use the environment's stream, or create a temporary stream
-//! when none is supplied. Device environment launches use a separate parent stream and
-//! establish a dependency on the environment's stream before launching the parent kernel.
-//! Non-default streams use an event dependency; an explicit default stream is synchronized
-//! on the host. The wrapped device-side API receives the device-side default stream.
-//!
-//! Environment graph launches capture and execute on the environment's non-default
-//! stream, or a temporary stream when no stream property is supplied. An explicitly
-//! supplied default stream is unsupported for environment graph launches.
-//!
-//! Without a stream property in the environment, callers must complete input preparation
-//! before invoking the wrapper. Environment wrappers wait for execution to complete
-//! before returning. See docs/cub/developer/test_overview.rst for details.
-//!
-//! Consult with `test/catch2_test_launch_wrapper.cu` for more usage examples.
 
 #if !defined(TEST_LAUNCH)
 #  error Test file should contain %PARAM% TEST_LAUNCH lid 0:1:2
