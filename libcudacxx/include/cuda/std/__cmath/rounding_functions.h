@@ -773,12 +773,17 @@ _CCCL_API inline long lround(_Integer __x) noexcept
 #  elif _CCCL_HOSTED() // ^^^ _CCCL_BUILTIN_NEARBYINTF128 ^^^ / vvv _CCCL_HOSTED() vvv
   // Only differs from rint in not raising FE_INEXACT, which only matters on the host as the device has no floating
   // point exceptions. feholdexcept masks the traps while rounding and fesetenv discards the raised flags, which can
-  // only be FE_INEXACT as rint returns NaN and infinity before any arithmetic. Like in glibc's nearbyint, the results
-  // of both calls are ignored as they do not fail on the supported hosts. The volatile keeps the rounding between them
+  // only be FE_INEXACT as rint returns NaN and infinity before any arithmetic. The volatile keeps the rounding between
+  // the two calls. There is no way to recover if fesetenv fails, so its result is ignored
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     ({
                       ::fenv_t __env;
-                      ::feholdexcept(&__env);
+                      if (::feholdexcept(&__env) != 0)
+                      {
+                        // The environment may not have been saved, so it can not be restored and FE_INEXACT may be
+                        // raised
+                        return ::cuda::std::__rint_fp128(__x);
+                      }
                       volatile __float128 __result = __x;
                       __result                     = ::cuda::std::__rint_fp128(__result);
                       ::fesetenv(&__env);
