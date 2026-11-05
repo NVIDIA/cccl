@@ -82,6 +82,8 @@ TEST_HOST_DEVICE_FUNC void test_rebind_mask_sizes()
 template <typename NewT, typename V>
 TEST_HOST_DEVICE_FUNC void test_rebind_t_alias()
 {
+  // Check the nested type directly to verify the alias definition.
+  // NOLINTNEXTLINE(cccl-modernize-type-traits)
   static_assert(cuda::std::is_same_v<simd::rebind_t<NewT, V>, typename simd::rebind<NewT, V>::type>);
 }
 

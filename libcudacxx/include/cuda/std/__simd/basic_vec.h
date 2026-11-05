@@ -107,8 +107,8 @@ private:
   _CCCL_HOST_DEVICE_API friend constexpr _Result
   __full_load_from_ptr(const _Up*, const typename _Result::mask_type&, flags<_Flags...>) noexcept;
 
-  using _Impl    = __simd_operations<_Tp, _Abi>;
-  using _Storage = typename _Impl::_SimdStorage;
+  using _Impl _CCCL_NODEBUG    = __simd_operations<_Tp, _Abi>;
+  using _Storage _CCCL_NODEBUG = typename _Impl::_SimdStorage;
 
   _Storage __s_{};
 

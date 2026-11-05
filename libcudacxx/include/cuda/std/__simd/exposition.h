@@ -43,7 +43,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 // [simd.expos], exposition-only helpers
 
 template <size_t _Bytes>
-using __integer_from = __make_nbit_int_t<_Bytes * 8, true>;
+using __integer_from _CCCL_NODEBUG = __make_nbit_int_t<_Bytes * 8, true>;
 
 // complex<T> where T is a vectorizable floating-point type
 template <typename _Tp>
@@ -106,7 +106,7 @@ inline constexpr bool __is_enabled_vec_v =
 
 // [simd.expos], simd-complex-value-type
 template <typename _Tp>
-using __simd_complex_value_type_t = typename _Tp::value_type;
+using __simd_complex_value_type_t _CCCL_NODEBUG = typename _Tp::value_type;
 
 template <typename _Tp, typename _Abi>
 inline constexpr __simd_size_type __simd_size_v = 0;

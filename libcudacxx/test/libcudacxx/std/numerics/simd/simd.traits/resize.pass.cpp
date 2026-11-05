@@ -84,6 +84,8 @@ TEST_HOST_DEVICE_FUNC void test_resize_mask_all()
 template <int N, typename V>
 TEST_HOST_DEVICE_FUNC void test_resize_t_alias()
 {
+  // Check the nested type directly to verify the alias definition.
+  // NOLINTNEXTLINE(cccl-modernize-type-traits)
   static_assert(cuda::std::is_same_v<simd::resize_t<N, V>, typename simd::resize<N, V>::type>);
 }
 

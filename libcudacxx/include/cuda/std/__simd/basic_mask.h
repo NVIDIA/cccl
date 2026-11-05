@@ -67,8 +67,8 @@ class basic_mask<_Bytes, _Abi, enable_if_t<__is_enabled_mask_v<_Bytes, _Abi>>> :
   template <typename, typename, typename>
   friend class basic_vec;
 
-  using _Impl    = __mask_operations<_Bytes, _Abi>;
-  using _Storage = typename _Impl::_MaskStorage;
+  using _Impl _CCCL_NODEBUG    = __mask_operations<_Bytes, _Abi>;
+  using _Storage _CCCL_NODEBUG = typename _Impl::_MaskStorage;
 
   _Storage __s_;
 
@@ -192,7 +192,7 @@ public:
     return {_Impl::__bitwise_not(__s_), __storage_tag};
   }
 
-  using __unary_return_t = basic_vec<__integer_from<_Bytes>, _Abi>;
+  using __unary_return_t _CCCL_NODEBUG = basic_vec<__integer_from<_Bytes>, _Abi>;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __unary_return_t operator+() const noexcept
   {

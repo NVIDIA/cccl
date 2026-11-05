@@ -65,11 +65,11 @@ inline constexpr size_t __mask_element_size_v<basic_mask<_Bytes, _Abi>> = _Bytes
 
 // Shorthand for integer_sequence<__simd_size_type, N>
 template <__simd_size_type... _Ns>
-using __simd_size_seq = integer_sequence<__simd_size_type, _Ns...>;
+using __simd_size_seq _CCCL_NODEBUG = integer_sequence<__simd_size_type, _Ns...>;
 
 // Shorthand for make_integer_sequence<__simd_size_type, N>
 template <__simd_size_type _Np>
-using __make_simd_size_seq = make_integer_sequence<__simd_size_type, _Np>;
+using __make_simd_size_seq _CCCL_NODEBUG = make_integer_sequence<__simd_size_type, _Np>;
 
 // "If basic_vec<typename T::value_type, Abi>::size() % T::size() is not 0, then
 // resize_t<basic_vec<typename T::value_type, Abi>::size() % T::size(), T> is valid and denotes
@@ -123,7 +123,7 @@ __make_chunk_array(const _Src& __src, __simd_size_seq<_Js...>) noexcept
 }
 
 template <typename _SubVec, typename _Tail, __simd_size_type _NHead, __simd_size_type _Ip>
-using __select_head_or_tail_t = ::cuda::std::conditional_t<(_Ip < _NHead), _SubVec, _Tail>;
+using __select_head_or_tail_t _CCCL_NODEBUG = ::cuda::std::conditional_t<(_Ip < _NHead), _SubVec, _Tail>;
 
 template <typename _SubVec, typename _Tail, __simd_size_type _NHead, __simd_size_type _Ip, typename _Src>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __select_head_or_tail_t<_SubVec, _Tail, _NHead, _Ip>
