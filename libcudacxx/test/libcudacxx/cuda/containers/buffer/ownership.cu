@@ -288,7 +288,8 @@ struct resizable_buffer_type;
 template <class T, class... Properties>
 struct resizable_buffer_type<cuda::buffer<T, Properties...>>
 {
-  using type = cuda::__resizable_buffer<T, Properties...>;
+  using type      = cuda::__resizable_buffer<T, Properties...>;
+  using byte_type = cuda::__resizable_buffer<cuda::std::byte, Properties...>;
 };
 
 C2H_CCCLRT_TEST("cuda::__resizable_buffer release, acquire and byte conversion", "[container][buffer]", test_types)
@@ -296,7 +297,7 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer release, acquire and byte conversion",
   using Base       = c2h::get<0, TestType>;
   using Buffer     = typename resizable_buffer_type<Base>::type;
   using T          = typename Buffer::value_type;
-  using ByteBuffer = decltype(cuda::std::declval<Buffer>().template as_bytes<cuda::std::byte>());
+  using ByteBuffer = typename resizable_buffer_type<Base>::byte_type;
 
   static_assert(has_release<Buffer>);
   static_assert(!has_release<Buffer&>);
@@ -312,6 +313,8 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer release, acquire and byte conversion",
   static_assert(!has_as_type<Buffer, float>);
   static_assert(has_as_type<ByteBuffer, T>);
   static_assert(!has_as_type<ByteBuffer&, T>);
+  static_assert(
+    cuda::std::is_same_v<decltype(cuda::std::declval<Buffer>().template as_bytes<cuda::std::byte>()), ByteBuffer>);
   static_assert(cuda::std::is_same_v<typename ByteBuffer::properties_list, typename Buffer::properties_list>);
   static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<ByteBuffer>().template as_type<T>()), Buffer>);
 
