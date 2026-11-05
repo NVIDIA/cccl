@@ -1333,8 +1333,7 @@ _CCCL_HOST_API auto __acquire_buffer(::cuda::__allocation_info<_Tp, _Properties.
   {
     _CCCL_THROW(::std::invalid_argument, "cuda::__acquire_buffer: capacity must match size");
   }
-  return __buffer_type{__buffer_type::__buffer_t::__adopt_allocation(
-    __info.stream, ::cuda::std::move(__info.mr), __info.ptr, __info.size, __info.alignment)};
+  return __buffer_type{__buffer_type::__buffer_t::__adopt_allocation(::cuda::std::move(__info))};
 }
 _CCCL_END_NAMESPACE_CUDA
 

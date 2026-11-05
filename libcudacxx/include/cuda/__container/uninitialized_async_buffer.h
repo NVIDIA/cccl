@@ -466,27 +466,28 @@ public:
     return __replace_allocation(__stream_, __count);
   }
 
-  _CCCL_HOST_API static __uninitialized_async_buffer __adopt_allocation(
-    const ::cuda::stream_ref __stream, __async_resource __mr, _Tp* __ptr, const size_t __count, const size_t __alignment)
+  _CCCL_HOST_API static __uninitialized_async_buffer
+  __adopt_allocation(::cuda::__allocation_info<_Tp, _Properties...>&& __info)
   {
-    __uninitialized_async_buffer __ret{::cuda::std::move(__mr), __stream, /* __count_ = */ 0, __alignment};
-    __validate_element_count(__count, __alignment);
-    if (__ptr == nullptr)
+    __uninitialized_async_buffer __ret{
+      ::cuda::std::move(__info.mr), __info.stream, /* __count_ = */ 0, __info.alignment};
+    __validate_element_count(__info.capacity, __info.alignment);
+    if (__info.ptr == nullptr)
     {
-      if (__count != 0)
+      if (__info.capacity != 0)
       {
         _CCCL_THROW(::std::invalid_argument, "cuda::__uninitialized_async_buffer: Null buffer with nonzero count");
       }
     }
     else
     {
-      if (!::cuda::is_aligned(__ptr, __alignment))
+      if (!::cuda::is_aligned(__info.ptr, __info.alignment))
       {
         _CCCL_THROW(::std::invalid_argument, "cuda::__uninitialized_async_buffer: Invalid alignment");
       }
     }
-    __ret.__count_ = __count;
-    __ret.__buf_   = __ptr;
+    __ret.__count_ = __info.capacity;
+    __ret.__buf_   = __info.ptr;
     return __ret;
   }
 

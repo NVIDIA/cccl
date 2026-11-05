@@ -135,8 +135,7 @@ C2H_TEST_LIST(
     CHECK(input.alignment() == alignof(TestType));
     CHECK(input.stream() == cuda::stream_ref{cuda::invalid_stream});
 
-    auto acquired = __uninitialized_async_buffer::__adopt_allocation(
-      released.stream, cuda::std::move(released.mr), released.ptr, released.capacity, released.alignment);
+    auto acquired = __uninitialized_async_buffer::__adopt_allocation(cuda::std::move(released));
     CHECK(acquired.data() == ptr);
     CHECK(acquired.size() == count);
     CHECK(acquired.alignment() == alignment);
