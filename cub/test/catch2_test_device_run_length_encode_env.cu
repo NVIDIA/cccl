@@ -17,11 +17,13 @@ struct stream_registry_factory_t;
 
 #include <cuda/__execution/tune.h>
 #include <cuda/iterator>
+#include <cuda/std/cstdint>
 #include <cuda/stream>
 
 #include <sstream>
 
 #include "block_size_extracting_helpers.h"
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/device_and_stream.h>
 
@@ -56,6 +58,30 @@ struct rle_non_trivial_runs_tuning
   }
 };
 
+template <int ThreadsPerBlock>
+struct rle_encode_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::RleEncodePolicy policy) const
+    -> cub::RleEncodePolicy
+  {
+    // the default policy may select lookahead, but this test observes the lookback block size
+    policy.algorithm                  = cub::RleAlgorithm::lookback;
+    policy.lookback.threads_per_block = ThreadsPerBlock;
+    return policy;
+  }
+};
+
+template <int ThreadsPerBlock>
+struct rle_non_trivial_runs_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::RleNonTrivialRunsPolicy policy) const
+    -> cub::RleNonTrivialRunsPolicy
+  {
+    policy.lookback.threads_per_block = ThreadsPerBlock;
+    return policy;
+  }
+};
+
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 
@@ -64,9 +90,9 @@ using block_sizes =
 CUB_TEST_CASE("DeviceRunLengthEncode::Encode works with default environment", "[run_length_encode][device]", CUB_SMALL)
 {
   auto d_in           = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
-  auto d_unique_out   = c2h::device_vector<int>(8);
-  auto d_counts_out   = c2h::device_vector<int>(8);
-  auto d_num_runs_out = c2h::device_vector<int>(1);
+  auto d_unique_out   = c2h::device_vector<int>(8, thrust::no_init);
+  auto d_counts_out   = c2h::device_vector<int>(8, thrust::no_init);
+  auto d_num_runs_out = c2h::device_vector<int>(1, thrust::no_init);
 
   REQUIRE(cudaSuccess
           == cub::DeviceRunLengthEncode::Encode(
@@ -88,9 +114,9 @@ CUB_TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns works with default environm
               CUB_SMALL)
 {
   auto d_in           = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
-  auto d_offsets_out  = c2h::device_vector<int>(8);
-  auto d_lengths_out  = c2h::device_vector<int>(8);
-  auto d_num_runs_out = c2h::device_vector<int>(1);
+  auto d_offsets_out  = c2h::device_vector<int>(8, thrust::no_init);
+  auto d_lengths_out  = c2h::device_vector<int>(8, thrust::no_init);
+  auto d_num_runs_out = c2h::device_vector<int>(1, thrust::no_init);
 
   REQUIRE(cudaSuccess
           == cub::DeviceRunLengthEncode::NonTrivialRuns(
@@ -112,9 +138,9 @@ CUB_TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns works with default environm
 CUB_TEST("DeviceRunLengthEncode::Encode uses environment", "[run_length_encode][device]", CUB_SMALL)
 {
   auto d_in           = c2h::device_vector<int>{1, 1, 1, 2, 2, 3, 4, 4, 4, 4};
-  auto d_unique_out   = c2h::device_vector<int>(10);
-  auto d_counts_out   = c2h::device_vector<int>(10);
-  auto d_num_runs_out = c2h::device_vector<int>(1);
+  auto d_unique_out   = c2h::device_vector<int>(10, thrust::no_init);
+  auto d_counts_out   = c2h::device_vector<int>(10, thrust::no_init);
+  auto d_num_runs_out = c2h::device_vector<int>(1, thrust::no_init);
   const int num_items = static_cast<int>(d_in.size());
 
   size_t expected_bytes_allocated{};
@@ -148,9 +174,9 @@ CUB_TEST("DeviceRunLengthEncode::Encode uses environment", "[run_length_encode][
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns uses environment", "[run_length_encode][device]", CUB_SMALL)
 {
   auto d_in           = c2h::device_vector<int>{1, 1, 1, 2, 2, 3, 4, 4, 4, 4};
-  auto d_offsets_out  = c2h::device_vector<int>(10);
-  auto d_lengths_out  = c2h::device_vector<int>(10);
-  auto d_num_runs_out = c2h::device_vector<int>(1);
+  auto d_offsets_out  = c2h::device_vector<int>(10, thrust::no_init);
+  auto d_lengths_out  = c2h::device_vector<int>(10, thrust::no_init);
+  auto d_num_runs_out = c2h::device_vector<int>(1, thrust::no_init);
   const int num_items = static_cast<int>(d_in.size());
 
   size_t expected_bytes_allocated{};
@@ -184,9 +210,9 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns uses environment", "[run_length_
 CUB_TEST_CASE("DeviceRunLengthEncode::Encode uses custom stream", "[run_length_encode][device]", CUB_SMALL)
 {
   auto d_in           = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
-  auto d_unique_out   = c2h::device_vector<int>(8);
-  auto d_counts_out   = c2h::device_vector<int>(8);
-  auto d_num_runs_out = c2h::device_vector<int>(1);
+  auto d_unique_out   = c2h::device_vector<int>(8, thrust::no_init);
+  auto d_counts_out   = c2h::device_vector<int>(8, thrust::no_init);
+  auto d_num_runs_out = c2h::device_vector<int>(1, thrust::no_init);
   const int num_items = static_cast<int>(d_in.size());
 
   const cuda::stream custom_stream = c2h::make_current_device_stream();
@@ -226,9 +252,9 @@ CUB_TEST_CASE("DeviceRunLengthEncode::Encode uses custom stream", "[run_length_e
 CUB_TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns uses custom stream", "[run_length_encode][device]", CUB_SMALL)
 {
   auto d_in           = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
-  auto d_offsets_out  = c2h::device_vector<int>(8);
-  auto d_lengths_out  = c2h::device_vector<int>(8);
-  auto d_num_runs_out = c2h::device_vector<int>(1);
+  auto d_offsets_out  = c2h::device_vector<int>(8, thrust::no_init);
+  auto d_lengths_out  = c2h::device_vector<int>(8, thrust::no_init);
+  auto d_num_runs_out = c2h::device_vector<int>(1, thrust::no_init);
   const int num_items = static_cast<int>(d_in.size());
 
   const cuda::stream custom_stream = c2h::make_current_device_stream();
@@ -275,14 +301,43 @@ CUB_TEST("DeviceRunLengthEncode::Encode can be tuned", "[run_length_encode][devi
   auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
   const block_size_extracting_constant_iterator d_in(42, thrust::raw_pointer_cast(d_block_size.data()));
 
-  auto d_unique_out   = c2h::device_vector<int>(1);
-  auto d_counts_out   = c2h::device_vector<int>(1);
-  auto d_num_runs_out = c2h::device_vector<int>(1);
+  auto d_unique_out   = c2h::device_vector<int>(1, thrust::no_init);
+  auto d_counts_out   = c2h::device_vector<int>(1, thrust::no_init);
+  auto d_num_runs_out = c2h::device_vector<int>(1, thrust::no_init);
 
   auto env = cuda::execution::tune(rle_encode_tuning<target_block_size>{});
 
   run_length_encode_env(d_in, d_unique_out.begin(), d_counts_out.begin(), d_num_runs_out.begin(), num_items, env);
 
+  REQUIRE(d_num_runs_out[0] == 1);
+  REQUIRE(d_unique_out[0] == 42);
+  REQUIRE(d_counts_out[0] == num_items);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST_CASE("DeviceRunLengthEncode::Encode tuning can be modified", "[run_length_encode][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+  constexpr int num_items                  = 256;
+
+  auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
+  const block_size_extracting_constant_iterator d_in(42, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto d_unique_out   = c2h::device_vector<int>(1, thrust::no_init);
+  auto d_counts_out   = c2h::device_vector<int>(1, thrust::no_init);
+  auto d_num_runs_out = c2h::device_vector<int>(1, thrust::no_init);
+
+  auto env = cuda::execution::tune(rle_encode_tuning_transform<target_block_size>{});
+
+  {
+    run_length_encode_env(
+      d_in, d_unique_out.begin(), d_counts_out.begin(), d_num_runs_out.begin(), num_items, stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
+  run_length_encode_env(d_in, d_unique_out.begin(), d_counts_out.begin(), d_num_runs_out.begin(), num_items, env);
   REQUIRE(d_num_runs_out[0] == 1);
   REQUIRE(d_unique_out[0] == 42);
   REQUIRE(d_counts_out[0] == num_items);
@@ -333,9 +388,9 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can be tuned", "[run_length_enco
   auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
   const block_size_extracting_constant_iterator d_in(42, thrust::raw_pointer_cast(d_block_size.data()));
 
-  auto d_offsets_out  = c2h::device_vector<int>(1);
-  auto d_lengths_out  = c2h::device_vector<int>(1);
-  auto d_num_runs_out = c2h::device_vector<int>(1);
+  auto d_offsets_out  = c2h::device_vector<int>(1, thrust::no_init);
+  auto d_lengths_out  = c2h::device_vector<int>(1, thrust::no_init);
+  auto d_num_runs_out = c2h::device_vector<int>(1, thrust::no_init);
 
   auto env = cuda::execution::tune(rle_non_trivial_runs_tuning<target_block_size>{});
 
@@ -347,7 +402,325 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can be tuned", "[run_length_enco
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+CUB_TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns tuning can be modified", "[run_length_encode][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+  constexpr int num_items                  = 256;
+
+  auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
+  const block_size_extracting_constant_iterator d_in(42, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto d_offsets_out  = c2h::device_vector<int>(1, thrust::no_init);
+  auto d_lengths_out  = c2h::device_vector<int>(1, thrust::no_init);
+  auto d_num_runs_out = c2h::device_vector<int>(1, thrust::no_init);
+
+  auto env = cuda::execution::tune(rle_non_trivial_runs_tuning_transform<target_block_size>{});
+
+  {
+    non_trivial_runs_env(
+      d_in, d_offsets_out.begin(), d_lengths_out.begin(), d_num_runs_out.begin(), num_items, stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
+  non_trivial_runs_env(d_in, d_offsets_out.begin(), d_lengths_out.begin(), d_num_runs_out.begin(), num_items, env);
+  REQUIRE(d_num_runs_out[0] == 1);
+  REQUIRE(d_offsets_out[0] == 0);
+  REQUIRE(d_lengths_out[0] == num_items);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
 #endif // TEST_LAUNCH != 1
+
+#if TEST_LAUNCH == 0
+
+// The two-phase overloads take the same environment as the single-phase ones but never allocate, so they do not go
+// through the launch wrappers and would run identically in every TEST_LAUNCH variant. Test them with host launch only.
+
+CUB_TEST_CASE("DeviceRunLengthEncode::Encode works with user provided memory and environment",
+              "[run_length_encode][device]",
+              CUB_SMALL)
+{
+  auto d_in           = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto d_unique_out   = c2h::device_vector<int>(8, thrust::no_init);
+  auto d_counts_out   = c2h::device_vector<int>(8, thrust::no_init);
+  auto d_num_runs_out = c2h::device_vector<int>(1, thrust::no_init);
+  const int num_items = static_cast<int>(d_in.size());
+
+  size_t expected_bytes{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceRunLengthEncode::Encode(
+      nullptr,
+      expected_bytes,
+      d_in.begin(),
+      d_unique_out.begin(),
+      d_counts_out.begin(),
+      d_num_runs_out.begin(),
+      num_items));
+  auto temp          = c2h::device_vector<cuda::std::uint8_t>(expected_bytes, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(temp.data());
+
+  auto test_encode = [&](const auto& env) {
+    size_t num_bytes = 0;
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceRunLengthEncode::Encode(
+        nullptr,
+        num_bytes,
+        d_in.begin(),
+        d_unique_out.begin(),
+        d_counts_out.begin(),
+        d_num_runs_out.begin(),
+        num_items,
+        env));
+    REQUIRE(num_bytes == expected_bytes);
+
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceRunLengthEncode::Encode(
+        temp_storage,
+        num_bytes,
+        d_in.begin(),
+        d_unique_out.begin(),
+        d_counts_out.begin(),
+        d_num_runs_out.begin(),
+        num_items,
+        env));
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    const c2h::device_vector<int> expected_unique{0, 2, 9, 5, 8};
+    const c2h::device_vector<int> expected_counts{1, 2, 1, 3, 1};
+    const c2h::device_vector<int> expected_num_runs{5};
+
+    REQUIRE(d_num_runs_out == expected_num_runs);
+    d_unique_out.resize(d_num_runs_out[0]);
+    d_counts_out.resize(d_num_runs_out[0]);
+    REQUIRE(d_unique_out == expected_unique);
+    REQUIRE(d_counts_out == expected_counts);
+  };
+
+  test_with_custom_streams(test_encode);
+}
+
+CUB_TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns works with user provided memory and environment",
+              "[run_length_encode][device]",
+              CUB_SMALL)
+{
+  auto d_in           = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto d_offsets_out  = c2h::device_vector<int>(8, thrust::no_init);
+  auto d_lengths_out  = c2h::device_vector<int>(8, thrust::no_init);
+  auto d_num_runs_out = c2h::device_vector<int>(1, thrust::no_init);
+  const int num_items = static_cast<int>(d_in.size());
+
+  size_t expected_bytes{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceRunLengthEncode::NonTrivialRuns(
+      nullptr,
+      expected_bytes,
+      d_in.begin(),
+      d_offsets_out.begin(),
+      d_lengths_out.begin(),
+      d_num_runs_out.begin(),
+      num_items));
+  auto temp          = c2h::device_vector<cuda::std::uint8_t>(expected_bytes, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(temp.data());
+
+  auto test_non_trivial_runs = [&](const auto& env) {
+    size_t num_bytes = 0;
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceRunLengthEncode::NonTrivialRuns(
+        nullptr,
+        num_bytes,
+        d_in.begin(),
+        d_offsets_out.begin(),
+        d_lengths_out.begin(),
+        d_num_runs_out.begin(),
+        num_items,
+        env));
+    REQUIRE(num_bytes == expected_bytes);
+
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceRunLengthEncode::NonTrivialRuns(
+        temp_storage,
+        num_bytes,
+        d_in.begin(),
+        d_offsets_out.begin(),
+        d_lengths_out.begin(),
+        d_num_runs_out.begin(),
+        num_items,
+        env));
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    const c2h::device_vector<int> expected_offsets{1, 4};
+    const c2h::device_vector<int> expected_lengths{2, 3};
+    const c2h::device_vector<int> expected_num_runs{2};
+
+    REQUIRE(d_num_runs_out == expected_num_runs);
+    d_offsets_out.resize(d_num_runs_out[0]);
+    d_lengths_out.resize(d_num_runs_out[0]);
+    REQUIRE(d_offsets_out == expected_offsets);
+    REQUIRE(d_lengths_out == expected_lengths);
+  };
+
+  test_with_custom_streams(test_non_trivial_runs);
+}
+
+// Before the environment parameter, the two-phase overloads took `cudaStream_t stream = nullptr`, so callers passing
+// nullptr or a literal 0 for the stream exist. Both must keep compiling and keep running on the default stream.
+CUB_TEST_CASE("DeviceRunLengthEncode two-phase overloads accept legacy null stream arguments",
+              "[run_length_encode][device]",
+              CUB_SMALL)
+{
+  auto d_in           = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto d_unique_out   = c2h::device_vector<int>(8, thrust::no_init);
+  auto d_counts_out   = c2h::device_vector<int>(8, thrust::no_init);
+  auto d_num_runs_out = c2h::device_vector<int>(1, thrust::no_init);
+  const int num_items = static_cast<int>(d_in.size());
+
+  auto encode_on = [&](const auto& stream) {
+    size_t temp_storage_bytes = 0;
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceRunLengthEncode::Encode(
+        nullptr,
+        temp_storage_bytes,
+        d_in.begin(),
+        d_unique_out.begin(),
+        d_counts_out.begin(),
+        d_num_runs_out.begin(),
+        num_items,
+        stream));
+
+    c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+    const stream_scope scope{cudaStream_t{}};
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceRunLengthEncode::Encode(
+        thrust::raw_pointer_cast(temp_storage.data()),
+        temp_storage_bytes,
+        d_in.begin(),
+        d_unique_out.begin(),
+        d_counts_out.begin(),
+        d_num_runs_out.begin(),
+        num_items,
+        stream));
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  };
+
+  SECTION("nullptr")
+  {
+    encode_on(nullptr);
+  }
+
+  SECTION("literal 0")
+  {
+    encode_on(0);
+  }
+
+  const c2h::device_vector<int> expected_unique{0, 2, 9, 5, 8};
+  const c2h::device_vector<int> expected_counts{1, 2, 1, 3, 1};
+  const c2h::device_vector<int> expected_num_runs{5};
+
+  REQUIRE(d_num_runs_out == expected_num_runs);
+  d_unique_out.resize(d_num_runs_out[0]);
+  d_counts_out.resize(d_num_runs_out[0]);
+  REQUIRE(d_unique_out == expected_unique);
+  REQUIRE(d_counts_out == expected_counts);
+}
+
+// Runs the two-phase overload wrapped by two_phase with the given environment: queries the temporary storage size
+// and executes with user provided storage.
+template <class TwoPhaseFn, class EnvT>
+void run_two_phase(TwoPhaseFn two_phase, const EnvT& env)
+{
+  size_t temp_storage_bytes = 0;
+  REQUIRE(cudaSuccess == two_phase(nullptr, temp_storage_bytes, env));
+
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  REQUIRE(cudaSuccess == two_phase(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, env));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+}
+
+CUB_TEST("DeviceRunLengthEncode::Encode can be tuned with user provided memory",
+         "[run_length_encode][device]",
+         CUB_SMALL,
+         block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr int num_items                  = 256;
+
+  auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
+  const block_size_extracting_constant_iterator d_in(42, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto d_unique_out   = c2h::device_vector<int>(1, thrust::no_init);
+  auto d_counts_out   = c2h::device_vector<int>(1, thrust::no_init);
+  auto d_num_runs_out = c2h::device_vector<int>(1, thrust::no_init);
+
+  run_two_phase(
+    [&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRunLengthEncode::Encode(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_unique_out.begin(),
+        d_counts_out.begin(),
+        d_num_runs_out.begin(),
+        num_items,
+        env);
+    },
+    cuda::execution::tune(rle_encode_tuning<target_block_size>{}));
+
+  REQUIRE(d_num_runs_out[0] == 1);
+  REQUIRE(d_unique_out[0] == 42);
+  REQUIRE(d_counts_out[0] == num_items);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can be tuned with user provided memory",
+         "[run_length_encode][device]",
+         CUB_SMALL,
+         block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr int num_items                  = 256;
+
+  auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
+  const block_size_extracting_constant_iterator d_in(42, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto d_offsets_out  = c2h::device_vector<int>(1, thrust::no_init);
+  auto d_lengths_out  = c2h::device_vector<int>(1, thrust::no_init);
+  auto d_num_runs_out = c2h::device_vector<int>(1, thrust::no_init);
+
+  run_two_phase(
+    [&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRunLengthEncode::NonTrivialRuns(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_offsets_out.begin(),
+        d_lengths_out.begin(),
+        d_num_runs_out.begin(),
+        num_items,
+        env);
+    },
+    cuda::execution::tune(rle_non_trivial_runs_tuning<target_block_size>{}));
+
+  REQUIRE(d_num_runs_out[0] == 1);
+  REQUIRE(d_offsets_out[0] == 0);
+  REQUIRE(d_lengths_out[0] == num_items);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+#endif // TEST_LAUNCH == 0
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
 CUB_TEST("Test RleEncodePolicy properties", "[run_length_encode][device]", CUB_SMALL)

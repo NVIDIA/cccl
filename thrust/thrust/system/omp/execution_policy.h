@@ -16,9 +16,10 @@
 //! \brief Execution policies for Thrust's OpenMP system.
 
 // get the execution policies definitions first
-#include <thrust/system/omp/detail/execution_policy.h>
+#include <thrust/system/omp/detail/execution_policy.h> // IWYU pragma: export
 
 // now get all the algorithm definitions
+// IWYU pragma: begin_keep
 #include <thrust/system/omp/detail/adjacent_difference.h>
 #include <thrust/system/omp/detail/assign_value.h>
 #include <thrust/system/omp/detail/binary_search.h>
@@ -60,3 +61,4 @@
 #include <thrust/system/omp/detail/uninitialized_fill.h>
 #include <thrust/system/omp/detail/unique.h>
 #include <thrust/system/omp/detail/unique_by_key.h>
+// IWYU pragma: end_keep

@@ -250,7 +250,7 @@ public:
 template <typename T>
 struct cuda::experimental::stf::streamed_interface_of<matrix<T>>
 {
-  using type = matrix_stream_interface<T>;
+  using type _CCCL_NODEBUG = matrix_stream_interface<T>;
 };
 
 /**

@@ -55,7 +55,7 @@ struct __concat_tuple_types<>
 };
 
 template <class... _TupleTypes>
-using __concat_tuple_types_t = typename __concat_tuple_types<_TupleTypes...>::type;
+using __concat_tuple_types_t _CCCL_NODEBUG = typename __concat_tuple_types<_TupleTypes...>::type;
 
 template <class... _Types0, class... _Types1, class... _Tail>
 struct __concat_tuple_types<__tuple_types<_Types0...>, __tuple_types<_Types1...>, _Tail...>
@@ -64,7 +64,7 @@ struct __concat_tuple_types<__tuple_types<_Types0...>, __tuple_types<_Types1...>
 };
 
 template <class... _Tuples>
-using __tuple_cat_return_t = __concat_tuple_types_t<__make_tuple_types_t<_Tuples>...>;
+using __tuple_cat_return_t _CCCL_NODEBUG = __concat_tuple_types_t<__make_tuple_types_t<_Tuples>...>;
 
 // clang-tidy incorrectly reports "'__t0' used after it was forwarded".
 // Each expansion forwards the tuple only to select get<I>'s cvref-qualified

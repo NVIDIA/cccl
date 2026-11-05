@@ -36,14 +36,14 @@ struct rebind_pointer;
 template <typename T, typename U>
 struct rebind_pointer<T*, U>
 {
-  using type = U*;
+  using type _CCCL_NODEBUG = U*;
 };
 
 // Rebind generic fancy pointers.
 template <template <typename, typename...> class Ptr, typename OldT, typename... Tail, typename T>
 struct rebind_pointer<Ptr<OldT, Tail...>, T>
 {
-  using type = Ptr<T, Tail...>;
+  using type _CCCL_NODEBUG = Ptr<T, Tail...>;
 };
 
 // Rebind `thrust::pointer`-like things with `thrust::reference`-like references.
@@ -57,7 +57,7 @@ template <template <typename, typename, typename, typename...> class Ptr,
 struct rebind_pointer<Ptr<OldT, Tag, Ref<OldT, RefTail...>, PtrTail...>, T>
 {
   //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "0");
-  using type = Ptr<T, Tag, Ref<T, RefTail...>, PtrTail...>;
+  using type _CCCL_NODEBUG = Ptr<T, Tag, Ref<T, RefTail...>, PtrTail...>;
 };
 
 // Rebind `thrust::pointer`-like things with `thrust::reference`-like references
@@ -73,7 +73,7 @@ template <template <typename, typename, typename, typename...> class Ptr,
 struct rebind_pointer<Ptr<OldT, Tag, Ref<OldT, RefTail...>, DerivedPtr<OldT, DerivedPtrTail...>>, T>
 {
   //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "1");
-  using type = Ptr<T, Tag, Ref<T, RefTail...>, DerivedPtr<T, DerivedPtrTail...>>;
+  using type _CCCL_NODEBUG = Ptr<T, Tag, Ref<T, RefTail...>, DerivedPtr<T, DerivedPtrTail...>>;
 };
 
 // Rebind `thrust::pointer`-like things with native reference types.
@@ -85,7 +85,7 @@ template <template <typename, typename, typename, typename...> class Ptr,
 struct rebind_pointer<Ptr<OldT, Tag, ::cuda::std::add_lvalue_reference_t<OldT>, PtrTail...>, T>
 {
   //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "2");
-  using type = Ptr<T, Tag, ::cuda::std::add_lvalue_reference_t<T>, PtrTail...>;
+  using type _CCCL_NODEBUG = Ptr<T, Tag, ::cuda::std::add_lvalue_reference_t<T>, PtrTail...>;
 };
 
 // Rebind `thrust::pointer`-like things with native reference types and templated
@@ -99,7 +99,7 @@ template <template <typename, typename, typename, typename...> class Ptr,
 struct rebind_pointer<Ptr<OldT, Tag, ::cuda::std::add_lvalue_reference_t<OldT>, DerivedPtr<OldT, DerivedPtrTail...>>, T>
 {
   //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "3");
-  using type = Ptr<T, Tag, ::cuda::std::add_lvalue_reference_t<T>, DerivedPtr<T, DerivedPtrTail...>>;
+  using type _CCCL_NODEBUG = Ptr<T, Tag, ::cuda::std::add_lvalue_reference_t<T>, DerivedPtr<T, DerivedPtrTail...>>;
 };
 
 template <typename FromPtr, typename ToPtr>
