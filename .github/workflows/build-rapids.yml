@@ -104,26 +104,24 @@ jobs:
 
           declare -a failures
 
-          _collect_compile_time_traces() {
-            local trace destination
-            (
+          _summarize_compile_time_traces() {
+            local output="/compile-time-reports/${RAPIDS_ENABLE_TESTS}"
+            # The EXIT trap must not overwrite a partial report after summarization fails.
+            if test ! -f "$output/summary.json"; then
               # Project names can refer to subprojects or aliases, so scan the mounted repositories.
-              cd "${HOME}/cccl/ci/rapids/.repos" || exit 1
-              # Do not follow the latest symlinks, which alias the same build tree.
-              find . -type f -name '*.o.json' -print0 |
-                while IFS= read -r -d '' trace; do
-                  destination="/compile-time-traces/${RAPIDS_ENABLE_TESTS}/${trace#./}"
-                  mkdir -p "$(dirname "$destination")" || exit 1
-                  mv "$trace" "$destination" || exit 1
-                done
-            )
+              PYTHONPATH="${HOME}/cccl${PYTHONPATH:+:$PYTHONPATH}" \
+                python3 -m ci.compile_time.summarize_third_party \
+                  --project rapids --phase "$RAPIDS_ENABLE_TESTS" \
+                  --trace-dir "${HOME}/cccl/ci/rapids/.repos" --source-root "$HOME" \
+                  --output "$output" --delete-traces
+            fi
           }
 
           _print_err_exit_msg() {
             local code=$?
             if test $code -ne 0; then
               if test -n "${RAPIDS_ENABLE_TESTS:-}"; then
-                _collect_compile_time_traces || code=1
+                _summarize_compile_time_traces || code=1
               fi
               echo "::error:: Failures: ${failures[*]}"
               echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
@@ -162,8 +160,8 @@ jobs:
               fi
               sccache --show-adv-stats
             done
-            # Move each pass's traces before the next pass can overwrite them.
-            _collect_compile_time_traces
+            # Summarize and remove each pass's traces before the next pass can overwrite them.
+            _summarize_compile_time_traces
           done
 
           EOF
@@ -190,7 +188,7 @@ jobs:
 
           # Trace actual NVCC compilations, with bounded local parallelism instead of sccache.
           # Serialize device images to avoid CUDA 13.3 time-trace temporary-file races.
-          mkdir -p "$RUNNER_TEMP/compile-time-traces"
+          mkdir -p "$RUNNER_TEMP/compile-time-reports"
           .devcontainer/launch.sh \
             --docker \
             --cuda ${{matrix.cuda}} \
@@ -219,26 +217,24 @@ jobs:
             --env "NVCC_APPEND_FLAGS=${NVCC_APPEND_FLAGS:+${NVCC_APPEND_FLAGS} }--fdevice-time-trace=- --threads=1" \
             --env "PARALLEL_LEVEL=$(nproc)" \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
-            --volume "$RUNNER_TEMP/compile-time-traces:/compile-time-traces" \
+            --volume "$RUNNER_TEMP/compile-time-reports:/compile-time-reports" \
             -- ./ci/rapids/rapids-entrypoint.sh /ci.sh
 
-      - name: Upload compile-time traces (tests OFF)
+      - name: Upload compile-time reports (tests OFF)
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: rapids-cuda${{ matrix.cuda }}-${{ strategy.job-index }}-tests-OFF-compile-time-traces
-          path: ${{ runner.temp }}/compile-time-traces/OFF
-          include-hidden-files: true
+          name: rapids-cuda${{ matrix.cuda }}-${{ strategy.job-index }}-tests-OFF-compile-time-reports
+          path: ${{ runner.temp }}/compile-time-reports/OFF
           if-no-files-found: error
           retention-days: 90
 
-      - name: Upload compile-time traces (tests ON)
+      - name: Upload compile-time reports (tests ON)
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: rapids-cuda${{ matrix.cuda }}-${{ strategy.job-index }}-tests-ON-compile-time-traces
-          path: ${{ runner.temp }}/compile-time-traces/ON
-          include-hidden-files: true
+          name: rapids-cuda${{ matrix.cuda }}-${{ strategy.job-index }}-tests-ON-compile-time-reports
+          path: ${{ runner.temp }}/compile-time-reports/ON
           if-no-files-found: error
           retention-days: 90
 

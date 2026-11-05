@@ -39,6 +39,8 @@ on:
 jobs:
   build-pytorch:
     name: Build PyTorch
+    # Fresh CUDA tracing bypasses the cache; allow the same 24-hour budget as FlashInfer.
+    timeout-minutes: 1440
     runs-on: |-
       ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) &&
           'linux-amd64-cpu32' || 'ubuntu-latest' }}
@@ -135,12 +137,20 @@ jobs:
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
             -- /ci.sh
 
-      - name: Upload compile-time traces
+      - name: Summarize compile-time traces
+        if: ${{ always() }}
+        run: |
+          PYTHONPATH="$GITHUB_WORKSPACE${PYTHONPATH:+:$PYTHONPATH}" \
+            python3 -m ci.compile_time.summarize_third_party \
+              --project pytorch --trace-dir build --source-root /home/coder/cccl/build \
+              --output "$RUNNER_TEMP/compile-time-reports"
+
+      - name: Upload compile-time reports
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: pytorch-compile-time-traces
-          path: build/**/*.o.json
+          name: pytorch-compile-time-reports
+          path: ${{ runner.temp }}/compile-time-reports
           if-no-files-found: error
           retention-days: 90
 
