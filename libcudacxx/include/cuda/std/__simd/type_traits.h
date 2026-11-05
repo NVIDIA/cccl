@@ -26,6 +26,7 @@
 #include <cuda/std/__fwd/simd.h>
 #include <cuda/std/__simd/abi.h>
 #include <cuda/std/__simd/exposition.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -82,19 +83,20 @@ using rebind_t = typename rebind<_Tp, _Vp>::type;
 
 // [simd.traits], resize
 template <__simd_size_type _Np, typename _Vp>
-struct resize;
+struct resize
+{};
 
 template <__simd_size_type _Np, typename _Tp, typename _Abi>
 struct resize<_Np, basic_vec<_Tp, _Abi>>
-{
-  using type = basic_vec<_Tp, __deduce_abi_t<_Tp, _Np>>;
-};
+    : enable_if<__is_enabled_vec_v<_Tp, _Abi> && __is_enabled_vec_v<_Tp, __deduce_abi_t<_Tp, _Np>>,
+                basic_vec<_Tp, __deduce_abi_t<_Tp, _Np>>>
+{};
 
 template <__simd_size_type _Np, size_t _Bytes, typename _Abi>
 struct resize<_Np, basic_mask<_Bytes, _Abi>>
-{
-  using type = basic_mask<_Bytes, __deduce_abi_t<__integer_from<_Bytes>, _Np>>;
-};
+    : enable_if<__is_enabled_mask_v<_Bytes, _Abi> && __is_enabled_mask_v<_Bytes, fixed_size<_Np>>,
+                basic_mask<_Bytes, fixed_size<_Np>>>
+{};
 
 template <__simd_size_type _Np, typename _Vp>
 using resize_t = typename resize<_Np, _Vp>::type;
