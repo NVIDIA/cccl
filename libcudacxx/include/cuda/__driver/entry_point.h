@@ -37,7 +37,8 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
 
-// Isolate the status-returning driver APIs from the earlier pointer/error-code-returning ABI which was publicly visible.
+// Isolate the status-returning driver APIs from the earlier pointer/error-code-returning ABI which was publicly
+// visible.
 _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 
 enum class __driver_error_source
