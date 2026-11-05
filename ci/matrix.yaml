@@ -87,6 +87,14 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
+    # Compile only ci/abi_tag.cu with nvcc; no CCCL builds, tests, or GPU runners.
+    # Use the existing supported CTK/host pairings, including both NVHPC versions.
+    - {jobs: ['build'], project: 'abi_tag', std: 17, ctk: '12.0', cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12', 'clang14', 'msvc2019', 'msvc14.39']}
+    - {jobs: ['build'], project: 'abi_tag', std: 17, ctk: '12.X', cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12', 'gcc13', 'gcc14', 'clang14', 'clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'msvc2019', 'msvc2022']}
+    - {jobs: ['build'], project: 'abi_tag', std: 17, ctk: '13.0', cxx: ['gcc11', 'gcc12', 'gcc13', 'gcc14', 'gcc15', 'clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'msvc2019', 'msvc2022']}
+    - {jobs: ['build'], project: 'abi_tag', std: 17, ctk: '13.X', cxx: ['gcc11', 'gcc12', 'gcc13', 'gcc14', 'gcc15', 'gcc16', 'clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21', 'clang22', 'msvc2019', 'msvc2022', 'msvc2026']}
+    - {jobs: ['build'], project: 'abi_tag', std: 17, ctk: 'nvhpc-prev', cxx: 'nvhpc-prev'}
+    - {jobs: ['build'], project: 'abi_tag', std: 17, ctk: 'nvhpc', cxx: 'nvhpc'}
 
   pull_request_fork:
     - {jobs: ['build'],                     project: ['libcudacxx', 'thrust', 'cudax'], std: 'max',  cxx: ['gcc', 'clang', 'msvc']}
@@ -889,6 +897,9 @@ codegen_targets:
 #            E.g. "job_map: { test: ['test_cpu', 'test_gpu'] }" replaces
 #            the "test" job with distinct "test_cpu" and "test_gpu" jobs.
 projects:
+  abi_tag:
+    name: 'abi_tag probe'
+    stds: [17]
   packaging:
     name: 'CCCL Packaging'
     stds: [17, 20, 23]
