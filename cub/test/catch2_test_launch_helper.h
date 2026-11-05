@@ -135,6 +135,20 @@
 
 namespace launch_helper_detail
 {
+// Own a fallback stream only when the environment does not supply a stream property.
+template <class Env>
+[[nodiscard]] cuda::stream make_fallback_stream()
+{
+  if constexpr (cuda::std::execution::__queryable_with<Env, cuda::get_stream_t>)
+  {
+    return cuda::stream{cuda::no_init};
+  }
+  else
+  {
+    return c2h::make_current_device_stream();
+  }
+}
+
 template <class StreamOrEnv>
 [[nodiscard]] auto override_stream(const StreamOrEnv& stream_or_env, cuda::stream_ref stream)
 {
@@ -144,8 +158,7 @@ template <class StreamOrEnv>
   }
   else
   {
-    auto stream_prop = cuda::std::execution::prop{cuda::get_stream_t{}, stream};
-    return cuda::std::execution::env{stream_prop, stream_or_env};
+    return cuda::std::execution::env{stream, stream_or_env};
   }
 }
 
@@ -419,16 +432,7 @@ void launch_env(ActionT action, Args... args)
   const env_t env = cuda::std::get<env_idx>(tuple);
 
   // Keep a capture stream alive when the environment does not provide one.
-  [[maybe_unused]] const auto owning_stream = [] {
-    if constexpr (cuda::std::execution::__queryable_with<env_t, cuda::get_stream_t>)
-    {
-      return cuda::stream{cuda::no_init};
-    }
-    else
-    {
-      return c2h::make_current_device_stream();
-    }
-  }();
+  [[maybe_unused]] const auto owning_stream = launch_helper_detail::make_fallback_stream<env_t>();
   cuda::stream_ref stream{cuda::stream_ref::value_type{}};
 
   if constexpr (cuda::std::execution::__queryable_with<env_t, cuda::get_stream_t>)
@@ -584,7 +588,8 @@ void launch_env(ActionT action, Args... args)
   tpl_t tuple(args...);
   const env_t env = cuda::std::get<env_idx>(tuple);
 
-  // Environment-based API should use default stream if not specified in the environment
+  // Keep a fallback stream alive when the environment does not provide one.
+  [[maybe_unused]] const auto owning_stream = launch_helper_detail::make_fallback_stream<env_t>();
   cudaStream_t stream{nullptr};
 
   if constexpr (cuda::std::execution::__queryable_with<env_t, cuda::get_stream_t>)
@@ -594,8 +599,7 @@ void launch_env(ActionT action, Args... args)
   }
   else
   {
-    // Create new stream one otherwise
-    REQUIRE(cudaStreamCreate(&stream) == cudaSuccess);
+    stream = owning_stream.get();
   }
 
   size_t bytes_allocated{};
@@ -639,11 +643,6 @@ void launch_env(ActionT action, Args... args)
   REQUIRE(bytes_deallocated == bytes_allocated);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-
-  if constexpr (!cuda::std::execution::__queryable_with<env_t, cuda::get_stream_t>)
-  {
-    REQUIRE(cudaSuccess == cudaStreamDestroy(stream));
-  }
 
   if constexpr (cuda::std::execution::__queryable_with<env_t, get_expected_allocation_size_t>)
   {
