@@ -19,7 +19,7 @@
       requires cuda::std::same_as</*mapping-result-of*/<Unit, ParentGroup, Mapping>, MappingResult>
     __device__ explicit virtual_group(const Unit& unit,
                                       const ParentGroup& parent_group,
-                                      Mapping&& mapping) noexcept;
+                                      Mapping&& mapping);
 
     virtual_group(const virtual_group&) = delete;
 

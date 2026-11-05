@@ -18,6 +18,7 @@
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
@@ -226,8 +227,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   KernelLauncherFactory launcher_factory = {})
 {
   using default_policy_selector_t = policy_selector_from_types<KeyIt1, ValueIt1, KeyIt2, ValueIt2, Offset>;
-  using policy_selector_t =
-    ::cuda::std::decay_t<::cuda::std::execution::__query_result_or_t<TuningEnvT, MergePolicy, default_policy_selector_t>>;
+  using policy_selector_t = policy_selector_from_tuning_env_t<TuningEnvT, MergePolicy, default_policy_selector_t>;
 #if _CCCL_HAS_CONCEPTS()
   static_assert(merge_policy_selector<policy_selector_t>);
 #endif // _CCCL_HAS_CONCEPTS()

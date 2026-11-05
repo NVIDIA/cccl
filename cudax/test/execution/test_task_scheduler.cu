@@ -43,7 +43,7 @@ C2H_TEST("task_scheduler starts work on the correct execution context", "[schedu
 }
 
 #if !_CCCL_HOST_COMPILATION()
-static __device__ bool g_called = false;
+static __device__ bool g_called = false; // NOLINT(readability-static-definition-in-anonymous-namespace)
 #else
 static bool g_called = false;
 #endif
