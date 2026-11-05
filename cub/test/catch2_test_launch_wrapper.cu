@@ -9,6 +9,7 @@ struct stream_registry_factory_t;
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/__functional/call_or.h>
 #include <cuda/buffer>
 #include <cuda/launch>
 #include <cuda/memory_resource>
@@ -259,7 +260,7 @@ struct cub_api_example_t
       d_in,
       d_out,
       num_items,
-      cuda::get_stream(stream_or_env).get());
+      cuda::__call_or(cuda::get_stream, cuda::stream_ref{cudaStream_t{}}, stream_or_env).get());
   }
 
   template <class T, class StreamOrEnv = cudaStream_t>
@@ -278,7 +279,7 @@ struct cub_api_example_t
       d_in,
       d_out,
       num_items,
-      cuda::get_stream(stream_or_env).get());
+      cuda::__call_or(cuda::get_stream, cuda::stream_ref{cudaStream_t{}}, stream_or_env).get());
   }
 
   template <class T, class Env>
@@ -458,6 +459,51 @@ CUB_TEST("Two-phase launch wrapper preserves environment properties", "[test][ut
   SECTION("templated invocable")
   {
     x2_0_with_env_templated<int>(data.in.data(), data.out.data(), num_items, env);
+  }
+
+  REQUIRE(stream.is_done());
+  require_all_equal(stream, data.out, 42);
+}
+
+CUB_TEST("Two-phase launch wrapper accepts stream-less environments", "[test][utils]", CUB_SMALL)
+{
+  INFO("Launch = " << TEST_LAUNCH);
+
+  constexpr int num_items = 42;
+  const auto stream       = c2h::default_stream_ref();
+  launch_test_data<int> data{stream, num_items};
+  const expected_stream_scope expected_scope{stream.get()};
+  data.prepare(stream);
+
+  SECTION("empty environment")
+  {
+    const cuda::std::execution::env env{};
+    SECTION("predefined invocable")
+    {
+      x2_0(data.in.data(), data.out.data(), num_items, env);
+    }
+    SECTION("templated invocable")
+    {
+      x2_0_templated<int>(data.in.data(), data.out.data(), num_items, env);
+    }
+  }
+  SECTION("environment with an unrelated property")
+  {
+    const auto token_prop = cuda::std::execution::prop{get_two_phase_token_t{}, 123};
+    const auto env        = cuda::std::execution::env{token_prop};
+    SECTION("predefined invocable")
+    {
+      x2_0_with_env(data.in.data(), data.out.data(), num_items, env);
+    }
+    SECTION("templated invocable")
+    {
+      x2_0_with_env_templated<int>(data.in.data(), data.out.data(), num_items, env);
+    }
+  }
+  SECTION("property used directly as an environment")
+  {
+    const auto env = cuda::std::execution::prop{get_two_phase_token_t{}, 123};
+    x2_0_with_env(data.in.data(), data.out.data(), num_items, env);
   }
 
   REQUIRE(stream.is_done());

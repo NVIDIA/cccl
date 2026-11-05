@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cuda/__functional/call_or.h>
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/launch>
@@ -40,8 +41,9 @@
   struct WRAPPED_API_NAME##_invocable_t                                                               \
   {                                                                                                   \
     template <class... Ts>                                                                            \
-    CUB_RUNTIME_FUNCTION cudaError_t                                                                  \
+    CUB_RUNTIME_FUNCTION auto                                                                         \
     operator()(cuda::std::uint8_t* d_temp_storage, std::size_t& temp_storage_bytes, Ts... args) const \
+      -> decltype(API TMPL_ARGS_OPT(d_temp_storage, temp_storage_bytes, args...))                     \
     {                                                                                                 \
       return API TMPL_ARGS_OPT(d_temp_storage, temp_storage_bytes, args...);                          \
     }                                                                                                 \
@@ -261,11 +263,13 @@ void launch_impl(cuda::stream_ref stream, ActionT action, [[maybe_unused]] Strea
 template <class ActionT, class TupleT, cuda::std::size_t... Is>
 void launch_with_stream(ActionT action, TupleT& args, cuda::std::index_sequence<Is...>)
 {
-  const auto& stream_or_env     = cuda::std::get<sizeof...(Is)>(args);
-  const auto stream             = cuda::get_stream(stream_or_env);
-  using last_arg_t              = cuda::std::remove_cvref_t<decltype(stream_or_env)>;
-  constexpr bool is_environment = cuda::std::execution::__queryable_with<last_arg_t, cuda::get_stream_t>
-                               && !cuda::std::is_convertible_v<const last_arg_t&, cuda::stream_ref>;
+  const auto& stream_or_env = cuda::std::get<sizeof...(Is)>(args);
+  const auto stream         = cuda::__call_or(cuda::get_stream, c2h::default_stream_ref(), stream_or_env);
+  using last_arg_t          = cuda::std::remove_cvref_t<decltype(stream_or_env)>;
+  constexpr bool is_environment =
+    !cuda::std::is_invocable_v<cuda::get_stream_t, const last_arg_t&>
+    || (cuda::std::execution::__queryable_with<last_arg_t, cuda::get_stream_t>
+        && !cuda::std::is_convertible_v<const last_arg_t&, cuda::stream_ref>);
   if constexpr (is_environment)
   {
     launch_impl<true>(stream, action, stream_or_env, cuda::std::get<Is>(args)...);
@@ -285,7 +289,15 @@ void launch(ActionT action, Args&&... args)
     using last_arg_t = cuda::std::tuple_element_t<sizeof...(Args) - 1, cuda::std::tuple<Args...>>;
     // MSVC 19.29 can report C1004 when the trait using this local alias appears directly in if constexpr.
     constexpr bool has_stream = cuda::std::is_invocable_v<cuda::get_stream_t, last_arg_t&>;
-    if constexpr (has_stream)
+#if TEST_LAUNCH == 2
+    // If appending a stream is invalid, the supplied final argument already occupies
+    // the API's environment parameter. Preserve it and inject the capture stream.
+    constexpr bool has_stream_or_env =
+      has_stream || !cuda::std::is_invocable_v<ActionT&, cuda::std::uint8_t*, std::size_t&, Args..., cudaStream_t>;
+#else
+    constexpr bool has_stream_or_env = has_stream;
+#endif
+    if constexpr (has_stream_or_env)
     {
       auto tuple = cuda::std::forward_as_tuple(args...);
       launch_helper_detail::launch_with_stream(action, tuple, cuda::std::make_index_sequence<sizeof...(Args) - 1>{});

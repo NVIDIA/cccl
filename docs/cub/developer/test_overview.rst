@@ -426,9 +426,10 @@ Two-phase wrappers select the supplied stream, or the default stream when none i
 Graph launches capture on the selected stream when it is non-default, and use a temporary
 capture stream otherwise.
 
-For two-phase graph launches, the wrapper appends a ``stream`` argument when the caller
-omits one. If the wrapped API has default parameters before its ``stream`` parameter,
-specify those explicitly at all call sites so the injected stream argument lines up.
+For two-phase graph launches, the wrapper adds the capture stream to a trailing environment
+that does not provide one. When no stream or environment argument is supplied, it appends a
+separate ``stream`` argument. Specify any preceding default parameters explicitly so that
+the environment or stream argument occupies the correct position.
 
 For ``_ENV`` wrappers, host and graph launches select the environment's stream, or create a
 temporary host stream when no stream property exists. Graph ``_ENV`` launches capture on
