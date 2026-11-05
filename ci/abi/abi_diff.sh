@@ -54,8 +54,9 @@ mkdir -p "${output_dir}"
 
 # cuda::experimental has no ABI guarantee. CUB and Thrust put every symbol in an inline
 # namespace that encodes their version and target architectures, so they cannot collide
-# across releases.
-exclude='^(?:(?:vtable|typeinfo|typeinfo name|guard variable) for )?(?:cuda::experimental|thrust|cub)::'
+# across releases. The match is limited to the text before the first '(' so that a `cuda::`
+# function that merely takes a Thrust or CUB argument is still checked.
+exclude='^(?:[^(]*\s)?(?:cuda::experimental|thrust|cub)::'
 
 python3 "${repo_root}/ci/abi/cccl_abi_diff.py" \
   "${base_ref}" "${test_ref}" \
