@@ -88,11 +88,6 @@ public:
       do_sync_aligned(__hier);
     }
 
-    [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance view() const
-    {
-      return *this;
-    }
-
     template <class _MappingResult, class _Hierarchy>
     _CCCL_DEVICE_API void deinit(const _MappingResult&, const _Hierarchy&)
     {}
