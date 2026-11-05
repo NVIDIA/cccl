@@ -40,14 +40,21 @@ template <typename _Tp>
 inline constexpr size_t __simd_pointer_alignment_v = ::cuda::std::max(alignof(_Tp), __optimal_cuda_alignment);
 
 // [simd.traits], alignment
+template <typename _Up, bool = __is_vectorizable_v<_Up>>
+struct __alignment_value
+{};
+
+template <typename _Up>
+struct __alignment_value<_Up, true> : integral_constant<size_t, __simd_pointer_alignment_v<_Up>>
+{};
+
 template <typename _Tp, typename _Up = typename _Tp::value_type>
-struct alignment;
+struct alignment
+{};
 
 template <typename _Tp, typename _Abi, typename _Up>
-struct alignment<basic_vec<_Tp, _Abi>, _Up> : integral_constant<size_t, __simd_pointer_alignment_v<_Up>>
-{
-  static_assert(__is_vectorizable_v<_Up>, "U must be a vectorizable type");
-};
+struct alignment<basic_vec<_Tp, _Abi>, _Up> : __alignment_value<_Up>
+{};
 
 template <typename _Tp, typename _Up = typename _Tp::value_type>
 inline constexpr size_t alignment_v = alignment<_Tp, _Up>::value;
