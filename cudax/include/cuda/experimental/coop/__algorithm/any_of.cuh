@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/hierarchy>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/operations.h>
@@ -30,7 +31,8 @@
 #include <cuda/std/optional>
 
 #include <cuda/experimental/__utility/result_policy.cuh>
-#include <cuda/experimental/coop/group>
+#include <cuda/experimental/coop/__group/concepts.cuh>
+#include <cuda/experimental/coop/__group/fwd.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
