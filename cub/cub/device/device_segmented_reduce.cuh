@@ -31,6 +31,7 @@
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/key_value_pair.cuh>
 #include <cub/detail/non_void_value.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_segmented_reduce.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
@@ -156,7 +157,7 @@ private:
       using default_policy_selector_t =
         detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
       using policy_selector_t =
-        ::cuda::std::execution::__query_result_or_t<TuningEnvT, SegmentedReducePolicy, default_policy_selector_t>;
+        detail::policy_selector_from_tuning_env_t<TuningEnvT, SegmentedReducePolicy, default_policy_selector_t>;
       return detail::segmented_reduce::dispatch<OverrideAccumT, offset_t>(
         d_temp_storage,
         temp_storage_bytes,
@@ -199,7 +200,7 @@ private:
     using default_policy_selector_t =
       detail::segmented_reduce::policy_selector_from_types<accum_t, OffsetT, ReductionOpT>;
     using policy_selector_t =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, SegmentedReducePolicy, default_policy_selector_t>;
+      detail::policy_selector_from_tuning_env_t<TuningEnvT, SegmentedReducePolicy, default_policy_selector_t>;
     return detail::segmented_reduce::dispatch_fixed_size<OverrideAccumT>(
       d_temp_storage,
       temp_storage_bytes,

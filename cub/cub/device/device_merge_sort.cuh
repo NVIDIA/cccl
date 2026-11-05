@@ -23,6 +23,7 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/null_type.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/device/dispatch/dispatch_merge_sort.cuh>
 #include <cub/util_namespace.cuh>
 
@@ -150,8 +151,8 @@ private:
     TuningEnvT)
   {
     using default_policy_selector_t = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
-    using policy_selector_t         = ::cuda::std::decay_t<
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, MergeSortPolicy, default_policy_selector_t>>;
+    using policy_selector_t =
+      detail::policy_selector_from_tuning_env_t<TuningEnvT, MergeSortPolicy, default_policy_selector_t>;
     return detail::merge_sort::dispatch(
       d_temp_storage,
       temp_storage_bytes,
