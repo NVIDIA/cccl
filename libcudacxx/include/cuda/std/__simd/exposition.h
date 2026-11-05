@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__fwd/complex.h>
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/complex.h>
 #include <cuda/std/__simd/abi.h>
@@ -49,15 +50,18 @@ template <typename _Tp>
 inline constexpr bool __is_complex_vectorizable_v = false;
 
 template <typename _Tp>
-inline constexpr bool __is_complex_vectorizable_v<::cuda::std::complex<_Tp>> = true;
+inline constexpr bool __is_complex_vectorizable_v<::cuda::std::complex<_Tp>> =
+  ::cuda::is_floating_point_v<_Tp> && !is_const_v<_Tp> && !is_volatile_v<_Tp>;
 
 template <typename _Tp>
-inline constexpr bool __is_complex_vectorizable_v<::cuda::complex<_Tp>> = true;
+inline constexpr bool __is_complex_vectorizable_v<::cuda::complex<_Tp>> =
+  ::cuda::is_floating_point_v<_Tp> && !is_const_v<_Tp> && !is_volatile_v<_Tp>;
 
 #if _CCCL_HAS_HOST_STD_LIB()
 
 template <typename _Tp>
-inline constexpr bool __is_complex_vectorizable_v<::std::complex<_Tp>> = true;
+inline constexpr bool __is_complex_vectorizable_v<::std::complex<_Tp>> =
+  ::cuda::is_floating_point_v<_Tp> && !is_const_v<_Tp> && !is_volatile_v<_Tp>;
 
 #endif // _CCCL_HAS_HOST_STD_LIB()
 
