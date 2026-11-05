@@ -279,7 +279,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
         unsigned int flags{};
         {
           const cuda::__ensure_current_context guard(device);
-          CUDART(cudaStreamGetFlags(pool[i].get(), &flags));
+          REQUIRE_CUDART(cudaStreamGetFlags(pool[i].get(), &flags));
         }
         REQUIRE((flags & cudaStreamNonBlocking) != 0);
       }
@@ -294,7 +294,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     int greatest_priority{};
     {
       const cuda::__ensure_current_context guard(device);
-      CUDART(cudaDeviceGetStreamPriorityRange(&least_priority, &greatest_priority));
+      REQUIRE_CUDART(cudaDeviceGetStreamPriorityRange(&least_priority, &greatest_priority));
     }
 
     if (least_priority != greatest_priority)
@@ -636,7 +636,7 @@ C2H_CCCLRT_TEST("Stream pool on a green context", "[stream][stream_pool][logical
       unsigned int flags{};
       {
         const cuda::__ensure_current_context guard(device);
-        CUDART(cudaStreamGetFlags(str.get(), &flags));
+        REQUIRE_CUDART(cudaStreamGetFlags(str.get(), &flags));
       }
       REQUIRE((flags & cudaStreamNonBlocking) != 0);
 

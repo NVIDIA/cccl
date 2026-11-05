@@ -49,7 +49,7 @@ _CCCL_API constexpr auto __ixnay_xvalue(_Tp&& __value) noexcept(::cuda::std::is_
 } // namespace __detail
 
 template <typename _Tp>
-using __remove_rvalue_reference_t =
+using __remove_rvalue_reference_t _CCCL_NODEBUG =
   decltype(__detail::__ixnay_xvalue(::cuda::std::declval<_Tp>()) // NOLINT(modernize-type-traits)
   );
 
@@ -78,17 +78,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __launch_transform_t
   // Types that want to customize `launch_transform` should define overloads of
   // transform_launch_argument that are find-able by ADL.
   template <typename _Arg>
-  using __transform_result_t = __remove_rvalue_reference_t<decltype(transform_launch_argument(
+  using __transform_result_t _CCCL_NODEBUG = __remove_rvalue_reference_t<decltype(transform_launch_argument(
     ::cuda::stream_ref{::cudaStream_t{}}, ::cuda::std::declval<_Arg>()))>;
 
   template <typename _Arg>
-  using __transformed_argument_t =
+  using __transformed_argument_t _CCCL_NODEBUG =
     __remove_rvalue_reference_t<decltype(::cuda::std::declval<_Arg>().transformed_argument())>;
 
   // The use of `optional` here is to move the destruction of the object returned from
-  // transform_launch_argument into the caller's stack frame. Objects created for default arguments
-  // are located in the caller's stack frame. This is so that a use of `launch_transform`
-  // such as:
+  // transform_launch_argument into the caller's full-expression. The storage is a temporary
+  // created by a default argument and bound to a reference parameter, so it persists until the
+  // completion of the full-expression containing the call ([class.temporary]/6.9). This is so
+  // that a use of `launch_transform` such as:
   //
   //   kernel<<<grid, block, 0, stream>>>(launch_transform(stream, arg));
   //
@@ -106,8 +107,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __launch_transform_t
   //
   // but sadly that is not valid C++.
   // TODO move to use __variant type once cuda/experimental/execution/__variant is moved to libcudacxx
-  // NOTE: The above seems to only apply if the type is not trivially destructible. To use the optional here I had to
-  // add a destructor.
+  //
+  // NOTE: The storage must not be a by-value parameter. Whether a by-value parameter is destroyed
+  // when the callee returns or at the end of the caller's full-expression is implementation-defined
+  // ([expr.call]/7). The Itanium C++ ABI (gcc, clang) destroys it in the caller after the kernel
+  // launch, but the Microsoft C++ ABI (MSVC) destroys it in the callee, i.e. before the kernel is
+  // launched, so post-launch actions would run too early.
   template <typename _Tp>
   struct __optional_with_a_destructor : ::cuda::std::optional<_Tp>
   {
@@ -132,7 +137,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __launch_transform_t
   [[nodiscard]] _CCCL_HOST_API auto operator()(
     _Stream&& __stream,
     _Arg&& __arg,
-    __optional_with_a_destructor<__transform_result_t<_Arg>> __storage = cuda::std::nullopt) const -> decltype(auto)
+    __optional_with_a_destructor<__transform_result_t<_Arg>>&& __storage = ::cuda::std::nullopt) const -> decltype(auto)
   {
     // Calls to transform_launch_argument are intentionally unqualified so as to use ADL.
     if constexpr (__is_instantiable_with<__transformed_argument_t, __transform_result_t<_Arg>>)

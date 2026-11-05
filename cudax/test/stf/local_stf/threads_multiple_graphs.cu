@@ -35,6 +35,10 @@ void worker(
   };
 
   gctx.finalize();
+
+  // The main thread unfreezes the data in its own stream, which does not depend on this one. Wait
+  // for the work submitted here before the thread returns.
+  cuda_safe_call(cudaStreamSynchronize(stream));
 }
 
 int main()

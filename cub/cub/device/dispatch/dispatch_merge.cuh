@@ -20,13 +20,22 @@
 #include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_temporary_storage.cuh>
 #include <cub/util_vsmem.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
-
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__execution/env.h>
+#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_empty.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::merge
@@ -198,11 +207,8 @@ template <typename KeyIt1,
           typename ValueIt3,
           typename Offset,
           typename CompareOp,
-          typename PolicySelector        = policy_selector_from_types<KeyIt1, ValueIt1, KeyIt2, ValueIt2, Offset>,
+          typename TuningEnvT            = ::cuda::std::execution::env<>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-#if _CCCL_HAS_CONCEPTS()
-  requires merge_policy_selector<PolicySelector>
-#endif // _CCCL_HAS_CONCEPTS()
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -216,16 +222,23 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   ValueIt3 d_values_out,
   CompareOp compare_op,
   cudaStream_t stream,
-  PolicySelector policy_selector         = {},
+  TuningEnvT                             = {},
   KernelLauncherFactory launcher_factory = {})
 {
+  using default_policy_selector_t = policy_selector_from_types<KeyIt1, ValueIt1, KeyIt2, ValueIt2, Offset>;
+  using policy_selector_t =
+    ::cuda::std::decay_t<::cuda::std::execution::__query_result_or_t<TuningEnvT, MergePolicy, default_policy_selector_t>>;
+#if _CCCL_HAS_CONCEPTS()
+  static_assert(merge_policy_selector<policy_selector_t>);
+#endif // _CCCL_HAS_CONCEPTS()
+
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+  return dispatch_compute_cap(policy_selector_t{}, cc, [&](auto policy_getter) {
     detail::log_dispatch("DeviceMerge", cc, policy_getter());
 
     static_assert(::cuda::std::is_empty_v<decltype(policy_getter)>);
@@ -267,10 +280,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       const int partition_grid_size = static_cast<int>(::cuda::ceil_div(num_diagonals, threads_per_partition_block));
 
       if (const auto error = CubDebug(
-            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-              partition_grid_size, threads_per_partition_block, 0, stream)
+            launcher_factory(partition_grid_size, threads_per_partition_block, 0, stream)
               .doit(device_partition_merge_path_kernel<
-                      PolicySelector,
+                      policy_selector_t,
                       KeyIt1,
                       ValueIt1,
                       KeyIt2,
@@ -298,10 +310,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     // merge kernel
     {
       if (const auto error = CubDebug(
-            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-              static_cast<int>(num_tiles), static_cast<int>(AgentT::threads_per_block), 0, stream)
+            launcher_factory(static_cast<int>(num_tiles), static_cast<int>(AgentT::threads_per_block), 0, stream)
               .doit(
-                device_merge_kernel<PolicySelector, KeyIt1, ValueIt1, KeyIt2, ValueIt2, KeyIt3, ValueIt3, Offset, CompareOp>,
+                device_merge_kernel<policy_selector_t, KeyIt1, ValueIt1, KeyIt2, ValueIt2, KeyIt3, ValueIt3, Offset, CompareOp>,
                 d_keys1,
                 d_values1,
                 num_items1,

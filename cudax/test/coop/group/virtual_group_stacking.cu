@@ -8,14 +8,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/barrier>
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
-#include <cuda/std/cstddef>
+#include <cuda/std/array>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
-#include <cuda/std/utility>
 #include <cuda/stream>
 
 #include <cuda/experimental/coop/group>
@@ -47,8 +45,7 @@ struct TestKernel1
     REQUIRE(group1.count(parent_group) == 2);
     REQUIRE(group1.rank(parent_group) == rank / 16);
 
-    const cudax::coop::virtual_group group2{
-      cuda::gpu_thread, group1, cudax::coop::group_as{cuda::std::integer_sequence<cuda::std::size_t, 8, 8>{}}};
+    const cudax::coop::virtual_group group2{cuda::gpu_thread, group1, cudax::coop::group_as{cuda::std::array{8, 8}}};
     test_group_membership(group2, 8, rank % 8);
     REQUIRE(group2.count(group1) == 2);
     REQUIRE(group2.rank(group1) == (rank % 16) / 8);
@@ -77,8 +74,7 @@ struct TestKernel2
     REQUIRE(group1.count(parent_group) == 4);
     REQUIRE(group1.rank(parent_group) == rank / 32);
 
-    const cudax::coop::virtual_group group2{
-      cuda::gpu_thread, group1, cudax::coop::group_as{cuda::std::integer_sequence<cuda::std::size_t, 16, 16>{}}};
+    const cudax::coop::virtual_group group2{cuda::gpu_thread, group1, cudax::coop::group_as{cuda::std::array{16, 16}}};
     test_group_membership(group2, 16, rank % 16);
     REQUIRE(group2.count(group1) == 2);
     REQUIRE(group2.rank(group1) == (rank % 32) / 16);

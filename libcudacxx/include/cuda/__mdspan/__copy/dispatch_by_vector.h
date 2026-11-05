@@ -25,6 +25,7 @@
 
 #  include <cuda/__mdspan/__copy/tensor_copy_utils.h>
 #  include <cuda/__mdspan/__copy/types.h>
+#  include <cuda/__mdspan/__copy/vector_access.h>
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
@@ -57,7 +58,7 @@ __vector_size_bytes(const __raw_tensor<_SrcExtentT, _SrcStrideT, _TpSrc, _MaxRan
 }
 
 template <int _VectorSize>
-constexpr auto __const_vector_size = ::cuda::std::integral_constant<int, _VectorSize>{};
+inline constexpr auto __const_vector_size = ::cuda::std::integral_constant<int, _VectorSize>{};
 
 //! @brief Dispatch a copy operation with the optimal vectorized element type.
 //!

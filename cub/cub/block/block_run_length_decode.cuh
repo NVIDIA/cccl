@@ -16,12 +16,12 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/log2.cuh>
 #include <cub/detail/uninitialized.cuh>
-#include <cub/thread/thread_search.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_ptx.cuh>
 
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 

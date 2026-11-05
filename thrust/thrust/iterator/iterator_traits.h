@@ -64,7 +64,7 @@ using it_pointer_t = typename ::cuda::std::iterator_traits<It>::pointer;
 template <template <typename...> typename Trait, typename... Args>
 struct lazy_trait
 {
-  using type = Trait<Args...>;
+  using type _CCCL_NODEBUG = Trait<Args...>;
 };
 } // namespace detail
 
@@ -90,7 +90,7 @@ template <typename Iterator>
 struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits<>::value_type or cuda::std::iter_value_t instead")
 iterator_value
 {
-  using type = typename iterator_traits<Iterator>::value_type;
+  using type _CCCL_NODEBUG = typename iterator_traits<Iterator>::value_type;
 };
 
 //! deprecated [Since 3.0]
@@ -105,7 +105,7 @@ using iterator_value_t
 template <typename Iterator>
 struct CCCL_DEPRECATED iterator_pointer
 {
-  using type = typename iterator_traits<Iterator>::pointer;
+  using type _CCCL_NODEBUG = typename iterator_traits<Iterator>::pointer;
 };
 
 //! deprecated [Since 3.0]
@@ -119,7 +119,7 @@ template <typename Iterator>
 struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits<>::reference or cuda::std::iter_reference_t instead")
 iterator_reference
 {
-  using type = typename iterator_traits<Iterator>::reference;
+  using type _CCCL_NODEBUG = typename iterator_traits<Iterator>::reference;
 };
 
 //! deprecated [Since 3.0]
@@ -135,7 +135,7 @@ template <typename Iterator>
 struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits<>::difference_t or cuda::std::iter_difference_t instead")
 iterator_difference
 {
-  using type = typename iterator_traits<Iterator>::difference_type;
+  using type _CCCL_NODEBUG = typename iterator_traits<Iterator>::difference_type;
 };
 
 //! deprecated [Since 3.0]
@@ -194,45 +194,45 @@ using iterator_system_t = typename iterator_system<Iterator>::type;
 template <>
 struct iterator_system<::cuda::discard_iterator>
 {
-  using type = any_system_tag;
+  using type _CCCL_NODEBUG = any_system_tag;
 };
 template <>
 struct iterator_traversal<::cuda::discard_iterator>
 {
-  using type = random_access_traversal_tag;
+  using type _CCCL_NODEBUG = random_access_traversal_tag;
 };
 
 template <class T, class Index>
 struct iterator_system<::cuda::constant_iterator<T, Index>>
 {
-  using type = any_system_tag;
+  using type _CCCL_NODEBUG = any_system_tag;
 };
 template <class T, class Index>
 struct iterator_traversal<::cuda::constant_iterator<T, Index>>
 {
-  using type = random_access_traversal_tag;
+  using type _CCCL_NODEBUG = random_access_traversal_tag;
 };
 
 template <class Start>
 struct iterator_system<::cuda::counting_iterator<Start>>
 {
-  using type = any_system_tag;
+  using type _CCCL_NODEBUG = any_system_tag;
 };
 template <class Start>
 struct iterator_traversal<::cuda::counting_iterator<Start>>
 {
-  using type = random_access_traversal_tag;
+  using type _CCCL_NODEBUG = random_access_traversal_tag;
 };
 
 template <class Iter, class Offset>
 struct iterator_system<::cuda::permutation_iterator<Iter, Offset>>
 {
-  using type = detail::minimum_system_t<iterator_system_t<Iter>, iterator_system_t<Offset>>;
+  using type _CCCL_NODEBUG = detail::minimum_system_t<iterator_system_t<Iter>, iterator_system_t<Offset>>;
 };
 template <class Iter, class Offset>
 struct iterator_traversal<::cuda::permutation_iterator<Iter, Offset>>
 {
-  using type = random_access_traversal_tag;
+  using type _CCCL_NODEBUG = random_access_traversal_tag;
 };
 
 template <class Iter>
@@ -245,12 +245,12 @@ struct iterator_traversal<::cuda::std::reverse_iterator<Iter>> : iterator_traver
 template <class IndexType, class Bijection>
 struct iterator_system<::cuda::shuffle_iterator<IndexType, Bijection>>
 {
-  using type = any_system_tag;
+  using type _CCCL_NODEBUG = any_system_tag;
 };
 template <class IndexType, class Bijection>
 struct iterator_traversal<::cuda::shuffle_iterator<IndexType, Bijection>>
 {
-  using type = random_access_traversal_tag;
+  using type _CCCL_NODEBUG = random_access_traversal_tag;
 };
 
 template <class Iter, class Stride>
@@ -263,12 +263,12 @@ struct iterator_traversal<::cuda::strided_iterator<Iter, Stride>> : iterator_tra
 template <class Fn, class Index>
 struct iterator_system<::cuda::tabulate_output_iterator<Fn, Index>>
 {
-  using type = any_system_tag;
+  using type _CCCL_NODEBUG = any_system_tag;
 };
 template <class Fn, class Index>
 struct iterator_traversal<::cuda::tabulate_output_iterator<Fn, Index>>
 {
-  using type = random_access_traversal_tag;
+  using type _CCCL_NODEBUG = random_access_traversal_tag;
 };
 
 template <class InputFn, class OutputFn, class Iter>
@@ -295,23 +295,23 @@ struct iterator_traversal<::cuda::transform_iterator<Fn, Iter>> : iterator_trave
 template <class... Iterators>
 struct iterator_system<::cuda::zip_iterator<Iterators...>>
 {
-  using type = detail::minimum_system_t<iterator_system_t<Iterators>...>;
+  using type _CCCL_NODEBUG = detail::minimum_system_t<iterator_system_t<Iterators>...>;
 };
 template <class... Iterators>
 struct iterator_traversal<::cuda::zip_iterator<Iterators...>>
 {
-  using type = detail::minimum_type<iterator_traversal_t<Iterators>...>;
+  using type _CCCL_NODEBUG = detail::minimum_type<iterator_traversal_t<Iterators>...>;
 };
 
 template <class Fn, class... Iterators>
 struct iterator_system<::cuda::zip_transform_iterator<Fn, Iterators...>>
 {
-  using type = detail::minimum_system_t<iterator_system_t<Iterators>...>;
+  using type _CCCL_NODEBUG = detail::minimum_system_t<iterator_system_t<Iterators>...>;
 };
 template <class Fn, class... Iterators>
 struct iterator_traversal<::cuda::zip_transform_iterator<Fn, Iterators...>>
 {
-  using type = detail::minimum_type<iterator_traversal_t<Iterators>...>;
+  using type _CCCL_NODEBUG = detail::minimum_type<iterator_traversal_t<Iterators>...>;
 };
 
 template <class Iter, class Sent>

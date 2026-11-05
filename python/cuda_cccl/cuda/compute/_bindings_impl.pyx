@@ -2486,7 +2486,7 @@ cdef extern from "cccl/c/histogram.h":
         cccl_value_t num_output_levels,
         cccl_value_t lower_level,
         cccl_value_t upper_level,
-        int64_t num_row_pixels,
+        int64_t num_row_items,
         int64_t num_rows,
         int64_t row_stride_samples,
         CUstream stream
@@ -2570,7 +2570,7 @@ cdef class DeviceHistogramBuildResult:
         Value h_num_output_levels,
         Value h_lower_level,
         Value h_upper_level,
-        int num_row_pixels,
+        int num_row_items,
         int num_rows,
         int row_stride_samples,
         stream
@@ -2590,7 +2590,7 @@ cdef class DeviceHistogramBuildResult:
                 h_num_output_levels.value_data,
                 h_lower_level.value_data,
                 h_upper_level.value_data,
-                num_row_pixels,
+                num_row_items,
                 num_rows,
                 row_stride_samples,
                 c_stream

@@ -63,7 +63,7 @@ struct __block_scope_barrier_base
 template <>
 class barrier<thread_scope_block, ::cuda::std::__empty_completion> : public __block_scope_barrier_base
 {
-  using __barrier_base = ::cuda::std::__barrier_base<::cuda::std::__empty_completion, thread_scope_block>;
+  using __barrier_base _CCCL_NODEBUG = ::cuda::std::__barrier_base<::cuda::std::__empty_completion, thread_scope_block>;
   __barrier_base __barrier;
 
   _CCCL_DEVICE_API friend ::cuda::std::uint64_t* ::cuda::device::_LIBCUDACXX_ABI_NAMESPACE::barrier_native_handle(
@@ -81,6 +81,9 @@ class barrier<thread_scope_block, ::cuda::std::__empty_completion> : public __bl
   friend class ::cuda::std::__barrier_poll_tester_parity;
 
 public:
+  //! @brief The thread scope of the barrier.
+  static constexpr thread_scope scope = thread_scope_block;
+
   using arrival_token           = typename __barrier_base::arrival_token;
   _CCCL_HIDE_FROM_ABI barrier() = default;
 

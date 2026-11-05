@@ -32,15 +32,15 @@ bool arch_filter(const cudaDeviceProp& props)
   return false;
 }
 
-static bool skip_host_exec(bool (* /* filter */)(const cudaDeviceProp&))
+inline bool skip_host_exec(bool (* /* filter */)(const cudaDeviceProp&))
 {
   return false;
 }
 
-static bool skip_device_exec(bool (*filter)(const cudaDeviceProp&))
+inline bool skip_device_exec(bool (*filter)(const cudaDeviceProp&))
 {
   cudaDeviceProp props{};
-  CUDART(cudaGetDeviceProperties(&props, 0));
+  REQUIRE_CUDART(cudaGetDeviceProperties(&props, 0));
   return filter(props);
 }
 
@@ -85,8 +85,8 @@ void test_host_dev(const Dims& dims, const Lambda& lambda, const Filters&... fil
     }
 
     // device testing
-    CUDART(cudaLaunchKernelEx(&config, lambda_launcher<Dims, Lambda>, dims, lambda));
-    CUDART(cudaDeviceSynchronize());
+    REQUIRE_CUDART(cudaLaunchKernelEx(&config, lambda_launcher<Dims, Lambda>, dims, lambda));
+    REQUIRE_CUDART(cudaDeviceSynchronize());
   }
 }
 

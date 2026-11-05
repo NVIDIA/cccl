@@ -12,8 +12,6 @@
 
 #include <cub/config.cuh>
 
-#include <cuda/std/__type_traits/is_void.h>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -22,31 +20,32 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_histogram.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/kernels/kernel_histogram.cuh>
 #include <cub/device/dispatch/tuning/tuning_histogram.cuh>
 #include <cub/grid/grid_queue.cuh>
-#include <cub/thread/thread_search.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__functional/proclaim_return_type.h>
 #include <cuda/std/__algorithm/copy.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__algorithm/transform.h>
-#include <cuda/std/__tuple_dir/apply.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/array>
-#include <cuda/std/limits>
-#include <cuda/std/tuple>
 
 #include <nv/target>
 
@@ -55,7 +54,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail::histogram
 {
 // Maximum number of bins per channel for which we will use a privatized smem strategy
-static constexpr int max_privatized_smem_bins = 256;
+inline constexpr int max_privatized_smem_bins = 256;
 
 template <int NumChannels,
           int NumActiveChannels,
@@ -192,7 +191,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   FirstLevelArrayT first_level_array,
   SecondLevelArrayT second_level_array,
   int max_num_output_bins,
-  OffsetT num_row_pixels,
+  OffsetT num_row_items,
   OffsetT num_rows,
   OffsetT row_stride_samples,
   cudaStream_t stream,
@@ -232,7 +231,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   }();
 
   const int threads_per_block = active_policy.threads_per_block;
-  const int pixels_per_thread = active_policy.pixels_per_thread;
+  const int items_per_thread  = active_policy.pixels_per_thread;
 
   // Get SM count
   int sm_count;
@@ -249,21 +248,28 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
+  // A sweep_kernel that cannot be launched (e.g., because of too many threads per block) has zero occupancy, which must
+  // not be mistaken for an empty problem below
+  if (histogram_sweep_sm_occupancy == 0)
+  {
+    return CubDebug(cudaErrorInvalidConfiguration);
+  }
+
   // Get device occupancy for sweep_kernel
   const int histogram_sweep_occupancy = histogram_sweep_sm_occupancy * sm_count;
 
-  if (num_row_pixels * NumChannels == row_stride_samples)
+  if (num_row_items * NumChannels == row_stride_samples)
   {
     // Treat as a single linear array of samples
-    num_row_pixels *= num_rows;
+    num_row_items *= num_rows;
     num_rows           = 1;
-    row_stride_samples = num_row_pixels * NumChannels;
+    row_stride_samples = num_row_items * NumChannels;
   }
 
   // Get grid dimensions, trying to keep total blocks ~histogram_sweep_occupancy
-  const int pixels_per_tile = threads_per_block * pixels_per_thread;
-  const int tiles_per_row   = static_cast<int>(::cuda::ceil_div(num_row_pixels, pixels_per_tile));
-  const int blocks_per_row  = ::cuda::std::min(histogram_sweep_occupancy, tiles_per_row);
+  const int items_per_tile = threads_per_block * items_per_thread;
+  const int tiles_per_row  = static_cast<int>(::cuda::ceil_div(num_row_items, items_per_tile));
+  const int blocks_per_row = ::cuda::std::min(histogram_sweep_occupancy, tiles_per_row);
   const int blocks_per_col =
     (blocks_per_row > 0)
       ? int(::cuda::std::min(static_cast<OffsetT>(histogram_sweep_occupancy / blocks_per_row), num_rows))
@@ -369,7 +375,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                 d_privatized_histograms_wrapper,
                 first_level_array,
                 second_level_array,
-                num_row_pixels,
+                num_row_items,
                 num_rows,
                 row_stride_samples,
                 tiles_per_row,
@@ -419,7 +425,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
  * @param d_samples
  *   The pointer to the input sequence of sample items.
  *   The samples from different channels are assumed to be interleaved
- *   (e.g., an array of 32-bit pixels where each pixel consists of four RGBA 8-bit samples).
+ *   (e.g., an array of 32-bit items where each item consists of four RGBA 8-bit samples).
  *
  * @param d_output_histograms
  *   The pointers to the histogram counter output arrays, one for each active channel.
@@ -438,8 +444,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
  *   The upper sample value bound (exclusive) for the highest histogram bin in each active
  * channel.
  *
- * @param num_row_pixels
- *   The number of multi-channel pixels per row in the region of interest
+ * @param num_row_items
+ *   The number of multi-channel items per row in the region of interest
  *
  * @param num_rows
  *   The number of rows in the region of interest
@@ -473,7 +479,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
   ::cuda::std::array<int, NumActiveChannels> num_output_levels,
   LowerLevelArrayT lower_level,
   UpperLevelArrayT upper_level,
-  OffsetT num_row_pixels,
+  OffsetT num_row_items,
   OffsetT num_rows,
   OffsetT row_stride_samples,
   cudaStream_t stream,
@@ -527,7 +533,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
             upper_level,
             lower_level,
             max_num_output_bins,
-            num_row_pixels,
+            num_row_items,
             num_rows,
             row_stride_samples,
             stream,
@@ -559,7 +565,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
             upper_level,
             lower_level,
             max_num_output_bins,
-            num_row_pixels,
+            num_row_items,
             num_rows,
             row_stride_samples,
             stream,
@@ -590,7 +596,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
  *
  * @param d_samples
  *   The pointer to the input sequence of sample items. The samples from different channels are
- *   assumed to be interleaved (e.g., an array of 32-bit pixels where each pixel consists of
+ *   assumed to be interleaved (e.g., an array of 32-bit items where each item consists of
  *   four RGBA 8-bit samples).
  *
  * @param d_output_histograms
@@ -610,8 +616,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
  *   The upper sample value bound (exclusive) for the highest histogram bin in each active
  * channel.
  *
- * @param num_row_pixels
- *   The number of multi-channel pixels per row in the region of interest
+ * @param num_row_items
+ *   The number of multi-channel items per row in the region of interest
  *
  * @param num_rows
  *   The number of rows in the region of interest
@@ -645,7 +651,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
   ::cuda::std::array<int, NumActiveChannels> num_output_levels,
   LowerLevelArrayT lower_level,
   UpperLevelArrayT upper_level,
-  OffsetT num_row_pixels,
+  OffsetT num_row_items,
   OffsetT num_rows,
   OffsetT row_stride_samples,
   cudaStream_t stream,
@@ -699,7 +705,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
           upper_level,
           lower_level,
           max_num_output_bins,
-          num_row_pixels,
+          num_row_items,
           num_rows,
           row_stride_samples,
           stream,
@@ -735,7 +741,7 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> HistogramPolicy
   using ap = typename ActivePolicy::AgentHistogramPolicyT;
   return HistogramPolicy{
     ap::BLOCK_THREADS,
-    ap::PIXELS_PER_THREAD,
+    ap::PIXELS_PER_THREAD, // read the old member from user-defined policy hubs
     ap::VEC_SIZE,
     ap::LOAD_ALGORITHM,
     ap::LOAD_MODIFIER,
@@ -796,7 +802,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
   ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms,
   ::cuda::std::array<int, NumActiveChannels> num_output_levels,
   ::cuda::std::array<const LevelT*, NumActiveChannels> d_levels,
-  OffsetT num_row_pixels,
+  OffsetT num_row_items,
   OffsetT num_rows,
   OffsetT row_stride_samples,
   cudaStream_t stream,
@@ -809,11 +815,16 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
   {
     using TransformsT = Transforms<LevelT, OffsetT, SampleT>;
 
-    // Use the pass-thru transform op for converting samples to privatized bins
-    using PrivatizedDecodeOpT = typename TransformsT::PassThruTransform;
+    using pass_thru_transform = typename TransformsT::PassThruTransform;
+    using search_transform    = typename TransformsT::template SearchTransform<const LevelT*>;
 
-    // Use the search transform op for converting privatized bins to output bins
-    using OutputDecodeOpT = typename TransformsT::template SearchTransform<const LevelT*>;
+    // Store signed byte samples in unsigned byte bins, then recover signed values before searching levels.
+    constexpr bool is_signed = ::cuda::std::is_same_v<SampleT, signed char>
+                            || (::cuda::std::is_signed_v<char> && ::cuda::std::is_same_v<SampleT, char>);
+    using PrivatizedDecodeOpT =
+      ::cuda::std::conditional_t<is_signed, cast_decode_op<pass_thru_transform, unsigned char>, pass_thru_transform>;
+    using OutputDecodeOpT =
+      ::cuda::std::conditional_t<is_signed, cast_decode_op<search_transform, SampleT>, search_transform>;
 
     ::cuda::std::array<int, NumActiveChannels> num_privatized_levels{};
     const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op{};
@@ -850,7 +861,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
             output_decode_op,
             privatized_decode_op,
             max_num_output_bins,
-            num_row_pixels,
+            num_row_items,
             num_rows,
             row_stride_samples,
             stream,
@@ -907,7 +918,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
               output_decode_op,
               privatized_decode_op,
               max_num_output_bins,
-              num_row_pixels,
+              num_row_items,
               num_rows,
               row_stride_samples,
               stream,
@@ -939,7 +950,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
               output_decode_op,
               privatized_decode_op,
               max_num_output_bins,
-              num_row_pixels,
+              num_row_items,
               num_rows,
               row_stride_samples,
               stream,
@@ -976,7 +987,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
   ::cuda::std::array<int, NumActiveChannels> num_output_levels,
   ::cuda::std::array<LevelT, NumActiveChannels> lower_level,
   ::cuda::std::array<LevelT, NumActiveChannels> upper_level,
-  OffsetT num_row_pixels,
+  OffsetT num_row_items,
   OffsetT num_rows,
   OffsetT row_stride_samples,
   cudaStream_t stream,
@@ -989,11 +1000,16 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
   {
     using TransformsT = Transforms<LevelT, OffsetT, SampleT>;
 
-    // Use the pass-thru transform op for converting samples to privatized bins
-    using PrivatizedDecodeOpT = typename TransformsT::PassThruTransform;
+    using pass_thru_transform = typename TransformsT::PassThruTransform;
+    using scale_transform     = typename TransformsT::ScaleTransform;
 
-    // Use the scale transform op for converting privatized bins to output bins
-    using OutputDecodeOpT = typename TransformsT::ScaleTransform;
+    // Store signed byte samples in unsigned byte bins, then recover signed values before scaling.
+    constexpr bool is_signed = ::cuda::std::is_same_v<SampleT, signed char>
+                            || (::cuda::std::is_signed_v<char> && ::cuda::std::is_same_v<SampleT, char>);
+    using PrivatizedDecodeOpT =
+      ::cuda::std::conditional_t<is_signed, cast_decode_op<pass_thru_transform, unsigned char>, pass_thru_transform>;
+    using OutputDecodeOpT =
+      ::cuda::std::conditional_t<is_signed, cast_decode_op<scale_transform, SampleT>, scale_transform>;
 
     using CommonT = typename TransformsT::ScaleTransform::CommonT;
 
@@ -1043,7 +1059,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
             output_decode_op,
             privatized_decode_op,
             max_num_output_bins,
-            num_row_pixels,
+            num_row_items,
             num_rows,
             row_stride_samples,
             stream,
@@ -1111,7 +1127,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
               output_decode_op,
               privatized_decode_op,
               max_num_output_bins,
-              num_row_pixels,
+              num_row_items,
               num_rows,
               row_stride_samples,
               stream,
@@ -1142,7 +1158,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
               output_decode_op,
               privatized_decode_op,
               max_num_output_bins,
-              num_row_pixels,
+              num_row_items,
               num_rows,
               row_stride_samples,
               stream,
@@ -1234,7 +1250,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
    * @param d_samples
    *   The pointer to the multi-channel input sequence of data samples.
    *   The samples from different channels are assumed to be interleaved
-   *   (e.g., an array of 32-bit pixels where each pixel consists of four RGBA 8-bit samples).
+   *   (e.g., an array of 32-bit items where each item consists of four RGBA 8-bit samples).
    *
    * @param d_output_histograms
    *   The pointers to the histogram counter output arrays, one for each active channel.
@@ -1251,8 +1267,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
    *   Bin ranges are defined by consecutive boundary pairings: lower sample value boundaries are
    *   inclusive and upper sample value boundaries are exclusive.
    *
-   * @param num_row_pixels
-   *   The number of multi-channel pixels per row in the region of interest
+   * @param num_row_items
+   *   The number of multi-channel items per row in the region of interest
    *
    * @param num_rows
    *   The number of rows in the region of interest
@@ -1276,7 +1292,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
     ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms,
     ::cuda::std::array<int, NumActiveChannels> num_output_levels,
     ::cuda::std::array<const LevelT*, NumActiveChannels> d_levels,
-    OffsetT num_row_pixels,
+    OffsetT num_row_items,
     OffsetT num_rows,
     OffsetT row_stride_samples,
     cudaStream_t stream,
@@ -1292,7 +1308,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
       d_output_histograms,
       num_output_levels,
       d_levels,
-      num_row_pixels,
+      num_row_items,
       num_rows,
       row_stride_samples,
       stream,
@@ -1317,7 +1333,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
    * @param d_samples
    *   The pointer to the input sequence of sample items.
    *   The samples from different channels are assumed to be interleaved
-   *   (e.g., an array of 32-bit pixels where each pixel consists of four RGBA 8-bit samples).
+   *   (e.g., an array of 32-bit items where each item consists of four RGBA 8-bit samples).
    *
    * @param d_output_histograms
    *   The pointers to the histogram counter output arrays, one for each active channel.
@@ -1336,8 +1352,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
    *   The upper sample value bound (exclusive) for the highest histogram bin in each active
    * channel.
    *
-   * @param num_row_pixels
-   *   The number of multi-channel pixels per row in the region of interest
+   * @param num_row_items
+   *   The number of multi-channel items per row in the region of interest
    *
    * @param num_rows
    *   The number of rows in the region of interest
@@ -1363,7 +1379,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
     ::cuda::std::array<int, NumActiveChannels> num_output_levels,
     ::cuda::std::array<LevelT, NumActiveChannels> lower_level,
     ::cuda::std::array<LevelT, NumActiveChannels> upper_level,
-    OffsetT num_row_pixels,
+    OffsetT num_row_items,
     OffsetT num_rows,
     OffsetT row_stride_samples,
     cudaStream_t stream,
@@ -1380,7 +1396,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
       num_output_levels,
       lower_level,
       upper_level,
-      num_row_pixels,
+      num_row_items,
       num_rows,
       row_stride_samples,
       stream,

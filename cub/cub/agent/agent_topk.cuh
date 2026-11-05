@@ -24,6 +24,7 @@
 #include <cub/detail/uninitialized.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 

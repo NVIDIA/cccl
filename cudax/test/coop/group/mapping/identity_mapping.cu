@@ -11,11 +11,9 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
-#include <cuda/std/cstddef>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
-#include <cuda/warp>
 
 #include <cuda/experimental/coop/group>
 
@@ -23,8 +21,8 @@
 
 namespace
 {
-template <class Config>
-__device__ void test_identity_mapping(Config config)
+template <class Config, class... NonExhaustive>
+__device__ void test_identity_mapping(Config config, const NonExhaustive&... non_exhaustive)
 {
   using Mapping = cudax::coop::identity_mapping;
 
@@ -42,12 +40,10 @@ __device__ void test_identity_mapping(Config config)
     const ThreadsInWarpMappingResult prev_mapping_result;
 
     static_assert(cudax::coop::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                    cuda::gpu_thread, parent_group, prev_mapping_result))>);
-    static_assert(
-      noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
+                    non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result))>);
 
     const Mapping mapping;
-    auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
+    auto result  = mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result);
     using Result = decltype(result);
 
     static_assert(cuda::std::is_same_v<Result, ThreadsInWarpMappingResult>);
@@ -74,10 +70,7 @@ struct TestKernel
   __device__ void operator()(const Config& config)
   {
     test_identity_mapping(config);
-    test_identity_mapping(config);
-    test_identity_mapping(config);
-    test_identity_mapping(config);
-    test_identity_mapping(config);
+    test_identity_mapping(config, cudax::coop::non_exhaustive);
   }
 };
 } // namespace

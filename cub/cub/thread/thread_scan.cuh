@@ -21,8 +21,9 @@
 
 #include <cub/detail/constant.cuh>
 #include <cub/detail/type_traits.cuh>
-#include <cub/thread/thread_operators.cuh>
 
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/is_callable.h>
 
 CUB_NAMESPACE_BEGIN

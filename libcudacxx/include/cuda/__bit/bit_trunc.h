@@ -96,7 +96,7 @@ template <class _Tp>
 #if _CCCL_DEVICE_COMPILATION()
 template <class = void>
 [[nodiscard]]
-_CCCL_DEVICE_API ::cuda::std::uint32_t
+_CCCL_CONST _CCCL_DEVICE_API ::cuda::std::uint32_t
 __szext_clamp_sm70(const ::cuda::std::uint32_t __v, const ::cuda::std::uint32_t __n) noexcept
 {
   ::cuda::std::uint32_t __ret;
@@ -158,9 +158,7 @@ _CCCL_API constexpr _Tp bit_trunc(const _Tp __v, const int __n) noexcept
   _CCCL_ASSERT(__n >= 0, "__n must be nonnegative");
 
   // When __n is a constant, use the fallback path.
-#if defined(_CCCL_BUILTIN_CONSTANT_P)
-  if (!_CCCL_BUILTIN_CONSTANT_P(__n))
-#endif // _CCCL_BUILTIN_CONSTANT_P
+  if (!_CCCL_IS_CONSTANT_P(__n))
   {
 #if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT

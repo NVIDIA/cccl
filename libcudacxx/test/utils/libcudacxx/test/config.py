@@ -750,6 +750,12 @@ class Configuration(object):
         additional_flags = self.get_lit_conf("test_compiler_flags")
         if additional_flags:
             self.cxx.compile_flags += shlex.split(additional_flags)
+        if self.cxx.type in ("nvcc", "nvrtcc") and any(
+            flag in ("--use_fast_math", "-use_fast_math")
+            for flag in self.cxx.flags + self.cxx.compile_flags
+        ):
+            self.config.available_features.add("fast-math")
+            self.cxx.compile_flags += ["-DTEST_HAS_CUDA_FAST_MATH=1"]
         compute_archs = self.get_lit_conf("compute_archs")
         if self.cxx.type == "nvrtcc":
             self.config.available_features.add("nvrtc")

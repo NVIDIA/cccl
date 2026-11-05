@@ -1,24 +1,21 @@
 #!/usr/bin/env python3
-"""Make the SASS comparison PR comment from the report of `compare_sass.py`.
-
-The comment says which targets changed, shows the first lines of each diff, and
-tells the author how to request a benchmark run. It does not run the benchmarks
-and does not say that the performance changed.
-
-With `--analysis` it also shows how a model classified each difference.
-"""
+"""Make the SASS comparison PR comment from the results of `sass_diff.sh`."""
 
 import argparse
 import html
 import json
 import re
 import sys
+from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from compare_sass import Status  # noqa: E402
+from compare_sass import Status
 
 # A header change can touch every target on every architecture, and a GitHub
 # comment holds 65536 characters. Thus the comment names this many targets and
@@ -26,7 +23,7 @@ from compare_sass import Status  # noqa: E402
 _MAX_LISTED_TARGETS = 25
 _MAX_DIFF_BLOCKS = 10
 
-#: The sort rank and the label of each classification.
+# The sort rank and the label of each classification.
 _CLASSIFICATIONS = {
     "significant": (0, "⚠️ Significant"),
     "unclear": (1, "❓ Unclear"),
@@ -37,16 +34,36 @@ _CLASSIFICATIONS = {
 _MAX_TITLE_CHARS = 120
 _MAX_EXPLANATION_CHARS = 600
 
-#: What GitHub accepts in one comment. The renderer stays under it, because a
-#: comment over the limit is rejected whole.
-_MAX_COMMENT_BYTES = 60000
+# GitHub rejects a comment over 65536 characters so we need a max bound on the size of the
+# comment.
+_MAX_COMMENT_BYTES = 60_000
+
+_MATRIX_PATH = Path(__file__).resolve().parent.parent / "matrix.yaml"
 
 _CONTROL_CHARACTER = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
-#: The markdown that can escape one line: a code span, emphasis, or a link. An
-#: `_` between two alphanumerics opens no emphasis in CommonMark, and escaping
-#: it would put a backslash in the middle of every `sm_90`.
+# The markdown that can escape one line: a code span, emphasis, or a link. An
+# `_` between two alphanumerics opens no emphasis in CommonMark, and escaping
+# it would put a backslash in the middle of every `sm_90`.
 _INLINE_MARKDOWN = re.compile(r"[\\`*\[\]]|(?<![0-9A-Za-z])_|_(?![0-9A-Za-z])")
+
+
+@dataclass(frozen=True)
+class Comparison:
+    meta: dict[str, Any]
+    report: dict[str, Any]
+    analysis: dict[str, dict[str, Any]] | None = None
+
+
+@cache
+def _matrix() -> dict[str, dict[str, Any]]:
+    with _MATRIX_PATH.open() as f:
+        return yaml.safe_load(f)
+
+
+@cache
+def _project_name(project: str) -> str:
+    return _matrix()["projects"][project]["name"]
 
 
 def _code(value: object) -> str:
@@ -54,38 +71,48 @@ def _code(value: object) -> str:
     return f"`{str(value).replace('`', '')}`"
 
 
-def _render_how_to_benchmark(targets: list[dict[str, Any]]) -> list[str]:
-    """One fenced block that says how to request a benchmark run.
+def _join(items: list[str]) -> str:
+    if len(items) == 1:
+        return items[0]
+    return f"{', '.join(items[:-1])} and {items[-1]}"
 
-    Fenced, because GitHub puts a copy button on every fenced block: the reader
-    pastes the whole task into an agent with one click. The filters are anchored
-    regexes on the target names, and a list longer than `_MAX_LISTED_TARGETS`
-    becomes one regex over the benchmark tree. A truncated list is neither short
-    nor complete.
-    """
-    # A target that this PR removed cannot be benchmarked.
-    names = [
-        target["target"]
-        for target in targets
-        if Status(target["status"]) is not Status.REMOVED
-    ]
-    if len(names) > _MAX_LISTED_TARGETS:
-        filters = [f"      - '^cub\\.bench\\.'   # all {len(names)} changed targets"]
-    else:
-        filters = [f"      - '^{re.escape(name)}$'" for name in names]
+
+def _rank(group: dict[str, Any] | None) -> int:
+    return _CLASSIFICATIONS[group["classification"] if group else "unclear"][0]
+
+
+def _render_how_to_benchmark(
+    changed: list[tuple[Comparison, list[dict[str, Any]]]],
+) -> list[str]:
+    """One fenced block that says how to request a benchmark run."""
+    filters = []
+    for comparison, targets in changed:
+        # A target that this PR removed cannot be benchmarked.
+        names = [
+            target["target"]
+            for target in targets
+            if Status(target["status"]) is not Status.REMOVED
+        ]
+        if len(names) > _MAX_LISTED_TARGETS:
+            project = comparison.meta["project"]
+            filters.append(
+                f"      - '^{project}\\.bench\\.'   # all {len(names)} changed targets"
+            )
+        else:
+            filters.extend(f"      - '^{re.escape(name)}$'" for name in names)
 
     return [
         "<details>",
         "<summary><strong>How to request a benchmark run</strong></summary>",
         "",
         "```",
-        "Request a CUB benchmark run for this PR:",
+        "Request a benchmark run for this PR:",
         "",
         "1. Replace the `benchmarks:` block of ci/bench.yaml with exactly this:",
         "",
         "benchmarks:",
         "  filters:",
-        "    cub:",
+        "    cpp:",
         *filters,
         "  gpus:",
         '    - "h100"   # pick the GPUs that this change can affect',
@@ -182,6 +209,17 @@ def load_analysis(path: Path, report: dict[str, Any]) -> dict[str, dict[str, Any
     return by_diff
 
 
+def load_comparison(directory: Path) -> Comparison:
+    with (directory / "report.json").open() as fd:
+        report = json.load(fd)
+    with (directory / "meta.json").open() as fd:
+        meta = json.load(fd)
+
+    analysis_path = directory / "analysis.json"
+    analysis = load_analysis(analysis_path, report) if analysis_path.exists() else None
+    return Comparison(meta=meta, report=report, analysis=analysis)
+
+
 def _text(value: str, limit: int) -> str:
     """Make model text safe for one line of markdown.
 
@@ -230,43 +268,37 @@ def _render_diff_block(
 
 
 def _render_diffs(
-    targets: list[dict[str, Any]],
-    artifacts_url: str,
-    analysis: dict[str, dict[str, Any]],
-    budget: int,
+    changed: list[tuple[Comparison, list[dict[str, Any]]]], budget: int
 ) -> list[str]:
     """Render one collapsed diff excerpt per changed target.
 
     Architectures can have different classifications, so show the one with the
-    lowest classification rank. Keep the first diff when ranks tie or analysis
-    is absent. A target that this PR added or removed has no diff at all.
+    lowest classification rank. Keep the first diff when ranks tie. A target
+    that this PR added or removed has no diff at all.
 
     A header change makes hundreds of diffs, so the classification decides
     which ones keep a block. `budget` is the bytes left for this section, and a
     block that does not fit it is dropped with the ones behind it.
     """
     with_diff = []
-    for target in targets:
-        candidates = []
-        for arch in target["archs"]:
-            if arch["diff"]:
-                key = f"{target['target']}.{arch['arch']}"
-                candidates.append((target, arch, analysis.get(key)))
-        if candidates:
-            with_diff.append(
-                min(
-                    candidates,
-                    key=lambda e: _CLASSIFICATIONS[e[2]["classification"]][0],
+    for comparison, targets in changed:
+        analysis = comparison.analysis or {}
+        artifacts_url = comparison.meta["artifacts_url"]
+        for target in targets:
+            candidates = [
+                (target, arch, analysis.get(f"{target['target']}.{arch['arch']}"))
+                for arch in target["archs"]
+                if arch["diff"]
+            ]
+            if candidates:
+                with_diff.append(
+                    (*min(candidates, key=lambda e: _rank(e[2])), artifacts_url)
                 )
-                if analysis
-                else candidates[0]
-            )
 
     if not with_diff:
         return []
 
-    if analysis:
-        with_diff.sort(key=lambda e: _CLASSIFICATIONS[e[2]["classification"]][0])
+    with_diff.sort(key=lambda e: _rank(e[2]))
 
     header = [
         "",
@@ -277,7 +309,7 @@ def _render_diffs(
     budget -= len("\n".join(header).encode())
 
     blocks: list[list[str]] = []
-    for target, arch, group in with_diff[:_MAX_DIFF_BLOCKS]:
+    for target, arch, group, artifacts_url in with_diff[:_MAX_DIFF_BLOCKS]:
         block = _render_diff_block(target, arch, group, artifacts_url)
         budget -= len("\n".join(block).encode()) + 1
         if budget < 0:
@@ -320,42 +352,62 @@ def _render_changed_table(targets: list[dict[str, Any]]) -> list[str]:
     return lines
 
 
-def render(
-    report: dict[str, Any],
-    *,
-    base_ref: str,
-    test_ref: str,
-    arch: str,
-    artifacts_url: str,
-    analysis: dict[str, dict[str, Any]] | None = None,
-) -> str:
-    """Render the markdown fragment for the PR comment."""
-    targets = report["targets"]
+def render(comparisons: list[Comparison]) -> str:
+    """Render the markdown for the PR comment."""
+    runs = {
+        (c.meta["base_ref"], c.meta["test_ref"], c.meta["arch"]) for c in comparisons
+    }
+    if len(runs) != 1:
+        raise ValueError(
+            f"The comparisons used different refs or architectures: {sorted(runs)}"
+        )
+    ((base_ref, test_ref, arch),) = runs
+
     # The comparison reports in whatever order it walked the dumps. Sort here,
     # so that the table is stable between runs and two comments can be compared,
     # and so that the truncation below always drops the same targets.
-    changed = sorted(
-        (target for target in targets if target["changed"]),
-        key=lambda target: target["target"],
-    )
+    changed = [
+        (
+            comparison,
+            sorted(
+                (t for t in comparison.report["targets"] if t["changed"]),
+                key=lambda t: t["target"],
+            ),
+        )
+        for comparison in comparisons
+    ]
+    all_changed = [target for _, targets in changed for target in targets]
 
-    if changed:
+    if all_changed:
+        counts = _join(
+            [
+                f"{len(targets)} of {len(c.report['targets'])} "
+                f"{_project_name(c.meta['project'])}"
+                for c, targets in changed
+            ]
+        )
         headline = [
-            f"⚠️ **The SASS changed for {len(changed)} of "
-            f"{len(targets)} CUB benchmark target(s). A benchmark run "
-            "may be necessary**",
+            (
+                f"⚠️ **The SASS changed for {counts} benchmark target(s). "
+                "A benchmark run may be necessary**"
+            ),
             "",
-            *_render_how_to_benchmark(changed),
+            *_render_how_to_benchmark([entry for entry in changed if entry[1]]),
         ]
     else:
+        counts = _join(
+            [
+                f"{len(c.report['targets'])} {_project_name(c.meta['project'])}"
+                for c in comparisons
+            ]
+        )
         headline = [
-            f"✅ **No SASS change in any of the {len(targets)} CUB benchmark "
-            "target(s).**",
+            f"✅ **No SASS change in any of the {counts} benchmark target(s).**"
         ]
 
     lines = [
         "<!-- cccl-sass-diff -->",
-        "## 🔬 CUB benchmark SASS comparison",
+        "## 🔬 Benchmark SASS comparison",
         "",
         *headline,
         "",
@@ -367,71 +419,37 @@ def render(
         "",
     ]
 
-    if changed:
-        lines.extend(_render_changed_table(changed))
+    if all_changed:
+        lines.extend(_render_changed_table(all_changed))
         budget = _MAX_COMMENT_BYTES - len("\n".join(lines).encode())
-        lines.extend(
-            [*_render_diffs(changed, artifacts_url, analysis or {}, budget), ""]
-        )
+        lines.extend([*_render_diffs(changed, budget), ""])
 
     return "\n".join(lines)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description=(
-            "Make the PR comment from the report that `compare_sass.py` wrote "
-            "and the metadata that `sass_diff.sh` wrote."
+        description="Make the PR comment from the results of `sass_diff.sh`.",
+    )
+    parser.add_argument(
+        "--input",
+        type=Path,
+        action="append",
+        required=True,
+        help=(
+            "Directory with report.json, meta.json and an optional analysis.json. "
+            "Repeatable."
         ),
-    )
-    parser.add_argument(
-        "--report",
-        type=Path,
-        required=True,
-        help="The report.json that `compare_sass.py` wrote.",
-    )
-    parser.add_argument(
-        "--meta",
-        type=Path,
-        required=True,
-        help="The meta.json that `sass_diff.sh` wrote.",
     )
     parser.add_argument(
         "--output",
         type=Path,
         required=True,
-        help="Where to write the markdown fragment.",
-    )
-    parser.add_argument(
-        "--artifacts-url",
-        default="www.example.com",
-        help="Download URL of the uploaded dumps.",
-    )
-    parser.add_argument(
-        "--analysis",
-        type=Path,
-        help=(
-            "Optional model classification of the diffs. Omit it to render the "
-            "comment without the triage section."
-        ),
+        help="Where to write the markdown comment.",
     )
     args = parser.parse_args()
 
-    with args.report.open() as fd:
-        report = json.load(fd)
-    with args.meta.open() as fd:
-        meta = json.load(fd)
-
-    analysis = load_analysis(args.analysis, report) if args.analysis else None
-
-    text = render(
-        report,
-        base_ref=meta["base_ref"],
-        test_ref=meta["test_ref"],
-        arch=meta["arch"],
-        artifacts_url=args.artifacts_url,
-        analysis=analysis,
-    )
+    text = render([load_comparison(directory) for directory in args.input])
     args.output.write_text(text)
 
 

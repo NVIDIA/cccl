@@ -372,7 +372,7 @@ cudaError_t pin_memory(T* p, size_t n)
   if (res != cudaSuccess)
   {
     // Consume the sticky error state so it is not re-reported elsewhere.
-    cudaGetLastError();
+    static_cast<void>(cudaGetLastError());
   }
   return res;
 }
@@ -397,7 +397,7 @@ void unpin_memory(T* p)
     // skipped or failed) and consume the sticky error state so it is not
     // misattributed to a later, unrelated call. This runs on cleanup paths
     // (including destructors), so it must not throw.
-    cudaGetLastError();
+    static_cast<void>(cudaGetLastError());
   }
 }
 
@@ -436,7 +436,7 @@ UNITTEST("pin_memory")
   EXPECT(!address_is_pinned(&a[0]));
   EXPECT(!address_is_pinned(&a[1023]));
 
-  pin_memory(&a[0], 1024);
+  cuda_safe_call(pin_memory(&a[0], 1024));
   EXPECT(address_is_pinned(&a[0]));
   EXPECT(address_is_pinned(&a[1023]));
   unpin_memory(&a[0]);
@@ -453,7 +453,7 @@ UNITTEST("pin_memory const")
 
   EXPECT(!address_is_pinned(ca));
 
-  pin_memory(ca, 1024);
+  cuda_safe_call(pin_memory(ca, 1024));
   EXPECT(address_is_pinned(ca));
   unpin_memory(ca);
 
@@ -476,7 +476,7 @@ UNITTEST("pin_memory ignores stale sticky errors")
   EXPECT(!address_is_pinned(&a[0]));
 
   // Consume whatever is left so this test does not poison the next one.
-  cudaGetLastError();
+  static_cast<void>(cudaGetLastError());
 };
 
 #endif // UNITTESTED_FILE
