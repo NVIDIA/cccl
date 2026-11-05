@@ -8,6 +8,7 @@
 
 #include <cuda/__execution/tune.h>
 #include <cuda/iterator>
+#include <cuda/std/type_traits>
 
 #include <algorithm>
 #include <functional>
@@ -26,11 +27,16 @@
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortKeys, stable_sort_keys);
 
+// Register both backends in each executable so an unsupported LRB case can skip independently.
+using test_algorithms = c2h::enum_type_list<test_algorithm, test_algorithm::existing, test_algorithm::lrb>;
+
 #if TEST_TYPES == 0
 using key_types = c2h::type_list<bool, std::uint8_t>;
 #elif TEST_TYPES == 1
 using key_types =
-  c2h::type_list<std::uint64_t
+  c2h::type_list<std::uint64_t,
+                 float,
+                 double
 #  if TEST_HALF_T()
                  ,
                  half_t
@@ -44,8 +50,11 @@ using key_types =
 
 #if TEST_TYPES == 0
 
-CUB_TEST("DeviceSegmentedSortKeys: No segments", "[keys][segmented][sort][device]", CUB_SMALL)
+CUB_TEST("DeviceSegmentedSortKeys: No segments", "[keys][segmented][sort][device]", CUB_SMALL, test_algorithms)
 {
+  constexpr auto selected_algorithm = c2h::get<0, TestType>::value;
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "public API" : "internal LRB"));
+
   // Type doesn't affect the escape logic, so it should be fine
   // to test only one set of types here.
 
@@ -59,7 +68,7 @@ CUB_TEST("DeviceSegmentedSortKeys: No segments", "[keys][segmented][sort][device
   cub::DoubleBuffer<cub::NullType> values_buffer(nullptr, nullptr);
   values_buffer.selector = 1;
 
-  call_cub_segmented_sort_api(
+  call_cub_segmented_sort_api<KeyT, cub::NullType, selected_algorithm>(
     sort_descending,
     sort_buffer,
     stable_sort,
@@ -70,6 +79,7 @@ CUB_TEST("DeviceSegmentedSortKeys: No segments", "[keys][segmented][sort][device
     int{},
     int{},
     nullptr,
+    nullptr,
     &keys_buffer.selector,
     &values_buffer.selector);
 
@@ -77,8 +87,11 @@ CUB_TEST("DeviceSegmentedSortKeys: No segments", "[keys][segmented][sort][device
   REQUIRE(values_buffer.selector == 1);
 }
 
-CUB_TEST("DeviceSegmentedSortKeys: Empty segments", "[keys][segmented][sort][device]", CUB_SMALL)
+CUB_TEST("DeviceSegmentedSortKeys: Empty segments", "[keys][segmented][sort][device]", CUB_SMALL, test_algorithms)
 {
+  constexpr auto selected_algorithm = c2h::get<0, TestType>::value;
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "public API" : "internal LRB"));
+
   // Type doesn't affect the escape logic, so it should be fine
   // to test only one set of types here.
 
@@ -96,7 +109,7 @@ CUB_TEST("DeviceSegmentedSortKeys: Empty segments", "[keys][segmented][sort][dev
   cub::DoubleBuffer<cub::NullType> values_buffer(nullptr, nullptr);
   values_buffer.selector = 1;
 
-  call_cub_segmented_sort_api(
+  call_cub_segmented_sort_api<KeyT, cub::NullType, selected_algorithm>(
     sort_descending,
     sort_buffer,
     sort_stable,
@@ -107,6 +120,7 @@ CUB_TEST("DeviceSegmentedSortKeys: Empty segments", "[keys][segmented][sort][dev
     int{},
     num_segments,
     d_offsets,
+    d_offsets + 1,
     &keys_buffer.selector,
     &values_buffer.selector);
 
@@ -119,8 +133,12 @@ CUB_TEST("DeviceSegmentedSortKeys: Empty segments", "[keys][segmented][sort][dev
 CUB_TEST("DeviceSegmentedSortKeys: Same size segments, derived keys",
          "[keys][segmented][sort][device][skip-cs-racecheck]",
          CUB_SMALL,
-         key_types)
+         key_types,
+         test_algorithms)
 {
+  constexpr auto selected_algorithm = c2h::get<1, TestType>::value;
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "public API" : "internal LRB"));
+
   using KeyT = c2h::get<0, TestType>;
 
   // Use adjust_seed_count to limit the number of passes run during sanitizer tests.
@@ -133,14 +151,18 @@ CUB_TEST("DeviceSegmentedSortKeys: Same size segments, derived keys",
     take(c2h::adjust_seed_count(2), random(1 << 0, 1 << 5)), //
     take(c2h::adjust_seed_count(2), random(1 << 5, 1 << 10)));
 
-  test_same_size_segments_derived<KeyT>(segment_size, segments);
+  test_same_size_segments_derived<KeyT, cub::NullType, selected_algorithm>(segment_size, segments);
 }
 
 CUB_TEST("DeviceSegmentedSortKeys: Randomly sized segments, derived keys",
          "[keys][segmented][sort][device][skip-cs-racecheck]",
          CUB_SMALL,
-         key_types)
+         key_types,
+         test_algorithms)
 {
+  constexpr auto selected_algorithm = c2h::get<1, TestType>::value;
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "public API" : "internal LRB"));
+
   using KeyT = c2h::get<0, TestType>;
 
   const int max_items   = 1 << 22;
@@ -153,14 +175,19 @@ CUB_TEST("DeviceSegmentedSortKeys: Randomly sized segments, derived keys",
     take(c2h::adjust_seed_count(2), random(1 << 10, 1 << 15)),
     take(c2h::adjust_seed_count(2), random(1 << 15, 1 << 20)));
 
-  test_random_size_segments_derived<KeyT>(C2H_SEED(1), max_items, max_segment, segments);
+  test_random_size_segments_derived<KeyT, cub::NullType, selected_algorithm>(
+    C2H_SEED(1), max_items, max_segment, segments);
 }
 
 CUB_TEST("DeviceSegmentedSortKeys: Randomly sized segments, random keys",
          "[keys][segmented][sort][device][skip-cs-initcheck][skip-cs-racecheck]",
          CUB_SMALL,
-         key_types)
+         key_types,
+         test_algorithms)
 {
+  constexpr auto selected_algorithm = c2h::get<1, TestType>::value;
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "public API" : "internal LRB"));
+
   using KeyT = c2h::get<0, TestType>;
 
   const int max_items   = 1 << 22;
@@ -169,21 +196,34 @@ CUB_TEST("DeviceSegmentedSortKeys: Randomly sized segments, random keys",
   // Use adjust_seed_count to limit the number of passes run during sanitizer tests.
   const int segments = GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1 << 15, 1 << 20)));
 
-  test_random_size_segments_random<KeyT>(C2H_SEED(1), max_items, max_segment, segments);
+  test_random_size_segments_random<KeyT, cub::NullType, selected_algorithm>(
+    C2H_SEED(1), max_items, max_segment, segments);
 }
 
-CUB_TEST(
-  "DeviceSegmentedSortKeys: Edge case segments, random keys", "[keys][segmented][sort][device]", CUB_SMALL, key_types)
+CUB_TEST("DeviceSegmentedSortKeys: Edge case segments, random keys",
+         "[keys][segmented][sort][device]",
+         CUB_SMALL,
+         key_types,
+         test_algorithms)
 {
+  constexpr auto selected_algorithm = c2h::get<1, TestType>::value;
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "public API" : "internal LRB"));
+
   using KeyT = c2h::get<0, TestType>;
-  test_edge_case_segments_random<KeyT>(C2H_SEED(4));
+  test_edge_case_segments_random<KeyT, cub::NullType, selected_algorithm>(C2H_SEED(4));
 }
 
-CUB_TEST(
-  "DeviceSegmentedSortKeys: Unspecified segments, random keys", "[keys][segmented][sort][device]", CUB_SMALL, key_types)
+CUB_TEST("DeviceSegmentedSortKeys: Unspecified segments, random keys",
+         "[keys][segmented][sort][device]",
+         CUB_SMALL,
+         key_types,
+         test_algorithms)
 {
+  constexpr auto selected_algorithm = c2h::get<1, TestType>::value;
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "public API" : "internal LRB"));
+
   using KeyT = c2h::get<0, TestType>;
-  test_unspecified_segments_random<KeyT>(C2H_SEED(4));
+  test_unspecified_segments_random<KeyT, cub::NullType, selected_algorithm>(C2H_SEED(4));
 }
 
 #if TEST_TYPES == 0
@@ -191,43 +231,54 @@ CUB_TEST(
 CUB_TEST("DeviceSegmentedSortKeys: very large number of segments",
          "[keys][segmented][sort][device][skip-cs-memcheck][skip-cs-racecheck][skip-cs-initcheck]",
          CUB_LARGE,
-         all_offset_types)
+         all_offset_types,
+         test_algorithms)
 try
 {
-  using key_t                        = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
-  using segment_offset_t             = std::int64_t;
-  using offset_t                     = c2h::get<0, TestType>;
-  using segment_iterator_t           = segment_index_to_offset_op<offset_t, segment_offset_t>;
-  constexpr std::size_t segment_size = 1000000;
-  constexpr std::size_t uint32_max   = cuda::std::numeric_limits<std::uint32_t>::max();
-  constexpr std::size_t num_items =
-    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : cuda::std::numeric_limits<offset_t>::max();
-  constexpr segment_offset_t num_empty_segments = uint32_max;
-  const segment_offset_t num_segments           = num_empty_segments + cuda::ceil_div(num_items, segment_size);
-  CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
+  constexpr auto selected_algorithm = c2h::get<1, TestType>::value;
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "public API" : "internal LRB"));
 
-  c2h::device_vector<key_t> in_keys(num_items);
-  c2h::device_vector<key_t> out_keys(num_items);
+  if constexpr (selected_algorithm == test_algorithm::lrb)
+  {
+    SKIP("The internal LRB backend does not yet support more than UINT_MAX segments.");
+  }
+  else
+  {
+    using key_t              = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
+    using segment_offset_t   = std::int64_t;
+    using offset_t           = c2h::get<0, TestType>;
+    using segment_iterator_t = segment_index_to_offset_op<offset_t, segment_offset_t>;
+    constexpr std::size_t segment_size = 1000000;
+    constexpr std::size_t uint32_max   = cuda::std::numeric_limits<std::uint32_t>::max();
+    constexpr std::size_t num_items =
+      (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : cuda::std::numeric_limits<offset_t>::max();
+    constexpr segment_offset_t num_empty_segments = uint32_max;
+    const segment_offset_t num_segments           = num_empty_segments + cuda::ceil_div(num_items, segment_size);
+    CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
 
-  // Generate input keys
-  constexpr auto max_histo_size = 250;
-  const segmented_verification_helper<key_t> verification_helper{max_histo_size};
-  verification_helper.prepare_input_data(in_keys);
+    c2h::device_vector<key_t> in_keys(num_items);
+    c2h::device_vector<key_t> out_keys(num_items);
 
-  auto offsets = cuda::transform_iterator(
-    cuda::counting_iterator(std::size_t{0}),
-    segment_iterator_t{num_empty_segments, num_segments, segment_size, num_items});
+    // Generate input keys
+    constexpr auto max_histo_size = 250;
+    const segmented_verification_helper<key_t> verification_helper{max_histo_size};
+    verification_helper.prepare_input_data(in_keys);
 
-  stable_sort_keys(
-    thrust::raw_pointer_cast(in_keys.data()),
-    thrust::raw_pointer_cast(out_keys.data()),
-    static_cast<offset_t>(num_items),
-    static_cast<segment_offset_t>(num_segments),
-    offsets,
-    offsets + 1);
+    auto offsets = cuda::transform_iterator(
+      cuda::counting_iterator(std::size_t{0}),
+      segment_iterator_t{num_empty_segments, num_segments, segment_size, num_items});
 
-  // Verify the keys are sorted correctly
-  verification_helper.verify_sorted(out_keys, offsets + num_empty_segments, num_segments - num_empty_segments);
+    stable_sort_keys(
+      thrust::raw_pointer_cast(in_keys.data()),
+      thrust::raw_pointer_cast(out_keys.data()),
+      static_cast<offset_t>(num_items),
+      static_cast<segment_offset_t>(num_segments),
+      offsets,
+      offsets + 1);
+
+    // Verify the keys are sorted correctly
+    verification_helper.verify_sorted(out_keys, offsets + num_empty_segments, num_segments - num_empty_segments);
+  }
 }
 catch (...)
 {
@@ -237,41 +288,74 @@ catch (...)
 CUB_TEST("DeviceSegmentedSort::SortKeys: very large segments",
          "[keys][segmented][sort][device][skip-cs-memcheck][skip-cs-racecheck][skip-cs-initcheck]",
          CUB_LARGE,
-         all_offset_types)
+         all_offset_types,
+         test_algorithms)
 try
 {
-  using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
-  using segment_offset_t           = std::int32_t;
-  using offset_t                   = c2h::get<0, TestType>;
-  constexpr std::size_t uint32_max = cuda::std::numeric_limits<std::uint32_t>::max();
-  constexpr int num_key_seeds      = 1;
-  constexpr std::size_t num_items =
-    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : cuda::std::numeric_limits<offset_t>::max();
-  const segment_offset_t num_segments = 2;
-  CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
+  constexpr auto selected_algorithm = c2h::get<1, TestType>::value;
+  INFO("Algorithm: " << (selected_algorithm == test_algorithm::existing ? "public API" : "internal LRB"));
 
-  c2h::device_vector<key_t> in_keys(num_items);
-  c2h::device_vector<key_t> out_keys(num_items);
-  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
-  c2h::device_vector<offset_t> offsets(num_segments + 1);
-  offsets[0] = 0;
-  offsets[1] = static_cast<offset_t>(num_items);
-  offsets[2] = static_cast<offset_t>(num_items);
+  if constexpr (selected_algorithm == test_algorithm::lrb && !test_host_launch)
+  {
+    SKIP("The internal LRB backend currently supports only host launches.");
+  }
+  else
+  {
+    if constexpr (selected_algorithm == test_algorithm::lrb)
+    {
+      cuda::compute_capability cc{};
+      REQUIRE(cudaSuccess == CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY{}.PtxComputeCap(cc));
+      if (!cub::detail::segmented_sort_capacity::can_use_lrb<cuda::std::uint8_t>(cc))
+      {
+        SKIP("The internal LRB backend requires a compiled SM90-or-newer target.");
+      }
+    }
+    using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
+    using segment_offset_t           = std::int32_t;
+    using offset_t                   = c2h::get<0, TestType>;
+    constexpr std::size_t uint32_max = cuda::std::numeric_limits<std::uint32_t>::max();
+    constexpr int num_key_seeds      = 1;
+    constexpr std::size_t num_items =
+      (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : cuda::std::numeric_limits<offset_t>::max();
+    const segment_offset_t num_segments = 2;
+    CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
 
-  // Prepare information for later verification
-  short_key_verification_helper<key_t> verification_helper{};
-  verification_helper.prepare_verification_data(in_keys);
+    c2h::device_vector<key_t> in_keys(num_items);
+    c2h::device_vector<key_t> out_keys(num_items);
+    c2h::gen(C2H_SEED(num_key_seeds), in_keys);
+    c2h::device_vector<offset_t> offsets(num_segments + 1);
+    offsets[0] = 0;
+    offsets[1] = static_cast<offset_t>(num_items);
+    offsets[2] = static_cast<offset_t>(num_items);
 
-  stable_sort_keys(
-    thrust::raw_pointer_cast(in_keys.data()),
-    thrust::raw_pointer_cast(out_keys.data()),
-    static_cast<offset_t>(num_items),
-    static_cast<segment_offset_t>(num_segments),
-    thrust::raw_pointer_cast(offsets.data()),
-    offsets.cbegin() + 1);
+    // Prepare information for later verification
+    short_key_verification_helper<key_t> verification_helper{};
+    verification_helper.prepare_verification_data(in_keys);
 
-  // Verify the keys are sorted correctly
-  verification_helper.verify_sorted(out_keys);
+    if constexpr (selected_algorithm == test_algorithm::lrb)
+    {
+      launch(lrb_sort_launcher_t{false, false, nullptr},
+             thrust::raw_pointer_cast(in_keys.data()),
+             thrust::raw_pointer_cast(out_keys.data()),
+             static_cast<cuda::std::int64_t>(num_items),
+             static_cast<unsigned>(num_segments),
+             thrust::raw_pointer_cast(offsets.data()),
+             offsets.cbegin() + 1);
+    }
+    else
+    {
+      stable_sort_keys(
+        thrust::raw_pointer_cast(in_keys.data()),
+        thrust::raw_pointer_cast(out_keys.data()),
+        static_cast<offset_t>(num_items),
+        static_cast<segment_offset_t>(num_segments),
+        thrust::raw_pointer_cast(offsets.data()),
+        offsets.cbegin() + 1);
+    }
+
+    // Verify the keys are sorted correctly
+    verification_helper.verify_sorted(out_keys);
+  }
 }
 catch (...)
 {
