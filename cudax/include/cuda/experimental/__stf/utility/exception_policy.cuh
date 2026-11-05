@@ -1071,57 +1071,6 @@ struct translate_t
                 "translate<To> replaces every exception; translate<From, To> replaces a From");
 };
 
-namespace detail
-{
-// Builds and throws the `_To` of a translation: from the caught `_From` when such a constructor
-// exists, from its `what()` otherwise, default-constructed failing both.
-template <class _To, class _From>
-[[noreturn]] void __throw_translated(const _From& __from)
-{
-  if constexpr (::cuda::std::is_constructible_v<_To, const _From&>)
-  {
-    _CCCL_THROW(_To, __from);
-  }
-  else if constexpr (::cuda::std::is_base_of_v<::std::exception, _From>
-                     && ::cuda::std::is_constructible_v<_To, const char*>)
-  {
-    _CCCL_THROW(_To, __from.what()); // carry the message across the translation
-  }
-  else if constexpr (::cuda::std::is_default_constructible_v<_To>)
-  {
-    _CCCL_THROW(_To);
-  }
-  else
-  {
-    static_assert(!::cuda::std::is_same_v<_From, _From>,
-                  "translate: To must be constructible from the caught exception, from its what(), or "
-                  "default-constructible");
-  }
-  _CCCL_UNREACHABLE();
-}
-
-// The `_To` for a non-standard exception, which offers nothing to build from.
-template <class _To>
-[[noreturn]] void __throw_translated()
-{
-  if constexpr (::cuda::std::is_default_constructible_v<_To>)
-  {
-    _CCCL_THROW(_To);
-  }
-  else if constexpr (::cuda::std::is_constructible_v<_To, const char*>)
-  {
-    _CCCL_THROW(_To, "non-standard exception");
-  }
-  else
-  {
-    static_assert(!::cuda::std::is_same_v<_To, _To>,
-                  "translate<To>: To must be default-constructible or constructible from a const char* to stand "
-                  "in for a non-standard exception");
-  }
-  _CCCL_UNREACHABLE();
-}
-} // namespace detail
-
 template <class _To>
 struct translate_t<_To>
 {
@@ -1142,9 +1091,9 @@ struct translate_t<_To>
   {
     if (__e)
     {
-      detail::__throw_translated<_To>(*__e);
+      __throw_translated(*__e);
     }
-    detail::__throw_translated<_To>();
+    __throw_translated();
     _CCCL_UNREACHABLE();
   }
 
@@ -1153,6 +1102,44 @@ struct translate_t<_To>
   {
     __claimed(__e, __loc, __fn);
     _CCCL_UNREACHABLE(); // nvcc's front end does not propagate [[noreturn]] through the call above
+  }
+
+private:
+  // Builds and throws the `_To`: from the caught exception when such a constructor exists, from
+  // its `what()` otherwise, default-constructed failing both.
+  [[noreturn]] static void __throw_translated(const ::std::exception& __from)
+  {
+    if constexpr (::cuda::std::is_constructible_v<_To, const ::std::exception&>)
+    {
+      _CCCL_THROW(_To, __from);
+    }
+    else if constexpr (::cuda::std::is_constructible_v<_To, const char*>)
+    {
+      _CCCL_THROW(_To, __from.what()); // carry the message across the translation
+    }
+    else
+    {
+      static_assert(::cuda::std::is_default_constructible_v<_To>,
+                    "translate: To must be constructible from the caught exception, from its what(), or "
+                    "default-constructible");
+      _CCCL_THROW(_To);
+    }
+  }
+
+  // The `_To` for a non-standard exception, which offers nothing to build from.
+  [[noreturn]] static void __throw_translated()
+  {
+    if constexpr (::cuda::std::is_default_constructible_v<_To>)
+    {
+      _CCCL_THROW(_To);
+    }
+    else
+    {
+      static_assert(::cuda::std::is_constructible_v<_To, const char*>,
+                    "translate<To>: To must be default-constructible or constructible from a const char* to stand "
+                    "in for a non-standard exception");
+      _CCCL_THROW(_To, "non-standard exception");
+    }
   }
 };
 
@@ -1181,7 +1168,7 @@ struct translate_t<_From, _To>
   template <class _Fn>
   [[noreturn]] nullval __claimed(const ::std::exception* __e, const ::cuda::std::source_location, _Fn&) const
   {
-    detail::__throw_translated<_To>(*dynamic_cast<const _From*>(__e)); // the claim was answered yes: the cast holds
+    __throw_translated(*dynamic_cast<const _From*>(__e)); // the claim was answered yes: the cast holds
   }
 
   template <class _Fn>
@@ -1192,7 +1179,7 @@ struct translate_t<_From, _To>
       // The funnel pointer decides for std-derived exceptions, no rethrow needed.
       if (const auto* __from = dynamic_cast<const _From*>(__e))
       {
-        detail::__throw_translated<_To>(*__from);
+        __throw_translated(*__from);
       }
       _CCCL_RETHROW; // decline: a std exception that is not a _From
     }
@@ -1203,10 +1190,33 @@ struct translate_t<_From, _To>
     }
     _CCCL_CATCH (const _From& __from)
     {
-      detail::__throw_translated<_To>(__from);
+      __throw_translated(__from);
     }
     _CCCL_CATCH_FALLTHROUGH // decline: not a _From either
     _CCCL_UNREACHABLE();
+  }
+
+private:
+  // Builds and throws the `_To`: from the caught `_From` when such a constructor exists, from
+  // its `what()` otherwise, default-constructed failing both.
+  [[noreturn]] static void __throw_translated(const _From& __from)
+  {
+    if constexpr (::cuda::std::is_constructible_v<_To, const _From&>)
+    {
+      _CCCL_THROW(_To, __from);
+    }
+    else if constexpr (::cuda::std::is_base_of_v<::std::exception, _From>
+                       && ::cuda::std::is_constructible_v<_To, const char*>)
+    {
+      _CCCL_THROW(_To, __from.what()); // carry the message across the translation
+    }
+    else
+    {
+      static_assert(::cuda::std::is_default_constructible_v<_To>,
+                    "translate: To must be constructible from the caught exception, from its what(), or "
+                    "default-constructible");
+      _CCCL_THROW(_To);
+    }
   }
 };
 
