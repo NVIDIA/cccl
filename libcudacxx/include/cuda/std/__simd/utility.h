@@ -52,22 +52,19 @@ inline constexpr bool __is_enabled_abi_v<__fixed_size<_Np>> = (_Np >= 1 && _Np <
 //----------------------------------------------------------------------------------------------------------------------
 // __can_generate_v
 
+template <typename _Tp, typename _From>
+inline constexpr bool __is_generator_result_v =
+  is_same_v<_Tp, bool> // bool is supported by mask only
+    ? is_same_v<_From, bool>
+    : (convertible_to<_From, _Tp> && (!is_arithmetic_v<_From> || __is_value_preserving_v<_From, _Tp>) );
+
 template <typename _Tp, typename _Generator, __simd_size_type _Idx, typename = void>
 inline constexpr bool __is_well_formed = false;
 
 template <typename _Tp, typename _Generator, __simd_size_type _Idx>
 inline constexpr bool
-  __is_well_formed<_Tp, _Generator, _Idx, void_t<decltype(declval<_Generator&>()(__simd_size_constant<_Idx>()))>> = [] {
-    using _From = decltype(declval<_Generator&>()(__simd_size_constant<_Idx>()));
-    if constexpr (is_same_v<_Tp, bool>) // bool is supported by mask only
-    {
-      return is_same_v<_From, bool>;
-    }
-    else
-    {
-      return convertible_to<_From, _Tp> && (!is_arithmetic_v<_From> || __is_value_preserving_v<_From, _Tp>);
-    }
-  }();
+  __is_well_formed<_Tp, _Generator, _Idx, void_t<decltype(declval<_Generator&>()(__simd_size_constant<_Idx>()))>> =
+    __is_generator_result_v<_Tp, decltype(declval<_Generator&>()(__simd_size_constant<_Idx>()))>;
 
 template <typename _Tp, typename _Generator, __simd_size_type... _Indices>
 [[nodiscard]]
