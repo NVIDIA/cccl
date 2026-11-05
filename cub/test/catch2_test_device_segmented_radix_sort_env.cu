@@ -1350,6 +1350,10 @@ CUB_TEST_CASE("DeviceSegmentedRadixSort keys two-phase accepts legacy null strea
   REQUIRE((keys == expected_keys || alt_keys == expected_keys));
 }
 
+// The tuning environments are empty classes, which older CTKs (at least 12.9 and 13.0) cannot pass as kernel
+// parameters, so these tests cannot use the device launch (TEST_LAUNCH == 1).
+#  if TEST_LAUNCH == 0
+
 CUB_TEST(
   "DeviceSegmentedRadixSort keys two-phase can be tuned", "[segmented_radix_sort][device]", CUB_SMALL, block_sizes)
 {
@@ -1397,6 +1401,8 @@ CUB_TEST(
   }
   REQUIRE(d_block_size[0] == target_block_size);
 }
+
+#  endif // TEST_LAUNCH == 0
 
 CUB_TEST_CASE("DeviceSegmentedRadixSort pairs two-phase accepts legacy null streams",
               "[segmented_radix_sort][device]",
@@ -1461,6 +1467,10 @@ CUB_TEST_CASE("DeviceSegmentedRadixSort pairs two-phase accepts legacy null stre
            || (alt_keys == expected_keys && alt_values == expected_values)));
 }
 
+// The tuning environments are empty classes, which older CTKs (at least 12.9 and 13.0) cannot pass as kernel
+// parameters, so these tests cannot use the device launch (TEST_LAUNCH == 1).
+#  if TEST_LAUNCH == 0
+
 CUB_TEST(
   "DeviceSegmentedRadixSort pairs two-phase can be tuned", "[segmented_radix_sort][device]", CUB_SMALL, block_sizes)
 {
@@ -1515,6 +1525,8 @@ CUB_TEST(
   }
   REQUIRE(d_block_size[0] == target_block_size);
 }
+
+#  endif // TEST_LAUNCH == 0
 
 #endif // TEST_LAUNCH != 2
 

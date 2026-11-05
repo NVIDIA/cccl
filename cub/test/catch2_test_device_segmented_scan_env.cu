@@ -12,9 +12,13 @@ struct stream_registry_factory_t;
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <cuda/__functional/call_or.h>
+#include <cuda/std/cstdint>
+
 #include <sstream>
 
 #include "block_size_extracting_helpers.h"
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedScan::ExclusiveSegmentedSum, device_segmented_exclusive_sum);
@@ -22,6 +26,13 @@ DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedScan::ExclusiveSegmentedScan, dev
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedScan::InclusiveSegmentedSum, device_segmented_inclusive_sum);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedScan::InclusiveSegmentedScan, device_segmented_inclusive_scan);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedScan::InclusiveSegmentedScanInit, device_segmented_inclusive_scan_init);
+
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::ExclusiveSegmentedSum, device_segmented_exclusive_sum_two_phase);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::ExclusiveSegmentedScan, device_segmented_exclusive_scan_two_phase);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::InclusiveSegmentedSum, device_segmented_inclusive_sum_two_phase);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::InclusiveSegmentedScan, device_segmented_inclusive_scan_two_phase);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::InclusiveSegmentedScanInit,
+                       device_segmented_inclusive_scan_init_two_phase);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -673,6 +684,619 @@ CUB_TEST("Device segmented inclusive scan init can be tuned", "[segmented_scan][
 }
 
 #endif // TEST_LAUNCH != 1
+
+#if TEST_LAUNCH == 0
+
+template <class EnvT, class TwoPhaseFn>
+void run_two_phase(const EnvT& env, TwoPhaseFn two_phase)
+{
+  const stream_scope scope{cuda::__call_or(cuda::get_stream, cuda::stream_ref{cudaStream_t{}}, env).get()};
+
+  size_t temp_storage_bytes = 0;
+  REQUIRE(cudaSuccess == two_phase(nullptr, temp_storage_bytes));
+
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  REQUIRE(cudaSuccess == two_phase(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes));
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+}
+
+// The launch wrappers copy their arguments, which the non-copyable streams of test_with_custom_streams do not allow
+CUB_TEST_CASE("Device segmented exclusive sum two-phase works with custom streams",
+              "[segmented_scan][device]",
+              CUB_SMALL)
+{
+  const ::cuda::std::int64_t num_segments = 3;
+  const c2h::device_vector<int> d_offsets{0, 4, 7, 9};
+  const int* offsets = thrust::raw_pointer_cast(d_offsets.data());
+  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  c2h::device_vector<int> d_out(d_in.size(), thrust::no_init);
+  const c2h::device_vector<int> expected{0, 8, 14, 21, 0, 3, 3, 0, 1};
+
+  SECTION("common offsets")
+  {
+    test_with_custom_streams([&](const auto& env) {
+      run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+        return cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
+          d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), offsets, offsets + 1, num_segments, env);
+      });
+      REQUIRE(d_out == expected);
+    });
+  }
+
+  SECTION("separate output offsets")
+  {
+    test_with_custom_streams([&](const auto& env) {
+      run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+        return cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in.begin(),
+          d_out.begin(),
+          offsets,
+          offsets + 1,
+          offsets,
+          num_segments,
+          env);
+      });
+      REQUIRE(d_out == expected);
+    });
+  }
+}
+
+CUB_TEST_CASE("Device segmented exclusive scan two-phase works with custom streams",
+              "[segmented_scan][device]",
+              CUB_SMALL)
+{
+  const ::cuda::std::int64_t num_segments = 3;
+  const c2h::device_vector<int> d_offsets{0, 4, 7, 9};
+  const int* offsets = thrust::raw_pointer_cast(d_offsets.data());
+  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  c2h::device_vector<int> d_out(d_in.size(), thrust::no_init);
+  const c2h::device_vector<int> expected{100, 108, 114, 121, 100, 103, 103, 100, 101};
+
+  SECTION("common offsets")
+  {
+    test_with_custom_streams([&](const auto& env) {
+      run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+        return cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in.begin(),
+          d_out.begin(),
+          offsets,
+          offsets + 1,
+          num_segments,
+          cuda::std::plus<>{},
+          100,
+          env);
+      });
+      REQUIRE(d_out == expected);
+    });
+  }
+
+  SECTION("separate output offsets")
+  {
+    test_with_custom_streams([&](const auto& env) {
+      run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+        return cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in.begin(),
+          d_out.begin(),
+          offsets,
+          offsets + 1,
+          offsets,
+          num_segments,
+          cuda::std::plus<>{},
+          100,
+          env);
+      });
+      REQUIRE(d_out == expected);
+    });
+  }
+}
+
+CUB_TEST_CASE("Device segmented inclusive sum two-phase works with custom streams",
+              "[segmented_scan][device]",
+              CUB_SMALL)
+{
+  const ::cuda::std::int64_t num_segments = 3;
+  const c2h::device_vector<int> d_offsets{0, 4, 7, 9};
+  const int* offsets = thrust::raw_pointer_cast(d_offsets.data());
+  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  c2h::device_vector<int> d_out(d_in.size(), thrust::no_init);
+  const c2h::device_vector<int> expected{8, 14, 21, 26, 3, 3, 12, 1, 3};
+
+  SECTION("common offsets")
+  {
+    test_with_custom_streams([&](const auto& env) {
+      run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+        return cub::DeviceSegmentedScan::InclusiveSegmentedSum(
+          d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), offsets, offsets + 1, num_segments, env);
+      });
+      REQUIRE(d_out == expected);
+    });
+  }
+
+  SECTION("separate output offsets")
+  {
+    test_with_custom_streams([&](const auto& env) {
+      run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+        return cub::DeviceSegmentedScan::InclusiveSegmentedSum(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in.begin(),
+          d_out.begin(),
+          offsets,
+          offsets + 1,
+          offsets,
+          num_segments,
+          env);
+      });
+      REQUIRE(d_out == expected);
+    });
+  }
+}
+
+CUB_TEST_CASE("Device segmented inclusive scan two-phase works with custom streams",
+              "[segmented_scan][device]",
+              CUB_SMALL)
+{
+  const ::cuda::std::int64_t num_segments = 3;
+  const c2h::device_vector<int> d_offsets{0, 4, 7, 9};
+  const int* offsets = thrust::raw_pointer_cast(d_offsets.data());
+  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  c2h::device_vector<int> d_out(d_in.size(), thrust::no_init);
+  const c2h::device_vector<int> expected{8, 14, 21, 26, 3, 3, 12, 1, 3};
+
+  SECTION("common offsets")
+  {
+    test_with_custom_streams([&](const auto& env) {
+      run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+        return cub::DeviceSegmentedScan::InclusiveSegmentedScan(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in.begin(),
+          d_out.begin(),
+          offsets,
+          offsets + 1,
+          num_segments,
+          cuda::std::plus<>{},
+          env);
+      });
+      REQUIRE(d_out == expected);
+    });
+  }
+
+  SECTION("separate output offsets")
+  {
+    test_with_custom_streams([&](const auto& env) {
+      run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+        return cub::DeviceSegmentedScan::InclusiveSegmentedScan(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in.begin(),
+          d_out.begin(),
+          offsets,
+          offsets + 1,
+          offsets,
+          num_segments,
+          cuda::std::plus<>{},
+          env);
+      });
+      REQUIRE(d_out == expected);
+    });
+  }
+}
+
+CUB_TEST_CASE("Device segmented inclusive scan init two-phase works with custom streams",
+              "[segmented_scan][device]",
+              CUB_SMALL)
+{
+  const ::cuda::std::int64_t num_segments = 3;
+  const c2h::device_vector<int> d_offsets{0, 4, 7, 9};
+  const int* offsets = thrust::raw_pointer_cast(d_offsets.data());
+  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  c2h::device_vector<int> d_out(d_in.size(), thrust::no_init);
+  const c2h::device_vector<int> expected{108, 114, 121, 126, 103, 103, 112, 101, 103};
+
+  SECTION("common offsets")
+  {
+    test_with_custom_streams([&](const auto& env) {
+      run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+        return cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in.begin(),
+          d_out.begin(),
+          offsets,
+          offsets + 1,
+          num_segments,
+          cuda::std::plus<>{},
+          100,
+          env);
+      });
+      REQUIRE(d_out == expected);
+    });
+  }
+
+  SECTION("separate output offsets")
+  {
+    test_with_custom_streams([&](const auto& env) {
+      run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+        return cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in.begin(),
+          d_out.begin(),
+          offsets,
+          offsets + 1,
+          offsets,
+          num_segments,
+          cuda::std::plus<>{},
+          100,
+          env);
+      });
+      REQUIRE(d_out == expected);
+    });
+  }
+}
+
+#endif // TEST_LAUNCH == 0
+
+// The graph launch appends its own stream argument, which cannot be combined with an environment
+#if TEST_LAUNCH != 2
+
+CUB_TEST_CASE("Device segmented exclusive sum two-phase accepts legacy null streams",
+              "[segmented_scan][device]",
+              CUB_SMALL)
+{
+  const ::cuda::std::int64_t num_segments = 3;
+  const c2h::device_vector<int> d_offsets{0, 4, 7, 9};
+  const int* offsets = thrust::raw_pointer_cast(d_offsets.data());
+  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  c2h::device_vector<int> d_out(d_in.size(), thrust::no_init);
+  const stream_scope scope{cudaStream_t{}};
+
+  SECTION("nullptr")
+  {
+    device_segmented_exclusive_sum_two_phase(d_in.begin(), d_out.begin(), offsets, offsets + 1, num_segments, nullptr);
+  }
+  SECTION("literal 0")
+  {
+    device_segmented_exclusive_sum_two_phase(d_in.begin(), d_out.begin(), offsets, offsets + 1, num_segments, 0);
+  }
+  SECTION("cudaStream_t{}")
+  {
+    device_segmented_exclusive_sum_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, num_segments, cudaStream_t{});
+  }
+  SECTION("nullptr with separate output offsets")
+  {
+    device_segmented_exclusive_sum_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, offsets, num_segments, nullptr);
+  }
+  SECTION("literal 0 with separate output offsets")
+  {
+    device_segmented_exclusive_sum_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, offsets, num_segments, 0);
+  }
+  SECTION("cudaStream_t{} with separate output offsets")
+  {
+    device_segmented_exclusive_sum_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, offsets, num_segments, cudaStream_t{});
+  }
+
+  const c2h::device_vector<int> expected{0, 8, 14, 21, 0, 3, 3, 0, 1};
+  REQUIRE(d_out == expected);
+}
+
+CUB_TEST_CASE("Device segmented exclusive scan two-phase accepts legacy null streams",
+              "[segmented_scan][device]",
+              CUB_SMALL)
+{
+  const ::cuda::std::int64_t num_segments = 3;
+  const c2h::device_vector<int> d_offsets{0, 4, 7, 9};
+  const int* offsets = thrust::raw_pointer_cast(d_offsets.data());
+  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  c2h::device_vector<int> d_out(d_in.size(), thrust::no_init);
+  const stream_scope scope{cudaStream_t{}};
+
+  SECTION("nullptr")
+  {
+    device_segmented_exclusive_scan_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, num_segments, cuda::std::plus<>{}, 100, nullptr);
+  }
+  SECTION("literal 0")
+  {
+    device_segmented_exclusive_scan_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, num_segments, cuda::std::plus<>{}, 100, 0);
+  }
+  SECTION("cudaStream_t{}")
+  {
+    device_segmented_exclusive_scan_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, num_segments, cuda::std::plus<>{}, 100, cudaStream_t{});
+  }
+  SECTION("nullptr with separate output offsets")
+  {
+    device_segmented_exclusive_scan_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, offsets, num_segments, cuda::std::plus<>{}, 100, nullptr);
+  }
+  SECTION("literal 0 with separate output offsets")
+  {
+    device_segmented_exclusive_scan_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, offsets, num_segments, cuda::std::plus<>{}, 100, 0);
+  }
+  SECTION("cudaStream_t{} with separate output offsets")
+  {
+    device_segmented_exclusive_scan_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, offsets, num_segments, cuda::std::plus<>{}, 100, cudaStream_t{});
+  }
+
+  const c2h::device_vector<int> expected{100, 108, 114, 121, 100, 103, 103, 100, 101};
+  REQUIRE(d_out == expected);
+}
+
+CUB_TEST_CASE("Device segmented inclusive sum two-phase accepts legacy null streams",
+              "[segmented_scan][device]",
+              CUB_SMALL)
+{
+  const ::cuda::std::int64_t num_segments = 3;
+  const c2h::device_vector<int> d_offsets{0, 4, 7, 9};
+  const int* offsets = thrust::raw_pointer_cast(d_offsets.data());
+  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  c2h::device_vector<int> d_out(d_in.size(), thrust::no_init);
+  const stream_scope scope{cudaStream_t{}};
+
+  SECTION("nullptr")
+  {
+    device_segmented_inclusive_sum_two_phase(d_in.begin(), d_out.begin(), offsets, offsets + 1, num_segments, nullptr);
+  }
+  SECTION("literal 0")
+  {
+    device_segmented_inclusive_sum_two_phase(d_in.begin(), d_out.begin(), offsets, offsets + 1, num_segments, 0);
+  }
+  SECTION("cudaStream_t{}")
+  {
+    device_segmented_inclusive_sum_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, num_segments, cudaStream_t{});
+  }
+  SECTION("nullptr with separate output offsets")
+  {
+    device_segmented_inclusive_sum_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, offsets, num_segments, nullptr);
+  }
+  SECTION("literal 0 with separate output offsets")
+  {
+    device_segmented_inclusive_sum_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, offsets, num_segments, 0);
+  }
+  SECTION("cudaStream_t{} with separate output offsets")
+  {
+    device_segmented_inclusive_sum_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, offsets, num_segments, cudaStream_t{});
+  }
+
+  const c2h::device_vector<int> expected{8, 14, 21, 26, 3, 3, 12, 1, 3};
+  REQUIRE(d_out == expected);
+}
+
+CUB_TEST_CASE("Device segmented inclusive scan two-phase accepts legacy null streams",
+              "[segmented_scan][device]",
+              CUB_SMALL)
+{
+  const ::cuda::std::int64_t num_segments = 3;
+  const c2h::device_vector<int> d_offsets{0, 4, 7, 9};
+  const int* offsets = thrust::raw_pointer_cast(d_offsets.data());
+  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  c2h::device_vector<int> d_out(d_in.size(), thrust::no_init);
+  const stream_scope scope{cudaStream_t{}};
+
+  SECTION("nullptr")
+  {
+    device_segmented_inclusive_scan_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, num_segments, cuda::std::plus<>{}, nullptr);
+  }
+  SECTION("literal 0")
+  {
+    device_segmented_inclusive_scan_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, num_segments, cuda::std::plus<>{}, 0);
+  }
+  SECTION("cudaStream_t{}")
+  {
+    device_segmented_inclusive_scan_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, num_segments, cuda::std::plus<>{}, cudaStream_t{});
+  }
+  SECTION("nullptr with separate output offsets")
+  {
+    device_segmented_inclusive_scan_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, offsets, num_segments, cuda::std::plus<>{}, nullptr);
+  }
+  SECTION("literal 0 with separate output offsets")
+  {
+    device_segmented_inclusive_scan_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, offsets, num_segments, cuda::std::plus<>{}, 0);
+  }
+  SECTION("cudaStream_t{} with separate output offsets")
+  {
+    device_segmented_inclusive_scan_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, offsets, num_segments, cuda::std::plus<>{}, cudaStream_t{});
+  }
+
+  const c2h::device_vector<int> expected{8, 14, 21, 26, 3, 3, 12, 1, 3};
+  REQUIRE(d_out == expected);
+}
+
+CUB_TEST_CASE("Device segmented inclusive scan init two-phase accepts legacy null streams",
+              "[segmented_scan][device]",
+              CUB_SMALL)
+{
+  const ::cuda::std::int64_t num_segments = 3;
+  const c2h::device_vector<int> d_offsets{0, 4, 7, 9};
+  const int* offsets = thrust::raw_pointer_cast(d_offsets.data());
+  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  c2h::device_vector<int> d_out(d_in.size(), thrust::no_init);
+  const stream_scope scope{cudaStream_t{}};
+
+  SECTION("nullptr")
+  {
+    device_segmented_inclusive_scan_init_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, num_segments, cuda::std::plus<>{}, 100, nullptr);
+  }
+  SECTION("literal 0")
+  {
+    device_segmented_inclusive_scan_init_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, num_segments, cuda::std::plus<>{}, 100, 0);
+  }
+  SECTION("cudaStream_t{}")
+  {
+    device_segmented_inclusive_scan_init_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, num_segments, cuda::std::plus<>{}, 100, cudaStream_t{});
+  }
+  SECTION("nullptr with separate output offsets")
+  {
+    device_segmented_inclusive_scan_init_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, offsets, num_segments, cuda::std::plus<>{}, 100, nullptr);
+  }
+  SECTION("literal 0 with separate output offsets")
+  {
+    device_segmented_inclusive_scan_init_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, offsets, num_segments, cuda::std::plus<>{}, 100, 0);
+  }
+  SECTION("cudaStream_t{} with separate output offsets")
+  {
+    device_segmented_inclusive_scan_init_two_phase(
+      d_in.begin(), d_out.begin(), offsets, offsets + 1, offsets, num_segments, cuda::std::plus<>{}, 100, cudaStream_t{});
+  }
+
+  const c2h::device_vector<int> expected{108, 114, 121, 126, 103, 103, 112, 101, 103};
+  REQUIRE(d_out == expected);
+}
+
+// The tuning environments are empty classes, which older CTKs (at least 12.9 and 13.0) cannot pass as kernel
+// parameters, so these tests cannot use the device launch (TEST_LAUNCH == 1).
+#  if TEST_LAUNCH == 0
+
+CUB_TEST("Device segmented exclusive sum two-phase can be tuned", "[segmented_scan][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  const ::cuda::std::int64_t num_segments  = 3;
+  const c2h::device_vector<int> d_offsets{0, 4, 7, 9};
+  const int* offsets = thrust::raw_pointer_cast(d_offsets.data());
+  c2h::device_vector<int> d_out(9, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
+  const auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+  const auto env  = cuda::execution::tune(segmented_scan_tuning<target_block_size>{});
+
+  SECTION("common offsets")
+  {
+    device_segmented_exclusive_sum_two_phase(d_in, d_out.begin(), offsets, offsets + 1, num_segments, env);
+  }
+  SECTION("separate output offsets")
+  {
+    device_segmented_exclusive_sum_two_phase(d_in, d_out.begin(), offsets, offsets + 1, offsets, num_segments, env);
+  }
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("Device segmented exclusive scan two-phase can be tuned", "[segmented_scan][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  const ::cuda::std::int64_t num_segments  = 3;
+  const c2h::device_vector<int> d_offsets{0, 4, 7, 9};
+  const int* offsets = thrust::raw_pointer_cast(d_offsets.data());
+  c2h::device_vector<int> d_out(9, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
+  const auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+  const auto env  = cuda::execution::tune(segmented_scan_tuning<target_block_size>{});
+
+  SECTION("common offsets")
+  {
+    device_segmented_exclusive_scan_two_phase(
+      d_in, d_out.begin(), offsets, offsets + 1, num_segments, cuda::std::plus<>{}, 100, env);
+  }
+  SECTION("separate output offsets")
+  {
+    device_segmented_exclusive_scan_two_phase(
+      d_in, d_out.begin(), offsets, offsets + 1, offsets, num_segments, cuda::std::plus<>{}, 100, env);
+  }
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("Device segmented inclusive sum two-phase can be tuned", "[segmented_scan][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  const ::cuda::std::int64_t num_segments  = 3;
+  const c2h::device_vector<int> d_offsets{0, 4, 7, 9};
+  const int* offsets = thrust::raw_pointer_cast(d_offsets.data());
+  c2h::device_vector<int> d_out(9, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
+  const auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+  const auto env  = cuda::execution::tune(segmented_scan_tuning<target_block_size>{});
+
+  SECTION("common offsets")
+  {
+    device_segmented_inclusive_sum_two_phase(d_in, d_out.begin(), offsets, offsets + 1, num_segments, env);
+  }
+  SECTION("separate output offsets")
+  {
+    device_segmented_inclusive_sum_two_phase(d_in, d_out.begin(), offsets, offsets + 1, offsets, num_segments, env);
+  }
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("Device segmented inclusive scan two-phase can be tuned", "[segmented_scan][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  const ::cuda::std::int64_t num_segments  = 3;
+  const c2h::device_vector<int> d_offsets{0, 4, 7, 9};
+  const int* offsets = thrust::raw_pointer_cast(d_offsets.data());
+  c2h::device_vector<int> d_out(9, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
+  const auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+  const auto env  = cuda::execution::tune(segmented_scan_tuning<target_block_size>{});
+
+  SECTION("common offsets")
+  {
+    device_segmented_inclusive_scan_two_phase(
+      d_in, d_out.begin(), offsets, offsets + 1, num_segments, cuda::std::plus<>{}, env);
+  }
+  SECTION("separate output offsets")
+  {
+    device_segmented_inclusive_scan_two_phase(
+      d_in, d_out.begin(), offsets, offsets + 1, offsets, num_segments, cuda::std::plus<>{}, env);
+  }
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST(
+  "Device segmented inclusive scan init two-phase can be tuned", "[segmented_scan][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  const ::cuda::std::int64_t num_segments  = 3;
+  const c2h::device_vector<int> d_offsets{0, 4, 7, 9};
+  const int* offsets = thrust::raw_pointer_cast(d_offsets.data());
+  c2h::device_vector<int> d_out(9, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
+  const auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+  const auto env  = cuda::execution::tune(segmented_scan_tuning<target_block_size>{});
+
+  SECTION("common offsets")
+  {
+    device_segmented_inclusive_scan_init_two_phase(
+      d_in, d_out.begin(), offsets, offsets + 1, num_segments, cuda::std::plus<>{}, 100, env);
+  }
+  SECTION("separate output offsets")
+  {
+    device_segmented_inclusive_scan_init_two_phase(
+      d_in, d_out.begin(), offsets, offsets + 1, offsets, num_segments, cuda::std::plus<>{}, 100, env);
+  }
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+#  endif // TEST_LAUNCH == 0
+
+#endif // TEST_LAUNCH != 2
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
 CUB_TEST("Test SegmentedScanPolicy properties", "[segmented_scan][device]", CUB_SMALL)
