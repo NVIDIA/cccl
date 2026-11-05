@@ -62,7 +62,7 @@ template <typename>
 inline constexpr bool __is_basic_vec_v = false;
 
 template <typename _Tp, typename _Abi>
-inline constexpr bool __is_basic_vec_v<basic_vec<_Tp, _Abi>> = __is_vectorizable_v<_Tp> && __is_enabled_abi_v<_Abi>;
+inline constexpr bool __is_basic_vec_v<basic_vec<_Tp, _Abi>> = __is_enabled_vec_v<_Tp, _Abi>;
 
 //----------------------------------------------------------------------------------------------------------------------
 // gather constraints concept

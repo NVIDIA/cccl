@@ -62,8 +62,7 @@ public:
 // basic_mask<Bytes, Abi> is enabled when there exists a vectorizable type T with sizeof(T) == Bytes and N in [1, 64]
 // derived from deduce-abi-t<T, N>
 template <size_t _Bytes, typename _Abi>
-class basic_mask<_Bytes, _Abi, enable_if_t<__is_vectorizable_byte_size_v<_Bytes> && __is_enabled_abi_v<_Abi>>>
-    : public __mask_operations<_Bytes, _Abi>
+class basic_mask<_Bytes, _Abi, enable_if_t<__is_enabled_mask_v<_Bytes, _Abi>>> : public __mask_operations<_Bytes, _Abi>
 {
   template <typename, typename, typename>
   friend class basic_vec;
@@ -113,7 +112,7 @@ public:
     return {};
   }
 
-  static constexpr __simd_size_constant<__simd_size_v<__integer_from<_Bytes>, _Abi>> size{};
+  static constexpr __simd_size_constant<__mask_size_v<_Bytes, _Abi>> size{};
 
   static constexpr auto __usize = size_t{size};
   static constexpr auto __size  = __simd_size_type{size};
@@ -129,7 +128,7 @@ public:
   {}
 
   _CCCL_TEMPLATE(size_t _UBytes, typename _UAbi)
-  _CCCL_REQUIRES((__simd_size_v<__integer_from<_UBytes>, _UAbi> == __size))
+  _CCCL_REQUIRES((__mask_size_v<_UBytes, _UAbi> == __size))
   _CCCL_HOST_DEVICE_API constexpr explicit basic_mask(const basic_mask<_UBytes, _UAbi>& __x) noexcept
   {
     _CCCL_PRAGMA_UNROLL_FULL()

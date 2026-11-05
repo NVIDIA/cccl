@@ -73,7 +73,7 @@ class basic_vec
 public:
   using value_type = _Tp;
   using abi_type   = _Abi;
-  using mask_type  = basic_mask<sizeof(_Tp), _Abi>;
+  using mask_type  = basic_mask<__simd_element_size<_Tp>::value, _Abi>;
 
   _CCCL_HIDE_FROM_ABI basic_vec()                            = delete;
   _CCCL_HIDE_FROM_ABI ~basic_vec()                           = delete;
@@ -86,11 +86,7 @@ public:
 // - there exists N in [1, 64] derived from deduce-abi-t<T, N>
 // - sizeof(T) is a vectorizable byte size, i.e. sizeof(T) fits in an integer, otherwise mask is not representable
 template <typename _Tp, typename _Abi>
-class basic_vec<
-  _Tp,
-  _Abi,
-  enable_if_t<__is_vectorizable_v<_Tp> && __is_vectorizable_byte_size_v<sizeof(_Tp)> && __is_enabled_abi_v<_Abi>>>
-    : public __simd_operations<_Tp, _Abi>
+class basic_vec<_Tp, _Abi, enable_if_t<__is_enabled_vec_v<_Tp, _Abi>>> : public __simd_operations<_Tp, _Abi>
 {
 public:
   using value_type = _Tp;

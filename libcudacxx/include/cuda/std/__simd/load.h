@@ -62,7 +62,7 @@ __check_load_preconditions(const _Up* __ptr, flags<_Flags...>, const __simd_size
   using __value_t = typename _Result::value_type;
   static_assert(same_as<remove_cvref_t<_Result>, _Result>, "V must not be a reference or cv-qualified type");
 
-  static_assert(__is_vectorizable_v<__value_t> && __is_enabled_abi_v<typename _Result::abi_type>,
+  static_assert(__is_enabled_vec_v<__value_t, typename _Result::abi_type>,
                 "cuda::std::simd::load: V must be an enabled specialization of basic_vec");
   static_assert(__is_vectorizable_v<_Up>, "range_value_t<R> must be a vectorizable type");
 
