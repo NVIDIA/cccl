@@ -399,6 +399,20 @@ struct segmented_reduce_tuning
   }
 };
 
+template <int ThreadsPerBlock>
+struct segmented_reduce_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability, cub::SegmentedReducePolicy policy) const
+    -> cub::SegmentedReducePolicy
+  {
+    // the code path taken depends on the segment sizes, so change all sub-policies
+    policy.large_reduce.threads_per_block  = ThreadsPerBlock;
+    policy.medium_reduce.threads_per_block = ThreadsPerBlock;
+    policy.small_reduce.threads_per_block  = ThreadsPerBlock;
+    return policy;
+  }
+};
+
 using block_sizes = c2h::type_list<cuda::std::integral_constant<int, 64>, cuda::std::integral_constant<int, 128>>;
 
 #if TEST_LAUNCH != 1
@@ -412,12 +426,42 @@ CUB_TEST("DeviceSegmentedReduce::Reduce can be tuned", "[segmented_reduce][devic
   auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
   c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
   c2h::device_vector<int> d_out(3, thrust::no_init);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   const block_size_extracting_op<::cuda::std::plus<>> reduce_op{thrust::raw_pointer_cast(d_block_size.data())};
 
   // We are expecting that `unrelated_tuning` is ignored
   auto env = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
+
+  device_segmented_reduce(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, reduce_op, 0, env);
+
+  const c2h::device_vector<int> expected{26, 12, 3};
+  REQUIRE(d_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceSegmentedReduce::Reduce tuning can be modified", "[segmented_reduce][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+
+  const int num_segments            = 3;
+  c2h::device_vector<int> d_offsets = {0, 4, 7, 9};
+  auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
+  c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  c2h::device_vector<int> d_out(3, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0);
+
+  const block_size_extracting_op<::cuda::std::plus<>> reduce_op{thrust::raw_pointer_cast(d_block_size.data())};
+
+  {
+    device_segmented_reduce(
+      d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, reduce_op, 0, stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
+  auto env = cuda::execution::tune(segmented_reduce_tuning_transform<target_block_size>{});
 
   device_segmented_reduce(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, reduce_op, 0, env);
 
@@ -434,7 +478,7 @@ CUB_TEST("Fixed-size DeviceSegmentedReduce::Reduce can be tuned", "[segmented_re
   const int segment_size = 3;
   c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
   c2h::device_vector<int> d_out(2, thrust::no_init);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   const block_size_extracting_op<::cuda::std::plus<>> reduce_op{thrust::raw_pointer_cast(d_block_size.data())};
 
@@ -455,7 +499,7 @@ CUB_TEST("DeviceSegmentedReduce::Sum can be tuned", "[segmented_reduce][device]"
   c2h::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
   c2h::device_vector<int> d_out(3, thrust::no_init);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   // use block_size_recording_iterator to embed blockDim info in the input type and query after
   // since Sum can not take a custom reduction_op
@@ -477,7 +521,7 @@ CUB_TEST("Fixed-size DeviceSegmentedReduce::Sum can be tuned", "[segmented_reduc
   const int num_segments = 2;
   const int segment_size = 3;
   c2h::device_vector<int> d_out(2, thrust::no_init);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   // use block_size_recording_iterator to embed blockDim info in the input type and query after
   // since Sum can not take a custom reduction_op
@@ -500,7 +544,7 @@ CUB_TEST("DeviceSegmentedReduce::Min can be tuned", "[segmented_reduce][device]"
   c2h::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
   c2h::device_vector<int> d_out(3, thrust::no_init);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
   auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
@@ -519,7 +563,7 @@ CUB_TEST("Fixed-size DeviceSegmentedReduce::Min can be tuned", "[segmented_reduc
   const int num_segments = 2;
   const int segment_size = 3;
   c2h::device_vector<int> d_out(2, thrust::no_init);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
   auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
@@ -539,7 +583,7 @@ CUB_TEST("DeviceSegmentedReduce::Max can be tuned", "[segmented_reduce][device]"
   c2h::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
   c2h::device_vector<int> d_out(3, thrust::no_init);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
   auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
@@ -558,7 +602,7 @@ CUB_TEST("Fixed-size DeviceSegmentedReduce::Max can be tuned", "[segmented_reduc
   const int num_segments = 2;
   const int segment_size = 3;
   c2h::device_vector<int> d_out(2, thrust::no_init);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
   auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
@@ -578,7 +622,7 @@ CUB_TEST("DeviceSegmentedReduce::ArgMin can be tuned", "[segmented_reduce][devic
   c2h::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
   c2h::device_vector<cub::KeyValuePair<int, int>> d_out(3);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
   auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
@@ -601,7 +645,7 @@ CUB_TEST("Fixed-size DeviceSegmentedReduce::ArgMin can be tuned", "[segmented_re
   const int num_segments = 2;
   const int segment_size = 3;
   c2h::device_vector<cuda::std::pair<int, int>> d_out(2);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
   auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
@@ -621,7 +665,7 @@ CUB_TEST("DeviceSegmentedReduce::ArgMax can be tuned", "[segmented_reduce][devic
   c2h::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
   c2h::device_vector<cub::KeyValuePair<int, int>> d_out(3);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
   auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
@@ -644,7 +688,7 @@ CUB_TEST("Fixed-size DeviceSegmentedReduce::ArgMax can be tuned", "[segmented_re
   const int num_segments = 2;
   const int segment_size = 3;
   c2h::device_vector<cuda::std::pair<int, int>> d_out(2);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
   auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
@@ -976,7 +1020,7 @@ CUB_TEST("DeviceSegmentedReduce::Reduce two-phase can be tuned", "[segmented_red
   auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
   c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
   c2h::device_vector<int> d_out(3, thrust::no_init);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   const block_size_extracting_op<::cuda::std::plus<>> reduce_op{thrust::raw_pointer_cast(d_block_size.data())};
 
@@ -1001,7 +1045,7 @@ CUB_TEST("Fixed-size DeviceSegmentedReduce::Reduce two-phase can be tuned",
   const int segment_size = 3;
   c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
   c2h::device_vector<int> d_out(2, thrust::no_init);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   const block_size_extracting_op<::cuda::std::plus<>> reduce_op{thrust::raw_pointer_cast(d_block_size.data())};
 
@@ -1022,7 +1066,7 @@ CUB_TEST("DeviceSegmentedReduce::Sum two-phase can be tuned", "[segmented_reduce
   c2h::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
   c2h::device_vector<int> d_out(3, thrust::no_init);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   // Sum can not take a custom reduction_op, so the input iterator records the block size
   auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
@@ -1043,7 +1087,7 @@ CUB_TEST(
   const int num_segments = 2;
   const int segment_size = 3;
   c2h::device_vector<int> d_out(2, thrust::no_init);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   // Sum can not take a custom reduction_op, so the input iterator records the block size
   auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
@@ -1064,7 +1108,7 @@ CUB_TEST("DeviceSegmentedReduce::Min two-phase can be tuned", "[segmented_reduce
   c2h::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
   c2h::device_vector<int> d_out(3, thrust::no_init);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
   auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
@@ -1084,7 +1128,7 @@ CUB_TEST(
   const int num_segments = 2;
   const int segment_size = 3;
   c2h::device_vector<int> d_out(2, thrust::no_init);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
   auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
@@ -1104,7 +1148,7 @@ CUB_TEST("DeviceSegmentedReduce::Max two-phase can be tuned", "[segmented_reduce
   c2h::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
   c2h::device_vector<int> d_out(3, thrust::no_init);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
   auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
@@ -1124,7 +1168,7 @@ CUB_TEST(
   const int num_segments = 2;
   const int segment_size = 3;
   c2h::device_vector<int> d_out(2, thrust::no_init);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
   auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
@@ -1144,7 +1188,7 @@ CUB_TEST("DeviceSegmentedReduce::ArgMin two-phase can be tuned", "[segmented_red
   c2h::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
   c2h::device_vector<cub::KeyValuePair<int, int>> d_out(3);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
   auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
@@ -1166,7 +1210,7 @@ CUB_TEST("Fixed-size DeviceSegmentedReduce::ArgMin two-phase can be tuned",
   const int num_segments = 2;
   const int segment_size = 3;
   c2h::device_vector<cuda::std::pair<int, int>> d_out(2);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
   auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
@@ -1186,7 +1230,7 @@ CUB_TEST("DeviceSegmentedReduce::ArgMax two-phase can be tuned", "[segmented_red
   c2h::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
   c2h::device_vector<cub::KeyValuePair<int, int>> d_out(3);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
   auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
@@ -1208,7 +1252,7 @@ CUB_TEST("Fixed-size DeviceSegmentedReduce::ArgMax two-phase can be tuned",
   const int num_segments = 2;
   const int segment_size = 3;
   c2h::device_vector<cuda::std::pair<int, int>> d_out(2);
-  c2h::device_vector<unsigned int> d_block_size(1, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
 
   auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
   auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});

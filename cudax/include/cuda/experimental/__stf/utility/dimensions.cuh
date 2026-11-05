@@ -463,6 +463,7 @@ public:
     { /*printf("EQUALITY TEST index %d %d shape equal ? %s\n", index,
            other.index, (&shape == &other.shape)?"yes":"no"); */
       _CCCL_ASSERT(iterated == rhs.iterated, "Cannot compare iterators in different boxes.");
+      // NOLINTNEXTLINE(readability-use-anyofallof)
       for (auto i : each(0, dimensions))
       {
         if (current[i] != rhs.current[i])
@@ -501,6 +502,7 @@ public:
   // Overload the equality operator to check if two shapes are equal
   _CCCL_HOST_DEVICE bool operator==(const box& rhs) const
   {
+    // NOLINTNEXTLINE(readability-use-anyofallof)
     for (const size_t i : each(0, dimensions))
     {
       if (get_begin(i) != rhs.get_begin(i) || get_end(i) != rhs.get_end(i))

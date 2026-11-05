@@ -25,7 +25,6 @@
 #include <cuda/__warp/lane_mask.h>
 #include <cuda/hierarchy>
 #include <cuda/std/__bit/popcount.h>
-#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -49,14 +48,13 @@ class binary_partition
   _Fn __fn_;
 
 public:
-  _CCCL_DEVICE_API explicit binary_partition(_Fn __fn) noexcept(::cuda::std::is_nothrow_move_constructible_v<_Fn>)
+  _CCCL_DEVICE_API explicit binary_partition(_Fn __fn)
       : __fn_(::cuda::std::move(__fn))
   {}
 
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const _Unit&, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) noexcept(
-    ::cuda::std::is_nothrow_invocable_v<_Fn&, const _PrevMappingResult&>)
+  map(const _Unit&, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result)
   {
     static_assert(::cuda::std::is_same_v<_Unit, thread_level>, "binary_partition can only group threads");
     static_assert(::cuda::std::is_same_v<typename _ParentGroup::level_type, warp_level>,
@@ -100,7 +98,7 @@ public:
   map(const non_exhaustive_t&,
       const _Unit& __unit,
       const _ParentGroup& __parent,
-      const _PrevMappingResult& __prev_mapping_result) noexcept(noexcept(map(__unit, __parent, __prev_mapping_result)))
+      const _PrevMappingResult& __prev_mapping_result)
   {
     return map(__unit, __parent, __prev_mapping_result);
   }

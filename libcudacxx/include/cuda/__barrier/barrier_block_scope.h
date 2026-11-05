@@ -81,6 +81,9 @@ class barrier<thread_scope_block, ::cuda::std::__empty_completion> : public __bl
   friend class ::cuda::std::__barrier_poll_tester_parity;
 
 public:
+  //! @brief The thread scope of the barrier.
+  static constexpr thread_scope scope = thread_scope_block;
+
   using arrival_token           = typename __barrier_base::arrival_token;
   _CCCL_HIDE_FROM_ABI barrier() = default;
 
