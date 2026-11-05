@@ -44,6 +44,7 @@ CUB_TEST("Capacity partition accepts arbitrary bounds without sort tuning", "[se
     capacity::group_merge_tuning_arch_selector{}(cuda::compute_capability{9, 0}) == cuda::compute_capability{9, 0});
   static_assert(
     capacity::group_merge_tuning_arch_selector{}(cuda::compute_capability{12, 0}) == cuda::compute_capability{12, 0});
+  static_assert(capacity::tiny_walk_policy::inline_cutoff == 36);
   using capacities = capacity::capacity_list<3, 10, 21>;
   static_assert(capacities::first_fit(3) == 0 && capacities::first_fit(4) == 1);
   static_assert(capacities::first_fit(21) == 2 && capacities::first_fit(22) == 3);

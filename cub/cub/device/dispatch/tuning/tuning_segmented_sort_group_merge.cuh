@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Private partition launch settings and GroupMerge thread/IPT ranges and launch defaults.
+// Private partition and tiny-segment walk launch settings and GroupMerge thread/IPT ranges and launch defaults.
 
 #pragma once
 
@@ -27,6 +27,18 @@ namespace detail::segmented_sort_capacity
 struct partition_policy
 {
   static constexpr int block_threads = 256;
+};
+
+// Walk launch: one warp per block, with each thread visiting segments_per_thread segments.
+// Lengths 2 to inline_cutoff - 1 are sorted by logical warps of up to max_threads threads.
+struct tiny_walk_policy
+{
+  static constexpr int block_threads       = 32;
+  static constexpr int segments_per_thread = 4;
+  static constexpr int items_per_thread    = 9;
+  static constexpr int max_threads         = 4;
+  // Exclusive: the walk sorts shorter segments; this length and longer go to capacity bins.
+  static constexpr int inline_cutoff = max_threads * items_per_thread;
 };
 
 // Settings for one launch; min/max_threads describe cooperation per segment, not block size.
