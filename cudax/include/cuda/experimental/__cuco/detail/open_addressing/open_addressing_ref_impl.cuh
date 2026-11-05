@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/raw_reference_cast.h>
 #include <thrust/device_reference.h>
 
 #include <cuda/__atomic/atomic.h>
@@ -30,6 +31,7 @@
 #include <cuda/__memcpy_async/memcpy_async.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/__utility/static_for.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/operations.h>
@@ -573,41 +575,40 @@ public:
     while (true)
     {
       const auto __bucket_slots = __storage_ref[*__probing_iter];
-      auto __expected_slot      = empty_slot_sentinel();
-      auto __probing_result     = __bucket_probing_results{detail::__equal_result::__unequal, -1};
+      // Only read when a slot is available, which overwrites it; starting from the first slot lets
+      // single-slot buckets use the loaded value directly.
+      auto __expected_slot = __bucket_slots[0];
+      // Zero, not -1, so every lane forms an in-bounds slot index below.
+      auto __probing_result = __bucket_probing_results{detail::__equal_result::__unequal, 0};
 
+      // Scan without `break` so the bucket loop compiles to straight-line code.
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
       {
-        const auto __slot = __bucket_slots[__i];
-        const auto __state =
-          __predicate.template operator()<detail::__is_insert::__yes, _SupportsErase>(__key, __extract_key(__slot));
-
-        if (__state == detail::__equal_result::__available)
+        if (__probing_result.__state == detail::__equal_result::__unequal)
         {
-          __expected_slot  = __slot;
-          __probing_result = __bucket_probing_results{__state, __i};
-          break;
-        }
-        if constexpr (!__allows_duplicates)
-        {
-          if (__state == detail::__equal_result::__equal)
+          const auto __slot = __bucket_slots[__i];
+          const auto __state =
+            __predicate.template operator()<detail::__is_insert::__yes, _SupportsErase>(__key, __extract_key(__slot));
+          if (__state == detail::__equal_result::__available
+              || (!__allows_duplicates && __state == detail::__equal_result::__equal))
           {
             __expected_slot  = __slot;
             __probing_result = __bucket_probing_results{__state, __i};
-            break;
           }
         }
       }
 
       const auto [__state, __intra_bucket_index] = __probing_result;
+      // Broadcasting one slot index takes one shuffle instead of two, and forming the pointer from
+      // the storage base after the shuffle keeps it known to address global memory.
+      const auto __slot_index = *__probing_iter + __intra_bucket_index;
 
       const auto __group_finds_equal = __group.ballot(__state == detail::__equal_result::__equal);
       if (__group_finds_equal != 0)
       {
-        const auto __src_lane      = __ffs(__group_finds_equal) - 1;
-        const auto __probing_index = __group.shfl(*__probing_iter, __src_lane);
-        const auto __slot_index    = __group.shfl(__intra_bucket_index, __src_lane);
-        auto* const __slot_ptr     = __get_slot_ptr(__probing_index, __slot_index);
+        const auto __src_lane  = __ffs(__group_finds_equal) - 1;
+        auto* const __slot_ptr = __storage_ref.data() + __group.shfl(__slot_index, __src_lane);
 
         if (__group.thread_rank() == __src_lane)
         {
@@ -620,11 +621,9 @@ public:
       const auto __group_contains_available = __group.ballot(__state == detail::__equal_result::__available);
       if (__group_contains_available != 0)
       {
-        const auto __src_lane      = __ffs(__group_contains_available) - 1;
-        const auto __probing_index = __group.shfl(*__probing_iter, __src_lane);
-        const auto __slot_index    = __group.shfl(__intra_bucket_index, __src_lane);
-        auto* const __slot_ptr     = __get_slot_ptr(__probing_index, __slot_index);
-        auto __status              = __insert_result::__continue;
+        const auto __src_lane  = __ffs(__group_contains_available) - 1;
+        auto* const __slot_ptr = __storage_ref.data() + __group.shfl(__slot_index, __src_lane);
+        auto __status          = __insert_result::__continue;
 
         if (__group.thread_rank() == __src_lane)
         {
@@ -952,6 +951,31 @@ public:
     }
   }
 
+  template <bool _SupportsErase>
+  struct __find_insert_slot_fn
+  {
+    template <class _Index, class _ProbeKey>
+    _CCCL_DEVICE_API void operator()(
+      _Index __i,
+      const __open_addressing_ref_impl& __self,
+      const _ProbeKey& __key,
+      const __bucket_type& __bucket_slots,
+      __bucket_probing_results& __result) const noexcept
+    {
+      if (__result.__state == detail::__equal_result::__unequal)
+      {
+        const auto __state = __self.__predicate.template operator()<detail::__is_insert::__yes, _SupportsErase>(
+          __key, __self.__extract_key(__bucket_slots[__i()]));
+        // The insertion predicate handles duplicate policy and never returns __empty.
+        __result.__state = __state;
+        if (__state != detail::__equal_result::__unequal)
+        {
+          __result.__intra_bucket_index = __i();
+        }
+      }
+    }
+  };
+
   //!
   //! @brief Scans a bucket for the first slot available for inserting @p __key.
   //!
@@ -969,24 +993,9 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API __bucket_probing_results
   __find_insert_slot(const _ProbeKey& __key, __bucket_type __bucket_slots) const noexcept
   {
-    for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
-    {
-      switch (__predicate.template operator()<detail::__is_insert::__yes, _SupportsErase>(
-        __key, __extract_key(__bucket_slots[__i])))
-      {
-        case detail::__equal_result::__available:
-          return __bucket_probing_results{detail::__equal_result::__available, __i};
-        case detail::__equal_result::__equal:
-          if constexpr (!__allows_duplicates)
-          {
-            return __bucket_probing_results{detail::__equal_result::__equal, __i};
-          }
-          break;
-        default:
-          break;
-      }
-    }
-    return __bucket_probing_results{detail::__equal_result::__unequal, -1};
+    auto __result = __bucket_probing_results{detail::__equal_result::__unequal, -1};
+    ::cuda::static_for<__bucket_size>(__find_insert_slot_fn<_SupportsErase>{}, *this, __key, __bucket_slots, __result);
+    return __result;
   }
 
   //!

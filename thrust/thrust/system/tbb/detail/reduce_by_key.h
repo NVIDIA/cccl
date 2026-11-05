@@ -45,7 +45,7 @@ inline L divide_ri(const L x, const R y)
 template <typename InputIterator, typename BinaryFunction, typename SFINAE = void>
 struct partial_sum_type
 {
-  using type = thrust::detail::it_value_t<InputIterator>;
+  using type _CCCL_NODEBUG = thrust::detail::it_value_t<InputIterator>;
 };
 
 template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate, typename BinaryFunction>

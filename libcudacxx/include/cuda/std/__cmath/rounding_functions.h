@@ -44,8 +44,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 [[nodiscard]] _CCCL_API inline __float128 __trunc_fp128_impl(__float128 __x) noexcept
 {
   using __storage_t          = __fp_storage_of_t<__float128>;
-  constexpr auto __fmt       = __fp_format_of_v<__float128>;
-  constexpr int __mant_nbits = __fp_mant_nbits_v<__fmt>;
+  constexpr int __mant_nbits = __fp_mant_nbits_v<__fp_format_of_v<__float128>>;
   const auto __bits          = ::cuda::std::__fp_get_storage(__x);
   const int __exp            = ::cuda::std::__fp_get_exp(__x);
 
@@ -108,6 +107,24 @@ template <class _Integer>
     return static_cast<_Integer>(__r);
   }
   // The result is unspecified for NaN and out of range values. Avoid the undefined conversion and return min(), as
+  // the x86 conversion instructions do
+  return numeric_limits<_Integer>::min();
+}
+
+// llround and lround are defined before round
+[[nodiscard]] _CCCL_API inline __float128 round(__float128 __x) noexcept;
+
+template <class _Integer>
+[[nodiscard]] _CCCL_API _Integer __lround_fp128(__float128 __x) noexcept
+{
+  const __float128 __r = ::cuda::std::round(__x);
+  // -min() is a power of two, so the bounds are exact
+  constexpr __float128 __bound = -static_cast<__float128>(numeric_limits<_Integer>::min());
+  if (__r >= -__bound && __r < __bound)
+  {
+    return static_cast<_Integer>(__r);
+  }
+  // The result is unspecified for NaN and out of range values, and converting them is undefined, so return min() like
   // the x86 conversion instructions do
   return numeric_limits<_Integer>::min();
 }
@@ -478,6 +495,13 @@ _CCCL_API inline long long llroundl(long double __x) noexcept
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline long long llround(__float128 __x) noexcept
+{
+  return ::cuda::std::__lround_fp128<long long>(__x);
+}
+#endif // _CCCL_HAS_FLOAT128()
+
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 _CCCL_API inline long long llround(_Integer __x) noexcept
 {
@@ -648,6 +672,13 @@ _CCCL_API inline long lroundl(long double __x) noexcept
   return ::cuda::std::lroundf(__bfloat162float(__x));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
+
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline long lround(__float128 __x) noexcept
+{
+  return ::cuda::std::__lround_fp128<long>(__x);
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 _CCCL_API inline long lround(_Integer __x) noexcept

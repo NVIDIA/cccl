@@ -19,6 +19,10 @@ option(
 )
 option(CCCL_ENABLE_PTXAS_WARNINGS "Enable ptxas warnings" OFF) # currently used only in CUB
 
+option(CCCL_ENABLE_FASTMATH "Enable fast math for internal CCCL testing." OFF)
+# Internal testing option; users should set CMAKE_CUDA_FLAGS instead.
+mark_as_advanced(CCCL_ENABLE_FASTMATH)
+
 function(
   cccl_build_compiler_interface
   interface_target
@@ -104,6 +108,9 @@ function(cccl_build_compiler_targets)
   endif()
   if (CCCL_ENABLE_TILE)
     list(APPEND cuda_compile_options "--enable-tile")
+  endif()
+  if (CCCL_ENABLE_FASTMATH)
+    list(APPEND cuda_compile_options "--use_fast_math")
   endif()
 
   if (NOT CCCL_ENABLE_PRAGMA_SYSTEM_HEADER)

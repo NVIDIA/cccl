@@ -22,7 +22,7 @@ namespace detail
 template <template <typename...> typename Trait, typename... Args>
 struct lazy_trait
 {
-  using type = Trait<Args...>;
+  using type _CCCL_NODEBUG = Trait<Args...>;
 };
 } // namespace detail
 #endif // _CCCL_DOXYGEN_INVOKED

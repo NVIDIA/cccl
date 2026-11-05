@@ -14,24 +14,32 @@
 #endif // no system header
 
 #include <cub/agent/agent_scan.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/detail/deferred_parameter.cuh>
-#include <cub/detail/it_traits.cuh>
+#include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/it_traits.cuh> // IWYU pragma: keep
+#include <cub/detail/uninitialized.cuh>
 #include <cub/detail/warpspeed/look_ahead.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_macro.cuh>
 
+#include <thrust/type_traits/is_contiguous_iterator.h>
+
 #include <cuda/std/__type_traits/always_false.h>
+
+#include <nv/target>
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
 #  include <cub/device/dispatch/kernels/kernel_scan_lookahead.cuh>
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
 
-#include <thrust/type_traits/is_contiguous_iterator.h>
-
+#include <cuda/__atomic/atomic.h>
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/atomic>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__atomic/order.h>
+#include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/cstdint>
@@ -307,7 +315,18 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   if constexpr (active_policy.algorithm == ScanAlgorithm::lookahead)
   {
     const OffsetT num_items = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
+    // the lookahead implementation copies tiles from and to raw pointers (the dispatch unwraps contiguous iterators)
+    constexpr bool contiguous_iterators = THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>
+                                       && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
+    static_assert(contiguous_iterators,
+                  "ScanPolicy: algorithm must not be ScanAlgorithm::lookahead unless the input and output iterators "
+                  "are contiguous");
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
+    // we cannot static_assert on nvc++, but custom tunings are unlikely there
+#  if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 900
+    static_assert(::cuda::std::__always_false_v<InputIteratorT>,
+                  "ScanPolicy: algorithm must not be ScanAlgorithm::lookahead when compiling for < sm_90");
+#  endif
     NV_IF_TARGET(
       NV_PROVIDES_SM_90, ({
         auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
@@ -515,7 +534,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   static_assert(::cuda::std::is_unsigned_v<OffsetT>, "the batched scan expects an unsigned offset type");
 
   __shared__ typename agent_t::TempStorage temp_storage;
-  __shared__ ::cuda::std::uint64_t tile_idx;
+  __shared__::cuda::std::uint64_t tile_idx;
 
   ::cuda::std::uint64_t current_batch_idx = 0;
 

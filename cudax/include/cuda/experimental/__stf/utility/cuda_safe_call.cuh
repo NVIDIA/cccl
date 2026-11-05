@@ -138,7 +138,7 @@ struct cuda_status_traits_base
 };
 
 /**
- * @brief Makes the CUDA runtime's `cudaError_t` a status for `errsink(policy) << status`; see
+ * @brief Makes the CUDA runtime's `cudaError_t` a status for `policy << status`; see
  * @ref status_traits.
  */
 template <>
@@ -160,7 +160,7 @@ struct status_traits<cudaError_t> : cuda_status_traits_base<cudaError_t>
 };
 
 /**
- * @brief Makes the CUDA driver's `CUresult` a status for `errsink(policy) << status`; see
+ * @brief Makes the CUDA driver's `CUresult` a status for `policy << status`; see
  * @ref status_traits.
  */
 template <>
@@ -190,7 +190,7 @@ struct status_traits<CUresult> : cuda_status_traits_base<CUresult>
 };
 
 /**
- * @brief Makes the occupancy calculator's `cudaOccError` a status for `errsink(policy) << status`;
+ * @brief Makes the occupancy calculator's `cudaOccError` a status for `policy << status`;
  * see @ref status_traits.
  */
 template <>
@@ -216,7 +216,7 @@ struct status_traits<cudaOccError> : cuda_status_traits_base<cudaOccError>
 
 #if __has_include(<cublas_v2.h>)
 /**
- * @brief Makes cuBLAS's `cublasStatus_t` a status for `errsink(policy) << status`; see
+ * @brief Makes cuBLAS's `cublasStatus_t` a status for `policy << status`; see
  * @ref status_traits.
  */
 template <>
@@ -240,7 +240,7 @@ struct status_traits<cublasStatus_t> : cuda_status_traits_base<cublasStatus_t>
 
 #if __has_include(<cusolverDn.h>)
 /**
- * @brief Makes cuSOLVER's `cusolverStatus_t` a status for `errsink(policy) << status`; see
+ * @brief Makes cuSOLVER's `cusolverStatus_t` a status for `policy << status`; see
  * @ref status_traits.
  */
 template <>
@@ -290,7 +290,7 @@ public:
     }
 
     int dev = -1;
-    cudaGetDevice(&dev);
+    static_cast<void>(cudaGetDevice(&dev));
 
     format("%s(%u) [device %d] CUDA error in %s: ", loc.file_name(), loc.line(), dev, loc.function_name());
     // The name for T only, not a visit over every alternative: that would instantiate every
@@ -393,25 +393,25 @@ namespace reserved
 template <typename, typename = void>
 struct first_param_impl
 {
-  using type = void;
+  using type _CCCL_NODEBUG = void;
 };
 
 template <typename R, typename P, typename... Ps>
 struct first_param_impl<R (*)(P, Ps...)>
 {
-  using type = P;
+  using type _CCCL_NODEBUG = P;
 };
 
 template <typename, typename = void>
 struct second_param_impl
 {
-  using type = void;
+  using type _CCCL_NODEBUG = void;
 };
 
 template <typename R, typename P0, typename P1, typename... Ps>
 struct second_param_impl<R (*)(P0, P1, Ps...)>
 {
-  using type = P1;
+  using type _CCCL_NODEBUG = P1;
 };
 
 template <typename...>
@@ -420,7 +420,7 @@ struct last_param_impl;
 template <typename P>
 struct last_param_impl<P>
 {
-  using type = P;
+  using type _CCCL_NODEBUG = P;
 };
 
 template <typename P, typename... Ps>
@@ -430,33 +430,33 @@ struct last_param_impl<P, Ps...> : last_param_impl<Ps...>
 template <typename, typename = void>
 struct function_last_param_impl
 {
-  using type = void;
+  using type _CCCL_NODEBUG = void;
 };
 
 template <typename R, typename... Ps>
 struct function_last_param_impl<R (*)(Ps...)>
 {
-  using type = typename last_param_impl<Ps...>::type;
+  using type _CCCL_NODEBUG = typename last_param_impl<Ps...>::type;
 };
 
 // `R (*)()` has no last parameter: the primary template's `void` applies.
 template <typename R>
 struct function_last_param_impl<R (*)()>
 {
-  using type = void;
+  using type _CCCL_NODEBUG = void;
 };
 
 // The pointee of a synthesized output parameter: `T*` -> `T`, anything else -> `void`.
 template <typename>
 struct out_param_impl
 {
-  using type = void;
+  using type _CCCL_NODEBUG = void;
 };
 
 template <typename T>
 struct out_param_impl<T*>
 {
-  using type = T;
+  using type _CCCL_NODEBUG = T;
 };
 
 /*
@@ -572,7 +572,7 @@ UNITTEST("cuda_safe_call")
  * `cudaCreateStream(&stream)`, with the note that the former call throws an exception in case of error.
  *
  * For the status types that specialize @ref status_traits, `cuda_try(status)` is equivalent to
- * `errsink(eh::unwind) << status`.
+ * `sump::unwind << status`.
  *
  * @snippet this cuda_try1
  */

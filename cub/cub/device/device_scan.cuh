@@ -33,6 +33,7 @@
 #include <cub/detail/input_value.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/dispatch_scan_by_key.cuh>
@@ -170,7 +171,7 @@ inline constexpr bool is_num_items_v = ::cuda::std::is_integral_v<NumItemsT> || 
 //! Tuning
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! All non-ByKey algorithms in DeviceScan that accept an environment can be tuned by passing a custom :ref:`policy
+//! All non-ByKey algorithms in DeviceScan can be tuned by passing a custom :ref:`policy
 //! selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::ScanPolicy`, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_scan_env_api.cu
@@ -236,15 +237,14 @@ private:
       policy_selector);
   }
 
-  template <ForceInclusive EnforceInclusive = ForceInclusive::No,
-            typename InputIteratorT,
+  // Validates the determinism requirements of an environment and selects the default policy for a scan
+  template <typename InputIteratorT,
             typename OutputIteratorT,
             typename ScanOpT,
             typename InitValueT,
             typename NumItemsT,
             typename EnvT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t scan_impl_env(
-    InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, InitValueT init, NumItemsT num_items, const EnvT& env)
+  struct scan_env_traits
   {
     static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                   "Determinism should be used inside requires to have an effect.");
@@ -265,13 +265,13 @@ private:
                                                     typename InitValueT::value_type>>;
     using offset_t = detail::choose_offset_t<typename ::cuda::args::__traits<NumItemsT>::element_type>;
 
-    constexpr bool is_run_to_run_required =
+    static constexpr bool is_run_to_run_required =
       ::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::run_to_run_t>;
-    constexpr bool is_gpu_to_gpu_required =
+    static constexpr bool is_gpu_to_gpu_required =
       ::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>;
-    constexpr bool is_safe_integral_op =
+    static constexpr bool is_safe_integral_op =
       ::cuda::std::is_integral_v<accum_t> && detail::is_cuda_binary_operator<ScanOpT>;
-    constexpr bool is_fp_plus_op =
+    static constexpr bool is_fp_plus_op =
       ::cuda::std::is_floating_point_v<accum_t> && ::cuda::__is_cuda_std_plus_v<ScanOpT, accum_t>;
 
     // run_to_run determinism is supported only with integral types with known operators, or floating-point types with
@@ -294,10 +294,49 @@ private:
       ScanOpT,
       stable_reduction_order,
       ::cuda::args::__is_deferred_v<NumItemsT>>;
+  };
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector_t>(
+  template <ForceInclusive EnforceInclusive = ForceInclusive::No,
+            typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename NumItemsT,
+            typename EnvT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t scan_impl_single_phase(
+    InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, InitValueT init, NumItemsT num_items, const EnvT& env)
+  {
+    using traits_t = scan_env_traits<InputIteratorT, OutputIteratorT, ScanOpT, InitValueT, NumItemsT, EnvT>;
+
+    return detail::dispatch_with_env_and_tuning<typename traits_t::default_policy_selector_t>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return scan_impl_determinism<EnforceInclusive, stable_reduction_order>(
+        return scan_impl_determinism<EnforceInclusive, traits_t::stable_reduction_order>(
+          storage, bytes, d_in, d_out, scan_op, init, num_items, stream, policy_selector);
+      });
+  }
+
+  template <ForceInclusive EnforceInclusive = ForceInclusive::No,
+            typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename NumItemsT,
+            typename EnvT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t scan_impl_two_phase(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ScanOpT scan_op,
+    InitValueT init,
+    NumItemsT num_items,
+    const EnvT& env)
+  {
+    using traits_t = scan_env_traits<InputIteratorT, OutputIteratorT, ScanOpT, InitValueT, NumItemsT, EnvT>;
+
+    return detail::dispatch_with_env_and_tuning<typename traits_t::default_policy_selector_t>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return scan_impl_determinism<EnforceInclusive, traits_t::stable_reduction_order>(
           storage, bytes, d_in, d_out, scan_op, init, num_items, stream, policy_selector);
       });
   }
@@ -336,7 +375,7 @@ private:
                                                       ScanOpT>;
 
     using policy_selector_t =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, ScanByKeyPolicy, default_policy_selector_t>;
+      detail::policy_selector_from_tuning_env_t<TuningEnvT, ScanByKeyPolicy, default_policy_selector_t>;
 
     // we would not need to override the accumulator type, but we must ensure it's the same as for the policy here
     return detail::scan_by_key::dispatch</* OverrideAccumT = */ accum_t>(
@@ -420,6 +459,9 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -435,18 +477,22 @@ public:
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename NumItemsT,
+            typename EnvT                                                    = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSum(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     NumItemsT num_items,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSum");
 
@@ -455,15 +501,15 @@ public:
     // Initial value
     const init_value_t init_value{};
 
-    return detail::scan::dispatch(
+    return scan_impl_two_phase(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       ::cuda::std::plus<>{},
       detail::InputValue<init_value_t>(init_value),
-      detail::make_num_items_dispatch_arg(num_items),
-      stream);
+      num_items,
+      env);
   }
 
   //! @rst
@@ -535,7 +581,7 @@ public:
     using init_value_t = cub::detail::it_value_t<InputIteratorT>;
     const init_value_t init_value{};
 
-    return scan_impl_env(
+    return scan_impl_single_phase(
       d_in, d_out, ::cuda::std::plus<>{}, detail::InputValue<init_value_t>(init_value), num_items, env);
   }
 
@@ -594,6 +640,9 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -606,19 +655,18 @@ public:
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_data`)
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename IteratorT, typename NumItemsT>
+  template <typename IteratorT,
+            typename NumItemsT,
+            typename EnvT                                                = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!detail::is_num_items_v<EnvT>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSum(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    IteratorT d_data,
-    NumItemsT num_items,
-    cudaStream_t stream = nullptr)
+    void* d_temp_storage, size_t& temp_storage_bytes, IteratorT d_data, NumItemsT num_items, const EnvT& env = {})
   {
-    return ExclusiveSum(d_temp_storage, temp_storage_bytes, d_data, d_data, num_items, stream);
+    return ExclusiveSum(d_temp_storage, temp_storage_bytes, d_data, d_data, num_items, env);
   }
 
   //! @rst
@@ -763,6 +811,9 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -784,11 +835,17 @@ public:
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT, typename NumItemsT>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename NumItemsT,
+            typename EnvT                                                    = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -797,19 +854,19 @@ public:
     ScanOpT scan_op,
     InitValueT init_value,
     NumItemsT num_items,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScan");
 
-    return detail::scan::dispatch(
+    return scan_impl_two_phase(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       scan_op,
       detail::InputValue<InitValueT>(init_value),
-      detail::make_num_items_dispatch_arg(num_items),
-      stream);
+      num_items,
+      env);
   }
 
   //! @rst
@@ -908,7 +965,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveScan");
 
-    return scan_impl_env(d_in, d_out, scan_op, detail::InputValue<InitValueT>(init_value), num_items, env);
+    return scan_impl_single_phase(d_in, d_out, scan_op, detail::InputValue<InitValueT>(init_value), num_items, env);
   }
 
   //! @rst
@@ -986,6 +1043,9 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -1004,11 +1064,16 @@ public:
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename IteratorT, typename ScanOpT, typename InitValueT, typename NumItemsT>
+  template <typename IteratorT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename NumItemsT,
+            typename EnvT                                                = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!detail::is_num_items_v<EnvT>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1016,9 +1081,9 @@ public:
     ScanOpT scan_op,
     InitValueT init_value,
     NumItemsT num_items,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
-    return ExclusiveScan(d_temp_storage, temp_storage_bytes, d_data, d_data, scan_op, init_value, num_items, stream);
+    return ExclusiveScan(d_temp_storage, temp_storage_bytes, d_data, d_data, scan_op, init_value, num_items, env);
   }
 
   //! @rst
@@ -1182,6 +1247,9 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -1203,16 +1271,18 @@ public:
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename ScanOpT,
             typename InitValueT,
-            typename InitValueIterT = InitValueT*,
-            typename NumItemsT      = int>
+            typename InitValueIterT                                          = InitValueT*,
+            typename NumItemsT                                               = int,
+            typename EnvT                                                    = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1221,19 +1291,19 @@ public:
     ScanOpT scan_op,
     FutureValue<InitValueT, InitValueIterT> init_value,
     NumItemsT num_items,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScan");
 
-    return detail::scan::dispatch(
+    return scan_impl_two_phase(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       scan_op,
       detail::InputValue<InitValueT, InitValueIterT>(init_value),
-      detail::make_num_items_dispatch_arg(num_items),
-      stream);
+      num_items,
+      env);
   }
 
   //! @rst
@@ -1314,6 +1384,9 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -1332,15 +1405,17 @@ public:
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename IteratorT,
             typename ScanOpT,
             typename InitValueT,
-            typename InitValueIterT = InitValueT*,
-            typename NumItemsT      = int>
+            typename InitValueIterT                                      = InitValueT*,
+            typename NumItemsT                                           = int,
+            typename EnvT                                                = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!detail::is_num_items_v<EnvT>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1348,9 +1423,9 @@ public:
     ScanOpT scan_op,
     FutureValue<InitValueT, InitValueIterT> init_value,
     NumItemsT num_items,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
-    return ExclusiveScan(d_temp_storage, temp_storage_bytes, d_data, d_data, scan_op, init_value, num_items, stream);
+    return ExclusiveScan(d_temp_storage, temp_storage_bytes, d_data, d_data, scan_op, init_value, num_items, env);
   }
 
   //! @rst
@@ -1528,7 +1603,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveScan");
 
-    return scan_impl_env(
+    return scan_impl_single_phase(
       d_in, d_out, scan_op, detail::InputValue<InitValueT, InitValueIterT>(init_value), num_items, env);
   }
 
@@ -1598,6 +1673,9 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -1613,30 +1691,27 @@ public:
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename NumItemsT,
+            typename EnvT                                                    = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSum(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     NumItemsT num_items,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveSum");
 
-    return detail::scan::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_out,
-      ::cuda::std::plus<>{},
-      NullType{},
-      detail::make_num_items_dispatch_arg(num_items),
-      stream);
+    return scan_impl_two_phase(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, ::cuda::std::plus<>{}, NullType{}, num_items, env);
   }
 
   //! @rst
@@ -1693,6 +1768,9 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -1705,19 +1783,18 @@ public:
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename IteratorT, typename NumItemsT>
+  template <typename IteratorT,
+            typename NumItemsT,
+            typename EnvT                                                = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!detail::is_num_items_v<EnvT>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSum(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    IteratorT d_data,
-    NumItemsT num_items,
-    cudaStream_t stream = nullptr)
+    void* d_temp_storage, size_t& temp_storage_bytes, IteratorT d_data, NumItemsT num_items, const EnvT& env = {})
   {
-    return InclusiveSum(d_temp_storage, temp_storage_bytes, d_data, d_data, num_items, stream);
+    return InclusiveSum(d_temp_storage, temp_storage_bytes, d_data, d_data, num_items, env);
   }
 
   //! @rst
@@ -1844,7 +1921,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveSum");
 
-    return scan_impl_env(d_in, d_out, ::cuda::std::plus<>{}, NullType{}, num_items, env);
+    return scan_impl_single_phase(d_in, d_out, ::cuda::std::plus<>{}, NullType{}, num_items, env);
   }
 
   //! @rst
@@ -1923,6 +2000,9 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -1941,11 +2021,16 @@ public:
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename NumItemsT>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ScanOpT,
+            typename NumItemsT,
+            typename EnvT                                                    = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1953,19 +2038,11 @@ public:
     OutputIteratorT d_out,
     ScanOpT scan_op,
     NumItemsT num_items,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScan");
 
-    return detail::scan::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_out,
-      scan_op,
-      NullType(),
-      detail::make_num_items_dispatch_arg(num_items),
-      stream);
+    return scan_impl_two_phase(d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, NullType{}, num_items, env);
   }
 
   //! @rst
@@ -2014,6 +2091,9 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2036,9 +2116,16 @@ public:
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
   //!
-  //! @param[in] stream
-  //!   CUDA stream to launch kernels within.
-  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT, typename NumItemsT>
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -2047,19 +2134,19 @@ public:
     ScanOpT scan_op,
     InitValueT init_value,
     NumItemsT num_items,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanInit");
 
-    return detail::scan::dispatch<ForceInclusive::Yes>(
+    return scan_impl_two_phase<ForceInclusive::Yes>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       scan_op,
       detail::InputValue<InitValueT>(init_value),
-      detail::make_num_items_dispatch_arg(num_items),
-      stream);
+      num_items,
+      env);
   }
 
   //! @rst
@@ -2131,6 +2218,9 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2146,20 +2236,24 @@ public:
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename IteratorT, typename ScanOpT, typename NumItemsT>
+  template <typename IteratorT,
+            typename ScanOpT,
+            typename NumItemsT,
+            typename EnvT                                                = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!detail::is_num_items_v<EnvT>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     IteratorT d_data,
     ScanOpT scan_op,
     NumItemsT num_items,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
-    return InclusiveScan(d_temp_storage, temp_storage_bytes, d_data, d_data, scan_op, num_items, stream);
+    return InclusiveScan(d_temp_storage, temp_storage_bytes, d_data, d_data, scan_op, num_items, env);
   }
 
   //! @rst
@@ -2301,7 +2395,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveScan");
 
-    return scan_impl_env(d_in, d_out, scan_op, NullType{}, num_items, env);
+    return scan_impl_single_phase(d_in, d_out, scan_op, NullType{}, num_items, env);
   }
 
   //! @rst
@@ -2391,7 +2485,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveScanInit");
 
-    return scan_impl_env<ForceInclusive::Yes>(
+    return scan_impl_single_phase<ForceInclusive::Yes>(
       d_in, d_out, scan_op, detail::InputValue<InitValueT>(init_value), num_items, env);
   }
 
@@ -2492,7 +2586,7 @@ public:
 
     auto __fut = FutureValue<__init_value_type, InitValueIterT>{::cuda::args::__unwrap(init_value)};
 
-    return scan_impl_env<ForceInclusive::Yes>(
+    return scan_impl_single_phase<ForceInclusive::Yes>(
       d_in, d_out, scan_op, detail::InputValue<__init_value_type, InitValueIterT>(__fut), num_items, env);
   }
 
@@ -2546,6 +2640,9 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2569,14 +2666,17 @@ public:
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
   //!
-  //! @param[in] stream
-  //!   CUDA stream to launch kernels within.
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename ScanOpT,
             typename InitValueIterT,
             typename InitValueBoundsT,
-            typename NumItemsT>
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -2585,7 +2685,7 @@ public:
     ScanOpT scan_op,
     const ::cuda::args::deferred<InitValueIterT, InitValueBoundsT>& init_value,
     NumItemsT num_items,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanInit");
 
@@ -2594,15 +2694,15 @@ public:
 
     auto __fut = FutureValue<__init_value_type, InitValueIterT>{::cuda::args::__unwrap(init_value)};
 
-    return detail::scan::dispatch<ForceInclusive::Yes>(
+    return scan_impl_two_phase<ForceInclusive::Yes>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       scan_op,
       detail::InputValue<__init_value_type, InitValueIterT>(__fut),
-      detail::make_num_items_dispatch_arg(num_items),
-      stream);
+      num_items,
+      env);
   }
 
   //! @}

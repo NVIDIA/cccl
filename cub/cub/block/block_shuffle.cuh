@@ -21,6 +21,8 @@
 #include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
 
+#include <cuda/std/__cstddef/types.h>
+
 CUB_NAMESPACE_BEGIN
 
 //! @rst
@@ -60,7 +62,7 @@ private:
   static constexpr int WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS;
 
   /// Shared memory storage layout type (last element from each thread's input)
-  using _TempStorage = T[BLOCK_THREADS];
+  using _TempStorage _CCCL_NODEBUG = T[BLOCK_THREADS];
 
 public:
   /// \smemstorage{BlockShuffle}

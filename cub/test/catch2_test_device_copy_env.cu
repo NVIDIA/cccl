@@ -149,6 +149,17 @@ struct batch_copy_tuning
   }
 };
 
+template <int BlockThreads>
+struct batch_copy_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability /*cc*/, cub::BatchedCopyPolicy policy) const
+    -> cub::BatchedCopyPolicy
+  {
+    policy.lookback.small_buffer.threads_per_block = BlockThreads;
+    return policy;
+  }
+};
+
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 
@@ -176,6 +187,43 @@ CUB_TEST("DeviceCopy::Batched can be tuned", "[copy][device]", CUB_SMALL, block_
   const block_size_extracting_constant_iterator sizes(items_per_range, thrust::raw_pointer_cast(d_block_size.data()));
 
   auto env = cuda::execution::tune(batch_copy_tuning<target_block_size>{});
+
+  device_copy_batched(input_it, output_it, sizes, num_ranges, env);
+
+  REQUIRE(d_dst == d_src);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceCopy::Batched tuning can be modified", "[copy][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+
+  // 3 ranges of 2 ints each
+  auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};
+  auto d_dst     = c2h::device_vector<int>(6, thrust::no_init);
+  auto d_offsets = c2h::device_vector<int>{0, 2, 4, 6};
+
+  const int num_ranges          = 3;
+  constexpr int items_per_range = 2;
+
+  const cuda::counting_iterator<int> iota(0);
+  auto input_it = cuda::make_transform_iterator(
+    iota, index_to_ptr<const int>{thrust::raw_pointer_cast(d_src.data()), thrust::raw_pointer_cast(d_offsets.data())});
+  auto output_it = thrust::make_transform_iterator(
+    iota, index_to_ptr<int>{thrust::raw_pointer_cast(d_dst.data()), thrust::raw_pointer_cast(d_offsets.data())});
+
+  c2h::device_vector<unsigned int> d_block_size(1);
+  const block_size_extracting_constant_iterator sizes(items_per_range, thrust::raw_pointer_cast(d_block_size.data()));
+
+  // the default tuning must not already use the target block size, otherwise the test passes vacuously
+  {
+    device_copy_batched(input_it, output_it, sizes, num_ranges, stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
+  auto env = cuda::execution::tune(batch_copy_tuning_transform<target_block_size>{});
 
   device_copy_batched(input_it, output_it, sizes, num_ranges, env);
 

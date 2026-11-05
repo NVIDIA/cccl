@@ -4,9 +4,9 @@
 #pragma once
 #include <cub/config.cuh>
 
+#include <cub/block/block_load.cuh>
 #include <cub/detail/cub_vector.cuh>
 #include <cub/detail/uninitialized.cuh>
-#include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
@@ -38,6 +38,9 @@ struct agent_t
 {
   // The input value type
   using InputT = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
+
+  // vectorized loads require a power-of-two vector size supported by CubVector
+  static_assert(VecSize == 1 || VecSize == 2 || VecSize == 4, "FindIfPolicy: vec_size must be 1, 2 or 4");
 
   // Vector type of InputT for data movement
   using VectorT = typename CubVector<InputT, VecSize>::Type;
@@ -91,22 +94,13 @@ struct agent_t
 
   _CCCL_DEVICE _CCCL_FORCEINLINE bool ConsumeTile(OffsetT tile_offset, ::cuda::std::true_type /*CAN_VECTORIZE*/)
   {
-    using InputT  = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
-    using VectorT = typename CubVector<InputT, VecSize>::Type;
+    using InputT = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
 
-    // vectorized loads begin
-    auto load_ptr = reinterpret_cast<const VectorT*>(d_in + tile_offset + (threadIdx.x * VecSize));
-    const CacheModifiedInputIterator<LoadModifier, VectorT> d_vec_in(load_ptr);
-
-    alignas(VectorT) unsigned char input_bytes[ItemsPerThread * sizeof(InputT)];
-    auto* vec_items = reinterpret_cast<VectorT*>(input_bytes);
-
-    constexpr int number_of_vectors = ItemsPerThread / VecSize;
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < number_of_vectors; ++i)
-    {
-      vec_items[i] = d_vec_in[ThreadsPerBlock * i];
-    }
+    alignas(InputT) unsigned char input_bytes[ItemsPerThread * sizeof(InputT)];
+    auto& input_items = *reinterpret_cast<InputT(*)[ItemsPerThread]>(input_bytes);
+    // is_aligned_and_full_tile checked that the tile is aligned to VectorT
+    detail::load_direct_striped_vectorized_aligned<ThreadsPerBlock, VecSize, LoadModifier>(
+      static_cast<int>(threadIdx.x), d_in + tile_offset, input_items);
 
     for (int i = 0; i < ItemsPerThread; ++i)
     {
@@ -116,7 +110,6 @@ struct agent_t
 
       OffsetT index = tile_offset + vector_of_tile * VecSize + element_in_vector;
 
-      auto* input_items = reinterpret_cast<InputT*>(input_bytes);
       if (index < num_items && predicate(input_items[i]))
       {
         atomicMin(&temp_storage.block_result, index);

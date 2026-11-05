@@ -135,6 +135,11 @@ struct AgentRadixSortUpsweep
   static constexpr int BLOCK_THREADS   = AgentRadixSortUpsweepPolicy::BLOCK_THREADS;
   static constexpr int KEYS_PER_THREAD = AgentRadixSortUpsweepPolicy::ITEMS_PER_THREAD;
 
+  // A thread bins up to KEYS_PER_THREAD keys per tile into its 8-bit digit counters
+  static_assert(1 <= KEYS_PER_THREAD && KEYS_PER_THREAD <= 255,
+                "RadixSortUpsweepPolicy / SegmentedRadixSortPolicy / SegmentedSortRadixSortPolicy: items_per_thread "
+                "must be between 1 and 255, since digit counts are accumulated in 8-bit counters");
+
   static constexpr int RADIX_DIGITS = 1 << RADIX_BITS;
 
   static constexpr int LOG_WARP_THREADS = log2_warp_threads;
@@ -152,6 +157,16 @@ struct AgentRadixSortUpsweep
   static constexpr int LOG_COUNTER_LANES = ::cuda::std::max(0, int(RADIX_BITS) - int(LOG_PACKING_RATIO));
   static constexpr int COUNTER_LANES     = 1 << LOG_COUNTER_LANES;
 
+  // ExtractCounts() writes PACKING_RATIO digit counts per counter lane into block_counters[][RADIX_DIGITS]
+  static_assert(RADIX_BITS >= LOG_PACKING_RATIO,
+                "RadixSortUpsweepPolicy / SegmentedRadixSortPolicy / SegmentedSortRadixSortPolicy: radix_bits must "
+                "be at least 2");
+
+  // UnpackDigitCounts() and ExtractCounts() aggregate the per-thread counters in strides of full warps
+  static_assert(BLOCK_THREADS % WARP_THREADS == 0,
+                "RadixSortUpsweepPolicy / SegmentedRadixSortPolicy / SegmentedSortRadixSortPolicy: threads_per_block "
+                "must be a multiple of the warp size (32)");
+
   // To prevent counter overflow, we must periodically unpack and aggregate the
   // digit counters back into registers.  Each counter lane is assigned to a
   // warp for aggregation.
@@ -159,7 +174,8 @@ struct AgentRadixSortUpsweep
   static constexpr int LANES_PER_WARP = ::cuda::std::max(1, (COUNTER_LANES + WARPS - 1) / WARPS);
 
   // Unroll tiles in batches without risk of counter overflow
-  static constexpr int UNROLL_COUNT      = ::cuda::std::min(64, 255 / KEYS_PER_THREAD);
+  static constexpr int UNROLL_COUNT = ::cuda::std::min(64, 255 / KEYS_PER_THREAD);
+  static_assert(UNROLL_COUNT > 0);
   static constexpr int UNROLLED_ELEMENTS = UNROLL_COUNT * TILE_ITEMS;
 
   // Input iterator wrapper type (for applying cache modifier)s

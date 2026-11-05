@@ -19,7 +19,7 @@
 
     template <typename HierarchyLike>
       requires cuda::std::same_as<Hierarchy, /*hierarchy-type-of*/<HierarchyLike>>
-    __device__ /*this-group*/(const HierarchyLike& hierarchy_like) noexcept;
+    __device__ /*this-group*/(const HierarchyLike& hierarchy_like);
 
     /*this-group*/(const /*this-group*/&) = delete;
 
@@ -43,7 +43,7 @@
 
   template </*hierarchy-level-type*/ Level, /*hierarchy-like-type*/ HierarchyLike>
   [[nodiscard]] __device__
-  auto make_this_group(const Level& level, const HierarchyLike& hierarchy_like) noexcept;
+  auto make_this_group(const Level& level, const HierarchyLike& hierarchy_like);
 
   } // namespace cuda::experimental::coop
 

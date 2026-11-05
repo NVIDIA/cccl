@@ -21,9 +21,9 @@
 #include <cub/detail/null_type.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_policy_wrapper_t.cuh>
-#include <cub/util_ptx.cuh>
 
 #include <cuda/__memory/discard_memory.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/cstdint>

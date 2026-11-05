@@ -15,9 +15,10 @@
 
 #include <cuda/std/__algorithm/lower_bound.h>
 #include <cuda/std/__algorithm/upper_bound.h>
-#include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/cstddef>
-#include <cuda/std/tuple>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__iterator/incrementable_traits.h>
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__tuple_dir/tuple.h>
 
 CUB_NAMESPACE_BEGIN
 

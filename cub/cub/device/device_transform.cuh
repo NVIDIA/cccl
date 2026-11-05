@@ -22,6 +22,7 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/device/dispatch/dispatch_transform.cuh>
 #include <cub/util_namespace.cuh>
 
@@ -116,13 +117,14 @@ CUB_NAMESPACE_BEGIN
 //! @endrst
 struct DeviceTransform
 {
-  template <detail::transform::requires_stable_address StableAddress = detail::transform::requires_stable_address::no,
-            typename... RandomAccessIteratorsIn,
-            typename RandomAccessIteratorOut,
-            typename NumItemsT,
-            typename Predicate,
-            typename TransformOp,
-            typename Env>
+  template <
+    detail::transform::requires_stable_address RequiresStableAddress = detail::transform::requires_stable_address::no,
+    typename... RandomAccessIteratorsIn,
+    typename RandomAccessIteratorOut,
+    typename NumItemsT,
+    typename Predicate,
+    typename TransformOp,
+    typename Env>
   CUB_RUNTIME_FUNCTION static cudaError_t __transform_internal(
     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
     RandomAccessIteratorOut output,
@@ -137,7 +139,7 @@ struct DeviceTransform
     if constexpr (::cuda::std::is_same_v<Predicate, ::cuda::always_true>
                   && detail::__is_cuda_zip_transform<inputs_t, TransformOp>)
     {
-      return __transform_internal<StableAddress>(
+      return __transform_internal<RequiresStableAddress>(
         ::cuda::std::move(::cuda::std::get<0>(inputs).__iterators()),
         ::cuda::std::move(output),
         num_items,
@@ -148,7 +150,7 @@ struct DeviceTransform
     else if constexpr (::cuda::std::is_same_v<Predicate, ::cuda::always_true>
                        && detail::__is_thrust_zip_transform<inputs_t, TransformOp>)
     {
-      return __transform_internal<StableAddress>(
+      return __transform_internal<RequiresStableAddress>(
         ::cuda::std::get<0>(inputs).get_iterator_tuple(),
         ::cuda::std::move(output),
         num_items,
@@ -171,20 +173,20 @@ struct DeviceTransform
 
       using tuning_env = ::cuda::std::execution::
         __query_result_or_t<Env, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
-      using default_policy_selector =
-        detail::transform::policy_selector_from_types<StableAddress == detail::transform::requires_stable_address::yes,
-                                                      ::cuda::std::is_same_v<Predicate, ::cuda::always_true>,
-                                                      inputs_t,
-                                                      RandomAccessIteratorOut>;
+      using default_policy_selector = detail::transform::policy_selector_from_types<
+        RequiresStableAddress == detail::transform::requires_stable_address::yes,
+        ::cuda::std::is_same_v<Predicate, ::cuda::always_true>,
+        inputs_t,
+        RandomAccessIteratorOut>;
 
       using policy_selector =
-        ::cuda::std::execution::__query_result_or_t<tuning_env, TransformPolicy, default_policy_selector>;
+        detail::policy_selector_from_tuning_env_t<tuning_env, TransformPolicy, default_policy_selector>;
 
 #if _CCCL_HAS_CONCEPTS()
       static_assert(detail::transform::transform_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
-      return detail::transform::dispatch<StableAddress>(
+      return detail::transform::dispatch<RequiresStableAddress>(
         ::cuda::std::move(inputs),
         ::cuda::std::move(output),
         static_cast<offset_t>(num_items),
@@ -196,13 +198,14 @@ struct DeviceTransform
   }
 
   // TODO(bgruber): we want to eventually forward the output tuple to the kernel and optimize writing multiple streams
-  template <detail::transform::requires_stable_address StableAddress = detail::transform::requires_stable_address::no,
-            typename... RandomAccessIteratorsIn,
-            typename... RandomAccessIteratorsOut,
-            typename NumItemsT,
-            typename Predicate,
-            typename TransformOp,
-            typename Env>
+  template <
+    detail::transform::requires_stable_address RequiresStableAddress = detail::transform::requires_stable_address::no,
+    typename... RandomAccessIteratorsIn,
+    typename... RandomAccessIteratorsOut,
+    typename NumItemsT,
+    typename Predicate,
+    typename TransformOp,
+    typename Env>
   CUB_RUNTIME_FUNCTION static cudaError_t __transform_internal(
     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
     ::cuda::std::tuple<RandomAccessIteratorsOut...> outputs,
@@ -211,7 +214,7 @@ struct DeviceTransform
     TransformOp transform_op,
     const Env& env)
   {
-    return __transform_internal<StableAddress>(
+    return __transform_internal<RequiresStableAddress>(
       ::cuda::std::move(inputs),
       ::cuda::make_zip_iterator(::cuda::std::move(outputs)),
       num_items,
@@ -327,7 +330,7 @@ struct DeviceTransform
   //! @param num_items The number of elements in each input sequence.
   //! @param transform_op An n-ary function object, where n is the number of input sequences. The input iterators' value
   //! types must be convertible to the parameters of the function object's call operator. The return type of the call
-  //! operator must be assignable to the dereferenced output iterator.
+  //! operator must be assignable to the output iterator's reference and value type (if non-void).
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename... RandomAccessIteratorsIn,
@@ -395,8 +398,8 @@ struct DeviceTransform
   //! input sequence in any other way.
   //! @param num_items The number of elements in each input sequence.
   //! @param transform_op A unary function object. The input iterator's value type must be convertible to the parameter
-  //! of the function object's call operator. The return type of the call operator must be assignable to the
-  //! dereferenced output iterator.
+  //! of the function object's call operator. The return type of the call operator must be assignable to the output
+  //! iterator's reference and value type (if non-void).
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename RandomAccessIteratorIn,
@@ -462,8 +465,8 @@ struct DeviceTransform
   //!
   //! @param output An iterator to the output sequence where num_items results are written to.
   //! @param num_items The number of elements to write to the output sequence.
-  //! @param generator A nullary function object. The return type of the call operator must be assignable to the
-  //! dereferenced output iterator.
+  //! @param generator A nullary function object. The return type of the call operator must be assignable to the output
+  //! iterator's reference and value type (if non-void).
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename RandomAccessIteratorOut,
@@ -604,8 +607,8 @@ struct DeviceTransform
   //! value.
   //! @param transform_op An n-ary function object, where n is the number of input sequences. The input iterators' value
   //! types must be convertible to the parameters of the function object's call operator. The return type of the call
-  //! operator must be assignable to the dereferenced output iterator. Will only be invoked if \p predicate returns
-  //! true.
+  //! operator must be assignable to the output iterator's reference and value type (if non-void). Will only be invoked
+  //! if \p predicate returns true.
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename... RandomAccessIteratorsIn,
@@ -697,7 +700,7 @@ struct DeviceTransform
   //! to the parameters of the function object's call operator.
   //! @param transform_op A unary function object. The input iterator's value type must be convertible to the
   //! parameter of the function object's call operator. The return type of the call operator must be assignable to the
-  //! dereferenced output iterator. Will only be invoked if \p predicate returns true.
+  //! output iterator's reference and value type (if non-void). Will only be invoked if \p predicate returns true.
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename RandomAccessIteratorIn,
@@ -785,7 +788,7 @@ struct DeviceTransform
   //! @param num_items The number of elements in each input sequence.
   //! @param transform_op An n-ary function object, where n is the number of input sequences. The input iterators' value
   //! types must be convertible to the parameters of the function object's call operator. The return type of the call
-  //! operator must be assignable to the dereferenced output iterator.
+  //! operator must be assignable to the output iterator's reference and value type (if non-void).
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename... RandomAccessIteratorsIn,
@@ -853,7 +856,7 @@ struct DeviceTransform
   //! @param num_items The number of elements in each input sequence.
   //! @param transform_op An n-ary function object, where n is the number of input sequences. The input iterators' value
   //! types must be convertible to the parameters of the function object's call operator. The return type of the call
-  //! operator must be assignable to the dereferenced output iterator.
+  //! operator must be assignable to the output iterator's reference and value type (if non-void).
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename RandomAccessIteratorIn,

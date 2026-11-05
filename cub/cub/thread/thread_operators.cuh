@@ -25,15 +25,11 @@
 
 #include <cub/detail/key_value_pair.cuh>
 
-#include <cuda/__functional/maximum.h>
-#include <cuda/__functional/minimum.h>
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__utility/forward.h>
-#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -464,13 +460,13 @@ inline constexpr bool is_cuda_binary_operator =
 template <typename Operator>
 struct GeneralizeOperator
 {
-  using type = Operator;
+  using type _CCCL_NODEBUG = Operator;
 };
 
 template <template <typename = void> class Operator, typename T>
 struct GeneralizeOperator<Operator<T>>
 {
-  using type = Operator<>;
+  using type _CCCL_NODEBUG = Operator<>;
 };
 
 template <typename Op>
