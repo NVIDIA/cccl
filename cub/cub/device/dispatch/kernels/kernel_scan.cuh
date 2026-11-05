@@ -48,56 +48,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
-// Occupancy-sized batch grids may fall below the 500-CTA cutoff, which replaces nanosleeps with fences.
-// Keep these adapters to avoid that regression until deferred tuning selects the appropriate delay policy.
-// Backoff policies already wait independently of grid size.
-template <typename DelayConstructorT>
-struct batch_delay_constructor_t : DelayConstructorT
-{
-  using DelayConstructorT::DelayConstructorT;
-};
-
-// Persistent scans must retain positive waits even when the resident grid has fewer than 500 CTAs.
-template <unsigned int Delay, unsigned int L2WriteLatency>
-struct batch_delay_constructor_t<fixed_delay_constructor_t<Delay, L2WriteLatency>>
-{
-  struct delay_t
-  {
-    _CCCL_DEVICE_API void operator()()
-    {
-      if constexpr (Delay > 0)
-      {
-        always_delay_or_prevent_hoisting<Delay>();
-      }
-      else
-      {
-        default_no_delay_t{}();
-      }
-    }
-  };
-
-  _CCCL_DEVICE_API batch_delay_constructor_t(unsigned int /* seed */)
-  {
-    if constexpr (L2WriteLatency > 0)
-    {
-      always_delay<L2WriteLatency>();
-    }
-  }
-
-  _CCCL_DEVICE_API delay_t operator()()
-  {
-    return {};
-  }
-};
-
-template <unsigned int L2WriteLatency>
-struct batch_delay_constructor_t<no_delay_constructor_t<L2WriteLatency>>
-    : batch_delay_constructor_t<fixed_delay_constructor_t<0, L2WriteLatency>>
-{
-  using base_type = batch_delay_constructor_t<fixed_delay_constructor_t<0, L2WriteLatency>>;
-  using base_type::base_type;
-};
-
 template <typename AccumT>
 struct scan_batch_state
 {
@@ -503,10 +453,8 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   constexpr ScanLookbackPolicy policy = current_policy<PolicySelector>().lookback;
   constexpr int tiles_per_batch       = policy.tiles_per_batch;
   static_assert(tiles_per_batch > 0, "Lookback scan batch size must be positive");
-  // Occupancy-based grids caused sharp regressions when the delay helper switched to fences below 500 CTAs.
-  // Use batch-specific adapters to retain nanosleeps while leaving other users of the delay constructors unchanged.
-  using delay_constructor = batch_delay_constructor_t<
-    delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
+  using delay_constructor =
+    delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>;
   using scan_policy_t =
     agent_scan_policy<0,
                       0,

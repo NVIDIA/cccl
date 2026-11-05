@@ -252,20 +252,34 @@ struct reduce_by_key_delay_constructor_t
   }
 };
 
-template <unsigned int Delay, unsigned int L2WriteLatency>
+template <unsigned int Delay, unsigned int L2WriteLatency, bool UseGridThreshold = true>
 struct fixed_delay_constructor_t
 {
   struct delay_t
   {
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
-      delay_or_prevent_hoisting<Delay>();
+      if constexpr (UseGridThreshold || Delay == 0)
+      {
+        delay_or_prevent_hoisting<Delay>();
+      }
+      else
+      {
+        always_delay_or_prevent_hoisting<Delay>();
+      }
     }
   };
 
   _CCCL_DEVICE _CCCL_FORCEINLINE fixed_delay_constructor_t(unsigned int /* seed */)
   {
-    delay<L2WriteLatency>();
+    if constexpr (UseGridThreshold || L2WriteLatency == 0)
+    {
+      delay<L2WriteLatency>();
+    }
+    else
+    {
+      always_delay<L2WriteLatency>();
+    }
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
