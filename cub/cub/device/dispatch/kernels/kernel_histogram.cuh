@@ -381,6 +381,20 @@ struct Transforms
   };
 };
 
+// Decode op that casts the sample to CastT before calling TransformT's BinSelect.
+template <typename TransformT, typename CastT>
+struct cast_decode_op : TransformT
+{
+  template <CacheLoadModifier LoadModifier, typename Sample>
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
+  {
+    if (valid)
+    {
+      TransformT::template BinSelect<LoadModifier>(static_cast<CastT>(sample), bin, valid);
+    }
+  }
+};
+
 /******************************************************************************
  * Histogram kernel entry points
  *****************************************************************************/
@@ -431,7 +445,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
 
   if ((threadIdx.x == 0) && (blockIdx.x == 0))
   {
-    tile_queue.ResetDrain();
+    static_cast<void>(tile_queue.ResetDrain());
   }
 
   const int output_bin = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);

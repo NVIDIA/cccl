@@ -12,11 +12,10 @@
 #define COMMON_GROUP_CUH
 
 #include <cuda/barrier>
+#include <cuda/hierarchy>
 #include <cuda/std/cstddef>
 #include <cuda/std/type_traits>
 #include <cuda/warp>
-
-#include <cuda/experimental/coop/group>
 
 #include "testing.cuh"
 

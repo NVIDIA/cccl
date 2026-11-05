@@ -24,23 +24,23 @@
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/exception_macros.h>
 
-#define _CCCL_TRY_RUNTIME_API(_NAME, _MSG, ...)                \
-  do                                                           \
-  {                                                            \
-    const ::cudaError_t __status = _NAME(__VA_ARGS__);         \
-    if (__status != ::cudaSuccess)                             \
-    {                                                          \
-      ::cudaGetLastError(); /* clear CUDA error state */       \
-      _CCCL_THROW(::cuda::cuda_error, __status, _MSG, #_NAME); \
-    }                                                          \
+#define _CCCL_TRY_RUNTIME_API(_NAME, _MSG, ...)                             \
+  do                                                                        \
+  {                                                                         \
+    const ::cudaError_t __status = _NAME(__VA_ARGS__);                      \
+    if (__status != ::cudaSuccess)                                          \
+    {                                                                       \
+      static_cast<void>(::cudaGetLastError()); /* clear CUDA error state */ \
+      _CCCL_THROW(::cuda::cuda_error, __status, _MSG, #_NAME);              \
+    }                                                                       \
   } while (0)
 
-#define _CCCL_ASSERT_RUNTIME_API(_NAME, _MSG, ...)                      \
-  do                                                                    \
-  {                                                                     \
-    [[maybe_unused]] const ::cudaError_t __status = _NAME(__VA_ARGS__); \
-    ::cudaGetLastError(); /* clear CUDA error state */                  \
-    _CCCL_ASSERT(__status == ::cudaSuccess, _MSG);                      \
+#define _CCCL_ASSERT_RUNTIME_API(_NAME, _MSG, ...)                        \
+  do                                                                      \
+  {                                                                       \
+    [[maybe_unused]] const ::cudaError_t __status = _NAME(__VA_ARGS__);   \
+    static_cast<void>(::cudaGetLastError()); /* clear CUDA error state */ \
+    _CCCL_ASSERT(__status == ::cudaSuccess, _MSG);                        \
   } while (0)
 
 #endif //_CUDA___RUNTIME_API_WRAPPER_H

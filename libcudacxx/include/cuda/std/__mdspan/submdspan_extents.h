@@ -175,7 +175,7 @@ _CCCL_REQUIRES((_Extents::rank() == sizeof...(_Slices)))
 }
 
 template <class _Extents, class... _Slices>
-using __get_subextents_t =
+using __get_subextents_t _CCCL_NODEBUG =
   decltype(::cuda::std::submdspan_extents(::cuda::std::declval<_Extents>(), ::cuda::std::declval<_Slices>()...));
 
 _CCCL_END_NAMESPACE_CUDA_STD

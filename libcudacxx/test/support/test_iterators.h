@@ -1205,13 +1205,13 @@ struct iter_value_or_void<
   It,
   cuda::std::enable_if_t<cuda::std::input_or_output_iterator<It> && !cuda::std::input_iterator<It>>>
 {
-  using type = void;
+  using type _CCCL_NODEBUG = void;
 };
 
 template <class It>
 struct iter_value_or_void<It, cuda::std::enable_if_t<cuda::std::input_iterator<It>>>
 {
-  using type = cuda::std::iter_value_t<It>;
+  using type _CCCL_NODEBUG = cuda::std::iter_value_t<It>;
 };
 
 template <class It>

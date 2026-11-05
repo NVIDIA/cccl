@@ -15,7 +15,9 @@ struct stream_registry_factory_t;
 #include <thrust/tabulate.h>
 
 #include <cuda/devices>
+#include <cuda/functional>
 #include <cuda/iterator>
+#include <cuda/std/limits>
 #include <cuda/stream>
 
 #include "block_size_extracting_helpers.h"
@@ -29,6 +31,7 @@ DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::TransformReduce, device_transform_
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::ReduceByKey, device_reduce_by_key);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::ArgMin, device_arg_min);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::ArgMax, device_arg_max);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::ArgMinMax, device_arg_minmax);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -50,6 +53,40 @@ struct reduce_tuning
     const auto policy =
       cub::ReducePassPolicy{ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
     return {policy, policy};
+  }
+};
+
+template <int ThreadsPerBlock>
+struct reduce_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::ReducePolicy policy) const
+    -> cub::ReducePolicy
+  {
+    policy.multi_tile.threads_per_block  = ThreadsPerBlock;
+    policy.single_tile.threads_per_block = ThreadsPerBlock;
+    return policy;
+  }
+};
+
+// Selects a non-deterministic block reduce. This is only valid if the reduction is not required to be run-to-run
+// deterministic, which includes a determinism::not_guaranteed request that falls back to a run-to-run deterministic
+// dispatch (e.g., for min/max or arg-min/arg-max).
+struct nondeterministic_reduce_tuning
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::ReducePolicy
+  {
+    const auto policy =
+      cub::ReducePassPolicy{128, 4, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC, cub::LOAD_DEFAULT};
+    return {policy, policy};
+  }
+};
+
+// not a known operator, so the reduction is not considered stable
+struct custom_max_op
+{
+  __host__ __device__ int operator()(int a, int b) const
+  {
+    return a < b ? b : a;
   }
 };
 
@@ -124,6 +161,28 @@ CUB_TEST("Device reduce can be tuned", "[reduce][device]", CUB_SMALL, block_size
   auto d_out = thrust::device_vector<int>(1);
 
   auto env = cuda::execution::tune(reduce_tuning<target_block_size>{}, unrelated_tuning{});
+
+  device_reduce(d_in, d_out.begin(), 1, cuda::std::plus<>{}, 0, env);
+  REQUIRE(d_out[0] == 1);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST_CASE("Device reduce tuning can be modified", "[reduce][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+  c2h::device_vector<unsigned int> d_block_size(1);
+
+  auto d_in  = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+  auto d_out = thrust::device_vector<int>(1, thrust::no_init);
+
+  auto env = cuda::execution::tune(reduce_tuning_transform<target_block_size>{});
+
+  {
+    device_reduce(d_in, d_out.begin(), 1, cuda::std::plus<>{}, 0, stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
 
   device_reduce(d_in, d_out.begin(), 1, cuda::std::plus<>{}, 0, env);
   REQUIRE(d_out[0] == 1);
@@ -277,6 +336,99 @@ CUB_TEST("Device ArgMax can be tuned", "[reduce][device]", CUB_SMALL, block_size
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+CUB_TEST_CASE("Device reduce not_guaranteed accepts a nondeterministic tuning when falling back to run_to_run",
+              "[reduce][device]",
+              CUB_SMALL)
+{
+  auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
+                          cuda::execution::tune(nondeterministic_reduce_tuning{})};
+
+  SECTION("non-plus operator on floats")
+  {
+    auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+    auto output = c2h::device_vector<float>(1);
+    device_reduce(
+      input.begin(),
+      output.begin(),
+      static_cast<int>(input.size()),
+      cuda::maximum<>{},
+      cuda::std::numeric_limits<float>::lowest(),
+      env);
+    REQUIRE(output[0] == 4.0f);
+  }
+  SECTION("custom operator on ints")
+  {
+    auto input  = c2h::device_vector<int>{3, 1, 4, 0, 2};
+    auto output = c2h::device_vector<int>(1);
+    device_reduce(input.begin(), output.begin(), static_cast<int>(input.size()), custom_max_op{}, 0, env);
+    REQUIRE(output[0] == 4);
+  }
+  SECTION("output type differs from the accumulator type")
+  {
+    auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+    auto output = c2h::device_vector<double>(1);
+    device_reduce(input.begin(), output.begin(), static_cast<int>(input.size()), cuda::std::plus<>{}, 0.0f, env);
+    REQUIRE(output[0] == 10.0);
+  }
+}
+
+CUB_TEST_CASE("Device Min and Max not_guaranteed accept a nondeterministic tuning", "[reduce][device]", CUB_SMALL)
+{
+  auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
+                          cuda::execution::tune(nondeterministic_reduce_tuning{})};
+
+  auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+  auto output = c2h::device_vector<float>(1);
+
+  SECTION("Min")
+  {
+    device_reduce_min(input.begin(), output.begin(), static_cast<int>(input.size()), env);
+    REQUIRE(output[0] == 0.0f);
+  }
+  SECTION("Max")
+  {
+    device_reduce_max(input.begin(), output.begin(), static_cast<int>(input.size()), env);
+    REQUIRE(output[0] == 4.0f);
+  }
+}
+
+CUB_TEST_CASE("Device ArgMin, ArgMax and ArgMinMax not_guaranteed accept a nondeterministic tuning",
+              "[reduce][device]",
+              CUB_SMALL)
+{
+  auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
+                          cuda::execution::tune(nondeterministic_reduce_tuning{})};
+
+  auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+  const auto n      = static_cast<int>(input.size());
+  auto extremum_out = c2h::device_vector<float>(1);
+  auto index_out    = c2h::device_vector<cuda::std::int64_t>(1);
+
+  SECTION("ArgMin")
+  {
+    device_arg_min(input.begin(), extremum_out.begin(), index_out.begin(), n, env);
+    REQUIRE(extremum_out[0] == 0.0f);
+    REQUIRE(index_out[0] == 3);
+  }
+  SECTION("ArgMax")
+  {
+    device_arg_max(input.begin(), extremum_out.begin(), index_out.begin(), n, env);
+    REQUIRE(extremum_out[0] == 4.0f);
+    REQUIRE(index_out[0] == 2);
+  }
+  SECTION("ArgMinMax")
+  {
+    auto max_extremum_out = c2h::device_vector<float>(1);
+    auto max_index_out    = c2h::device_vector<cuda::std::int64_t>(1);
+    device_arg_minmax(
+      input.begin(), extremum_out.begin(), index_out.begin(), max_extremum_out.begin(), max_index_out.begin(), n, env);
+    REQUIRE(extremum_out[0] == 0.0f);
+    REQUIRE(index_out[0] == 3);
+    REQUIRE(max_extremum_out[0] == 4.0f);
+    REQUIRE(max_index_out[0] == 2);
+  }
+}
+
 #endif // TEST_LAUNCH != 1
 
 template <int BlockThreads, int ItemsPerThread = 1>
@@ -286,6 +438,17 @@ struct reduce_by_key_tuning
   {
     return {cub::ReduceByKeyAlgorithm::lookback,
             {BlockThreads, ItemsPerThread, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}}};
+  }
+};
+
+template <int BlockThreads>
+struct reduce_by_key_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::ReduceByKeyPolicy policy) const
+    -> cub::ReduceByKeyPolicy
+  {
+    policy.lookback.threads_per_block = BlockThreads;
+    return policy;
   }
 };
 
@@ -326,6 +489,47 @@ CUB_TEST("Device ReduceByKey can be tuned", "[reduce][device]", CUB_SMALL, reduc
   d_aggregates_out.resize(5);
   REQUIRE(d_unique_out == expected_keys);
   REQUIRE(d_aggregates_out == expected_aggregates);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST_CASE("Device ReduceByKey tuning can be modified", "[reduce][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+  auto d_keys_in                           = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto d_values_in                         = c2h::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
+  auto d_unique_out                        = c2h::device_vector<int>(8);
+  auto d_aggregates_out                    = c2h::device_vector<int>(8);
+  auto d_num_runs_out                      = c2h::device_vector<int>(1, thrust::no_init);
+  auto d_block_size                        = c2h::device_vector<unsigned int>(1);
+
+  const block_size_extracting_minimum_t reduction_op{thrust::raw_pointer_cast(d_block_size.data())};
+  auto env = cuda::execution::tune(reduce_by_key_tuning_transform<target_block_size>{});
+
+  {
+    device_reduce_by_key(
+      d_keys_in.begin(),
+      d_unique_out.begin(),
+      d_values_in.begin(),
+      d_aggregates_out.begin(),
+      d_num_runs_out.begin(),
+      reduction_op,
+      static_cast<int>(d_keys_in.size()),
+      stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
+  device_reduce_by_key(
+    d_keys_in.begin(),
+    d_unique_out.begin(),
+    d_values_in.begin(),
+    d_aggregates_out.begin(),
+    d_num_runs_out.begin(),
+    reduction_op,
+    static_cast<int>(d_keys_in.size()),
+    env);
+  REQUIRE(d_num_runs_out[0] == 5);
   REQUIRE(d_block_size[0] == target_block_size);
 }
 

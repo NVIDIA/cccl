@@ -36,6 +36,8 @@
 #include <cuda/experimental/coop/__group/concepts.cuh>
 #include <cuda/experimental/coop/__group/fwd.cuh>
 
+#include <nv/target>
+
 #include <cuda/std/__cccl/prologue.h>
 
 #if !defined(_CCCL_DOXYGEN_INVOKED)
@@ -43,7 +45,7 @@
 namespace cuda::experimental::coop
 {
 template <class _Group>
-[[nodiscard]] _CCCL_DEVICE_API bool __elect_one(const _Group& __group) noexcept
+[[nodiscard]] _CCCL_DEVICE_API bool __elect_one(const _Group& __group)
 {
   if constexpr (__is_this_group_v<_Group> && ::cuda::std::is_same_v<typename _Group::level_type, warp_level>)
   {
@@ -67,8 +69,7 @@ template <class _Group>
 _CCCL_TEMPLATE(class _Group, class _Callable, class... _Args)
 _CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_invocable_v<_Callable, _Args...>
                  _CCCL_AND ::cuda::std::is_void_v<::cuda::std::invoke_result_t<_Callable, _Args...>>)
-_CCCL_DEVICE_API void invoke_one(const _Group& __group, _Callable&& __callable, _Args&&... __args) noexcept(
-  ::cuda::std::is_nothrow_invocable_v<_Callable, _Args...>)
+_CCCL_DEVICE_API void invoke_one(const _Group& __group, _Callable&& __callable, _Args&&... __args)
 {
   if (::cuda::experimental::coop::__elect_one(__group))
   {
@@ -83,8 +84,7 @@ _CCCL_TEMPLATE(class _Group,
 _CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_invocable_v<_Callable, _Args...> _CCCL_AND(
   !::cuda::std::is_void_v<_InvokeResult>))
 [[nodiscard]]
-_CCCL_DEVICE_API auto invoke_one(const _Group& __group, _Callable&& __callable, _Args&&... __args) noexcept(
-  ::cuda::std::is_nothrow_invocable_v<_Callable, _Args...>)
+_CCCL_DEVICE_API auto invoke_one(const _Group& __group, _Callable&& __callable, _Args&&... __args)
 {
   using _Ret = ::cuda::std::optional<::cuda::std::conditional_t<::cuda::std::is_rvalue_reference_v<_InvokeResult>,
                                                                 ::cuda::std::remove_reference_t<_InvokeResult>,

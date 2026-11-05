@@ -48,11 +48,12 @@ _CCCL_TEMPLATE(class _Extents)
 _CCCL_REQUIRES((_Extents::rank() == 2))
 struct __transpose_extents_t_impl
 {
-  using __type = extents<typename _Extents::index_type, _Extents::static_extent(1), _Extents::static_extent(0)>;
+  using __type _CCCL_NODEBUG =
+    extents<typename _Extents::index_type, _Extents::static_extent(1), _Extents::static_extent(0)>;
 };
 
 template <class _Extents>
-using __transpose_extents_t = typename __transpose_extents_t_impl<_Extents>::__type;
+using __transpose_extents_t _CCCL_NODEBUG = typename __transpose_extents_t_impl<_Extents>::__type;
 
 _CCCL_TEMPLATE(class _Extents)
 _CCCL_REQUIRES((_Extents::rank() == 2))
@@ -98,7 +99,8 @@ public:
   struct mapping
   {
   private:
-    using __nested_mapping_type = typename _Layout::template mapping<__detail::__transpose_extents_t<_Extents>>;
+    using __nested_mapping_type _CCCL_NODEBUG =
+      typename _Layout::template mapping<__detail::__transpose_extents_t<_Extents>>;
 
     static constexpr bool __required_span_size_noexcept = noexcept(__nested_mapping_type{}.required_span_size());
 
@@ -202,8 +204,8 @@ namespace __detail
 template <class _ElementType, class _Accessor>
 struct __transposed_element_accessor
 {
-  using __element_type  = _ElementType;
-  using __accessor_type = _Accessor;
+  using __element_type _CCCL_NODEBUG  = _ElementType;
+  using __accessor_type _CCCL_NODEBUG = _Accessor;
 
   _CCCL_API static constexpr __accessor_type __accessor(const _Accessor& __a)
   {
@@ -214,8 +216,8 @@ struct __transposed_element_accessor
 template <class _ElementType>
 struct __transposed_element_accessor<_ElementType, default_accessor<_ElementType>>
 {
-  using __element_type  = _ElementType;
-  using __accessor_type = default_accessor<__element_type>;
+  using __element_type _CCCL_NODEBUG  = _ElementType;
+  using __accessor_type _CCCL_NODEBUG = default_accessor<__element_type>;
 
   _CCCL_API static constexpr __accessor_type __accessor(const default_accessor<_ElementType>& __a)
   {
@@ -226,7 +228,7 @@ struct __transposed_element_accessor<_ElementType, default_accessor<_ElementType
 template <class _Layout>
 struct __transposed_layout
 {
-  using __layout_type = layout_transpose<_Layout>;
+  using __layout_type _CCCL_NODEBUG = layout_transpose<_Layout>;
 
   template <class _OriginalMapping>
   _CCCL_API static constexpr auto __mapping(const _OriginalMapping& __orig_map)
@@ -240,7 +242,7 @@ struct __transposed_layout
 template <>
 struct __transposed_layout<layout_left>
 {
-  using __layout_type = layout_right;
+  using __layout_type _CCCL_NODEBUG = layout_right;
 
   template <class _OriginalExtents>
   _CCCL_API static constexpr auto __mapping(const typename layout_left::template mapping<_OriginalExtents>& __orig_map)
@@ -255,7 +257,7 @@ struct __transposed_layout<layout_left>
 template <>
 struct __transposed_layout<layout_right>
 {
-  using __layout_type = layout_left;
+  using __layout_type _CCCL_NODEBUG = layout_left;
 
   template <class _OriginalExtents>
   _CCCL_API static constexpr auto __mapping(const typename layout_right::template mapping<_OriginalExtents>& __orig_map)
@@ -270,7 +272,7 @@ struct __transposed_layout<layout_right>
 template <>
 struct __transposed_layout<layout_stride>
 {
-  using __layout_type = layout_stride;
+  using __layout_type _CCCL_NODEBUG = layout_stride;
 
   template <class _OriginalExtents>
   _CCCL_API static constexpr auto __mapping(const typename layout_stride::template mapping<_OriginalExtents>& __orig_map)
@@ -291,7 +293,7 @@ struct __transposed_layout<layout_stride>
 template <class _NestedLayout>
 struct __transposed_layout<layout_transpose<_NestedLayout>>
 {
-  using __layout_type = _NestedLayout;
+  using __layout_type _CCCL_NODEBUG = _NestedLayout;
 };
 } // namespace __detail
 

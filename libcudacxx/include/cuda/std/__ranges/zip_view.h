@@ -160,10 +160,10 @@ class zip_view : public view_interface<zip_view<_Views...>>
   tuple<_Views...> __views_;
 
   template <bool _OtherConst>
-  using __iterator = ::cuda::zip_iterator<iterator_t<__maybe_const<_OtherConst, _Views>>...>;
+  using __iterator _CCCL_NODEBUG = ::cuda::zip_iterator<iterator_t<__maybe_const<_OtherConst, _Views>>...>;
 
   template <bool _OtherConst>
-  using __sentinel = __zip_sentinel<_OtherConst, _Views...>;
+  using __sentinel _CCCL_NODEBUG = __zip_sentinel<_OtherConst, _Views...>;
 
 public:
   _CCCL_HIDE_FROM_ABI zip_view() = default;
@@ -251,7 +251,7 @@ template <bool _Const, class... _Views>
 class __zip_sentinel
 {
   template <class... _Iters>
-  using __iterator = ::cuda::zip_iterator<_Iters...>;
+  using __iterator _CCCL_NODEBUG = ::cuda::zip_iterator<_Iters...>;
 
   template <bool, class...>
   friend class __zip_sentinel;

@@ -218,7 +218,7 @@ struct __allocator_traits_rebind<_Alloc<_Tp, _Args...>, _Up, false>
 };
 
 template <class _Alloc, class _Tp>
-using __allocator_traits_rebind_t = typename __allocator_traits_rebind<_Alloc, _Tp>::type;
+using __allocator_traits_rebind_t _CCCL_NODEBUG = typename __allocator_traits_rebind<_Alloc, _Tp>::type;
 
 // __has_allocate_hint
 template <class _Alloc, class _SizeType, class _ConstVoidPtr, class = void>

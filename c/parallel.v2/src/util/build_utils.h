@@ -10,11 +10,18 @@
 
 #pragma once
 
+#include <cctype>
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
+#include <iterator>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include <cuda.h>
 
 #include <cccl/c/types.h>
 #include <hostjit/config.hpp>
@@ -181,6 +188,11 @@ public:
     {
       merged_ = *base;
     }
+    if (merged_.extra_include_dirs == nullptr && merged_.num_extra_include_dirs != 0)
+    {
+      throw std::invalid_argument("cccl_build_config: num_extra_include_dirs is non-zero but extra_include_dirs is "
+                                  "null");
+    }
     // We append at most two paths (cub + thrust). Reserve up front so the
     // owned_strs_/ptrs_ vectors don't reallocate — important because we
     // capture pointers into owned_strs_ for `extra_include_dirs`.
@@ -219,22 +231,114 @@ private:
   std::vector<const char*> ptrs_;
 };
 
-// Copy cubin data into a heap-allocated buffer the caller owns. Plain `new[]`
+// Copy byte data into a heap-allocated buffer the caller owns. Plain `new[]`
 // — memcpy is noexcept so there's no exception path between the allocation
-// and the assignment to out_cubin. The caller eventually frees via
-// release_jit_artifacts() (or delete[] on out_cubin).
-inline void copy_cubin(const std::vector<char>& cubin, void*& out_cubin, size_t& out_size)
+// and the assignment to out_bytes. The caller eventually frees via
+// release_jit_artifacts() (or delete[] on out_bytes). Used to populate
+// build_result_t::payload, which holds the full compiled .so/.dll bytes
+// (not just the raw device cubin — the host wrapper code needs to travel
+// with it too, since a v2 build_result is a native shared library, not a
+// driver-loadable device blob).
+inline void copy_bytes(const std::vector<char>& bytes, void*& out_bytes, size_t& out_size)
 {
-  if (cubin.empty())
+  if (bytes.empty())
   {
-    out_cubin = nullptr;
+    out_bytes = nullptr;
     out_size  = 0;
     return;
   }
-  auto* buf = new char[cubin.size()];
-  std::memcpy(buf, cubin.data(), cubin.size());
-  out_cubin = buf;
-  out_size  = cubin.size();
+  auto* buf = new char[bytes.size()];
+  std::memcpy(buf, bytes.data(), bytes.size());
+  out_bytes = buf;
+  out_size  = bytes.size();
+}
+
+// Reads the compiled artifact (the native shared library) the JITCompiler
+// produced, so *_build_ex can populate build->payload and *_serialize works
+// whether a build_result came from the fused path or from _compile()+_load().
+// Takes ownership of `compiler`: it is deleted if the artifact cannot be read
+// or copied, so a failed build leaks nothing.
+inline void copy_compiled_library(hostjit::JITCompiler* compiler, void*& out_bytes, size_t& out_size)
+{
+  try
+  {
+#ifdef _WIN32
+    std::string lib_path = compiler->getArtifactsPath() + "\\cuda_code.dll";
+#else
+    std::string lib_path = compiler->getArtifactsPath() + "/libcuda_code.so";
+#endif
+    std::ifstream lib_file(lib_path, std::ios::binary);
+    if (!lib_file)
+    {
+      throw std::runtime_error("cannot read compiled library: " + lib_path);
+    }
+    std::vector<char> bytes((std::istreambuf_iterator<char>(lib_file)), std::istreambuf_iterator<char>());
+    copy_bytes(bytes, out_bytes, out_size);
+  }
+  catch (...)
+  {
+    delete compiler;
+    throw;
+  }
+}
+
+// CUDART_VERSION (major * 1000 + minor * 10) from the cuda_runtime_api.h the
+// library is compiled against: the one in `ctk_path` (the CUDA include
+// directory, optionally `-I`-prefixed), or in the auto-detected toolkit when
+// `ctk_path` is NULL. 0 if it cannot be determined. Recorded in the build
+// result so `*_load` can refuse a runtime that cannot satisfy the library's
+// cudart imports.
+inline int detect_cudart_version(const char* ctk_path)
+{
+  std::filesystem::path include_dir = strip_dash_i_prefix(ctk_path);
+  if (include_dir.empty())
+  {
+    std::string root = hostjit::detectDefaultConfig().cuda_toolkit_path;
+    if (root.empty())
+    {
+      return 0;
+    }
+    include_dir = std::filesystem::path(root) / "include";
+  }
+  std::ifstream header(include_dir / "cuda_runtime_api.h");
+  constexpr std::string_view define = "#define CUDART_VERSION";
+  for (std::string line; std::getline(header, line);)
+  {
+    if (line.starts_with(define) && line.size() > define.size()
+        && std::isspace(static_cast<unsigned char>(line[define.size()])))
+    {
+      return std::atoi(line.c_str() + define.size());
+    }
+  }
+  return 0;
+}
+
+// Checks that the current device can run a library compiled for `build_cc`
+// (cc_major * 10 + cc_minor), with v1's rule (c/parallel/src/serialization.cpp):
+// SASS runs only on the same major and a device minor >= the target's.
+// Returns an error message, or an empty string if compatible or if the device
+// cannot be determined (the current context's device, else device 0).
+inline std::string check_device_compute_capability(int build_cc)
+{
+  CUdevice dev{};
+  if (cuCtxGetDevice(&dev) != CUDA_SUCCESS && (cuInit(0) != CUDA_SUCCESS || cuDeviceGet(&dev, 0) != CUDA_SUCCESS))
+  {
+    return {};
+  }
+  int major = 0;
+  int minor = 0;
+  if (cuDeviceGetAttribute(&major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, dev) != CUDA_SUCCESS
+      || cuDeviceGetAttribute(&minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, dev) != CUDA_SUCCESS)
+  {
+    return {};
+  }
+  if (build_cc / 10 == major && minor >= build_cc % 10)
+  {
+    return {};
+  }
+  return "the library was built for sm_" + std::to_string(build_cc) + " but the current device is sm_"
+       + std::to_string(major) + std::to_string(minor)
+       + "; it requires the same compute-capability major and a device minor >= the target minor";
 }
 
 // Free the JIT compiler and cubin buffer common to every build_result_t in

@@ -34,7 +34,7 @@ template <class _Tp>
 inline constexpr bool negation_v = !_Tp::value;
 
 template <class _Tp>
-using _Not = negation<_Tp>;
+using _Not _CCCL_NODEBUG = negation<_Tp>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
