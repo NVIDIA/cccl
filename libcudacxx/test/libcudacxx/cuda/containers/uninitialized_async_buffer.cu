@@ -114,6 +114,35 @@ C2H_TEST_LIST(
     }
   }
 
+  SECTION("release preserves allocation metadata before resetting the source")
+  {
+    const auto count                      = GENERATE(cuda::std::size_t{0}, cuda::std::size_t{42});
+    constexpr cuda::std::size_t alignment = 64;
+    __uninitialized_async_buffer input{resource, stream, count, alignment};
+    const TestType* ptr = input.data();
+
+    auto released = cuda::std::move(input).__release_allocation();
+    static_assert(
+      cuda::std::is_same_v<decltype(released), cuda::__allocation_info<TestType, cuda::mr::device_accessible>>);
+    static_assert(cuda::std::is_nothrow_move_constructible_v<decltype(released)>);
+    CHECK(released.ptr == ptr);
+    CHECK(released.capacity == count);
+    CHECK(released.size == count);
+    CHECK(released.alignment == alignment);
+    CHECK(released.stream == cuda::stream_ref{stream});
+    CHECK(input.data() == nullptr);
+    CHECK(input.size() == 0);
+    CHECK(input.alignment() == alignof(TestType));
+    CHECK(input.stream() == cuda::stream_ref{cuda::invalid_stream});
+
+    auto acquired = __uninitialized_async_buffer::__adopt_allocation(
+      released.stream, cuda::std::move(released.mr), released.ptr, released.capacity, released.alignment);
+    CHECK(acquired.data() == ptr);
+    CHECK(acquired.size() == count);
+    CHECK(acquired.alignment() == alignment);
+    CHECK(acquired.stream() == cuda::stream_ref{stream});
+  }
+
   SECTION("conversion")
   {
     cuda::__uninitialized_async_buffer<TestType, cuda::mr::device_accessible, my_property> input{resource, stream, 42};

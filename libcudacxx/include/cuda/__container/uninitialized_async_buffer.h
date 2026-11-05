@@ -23,6 +23,7 @@
 
 #if _CCCL_HAS_CTK()
 
+#  include <cuda/__container/allocation_info.h>
 #  include <cuda/__memory/is_aligned.h>
 #  include <cuda/__memory_resource/allocation_alignment.h>
 #  include <cuda/__memory_resource/any_resource.h>
@@ -32,6 +33,7 @@
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__memory/align.h>
 #  include <cuda/std/__new/launder.h>
+#  include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #  include <cuda/std/__type_traits/type_set.h>
 #  include <cuda/std/__utility/exchange.h>
 #  include <cuda/std/__utility/move.h>
@@ -488,13 +490,18 @@ public:
     return __ret;
   }
 
-  [[nodiscard]] _CCCL_HOST_API __async_resource __release_allocation() && noexcept
+  [[nodiscard]] _CCCL_HOST_API ::cuda::__allocation_info<_Tp, _Properties...> __release_allocation() && noexcept
   {
+    using __info_t = ::cuda::__allocation_info<_Tp, _Properties...>;
+    static_assert(::cuda::std::is_nothrow_move_constructible_v<__info_t>);
+
+    __info_t __ret{__stream_, ::cuda::std::move(__mr_), __get_data(), __count_, __count_, __alignment_};
+
     __stream_    = ::cuda::stream_ref{::cuda::invalid_stream};
     __count_     = 0;
     __alignment_ = alignof(_Tp);
     __buf_       = nullptr;
-    return ::cuda::std::move(__mr_);
+    return __ret;
   }
 
   _CCCL_HOST_API void

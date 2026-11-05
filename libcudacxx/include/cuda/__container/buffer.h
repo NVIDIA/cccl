@@ -807,12 +807,7 @@ public:
   //! @warning After this call, the buffer can only be assigned to or destroyed.
   [[nodiscard]] _CCCL_HOST_API __allocation_info_t release() && noexcept
   {
-    const pointer __ptr               = __buf_.data();
-    const size_type __capacity        = __buf_.size();
-    const size_type __size            = __buf_.size();
-    const size_type __alignment       = __buf_.alignment();
-    const ::cuda::stream_ref __stream = __buf_.stream();
-    return {__stream, std::move(__buf_).__release_allocation(), __ptr, __capacity, __size, __alignment};
+    return ::cuda::std::move(__buf_).__release_allocation();
   }
 
   //! @brief Converts the buffer into a buffer of bytes that owns the same
