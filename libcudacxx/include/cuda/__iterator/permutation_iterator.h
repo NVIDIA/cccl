@@ -129,13 +129,13 @@ private:
 #endif // _CCCL_DOXYGEN_INVOKED
 
 public:
-  using iterator_type       = _Iter;
-  using iterator_concept    = ::cuda::std::random_access_iterator_tag;
-  using iterator_category   = ::cuda::std::random_access_iterator_tag;
-  using value_type          = ::cuda::std::iter_value_t<_Iter>;
-  using __iter_difference_t = ::cuda::std::iter_difference_t<_Iter>;
-  using difference_type     = ::cuda::std::iter_difference_t<_Index>;
-  using __index_value_t     = ::cuda::std::iter_value_t<_Index>;
+  using iterator_type                     = _Iter;
+  using iterator_concept                  = ::cuda::std::random_access_iterator_tag;
+  using iterator_category                 = ::cuda::std::random_access_iterator_tag;
+  using value_type                        = ::cuda::std::iter_value_t<_Iter>;
+  using __iter_difference_t _CCCL_NODEBUG = ::cuda::std::iter_difference_t<_Iter>;
+  using difference_type                   = ::cuda::std::iter_difference_t<_Index>;
+  using __index_value_t _CCCL_NODEBUG     = ::cuda::std::iter_value_t<_Index>;
 
   //! Ensure that the user passes an iterator to something interger_like
   static_assert(::cuda::std::__integer_like<__index_value_t>,

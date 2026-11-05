@@ -11,6 +11,7 @@
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
+#include <cub/device/dispatch/tuning/tuning_scan_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/warp/warp_load.cuh>
@@ -83,6 +84,7 @@ void do_test(const Tester& tester)
     tester(cub::BlockLoadAlgorithm::BLOCK_LOAD_TRANSPOSE, "BLOCK_LOAD_TRANSPOSE");
     tester(cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE, "BLOCK_LOAD_WARP_TRANSPOSE");
     tester(cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED, "BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED");
+    tester(cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED_VECTORIZED, "BLOCK_LOAD_STRIPED_VECTORIZED");
 
     tester(cub::BlockLoadAlgorithm(100), "<unknown BlockLoadAlgorithm>");
   }
@@ -162,6 +164,13 @@ void do_test(const Tester& tester)
     tester(cub::ScanAlgorithm::lookahead, "ScanAlgorithm::lookahead");
 
     tester(cub::ScanAlgorithm(100), "<unknown ScanAlgorithm>");
+  }
+
+  // ScanByKeyAlgorithm
+  {
+    tester(cub::ScanByKeyAlgorithm::lookback, "ScanByKeyAlgorithm::lookback");
+
+    tester(cub::ScanByKeyAlgorithm(100), "<unknown ScanByKeyAlgorithm>");
   }
 
   // TransformAlgorithm

@@ -27,6 +27,7 @@
 #include <cuda/__utility/__basic_any/virtual_functions.h>
 #include <cuda/__utility/__basic_any/virtual_ptrs.h>
 #include <cuda/std/__exception/terminate.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/type_list_operations.h>
 #include <cuda/std/__utility/typeid.h>
 
 #include <cuda/std/__cccl/prologue.h>

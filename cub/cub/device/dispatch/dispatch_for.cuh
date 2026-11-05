@@ -13,20 +13,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_for.cuh>
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/kernels/kernel_for_each.cuh>
 #include <cub/device/dispatch/tuning/tuning_for.cuh>
-#include <cub/thread/thread_load.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/std/__host_stdlib/sstream>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/__device/compute_capability.h>
+
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 
@@ -67,9 +66,8 @@ invoke_dynamic_block_size(OffsetT num_items, OpT op, cudaStream_t stream, ForPol
     return error;
   }
 
-  if (auto error = CubDebug(detail::DebugSyncStream(stream)))
+  if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
   {
-    CubDebug(error = SyncStream(stream)); // TODO(bgruber): this does not make sense to me
     return error;
   }
 
@@ -103,9 +101,8 @@ invoke_static_block_size(OffsetT num_items, OpT op, cudaStream_t stream, ForPoli
     return error;
   }
 
-  if (auto error = CubDebug(detail::DebugSyncStream(stream)))
+  if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
   {
-    CubDebug(error = SyncStream(stream)); // TODO(bgruber): this does not make sense to me
     return error;
   }
 

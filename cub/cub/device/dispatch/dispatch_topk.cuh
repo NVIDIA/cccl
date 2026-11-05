@@ -29,14 +29,14 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_topk.cuh>
 #include <cub/util_arch.cuh>
-#include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
@@ -363,9 +363,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       return error;
     }
 
-    if (d_temp_storage == nullptr)
+    // Return if the caller is simply requesting the size of the storage allocation, or if there is nothing to select
+    // (k is capped to num_items above, so this also covers empty inputs)
+    if (d_temp_storage == nullptr || k == 0)
     {
-      // Return if the caller is simply requesting the size of the storage allocation
       return cudaSuccess;
     }
 

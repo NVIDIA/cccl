@@ -18,8 +18,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/config.h>
-
 #include <thrust/binary_search.h>
 #include <thrust/detail/seq.h>
 #include <thrust/find.h>

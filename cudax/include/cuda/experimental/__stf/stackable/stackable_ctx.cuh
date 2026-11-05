@@ -1018,7 +1018,7 @@ public:
   // first failure on, so the policy is to report it and end the program.
   ~graph_scope_guard()
   {
-    ctx_.pop(exception_policies::abort);
+    ctx_.pop(sump::abort);
   }
 
   graph_scope_guard(const graph_scope_guard&)            = delete;
@@ -1130,7 +1130,7 @@ public:
     {
       ensure_prepared_();
     };
-    ctx_.pop_epilogue(exception_policies::abort);
+    ctx_.pop_epilogue(sump::abort);
     released_ = true;
   }
 
@@ -1342,7 +1342,7 @@ public:
   // As with graph_scope_guard: a destructor can only report the first failure and end the program.
   ~while_graph_scope_guard()
   {
-    ctx_.pop(exception_policies::abort);
+    ctx_.pop(sump::abort);
   }
 
   cudaGraphConditionalHandle cond_handle() const
@@ -1379,7 +1379,7 @@ public:
     template <typename... Ts>
     struct to_cuda_tuple<::std::tuple<Ts...>>
     {
-      using type = ::cuda::std::tuple<Ts...>;
+      using type _CCCL_NODEBUG = ::cuda::std::tuple<Ts...>;
     };
 
     using kernel_tuple_t = typename to_cuda_tuple<filtered_data_t>::type;

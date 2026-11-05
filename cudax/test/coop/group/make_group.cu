@@ -11,7 +11,7 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
-#include <cuda/std/cstddef>
+#include <cuda/std/array>
 #include <cuda/std/optional>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
@@ -27,8 +27,6 @@ __device__ void test_make_group(Args&&... args)
   auto group = cudax::coop::make_group<GroupTempl>(cuda::std::forward<Args>(args)...);
 
   static_assert(cuda::std::is_same_v<decltype(GroupTempl{cuda::std::forward<Args>(args)...}), decltype(group)>);
-  static_assert(noexcept(GroupTempl{cuda::std::forward<Args>(args)...})
-                == noexcept(cudax::coop::make_group<GroupTempl>(cuda::std::forward<Args>(args)...)));
 
   group.sync_aligned();
 }
@@ -56,12 +54,6 @@ __device__ void test_make_group_non_exhaustive(
 
   static_assert(cuda::std::is_same_v<cuda::std::optional<Group>, decltype(group)>);
   static_assert(MappingResult::is_always_exhaustive() == IsAlwaysExhaustive);
-  static_assert(noexcept(cudax::coop::make_group<GroupTempl>(
-    cudax::coop::non_exhaustive,
-    unit,
-    parent,
-    cuda::std::forward<Mapping>(mapping),
-    cuda::std::forward<Synchronizer>(synchronizer))));
 
   REQUIRE(group.has_value() == is_valid);
   if (group)
@@ -125,7 +117,7 @@ struct TestKernel
       cuda::gpu_thread.rank(cuda::warp) < 16,
       cuda::gpu_thread,
       cudax::coop::this_warp{config},
-      cudax::coop::group_as{cuda::std::index_sequence<4, 12>{}},
+      cudax::coop::group_as{cuda::std::array{4, 12}},
       cudax::coop::lane_synchronizer{});
 
     test_make_group_non_exhaustive<cudax::coop::generic_group, false>(

@@ -17,6 +17,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/agent/agent_batched_topk.cuh>
 #include <cub/agent/agent_batched_topk_cluster.cuh>
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/choose_offset.cuh>
@@ -25,19 +26,21 @@
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/null_type.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/detail/segmented_params.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/kernels/kernel_batched_topk.cuh>
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_macro.cuh>
-#include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
 
+#include <cuda/__argument/argument.h>
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/__cmath/round_up.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/tie_break.h>
@@ -45,23 +48,20 @@
 #include <cuda/__iterator/strided_iterator.h>
 #include <cuda/__iterator/transform_iterator.h>
 #include <cuda/__numeric/narrow.h>
-#include <cuda/argument>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__expected/expected.h>
+#include <cuda/std/__expected/unexpected.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/always_false.h>
-#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/remove_cv.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/expected>
-#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -1023,8 +1023,7 @@ _CCCL_HOST_API cudaError_t dispatch_select(
 
   // Type derived from the query-result trait rather than `decltype(policy_selector)`: GCC 7 rejects the latter ("use of
   // 'policy_selector' before deduction of 'auto'") when `policy_selector_t` is later named inside the dispatch lambda.
-  using policy_selector_t =
-    ::cuda::std::execution::__query_result_or_t<TuningEnvT, topk_policy, default_policy_selector_t>;
+  using policy_selector_t = policy_selector_from_tuning_env_t<TuningEnvT, topk_policy, default_policy_selector_t>;
 #if _CCCL_HAS_CONCEPTS()
   static_assert(topk_policy_selector<policy_selector_t>,
                 "Invalid policy selector for cub::DeviceBatchedTopK::dispatch");

@@ -8,12 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/atomic>
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
 #include <cuda/std/type_traits>
-#include <cuda/std/utility>
 #include <cuda/stream>
 
 #include <cuda/experimental/coop/group>
@@ -39,7 +37,9 @@ __device__ void test_virtual_group(Config config, Level level)
     static_assert(vg.is_always_contiguous());
 
     vg.sync();
+    vg.wait(vg.arrive());
     vg.sync_aligned();
+    vg.wait_aligned(vg.arrive_aligned());
   }
 
   // Test virtual group with group_by mapping.
@@ -58,7 +58,9 @@ __device__ void test_virtual_group(Config config, Level level)
     static_assert(vg.is_always_contiguous());
 
     vg.sync();
+    vg.wait(vg.arrive());
     vg.sync_aligned();
+    vg.wait_aligned(vg.arrive_aligned());
   }
 }
 

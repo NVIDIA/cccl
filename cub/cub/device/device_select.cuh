@@ -1859,6 +1859,8 @@ struct DeviceSelect
   //!     :start-after: example-begin select-uniquebykey-env
   //!     :end-before: example-end select-uniquebykey-env
   //!
+  //! @endrst
+  //!
   //! @tparam KeyInputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input keys @iterator
   //!

@@ -14,18 +14,24 @@
 #endif // no system header
 
 #include <cub/agent/agent_set_operations.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_set_operations.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_temporary_storage.cuh>
 #include <cub/util_vsmem.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__numeric/add_overflow.h>
 #include <cuda/__numeric/mul_overflow.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__utility/pair.h>
@@ -166,8 +172,7 @@ template <typename KeysIt1,
 
   // Resolve the tuning policy selector from the (optional) tuning environment, defaulting to the type-derived selector.
   using default_policy_selector = policy_selector_from_types<KeysIt1, ValuesIt1, KeysIt2, ValuesIt2, Offset>;
-  using policy_selector_t =
-    ::cuda::std::decay_t<::cuda::std::execution::__query_result_or_t<TuningEnvT, SetOpsPolicy, default_policy_selector>>;
+  using policy_selector_t       = policy_selector_from_tuning_env_t<TuningEnvT, SetOpsPolicy, default_policy_selector>;
 #if _CCCL_HAS_CONCEPTS()
   static_assert(set_ops_policy_selector<policy_selector_t>, "invalid policy selector for set-ops dispatch");
 #endif // _CCCL_HAS_CONCEPTS()

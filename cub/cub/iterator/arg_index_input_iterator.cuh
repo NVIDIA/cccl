@@ -22,8 +22,11 @@
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/key_value_pair.cuh>
 
-#include <thrust/iterator/iterator_facade.h>
+#include <thrust/iterator/detail/any_system_tag.h>
+#include <thrust/iterator/detail/iterator_facade_category.h> // IWYU pragma: keep
+#include <thrust/iterator/iterator_traversal_tags.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN

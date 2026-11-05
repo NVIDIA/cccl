@@ -27,6 +27,7 @@ runs:
   using: "composite"
   steps:
     - name: Collect workflow logs
+      id: collect-logs
       env:
         GH_TOKEN: ${{ github.token }}
         PR_NUMBER: ${{ inputs.pr_number }}
@@ -37,6 +38,8 @@ runs:
           /tmp/ci-logs \
           "${RUN_ID}" \
           "${PR_NUMBER}"
+        has_evidence="$(jq 'any(.[]; .log_path != "" or (.annotations | length > 0))' /tmp/ci-logs/jobs.json)"
+        echo "has_evidence=${has_evidence}" >> "${GITHUB_OUTPUT}"
 
     - name: Prepare analysis environment
       shell: bash --noprofile --norc -euo pipefail {0}
@@ -47,6 +50,7 @@ runs:
         cp "${GITHUB_ACTION_PATH}/config.toml" "${RUNNER_TEMP}/codex-home/config.toml"
 
     - name: Investigate the workflow run
+      if: ${{ steps.collect-logs.outputs.has_evidence == 'true' }}
       uses: openai/codex-action@52fe01ec70a42f454c9d2ebd47598f9fd6893d56 # v1.11
       env:
         CI_LOG_DIR: /tmp/ci-logs
@@ -70,12 +74,18 @@ runs:
     - name: Assemble normalized analysis
       id: assemble-analysis
       env:
+        HAS_EVIDENCE: ${{ steps.collect-logs.outputs.has_evidence }}
         MODEL_OUTPUT_FILE: ${{ runner.temp }}/ci-failure-analysis/model-output.json
         ANALYSIS_FILE: ${{ runner.temp }}/ci-failure-analysis/analysis.json
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
+        model_output_file="${MODEL_OUTPUT_FILE}"
+        if [[ "${HAS_EVIDENCE}" == "false" ]]; then
+          model_output_file=/dev/null
+        fi
         jq --null-input \
-          --slurpfile model_output "${MODEL_OUTPUT_FILE}" \
+          --argjson has_evidence "${HAS_EVIDENCE}" \
+          --slurpfile model_output "${model_output_file}" \
           --slurpfile run /tmp/ci-logs/run.json \
           --slurpfile jobs /tmp/ci-logs/jobs.json \
           '{
@@ -87,7 +97,9 @@ runs:
               $jobs[0][] |
               {id, name}
             ],
-            groups: $model_output[0].groups
+            groups: (if $has_evidence then $model_output[0].groups else [] end),
+            missing_log_job_count: ([$jobs[0][] | select(.log_path == "")] | length),
+            analysis_skipped: ($has_evidence | not)
           }' > "${ANALYSIS_FILE}"
         test -s "${ANALYSIS_FILE}"
         echo "analysis_file=${ANALYSIS_FILE}" >> "${GITHUB_OUTPUT}"

@@ -22,6 +22,7 @@
 
 #include <cub/block/block_discontinuity.cuh>
 #include <cub/block/block_radix_sort.cuh>
+#include <cub/block/block_scan.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>

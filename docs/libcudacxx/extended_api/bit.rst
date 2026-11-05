@@ -8,6 +8,7 @@ Bit
    :maxdepth: 1
 
    bit/bitmask
+   bit/bit_msb
    bit/bit_ffs
    bit/bit_fns
    bit/bit_reverse
@@ -28,6 +29,11 @@ Bit
      - Generate a bitmask
      - CCCL 3.0.0
      - CUDA 13.0
+
+   * - :ref:`bit_msb <libcudacxx-extended-api-bit-bit_msb>`
+     - Find the most significant set bit
+     - CCCL 3.7.0
+     - CUDA 13.7
 
    * - :ref:`bit_ffs <libcudacxx-extended-api-bit-bit_ffs>`
      - Find the first (least significant) set bit
