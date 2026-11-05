@@ -66,6 +66,20 @@ inline constexpr bool __is_vectorizable_v =
   (__is_extended_arithmetic_v<_Tp> || __is_complex_vectorizable_v<_Tp>)
   && !is_same_v<_Tp, bool> && !is_const_v<_Tp> && !is_volatile_v<_Tp>;
 
+template <typename _Abi>
+inline constexpr bool __is_enabled_abi_v = false;
+
+template <__simd_size_type _Np>
+inline constexpr bool __is_enabled_abi_v<__fixed_size<_Np>> = (_Np >= 1 && _Np <= 64);
+
+template <size_t _Bytes>
+inline constexpr bool __is_vectorizable_byte_size_v =
+  (_Bytes == 1 || _Bytes == 2 || _Bytes == 4 || _Bytes == 8
+#if _CCCL_HAS_INT128()
+   || _Bytes == 16
+#endif // _CCCL_HAS_INT128()
+  );
+
 // [simd.expos], simd-complex-value-type
 template <typename _Tp>
 using __simd_complex_value_type_t = typename _Tp::value_type;

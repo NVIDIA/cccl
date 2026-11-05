@@ -43,14 +43,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 
-template <size_t _Bytes>
-inline constexpr bool __is_vectorizable_byte_size_v =
-  (_Bytes == 1 || _Bytes == 2 || _Bytes == 4 || _Bytes == 8
-#if _CCCL_HAS_INT128()
-   || _Bytes == 16
-#endif // _CCCL_HAS_INT128()
-  );
-
 // If basic_mask<Bytes, Abi> is disabled, the specialization has a deleted default constructor, deleted destructor,
 // deleted copy constructor, and deleted copy assignment. In addition only the value_type and abi_type members are
 // present.
