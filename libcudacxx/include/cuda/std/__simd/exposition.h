@@ -80,6 +80,9 @@ inline constexpr bool __is_vectorizable_byte_size_v =
 #endif // _CCCL_HAS_INT128()
   );
 
+template <size_t _Bytes, typename _Abi>
+inline constexpr bool __is_enabled_mask_v = __is_vectorizable_byte_size_v<_Bytes> && __is_enabled_abi_v<_Abi>;
+
 // [simd.expos], simd-complex-value-type
 template <typename _Tp>
 using __simd_complex_value_type_t = typename _Tp::value_type;

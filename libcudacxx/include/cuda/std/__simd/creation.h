@@ -54,8 +54,7 @@ template <typename _Tp>
 inline constexpr bool __is_enabled_basic_mask_v = false;
 
 template <size_t _Bytes, typename _Abi>
-inline constexpr bool __is_enabled_basic_mask_v<basic_mask<_Bytes, _Abi>> =
-  __is_vectorizable_byte_size_v<_Bytes> && __is_enabled_abi_v<_Abi>;
+inline constexpr bool __is_enabled_basic_mask_v<basic_mask<_Bytes, _Abi>> = __is_enabled_mask_v<_Bytes, _Abi>;
 
 // get the element size of a basic_mask
 // TODO(fbusato): remove if duplicated in other PRs
