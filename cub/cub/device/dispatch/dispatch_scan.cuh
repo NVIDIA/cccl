@@ -99,11 +99,12 @@ struct DeviceScanKernelSource
                      StableReductionOrder,
                      IsDeferred>)
 
-  CUB_DEFINE_KERNEL_GETTER(BatchInitKernel, DeviceScanBatchInitKernel<PolicySelector, ScanTileStateT, AccumT>)
+  CUB_DEFINE_KERNEL_GETTER(BatchInitKernel,
+                           DeviceScanBatchInitKernel<batch_policy_selector<PolicySelector>, ScanTileStateT, AccumT>)
 
   CUB_DEFINE_KERNEL_GETTER(
     BatchScanKernel,
-    DeviceScanBatchKernel<PolicySelector,
+    DeviceScanBatchKernel<batch_policy_selector<PolicySelector>,
                           UnwrappedInputIteratorT,
                           UnwrappedOutputIteratorT,
                           ScanTileStateT,

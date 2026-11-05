@@ -90,6 +90,14 @@ using default_immediate_int_policy = cub::detail::scan::
   policy_selector_from_types<const scan_value_t*, scan_value_t*, scan_value_t, uint32_t, cuda::std::plus<>>;
 static_assert(default_immediate_int_policy{}(cuda::compute_capability{10, 0}).lookback.tiles_per_batch == 65536);
 
+using default_batch_int_policy = cub::detail::scan::batch_policy_selector<default_deferred_int_policy>;
+static_assert(default_batch_int_policy{}(cuda::compute_capability{8, 0}).lookback.lookback_delay.kind
+              == cub::LookbackDelayAlgorithm::__fixed_delay_no_grid_threshold);
+static_assert(default_deferred_int_policy{}(cuda::compute_capability{8, 0}).lookback.lookback_delay
+              == default_immediate_int_policy{}(cuda::compute_capability{8, 0}).lookback.lookback_delay);
+static_assert(default_immediate_int_policy{}(cuda::compute_capability{8, 0}).lookback.lookback_delay.kind
+              == cub::LookbackDelayAlgorithm::fixed_delay);
+
 using default_stable_deferred_float_policy =
   cub::detail::scan::policy_selector_from_types<const float*, float*, float, uint32_t, cuda::std::plus<>, true, true>;
 static_assert(default_stable_deferred_float_policy{}(cuda::compute_capability{9, 0}).algorithm
@@ -541,10 +549,32 @@ struct batch_wait_policy_selector
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::ScanPolicy
   {
     auto policy = small_batch_policy_selector<scan_value_t, scan_value_t, scan_value_t, cuda::std::plus<>>{}(cc);
+    constexpr auto delay_policy = cub::detail::scan::make_batched_delay_policy({Kind, Delay, L2WriteLatency});
+    using delay_constructor_t =
+      cub::detail::delay_constructor_t<delay_policy.kind, delay_policy.delay, delay_policy.l2_write_latency>;
+    static_assert(cub::detail::lookback_delay_policy_from_type<delay_constructor_t> == delay_policy);
+    static_assert(cub::detail::scan::make_batched_delay_policy(delay_policy) == delay_policy);
+    if constexpr (Kind == cub::LookbackDelayAlgorithm::fixed_delay || Kind == cub::LookbackDelayAlgorithm::no_delay)
+    {
+      static_assert(delay_policy.kind == cub::LookbackDelayAlgorithm::__fixed_delay_no_grid_threshold);
+      static_assert(delay_policy.delay == (Kind == cub::LookbackDelayAlgorithm::no_delay ? 0 : Delay));
+      static_assert(delay_policy.l2_write_latency == L2WriteLatency);
+    }
+    else
+    {
+      static_assert(delay_policy == cub::LookbackDelayPolicy{Kind, Delay, L2WriteLatency});
+    }
     policy.lookback.lookback_delay = {Kind, Delay, L2WriteLatency};
     return policy;
   }
 };
+
+using custom_no_delay_policy       = batch_wait_policy_selector<cub::LookbackDelayAlgorithm::no_delay, 0, 450>;
+using custom_batch_no_delay_policy = cub::detail::scan::batch_policy_selector<custom_no_delay_policy>;
+static_assert(custom_no_delay_policy{}(cuda::compute_capability{8, 0}).lookback.lookback_delay
+              == cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::no_delay, 0, 450});
+static_assert(custom_batch_no_delay_policy{}(cuda::compute_capability{8, 0}).lookback.lookback_delay
+              == cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::__fixed_delay_no_grid_threshold, 0, 450});
 
 using batch_wait_policies =
   c2h::type_list<batch_wait_policy_selector<cub::LookbackDelayAlgorithm::fixed_delay, 350, 450>,
