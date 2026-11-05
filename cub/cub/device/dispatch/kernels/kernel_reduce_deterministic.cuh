@@ -44,7 +44,7 @@ namespace detail::reduce
 template <typename KernelNumItemsT, bool = ::cuda::std::is_integral_v<KernelNumItemsT>>
 struct deterministic_num_items
 {
-  using type = KernelNumItemsT;
+  using type _CCCL_NODEBUG = KernelNumItemsT;
 };
 
 template <typename KernelNumItemsT>

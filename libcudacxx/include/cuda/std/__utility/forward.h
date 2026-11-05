@@ -74,13 +74,13 @@ using ::std::forward;
 #else // ^^^ _CCCL_HAS_BUILTIN_STD_FORWARD() ^^^ / vvv !_CCCL_HAS_BUILTIN_STD_FORWARD() vvv
 
 template <class _Tp>
-[[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr _Tp&& forward(remove_reference_t<_Tp>& __t) noexcept
+[[nodiscard]] _CCCL_INTRINSIC _CCCL_NODEBUG_API constexpr _Tp&& forward(remove_reference_t<_Tp>& __t) noexcept
 {
   return static_cast<_Tp&&>(__t);
 }
 
 template <class _Tp>
-[[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr _Tp&& forward(remove_reference_t<_Tp>&& __t) noexcept
+[[nodiscard]] _CCCL_INTRINSIC _CCCL_NODEBUG_API constexpr _Tp&& forward(remove_reference_t<_Tp>&& __t) noexcept
 {
   static_assert(!is_lvalue_reference_v<_Tp>, "cannot forward an rvalue as an lvalue");
   return static_cast<_Tp&&>(__t);

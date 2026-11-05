@@ -326,14 +326,14 @@ struct __passthrough_type<span<_Tp, _Extent>>
 template <class _CharT, class _Traits>
 struct __passthrough_type<basic_string_view<_CharT, _Traits>>
 {
-  using type = _CCCL_NODEBUG basic_string_view<_CharT, _Traits>;
+  using type _CCCL_NODEBUG = basic_string_view<_CharT, _Traits>;
 };
 
 template <class _Iter, class _Sent, ::cuda::std::ranges::subrange_kind _Kind>
 struct __passthrough_type<::cuda::std::ranges::subrange<_Iter, _Sent, _Kind>,
                           void_t<typename ::cuda::std::ranges::subrange<_Iter>>>
 {
-  using type = _CCCL_NODEBUG ::cuda::std::ranges::subrange<_Iter>;
+  using type _CCCL_NODEBUG = ::cuda::std::ranges::subrange<_Iter>;
 };
 
 template <class _Tp>

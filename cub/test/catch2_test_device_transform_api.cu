@@ -8,6 +8,8 @@
 
 #include <cuda/iterator>
 
+#include <iostream>
+
 #include "cub_test_macros.h"
 
 // need a separate function because the ext. lambda needs to be enclosed by a function with external linkage on Windows
@@ -21,17 +23,22 @@ void test_transform_many_many_api()
     return {product, product < 0};
   };
 
-  auto result1 = thrust::device_vector<double>(input1.size(), thrust::no_init);
-  auto result2 = thrust::device_vector<bool>(input1.size(), thrust::no_init);
-  cub::DeviceTransform::Transform(
+  auto result1     = thrust::device_vector<double>(input1.size(), thrust::no_init);
+  auto result2     = thrust::device_vector<bool>(input1.size(), thrust::no_init);
+  const auto error = cub::DeviceTransform::Transform(
     cuda::std::tuple{input1.begin(), input2.begin()},
     cuda::std::tuple{result1.begin(), result2.begin()},
     input1.size(),
     op);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceTransform::Transform failed with status: " << error << '\n';
+  }
 
   const auto expected1 = thrust::host_vector<double>{0, -3.1, -2.2, -9, 12.8, -0};
   const auto expected2 = thrust::host_vector<bool>{false, true, true, true, false, false};
   // example-end transform-many-many
+  REQUIRE(error == cudaSuccess);
   CHECK(result1 == expected1);
   CHECK(result2 == expected2);
 }
@@ -52,12 +59,17 @@ void test_transform_api()
     return (static_cast<float>(a) + b) * static_cast<float>(c);
   };
 
-  auto result = thrust::device_vector<int>(input1.size(), thrust::no_init);
-  cub::DeviceTransform::Transform(
+  auto result      = thrust::device_vector<int>(input1.size(), thrust::no_init);
+  const auto error = cub::DeviceTransform::Transform(
     cuda::std::tuple{input1.begin(), input2.begin(), input3}, result.begin(), input1.size(), op);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceTransform::Transform failed with status: " << error << '\n';
+  }
 
   const auto expected = thrust::host_vector<float>{520, 111, 397, 618};
   // example-end transform-many
+  REQUIRE(error == cudaSuccess);
   CHECK(result == expected);
 }
 
@@ -78,10 +90,16 @@ void test_transform_if_api()
   };
 
   auto result = thrust::device_vector<int>(input.size()); // initialized to zeros
-  cub::DeviceTransform::TransformIf(cuda::std::tuple{input.begin()}, result.begin(), input.size(), predicate, op);
+  const auto error =
+    cub::DeviceTransform::TransformIf(cuda::std::tuple{input.begin()}, result.begin(), input.size(), predicate, op);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceTransform::TransformIf failed with status: " << error << '\n';
+  }
 
   const auto expected = thrust::host_vector<float>{0, -2, 0, -6, 0, -10};
   // example-end transform-if
+  REQUIRE(error == cudaSuccess);
   CHECK(result == expected);
 }
 
@@ -101,11 +119,16 @@ void test_transform_if_single_api()
     return value * 2;
   };
 
-  auto result = thrust::device_vector<int>(input.size()); // initialized to zeros
-  cub::DeviceTransform::TransformIf(input.begin(), result.begin(), input.size(), predicate, op);
+  auto result      = thrust::device_vector<int>(input.size()); // initialized to zeros
+  const auto error = cub::DeviceTransform::TransformIf(input.begin(), result.begin(), input.size(), predicate, op);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceTransform::TransformIf failed with status: " << error << '\n';
+  }
 
   const auto expected = thrust::host_vector<float>{0, -2, 0, -6, 0, -10};
   // example-end transform-if-single
+  REQUIRE(error == cudaSuccess);
   CHECK(result == expected);
 }
 
@@ -129,12 +152,17 @@ void test_transform_stable_api()
     return a + input2_ptr[i];
   };
 
-  auto result = thrust::device_vector<int>(input1.size(), thrust::no_init);
-  cub::DeviceTransform::TransformStableArgumentAddresses(
+  auto result      = thrust::device_vector<int>(input1.size(), thrust::no_init);
+  const auto error = cub::DeviceTransform::TransformStableArgumentAddresses(
     cuda::std::tuple{input1_ptr}, result.begin(), input1.size(), op);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceTransform::TransformStableArgumentAddresses failed with status: " << error << '\n';
+  }
 
   const auto expected = thrust::host_vector<float>{52, 29, -6, 33};
   // example-end transform-many-stable
+  REQUIRE(error == cudaSuccess);
   CHECK(result == expected);
 }
 

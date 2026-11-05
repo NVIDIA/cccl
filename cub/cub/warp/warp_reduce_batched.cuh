@@ -132,7 +132,7 @@ private:
   };
 
   //! Shared memory storage layout type for WarpReduceBatched
-  using _TempStorage = typename InternalWarpReduceBatched::TempStorage;
+  using _TempStorage _CCCL_NODEBUG = typename InternalWarpReduceBatched::TempStorage;
 
   //! Shared storage reference
   _TempStorage& temp_storage;

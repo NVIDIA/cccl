@@ -71,15 +71,15 @@ TEST_CASE("TestGatherCudaStreams", "[gather]")
   thrust::device_vector<int> dst = {0, 0, 0, 0, 0}; // destination vector
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::gather(thrust::cuda::par.on(s), map.begin(), map.end(), src.begin(), dst.begin());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   const thrust::device_vector<int> ref = {6, 2, 1, 7, 2}; // destination vector
 
   REQUIRE(dst == ref);
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -170,13 +170,13 @@ TEST_CASE("TestGatherIfCudaStreams", "[gather]")
   thrust::device_vector<int> dst(5, 0); // destination vector
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::gather_if(thrust::cuda::par.on(s), map.begin(), map.end(), flg.begin(), src.begin(), dst.begin());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   const thrust::device_vector<int> ref{0, 2, 0, 7, 0}; // destination vector
 
   REQUIRE(dst == ref);
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }

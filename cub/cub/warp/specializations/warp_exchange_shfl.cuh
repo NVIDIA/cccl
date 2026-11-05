@@ -15,9 +15,9 @@
 
 #include <cub/detail/null_type.cuh>
 #include <cub/util_ptx.cuh>
+#include <cub/warp/warp_utils.cuh>
 
 #include <cuda/__cmath/pow2.h>
-#include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
@@ -33,8 +33,6 @@ class WarpExchangeShfl
   static_assert(ItemsPerThread == LogicalWarpThreads,
                 "WARP_EXCHANGE_SHUFFLE currently only works when ItemsPerThread == "
                 "LogicalWarpThreads");
-
-  static constexpr bool IS_ARCH_WARP = LogicalWarpThreads == warp_threads;
 
   template <int NumEntries, int IDX>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
@@ -219,20 +217,15 @@ class WarpExchangeShfl
     ((output_items[Is] = vals[Is]), ...);
   }
 
-  const unsigned int lane_id;
-  const unsigned int warp_id;
-  const unsigned int member_mask;
+  const unsigned int lane_id     = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
+  const unsigned int member_mask = CUB_NS_QUALIFIER::detail::warp_mask<LogicalWarpThreads>();
 
 public:
   using TempStorage = NullType;
 
   WarpExchangeShfl() = delete;
 
-  explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpExchangeShfl(TempStorage&)
-      : lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads))
-      , warp_id(IS_ARCH_WARP ? 0 : (::cuda::ptx::get_sreg_laneid() / LogicalWarpThreads))
-      , member_mask(WarpMask<LogicalWarpThreads>(warp_id))
-  {}
+  explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpExchangeShfl(TempStorage&) {}
 
   template <typename OutputT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
