@@ -60,6 +60,7 @@ CUB_TEST("Capacity partition accepts arbitrary bounds without sort tuning", "[se
   static_assert(sm100_policy{}().partition.threads_per_block == 128);
   static_assert(kernels::capacities_t<sm90_policy>::size == 77);
   static_assert(kernels::capacities_t<sm100_policy>::size == 71);
+  static_assert(capacity::tiny_walk_policy::inline_cutoff == 36);
 
   using capacities = capacity::capacity_list<3, 10, 21>;
   static_assert(capacities::first_fit(3) == 0 && capacities::first_fit(4) == 1);
