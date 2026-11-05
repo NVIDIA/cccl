@@ -24,8 +24,8 @@
 #include <cub/detail/uninitialized.cuh>
 #include <cub/warp/specializations/warp_scan_shfl.cuh>
 #include <cub/warp/specializations/warp_scan_smem.cuh>
+#include <cub/warp/warp_utils.cuh>
 
-#include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -145,9 +145,6 @@ private:
    * Constants and type definitions
    ******************************************************************************/
 
-  /// Whether the logical warp size and the PTX warp size coincide
-  static constexpr bool IS_ARCH_WARP = (LogicalWarpThreads == detail::warp_threads);
-
   /// Whether the logical warp size is a power-of-two
   static constexpr bool IS_POW_OF_TWO = ((LogicalWarpThreads & (LogicalWarpThreads - 1)) == 0);
 
@@ -168,7 +165,7 @@ private:
 
   /// Shared storage reference
   _TempStorage& temp_storage;
-  unsigned int lane_id;
+  unsigned int lane_id = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
 
   /******************************************************************************
    * Public types
@@ -188,7 +185,6 @@ public:
   //!   Reference to memory allocation having layout type TempStorage
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpScan(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads)
   {}
 
   //! @}
