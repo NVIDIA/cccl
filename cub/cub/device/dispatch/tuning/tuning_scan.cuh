@@ -736,6 +736,31 @@ template <typename T>
 concept scan_policy_selector = policy_selector<T, ScanPolicy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_batched_delay_policy(LookbackDelayPolicy policy)
+  -> LookbackDelayPolicy
+{
+  if (policy.kind == LookbackDelayAlgorithm::fixed_delay || policy.kind == LookbackDelayAlgorithm::no_delay)
+  {
+    // Occupancy-sized grids may have fewer than 500 CTAs. Retain nanosleeps to avoid serious lookback regressions.
+    policy.delay = policy.kind == LookbackDelayAlgorithm::no_delay ? 0 : policy.delay;
+    policy.kind  = LookbackDelayAlgorithm::__fixed_delay_no_grid_threshold;
+  }
+  return policy;
+}
+
+// Only persistent batch grids need waits independent of grid size. Apply this after custom tuning so
+// single-grid scans retain their selected delay policy and custom batch policies preserve their wait behavior.
+template <typename PolicySelector>
+struct batch_policy_selector
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanPolicy
+  {
+    auto policy                    = PolicySelector{}(cc);
+    policy.lookback.lookback_delay = make_batched_delay_policy(policy.lookback.lookback_delay);
+    return policy;
+  }
+};
+
 _CCCL_HOST_DEVICE_API constexpr auto make_mem_scaled_lookback_scan_policy(
   int nominal_4b_threads_per_block,
   int nominal_4b_items_per_thread,
