@@ -71,7 +71,7 @@ class thread_hierarchy
   template <auto x, auto y, auto... subspec>
   struct inner_t<x, y, subspec...>
   {
-    using type = thread_hierarchy<subspec...>;
+    using type _CCCL_NODEBUG = thread_hierarchy<subspec...>;
   };
 
 public:

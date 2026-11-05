@@ -496,9 +496,14 @@ Recommended minimum tests cases to be added for each new single-phase API overlo
    and verify the applied block size on the device using ``block_size_extracting_op`` or
    ``block_size_extracting_constant_iterator``. The test case should be guarded by
    ``#if TEST_LAUNCH != 1``.
-5. If the algorithm has a determinism/ordering axis, ``cuda::execution::require(...)`` is
+5. ``"<algorithm> tuning can be modified"`` — an environment carrying
+   ``cuda::execution::tune(...)`` with a policy transformer is honored: the transformer modifies the
+   block size used by the kernel. Verify the applied block size on the device in the same way as for
+   ``"<algorithm> can be tuned"``, and check that it differs from the block size of CUB's default
+   tuning. The test case should be guarded by ``#if TEST_LAUNCH != 1``.
+6. If the algorithm has a determinism/ordering axis, ``cuda::execution::require(...)`` is
    tested for each supported level. The test case should be guarded by ``#if TEST_LAUNCH != 1``.
-6. If the algorithm takes an operator/predicate parameter (e.g. a comparator or equality op),
+7. If the algorithm takes an operator/predicate parameter (e.g. a comparator or equality op),
    that parameter is tested in combination with the environment, not only in isolation. The test
    case should be guarded by ``#if TEST_LAUNCH != 1``.
 

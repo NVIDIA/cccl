@@ -27,7 +27,7 @@ struct iterator_category_to_system;
 template <typename Category, typename System, typename Traversal>
 struct iterator_category_to_system<iterator_category_with_system_and_traversal<Category, System, Traversal>>
 {
-  using type = System;
+  using type _CCCL_NODEBUG = System;
 };
 
 // specialize iterator_category_to_traversal for iterator_category_with_system_and_traversal
@@ -37,7 +37,7 @@ struct iterator_category_to_traversal;
 template <typename Category, typename System, typename Traversal>
 struct iterator_category_to_traversal<iterator_category_with_system_and_traversal<Category, System, Traversal>>
 {
-  using type = Traversal;
+  using type _CCCL_NODEBUG = Traversal;
 };
 } // namespace detail
 THRUST_NAMESPACE_END
