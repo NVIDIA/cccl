@@ -21,7 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/uabs.h>
 #include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/__utility/in_range.h>
+#include <cuda/std/__bit/countr.h>
+#include <cuda/std/__bit/integral.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/equality_comparable.h>
@@ -33,6 +38,7 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_signed.h>
@@ -139,42 +145,74 @@ template <typename _From, typename _To>
 inline constexpr bool __is_value_preserving_v<_From, ::std::complex<_To>> = __is_value_preserving_v<_From, _To>;
 #endif // _CCCL_HAS_HOST_STD_LIB()
 
-template <typename _From, typename _ValueType>
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __is_constexpr_wrapper_value_preserving() noexcept
+template <typename _Int, typename _Fp>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL bool __is_fp_in_integer_range(_Fp __value) noexcept
 {
-  using _Source = remove_cvref_t<decltype(_From::value)>;
-  if constexpr (!__constexpr_wrapper_like<_From> || !is_arithmetic_v<_Source>)
+  // The target integer range covers all floating-point values
+  if constexpr (numeric_limits<_Int>::digits >= numeric_limits<_Fp>::max_exponent)
   {
-    return false;
+    constexpr auto __low = is_signed_v<_Int> ? numeric_limits<_Fp>::lowest() : _Fp{0};
+    return ::cuda::in_range(__value, __low, numeric_limits<_Fp>::max());
   }
-  else if constexpr (__is_complex_vectorizable_v<_ValueType>)
+  else // The target integer range is smaller than floating-point range
   {
-    using __value_type _CCCL_NODEBUG = typename _ValueType::value_type;
-    return ::cuda::std::simd::__is_constexpr_wrapper_value_preserving<_From, __value_type>();
-  }
-  else if constexpr (is_integral_v<_Source> && is_integral_v<_ValueType>)
-  {
-    // Promote bool and character types, which cmp_equal does not accept directly.
-    return ::cuda::std::cmp_equal(+static_cast<_ValueType>(_From::value), +_From::value);
-  }
-  else
-  {
-    return static_cast<_Source>(static_cast<_ValueType>(_From::value)) == _From::value;
+    // find the smallest floating-point value that is not representable by the integer type
+    constexpr auto __bound = ::cuda::ceil_div(numeric_limits<_Int>::max(), 2) * _Fp{2};
+    constexpr auto __low   = is_signed_v<_Int> ? -__bound : _Fp{0};
+    return __value >= __low && __value < __bound;
   }
 }
 
-template <typename _From, typename _ValueType, typename = void>
+template <typename _From, typename _To>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL bool __is_constexpr_wrapper_value_preserving() noexcept
+{
+  using _FromValue = remove_cvref_t<decltype(_From::value)>;
+  if constexpr (!__constexpr_wrapper_like<_From> || !is_arithmetic_v<_FromValue>)
+  {
+    return false;
+  }
+  else if constexpr (__is_complex_vectorizable_v<_To>)
+  {
+    using __value_type _CCCL_NODEBUG = typename _To::value_type;
+    return ::cuda::std::simd::__is_constexpr_wrapper_value_preserving<_From, __value_type>();
+  }
+  else if constexpr (is_integral_v<_FromValue> && is_integral_v<_To>)
+  {
+    // Promote bool and character types, which cmp_equal does not accept directly.
+    return ::cuda::std::cmp_equal(+static_cast<_To>(_From::value), +_From::value);
+  }
+  else if constexpr (is_integral_v<_To>)
+  {
+    auto __value = _From::value; // non-const avoids diagnostics on CUDA 12 and NVHPC
+    return ::cuda::std::simd::__is_fp_in_integer_range<_To>(__value) // e.g. 1e100 is not representable by int
+        && static_cast<_FromValue>(static_cast<_To>(__value)) == __value; // e.g. 3.0 <-> 3
+  }
+  else if constexpr (is_integral_v<_FromValue> && is_floating_point_v<_To>)
+  {
+    // Promote bool and character types before computing the unsigned magnitude
+    const auto __value         = ::cuda::uabs(+_From::value);
+    const auto __width         = ::cuda::std::bit_width(__value);
+    const auto __mantissa_bits = __width - ::cuda::std::countr_zero(__value);
+    return __value == 0
+        || (__width <= numeric_limits<_To>::max_exponent && __mantissa_bits <= numeric_limits<_To>::digits);
+  }
+  else
+  {
+    return static_cast<_FromValue>(static_cast<_To>(_From::value)) == _From::value;
+  }
+}
+
+template <typename _From, typename _To, typename = void>
 inline constexpr bool __is_constexpr_wrapper_value_preserving_v = false;
 
-// The standard requires checking whether the specific compile-time value From::value is representable by _ValueType,
+// The standard requires checking whether the specific compile-time value From::value is representable by _To,
 // not whether the entire source type is value-preserving.
-template <typename _From, typename _ValueType>
+template <typename _From, typename _To>
 inline constexpr bool __is_constexpr_wrapper_value_preserving_v<
   _From,
-  _ValueType,
-  void_t<decltype(_From::value),
-         decltype(bool_constant<__is_constexpr_wrapper_value_preserving<_From, _ValueType>()>{})>> =
-  __is_constexpr_wrapper_value_preserving<_From, _ValueType>();
+  _To,
+  void_t<decltype(_From::value), decltype(bool_constant<__is_constexpr_wrapper_value_preserving<_From, _To>()>{})>> =
+  __is_constexpr_wrapper_value_preserving<_From, _To>();
 
 // [simd.ctor] implicit value constructor
 // - From is not an arithmetic type and does not satisfy constexpr-wrapper-like,
