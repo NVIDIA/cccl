@@ -157,9 +157,9 @@ template <typename _Int, typename _Fp>
   else // The target integer range is smaller than floating-point range
   {
     // find the smallest floating-point value that is not representable by the integer type
-    constexpr auto __bound = ::cuda::ceil_div(numeric_limits<_Int>::max(), 2) * _Fp{2};
-    constexpr auto __low   = is_signed_v<_Int> ? -__bound : _Fp{0};
-    return __value >= __low && __value < __bound;
+    constexpr auto __upper_bound = ::cuda::ceil_div(numeric_limits<_Int>::max(), 2) * _Fp{2};
+    constexpr auto __low         = is_signed_v<_Int> ? -__upper_bound : _Fp{0};
+    return __value >= __low && __value < __upper_bound;
   }
 }
 
