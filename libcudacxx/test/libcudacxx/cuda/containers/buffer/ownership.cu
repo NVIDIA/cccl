@@ -403,10 +403,10 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer release, acquire and byte conversion",
     {
       Buffer buf{stream, resource, 512, cuda::no_init, env};
       buf.resize_unsynchronized(1, cuda::no_init);
-      auto released = cuda::std::move(buf).release();
-      auto acquired = cuda::__acquire_resizable_buffer(cuda::std::move(released));
-      auto bytes    = cuda::std::move(acquired).template as_bytes<cuda::std::byte>();
-      Buffer typed  = cuda::std::move(bytes).template as_type<T>();
+      auto released      = cuda::std::move(buf).release();
+      auto acquired      = cuda::__acquire_resizable_buffer(cuda::std::move(released));
+      auto bytes         = cuda::std::move(acquired).template as_bytes<cuda::std::byte>();
+      Buffer const typed = cuda::std::move(bytes).template as_type<T>();
       CHECK(typed.size() == 1);
       CHECK(typed.capacity() == 512);
     }
