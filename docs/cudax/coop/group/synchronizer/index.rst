@@ -18,23 +18,24 @@ Group Synchronizer Instance Concept
                                                       const MappingResult& mapping_result,
                                                       const Hierarchy& hierarchy)
   {
+    requires(cuda::std::is_trivially_copyable_v<T>);
+    requires(cuda::std::is_trivially_destructible_v<T>);
+
     // Lifetime-related methods.
-    { t.deinit(mapping_result, hierarchy) } -> cuda::std::same_as<void>;             // (1)
-    { ct.view() } -> /*group-synchronizer-instance-view*/<MappingResult, Hierarchy>; // (2)
+    { t.deinit(mapping_result, hierarchy) } -> cuda::std::same_as<void>; // (1)
 
     // Synchronization interface.
-    { ct.do_sync(hierarchy) } -> cuda::std::same_as<void>;                           // (3)
-    { ct.do_sync_aligned(hierarchy) } -> cuda::std::same_as<void>;                   // (4)
+    { ct.do_sync(hierarchy) } -> cuda::std::same_as<void>;               // (2)
+    { ct.do_sync_aligned(hierarchy) } -> cuda::std::same_as<void>;       // (3)
   };
 
 Where:
 
 #. Deinitializes the synchronizer instance.
-#. Creates a non-owning view over the synchronizer instance resources. It must also satisfy the *group-synchronizer-instance-view* concept.
 #. Runs the synchronization. It doesn't require the units to be contextually aligned.
 #. Runs the synchronization. The caller guarantees that all of the units are contextually aligned (execute the exact same statement in the code).
 
-The *group-synchronizer-instance-view* concept is the same as the *group-synchronizer-instance*, but it doesn't require the ``.deinit(...)`` method, since the view has nothing to deinitialize.
+Every synchronizer instance must be trivially copyable and destructible. The object can be copied multiple times, but it is guaranteed to be destroyed only once by calling the ``.deinit(...)`` method with the same parameters it was constructed with by the synchronizer object.
 
 Group Synchronizer Instantiation Process
 ----------------------------------------
@@ -49,7 +50,7 @@ Every group synchronizer type must implement the *group-synchronizer* interface:
 .. code:: c++
 
   template <typename T, typename Unit, typename ParentGroup, typename MappingResult>
-  concept /*group-synchronizer*/ = requires (T& t,
+  concept /*group-synchronizer*/ = requires (T&& t,
                                              const Unit& unit,
                                              const ParentGroup& parent_group,
                                              const MappingResult& mapping_result)

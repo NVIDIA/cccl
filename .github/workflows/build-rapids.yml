@@ -13,11 +13,6 @@ on:
         required: false
         default: ""
         type: string
-      enable_slack_alerts:
-        description: "If true, a message will be posted to the CCCL GHA CI Alert channel if the workflow fails."
-        required: false
-        default: false
-        type: boolean
   workflow_call:
     inputs:
       override_cccl_tag:
@@ -30,11 +25,6 @@ on:
         required: false
         default: ""
         type: string
-      enable_slack_alerts:
-        description: "If true, a message will be posted to the CCCL GHA CI Alert channel if the workflow fails."
-        required: false
-        default: false
-        type: boolean
 
 jobs:
   build-rapids:
@@ -237,22 +227,3 @@ jobs:
           path: ${{ runner.temp }}/compile-time-reports/ON
           if-no-files-found: error
           retention-days: 90
-
-  notify-failure:
-    name: Notify Slack of RAPIDS failure
-    if: ${{ failure() && inputs.enable_slack_alerts }}
-    needs: build-rapids
-    runs-on: ubuntu-slim
-    steps:
-      - name: Notify
-        uses: slackapi/slack-github-action@v1.26.0
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
-          WORKFLOW_TYPE: ${{ github.workflow }}
-          SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
-        with:
-          channel-id: ${{ secrets.SLACK_CHANNEL_RAPIDS_CI_ALERT }}
-          slack-message: |
-            RAPIDS build in workflow '${{ env.WORKFLOW_TYPE }}' failed.
-
-            Details: ${{ env.SUMMARY_URL }}

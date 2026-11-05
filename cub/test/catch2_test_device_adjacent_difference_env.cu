@@ -16,6 +16,7 @@ struct stream_registry_factory_t;
 
 #include <sstream>
 
+#include "block_size_extracting_helpers.h"
 #include "catch2_test_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceAdjacentDifference::SubtractLeftCopy,
@@ -161,19 +162,7 @@ CUB_TEST("Device adjacent difference subtract right uses environment", "[adjacen
 
 #if TEST_LAUNCH != 1
 
-struct block_size_extracting_minus_t
-{
-  unsigned int* d_block_size;
-
-  __device__ int operator()(int lhs, int rhs) const
-  {
-    if (threadIdx.x == 1) // thread 0 does not always call this operator
-    {
-      atomicMax(d_block_size, blockDim.x);
-    }
-    return lhs - rhs;
-  }
-};
+using block_size_extracting_minus_t = block_size_extracting_op<cuda::std::minus<>>;
 
 template <int ThreadsPerBlock>
 struct adj_diff_tuning
@@ -243,6 +232,40 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRight can be tuned", "[adjacent_diff
   auto d_block_size                        = c2h::device_vector<unsigned int>{0};
   auto op  = block_size_extracting_minus_t{thrust::raw_pointer_cast(d_block_size.data())};
   auto env = cuda::execution::tune(adj_diff_tuning<target_block_size>{});
+
+  device_adjacent_difference_subtract_right(data.begin(), data.size(), op, env);
+
+  const c2h::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
+  REQUIRE(data == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+template <int ThreadsPerBlock>
+struct adj_diff_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::AdjacentDifferencePolicy policy) const
+    -> cub::AdjacentDifferencePolicy
+  {
+    policy.threads_per_block = ThreadsPerBlock;
+    return policy;
+  }
+};
+
+CUB_TEST("DeviceAdjacentDifference::SubtractRight tuning can be modified", "[adjacent_difference][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+  auto data                                = c2h::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
+  auto d_block_size                        = c2h::device_vector<unsigned int>{0};
+  auto op = block_size_extracting_minus_t{thrust::raw_pointer_cast(d_block_size.data())};
+  {
+    auto data_default = data;
+    device_adjacent_difference_subtract_right(data_default.begin(), data_default.size(), op, stdexec::env{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
+  auto env = cuda::execution::tune(adj_diff_tuning_transform<target_block_size>{});
 
   device_adjacent_difference_subtract_right(data.begin(), data.size(), op, env);
 

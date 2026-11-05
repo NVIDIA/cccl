@@ -87,14 +87,11 @@ _CCCL_REQUIRES(__is_same_templ_v<generic_group, _GroupTempl> _CCCL_AND __is_hier
 {
   const auto __mapping_result = ::cuda::experimental::coop::__do_group_mapping(
     __non_exhaustive, __unit, __parent, ::cuda::std::forward<_Mapping>(__mapping));
+  const auto __synchronizer_instance =
+    ::cuda::std::forward<_Synchronizer>(__synchronizer).make_instance(__unit, __parent, __mapping_result);
   using _Ret = ::cuda::std::optional<_Group>;
   return (__mapping_result.is_valid())
-         ? _Ret{::cuda::std::in_place,
-                __non_exhaustive,
-                __unit,
-                __parent,
-                __mapping_result,
-                ::cuda::std::forward<_Synchronizer>(__synchronizer)}
+         ? _Ret{::cuda::std::in_place, __non_exhaustive, __unit, __parent, __mapping_result, __synchronizer_instance}
          : _Ret{};
 }
 

@@ -22,6 +22,7 @@
 
 #include <cub/detail/cub_vector.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_for.cuh>
 #include <cub/util_namespace.cuh>
@@ -141,7 +142,7 @@ struct DeviceFor
       ::cuda::__call_or(::cuda::execution::__get_tuning, ::cuda::std::execution::env<>{}, env);
     using default_policy_selector = detail::for_each::policy_selector;
     using policy_selector =
-      ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), ForPolicy, default_policy_selector>;
+      detail::policy_selector_from_tuning_env_t<decltype(tuning_env), ForPolicy, default_policy_selector>;
     return detail::for_each::dispatch(static_cast<offset_t>(num_items), op, stream.get(), policy_selector{});
   }
 

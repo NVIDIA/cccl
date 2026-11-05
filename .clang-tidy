@@ -89,7 +89,6 @@ Checks:
   # members" than to remember to change 2 places at once.
   - '-readability-redundant-member-init'
   - '-readability-redundant-string-init'
-  - '-readability-const-return-type'
   - '-readability-delete-null-pointer'
   - '-readability-container-data-pointer'
   - '-readability-use-std-min-max'
@@ -112,12 +111,10 @@ Checks:
   - '-readability-make-member-function-const'
   - '-readability-enum-initial-value'
   - '-readability-avoid-return-with-void-value'
-  - '-readability-redundant-string-cstr'
   - '-readability-suspicious-call-argument'
   - '-readability-container-size-empty'
   - '-readability-redundant-control-flow'
   - '-readability-avoid-const-params-in-decls'
-  - '-readability-string-compare'
   - '-readability-inconsistent-declaration-parameter-name'
   # Handled by clang-tidy
   - '-readability-misleading-indentation'
