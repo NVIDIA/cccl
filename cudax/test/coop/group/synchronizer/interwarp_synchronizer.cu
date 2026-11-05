@@ -16,9 +16,9 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/ranges>
 #include <cuda/std/span>
-#include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
+#include <cuda/type_traits>
 
 #include <cuda/experimental/coop/group>
 
@@ -116,7 +116,7 @@ __device__ void test_interwarp_synchronizer(Config config)
 
       using SynchronizerInstance = decltype(synchronizer_instance);
 
-      static_assert(cuda::std::is_trivially_copyable_v<SynchronizerInstance>);
+      static_assert(cuda::is_trivially_copyable_v<SynchronizerInstance>);
       static_assert(cuda::std::is_trivially_destructible_v<SynchronizerInstance>);
 
       using ArrivalToken = typename SynchronizerInstance::arrival_token;
@@ -191,7 +191,7 @@ __device__ void test_interwarp_synchronizer(Config config)
 
       using SynchronizerInstance = decltype(synchronizer_instance);
 
-      static_assert(cuda::std::is_trivially_copyable_v<SynchronizerInstance>);
+      static_assert(cuda::is_trivially_copyable_v<SynchronizerInstance>);
       static_assert(cuda::std::is_trivially_destructible_v<SynchronizerInstance>);
 
       using ArrivalToken = typename SynchronizerInstance::arrival_token;

@@ -11,9 +11,9 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
-#include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
+#include <cuda/type_traits>
 
 #include <cuda/experimental/coop/group>
 
@@ -45,7 +45,7 @@ __device__ void test_lane_synchronizer(const Level& level, Config config)
 
     using SynchronizerInstance = decltype(synchronizer_instance);
 
-    static_assert(cuda::std::is_trivially_copyable_v<SynchronizerInstance>);
+    static_assert(cuda::is_trivially_copyable_v<SynchronizerInstance>);
     static_assert(cuda::std::is_trivially_destructible_v<SynchronizerInstance>);
 
     using ArrivalToken = typename SynchronizerInstance::arrival_token;
