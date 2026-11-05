@@ -219,7 +219,7 @@ private:
       {__alloc.stream,
        ::cuda::std::move(__alloc.mr),
        reinterpret_cast<_Up*>(__alloc.ptr),
-       __alloc.size * sizeof(_Tp) / sizeof(_Up),
+       __alloc.capacity * sizeof(_Tp) / sizeof(_Up),
        __alloc.size * sizeof(_Tp) / sizeof(_Up),
        __alloc.alignment});
   }
