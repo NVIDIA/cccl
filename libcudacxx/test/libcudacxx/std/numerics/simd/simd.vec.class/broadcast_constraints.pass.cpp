@@ -182,7 +182,7 @@ TEST_HOST_DEVICE_FUNC constexpr void test_width()
   test_value<double, float, N>(2.0f, 2.0);
   test_value<int, short, N>(3, 3);
   test_value<int, bool, N>(true, 1);
-  test_value<int, integral_constant<bool, true>, N>({}, 1);
+  test_value<int, cuda::std::true_type, N>({}, 1);
   test_value<signed char, integral_constant<int, -128>, N>({}, -128);
   test_value<unsigned char, integral_constant<int, 255>, N>({}, 255);
   test_value<int, integral_constant<unsigned, 7>, N>({}, 7);
@@ -221,7 +221,7 @@ TEST_HOST_DEVICE_FUNC constexpr bool test()
 
 int main(int, char**)
 {
-  assert(test()); // NOLINT(cert-dcl03-c,misc-static-assert)
+  assert(test()); // NOLINT(misc-static-assert)
   static_assert(test());
   return 0;
 }
