@@ -611,6 +611,7 @@ typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::erase(iterator f
 {
   // overlap copy the range [last,end()) to first
   // XXX this copy only potentially overlaps
+  // NOLINTNEXTLINE(readability-suspicious-call-argument)
   const iterator i = thrust::detail::overlapped_copy(last, end(), first);
 
   // destroy everything after i

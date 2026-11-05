@@ -128,6 +128,7 @@ _CCCL_API void __buffered_inplace_merge(
     {
       ::cuda::std::__construct_at(__p, _IterOps<_AlgPolicy>::__iter_move(__i));
     }
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     ::cuda::std::__half_inplace_merge<_AlgPolicy>(__buff, __p, __middle, __last, __first, __comp);
   }
   else

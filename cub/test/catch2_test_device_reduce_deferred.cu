@@ -180,6 +180,7 @@ struct select_then_reduce_t
 
     const auto deferred_num_items = cuda::args::deferred{d_num_selected_out};
     size_t reduce_temp_storage_bytes{};
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     if (const cudaError_t error = cub::DeviceReduce::Reduce(
           nullptr,
           reduce_temp_storage_bytes,
@@ -214,6 +215,7 @@ struct select_then_reduce_t
       return error;
     }
 
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     return cub::DeviceReduce::Reduce(
       d_temp_storage,
       reduce_temp_storage_bytes,
