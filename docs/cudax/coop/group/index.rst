@@ -310,7 +310,7 @@ Both overloads take the ``GroupTempl`` template template parameter that denotes 
 
 #. Equivalent to  ``GroupTempl{args...}``.
 
-#. Instantiates ``GroupTempl`` with ``args`` and the result the :ref:`non-exhaustive<cudax-coop-group-mapping-exhaustivness>` mapping, returns an empty ``cuda::std::optional``, when the current unit was not assigned to any group.
+#. Instantiates ``GroupTempl`` with ``args`` and the result the :ref:`non-exhaustive<cudax-coop-group-mapping-exhaustivness>` mapping, returns an empty ``cuda::std::optional``, when the current unit was not assigned to any group. Currently, only :ref:`cudax-coop-group-generic-group` is supported.
 
 #. Takes an original cooperative groups group and converts it to a CCCL Cooperative Groups equivalent group.
 
