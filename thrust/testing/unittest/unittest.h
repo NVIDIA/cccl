@@ -3,6 +3,7 @@
 // Here was Thrust's legacy unit test framework. It's core was replaced by Catch2, but the APIs remain for all tests
 // that have not been migrated yet.
 
+#include <thrust/detail/preprocessor.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/mr/device_memory_resource.h>

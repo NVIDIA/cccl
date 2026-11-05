@@ -17,8 +17,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/config.h>
-
 #include <thrust/detail/config/memory_resource.h>
 #include <thrust/mr/polymorphic_adaptor.h>
 #include <thrust/mr/validator.h>

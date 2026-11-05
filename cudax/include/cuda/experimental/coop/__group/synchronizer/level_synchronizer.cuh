@@ -23,12 +23,14 @@
 
 #include <cuda/hierarchy>
 #include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/coop/__group/fwd.cuh>
 #include <cuda/experimental/coop/__group/synchronizer/arrival_token.cuh>
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -69,20 +71,20 @@ struct level_synchronizer::__synchronizer_instance
 {
   using arrival_token _CCCL_NODEBUG = __dummy_arrival_token<__synchronizer_instance>;
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_sync(const _MappingResult& __mapping_result, const _Hierarchy& __hier) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_sync(const _Hierarchy& __hier) const
   {
-    do_wait(__mapping_result, __hier, do_arrive(__mapping_result, __hier));
+    do_wait(__hier, do_arrive(__hier));
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_sync_aligned(const _MappingResult& __mapping_result, const _Hierarchy& __hier) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_sync_aligned(const _Hierarchy& __hier) const
   {
-    do_wait_aligned(__mapping_result, __hier, do_arrive_aligned(__mapping_result, __hier));
+    do_wait_aligned(__hier, do_arrive_aligned(__hier));
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API arrival_token do_arrive(const _MappingResult&, const _Hierarchy&) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API arrival_token do_arrive(const _Hierarchy&) const
   {
     if constexpr (::cuda::std::is_same_v<_Level, cluster_level>)
     {
@@ -91,8 +93,8 @@ struct level_synchronizer::__synchronizer_instance
     return arrival_token{};
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API arrival_token do_arrive_aligned(const _MappingResult&, const _Hierarchy&) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API arrival_token do_arrive_aligned(const _Hierarchy&) const
   {
     if constexpr (::cuda::std::is_same_v<_Level, cluster_level>)
     {
@@ -101,8 +103,8 @@ struct level_synchronizer::__synchronizer_instance
     return arrival_token{};
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_wait(const _MappingResult&, const _Hierarchy&, [[maybe_unused]] arrival_token&& __tok) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_wait(const _Hierarchy&, [[maybe_unused]] arrival_token&& __tok) const
   {
     _CCCL_ASSERT(__tok.__valid(), "invalid arrival token passed to do_wait function");
 
@@ -129,9 +131,8 @@ struct level_synchronizer::__synchronizer_instance
     }
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void
-  do_wait_aligned(const _MappingResult&, const _Hierarchy&, [[maybe_unused]] arrival_token&& __tok) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_wait_aligned(const _Hierarchy&, [[maybe_unused]] arrival_token&& __tok) const
   {
     _CCCL_ASSERT(__tok.__valid(), "invalid arrival token passed to do_wait_aligned function");
 
@@ -199,14 +200,14 @@ struct level_synchronizer::__synchronizer_instance<grid_level>
     return &__grid_workspace_ptr_->__barrier_;
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_sync(const _MappingResult&, const _Hierarchy& __hier) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_sync(const _Hierarchy& __hier) const
   {
     __sync_impl<false>(__hier);
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_sync_aligned(const _MappingResult&, const _Hierarchy& __hier) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_sync_aligned(const _Hierarchy& __hier) const
   {
     __sync_impl<true>(__hier);
   }
@@ -293,14 +294,14 @@ struct level_synchronizer::__synchronizer_instance<grid_level>
     return arrival_token{__old_barrier_value};
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API arrival_token do_arrive(const _MappingResult&, const _Hierarchy& __hier) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API arrival_token do_arrive(const _Hierarchy& __hier) const
   {
     return __arrive_impl<false>(__hier);
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API arrival_token do_arrive_aligned(const _MappingResult&, const _Hierarchy& __hier) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API arrival_token do_arrive_aligned(const _Hierarchy& __hier) const
   {
     return __arrive_impl<true>(__hier);
   }
@@ -329,14 +330,14 @@ struct level_synchronizer::__synchronizer_instance<grid_level>
     ::cuda::experimental::coop::__block_sync<_Aligned>();
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_wait(const _MappingResult&, const _Hierarchy& __hier, arrival_token&& __tok) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_wait(const _Hierarchy& __hier, arrival_token&& __tok) const
   {
     __wait_impl<false>(__hier, __tok.__value());
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_wait_aligned(const _MappingResult&, const _Hierarchy& __hier, arrival_token&& __tok) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_wait_aligned(const _Hierarchy& __hier, arrival_token&& __tok) const
   {
     __wait_impl<true>(__hier, __tok.__value());
   }

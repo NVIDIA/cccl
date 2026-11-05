@@ -8,7 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/atomic>
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
@@ -35,6 +34,25 @@ __device__ void test_group_view(Config config, Level level)
   {
     using GroupView = decltype(cudax::coop::group_view{g});
     static_assert(cuda::std::is_copy_constructible_v<GroupView>);
+  }
+
+  // Views support assignment and explicitly nested view types.
+  {
+    cudax::coop::group_view view{g};
+    using View = decltype(view);
+    static_assert(cuda::std::is_copy_assignable_v<View>);
+    static_assert(cuda::std::is_move_assignable_v<View>);
+    View other{g};
+    other = view;
+    view  = cuda::std::move(other);
+
+    const cudax::coop::group_view<typename View::unit_type, View> nested{view};
+    static_assert(nested.static_count(level) == g.static_count(level));
+    REQUIRE(nested.count(level) == g.count(level));
+    REQUIRE(nested.template count_as<unsigned>(level) == g.template count_as<unsigned>(level));
+    REQUIRE(nested.rank(level) == g.rank(level));
+    REQUIRE(nested.template rank_as<unsigned>(level) == g.template rank_as<unsigned>(level));
+    nested.sync();
   }
 
   // Test view over the group.

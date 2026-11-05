@@ -14,6 +14,7 @@
 #include <cuda/hierarchy>
 #include <cuda/launch>
 #include <cuda/std/execution>
+#include <cuda/std/functional>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
 

@@ -12,6 +12,8 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/cstddef>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
@@ -147,7 +149,7 @@ __device__ void test_group_by_group(Unit unit, Level level, Config config)
     auto& barriers = get_barriers<nbarriers, 0>(level);
 
     const cudax::coop::group_by mapping{cuda::std::cw<N>};
-    const cudax::coop::barrier_synchronizer synchronizer{barriers};
+    cudax::coop::barrier_synchronizer synchronizer{barriers};
     cudax::coop::generic_group group{unit, parent_group, mapping, synchronizer};
 
     test_common_properties<Unit, Level>(config.hierarchy(), group);
@@ -158,7 +160,7 @@ __device__ void test_group_by_group(Unit unit, Level level, Config config)
     auto& barriers = get_barriers<nbarriers, 1>(level);
 
     const cudax::coop::group_by mapping{N};
-    const cudax::coop::barrier_synchronizer synchronizer{barriers};
+    cudax::coop::barrier_synchronizer synchronizer{barriers};
     cudax::coop::generic_group group{unit, parent_group, mapping, synchronizer};
 
     test_common_properties<Unit, Level>(config.hierarchy(), group);
