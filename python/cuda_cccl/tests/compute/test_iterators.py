@@ -155,6 +155,20 @@ def test_counting_iterator_add_negative_offset():
     assert np.frombuffer(bytes(it.state), dtype=np.int32)[0] == 8
 
 
+def test_reverse_iterator_add_float_start():
+    # A floating-point start must move backward by the signed distance, which
+    # is what the device-side advance op reads.
+    it = ReverseIterator(CountingIterator(np.float32(10))) + 1
+
+    assert np.frombuffer(bytes(it.state), dtype=np.float32)[0] == 9
+
+
+def test_counting_iterator_add_numpy_integer_offset():
+    it = CountingIterator(np.uint64(10)) + np.int32(1)
+
+    assert np.frombuffer(bytes(it.state), dtype=np.uint64)[0] == 11
+
+
 @pytest.mark.parametrize(
     "shape, itemsize, expected",
     [

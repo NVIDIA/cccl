@@ -66,7 +66,9 @@ class CountingIterator(IteratorBase):
 
             extern "C" __device__ void {symbol}(void* state, void* offset) {{
                 auto* s = static_cast<{cpp_type}*>(state);
-                auto dist = *static_cast<uint64_t*>(offset);
+                // The distance is signed: a ReverseIterator advances this iterator
+                // with a negative distance.
+                auto dist = *static_cast<int64_t*>(offset);
                 *s += static_cast<{cpp_type}>(dist);
             }}
         """).strip()
@@ -109,6 +111,9 @@ class CountingIterator(IteratorBase):
         iterator backward. Integer start values wrap on overflow, the same way
         the device-side advance op wraps.
         """
+        # A NumPy integer offset would otherwise take part in the arithmetic
+        # below and overflow its own dtype.
+        offset = int(offset)
         dtype = self._start_value.dtype
         if np.issubdtype(dtype, np.integer):
             # NumPy rejects mixing a negative Python int with an unsigned
