@@ -164,11 +164,6 @@ struct level_synchronizer::__synchronizer_instance
   template <class _MappingResult, class _Hierarchy>
   _CCCL_DEVICE_API void deinit(const _MappingResult&, const _Hierarchy&)
   {}
-
-  [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance view() const
-  {
-    return *this;
-  }
 };
 
 struct __grid_workspace
@@ -345,11 +340,6 @@ struct level_synchronizer::__synchronizer_instance<grid_level>
   template <class _MappingResult, class _Hierarchy>
   _CCCL_DEVICE_API void deinit(const _MappingResult&, const _Hierarchy&)
   {}
-
-  [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance view() const
-  {
-    return *this;
-  }
 };
 } // namespace cuda::experimental::coop
 
