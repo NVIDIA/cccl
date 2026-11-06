@@ -120,7 +120,7 @@ using fixed_size_offset_t = ::cuda::std::conditional_t<
 
 // Returns the host-known segment size, or -1 if it does not fit into OffsetT
 template <typename OffsetT, typename SegmentSizeT>
-CUB_RUNTIME_FUNCTION OffsetT host_segment_size(SegmentSizeT segment_size)
+_CCCL_API OffsetT host_segment_size(SegmentSizeT segment_size)
 {
   using validation = params::__validate_uniform_integral_param<SegmentSizeT>;
   static_assert(!validation::args_traits::is_deferred,
@@ -313,6 +313,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 }
 
 // Segment i occupies [i * segment_size, (i + 1) * segment_size) in both input and output
+_CCCL_EXEC_CHECK_DISABLE
 template <ForceInclusive EnforceInclusive = ForceInclusive::No,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -335,7 +336,7 @@ template <ForceInclusive EnforceInclusive = ForceInclusive::No,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_scan_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_fixed_size(
+_CCCL_API _CCCL_FORCEINLINE cudaError_t dispatch_fixed_size(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   InputIteratorT d_in,
@@ -349,7 +350,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_fixed_size(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  static constexpr auto int64_max = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max();
+  static constexpr auto int64_max = (::cuda::std::numeric_limits<::cuda::std::int64_t>::max)();
   const OffsetT segment_size      = host_segment_size<OffsetT>(segment_size_arg);
 
   // The total number of items is used to advance d_in and d_out, so it must fit into int64_t
@@ -389,13 +390,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_fixed_size(
     ::cuda::std::clamp(tile_items / segment_size, OffsetT{1}, static_cast<OffsetT>(active_policy.block.max_segments)));
 
   static constexpr auto max_num_segments_per_invocation =
-    static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
+    static_cast<::cuda::std::int64_t>((::cuda::std::numeric_limits<::cuda::std::int32_t>::max)());
 
   for (::cuda::std::int64_t first_segment = 0; first_segment < num_segments;
        first_segment += max_num_segments_per_invocation)
   {
     const auto num_segments_per_invocation =
-      static_cast<int>(::cuda::std::min(num_segments - first_segment, max_num_segments_per_invocation));
+      static_cast<int>((::cuda::std::min) (num_segments - first_segment, max_num_segments_per_invocation));
     const auto first_item = first_segment * segment_size;
     const int grid_size   = ::cuda::ceil_div(num_segments_per_invocation, segments_per_block);
 

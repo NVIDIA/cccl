@@ -798,7 +798,7 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
   }
   else
   {
-    const int size = ::cuda::std::min(segments_per_block, n_segments - first_segment);
+    const int size = (::cuda::std::min) (segments_per_block, n_segments - first_segment);
     if (size == 1)
     {
       agent.scan_one_segment(0, segment_size, 0);
