@@ -5,7 +5,6 @@
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh> // make_cluster_policy()
 
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/std/algorithm>
 #include <cuda/std/cstdint>
 
 #include "cub_test_macros.h"
@@ -101,57 +100,4 @@ CUB_TEST("Segmented TopK cluster SMEM layout exposes the full physical capacity 
   check_layout_matrix<float, 4 * 1024, 128>();
   check_layout_matrix<float, 16 * 1024, 128>();
   check_layout_matrix<cuda::std::uint64_t, 16 * 1024, 256>();
-}
-
-CUB_TEST("Segmented TopK cluster trims the logical cluster to chunk-owning ranks without moving chunks",
-         "[keys][segmented][topk][cluster][layout]",
-         CUB_SMALL)
-{
-  using cub::detail::batched_topk_cluster::trim_to_chunk_owning_blocks;
-  using count_t = cuda::std::uint32_t;
-
-  // The agent's partitions: the blocked one gives rank `r` chunks `[r * q, (r + 1) * q)` with `q = ceil(C / L)`, the
-  // strided one gives it chunks `r, r + L, ...`.
-  const auto owner = [](bool is_blocked, count_t chunk, count_t num_chunks, count_t num_blocks) {
-    return is_blocked ? chunk / cuda::ceil_div(num_chunks, num_blocks) : chunk % num_blocks;
-  };
-
-  for (const bool is_blocked : {true, false})
-  {
-    for (count_t num_blocks = 1; num_blocks <= 16; ++num_blocks)
-    {
-      CAPTURE(is_blocked, num_blocks);
-      REQUIRE(trim_to_chunk_owning_blocks(0, num_blocks, is_blocked).num_blocks == 1u);
-      for (count_t num_chunks = 1; num_chunks <= 512; ++num_chunks)
-      {
-        CAPTURE(num_chunks);
-        const auto trimmed = trim_to_chunk_owning_blocks(num_chunks, num_blocks, is_blocked);
-        REQUIRE(trimmed.num_blocks >= 1u);
-        REQUIRE(trimmed.num_blocks <= num_blocks);
-        if (is_blocked)
-        {
-          REQUIRE(trimmed.blocked_chunks_per_rank == cuda::ceil_div(num_chunks, num_blocks));
-          REQUIRE(trimmed.blocked_chunks_per_rank == cuda::ceil_div(num_chunks, trimmed.num_blocks));
-        }
-        // The dispatch relies on idempotence when it scans candidate cluster widths.
-        REQUIRE(
-          trim_to_chunk_owning_blocks(num_chunks, trimmed.num_blocks, is_blocked).num_blocks == trimmed.num_blocks);
-
-        // Every chunk keeps its owner, and every remaining rank owns at least one chunk.
-        bool keeps_owners        = true;
-        bool rank_owns_chunk[16] = {};
-        for (count_t chunk = 0; chunk < num_chunks; ++chunk)
-        {
-          const count_t rank = owner(is_blocked, chunk, num_chunks, trimmed.num_blocks);
-          keeps_owners       = keeps_owners && rank == owner(is_blocked, chunk, num_chunks, num_blocks)
-                            && rank < trimmed.num_blocks;
-          rank_owns_chunk[(cuda::std::min) (rank, count_t{15})] = true;
-        }
-        REQUIRE(keeps_owners);
-        REQUIRE(cuda::std::all_of(rank_owns_chunk, rank_owns_chunk + trimmed.num_blocks, [](bool owns) {
-          return owns;
-        }));
-      }
-    }
-  }
 }
