@@ -315,6 +315,28 @@ struct three_way_partition_policy_selector
   }
 };
 
+template <unsigned int BlockThreads>
+struct partition_policy_transformer
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::PartitionPolicy policy) const
+    -> cub::PartitionPolicy
+  {
+    policy.lookback.threads_per_block = static_cast<int>(BlockThreads);
+    return policy;
+  }
+};
+
+template <unsigned int BlockThreads>
+struct three_way_partition_policy_transformer
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::ThreeWayPartitionPolicy policy) const
+    -> cub::ThreeWayPartitionPolicy
+  {
+    policy.lookback.threads_per_block = static_cast<int>(BlockThreads);
+    return policy;
+  }
+};
+
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 
@@ -352,6 +374,30 @@ CUB_TEST("DevicePartition::Flagged can be tuned", "[partition][device]", CUB_SMA
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+CUB_TEST_CASE("DevicePartition::If tuning can be modified", "[partition][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+  auto d_in                                = c2h::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
+  auto d_out                               = c2h::device_vector<int>(8, thrust::no_init);
+  auto d_num_selected                      = c2h::device_vector<unsigned int>(1, thrust::no_init);
+  auto d_block_size                        = c2h::device_vector<unsigned int>(1);
+
+  const block_size_extracting_op<less_than_5_t> select_op{thrust::raw_pointer_cast(d_block_size.data())};
+
+  auto env = cuda::execution::tune(partition_policy_transformer<target_block_size>{});
+
+  {
+    device_partition_if(d_in.begin(), d_out.begin(), d_num_selected.begin(), 8, select_op, stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
+  device_partition_if(d_in.begin(), d_out.begin(), d_num_selected.begin(), 8, select_op, env);
+  REQUIRE(d_num_selected[0] == 4);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
 struct less_than_7_t
 {
   __host__ __device__ bool operator()(int val) const
@@ -374,6 +420,52 @@ CUB_TEST("DevicePartition::If three-way can be tuned", "[partition][device]", CU
   const greater_than_t<int> large_selector{50};
 
   auto env = cuda::execution::tune(three_way_partition_policy_selector<target_block_size>{});
+
+  device_partition_if(
+    d_in.begin(),
+    d_small_out.begin(),
+    d_large_out.begin(),
+    d_unselected_out.begin(),
+    d_num_selected.begin(),
+    static_cast<int>(d_in.size()),
+    small_selector,
+    large_selector,
+    env);
+  REQUIRE(d_num_selected[0] == 5);
+  REQUIRE(d_num_selected[1] == 1);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST_CASE("DevicePartition::If three-way tuning can be modified", "[partition][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+  auto d_in                                = c2h::device_vector<int>{0, 2, 3, 9, 5, 2, 81, 8};
+  auto d_small_out                         = c2h::device_vector<int>(8);
+  auto d_large_out                         = c2h::device_vector<int>(8);
+  auto d_unselected_out                    = c2h::device_vector<int>(8);
+  auto d_num_selected                      = c2h::device_vector<int>(2, thrust::no_init);
+  auto d_block_size                        = c2h::device_vector<unsigned int>(1);
+
+  const block_size_extracting_op<less_than_7_t> small_selector{thrust::raw_pointer_cast(d_block_size.data())};
+  const greater_than_t<int> large_selector{50};
+
+  auto env = cuda::execution::tune(three_way_partition_policy_transformer<target_block_size>{});
+
+  {
+    device_partition_if(
+      d_in.begin(),
+      d_small_out.begin(),
+      d_large_out.begin(),
+      d_unselected_out.begin(),
+      d_num_selected.begin(),
+      static_cast<int>(d_in.size()),
+      small_selector,
+      large_selector,
+      stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
 
   device_partition_if(
     d_in.begin(),

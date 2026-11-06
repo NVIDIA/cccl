@@ -102,6 +102,7 @@ PREDEFINED = \
     "_CCCL_HOST_DEVICE_API=inline" \
     "_CCCL_HOST_API=inline" \
     "_CCCL_DEVICE_API=inline" \
+    "_CCCL_NODEBUG=" \
     "_CCCL_NODEBUG_API=inline" \
     "_CCCL_NODEBUG_DEVICE_API=inline" \
     "_CCCL_NODEBUG_HOST_API=inline" \

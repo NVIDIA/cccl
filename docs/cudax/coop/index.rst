@@ -5,7 +5,7 @@ CCCL Cooperative
 
 CCCL Cooperative is a set of device-side APIs for organizing groups of collaborating threads and executing collective algorithms. They are placed in the ``cuda::experimental::coop`` namespace and available through ``<cuda/experimental/coop/_header_>`` include files.
 
-These APIs are successors to both the original cooperative groups (``<cooperative_groups.h>``) and CUB thread-, warp-, and block-wide collective algorithms. The goal is to provide a more capable API that provides better flexibility, performance, and safety.
+These APIs are successors to both the original cooperative groups (``<cooperative_groups.h>``, see `online docs <https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/cooperative-groups.html>`__) and CUB thread-, warp-, and block-wide collective algorithms. The goal is to provide a more capable API that provides better flexibility, performance, and safety.
 
 .. toctree::
   :maxdepth: 1

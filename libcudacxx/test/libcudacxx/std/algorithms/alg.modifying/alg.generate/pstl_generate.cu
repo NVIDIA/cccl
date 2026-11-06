@@ -48,7 +48,6 @@ struct gen_val
 };
 
 #include "test_iterators.h"
-#include "test_macros.h"
 #include "test_pstl.h"
 
 template <class Policy, class T>

@@ -46,7 +46,7 @@ inline constexpr bool has_system_type<T, ::cuda::std::void_t<typename T::system_
 template <class T>
 struct nested_system_type
 {
-  using type = typename T::system_type;
+  using type _CCCL_NODEBUG = typename T::system_type;
 };
 
 template <class T, class = void>
@@ -85,7 +85,7 @@ struct allocator_system
                                         ::cuda::std::add_lvalue_reference<type>,
                                         ::cuda::std::type_identity<type>>::type;
 
-  _CCCL_HOST_DEVICE inline static get_result_type get(Alloc& a)
+  _CCCL_HOST_DEVICE static get_result_type get(Alloc& a)
   {
     return allocator_traits_detail::system(a);
   }

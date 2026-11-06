@@ -205,7 +205,7 @@ struct PerDeviceAttributeCache
   // i.e. a linear sequence of transitions.
   enum DeviceEntryStatus // NOLINT(cppcoreguidelines-use-enum-class)
   {
-    DeviceEntryEmpty = 0,
+    DeviceEntryEmpty,
     DeviceEntryInitializing,
     DeviceEntryReady
   };
@@ -223,7 +223,7 @@ public:
   /**
    * \brief Construct the cache.
    */
-  _CCCL_HOST inline PerDeviceAttributeCache()
+  _CCCL_HOST PerDeviceAttributeCache()
       : entries_()
   {
     _CCCL_ASSERT(detail::device_count() <= detail::max_devices, "");
@@ -739,7 +739,7 @@ __host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
 template <typename T>
 struct get_active_policy
 {
-  using type = typename T::ActivePolicy;
+  using type _CCCL_NODEBUG = typename T::ActivePolicy;
 };
 
 /// Helper for dispatching into a policy chain

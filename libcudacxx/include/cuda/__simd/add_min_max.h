@@ -46,14 +46,15 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 #if _CCCL_HAS_SIMD_ADD_MIN_MAX()
 
 // CUDA [13.2, 13.3] ptxas generates incorrect SM103 code for dependent VIADDMNMX instructions.
-// The workaround consists in adding an identity LOP3 to break the dependency. CTK 13.4 fixes the issue.
+// The workaround consists in adding an identity PRMT to break the dependency. CTK 13.4 fixes the issue.
+// Identity LOP3 can crash ptxas when its result controls a branch.
 [[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::cuda::std::uint32_t
 __workaround_sm103_viaddmnmx(::cuda::std::uint32_t __value) noexcept
 {
 #  if _CCCL_CTK_AT_LEAST(13, 2) && _CCCL_CTK_BELOW(13, 4)
   NV_IF_TARGET(NV_IS_EXACTLY_SM_103, ({
                  ::cuda::std::uint32_t __result;
-                 asm volatile("lop3.b32 %0, %1, 0, 0, 0xF0;" : "=r"(__result) : "r"(__value));
+                 asm volatile("prmt.b32 %0, %1, 0, 0x3210;" : "=r"(__result) : "r"(__value));
                  return __result;
                }))
 #  endif // _CCCL_CTK_AT_LEAST(13, 2) && _CCCL_CTK_BELOW(13, 4)

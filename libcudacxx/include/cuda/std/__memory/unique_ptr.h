@@ -103,25 +103,25 @@ template <class _Deleter>
 struct __unique_ptr_deleter_sfinae
 {
   static_assert(!is_reference_v<_Deleter>, "incorrect specialization");
-  using __lval_ref_type        = const _Deleter&;
-  using __good_rval_ref_type   = _Deleter&&;
-  using __enable_rval_overload = true_type;
+  using __lval_ref_type _CCCL_NODEBUG        = const _Deleter&;
+  using __good_rval_ref_type _CCCL_NODEBUG   = _Deleter&&;
+  using __enable_rval_overload _CCCL_NODEBUG = true_type;
 };
 
 template <class _Deleter>
 struct __unique_ptr_deleter_sfinae<_Deleter const&>
 {
-  using __lval_ref_type        = const _Deleter&;
-  using __bad_rval_ref_type    = const _Deleter&&;
-  using __enable_rval_overload = false_type;
+  using __lval_ref_type _CCCL_NODEBUG        = const _Deleter&;
+  using __bad_rval_ref_type _CCCL_NODEBUG    = const _Deleter&&;
+  using __enable_rval_overload _CCCL_NODEBUG = false_type;
 };
 
 template <class _Deleter>
 struct __unique_ptr_deleter_sfinae<_Deleter&>
 {
-  using __lval_ref_type        = _Deleter&;
-  using __bad_rval_ref_type    = _Deleter&&;
-  using __enable_rval_overload = false_type;
+  using __lval_ref_type _CCCL_NODEBUG        = _Deleter&;
+  using __bad_rval_ref_type _CCCL_NODEBUG    = _Deleter&&;
+  using __enable_rval_overload _CCCL_NODEBUG = false_type;
 };
 
 #if defined(_LIBCUDACXX_ABI_ENABLE_UNIQUE_PTR_TRIVIAL_ABI)
@@ -175,7 +175,7 @@ private:
     enable_if_t<(is_reference_v<_Dp> && is_same_v<_Dp, _UDel>) || (!is_reference_v<_Dp> && is_convertible_v<_UDel, _Dp>)>;
 
   template <class _UDel>
-  using _EnableIfDeleterAssignable = enable_if_t<is_assignable_v<_Dp&, _UDel&&>>;
+  using _EnableIfDeleterAssignable _CCCL_NODEBUG = enable_if_t<is_assignable_v<_Dp&, _UDel&&>>;
 
 public:
   template <bool _Dummy = true, class = _EnableIfDeleterDefaultConstructible<_Dummy>>
@@ -324,7 +324,7 @@ private:
                       || (is_same_v<pointer, element_type*> && is_convertible_v<_FromElem (*)[], element_type (*)[]>)>
   {};
 
-  using _DeleterSFINAE = __unique_ptr_deleter_sfinae<_Dp>;
+  using _DeleterSFINAE _CCCL_NODEBUG = __unique_ptr_deleter_sfinae<_Dp>;
 
   template <bool _Dummy>
   using _LValRefType _CCCL_NODEBUG = typename __dependent_type<_DeleterSFINAE, _Dummy>::__lval_ref_type;
@@ -668,19 +668,19 @@ operator<=>(const unique_ptr<_T1, _D1>& __x, nullptr_t)
 template <class _Tp>
 struct __unique_if
 {
-  using __unique_single = unique_ptr<_Tp>;
+  using __unique_single _CCCL_NODEBUG = unique_ptr<_Tp>;
 };
 
 template <class _Tp>
 struct __unique_if<_Tp[]>
 {
-  using __unique_array_unknown_bound = unique_ptr<_Tp[]>;
+  using __unique_array_unknown_bound _CCCL_NODEBUG = unique_ptr<_Tp[]>;
 };
 
 template <class _Tp, size_t _Np>
 struct __unique_if<_Tp[_Np]>
 {
-  using __unique_array_known_bound = void;
+  using __unique_array_known_bound _CCCL_NODEBUG = void;
 };
 
 _CCCL_EXEC_CHECK_DISABLE

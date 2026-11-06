@@ -27,7 +27,7 @@ General
    adding a Doxygen comment ``//! Deprecated [Since X.Y]`` with the CCCL version introducing the deprecation,
    in at least one preceding release.
 #. Do not name entities after identifiers that compilers or system headers define as macros,
-   such as ``__in``, ``__out``, ``__inout``, ``__input``, ``__output``, ``__acquire``, or ``__release``.
+   such as ``__in``, ``__out``, ``__inout``, ``__input``, ``__output``, ``__acquire``, ``__release``, or ``__bound``.
 #. Remove any unused files, code, or entities like variables, functions, types, template parameters, etc.
 
 Header inclusion

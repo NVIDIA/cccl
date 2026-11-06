@@ -103,7 +103,7 @@ using InternalWarpExchangeImpl =
  * @endcode
  * @par
  * Suppose the set of striped input @p thread_data across the block of threads
- * is <tt>{ [0,16,32,48], [1,17,33,49], ..., [15, 32, 47, 63] }</tt>.
+ * is <tt>{ [0,16,32,48], [1,17,33,49], ..., [15, 31, 47, 63] }</tt>.
  * The corresponding output @p thread_data in those threads will be
  * <tt>{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [60,61,62,63] }</tt>.
  */
@@ -181,7 +181,7 @@ public:
    * Suppose the set of striped input @p thread_data across the block of threads
    * is <tt>{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [60,61,62,63] }</tt>.
    * The corresponding output @p thread_data in those threads will be
-   * <tt>{ [0,16,32,48], [1,17,33,49], ..., [15, 32, 47, 63] }</tt>.
+   * <tt>{ [0,16,32,48], [1,17,33,49], ..., [15, 31, 47, 63] }</tt>.
    *
    * @param[in] input_items
    *   Items to exchange, converting between <em>blocked</em> and
@@ -241,7 +241,7 @@ public:
    * @endcode
    * @par
    * Suppose the set of striped input @p thread_data across the block of threads
-   * is <tt>{ [0,16,32,48], [1,17,33,49], ..., [15, 32, 47, 63] }</tt>.
+   * is <tt>{ [0,16,32,48], [1,17,33,49], ..., [15, 31, 47, 63] }</tt>.
    * The corresponding output @p thread_data in those threads will be
    * <tt>{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [60,61,62,63] }</tt>.
    *

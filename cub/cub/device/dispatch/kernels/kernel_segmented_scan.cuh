@@ -170,7 +170,7 @@ private:
     _multiple_segment_algorithms_storage_t reused;
   };
 
-  using _TempStorage =
+  using _TempStorage _CCCL_NODEBUG =
     ::cuda::std::conditional_t<multi_segment_enabled, _multi_segment_temp_storage_t, _single_segment_temp_storage_t>;
 
   _TempStorage& temp_storage; ///< Reference to temp_storage

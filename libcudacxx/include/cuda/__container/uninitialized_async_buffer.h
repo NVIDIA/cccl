@@ -82,7 +82,7 @@ private:
                 "The properties of cuda::__uninitialized_async_buffer must contain at least one execution space "
                 "property!");
 
-  using __async_resource = ::cuda::mr::any_resource<_Properties...>;
+  using __async_resource _CCCL_NODEBUG = ::cuda::mr::any_resource<_Properties...>;
 
   __async_resource __mr_;
   ::cuda::stream_ref __stream_ = {::cudaStream_t{}};
