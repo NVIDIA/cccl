@@ -249,8 +249,7 @@ public:
     }
 
     size_t __w = __dt - ::cuda::std::countl_zero(__rp) - 1;
-    // NOLINTNEXTLINE(readability-redundant-parentheses)
-    if ((__rp & ((numeric_limits<_UIntType>::max)() >> (__dt - __w))) != 0)
+    if ((__rp & (numeric_limits<_UIntType>::max() >> (__dt - __w))) != 0)
     {
       ++__w;
     }
