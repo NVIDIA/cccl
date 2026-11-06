@@ -140,28 +140,35 @@ private:
       policy_selector_t{});
   }
 
+  // Two-phase overloads pass d_temp_storage and temp_storage_bytes as temp_storage, otherwise the temporary storage
+  // is allocated through the environment
+  _CCCL_EXEC_CHECK_DISABLE
   template <ForceInclusive EnforceInclusive = ForceInclusive::No,
             typename InputIteratorT,
             typename OutputIteratorT,
             typename SegmentSizeT,
             typename ScanOpT,
             typename InitValueT,
-            typename EnvT>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_env_impl(
+            typename EnvT,
+            typename... TempStorageT>
+  [[nodiscard]] _CCCL_API static cudaError_t fixed_size_env_impl(
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
     SegmentSizeT segment_size,
     ScanOpT scan_op,
     InitValueT init_value,
-    const EnvT& env)
+    const EnvT& env,
+    TempStorageT&... temp_storage)
   {
     using accum_t = detail::segmented_scan::deduced_accum_t<ScanOpT, InitValueT, detail::it_value_t<InputIteratorT>>;
 
     using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+      temp_storage...,
+      env,
+      [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return detail::segmented_scan::dispatch_fixed_size<EnforceInclusive>(
           d_temp_storage,
           temp_storage_bytes,
@@ -2808,6 +2815,9 @@ public:
   //! @tparam SegmentSizeT
   //!   **[inferred]** Integral type or ``cuda::args`` annotation of the segment size
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2831,34 +2841,37 @@ public:
   //!   Must be in ``[0, INT64_MAX]``, or ``cudaErrorInvalidValue`` is returned.
   //!   @endrst
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename SegmentSizeT>
-  CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSegmentedSum(
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename SegmentSizeT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  _CCCL_API static cudaError_t ExclusiveSegmentedSum(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
     SegmentSizeT segment_size,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::ExclusiveSegmentedSum");
 
     using init_value_t = detail::it_value_t<InputIteratorT>;
 
-    return detail::segmented_scan::dispatch_fixed_size(
-      d_temp_storage,
-      temp_storage_bytes,
+    return fixed_size_env_impl(
       d_in,
       d_out,
       num_segments,
       segment_size,
       ::cuda::std::plus<>{},
       detail::InputValue<init_value_t>(init_value_t{}),
-      stream);
+      env,
+      d_temp_storage,
+      temp_storage_bytes);
   }
 
   //! @rst
@@ -2921,7 +2934,7 @@ public:
             typename OutputIteratorT,
             typename SegmentSizeT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSegmentedSum(
+  [[nodiscard]] _CCCL_API static cudaError_t ExclusiveSegmentedSum(
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
@@ -2984,6 +2997,9 @@ public:
   //! @tparam InitValueT
   //!  **[inferred]** Type of the `init_value`
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -3013,12 +3029,17 @@ public:
   //! @param[in] init_value
   //!   Initial value to seed the exclusive scan for each segment in the output sequence
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename SegmentSizeT, typename ScanOpT, typename InitValueT>
-  CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSegmentedScan(
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename SegmentSizeT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  _CCCL_API static cudaError_t ExclusiveSegmentedScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
@@ -3027,20 +3048,20 @@ public:
     SegmentSizeT segment_size,
     ScanOpT scan_op,
     InitValueT init_value,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::ExclusiveSegmentedScan");
 
-    return detail::segmented_scan::dispatch_fixed_size(
-      d_temp_storage,
-      temp_storage_bytes,
+    return fixed_size_env_impl(
       d_in,
       d_out,
       num_segments,
       segment_size,
       scan_op,
       detail::InputValue<InitValueT>(init_value),
-      stream);
+      env,
+      d_temp_storage,
+      temp_storage_bytes);
   }
 
   //! @rst
@@ -3121,7 +3142,7 @@ public:
             typename ScanOpT,
             typename InitValueT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSegmentedScan(
+  [[nodiscard]] _CCCL_API static cudaError_t ExclusiveSegmentedScan(
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
@@ -3168,6 +3189,9 @@ public:
   //! @tparam SegmentSizeT
   //!   **[inferred]** Integral type or ``cuda::args`` annotation of the segment size
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -3191,32 +3215,35 @@ public:
   //!   Must be in ``[0, INT64_MAX]``, or ``cudaErrorInvalidValue`` is returned.
   //!   @endrst
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename SegmentSizeT>
-  CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSegmentedSum(
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename SegmentSizeT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  _CCCL_API static cudaError_t InclusiveSegmentedSum(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
     SegmentSizeT segment_size,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::InclusiveSegmentedSum");
 
-    return detail::segmented_scan::dispatch_fixed_size(
-      d_temp_storage,
-      temp_storage_bytes,
+    return fixed_size_env_impl(
       d_in,
       d_out,
       num_segments,
       segment_size,
       ::cuda::std::plus<>{},
       NullType{},
-      stream);
+      env,
+      d_temp_storage,
+      temp_storage_bytes);
   }
 
   //! @rst
@@ -3279,7 +3306,7 @@ public:
             typename OutputIteratorT,
             typename SegmentSizeT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSegmentedSum(
+  [[nodiscard]] _CCCL_API static cudaError_t InclusiveSegmentedSum(
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
@@ -3329,6 +3356,9 @@ public:
   //! @tparam ScanOpT
   //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -3355,12 +3385,16 @@ public:
   //! @param[in] scan_op
   //!   Binary associative scan functor
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename SegmentSizeT, typename ScanOpT>
-  CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSegmentedScan(
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename SegmentSizeT,
+            typename ScanOpT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  _CCCL_API static cudaError_t InclusiveSegmentedScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
@@ -3368,12 +3402,12 @@ public:
     ::cuda::std::int64_t num_segments,
     SegmentSizeT segment_size,
     ScanOpT scan_op,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::InclusiveSegmentedScan");
 
-    return detail::segmented_scan::dispatch_fixed_size(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, scan_op, NullType{}, stream);
+    return fixed_size_env_impl(
+      d_in, d_out, num_segments, segment_size, scan_op, NullType{}, env, d_temp_storage, temp_storage_bytes);
   }
 
   //! @rst
@@ -3446,7 +3480,7 @@ public:
             typename SegmentSizeT,
             typename ScanOpT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSegmentedScan(
+  [[nodiscard]] _CCCL_API static cudaError_t InclusiveSegmentedScan(
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
@@ -3502,6 +3536,9 @@ public:
   //! @tparam InitValueT
   //!  **[inferred]** Type of the `init_value`
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -3531,12 +3568,17 @@ public:
   //! @param[in] init_value
   //!   Initial value to seed the inclusive scan for each segment in the output sequence
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename SegmentSizeT, typename ScanOpT, typename InitValueT>
-  CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSegmentedScanInit(
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename SegmentSizeT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  _CCCL_API static cudaError_t InclusiveSegmentedScanInit(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
@@ -3545,22 +3587,22 @@ public:
     SegmentSizeT segment_size,
     ScanOpT scan_op,
     InitValueT init_value,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::InclusiveSegmentedScanInit");
 
     static_assert(!::cuda::std::is_same_v<InitValueT, NullType>);
 
-    return detail::segmented_scan::dispatch_fixed_size<ForceInclusive::Yes>(
-      d_temp_storage,
-      temp_storage_bytes,
+    return fixed_size_env_impl<ForceInclusive::Yes>(
       d_in,
       d_out,
       num_segments,
       segment_size,
       scan_op,
       detail::InputValue<InitValueT>(init_value),
-      stream);
+      env,
+      d_temp_storage,
+      temp_storage_bytes);
   }
 
   //! @rst
@@ -3642,7 +3684,7 @@ public:
             typename ScanOpT,
             typename InitValueT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSegmentedScanInit(
+  [[nodiscard]] _CCCL_API static cudaError_t InclusiveSegmentedScanInit(
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
