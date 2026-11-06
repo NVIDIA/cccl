@@ -63,7 +63,6 @@ Checks:
   - '-readability-implicit-bool-conversion'
   - '-readability-braces-around-statements'
   - '-readability-qualified-auto'
-  - '-readability-isolate-declaration'
   - '-readability-named-parameter'
   - '-readability-identifier-length'
   # This is just noise. 95% of the time we have such static accesses to make things like

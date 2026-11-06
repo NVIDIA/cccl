@@ -272,7 +272,10 @@ TEST_CASE("TestShuffleIteratorStateless", "[shuffle]")
 
 double inverse_erf(double x)
 {
-  double tt1, tt2, lnx, sgn;
+  double tt1;
+  double tt2;
+  double lnx;
+  double sgn;
   sgn = (x < 0) ? -1.0 : 1.0;
 
   x   = (1 - x) * (1 + x);
