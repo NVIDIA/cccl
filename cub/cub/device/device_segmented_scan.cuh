@@ -28,6 +28,7 @@
 #include <cub/detail/input_value.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_segmented_scan.cuh>
 

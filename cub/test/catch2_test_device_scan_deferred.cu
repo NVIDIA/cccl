@@ -405,6 +405,39 @@ CUB_TEST("DeviceScan with a deferred size accepts a custom lookback policy", "[d
 // need explicit streams, graph capture or repeated invocations. Running them once, under the direct-launch
 // variant, avoids rebuilding identical work for every TEST_LAUNCH value.
 #if TEST_LAUNCH == 0
+CUB_TEST("DeviceScan batch kernel getters use the batch policy selector", "[device][scan][deferred][batch]", CUB_SMALL)
+{
+  using tile_state_t    = cub::ScanTileState<scan_value_t>;
+  using kernel_source_t = cub::detail::scan::DeviceScanKernelSource<
+    default_deferred_int_policy,
+    const scan_value_t*,
+    scan_value_t*,
+    cuda::std::plus<>,
+    cub::NullType,
+    uint32_t,
+    count_t*,
+    scan_value_t,
+    cub::ForceInclusive::Yes,
+    false,
+    true>;
+  const auto expected_init =
+    &cub::detail::scan::DeviceScanBatchInitKernel<default_batch_int_policy, tile_state_t, scan_value_t>;
+  const auto expected_scan = &cub::detail::scan::DeviceScanBatchKernel<
+    default_batch_int_policy,
+    const scan_value_t*,
+    scan_value_t*,
+    tile_state_t,
+    cuda::std::plus<>,
+    cub::NullType,
+    uint32_t,
+    count_t*,
+    scan_value_t,
+    true>;
+
+  REQUIRE(kernel_source_t::BatchInitKernel() == expected_init);
+  REQUIRE(kernel_source_t::BatchScanKernel() == expected_scan);
+}
+
 CUB_TEST("DeviceScan immediate and constant counts select the correct overloads", "[device][scan][arguments]", CUB_SMALL)
 {
   const c2h::device_vector<scan_value_t> input{1, 2, 3, 4};

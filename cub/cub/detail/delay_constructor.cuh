@@ -27,13 +27,13 @@ template <unsigned int L2WriteLatency>
 inline constexpr auto lookback_delay_policy_from_type<no_delay_constructor_t<L2WriteLatency>> =
   LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, L2WriteLatency};
 
-template <unsigned int Delay, unsigned int L2WriteLatency, bool UseGridThreshold>
-inline constexpr auto
-  lookback_delay_policy_from_type<fixed_delay_constructor_t<Delay, L2WriteLatency, UseGridThreshold>> =
-    LookbackDelayPolicy{
-      UseGridThreshold ? LookbackDelayAlgorithm::fixed_delay : LookbackDelayAlgorithm::__fixed_delay_no_grid_threshold,
-      Delay,
-      L2WriteLatency};
+template <unsigned int Delay, unsigned int L2WriteLatency>
+inline constexpr auto lookback_delay_policy_from_type<fixed_delay_constructor_t<Delay, L2WriteLatency>> =
+  LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, Delay, L2WriteLatency};
+
+template <unsigned int Delay, unsigned int L2WriteLatency>
+inline constexpr auto lookback_delay_policy_from_type<fixed_delay_constructor_t<Delay, L2WriteLatency, false>> =
+  LookbackDelayPolicy{LookbackDelayAlgorithm::__fixed_delay_no_grid_threshold, Delay, L2WriteLatency};
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
 inline constexpr auto lookback_delay_policy_from_type<exponential_backoff_constructor_t<Delay, L2WriteLatency>> =
