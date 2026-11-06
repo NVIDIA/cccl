@@ -202,7 +202,8 @@ enum class LookbackDelayAlgorithm
   exponential_backon_jitter_window,
   exponential_backon_jitter,
   exponential_backon,
-  __reduce_by_key //!< Internal
+  __reduce_by_key, //!< Internal
+  __fixed_delay_no_grid_threshold //!< Internal
 };
 
 namespace detail
@@ -229,6 +230,8 @@ namespace detail
       return "LookbackDelayAlgorithm::exponential_backon";
     case LookbackDelayAlgorithm::__reduce_by_key:
       return "LookbackDelayAlgorithm::__reduce_by_key";
+    case LookbackDelayAlgorithm::__fixed_delay_no_grid_threshold:
+      return "LookbackDelayAlgorithm::__fixed_delay_no_grid_threshold";
   }
   return "<unknown LookbackDelayAlgorithm>";
 }
