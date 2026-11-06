@@ -10,7 +10,9 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <numeric>
 #include <random>
+#include <utility>
 #include <vector>
 
 #include "cub_test_macros.h"
@@ -341,6 +343,7 @@ CUB_TEST("Tiny walk dispatch bins deferred segments by arbitrary bounds", "[segm
       bytes,
       thrust::raw_pointer_cast(d_begins.data()),
       thrust::raw_pointer_cast(d_ends.data()),
+      static_cast<cuda::std::int64_t>(input.size()),
       count,
       thrust::raw_pointer_cast(d_in.data()),
       thrust::raw_pointer_cast(d_out.data()),
@@ -371,6 +374,109 @@ CUB_TEST("Tiny walk dispatch bins deferred segments by arbitrary bounds", "[segm
   REQUIRE(cudaMemcpy(offsets.data(), result.bin_offsets, offsets.size() * sizeof(unsigned), cudaMemcpyDeviceToHost)
           == cudaSuccess);
   REQUIRE(offsets == c2h::host_vector<unsigned>(walk_capacities::size + 2, 0));
+}
+
+// Non-overlapping segments within num_items keys defer at most num_items / inline_cutoff segments, so both ID
+// buffers are sized by that bound, and the bound is reached when every segment has exactly the cutoff length.
+CUB_TEST("Tiny walk dispatch bounds ID buffers by the number of items", "[segmented][sort][device]", CUB_SMALL)
+{
+  using capacities      = irregular_expansion::capacities;
+  constexpr int cutoff  = capacity::tiny_walk_policy::inline_cutoff;
+  const auto query_size = [](cuda::std::int64_t num_items, unsigned num_segments) {
+    size_t bytes = 0;
+    capacity::partition_result result;
+    REQUIRE(
+      capacity::dispatch_tiny_sort_and_partition<capacities>(
+        nullptr,
+        bytes,
+        static_cast<const int*>(nullptr),
+        static_cast<const int*>(nullptr),
+        num_items,
+        num_segments,
+        static_cast<const int*>(nullptr),
+        static_cast<int*>(nullptr),
+        result)
+      == cudaSuccess);
+    return bytes;
+  };
+  REQUIRE(query_size(10 * cutoff, 1000000) == query_size(10 * cutoff, 10));
+  REQUIRE(query_size(10 * cutoff + cutoff - 1, 1000000) == query_size(10 * cutoff, 10));
+  REQUIRE(query_size(1000000 * cutoff, 10) == query_size(10 * cutoff, 10));
+  REQUIRE(query_size(1000000 * cutoff, 1000000) > query_size(10 * cutoff, 10));
+  REQUIRE(query_size(cutoff - 1, 1000) == query_size(0, 0));
+  REQUIRE(query_size(-1, 1000) == query_size(0, 0));
+
+  const auto run =
+    [](const c2h::host_vector<int>& begins,
+       const c2h::host_vector<int>& ends,
+       c2h::device_vector<int>& d_in,
+       c2h::device_vector<int>& d_out) {
+      c2h::device_vector<int> d_begins = begins, d_ends = ends;
+      const auto num_items    = static_cast<cuda::std::int64_t>(d_in.size());
+      const auto num_segments = static_cast<unsigned>(begins.size());
+      capacity::partition_result result;
+      size_t bytes      = 0;
+      const auto launch = [&](void* storage) {
+        return capacity::dispatch_tiny_sort_and_partition<capacities>(
+          storage,
+          bytes,
+          thrust::raw_pointer_cast(d_begins.data()),
+          thrust::raw_pointer_cast(d_ends.data()),
+          num_items,
+          num_segments,
+          thrust::raw_pointer_cast(d_in.data()),
+          thrust::raw_pointer_cast(d_out.data()),
+          result);
+      };
+      REQUIRE(launch(nullptr) == cudaSuccess);
+      c2h::device_vector<unsigned char> storage(bytes);
+      REQUIRE(launch(thrust::raw_pointer_cast(storage.data())) == cudaSuccess);
+      REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
+      c2h::host_vector<unsigned> offsets(capacities::size + 2);
+      REQUIRE(cudaMemcpy(offsets.data(), result.bin_offsets, offsets.size() * sizeof(unsigned), cudaMemcpyDeviceToHost)
+              == cudaSuccess);
+      c2h::host_vector<unsigned> ids(offsets.back());
+      REQUIRE(cudaMemcpy(ids.data(), result.segment_ids, ids.size() * sizeof(unsigned), cudaMemcpyDeviceToHost)
+              == cudaSuccess);
+      return std::pair{offsets, ids};
+    };
+
+  // Every segment is deferred, so both buffers fill to exactly num_items / cutoff entries; the trailing keys
+  // belong to no segment. num_full - 1 IDs fill whole 256-byte blocks, so a bound one short shrinks the storage.
+  constexpr int num_full = 3009;
+  REQUIRE(query_size(num_full * cutoff + cutoff - 1, num_full) - query_size(0, 0) >= 2 * sizeof(unsigned) * num_full);
+  c2h::host_vector<int> begins(num_full), ends(num_full);
+  for (int segment = 0; segment < num_full; ++segment)
+  {
+    begins[segment] = segment * cutoff;
+    ends[segment]   = begins[segment] + cutoff;
+  }
+  c2h::device_vector<int> d_in(num_full * cutoff + cutoff - 1, 1), d_out(d_in.size(), 0);
+  const auto [offsets, ids] = run(begins, ends, d_in, d_out);
+  REQUIRE(offsets == c2h::host_vector<unsigned>{0, num_full, num_full, num_full, num_full});
+  auto sorted_ids = ids;
+  std::sort(sorted_ids.begin(), sorted_ids.end());
+  c2h::host_vector<unsigned> expected_ids(num_full);
+  std::iota(expected_ids.begin(), expected_ids.end(), 0u);
+  REQUIRE(sorted_ids == expected_ids);
+
+  // Fewer keys than the cutoff: no segment can be deferred and the ID buffers are empty, but tiny segments
+  // are still sorted.
+  const c2h::host_vector<int> tiny_begins{0, 1, 3, 20}, tiny_ends{1, 3, 20, 35};
+  c2h::host_vector<int> tiny_input(cutoff - 1);
+  for (int i = 0; i < cutoff - 1; ++i)
+  {
+    tiny_input[i] = cutoff - i;
+  }
+  c2h::host_vector<int> tiny_expected = tiny_input;
+  for (size_t segment = 0; segment < tiny_begins.size(); ++segment)
+  {
+    std::sort(tiny_expected.begin() + tiny_begins[segment], tiny_expected.begin() + tiny_ends[segment]);
+  }
+  c2h::device_vector<int> d_tiny_in   = tiny_input, d_tiny_out(tiny_input.size(), 0);
+  const auto [tiny_offsets, tiny_ids] = run(tiny_begins, tiny_ends, d_tiny_in, d_tiny_out);
+  REQUIRE(tiny_offsets == c2h::host_vector<unsigned>(capacities::size + 2, 0));
+  REQUIRE(c2h::host_vector<int>(d_tiny_out) == tiny_expected);
 }
 
 // Exercise capacity boundaries and all launch groups, including repeated work and untouched overflow.
@@ -450,6 +556,7 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
       bytes,
       thrust::raw_pointer_cast(d_begins.data()),
       thrust::raw_pointer_cast(d_ends.data()),
+      static_cast<cuda::std::int64_t>(input.size()),
       static_cast<unsigned>(lengths.size()),
       thrust::raw_pointer_cast(d_in.data()),
       thrust::raw_pointer_cast(d_out.data()),
@@ -540,6 +647,7 @@ CUB_TEST("Capacity sort orders infinities and treats signed zeros as equivalent"
       bytes,
       offsets,
       offsets + 1,
+      static_cast<cuda::std::int64_t>(input.size()),
       1,
       thrust::raw_pointer_cast(d_in.data()),
       thrust::raw_pointer_cast(d_out.data()),

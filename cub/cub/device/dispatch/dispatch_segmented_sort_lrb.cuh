@@ -25,7 +25,9 @@
 #include <cub/util_debug.cuh>
 #include <cub/util_temporary_storage.cuh>
 
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/utility>
 
 CUB_NAMESPACE_BEGIN
@@ -50,6 +52,7 @@ using group_merge_sort_kernels_t =
 // scatter the queued IDs into capacity bins. These pointers alias caller-provided global storage. It must remain valid
 // until every operation queued on the stream has completed, as with other CUB algorithms.
 // Empty ranges are skipped; segments shorter than tiny_walk_policy::inline_cutoff are written to out here.
+// Segments must not overlap and must lie within the num_items keys of in, as CUB requires.
 template <typename Capacities,
           typename BeginIterator,
           typename EndIterator,
@@ -60,6 +63,7 @@ _CCCL_HOST_API cudaError_t dispatch_tiny_sort_and_partition(
   size_t& temp_storage_bytes,
   BeginIterator begins,
   EndIterator ends,
+  ::cuda::std::int64_t num_items,
   unsigned num_segments,
   const Key* in,
   Key* out,
@@ -68,11 +72,15 @@ _CCCL_HOST_API cudaError_t dispatch_tiny_sort_and_partition(
   KernelLauncherFactory launcher_factory = {})
 {
   constexpr int total_bins = Capacities::size + 1;
+  // Non-overlapping segments within num_items keys hold at most num_items / inline_cutoff deferred segments.
+  const auto max_deferred = static_cast<unsigned>(
+    (::cuda::std::min) (::cuda::std::int64_t{num_segments},
+                        (::cuda::std::max) (num_items, ::cuda::std::int64_t{0}) / tiny_walk_policy::inline_cutoff));
   // The first allocation holds counts and the deferred count (cleared together), offsets (with an end
   // sentinel), and cursors. The others hold binned IDs and the walk's deferred IDs.
   const size_t sizes[] = {sizeof(unsigned) * (3 * total_bins + 2),
-                          sizeof(unsigned) * size_t{num_segments},
-                          sizeof(unsigned) * size_t{num_segments}};
+                          sizeof(unsigned) * size_t{max_deferred},
+                          sizeof(unsigned) * size_t{max_deferred}};
   void* allocations[3]{};
   if (const auto error = CubDebug(alias_temporaries(temp_storage, temp_storage_bytes, allocations, sizes)))
   {
@@ -116,7 +124,7 @@ _CCCL_HOST_API cudaError_t dispatch_tiny_sort_and_partition(
   {
     return error;
   }
-  if (num_segments)
+  if (max_deferred)
   {
     int sm_count = 0;
     if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
@@ -124,10 +132,10 @@ _CCCL_HOST_API cudaError_t dispatch_tiny_sort_and_partition(
       return error;
     }
     // The deferred count is not known on the host; the grid strides over it and never exceeds one block per
-    // block_threads segments.
+    // block_threads possible deferred segments.
     constexpr unsigned block_threads = partition_policy::block_threads;
     const unsigned grid_size = (::cuda::std::min) (static_cast<unsigned>(sm_count) * partition_policy::blocks_per_sm,
-                                                   num_segments / block_threads + (num_segments % block_threads != 0));
+                                                   max_deferred / block_threads + (max_deferred % block_threads != 0));
     if (const auto error = CubDebug(
           launcher_factory(grid_size, block_threads, 0, stream)
             .doit(compact_scatter_kernel<Capacities, BeginIterator, EndIterator>,
@@ -237,6 +245,7 @@ _CCCL_HOST_API cudaError_t launch_sort_kernel_list(
 
 // Host-launched internal bounded ascending keys-only backend; device-side API calls are not supported.
 // Oversized segments are left unsorted in the overflow ID range; overflow sorting belongs to a later change.
+// num_items bounds the ID buffers, so segments must not overlap and must lie within the num_items keys of in.
 // Its kernel list and policies are fixed here, with no public API route.
 template <typename Key,
           typename BeginIterator,
@@ -247,6 +256,7 @@ _CCCL_HOST_API cudaError_t dispatch(
   size_t& temp_storage_bytes,
   BeginIterator begins,
   EndIterator ends,
+  ::cuda::std::int64_t num_items,
   unsigned num_segments,
   const Key* in,
   Key* out,
@@ -272,7 +282,17 @@ _CCCL_HOST_API cudaError_t dispatch(
       static_assert(capacities_t::bounds[0] >= tiny_walk_policy::inline_cutoff,
                     "The first sorting bin must start at the tiny-walk cutoff; shorter bins would stay empty");
       if (const auto error = dispatch_tiny_sort_and_partition<capacities_t>(
-            temp_storage, temp_storage_bytes, begins, ends, num_segments, in, out, result, stream, launcher_factory))
+            temp_storage,
+            temp_storage_bytes,
+            begins,
+            ends,
+            num_items,
+            num_segments,
+            in,
+            out,
+            result,
+            stream,
+            launcher_factory))
       {
         return error;
       }

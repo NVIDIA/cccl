@@ -1181,6 +1181,7 @@ struct lrb_sort_launcher_t
     std::size_t& bytes,
     const KeyT* input,
     KeyT* output,
+    int items,
     unsigned segments,
     const int* begins,
     const int* ends) const
@@ -1192,6 +1193,7 @@ struct lrb_sort_launcher_t
       bytes,
       begins,
       thrust::device_pointer_cast(ends),
+      items,
       segments,
       reinterpret_cast<const key_type*>(input),
       reinterpret_cast<key_type*>(output),
@@ -1269,6 +1271,7 @@ void call_cub_segmented_sort_api(
       launch(lrb_sort_launcher_t{},
              static_cast<const KeyT*>(input_keys),
              output_keys,
+             num_items,
              static_cast<unsigned>(num_segments),
              d_begin_offsets,
              d_end_offsets);
