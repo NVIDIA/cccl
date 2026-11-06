@@ -272,6 +272,18 @@ public:
   virtual bool allocation_is_stream_ordered() const = 0;
 
   /**
+   * @brief Make this place's memory readable and writable by kernels running
+   *        on device @p peer_dev (peer mapping of the pool the place allocates
+   *        from). No-op by default: places that draw from a device's default
+   *        pool are covered by `machine::enable_peer_accesses()`. Places with
+   *        a pool of their own (locality domains) override it. Called by
+   *        `place_group` for every (place, other device of the group) pair, so
+   *        that a collective's fold kernel on one device may read the partials
+   *        of the ranks on the other devices (`places_communicator::all_reduce`).
+   */
+  virtual void grant_peer_access(int /*peer_dev*/) const {}
+
+  /**
    * @brief Create a physical memory allocation for this place (VMM API)
    *
    * Default implementation returns CUDA_ERROR_NOT_SUPPORTED.
