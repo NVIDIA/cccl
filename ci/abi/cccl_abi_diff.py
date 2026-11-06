@@ -45,7 +45,6 @@ SYMBOL_PREFIXES = (
 )
 LOCAL_STATIC_RE = re.compile(r"^_ZZ(.*)E(\d+)(\w+?)(?:_\d+)?$")
 SCRIPT_HASH = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()[:12]
-SEVERITY_RANK = {"critical": 0, "high": 1, "medium": 2, "low": 3}
 
 
 def log(msg: str) -> None:
@@ -795,35 +794,27 @@ def norm_kind(k: str) -> str:
     return "class" if k in ("structure", "class") else k
 
 
-def worst(*sevs: str) -> str:
-    return min(sevs, key=SEVERITY_RANK.get)
-
-
-def cmp_type(a: dict, b: dict) -> tuple[str, str] | None:
-    """Return (severity, reason) if two signature type descriptors are ABI-incompatible."""
+def cmp_type(a: dict, b: dict) -> str | None:
+    """Return the reason two signature type descriptors differ, or None."""
     if a["size"] != b["size"]:
-        return "critical", f"size {a['size']} -> {b['size']}"
+        return f"size {a['size']} -> {b['size']}"
     if norm_kind(a["kind"]) != norm_kind(b["kind"]):
-        return "critical", f"kind {a['kind']} -> {b['kind']}"
+        return f"kind {a['kind']} -> {b['kind']}"
     pa, pb = a.get("pass_by"), b.get("pass_by")
     if pa != pb and "reference" in (pa, pb):
-        return "critical", f"passing convention {pa} -> {pb}"
+        return f"passing convention {pa} -> {pb}"
     if strip_cv(a["name"]) != strip_cv(b["name"]):
-        return "high", "type changed with same size"
+        return "type changed with same size"
     return None
 
 
-def layout_diff(a: dict, b: dict) -> tuple[str, list[str]]:
-    """Severity and description of a class layout change ('' severity if unchanged)."""
-    diffs, sev = [], "low"
+def layout_diff(a: dict, b: dict) -> list[str]:
+    """Describe a class layout change (empty if unchanged)."""
+    diffs = []
     if a["size"] != b["size"]:
         diffs.append(f"sizeof {a['size']} -> {b['size']}")
-        sev = "critical"
     if a["align"] != b["align"]:
         diffs.append(f"alignas {a['align']} -> {b['align']}")
-        sev = worst(
-            sev, "critical" if None not in (a["align"], b["align"]) else "medium"
-        )
 
     def full(m):
         return (
@@ -834,12 +825,6 @@ def layout_diff(a: dict, b: dict) -> tuple[str, list[str]]:
             m["size"],
         )
 
-    def shape(ms):
-        return [(m["offset"], m.get("bits"), m["size"]) for m in ms]
-
-    def typed(ms):
-        return [(m["offset"], m.get("bits"), m["size"], m["type"]) for m in ms]
-
     ma, mb = [full(m) for m in a["members"]], [full(m) for m in b["members"]]
     if ma != mb:
         sa, sb = set(ma), set(mb)
@@ -849,27 +834,12 @@ def layout_diff(a: dict, b: dict) -> tuple[str, list[str]]:
         diffs += [
             f"+ member {m[0]} @{m[1]} : {m[3]} ({m[4]}B)" for m in mb if m not in sa
         ]
-        if shape(a["members"]) != shape(b["members"]):
-            sev = "critical"
-        elif typed(a["members"]) != typed(b["members"]):
-            sev = worst(sev, "high")
     ba, bb = [full(m) for m in a["bases"]], [full(m) for m in b["bases"]]
     if ba != bb:
         diffs.append(
             f"bases {[(x[3], x[1]) for x in ba]} -> {[(x[3], x[1]) for x in bb]}"
         )
-
-        def nonempty(ms):
-            return [
-                (m["offset"], m["size"], m["type"])
-                for m in ms
-                if m["size"] not in (0, 1)
-            ]
-
-        sev = worst(
-            sev, "high" if nonempty(a["bases"]) != nonempty(b["bases"]) else "medium"
-        )
-    return (sev if diffs else ""), diffs
+    return diffs
 
 
 def layout_brief(snap: Snapshot, type_name: str) -> str | None:
@@ -898,28 +868,24 @@ def compare(a: Snapshot, b: Snapshot) -> dict:
 
     for n in common_f:
         fa, fb = a.functions[n], b.functions[n]
-        reasons, sev = [], "low"
+        reasons = []
         r = cmp_type(fa["ret"], fb["ret"])
         if r:
-            reasons.append(f"return {fa['ret']['name']} -> {fb['ret']['name']}: {r[1]}")
+            reasons.append(f"return {fa['ret']['name']} -> {fb['ret']['name']}: {r}")
             reasons += type_change_evidence(a, b, fa["ret"], fb["ret"])
-            sev = min(sev, r[0], key=SEVERITY_RANK.get)
         if len(fa["params"]) != len(fb["params"]):
             reasons.append(
                 f"parameter count {len(fa['params'])} -> {len(fb['params'])}"
             )
-            sev = "critical"
         else:
             for i, (pa, pb) in enumerate(zip(fa["params"], fb["params"])):
                 r = cmp_type(pa, pb)
                 if r:
-                    reasons.append(f"param {i} {pa['name']} -> {pb['name']}: {r[1]}")
-                    sev = min(sev, r[0], key=SEVERITY_RANK.get)
+                    reasons.append(f"param {i} {pa['name']} -> {pb['name']}: {r}")
         if reasons:
             findings.append(
                 {
                     "category": "A_function_signature",
-                    "severity": sev,
                     "symbol": n,
                     "demangled": dm.get(n, n),
                     "details": reasons,
@@ -930,20 +896,17 @@ def compare(a: Snapshot, b: Snapshot) -> dict:
 
     for n in common_o:
         oa, ob = a.objects[n], b.objects[n]
-        reasons, sev = [], "low"
+        reasons = []
         if oa["size"] != ob["size"]:
             reasons.append(f"st_size {oa['size']} -> {ob['size']}")
-            sev = "critical"
         ta, tb = oa.get("type"), ob.get("type")
         if ta and tb and strip_cv(ta["name"]) != strip_cv(tb["name"]):
             reasons.append(f"type {ta['name']} -> {tb['name']}")
             reasons += type_change_evidence(a, b, ta, tb)
-            sev = worst(sev, "high")
         if reasons:
             findings.append(
                 {
                     "category": "B_object",
-                    "severity": sev,
                     "symbol": n,
                     "demangled": dm.get(n, n),
                     "details": reasons,
@@ -979,18 +942,13 @@ def compare(a: Snapshot, b: Snapshot) -> dict:
     for q in sorted(reach):
         if q not in a.classes or q not in b.classes:
             continue
-        sev, diffs = layout_diff(a.classes[q], b.classes[q])
+        diffs = layout_diff(a.classes[q], b.classes[q])
         if not diffs:
             continue
         direct = [s for k, s in reach[q] if k == "symbol"]
-        if not direct:
-            sev = {"critical": "high", "high": "medium", "medium": "low", "low": "low"}[
-                sev
-            ]
         findings.append(
             {
                 "category": "C_class_layout",
-                "severity": sev,
                 "symbol": q,
                 "demangled": q,
                 "details": diffs,
@@ -1000,13 +958,7 @@ def compare(a: Snapshot, b: Snapshot) -> dict:
             }
         )
 
-    findings.sort(
-        key=lambda f: (SEVERITY_RANK[f["severity"]], f["category"], f["demangled"])
-    )
-    counts: dict[str, dict[str, int]] = {}
-    for f in findings:
-        counts.setdefault(f["category"], {}).setdefault(f["severity"], 0)
-        counts[f["category"]][f["severity"]] += 1
+    findings.sort(key=lambda f: (f["category"], f["demangled"]))
     return {
         "a": a.label,
         "b": b.label,
@@ -1015,9 +967,16 @@ def compare(a: Snapshot, b: Snapshot) -> dict:
             "objects": [len(a.objects), len(b.objects), len(common_o)],
             "classes": [len(a.classes), len(b.classes)],
         },
-        "counts": counts,
+        "counts": count_findings(findings),
         "findings": findings,
     }
+
+
+def count_findings(findings: list[dict]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for f in findings:
+        counts[f["category"]] = counts.get(f["category"], 0) + 1
+    return counts
 
 
 def summarize(rep: dict, limit: int) -> str:
@@ -1029,7 +988,7 @@ def summarize(rep: dict, limit: int) -> str:
         f"  findings: {len(rep['findings'])}  " + json.dumps(rep["counts"]),
     ]
     for f in rep["findings"][:limit]:
-        lines.append(f"[{f['severity'].upper():8}] {f['category']}: {f['demangled']}")
+        lines.append(f"[{f['category']}] {f['demangled']}")
         if f["category"] != "C_class_layout":
             lines.append(f"      {f['symbol']}")
         for d in f["details"][:8]:
@@ -1088,9 +1047,9 @@ def main() -> int:
         "--limit", type=int, default=40, help="findings shown in the text summary"
     )
     ap.add_argument(
-        "--fail-on",
-        choices=["critical", "high", "medium", "low", "never"],
-        default="high",
+        "--no-fail",
+        action="store_true",
+        help="exit 0 even when differences are found",
     )
     args = ap.parse_args()
 
@@ -1114,10 +1073,7 @@ def main() -> int:
     if args.exclude:
         rx = re.compile(args.exclude)
         rep["findings"] = [f for f in rep["findings"] if not rx.search(f["demangled"])]
-        rep["counts"] = {}
-        for f in rep["findings"]:
-            c = rep["counts"].setdefault(f["category"], {})
-            c[f["severity"]] = c.get(f["severity"], 0) + 1
+        rep["counts"] = count_findings(rep["findings"])
     rep["toolchain"] = {
         "cxx": run([tc.cxx, "--version"]).stdout.splitlines()[0],
         "std": tc.std,
@@ -1130,14 +1086,7 @@ def main() -> int:
             Path(args.json).parent.mkdir(parents=True, exist_ok=True)
             Path(args.json).write_text(json.dumps(rep, indent=1))
         print(summarize(rep, args.limit))
-    if args.fail_on == "never":
-        return 0
-    return int(
-        any(
-            SEVERITY_RANK[f["severity"]] <= SEVERITY_RANK[args.fail_on]
-            for f in rep["findings"]
-        )
-    )
+    return int(bool(rep["findings"]) and not args.no_fail)
 
 
 if __name__ == "__main__":

@@ -38,9 +38,7 @@ The tool needs `g++`, `readelf`, `c++filt`, `git` and the CUDA Toolkit headers. 
    - **C** class: `sizeof`, member offsets or member types, or bases changed for a class
      reachable from a common symbol.
 
-Severity is `critical` when sizes, offsets or calling convention differ, `high` when the size
-is the same but the type is different, `medium` when an empty base or alignment attribute
-changed, and `low` for member renames only. CI fails on `high` and above.
+Any difference fails the check.
 
 ## Limitations
 

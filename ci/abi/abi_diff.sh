@@ -8,7 +8,7 @@
 # mangled name. A symbol that keeps its mangled name but changes its definition between
 # releases therefore breaks that binary. See ci/abi/README.md.
 #
-# Exit status is 0 when no finding reaches -fail-on, 1 otherwise.
+# Exit status is 0 when no difference is found, 1 otherwise.
 set -euo pipefail
 
 usage()
@@ -20,7 +20,6 @@ Options:
   -base-ref <ref>     Release to compare against. Default: the newest vX.Y.Z tag.
   -test-ref <ref>     Revision or directory to check. Default: HEAD.
   -output-dir <path>  Directory for report.json. Default: "<cwd>/abi-artifacts".
-  -fail-on <level>    critical, high, medium, low or never. Default: high.
 EOF
 }
 
@@ -28,14 +27,12 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 base_ref=""
 test_ref="HEAD"
 output_dir="${PWD}/abi-artifacts"
-fail_on="high"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -base-ref) base_ref="$2"; shift 2 ;;
     -test-ref) test_ref="$2"; shift 2 ;;
     -output-dir) output_dir="$2"; shift 2 ;;
-    -fail-on) fail_on="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) usage >&2; exit 2 ;;
   esac
@@ -63,5 +60,4 @@ python3 "${repo_root}/ci/abi/cccl_abi_diff.py" \
   --repo "${repo_root}" \
   --cache-dir "${output_dir}/cache" \
   --exclude "${exclude}" \
-  --json "${output_dir}/report.json" \
-  --fail-on "${fail_on}"
+  --json "${output_dir}/report.json"
