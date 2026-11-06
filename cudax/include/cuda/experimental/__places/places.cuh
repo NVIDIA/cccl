@@ -503,7 +503,8 @@ public:
     return pimpl_->allocation_is_stream_ordered();
   }
 
-  /// @brief Peer-map this place's memory for kernels on device @p peer_dev (see `data_place_interface::grant_peer_access`).
+  /// @brief Peer-map this place's memory for kernels on device @p peer_dev
+  /// (see `data_place_interface::grant_peer_access`).
   void grant_peer_access(int peer_dev) const
   {
     pimpl_->grant_peer_access(peer_dev);
