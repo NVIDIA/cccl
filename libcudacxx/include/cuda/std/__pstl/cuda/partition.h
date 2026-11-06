@@ -155,7 +155,8 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
           // the streaming partition path and its additional offset bookkeeping.
           if (__count <= static_cast<size_t>(numeric_limits<int>::max()))
           {
-            return __par_impl(__policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__pred));
+            return __par_impl(
+              __policy, ::cuda::std::move(__first), static_cast<int>(__count), ::cuda::std::move(__pred));
           }
         }
         return __par_impl(__policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__pred));
