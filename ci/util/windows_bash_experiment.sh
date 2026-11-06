@@ -58,14 +58,16 @@ case "${1:?Expected preflight or collect}" in
     if [[ -f build/thrust/CMakeCache.txt ]]; then
       cp build/thrust/CMakeCache.txt "$output/"
       ninja -C build/thrust -t targets all > "$output/targets.txt"
+      # CTest's inventory command overwrites LastTest.log. Preserve execution
+      # evidence first, especially for the PowerShell arm without ctest.log.
+      if [[ -d build/thrust/Testing ]]; then
+        cp -R build/thrust/Testing "$output/"
+      fi
       ctest --preset thrust-cpu --show-only=json-v1 > "$output/tests.json"
       jq -e '.tests | length > 0' "$output/tests.json"
       find build/thrust/bin -type f -name '*.exe' | sort > "$output/executables.txt"
       if [[ -f build/thrust/compile_commands.json ]]; then
         cp build/thrust/compile_commands.json "$output/"
-      fi
-      if [[ -d build/thrust/Testing ]]; then
-        cp -R build/thrust/Testing "$output/"
       fi
       if [[ -f build/thrust-cpu/ctest.log ]]; then
         cp build/thrust-cpu/ctest.log "$output/"
