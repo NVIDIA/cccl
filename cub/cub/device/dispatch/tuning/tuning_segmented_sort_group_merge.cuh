@@ -92,9 +92,10 @@ struct policy_selector
   {
     constexpr int large_threads_per_block = sizeof(Key) <= 4 ? 1024 : 512;
     lrb_policy policy{};
-    auto& warp                      = policy.group_merge.warp;
-    warp.threads_per_block          = 256;
-    warp.min_threads_per_segment    = 1;
+    auto& warp             = policy.group_merge.warp;
+    warp.threads_per_block = 256;
+    // The warp launch starts at the walk's logical warp width, whose minimum capacity is the walk's cutoff.
+    warp.min_threads_per_segment    = tiny_walk_policy::max_threads_per_segment;
     warp.max_threads_per_segment    = 32;
     warp.min_items_per_thread       = 9;
     warp.max_items_per_thread       = 15;
