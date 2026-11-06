@@ -202,12 +202,6 @@ public:
   using type = ratio<num, den>;
 };
 
-template <intmax_t _Num, intmax_t _Den>
-constexpr intmax_t ratio<_Num, _Den>::num;
-
-template <intmax_t _Num, intmax_t _Den>
-constexpr intmax_t ratio<_Num, _Den>::den;
-
 template <class _Tp>
 inline constexpr bool __is_cuda_std_ratio_v = false;
 
