@@ -25,10 +25,7 @@ struct is_outside_circle
     {
       return true;
     }
-    else
-    {
-      return false;
-    }
+    return false;
   }
 };
 
