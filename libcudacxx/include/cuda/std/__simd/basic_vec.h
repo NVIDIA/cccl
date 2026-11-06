@@ -254,18 +254,11 @@ public:
 
   // [simd.ctor], basic_vec constructors
 
-  // [simd.ctor] value broadcast constructor (explicit overload)
+  // [simd.ctor] value broadcast constructor
   // The conversion constraints exclude copy and move construction.
   // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_TEMPLATE(typename _Up)
-  _CCCL_REQUIRES((__explicitly_convertible_to<_Up, value_type>) _CCCL_AND(!__is_value_ctor_implicit<_Up, value_type>))
-  _CCCL_HOST_DEVICE_API constexpr explicit basic_vec(_Up&& __v) noexcept
-      : __s_{_Impl::__broadcast(static_cast<value_type>(__v))}
-  {}
-
-  // [simd.ctor] value broadcast constructor (implicit overload)
-  _CCCL_TEMPLATE(typename _Up)
-  _CCCL_REQUIRES((__explicitly_convertible_to<_Up, value_type>) _CCCL_AND(__is_value_ctor_implicit<_Up, value_type>))
+  _CCCL_REQUIRES(__is_value_ctor_implicit<_Up, value_type>)
   _CCCL_HOST_DEVICE_API constexpr basic_vec(_Up&& __v) noexcept
       : __s_{_Impl::__broadcast(static_cast<value_type>(__v))}
   {}
@@ -669,7 +662,7 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
   operator<<(const basic_vec& __lhs, const __simd_size_type __n) noexcept
   {
-    return __lhs << basic_vec{__n};
+    return __lhs << basic_vec{static_cast<value_type>(__n)};
   }
 
   _CCCL_TEMPLATE(typename _Tp2 = _Tp)
@@ -677,7 +670,7 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
   operator>>(const basic_vec& __lhs, const __simd_size_type __n) noexcept
   {
-    return __lhs >> basic_vec{__n};
+    return __lhs >> basic_vec{static_cast<value_type>(__n)};
   }
 
   // [simd.cassign], basic_vec compound assignment
