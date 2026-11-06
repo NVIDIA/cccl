@@ -91,7 +91,6 @@ Checks:
   # again. It is easier to just follow the rule of "always explicitly default initialize
   # members" than to remember to change 2 places at once.
   - '-readability-redundant-member-init'
-  - '-readability-redundant-string-init'
   - '-readability-delete-null-pointer'
   - '-readability-container-data-pointer'
   - '-readability-use-std-min-max'
@@ -114,7 +113,6 @@ Checks:
   - '-readability-avoid-return-with-void-value'
   - '-readability-suspicious-call-argument'
   - '-readability-container-size-empty'
-  - '-readability-redundant-control-flow'
   - '-readability-avoid-const-params-in-decls'
   - '-readability-inconsistent-declaration-parameter-name'
   # Handled by clang-tidy
