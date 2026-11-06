@@ -69,10 +69,6 @@ log_vars \
 mkdir -p "${workdir}"
 cd "${workdir}"
 
-# Python deps:
-# MatX's test-vector generators require SciPy during CMake configuration.
-pip install numpy scipy
-
 # Clone MatX
 rm -rf MatX
 git clone "${matx_repo}" -b "${matx_branch}"
@@ -81,6 +77,9 @@ cd MatX
 echo "MatX HEAD:"
 git log -1 --format=short
 cd ..
+
+# Install the Python dependencies required by the cloned MatX tests.
+pip install -r MatX/test/requirements.txt
 
 # Write out version override file
 jq -r ".packages.CCCL *=
