@@ -286,7 +286,7 @@ public:
    * @param size Size of the allocation in bytes
    * @return CUresult indicating success or failure
    */
-  virtual CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const
+  virtual CUresult mem_create([[maybe_unused]] CUmemGenericAllocationHandle* handle, [[maybe_unused]] size_t size) const
   {
     return CUDA_ERROR_NOT_SUPPORTED;
   }

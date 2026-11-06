@@ -303,7 +303,8 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__allocate_histogramming_buffers(
       /*__all_samples=*/
       __resizable_buffer_type<_Tp>{__stream, __resource, __buffer_env},
       /*__samples_size=*/
-      __resizable_buffer_type<::cuda::std::size_t>{__stream, __resource, __comm_size, ::cuda::no_init, __buffer_env}});
+      __resizable_buffer_type<::cuda::std::size_t>{
+        __stream, __resource, static_cast<::cuda::std::size_t>(__comm_size), ::cuda::no_init, __buffer_env}});
 
     __local_hist_results.emplace_back(__per_comm_histogramming_result_type{
       /*__splitters=*/
@@ -523,8 +524,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__update_intervals(
     // Each splitter's bracket is narrowed against its own ideal rank and written straight back
     // over itself. The bracket keys double as the next round's sampling interval, so there is
     // nothing further to project out.
-    auto __in = ::cuda::make_transform_iterator(
-      ::cuda::counting_iterator<::cuda::std::uint64_t>{}, __ideal_rank_fn{__N, __comm_size});
+    auto __in = ::cuda::make_transform_iterator(::cuda::counting_iterator<::cuda::std::uint64_t>{},
+                                                __ideal_rank_fn{__N, static_cast<::cuda::std::uint64_t>(__comm_size)});
     auto __op = __update_intervals_fn<_Tp>{__probes.data(), __hist.data(), __probes.size()};
 
     __CUDAX_MULTI_GPU_DISPATCH(
@@ -570,8 +571,10 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__histogramming_phase(
     __host_scratch.emplace_back(0);
   }
 
-  auto __recvcounts = ::cuda::std::span<::cuda::std::size_t>{__host_scratch.data(), __comm_size};
-  auto __cap_displs = ::cuda::std::span<::cuda::std::size_t>{__host_scratch.data() + __comm_size, __comm_size + 1};
+  auto __recvcounts =
+    ::cuda::std::span<::cuda::std::size_t>{__host_scratch.data(), static_cast<::cuda::std::size_t>(__comm_size)};
+  auto __cap_displs = ::cuda::std::span<::cuda::std::size_t>{
+    __host_scratch.data() + __comm_size, static_cast<::cuda::std::size_t>(__comm_size + 1)};
 
   _CCCL_ASSERT(__recvcounts.size() + __cap_displs.size() == __host_scratch.size(), "");
 

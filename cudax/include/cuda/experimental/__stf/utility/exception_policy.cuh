@@ -554,7 +554,7 @@ struct terminate_t
     ::std::terminate();
   }
 };
-inline constexpr terminate_t terminate{};
+[[maybe_unused]] inline constexpr terminate_t terminate{};
 
 /**
  * @brief The identity element of `&`: a policy with no capabilities at all.
@@ -4273,14 +4273,21 @@ struct always_t
     detail::__status_path_nothrow_v<_A, _Status, _Fn> && detail::__status_path_nothrow_v<_B, _Status, _Fn>)
   {
     detail::__status_answer<_Status> __answer{__status, true};
-    _CCCL_TRY
+    if constexpr (detail::__status_path_nothrow_v<_A, _Status, _Fn>)
     {
       __answer = detail::__offer_status<_Status>(__head_, __status, __loc, __fn);
     }
-    _CCCL_CATCH_ALL
+    else
     {
-      static_cast<void>(detail::__offer_status<_Status, false>(__fin_, __status, __loc, __fn));
-      _CCCL_RETHROW;
+      _CCCL_TRY
+      {
+        __answer = detail::__offer_status<_Status>(__head_, __status, __loc, __fn);
+      }
+      _CCCL_CATCH_ALL
+      {
+        static_cast<void>(detail::__offer_status<_Status, false>(__fin_, __status, __loc, __fn));
+        _CCCL_RETHROW;
+      }
     }
     static_cast<void>(detail::__offer_status<_Status, false>(__fin_, __status, __loc, __fn));
     return __answer;
