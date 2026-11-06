@@ -1310,6 +1310,10 @@ private:
   // complete-tx releases at cluster scope, which (with the block barrier before Step 2) orders this block's reads of
   // its `state` copy before the next publish overwrites it; the fence gives a warp that sends nothing the same
   // guarantee.
+  // TODO(cccl): a non-leader without candidates (`num_local_candidates == 0` from the second pass on) could settle the
+  // whole histogram with a single fenced `complete_tx` instead of reading every bucket, and a block with candidates
+  // needs no per-warp fence (its `red.async`s already release). Prototyped together with the other empty-work skips
+  // in `run_radix_passes`; not a consistent win on B200/H200 yet.
   _CCCL_DEVICE _CCCL_FORCEINLINE void fold_hist_into_leader()
   {
     offset_t* const remote_hist              = layout.leader_storage->hist;
@@ -1477,7 +1481,6 @@ private:
     }
     wait_handshake(&temp_storage.prefix_mbar, 0u);
 #else // ^^^ _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() ^^^ / vvv !_CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() vvv
-    // Idle ranks arrive here only to keep this barrier reachable (the mbarrier path lets them exit after startup).
     cluster_or_block_sync(is_single_cta);
 #endif // _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC()
     // The local seed guarantees the tie counter carries at least `num_cluster_selected` (postcondition of the fused
@@ -2911,7 +2914,8 @@ private:
       "Dynamic shared memory block_tile is too small");
   }
 
-  // Fill the `layout` member for this block's `segment_id`/`segment_size`. Called once at the top of `run`.
+  // Fill the `layout` member for this block's `segment_id`/`segment_size`. Called once in `process_impl`, before the
+  // startup barrier.
   _CCCL_DEVICE _CCCL_FORCEINLINE void compute_segment_layout()
   {
     layout.block_keys_in = d_key_segments_it[segment_id];
@@ -2945,10 +2949,14 @@ private:
 
     // Logical cluster blocks: the CTAs that actually receive chunks (at least `policy.min_chunks_per_block` each), <=
     // the launched `num_full_cluster_blocks`. Ranks at or beyond it are idle -- they own no chunks, consume nothing,
-    // never lead, and no peer touches their shared memory. On the barrier path they stay resident to arrive at every
-    // cluster barrier; on the mbarrier path they return after the startup barrier (see `run`). Derived from this CTA's
+    // never lead, and no peer touches their shared memory, so they exit before the startup barrier (see
+    // `process_impl`). Derived from this CTA's
     // head-aligned `num_cluster_chunks` so it matches the partition exactly. Collapses to 1 on the single-CTA path and
     // stays at `num_full_cluster_blocks` for host-exact sizes (the dispatch already matched it).
+    // TODO(cccl): the blocked partition (deterministic path) gives each rank `ceil(chunks / blocks)` chunks, so
+    // trailing ranks below this count can own none (e.g. 16 chunks over 12 ranks: 8 owners); the leader (last rank) is
+    // then one of them. Trimming the count to `ceil(chunks / chunks_per_rank)` (here and in the dispatch's width
+    // search) moves no chunk, but a chunkless leader that only merges may be faster; deciding this needs benchmarks.
     layout.num_logical_cluster_blocks = is_single_cta ? 1u : num_full_cluster_blocks;
     if constexpr (enable_runtime_single_cta)
     {
@@ -3142,6 +3150,11 @@ private:
       // `kth_key_bits_local` already holds the splitter digits for passes `0..pass-1`: each block folded the leader's
       // published `kth_bucket` into it at the end of the previous pass (see the end of this loop). Pass 0 needs no
       // filtering (all keys are candidates), so it is handled by the fused first-pass load above.
+      // TODO(cccl): candidates only shrink, so a non-leader whose pass found none could skip all later Step 1s
+      // (including the overflow re-stream from gmem) and, already in that pass, its own-histogram scan and `hist`
+      // reset, without extra barriers (decided after the barrier before Step 2; the straddling CTA never skips, so the
+      // ping-pong parity stays valid). Prototyped: wins for very large segments, small regressions otherwise; the flag
+      // must be made provably warp-uniform or the compiler abandons the uniform datapath.
       if (!is_first_pass)
       {
         identify_candidates_op_t identify_op(&kth_key_bits_local, pass, total_bits, decomposer_t{});
@@ -3212,9 +3225,7 @@ private:
       }
 
       // Step 2: non-leader blocks reduce their per-bucket raw counts into the leader's `hist` via cluster-scope DSMEM
-      // atomics. The leader skips this to avoid double-counting its own contribution; idle ranks
-      // (`>= num_logical_cluster_blocks`) have an all-zero histogram, so they skip the reduction entirely (the loop
-      // would only read zeros; on the mbarrier path they have already exited).
+      // atomics. The leader skips this to avoid double-counting its own contribution; idle ranks have already exited.
 #if _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC()
       if (cluster_block_rank != layout.leader_rank && !layout.is_idle_rank)
       {
@@ -3260,8 +3271,7 @@ private:
 
       // Split the post-reduction cluster barrier: arrive once the reductions are released, then overlap the
       // non-leaders' own-histogram scan (block-local) with the cluster-arrival latency, and only wait before the leader
-      // reads the merged `hist`. Idle ranks arrive here only because the cluster barrier spans the whole launched
-      // cluster. The mbarrier path has no rendezvous here; only the leader waits (for the fold, below).
+      // reads the merged `hist`. The mbarrier path has no rendezvous here; only the leader waits (for the fold, below).
       cluster_or_block_arrive(is_single_cta);
 #endif // _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC()
 
@@ -3349,15 +3359,14 @@ private:
         wait_handshake(&temp_storage.pass_mbar, static_cast<::cuda::std::uint32_t>(pass) & 1u);
       }
 #else // ^^^ _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() ^^^ / vvv !_CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() vvv
-      // End-of-pass rendezvous of the whole cluster (idle ranks arrive here only to keep the cluster barrier
-      // reachable).
+      // End-of-pass rendezvous of the working blocks.
       cluster_or_block_sync(is_single_cta);
 #endif // _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC()
 
       // End-of-pass splitter fold. Every block reads the leader's just-published `result` pair once and uses both
       // halves: working threads fold the `kth_bucket` digit into their own `kth_key_bits_local` (so the full splitter
-      // key is reconstructed locally without a broadcast), and every block -- including idle ranks on the barrier path
-      // -- reuses the same value for the uniform early-stop check below, so the whole cluster breaks together.
+      // key is reconstructed locally without a broadcast), and every block reuses the same value for the uniform
+      // early-stop check below, so the whole cluster breaks together.
 #if _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC()
       const pass_result_t pass_result = temp_storage.state.result;
 #else // ^^^ _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() ^^^ / vvv !_CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() vvv
@@ -3412,17 +3421,7 @@ private:
     // `process_impl` handles `k == 0` and select-all, so the radix path sees a strict `0 < k < segment_size`.
     _CCCL_ASSERT(k > out_offset_t{0} && static_cast<segment_size_val_t>(k) < segment_size,
                  "radix path requires 0 < k < segment size");
-    compute_segment_layout();
-
-    // An idle rank takes part in no handshake and is never targeted, so on the mbarrier path it completes the startup
-    // cluster barrier (the path's last, so none is in progress when it exits) and returns, freeing its SM slot.
-#if _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC()
-    if (layout.is_idle_rank)
-    {
-      cluster_wait();
-      return;
-    }
-#endif // _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC()
+    _CCCL_ASSERT(!layout.is_idle_rank, "idle ranks exit in `process_impl`");
 
     // Per-block local copy of `kth_key_bits` so each key check hits the block's own SMEM rather than DSMEM during the
     // histogram loop. Built up one splitter digit per pass from the leader's published `kth_bucket` (see
@@ -3654,6 +3653,15 @@ private:
       return;
     }
 
+    // The chunk layout depends only on the segment, not on the select direction, so it is computed before the startup
+    // barrier: an idle rank (no chunks, never the leader, never targeted by DSMEM traffic) exits here without taking
+    // part in any cluster barrier, freeing its SM slot. Cluster barriers only wait for non-exited threads.
+    compute_segment_layout();
+    if (layout.is_idle_rank)
+    {
+      return;
+    }
+
     // Each block's elected leader thread initializes its block-local `state`. Only the leader block's copy is
     // authoritative, but the leader's rank is unknown here
     // (`compute_segment_layout` derives it later from the runtime logical cluster size), so every block initializes
@@ -3665,7 +3673,7 @@ private:
       // Front-load the scan accumulators so the initial cluster barrier below (arrive here, wait in the first pass)
       // publishes the zeros to all ranks: the final filter's `prime_placement_counters` then adds into already-zeroed
       // `selected_offset_counter`/`tie_offset_counter` (its own local seed + peers' DSMEM pushes).
-      // `num_local_candidates` is zeroed too so idle/leader ranks that never write it read 0.
+      // `num_local_candidates` is zeroed too so the leader, which never writes it, reads 0.
       temp_storage.selected_offset_counter     = 0;
       temp_storage.tie_offset_counter          = 0;
       temp_storage.num_local_strictly_selected = 0;
