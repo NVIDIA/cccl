@@ -1343,12 +1343,14 @@ private:
     _CCCL_ASSERT(layout.local_partition.num_chunks != offset_t{0}, "every working rank owns at least one chunk");
     if (!has_candidates)
     {
+#  ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
       _CCCL_PRAGMA_NOUNROLL()
       for (int i = tid; i < num_buckets; i += policy.threads_per_block)
       {
         _CCCL_ASSERT(temp_storage.hist[i] == offset_t{0},
                      "a non-leader without candidates must have an empty histogram");
       }
+#  endif // CCCL_ENABLE_DEVICE_ASSERTIONS
       if (tid == 0)
       {
         ::cuda::ptx::fence_sync_restrict(
@@ -1385,10 +1387,9 @@ private:
         reduce_bucket(i);
       }
     }
-#  ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
-    // Debug only: a block barrier (every thread of this non-leader gets here) checking that the release exists.
+    // A block barrier, but only in builds with assertions (every thread of this non-leader gets here): checks that the
+    // block's release exists.
     _CCCL_ASSERT(__syncthreads_or(pushes_any), "a non-leader with candidates must push at least one bucket");
-#  endif // CCCL_ENABLE_DEVICE_ASSERTIONS
     // A full-warp reduction needs no shared memory (`TempStorage` is empty); the sum is valid in lane 0.
     using warp_reduce_t = WarpReduce<::cuda::std::uint32_t>;
     typename warp_reduce_t::TempStorage warp_reduce_storage;
