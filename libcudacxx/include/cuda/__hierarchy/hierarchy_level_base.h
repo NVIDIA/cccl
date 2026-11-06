@@ -95,7 +95,7 @@ struct hierarchy_level_base
 
   _CCCL_TEMPLATE(class _InLevel, class _Hierarchy)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND __is_or_has_hierarchy_member_v<_Hierarchy>)
-  [[nodiscard]] _CCCL_API static constexpr auto static_count(const _InLevel& __level, const _Hierarchy& __hier) noexcept
+  [[nodiscard]] _CCCL_API static constexpr auto static_count(const _InLevel&, const _Hierarchy& __hier) noexcept
   {
     return ::cuda::__static_count_query<_Level, _InLevel, decltype(::cuda::__unpack_hierarchy_if_needed(__hier))>();
   }
@@ -180,35 +180,35 @@ struct hierarchy_level_base
 
   _CCCL_TEMPLATE(class _Group)
   _CCCL_REQUIRES(::cuda::experimental::coop::group<_Group>)
-  [[nodiscard]] _CCCL_API static constexpr auto count(const _Group& __group) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr auto count(const _Group& __group) noexcept
   {
     return count_as<__default_1d_query_type<typename _Group::unit_type>>(__group);
   }
 
   _CCCL_TEMPLATE(class _Group)
   _CCCL_REQUIRES(::cuda::experimental::coop::group<_Group>)
-  [[nodiscard]] _CCCL_API static auto rank(const _Group& __group) noexcept
+  [[nodiscard]] _CCCL_API static constexpr auto rank(const _Group& __group) noexcept
   {
     return rank_as<__default_1d_query_type<typename _Group::unit_type>>(__group);
   }
 
   _CCCL_TEMPLATE(class _Tp, class _Group)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::experimental::coop::group<_Group>)
-  [[nodiscard]] _CCCL_API static constexpr _Tp count_as(const _Group& __group) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr _Tp count_as(const _Group& __group) noexcept
   {
     return ::cuda::experimental::coop::__count_query_group<_Tp, _Level>(__group);
   }
 
   _CCCL_TEMPLATE(class _Tp, class _Group)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::experimental::coop::group<_Group>)
-  [[nodiscard]] _CCCL_API static _Tp rank_as(const _Group& __group) noexcept
+  [[nodiscard]] _CCCL_API static constexpr _Tp rank_as(const _Group& __group) noexcept
   {
     return ::cuda::experimental::coop::__rank_query_group<_Tp, _Level>(__group);
   }
 
   _CCCL_TEMPLATE(class _Group)
   _CCCL_REQUIRES(::cuda::experimental::coop::group<_Group>)
-  [[nodiscard]] _CCCL_DEVICE_API static bool is_root_rank(const _Group& __group) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_root_rank(const _Group& __group) noexcept
   {
     return _Level::rank(__group) == 0;
   }
