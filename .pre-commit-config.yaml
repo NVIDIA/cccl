@@ -6,17 +6,19 @@ ci:
     autoupdate_branch: ''
     autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
     autoupdate_schedule: quarterly
-    skip: [secret-scan-trufflehog]
+    skip: [secret-scan-trufflehog, guardwords-scan-code-scanning]
     submodules: false
 
 repos:
   # Runs first so a leaked credential blocks the commit before any formatter runs.
   # Self-installing: the hook downloads a pinned, checksum-verified trufflehog on
   # first use (no manual install). Skipped on pre-commit.ci; Pulse CI enforces server-side.
+  # GuardWords needs NVIDIA's internal client and network; it skips with a notice elsewhere.
   - repo: https://github.com/NVIDIA/security-workflows
-    rev: v0.2.0
+    rev: v0.5.0
     hooks:
       - id: secret-scan-trufflehog
+      - id: guardwords-scan-code-scanning
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
