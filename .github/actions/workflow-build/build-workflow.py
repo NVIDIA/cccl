@@ -516,7 +516,14 @@ def generate_dispatch_job_name(matrix_job, job_type):
         else ""
     )
 
-    return f"[{config_tag}] {job_name}({cpu_str}{gpu_str}){extra_info}"
+    shell_label = ""
+    if "script_shell" in matrix_job:
+        shell_name = {"bash": "Bash", "powershell": "PowerShell"}[
+            matrix_job["script_shell"]
+        ]
+        shell_label = f" [{shell_name}]"
+
+    return f"[{config_tag}] {job_name}({cpu_str}{gpu_str}){extra_info}{shell_label}"
 
 
 def generate_dispatch_job_runner(matrix_job, job_type):
@@ -601,8 +608,23 @@ def generate_dispatch_job_environment(matrix_job, job_type):
 
 
 def generate_dispatch_job_command(matrix_job, job_type):
-    script_path = "./ci/windows" if is_windows(matrix_job) else "./ci"
-    script_ext = ".ps1" if is_windows(matrix_job) else ".sh"
+    windows = is_windows(matrix_job)
+    if "script_shell" in matrix_job and (
+        not windows
+        or matrix_job["project"] != "thrust"
+        or job_type not in ("build", "test_cpu", "test_gpu")
+    ):
+        raise ValueError(
+            error_message_with_matrix_job(
+                matrix_job,
+                "script_shell is only supported for Windows Thrust build/test jobs.",
+            )
+        )
+
+    windows_bash = windows and matrix_job.get("script_shell") == "bash"
+    powershell = windows and not windows_bash
+    script_path = "./ci/windows" if powershell else "./ci"
+    script_ext = ".ps1" if powershell else ".sh"
 
     job_info = get_job_type_info(job_type)
     job_prefix = job_info["invoke"]["prefix"]
@@ -623,6 +645,8 @@ def generate_dispatch_job_command(matrix_job, job_type):
     extra_args = matrix_job["args"] if "args" in matrix_job else ""
 
     command = f'"{script_name}"'
+    if windows_bash:
+        command = f'bash --noprofile --norc {command} -cxx "cl"'
     if job_args:
         command += f" {job_args}"
     if std_str:
@@ -1183,6 +1207,17 @@ def validate_tags(matrix_job, ignore_required=False):
 
     jobs = matrix_job.get("jobs", [])
     jobs = jobs if isinstance(jobs, list) else [jobs]
+    if "script_shell" in matrix_job:
+        shells = matrix_job["script_shell"]
+        shells = shells if isinstance(shells, list) else [shells]
+        if not shells or any(shell not in ("bash", "powershell") for shell in shells):
+            raise ValueError(
+                error_message_with_matrix_job(
+                    matrix_job,
+                    "script_shell must be 'bash' or 'powershell', or a nonempty list of these values.",
+                )
+            )
+
     has_codegen_job = "codegen_filecheck" in jobs
     if has_codegen_job and "codegen_target" not in matrix_job:
         raise Exception(

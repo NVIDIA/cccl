@@ -10,9 +10,18 @@ fi
 # Ensure the script is being executed in its containing directory
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 
+CCCL_BUILD_WINDOWS=false
+case "${OSTYPE}" in
+    msys* | mingw*) CCCL_BUILD_WINDOWS=true ;;
+    *) ;;
+esac
+
 # Script defaults
 VERBOSE=${VERBOSE:-}
 HOST_COMPILER=${CXX:-g++} # $CXX if set, otherwise `g++`
+if $CCCL_BUILD_WINDOWS; then
+    HOST_COMPILER=${CXX:-cl}
+fi
 CXX_STANDARD=17
 CUDA_COMPILER=${CUDACXX:-nvcc} # $CUDACXX if set, otherwise `nvcc`
 CUDA_ARCHS= # Empty, use presets by default.
@@ -26,13 +35,14 @@ CTEST_PARALLEL_LEVEL=1
 function usage {
     echo "Usage: $0 [OPTIONS]"
     echo
-    echo "The PARALLEL_LEVEL environment variable controls the amount of build parallelism. Default is the number of cores minus one."
+    echo "The PARALLEL_LEVEL environment variable controls the amount of build parallelism."
+    echo "Default is the number of cores on Windows, or the number of cores minus one on Linux."
     echo
     echo "Options:"
     echo "  -v/-verbose: enable shell echo for debugging"
     echo "  -configure: Only run cmake to configure, do not build or test."
     echo "  -cuda: CUDA compiler (Defaults to \$CUDACXX if set, otherwise nvcc)"
-    echo "  -cxx: Host compiler (Defaults to \$CXX if set, otherwise g++)"
+    echo "  -cxx: Host compiler (Defaults to \$CXX if set, otherwise cl on Windows or g++ on Linux)"
     echo "  -std: CUDA/C++ standard (Defaults to 17)"
     echo "  -arch: Target CUDA arches, e.g. \"60-real;70;80-virtual\" (Defaults to value in presets file)"
     echo "  -enable-tile: Enable tile support"
@@ -55,7 +65,12 @@ function check_required_dependencies() {
     local missing_deps=()
 
     # Check for essential tools
-    local required_tools=("cmake" "git" "jq" "ninja" "nproc")
+    local required_tools=("cmake" "git" "jq" "ninja")
+    if $CCCL_BUILD_WINDOWS; then
+        required_tools+=("cygpath")
+    else
+        required_tools+=("nproc")
+    fi
     for tool in "${required_tools[@]}"; do
         command -v "$tool" &>/dev/null || missing_deps+=("$tool")
     done
@@ -104,18 +119,29 @@ while [[ "${#args[@]}" -ne 0 ]]; do
     esac
 done
 
+# Check before resolving compilers, which requires cygpath on Windows.
+check_required_dependencies
+
 # Convert to full paths and validate compilers exist:
 function validate_and_resolve_compiler() {
     local compiler_name="$1"
     local compiler_var="$2"
     local compiler_path
 
-    compiler_path=$(command -v "${compiler_var}" 2>/dev/null)
+    if $CCCL_BUILD_WINDOWS; then
+        compiler_var=$(cygpath -u "${compiler_var}")
+    fi
+    compiler_path=$(command -v "${compiler_var}" 2>/dev/null || :)
     if [[ -z "$compiler_path" ]]; then
         echo "❌ Error: ${compiler_name} '${compiler_var}' not found in PATH" >&2
         exit 1
     fi
 
+    if $CCCL_BUILD_WINDOWS; then
+        # CMake and nvcc consume native paths, including through environment variables.
+        # Use the same absolute spelling for CXX and CUDAHOSTCXX.
+        compiler_path=$(cygpath -am "$compiler_path")
+    fi
     echo "$compiler_path"
 }
 
@@ -124,11 +150,12 @@ CUDA_COMPILER=$(validate_and_resolve_compiler "CUDA compiler" "${CUDA_COMPILER}"
 
 if [[ "$(basename "$CUDA_COMPILER")" == nvcc* ]]; then
     NVCC_VERSION=$("$CUDA_COMPILER" --version | grep "release" | sed 's/.*, V//')
+    NVCC_VERSION=${NVCC_VERSION%$'\r'}
     # Verify that we have an X.Y.Z version in case the output format changes:
     if ! [[ "$NVCC_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
         echo "❌ Error: Detected nvcc version is not a valid X.Y.Z triple: '$NVCC_VERSION'" >&2
         echo "$CUDA_COMPILER --version" >&2 || :
-        $CUDA_COMPILER --version >&2 || :
+        "$CUDA_COMPILER" --version >&2 || :
         exit 1
     fi
 fi
@@ -153,13 +180,19 @@ if [[ -n "$VERBOSE" ]]; then
     set -x
 fi
 
-# Check for required dependencies
-check_required_dependencies
-
 # Begin processing unsets after option parsing
 set -u
 
-N_CPUS="$(nproc --all --ignore=1)"
+if $CCCL_BUILD_WINDOWS; then
+    # Match the processor count used by the existing PowerShell builds.
+    N_CPUS="${NUMBER_OF_PROCESSORS:-}"
+    if ! [[ "$N_CPUS" =~ ^[1-9][0-9]*$ ]]; then
+        echo "Error: NUMBER_OF_PROCESSORS must be a positive integer on Windows." >&2
+        exit 1
+    fi
+else
+    N_CPUS="$(nproc --all --ignore=1)"
+fi
 readonly N_CPUS
 readonly PARALLEL_LEVEL="${PARALLEL_LEVEL:=${N_CPUS}}"
 
@@ -175,22 +208,26 @@ BUILD_ROOT=$(cd "../build" && pwd)
 # Absolute path to per-devcontainer build directory
 BUILD_DIR="$BUILD_ROOT/$CCCL_BUILD_INFIX"
 
-# The most recent devcontainer build dir will always be symlinked to cccl/build/latest
+# Convenience symlinks are not required for Windows builds and may need extra privileges.
 mkdir -p "$BUILD_DIR"
-rm -f "$BUILD_ROOT"/latest
-ln -sf "$BUILD_DIR" "$BUILD_ROOT"/latest
+if ! $CCCL_BUILD_WINDOWS; then
+    rm -f "$BUILD_ROOT"/latest
+    ln -sf "$BUILD_DIR" "$BUILD_ROOT"/latest
+fi
 
 # The more recent preset build dir will always be symlinked to:
 # cccl/preset-latest
 function symlink_latest_preset {
     local PRESET=$1
     mkdir -p "$BUILD_DIR/$PRESET"
-    rm -f "$BUILD_ROOT/preset-latest"
-    ln -sf "$BUILD_DIR/$PRESET" "$BUILD_ROOT/preset-latest"
+    if ! $CCCL_BUILD_WINDOWS; then
+        rm -f "$BUILD_ROOT/preset-latest"
+        ln -sf "$BUILD_DIR/$PRESET" "$BUILD_ROOT/preset-latest"
+    fi
 }
 
-# Now that BUILD_DIR exists, use readlink to canonicalize the path:
-BUILD_DIR=$(readlink -f "${BUILD_DIR}")
+# Now that BUILD_DIR exists, canonicalize it using Bash on both platforms.
+BUILD_DIR=$(cd "${BUILD_DIR}" && pwd -P)
 
 # Prepare environment for CMake:
 export CMAKE_BUILD_PARALLEL_LEVEL="$((PARALLEL_LEVEL > N_CPUS ? N_CPUS : PARALLEL_LEVEL))"
@@ -213,10 +250,14 @@ source ./pretty_printing.sh
 print_environment_details() {
   begin_group "⚙️ Environment Details"
 
-  echo "free -h:"
-  free -h || :
+  if $CCCL_BUILD_WINDOWS; then
+    echo "NUMBER_OF_PROCESSORS=${NUMBER_OF_PROCESSORS}"
+  else
+    echo "free -h:"
+    free -h || :
 
-  echo "nproc=$(nproc || :)"
+    echo "nproc=$(nproc || :)"
+  fi
 
   echo "pwd=$(pwd)"
 
@@ -273,11 +314,16 @@ run_ci_timed_command() {
 
     if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
         if [[ -n "${CCCL_CI_COMMAND_TIMEOUT}" && "${CCCL_CI_COMMAND_TIMEOUT}" != "0" ]]; then
-            if command -v timeout &> /dev/null; then
+            if $CCCL_BUILD_WINDOWS; then
+                # Windows timeout.exe is unrelated, and GNU timeout cannot reliably
+                # terminate native Windows process trees. Match the PowerShell jobs.
+                echo "Per-command timeouts are disabled on Windows; the workflow timeout applies."
+            elif command -v timeout &> /dev/null; then
                 run_command "${group_name}" timeout "${CCCL_CI_COMMAND_TIMEOUT}" "${command[@]}"
                 return $?
+            else
+                echo "Warning: timeout not found; running without CI timeout." >&2
             fi
-            echo "Warning: timeout not found; running without CI timeout." >&2
         fi
     fi
 
@@ -414,8 +460,8 @@ function build_preset() {
 
     sccache -z > /dev/null || :
 
-    # Track memory usage on CI:
-    if [[ -n "${GITHUB_ACTIONS:-}" || -n "${MEMMON:-}" ]]; then
+    # memmon relies on Linux /proc and ps.
+    if ! $CCCL_BUILD_WINDOWS && [[ -n "${GITHUB_ACTIONS:-}" || -n "${MEMMON:-}" ]]; then
       util/memmon.sh --start \
           --log-threshold "${MEMMON_LOG_THRESHOLD:-2}" \
           --print-threshold "${MEMMON_PRINT_THRESHOLD:-5}" \
@@ -429,7 +475,7 @@ function build_preset() {
     run_ci_timed_command "$GROUP_NAME" cmake --build --parallel "$PARALLEL_LEVEL" --preset="$PRESET" ${VERBOSE:+-v} "${BUILD_COMMANDS[@]}" || status=$?
     popd > /dev/null
 
-    if [[ -n "${GITHUB_ACTIONS:-}" || -n "${MEMMON:-}" ]]; then
+    if ! $CCCL_BUILD_WINDOWS && [[ -n "${GITHUB_ACTIONS:-}" || -n "${MEMMON:-}" ]]; then
       util/memmon.sh --stop || :
       run_command "📝 Memory Monitor Log" head -n20 "$memmon_log" || :
     fi

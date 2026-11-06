@@ -6,6 +6,7 @@ CPU_ONLY=false
 GPU_ONLY=false
 
 ci_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+repo_dir=$(cd "${ci_dir}/.." && pwd)
 
 new_args="$("${ci_dir}/util/extract_switches.sh" -cpu-only -gpu-only -- "$@")"
 declare -a new_args="(${new_args})"
@@ -47,7 +48,7 @@ if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
   run_command "📦  Unpacking test artifacts" \
     "${ci_dir}/util/artifacts/download_packed.sh" \
       "z_thrust-test-artifacts-${DEVCONTAINER_NAME:?}-$producer_id-$ARTIFACT_TAG" \
-      /home/coder/cccl/
+      "${repo_dir}"
 else
   ./build_thrust.sh "$@"
 fi
