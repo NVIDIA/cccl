@@ -22,6 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__fwd/new.h>
 #include <cuda/std/__new/allocate.h>
 #include <cuda/std/__utility/pair.h>
