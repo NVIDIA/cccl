@@ -151,8 +151,6 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
         // Preserve the original dispatch for 64-bit integers.
         if constexpr (!(is_integral_v<_ValueType> && sizeof(_ValueType) == 8))
         {
-          // CUB widens unsigned counts to 64-bit signed offsets. Use a signed 32-bit count when it fits to avoid
-          // the streaming partition path and its additional offset bookkeeping.
           if (__count <= static_cast<size_t>(numeric_limits<int>::max()))
           {
             return __par_impl(
