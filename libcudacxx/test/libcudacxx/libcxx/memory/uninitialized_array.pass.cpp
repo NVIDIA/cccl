@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/__memory/uninitialized_array.h>
+#include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
@@ -47,6 +48,37 @@ TEST_FUNC void test_data_pointer_const_correctness()
   static_assert(cuda::std::is_same<decltype(cuda::std::declval<const arr_t&>().data()), const int*>::value);
   arr_t arr{};
   assert(arr.data() != nullptr);
+}
+
+struct not_default_constructible_t
+{
+  int x;
+
+  TEST_FUNC explicit not_default_constructible_t(int v)
+      : x(v)
+  {}
+};
+
+TEST_FUNC void test_alias()
+{
+  using arr_t = cuda::__uninitialized_array<not_default_constructible_t, 4>;
+  static_assert(
+    cuda::std::is_same<decltype(cuda::std::declval<arr_t&>().alias()), not_default_constructible_t(&)[4]>::value);
+  static_assert(cuda::std::is_same<decltype(cuda::std::declval<const arr_t&>().alias()),
+                                   const not_default_constructible_t(&)[4]>::value);
+
+  arr_t arr{};
+  auto& a = arr.alias();
+  for (int i = 0; i < 4; ++i)
+  {
+    cuda::std::construct_at(&a[i], i + 1);
+  }
+  const arr_t& carr = arr;
+  for (int i = 0; i < 4; ++i)
+  {
+    assert(carr.alias()[i].x == i + 1);
+    assert(&arr[i] == &a[i]);
+  }
 }
 
 TEST_FUNC void test_no_value_initialization()
@@ -100,6 +132,7 @@ TEST_FUNC bool test()
   test_custom_alignment();
   test_element_access();
   test_data_pointer_const_correctness();
+  test_alias();
   test_no_value_initialization();
   test_basic_integers();
   test_floating_point();
