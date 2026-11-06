@@ -33,6 +33,7 @@ benchmarks:
   filters:
     # C++ benchmark filters (CUB, Thrust, libcu++; regex matched against ninja target names).
     cpp:
+      - '^cub\.bench\.copy\.memcpy\.'
       # Examples:
       # - '^cub\.bench\.for_each\.base'
       # - '^cub\.bench\.reduce\.(sum|min)\.'
@@ -52,7 +53,7 @@ benchmarks:
     # - "rtxa6000"   # sm_86, 48 GB
     # - "l4"         # sm_89, 24 GB
     # - "rtx4090"    # sm_89, 24 GB
-    # - "h100"       # sm_90, 80 GB
+    - "h100"       # sm_90, 80 GB
     # - "rtxpro6000" # sm_120
 
   # Extra .devcontainer/launch.sh -d args
