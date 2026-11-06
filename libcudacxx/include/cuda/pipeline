@@ -103,10 +103,22 @@ template <thread_scope _Scope>
 class pipeline
 {
 public:
-  _CCCL_HIDE_FROM_ABI pipeline(pipeline&&) = default;
-  pipeline(const pipeline&)                = delete;
-  pipeline& operator=(pipeline&&)          = delete;
-  pipeline& operator=(const pipeline&)     = delete;
+  // The moved-from pipeline must not quit, otherwise the shared refcount is released twice.
+  _CCCL_HOST_DEVICE_API inline pipeline(pipeline&& __other) noexcept
+      : __head(__other.__head)
+      , __tail(__other.__tail)
+      , __stages_count(__other.__stages_count)
+      , __consumed_phase_parity(__other.__consumed_phase_parity)
+      , __produced_phase_parity(__other.__produced_phase_parity)
+      , __active(__other.__active)
+      , __partitioned(__other.__partitioned)
+      , __shared_state(__other.__shared_state)
+  {
+    __other.__active = false;
+  }
+  pipeline(const pipeline&)            = delete;
+  pipeline& operator=(pipeline&&)      = delete;
+  pipeline& operator=(const pipeline&) = delete;
 
   _CCCL_HOST_DEVICE_API inline ~pipeline()
   {
