@@ -52,6 +52,7 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 
@@ -624,7 +625,7 @@ private:
   {
     const auto __max_shmem_bytes = ::cuda::device_attributes::max_shared_memory_per_block_optin(__stream.device());
 
-    if (__shmem_bytes <= __max_shmem_bytes)
+    if (::cuda::std::cmp_less_equal(__shmem_bytes, __max_shmem_bytes))
     {
       // Match cuda::launch's function attributes before querying occupancy. Function attributes
       // override kernel attributes, including values previously set for a smaller sketch.

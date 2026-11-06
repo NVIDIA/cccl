@@ -163,7 +163,8 @@ public:
    * @return True if redundant entries were removed and further uniqueness processing is unnecessary, false otherwise.
    * @note This function provides a hook for derived classes to implement optimization strategies.
    */
-  virtual bool factorize(const backend_ctx_untyped& ctx, reserved::event_vector& events)
+  virtual bool factorize([[maybe_unused]] const backend_ctx_untyped& ctx,
+                         [[maybe_unused]] reserved::event_vector& events)
   {
     return false;
   }
@@ -211,11 +212,19 @@ class event_list
   using event_vector = reserved::event_vector;
 
 public:
-  event_list()                             = default;
-  event_list(const event_list&)            = default;
-  event_list(event_list&&)                 = default;
+  // NVCC infers device support for defaulted special members of this host-only type.
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI ~event_list() = default;
+
+  event_list() = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  event_list(const event_list&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  event_list(event_list&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
   event_list& operator=(const event_list&) = default;
-  event_list& operator=(event_list&&)      = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  event_list& operator=(event_list&&) = default;
 
   /// Create a list from a single event
   event_list(event e)
