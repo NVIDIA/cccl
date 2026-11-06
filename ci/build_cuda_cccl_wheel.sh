@@ -105,8 +105,9 @@ fi
 
 cd "$repo_root/python/cuda_cccl"
 
-# Determine CUDA version from nvcc
-cuda_version=$(nvcc --version | grep -oP 'release \K[0-9]+\.[0-9]+' | cut -d. -f1)
+# Git Bash's native locale may not support grep's PCRE mode. Capture only the
+# version digits, which also discards native nvcc's CRLF line ending.
+cuda_version=$(nvcc --version | sed -nE 's/.*release ([0-9]+)\.[0-9]+.*/\1/p')
 echo "Detected CUDA version: ${cuda_version}"
 if cccl_python_is_windows && [[ "$cuda_version" != "$CCCL_WHEEL_CUDA_MAJOR" ]]; then
   echo "Expected CUDA ${CCCL_WHEEL_CUDA_MAJOR}, found ${cuda_version}" >&2
@@ -135,7 +136,7 @@ if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
     # so CMake's FindCUDAToolkit picks them up. nvcc is on PATH; derive the
     # version (e.g. "13-0") from it.
     ctk_pkg_ver=$(nvcc --version 2>/dev/null \
-      | grep -oP 'release \K[0-9]+\.[0-9]+' | tr '.' '-')
+      | sed -nE 's/.*release ([0-9]+)\.([0-9]+).*/\1-\2/p')
     if [[ -n "${ctk_pkg_ver}" ]]; then
       echo "Installing libnvjitlink-devel-${ctk_pkg_ver} libnvfatbin-devel-${ctk_pkg_ver}..."
       /workspace/ci/util/retry.sh 5 30 dnf -y install \

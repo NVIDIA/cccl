@@ -69,6 +69,15 @@ if name == "cygpath":
 elif name == "nvcc":
     major = "13" if "cuda13" in sys.argv[0] else "12"
     print(f"Cuda compilation tools, release {major}.9, V{major}.9.1\r")
+elif name == "grep":
+    perl_regexp = any(
+        arg == "--perl-regexp" or (arg.startswith("-") and "P" in arg)
+        for arg in args
+    )
+    if os.environ.get("MOCK_PCRE_SUPPORTED") == "0" and perl_regexp:
+        print("grep: -P supports only unibyte and UTF-8 locales", file=sys.stderr)
+        sys.exit(2)
+    os.execv(os.environ["MOCK_REAL_GREP"], ["grep", *args])
 elif name == "docker":
     if args[0] != "run":
         sys.exit(0)
@@ -108,13 +117,14 @@ elif name == "python":
 """
     )
     mock.chmod(0o755)
-    for name in ["python", "docker", "cygpath", "cl"]:
+    for name in ["python", "docker", "cygpath", "cl", "grep"]:
         (tools / name).symlink_to(mock)
     env = os.environ.copy()
     env.update(
         PATH=f"{tools}:{env['PATH']}",
         MOCK_LOG=str(tmp_path / "calls.jsonl"),
         MOCK_REPO=str(repo),
+        MOCK_REAL_GREP=shutil.which("grep"),
         HOST_WORKSPACE="D:/runner workspace",
         CONTAINER_WORKSPACE=f"C:{repo}",
         NUMBER_OF_PROCESSORS="16",
@@ -131,7 +141,7 @@ elif name == "python":
         (toolkit / "bin/nvcc.exe").symlink_to(mock)
         env[f"CUDA_PATH_V{version}"] = f"C:{toolkit}"
 
-    def run(windows=True, failure="", stale=False):
+    def run(windows=True, failure="", stale=False, pcre_supported=True):
         if stale:
             for relative_path in [
                 "wheelhouse/cuda_cccl-0.0-py3-none-win_amd64.cu12.whl",
@@ -146,7 +156,12 @@ elif name == "python":
         result = subprocess.run(
             ["bash", str(ci / "build_cuda_cccl_python.sh"), "-py-version", "3.13"],
             cwd=repo,
-            env=env | {"MOCK_WINDOWS": str(int(windows)), "MOCK_FAILURE": failure},
+            env=env
+            | {
+                "MOCK_WINDOWS": str(int(windows)),
+                "MOCK_FAILURE": failure,
+                "MOCK_PCRE_SUPPORTED": str(int(pcre_supported)),
+            },
             capture_output=True,
             text=True,
             check=False,
@@ -217,6 +232,13 @@ def test_linux_keeps_manylinux_builds_and_auditwheel(wheel_build):
     assert not any("delvewheel" in call["args"] for call in calls)
     (final,) = (repo / "wheelhouse").glob("*.whl")
     assert final.read_text() == "repaired"
+
+
+def test_windows_cuda_version_parsing_without_pcre_locale(wheel_build):
+    result, _, _ = wheel_build(pcre_supported=False)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "Detected CUDA version: 12\n" in result.stdout
+    assert "Detected CUDA version: 13\n" in result.stdout
 
 
 @pytest.mark.parametrize(
