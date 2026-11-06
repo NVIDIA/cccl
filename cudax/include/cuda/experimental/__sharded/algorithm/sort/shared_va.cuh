@@ -90,6 +90,7 @@
 #include <cmath>
 #include <functional>
 #include <stdexcept>
+#include <algorithm>
 #include <vector>
 
 #include <cuda_runtime.h>
@@ -502,7 +503,11 @@ void merge_into(
 /**
  * @brief True when every shard lives in one shared address space this engine
  * may load across directly: all shards on device-backed places (device,
- * locality domain, green context) of the SAME underlying device.
+ * locality domain, green context) of one device, or of several devices that
+ * are mutually peer-accessible. The latter is the condition under which
+ * `place_group` peer-maps every place's pool for every other device of the
+ * group (`grant_cross_device_access`), so a load from any shard's storage is
+ * legal from any shard's place.
  */
 template <typename _Tp>
 [[nodiscard]] bool one_shared_address_space(const sharded_array<_Tp>& data)
@@ -511,7 +516,7 @@ template <typename _Tp>
   {
     return false;
   }
-  int dev = -1;
+  ::std::vector<int> devices;
   for (size_t g = 0; g < data.num_shards(); g++)
   {
     const int d = places::device_ordinal(data.shard(g).place);
@@ -519,13 +524,20 @@ template <typename _Tp>
     {
       return false; // host / managed / composite: not this engine's rung
     }
-    if (dev < 0)
+    if (::std::find(devices.begin(), devices.end(), d) == devices.end())
     {
-      dev = d;
+      devices.push_back(d);
     }
-    else if (d != dev)
+  }
+  for (const int a : devices)
+  {
+    for (const int b : devices)
     {
-      return false;
+      int can = 0;
+      if (a != b && (cudaDeviceCanAccessPeer(&can, a, b) != cudaSuccess || !can))
+      {
+        return false; // the group could not peer-map b's pool for a: not one address space
+      }
     }
   }
   return true;

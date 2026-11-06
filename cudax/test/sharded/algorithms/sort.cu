@@ -392,9 +392,39 @@ bool on_one_device(place_group& group)
   return true;
 }
 
-// A group spanning several devices is refused up front (documented contract:
-// the cross-address-space engine is a separate change), with the array untouched.
-void test_cross_device_refusal(place_group& group)
+// True when every pair of devices the group spans is mutually peer-accessible:
+// the condition under which place_group peer-maps every place's pool for every
+// other device, and the engine's one_shared_address_space predicate holds.
+bool mutually_peer_accessible(place_group& group)
+{
+  ::std::vector<int> devices;
+  for (size_t i = 0; i < group.size(); i++)
+  {
+    const int d = cuda::experimental::places::device_ordinal(group.place(i).affine_data_place());
+    if (::std::find(devices.begin(), devices.end(), d) == devices.end())
+    {
+      devices.push_back(d);
+    }
+  }
+  for (const int a : devices)
+  {
+    for (const int b : devices)
+    {
+      int can = 0;
+      if (a != b && (cudaDeviceCanAccessPeer(&can, a, b) != cudaSuccess || !can))
+      {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+// A group spanning several devices: sorted through the shared address space
+// when the devices are mutually peer-accessible (the group has peer-mapped
+// every pool), refused up front with the array untouched otherwise (documented
+// contract: the cross-address-space engine is a separate change).
+void test_cross_device(place_group& group)
 {
   const size_t n = 4096;
   auto data      = sharded_array<int>::allocate(group, n);
@@ -404,6 +434,12 @@ void test_cross_device_refusal(place_group& group)
     host[i] = static_cast<int>(n - i);
   }
   data.copy_from_host(host.data());
+
+  if (mutually_peer_accessible(group))
+  {
+    check_sorts_like_std(group, data, host, ::std::less<int>{});
+    return;
+  }
 
   bool threw = false;
   try
@@ -432,8 +468,18 @@ int main()
 
   if (!on_one_device(grid_group))
   {
-    test_cross_device_refusal(grid_group);
-    printf("sort: the grid spans several devices; running the engine tests on device 0 only.\n");
+    test_cross_device(grid_group);
+    if (mutually_peer_accessible(grid_group))
+    {
+      // Peer-mapped devices: the engine runs over the whole grid.
+      test_distributions(grid_group);
+      test_contiguous(grid_group);
+      printf("sort: the grid spans several peer-accessible devices; engine exercised on the whole grid.\n");
+    }
+    else
+    {
+      printf("sort: the grid spans several devices without peer access; engine tests on device 0 only.\n");
+    }
   }
 
   // The engine proper runs on one device's domains (the whole grid when that
