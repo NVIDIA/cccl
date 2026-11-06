@@ -202,6 +202,12 @@ TEST_HOST_DEVICE_FUNC constexpr void test_broadcast_participation()
   test_participation<float, integral_constant<uint64_t, UINT64_MAX>, false, N>();
   test_participation<int, floating_constant<3, 2>, false, N>();
   test_participation<int, large_floating_constant, false, N>();
+#if _CCCL_HAS_NVFP16()
+  test_participation<__half, integral_constant<int, INT32_MAX>, false, N>();
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+  test_participation<__nv_bfloat16, integral_constant<int, INT32_MAX>, false, N>();
+#endif // _CCCL_HAS_NVBF16()
 
   // floating point -> integer conversions that are not value-preserving
   test_participation<signed char, floating_constant<128>, false, N>();
