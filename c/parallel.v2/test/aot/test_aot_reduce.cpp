@@ -350,6 +350,17 @@ bool build_and_serialize(std::vector<char>& out_blob)
       return false;
     }
 
+    // The OS/architecture tag sits after magic[8] and algo_tag.
+    std::vector<char> other_os(static_cast<char*>(buf), static_cast<char*>(buf) + size);
+    uint32_t bogus_os_arch = 0xdeadbeef;
+    std::memcpy(other_os.data() + 8 + sizeof(uint32_t), &bogus_os_arch, sizeof(bogus_os_arch));
+    if (cccl_serialization_v2_validate_blob(other_os.data(), other_os.size()) != CUDA_ERROR_INVALID_VALUE
+        || !last_error_contains("different OS/architecture"))
+    {
+      fprintf(stderr, "FAIL: validate_blob should report a different OS/architecture\n");
+      return false;
+    }
+
     // The compute capability sits after magic[8], algo_tag and os_arch_tag.
     uint32_t other_major_cc = (cc_major == 7 ? 8 : 7) * 10 + 5;
     std::vector<char> wrong_cc(static_cast<char*>(buf), static_cast<char*>(buf) + size);

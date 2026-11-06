@@ -26,7 +26,7 @@ const char* cccl_serialization_v2_last_error(void)
 
 CUresult cccl_serialization_v2_validate_blob(const void* buf, size_t size)
 {
-  return cccl::detail::guard("cccl_serialization_v2_validate_blob", [&] {
+  return cccl::detail::guard<false>("cccl_serialization_v2_validate_blob", [&] {
     namespace sv2 = cccl::serialization_v2;
 
     sv2::blob_header header;
@@ -40,6 +40,7 @@ CUresult cccl_serialization_v2_validate_blob(const void* buf, size_t size)
       throw cccl::detail::cccl_error(
         CUDA_ERROR_INVALID_VALUE, "cccl.c.parallel.v2 serialization: bad magic (not a v2 CCCL C parallel blob)");
     }
+    sv2::check_os_arch(header);
     if (auto error = cccl::detail::check_device_compute_capability(static_cast<int>(header.cc)); !error.empty())
     {
       throw cccl::detail::cccl_error(CUDA_ERROR_NO_BINARY_FOR_GPU, error);

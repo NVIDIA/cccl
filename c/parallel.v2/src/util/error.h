@@ -64,14 +64,18 @@ inline void clear_last_error() noexcept
 
 // Runs `body` at a C API boundary: clears the last-error message on entry, and
 // maps whatever it throws to a CUresult, leaving the description behind as the
-// last-error message (and on stderr). A cccl_error carries its own code; any
-// other exception is CUDA_ERROR_UNKNOWN.
-template <typename Body>
+// last-error message. A cccl_error carries its own code; any other exception is
+// CUDA_ERROR_UNKNOWN. Failures are also printed to stderr unless PrintToStderr
+// is false, which suits entry points whose failures are an expected answer.
+template <bool PrintToStderr = true, typename Body>
 CUresult guard(const char* entry_point, Body&& body) noexcept
 {
   clear_last_error();
   auto fail = [&](CUresult code, const char* message) noexcept {
-    std::fprintf(stderr, "\nERROR in %s(): %s\n", entry_point, message);
+    if constexpr (PrintToStderr)
+    {
+      std::fprintf(stderr, "\nERROR in %s(): %s\n", entry_point, message);
+    }
     set_last_error(message);
     return code;
   };

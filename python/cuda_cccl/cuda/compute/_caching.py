@@ -22,11 +22,6 @@ except ImportError:
 from ._utils.protocols import get_dtype, get_shape, is_device_array
 from .struct import _Struct
 
-try:
-    from ._build_info import USING_V2  # type: ignore[import-not-found]
-except ImportError:
-    USING_V2 = False
-
 # Registry thet maps type -> key function for extracting cache key
 # from a value of that type.
 _KEY_FUNCTIONS: dict[type, Callable[[Any], Hashable]] = {}
