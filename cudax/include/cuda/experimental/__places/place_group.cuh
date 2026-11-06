@@ -687,8 +687,48 @@ private:
     auto& m       = reserved::machine::instance();
     ::std::ignore = m;
 
+    // The machine maps every device's *default* pool to its peers; places
+    // with a pool of their own (locality domains) are mapped here, for the
+    // devices this group spans, so one place's kernels may read another
+    // place's buffers (places_communicator::all_reduce fold).
+    grant_cross_device_access();
+
     stream_cache_.resize(places_.size());
     comm_cache_.resize(num_lanes_);
+  }
+
+  void grant_cross_device_access()
+  {
+    ::std::vector<int> devices;
+    for (const auto& p : places_)
+    {
+      const int d = device_ordinal(p.affine_data_place());
+      if (d >= 0 && ::std::find(devices.begin(), devices.end(), d) == devices.end())
+      {
+        devices.push_back(d);
+      }
+    }
+    if (devices.size() < 2)
+    {
+      return;
+    }
+    for (const auto& p : places_)
+    {
+      const data_place dp = p.affine_data_place();
+      const int home      = device_ordinal(dp);
+      for (const int peer : devices)
+      {
+        if (peer == home || home < 0)
+        {
+          continue;
+        }
+        int can = 0;
+        if (cudaDeviceCanAccessPeer(&can, peer, home) == cudaSuccess && can)
+        {
+          dp.grant_peer_access(peer);
+        }
+      }
+    }
   }
 
   // Materialize (lazily, once) the per-place streams from the registry's

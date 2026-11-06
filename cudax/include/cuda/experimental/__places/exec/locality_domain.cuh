@@ -709,6 +709,29 @@ public:
     cuda_try(cuMemFreeAsync(reinterpret_cast<CUdeviceptr>(ptr), reinterpret_cast<CUstream>(stream)));
   }
 
+  /**
+   * @brief Peer-map the domain's default pool for device @p peer_dev. The
+   *        domain pool is not the device's default pool, so the process-wide
+   *        `machine::enable_peer_accesses()` (which maps the latter) does not
+   *        cover it; without this, a kernel on another device reading a
+   *        buffer of this place faults (places_communicator's all-reduce fold
+   *        over a multi-GPU place group).
+   */
+  void grant_peer_access(int peer_dev) const override
+  {
+    if (peer_dev == view_.devid)
+    {
+      return;
+    }
+    const CUmemLocation location = __pool_location();
+    const CUmemoryPool pool      = ::cuda::__get_default_memory_pool(location, ::CU_MEM_ALLOCATION_TYPE_PINNED);
+    CUmemAccessDesc desc         = {};
+    desc.location.type           = CU_MEM_LOCATION_TYPE_DEVICE;
+    desc.location.id             = peer_dev;
+    desc.flags                   = CU_MEM_ACCESS_FLAGS_PROT_READWRITE;
+    cuda_try(cuMemPoolSetAccess(pool, &desc, 1));
+  }
+
   bool allocation_is_stream_ordered() const override
   {
     return true;
