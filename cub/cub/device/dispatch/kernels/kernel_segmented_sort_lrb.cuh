@@ -28,9 +28,10 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort_capacity
 {
-// Count nonempty segments by capacity, or scatter their IDs into reserved per-bin ranges.
-// Partition receives capacity bounds only; it never receives sorting configurations.
-template <typename Capacities, bool Scatter, typename BeginIterator, typename EndIterator>
+// Count segments of at least MinLength keys by capacity, or scatter their IDs into reserved per-bin ranges.
+// Count and scatter must use the same MinLength. Partition receives capacity bounds only; it never receives
+// sorting configurations.
+template <typename Capacities, bool Scatter, typename BeginIterator, typename EndIterator, int MinLength = 1>
 __launch_bounds__(partition_policy::block_threads) _CCCL_KERNEL_ATTRIBUTES void partition_kernel(
   BeginIterator begins, EndIterator ends, unsigned num_segments, unsigned* counts_or_cursors, unsigned* ids)
 {
@@ -49,7 +50,8 @@ __launch_bounds__(partition_policy::block_threads) _CCCL_KERNEL_ATTRIBUTES void 
   {
     const auto begin = begins[input_segment_id];
     const auto end   = ends[input_segment_id];
-    if (end > begin)
+    // Compare before subtracting: with unsigned offsets, end < begin would wrap to a huge length.
+    if (end > begin && end - begin >= MinLength)
     {
       bin_idx             = Capacities::first_fit(end - begin);
       segment_rank_in_bin = atomicAdd(bin_counts_shared + bin_idx, 1u);
@@ -110,7 +112,9 @@ __launch_bounds__(tiny_walk_policy::block_threads) _CCCL_KERNEL_ATTRIBUTES void 
     {
       const unsigned segment_id = tile_begin + idx_in_tile;
       const auto begin          = begins[segment_id];
-      const auto length         = ends[segment_id] - begin;
+      const auto end            = ends[segment_id];
+      // Compare before subtracting: with unsigned offsets, end < begin would wrap to a huge length.
+      const auto length = end > begin ? end - begin : decltype(end - begin){};
       if (length == 1)
       {
         out[begin] = in[begin];

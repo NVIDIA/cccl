@@ -97,8 +97,9 @@ CUB_TEST("Tiny sort sorts each segment within its logical warp capacity",
   check(cuda::std::integral_constant<int, 4>{});
 }
 
-// Tiny segments and singletons are written; empty and deferred segments are only counted, never written.
-CUB_TEST("Tiny walk sorts short segments and counts deferred ones by capacity",
+// Tiny segments and singletons are written and never queued; deferred segments are counted, then scattered
+// into their capacity bins, and their keys are not written.
+CUB_TEST("Tiny walk sorts short segments and bins deferred ones by capacity",
          "[segmented][sort][device]",
          CUB_SMALL,
          c2h::type_list<int, double>)
@@ -119,23 +120,31 @@ CUB_TEST("Tiny walk sorts short segments and counts deferred ones by capacity",
   {
     lengths.push_back(any_length(random));
   }
-  c2h::host_vector<int> begins, ends;
+  // Unsigned offsets: a reversed range must stay empty rather than wrap to a huge length.
+  c2h::host_vector<unsigned> begins, ends;
   c2h::host_vector<key_type> input;
   std::uniform_int_distribution<int> random_key{-1000, 1000};
   for (const int length : lengths)
   {
     input.push_back(key_type{-99});
-    begins.push_back(static_cast<int>(input.size()));
+    begins.push_back(static_cast<unsigned>(input.size()));
     for (int i = 0; i < length; ++i)
     {
       input.push_back(static_cast<key_type>(random_key(random)) / key_type{4});
     }
-    ends.push_back(static_cast<int>(input.size()));
+    ends.push_back(static_cast<unsigned>(input.size()));
   }
+  lengths.push_back(0);
+  begins.push_back(ends.back());
+  ends.push_back(ends.back() - 5);
   c2h::host_vector<key_type> expected(input.size(), key_type{-99});
   c2h::host_vector<unsigned> expected_counts(capacities::size + 1, 0);
   for (size_t segment = 0; segment < lengths.size(); ++segment)
   {
+    if (ends[segment] <= begins[segment])
+    {
+      continue;
+    }
     if (lengths[segment] >= policy_t::inline_cutoff)
     {
       ++expected_counts[capacities::first_fit(lengths[segment])];
@@ -144,8 +153,8 @@ CUB_TEST("Tiny walk sorts short segments and counts deferred ones by capacity",
     std::copy(input.begin() + begins[segment], input.begin() + ends[segment], expected.begin() + begins[segment]);
     std::sort(expected.begin() + begins[segment], expected.begin() + ends[segment]);
   }
-  c2h::device_vector<key_type> d_in = input, d_out(input.size(), key_type{-99});
-  c2h::device_vector<int> d_begins = begins, d_ends = ends;
+  c2h::device_vector<key_type> d_in     = input, d_out(input.size(), key_type{-99});
+  c2h::device_vector<unsigned> d_begins = begins, d_ends = ends;
   c2h::device_vector<unsigned> d_counts(capacities::size + 1, 0);
   const auto num_segments          = static_cast<unsigned>(lengths.size());
   constexpr unsigned tile_segments = policy_t::block_threads * policy_t::segments_per_thread;
@@ -161,6 +170,42 @@ CUB_TEST("Tiny walk sorts short segments and counts deferred ones by capacity",
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
   REQUIRE(c2h::host_vector<key_type>(d_out) == expected);
   REQUIRE(c2h::host_vector<unsigned>(d_counts) == expected_counts);
+  // The walk's counts size the bins; a scatter with the same cutoff must fill them exactly.
+  c2h::device_vector<unsigned> d_offsets(capacities::size + 2), d_cursors(capacities::size + 1);
+  c2h::device_vector<unsigned> d_ids(num_segments, ~0u);
+  capacity::segment_prefix_kernel<capacities>
+    <<<1, 1>>>(thrust::raw_pointer_cast(d_counts.data()),
+               thrust::raw_pointer_cast(d_offsets.data()),
+               thrust::raw_pointer_cast(d_cursors.data()));
+  constexpr unsigned partition_threads = capacity::partition_policy::block_threads;
+  capacity::partition_kernel<capacities, true, const unsigned*, const unsigned*, policy_t::inline_cutoff>
+    <<<(num_segments + partition_threads - 1) / partition_threads, partition_threads>>>(
+      thrust::raw_pointer_cast(d_begins.data()),
+      thrust::raw_pointer_cast(d_ends.data()),
+      num_segments,
+      thrust::raw_pointer_cast(d_cursors.data()),
+      thrust::raw_pointer_cast(d_ids.data()));
+  REQUIRE(cudaGetLastError() == cudaSuccess);
+  REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
+  const c2h::host_vector<unsigned> offsets = d_offsets;
+  const c2h::host_vector<unsigned> ids     = d_ids;
+  for (int bin_idx = 0; bin_idx <= capacities::size; ++bin_idx)
+  {
+    std::vector<unsigned> bin_ids(ids.begin() + offsets[bin_idx], ids.begin() + offsets[bin_idx + 1]);
+    std::vector<unsigned> expected_ids;
+    for (unsigned segment = 0; segment < num_segments; ++segment)
+    {
+      if (lengths[segment] >= policy_t::inline_cutoff && capacities::first_fit(lengths[segment]) == bin_idx)
+      {
+        expected_ids.push_back(segment);
+      }
+    }
+    std::sort(bin_ids.begin(), bin_ids.end());
+    REQUIRE(bin_ids == expected_ids);
+  }
+  REQUIRE(std::all_of(ids.begin() + offsets.back(), ids.end(), [](unsigned id) {
+    return id == ~0u;
+  }));
 }
 
 // Check generic bounds, irregular configuration mapping, overflow IDs, and empty-workspace reuse.
