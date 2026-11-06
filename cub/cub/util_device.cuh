@@ -205,7 +205,7 @@ struct PerDeviceAttributeCache
   // i.e. a linear sequence of transitions.
   enum DeviceEntryStatus // NOLINT(cppcoreguidelines-use-enum-class)
   {
-    DeviceEntryEmpty = 0,
+    DeviceEntryEmpty,
     DeviceEntryInitializing,
     DeviceEntryReady
   };
@@ -223,7 +223,7 @@ public:
   /**
    * \brief Construct the cache.
    */
-  _CCCL_HOST inline PerDeviceAttributeCache()
+  _CCCL_HOST PerDeviceAttributeCache()
       : entries_()
   {
     _CCCL_ASSERT(detail::device_count() <= detail::max_devices, "");
