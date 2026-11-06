@@ -44,6 +44,7 @@
 #include <cub/block/block_exchange.cuh>
 #include <cub/block/block_histogram.cuh>
 #include <cub/block/block_load.cuh>
+#include <cub/block/block_merge.cuh>
 #include <cub/block/block_merge_sort.cuh>
 #include <cub/block/block_radix_rank.cuh>
 #include <cub/block/block_radix_sort.cuh>
