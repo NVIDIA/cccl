@@ -36,11 +36,11 @@ struct segmented_scan_functor
 
   using result_type = typename ::cuda::std::tuple<OutputType, HeadFlagType>;
 
-  _CCCL_HOST_DEVICE segmented_scan_functor(AssociativeOperator _binary_op)
+  _CCCL_HOST_DEVICE_API segmented_scan_functor(AssociativeOperator _binary_op)
       : binary_op(_binary_op)
   {}
 
-  _CCCL_HOST_DEVICE result_type operator()(result_type a, result_type b)
+  _CCCL_HOST_DEVICE_API result_type operator()(result_type a, result_type b)
   {
     return result_type(
       ::cuda::std::get<1>(b) ? ::cuda::std::get<0>(b) : binary_op(::cuda::std::get<0>(a), ::cuda::std::get<0>(b)),
@@ -50,7 +50,7 @@ struct segmented_scan_functor
 } // end namespace detail
 
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
+_CCCL_HOST_DEVICE_API OutputIterator inclusive_scan_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -65,7 +65,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename BinaryPredicate>
-_CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
+_CCCL_HOST_DEVICE_API OutputIterator inclusive_scan_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -82,7 +82,7 @@ template <typename DerivedPolicy,
           typename OutputIterator,
           typename BinaryPredicate,
           typename AssociativeOperator>
-_CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
+_CCCL_HOST_DEVICE_API OutputIterator inclusive_scan_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -120,7 +120,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
 }
 
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
+_CCCL_HOST_DEVICE_API OutputIterator exclusive_scan_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -132,7 +132,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
 }
 
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator, typename T>
-_CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
+_CCCL_HOST_DEVICE_API OutputIterator exclusive_scan_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -149,7 +149,7 @@ template <typename DerivedPolicy,
           typename OutputIterator,
           typename T,
           typename BinaryPredicate>
-_CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
+_CCCL_HOST_DEVICE_API OutputIterator exclusive_scan_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -168,7 +168,7 @@ template <typename DerivedPolicy,
           typename T,
           typename BinaryPredicate,
           typename AssociativeOperator>
-_CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
+_CCCL_HOST_DEVICE_API OutputIterator exclusive_scan_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,

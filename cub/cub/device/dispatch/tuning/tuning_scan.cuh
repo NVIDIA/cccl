@@ -76,7 +76,7 @@ namespace detail
 #endif // _CCCL_HOSTED()
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, ScanAlgorithm algo)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, ScanAlgorithm algo)
 {
   return os << CUB_NS_QUALIFIER::detail::to_string(algo);
 }
@@ -132,7 +132,7 @@ struct ScanLookbackPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ScanLookbackPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const ScanLookbackPolicy& p)
   {
     return os
         << "ScanLookbackPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
@@ -187,7 +187,7 @@ struct ScanLookaheadPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ScanLookaheadPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const ScanLookaheadPolicy& p)
   {
     return os
         << "ScanLookaheadPolicy { .reduce_and_scan_warps = " << p.reduce_and_scan_warps << ", .items_per_thread = "
@@ -219,7 +219,7 @@ struct ScanPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ScanPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const ScanPolicy& p)
   {
     return os << "ScanPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback
               << ", .lookahead = " << p.lookahead << " }";
@@ -277,21 +277,21 @@ enum class accum_size
 
 // TODO(bgruber): remove this in CCCL 4.0 when we remove the public scan dispatcher
 template <class AccumT>
-constexpr _CCCL_HOST_DEVICE primitive_accum is_primitive_accum()
+_CCCL_HOST_DEVICE_API constexpr primitive_accum is_primitive_accum()
 {
   return is_primitive<AccumT>::value ? primitive_accum::yes : primitive_accum::no;
 }
 
 // TODO(bgruber): remove this in CCCL 4.0 when we remove the public scan dispatcher
 template <class ScanOpT>
-constexpr _CCCL_HOST_DEVICE primitive_op is_primitive_op()
+_CCCL_HOST_DEVICE_API constexpr primitive_op is_primitive_op()
 {
   return basic_binary_op_v<ScanOpT> ? primitive_op::yes : primitive_op::no;
 }
 
 // TODO(bgruber): remove this in CCCL 4.0 when we remove the public scan dispatcher
 template <class ValueT>
-constexpr _CCCL_HOST_DEVICE value_size classify_value_size()
+_CCCL_HOST_DEVICE_API constexpr value_size classify_value_size()
 {
   return sizeof(ValueT) == 1 ? value_size::_1
        : sizeof(ValueT) == 2 ? value_size::_2
@@ -304,7 +304,7 @@ constexpr _CCCL_HOST_DEVICE value_size classify_value_size()
 
 // TODO(bgruber): remove this in CCCL 4.0 when we remove the public scan dispatcher
 template <class AccumT>
-constexpr _CCCL_HOST_DEVICE accum_size classify_accum_size()
+_CCCL_HOST_DEVICE_API constexpr accum_size classify_accum_size()
 {
   return sizeof(AccumT) == 1 ? accum_size::_1
        : sizeof(AccumT) == 2 ? accum_size::_2
@@ -317,7 +317,7 @@ constexpr _CCCL_HOST_DEVICE accum_size classify_accum_size()
 
 // TODO(bgruber): remove this in CCCL 4.0 when we remove the public scan dispatcher
 template <class OffsetT>
-constexpr _CCCL_HOST_DEVICE offset_size classify_offset_size()
+_CCCL_HOST_DEVICE_API constexpr offset_size classify_offset_size()
 {
   return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
 }

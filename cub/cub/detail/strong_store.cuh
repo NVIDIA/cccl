@@ -26,7 +26,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(uint4* ptr, uint4 val)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void store_relaxed(uint4* ptr, uint4 val)
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_70,
@@ -39,7 +39,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(uint4* ptr, uint4 val)
        "st.cg.v4.u32 [%0], {%1, %2, %3, %4};" : : "l"(ptr), "r"(val.x), "r"(val.y), "r"(val.z), "r"(val.w) : "memory");));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(ulonglong2* ptr, ulonglong2 val)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void store_relaxed(ulonglong2* ptr, ulonglong2 val)
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_70,
@@ -47,7 +47,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(ulonglong2* ptr, ulonglong2 va
     (asm volatile("st.cg.v2.u64 [%0], {%1, %2};" : : "l"(ptr), "l"(val.x), "l"(val.y) : "memory");));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(ushort4* ptr, ushort4 val)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void store_relaxed(ushort4* ptr, ushort4 val)
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_70,
@@ -60,7 +60,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(ushort4* ptr, ushort4 val)
        "st.cg.v4.u16 [%0], {%1, %2, %3, %4};" : : "l"(ptr), "h"(val.x), "h"(val.y), "h"(val.z), "h"(val.w) : "memory");));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(uint2* ptr, uint2 val)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void store_relaxed(uint2* ptr, uint2 val)
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_70,
@@ -68,28 +68,28 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(uint2* ptr, uint2 val)
     (asm volatile("st.cg.v2.u32 [%0], {%1, %2};" : : "l"(ptr), "r"(val.x), "r"(val.y) : "memory");));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned long long* ptr, unsigned long long val)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void store_relaxed(unsigned long long* ptr, unsigned long long val)
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
                     (asm volatile("st.relaxed.gpu.u64 [%0], %1;" : : "l"(ptr), "l"(val) : "memory");),
                     (asm volatile("st.cg.u64 [%0], %1;" : : "l"(ptr), "l"(val) : "memory");));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned int* ptr, unsigned int val)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void store_relaxed(unsigned int* ptr, unsigned int val)
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
                     (asm volatile("st.relaxed.gpu.u32 [%0], %1;" : : "l"(ptr), "r"(val) : "memory");),
                     (asm volatile("st.cg.u32 [%0], %1;" : : "l"(ptr), "r"(val) : "memory");));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned short* ptr, unsigned short val)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void store_relaxed(unsigned short* ptr, unsigned short val)
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
                     (asm volatile("st.relaxed.gpu.u16 [%0], %1;" : : "l"(ptr), "h"(val) : "memory");),
                     (asm volatile("st.cg.u16 [%0], %1;" : : "l"(ptr), "h"(val) : "memory");));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned char* ptr, unsigned char val)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void store_relaxed(unsigned char* ptr, unsigned char val)
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_70,
@@ -107,7 +107,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned char* ptr, unsigned c
                   "h"((unsigned short) val) : "memory");));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(uint4* ptr, uint4 val)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void store_release(uint4* ptr, uint4 val)
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_70,
@@ -125,7 +125,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_release(uint4* ptr, uint4 val)
     }));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(ulonglong2* ptr, ulonglong2 val)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void store_release(ulonglong2* ptr, ulonglong2 val)
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_70,
@@ -136,7 +136,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_release(ulonglong2* ptr, ulonglong2 va
     }));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(ushort4* ptr, ushort4 val)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void store_release(ushort4* ptr, ushort4 val)
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_70,
@@ -154,7 +154,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_release(ushort4* ptr, ushort4 val)
     }));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(uint2* ptr, uint2 val)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void store_release(uint2* ptr, uint2 val)
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_70,
@@ -165,7 +165,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_release(uint2* ptr, uint2 val)
     }));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned long long* ptr, unsigned long long val)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void store_release(unsigned long long* ptr, unsigned long long val)
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_70, (asm volatile("st.release.gpu.u64 [%0], %1;" : : "l"(ptr), "l"(val) : "memory");), ({
@@ -174,7 +174,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned long long* ptr, unsig
     }));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned int* ptr, unsigned int val)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void store_release(unsigned int* ptr, unsigned int val)
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_70, (asm volatile("st.release.gpu.u32 [%0], %1;" : : "l"(ptr), "r"(val) : "memory");), ({
@@ -183,7 +183,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned int* ptr, unsigned in
     }));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned short* ptr, unsigned short val)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void store_release(unsigned short* ptr, unsigned short val)
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_70, (asm volatile("st.release.gpu.u16 [%0], %1;" : : "l"(ptr), "h"(val) : "memory");), ({
@@ -192,7 +192,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned short* ptr, unsigned 
     }));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned char* ptr, unsigned char val)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void store_release(unsigned char* ptr, unsigned char val)
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_70,

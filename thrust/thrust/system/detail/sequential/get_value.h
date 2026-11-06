@@ -19,7 +19,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE thrust::detail::it_value_t<Pointer>
+_CCCL_HOST_DEVICE_API thrust::detail::it_value_t<Pointer>
 get_value(sequential::execution_policy<DerivedPolicy>&, Pointer ptr)
 {
   return *thrust::raw_pointer_cast(ptr);

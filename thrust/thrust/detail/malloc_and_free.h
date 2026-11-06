@@ -36,7 +36,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy>
-_CCCL_HOST_DEVICE pointer<void, DerivedPolicy>
+_CCCL_HOST_DEVICE_API pointer<void, DerivedPolicy>
 malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, std::size_t n)
 {
   using thrust::system::detail::generic::malloc;
@@ -52,7 +52,7 @@ malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, std::si
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename T, typename DerivedPolicy>
-_CCCL_HOST_DEVICE pointer<T, DerivedPolicy>
+_CCCL_HOST_DEVICE_API pointer<T, DerivedPolicy>
 malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, std::size_t n)
 {
   using thrust::system::detail::generic::malloc;
@@ -65,7 +65,7 @@ malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, std::si
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Pointer ptr)
+_CCCL_HOST_DEVICE_API void free(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Pointer ptr)
 {
   using thrust::system::detail::generic::free;
 

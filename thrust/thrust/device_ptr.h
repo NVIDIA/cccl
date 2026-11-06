@@ -104,7 +104,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE device_ptr(std::nullptr_t)
+  _CCCL_HOST_DEVICE_API device_ptr(std::nullptr_t)
       : super_t(nullptr)
   {}
 
@@ -125,7 +125,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST_DEVICE explicit device_ptr(U* ptr)
+  _CCCL_HOST_DEVICE_API explicit device_ptr(U* ptr)
       : super_t(ptr)
   {}
 
@@ -144,7 +144,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST_DEVICE device_ptr(device_ptr<U> const& other)
+  _CCCL_HOST_DEVICE_API device_ptr(device_ptr<U> const& other)
       : super_t(other)
   {}
 
@@ -165,7 +165,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST_DEVICE device_ptr& operator=(device_ptr<U> const& other)
+  _CCCL_HOST_DEVICE_API device_ptr& operator=(device_ptr<U> const& other)
   {
     super_t::operator=(other);
     return *this;
@@ -183,7 +183,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE device_ptr& operator=(std::nullptr_t)
+  _CCCL_HOST_DEVICE_API device_ptr& operator=(std::nullptr_t)
   {
     super_t::operator=(nullptr);
     return *this;

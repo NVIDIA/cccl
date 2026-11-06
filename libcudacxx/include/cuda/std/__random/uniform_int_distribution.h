@@ -213,7 +213,7 @@ private:
 
 public:
   // constructors and reset functions
-  constexpr uniform_int_distribution() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr uniform_int_distribution() noexcept = default;
   _CCCL_HOST_DEVICE_API explicit constexpr uniform_int_distribution(
     result_type __a, result_type __b = numeric_limits<result_type>::max()) noexcept
       : __p_(param_type(__a, __b))
@@ -306,7 +306,7 @@ public:
 
 #if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
-  friend ::std::basic_ostream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const uniform_int_distribution& __x)
   {
     using _Ostream = ::std::basic_ostream<_CharT, _Traits>;
@@ -321,7 +321,7 @@ public:
   }
 
   template <class _CharT, class _Traits>
-  friend ::std::basic_istream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_istream<_CharT, _Traits>&
   operator>>(::std::basic_istream<_CharT, _Traits>& __is, uniform_int_distribution& __x)
   {
     using _Istream = ::std::basic_istream<_CharT, _Traits>;

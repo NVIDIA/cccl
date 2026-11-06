@@ -39,9 +39,9 @@ class tagged_iterator : public make_tagged_iterator_base<Iterator, Tag>
   using super_t = make_tagged_iterator_base<Iterator, Tag>;
 
 public:
-  tagged_iterator() = default;
+  _CCCL_HIDE_FROM_ABI tagged_iterator() = default;
 
-  _CCCL_HOST_DEVICE explicit tagged_iterator(Iterator x)
+  _CCCL_HOST_DEVICE_API explicit tagged_iterator(Iterator x)
       : super_t(x)
   {}
 };
@@ -53,7 +53,7 @@ public:
 //! \param iter The iterator of interest.
 //! \return An iterator whose system tag is \p Tag and whose behavior is otherwise equivalent to \p iter.
 template <typename Tag, typename Iterator>
-auto make_tagged_iterator(Iterator iter) -> tagged_iterator<Iterator, Tag>
+_CCCL_HOST_API auto make_tagged_iterator(Iterator iter) -> tagged_iterator<Iterator, Tag>
 {
   return tagged_iterator<Iterator, Tag>(iter);
 }

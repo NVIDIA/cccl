@@ -668,12 +668,12 @@ private:
   int segment_size;
 
 public:
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE generate_idx_value(Iterator it, int segment_size)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE generate_idx_value(Iterator it, int segment_size)
       : it(it)
       , segment_size(segment_size)
   {}
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(::cuda::std::int64_t idx) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE auto operator()(::cuda::std::int64_t idx) const
   {
     return ::cuda::std::pair<int, OutputValueT>(static_cast<int>(idx % segment_size), it[idx]);
   }

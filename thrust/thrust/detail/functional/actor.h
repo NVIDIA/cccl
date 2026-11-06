@@ -36,7 +36,7 @@ template <typename Eval>
 struct actor : Eval
 {
   _CCCL_EXEC_CHECK_DISABLE
-  constexpr actor() = default;
+  _CCCL_HIDE_FROM_ABI constexpr actor() = default;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API actor(const Eval& base)
@@ -90,7 +90,7 @@ template <typename Eval, typename SubExpr>
 struct composite<Eval, SubExpr>
 {
   _CCCL_EXEC_CHECK_DISABLE
-  constexpr composite() = default;
+  _CCCL_HIDE_FROM_ABI constexpr composite() = default;
 
   // TODO(bgruber): drop ctor and use aggregate initialization in C++17
   _CCCL_EXEC_CHECK_DISABLE
@@ -116,7 +116,7 @@ template <typename Eval, typename SubExpr1, typename SubExpr2>
 struct composite<Eval, SubExpr1, SubExpr2>
 {
   _CCCL_EXEC_CHECK_DISABLE
-  constexpr composite() = default;
+  _CCCL_HIDE_FROM_ABI constexpr composite() = default;
 
   // TODO(bgruber): drop ctor and use aggregate initialization in C++17
   _CCCL_EXEC_CHECK_DISABLE
@@ -150,7 +150,7 @@ template <typename F>
 struct operator_adaptor : F
 {
   _CCCL_EXEC_CHECK_DISABLE
-  constexpr operator_adaptor() = default;
+  _CCCL_HIDE_FROM_ABI constexpr operator_adaptor() = default;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API operator_adaptor(F f)

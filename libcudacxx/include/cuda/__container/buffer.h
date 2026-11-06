@@ -132,7 +132,7 @@ private:
 
   //! @brief Helper to check container is compatible with this buffer
   template <class _Range>
-  [[nodiscard]] static constexpr bool __compatible_range() noexcept
+  [[nodiscard]] _CCCL_HOST_API static constexpr bool __compatible_range() noexcept
   {
     return ::cuda::std::ranges::__container_compatible_range<_Range, _Tp>;
   }
@@ -140,20 +140,20 @@ private:
   //! @brief Helper to check whether a different buffer still satisfies all
   //! properties of this one
   template <class... _OtherProperties>
-  [[nodiscard]] static constexpr bool __properties_match() noexcept
+  [[nodiscard]] _CCCL_HOST_API static constexpr bool __properties_match() noexcept
   {
     return ::cuda::std::__type_set_contains_v<::cuda::std::__make_type_set<_OtherProperties...>, _Properties...>;
   }
 
   //! @brief Helper to return an resource_ref to the currently used resource.
   //! Used to grow the buffer
-  __resource_ref_t __borrow_resource() const noexcept
+  _CCCL_HOST_API __resource_ref_t __borrow_resource() const noexcept
   {
     return const_cast<__resource_t&>(__buf_.memory_resource());
   }
 
   template <class _Env>
-  static size_t __alignment_from_env(const _Env& __env)
+  _CCCL_HOST_API static size_t __alignment_from_env(const _Env& __env)
   {
     const auto __align = ::cuda::__call_or(::cuda::allocation_alignment, alignof(_Tp), __env);
     ::cuda::__validate_allocation_alignment(__align, alignof(_Tp));
@@ -1003,7 +1003,7 @@ _CCCL_TEMPLATE(
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
     __buffer_compatible_env<_Env>)
-buffer<_Tp, _FirstProperty, _RestProperties...>
+_CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...>
 make_buffer(stream_ref __stream, _Resource&& __mr, const _Env& __env = {})
 {
   return buffer<_Tp, _FirstProperty, _RestProperties...>{__stream, ::cuda::std::forward<_Resource>(__mr), __env};
@@ -1084,7 +1084,7 @@ _CCCL_TEMPLATE(
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
     __buffer_compatible_env<_Env>)
-buffer<_Tp, _FirstProperty, _RestProperties...>
+_CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...>
 make_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, ::cuda::no_init_t, const _Env& __env = {})
 {
   return buffer<_Tp, _FirstProperty, _RestProperties...>{
@@ -1124,7 +1124,7 @@ _CCCL_TEMPLATE(class _Tp,
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
     __buffer_compatible_env<_Env> _CCCL_AND ::cuda::std::__has_forward_traversal<_Iter>)
-buffer<_Tp, _FirstProperty, _RestProperties...>
+_CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...>
 make_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _Iter __last, const _Env& __env = {})
 {
   return buffer<_Tp, _FirstProperty, _RestProperties...>{
@@ -1162,7 +1162,7 @@ _CCCL_TEMPLATE(
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
     __buffer_compatible_env<_Env>)
-buffer<_Tp, _FirstProperty, _RestProperties...>
+_CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...>
 make_buffer(stream_ref __stream, _Resource&& __mr, ::cuda::std::initializer_list<_Tp> __ilist, const _Env& __env = {})
 {
   return buffer<_Tp, _FirstProperty, _RestProperties...>{
@@ -1202,7 +1202,7 @@ _CCCL_TEMPLATE(class _Tp,
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
     __buffer_compatible_env<_Env> _CCCL_AND ::cuda::std::ranges::forward_range<_Range>)
-buffer<_Tp, _FirstProperty, _RestProperties...>
+_CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...>
 make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range, const _Env& __env = {})
 {
   return buffer<_Tp, _FirstProperty, _RestProperties...>{

@@ -92,7 +92,7 @@ struct BlockScanWarpScans
   {
     alignas(16) char storage[sizeof(_TempStorage)];
 
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE _TempStorage& Alias()
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE _TempStorage& Alias()
     {
       return reinterpret_cast<_TempStorage&>(*this);
     }
@@ -113,7 +113,7 @@ struct BlockScanWarpScans
   //---------------------------------------------------------------------
 
   /// Constructor
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockScanWarpScans(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockScanWarpScans(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
       , warp_id((WARPS == 1) ? 0 : linear_tid / WARP_THREADS)
@@ -135,7 +135,7 @@ struct BlockScanWarpScans
    *   Threadblock-wide aggregate reduction of input items
    */
   template <typename ScanOp, int WARP>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ApplyWarpAggregates(T& warp_prefix, ScanOp scan_op, T& block_aggregate, constant_t<WARP> /*addend_warp*/)
   {
     if (warp_id == WARP)
@@ -160,7 +160,7 @@ struct BlockScanWarpScans
    *   Threadblock-wide aggregate reduction of input items
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ApplyWarpAggregates(T& /*warp_prefix*/, ScanOp /*scan_op*/, T& /*block_aggregate*/, constant_t<WARPS> /*addend_warp*/)
   {}
 
@@ -179,7 +179,7 @@ struct BlockScanWarpScans
    *   Threadblock-wide aggregate reduction of input items
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T ComputeWarpPrefix(ScanOp scan_op, T warp_aggregate, T& block_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T ComputeWarpPrefix(ScanOp scan_op, T warp_aggregate, T& block_aggregate)
   {
     // Last lane in each warp shares its warp-aggregate
     if (lane_id == WARP_THREADS - 1)
@@ -229,7 +229,7 @@ struct BlockScanWarpScans
    *   Initial value to seed the exclusive scan
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T
   ComputeWarpPrefix(ScanOp scan_op, T warp_aggregate, T& block_aggregate, const T& initial_value)
   {
     T warp_prefix = ComputeWarpPrefix(scan_op, warp_aggregate, block_aggregate);
@@ -263,7 +263,7 @@ struct BlockScanWarpScans
    *   Binary scan operator
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, ScanOp scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, ScanOp scan_op)
   {
     // Compute block-wide exclusive scan.  The exclusive output from tid0 is invalid.
     T block_aggregate;
@@ -287,7 +287,8 @@ struct BlockScanWarpScans
    *   Binary scan operator
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, const T& initial_value, ScanOp scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ExclusiveScan(T input, T& exclusive_output, const T& initial_value, ScanOp scan_op)
   {
     // ExclusiveScan fills the aggregate before it is read.
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
@@ -314,7 +315,7 @@ struct BlockScanWarpScans
    *   Threadblock-wide aggregate reduction of input items
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, ScanOp scan_op, T& block_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, ScanOp scan_op, T& block_aggregate)
   {
     // Compute warp scan in each warp.  The exclusive output from each lane0 is invalid.
     // WarpScan fills the output before it is read.
@@ -357,7 +358,7 @@ struct BlockScanWarpScans
    *   Threadblock-wide aggregate reduction of input items
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ExclusiveScan(T input, T& exclusive_output, const T& initial_value, ScanOp scan_op, T& block_aggregate)
   {
     // Compute warp scan in each warp.  The exclusive output from each lane0 is invalid.
@@ -399,7 +400,7 @@ struct BlockScanWarpScans
    *   block-wide prefix to be applied to all inputs.
    */
   template <typename ScanOp, typename BlockPrefixCallbackOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ExclusiveScan(T input, T& exclusive_output, ScanOp scan_op, BlockPrefixCallbackOp& block_prefix_callback_op)
   {
     // Compute block-wide exclusive scan.  The exclusive output from tid0 is invalid.
@@ -449,7 +450,7 @@ struct BlockScanWarpScans
    *   Binary scan operator
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op)
   {
     T block_aggregate;
     InclusiveScan(input, inclusive_output, scan_op, block_aggregate);
@@ -473,7 +474,7 @@ struct BlockScanWarpScans
    *   Threadblock-wide aggregate reduction of input items
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op, T& block_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op, T& block_aggregate)
   {
     WarpScanT(temp_storage.warp_scan[warp_id]).InclusiveScan(input, inclusive_output, scan_op);
 
@@ -509,7 +510,7 @@ struct BlockScanWarpScans
    * block-wide prefix to be applied to all inputs.
    */
   template <typename ScanOp, typename BlockPrefixCallbackOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   InclusiveScan(T input, T& exclusive_output, ScanOp scan_op, BlockPrefixCallbackOp& block_prefix_callback_op)
   {
     // InclusiveScan fills the aggregate before it is read.

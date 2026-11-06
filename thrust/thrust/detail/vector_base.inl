@@ -44,7 +44,7 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 template <typename T, typename Alloc>
-vector_base<T, Alloc>::vector_base()
+_CCCL_HOST_API vector_base<T, Alloc>::vector_base()
     : m_storage()
     , m_size(0)
 {
@@ -52,7 +52,7 @@ vector_base<T, Alloc>::vector_base()
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>::vector_base(const Alloc& alloc)
+_CCCL_HOST_API vector_base<T, Alloc>::vector_base(const Alloc& alloc)
     : m_storage(alloc)
     , m_size(0)
 {
@@ -60,7 +60,7 @@ vector_base<T, Alloc>::vector_base(const Alloc& alloc)
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>::vector_base(size_type n)
+_CCCL_HOST_API vector_base<T, Alloc>::vector_base(size_type n)
     : m_storage()
     , m_size(0)
 {
@@ -68,7 +68,7 @@ vector_base<T, Alloc>::vector_base(size_type n)
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>::vector_base(size_type n, default_init_t)
+_CCCL_HOST_API vector_base<T, Alloc>::vector_base(size_type n, default_init_t)
     : m_storage()
     , m_size(0)
 {
@@ -86,7 +86,7 @@ vector_base<T, Alloc>::vector_base(size_type n, default_init_t)
 
 template <typename T, typename Alloc>
 template <typename T2>
-vector_base<T, Alloc>::vector_base(size_type n, no_init_t)
+_CCCL_HOST_API vector_base<T, Alloc>::vector_base(size_type n, no_init_t)
     : m_storage()
     , m_size(0)
 {
@@ -100,7 +100,7 @@ vector_base<T, Alloc>::vector_base(size_type n, no_init_t)
 }
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>::vector_base(size_type n, const Alloc& alloc)
+_CCCL_HOST_API vector_base<T, Alloc>::vector_base(size_type n, const Alloc& alloc)
     : m_storage(alloc)
     , m_size(0)
 {
@@ -108,7 +108,7 @@ vector_base<T, Alloc>::vector_base(size_type n, const Alloc& alloc)
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>::vector_base(size_type n, const value_type& value)
+_CCCL_HOST_API vector_base<T, Alloc>::vector_base(size_type n, const value_type& value)
     : m_storage()
     , m_size(0)
 {
@@ -116,7 +116,7 @@ vector_base<T, Alloc>::vector_base(size_type n, const value_type& value)
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>::vector_base(size_type n, const value_type& value, const Alloc& alloc)
+_CCCL_HOST_API vector_base<T, Alloc>::vector_base(size_type n, const value_type& value, const Alloc& alloc)
     : m_storage(alloc)
     , m_size(0)
 {
@@ -124,7 +124,7 @@ vector_base<T, Alloc>::vector_base(size_type n, const value_type& value, const A
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>::vector_base(const vector_base& v)
+_CCCL_HOST_API vector_base<T, Alloc>::vector_base(const vector_base& v)
     : m_storage(copy_allocator_t(), v.m_storage)
     , m_size(0)
 {
@@ -132,7 +132,7 @@ vector_base<T, Alloc>::vector_base(const vector_base& v)
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>::vector_base(const vector_base& v, const Alloc& alloc)
+_CCCL_HOST_API vector_base<T, Alloc>::vector_base(const vector_base& v, const Alloc& alloc)
     : m_storage(alloc)
     , m_size(0)
 {
@@ -140,7 +140,7 @@ vector_base<T, Alloc>::vector_base(const vector_base& v, const Alloc& alloc)
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>::vector_base(vector_base&& v) noexcept
+_CCCL_HOST_API vector_base<T, Alloc>::vector_base(vector_base&& v) noexcept
     : m_storage(copy_allocator_t(), v.m_storage)
     , m_size(0)
 {
@@ -148,7 +148,7 @@ vector_base<T, Alloc>::vector_base(vector_base&& v) noexcept
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(const vector_base& v)
+_CCCL_HOST_API vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(const vector_base& v)
 {
   if (this != &v)
   {
@@ -170,7 +170,7 @@ vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(const vector_base& v)
 } // end vector_base::operator=()
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(vector_base&& v) noexcept
+_CCCL_HOST_API vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(vector_base&& v) noexcept
 {
   m_storage.destroy(begin(), end());
   m_storage = ::cuda::std::move(v.m_storage);
@@ -184,7 +184,7 @@ vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(vector_base&& v) noexcep
 
 template <typename T, typename Alloc>
 template <typename OtherT, typename OtherAlloc>
-vector_base<T, Alloc>::vector_base(const vector_base<OtherT, OtherAlloc>& v)
+_CCCL_HOST_API vector_base<T, Alloc>::vector_base(const vector_base<OtherT, OtherAlloc>& v)
     : m_storage()
     , m_size(0)
 {
@@ -193,7 +193,7 @@ vector_base<T, Alloc>::vector_base(const vector_base<OtherT, OtherAlloc>& v)
 
 template <typename T, typename Alloc>
 template <typename OtherT, typename OtherAlloc>
-vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(const vector_base<OtherT, OtherAlloc>& v)
+_CCCL_HOST_API vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(const vector_base<OtherT, OtherAlloc>& v)
 {
   assign(v.begin(), v.end());
 
@@ -202,7 +202,7 @@ vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(const vector_base<OtherT
 
 template <typename T, typename Alloc>
 template <typename OtherT, typename OtherAlloc>
-vector_base<T, Alloc>::vector_base(const std::vector<OtherT, OtherAlloc>& v)
+_CCCL_HOST_API vector_base<T, Alloc>::vector_base(const std::vector<OtherT, OtherAlloc>& v)
     : m_storage()
     , m_size(0)
 {
@@ -211,7 +211,7 @@ vector_base<T, Alloc>::vector_base(const std::vector<OtherT, OtherAlloc>& v)
 
 template <typename T, typename Alloc>
 template <typename OtherT, typename OtherAlloc>
-vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(const std::vector<OtherT, OtherAlloc>& v)
+_CCCL_HOST_API vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(const std::vector<OtherT, OtherAlloc>& v)
 {
   assign(v.begin(), v.end());
 
@@ -219,7 +219,7 @@ vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(const std::vector<OtherT
 } // end vector_base::operator=()
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>::vector_base(::cuda::std::initializer_list<T> il)
+_CCCL_HOST_API vector_base<T, Alloc>::vector_base(::cuda::std::initializer_list<T> il)
     : m_storage()
     , m_size(0)
 {
@@ -227,7 +227,7 @@ vector_base<T, Alloc>::vector_base(::cuda::std::initializer_list<T> il)
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>::vector_base(::cuda::std::initializer_list<T> il, const Alloc& alloc)
+_CCCL_HOST_API vector_base<T, Alloc>::vector_base(::cuda::std::initializer_list<T> il, const Alloc& alloc)
     : m_storage(alloc)
     , m_size(0)
 {
@@ -235,7 +235,7 @@ vector_base<T, Alloc>::vector_base(::cuda::std::initializer_list<T> il, const Al
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(::cuda::std::initializer_list<T> il)
+_CCCL_HOST_API vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(::cuda::std::initializer_list<T> il)
 {
   assign(il.begin(), il.end());
 
@@ -243,7 +243,7 @@ vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(::cuda::std::initializer
 } // end vector_base::operator=()
 
 template <typename T, typename Alloc>
-void vector_base<T, Alloc>::value_init(size_type n)
+_CCCL_HOST_API void vector_base<T, Alloc>::value_init(size_type n)
 {
   if (n > 0)
   {
@@ -255,7 +255,7 @@ void vector_base<T, Alloc>::value_init(size_type n)
 } // end vector_base::value_init()
 
 template <typename T, typename Alloc>
-void vector_base<T, Alloc>::fill_init(size_type n, const T& x)
+_CCCL_HOST_API void vector_base<T, Alloc>::fill_init(size_type n, const T& x)
 {
   if (n > 0)
   {
@@ -268,7 +268,7 @@ void vector_base<T, Alloc>::fill_init(size_type n, const T& x)
 
 template <typename T, typename Alloc>
 template <typename InputIterator>
-void vector_base<T, Alloc>::range_init(InputIterator first, InputIterator last)
+_CCCL_HOST_API void vector_base<T, Alloc>::range_init(InputIterator first, InputIterator last)
 {
   using traversal = typename iterator_traversal<InputIterator>::type;
   if constexpr (::cuda::std::is_convertible_v<traversal, random_access_traversal_tag>)
@@ -289,7 +289,7 @@ void vector_base<T, Alloc>::range_init(InputIterator first, InputIterator last)
 
 template <typename T, typename Alloc>
 template <typename InputIterator, ::cuda::std::enable_if_t<::cuda::std::__has_input_traversal<InputIterator>, int>>
-vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last)
+_CCCL_HOST_API vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last)
     : m_storage()
     , m_size(0)
 {
@@ -299,7 +299,7 @@ vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last)
 
 template <typename T, typename Alloc>
 template <typename InputIterator, ::cuda::std::enable_if_t<::cuda::std::__has_input_traversal<InputIterator>, int>>
-vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last, const Alloc& alloc)
+_CCCL_HOST_API vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last, const Alloc& alloc)
     : m_storage(alloc)
     , m_size(0)
 {
@@ -308,7 +308,7 @@ vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last, cons
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
-void vector_base<T, Alloc>::resize(size_type new_size)
+_CCCL_HOST_API void vector_base<T, Alloc>::resize(size_type new_size)
 {
   if (new_size < size())
   {
@@ -323,7 +323,7 @@ void vector_base<T, Alloc>::resize(size_type new_size)
 } // end vector_base::resize()
 
 template <typename T, typename Alloc>
-void vector_base<T, Alloc>::resize(size_type new_size, default_init_t)
+_CCCL_HOST_API void vector_base<T, Alloc>::resize(size_type new_size, default_init_t)
 {
   if (new_size < size())
   {
@@ -337,7 +337,7 @@ void vector_base<T, Alloc>::resize(size_type new_size, default_init_t)
 
 template <typename T, typename Alloc>
 template <typename T2>
-void vector_base<T, Alloc>::resize(size_type new_size, no_init_t)
+_CCCL_HOST_API void vector_base<T, Alloc>::resize(size_type new_size, no_init_t)
 {
   static_assert(::cuda::std::is_trivially_constructible_v<T2>,
                 "The vector's element type must be trivially constructible to skip initialization.");
@@ -352,7 +352,7 @@ void vector_base<T, Alloc>::resize(size_type new_size, no_init_t)
 }
 
 template <typename T, typename Alloc>
-void vector_base<T, Alloc>::resize(size_type new_size, const value_type& x)
+_CCCL_HOST_API void vector_base<T, Alloc>::resize(size_type new_size, const value_type& x)
 {
   if (new_size < size())
   {
@@ -367,19 +367,19 @@ void vector_base<T, Alloc>::resize(size_type new_size, const value_type& x)
 } // end vector_base::resize()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::size_type vector_base<T, Alloc>::size() const
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::size_type vector_base<T, Alloc>::size() const
 {
   return m_size;
 } // end vector_base::size()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::size_type vector_base<T, Alloc>::max_size() const
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::size_type vector_base<T, Alloc>::max_size() const
 {
   return m_storage.max_size();
 } // end vector_base::max_size()
 
 template <typename T, typename Alloc>
-void vector_base<T, Alloc>::reserve(size_type n)
+_CCCL_HOST_API void vector_base<T, Alloc>::reserve(size_type n)
 {
   if (n > capacity())
   {
@@ -419,69 +419,69 @@ void vector_base<T, Alloc>::reserve(size_type n)
 } // end vector_base::reserve()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::size_type vector_base<T, Alloc>::capacity() const
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::size_type vector_base<T, Alloc>::capacity() const
 {
   return m_storage.size();
 } // end vector_base::capacity()
 
 template <typename T, typename Alloc>
-void vector_base<T, Alloc>::shrink_to_fit()
+_CCCL_HOST_API void vector_base<T, Alloc>::shrink_to_fit()
 {
   // use the swap trick
   vector_base(*this).swap(*this);
 } // end vector_base::shrink_to_fit()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::reference vector_base<T, Alloc>::operator[](const size_type n)
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::reference vector_base<T, Alloc>::operator[](const size_type n)
 {
   return m_storage[n];
 } // end vector_base::operator[]
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_reference
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::const_reference
 vector_base<T, Alloc>::operator[](const size_type n) const
 {
   return m_storage[n];
 } // end vector_base::operator[]
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::begin()
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::begin()
 {
   return m_storage.begin();
 } // end vector_base::begin()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_iterator vector_base<T, Alloc>::begin() const
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::const_iterator vector_base<T, Alloc>::begin() const
 {
   return m_storage.begin();
 } // end vector_base::begin()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_iterator vector_base<T, Alloc>::cbegin() const
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::const_iterator vector_base<T, Alloc>::cbegin() const
 {
   return begin();
 } // end vector_base::cbegin()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::reverse_iterator vector_base<T, Alloc>::rbegin()
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::reverse_iterator vector_base<T, Alloc>::rbegin()
 {
   return reverse_iterator(end());
 } // end vector_base::rbegin()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_reverse_iterator vector_base<T, Alloc>::rbegin() const
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::const_reverse_iterator vector_base<T, Alloc>::rbegin() const
 {
   return const_reverse_iterator(end());
 } // end vector_base::rbegin()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_reverse_iterator vector_base<T, Alloc>::crbegin() const
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::const_reverse_iterator vector_base<T, Alloc>::crbegin() const
 {
   return rbegin();
 } // end vector_base::crbegin()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::end()
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::end()
 {
   iterator result = begin();
   ::cuda::std::advance(result, size());
@@ -489,7 +489,7 @@ _CCCL_HOST_DEVICE typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>
 } // end vector_base::end()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_iterator vector_base<T, Alloc>::end() const
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::const_iterator vector_base<T, Alloc>::end() const
 {
   const_iterator result = begin();
   ::cuda::std::advance(result, size());
@@ -497,43 +497,43 @@ _CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_iterator vector_base<T, 
 } // end vector_base::end()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_iterator vector_base<T, Alloc>::cend() const
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::const_iterator vector_base<T, Alloc>::cend() const
 {
   return end();
 } // end vector_base::cend()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::reverse_iterator vector_base<T, Alloc>::rend()
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::reverse_iterator vector_base<T, Alloc>::rend()
 {
   return reverse_iterator(begin());
 } // end vector_base::rend()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_reverse_iterator vector_base<T, Alloc>::rend() const
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::const_reverse_iterator vector_base<T, Alloc>::rend() const
 {
   return const_reverse_iterator(begin());
 } // end vector_base::rend()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_reverse_iterator vector_base<T, Alloc>::crend() const
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::const_reverse_iterator vector_base<T, Alloc>::crend() const
 {
   return rend();
 } // end vector_base::crend()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_reference vector_base<T, Alloc>::front() const
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::const_reference vector_base<T, Alloc>::front() const
 {
   return *begin();
 } // end vector_base::front()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::reference vector_base<T, Alloc>::front()
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::reference vector_base<T, Alloc>::front()
 {
   return *begin();
 } // end vector_base::front()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_reference vector_base<T, Alloc>::back() const
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::const_reference vector_base<T, Alloc>::back() const
 {
   const_iterator ptr_to_back = end();
   --ptr_to_back;
@@ -541,7 +541,7 @@ _CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_reference vector_base<T,
 } // end vector_base::vector_base
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::reference vector_base<T, Alloc>::back()
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::reference vector_base<T, Alloc>::back()
 {
   iterator ptr_to_back = end();
   --ptr_to_back;
@@ -549,19 +549,19 @@ _CCCL_HOST_DEVICE typename vector_base<T, Alloc>::reference vector_base<T, Alloc
 } // end vector_base::vector_base
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::pointer vector_base<T, Alloc>::data()
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::pointer vector_base<T, Alloc>::data()
 {
   return pointer(&front());
 } // end vector_base::data()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_pointer vector_base<T, Alloc>::data() const
+_CCCL_HOST_DEVICE_API typename vector_base<T, Alloc>::const_pointer vector_base<T, Alloc>::data() const
 {
   return const_pointer(&front());
 } // end vector_base::data()
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>::~vector_base()
+_CCCL_HOST_API vector_base<T, Alloc>::~vector_base()
 {
   // destroy every living thing
   if (!empty())
@@ -571,25 +571,25 @@ vector_base<T, Alloc>::~vector_base()
 } // end vector_base::~vector_base()
 
 template <typename T, typename Alloc>
-void vector_base<T, Alloc>::clear()
+_CCCL_HOST_API void vector_base<T, Alloc>::clear()
 {
   erase(begin(), end());
 } // end vector_base::~vector_dev()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE bool vector_base<T, Alloc>::empty() const
+_CCCL_HOST_DEVICE_API bool vector_base<T, Alloc>::empty() const
 {
   return size() == 0;
 } // end vector_base::empty();
 
 template <typename T, typename Alloc>
-void vector_base<T, Alloc>::push_back(const value_type& x)
+_CCCL_HOST_API void vector_base<T, Alloc>::push_back(const value_type& x)
 {
   insert(end(), x);
 } // end vector_base::push_back()
 
 template <typename T, typename Alloc>
-void vector_base<T, Alloc>::pop_back()
+_CCCL_HOST_API void vector_base<T, Alloc>::pop_back()
 {
   const iterator e     = end();
   iterator ptr_to_back = e;
@@ -599,7 +599,7 @@ void vector_base<T, Alloc>::pop_back()
 } // end vector_base::pop_back()
 
 template <typename T, typename Alloc>
-typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::erase(iterator pos)
+_CCCL_HOST_API typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::erase(iterator pos)
 {
   iterator end = pos;
   ++end;
@@ -607,7 +607,7 @@ typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::erase(iterator p
 } // end vector_base::erase()
 
 template <typename T, typename Alloc>
-typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::erase(iterator first, iterator last)
+_CCCL_HOST_API typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::erase(iterator first, iterator last)
 {
   // overlap copy the range [last,end()) to first
   // XXX this copy only potentially overlaps
@@ -625,14 +625,14 @@ typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::erase(iterator f
 } // end vector_base::erase()
 
 template <typename T, typename Alloc>
-void vector_base<T, Alloc>::assign(size_type n, const T& x)
+_CCCL_HOST_API void vector_base<T, Alloc>::assign(size_type n, const T& x)
 {
   fill_assign(n, x);
 } // end vector_base::assign()
 
 template <typename T, typename Alloc>
 template <typename InputIterator>
-void vector_base<T, Alloc>::assign(InputIterator first, InputIterator last)
+_CCCL_HOST_API void vector_base<T, Alloc>::assign(InputIterator first, InputIterator last)
 {
   // we could have received assign(n, x), so disambiguate on the type of InputIterator
   if constexpr (::cuda::std::is_integral_v<InputIterator>)
@@ -646,13 +646,13 @@ void vector_base<T, Alloc>::assign(InputIterator first, InputIterator last)
 } // end vector_base::assign()
 
 template <typename T, typename Alloc>
-typename vector_base<T, Alloc>::allocator_type vector_base<T, Alloc>::get_allocator() const
+_CCCL_HOST_API typename vector_base<T, Alloc>::allocator_type vector_base<T, Alloc>::get_allocator() const
 {
   return m_storage.get_allocator();
 } // end vector_base::get_allocator()
 
 template <typename T, typename Alloc>
-typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::insert(iterator position, const T& x)
+_CCCL_HOST_API typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::insert(iterator position, const T& x)
 {
   // find the index of the insertion
   const size_type index = ::cuda::std::distance(begin(), position);
@@ -667,14 +667,14 @@ typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::insert(iterator 
 } // end vector_base::insert()
 
 template <typename T, typename Alloc>
-void vector_base<T, Alloc>::insert(iterator position, size_type n, const T& x)
+_CCCL_HOST_API void vector_base<T, Alloc>::insert(iterator position, size_type n, const T& x)
 {
   fill_insert(position, n, x);
 } // end vector_base::insert()
 
 template <typename T, typename Alloc>
 template <typename InputIterator>
-void vector_base<T, Alloc>::insert(iterator position, InputIterator first, InputIterator last)
+_CCCL_HOST_API void vector_base<T, Alloc>::insert(iterator position, InputIterator first, InputIterator last)
 {
   // we could have received insert(position, n, x), so disambiguate on the
   // type of InputIterator
@@ -685,21 +685,22 @@ void vector_base<T, Alloc>::insert(iterator position, InputIterator first, Input
 
 template <typename T, typename Alloc>
 template <typename InputIterator>
-void vector_base<T, Alloc>::insert_dispatch(iterator position, InputIterator first, InputIterator last, false_type)
+_CCCL_HOST_API void
+vector_base<T, Alloc>::insert_dispatch(iterator position, InputIterator first, InputIterator last, false_type)
 {
   copy_insert(position, first, last);
 } // end vector_base::insert_dispatch()
 
 template <typename T, typename Alloc>
 template <typename Integral>
-void vector_base<T, Alloc>::insert_dispatch(iterator position, Integral n, Integral x, true_type)
+_CCCL_HOST_API void vector_base<T, Alloc>::insert_dispatch(iterator position, Integral n, Integral x, true_type)
 {
   fill_insert(position, n, x);
 } // end vector_base::insert_dispatch()
 
 template <typename T, typename Alloc>
 template <typename ForwardIterator>
-void vector_base<T, Alloc>::copy_insert(iterator position, ForwardIterator first, ForwardIterator last)
+_CCCL_HOST_API void vector_base<T, Alloc>::copy_insert(iterator position, ForwardIterator first, ForwardIterator last)
 {
   if (first != last)
   {
@@ -809,7 +810,7 @@ void vector_base<T, Alloc>::copy_insert(iterator position, ForwardIterator first
 
 template <typename T, typename Alloc>
 template <bool SkipInit>
-void vector_base<T, Alloc>::append(size_type n)
+_CCCL_HOST_API void vector_base<T, Alloc>::append(size_type n)
 {
   if (n != 0)
   {
@@ -879,7 +880,7 @@ void vector_base<T, Alloc>::append(size_type n)
 } // end vector_base::append()
 
 template <typename T, typename Alloc>
-void vector_base<T, Alloc>::fill_insert(iterator position, size_type n, const T& x)
+_CCCL_HOST_API void vector_base<T, Alloc>::fill_insert(iterator position, size_type n, const T& x)
 {
   if (n == 0)
   {
@@ -972,7 +973,7 @@ void vector_base<T, Alloc>::fill_insert(iterator position, size_type n, const T&
 
 template <typename T, typename Alloc>
 template <typename InputIterator>
-void vector_base<T, Alloc>::range_assign(InputIterator first, InputIterator last)
+_CCCL_HOST_API void vector_base<T, Alloc>::range_assign(InputIterator first, InputIterator last)
 {
   using traversal = typename iterator_traversal<InputIterator>::type;
   if constexpr (::cuda::std::is_convertible_v<traversal, random_access_traversal_tag>)
@@ -1047,7 +1048,7 @@ void vector_base<T, Alloc>::range_assign(InputIterator first, InputIterator last
 } // end range_assign()
 
 template <typename T, typename Alloc>
-void vector_base<T, Alloc>::fill_assign(size_type n, const T& x)
+_CCCL_HOST_API void vector_base<T, Alloc>::fill_assign(size_type n, const T& x)
 {
   if (n > capacity())
   {
@@ -1079,7 +1080,7 @@ void vector_base<T, Alloc>::fill_assign(size_type n, const T& x)
 
 template <typename T, typename Alloc>
 template <typename ForwardIterator>
-void vector_base<T, Alloc>::allocate_and_copy(
+_CCCL_HOST_API void vector_base<T, Alloc>::allocate_and_copy(
   size_type requested_size, ForwardIterator first, ForwardIterator last, storage_type& new_storage)
 {
   if (requested_size == 0)
@@ -1122,14 +1123,16 @@ void vector_base<T, Alloc>::allocate_and_copy(
 
 // iterator tags match
 template <typename InputIterator1, typename InputIterator2>
-bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, ::cuda::std::true_type)
+_CCCL_HOST_API bool
+vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, ::cuda::std::true_type)
 {
   return thrust::equal(first1, last1, first2);
 }
 
 // iterator tags differ
 template <typename InputIterator1, typename InputIterator2>
-bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, ::cuda::std::false_type)
+_CCCL_HOST_API bool
+vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, ::cuda::std::false_type)
 {
   const it_difference_t<InputIterator1> n = ::cuda::std::distance(first1, last1);
 
@@ -1150,7 +1153,7 @@ bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 fi
 }
 
 template <typename InputIterator1, typename InputIterator2>
-bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
+_CCCL_HOST_API bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
 {
   using system1 = typename thrust::iterator_system<InputIterator1>::type;
   using system2 = typename thrust::iterator_system<InputIterator2>::type;
@@ -1160,37 +1163,37 @@ bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 fi
 }
 
 template <typename T1, typename Alloc1, typename T2, typename Alloc2>
-bool operator==(const vector_base<T1, Alloc1>& lhs, const vector_base<T2, Alloc2>& rhs)
+_CCCL_HOST_API bool operator==(const vector_base<T1, Alloc1>& lhs, const vector_base<T2, Alloc2>& rhs)
 {
   return lhs.size() == rhs.size() && detail::vector_equal(lhs.begin(), lhs.end(), rhs.begin());
 }
 
 template <typename T1, typename Alloc1, typename T2, typename Alloc2>
-bool operator==(const vector_base<T1, Alloc1>& lhs, const std::vector<T2, Alloc2>& rhs)
+_CCCL_HOST_API bool operator==(const vector_base<T1, Alloc1>& lhs, const std::vector<T2, Alloc2>& rhs)
 {
   return lhs.size() == rhs.size() && detail::vector_equal(lhs.begin(), lhs.end(), rhs.begin());
 }
 
 template <typename T1, typename Alloc1, typename T2, typename Alloc2>
-bool operator==(const std::vector<T1, Alloc1>& lhs, const vector_base<T2, Alloc2>& rhs)
+_CCCL_HOST_API bool operator==(const std::vector<T1, Alloc1>& lhs, const vector_base<T2, Alloc2>& rhs)
 {
   return lhs.size() == rhs.size() && detail::vector_equal(lhs.begin(), lhs.end(), rhs.begin());
 }
 
 template <typename T1, typename Alloc1, typename T2, typename Alloc2>
-bool operator!=(const vector_base<T1, Alloc1>& lhs, const vector_base<T2, Alloc2>& rhs)
+_CCCL_HOST_API bool operator!=(const vector_base<T1, Alloc1>& lhs, const vector_base<T2, Alloc2>& rhs)
 {
   return !(lhs == rhs);
 }
 
 template <typename T1, typename Alloc1, typename T2, typename Alloc2>
-bool operator!=(const vector_base<T1, Alloc1>& lhs, const std::vector<T2, Alloc2>& rhs)
+_CCCL_HOST_API bool operator!=(const vector_base<T1, Alloc1>& lhs, const std::vector<T2, Alloc2>& rhs)
 {
   return !(lhs == rhs);
 }
 
 template <typename T1, typename Alloc1, typename T2, typename Alloc2>
-bool operator!=(const std::vector<T1, Alloc1>& lhs, const vector_base<T2, Alloc2>& rhs)
+_CCCL_HOST_API bool operator!=(const std::vector<T1, Alloc1>& lhs, const vector_base<T2, Alloc2>& rhs)
 {
   return !(lhs == rhs);
 }

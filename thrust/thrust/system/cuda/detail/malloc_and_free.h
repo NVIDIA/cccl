@@ -46,7 +46,7 @@ inline cub::CachingDeviceAllocator& get_allocator()
 // note that malloc returns a raw pointer to avoid
 // depending on the heavyweight thrust/system/cuda/memory.h header
 template <typename DerivedPolicy>
-_CCCL_HOST_DEVICE void* malloc(execution_policy<DerivedPolicy>&, std::size_t n)
+_CCCL_HOST_DEVICE_API void* malloc(execution_policy<DerivedPolicy>&, std::size_t n)
 {
   void* result = nullptr;
 
@@ -81,7 +81,7 @@ _CCCL_HOST_DEVICE void* malloc(execution_policy<DerivedPolicy>&, std::size_t n)
 } // end malloc()
 
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE void free(execution_policy<DerivedPolicy>&, Pointer ptr)
+_CCCL_HOST_DEVICE_API void free(execution_policy<DerivedPolicy>&, Pointer ptr)
 {
   // need to repeat a lot of code here because we can't use #if inside of the
   // NV_IF_TARGET macro.

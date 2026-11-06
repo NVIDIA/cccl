@@ -50,7 +50,7 @@ struct SegmentedRadixSortPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedRadixSortPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedRadixSortPolicy& p)
   {
     return os << "SegmentedRadixSortPolicy { .regular_pass = " << p.regular_pass
               << ", .alternate_pass = " << p.alternate_pass << " }";

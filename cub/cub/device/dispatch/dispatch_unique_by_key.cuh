@@ -376,7 +376,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
   {
     struct policy_getter
     {
-      _CCCL_HOST_DEVICE constexpr auto operator()() const -> UniqueByKeyPolicy
+      _CCCL_HOST_DEVICE_API constexpr auto operator()() const -> UniqueByKeyPolicy
       {
         return detail::unique_by_key::convert_policy<ActivePolicyT>();
       }

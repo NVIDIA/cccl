@@ -82,7 +82,7 @@ private:
 
 public:
   // constructor and reset functions
-  constexpr fisher_f_distribution() = default;
+  _CCCL_HIDE_FROM_ABI constexpr fisher_f_distribution() = default;
 
   _CCCL_HOST_DEVICE_API constexpr explicit fisher_f_distribution(result_type __m, result_type __n = result_type{1})
       : __p_{param_type{__m, __n}}
@@ -150,7 +150,7 @@ public:
 
 #if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
-  friend ::std::basic_ostream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const fisher_f_distribution& __x)
   {
     using ostream_type                        = ::std::basic_ostream<_CharT, _Traits>;
@@ -170,7 +170,7 @@ public:
   }
 
   template <class _CharT, class _Traits>
-  friend ::std::basic_istream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_istream<_CharT, _Traits>&
   operator>>(::std::basic_istream<_CharT, _Traits>& __is, fisher_f_distribution& __x)
   {
     using istream_type                        = ::std::basic_istream<_CharT, _Traits>;

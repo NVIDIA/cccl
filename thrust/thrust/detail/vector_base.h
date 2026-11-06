@@ -429,8 +429,8 @@ public:
    *  \param v The vector_base with which to swap.
    */
   // NOLINTNEXTLINE(bugprone-exception-escape)
-  void swap(vector_base& v) noexcept(::cuda::std::is_nothrow_swappable_v<storage_type>
-                                     && ::cuda::std::is_nothrow_swappable_v<size_type>)
+  _CCCL_HOST_API void swap(vector_base& v) noexcept(
+    ::cuda::std::is_nothrow_swappable_v<storage_type> && ::cuda::std::is_nothrow_swappable_v<size_type>)
   {
     using ::cuda::std::swap;
     swap(m_storage, v.m_storage);
@@ -561,7 +561,8 @@ private:
    *  \param b The second vector of interest. After completion, the contents
    *           of a will be returned here.
    */
-  friend void swap(vector_base& a, vector_base& b) noexcept(noexcept(a.swap(b))) // NOLINT(bugprone-exception-escape)
+  _CCCL_HOST_API friend void swap(vector_base& a,
+                                  vector_base& b) noexcept(noexcept(a.swap(b))) // NOLINT(bugprone-exception-escape)
   {
     a.swap(b);
   }

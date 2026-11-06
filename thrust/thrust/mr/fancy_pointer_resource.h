@@ -27,22 +27,22 @@ class fancy_pointer_resource final
     , private validator<Upstream>
 {
 public:
-  fancy_pointer_resource()
+  _CCCL_HOST_API fancy_pointer_resource()
       : m_upstream(get_global_resource<Upstream>())
   {}
 
-  fancy_pointer_resource(Upstream* upstream)
+  _CCCL_HOST_API fancy_pointer_resource(Upstream* upstream)
       : m_upstream(upstream)
   {}
 
-  [[nodiscard]] Pointer do_allocate( // NOLINT(google-default-arguments)
+  [[nodiscard]] _CCCL_HOST_API Pointer do_allocate( // NOLINT(google-default-arguments)
     std::size_t bytes,
     std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     return static_cast<Pointer>(m_upstream->do_allocate(bytes, alignment));
   }
 
-  void do_deallocate(Pointer p, std::size_t bytes, std::size_t alignment) override
+  _CCCL_HOST_API void do_deallocate(Pointer p, std::size_t bytes, std::size_t alignment) override
   {
     return m_upstream->do_deallocate(
       static_cast<typename Upstream::pointer>(::cuda::std::to_address(p)), bytes, alignment);

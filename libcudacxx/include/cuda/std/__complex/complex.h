@@ -686,7 +686,8 @@ template <class _Tp>
 
 #if _CCCL_HOSTED()
 template <class _Tp, class _CharT, class _Traits>
-::std::basic_istream<_CharT, _Traits>& operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<_Tp>& __x)
+_CCCL_HOST_API ::std::basic_istream<_CharT, _Traits>&
+operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<_Tp>& __x)
 {
   ::std::complex<_Tp> __temp;
   __is >> __temp;
@@ -695,7 +696,8 @@ template <class _Tp, class _CharT, class _Traits>
 }
 
 template <class _Tp, class _CharT, class _Traits>
-::std::basic_ostream<_CharT, _Traits>& operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<_Tp>& __x)
+_CCCL_HOST_API ::std::basic_ostream<_CharT, _Traits>&
+operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<_Tp>& __x)
 {
   return __os << static_cast<::std::complex<_Tp>>(__x);
 }

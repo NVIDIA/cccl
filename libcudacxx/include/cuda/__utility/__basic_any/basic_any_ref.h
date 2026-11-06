@@ -149,7 +149,7 @@ private:
   friend struct __basic_any;
   friend struct __basic_any_access;
 
-  __basic_any() = default;
+  _CCCL_HIDE_FROM_ABI __basic_any() = default;
 
   //! \brief Constructs a \c __basic_any<__ireference<_Interface>> from an lvalue
   //! reference to a \c __basic_any<_Interface>.
@@ -317,7 +317,7 @@ private:
   friend struct __basic_any;
   friend struct __basic_any_access;
 
-  __basic_any() = default;
+  _CCCL_HIDE_FROM_ABI __basic_any() = default;
 };
 
 _CCCL_END_NAMESPACE_CUDA

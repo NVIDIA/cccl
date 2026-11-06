@@ -91,16 +91,16 @@ public:
   using iterator = thrust::detail::tagged_iterator<Iterator, System>;
 
   template <typename Ignored1, typename Ignored2>
-  tagged_iterator_range(const Ignored1&, const Ignored2&, Iterator first, Iterator last)
+  _CCCL_HOST_API tagged_iterator_range(const Ignored1&, const Ignored2&, Iterator first, Iterator last)
       : m_begin(first)
       , m_end(last)
   {}
 
-  iterator begin() const
+  _CCCL_HOST_API iterator begin() const
   {
     return m_begin;
   }
-  iterator end() const
+  _CCCL_HOST_API iterator end() const
   {
     return m_end;
   }
@@ -124,10 +124,11 @@ class move_to_system : public move_to_system_base<Iterator, FromSystem, ToSystem
   using super_t = move_to_system_base<Iterator, FromSystem, ToSystem>;
 
 public:
-  move_to_system(thrust::execution_policy<FromSystem>& from_system,
-                 thrust::execution_policy<ToSystem>& to_system,
-                 Iterator first,
-                 Iterator last)
+  _CCCL_HOST_API move_to_system(
+    thrust::execution_policy<FromSystem>& from_system,
+    thrust::execution_policy<ToSystem>& to_system,
+    Iterator first,
+    Iterator last)
       : super_t(to_system, from_system, first, last)
   {}
 };

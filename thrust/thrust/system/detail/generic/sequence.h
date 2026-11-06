@@ -28,7 +28,7 @@ struct compute_sequence_value
   T step;
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE T operator()(std::size_t i) const
+  _CCCL_HOST_DEVICE_API T operator()(std::size_t i) const
   {
     if constexpr (::cuda::std::is_arithmetic_v<T>)
     {
@@ -43,7 +43,7 @@ struct compute_sequence_value
 } // namespace detail
 
 template <typename DerivedPolicy, typename ForwardIterator, typename T = thrust::detail::it_value_t<ForwardIterator>>
-_CCCL_HOST_DEVICE void sequence(
+_CCCL_HOST_DEVICE_API void sequence(
   thrust::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,

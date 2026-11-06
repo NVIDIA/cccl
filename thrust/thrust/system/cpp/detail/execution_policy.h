@@ -42,7 +42,7 @@ struct execution_policy : system::detail::sequential::execution_policy<Derived>
   using tag_type = tag;
 
   // allow conversion to tag when it is not a successor
-  _CCCL_HOST_DEVICE operator tag() const
+  _CCCL_HOST_DEVICE_API operator tag() const
   {
     return {};
   }

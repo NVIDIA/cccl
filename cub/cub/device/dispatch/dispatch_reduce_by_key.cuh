@@ -68,47 +68,47 @@ struct streaming_context
   GlobalOffsetT* d_num_previous_uniques_in;
   GlobalOffsetT* d_num_accumulated_uniques_out;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE GlobalOffsetT num_accumulated_uniques_out() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE GlobalOffsetT num_accumulated_uniques_out() const
   {
     return first_partition ? GlobalOffsetT{0} : *d_num_previous_uniques_in;
   };
 
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE bool is_first_partition() const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API bool is_first_partition() const
   {
     return first_partition;
   }
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE bool is_last_partition() const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API bool is_last_partition() const
   {
     return last_partition;
   }
 
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE auto predecessor_key() const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API auto predecessor_key() const
   {
     return *preceding_key_it;
   }
 
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE AccumT prefix() const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API AccumT prefix() const
   {
     return *preceding_prefix;
   }
 
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE void write_prefix(AccumT prefix) const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API void write_prefix(AccumT prefix) const
   {
     *prefix_out = prefix;
   }
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GlobalOffsetT* previous_uniques_ptr() const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE GlobalOffsetT* previous_uniques_ptr() const
   {
     return d_num_previous_uniques_in;
   }
 
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE GlobalOffsetT num_uniques() const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API GlobalOffsetT num_uniques() const
   {
     return num_accumulated_uniques_out();
   }
 
   template <typename NumUniquesT>
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE GlobalOffsetT add_num_uniques(NumUniquesT num_uniques) const
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE_API GlobalOffsetT add_num_uniques(NumUniquesT num_uniques) const
   {
     GlobalOffsetT total_uniques = num_accumulated_uniques_out() + static_cast<GlobalOffsetT>(num_uniques);
 

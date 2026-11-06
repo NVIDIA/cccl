@@ -86,7 +86,7 @@ private:
 
 public:
   // constructors and reset functions
-  constexpr gamma_distribution() = default;
+  _CCCL_HIDE_FROM_ABI constexpr gamma_distribution() = default;
   _CCCL_HOST_DEVICE_API constexpr explicit gamma_distribution(
     result_type __alpha, result_type __beta = result_type{1}) noexcept
       : __p_{param_type{__alpha, __beta}}
@@ -213,7 +213,7 @@ public:
 
 #if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
-  friend ::std::basic_ostream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const gamma_distribution& __x)
   {
     using ostream_type                        = ::std::basic_ostream<_CharT, _Traits>;
@@ -233,7 +233,7 @@ public:
   }
 
   template <class _CharT, class _Traits>
-  friend ::std::basic_istream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_istream<_CharT, _Traits>&
   operator>>(::std::basic_istream<_CharT, _Traits>& __is, gamma_distribution& __x)
   {
     using istream_type                        = ::std::basic_istream<_CharT, _Traits>;

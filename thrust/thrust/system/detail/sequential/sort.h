@@ -46,7 +46,7 @@ inline constexpr bool needs_reverse = ::cuda::std::is_same_v<Compare, ::cuda::st
 } // end namespace sort_detail
 
 template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE void stable_sort(
+_CCCL_HOST_DEVICE_API void stable_sort(
   sequential::execution_policy<DerivedPolicy>& exec,
   RandomAccessIterator first,
   RandomAccessIterator last,
@@ -77,7 +77,7 @@ template <typename DerivedPolicy,
           typename RandomAccessIterator1,
           typename RandomAccessIterator2,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE void stable_sort_by_key(
+_CCCL_HOST_DEVICE_API void stable_sort_by_key(
   sequential::execution_policy<DerivedPolicy>& exec,
   RandomAccessIterator1 first1,
   RandomAccessIterator1 last1,

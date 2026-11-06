@@ -29,11 +29,11 @@ struct execution_policy<tag> : thrust::execution_policy<tag>
 
 struct tag : execution_policy<tag>
 {
-  constexpr tag() = default;
+  _CCCL_HIDE_FROM_ABI constexpr tag() = default;
 
   // allow any execution_policy to convert to the sequential tag. required for minimum_system to pick the sequential one
   template <typename DerivedPolicy>
-  _CCCL_HOST_DEVICE tag(const thrust::execution_policy<DerivedPolicy>&)
+  _CCCL_HOST_DEVICE_API tag(const thrust::execution_policy<DerivedPolicy>&)
   {}
 };
 
@@ -43,7 +43,7 @@ struct execution_policy : thrust::execution_policy<Derived>
   using tag_type = tag;
 
   // allow conversion to tag when it is not a successor
-  _CCCL_HOST_DEVICE operator tag() const
+  _CCCL_HOST_DEVICE_API operator tag() const
   {
     return {};
   }

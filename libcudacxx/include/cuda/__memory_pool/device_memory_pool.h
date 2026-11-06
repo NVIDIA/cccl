@@ -189,7 +189,7 @@ struct device_memory_pool : device_memory_pool_ref
           ::CU_MEM_ALLOCATION_TYPE_PINNED))
   {}
 
-  ~device_memory_pool() noexcept
+  _CCCL_HOST_API ~device_memory_pool() noexcept
   {
     if (__pool_ != nullptr)
     {
@@ -223,7 +223,7 @@ struct device_memory_pool : device_memory_pool_ref
   device_memory_pool& operator=(const device_memory_pool&) = delete;
 
 private:
-  device_memory_pool(::cudaMemPool_t __pool) noexcept
+  _CCCL_HOST_API device_memory_pool(::cudaMemPool_t __pool) noexcept
       : device_memory_pool_ref(__pool)
   {}
 };

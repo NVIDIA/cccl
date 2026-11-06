@@ -55,7 +55,7 @@ struct unary_transform_f
 // EAN 2024-10-04: when force-inlined, gcc's optimizer will generate bad code
 // for this function:
 template <class Policy, class InputIt, class Size, class OutputIt, class StencilIt, class TransformOp, class Predicate>
-OutputIt _CCCL_HOST_DEVICE unary_if_with_stencil(
+OutputIt _CCCL_HOST_DEVICE_API unary_if_with_stencil(
   Policy& policy,
   InputIt items,
   OutputIt result,
@@ -104,7 +104,7 @@ template <class Policy,
           class StencilIt,
           class TransformOp,
           class Predicate>
-OutputIt _CCCL_HOST_DEVICE binary_if_with_stencil(
+OutputIt _CCCL_HOST_DEVICE_API binary_if_with_stencil(
   Policy& policy,
   InputIt1 items1,
   InputIt2 items2,

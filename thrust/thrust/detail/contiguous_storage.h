@@ -32,7 +32,7 @@ struct copy_allocator_t
 
 struct allocator_mismatch_on_swap : std::runtime_error
 {
-  allocator_mismatch_on_swap()
+  _CCCL_HOST_API allocator_mismatch_on_swap()
       : std::runtime_error("swap called on containers with allocators that propagate on swap, but compare non-equal")
   {}
 };
@@ -102,7 +102,7 @@ public:
   _CCCL_HOST_DEVICE void deallocate() noexcept;
 
 private:
-  static constexpr bool is_swap_noexcept()
+  _CCCL_HOST_API static constexpr bool is_swap_noexcept()
   {
     if (!::cuda::std::is_nothrow_swappable_v<iterator>)
     {
@@ -121,7 +121,7 @@ private:
 
 public:
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE void
+  _CCCL_HOST_DEVICE_API void
   swap(contiguous_storage& other) noexcept(is_swap_noexcept()) // NOLINT(bugprone-exception-escape)
   {
     using ::cuda::std::swap;
@@ -166,7 +166,7 @@ public:
   _CCCL_HOST_DEVICE void destroy(iterator first, iterator last) noexcept;
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE void deallocate_on_allocator_mismatch(const contiguous_storage& other) noexcept
+  _CCCL_HOST_DEVICE_API void deallocate_on_allocator_mismatch(const contiguous_storage& other) noexcept
   {
     if constexpr (::cuda::std::allocator_traits<Alloc>::propagate_on_container_copy_assignment::value)
     {
@@ -178,7 +178,7 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE void destroy_on_allocator_mismatch(
+  _CCCL_HOST_DEVICE_API void destroy_on_allocator_mismatch(
     const contiguous_storage& other, [[maybe_unused]] iterator first, [[maybe_unused]] iterator last) noexcept
   {
     if constexpr (::cuda::std::allocator_traits<Alloc>::propagate_on_container_copy_assignment::value)
@@ -193,7 +193,7 @@ public:
   _CCCL_HOST_DEVICE void set_allocator(const allocator_type& alloc);
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE void propagate_allocator(const contiguous_storage& other)
+  _CCCL_HOST_DEVICE_API void propagate_allocator(const contiguous_storage& other)
   {
     if constexpr (::cuda::std::allocator_traits<Alloc>::propagate_on_container_copy_assignment::value)
     {
@@ -202,7 +202,7 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE void propagate_allocator(contiguous_storage& other)
+  _CCCL_HOST_DEVICE_API void propagate_allocator(contiguous_storage& other)
   {
     if constexpr (::cuda::std::allocator_traits<Alloc>::propagate_on_container_move_assignment::value)
     {
@@ -224,7 +224,8 @@ private:
   size_type m_size;
 
   // NOLINTNEXTLINE(bugprone-exception-escape)
-  friend _CCCL_HOST_DEVICE void swap(contiguous_storage& lhs, contiguous_storage& rhs) noexcept(noexcept(lhs.swap(rhs)))
+  _CCCL_HOST_DEVICE_API friend void
+  swap(contiguous_storage& lhs, contiguous_storage& rhs) noexcept(noexcept(lhs.swap(rhs)))
   {
     lhs.swap(rhs);
   }

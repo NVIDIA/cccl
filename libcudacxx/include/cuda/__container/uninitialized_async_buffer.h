@@ -148,31 +148,32 @@ private:
   {
     __async_resource* __resource_;
 
-    void* allocate_sync(std::size_t __size, std::size_t __alignment)
+    _CCCL_HOST_API void* allocate_sync(std::size_t __size, std::size_t __alignment)
     {
       return __resource_->allocate_sync(__size, __alignment);
     }
 
-    void deallocate_sync(void* __ptr, std::size_t __size, std::size_t __alignment) noexcept
+    _CCCL_HOST_API void deallocate_sync(void* __ptr, std::size_t __size, std::size_t __alignment) noexcept
     {
       __resource_->deallocate_sync(__ptr, __size, __alignment);
     }
 
-    void* allocate(::cuda::stream_ref __stream, std::size_t __size, std::size_t __alignment)
+    _CCCL_HOST_API void* allocate(::cuda::stream_ref __stream, std::size_t __size, std::size_t __alignment)
     {
       return __resource_->allocate(__stream, __size, __alignment);
     }
 
-    void deallocate(::cuda::stream_ref __stream, void* __ptr, std::size_t __size, std::size_t __alignment) noexcept
+    _CCCL_HOST_API void
+    deallocate(::cuda::stream_ref __stream, void* __ptr, std::size_t __size, std::size_t __alignment) noexcept
     {
       __resource_->deallocate(__stream, __ptr, __size, __alignment);
     }
 
-    friend bool operator==(const __fake_resource_ref& __lhs, const __fake_resource_ref& __rhs) noexcept
+    _CCCL_HOST_API friend bool operator==(const __fake_resource_ref& __lhs, const __fake_resource_ref& __rhs) noexcept
     {
       return *__lhs.__resource_ == *__rhs.__resource_;
     }
-    friend bool operator!=(const __fake_resource_ref& __lhs, const __fake_resource_ref& __rhs) noexcept
+    _CCCL_HOST_API friend bool operator!=(const __fake_resource_ref& __lhs, const __fake_resource_ref& __rhs) noexcept
     {
       return *__lhs.__resource_ != *__rhs.__resource_;
     }

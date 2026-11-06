@@ -218,7 +218,7 @@ struct AgentPlan
   int shared_memory_size;
   int grid_size;
 
-  AgentPlan() = default;
+  _CCCL_HIDE_FROM_ABI AgentPlan() = default;
 
   THRUST_RUNTIME_FUNCTION
   AgentPlan(int threads_per_block_, int items_per_thread_, int shared_memory_size_, int grid_size_ = 0)
@@ -229,7 +229,7 @@ struct AgentPlan
       , grid_size(grid_size_)
   {}
 
-  AgentPlan(AgentPlan const& plan) = default;
+  _CCCL_HIDE_FROM_ABI AgentPlan(AgentPlan const& plan) = default;
 
   template <class PtxPlan>
   THRUST_RUNTIME_FUNCTION
@@ -365,29 +365,29 @@ class cuda_optional
   T val{};
 
 public:
-  cuda_optional() = default;
+  _CCCL_HIDE_FROM_ABI cuda_optional() = default;
 
-  _CCCL_HOST_DEVICE cuda_optional(T v, cudaError_t status = cudaSuccess)
+  _CCCL_HOST_DEVICE_API cuda_optional(T v, cudaError_t status = cudaSuccess)
       : err(status)
       , val(v)
   {}
 
-  bool _CCCL_HOST_DEVICE is_valid() const
+  bool _CCCL_HOST_DEVICE_API is_valid() const
   {
     return cudaSuccess == err;
   }
 
-  cudaError_t _CCCL_HOST_DEVICE status() const
+  cudaError_t _CCCL_HOST_DEVICE_API status() const
   {
     return err;
   }
 
-  _CCCL_HOST_DEVICE T const& value() const
+  _CCCL_HOST_DEVICE_API T const& value() const
   {
     return val;
   }
 
-  _CCCL_HOST_DEVICE operator T const&() const
+  _CCCL_HOST_DEVICE_API operator T const&() const
   {
     return val;
   }
@@ -470,12 +470,12 @@ struct uninitialized
 
   DeviceWord storage[words];
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T& get()
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE T& get()
   {
     return reinterpret_cast<T&>(*this);
   }
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T&()
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE operator T&()
   {
     return get();
   }
@@ -484,7 +484,7 @@ struct uninitialized
 #if !_CCCL_COMPILER(NVRTC)
 namespace host
 {
-inline cuda_optional<size_t> get_max_shared_memory_per_block()
+_CCCL_HOST_API inline cuda_optional<size_t> get_max_shared_memory_per_block()
 {
   cudaError_t status = cudaSuccess;
   int dev_id         = 0;

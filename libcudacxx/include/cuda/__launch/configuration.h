@@ -305,12 +305,13 @@ public:
   }
 
   // Helper function to access private constructors
-  static constexpr dynamic_shared_memory_option __create(bool __non_portable = false) noexcept
+  _CCCL_HOST_API static constexpr dynamic_shared_memory_option __create(bool __non_portable = false) noexcept
   {
     return dynamic_shared_memory_option{__non_portable};
   }
 
-  static constexpr dynamic_shared_memory_option __create(::cuda::std::size_t __n, bool __non_portable = false) noexcept
+  _CCCL_HOST_API static constexpr dynamic_shared_memory_option
+  __create(::cuda::std::size_t __n, bool __non_portable = false) noexcept
   {
     return dynamic_shared_memory_option{__n, __non_portable};
   }
@@ -327,7 +328,7 @@ private:
 };
 
 template <class _Tp>
-[[nodiscard]] ::cudaError_t __apply_launch_option(
+[[nodiscard]] _CCCL_HOST_API ::cudaError_t __apply_launch_option(
   const dynamic_shared_memory_option<_Tp>& __opt, ::CUlaunchConfig& __config, ::CUfunction __kernel) noexcept
 {
   ::cudaError_t __status = ::cudaSuccess;
@@ -477,7 +478,7 @@ struct launch_priority : public __detail::launch_option
   static constexpr __detail::launch_option_kind kind = __detail::launch_option_kind::launch_priority;
   int priority;
 
-  launch_priority(int p) noexcept
+  _CCCL_HOST_API launch_priority(int p) noexcept
       : priority(p)
   {}
 };
@@ -498,7 +499,7 @@ template <typename... _OptionsToFilter>
 struct __filter_options
 {
   template <bool _Pred, typename _Option>
-  [[nodiscard]] auto __option_or_empty(const _Option& __option)
+  [[nodiscard]] _CCCL_HOST_API auto __option_or_empty(const _Option& __option)
   {
     if constexpr (_Pred)
     {
@@ -511,7 +512,7 @@ struct __filter_options
   }
 
   template <typename... _Options>
-  [[nodiscard]] auto operator()(const _Options&... __options)
+  [[nodiscard]] _CCCL_HOST_API auto operator()(const _Options&... __options)
   {
     return ::cuda::std::tuple_cat(
       __option_or_empty<!__detail::__option_present_in_list<_Options, _OptionsToFilter...>>(__options)...);
@@ -553,12 +554,12 @@ struct kernel_config
   static_assert(::cuda::std::_And<::cuda::std::is_base_of<__detail::launch_option, _Options>...>::value);
   static_assert(__detail::no_duplicate_options<_Options...>);
 
-  constexpr kernel_config(const _Hierarchy& hierarchy, const _Options&... opts)
+  _CCCL_HOST_API constexpr kernel_config(const _Hierarchy& hierarchy, const _Options&... opts)
       : __hierarchy(hierarchy)
-      , __options(opts...) {};
-  constexpr kernel_config(const _Hierarchy& hierarchy, const ::cuda::std::tuple<_Options...>& opts)
+      , __options(opts...){};
+  _CCCL_HOST_API constexpr kernel_config(const _Hierarchy& hierarchy, const ::cuda::std::tuple<_Options...>& opts)
       : __hierarchy(hierarchy)
-      , __options(opts) {};
+      , __options(opts){};
 
   [[nodiscard]] _CCCL_API constexpr const _Hierarchy& hierarchy() const noexcept
   {
@@ -580,7 +581,7 @@ struct kernel_config
    * _Options to be added to the configuration
    */
   template <typename... _NewOptions>
-  [[nodiscard]] auto add(const _NewOptions&... new_options) const
+  [[nodiscard]] _CCCL_HOST_API auto add(const _NewOptions&... new_options) const
   {
     return kernel_config<_Hierarchy, _Options..., _NewOptions...>(
       __hierarchy, ::cuda::std::tuple_cat(__options, ::cuda::std::make_tuple(new_options...)));
@@ -605,7 +606,8 @@ struct kernel_config
    * Other configuration to combine with this configuration
    */
   template <typename _OtherDimensions, typename... _OtherOptions>
-  [[nodiscard]] auto combine(const kernel_config<_OtherDimensions, _OtherOptions...>& __other_config) const
+  [[nodiscard]] _CCCL_HOST_API auto
+  combine(const kernel_config<_OtherDimensions, _OtherOptions...>& __other_config) const
   {
     // can't use fully qualified kernel_config name here because of nvcc bug,
     // TODO remove __make_config_from_tuple once fixed
@@ -630,7 +632,7 @@ struct kernel_config
    * Kernel functor to search for the default configuration
    */
   template <typename _Kernel>
-  [[nodiscard]] auto combine_with_default(const _Kernel& __kernel) const
+  [[nodiscard]] _CCCL_HOST_API auto combine_with_default(const _Kernel& __kernel) const
   {
     if constexpr (__kernel_has_default_config<_Kernel>)
     {
@@ -671,7 +673,7 @@ operator&(const hierarchy_level_desc<_L1, _Dims1>& l1, const hierarchy_level_des
 }
 
 template <typename _Dimensions, typename... _Options>
-auto __make_config_from_tuple(const _Dimensions& __dims, const ::cuda::std::tuple<_Options...>& __opts)
+_CCCL_HOST_API auto __make_config_from_tuple(const _Dimensions& __dims, const ::cuda::std::tuple<_Options...>& __opts)
 {
   return kernel_config(__dims, __opts);
 }
@@ -680,7 +682,7 @@ template <typename _Dimensions,
           typename... _Options,
           typename _Option,
           typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<__detail::launch_option, _Option>>>
-[[nodiscard]] constexpr auto
+[[nodiscard]] _CCCL_HOST_API constexpr auto
 operator&(const kernel_config<_Dimensions, _Options...>& config, const _Option& option) noexcept
 {
   return config.add(option);
@@ -689,7 +691,7 @@ operator&(const kernel_config<_Dimensions, _Options...>& config, const _Option& 
 template <typename... _Levels,
           typename _Option,
           typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<__detail::launch_option, _Option>>>
-[[nodiscard]] constexpr auto operator&(const hierarchy<_Levels...>& dims, const _Option& option) noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr auto operator&(const hierarchy<_Levels...>& dims, const _Option& option) noexcept
 {
   return kernel_config(dims, option);
 }
@@ -711,7 +713,8 @@ template <typename... _Levels,
  * resulting kernel configuration object
  */
 template <typename _BottomUnit, typename... _Levels, typename... _Opts>
-[[nodiscard]] constexpr auto make_config(const hierarchy<_BottomUnit, _Levels...>& dims, const _Opts&... opts) noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr auto
+make_config(const hierarchy<_BottomUnit, _Levels...>& dims, const _Opts&... opts) noexcept
 {
   return kernel_config<hierarchy<_BottomUnit, _Levels...>, _Opts...>(dims, opts...);
 }
@@ -736,14 +739,14 @@ template <typename _BottomUnit, typename... _Levels, typename... _Opts>
  * @endcode
  */
 template <int _ThreadsPerBlock>
-constexpr auto distribute(int numElements) noexcept
+_CCCL_HOST_API constexpr auto distribute(int numElements) noexcept
 {
   const int blocksPerGrid = (numElements + _ThreadsPerBlock - 1) / _ThreadsPerBlock;
   return make_config(make_hierarchy(grid_dims(blocksPerGrid), block_dims<_ThreadsPerBlock>()));
 }
 
 template <typename... _Prev>
-[[nodiscard]] constexpr auto __process_config_args(const ::cuda::std::tuple<_Prev...>& previous)
+[[nodiscard]] _CCCL_HOST_API constexpr auto __process_config_args(const ::cuda::std::tuple<_Prev...>& previous)
 {
   if constexpr (sizeof...(_Prev) == 0)
   {
@@ -757,7 +760,7 @@ template <typename... _Prev>
 }
 
 template <typename... _Prev, typename _Arg, typename... _Rest>
-[[nodiscard]] constexpr auto
+[[nodiscard]] _CCCL_HOST_API constexpr auto
 __process_config_args(const ::cuda::std::tuple<_Prev...>& previous, const _Arg& arg, const _Rest&... rest)
 {
   if constexpr (::cuda::std::is_base_of_v<__detail::launch_option, _Arg>)
@@ -781,7 +784,7 @@ __process_config_args(const ::cuda::std::tuple<_Prev...>& previous, const _Arg& 
 }
 
 template <typename... _Args>
-[[nodiscard]] constexpr auto make_config(const _Args&... args)
+[[nodiscard]] _CCCL_HOST_API constexpr auto make_config(const _Args&... args)
 {
   return __process_config_args(::cuda::std::make_tuple(), args...);
 }
@@ -789,13 +792,14 @@ template <typename... _Args>
 namespace __detail
 {
 template <typename _Dimensions, typename... _Options>
-unsigned int constexpr kernel_config_count_attr_space(const kernel_config<_Dimensions, _Options...>&) noexcept
+_CCCL_HOST_API unsigned int constexpr kernel_config_count_attr_space(
+  const kernel_config<_Dimensions, _Options...>&) noexcept
 {
   return (0 + ... + _Options::needs_attribute_space);
 }
 
 template <typename _Dimensions, typename... _Options>
-[[nodiscard]] cudaError_t apply_kernel_config(
+[[nodiscard]] _CCCL_HOST_API cudaError_t apply_kernel_config(
   const kernel_config<_Dimensions, _Options...>& config, CUlaunchConfig& cuda_config, CUfunction kernel) noexcept
 {
   return ::cuda::std::apply(

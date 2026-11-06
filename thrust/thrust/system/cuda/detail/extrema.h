@@ -135,7 +135,7 @@ cub_minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt las
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class ItemsIt, class BinaryPred = ::cuda::std::less<thrust::detail::it_value_t<ItemsIt>>>
-ItemsIt _CCCL_HOST_DEVICE
+ItemsIt _CCCL_HOST_DEVICE_API
 min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred = {})
 {
   THRUST_CDP_DISPATCH(({ return __extrema::cub_min_element(policy, first, last, binary_pred); }),
@@ -146,7 +146,7 @@ min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, Bina
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class ItemsIt, class BinaryPred = ::cuda::std::less<thrust::detail::it_value_t<ItemsIt>>>
-ItemsIt _CCCL_HOST_DEVICE
+ItemsIt _CCCL_HOST_DEVICE_API
 max_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred = {})
 {
   THRUST_CDP_DISPATCH(
@@ -158,7 +158,7 @@ max_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, Bina
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class ItemsIt, class BinaryPred = ::cuda::std::less<thrust::detail::it_value_t<ItemsIt>>>
-::cuda::std::pair<ItemsIt, ItemsIt> _CCCL_HOST_DEVICE
+::cuda::std::pair<ItemsIt, ItemsIt> _CCCL_HOST_DEVICE_API
 minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred = {})
 {
   THRUST_CDP_DISPATCH(({ return __extrema::cub_minmax_element(policy, first, last, binary_pred); }),
