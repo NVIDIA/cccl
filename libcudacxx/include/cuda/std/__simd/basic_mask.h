@@ -28,9 +28,12 @@
 #include <cuda/std/__fwd/simd.h>
 #include <cuda/std/__iterator/default_sentinel.h>
 #include <cuda/std/__simd/abi.h>
+#include <cuda/std/__simd/concepts.h>
 #include <cuda/std/__simd/exposition.h>
 #include <cuda/std/__simd/iterator.h>
+#include <cuda/std/__simd/permute_dynamic.h>
 #include <cuda/std/__simd/specializations/fixed_size_mask.h> // IWYU pragma: keep
+#include <cuda/std/__simd/type_traits.h>
 #include <cuda/std/__simd/utility.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -190,9 +193,13 @@ public:
     return static_cast<bool>(__s_.__get(__i));
   }
 
-  // TODO(fbusato): subscript with integral indices, requires permute()
-  // template<simd-integral I>
-  // constexpr resize_t<I::size(), basic_mask> operator[](const I& indices) const;
+  _CCCL_TEMPLATE(typename _Indices)
+  _CCCL_REQUIRES(__simd_vec_type<_Indices> _CCCL_AND is_integral_v<typename _Indices::value_type>)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr resize_t<_Indices::size(), basic_mask>
+  operator[](const _Indices& __indices) const
+  {
+    return ::cuda::std::simd::permute(*this, __indices);
+  }
 
   // [simd.mask.unary], basic_mask unary operators
 
