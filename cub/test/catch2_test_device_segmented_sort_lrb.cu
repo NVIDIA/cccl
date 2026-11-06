@@ -208,8 +208,9 @@ CUB_TEST("Tiny walk sorts short segments and bins deferred ones by capacity",
   }));
 }
 
-// Check generic bounds, irregular configuration mapping, overflow IDs, and empty-workspace reuse.
-CUB_TEST("Capacity partition accepts arbitrary bounds without sort tuning", "[segmented][sort][device]", CUB_SMALL)
+// Check generic bounds, irregular configuration mapping, sorted tiny segments, untouched overflow, and
+// empty-workspace reuse.
+CUB_TEST("Tiny walk dispatch bins deferred segments by arbitrary bounds", "[segmented][sort][device]", CUB_SMALL)
 {
   for (int bin_idx = 0; bin_idx < 3; ++bin_idx)
   {
@@ -227,39 +228,70 @@ CUB_TEST("Capacity partition accepts arbitrary bounds without sort tuning", "[se
   using capacities = capacity::capacity_list<3, 10, 21>;
   static_assert(capacities::first_fit(3) == 0 && capacities::first_fit(4) == 1);
   static_assert(capacities::first_fit(21) == 2 && capacities::first_fit(22) == 3);
-  const c2h::host_vector<int> begins{5, 7, 9, 20, 30, 40, 50, 60, 90};
-  const c2h::host_vector<int> ends{4, 7, 10, 23, 34, 50, 61, 81, 112};
-  c2h::device_vector<int> d_begins = begins, d_ends = ends;
+  using walk_capacities = irregular_expansion::capacities;
+  // A reversed range first, then lengths around the cutoff and each bound; the last one overflows.
+  const std::vector<int> lengths{0, 1, 2, 35, 36, 37, 80, 81, 144, 145};
+  c2h::host_vector<int> begins{5}, ends{4}, input(5, -99);
+  for (const int length : lengths)
+  {
+    input.push_back(-99);
+    begins.push_back(static_cast<int>(input.size()));
+    for (int i = 0; i < length; ++i)
+    {
+      input.push_back(length - i);
+    }
+    ends.push_back(static_cast<int>(input.size()));
+  }
+  auto expected = c2h::host_vector<int>(input.size(), -99);
+  for (size_t segment = 0; segment < begins.size(); ++segment)
+  {
+    if (ends[segment] - begins[segment] < capacity::tiny_walk_policy::inline_cutoff)
+    {
+      for (int i = begins[segment]; i < ends[segment]; ++i)
+      {
+        expected[i] = i - begins[segment] + 1;
+      }
+    }
+  }
+  c2h::device_vector<int> d_begins = begins, d_ends = ends, d_in = input, d_out(input.size(), -99);
   capacity::partition_result result;
   size_t bytes   = 0;
   const auto run = [&](void* storage, unsigned count) {
-    return capacity::dispatch_partition<capacities>(
-      storage, bytes, thrust::raw_pointer_cast(d_begins.data()), thrust::raw_pointer_cast(d_ends.data()), count, result);
+    return capacity::dispatch_tiny_sort_and_partition<walk_capacities>(
+      storage,
+      bytes,
+      thrust::raw_pointer_cast(d_begins.data()),
+      thrust::raw_pointer_cast(d_ends.data()),
+      count,
+      thrust::raw_pointer_cast(d_in.data()),
+      thrust::raw_pointer_cast(d_out.data()),
+      result);
   };
   REQUIRE(run(nullptr, static_cast<unsigned>(begins.size())) == cudaSuccess);
   c2h::device_vector<unsigned char> storage(bytes);
   REQUIRE(run(thrust::raw_pointer_cast(storage.data()), static_cast<unsigned>(begins.size())) == cudaSuccess);
-  c2h::host_vector<unsigned> offsets(capacities::size + 2);
+  c2h::host_vector<unsigned> offsets(walk_capacities::size + 2);
   REQUIRE(cudaMemcpy(offsets.data(), result.bin_offsets, offsets.size() * sizeof(unsigned), cudaMemcpyDeviceToHost)
           == cudaSuccess);
-  REQUIRE(offsets == c2h::host_vector<unsigned>{0, 2, 4, 6, 7});
+  REQUIRE(offsets == c2h::host_vector<unsigned>{0, 1, 3, 5, 6});
+  REQUIRE(c2h::host_vector<int>(d_out) == expected);
   c2h::host_vector<unsigned> ids(offsets.back());
   REQUIRE(
     cudaMemcpy(ids.data(), result.segment_ids, ids.size() * sizeof(unsigned), cudaMemcpyDeviceToHost) == cudaSuccess);
-  for (int bin_idx = 0; bin_idx <= capacities::size; ++bin_idx)
+  for (int bin_idx = 0; bin_idx <= walk_capacities::size; ++bin_idx)
   {
     for (unsigned i = offsets[bin_idx]; i < offsets[bin_idx + 1]; ++i)
     {
-      REQUIRE(capacities::first_fit(ends[ids[i]] - begins[ids[i]]) == bin_idx);
+      REQUIRE(walk_capacities::first_fit(ends[ids[i]] - begins[ids[i]]) == bin_idx);
     }
   }
   std::sort(ids.begin(), ids.end());
-  REQUIRE(ids == c2h::host_vector<unsigned>{2, 3, 4, 5, 6, 7, 8});
+  REQUIRE(ids == c2h::host_vector<unsigned>{5, 6, 7, 8, 9, 10});
   // Reuse the same workspace with no segments; every range must become empty.
   REQUIRE(run(thrust::raw_pointer_cast(storage.data()), 0) == cudaSuccess);
   REQUIRE(cudaMemcpy(offsets.data(), result.bin_offsets, offsets.size() * sizeof(unsigned), cudaMemcpyDeviceToHost)
           == cudaSuccess);
-  REQUIRE(offsets == c2h::host_vector<unsigned>(capacities::size + 2, 0));
+  REQUIRE(offsets == c2h::host_vector<unsigned>(walk_capacities::size + 2, 0));
 }
 
 // Exercise capacity boundaries and all launch groups, including repeated work and untouched overflow.
@@ -366,7 +398,9 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
     using policy_getter_t     = cub::detail::policy_getter<typename kernel_t::policy_selector, sm90_cc>;
     using kernel_capacities_t = typename kernel_t::template capacities_t<policy_getter_t>;
     constexpr int first_bin   = kernels_t::template kernel_bin_begin_idx<sm90_cc>(i);
-    constexpr int lower_bound = first_bin ? capacities::bounds[static_cast<size_t>(first_bin - 1)] : 0;
+    // Lengths below the walk's cutoff are never binned, so the warp kernel does not rewrite them.
+    constexpr int lower_bound = first_bin ? capacities::bounds[static_cast<size_t>(first_bin - 1)]
+                                          : capacity::tiny_walk_policy::inline_cutoff - 1;
     auto retry                = expected;
     for (size_t segment = 0; segment < lengths.size(); ++segment)
     {

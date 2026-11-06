@@ -64,11 +64,12 @@ struct group_merge_tuning_arch_selector
 
 // Independent selectors supply the current SM90+ defaults for each sorting launch.
 // Older targets can compile these kernels, but the host dispatcher does not launch them.
+// The warp launch starts at tiny_walk_policy::max_threads, whose minimum capacity is the walk's cutoff.
 struct group_merge_warp_policy_selector
 {
   _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()(::cuda::compute_capability) const
   {
-    return {256, 1, 32, 9, 15, 128, 1};
+    return {256, tiny_walk_policy::max_threads, 32, 9, 15, 128, 1};
   }
 };
 
