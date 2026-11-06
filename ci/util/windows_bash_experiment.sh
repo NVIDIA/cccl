@@ -46,6 +46,9 @@ case "${1:?Expected preflight or collect}" in
     printf '__global__ void probe_kernel() {}\n' > "$probe/probe.cu"
     (
       cd "$probe"
+      # Every compiler path below is already native. In particular, Git Bash's
+      # automatic conversion corrupts MSVC's attached -FeC:/... argument.
+      export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'
       cl -nologo -EHsc "-Fe${native_probe}/probe.exe" "${native_probe}/probe.cpp"
       ./probe.exe
       nvcc -ccbin "$native_cl" -std=c++20 -arch=sm_89 -c \
