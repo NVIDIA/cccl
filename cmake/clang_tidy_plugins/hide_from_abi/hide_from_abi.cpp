@@ -83,7 +83,7 @@ public:
                      hasAttr(attr::Visibility),
                      cxxMethodDecl(ofClass(cxxRecordDecl(isLambda()))),
                      isExpansionInSystemHeader(),
-                     util::isExpansionInTestFile)),
+                     util::isExpansionInTestFile())),
         util::isExpansionInHeaderFile(header_extensions_),
         optionally(is_special_member.bind(SPECIAL_FUNCTION_BIND)))
         .bind(FUNCTION_BIND),

@@ -23,6 +23,10 @@ AST_MATCHER_P(Decl, isExpansionInHeaderFile, const FileExtensionsSet*, extension
       || (extensions->contains("") && !filename.empty() && llvm::sys::path::extension(filename).empty());
 }
 
-// NOLINTNEXTLINE(bugprone-throwing-static-initialization)
-inline const auto isExpansionInTestFile = ast_matchers::isExpansionInFileMatching(".*/test/.*");
+using file_matching_type = decltype(ast_matchers::isExpansionInFileMatching(""));
+
+AST_MATCHER_FUNCTION(file_matching_type, isExpansionInTestFile)
+{
+  return ast_matchers::isExpansionInFileMatching(".*/(test|c2h)/.*");
+}
 } // namespace clang::tidy::cccl::util
