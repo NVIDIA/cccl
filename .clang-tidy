@@ -100,7 +100,6 @@ Checks:
   - '-readability-avoid-nested-conditional-operator'
   - '-readability-static-accessed-through-instance'
   - '-readability-redundant-access-specifiers'
-  - '-readability-redundant-inline-specifier'
   - '-readability-redundant-declaration'
   - '-readability-redundant-parentheses'
   - '-readability-avoid-unconditional-preprocessor-if'
