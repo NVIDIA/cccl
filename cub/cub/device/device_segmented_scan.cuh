@@ -121,7 +121,7 @@ private:
     using default_policy_selector_t = detail::segmented_scan::policy_selector_from_types<accum_t>;
     using policy_selector_t =
       detail::policy_selector_from_tuning_env_t<TuningEnvT, SegmentedScanPolicy, default_policy_selector_t>;
-    return detail::segmented_scan::dispatch<EnforceInclusive>(
+    return _CUB::detail::segmented_scan::dispatch<EnforceInclusive>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
