@@ -180,7 +180,7 @@ struct hierarchy_level_base
 
   _CCCL_TEMPLATE(class _Group)
   _CCCL_REQUIRES(::cuda::experimental::coop::group<_Group>)
-  [[nodiscard]] _CCCL_API static constexpr auto count(const _Group& __group) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr auto count(const _Group& __group) noexcept
   {
     return count_as<__default_1d_query_type<typename _Group::unit_type>>(__group);
   }
@@ -194,7 +194,7 @@ struct hierarchy_level_base
 
   _CCCL_TEMPLATE(class _Tp, class _Group)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::experimental::coop::group<_Group>)
-  [[nodiscard]] _CCCL_API static constexpr _Tp count_as(const _Group& __group) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr _Tp count_as(const _Group& __group) noexcept
   {
     return ::cuda::experimental::coop::__count_query_group<_Tp, _Level>(__group);
   }
