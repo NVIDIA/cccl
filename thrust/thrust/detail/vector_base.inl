@@ -754,20 +754,16 @@ void vector_base<T, Alloc>::copy_insert(iterator position, ForwardIterator first
     {
       const size_type old_size = size();
 
-      // compute the new capacity after the allocation
-      size_type new_capacity =
-        old_size + ::cuda::std::max THRUST_PREVENT_MACRO_SUBSTITUTION(old_size, num_new_elements);
-
-      // allocate exponentially larger new storage
-      new_capacity = ::cuda::std::max<size_type>(new_capacity, 2 * capacity());
-
-      // do not exceed maximum storage
-      new_capacity = ::cuda::std::min<size_type>(new_capacity, max_size());
-
-      if (new_capacity > max_size())
+      // reject insertions past max_size() without computing old_size + num_new_elements, which may wrap around
+      if (num_new_elements > max_size() || old_size > max_size() - num_new_elements)
       {
         throw std::length_error("insert(): insertion exceeds max_size().");
       } // end if
+
+      // Grow exponentially within bounds, like fill_insert. old_size + num_new_elements cannot wrap after the check
+      // above, and the lower bound is capped at max_size() because clamp() requires lo <= hi.
+      const size_type new_capacity = ::cuda::std::clamp<size_type>(
+        old_size + num_new_elements, ::cuda::std::min<size_type>(2 * capacity(), max_size()), max_size());
 
       storage_type new_storage(copy_allocator_t(), m_storage, new_capacity);
 
@@ -930,9 +926,17 @@ void vector_base<T, Alloc>::fill_insert(iterator position, size_type n, const T&
   {
     const size_type old_size = size();
 
-    // Ensure allocation grows exponentially within bounds
+    // Reject insertions past max_size() without computing old_size + n, which may wrap around. This also avoids a
+    // bogus -Wstringop-overflow from gcc 15.3 / 16.2 for the copies below.
+    if (n > max_size() || old_size > max_size() - n)
+    {
+      throw std::length_error("insert(): insertion exceeds max_size().");
+    }
+
+    // Ensure allocation grows exponentially within bounds. Cap the lower bound at max_size(): with a small max_size(),
+    // 2 * capacity() can exceed it, and clamp() requires lo <= hi.
     const size_type new_capacity =
-      ::cuda::std::clamp<size_type>(old_size + n, static_cast<size_type>(2 * capacity()), max_size());
+      ::cuda::std::clamp<size_type>(old_size + n, ::cuda::std::min<size_type>(2 * capacity(), max_size()), max_size());
 
     storage_type new_storage(copy_allocator_t(), m_storage, new_capacity);
 
