@@ -1292,9 +1292,12 @@ void check_two_phase_overloads_with_legacy_stream(StreamT stream)
     c2h::device_vector<int> d_offsets = {0, 4, 7, 9};
     auto d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
     c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
-    c2h::device_vector<int> d_reduce_out(3, thrust::no_init), d_sum_out(3, thrust::no_init),
-      d_min_out(3, thrust::no_init), d_max_out(3, thrust::no_init);
-    c2h::device_vector<cub::KeyValuePair<int, int>> d_argmin_out(3), d_argmax_out(3);
+    c2h::device_vector<int> d_reduce_out(3, thrust::no_init);
+    c2h::device_vector<int> d_sum_out(3, thrust::no_init);
+    c2h::device_vector<int> d_min_out(3, thrust::no_init);
+    c2h::device_vector<int> d_max_out(3, thrust::no_init);
+    c2h::device_vector<cub::KeyValuePair<int, int>> d_argmin_out(3);
+    c2h::device_vector<cub::KeyValuePair<int, int>> d_argmax_out(3);
 
     {
       const stream_scope scope{cudaStream_t{}};
@@ -1332,9 +1335,12 @@ void check_two_phase_overloads_with_legacy_stream(StreamT stream)
     const int num_segments = 2;
     const int segment_size = 3;
     c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
-    c2h::device_vector<int> d_reduce_out(2, thrust::no_init), d_sum_out(2, thrust::no_init),
-      d_min_out(2, thrust::no_init), d_max_out(2, thrust::no_init);
-    c2h::device_vector<cuda::std::pair<int, int>> d_argmin_out(2), d_argmax_out(2);
+    c2h::device_vector<int> d_reduce_out(2, thrust::no_init);
+    c2h::device_vector<int> d_sum_out(2, thrust::no_init);
+    c2h::device_vector<int> d_min_out(2, thrust::no_init);
+    c2h::device_vector<int> d_max_out(2, thrust::no_init);
+    c2h::device_vector<cuda::std::pair<int, int>> d_argmin_out(2);
+    c2h::device_vector<cuda::std::pair<int, int>> d_argmax_out(2);
 
     {
       const stream_scope scope{cudaStream_t{}};
