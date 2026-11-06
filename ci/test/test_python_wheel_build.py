@@ -52,6 +52,7 @@ with open(os.environ["MOCK_LOG"], "a") as log:
         key: os.environ.get(key) for key in [
             "CC", "CXX", "CUDACXX", "CUDAHOSTCXX", "CMAKE_GENERATOR",
             "MSYS_NO_PATHCONV", "MSYS2_ARG_CONV_EXCL",
+            "PATH",
         ]
     }}) + "\n")
 
@@ -117,11 +118,15 @@ elif name == "python":
 """
     )
     mock.chmod(0o755)
-    for name in ["python", "docker", "cygpath", "cl", "grep"]:
+    for name in ["python", "docker", "cygpath", "grep", "link.exe"]:
         (tools / name).symlink_to(mock)
+    msvc = tmp_path / "MSVC native tools"
+    msvc.mkdir()
+    for name in ["cl", "cl.exe", "link.exe"]:
+        (msvc / name).symlink_to(mock)
     env = os.environ.copy()
     env.update(
-        PATH=f"{tools}:{env['PATH']}",
+        PATH=f"{tools}:{msvc}:{env['PATH']}",
         MOCK_LOG=str(tmp_path / "calls.jsonl"),
         MOCK_REPO=str(repo),
         MOCK_REAL_GREP=shutil.which("grep"),
@@ -181,8 +186,18 @@ def test_windows_builds_both_native_wheels_then_repairs(wheel_build, stale):
     builds = [call for call in calls if call["args"][:3] == ["-m", "pip", "wheel"]]
     assert len(builds) == 2
     for build, version in zip(builds, ["12.9", "13.0"]):
-        assert build["env"]["CXX"] == "cl.exe"
-        assert build["env"]["CUDAHOSTCXX"] == "cl.exe"
+        compiler = f"C:{repo.parent}/MSVC native tools/cl.exe"
+        assert build["env"]["CXX"] == compiler
+        assert build["env"]["CUDAHOSTCXX"] == compiler
+        assert f"cmake.define.CMAKE_C_COMPILER={compiler}" in build["args"]
+        assert f"cmake.define.CMAKE_CXX_COMPILER={compiler}" in build["args"]
+        assert (
+            f"cmake.define.CMAKE_LINKER=C:{repo.parent}/MSVC native tools/link.exe"
+            in build["args"]
+        )
+        assert build["env"]["PATH"].split(":")[0] == str(
+            repo.parent / "MSVC native tools"
+        )
         assert build["env"]["CMAKE_GENERATOR"] == "Ninja"
         assert f"cuda{version} toolkit/bin/nvcc.exe" in build["env"]["CUDACXX"]
         assert any(
