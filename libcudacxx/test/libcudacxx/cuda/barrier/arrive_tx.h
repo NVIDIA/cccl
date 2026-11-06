@@ -77,6 +77,9 @@ TEST_DEVICE_FUNC void test()
       __syncthreads();
       thread<split_arrive_and_expect>(*bar_1, 1);
 
+      // sel_2 reuses the shared memory of sel_1: wait until no thread still waits on bar_1.
+      __syncthreads();
+
       // Run all threads, each arriving with arrival count 2
       shared_memory_selector<barrier_t, constructor_initializer> sel_2;
       barrier_t* bar_2 = sel_2.construct(2 * blockDim.x);
