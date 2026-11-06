@@ -3268,8 +3268,11 @@ private:
       // every working rank owns chunks (`trim_to_chunk_owning_blocks`); later, `num_local_candidates` is the previous
       // splitter bucket's local count, i.e. this pass's histogram total. A non-leader without candidates skips the work
       // on its (empty) `hist` below; the leader never does, its `hist` is the merged one.
-      const bool has_candidates =
-        is_first_pass || cluster_block_rank == layout.leader_rank || temp_storage.num_local_candidates != offset_t{0};
+      // The vote changes nothing (the value is block-uniform) but makes it provably warp-uniform: branching on a plain
+      // shared-memory load makes the compiler treat the guarded regions as divergent and abandon the uniform datapath.
+      const bool has_candidates = __any_sync(
+        ~0u,
+        is_first_pass || cluster_block_rank == layout.leader_rank || temp_storage.num_local_candidates != offset_t{0});
       may_have_candidates = has_candidates;
 
       // First pass only: complete the deferred initial cluster barrier here. `process_impl` issued its matching
