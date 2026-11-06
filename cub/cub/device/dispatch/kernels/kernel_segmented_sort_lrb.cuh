@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Device kernels for capacity-based ID partitioning and sorting with work prefixes built in shared memory.
+// Device kernels for the tiny-segment walk, capacity-based ID partitioning, and sorting with work prefixes
+// built in shared memory.
 
 #pragma once
 
@@ -15,9 +16,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/agent/agent_segmented_sort_tiny.cuh>
 #include <cub/detail/segmented_sort_entries.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
 #include <cub/util_arch.cuh>
+
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -66,6 +71,89 @@ __launch_bounds__(partition_policy::block_threads) _CCCL_KERNEL_ATTRIBUTES void 
       ids[bin_starts_shared[bin_idx] + segment_rank_in_bin] = input_segment_id;
     }
   }
+}
+
+// Each block walks one tile of block_threads * segments_per_thread segments. Empty segments are skipped,
+// singletons are copied, and segments shorter than inline_cutoff are queued by logical warp size and sorted
+// by the block. Longer segments are counted by capacity; the block flushes its counts only if it found one.
+template <typename Capacities, typename BeginIterator, typename EndIterator, typename Key>
+__launch_bounds__(tiny_walk_policy::block_threads) _CCCL_KERNEL_ATTRIBUTES void tiny_walk_kernel(
+  BeginIterator begins, EndIterator ends, unsigned num_segments, const Key* in, Key* out, unsigned* counts)
+{
+  using policy_t                   = tiny_walk_policy;
+  using sorter_t                   = tiny_sort_implementation<Key>;
+  constexpr unsigned total_bins    = Capacities::size + 1;
+  constexpr unsigned tile_segments = policy_t::block_threads * policy_t::segments_per_thread;
+  // One queue each for logical warps of 1, 2, and 4 threads.
+  constexpr int num_queues = 3;
+  __shared__ unsigned bin_counts_shared[total_bins];
+  __shared__ unsigned queue_sizes_shared[num_queues];
+  __shared__ unsigned queues_shared[num_queues][tile_segments];
+  __shared__ typename sorter_t::temp_storage sort_storage;
+  for (unsigned bin_idx = threadIdx.x; bin_idx < total_bins; bin_idx += blockDim.x)
+  {
+    bin_counts_shared[bin_idx] = 0;
+  }
+  if (threadIdx.x < num_queues)
+  {
+    queue_sizes_shared[threadIdx.x] = 0;
+  }
+  __syncthreads();
+  const unsigned tile_begin = blockIdx.x * tile_segments;
+  // Compare tile-local indices so that the last tile cannot overflow unsigned segment IDs.
+  const unsigned tile_size = (::cuda::std::min) (tile_segments, num_segments - tile_begin);
+  bool has_deferred        = false;
+  for (int pass = 0; pass < policy_t::segments_per_thread; ++pass)
+  {
+    const unsigned idx_in_tile = pass * policy_t::block_threads + threadIdx.x;
+    if (idx_in_tile < tile_size)
+    {
+      const unsigned segment_id = tile_begin + idx_in_tile;
+      const auto begin          = begins[segment_id];
+      const auto length         = ends[segment_id] - begin;
+      if (length == 1)
+      {
+        out[begin] = in[begin];
+      }
+      else if (length > 1 && length < policy_t::inline_cutoff)
+      {
+        const int queue = length <= policy_t::items_per_thread ? 0 : length <= 2 * policy_t::items_per_thread ? 1 : 2;
+        queues_shared[queue][atomicAdd(queue_sizes_shared + queue, 1u)] = segment_id;
+      }
+      else if (length >= policy_t::inline_cutoff)
+      {
+        atomicAdd(bin_counts_shared + Capacities::first_fit(length), 1u);
+        has_deferred = true;
+      }
+    }
+  }
+  if (__syncthreads_or(has_deferred))
+  {
+    for (unsigned bin_idx = threadIdx.x; bin_idx < total_bins; bin_idx += blockDim.x)
+    {
+      if (bin_counts_shared[bin_idx])
+      {
+        atomicAdd(counts + bin_idx, bin_counts_shared[bin_idx]);
+      }
+    }
+  }
+  // Logical warp sizes alias sort_storage, so every pass ends with a block barrier.
+  const auto sort_queue = [&](auto logical_warp_threads, int queue) {
+    constexpr int threads                = decltype(logical_warp_threads)::value;
+    constexpr unsigned segments_per_pass = policy_t::block_threads / threads;
+    const unsigned queue_size            = queue_sizes_shared[queue];
+    for (unsigned pass_begin = 0; pass_begin < queue_size; pass_begin += segments_per_pass)
+    {
+      const unsigned queue_idx = pass_begin + threadIdx.x / threads;
+      const bool is_valid      = queue_idx < queue_size;
+      sorter_t::template sort_segment<threads>(
+        sort_storage, is_valid ? queues_shared[queue][queue_idx] : 0, is_valid, begins, ends, in, out);
+      __syncthreads();
+    }
+  };
+  sort_queue(::cuda::std::integral_constant<int, 1>{}, 0);
+  sort_queue(::cuda::std::integral_constant<int, 2>{}, 1);
+  sort_queue(::cuda::std::integral_constant<int, 4>{}, 2);
 }
 
 // One thread converts bin counts into global ID offsets and initial scatter cursors.

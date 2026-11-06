@@ -97,6 +97,72 @@ CUB_TEST("Tiny sort sorts each segment within its logical warp capacity",
   check(cuda::std::integral_constant<int, 4>{});
 }
 
+// Tiny segments and singletons are written; empty and deferred segments are only counted, never written.
+CUB_TEST("Tiny walk sorts short segments and counts deferred ones by capacity",
+         "[segmented][sort][device]",
+         CUB_SMALL,
+         c2h::type_list<int, double>)
+{
+  using key_type   = c2h::get<0, TestType>;
+  using capacities = irregular_expansion::capacities;
+  using policy_t   = capacity::tiny_walk_policy;
+  std::vector<int> lengths{0, 1, 2, 9, 10, 18, 19, 35, 36, 37, 80, 81, 144, 145};
+  std::mt19937 random{12345};
+  // Whole tiles of tiny segments skip the count flush; mixed tiles cover several blocks.
+  std::uniform_int_distribution<int> tiny_length{0, policy_t::inline_cutoff - 1};
+  std::uniform_int_distribution<int> any_length{0, 160};
+  for (int i = 0; i < 300; ++i)
+  {
+    lengths.push_back(tiny_length(random));
+  }
+  for (int i = 0; i < 600; ++i)
+  {
+    lengths.push_back(any_length(random));
+  }
+  c2h::host_vector<int> begins, ends;
+  c2h::host_vector<key_type> input;
+  std::uniform_int_distribution<int> random_key{-1000, 1000};
+  for (const int length : lengths)
+  {
+    input.push_back(key_type{-99});
+    begins.push_back(static_cast<int>(input.size()));
+    for (int i = 0; i < length; ++i)
+    {
+      input.push_back(static_cast<key_type>(random_key(random)) / key_type{4});
+    }
+    ends.push_back(static_cast<int>(input.size()));
+  }
+  c2h::host_vector<key_type> expected(input.size(), key_type{-99});
+  c2h::host_vector<unsigned> expected_counts(capacities::size + 1, 0);
+  for (size_t segment = 0; segment < lengths.size(); ++segment)
+  {
+    if (lengths[segment] >= policy_t::inline_cutoff)
+    {
+      ++expected_counts[capacities::first_fit(lengths[segment])];
+      continue;
+    }
+    std::copy(input.begin() + begins[segment], input.begin() + ends[segment], expected.begin() + begins[segment]);
+    std::sort(expected.begin() + begins[segment], expected.begin() + ends[segment]);
+  }
+  c2h::device_vector<key_type> d_in = input, d_out(input.size(), key_type{-99});
+  c2h::device_vector<int> d_begins = begins, d_ends = ends;
+  c2h::device_vector<unsigned> d_counts(capacities::size + 1, 0);
+  const auto num_segments          = static_cast<unsigned>(lengths.size());
+  constexpr unsigned tile_segments = policy_t::block_threads * policy_t::segments_per_thread;
+  capacity::tiny_walk_kernel<capacities>
+    <<<(num_segments + tile_segments - 1) / tile_segments, policy_t::block_threads>>>(
+      thrust::raw_pointer_cast(d_begins.data()),
+      thrust::raw_pointer_cast(d_ends.data()),
+      num_segments,
+      thrust::raw_pointer_cast(d_in.data()),
+      thrust::raw_pointer_cast(d_out.data()),
+      thrust::raw_pointer_cast(d_counts.data()));
+  REQUIRE(cudaGetLastError() == cudaSuccess);
+  REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
+  REQUIRE(c2h::host_vector<key_type>(d_out) == expected);
+  REQUIRE(c2h::host_vector<unsigned>(d_counts) == expected_counts);
+}
+
 // Check generic bounds, irregular configuration mapping, overflow IDs, and empty-workspace reuse.
 CUB_TEST("Capacity partition accepts arbitrary bounds without sort tuning", "[segmented][sort][device]", CUB_SMALL)
 {
