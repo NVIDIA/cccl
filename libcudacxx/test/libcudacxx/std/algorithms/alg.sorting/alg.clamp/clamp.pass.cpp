@@ -14,9 +14,16 @@
 //   const T&
 //   clamp(const T& v, const T& lo, const T& hi);
 
+// clang-format off
+#include <disable_nvfp_conversions_and_operators.h>
+// clang-format on
+
+#include <cuda/std/__type_traits/is_extended_arithmetic.h>
 #include <cuda/std/algorithm>
 #include <cuda/std/cassert>
+#include <cuda/std/type_traits>
 
+#include "cuda_fp_types.h"
 #include "test_macros.h"
 
 struct Tag
@@ -46,7 +53,18 @@ TEST_FUNC constexpr bool operator<(const Tag& rhs, const Tag& lhs)
 template <class T>
 TEST_FUNC constexpr void test(const T& a, const T& lo, const T& hi, const T& x)
 {
-  assert(&cuda::std::clamp(a, lo, hi) == &x);
+  if constexpr (cuda::std::is_arithmetic_v<T>)
+  {
+    assert(cuda::std::clamp(a, lo, hi) == x);
+  }
+  else if constexpr (cuda::std::__is_extended_arithmetic_v<T>)
+  {
+    assert(::__heq(cuda::std::clamp(a, lo, hi), x));
+  }
+  else
+  {
+    assert(&cuda::std::clamp(a, lo, hi) == &x);
+  }
 }
 
 TEST_FUNC constexpr bool test()
@@ -129,10 +147,34 @@ TEST_FUNC constexpr bool test()
   return true;
 }
 
+TEST_FUNC void test_extended_arithmetic()
+{
+#if _CCCL_HAS_NVFP16()
+  {
+    __half x = ::__float2half(0.0f);
+    __half y = ::__float2half(1.0f);
+    __half z = ::__float2half(2.0f);
+    test(x, y, z, y);
+    test(y, x, z, y);
+  }
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+  {
+    __nv_bfloat16 x = ::__float2bfloat16(0.0f);
+    __nv_bfloat16 y = ::__float2bfloat16(1.0f);
+    __nv_bfloat16 z = ::__float2bfloat16(2.0f);
+    test(x, y, z, y);
+    test(y, x, z, y);
+  }
+#endif // _CCCL_HAS_NVBF16()
+}
+
 int main(int, char**)
 {
   test();
   static_assert(test());
+
+  test_extended_arithmetic();
 
   return 0;
 }

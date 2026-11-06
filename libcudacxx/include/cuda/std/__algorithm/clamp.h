@@ -20,6 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/extended_data_types.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_same.h>
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
@@ -36,13 +41,56 @@ clamp(const _Tp& __v _CCCL_LIFETIMEBOUND,
   return __comp(__v, __lo) ? __lo : __comp(__hi, __v) ? __hi : __v;
 }
 
-template <class _Tp>
+template <class _Tp,
+#if _CCCL_HAS_NVFP16()
+          enable_if_t<!is_same_v<_Tp, __half>, int> = 0,
+#endif //_CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+          enable_if_t<!is_same_v<_Tp, __nv_bfloat16>, int> = 0,
+#endif // _CCCL_HAS_NVBF16()
+          enable_if_t<!is_arithmetic_v<_Tp>, int> = 0>
 [[nodiscard]] _CCCL_API constexpr const _Tp&
 clamp(const _Tp& __v _CCCL_LIFETIMEBOUND, const _Tp& __lo _CCCL_LIFETIMEBOUND, const _Tp& __hi _CCCL_LIFETIMEBOUND)
 {
   _CCCL_ASSERT(!(__hi < __lo), "Bad bounds passed to cuda::std::clamp");
   return __v < __lo ? __lo : __hi < __v ? __hi : __v;
 }
+
+template <class _Tp, enable_if_t<is_arithmetic_v<_Tp>, int> = 0>
+[[nodiscard]] _CCCL_API constexpr _Tp clamp(const _Tp __v, const _Tp __lo, const _Tp __hi) noexcept
+{
+  _CCCL_ASSERT(!(__hi < __lo), "Bad bounds passed to cuda::std::clamp");
+  return __v < __lo ? __lo : __hi < __v ? __hi : __v;
+}
+
+#if _CCCL_HAS_NVFP16()
+template <class _Tp, enable_if_t<is_same_v<_Tp, __half>, int> = 0>
+[[nodiscard]] _CCCL_API _Tp clamp(const _Tp __v, const _Tp __lo, const _Tp __hi) noexcept
+{
+  _CCCL_ASSERT(!__hlt(__hi, __lo), "Bad bounds passed to cuda::std::clamp");
+  return __hmax(__lo, __hmin(__hi, __v));
+}
+#endif // _CCCL_HAS_NVFP16()
+
+#if _CCCL_HAS_NVBF16()
+template <class _Tp, enable_if_t<is_same_v<_Tp, __nv_bfloat16>, int> = 0>
+[[nodiscard]] _CCCL_API _Tp clamp(const _Tp __v, const _Tp __lo, const _Tp __hi) noexcept
+{
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_80,
+    ({
+      _CCCL_ASSERT(!__hlt(__hi, __lo), "Bad bounds passed to cuda::std::clamp");
+      return __hmax(__lo, __hmin(__hi, __v));
+    }),
+    ({
+      _CCCL_ASSERT(!(__bfloat162float(__hi) < __bfloat162float(__lo)), "Bad bounds passed to cuda::std::clamp");
+      return __bfloat162float(__v) < __bfloat162float(__lo) ? __lo
+           : __bfloat162float(__hi) < __bfloat162float(__v)
+             ? __hi
+             : __v;
+    }));
+}
+#endif // _CCCL_HAS_NVBF16()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
