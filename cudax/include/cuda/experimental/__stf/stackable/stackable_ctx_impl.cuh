@@ -197,8 +197,17 @@ public:
     template <typename TaskAction>
     auto concretize_deferred_task(TaskAction&& action)
     {
+      // Hold the context-tree shared lock across validation, auto-push and task
+      // creation, as parallel_for()/launch()/cuda_kernel()/host_launch() do.
+      // task() itself only holds it while reading the head offset, so without
+      // this lock a concurrent push() on another thread may grow the node
+      // vector and invalidate the node references taken by push_at(), and a
+      // concurrent pop() may release a shared freeze that push_at() is reusing.
+      // The lock is released before the task body runs, like the other entry
+      // points, which return their scope object before the body is applied.
+      auto tree_lock = sctx_.pimpl->acquire_shared_lock();
       return ::std::apply(
-        [this, &action](auto&&... initial_args) {
+        [this, &action, &tree_lock](auto&&... initial_args) {
           // 1. Combine access modes across all dependencies (initial + additional)
           ::std::vector<::std::pair<int, access_mode>> combined_modes;
 
@@ -259,6 +268,7 @@ public:
           }
 
           concrete_task_ = task.get_base_task();
+          tree_lock.unlock();
           return action(task);
         },
         task_deps_tuple_);
