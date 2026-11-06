@@ -46,14 +46,11 @@ struct find_if_functor
     {
       return TupleType(true, (::cuda::std::min) (::cuda::std::get<1>(lhs), ::cuda::std::get<1>(rhs)));
     }
-    else if (::cuda::std::get<0>(lhs))
+    if (::cuda::std::get<0>(lhs))
     {
       return lhs;
     }
-    else
-    {
-      return rhs;
-    }
+    return rhs;
   }
 };
 

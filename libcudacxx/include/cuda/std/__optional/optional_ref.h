@@ -269,14 +269,11 @@ public:
 
   _CCCL_API constexpr _Tp& value() const
   {
-    if (__value_ != nullptr)
-    {
-      return *__value_;
-    }
-    else
+    if (__value_ == nullptr)
     {
       __throw_bad_optional_access();
     }
+    return *__value_;
   }
 
   template <class _Up>
